@@ -8,6 +8,7 @@ members = [
   "crates/alo-models",
   "crates/alo-record",
   "crates/alo-shortcuts",
+  "crates/alo-strings",
 ]
 
 [workspace.package]

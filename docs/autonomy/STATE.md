@@ -944,3 +944,96 @@ says they want their photographs there gets them. The rule only decides what
   has reached a screen, because the compositor does not exist. Law 3's "on real
   hardware" is owed, and `ROADMAP.md`'s "Making it yours" stays unticked until a
   person changes their background on the certified machine and sees it change.
+
+## 2026-09-02 — iteration 11: the strings, and the end of silent English
+
+**Built: item 9.** `crates/alo-strings`, a new crate of eleven files:
+`key.rs`, `template.rs`, `filling.rs`, `phrase.rs`, `vocabulary.rs`,
+`translation.rs`, `speaking.rs`, `language.rs`, `union.rs`, `said.rs`,
+`strings.rs`. Like `alo-shortcuts` and `alo-appearance` it depends on nothing
+else in the workspace, and for the same reason: a person reading their own
+machine in their own language is not an agent doing something.
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -D warnings` clean, `cargo doc --workspace --no-deps` clean. 75
+unit tests, 5 integration tests, 3 doctests and one `compile_fail` in the new
+crate; the workspace is **475 tests and 17 doctests**, all green and the rest
+untouched. A `CHANGELOG.md` line and the queue in the same change. The
+`compile_fail` was checked to fail on the privacy — E0451, *fields `language`
+and `texts` of struct `Speaking` are private* — and not on a typo, and it has a
+passing twin.
+
+**The decision the item asked for, and the answer that was bigger than the
+question.** The item asked for "a test that a missing translation is visible in
+development rather than silently English". The obvious build of that is a
+development flag that wraps untranslated strings, and it is wrong: it answers
+with a bare `String` the rest of the time, so *shown English because nobody
+translated it* would be invisible in exactly the build a person in Latvia is
+running, and the first person to find out would be them. So the marking is
+there — `Showing::InDevelopment`, guillemets, and the test the item asked for by
+name — but it is one of three ways of noticing rather than the only one. Every
+answer is a `Said` carrying `CameFrom`: a translation and which language it
+really is, the source, or a key nothing declares. `Strings::unanswered` lists
+what a release note has to count. English is now impossible to show without the
+system knowing it did.
+
+**The decision that was not in the item at all.** A translation is written by
+somebody whose language nobody on this team reads, so nobody here can see that
+a sentence has gone wrong by reading it. A translator who moved `{bytes}` out of
+*"{path} holds {bytes} bytes and a verb reads at most {most}"* would leave a
+person told their file is too big and not told how big, in their own language,
+with nothing anywhere saying so. So `Vocabulary::check` is the only door to a
+showable translation — `Speaking` has no public constructor and no
+`Deserialize`, which is `Departing` and `Touching` again — and it matches every
+gap against the source's, both ways. What is refused: a dropped gap, an invented
+one, a sentence that is not one, and a key nothing says any more. What is
+deliberately **not** refused: a partial file. A language arrives a few hundred
+strings at a time and a check that insisted on completeness would mean nobody
+ever saw the first half of anybody's work. And everything wrong comes back at
+once, because being told about the next mistake each time you try again is how a
+translator gives up.
+
+**Three smaller ones worth keeping.**
+
+- **English is a source, not a default.** The sentence lives beside the key in
+  the code, which is item 7's *only the difference is stored* reaching a fifth
+  crate: the defaults are in the code and the file holds what somebody changed,
+  and here the change is a translation. That is not the hardcoded English
+  `CLAUDE.md` forbids — hardcoded English is English that reaches a screen
+  without anything having asked whether a translation exists — and the
+  difference is carried by `Said` rather than by a convention. It also means a
+  release can improve an English sentence for every machine that has no
+  translation of it, and that a phrase cannot exist without English at all.
+- **A person names their own second language.** The chain is what they said,
+  each with its broader forms (`pt-BR` brings `pt`), and nothing else. Somebody
+  in Latvia who also reads Russian says so and meets Russian before English;
+  nothing infers it for them, because *you are Latvian so you must read Russian*
+  is not a thing software gets to decide.
+- **A language is named in its own language, and gaps are named and never
+  numbered.** `union.rs` holds the 24 with their endonyms, because a picker that
+  said *Greek* is one the people it exists for cannot read; and `{}` is refused
+  outright, because a translator reordering a sentence — German puts the size
+  before the name — has to have something to reorder by.
+
+**What the next iteration must know:**
+
+- **The strings themselves have not moved.** `alo-files`, `alo-shortcuts` and
+  `alo-appearance` still hold their English in their own error types and labels.
+  That is items **9b, 9c and 9d**, one crate each, because a half-moved crate
+  reads exactly like a finished one. The scaffolding was not built blind: the
+  integration test carries the awkward real strings from all three — `TooBig`
+  with its three gaps, `Token::name`, `Modifier::Super` — through the whole path
+  verbatim, and the note `Token::name` needs is drafted there for 9d to take.
+- **Plurals are item 9a and are a real gap, not a tidy-up.** `Failed::TooBig`
+  says "{bytes} bytes" and is wrong in English for a one-byte file today; Polish
+  has three forms, Irish five, Latvian one for zero. The CLDR rules are a table,
+  and a table written from memory and shipped as a tested promise is what the
+  gate exists to stop — so 9a starts with the rules in front of it. 9b is
+  blocked behind it for that one message and says so.
+- **Nothing here has been shown to anybody.** No screen has rendered one of
+  these strings, because the compositor does not exist. `ROADMAP.md`'s
+  "Language" stays unticked, and it should: it promises the shell in 24
+  languages, and what exists is the machinery plus zero translations.
+- **Item 10 is the last ready item**, and after it every remaining item in the
+  queue is 9a–9d, 4a and 8a — of which 4a is `alo-agentd`'s and 8a is a
+  designer's decision. The loop is close to having only its own cuts left.

@@ -1,0 +1,18 @@
+[package]
+name = "alo-strings"
+version = "0.0.1"
+description = "Every string a person reads, named rather than written in place, so a translation is something that arrives rather than something that has to be waited for."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

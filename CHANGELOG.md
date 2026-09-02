@@ -12,6 +12,26 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- alo OS can now be translated, and English has stopped being able to hide.
+  Every sentence the system says is named, and the answer to *what does this
+  say* always carries **whether anybody translated it** — so a screen that is
+  still English in a Latvian machine is something the system knows about, can
+  list, and marks outright while it is being built, instead of something a
+  person in Latvia finds after the release. A translator's file is checked
+  against what the system actually says before a word of it is shown: a
+  sentence that lost the file name or the size out of it is refused, in words
+  addressed to the translator rather than to a programmer, and everything wrong
+  with a file comes back at once rather than one mistake at a time. A part-done
+  language is welcome — a few hundred strings at a time is how translation
+  really happens, and the untranslated rest simply stays English until it is
+  not. **You name the languages you read, in your order**, so somebody who
+  reads Latvian and Russian meets Russian before English; nothing infers a
+  second language on your behalf. All 24 official EU languages are listed, each
+  written in its own language rather than in ours, because a list that says
+  *Greek* is a list the people it is for cannot read. There are no translations
+  yet: what exists is the machinery, and the reason it exists now is that every
+  screen written before it would have had to be written twice.
+
 - The machine is yours to look at. Put a picture behind your windows, or a
   folder of them that changes every so often, or a plain colour — and give one
   screen something different if you want, without the other screens changing.

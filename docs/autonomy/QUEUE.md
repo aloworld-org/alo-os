@@ -34,14 +34,15 @@ and stops when there are none left.
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
-`crates/alo-files`, `crates/alo-shortcuts` and `crates/alo-appearance` were
-built by the loop and are described in the items below. The first four depend on
-each other in one direction only: `alo-capability` decides and reaches nothing,
-`alo-egress` decides about what leaves, `alo-files` is the only one that touches
-a disk, and `alo-record` observes them and is reachable from none of them. The
-last two depend on nothing in this workspace at all, because a person pressing a
-key on their own machine or choosing their own wallpaper is not an agent doing
-something and needs no grant.
+`crates/alo-files`, `crates/alo-shortcuts`, `crates/alo-appearance` and
+`crates/alo-strings` were built by the loop and are described in the items
+below. The first four depend on each other in one direction only:
+`alo-capability` decides and reaches nothing, `alo-egress` decides about what
+leaves, `alo-files` is the only one that touches a disk, and `alo-record`
+observes them and is reachable from none of them. The last three depend on
+nothing in this workspace at all, because a person pressing a key on their own
+machine, choosing their own wallpaper or reading their own machine in their own
+language is not an agent doing something and needs no grant.
 
 | | |
 |---|---|
@@ -370,30 +371,92 @@ items must follow:
   the tension are in place; the item is a decision first and a small amount of
   code second.
 
-- [ ] **9. Strings** — i18n scaffolding for the 24 official EU languages to begin
-  with, and any language contributed after that (ADR-free, `CLAUDE.md`): the
-  catalogue, the lookup, the fallback chain, and a test that a missing
-  translation is visible in development rather than silently English. No
-  translations yet — the scaffolding is what stops English being hardcoded while
-  the shell is written. The largest list of hardcoded English is `alo-files`:
-  every `Failed` message, the `RealError` pair, `Touching`'s refusal, and the
-  six verbs' purposes, argument purposes and sentences — the last of which are
-  the words a person approves. `alo-shortcuts` adds a second list, and it is the
-  one a person reads every time they open the shortcuts panel: `Action::purpose`,
-  `Key::label`, `Modifier::label`, the three `ChordError` sentences, and what
-  `Taken` and `Clash` say. Two of them are not sentences and need a translator's
-  judgement rather than a translator's typing — a key is labelled with what is
+- [x] **9. Strings** — implements `CLAUDE.md`'s *user-facing strings are
+  externalized from day one* and `docs/features.md`'s "Language and access"
+  (ADR-free). `crates/alo-strings`, a **new crate** that depends on nothing in
+  this workspace: `key.rs` (what names one string), `template.rs` (a sentence
+  with named gaps), `filling.rs` (what goes into them), `phrase.rs` (one string
+  the code can say, and its note to a translator), `vocabulary.rs` (everything
+  the code can say, and where a translation is checked against it),
+  `translation.rs` (one language's strings as they arrive, and what can be wrong
+  with them), `speaking.rs` (a checked translation — the only thing the lookup
+  accepts), `language.rs` (which language, and which way it is read), `union.rs`
+  (the 24, each named in itself), `said.rs` (one answer and where it came from),
+  `strings.rs` (the lookup and the chain). 75 tests, 5 integration tests over
+  the strings this repository already has, 3 doctests and a `compile_fail`,
+  clippy clean.
+
+  **The item said "so a missing translation is visible in development", and the
+  design decision was refusing to make that a development-only fact.** A build
+  flag that marked untranslated strings would answer with a `String` the rest of
+  the time, and *shown English because nobody translated it* would be invisible
+  in exactly the build a person in Latvia is running. So the answer is a `Said`
+  that always carries where it came from — a translation, the source, or a key
+  nothing declares — and marking in development is one of three ways of noticing
+  rather than the only one; `Strings::unanswered` is the second, and
+  `Said::is_translated` on every answer is the third.
+
+  **The second decision was not in the item.** A translation is written by
+  somebody whose language nobody here reads, so a sentence that dropped `{bytes}`
+  would reach a person as *your file is too big* with no size in it, in their own
+  language, with nothing anywhere saying so. `Vocabulary::check` is therefore the
+  only door to a showable translation: it matches every gap against the source's,
+  refuses a dropped or invented one in words addressed to a translator, and
+  returns **everything** wrong at once, because being told about the next mistake
+  each time you try again is how a translator gives up. A *partial* translation
+  is deliberately not an error.
+
+  Three decisions the next items inherit. **English is a source, not a default**
+  — the sentence lives beside the key in the code, which is item 7's *only the
+  difference is stored* reaching a fifth crate, and is what lets a release
+  improve an English sentence for every machine that has no translation of it.
+  **A person names their own second language**: the chain is what they said plus
+  the broader form of each (`pt-BR` brings `pt`), and nothing infers a second
+  language from a first. **A language is named in its own language** —
+  `union.rs` holds the 24 endonyms, and a picker that said *Greek* would be one
+  the people it exists for cannot read.
+
+  What it could not close is items 9a–9d below.
+
+- [ ] **9a. Plural forms** — cut from item 9, and cut because the loop does not
+  have what it needs to do it well. *1 byte* and *2 bytes* is one sentence in
+  English, two in Polish, three in Irish, and Latvian has a form for zero;
+  `alo-files`' `Failed::TooBig` needs it today and is wrong in English without
+  it. The rules are CLDR's and are a real table, and a table written from memory
+  and shipped as a tested promise is exactly what `CLAUDE.md` forbids — so this
+  item starts by putting the CLDR cardinal rules for the 24 in front of whoever
+  does it. Nothing in `alo-strings` has to move: a plural phrase becomes one key
+  per form, and `Vocabulary` is already where a language's forms would be known.
+
+- [ ] **9b. `alo-files` onto `alo-strings`** — the largest list, and the one that
+  includes words a person approves. Every `Failed` message, the `RealError`
+  pair, `Touching`'s refusal, and the six verbs' purposes, argument purposes and
+  sentences. The sentences are the awkward part and not the volume:
+  `alo-capability` refuses a verb whose sentence does not name every argument,
+  and that refusal has to keep holding when the sentence comes from a
+  translation — which is what `Vocabulary::check`'s gap matching is for, and
+  what the item has to wire up rather than re-invent. Blocked behind 9a for
+  `Failed::TooBig` alone, so either do 9a first or leave that one message
+  behind and say so.
+
+- [ ] **9c. `alo-shortcuts` onto `alo-strings`** — the list a person reads every
+  time they open the shortcuts panel: `Action::purpose`, `Key::label`,
+  `Modifier::label`, the three `ChordError` sentences, and what `Taken` and
+  `Clash` say. Two of them need a translator's judgement rather than their
+  typing and so need a note written for them: a key is labelled with what is
   printed on it, which the person's own layout decides, and `Modifier::Super` is
   called something different on the keyboard in front of most of them.
-  `alo-appearance` adds a third list, and it is short but awkward:
+
+- [ ] **9d. `alo-appearance` onto `alo-strings`** — short but awkward:
   `Token::name`, the two `ColourError` sentences, the three `PictureError` ones,
   `RotatingError`, `DisplayError`, `ScheduleError`, `TimeError` and `TextError`.
-  `Token::name` is the awkward one — several languages have no ordinary word for
-  terracotta and the one a translator reaches for may not be the colour. Two
-  things in that crate are *not* on the list and are deliberately not: a time of
-  day is written `18:00` in the settings file whatever the region does, and how
-  a person is *shown* a time is the region's business rather than a translated
-  string.
+  `Token::name` is the awkward one and its note is already drafted in
+  `alo-strings`' integration test — several languages have no ordinary word for
+  terracotta and the loanword a translator reaches for may name a different
+  colour. Two things in that crate are *not* on the list and are deliberately
+  not: a time of day is written `18:00` in the settings file whatever the region
+  does, and how a person is *shown* a time is the region's business rather than
+  a translated string.
 
 - [ ] **10. Test a provider before saving it** — promised at v0.5 in
   `docs/features.md` and the one loose end in `provider.rs`. A mistyped key
