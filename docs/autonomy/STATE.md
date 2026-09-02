@@ -1037,3 +1037,50 @@ translator gives up.
 - **Item 10 is the last ready item**, and after it every remaining item in the
   queue is 9a–9d, 4a and 8a — of which 4a is `alo-agentd`'s and 8a is a
   designer's decision. The loop is close to having only its own cuts left.
+
+---
+
+## 2026-09-02 — iteration 12: halted, because the track it was given does not exist
+
+The supervisor asked for one iteration of the loop for track **`business`**.
+Nothing was built, and nothing in the queue was touched.
+
+**Why.** This loop has no tracks. `LOOP.md` describes one loop over one queue,
+and `QUEUE.md` is that queue: the capability model, the record, egress, the file
+verbs, shortcuts, appearance and strings, every item naming an ADR, a contract
+or a line of `docs/features.md` it implements. There is no business queue in
+this repository, no business item in the one queue there is, and no section of
+`docs/features.md` or `ROADMAP.md` that such an item could name. The word
+appears in this repository only in `catalogue.rs` and ADR 0007, where it means
+*commercial use of a model licence* — a property of a model, not a body of work.
+
+**Why that is a halt rather than something to work around.** Building a business
+track would have meant the loop inventing scope, and `CLAUDE.md` gates scope on
+`docs/features.md` with a tier, inside the current release. It would also have
+meant the loop deciding what this company's commercial work is — pricing,
+positioning, who the first customer is — which is the clearest example there is
+of *a decision that is not ours*. `LOOP.md` names both of those as halting
+conditions, and halting with a clear reason is worth more than an iteration that
+invents a way past a question nobody has looked at.
+
+**What the supervisor should do with this.** One of three things, and the loop
+cannot choose between them:
+
+- **The track name was a mistake**, and the intended run is the ordinary loop.
+  Re-run without a track. The first ready item is **10 — test a provider before
+  saving it**; after it, only 9a–9d, 4a and 8a remain, and of those 4a is
+  `alo-agentd`'s and 8a needs a designer.
+- **A business track is genuinely wanted.** Then it needs its own queue file,
+  written by a person, with items that name what they implement the way this
+  queue's items do — and probably its own `LOOP.md` section saying what a gate
+  means for work that has no `cargo clippy`. A build loop whose gate is tests
+  cannot tick a pricing decision as done.
+- **The business work belongs elsewhere.** Most of what that phrase usually
+  covers is not this repository's at all — this repository is the shell, the
+  daemon and the image. `LOOP.md` forbids the loop touching another one.
+
+**The gate.** Not run, because nothing changed but this journal entry and no
+Rust was touched. The workspace is as iteration 11 left it: 218-plus tests
+passing, clippy clean against the deny list.
+
+LOOP HALT
