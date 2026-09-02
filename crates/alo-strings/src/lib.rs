@@ -167,10 +167,12 @@
 //! it, not a form to pick as though the number had been whole; [`cldr`] says
 //! what it would cost.
 //!
-//! **The strings themselves.** `alo-files`, `alo-shortcuts` and
-//! `alo-appearance` still hold their English in their own error types and
-//! labels. Moving each of them onto this crate is its own item — 9b, 9c and 9d
-//! — because a half-moved crate reads exactly like a finished one.
+//! **The strings of the crates that have not moved.** `alo-files` has moved
+//! (item 9b) and declares its own words; `alo-shortcuts` and `alo-appearance`
+//! still hold their English in their own labels and error types, and moving
+//! each of them onto this crate is its own item — 9c and 9d — because a
+//! half-moved crate reads exactly like a finished one. `alo-capability` and
+//! `alo-models` are 9e, and should follow the other two.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 

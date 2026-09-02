@@ -31,6 +31,7 @@
 use std::path::{Path, PathBuf};
 
 use alo_capability::{Ask, Authorised, Grants, Refused, Value};
+use alo_strings::{Filling, Strings};
 
 use crate::answer::Answer;
 use crate::archiving::{archive, is_an_archive_name};
@@ -39,6 +40,7 @@ use crate::failed::Failed;
 use crate::looking::{find, list, read};
 use crate::real::Real;
 use crate::touching::Touching;
+use crate::words;
 
 /// What happened when the machine was asked to do it.
 ///
@@ -60,15 +62,20 @@ impl Did {
     /// about the paths the call named, because two moments would be two answers
     /// that could disagree.
     ///
+    /// The strings are for the refusal, and for nothing else: what a person is
+    /// told when the grants do not cover a path this would create is worded
+    /// here, and `alo_capability::Refused` carries words. [`crate::touching`]
+    /// says why that is one rendering rather than two.
+    ///
     /// # Errors
     /// [`Refused`], carrying the call, when the grants do not cover something
     /// the call would create. Nothing has been touched when that happens.
-    pub fn of(touching: Touching, grants: &Grants) -> Result<Self, Refused> {
+    pub fn of(touching: Touching, grants: &Grants, strings: &Strings) -> Result<Self, Refused> {
         let outcome = match Todo::of(&touching) {
             Err(failed) => Err(failed),
             Ok(todo) => {
                 if let Some(creating) = todo.creating() {
-                    may_create(&touching, grants, creating)?;
+                    may_create(&touching, grants, creating, strings)?;
                 }
                 todo.done()
             }
@@ -256,17 +263,25 @@ impl<'a> Todo<'a> {
 /// The moment is the authorisation's own, and the words of a refusal are the
 /// grants' own, so that this refusal is the same kind of thing as every other
 /// and reaches the record by the same road.
-fn may_create(touching: &Touching, grants: &Grants, creating: &Path) -> Result<(), Refused> {
+fn may_create(
+    touching: &Touching,
+    grants: &Grants,
+    creating: &Path,
+    strings: &Strings,
+) -> Result<(), Refused> {
     let authorised = touching.authorised();
     let under = authorised.under();
     if let Err(why) = grants.permitting(under, &Ask::Path(creating.to_owned()), authorised.at()) {
         return Err(Refused::not_granted(
             touching.call().clone(),
-            format!(
-                "{} would put something at {}, and {why} — a grant covers where a file goes, not only where it comes from",
-                authorised.verb(),
-                creating.display(),
-            ),
+            strings
+                .say(
+                    &words::WOULD_CREATE.key(),
+                    &Filling::of("verb", authorised.verb())
+                        .and("path", creating.display().to_string())
+                        .and("why", why),
+                )
+                .into_text(),
         ));
     }
     Ok(())

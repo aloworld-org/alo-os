@@ -44,6 +44,13 @@ nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
 
+One edge crosses that: **`alo-files` depends on `alo-strings`** since item 9b,
+because it is the first crate to have moved its English onto it. `alo-strings`
+still depends on nothing, and the direction is the one every other edge here
+takes — a crate that says something reaches the crate that knows how things are
+said, never the reverse. 9c and 9d add the same edge from `alo-shortcuts` and
+`alo-appearance`.
+
 | | |
 |---|---|
 | `catalogue.rs` | What alo OS offers, every licence stated, commercial use answered outright; the CPU costs and defaults from ADR 0007 |
@@ -462,17 +469,41 @@ deny list.** Two patterns later items must follow:
   language needs — a Polish file with `one` and `other` is not two thirds done,
   and the old signature would have reported it complete.
 
-- [ ] **9b. `alo-files` onto `alo-strings`** — the largest list, and the one that
-  includes words a person approves. Every `Failed` message, the `RealError`
-  pair, `Touching`'s refusal, and the six verbs' purposes, argument purposes and
-  sentences. The sentences are the awkward part and not the volume:
-  `alo-capability` refuses a verb whose sentence does not name every argument,
-  and that refusal has to keep holding when the sentence comes from a
-  translation — which is what `Vocabulary::check`'s gap matching is for, and
-  what the item has to wire up rather than re-invent. **No longer blocked**:
-  9a is built, and `Failed::TooBig` becomes a `Plural` counting `bytes`, which
-  `alo-strings`' integration test already carries verbatim as the shape to
-  copy.
+- [x] **9b. `alo-files` onto `alo-strings`** — the largest list, and the one that
+  includes words a person approves. Two new files in `crates/alo-files`:
+  `words.rs` (every string this crate can say, the English beside each key, and
+  the notes a translator needs) and `saying.rs` (what the six verbs are and what
+  a person approves, in the language they read). `Failed`, `RealError`,
+  `Touching`'s two refusals and `Did`'s all moved onto it; `verbs.rs` now
+  declares the six **from** those constants. 41 phrases and one countable
+  string, 14 new unit tests and 5 new integration tests; `Key::unchecked` is new
+  in `alo-strings`. 578 tests and 20 doctests across the workspace, clippy
+  clean.
+
+  **The guarantee the item asked for is kept by there being one string, not two
+  that agree.** `alo-capability` refuses a verb whose sentence does not name
+  every argument, `alo-strings` refuses a translation that drops a gap the
+  source has — and those are the same rule only while the string a translator is
+  handed is the string the declaration was checked against. So the declaration
+  reads the constant rather than repeating it, and a test walks all six.
+
+  Three decisions the next items inherit. **`Failed` and `RealError` lost their
+  `Display`**, which is the strong form of *hardcoded English is a bug*: a
+  `Display` is one `to_string()` from a screen, in a shell whose author had no
+  reason to think about it, so the only road to words is `said(&Strings)` and
+  every answer says whether anybody translated it. What is given up is
+  `std::error::Error` on two types that were never errors a programmer handles.
+  **`Touching::of` and `Did::of` take the strings**, because the two refusals
+  this crate words itself are carried into the record by
+  `alo_capability::Refused` — so what a person was told is what is written down,
+  one rendering rather than an English record beside a translated screen.
+  **`Key::unchecked` takes a `&'static str`**, so a key can only come from a
+  literal, and each crate that declares words puts every one of its own back
+  through `Key::named` in a test — `alo-shortcuts`' shipped bindings and
+  `alo-appearance`'s shipped wallpaper, one crate further on.
+
+  What it does **not** do is put a translated sentence into a `Call` or an
+  approval: `Call` renders and keeps its own, and moving that is 9e.
 
 - [ ] **9c. `alo-shortcuts` onto `alo-strings`** — the list a person reads every
   time they open the shortcuts panel: `Action::purpose`, `Key::label`,
@@ -481,6 +512,13 @@ deny list.** Two patterns later items must follow:
   typing and so need a note written for them: a key is labelled with what is
   printed on it, which the person's own layout decides, and `Modifier::Super` is
   called something different on the keyboard in front of most of them.
+
+  **The shape is settled by 9b and should be copied rather than re-decided**: a
+  `words.rs` of `Word` constants under one area, `Key::unchecked` with a test
+  walking every key through `Key::named`, a `said(&Strings)` on each type that
+  says something, and no `Display` left behind to say it in English instead.
+  Unlike 9b nothing here is carried into a refusal somebody else keeps, so no
+  signature has to grow a `&Strings` — a label is asked for where it is shown.
 
 - [ ] **9d. `alo-appearance` onto `alo-strings`** — short but awkward:
   `Token::name`, `Accent::name`, the three `AccentError` sentences, the two
@@ -509,6 +547,18 @@ deny list.** Two patterns later items must follow:
   by somebody deciding whether to paste a contract into a question, so they are
   not strings to hurry. It should follow 9b–9d rather than lead them: those
   three are the crates whose strings a person meets every day.
+
+  **9b left it one question, and it is the interesting one.** A `Call` renders
+  its sentence in English when the call is made and keeps it, so the sentence
+  the record keeps and the sentence a person is shown are two renderings of one
+  string; 9b made the second translatable and could not touch the first without
+  moving this whole crate. So 9e decides whether a `Call` carries a key and a
+  filling rather than a rendered string — which would make the approval, the
+  record and the screen one thing — or whether a record keeps the source
+  language on purpose. That is a decision about what a record is *for*, and
+  `alo-record`'s `Line` is on the other side of it. `alo-files` already shows
+  the shape either way: `words.rs` and `saying.rs`, and a declaration that reads
+  the constant rather than repeating it.
 
 - [x] **10. Test a provider before saving it** — implements `docs/features.md`'s
   v0.5 *test a provider before saving it* and closes the loose end in

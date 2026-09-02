@@ -236,13 +236,13 @@ mod tests {
     fn what_is_not_a_folder_is_answered_in_words() {
         let folder = a_folder_of_our_own("nothing");
         let gone = walk(&folder.join("Taxes"), MOST_WALKED).unwrap_err();
-        assert!(matches!(gone, Failed::Gone { .. }), "{gone}");
+        assert!(matches!(gone, Failed::Gone { .. }), "{gone:?}");
 
         fs::write(folder.join("march.pdf"), b"an invoice").unwrap();
         let not_a_folder = walk(&folder.join("march.pdf"), MOST_WALKED).unwrap_err();
         assert!(
             !matches!(not_a_folder, Failed::Gone { .. }),
-            "{not_a_folder}"
+            "{not_a_folder:?}"
         );
 
         let _ = fs::remove_dir_all(&folder);

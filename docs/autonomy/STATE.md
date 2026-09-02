@@ -1443,3 +1443,105 @@ anything; 9c, 9d and 9e were never blocked, and 9e should still follow the other
 three. 4a is `alo-agentd`'s and the daemon still does not exist — after the
 strings items, every remaining item in this queue belongs to a daemon, a Linux
 host or a certified machine.
+
+---
+
+## 2026-09-02 — iteration 16: the file half, said in the reader's own language
+
+**Built: item 9b**, whole, including two refusals and one guarantee the item did
+not name. Two new files in `crates/alo-files`, and every type in the crate that
+says something moved onto `alo-strings`.
+
+| | |
+|---|---|
+| `words.rs` | **New.** Every string this crate can say: 41 phrases and one countable one, the English beside each key, and the notes a translator cannot work without |
+| `saying.rs` | **New.** What the six verbs are, what each argument is for, and the sentence a person approves — in the language they read |
+| `failed.rs` | The fourteen ways the machine can fail, with `said(&Strings)` and **no `Display`** |
+| `real.rs` | `RealError`'s pair, the same way |
+| `verbs.rs` | The six, now declared **from** `words.rs`' constants rather than from copies of them |
+| `touching.rs`, `doing.rs` | The two refusals this crate words itself, rendered where they are made |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-files` is 78 unit tests (was 64) and 18
+integration tests against a real filesystem and the real vocabulary (was 13);
+the workspace is **578 tests and 20 doctests**, all green. `CHANGELOG.md`,
+`docs/contracts/agent-verbs.md`, `QUEUE.md` and `ROADMAP.md` in the same change.
+
+**The item named the awkward part correctly, and the answer was to have one
+string rather than two that agree.** `alo_capability::Verb::checked` refuses a
+verb whose sentence does not name every argument — a person approves the
+sentence, so an argument it leaves out is one they did not agree to — and
+`Vocabulary::check` refuses a translation that drops a gap the source has. Those
+are the same rule in two languages, and they only hold together while the string
+a translator is handed **is** the string the declaration was checked against. So
+`verbs.rs` declares each of the six from the constant in `words.rs`, and a test
+walks all six purposes, all twelve argument purposes and all six sentences back
+against the declarations. A test that the two lists are equal would have been
+the weaker version of this: it would fail after somebody had already written the
+second copy.
+
+**The decision that was not in the item: `Failed` and `RealError` lost their
+`Display`.** A `Display` on a user-facing error is an English sentence one
+`to_string()` away from a screen, in a shell whose author had no reason to think
+about it — and `CLAUDE.md` calls hardcoded English a bug rather than a
+preference. So the only road to words is `said(&Strings)`, which answers with a
+`Said` that says whether anybody translated it. What is given up is
+`std::error::Error` on two types that were never errors a programmer handles,
+and the crate says so where somebody will argue with it.
+
+**The second was `Touching::of` and `Did::of` growing a `&Strings`.** Two of the
+three refusals in this crate are worded here rather than by the grants, and
+`alo_capability::Refused` carries **words** into the record. Rendering them in
+the person's language at the moment they are made means what somebody was told
+is what is written down — one rendering rather than an English record beside a
+translated screen, with nothing keeping the two accounts of one moment equal.
+The cost is a parameter on two public constructors, every caller of which is in
+this workspace; the alternative was `Refused` carrying a key and a filling,
+which is `alo-capability`'s and is 9e's.
+
+**And one addition to a shipped crate: `Key::unchecked`.** A crate that declares
+what it can say writes its own keys as literals, and every one of them being a
+`Result` would need a fallback that does not exist — a sentence that could not
+be looked up is a sentence nobody can read. This is `alo-shortcuts`' shipped
+bindings and `alo-appearance`'s shipped wallpaper, one crate further on: built
+by the compiler, with a test putting every one back through `Key::named`. It
+takes a `&'static str`, so the only thing that can reach it is a literal; a key
+from a file still has to be checked and refused.
+
+**What the next iteration must know:**
+
+- **9c and 9d have a shape to copy rather than a decision to make.** A
+  `words.rs` of `Word` constants under one area, `Key::unchecked` plus the test
+  that walks them, `said(&Strings)` on each type, and no `Display` left behind.
+  Neither of those crates' words is carried into somebody else's refusal, so
+  neither needs a signature to grow a `&Strings` — a label is asked for where it
+  is shown.
+- **9e inherits one real question**, now written into the queue item. A `Call`
+  renders its sentence in English when the call is made and keeps it, so the
+  sentence the record keeps and the sentence a person is shown are two
+  renderings of one string. 9b made the second translatable and could not touch
+  the first. Whether a `Call` should carry a key and a filling instead is a
+  decision about what a record is *for*, and `alo-record`'s `Line` is on the
+  other side of it.
+- **`alo-strings`' integration test gave three strings back.** That file said
+  from the start that a crate's strings leave it when the crate moves, and
+  `alo-files`' have — into `crates/alo-files/tests/what_this_crate_says.rs`,
+  where Polish, Irish, Latvian and German are walked against the vocabulary the
+  code actually uses. What is left there is `alo-shortcuts`' and
+  `alo-appearance`', which are labels: no gaps, nothing counted.
+- **A refusal never depends on a string table.** A `Strings` that was given no
+  words refuses exactly what it refused before and says so with the key, marked
+  — there is a test for it, and the contract now says it too. Anything later
+  that renders a refusal should keep that property rather than assume the
+  vocabulary was loaded.
+- **Nothing here has been read by anybody.** There is still no screen and there
+  are still zero translations in this repository; the German, Polish and Irish
+  in the tests are the tests'. `ROADMAP.md`'s *Language* stays unticked — its
+  *Built* clause gains `alo-files` and its *Owed* now says 9c–9e rather than
+  9b–9e.
+
+**What is left is 9c, 9d, 9e and 4a.** None of 9c–9e is blocked by anything, and
+9e should still follow the other two. 4a is `alo-agentd`'s and the daemon still
+does not exist — after the strings items, every remaining item in this queue
+belongs to a daemon, a Linux host or a certified machine.

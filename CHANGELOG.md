@@ -12,6 +12,23 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Everything the file half of alo OS says to you can now be said in your own
+  language — and none of it can reach you in English without the system knowing
+  it did. That is every refusal a file verb can give you (*there is already
+  something at that name*, *this file is too big to read*, *that path really
+  leads somewhere you did not grant*), what each of the six file verbs is for,
+  what each thing it asks you for means, and **the sentence you approve before a
+  file is renamed, moved or archived**. The sentence is the one that matters: a
+  translation of it that lost one of the things it names — *move march.pdf*,
+  with no word about where to — is refused when the language is loaded, the same
+  way a verb whose English sentence left an argument out is refused when it is
+  declared. A translator gets a note wherever a sentence cannot be translated
+  from its own words, and the message about a file being too big now counts
+  bytes properly in every language rather than saying *1 bytes*. Nothing about
+  what is allowed changed: a machine with no translations loaded refuses exactly
+  what it refused before, and what a refusal told you is what the record of it
+  keeps.
+
 - A sentence that counts something is now counted in your own language, and the
   rules for that were read rather than remembered. *1 byte* and *2 bytes* is one
   sentence in English with two shapes; it is three in Polish, five in Irish, and

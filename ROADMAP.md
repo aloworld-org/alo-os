@@ -142,9 +142,12 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       · Built: `alo-strings` — every sentence named, translation checked against
       what the system says, the 24 languages listed each in its own language,
       English unable to hide, and a sentence that counts something counted with
-      its reader's own plural rules, read from CLDR rather than recalled
+      its reader's own plural rules, read from CLDR rather than recalled; and
+      `alo-files`, the first crate whose own English has moved onto it — every
+      file refusal, the six verbs, and the sentence a person approves before a
+      file is renamed, moved or archived
       · Owed: a shell to translate, the crates still holding their own English
-      (9b–9e), and every translation — there are none yet
+      (9c–9e), and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

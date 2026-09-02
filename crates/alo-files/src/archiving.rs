@@ -226,7 +226,7 @@ mod tests {
         .unwrap_err();
         assert!(
             matches!(into_itself, Failed::IntoItself { .. }),
-            "{into_itself}"
+            "{into_itself:?}"
         );
 
         let deeper = archive(
@@ -235,7 +235,7 @@ mod tests {
             &inside.join("invoices.zip"),
         )
         .unwrap_err();
-        assert!(matches!(deeper, Failed::IntoItself { .. }), "{deeper}");
+        assert!(matches!(deeper, Failed::IntoItself { .. }), "{deeper:?}");
         assert!(!invoices.join("invoices.zip").exists());
 
         let _ = fs::remove_dir_all(&root);
@@ -287,7 +287,10 @@ mod tests {
         fs::write(&at, b"somebody else's archive").unwrap();
 
         let refused = archive(&really(&invoices), &really(&keep), &at).unwrap_err();
-        assert!(matches!(refused, Failed::AlreadyThere { .. }), "{refused}");
+        assert!(
+            matches!(refused, Failed::AlreadyThere { .. }),
+            "{refused:?}"
+        );
         assert_eq!(fs::read(&at).unwrap(), b"somebody else's archive");
 
         let _ = fs::remove_dir_all(&root);

@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 alo-capability = { path = "../alo-capability" }
+alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
 [lints]

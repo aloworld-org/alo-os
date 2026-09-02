@@ -42,13 +42,29 @@
 //! no amount of resolving will reveal. Both are in `docs/quirks.md`. Closing
 //! them belongs to the code that opens the file, by holding on to what it
 //! opened rather than by asking about the path twice.
+//!
+//! # Why a refusal needs the strings
+//!
+//! [`Touching::of`] takes the strings this machine reads, because two of the
+//! three refusals above are worded here rather than by the grants, and
+//! `alo_capability::Refused` carries words. The words it carries are the words
+//! the person was shown — one rendering, in their language, which is then what
+//! the record keeps. The alternative is an English record and a translated
+//! screen, which is two accounts of one moment that nothing keeps equal.
+//!
+//! A `Strings` that was never given [`crate::file_words`] refuses just as
+//! firmly and says so: the refusal carries the key, marked. What must never
+//! depend on a string table is whether something is refused, and nothing here
+//! does.
 
 use std::collections::BTreeMap;
 
 use alo_capability::{Ask, Authorised, Call, Grants, Refused, Value};
+use alo_strings::{Filling, Strings};
 
 use crate::real::Real;
 use crate::resolving::Resolving;
+use crate::words;
 
 /// A file call that may touch the disk, and the real paths it may touch.
 ///
@@ -79,6 +95,7 @@ impl Touching {
         authorised: Authorised,
         grants: &Grants,
         resolving: &dyn Resolving,
+        strings: &Strings,
     ) -> Result<Self, Refused> {
         let at = authorised.at();
         let under = authorised.under().clone();
@@ -97,7 +114,7 @@ impl Touching {
                 Err(why) => {
                     return Err(Refused::not_granted(
                         authorised.call().clone(),
-                        why.to_string(),
+                        why.said(strings).into_text(),
                     ));
                 }
             };
@@ -108,12 +125,14 @@ impl Touching {
             {
                 return Err(Refused::not_granted(
                     authorised.call().clone(),
-                    format!(
-                        "{} really leads to {}, which {} has not been granted — a grant covers where a file is, not where a link to it sits",
-                        given.display(),
-                        resolved.describe(),
-                        under.as_str()
-                    ),
+                    strings
+                        .say(
+                            &words::REALLY_LEADS_ELSEWHERE.key(),
+                            &Filling::of("path", given.display().to_string())
+                                .and("really", resolved.describe())
+                                .and("who", under.as_str()),
+                        )
+                        .into_text(),
                 ));
             }
             real.insert(argument.clone(), resolved);
@@ -176,6 +195,7 @@ impl Touching {
 mod tests {
     use super::*;
     use crate::real::RealError;
+    use crate::testing::in_english;
     use crate::verbs::file_verbs;
     use alo_capability::{
         Approvals, Arg, Effect, Given, Grant, Grantee, NotAuthorised, Proposal, Reach, Requires,
@@ -298,6 +318,7 @@ mod tests {
             authorised,
             &grants,
             &Wherever::leading(&[("/home/anna/Invoices/march.pdf", "/etc/shadow")]),
+            &in_english(),
         )
         .unwrap_err();
         assert!(refused.to_string().contains("/etc/shadow"), "{refused}");
@@ -327,6 +348,7 @@ mod tests {
                 "/home/anna/Invoices/march.pdf",
                 "/home/anna/Invoices/2026/march.pdf",
             )]),
+            &in_english(),
         )
         .unwrap();
         assert_eq!(touching.verb(), "read_file");
@@ -380,7 +402,7 @@ mod tests {
         let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
 
         let wherever = Wherever::plain(&["/home/anna/Invoices", "/home/anna/Taxes"]);
-        let refused = Touching::of(authorised, &grants, &wherever).unwrap_err();
+        let refused = Touching::of(authorised, &grants, &wherever, &in_english()).unwrap_err();
         assert!(
             refused.to_string().contains("/home/anna/Taxes"),
             "{refused}"
@@ -407,7 +429,7 @@ mod tests {
         assert_eq!(grants.revoke_everything_for(&files()), 1);
 
         let wherever = Wherever::plain(&["/home/anna/Invoices"]);
-        let refused = Touching::of(authorised, &grants, &wherever).unwrap_err();
+        let refused = Touching::of(authorised, &grants, &wherever, &in_english()).unwrap_err();
         assert!(
             refused.to_string().contains("has not been granted"),
             "{refused}"
@@ -423,7 +445,8 @@ mod tests {
         let grants = granting(&["/home/anna/Invoices"]);
         let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
 
-        let refused = Touching::of(authorised, &grants, &Wherever::plain(&[])).unwrap_err();
+        let refused =
+            Touching::of(authorised, &grants, &Wherever::plain(&[]), &in_english()).unwrap_err();
         assert!(
             refused.to_string().contains("there is nothing at"),
             "{refused}"
@@ -462,6 +485,7 @@ mod tests {
             authorised,
             &grants,
             &Wherever::plain(&["/home/anna/Invoices/march.pdf", "/home/anna/Archive"]),
+            &in_english(),
         )
         .unwrap();
         assert_eq!(touching.verb(), "move_file");
@@ -504,6 +528,7 @@ mod tests {
                 ),
                 ("/home/anna/Archive", "/mnt/usb/Archive"),
             ]),
+            &in_english(),
         )
         .unwrap_err();
         assert!(
@@ -536,7 +561,7 @@ mod tests {
         let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
 
         let wherever = Wherever::plain(&[]);
-        let touching = Touching::of(authorised, &grants, &wherever).unwrap();
+        let touching = Touching::of(authorised, &grants, &wherever, &in_english()).unwrap();
         assert_eq!(touching.all().count(), 0);
         assert!(touching.real("folder").is_none());
         assert!(wherever.was_asked_about().is_empty());
@@ -567,7 +592,7 @@ mod tests {
             .unwrap();
 
         let wherever = Wherever::plain(&["/home/anna/Invoices/march.pdf"]);
-        let touching = Touching::of(authorised, &grants, &wherever).unwrap();
+        let touching = Touching::of(authorised, &grants, &wherever, &in_english()).unwrap();
         assert_eq!(
             wherever.was_asked_about(),
             [PathBuf::from("/home/anna/Invoices/march.pdf")]
@@ -590,6 +615,7 @@ mod tests {
             authorised,
             &grants,
             &Wherever::plain(&["/home/anna/Invoices"]),
+            &in_english(),
         )
         .unwrap();
         assert_eq!(touching.authorised().at(), noon());

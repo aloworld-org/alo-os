@@ -41,8 +41,26 @@
 //! hand them one whose name lies about what is in it. Zip because it is the one
 //! archive every desktop opens without being told how; that the name has to say
 //! so is declared here, where a person reads it in the argument's purpose.
+//!
+//! # Where the words come from
+//!
+//! Every sentence in this file is [`crate::words`]', not this file's. A verb's
+//! purpose, each argument's purpose and the sentence a person approves are all
+//! declared from the constants a translator is handed, so there is one English
+//! string per thing rather than two that drift.
+//!
+//! That is what makes the guarantee survive translation.
+//! `alo_capability::Verb::checked` refuses a sentence that does not name every
+//! argument — a person approves the sentence, so an argument it leaves out is
+//! one they did not agree to — and `alo_strings::Vocabulary::check` refuses a
+//! translation that dropped a gap the source has. The second rule is the first
+//! rule in another language, and it only holds because the string being
+//! translated is the string that was checked. [`crate::saying::sentence`] is
+//! where a person reads the result.
 
 use alo_capability::{Arg, Effect, Requires, Takes, Verb, VerbError, Verbs, VerbsError};
+
+use crate::words;
 
 /// The most characters a file's or folder's name may be.
 ///
@@ -138,11 +156,15 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
 fn list_folder() -> Result<Verb, VerbError> {
     Verb::checked(
         "list_folder",
-        "list what is in a folder",
+        words::LIST_FOLDER.says(),
         Effect::Read,
-        vec![Arg::taking("folder", "the folder to list", Takes::Path)],
+        vec![Arg::taking(
+            "folder",
+            words::LIST_FOLDER_FOLDER.says(),
+            Takes::Path,
+        )],
         Requires::grants_over(["folder"]),
-        "list what is in {folder}",
+        words::LIST_FOLDER_SENTENCE.says(),
     )
 }
 
@@ -150,11 +172,15 @@ fn list_folder() -> Result<Verb, VerbError> {
 fn read_file() -> Result<Verb, VerbError> {
     Verb::checked(
         "read_file",
-        "read what is in a file",
+        words::READ_FILE.says(),
         Effect::Read,
-        vec![Arg::taking("file", "the file to read", Takes::Path)],
+        vec![Arg::taking(
+            "file",
+            words::READ_FILE_FILE.says(),
+            Takes::Path,
+        )],
         Requires::grants_over(["file"]),
-        "read what is in {file}",
+        words::READ_FILE_SENTENCE.says(),
     )
 }
 
@@ -166,23 +192,23 @@ fn read_file() -> Result<Verb, VerbError> {
 fn find_in_folder() -> Result<Verb, VerbError> {
     Verb::checked(
         "find_in_folder",
-        "find files in a folder by what they are called",
+        words::FIND_IN_FOLDER.says(),
         Effect::Read,
         vec![
-            Arg::taking("folder", "the folder to look in", Takes::Path),
+            Arg::taking("folder", words::FIND_IN_FOLDER_FOLDER.says(), Takes::Path),
             Arg::taking(
                 "named",
-                "the words a file's name has to contain",
+                words::FIND_IN_FOLDER_NAMED.says(),
                 Takes::name(LONGEST_NAME),
             ),
             Arg::taking(
                 "most",
-                "how many files to answer with at most",
+                words::FIND_IN_FOLDER_MOST.says(),
                 Takes::count(1, MOST_FOUND),
             ),
         ],
         Requires::grants_over(["folder"]),
-        "find up to {most} files in {folder} whose name contains {named}",
+        words::FIND_IN_FOLDER_SENTENCE.says(),
     )
 }
 
@@ -190,14 +216,18 @@ fn find_in_folder() -> Result<Verb, VerbError> {
 fn rename_file() -> Result<Verb, VerbError> {
     Verb::checked(
         "rename_file",
-        "give a file a different name, where it already is",
+        words::RENAME_FILE.says(),
         Effect::Change,
         vec![
-            Arg::taking("file", "the file to rename", Takes::Path),
-            Arg::taking("name", "what to call it instead", Takes::name(LONGEST_NAME)),
+            Arg::taking("file", words::RENAME_FILE_FILE.says(), Takes::Path),
+            Arg::taking(
+                "name",
+                words::RENAME_FILE_NAME.says(),
+                Takes::name(LONGEST_NAME),
+            ),
         ],
         Requires::grants_over(["file"]),
-        "rename {file} to {name}",
+        words::RENAME_FILE_SENTENCE.says(),
     )
 }
 
@@ -205,14 +235,14 @@ fn rename_file() -> Result<Verb, VerbError> {
 fn move_file() -> Result<Verb, VerbError> {
     Verb::checked(
         "move_file",
-        "move a file into a folder",
+        words::MOVE_FILE.says(),
         Effect::Change,
         vec![
-            Arg::taking("file", "the file to move", Takes::Path),
-            Arg::taking("into", "the folder it goes into", Takes::Path),
+            Arg::taking("file", words::MOVE_FILE_FILE.says(), Takes::Path),
+            Arg::taking("into", words::MOVE_FILE_INTO.says(), Takes::Path),
         ],
         Requires::grants_over(["file", "into"]),
-        "move {file} into {into}",
+        words::MOVE_FILE_SENTENCE.says(),
     )
 }
 
@@ -220,19 +250,19 @@ fn move_file() -> Result<Verb, VerbError> {
 fn archive_folder() -> Result<Verb, VerbError> {
     Verb::checked(
         "archive_folder",
-        "make one archive file out of a folder",
+        words::ARCHIVE_FOLDER.says(),
         Effect::Change,
         vec![
-            Arg::taking("folder", "the folder to make an archive of", Takes::Path),
-            Arg::taking("into", "the folder the archive goes into", Takes::Path),
+            Arg::taking("folder", words::ARCHIVE_FOLDER_FOLDER.says(), Takes::Path),
+            Arg::taking("into", words::ARCHIVE_FOLDER_INTO.says(), Takes::Path),
             Arg::taking(
                 "name",
-                "what to call the archive, ending in .zip",
+                words::ARCHIVE_FOLDER_NAME.says(),
                 Takes::name(LONGEST_NAME),
             ),
         ],
         Requires::grants_over(["folder", "into"]),
-        "make an archive of {folder} called {name}, in {into}",
+        words::ARCHIVE_FOLDER_SENTENCE.says(),
     )
 }
 

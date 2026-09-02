@@ -76,6 +76,35 @@ impl Key {
         })
     }
 
+    /// A key this repository wrote itself, checked by a test rather than at
+    /// run time.
+    ///
+    /// A crate that declares what it can say writes its own keys as literals —
+    /// they are not typed by anybody and cannot arrive from a file — and the
+    /// alternative is every one of them being a `Result` that the calling code
+    /// has to invent a fallback for. There is no honest fallback: a sentence
+    /// that could not be looked up is a sentence nobody can read.
+    ///
+    /// So this is the same shape as `alo-shortcuts`' shipped bindings and
+    /// `alo-appearance`'s shipped wallpaper — built by the compiler, with a
+    /// test putting every one of them back through [`Key::named`], which is how
+    /// what we ship stays held to the rule everybody else is held to.
+    ///
+    /// It takes a `&'static str` so that the only thing that can reach it is a
+    /// literal. A key read from a file, or built from anything somebody typed,
+    /// has to go through [`Key::named`] and be refused if it is wrong.
+    ///
+    /// A key that got past a missing test says nothing about safety: nothing
+    /// declares it, so [`crate::Strings`] answers with the key itself and
+    /// [`crate::Said::is_a_bug`] says so — the same answer as a key nobody
+    /// declared, which is what this would be.
+    #[must_use]
+    pub fn unchecked(named: &'static str) -> Self {
+        Self {
+            named: named.to_owned(),
+        }
+    }
+
     /// Which part of the system this string comes from: everything before the
     /// first dot.
     #[must_use]
@@ -209,6 +238,18 @@ mod tests {
     fn more_than_two_parts_is_fine() {
         let key = Key::named("files.failed.too-big").unwrap();
         assert_eq!(key.area(), "files");
+    }
+
+    /// A key the code wrote itself is the same key the check would have made,
+    /// which is the whole of what [`Key::unchecked`] promises — and the test
+    /// that every crate's own keys are written that way is that crate's, beside
+    /// the keys.
+    #[test]
+    fn a_key_the_code_wrote_itself_is_the_key_the_check_would_have_made() {
+        assert_eq!(
+            Key::unchecked("files.failed.too-big"),
+            Key::named("files.failed.too-big").unwrap()
+        );
     }
 
     /// **A key with no area is refused**, because the area is the only thing

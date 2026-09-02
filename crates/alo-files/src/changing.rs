@@ -100,7 +100,7 @@ fn moving(file: &Real, to: &Path, doing: &str) -> Result<(), Failed> {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{a_folder_of_our_own, really};
+    use crate::testing::{a_folder_of_our_own, really, said};
 
     /// The ordinary day: a file gets a different name, where it was.
     #[test]
@@ -130,8 +130,11 @@ mod tests {
         fs::write(&taken, b"somebody else's invoice").unwrap();
 
         let refused = rename(&really(&file), &taken).unwrap_err();
-        assert!(matches!(refused, Failed::AlreadyThere { .. }), "{refused}");
-        assert!(refused.to_string().contains("choose another name"));
+        assert!(
+            matches!(refused, Failed::AlreadyThere { .. }),
+            "{refused:?}"
+        );
+        assert!(said(&refused).contains("choose another name"));
         // And nothing moved: both files are exactly as they were.
         assert_eq!(fs::read(&file).unwrap(), b"an invoice");
         assert_eq!(fs::read(&taken).unwrap(), b"somebody else's invoice");
@@ -170,7 +173,7 @@ mod tests {
 
         let refused =
             move_into(&really(&file), &really(&folder), &folder.join("march.pdf")).unwrap_err();
-        assert!(matches!(refused, Failed::AlreadyIn { .. }), "{refused}");
+        assert!(matches!(refused, Failed::AlreadyIn { .. }), "{refused:?}");
         assert!(file.exists());
 
         let _ = fs::remove_dir_all(&folder);
@@ -187,7 +190,7 @@ mod tests {
         fs::create_dir_all(&archive).unwrap();
 
         let refused = rename(&really(&invoices), &root.join("Taxes")).unwrap_err();
-        assert!(matches!(refused, Failed::NotAFile { .. }), "{refused}");
+        assert!(matches!(refused, Failed::NotAFile { .. }), "{refused:?}");
         assert!(invoices.exists());
 
         let moving_one = move_into(
@@ -198,7 +201,7 @@ mod tests {
         .unwrap_err();
         assert!(
             matches!(moving_one, Failed::NotAFile { .. }),
-            "{moving_one}"
+            "{moving_one:?}"
         );
         assert!(invoices.exists());
 
@@ -213,7 +216,7 @@ mod tests {
         .unwrap_err();
         assert!(
             matches!(into_a_file, Failed::NotAFolder { .. }),
-            "{into_a_file}"
+            "{into_a_file:?}"
         );
 
         let _ = fs::remove_dir_all(&root);
@@ -230,7 +233,7 @@ mod tests {
         fs::remove_file(&file).unwrap();
 
         let refused = rename(&real, &folder.join("march-2026.pdf")).unwrap_err();
-        assert!(matches!(refused, Failed::Gone { .. }), "{refused}");
+        assert!(matches!(refused, Failed::Gone { .. }), "{refused:?}");
 
         let _ = fs::remove_dir_all(&folder);
     }

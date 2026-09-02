@@ -23,7 +23,14 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 
 use alo_capability::{Authorised, Given, Grant, Grantee, Grants, Reach, Verbs};
-use alo_files::{OnThisMachine, Real, Resolving, Touching, file_verbs};
+use alo_files::{OnThisMachine, Real, Resolving, Touching, file_verbs, file_words};
+use alo_strings::Strings;
+
+/// This crate's words, with nothing translated: what a refusal says on a
+/// machine whose shell has loaded no translations.
+fn in_english() -> Strings {
+    Strings::of(file_words().unwrap())
+}
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 fn noon() -> SystemTime {
@@ -98,7 +105,7 @@ fn a_granted_folder_that_is_really_there_may_be_touched() {
         .call("list_folder", &[("folder", as_given(&invoices))])
         .unwrap();
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
-    let touching = Touching::of(authorised, &grants, &OnThisMachine).unwrap();
+    let touching = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap();
 
     assert_eq!(
         touching.real("folder").map(Real::as_path),
@@ -125,7 +132,7 @@ fn a_file_that_is_not_there_is_refused() {
         )
         .unwrap();
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
-    let refused = Touching::of(authorised, &grants, &OnThisMachine).unwrap_err();
+    let refused = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap_err();
 
     assert!(
         refused.to_string().contains("there is nothing at"),
@@ -189,7 +196,7 @@ fn a_link_out_of_a_granted_folder_is_refused_on_a_real_filesystem() {
     // Lexically it is inside the granted folder, and it is authorised.
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
 
-    let refused = Touching::of(authorised, &grants, &OnThisMachine).unwrap_err();
+    let refused = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap_err();
     assert!(refused.to_string().contains("really leads to"), "{refused}");
     assert!(refused.to_string().contains("secret.txt"), "{refused}");
     assert_eq!(refused.call(), &call);

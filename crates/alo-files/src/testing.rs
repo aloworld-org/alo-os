@@ -17,8 +17,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use alo_strings::Strings;
+
+use crate::failed::Failed;
 use crate::real::Real;
 use crate::resolving::{OnThisMachine, Resolving};
+use crate::words::file_words;
 
 /// A folder of this test's own, resolved, so that what is granted and what is
 /// asked about are spelled the way this machine spells them.
@@ -45,4 +49,75 @@ pub(crate) fn a_folder_of_our_own(what: &str) -> PathBuf {
 /// Where this path really leads, as the one resolver on this machine says.
 pub(crate) fn really(path: &Path) -> Real {
     OnThisMachine.real(path).unwrap()
+}
+
+/// This crate's own words, with nothing translated: what a machine that has no
+/// translations of them shows, which is what most of these tests are about.
+pub(crate) fn in_english() -> Strings {
+    Strings::of(file_words().unwrap())
+}
+
+/// What a failure says on such a machine.
+pub(crate) fn said(failed: &Failed) -> String {
+    failed.said(&in_english()).into_text()
+}
+
+/// One example of every way the machine can fail to do something it was
+/// allowed to do.
+///
+/// Written out by hand, because the point of the list is that a variant added
+/// without a word for it is caught — and a list derived from the variants
+/// would be derived from the same thing it is checking.
+pub(crate) fn every_failure() -> Vec<Failed> {
+    vec![
+        Failed::NotAFileVerb {
+            verb: "open_application".to_owned(),
+        },
+        Failed::Missing {
+            verb: "move_file".to_owned(),
+            argument: "into".to_owned(),
+        },
+        Failed::NotAFolder {
+            path: "/home/anna/Invoices/march.pdf".to_owned(),
+        },
+        Failed::NotAFile {
+            path: "/home/anna/Invoices".to_owned(),
+        },
+        Failed::Gone {
+            path: "/home/anna/Invoices/march.pdf".to_owned(),
+        },
+        Failed::TooBig {
+            path: "/home/anna/Invoices/scan.tiff".to_owned(),
+            bytes: 200_000_000,
+            most: 1_048_576,
+        },
+        Failed::NotText {
+            path: "/home/anna/Invoices/scan.tiff".to_owned(),
+        },
+        Failed::AlreadyThere {
+            path: "/home/anna/Archive/march.pdf".to_owned(),
+        },
+        Failed::AlreadyIn {
+            path: "/home/anna/Archive/march.pdf".to_owned(),
+        },
+        Failed::IntoItself {
+            folder: "/home/anna/Invoices".to_owned(),
+        },
+        Failed::NotAZipName {
+            name: "invoices".to_owned(),
+        },
+        Failed::TooMany {
+            folder: "/home/anna/Invoices".to_owned(),
+            most: 20_000,
+        },
+        Failed::TooMuch {
+            folder: "/home/anna/Invoices".to_owned(),
+            most: 2_147_483_648,
+        },
+        Failed::TheMachineSaidNo {
+            path: "/home/anna/Invoices".to_owned(),
+            doing: "listed".to_owned(),
+            why: "permission denied".to_owned(),
+        },
+    ]
 }

@@ -31,6 +31,27 @@ Two rules that are easy to state and easy to violate:
    be generated from its arguments is refused, because an approval a person
    cannot understand is not an approval.
 
+## The words are the declaration's, and the declaration can be translated
+
+A verb's `purpose`, its arguments' purposes and its `sentence` are read by a
+person, so they are strings a translator can be given rather than English a
+shell shows whatever the person reads. What a verb is declared with is the
+**source** — the sentence somebody translates — and an adapter declares the
+same string in its own `alo-strings` vocabulary, keyed under its own area.
+
+The rule above survives that, and does not have to be re-checked in each
+language: a declaration is refused if its sentence leaves an argument out, and
+a translation is refused if it drops a gap the source has or invents one it
+does not. Those are the same rule enforced by two crates on **one string**,
+which only holds while the string a translator is given is the string the
+declaration was checked against. `alo-files`' `words` module is the worked
+example: the six verbs are declared *from* the constants a translator receives,
+so there is no second copy to drift.
+
+An adapter that shows a person a sentence asks its own vocabulary for it. What
+a `Call` carries is the source sentence, and what a record keeps is what the
+person was actually shown — one rendering, never two accounts of one moment.
+
 ## What an argument can be
 
 A closed list, like the verbs themselves. An argument is one of:
@@ -124,6 +145,12 @@ What this cannot do is close the gap between the check and the open — a link
 swapped in afterwards, or a hard link, which is a second real name for a file
 that also lives elsewhere and which no amount of resolving reveals. Both are in
 `docs/quirks.md`, and closing them belongs to the code that opens the file.
+
+A refusal at question 2 or 3 is worded by whatever executes the verb rather than
+by the grants, so **it is worded in the language the person reads**, once — and
+that one rendering is what the record keeps. A refusal never depends on a
+string table: a machine whose shell declared no words at all refuses exactly the
+same things, and says so with the key.
 
 ### A grant covers where a file goes, not only where it comes from
 

@@ -183,7 +183,7 @@ pub(crate) fn find(folder: &Real, named: &str, most: usize) -> Result<Answer, Fa
 )]
 mod tests {
     use super::*;
-    use crate::testing::{a_folder_of_our_own, really};
+    use crate::testing::{a_folder_of_our_own, really, said};
 
     /// A listing is in an order a person can read, and says what each thing is
     /// without following it.
@@ -218,7 +218,7 @@ mod tests {
         fs::write(&file, b"an invoice").unwrap();
 
         let refused = list(&really(&file)).unwrap_err();
-        assert!(matches!(refused, Failed::NotAFolder { .. }), "{refused}");
+        assert!(matches!(refused, Failed::NotAFolder { .. }), "{refused:?}");
 
         let _ = fs::remove_dir_all(&folder);
     }
@@ -248,8 +248,8 @@ mod tests {
         fs::write(&file, vec![b'x'; (MOST_READ + 1) as usize]).unwrap();
 
         let refused = read(&really(&file)).unwrap_err();
-        assert!(matches!(refused, Failed::TooBig { .. }), "{refused}");
-        assert!(refused.to_string().contains("open it in an application"));
+        assert!(matches!(refused, Failed::TooBig { .. }), "{refused:?}");
+        assert!(said(&refused).contains("open it in an application"));
 
         let _ = fs::remove_dir_all(&folder);
     }
@@ -263,7 +263,7 @@ mod tests {
         fs::write(&file, [0xFF_u8, 0xFE, 0x00, 0x9F]).unwrap();
 
         let refused = read(&really(&file)).unwrap_err();
-        assert!(matches!(refused, Failed::NotText { .. }), "{refused}");
+        assert!(matches!(refused, Failed::NotText { .. }), "{refused:?}");
 
         let _ = fs::remove_dir_all(&folder);
     }
@@ -274,7 +274,7 @@ mod tests {
     fn reading_a_folder_says_that_it_is_a_folder() {
         let folder = a_folder_of_our_own("readfolder");
         let refused = read(&really(&folder)).unwrap_err();
-        assert!(matches!(refused, Failed::NotAFile { .. }), "{refused}");
+        assert!(matches!(refused, Failed::NotAFile { .. }), "{refused:?}");
         let _ = fs::remove_dir_all(&folder);
     }
 

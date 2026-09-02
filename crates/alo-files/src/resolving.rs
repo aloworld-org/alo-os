@@ -85,7 +85,7 @@ impl Resolving for OnThisMachine {
 )]
 mod tests {
     use super::*;
-    use crate::testing::a_folder_of_our_own;
+    use crate::testing::{a_folder_of_our_own, in_english};
     use std::fs;
 
     /// The ordinary case, against a real filesystem: a file that is there
@@ -109,8 +109,9 @@ mod tests {
     fn a_path_that_is_not_there_is_refused_and_says_so() {
         let folder = a_folder_of_our_own("missing");
         let err = OnThisMachine.real(&folder.join("april.pdf")).unwrap_err();
-        assert!(matches!(err, RealError::Nothing { .. }), "{err}");
-        assert!(err.to_string().contains("there is nothing at"), "{err}");
+        assert!(matches!(err, RealError::Nothing { .. }), "{err:?}");
+        let said = err.said(&in_english());
+        assert!(said.text().contains("there is nothing at"), "{said}");
         let _ = fs::remove_dir_all(&folder);
     }
 

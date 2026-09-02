@@ -21,6 +21,10 @@
 
 use std::path::{Path, PathBuf};
 
+use alo_strings::{Filling, Said, Strings};
+
+use crate::words;
+
 /// A path with every link followed: what this machine would really open.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Real(PathBuf);
@@ -61,26 +65,48 @@ impl Real {
 /// path the grants have not already permitted — [`crate::Touching`] asks them
 /// first, so a refusal here can only ever be about somewhere the agent was
 /// already allowed to look.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// Like [`crate::Failed`] it has no `Display`: the words are
+/// [`RealError::said`]'s, in the language the person reads, and the reasoning
+/// is in [`crate::failed`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RealError {
     /// Nothing is at that path.
-    #[error(
-        "there is nothing at {path} — a verb reaches what is there, so name something that exists"
-    )]
     Nothing {
         /// The path as it was asked about.
         path: String,
     },
     /// Something is there, and this machine would not say where it leads.
-    #[error(
-        "{path} could not be followed ({why}) — nothing is done to a path this machine cannot resolve"
-    )]
     Unreadable {
         /// The path as it was asked about.
         path: String,
         /// What the machine said, in its own words.
         why: String,
     },
+}
+
+impl RealError {
+    /// What this says, in the language the person reads.
+    ///
+    /// These two are the only words in this crate that travel into somebody
+    /// else's refusal: [`crate::Touching`] hands them to
+    /// `alo_capability::Refused`, which carries them into the record. So this
+    /// is one rendering — what the person was told is what is written down —
+    /// rather than an English record and a translated screen that could say
+    /// different things about one moment.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::Nothing { path } => strings.say(
+                &words::NOTHING_THERE.key(),
+                &Filling::of("path", path.clone()),
+            ),
+            Self::Unreadable { path, why } => strings.say(
+                &words::UNREADABLE.key(),
+                &Filling::of("path", path.clone()).and("why", why.clone()),
+            ),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -124,17 +150,22 @@ mod tests {
     /// refusal that named neither is one somebody has to guess at.
     #[test]
     fn the_refusals_say_what_to_do() {
+        let strings = crate::testing::in_english();
         let nothing = RealError::Nothing {
             path: "/home/anna/Invoices/april.pdf".to_owned(),
-        };
-        assert!(nothing.to_string().contains("april.pdf"), "{nothing}");
-        assert!(nothing.to_string().contains("name something that exists"));
+        }
+        .said(&strings);
+        assert!(nothing.text().contains("april.pdf"), "{nothing}");
+        assert!(nothing.text().contains("name something that exists"));
+        assert!(!nothing.is_a_bug());
 
         let unreadable = RealError::Unreadable {
             path: "/home/anna/Invoices".to_owned(),
             why: "too many levels of symbolic links".to_owned(),
-        };
-        assert!(unreadable.to_string().contains("could not be followed"));
-        assert!(unreadable.to_string().contains("too many levels"));
+        }
+        .said(&strings);
+        assert!(unreadable.text().contains("could not be followed"));
+        assert!(unreadable.text().contains("too many levels"));
+        assert!(unreadable.unfilled().is_empty(), "{unreadable}");
     }
 }

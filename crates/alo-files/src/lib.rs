@@ -49,6 +49,23 @@
 //! not been asked about at all. A grant covers where a file goes, not only
 //! where it comes from.
 //!
+//! # What a person reads
+//!
+//! Nothing in this crate composes an English sentence for a screen. Every
+//! string it can say is declared in [`words`] and answered through
+//! `alo-strings` in the language the person in front of the machine reads:
+//! [`Failed::said`] and [`RealError::said`] for what could not be done,
+//! [`saying`] for what the six verbs are and what a person approves, and the
+//! two refusals this crate words itself rendered where they are made, so that
+//! what somebody was told is what the record keeps.
+//!
+//! [`Failed`] and [`RealError`] therefore have no `Display`, which is the whole
+//! of the guarantee: a sentence cannot reach anybody without something having
+//! asked whether it was translated. A shell puts [`words::declare_into`] into
+//! its vocabulary at startup, as it does [`declare_into`] into its verb list —
+//! and a shell that forgets shows the key, marked, rather than English nobody
+//! offered to translate.
+//!
 //! # What acts, and what only decides
 //!
 //! Two files touch a disk on purpose: [`resolving`], which asks where a path
@@ -75,8 +92,10 @@ pub mod failed;
 pub mod named;
 pub mod real;
 pub mod resolving;
+pub mod saying;
 pub mod touching;
 pub mod verbs;
+pub mod words;
 
 mod archiving;
 mod changing;
@@ -94,5 +113,7 @@ pub use failed::Failed;
 pub use named::{Kind, Named};
 pub use real::{Real, RealError};
 pub use resolving::{OnThisMachine, Resolving};
+pub use saying::{purpose, purpose_of, sentence};
 pub use touching::Touching;
 pub use verbs::{Declaring, declare_into, file_verbs};
+pub use words::{Counted, EVERY_WORD, Spoken, THE_SIX, Word, WordsError, file_words};

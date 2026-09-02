@@ -562,7 +562,7 @@ mod tests {
         let too_much = archive
             .file("big.txt", &big, SystemTime::UNIX_EPOCH)
             .unwrap_err();
-        assert!(matches!(too_much, Failed::TooMuch { .. }), "{too_much}");
+        assert!(matches!(too_much, Failed::TooMuch { .. }), "{too_much:?}");
 
         let _ = std::fs::remove_dir_all(&folder);
     }
@@ -576,7 +576,10 @@ mod tests {
         std::fs::write(&taken, b"somebody else's").unwrap();
 
         let refused = Archive::beginning(&taken, 1024).unwrap_err();
-        assert!(matches!(refused, Failed::AlreadyThere { .. }), "{refused}");
+        assert!(
+            matches!(refused, Failed::AlreadyThere { .. }),
+            "{refused:?}"
+        );
         assert_eq!(std::fs::read(&taken).unwrap(), b"somebody else's");
 
         let _ = std::fs::remove_dir_all(&folder);

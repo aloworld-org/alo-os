@@ -29,7 +29,9 @@ use alo_capability::{
 };
 use alo_files::{
     Answer, Did, Failed, Kind, Named, OnThisMachine, Real, Resolving, Touching, file_verbs,
+    file_words,
 };
+use alo_strings::Strings;
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 fn noon() -> SystemTime {
@@ -82,12 +84,18 @@ fn as_given(path: &Path) -> Given {
     Given::text(path.to_string_lossy().into_owned())
 }
 
+/// This crate's words, with nothing translated — the machine a shell that has
+/// loaded no translations is running, and the one every step below refuses on.
+fn in_english() -> Strings {
+    Strings::of(file_words().unwrap())
+}
+
 /// A read, done: validated, permitted, resolved, and performed.
 fn looking(verb: &str, given: &[(&str, Given)], grants: &Grants) -> Did {
     let call = file_verbs().unwrap().call(verb, given).unwrap();
     let authorised = Authorised::read(&call, &files(), grants, noon()).unwrap();
-    let touching = Touching::of(authorised, grants, &OnThisMachine).unwrap();
-    Did::of(touching, grants).unwrap()
+    let touching = Touching::of(authorised, grants, &OnThisMachine, &in_english()).unwrap();
+    Did::of(touching, grants, &in_english()).unwrap()
 }
 
 /// A change, all the way through: proposed, approved once, redeemed, resolved,
@@ -101,9 +109,9 @@ fn changing(verb: &str, given: &[(&str, Given)], grants: &Grants) -> Result<Did,
         .unwrap()
         .redeem(grants, noon())
         .unwrap();
-    let touching =
-        Touching::of(authorised, grants, &OnThisMachine).map_err(|why| why.to_string())?;
-    Did::of(touching, grants).map_err(|why| why.to_string())
+    let touching = Touching::of(authorised, grants, &OnThisMachine, &in_english())
+        .map_err(|why| why.to_string())?;
+    Did::of(touching, grants, &in_english()).map_err(|why| why.to_string())
 }
 
 /// The ordinary day, from a declared verb to what is really in the folder.
@@ -329,7 +337,7 @@ fn an_archive_called_something_that_is_not_a_zip_is_refused() {
     .unwrap();
 
     let failed = did.failure().unwrap();
-    assert!(matches!(failed, Failed::NotAZipName { .. }), "{failed}");
+    assert!(matches!(failed, Failed::NotAZipName { .. }), "{failed:?}");
     assert_eq!(
         fs::read_dir(&keep).unwrap().count(),
         0,
@@ -355,15 +363,15 @@ fn a_machine_that_could_not_do_it_still_hands_back_what_ran() {
         .call("read_file", &[("file", as_given(&file))])
         .unwrap();
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
-    let touching = Touching::of(authorised, &grants, &OnThisMachine).unwrap();
+    let touching = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap();
 
     // Between the check and the doing, the file goes away. This is the race
     // `docs/quirks.md` records, seen from the side where it is harmless.
     fs::remove_file(&file).unwrap();
 
-    let did = Did::of(touching, &grants).unwrap();
+    let did = Did::of(touching, &grants, &in_english()).unwrap();
     let failed = did.failure().unwrap();
-    assert!(matches!(failed, Failed::Gone { .. }), "{failed}");
+    assert!(matches!(failed, Failed::Gone { .. }), "{failed:?}");
     assert!(did.answer().is_none());
 
     let (authorised, outcome) = did.into_parts();
@@ -419,12 +427,14 @@ fn a_verb_that_is_not_a_file_verb_is_not_performed_here() {
         .unwrap()
         .redeem(&grants, noon())
         .unwrap();
-    let touching = Touching::of(authorised, &grants, &OnThisMachine).unwrap();
+    let touching = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap();
 
-    let did = Did::of(touching, &grants).unwrap();
+    let did = Did::of(touching, &grants, &in_english()).unwrap();
     let failed = did.failure().unwrap();
-    assert!(matches!(failed, Failed::NotAFileVerb { .. }), "{failed}");
-    assert!(failed.to_string().contains("open_application"), "{failed}");
+    assert!(matches!(failed, Failed::NotAFileVerb { .. }), "{failed:?}");
+    let said = failed.said(&in_english());
+    assert!(said.text().contains("open_application"), "{said}");
+    assert!(!said.is_a_bug(), "{said}");
 }
 
 /// A read never becomes a change on the way through, and what a verb touched is
@@ -443,7 +453,7 @@ fn a_read_touches_only_what_it_named() {
         .unwrap();
     assert!(!call.waits_for_approval());
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
-    let touching = Touching::of(authorised, &grants, &OnThisMachine).unwrap();
+    let touching = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap();
 
     assert_eq!(touching.all().count(), 1);
     assert_eq!(
@@ -455,7 +465,7 @@ fn a_read_touches_only_what_it_named() {
         Some(&Value::Path(invoices.clone()))
     );
 
-    let did = Did::of(touching, &grants).unwrap();
+    let did = Did::of(touching, &grants, &in_english()).unwrap();
     assert!(matches!(did.answer(), Some(Answer::Listed(_))));
     // The folder is exactly as it was: a read changed nothing.
     assert_eq!(fs::read_dir(&invoices).unwrap().count(), 1);
