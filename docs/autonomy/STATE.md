@@ -197,3 +197,67 @@ refused too.
 Eight ready items left. Item 3 (approvals) is next, and it speaks this
 iteration's vocabulary: read `call.rs` before starting it, because an approval
 is over exactly one `Call` and exactly its arguments.
+
+
+---
+
+## 2026-09-02 — iteration 3: approvals
+
+**Built: item 3.** Four files in `crates/alo-capability`, turning ADR 0001 §5
+into a journey a change has to make rather than a rule a daemon has to
+remember. Each type can only be reached from the one before it.
+
+| | |
+|---|---|
+| `proposal.rs` | The question put to a person: the sentence, who it would run as, and when it lapses. A read is refused here, and so is a change the grants already do not permit |
+| `approvals.rs` | The list waiting to be answered — propose, approve, decline, sweep — and numbers that are never reused |
+| `approval.rs` | One answer, worth exactly one execution, spent by redeeming it |
+| `authorised.rs` | The only type in the crate that means may-run, and the two doors into it: a read, or a redeemed approval |
+
+One test-support file came with them: `test_calls.rs`, under `cfg(test)`, so
+that four files asking about the same journey do not drift into four journeys.
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, 135 tests passing
+(24 new plus 2 doctests, 65 in items 1 and 2, 44 in `alo-models`). `cargo doc`
+clean. Built and unit tested on Windows; **no hardware verification, and none
+claimed** — nothing here touches a machine.
+
+The guarantee `CLAUDE.md` names — *one approval causes exactly one execution* —
+is now carried twice. The list refuses a proposal answered a second time, and
+`Approved::redeem` takes `self`, so a second execution is not a program that
+compiles: that half is a `compile_fail` doctest, with a twin that passes, so
+the pair cannot quietly become a test that a typo fails to compile.
+
+**What the next iteration must know:**
+
+- **Item 4 (the record) is now mostly a matter of writing down what these types
+  already carry.** `Authorised` answers *what ran, under whose authority, from
+  which approval* (`call`, `under`, `from_approval`, `at`), and `Refused`
+  carries the call it refused so a refusal is recordable rather than only
+  countable. The one thing missing is *against which grant*: `Grants::permits`
+  answers yes or no and does not say which grant said yes, and item 4 will need
+  a `GrantId` back from it. That is a small addition to `grants.rs` and it
+  should be made there rather than by re-deriving the answer in the record.
+- **The grants are asked three times on the way to an execution** — when the
+  call is checked, when the change is proposed, and last inside `Authorised`.
+  The last one is the one that matters, and it is why a revoked grant stops
+  something already approved. Nothing caches an answer, and nothing should
+  start.
+- **`Refused` boxes its `Call`.** Clippy's `result_large_err` was right: every
+  authorisation returns it in the `Err`, and the happy path should not carry a
+  hundred bytes it never reads. Anything later returning a call-shaped error
+  should do the same.
+- **Two doctests exist now, where the crate had none.** They are the public
+  worked example of the journey, and `cargo test` runs them. If the shape of
+  the API moves, they move with it.
+- **Nothing is deserialised on the approval path.** `Proposal` and `Approvals`
+  serialise so a pending question can be shown or written down, and neither
+  reads back — an unanswered question does not survive a restart, which is the
+  intended behaviour and not a limitation. Item 4 must read its records into a
+  type of the record's own, as iteration 2 already said of `Call` and `Value`.
+- **The new user-facing English is on item 9's list**: `ProposalError`,
+  `AnswerError`, `NotAuthorised` and the `Refused` display. Every refusal in
+  this iteration is a sentence somebody reads.
+
+Seven ready items left. Item 4 (the record) is next.

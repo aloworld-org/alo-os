@@ -97,11 +97,29 @@ items must follow:
   separate**: `call.rs` answers the first and deliberately does not answer the
   second, which is item 3's.
 
-- [ ] **3. Approvals** — implements ADR 0001 §5. One approval, one execution, of
-  exactly those arguments. No "remember this", no duration, no "always allow for
-  this application" — durable permission is a grant. Tests: an approval cannot
-  be replayed; an approval for one argument set does not authorise another;
-  approving nothing runs nothing.
+- [x] **3. Approvals** — implements ADR 0001 §5. Four files in
+  `crates/alo-capability`: `proposal.rs` (a change put to a person, and what is
+  never put to one), `approvals.rs` (the list waiting to be answered, and the
+  answering), `approval.rs` (one answer, worth one execution), `authorised.rs`
+  (the only type meaning may-run, and both doors into it). 24 tests and two
+  doctests, clippy clean.
+
+  A change now travels `Call` → `Proposal` → `Approved` → `Authorised`, and
+  each step can only be reached from the one before. **One approval, one
+  execution** is carried twice over: the list refuses a proposal answered twice,
+  and `Approved::redeem` takes `self`, so a second execution is not a program
+  that compiles — which is what the `compile_fail` doctest on `redeem` asserts,
+  with a twin that passes so the pair cannot rot into a test of a typo. The
+  arguments travel inside the approval and there is no accessor lending them
+  out, so an approval for one argument set cannot authorise another.
+
+  Three decisions the next items inherit. **The grants are asked last at the
+  moment of execution**, which is where a revoked grant becomes immediate; being
+  permitted is checked when the call is made, again when it is proposed, and
+  again there. **A read is never proposed and a change never takes the read
+  door**, so ADR 0001 §5 is two refusals rather than a convention. **A refusal
+  carries what it refused** (`Refused::call`), because item 4 records refusals
+  and one that threw away the call could only say that something was stopped.
 
 - [ ] **4. The record** — implements ADR 0001 §7. Every execution *and every
   refusal*, with what ran, under whose authority, from which approval, against

@@ -15,10 +15,10 @@
 //!   inside the turn, a change waits for one approval (ADR 0001 §5).
 //!
 //! **Being permitted and being approved are different questions.** This file
-//! answers only the first, and a permitted change still has not run: an
-//! approval is item 3 in `docs/autonomy/QUEUE.md`. Building the two into one
-//! method is how "one approval, one execution" would quietly become "one
-//! approval, whatever the grant allows".
+//! answers only the first, and a permitted change still has not run: it becomes
+//! a [`crate::Proposal`], and one approval of that turns into one execution.
+//! Building the two into one method is how "one approval, one execution" would
+//! quietly become "one approval, whatever the grant allows".
 
 use std::collections::BTreeMap;
 use std::time::SystemTime;

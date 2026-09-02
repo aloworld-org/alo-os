@@ -12,6 +12,24 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- A change an agent wants to make now waits for you, and one approval buys
+  exactly one action. What you approve is the sentence describing what will
+  happen, and what runs is what that sentence named — the arguments travel
+  inside the approval rather than arriving beside it, so nothing can be
+  substituted between your answer and the action. An approval cannot be spent
+  twice: the question leaves the list the moment you answer it, and answering it
+  again finds nothing there. There is no "remember this", no "allow for ten
+  minutes" and no "always allow for this application" — durable permission is a
+  grant you made deliberately and can take away in one action. Questions expire
+  rather than sitting there collecting an accidental click, and something you
+  never granted is refused before you are interrupted by a question about it at
+  all, because an approval that leads to "actually, no" teaches people to click
+  through. Your grants are checked again at the moment something would happen,
+  so revoking a folder after approving something still stops it. And a request
+  that only answers a question — listing a folder you granted — still simply
+  answers, because making a question wait for approval is how people learn to
+  approve without reading.
+
 - What an agent can do is now a list, and a closed one: if something is not on
   it, the agent does not have it, and asking for it comes back saying so rather
   than being attempted. Each entry says what it is for in ordinary words,

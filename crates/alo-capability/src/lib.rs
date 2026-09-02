@@ -51,8 +51,31 @@
 //! 1. **is the call well-formed** — [`Verbs::call`], which validates every
 //!    argument at the boundary and generates the sentence;
 //! 2. **is it permitted** — [`Call::permitted_by`], against the grants;
-//! 3. **is it approved** — not here. One approval, one execution, and that is
-//!    item 3 in `docs/autonomy/QUEUE.md`.
+//! 3. **is it approved** — [`Approvals`], and only for a change.
+//!
+//! # Approvals
+//!
+//! ADR 0001 §5: a read answers inside the turn, a change waits for one
+//! approval of the sentence describing it. The journey a change makes is four
+//! types long, and each of them can only be reached from the one before:
+//!
+//! 1. [`Call`] — validated, with its sentence generated from those arguments;
+//! 2. [`Proposal`] — the question put to a person, which lapses. A read is
+//!    refused here, and so is a change the grants already do not permit;
+//! 3. [`Approved`] — the answer, worth exactly one execution. It is not
+//!    `Clone`, it holds the call rather than lending out its arguments, and
+//!    redeeming it consumes it;
+//! 4. [`Authorised`] — a call that may run now, which an executor takes by
+//!    value. A read reaches it directly through [`Authorised::read`]; a change
+//!    reaches it only through [`Approved::redeem`].
+//!
+//! **The grants are asked last at the moment of execution**, which is what
+//! makes a revoked grant take effect immediately: an approval given at noon and
+//! redeemed after the folder was revoked is refused, because nothing decided
+//! anything ahead of time.
+//!
+//! There is no "remember this", no duration on an approval and no allowing
+//! something for an application. Durable permission is a grant.
 //!
 //! # Telling the time
 //!
@@ -64,20 +87,31 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod approval;
+pub mod approvals;
 pub mod arg;
+pub mod authorised;
 pub mod call;
 pub mod grant;
 pub mod grants;
 pub mod path;
+pub mod proposal;
 pub mod reach;
 pub mod sentence;
 pub mod verb;
 pub mod verbs;
 
+#[cfg(test)]
+mod test_calls;
+
+pub use approval::Approved;
+pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};
+pub use authorised::{Authorised, NotAuthorised, Refused};
 pub use call::{Call, CallError};
 pub use grant::{Grant, GrantError, Grantee};
 pub use grants::{GrantId, Grants, Held};
+pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};
 pub use sentence::{Part, Sentence, SentenceError};
 pub use verb::{Effect, Requires, Verb, VerbError};
