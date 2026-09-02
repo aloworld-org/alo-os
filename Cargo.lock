@@ -12,6 +12,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-egress"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-models",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-models"
 version = "0.0.1"
 dependencies = [

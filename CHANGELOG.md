@@ -12,6 +12,25 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Anything an agent sends out of your machine now has to be decided about and
+  shown while it happens, and not only when it is a question to a model. The
+  indicator is a list you can read rather than a light that is on: who is
+  reaching out, where to, and whether it is asking something, fetching something
+  or sending something. **A machine can no longer be given permission to reach
+  out without that appearing** — permission and the indicator line are the same
+  act, so a connection that was allowed but not shown is not a state that
+  exists. A question your own machine answers is not a departure at all, so a
+  day's work on a local model leaves the indicator quiet, which is what the
+  zero-egress claim looks like from the inside. If your organisation has said
+  where this machine may reach — inside the building, inside a named region, or
+  nowhere — it is now one rule covering everything rather than a rule about
+  models and a gap around everything else, and being refused says which setting
+  stopped it and where it was going. A machine on your own network counts as
+  leaving: it went down the corridor, and "it is only our own network" is
+  exactly the assumption this refuses to make. An address is checked before it
+  can be displayed, so nothing can be named in a way that makes the indicator
+  line read as something other than what is happening.
+
 - What an agent did is now kept, and so is everything it was stopped from
   doing. Each entry says what ran, whose authority it ran under, which approval
   it came from and which grant permitted it — and the grant it names is the one

@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/alo-capability", "crates/alo-models", "crates/alo-record"]
+members = [
+  "crates/alo-capability",
+  "crates/alo-egress",
+  "crates/alo-models",
+  "crates/alo-record",
+]
 
 [workspace.package]
 edition = "2024"

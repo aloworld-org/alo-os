@@ -345,3 +345,84 @@ Seven ready items left, one of them new. Item 5 (egress policy) is next, and it
 starts from `source.rs` in `alo-models` and from `Happened::Answered` here —
 `Asking::only(Only::Egress)` already answers *what left this machine*, so item 5
 is the decision and the indicator rather than the record of it.
+
+
+---
+
+## 2026-09-02 — iteration 5: egress policy and the indicator
+
+**Built: item 5**, minus the record, which is cut into a new item 5a and
+explained below. `crates/alo-egress`, law 1 as working code: nothing an agent
+causes leaves this machine without being decided about and shown while it
+happens.
+
+| | |
+|---|---|
+| `destination.rs` | Where something is going — a paired machine, a named provider, or an address a verb named — and what may be shown as one |
+| `leaving.rs` | One egress about to happen: who, where to, and why. `Why` is a closed list, and the sentence a person reads lives here and only here |
+| `policy.rs` | What an organisation permits, the refusal in words, and `NotPermitted` carrying what it refused |
+| `departing.rs` | The only type meaning may-leave, and it has no constructor of its own |
+| `indicator.rs` | What is leaving right now: the list a person reads, and the one thing that makes a `Departing` |
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, 206 tests passing
+plus 5 doctests (27 new unit tests and 3 new doctests in `alo-egress`, one of
+them `compile_fail`). `cargo doc --workspace --no-deps` clean. Built and unit
+tested on Windows; **no hardware verification, and none claimed** — nothing here
+opens a socket, and enforcement at the network boundary is a Linux item.
+
+**The design decision the item turns on.** The policy and the indicator are one
+call rather than two. `Indicator::beginning` asks `EgressPolicy` and, if it
+permits, puts the egress on the list before handing back the `Departing` a
+caller must hold to open the connection. *Permitted but unshown* is therefore
+not a state a program can be in, which is how the guarantee `CLAUDE.md` makes in
+public — no agent-caused egress escapes the indicator — stops depending on
+whoever writes the next verb remembering to fire an event. It is the same shape
+as `Authorised`, and the file says plainly what it does not stop: code that
+opens a socket without asking for a `Departing` at all.
+
+**What was cut, and why it is a decision rather than a leftover.** The queue
+item said "and the record of it". `alo-record` already keeps
+`Happened::Answered`, which records where an answer came from *and* answers
+`Only::Egress`. An answer from a provider is both a departure and a provenance,
+so adding a `Happened::Left` beside it would make one departure two entries in
+the single query law 1 promises — and the alternatives (make `Answered`
+provenance only; or have one constructor take a `&Departing` and choose the
+variant from `Why`) both change semantics that shipped in iteration 4. Choosing
+in a hurry, at the end of an iteration, would have been the wrong way to make
+that decision. Item 5a states both options and what the new entry has to
+guarantee. `Departing` already carries everything such an entry needs, decided
+once at the moment it was allowed.
+
+**What the next iteration must know:**
+
+- **The rule is stated once.** `EgressPolicy` is `From<&SourcePolicy>`, and
+  `the_wider_boundary_agrees_with_the_inference_one_about_every_source` walks
+  every policy against every source to prove they cannot disagree. Anything
+  later that adds a policy variant adds it in both places or fails that test,
+  which is the intent.
+- **A question answered on this machine is not a departure.** `Leaving::asking`
+  refuses `InferenceSource::ThisMachine` rather than returning an empty
+  destination, so law 1's zero-egress claim is the absence of a type rather
+  than a counter that reads zero. `DestinationError::NothingLeaves` says what to
+  do instead.
+- **Only a paired machine is in the building.** A host that answers on the same
+  wire is outside it, and `Destination::Address` satisfies no region at all —
+  guessing a region from a hostname is how a customer ends up in breach while
+  looking at a reassuring label. ADR 0003 is the reasoning.
+- **An address is validated before it can be displayed**, because the host came
+  from a verb's argument. Same refusals as `alo_capability::Arg` — nothing
+  blank, no control characters — plus a length bound, because the indicator is
+  one line a person trusts.
+- **`Leaving` serialises and does not deserialise**, like `Call` and `Proposal`.
+  `Destination` does both, because a record will need to read one back. Item 5a
+  inherits that split.
+- **The new user-facing English is on item 9's list**: `DestinationError`,
+  `EgressPolicy::refusal`, and `Leaving::describe` — which is deliberately the
+  only place the indicator's sentence is composed, so there is one thing to
+  translate rather than one phrase in the shell and another in the settings
+  panel.
+
+Seven ready items left, one of them new. Item 5a (the record of what left) is
+next, and it is a decision to make before it is code to write; item 6 (file
+verbs, the portable half) is the next one that starts from a settled model.

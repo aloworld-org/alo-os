@@ -33,8 +33,8 @@ and stops when there are none left.
 
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
-`crates/alo-capability` and `crates/alo-record` were built by the loop and are
-described in the items below.
+`crates/alo-capability`, `crates/alo-record` and `crates/alo-egress` were built
+by the loop and are described in the items below.
 
 | | |
 |---|---|
@@ -152,12 +152,47 @@ items must follow:
   a method anything holding the list can reach for. That decision, the file it
   is written to, and the appending are `alo-agentd`'s and do not exist yet.
 
-- [ ] **5. Egress policy** — implements law 1, and now sits on `source.rs` rather
-  than starting from nothing. The decision and the indicator event: what an agent
-  is about to cause to leave, where to, and the record of it. `SourcePolicy`
-  already decides whether a *source* is permitted; this item is the wider
-  boundary — any egress an agent causes, not only inference. Enforcement is
-  Linux and is a later item.
+- [x] **5. Egress policy** — implements law 1 §8. Five files in
+  `crates/alo-egress`, a **new crate**: `destination.rs` (where something is
+  going, and what may be shown as an address), `leaving.rs` (one egress about to
+  happen — who, where to, why), `policy.rs` (what an organisation permits, and
+  the refusal in words), `departing.rs` (the only type meaning may-leave),
+  `indicator.rs` (what is leaving right now). 27 tests and 3 doctests, clippy
+  clean.
+
+  **The decision and the indicator are one call**, and that is the whole design:
+  `Indicator::beginning` asks the policy and shows the result, and it is the only
+  constructor of `Departing` — the token a caller must hold before it opens a
+  connection. *Permitted but not shown* is therefore not a state that exists,
+  which is the guarantee `CLAUDE.md` names, carried by a type rather than by
+  whoever writes the next verb remembering. Ending a departure takes `self`, so
+  one connection can never take two lines off the indicator; the `compile_fail`
+  doctest asserts it, with a passing twin.
+
+  Three decisions the next items inherit. **The rule is stated once**:
+  `EgressPolicy` is made `From<&SourcePolicy>` rather than written down again,
+  and a test walks every policy against every source to prove the wider boundary
+  and the inference one cannot disagree. **A question answered on this machine is
+  not a departure** — `Leaving::asking` refuses it — so law 1's zero-egress claim
+  is the absence of a type rather than a counter that happens to read zero.
+  **Only a paired machine is in the building**: a host that answers on the same
+  wire is outside it, because ADR 0003 refuses "it is only our internal network".
+
+  Enforcement at the network boundary is Linux and is a later item; this crate
+  guarantees the ordinary path, not code that never asked.
+
+- [ ] **5a. The record of what left** — cut from item 5 deliberately, and it is a
+  decision before it is code. `Departing` already carries what an entry needs —
+  agent, destination, why, and the moment — but where it goes in `alo-record` is
+  not obvious: `Happened::Answered` already records where an answer came from and
+  already answers `Only::Egress`, so an answer from a provider is both a
+  departure and a provenance, and a second entry beside it would count one
+  departure twice in the one query law 1 promises. Either `Answered` becomes
+  provenance only and a new `Happened::Left` is the single egress entry, or
+  `Entry` gains a constructor taking `&Departing` that produces `Answered` for
+  `Why::Asking` and `Left` otherwise. Pick one, write down why, and make the
+  entry unreachable except from a `Departing` so an egress cannot be recorded
+  that the indicator never showed.
 
 - [ ] **6. File verbs, the portable half** — the verb definitions, argument
   types, grant checks and sentence generation for list, read, find, rename,
