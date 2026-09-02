@@ -13,6 +13,8 @@
 
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 /// Where a provider runs, as **the provider states it** — never inferred.
 ///
 /// Deliberately not an enum of places. alo OS is built in Europe and is not
@@ -24,7 +26,8 @@ use std::fmt;
 /// looking at a reassuring label, so a provider that has not said is
 /// [`Region::Unknown`], and unknown never satisfies a policy that names a
 /// region.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum Region {
     /// Declared by the provider, in the provider's own words — "the EU",
     /// "Switzerland", "the United States".

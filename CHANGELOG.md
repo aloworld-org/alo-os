@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- You can add your own model provider in Settings — a name, an address and a
+  key. Use Mistral, your own endpoint, or whatever you already pay for. The key
+  is stored in the keyring and never written into a settings file, so it cannot
+  escape through a backup, a log or a support bundle you email somebody. You say
+  where the provider runs; nothing is guessed from its address. And an address
+  that is not https is refused rather than warned about, unless it is a service
+  on this machine — otherwise your key and your questions would travel in clear.
+
 - Which model provider you use is yours to choose — Mistral, alo, your own
   endpoint, or none. alo OS ships no default that decides for you, and where an
   organisation does have a rule, the region is theirs to name: "the EU",

@@ -14,10 +14,12 @@
 
 pub mod catalogue;
 pub mod ollama;
+pub mod provider;
 pub mod runtime;
 pub mod source;
 
 pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model};
 pub use ollama::Ollama;
+pub use provider::{Provider, ProviderError, Providers, SecretRef};
 pub use runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
 pub use source::{InferenceSource, Region, SourcePolicy};

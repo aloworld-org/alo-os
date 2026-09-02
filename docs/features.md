@@ -145,6 +145,9 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.01] ★ **The GPU works on first boot**, where there is one — no driver installation, no CUDA archaeology. Acceleration, not an entry price
 - [v0.01] ★ **A model runs in one command**, from a curated catalogue of open-weight models with their licences stated
 - [v0.01] ★ The agents point at the **local** model by default — sovereignty is the default configuration, not an option to find
+- [v0.01] ★ **Add your own provider in Settings** — a name, an address, and a key: Mistral, your own endpoint, or whatever you already pay for. The key goes to the keyring, never into a settings file, so it cannot leak through a backup or a support bundle. You say where the provider runs; nothing is guessed from its address
+- [v0.5] An address that is not https is refused rather than warned about, unless it is a service on this machine — "it is only our internal network" is how a key ends up on the wire in clear
+- [v0.5] Test a provider before saving it, so a mistyped key is found now rather than in the middle of a question
 - [v0.01] ★ **Or use an API instead** (ADR 0008). A model may answer on this machine, on a machine on your network, or behind a provider's API — for a laptop too thin to run one, or an organisation that would rather buy inference than operate it
 - [v0.01] ★ **Where the answer came from is said where the answer appears** — "on this machine", "on the studio workstation, on your network", "by alo, in the EU". Not in a settings page somebody would have to go looking for, because a person about to paste a contract into a question is entitled to know where it is going first
 - [v0.01] ★ **Never a silent fallback.** A local model that fails does not quietly become an API call: failing to answer is recoverable, a person's records leaving the building because a download was corrupt is not

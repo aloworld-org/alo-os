@@ -32,6 +32,8 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       against a real socket. **Not yet run against a real Ollama or a GPU** —
       law 3's "on real hardware" is owed on the certified machine.
 - [ ] **Agents point at the local model by default**, configured rather than coded
+- [ ] **Add your own provider in Settings** — name, address, key to the keyring;
+      the region stated rather than guessed; https required off this machine
 - [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
 - [ ] **Egress indicator**, and no telemetry
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
