@@ -23,6 +23,7 @@ use alo_strings::{Filling, Said, Strings};
 use serde::Serialize;
 
 use crate::approval::Approved;
+use crate::call::Call;
 use crate::grant::Grantee;
 use crate::proposal::Proposal;
 use crate::words;
@@ -56,9 +57,14 @@ pub struct Waiting {
 /// Why a proposal could not be answered.
 ///
 /// **No `Display`**, like every other refusal a person reads here. The one that
-/// quotes the question quotes it in the words it was proposed in — see the note
-/// on [`crate::words::LAPSED`], which is where the quotation marks live so that
-/// a language can use its own.
+/// quotes the question **carries the call rather than a rendering of it** (item
+/// 9g), so the sentence inside the refusal is rendered with the same vocabulary
+/// as the refusal around it — see the note on [`crate::words::LAPSED`], which is
+/// where the quotation marks live so that a language can use its own.
+///
+/// The call is boxed for the reason [`crate::Refused`]'s is: every answer
+/// returns this type in its `Err`, and the happy path should not carry a
+/// hundred bytes it never reads.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AnswerError {
     /// A number that is not waiting for an answer.
@@ -69,7 +75,7 @@ pub enum AnswerError {
     /// A question that stood too long.
     Lapsed {
         /// What the question was, since the person is being told to ask again.
-        sentence: String,
+        call: Box<Call>,
     },
 }
 
@@ -82,9 +88,9 @@ impl AnswerError {
                 &words::NOTHING_WAITING.key(),
                 &Filling::of("number", number.to_string()),
             ),
-            Self::Lapsed { sentence } => strings.say(
+            Self::Lapsed { call } => strings.say(
                 &words::LAPSED.key(),
-                &Filling::of("sentence", sentence.clone()),
+                &Filling::of("sentence", call.sentence(strings).into_text()),
             ),
         }
     }
@@ -128,7 +134,7 @@ impl Approvals {
         let waiting = self.take(id)?;
         if !waiting.proposal.is_waiting_at(now) {
             return Err(AnswerError::Lapsed {
-                sentence: waiting.proposal.sentence().to_owned(),
+                call: Box::new(waiting.proposal.call().clone()),
             });
         }
         Ok(Approved::of(waiting.id, waiting.proposal, now))
@@ -212,8 +218,11 @@ mod tests {
     use super::*;
     use crate::call::Call;
     use crate::grants::Grants;
-    use crate::test_calls::{archiving_april, archiving_march, files, granting_both, hour, noon};
-    use crate::testing::{in_english, translated};
+    use crate::test_calls::{
+        MOVING_SENTENCE, THE_WORDS, archiving_april, archiving_march, files, granting_both, hour,
+        noon, reading,
+    };
+    use crate::testing::{in_english, translating};
 
     fn proposing(call: &Call, grants: &Grants) -> Proposal {
         Proposal::checked(call, &files(), grants, noon(), hour()).unwrap()
@@ -262,9 +271,10 @@ mod tests {
         let march = approvals.propose(proposing(&archiving_march(), &grants));
         let april = approvals.propose(proposing(&archiving_april(), &grants));
 
+        let strings = reading();
         let approved = approvals.approve(march, noon()).unwrap();
-        assert!(approved.sentence().contains("march.pdf"));
-        assert!(!approved.sentence().contains("april.pdf"));
+        assert!(approved.sentence(&strings).text().contains("march.pdf"));
+        assert!(!approved.sentence(&strings).text().contains("april.pdf"));
 
         let left: Vec<_> = approvals.waiting_at(noon()).collect();
         assert_eq!(left.len(), 1);
@@ -274,7 +284,8 @@ mod tests {
                 .of(april)
                 .unwrap()
                 .proposal
-                .sentence()
+                .sentence(&strings)
+                .text()
                 .contains("april.pdf")
         );
     }
@@ -289,36 +300,49 @@ mod tests {
         assert_eq!(
             err,
             AnswerError::Lapsed {
-                sentence: "move /home/anna/Invoices/march.pdf into /home/anna/Archive".to_owned()
+                call: Box::new(archiving_march())
             }
         );
-        let said = err.said(&in_english());
+        let said = err.said(&reading());
         assert!(said.text().contains("ask again"), "{said}");
-        assert!(said.text().contains("march.pdf"), "{said}");
+        assert!(
+            said.text()
+                .contains("move /home/anna/Invoices/march.pdf into /home/anna/Archive"),
+            "{said}"
+        );
         // It is gone rather than left there for somebody to click again.
         assert!(approvals.is_empty());
     }
 
-    /// **The quotation marks belong to the language, not to the code.** German
-    /// opens a quotation at the bottom of the line, and it can, because the
-    /// marks are inside the sentence a translator is handed rather than around
-    /// the gap this crate fills.
+    /// **The quotation marks belong to the language, not to the code**, and
+    /// since item 9g so does the sentence inside them. German opens a quotation
+    /// at the bottom of the line, and it can, because the marks are inside the
+    /// sentence a translator is handed rather than around the gap this crate
+    /// fills — and the question being quoted is rendered here, with the same
+    /// vocabulary, rather than arriving in whichever language the verb was
+    /// declared in.
     #[test]
-    fn the_quotation_marks_are_the_translators_to_place() {
-        let strings = translated(&[(
-            crate::words::LAPSED,
-            "„{sentence}“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, wenn es \
-             noch gewünscht ist",
-        )]);
+    fn the_question_and_the_quotation_marks_are_both_the_translators() {
+        let strings = translating(
+            &THE_WORDS,
+            &[
+                (MOVING_SENTENCE, "{file} nach {into} verschieben"),
+                (
+                    crate::words::LAPSED,
+                    "„{sentence}“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, \
+                     wenn es noch gewünscht ist",
+                ),
+            ],
+        );
         let said = AnswerError::Lapsed {
-            sentence: "march.pdf verschieben".to_owned(),
+            call: Box::new(archiving_march()),
         }
         .said(&strings);
         assert!(said.is_translated());
         assert_eq!(
             said.text(),
-            "„march.pdf verschieben“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, \
-             wenn es noch gewünscht ist"
+            "„/home/anna/Invoices/march.pdf nach /home/anna/Archive verschieben“ wurde vor zu \
+             langer Zeit vorgeschlagen — fragen Sie erneut, wenn es noch gewünscht ist"
         );
     }
 
@@ -381,7 +405,8 @@ mod tests {
                 .first()
                 .unwrap()
                 .proposal
-                .sentence()
+                .sentence(&reading())
+                .text()
                 .contains("march.pdf")
         );
         assert_eq!(approvals.waiting_for(&files(), noon()).count(), 2);
@@ -393,15 +418,17 @@ mod tests {
         );
     }
 
-    /// What is waiting can be shown and written down, sentence and all.
+    /// What is waiting can be shown and written down: what names the sentence,
+    /// and the values it is filled from.
     #[test]
     fn what_is_waiting_can_be_written_down() {
         let (approvals, _) = one_waiting();
         let written = serde_json::to_string(&approvals).unwrap();
         assert!(written.contains("move_file"), "{written}");
         assert!(
-            written.contains("move /home/anna/Invoices/march.pdf into"),
+            written.contains("testing.verb.move-file.sentence"),
             "{written}"
         );
+        assert!(written.contains("march.pdf"), "{written}");
     }
 }

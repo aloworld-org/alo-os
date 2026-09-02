@@ -26,6 +26,7 @@
 //! stops them is that the verb's implementation must never pass an argument to
 //! an interpreter. That rule is in ADR 0001 §1 and it is on the reviewer.
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::arg::{Arg, Takes};
@@ -223,7 +224,7 @@ pub struct Verb {
     /// The stable identifier.
     name: String,
     /// One sentence, in the words a person would use.
-    purpose: String,
+    purpose: Word,
     /// Read or change.
     effect: Effect,
     /// What it takes, all of it required.
@@ -241,11 +242,11 @@ impl Verb {
     /// [`VerbError`], saying what to change about the declaration.
     pub fn checked(
         name: &str,
-        purpose: &str,
+        purpose: Word,
         effect: Effect,
         args: Vec<Arg>,
         requires: Requires,
-        sentence: &str,
+        sentence: Word,
     ) -> Result<Self, VerbError> {
         let name = name.trim().to_owned();
         if name.is_empty() {
@@ -257,13 +258,12 @@ impl Verb {
         if announces_an_interpreter(&name) {
             return Err(VerbError::RunsSomething { name });
         }
-        let purpose = purpose.trim().to_owned();
-        if purpose.is_empty() {
+        if purpose.says().trim().is_empty() {
             return Err(VerbError::NoPurpose { name });
         }
         check_args(&args)?;
         check_requires(&requires, &args)?;
-        let sentence = Sentence::parse(sentence)?;
+        let sentence = Sentence::of(sentence)?;
         check_sentence(&sentence, &args)?;
         Ok(Self {
             name,
@@ -281,10 +281,20 @@ impl Verb {
         &self.name
     }
 
-    /// What it does, in one sentence.
+    /// What it does, in one sentence, in the language the person reads.
     #[must_use]
-    pub fn purpose(&self) -> &str {
-        &self.purpose
+    pub fn purpose(&self, strings: &Strings) -> Said {
+        strings.say(&self.purpose.key(), &Filling::nothing())
+    }
+
+    /// What it does, in the language the code is written in.
+    ///
+    /// The source, in the sense `alo-strings` means it: the sentence somebody
+    /// translates. A shell shows [`Verb::purpose`], which says whether anybody
+    /// has.
+    #[must_use]
+    pub fn purpose_as_written(&self) -> &'static str {
+        self.purpose.says()
     }
 
     /// Whether it answers or changes something.
@@ -302,7 +312,7 @@ impl Verb {
     /// The argument of this name, if it takes one.
     #[must_use]
     pub fn arg(&self, name: &str) -> Option<&Arg> {
-        self.args.iter().find(|arg| arg.name == name)
+        self.args.iter().find(|arg| arg.name() == name)
     }
 
     /// What must be granted for it to run.
@@ -359,31 +369,31 @@ fn announces_an_interpreter(name: &str) -> bool {
 /// they are for.
 fn check_args(args: &[Arg]) -> Result<(), VerbError> {
     for (position, arg) in args.iter().enumerate() {
-        if arg.name.is_empty() {
+        if arg.name().is_empty() {
             return Err(VerbError::UnnamedArgument);
         }
-        if !is_an_identifier(&arg.name) {
+        if !is_an_identifier(arg.name()) {
             return Err(VerbError::ArgumentNotAnIdentifier {
-                argument: arg.name.clone(),
+                argument: arg.name().to_owned(),
             });
         }
-        if announces_an_interpreter(&arg.name) {
+        if announces_an_interpreter(arg.name()) {
             return Err(VerbError::ArgumentRunsSomething {
-                argument: arg.name.clone(),
+                argument: arg.name().to_owned(),
             });
         }
-        if arg.purpose.is_empty() {
+        if arg.purpose_as_written().trim().is_empty() {
             return Err(VerbError::ArgumentWithoutPurpose {
-                argument: arg.name.clone(),
+                argument: arg.name().to_owned(),
             });
         }
         if args
             .iter()
             .take(position)
-            .any(|earlier| earlier.name == arg.name)
+            .any(|earlier| earlier.name() == arg.name())
         {
             return Err(VerbError::SameArgumentTwice {
-                argument: arg.name.clone(),
+                argument: arg.name().to_owned(),
             });
         }
         check_takes(arg)?;
@@ -396,15 +406,15 @@ fn check_args(args: &[Arg]) -> Result<(), VerbError> {
 /// A range with nothing in it and a choice of one are both declarations that
 /// look reasonable and can never be what the author meant.
 fn check_takes(arg: &Arg) -> Result<(), VerbError> {
-    match &arg.takes {
+    match arg.takes() {
         Takes::Choice(options) if options.len() < 2 => Err(VerbError::ChoiceOfOne {
-            argument: arg.name.clone(),
+            argument: arg.name().to_owned(),
         }),
         Takes::Count { least, most } if least > most => Err(VerbError::EmptyRange {
-            argument: arg.name.clone(),
+            argument: arg.name().to_owned(),
         }),
         Takes::Name { longest } if *longest == 0 => Err(VerbError::NoLength {
-            argument: arg.name.clone(),
+            argument: arg.name().to_owned(),
         }),
         Takes::Path
         | Takes::Application
@@ -424,11 +434,11 @@ fn check_requires(requires: &Requires, args: &[Arg]) -> Result<(), VerbError> {
             for argument in over {
                 let arg = args
                     .iter()
-                    .find(|arg| &arg.name == argument)
+                    .find(|arg| arg.name() == argument)
                     .ok_or_else(|| VerbError::NoSuchArgument {
                         argument: argument.clone(),
                     })?;
-                if !arg.takes.can_be_a_grant() {
+                if !arg.takes().can_be_a_grant() {
                     return Err(VerbError::CannotBeAGrant {
                         argument: argument.clone(),
                     });
@@ -451,16 +461,16 @@ fn check_requires(requires: &Requires, args: &[Arg]) -> Result<(), VerbError> {
 /// Whether the sentence describes this call and all of it.
 fn check_sentence(sentence: &Sentence, args: &[Arg]) -> Result<(), VerbError> {
     for mentioned in sentence.mentions() {
-        if !args.iter().any(|arg| arg.name == mentioned) {
+        if !args.iter().any(|arg| arg.name() == mentioned) {
             return Err(VerbError::SentenceNames {
                 argument: mentioned.to_owned(),
             });
         }
     }
     for arg in args {
-        if !sentence.mentions().any(|mentioned| mentioned == arg.name) {
+        if !sentence.mentions().any(|mentioned| mentioned == arg.name()) {
             return Err(VerbError::SentenceOmits {
-                argument: arg.name.clone(),
+                argument: arg.name().to_owned(),
             });
         }
     }
@@ -475,22 +485,36 @@ fn check_sentence(sentence: &Sentence, args: &[Arg]) -> Result<(), VerbError> {
 mod tests {
     use super::*;
 
+    /// The words these declarations are made of. A verb is declared from the
+    /// strings a translator is handed, so a test that declares one declares
+    /// those too.
+    const A_FOLDER: Word = Word::saying("testing.argument.folder", "the folder to look in");
+    const A_NAME: Word = Word::saying("testing.argument.name", "what to call it");
+    const LISTING: Word = Word::saying("testing.verb.list-folder", "list what is in a folder");
+    const LISTING_SENTENCE: Word =
+        Word::saying("testing.sentence.list-folder", "list what is in {folder}");
+
+    /// A purpose or a sentence a test does not care about the words of.
+    fn saying(says: &'static str) -> Word {
+        Word::saying("testing.verb.whatever", says)
+    }
+
     fn folder() -> Arg {
-        Arg::taking("folder", "the folder to look in", Takes::Path)
+        Arg::taking("folder", A_FOLDER, Takes::Path)
     }
 
     fn name() -> Arg {
-        Arg::taking("name", "what to call it", Takes::name(255))
+        Arg::taking("name", A_NAME, Takes::name(255))
     }
 
     fn list() -> Result<Verb, VerbError> {
         Verb::checked(
             "list_folder",
-            "list what is in a folder",
+            LISTING,
             Effect::Read,
             vec![folder()],
             Requires::grants_over(["folder"]),
-            "list what is in {folder}",
+            LISTING_SENTENCE,
         )
     }
 
@@ -498,7 +522,7 @@ mod tests {
     fn a_verb_declares_what_the_contract_asks_for() {
         let verb = list().unwrap();
         assert_eq!(verb.name(), "list_folder");
-        assert_eq!(verb.purpose(), "list what is in a folder");
+        assert_eq!(verb.purpose_as_written(), "list what is in a folder");
         assert_eq!(verb.effect(), Effect::Read);
         assert!(!verb.effect().waits_for_approval());
         assert!(Effect::Change.waits_for_approval());
@@ -517,11 +541,11 @@ mod tests {
     fn a_verb_that_would_run_something_is_refused() {
         let err = Verb::checked(
             "run_command",
-            "run a command",
+            saying("run a command"),
             Effect::Change,
             vec![name()],
             Requires::nothing_because("it only runs what the person asked for"),
-            "run {name}",
+            saying("run {name}"),
         )
         .unwrap_err();
         assert_eq!(
@@ -537,11 +561,11 @@ mod tests {
                 matches!(
                     Verb::checked(
                         named,
-                        "whatever it does",
+                        saying("whatever it does"),
                         Effect::Change,
                         vec![name()],
                         Requires::nothing_because("there is no reason good enough for this"),
-                        "do {name}",
+                        saying("do {name}"),
                     ),
                     Err(VerbError::RunsSomething { .. })
                 ),
@@ -554,14 +578,29 @@ mod tests {
     /// expression.
     #[test]
     fn an_argument_that_would_be_interpreted_is_refused() {
-        for argument in ["script", "filter_expression", "sql_query", "shell_command"] {
+        // The sentence is written out beside each argument rather than composed,
+        // because a `Word` is a string somebody wrote and translated — there is
+        // no `format!` that reaches one.
+        for (argument, sentence) in [
+            ("script", "prepare a report using {script}"),
+            (
+                "filter_expression",
+                "prepare a report using {filter_expression}",
+            ),
+            ("sql_query", "prepare a report using {sql_query}"),
+            ("shell_command", "prepare a report using {shell_command}"),
+        ] {
             let err = Verb::checked(
                 "prepare_report",
-                "prepare a report",
+                saying("prepare a report"),
                 Effect::Change,
-                vec![Arg::taking(argument, "how to do it", Takes::name(255))],
+                vec![Arg::taking(
+                    argument,
+                    saying("how to do it"),
+                    Takes::name(255),
+                )],
                 Requires::nothing_because("a report is built entirely from typed arguments"),
-                &format!("prepare a report using {{{argument}}}"),
+                saying(sentence),
             )
             .unwrap_err();
             assert_eq!(
@@ -578,15 +617,15 @@ mod tests {
         assert!(
             Verb::checked(
                 "focus_application",
-                "bring an application to the front",
+                saying("bring an application to the front"),
                 Effect::Change,
                 vec![Arg::taking(
                     "application",
-                    "which application",
+                    saying("which application"),
                     Takes::Application,
                 )],
                 Requires::grants_over(["application"]),
-                "bring {application} to the front",
+                saying("bring {application} to the front"),
             )
             .is_ok()
         );
@@ -599,14 +638,14 @@ mod tests {
     fn a_sentence_that_leaves_an_argument_out_is_refused() {
         let err = Verb::checked(
             "move_file",
-            "move a file into a folder",
+            saying("move a file into a folder"),
             Effect::Change,
             vec![
-                Arg::taking("file", "the file to move", Takes::Path),
-                Arg::taking("into", "where it goes", Takes::Path),
+                Arg::taking("file", saying("the file to move"), Takes::Path),
+                Arg::taking("into", saying("where it goes"), Takes::Path),
             ],
             Requires::grants_over(["file", "into"]),
-            "move {file}",
+            saying("move {file}"),
         )
         .unwrap_err();
         assert_eq!(
@@ -624,22 +663,28 @@ mod tests {
     fn a_sentence_that_cannot_be_generated_is_refused() {
         let unreadable = Verb::checked(
             "list_folder",
-            "list what is in a folder",
+            LISTING,
             Effect::Read,
             vec![folder()],
             Requires::grants_over(["folder"]),
-            "list what is in {folder",
+            saying("list what is in {folder"),
         )
         .unwrap_err();
-        assert_eq!(unreadable, VerbError::Unreadable(SentenceError::Unclosed));
+        assert!(
+            matches!(
+                unreadable,
+                VerbError::Unreadable(SentenceError::Unreadable(_))
+            ),
+            "{unreadable:?}"
+        );
 
         let invented = Verb::checked(
             "list_folder",
-            "list what is in a folder",
+            LISTING,
             Effect::Read,
             vec![folder()],
             Requires::grants_over(["folder"]),
-            "list what is in {folder} for {person}",
+            saying("list what is in {folder} for {person}"),
         )
         .unwrap_err();
         assert_eq!(
@@ -657,11 +702,11 @@ mod tests {
     fn a_verb_that_requires_no_grant_has_to_say_why() {
         let err = Verb::checked(
             "list_displays",
-            "list the displays attached to this machine",
+            saying("list the displays attached to this machine"),
             Effect::Read,
             vec![],
             Requires::nothing_because("no"),
-            "list the displays",
+            saying("list the displays"),
         )
         .unwrap_err();
         assert_eq!(err, VerbError::NoGrantAndNoReason);
@@ -670,13 +715,13 @@ mod tests {
         assert!(
             Verb::checked(
                 "list_displays",
-                "list the displays attached to this machine",
+                saying("list the displays attached to this machine"),
                 Effect::Read,
                 vec![],
                 Requires::nothing_because(
                     "a display is not a path, a file or an application, and naming one reaches nothing",
                 ),
-                "list the displays",
+                saying("list the displays"),
             )
             .is_ok()
         );
@@ -689,14 +734,14 @@ mod tests {
     fn a_grant_has_to_be_over_something_a_grant_can_cover() {
         let err = Verb::checked(
             "read_lines",
-            "read the first lines of a file",
+            saying("read the first lines of a file"),
             Effect::Read,
             vec![
-                Arg::taking("file", "the file to read", Takes::Path),
-                Arg::taking("lines", "how many lines", Takes::count(1, 500)),
+                Arg::taking("file", saying("the file to read"), Takes::Path),
+                Arg::taking("lines", saying("how many lines"), Takes::count(1, 500)),
             ],
             Requires::grants_over(["lines"]),
-            "read the first {lines} lines of {file}",
+            saying("read the first {lines} lines of {file}"),
         )
         .unwrap_err();
         assert_eq!(
@@ -708,11 +753,11 @@ mod tests {
 
         let missing = Verb::checked(
             "read_lines",
-            "read the first lines of a file",
+            saying("read the first lines of a file"),
             Effect::Read,
-            vec![Arg::taking("file", "the file to read", Takes::Path)],
+            vec![Arg::taking("file", saying("the file to read"), Takes::Path)],
             Requires::grants_over(["folder"]),
-            "read {file}",
+            saying("read {file}"),
         )
         .unwrap_err();
         assert_eq!(
@@ -729,15 +774,15 @@ mod tests {
     fn an_argument_that_can_never_be_filled_is_refused() {
         let one_option = Verb::checked(
             "archive_file",
-            "archive a file",
+            saying("archive a file"),
             Effect::Change,
             vec![Arg::taking(
                 "into",
-                "where it goes",
+                saying("where it goes"),
                 Takes::choice(["archive"]),
             )],
             Requires::nothing_because("the destination is decided by the system, not by a path"),
-            "archive it into {into}",
+            saying("archive it into {into}"),
         )
         .unwrap_err();
         assert_eq!(
@@ -749,11 +794,15 @@ mod tests {
 
         let backwards = Verb::checked(
             "read_lines",
-            "read the first lines of a file",
+            saying("read the first lines of a file"),
             Effect::Read,
-            vec![Arg::taking("lines", "how many", Takes::count(10, 1))],
+            vec![Arg::taking(
+                "lines",
+                saying("how many"),
+                Takes::count(10, 1),
+            )],
             Requires::nothing_because("it reads nothing until item 6 gives it a file"),
-            "read {lines} lines",
+            saying("read {lines} lines"),
         )
         .unwrap_err();
         assert_eq!(
@@ -771,11 +820,11 @@ mod tests {
         assert_eq!(
             Verb::checked(
                 "  ",
-                "whatever",
+                saying("whatever"),
                 Effect::Read,
                 vec![],
                 Requires::nothing_because("it does not matter, the name is checked first"),
-                "do it",
+                saying("do it"),
             )
             .unwrap_err(),
             VerbError::Unnamed
@@ -783,44 +832,44 @@ mod tests {
         assert!(matches!(
             Verb::checked(
                 "List Folder",
-                "list what is in a folder",
+                LISTING,
                 Effect::Read,
                 vec![folder()],
                 Requires::grants_over(["folder"]),
-                "list {folder}",
+                saying("list {folder}"),
             ),
             Err(VerbError::NotAnIdentifier { .. })
         ));
         assert!(matches!(
             Verb::checked(
                 "list_folder",
-                "list what is in a folder",
+                LISTING,
                 Effect::Read,
                 vec![folder(), folder()],
                 Requires::grants_over(["folder"]),
-                "list {folder}",
+                saying("list {folder}"),
             ),
             Err(VerbError::SameArgumentTwice { .. })
         ));
         assert!(matches!(
             Verb::checked(
                 "list_folder",
-                "",
+                saying("   "),
                 Effect::Read,
                 vec![folder()],
                 Requires::grants_over(["folder"]),
-                "list {folder}",
+                saying("list {folder}"),
             ),
             Err(VerbError::NoPurpose { .. })
         ));
         assert!(matches!(
             Verb::checked(
                 "list_folder",
-                "list what is in a folder",
+                LISTING,
                 Effect::Read,
-                vec![Arg::taking("folder", "", Takes::Path)],
+                vec![Arg::taking("folder", saying("   "), Takes::Path)],
                 Requires::grants_over(["folder"]),
-                "list {folder}",
+                saying("list {folder}"),
             ),
             Err(VerbError::ArgumentWithoutPurpose { .. })
         ));

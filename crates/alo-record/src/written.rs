@@ -87,6 +87,11 @@ impl From<&Value> for Written {
 mod tests {
     use super::*;
     use alo_capability::{Arg, Given, Takes};
+    use alo_strings::Word;
+
+    /// What an argument is for, which none of these tests is about — they are
+    /// about the value that came out the other side of validation.
+    const A_PURPOSE: Word = Word::saying("testing.argument.purpose", "whatever it is for");
 
     fn validated(arg: &Arg, given: &Given) -> Option<Value> {
         arg.validate(given).ok()
@@ -98,27 +103,27 @@ mod tests {
     fn every_kind_of_argument_can_be_written_down() {
         let cases = [
             (
-                Arg::taking("file", "the file", Takes::Path),
+                Arg::taking("file", A_PURPOSE, Takes::Path),
                 Given::text("/home/anna/Invoices/march.pdf"),
                 "/home/anna/Invoices/march.pdf",
             ),
             (
-                Arg::taking("application", "which one", Takes::Application),
+                Arg::taking("application", A_PURPOSE, Takes::Application),
                 Given::text("org.blender.Blender"),
                 "org.blender.Blender",
             ),
             (
-                Arg::taking("name", "what to call it", Takes::name(255)),
+                Arg::taking("name", A_PURPOSE, Takes::name(255)),
                 Given::text("april.pdf"),
                 "april.pdf",
             ),
             (
-                Arg::taking("lines", "how many", Takes::count(1, 500)),
+                Arg::taking("lines", A_PURPOSE, Takes::count(1, 500)),
                 Given::number(7),
                 "7",
             ),
             (
-                Arg::taking("into", "where it goes", Takes::choice(["archive", "trash"])),
+                Arg::taking("into", A_PURPOSE, Takes::choice(["archive", "trash"])),
                 Given::text("archive"),
                 "archive",
             ),
@@ -138,7 +143,7 @@ mod tests {
     /// so a path is kept as a path rather than as a description of one.
     #[test]
     fn a_path_is_kept_as_a_path() {
-        let file = Arg::taking("file", "the file", Takes::Path);
+        let file = Arg::taking("file", A_PURPOSE, Takes::Path);
         let written = validated(&file, &Given::text("/home/anna/Invoices/march.pdf"))
             .as_ref()
             .map(Written::from);

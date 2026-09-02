@@ -15,11 +15,11 @@ Every verb declares:
 | Field | Meaning |
 |---|---|
 | `name` | Stable identifier. Never reused for a different meaning. |
-| `purpose` | One sentence, in the words a person would use. |
+| `purpose` | One sentence, in the words a person would use. A declared string, so it can be translated. |
 | `effect` | `read` or `change`. Decides whether it runs in the turn or waits for approval. |
 | `args` | Typed, each with a purpose. Validated at the boundary before anything runs. |
 | `requires` | Which grant must be held for this call to be possible at all. |
-| `sentence` | How the approval sentence is generated **from the validated arguments**. |
+| `sentence` | The approval sentence, with a gap per argument, filled **from the validated arguments**. A declared string. |
 
 Two rules that are easy to state and easy to violate:
 
@@ -34,23 +34,34 @@ Two rules that are easy to state and easy to violate:
 ## The words are the declaration's, and the declaration can be translated
 
 A verb's `purpose`, its arguments' purposes and its `sentence` are read by a
-person, so they are strings a translator can be given rather than English a
-shell shows whatever the person reads. What a verb is declared with is the
-**source** — the sentence somebody translates — and an adapter declares the
-same string in its own `alo-strings` vocabulary, keyed under its own area.
+person, so **a verb is declared from `alo_strings::Word`s** — a key, the English
+beside it, and the note a translator needs. There is no way to declare one from a
+bare string, and that is the point: the string a translator is handed is
+necessarily the string the declaration was checked against, rather than a copy
+of it that a test has to keep equal. An adapter declares its own words in its own
+`alo-strings` vocabulary, keyed under its own area, and hands the same constants
+to `Verb::checked`.
 
 The rule above survives that, and does not have to be re-checked in each
 language: a declaration is refused if its sentence leaves an argument out, and
 a translation is refused if it drops a gap the source has or invents one it
-does not. Those are the same rule enforced by two crates on **one string**,
-which only holds while the string a translator is given is the string the
-declaration was checked against. `alo-files`' `words` module is the worked
-example: the six verbs are declared *from* the constants a translator receives,
-so there is no second copy to drift.
+does not. Those are the same rule enforced by two crates on **one string**.
+`alo-files`' `words` module is the worked example.
 
-An adapter that shows a person a sentence asks its own vocabulary for it. What
-a `Call` carries is the source sentence, and what a record keeps is what the
-person was actually shown — one rendering, never two accounts of one moment.
+**Nothing renders a sentence until somebody reads it.** A `Call` carries what
+names its sentence and the validated values that fill it; `Call::sentence`,
+`Verb::purpose` and `Arg::purpose` each take the vocabulary the person in front
+of the machine reads and answer with something that says whether anybody
+translated it. The screen, the approval and the record therefore render **one
+value** — never two accounts of one moment, and never a record in a language
+nobody was shown.
+
+One thing an adapter has to get right that no check can reach: every word a verb
+is declared with must be in the vocabulary the adapter declares. A constant left
+out of that list compiles and reaches a person as a key, in the place where the
+sentence they are approving belongs. `alo-files`
+(`verbs::everything_the_six_say_is_something_this_crate_declares`) is the
+worked example of the test that closes it.
 
 ## Being told no
 
@@ -320,9 +331,12 @@ than formatting a line for somebody to match against.
    one that only changes something "small".
 3. Its arguments are typed and validated at the boundary, and none of them
    reaches an interpreter.
-4. Its sentence generates from those arguments, and **names every one of them**.
+4. Its sentence fills from those arguments, and **names every one of them**.
    An argument the sentence leaves out is an argument the person did not agree
    to, so a verb whose sentence omits one cannot be declared at all.
+   Its purpose, each argument's purpose and its sentence are declared strings,
+   and every one of them is in the adapter's own vocabulary — a word declared
+   nowhere reaches a person as a key.
 5. It names the grant it requires, and names it over an argument a grant can
    cover — a path or an application. A verb that requires no grant needs a
    written reason in its ADR, and the reason is carried in the declaration

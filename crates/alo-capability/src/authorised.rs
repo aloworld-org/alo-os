@@ -254,8 +254,8 @@ impl Authorised {
     /// What this was, in the words a person read — or would have read, for a
     /// read that nobody was asked about.
     #[must_use]
-    pub fn sentence(&self) -> &str {
-        self.call.sentence()
+    pub fn sentence(&self, strings: &Strings) -> Said {
+        self.call.sentence(strings)
     }
 
     /// Whose authority it runs under.
@@ -304,7 +304,7 @@ impl Authorised {
 mod tests {
     use super::*;
     use crate::test_calls::{
-        archiving_march, files, granting, granting_both, hour, listing_invoices, noon,
+        archiving_march, files, granting, granting_both, hour, listing_invoices, noon, reading,
     };
     use crate::testing::in_english;
     use alo_strings::Key;
@@ -316,7 +316,10 @@ mod tests {
         let authorised =
             Authorised::read(&call, &files(), &granting(&["/home/anna/Invoices"]), noon()).unwrap();
         assert_eq!(authorised.verb(), "list_folder");
-        assert_eq!(authorised.sentence(), "list what is in /home/anna/Invoices");
+        assert_eq!(
+            authorised.sentence(&reading()).text(),
+            "list what is in /home/anna/Invoices"
+        );
         assert_eq!(authorised.call(), &call);
         assert_eq!(authorised.under(), &files());
         assert_eq!(authorised.at(), noon());

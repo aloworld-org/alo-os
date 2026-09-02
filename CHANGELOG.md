@@ -12,6 +12,34 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The sentence you approve, the record of it and the refusal that quotes it
+  are now one sentence rather than three renderings of it.** *Move
+  march.pdf into Archive* is what an agent puts in front of you before it
+  touches anything, and until now it was written down in the language the
+  capability was declared in — so a machine reading Estonian could show you an
+  Estonian sentence, ask you to approve it, and keep an English one in the
+  record a security review reads afterwards. Now there is one thing: what names
+  the sentence, and the values that go in it. The words are asked for wherever
+  somebody reads them, and the screen, the approval and the record all read the
+  same thing.
+
+  Two clauses that used to arrive in English inside an otherwise translated
+  sentence have gone with it: *what this argument is for*, when an agent asks
+  for something without it, and the question quoted back to you when it stood
+  too long to answer. Both are looked up with the same vocabulary as the
+  sentence around them.
+
+  Nothing about **what may run** changed. A capability is still refused without
+  a vocabulary having been loaded, a verb still cannot be declared with a
+  sentence that leaves one of its arguments out, and one approval is still worth
+  exactly one execution.
+
+  For anybody writing an adapter: a verb is now declared from the same declared
+  strings a translator is given, rather than from English that is separately
+  translated somewhere else. It is a change to a public surface, and it is what
+  makes the guarantee above structural instead of something a test has to hope
+  for.
+
 - **The line that says something is leaving your machine is now in your own
   language.** It is the one alo OS is sold on: *@mail is asking a question of
   someone, which has not said where it runs*, read while it is happening rather

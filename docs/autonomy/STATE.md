@@ -2126,3 +2126,110 @@ outside the doctest harness**: it still fails with E0624, associated function
   compositor surface and there is no compositor.
 - **What is left is 9g and 4a.** After 9g, every remaining item in this queue
   belongs to a daemon, a Linux host or a certified machine.
+
+## 2026-09-03 — iteration 22: the sentence a person approves, said once
+
+**Built: item 9g**, whole. The last of the 9-series, and the only one of them
+that is not a translation item: it is the **public surface change** that makes
+the sentence somebody approves one value instead of two renderings of one
+string. It reaches `alo-capability`, `alo-files` and `alo-record` at once.
+
+| | |
+|---|---|
+| `sentence.rs` (capability) | Rewritten. A `Sentence` is a `Key` and an `alo_strings::Template`, made from a `Word` and from nothing else. `Part`, `parts()` and `render()` are gone |
+| `arg.rs` | `Arg` takes a `Word` for its purpose; its fields are private and `purpose(&Strings)` answers |
+| `verb.rs` | `Verb::checked` takes a `Word` for the purpose and one for the sentence; `purpose(&Strings)` and `purpose_as_written()` |
+| `call.rs` | `Call` carries a `Key` and answers `sentence(&Strings)`, `sentence_key()`, `filling()`. `CallError::Missing` carries the purpose's key; `CallError::Unsayable` is gone |
+| `proposal.rs`, `approval.rs`, `authorised.rs` | `sentence(&Strings) -> Said` |
+| `approvals.rs` | `AnswerError::Lapsed` carries the call, boxed, rather than a rendering of it |
+| `words.rs` (capability) | 32 words, was 33; two notes rewritten because both gaps now arrive translated |
+| `verbs.rs` (files) | The six declared *from* the constants — passed, not read out of |
+| `saying.rs` (files) | **Gone.** Its three answers are the verb's now, so they work for anybody's verbs rather than for six |
+| `words.rs` (files) | `Spoken` and `THE_SIX` gone with it; the table they were is a test |
+| `what.rs`, `entry.rs` (record) | `What::of` and `Entry::ran`, `never_asked`, `declined` take the strings |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. **707 tests and 20 doctests across the
+workspace**, all green — the same totals as iteration 21, because four tests in
+`saying.rs` became three better-placed ones elsewhere. `CHANGELOG.md`,
+`docs/contracts/agent-verbs.md`, `docs/quirks.md`, `QUEUE.md` and `ROADMAP.md`
+in the same change.
+
+**The decision the item named, and the shape it turned out to have.** The queue
+asked for "a `Call` carrying a key and a filling rather than a rendered
+sentence, `Verb::checked` taking the key of its sentence". A key would have been
+enough to make it work and not enough to make it *stay* true: a declaration
+could then be checked against one string and a translator handed another, which
+is the exact drift the 9-series exists to remove, wearing a key. So a verb is
+declared from `alo_strings::Word`s — `Verb::checked` and `Arg::taking` take one,
+and there is no way to declare a verb from a bare string. The string a
+translator is given is now *necessarily* the string `Verb::checked` checked, so
+*a sentence names every argument* and *a translation may not drop a gap* are two
+crates enforcing one rule about one string, structurally rather than because
+`alo-files` remembered to declare its six from its constants.
+
+**And the thing the item did not contain: there were two parsers for one
+syntax.** `Sentence::parse` was `alo-capability`'s own and `Template::written`
+is `alo-strings`', and they disagreed about `{{` — this crate refused a sentence
+with a literal brace in it, and the vocabulary accepted the same string as a
+phrase. Nothing had noticed because no verb had a brace in its sentence. That is
+the 9-series' failure mode one level down: two readings of one string that
+happen to agree. There is one parser now, and what is left in `sentence.rs` is
+the key plus the one rule that is about approval rather than about strings — a
+sentence made only of its arguments describes nothing, which `alo-strings` has
+no reason to care about and this crate must.
+
+**Three decisions the next iteration inherits.**
+
+- **`CallError::Unsayable` is gone**, and so is the word behind it. Nothing
+  renders a sentence when a call is made any more, so the variant described a
+  state that cannot happen — the unreachable branch deleted rather than
+  translated, which is 9f's and 9h's rule met a third time. `EVERY_WORD` is 32.
+- **`AnswerError::Lapsed` carries the call rather than its words**, boxed as
+  `Refused`'s is. That plus `CallError::Missing` carrying the purpose's key
+  closes `docs/quirks.md`'s *two gaps in a translated sentence arrive in the
+  language the code was written in*, which iteration 19 wrote down and named
+  9g as the fix for. The entry is kept, marked closed, because the shape of the
+  mistake is worth recognising again.
+- **A verb can be declared with a word nobody declared**, and no check at
+  declaration time can reach it: `Verb::checked` sees a `Word`, not a
+  vocabulary. It compiles, it translates, and it reaches a person as a key in
+  the place where the sentence they are approving belongs. So every crate that
+  declares verbs owes the test `alo-files` now has —
+  `everything_the_six_say_is_something_this_crate_declares` — and
+  `docs/contracts/agent-verbs.md` says so to whoever writes an adapter.
+
+**What was re-checked rather than assumed.** The `compile_fail` doctest on
+`Approved::redeem` was unmarked and compiled: it still fails with **E0382, use
+of moved value**, and with nothing else, so it is still a test of *one approval,
+one execution* and not of a signature that stopped compiling. Its passing twin
+had to gain a small vocabulary, because asserting on the sentence now means
+asking for it — which is the change, shown in the one place a reader of the
+public surface will meet it.
+
+**What the next iteration must know:**
+
+- **`Verb::purpose`, `Arg::purpose` and `Call::sentence` all take `&Strings`
+  now**, and `Arg`'s fields are private. Anything that wants the source English
+  — a test, a declaration check — asks `purpose_as_written()` or
+  `Sentence::as_written()`, and both say in their own documentation that they
+  are the translator's copy rather than the reader's.
+- **`alo-record` renders what ran, not only what did not.** `Entry::refused` has
+  taken the strings since 9e; `ran`, `never_asked` and `declined` do now. A
+  daemon writing a record hands it the vocabulary the person in front of the
+  machine reads, once, and what is written down is what they saw.
+- **The fixtures declare words.** `alo-capability`'s `test_calls.rs` and
+  `alo-record`'s each carry the two fixture verbs' seven words and a `Strings`
+  that holds them, because a fixture verb declared without its strings writes a
+  key into the record where the sentence belongs. `alo-capability`'s
+  `testing.rs` grew `speaking(&[Word])` and `translating(&[Word], …)` for it.
+- **Nothing here has been read by anybody.** There are still zero translations
+  in this repository; the German in the tests is the tests'. `ROADMAP.md`'s
+  *Language* line loses 9g from its *Owed* and gains the sentence to its
+  *Built*; *`alo-agentd`* and *every execution recorded* gained clauses and stay
+  unticked, because there is still no daemon and no shell.
+- **What is left is 4a**, and it is `alo-agentd`'s: where the record is written
+  and what prunes it. The daemon does not exist, so **every remaining item in
+  this queue belongs to a daemon, a Linux host or a certified machine.** The
+  next iteration should expect to find nothing ready and say so.

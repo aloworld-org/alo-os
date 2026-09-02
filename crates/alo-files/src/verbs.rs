@@ -45,9 +45,11 @@
 //! # Where the words come from
 //!
 //! Every sentence in this file is [`crate::words`]', not this file's. A verb's
-//! purpose, each argument's purpose and the sentence a person approves are all
-//! declared from the constants a translator is handed, so there is one English
-//! string per thing rather than two that drift.
+//! purpose, each argument's purpose and the sentence a person approves are the
+//! constants a translator is handed — since item 9g they are *passed* to
+//! `alo_capability::Verb::checked` rather than being read out of it, so a verb
+//! carries what names each of its strings and nothing anywhere holds a second
+//! copy.
 //!
 //! That is what makes the guarantee survive translation.
 //! `alo_capability::Verb::checked` refuses a sentence that does not name every
@@ -55,8 +57,8 @@
 //! one they did not agree to — and `alo_strings::Vocabulary::check` refuses a
 //! translation that dropped a gap the source has. The second rule is the first
 //! rule in another language, and it only holds because the string being
-//! translated is the string that was checked. [`crate::saying::sentence`] is
-//! where a person reads the result.
+//! translated is the string that was checked. `alo_capability::Call::sentence`
+//! is where a person reads the result.
 
 use alo_capability::{Arg, Effect, Requires, Takes, Verb, VerbError, Verbs, VerbsError};
 
@@ -95,21 +97,28 @@ pub enum Declaring {
 ///
 /// ```
 /// use alo_capability::Given;
-/// use alo_files::file_verbs;
+/// use alo_files::{file_verbs, file_words};
+/// use alo_strings::Strings;
 ///
 /// let verbs = file_verbs()?;
 /// // A call that does not form is refused with a sentence a person reads, so
 /// // `alo_capability::CallError` is not a `std::error::Error` — see that
-/// // crate's `words` module, and `crate::saying` for the words.
+/// // crate's `words` module.
 /// let call = verbs.call("move_file", &[
 ///     ("file", Given::text("/home/anna/Invoices/march.pdf")),
 ///     ("into", Given::text("/home/anna/Archive")),
 /// ]).expect("the six take these arguments");
 ///
+/// // The words come from the vocabulary this crate declares, in whichever
+/// // language the person reads. Nobody has translated it here, so it is the
+/// // English the verb was declared with — and the answer says so.
+/// let strings = Strings::of(file_words()?);
+/// let sentence = call.sentence(&strings);
 /// assert_eq!(
-///     call.sentence(),
+///     sentence.text(),
 ///     "move /home/anna/Invoices/march.pdf into /home/anna/Archive",
 /// );
+/// assert!(!sentence.is_a_bug());
 /// assert!(call.waits_for_approval());
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -159,15 +168,15 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
 fn list_folder() -> Result<Verb, VerbError> {
     Verb::checked(
         "list_folder",
-        words::LIST_FOLDER.says(),
+        words::LIST_FOLDER,
         Effect::Read,
         vec![Arg::taking(
             "folder",
-            words::LIST_FOLDER_FOLDER.says(),
+            words::LIST_FOLDER_FOLDER,
             Takes::Path,
         )],
         Requires::grants_over(["folder"]),
-        words::LIST_FOLDER_SENTENCE.says(),
+        words::LIST_FOLDER_SENTENCE,
     )
 }
 
@@ -175,15 +184,11 @@ fn list_folder() -> Result<Verb, VerbError> {
 fn read_file() -> Result<Verb, VerbError> {
     Verb::checked(
         "read_file",
-        words::READ_FILE.says(),
+        words::READ_FILE,
         Effect::Read,
-        vec![Arg::taking(
-            "file",
-            words::READ_FILE_FILE.says(),
-            Takes::Path,
-        )],
+        vec![Arg::taking("file", words::READ_FILE_FILE, Takes::Path)],
         Requires::grants_over(["file"]),
-        words::READ_FILE_SENTENCE.says(),
+        words::READ_FILE_SENTENCE,
     )
 }
 
@@ -195,23 +200,23 @@ fn read_file() -> Result<Verb, VerbError> {
 fn find_in_folder() -> Result<Verb, VerbError> {
     Verb::checked(
         "find_in_folder",
-        words::FIND_IN_FOLDER.says(),
+        words::FIND_IN_FOLDER,
         Effect::Read,
         vec![
-            Arg::taking("folder", words::FIND_IN_FOLDER_FOLDER.says(), Takes::Path),
+            Arg::taking("folder", words::FIND_IN_FOLDER_FOLDER, Takes::Path),
             Arg::taking(
                 "named",
-                words::FIND_IN_FOLDER_NAMED.says(),
+                words::FIND_IN_FOLDER_NAMED,
                 Takes::name(LONGEST_NAME),
             ),
             Arg::taking(
                 "most",
-                words::FIND_IN_FOLDER_MOST.says(),
+                words::FIND_IN_FOLDER_MOST,
                 Takes::count(1, MOST_FOUND),
             ),
         ],
         Requires::grants_over(["folder"]),
-        words::FIND_IN_FOLDER_SENTENCE.says(),
+        words::FIND_IN_FOLDER_SENTENCE,
     )
 }
 
@@ -219,18 +224,14 @@ fn find_in_folder() -> Result<Verb, VerbError> {
 fn rename_file() -> Result<Verb, VerbError> {
     Verb::checked(
         "rename_file",
-        words::RENAME_FILE.says(),
+        words::RENAME_FILE,
         Effect::Change,
         vec![
-            Arg::taking("file", words::RENAME_FILE_FILE.says(), Takes::Path),
-            Arg::taking(
-                "name",
-                words::RENAME_FILE_NAME.says(),
-                Takes::name(LONGEST_NAME),
-            ),
+            Arg::taking("file", words::RENAME_FILE_FILE, Takes::Path),
+            Arg::taking("name", words::RENAME_FILE_NAME, Takes::name(LONGEST_NAME)),
         ],
         Requires::grants_over(["file"]),
-        words::RENAME_FILE_SENTENCE.says(),
+        words::RENAME_FILE_SENTENCE,
     )
 }
 
@@ -238,14 +239,14 @@ fn rename_file() -> Result<Verb, VerbError> {
 fn move_file() -> Result<Verb, VerbError> {
     Verb::checked(
         "move_file",
-        words::MOVE_FILE.says(),
+        words::MOVE_FILE,
         Effect::Change,
         vec![
-            Arg::taking("file", words::MOVE_FILE_FILE.says(), Takes::Path),
-            Arg::taking("into", words::MOVE_FILE_INTO.says(), Takes::Path),
+            Arg::taking("file", words::MOVE_FILE_FILE, Takes::Path),
+            Arg::taking("into", words::MOVE_FILE_INTO, Takes::Path),
         ],
         Requires::grants_over(["file", "into"]),
-        words::MOVE_FILE_SENTENCE.says(),
+        words::MOVE_FILE_SENTENCE,
     )
 }
 
@@ -253,19 +254,19 @@ fn move_file() -> Result<Verb, VerbError> {
 fn archive_folder() -> Result<Verb, VerbError> {
     Verb::checked(
         "archive_folder",
-        words::ARCHIVE_FOLDER.says(),
+        words::ARCHIVE_FOLDER,
         Effect::Change,
         vec![
-            Arg::taking("folder", words::ARCHIVE_FOLDER_FOLDER.says(), Takes::Path),
-            Arg::taking("into", words::ARCHIVE_FOLDER_INTO.says(), Takes::Path),
+            Arg::taking("folder", words::ARCHIVE_FOLDER_FOLDER, Takes::Path),
+            Arg::taking("into", words::ARCHIVE_FOLDER_INTO, Takes::Path),
             Arg::taking(
                 "name",
-                words::ARCHIVE_FOLDER_NAME.says(),
+                words::ARCHIVE_FOLDER_NAME,
                 Takes::name(LONGEST_NAME),
             ),
         ],
         Requires::grants_over(["folder", "into"]),
-        words::ARCHIVE_FOLDER_SENTENCE.says(),
+        words::ARCHIVE_FOLDER_SENTENCE,
     )
 }
 
@@ -328,12 +329,12 @@ mod tests {
             };
             assert!(!over.is_empty(), "{} requires no grant", verb.name());
             for arg in verb.args() {
-                if arg.takes == Takes::Path {
+                if arg.takes() == &Takes::Path {
                     assert!(
-                        over.contains(&arg.name),
+                        over.contains(&arg.name().to_owned()),
                         "{} does not require a grant over {}",
                         verb.name(),
-                        arg.name
+                        arg.name()
                     );
                 }
             }
@@ -356,8 +357,9 @@ mod tests {
                 ],
             )
             .unwrap();
+        let strings = in_english();
         assert_eq!(
-            rename.sentence(),
+            rename.sentence(&strings).text(),
             "rename /home/anna/Invoices/march.pdf to march-2026.pdf"
         );
 
@@ -372,7 +374,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            archive.sentence(),
+            archive.sentence(&strings).text(),
             "make an archive of /home/anna/Invoices called invoices-2026.zip, in /home/anna/Archive"
         );
         assert_eq!(archive.asks().len(), 2, "the name is not a place");
@@ -388,7 +390,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            find.sentence(),
+            find.sentence(&strings).text(),
             "find up to 20 files in /home/anna/Invoices whose name contains march"
         );
     }
@@ -485,6 +487,47 @@ mod tests {
         assert!(clash.to_string().contains("move_file"), "{clash}");
         assert_eq!(mine.len(), 1);
         assert!(mine.of("list_folder").is_none());
+    }
+
+    /// **Every word the six are declared with is one this crate can say.**
+    ///
+    /// This is the risk item 9g introduced and the test that closes it. A verb
+    /// now carries the *key* of its purpose, of each argument's purpose and of
+    /// its sentence, and nothing about `Verb::checked` requires those keys to be
+    /// in anybody's vocabulary — a constant left out of [`crate::words`]'s list
+    /// would compile, declare and reach a person as a key with a marker on it,
+    /// in the place where the sentence they are approving should be.
+    #[test]
+    fn everything_the_six_say_is_something_this_crate_declares() {
+        let strings = in_english();
+        for verb in file_verbs().unwrap().all() {
+            let purpose = verb.purpose(&strings);
+            assert!(!purpose.is_a_bug(), "{}: {purpose}", verb.name());
+            for arg in verb.args() {
+                let said = arg.purpose(&strings);
+                assert!(!said.is_a_bug(), "{} {}: {said}", verb.name(), arg.name());
+            }
+        }
+
+        // And the sentence, which is the one a person agrees to: filled from a
+        // real call, with nothing left over and no marker on it.
+        let call = file_verbs()
+            .unwrap()
+            .call(
+                "move_file",
+                &[
+                    ("file", Given::text("/home/anna/Invoices/march.pdf")),
+                    ("into", Given::text("/home/anna/Archive")),
+                ],
+            )
+            .unwrap();
+        let said = call.sentence(&strings);
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.unfilled().is_empty(), "{:?}", said.unfilled());
+        assert_eq!(
+            said.text(),
+            "move /home/anna/Invoices/march.pdf into /home/anna/Archive"
+        );
     }
 
     /// Nothing arrives declared. A registry nobody gave these to has no file

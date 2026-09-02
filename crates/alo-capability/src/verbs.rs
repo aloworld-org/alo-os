@@ -111,19 +111,9 @@ impl Verbs {
 mod tests {
     use super::*;
     use crate::arg::{Arg, Takes};
+    use crate::test_calls::{LISTING_SENTENCE, list_folder, reading};
     use crate::verb::{Effect, Requires, Verb};
-
-    fn list_folder() -> Verb {
-        Verb::checked(
-            "list_folder",
-            "list what is in a folder",
-            Effect::Read,
-            vec![Arg::taking("folder", "the folder to list", Takes::Path)],
-            Requires::grants_over(["folder"]),
-            "list what is in {folder}",
-        )
-        .unwrap()
-    }
+    use alo_strings::Word;
 
     fn one_verb() -> Verbs {
         let mut verbs = Verbs::default();
@@ -171,11 +161,18 @@ mod tests {
         let mut verbs = one_verb();
         let shadow = Verb::checked(
             "list_folder",
-            "list what is in a folder, differently",
+            Word::saying(
+                "testing.verb.list-folder.other-purpose",
+                "list what is in a folder, differently",
+            ),
             Effect::Change,
-            vec![Arg::taking("folder", "the folder", Takes::Path)],
+            vec![Arg::taking(
+                "folder",
+                Word::saying("testing.verb.list-folder.other-folder", "the folder"),
+                Takes::Path,
+            )],
             Requires::grants_over(["folder"]),
-            "list {folder}",
+            Word::saying("testing.verb.list-folder.other-sentence", "list {folder}"),
         )
         .unwrap();
         assert_eq!(
@@ -196,7 +193,7 @@ mod tests {
         assert_eq!(listed.len(), 1);
         let first = listed.first().unwrap();
         assert_eq!(first.name(), "list_folder");
-        assert_eq!(first.purpose(), "list what is in a folder");
+        assert_eq!(first.purpose(&reading()).text(), "list what is in a folder");
         assert!(!first.effect().waits_for_approval());
     }
 
@@ -212,7 +209,11 @@ mod tests {
             )
             .unwrap();
         assert_eq!(call.verb(), "list_folder");
-        assert_eq!(call.sentence(), "list what is in /home/anna/Invoices");
+        assert_eq!(
+            call.sentence(&reading()).text(),
+            "list what is in /home/anna/Invoices"
+        );
+        assert_eq!(call.sentence_key(), &LISTING_SENTENCE.key());
         assert_eq!(call.asks().len(), 1);
         assert!(!call.waits_for_approval());
     }

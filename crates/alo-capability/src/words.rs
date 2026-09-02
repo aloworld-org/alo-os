@@ -321,26 +321,14 @@ pub const ARGUMENT_MISSING: Word = Word::saying(
     "{verb} needs {argument} — {purpose}",
 )
 .noting(
-    "{purpose} is what the verb says the argument is for. It arrives in the language the verb was \
-     declared in, which is English until the crate that declares the verb hands its own words \
-     over.",
+    "{purpose} is what the verb says the argument is for. It arrives already in the reader's \
+     language, looked up with this same vocabulary, so it is not to be repeated here.",
 );
 
 /// The same argument given twice.
 pub const SAME_ARGUMENT_TWICE: Word = Word::saying(
     "capability.call.same-argument-twice",
     "{argument} was given twice — a call gives each argument one value",
-);
-
-/// A call whose sentence could not be filled in.
-pub const UNSAYABLE: Word = Word::saying(
-    "capability.call.unsayable",
-    "{verb} could not be put into a sentence to approve, so nothing was done — this is a verb to \
-     declare again, not a call to make again",
-)
-.noting(
-    "This is read by whoever wrote the verb rather than by whoever asked for it: a verb that \
-     passed its own declaration checks cannot cause it.",
 );
 
 // ---------------------------------------------------------------------------
@@ -390,15 +378,15 @@ pub const LAPSED: Word = Word::saying(
 )
 .noting(
     "The quotation marks are part of the sentence: use the ones your language writes. {sentence} \
-     is the change that was proposed. It arrives in the language the verb was declared in, which \
-     is not yet the reader's — see docs/quirks.md.",
+     is the change that was proposed, and it arrives already in the reader's language, looked up \
+     with this same vocabulary.",
 );
 
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 33] = [
+pub const EVERY_WORD: [Word; 32] = [
     ANONYMOUS,
     NOTHING_NAMED,
     THE_WHOLE_MACHINE,
@@ -426,7 +414,6 @@ pub const EVERY_WORD: [Word; 33] = [
     NO_SUCH_ARGUMENT,
     ARGUMENT_MISSING,
     SAME_ARGUMENT_TWICE,
-    UNSAYABLE,
     READ_DOES_NOT_WAIT,
     PROPOSAL_NO_TIME,
     PROPOSAL_NO_END,

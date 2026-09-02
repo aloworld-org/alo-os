@@ -57,7 +57,7 @@
 //! model would come undone:
 //!
 //! 1. **is the call well-formed** — [`Verbs::call`], which validates every
-//!    argument at the boundary and generates the sentence;
+//!    argument at the boundary and carries what names the sentence;
 //! 2. **is it permitted** — [`Call::permitted_by`], against the grants;
 //! 3. **is it approved** — [`Approvals`], and only for a change.
 //!
@@ -67,7 +67,8 @@
 //! approval of the sentence describing it. The journey a change makes is four
 //! types long, and each of them can only be reached from the one before:
 //!
-//! 1. [`Call`] — validated, with its sentence generated from those arguments;
+//! 1. [`Call`] — validated, carrying what names its sentence and the values
+//!    that fill it, so the screen, the approval and the record read one thing;
 //! 2. [`Proposal`] — the question put to a person, which lapses. A read is
 //!    refused here, and so is a change the grants already do not permit;
 //! 3. [`Approved`] — the answer, worth exactly one execution. It is not
@@ -156,7 +157,7 @@ pub use grants::{GrantId, Grants, Held};
 pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};
 pub use refusing::NotGranted;
-pub use sentence::{Part, Sentence, SentenceError};
+pub use sentence::{Sentence, SentenceError};
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
 pub use words::{EVERY_WORD, WordsError, capability_words, declare_into};

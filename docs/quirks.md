@@ -241,28 +241,30 @@ errors a programmer handles.
 **Date:** 2026-09-02
 
 ### Two gaps in a translated sentence arrive in the language the code was written in
+**Closed by item 9g on 2026-09-03.** Kept because the shape of the mistake is
+worth recognising again, and because the fix cost a public surface change.
 **Version:** `alo-capability` at item 9e, observed 2026-09-02.
 **Behaviour:** a translated sentence is only as translated as what goes into
-its gaps, and two here come from somewhere that has not moved yet.
-`capability.call.missing` — *{verb} needs {argument} — {purpose}* — fills
+its gaps, and two here came from somewhere that had not moved.
+`capability.call.missing` — *{verb} needs {argument} — {purpose}* — filled
 `{purpose}` from what the verb was declared with, which is the source string
-rather than the reader's; the crate that declares the verb has the translation
-(`alo-files`' `saying::purpose_of` answers with it), and the crate that refuses
-the call does not, because a `Verb` carries the declaration and not a key.
-`capability.answer.lapsed` quotes the approval sentence, which
-`alo_capability::Call` renders at the moment the call is made and keeps as a
-string. So a German machine can read a German sentence with an English clause
-inside it, which is exactly the failure `alo-appearance` closed for colour
-names in item 9d.
-**Our response:** the note on each of those two words says so, in the words a
-translator needs — *it arrives in the language the verb was declared in* — so
-nobody spends an afternoon looking for the string that would fix it. The fix is
-item 9g in `docs/autonomy/QUEUE.md`: a `Call` carrying a key and a filling
-rather than a rendered sentence, which makes the approval, the record and the
-screen one thing. It is written down here rather than worked around because
-working around it would mean a second copy of a declaration, and one string
-rather than two that agree is the rule the whole 9-series is built on.
-**Date:** 2026-09-02
+rather than the reader's; the crate that declared the verb had the translation,
+and the crate that refuses the call did not, because a `Verb` carried the
+declaration and not a key. `capability.answer.lapsed` quotes the approval
+sentence, which `alo_capability::Call` rendered at the moment the call was made
+and kept as a string. So a German machine could read a German sentence with an
+English clause inside it, which is exactly the failure `alo-appearance` closed
+for colour names in item 9d.
+**Our response while it stood:** the note on each of those two words said so, in
+the words a translator needs, so nobody spent an afternoon looking for the
+string that would fix it. **What closed it:** item 9g. A verb is declared from
+`alo_strings::Word`s, a `Call` carries the key of its sentence and the values
+that fill it, and `CallError::Missing` carries the key of the argument's
+purpose — so both gaps are looked up with the same vocabulary as the sentence
+around them. It was never worked around, because working around it would have
+meant a second copy of a declaration, and one string rather than two that agree
+is the rule the whole 9-series is built on.
+**Date:** 2026-09-02, closed 2026-09-03
 
 ### A translated error cannot be a `std::error::Error`
 **Version:** Rust 1.x, `std::error::Error: Debug + Display`, met again at item

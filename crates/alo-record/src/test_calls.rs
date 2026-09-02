@@ -28,6 +28,7 @@ use alo_capability::{
 };
 use alo_egress::{Departing, Destination, EgressPolicy, Indicator, Leaving, NotPermitted, Why};
 use alo_models::Region;
+use alo_strings::Word;
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 pub(crate) fn noon() -> SystemTime {
@@ -44,18 +45,67 @@ pub(crate) fn files() -> Grantee {
     Grantee::named("@files")
 }
 
+/// What the change these tests follow does.
+pub(crate) const MOVING: Word = Word::saying(
+    "testing.verb.move-file.purpose",
+    "move a file into a folder",
+);
+/// **The sentence a person approves before that file is moved**, which is the
+/// one the record keeps.
+pub(crate) const MOVING_SENTENCE: Word =
+    Word::saying("testing.verb.move-file.sentence", "move {file} into {into}");
+/// What it moves.
+pub(crate) const MOVING_FILE: Word =
+    Word::saying("testing.verb.move-file.argument.file", "the file to move");
+/// Where it moves it.
+pub(crate) const MOVING_INTO: Word = Word::saying(
+    "testing.verb.move-file.argument.into",
+    "the folder it goes into",
+);
+
+/// What the read these tests follow does.
+pub(crate) const LISTING: Word = Word::saying(
+    "testing.verb.list-folder.purpose",
+    "list what is in a folder",
+);
+/// What a person is shown while it happens.
+pub(crate) const LISTING_SENTENCE: Word = Word::saying(
+    "testing.verb.list-folder.sentence",
+    "list what is in {folder}",
+);
+/// What it lists.
+pub(crate) const LISTING_FOLDER: Word = Word::saying(
+    "testing.verb.list-folder.argument.folder",
+    "the folder to list",
+);
+
+/// Everything the two fixture verbs can say.
+///
+/// Since item 9g a verb is declared from words and a record renders its
+/// sentence, so a fixture that declared a verb without declaring its strings
+/// would write the key into the record where the sentence belongs.
+pub(crate) const THE_WORDS: [Word; 7] = [
+    MOVING,
+    MOVING_SENTENCE,
+    MOVING_FILE,
+    MOVING_INTO,
+    LISTING,
+    LISTING_SENTENCE,
+    LISTING_FOLDER,
+];
+
 /// A change: moving one file into one folder, so two things must be granted.
 fn move_file() -> Verb {
     Verb::checked(
         "move_file",
-        "move a file into a folder",
+        MOVING,
         Effect::Change,
         vec![
-            Arg::taking("file", "the file to move", Takes::Path),
-            Arg::taking("into", "the folder it goes into", Takes::Path),
+            Arg::taking("file", MOVING_FILE, Takes::Path),
+            Arg::taking("into", MOVING_INTO, Takes::Path),
         ],
         Requires::grants_over(["file", "into"]),
-        "move {file} into {into}",
+        MOVING_SENTENCE,
     )
     .unwrap()
 }
@@ -64,11 +114,11 @@ fn move_file() -> Verb {
 fn list_folder() -> Verb {
     Verb::checked(
         "list_folder",
-        "list what is in a folder",
+        LISTING,
         Effect::Read,
-        vec![Arg::taking("folder", "the folder to list", Takes::Path)],
+        vec![Arg::taking("folder", LISTING_FOLDER, Takes::Path)],
         Requires::grants_over(["folder"]),
-        "list what is in {folder}",
+        LISTING_SENTENCE,
     )
     .unwrap()
 }

@@ -22,12 +22,17 @@
 //! a line here, and neither of those is the other.
 //!
 //! **The six verbs' words are declared from here, not copied from here.**
-//! [`crate::verbs`] builds each declaration out of these constants, so the
-//! English a person approves and the English a translator is given are the same
-//! string rather than two strings a test hopes are equal. That matters more
-//! than it looks: `alo_capability::Verb::checked` refuses a sentence that does
-//! not name every argument, and the guarantee only survives translation if the
-//! thing being translated is the sentence that was checked.
+//! [`crate::verbs`] hands each of these constants to
+//! `alo_capability::Verb::checked`, so the English a person approves and the
+//! English a translator is given are the same string rather than two strings a
+//! test hopes are equal. That matters more than it looks: `Verb::checked`
+//! refuses a sentence that does not name every argument, and the guarantee only
+//! survives translation if the thing being translated is the sentence that was
+//! checked.
+//!
+//! Since item 9g a verb carries the *word* rather than its English, so what a
+//! person reads is `alo_capability::Call::sentence` looking one of these up.
+//! There is no second list here that says the same thing a different way.
 //!
 //! # A note is part of the string
 //!
@@ -368,83 +373,6 @@ pub const ARCHIVE_FOLDER_NAME: Word = Word::saying(
 )
 .noting("\".zip\" is the ending the name has to have, and is not translated.");
 
-/// What one of the six says: what it does, what a person reads when it runs,
-/// and what each of its arguments is for.
-///
-/// This is the same list [`crate::verbs`] declares, said rather than declared.
-/// Both are built from the constants above, so there is one English sentence
-/// per thing rather than two that a test has to keep equal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Spoken {
-    /// The verb's name, which is never translated.
-    pub verb: &'static str,
-    /// What it does, in the words a person would use.
-    pub purpose: Word,
-    /// What a person reads when it runs — and approves, if it changes anything.
-    pub sentence: Word,
-    /// What each argument is for, by the argument's name.
-    pub arguments: &'static [(&'static str, Word)],
-}
-
-impl Spoken {
-    /// What this argument is for, or nothing if the verb does not take it.
-    #[must_use]
-    pub fn argument(&self, named: &str) -> Option<Word> {
-        self.arguments
-            .iter()
-            .find(|(name, _)| *name == named)
-            .map(|(_, word)| *word)
-    }
-}
-
-/// The six, and every word each of them has.
-pub const THE_SIX: [Spoken; 6] = [
-    Spoken {
-        verb: "list_folder",
-        purpose: LIST_FOLDER,
-        sentence: LIST_FOLDER_SENTENCE,
-        arguments: &[("folder", LIST_FOLDER_FOLDER)],
-    },
-    Spoken {
-        verb: "read_file",
-        purpose: READ_FILE,
-        sentence: READ_FILE_SENTENCE,
-        arguments: &[("file", READ_FILE_FILE)],
-    },
-    Spoken {
-        verb: "find_in_folder",
-        purpose: FIND_IN_FOLDER,
-        sentence: FIND_IN_FOLDER_SENTENCE,
-        arguments: &[
-            ("folder", FIND_IN_FOLDER_FOLDER),
-            ("named", FIND_IN_FOLDER_NAMED),
-            ("most", FIND_IN_FOLDER_MOST),
-        ],
-    },
-    Spoken {
-        verb: "rename_file",
-        purpose: RENAME_FILE,
-        sentence: RENAME_FILE_SENTENCE,
-        arguments: &[("file", RENAME_FILE_FILE), ("name", RENAME_FILE_NAME)],
-    },
-    Spoken {
-        verb: "move_file",
-        purpose: MOVE_FILE,
-        sentence: MOVE_FILE_SENTENCE,
-        arguments: &[("file", MOVE_FILE_FILE), ("into", MOVE_FILE_INTO)],
-    },
-    Spoken {
-        verb: "archive_folder",
-        purpose: ARCHIVE_FOLDER,
-        sentence: ARCHIVE_FOLDER_SENTENCE,
-        arguments: &[
-            ("folder", ARCHIVE_FOLDER_FOLDER),
-            ("into", ARCHIVE_FOLDER_INTO),
-            ("name", ARCHIVE_FOLDER_NAME),
-        ],
-    },
-];
-
 /// Every plain string this crate can say, in the order a translator meets them:
 /// what the machine could not do, what could not be followed, what a refusal
 /// says, and then the six verbs.
@@ -608,25 +536,104 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
-    /// **The words the six verbs are declared with are these words.** Not
-    /// copies of them: [`crate::verbs`] reads these constants, so a sentence
-    /// improved here is improved in the declaration, and the sentence
-    /// `alo_capability` checked is the sentence a translator is given.
+    /// **The words the six verbs are declared with are these words**, and each
+    /// of them is the one that belongs to that verb.
+    ///
+    /// `Verb::checked` cannot check this: any word is a word. What it would
+    /// look like to get wrong is `read_file` declared with `list_folder`'s
+    /// sentence — a declaration that compiles, translates and tells somebody
+    /// the wrong thing about what is happening to their disk. So the table is
+    /// written out here and walked.
     #[test]
-    fn the_six_say_what_they_are_declared_with() {
+    fn each_of_the_six_is_declared_with_its_own_words() {
+        /// One row of the table below: a verb, and the words it is meant to
+        /// have been declared with.
+        struct Declared {
+            /// The verb's name.
+            named: &'static str,
+            /// What it does.
+            purpose: Word,
+            /// What a person reads when it runs.
+            sentence: Word,
+            /// What each of its arguments is for, by the argument's name.
+            arguments: &'static [(&'static str, Word)],
+        }
+
+        let six = [
+            Declared {
+                named: "list_folder",
+                purpose: LIST_FOLDER,
+                sentence: LIST_FOLDER_SENTENCE,
+                arguments: &[("folder", LIST_FOLDER_FOLDER)],
+            },
+            Declared {
+                named: "read_file",
+                purpose: READ_FILE,
+                sentence: READ_FILE_SENTENCE,
+                arguments: &[("file", READ_FILE_FILE)],
+            },
+            Declared {
+                named: "find_in_folder",
+                purpose: FIND_IN_FOLDER,
+                sentence: FIND_IN_FOLDER_SENTENCE,
+                arguments: &[
+                    ("folder", FIND_IN_FOLDER_FOLDER),
+                    ("named", FIND_IN_FOLDER_NAMED),
+                    ("most", FIND_IN_FOLDER_MOST),
+                ],
+            },
+            Declared {
+                named: "rename_file",
+                purpose: RENAME_FILE,
+                sentence: RENAME_FILE_SENTENCE,
+                arguments: &[("file", RENAME_FILE_FILE), ("name", RENAME_FILE_NAME)],
+            },
+            Declared {
+                named: "move_file",
+                purpose: MOVE_FILE,
+                sentence: MOVE_FILE_SENTENCE,
+                arguments: &[("file", MOVE_FILE_FILE), ("into", MOVE_FILE_INTO)],
+            },
+            Declared {
+                named: "archive_folder",
+                purpose: ARCHIVE_FOLDER,
+                sentence: ARCHIVE_FOLDER_SENTENCE,
+                arguments: &[
+                    ("folder", ARCHIVE_FOLDER_FOLDER),
+                    ("into", ARCHIVE_FOLDER_INTO),
+                    ("name", ARCHIVE_FOLDER_NAME),
+                ],
+            },
+        ];
         let verbs = crate::verbs::file_verbs().unwrap();
-        assert_eq!(THE_SIX.len(), verbs.len());
-        for spoken in THE_SIX {
-            let verb = verbs.of(spoken.verb).unwrap();
-            assert_eq!(verb.purpose(), spoken.purpose.says(), "{}", spoken.verb);
-            assert_eq!(verb.args().len(), spoken.arguments.len(), "{}", spoken.verb);
+        assert_eq!(six.len(), verbs.len());
+        let strings = crate::testing::in_english();
+        for declared in six {
+            let named = declared.named;
+            let verb = verbs.of(named).unwrap();
+            assert_eq!(
+                verb.purpose(&strings).text(),
+                declared.purpose.says(),
+                "{named}"
+            );
+            assert_eq!(verb.sentence().key(), &declared.sentence.key(), "{named}");
+            assert_eq!(
+                verb.sentence().as_written(),
+                declared.sentence.says(),
+                "{named}"
+            );
+            assert_eq!(verb.args().len(), declared.arguments.len(), "{named}");
             for arg in verb.args() {
+                let word = declared
+                    .arguments
+                    .iter()
+                    .find(|(name, _)| *name == arg.name())
+                    .map(|(_, word)| *word);
                 assert_eq!(
-                    spoken.argument(&arg.name).map(|word| word.says()),
-                    Some(arg.purpose.as_str()),
-                    "{} {}",
-                    spoken.verb,
-                    arg.name
+                    word.map(|word| word.says()),
+                    Some(arg.purpose(&strings).text()),
+                    "{named} {}",
+                    arg.name()
                 );
             }
         }

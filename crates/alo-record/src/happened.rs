@@ -331,11 +331,12 @@ impl Happened {
 mod tests {
     use super::*;
     use crate::test_calls::{archiving_march, listing_invoices, to_alo, to_the_studio};
+    use crate::testing::in_english;
 
     fn ran() -> Happened {
         Happened::Ran {
             agent: Line::of("@files"),
-            what: What::of(&archiving_march()),
+            what: What::of(&archiving_march(), &in_english()),
             from_approval: Some(3),
             against: vec![0, 1],
         }
@@ -364,7 +365,7 @@ mod tests {
     fn a_read_ran_from_no_approval_and_says_so() {
         let happened = Happened::Ran {
             agent: Line::of("@files"),
-            what: What::of(&listing_invoices()),
+            what: What::of(&listing_invoices(), &in_english()),
             from_approval: None,
             against: vec![0],
         };
@@ -398,7 +399,7 @@ mod tests {
     fn both_kinds_of_refusal_are_refusals() {
         let stopped = Happened::Stopped {
             agent: Line::of("@files"),
-            what: What::of(&archiving_march()),
+            what: What::of(&archiving_march(), &in_english()),
             how: Stopped::ByThePerson,
         };
         assert!(stopped.was_stopped());
@@ -495,7 +496,7 @@ mod tests {
     fn why_something_was_stopped_is_one_question_across_all_three_refusals() {
         let at_the_moment = Happened::Stopped {
             agent: Line::of("@files"),
-            what: What::of(&archiving_march()),
+            what: What::of(&archiving_march(), &in_english()),
             how: Stopped::AtTheMoment(Line::of("the grant has expired")),
         };
         assert!(
@@ -515,7 +516,7 @@ mod tests {
         // was not stopped has nothing to explain.
         let declined = Happened::Stopped {
             agent: Line::of("@files"),
-            what: What::of(&archiving_march()),
+            what: What::of(&archiving_march(), &in_english()),
             how: Stopped::ByThePerson,
         };
         assert_eq!(declined.why_stopped(), None);
@@ -530,7 +531,7 @@ mod tests {
             ran(),
             Happened::Stopped {
                 agent: Line::of("@files"),
-                what: What::of(&archiving_march()),
+                what: What::of(&archiving_march(), &in_english()),
                 how: Stopped::AtTheMoment(Line::of("the grant has expired")),
             },
             Happened::TurnedAway {

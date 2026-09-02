@@ -58,6 +58,13 @@ crate that knows how things are said, never the reverse. Every crate in this
 workspace has now crossed it, so *hardcoded English is a bug* is a rule with no
 exceptions left in it rather than a rule with a list.
 
+Since **item 9g** the edge is load-bearing rather than incidental: a verb is
+*declared* from `alo_strings::Word`s, so `alo-capability` cannot express a
+capability whose words are not translatable, and `alo-record` renders the
+sentence a person approved rather than copying one. `alo-files` lost a file to
+it — `saying.rs` — which is what it looks like when two things that said the
+same thing become one.
+
 | | |
 |---|---|
 | `catalogue.rs` | What alo OS offers, every licence stated, commercial use answered outright; the CPU costs and defaults from ADR 0007 |
@@ -481,7 +488,8 @@ deny list.** Two patterns later items must follow:
   includes words a person approves. Two new files in `crates/alo-files`:
   `words.rs` (every string this crate can say, the English beside each key, and
   the notes a translator needs) and `saying.rs` (what the six verbs are and what
-  a person approves, in the language they read). `Failed`, `RealError`,
+  a person approves, in the language they read — **gone at 9g**, which put those
+  three answers on the verb itself). `Failed`, `RealError`,
   `Touching`'s two refusals and `Did`'s all moved onto it; `verbs.rs` now
   declares the six **from** those constants. 41 phrases and one countable
   string, 14 new unit tests and 5 new integration tests; `Key::unchecked` is new
@@ -708,24 +716,50 @@ deny list.** Two patterns later items must follow:
   that leaves: both name it, both name the region, and both say *has not said
   where it runs* when nobody has.
 
-- [ ] **9g. The sentence a person approves** — the question 9b left, 9c and 9d
-  did not touch, and 9e answered without moving. `Call` renders its sentence
-  when the call is made and keeps the string, so what a shell shows (`alo-files`
-  looks the key up) and what the approval and the record keep are two renderings
-  of one string. **9e's answer is that they should be one**, and the argument is
-  the one 9e made about refusals: a value carries what it is, and words are
-  asked for where somebody reads them, so two accounts of one moment cannot
-  drift. What that means here is a `Call` carrying a key and a filling rather
-  than a rendered sentence, `Verb::checked` taking the key of its sentence
-  (`alo-files` already declares its six *from* the constants, so it has one),
-  and the record keeping the rendering made at the moment the person read it.
+- [x] **9g. The sentence a person approves** — the question 9b left, 9c and 9d
+  did not touch, and 9e answered without moving. A **public surface change**
+  reaching `alo-capability`, `alo-files` and `alo-record` at once.
+  `alo-capability`: `sentence.rs` rewritten around `alo_strings::Template`,
+  `Arg` and `Verb` declared from `Word`s, `Call` carrying a `Key` and answering
+  `sentence(&Strings)`, and `Proposal`, `Approved` and `Authorised` with it.
+  `alo-files`: the six declared from the constants rather than out of them, and
+  `saying.rs` gone. `alo-record`: `What::of` and four of `Entry`'s constructors
+  take the strings. 108 unit tests in `alo-capability` (was 107), 7 integration
+  tests (was 6); 707 tests and 20 doctests across the workspace, clippy clean.
 
-  It is its own item because it is a **public surface change** — third parties
-  declare verbs against `docs/contracts/agent-verbs.md` — and because it
-  reaches `alo-capability`, `alo-files` and `alo-record` at once. It is not a
-  rename: `alo-record`'s `Line` is on the other side of it, and what a record
-  keeps about a moment is what has to be decided rather than how a string is
-  spelled.
+  **The answer was 9e's, applied to the sentence, and the shape it took is a
+  verb declared from the words rather than beside them.** `Verb::checked` and
+  `Arg::taking` take an `alo_strings::Word` — a key, the English, the note —
+  and there is no way to declare one from a bare string. That makes the
+  guarantee structural rather than a convention `alo-files` happened to keep:
+  the string a translator is handed is *necessarily* the string the declaration
+  was checked against, so *a sentence names every argument* and *a translation
+  may not drop a gap* are the same rule about the same string, in every crate
+  that will ever declare a verb.
+
+  **What the item did not say, and is the reason it was worth doing carefully:
+  there were two parsers for one syntax.** `Sentence::parse` was this crate's
+  own and `alo_strings::Template` is the vocabulary's, and they disagreed about
+  `{{` — so a sentence with a literal brace in it was a declaration
+  `alo-capability` refused and a phrase `alo-strings` accepted, which is the
+  9-series' whole failure mode one level down. There is one parser now, and
+  `sentence.rs` is what is left of the old one: the key, and the one rule that
+  is about approval rather than about strings — a sentence made only of its
+  arguments describes nothing.
+
+  Three decisions the next items inherit. **`CallError::Unsayable` is gone**,
+  because nothing renders a sentence at the moment a call is made any more and
+  the variant could not happen — the unreachable branch deleted rather than
+  translated, as in 9f and 9h. **`AnswerError::Lapsed` carries the call**, not a
+  rendering of it, so the question quoted back to somebody is rendered with the
+  vocabulary of the refusal around it; `docs/quirks.md`'s *two gaps in a
+  translated sentence* is closed by that and by `CallError::Missing` carrying
+  the purpose's key. **A word a verb is declared with can be one nobody
+  declared**, which no check at declaration time can reach — it compiles and
+  reaches a person as a key where the sentence they are approving belongs — so
+  every crate that declares verbs owes the test `alo-files` now has
+  (`everything_the_six_say_is_something_this_crate_declares`), and the contract
+  says so.
 
 - [x] **10. Test a provider before saving it** — implements `docs/features.md`'s
   v0.5 *test a provider before saving it* and closes the loose end in

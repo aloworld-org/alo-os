@@ -23,7 +23,7 @@
 
 use alo_capability::Given;
 use alo_files::words::{self, EVERY_WORD, TOO_BIG};
-use alo_files::{Failed, file_verbs, file_words, sentence};
+use alo_files::{Failed, file_verbs, file_words};
 use alo_strings::{
     Counting, Filling, Form, Key, Language, Showing, Strings, Translation, Vocabulary,
 };
@@ -181,7 +181,7 @@ fn an_approval_sentence_survives_translation_with_every_argument_in_it() {
             ],
         )
         .unwrap();
-    let said = sentence(&call, &strings).unwrap();
+    let said = call.sentence(&strings);
     assert_eq!(
         said.text(),
         "ein Archiv von /home/anna/Invoices namens invoices-2026.zip in /home/anna/Archive anlegen"

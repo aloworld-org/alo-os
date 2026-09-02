@@ -128,13 +128,14 @@ impl Proposal {
         })
     }
 
-    /// What the person is being asked to approve, in words.
+    /// What the person is being asked to approve, in the language they read.
     ///
-    /// Generated from the validated arguments when the call was made, so this
-    /// is the same sentence however many times it is read.
+    /// Filled from the validated arguments the call was made with, so this is
+    /// the same sentence however many times it is read — and the same value
+    /// however many languages read it.
     #[must_use]
-    pub fn sentence(&self) -> &str {
-        self.call.sentence()
+    pub fn sentence(&self, strings: &Strings) -> Said {
+        self.call.sentence(strings)
     }
 
     /// The verb that would run.
@@ -195,7 +196,9 @@ impl Proposal {
 )]
 mod tests {
     use super::*;
-    use crate::test_calls::{archiving_march, files, granting, hour, listing_invoices, noon};
+    use crate::test_calls::{
+        archiving_march, files, granting, hour, listing_invoices, noon, reading,
+    };
     use crate::testing::in_english;
 
     /// A read never becomes a question. It answers inside the turn, and asking
@@ -269,7 +272,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            proposal.sentence(),
+            proposal.sentence(&reading()).text(),
             "move /home/anna/Invoices/march.pdf into /home/anna/Archive"
         );
         assert_eq!(proposal.verb(), "move_file");
@@ -283,7 +286,10 @@ mod tests {
     }
 
     /// A declined question is recorded, so a proposal has to survive being
-    /// written down — with the sentence somebody was actually shown.
+    /// written down — with what names the sentence somebody was shown, and the
+    /// values it was filled from. The words are looked up wherever it is read,
+    /// which is what stops a written-down question being a question in a
+    /// language nobody chose.
     #[test]
     fn a_proposal_can_be_written_down() {
         let proposal = Proposal::checked(
@@ -298,9 +304,10 @@ mod tests {
         assert!(written.contains("move_file"), "{written}");
         assert!(written.contains("@files"), "{written}");
         assert!(
-            written.contains("move /home/anna/Invoices/march.pdf into"),
+            written.contains("testing.verb.move-file.sentence"),
             "{written}"
         );
+        assert!(written.contains("march.pdf"), "{written}");
     }
 
     /// The errors say what to do, not what went wrong.

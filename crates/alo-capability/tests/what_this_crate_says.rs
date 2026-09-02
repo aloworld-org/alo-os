@@ -19,10 +19,41 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use alo_capability::{
-    Arg, ArgError, Ask, Authorised, Call, Effect, Given, Grant, GrantError, Grantee, Grants,
-    NotGranted, Proposal, Reach, Requires, Takes, Verb, capability_words, declare_into, words,
+    AnswerError, Approvals, Arg, ArgError, Ask, Authorised, Call, CallError, Effect, Given, Grant,
+    GrantError, Grantee, Grants, NotGranted, Proposal, Reach, Requires, Takes, Verb,
+    capability_words, declare_into, words,
 };
-use alo_strings::{Filling, Key, Language, Strings, Translation, Vocabulary};
+use alo_strings::{Key, Language, Strings, Translation, Vocabulary, Word};
+
+/// What the verb these tests are about does.
+const MOVING: Word = Word::saying("example.move-file.purpose", "move a file into a folder");
+/// **The sentence a person approves before that file is moved.**
+const MOVING_SENTENCE: Word = Word::saying("example.move-file.sentence", "move {file} into {into}");
+/// What it moves.
+const MOVING_FILE: Word = Word::saying("example.move-file.file", "the file to move");
+/// Where it moves it.
+const MOVING_INTO: Word = Word::saying("example.move-file.into", "the folder it goes into");
+
+/// What the read these tests are about does.
+const LISTING: Word = Word::saying("example.list-folder.purpose", "list what is in a folder");
+/// What a person is shown while it happens.
+const LISTING_SENTENCE: Word =
+    Word::saying("example.list-folder.sentence", "list what is in {folder}");
+/// What it lists.
+const LISTING_FOLDER: Word = Word::saying("example.list-folder.folder", "the folder to list");
+
+/// Everything the two verbs in this file can say. Since item 9g a verb is
+/// declared from words, so a test that declares a verb declares these too — the
+/// arrangement a shell has, where one vocabulary holds every crate's strings.
+const THE_VERBS_WORDS: [Word; 7] = [
+    MOVING,
+    MOVING_SENTENCE,
+    MOVING_FILE,
+    MOVING_INTO,
+    LISTING,
+    LISTING_SENTENCE,
+    LISTING_FOLDER,
+];
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 fn noon() -> SystemTime {
@@ -40,8 +71,16 @@ fn german() -> Language {
 }
 
 /// The same, with these said in German and German preferred.
-fn speaking_german(said: &[(alo_strings::Word, &str)]) -> Strings {
-    let vocabulary = capability_words().unwrap();
+fn speaking_german(said: &[(Word, &str)]) -> Strings {
+    german_saying(&[], said)
+}
+
+/// The same again, with a test's own words in the vocabulary as well.
+fn german_saying(extra: &[Word], said: &[(Word, &str)]) -> Strings {
+    let mut vocabulary = capability_words().unwrap();
+    for word in extra {
+        vocabulary.says(word.phrase().unwrap()).unwrap();
+    }
     let mut translation = Translation::into_language(german());
     for (word, says) in said {
         translation = translation.says(word.key(), *says);
@@ -57,14 +96,27 @@ fn speaking_german(said: &[(alo_strings::Word, &str)]) -> Strings {
 fn move_file() -> Verb {
     Verb::checked(
         "move_file",
-        "move a file into a folder",
+        MOVING,
         Effect::Change,
         vec![
-            Arg::taking("file", "the file to move", Takes::Path),
-            Arg::taking("into", "the folder it goes into", Takes::Path),
+            Arg::taking("file", MOVING_FILE, Takes::Path),
+            Arg::taking("into", MOVING_INTO, Takes::Path),
         ],
         Requires::grants_over(["file", "into"]),
-        "move {file} into {into}",
+        MOVING_SENTENCE,
+    )
+    .unwrap()
+}
+
+/// The read these tests are about.
+fn list_folder() -> Verb {
+    Verb::checked(
+        "list_folder",
+        LISTING,
+        Effect::Read,
+        vec![Arg::taking("folder", LISTING_FOLDER, Takes::Path)],
+        Requires::grants_over(["folder"]),
+        LISTING_SENTENCE,
     )
     .unwrap()
 }
@@ -151,7 +203,7 @@ fn a_person_is_told_no_in_the_language_they_read() {
     assert_eq!(grant, GrantError::TheWholeMachine);
     assert!(grant.said(&strings).text().starts_with("es gibt keine"));
 
-    let argument = Arg::taking("folder", "the folder to list", Takes::Path)
+    let argument = Arg::taking("folder", LISTING_FOLDER, Takes::Path)
         .validate(&Given::text("Invoices"))
         .unwrap_err();
     assert_eq!(
@@ -183,15 +235,7 @@ fn a_person_is_told_no_in_the_language_they_read() {
     assert!(said.text().contains("@files"), "{said}");
 
     let read = Call::of(
-        &Verb::checked(
-            "list_folder",
-            "list what is in a folder",
-            Effect::Read,
-            vec![Arg::taking("folder", "the folder to list", Takes::Path)],
-            Requires::grants_over(["folder"]),
-            "list what is in {folder}",
-        )
-        .unwrap(),
+        &list_folder(),
         &[("folder", Given::text("/home/anna/Invoices"))],
     )
     .unwrap();
@@ -295,29 +339,95 @@ fn a_translation_that_drops_what_was_refused_is_refused() {
     assert!(wrongs.to_string().contains("wanted"), "{wrongs}");
 }
 
-/// The one gap that arrives from somewhere else arrives filled, and the
-/// sentence around it is still the reader's.
+/// **The sentence a person approves is one string, read once** — the whole of
+/// item 9g, from outside the crate.
 ///
-/// `{sentence}` in *that was proposed too long ago* is the approval sentence,
-/// which `alo_capability::Call` renders when the call is made — in the source
-/// language, until item 9f moves it. This test is what that owes: the words
-/// around it move now, and the quotation marks are the translator's.
+/// A change is proposed, nobody answers it in time, and the refusal quotes the
+/// question. Every word of what comes back is German: the refusal, the sentence
+/// inside it, and the quotation marks around that. Before 9g the sentence was
+/// rendered when the call was made and kept as a string, so this same refusal
+/// read as German with an English question inside it, and `docs/quirks.md`
+/// recorded that as something owed.
 #[test]
-fn the_sentence_a_question_quotes_is_the_one_that_was_proposed() {
-    let strings = speaking_german(&[(
-        words::LAPSED,
-        "„{sentence}“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, wenn es noch \
-         gewünscht ist",
-    )]);
-    let said = strings.say(
-        &words::LAPSED.key(),
-        &Filling::of("sentence", moving().sentence().to_owned()),
+fn the_question_a_refusal_quotes_is_read_in_the_readers_own_language() {
+    let strings = german_saying(
+        &THE_VERBS_WORDS,
+        &[
+            (MOVING_SENTENCE, "{file} nach {into} verschieben"),
+            (
+                words::LAPSED,
+                "„{sentence}“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, wenn es \
+                 noch gewünscht ist",
+            ),
+        ],
     );
+
+    let mut grants = granting("/home/anna/Invoices");
+    grants.grant(
+        Grant::checked(
+            "@files",
+            Reach::Folder(PathBuf::from("/home/anna/Archive")),
+            noon(),
+            hour(),
+        )
+        .unwrap(),
+    );
+    let mut approvals = Approvals::default();
+    let id = approvals.propose(
+        Proposal::checked(
+            &moving(),
+            &Grantee::named("@files"),
+            &grants,
+            noon(),
+            hour(),
+        )
+        .unwrap(),
+    );
+    let lapsed = approvals.approve(id, noon() + hour()).unwrap_err();
+    assert!(matches!(lapsed, AnswerError::Lapsed { .. }), "{lapsed:?}");
+
+    let said = lapsed.said(&strings);
     assert!(said.is_translated());
     assert!(said.text().starts_with('„'), "{said}");
-    assert!(
-        said.text()
-            .contains("move /home/anna/Invoices/march.pdf into /home/anna/Archive"),
-        "{said}"
+    assert_eq!(
+        said.text(),
+        "„/home/anna/Invoices/march.pdf nach /home/anna/Archive verschieben“ wurde vor zu langer \
+         Zeit vorgeschlagen — fragen Sie erneut, wenn es noch gewünscht ist"
     );
+}
+
+/// **What an argument is for is the reader's too**, which is the other half of
+/// item 9g: a call that arrives without one is told what the verb wanted it
+/// for, and that clause used to be the language the verb happened to be
+/// declared in.
+#[test]
+fn what_an_argument_is_for_is_read_in_the_readers_own_language() {
+    let strings = german_saying(
+        &THE_VERBS_WORDS,
+        &[
+            (MOVING_INTO, "der Ordner, in den sie kommt"),
+            (
+                words::ARGUMENT_MISSING,
+                "{verb} braucht {argument} — {purpose}",
+            ),
+        ],
+    );
+    let missing = Call::of(
+        &move_file(),
+        &[("file", Given::text("/home/anna/Invoices/march.pdf"))],
+    )
+    .unwrap_err();
+    assert!(matches!(missing, CallError::Missing { .. }), "{missing:?}");
+    assert_eq!(
+        missing.said(&strings).text(),
+        "move_file braucht into — der Ordner, in den sie kommt"
+    );
+
+    // And the verb's own purpose comes out of the same vocabulary, so a list of
+    // capabilities is not half in one language.
+    assert_eq!(
+        move_file().purpose(&strings).text(),
+        "move a file into a folder"
+    );
+    assert!(!move_file().purpose(&strings).is_translated());
 }

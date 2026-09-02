@@ -85,13 +85,13 @@ mod tests {
         let grants = granting_both();
 
         let read = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
-        record.keep(Entry::ran(&read));
+        record.keep(Entry::ran(&read, &in_english()));
 
         let mut approvals = Approvals::default();
         let id = approvals.propose(proposing(&archiving_march(), &grants));
         let approved = approvals.approve(id, noon()).unwrap();
         let running = approved.redeem(&grants, noon()).unwrap();
-        record.keep(Entry::ran(&running));
+        record.keep(Entry::ran(&running, &in_english()));
 
         let refused = Authorised::read(
             &listing_invoices(),

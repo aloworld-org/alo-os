@@ -78,15 +78,20 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       needing a vocabulary to do it · Owed: the indicator itself, which is a
       compositor surface
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
-      · Built: `alo-capability` (the verbs, the grants, the approvals, and every
-      refusal of theirs said in the language the person reads) and `alo-files`
-      (the six file verbs) · Owed: the daemon itself, application verbs, and the
-      context an agent is given when invoked
+      · Built: `alo-capability` (the verbs, the grants, the approvals, every
+      refusal of theirs said in the language the person reads, and — since 9g —
+      the sentence a person approves, carried as what names it and the values
+      that fill it rather than as words in whichever language the verb was
+      declared in) and `alo-files` (the six file verbs, declared from the words
+      a translator is handed) · Owed: the daemon itself, application verbs, and
+      the context an agent is given when invoked
 - [ ] Every execution recorded with its origin, approval and grant
-      · Built: `alo-record` — the record, including refusals, which are now
-      written down in the same words the person was shown rather than in a
-      second rendering of their own · Owed: queue 4a — where it is written and
-      what prunes it, which waits on `alo-agentd`
+      · Built: `alo-record` — the record, including refusals, which are written
+      down in the same words the person was shown rather than in a second
+      rendering of their own; since 9g that covers what *ran* as well as what
+      did not, so the sentence in the record is the sentence somebody approved
+      · Owed: queue 4a — where it is written and what prunes it, which waits on
+      `alo-agentd`
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
@@ -172,9 +177,12 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       `alo-egress` (the line a person reads while something is leaving their
       machine — the visible half of law 1 — the place it names, and every
       refusal the egress policy makes)
-      · Owed: a shell to translate, the sentence a person approves, which is
-      still rendered in English at the moment the call is made (9g), and every
-      translation — there are none yet
+      — and, since 9g, **the sentence a person approves is one string rather
+      than two renderings of it**: a verb is declared from the words a
+      translator is handed, a call carries what names its sentence and the
+      values that fill it, and the screen, the approval and the record all ask
+      the reader's own vocabulary for the words
+      · Owed: a shell to translate, and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

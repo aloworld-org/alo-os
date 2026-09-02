@@ -29,7 +29,7 @@
 
 use std::path::PathBuf;
 
-use alo_strings::{Counting, Filling, Said, Strings};
+use alo_strings::{Counting, Filling, Key, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::path::steps_upwards;
@@ -326,25 +326,63 @@ impl ArgError {
 /// reads as describing less than will happen. A verb that needs to behave two
 /// ways declares a [`Takes::Choice`] and says so in its sentence, or it is two
 /// verbs.
+///
+/// **What it is for is a [`Word`], not a `String`** (item 9g). A person reads
+/// it beside the box when an agent asks for something, and it is quoted back to
+/// them when a call arrives without it — so it is a string somebody translates,
+/// declared once, rather than English carried in a struct and looked up again
+/// somewhere else.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Arg {
     /// The name the argument arrives under. An identity, matched exactly.
-    pub name: String,
+    name: String,
     /// What it is for, in one short phrase a person would use.
-    pub purpose: String,
+    purpose: Word,
     /// What it takes.
-    pub takes: Takes,
+    takes: Takes,
 }
 
 impl Arg {
     /// An argument of this name, for this purpose, taking this.
     #[must_use]
-    pub fn taking(name: &str, purpose: &str, takes: Takes) -> Self {
+    pub fn taking(name: &str, purpose: Word, takes: Takes) -> Self {
         Self {
             name: name.trim().to_owned(),
-            purpose: purpose.trim().to_owned(),
+            purpose,
             takes,
         }
+    }
+
+    /// The name it arrives under. An identity, matched exactly.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// What it takes.
+    #[must_use]
+    pub fn takes(&self) -> &Takes {
+        &self.takes
+    }
+
+    /// What it is for, in the language the person reads.
+    #[must_use]
+    pub fn purpose(&self, strings: &Strings) -> Said {
+        strings.say(&self.purpose.key(), &Filling::nothing())
+    }
+
+    /// What names the purpose, for a refusal that has to quote it.
+    ///
+    /// Crate-private: outside this crate the answer to *what is this argument
+    /// for* is [`Arg::purpose`], which says whether anybody translated it.
+    pub(crate) fn purpose_key(&self) -> Key {
+        self.purpose.key()
+    }
+
+    /// The purpose as the verb declared it, for the checks made where a verb is
+    /// declared.
+    pub(crate) fn purpose_as_written(&self) -> &'static str {
+        self.purpose.says()
     }
 
     /// Check what arrived against what was declared.
@@ -474,12 +512,18 @@ mod tests {
     use super::*;
     use crate::testing::{in_english, translated};
 
+    /// What an argument is for is a word now, so the fixtures declare theirs
+    /// like any other crate would.
+    const A_FOLDER: Word = Word::saying("testing.argument.folder", "the folder to list");
+    const A_NAME: Word = Word::saying("testing.argument.name", "what to call it");
+    const WHATEVER: Word = Word::saying("testing.argument.whatever", "whatever it is for");
+
     fn folder() -> Arg {
-        Arg::taking("folder", "the folder to list", Takes::Path)
+        Arg::taking("folder", A_FOLDER, Takes::Path)
     }
 
     fn new_name() -> Arg {
-        Arg::taking("name", "what to call it", Takes::name(255))
+        Arg::taking("name", A_NAME, Takes::name(255))
     }
 
     /// A path argument takes a path a grant can be compared against, and
@@ -580,7 +624,7 @@ mod tests {
     /// Matching kindly here would let a model pick an option nobody declared.
     #[test]
     fn a_choice_is_one_of_the_options_and_is_matched_exactly() {
-        let arg = Arg::taking("into", "where it goes", Takes::choice(["archive", "trash"]));
+        let arg = Arg::taking("into", WHATEVER, Takes::choice(["archive", "trash"]));
         assert_eq!(
             arg.validate(&Given::text("archive")).unwrap(),
             Value::Choice("archive".to_owned())
@@ -603,7 +647,7 @@ mod tests {
     /// A number is inside the range the verb declared, at both ends.
     #[test]
     fn a_count_is_inside_its_range() {
-        let arg = Arg::taking("most", "how many to return", Takes::count(1, 100));
+        let arg = Arg::taking("most", WHATEVER, Takes::count(1, 100));
         assert_eq!(arg.validate(&Given::number(1)).unwrap(), Value::Count(1));
         assert_eq!(
             arg.validate(&Given::number(100)).unwrap(),
@@ -657,7 +701,7 @@ mod tests {
                 Takes::Count { .. } => "most",
                 Takes::Choice(_) => "into",
             };
-            let arg = Arg::taking(named, "whatever it is for", takes);
+            let arg = Arg::taking(named, WHATEVER, takes);
             for attempt in [
                 "rm -rf /home/anna",
                 "$(cat /etc/shadow)",
@@ -700,7 +744,7 @@ mod tests {
     /// An application identifier is an identifier, not a phrase.
     #[test]
     fn an_application_argument_takes_an_identifier() {
-        let arg = Arg::taking("application", "which application", Takes::Application);
+        let arg = Arg::taking("application", WHATEVER, Takes::Application);
         assert_eq!(
             arg.validate(&Given::text(" org.blender.Blender ")).unwrap(),
             Value::Application("org.blender.Blender".to_owned())

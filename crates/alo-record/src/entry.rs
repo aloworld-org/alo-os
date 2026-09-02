@@ -17,6 +17,12 @@
 //! [`Entry::ran`] is the exception that proves it — it takes its moment from
 //! the [`Authorised`] itself, because the moment that matters is the one the
 //! grants were asked at, and that moment already exists.
+//!
+//! **Every constructor that writes down a call takes the strings** (item 9g).
+//! A call carries what names the sentence a person approves and the values that
+//! fill it, and the words are asked for here, once, with the vocabulary that
+//! person reads — the rule [`Entry::refused`] has kept since 9e, now covering
+//! what ran as well as what did not.
 
 use std::time::SystemTime;
 
@@ -56,12 +62,12 @@ impl Entry {
     /// allowed to happen. A record that stamped its own time would be recording
     /// when it got round to writing.
     #[must_use]
-    pub fn ran(authorised: &Authorised) -> Self {
+    pub fn ran(authorised: &Authorised, strings: &Strings) -> Self {
         Self {
             at: authorised.at(),
             happened: Happened::Ran {
                 agent: Line::of(authorised.under().as_str()),
-                what: What::of(authorised.call()),
+                what: What::of(authorised.call(), strings),
                 from_approval: authorised.from_approval().map(|from| from.as_u64()),
                 against: authorised
                     .against()
@@ -90,6 +96,7 @@ impl Entry {
             refused.call(),
             agent,
             Stopped::AtTheMoment(Line::of(refused.said(strings).text())),
+            strings,
             at,
         )
     }
@@ -100,22 +107,30 @@ impl Entry {
     /// [`alo_capability::ProposalError`]. Nobody was interrupted, which is the
     /// intended behaviour and still a thing that happened.
     #[must_use]
-    pub fn never_asked(call: &Call, agent: &Grantee, why: &str, at: SystemTime) -> Self {
+    pub fn never_asked(
+        call: &Call,
+        agent: &Grantee,
+        why: &str,
+        strings: &Strings,
+        at: SystemTime,
+    ) -> Self {
         Self::stopped(
             call,
             agent,
             Stopped::BeforeAnybodyWasAsked(Line::of(why)),
+            strings,
             at,
         )
     }
 
     /// A person declined a change.
     #[must_use]
-    pub fn declined(proposal: &Proposal, at: SystemTime) -> Self {
+    pub fn declined(proposal: &Proposal, strings: &Strings, at: SystemTime) -> Self {
         Self::stopped(
             proposal.call(),
             proposal.grantee(),
             Stopped::ByThePerson,
+            strings,
             at,
         )
     }
@@ -163,12 +178,18 @@ impl Entry {
     /// Private because *where* it was stopped is not a caller's choice to make
     /// freely: each of the three has a constructor above that can only be
     /// reached from the point in the journey it describes.
-    fn stopped(call: &Call, agent: &Grantee, how: Stopped, at: SystemTime) -> Self {
+    fn stopped(
+        call: &Call,
+        agent: &Grantee,
+        how: Stopped,
+        strings: &Strings,
+        at: SystemTime,
+    ) -> Self {
         Self {
             at,
             happened: Happened::Stopped {
                 agent: Line::of(agent.as_str()),
-                what: What::of(call),
+                what: What::of(call, strings),
                 how,
             },
         }
@@ -228,7 +249,7 @@ mod tests {
         let approved = approvals.approve(id, noon()).unwrap();
         let authorised = approved.redeem(&grants, noon()).unwrap();
 
-        let entry = Entry::ran(&authorised);
+        let entry = Entry::ran(&authorised, &in_english());
         assert_eq!(entry.at(), noon());
         assert!(entry.agent().is("@files"));
         assert_eq!(entry.happened().from_approval(), Some(id.as_u64()));
@@ -246,7 +267,7 @@ mod tests {
     fn a_read_is_recorded_with_no_approval_because_it_needed_none() {
         let grants = granting(&["/home/anna/Invoices"]);
         let authorised = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
-        let entry = Entry::ran(&authorised);
+        let entry = Entry::ran(&authorised, &in_english());
         assert!(entry.happened().ran());
         assert_eq!(entry.happened().from_approval(), None);
         assert_eq!(entry.happened().against().len(), 1);
@@ -308,7 +329,7 @@ mod tests {
             .unwrap_err()
             .said(&in_english())
             .into_text();
-        let entry = Entry::never_asked(&archiving_march(), &files(), &why, noon());
+        let entry = Entry::never_asked(&archiving_march(), &files(), &why, &in_english(), noon());
         assert!(matches!(
             entry.happened().stopped(),
             Some(Stopped::BeforeAnybodyWasAsked(_))
@@ -324,7 +345,7 @@ mod tests {
         let mut approvals = Approvals::default();
         let id = approvals.propose(proposing(&archiving_march(), &grants));
         let declined = approvals.decline(id).unwrap();
-        let entry = Entry::declined(&declined, noon());
+        let entry = Entry::declined(&declined, &in_english(), noon());
         assert_eq!(entry.happened().stopped(), Some(&Stopped::ByThePerson));
         assert_eq!(
             entry.happened().stopped().and_then(Stopped::why),
@@ -382,6 +403,7 @@ mod tests {
     fn an_entry_survives_being_written_down_and_read_back() {
         let entry = Entry::declined(
             &proposing(&archiving_march(), &granting_both()),
+            &in_english(),
             noon() + hour(),
         );
         let written = serde_json::to_string(&entry).unwrap();
@@ -395,7 +417,7 @@ mod tests {
     #[test]
     fn nothing_read_back_out_of_a_record_can_be_acted_on() {
         let grants = Grants::default();
-        let entry = Entry::never_asked(&archiving_march(), &files(), "no", noon());
+        let entry = Entry::never_asked(&archiving_march(), &files(), "no", &in_english(), noon());
         let written = serde_json::to_string(&entry).unwrap();
         let read = serde_json::from_str::<Entry>(&written).unwrap();
         // What comes back is words and numbers. There is no method on it that

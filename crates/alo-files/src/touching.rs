@@ -199,6 +199,7 @@ mod tests {
         Approvals, Arg, Effect, Given, Grant, Grantee, NotAuthorised, Proposal, Reach, Requires,
         Takes, Verb, Verbs,
     };
+    use alo_strings::Word;
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
     use std::time::{Duration, SystemTime};
@@ -389,14 +390,31 @@ mod tests {
     fn a_path_that_is_not_granted_is_refused_before_the_disk_is_touched() {
         let forgetful = Verb::checked(
             "compare_folders",
-            "say how two folders differ",
+            Word::saying(
+                "testing.compare-folders.purpose",
+                "say how two folders differ",
+            ),
             Effect::Read,
             vec![
-                Arg::taking("folder", "the folder to look at", Takes::Path),
-                Arg::taking("with", "the folder to compare it with", Takes::Path),
+                Arg::taking(
+                    "folder",
+                    Word::saying("testing.compare-folders.folder", "the folder to look at"),
+                    Takes::Path,
+                ),
+                Arg::taking(
+                    "with",
+                    Word::saying(
+                        "testing.compare-folders.with",
+                        "the folder to compare it with",
+                    ),
+                    Takes::Path,
+                ),
             ],
             Requires::grants_over(["folder"]),
-            "say how {folder} differs from {with}",
+            Word::saying(
+                "testing.compare-folders.sentence",
+                "say how {folder} differs from {with}",
+            ),
         )
         .unwrap();
         let mut verbs = Verbs::default();
@@ -568,13 +586,16 @@ mod tests {
     fn a_call_that_names_no_path_touches_nothing() {
         let displays = Verb::checked(
             "list_displays",
-            "list the displays attached to this machine",
+            Word::saying(
+                "testing.list-displays.purpose",
+                "list the displays attached to this machine",
+            ),
             Effect::Read,
             vec![],
             Requires::nothing_because(
                 "a display is not a path, a file or an application, and naming one reaches nothing",
             ),
-            "list the displays",
+            Word::saying("testing.list-displays.sentence", "list the displays"),
         )
         .unwrap();
         let mut verbs = Verbs::default();

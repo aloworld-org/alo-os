@@ -31,7 +31,7 @@ use alo_files::{
     Answer, Did, Failed, Kind, Named, OnThisMachine, Real, Resolving, Touching, file_verbs,
     file_words,
 };
-use alo_strings::Strings;
+use alo_strings::{Strings, Word};
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 fn noon() -> SystemTime {
@@ -398,15 +398,18 @@ fn a_machine_that_could_not_do_it_still_hands_back_what_ran() {
 fn a_verb_that_is_not_a_file_verb_is_not_performed_here() {
     let opening = Verb::checked(
         "open_application",
-        "open an application",
+        Word::saying("example.open-application.purpose", "open an application"),
         Effect::Change,
         vec![Arg::taking(
             "application",
-            "the application to open",
+            Word::saying(
+                "example.open-application.application",
+                "the application to open",
+            ),
             Takes::Application,
         )],
         Requires::grants_over(["application"]),
-        "open {application}",
+        Word::saying("example.open-application.sentence", "open {application}"),
     )
     .unwrap();
     let mut verbs = Verbs::default();

@@ -9,10 +9,18 @@
 //!
 //! - **what it may touch** ([`Call::asks`]) — the questions to put to the
 //!   grants, one per argument the verb said its grant is over;
-//! - **what a person would be approving** ([`Call::sentence`]) — generated,
-//!   already, before anybody has decided whether it is permitted;
+//! - **what a person would be approving** ([`Call::sentence`]) — the verb's
+//!   sentence with this call's validated values in it, in the language the
+//!   person reads;
 //! - **whether it waits** ([`Call::waits_for_approval`]) — a read answers
 //!   inside the turn, a change waits for one approval (ADR 0001 §5).
+//!
+//! **A call carries a key and its values, never a rendered sentence** (item
+//! 9g). It used to render one in the language the verb was declared in and keep
+//! the string, so a shell showed a translated sentence while the approval and
+//! the record kept an English one — two accounts of the same moment, which is
+//! exactly what item 9e refused for refusals. Now there is one value, and the
+//! screen and the record render it with the same vocabulary.
 //!
 //! **Being permitted and being approved are different questions.** This file
 //! answers only the first, and a permitted change still has not run: it becomes
@@ -23,7 +31,7 @@
 use std::collections::BTreeMap;
 use std::time::SystemTime;
 
-use alo_strings::{Filling, Said, Strings};
+use alo_strings::{Filling, Key, Said, Strings};
 use serde::Serialize;
 
 use crate::arg::{ArgError, Given, Value};
@@ -31,7 +39,6 @@ use crate::grant::Grantee;
 use crate::grants::{GrantId, Grants};
 use crate::reach::Ask;
 use crate::refusing::NotGranted;
-use crate::sentence::SentenceError;
 use crate::verb::{Effect, Requires, Verb};
 use crate::words;
 
@@ -65,8 +72,10 @@ pub enum CallError {
         verb: String,
         /// The argument that was not given.
         argument: String,
-        /// What that argument is for, so the answer is in the question.
-        purpose: String,
+        /// What names what that argument is for, so the answer is in the
+        /// question — and in the reader's language, which is what item 9g
+        /// carrying the key rather than the words is for.
+        purpose: Key,
     },
     /// The same argument given twice.
     SameArgumentTwice {
@@ -75,18 +84,6 @@ pub enum CallError {
     },
     /// An argument that did not survive validation.
     Argument(ArgError),
-    /// The sentence could not be filled in. A verb that passed
-    /// [`Verb::checked`] cannot cause this; it is here so that no code path
-    /// builds a sentence with a hole in it.
-    ///
-    /// It carries the template's own refusal, which keeps its English because
-    /// it is read by whoever declared the verb — see [`crate::sentence`].
-    Unsayable {
-        /// The verb whose sentence could not be filled in.
-        verb: String,
-        /// What was wrong with the template, for whoever wrote it.
-        why: SentenceError,
-    },
 }
 
 impl From<ArgError> for CallError {
@@ -101,6 +98,10 @@ impl CallError {
     /// An argument's refusal is that argument's own sentence rather than a
     /// second one wrapped around it: a person who sent a relative path needs to
     /// be told to send a full one, not that a call could not be made.
+    ///
+    /// The one that quotes a verb's own words looks them up here, with the same
+    /// vocabulary as the sentence around them — so *what this argument is for*
+    /// is not a clause in the language the verb happened to be declared in.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
@@ -121,15 +122,15 @@ impl CallError {
                 &words::ARGUMENT_MISSING.key(),
                 &Filling::of("verb", verb.clone())
                     .and("argument", argument.clone())
-                    .and("purpose", purpose.clone()),
+                    .and(
+                        "purpose",
+                        strings.say(purpose, &Filling::nothing()).into_text(),
+                    ),
             ),
             Self::SameArgumentTwice { argument } => strings.say(
                 &words::SAME_ARGUMENT_TWICE.key(),
                 &Filling::of("argument", argument.clone()),
             ),
-            Self::Unsayable { verb, .. } => {
-                strings.say(&words::UNSAYABLE.key(), &Filling::of("verb", verb.clone()))
-            }
         }
     }
 }
@@ -150,17 +151,22 @@ pub struct Call {
     values: BTreeMap<String, Value>,
     /// What has to be granted for this to run, in the order the verb named it.
     asks: Vec<Ask>,
-    /// The sentence, generated from the values above and from nothing else.
-    sentence: String,
+    /// What names the sentence a person approves. The words are looked up
+    /// wherever somebody reads them; the gaps are filled from the values above
+    /// and from nothing else.
+    sentence: Key,
 }
 
 impl Call {
     /// Validate a set of arguments against a verb.
     ///
     /// Every argument the verb declares is required, so a call is complete or
-    /// it is a refusal. The sentence is generated here rather than later,
-    /// because a call whose sentence could not be generated must not reach the
-    /// point where somebody is asked to approve it.
+    /// it is a refusal. What that gives the sentence is the thing worth
+    /// noticing: [`Verb::checked`] refuses a sentence that names an argument
+    /// the verb does not take or leaves one out, and every argument it does
+    /// take has a value here — so the filling covers every gap, in the source
+    /// and in any translation, because `alo_strings::Vocabulary` refuses a
+    /// translation that invents a gap or drops one.
     ///
     /// # Errors
     /// [`CallError`], saying what to send instead.
@@ -180,28 +186,21 @@ impl Call {
             values.insert(name.to_owned(), arg.validate(value)?);
         }
         for arg in verb.args() {
-            if !values.contains_key(&arg.name) {
+            if !values.contains_key(arg.name()) {
                 return Err(CallError::Missing {
                     verb: verb.name().to_owned(),
-                    argument: arg.name.clone(),
-                    purpose: arg.purpose.clone(),
+                    argument: arg.name().to_owned(),
+                    purpose: arg.purpose_key(),
                 });
             }
         }
         let asks = asks_of(verb, &values);
-        let sentence = verb
-            .sentence()
-            .render(&values)
-            .map_err(|why| CallError::Unsayable {
-                verb: verb.name().to_owned(),
-                why,
-            })?;
         Ok(Self {
             verb: verb.name().to_owned(),
             effect: verb.effect(),
             values,
             asks,
-            sentence,
+            sentence: verb.sentence().key().clone(),
         })
     }
 
@@ -223,10 +222,37 @@ impl Call {
         self.effect.waits_for_approval()
     }
 
-    /// What a person would be approving, in words.
+    /// **What a person would be approving, in the language they read.**
+    ///
+    /// The words are the verb's and the values are this call's, which is the
+    /// whole point of the sentence: nothing the model wrote appears in it, and
+    /// translating moves the words and never the values. The answer says where
+    /// it came from, so a machine showing English because nobody translated the
+    /// verb is a fact something can see.
     #[must_use]
-    pub fn sentence(&self) -> &str {
+    pub fn sentence(&self, strings: &Strings) -> Said {
+        strings.say(&self.sentence, &self.filling())
+    }
+
+    /// What names the sentence a person approves.
+    ///
+    /// For anything that has to keep the sentence as a value rather than as
+    /// words — a record, a refusal that quotes it — and render it where
+    /// somebody reads it.
+    #[must_use]
+    pub fn sentence_key(&self) -> &Key {
         &self.sentence
+    }
+
+    /// What goes into the sentence's gaps: each validated value, under the name
+    /// of the argument that carried it.
+    #[must_use]
+    pub fn filling(&self) -> Filling {
+        let mut filling = Filling::nothing();
+        for (argument, value) in &self.values {
+            filling = filling.and(argument.clone(), value.describe());
+        }
+        filling
     }
 
     /// What has to be granted for this call to run.
@@ -323,77 +349,13 @@ fn asks_of(verb: &Verb, values: &BTreeMap<String, Value>) -> Vec<Ask> {
 )]
 mod tests {
     use super::*;
-    use crate::arg::{Arg, Takes};
-    use crate::grant::Grant;
-    use crate::reach::Reach;
+    use crate::test_calls::{
+        MOVING_INTO, MOVING_SENTENCE, THE_WORDS, archiving_march as moving_march, files, granting,
+        hour, list_folder, move_file, noon, reading,
+    };
+    use crate::testing::translating;
+    use alo_strings::Word;
     use std::path::PathBuf;
-    use std::time::Duration;
-
-    fn noon() -> SystemTime {
-        SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
-    }
-
-    fn hour() -> Duration {
-        Duration::from_secs(60 * 60)
-    }
-
-    fn files() -> Grantee {
-        Grantee::named("@files")
-    }
-
-    fn move_file() -> Verb {
-        Verb::checked(
-            "move_file",
-            "move a file into a folder",
-            Effect::Change,
-            vec![
-                Arg::taking("file", "the file to move", Takes::Path),
-                Arg::taking("into", "the folder it goes into", Takes::Path),
-            ],
-            Requires::grants_over(["file", "into"]),
-            "move {file} into {into}",
-        )
-        .unwrap()
-    }
-
-    fn list_folder() -> Verb {
-        Verb::checked(
-            "list_folder",
-            "list what is in a folder",
-            Effect::Read,
-            vec![Arg::taking("folder", "the folder to list", Takes::Path)],
-            Requires::grants_over(["folder"]),
-            "list what is in {folder}",
-        )
-        .unwrap()
-    }
-
-    fn moving_march() -> Call {
-        Call::of(
-            &move_file(),
-            &[
-                ("file", Given::text("/home/anna/Invoices/march.pdf")),
-                ("into", Given::text("/home/anna/Archive")),
-            ],
-        )
-        .unwrap()
-    }
-
-    fn granting(reaches: &[&str]) -> Grants {
-        let mut grants = Grants::default();
-        for reach in reaches {
-            grants.grant(
-                Grant::checked(
-                    "@files",
-                    Reach::Folder(PathBuf::from(reach)),
-                    noon(),
-                    hour(),
-                )
-                .unwrap(),
-            );
-        }
-        grants
-    }
 
     /// A call becomes a sentence and a set of questions for the grants, and
     /// nothing the model wrote appears in either.
@@ -403,7 +365,7 @@ mod tests {
         assert_eq!(call.verb(), "move_file");
         assert!(call.waits_for_approval());
         assert_eq!(
-            call.sentence(),
+            call.sentence(&reading()).text(),
             "move /home/anna/Invoices/march.pdf into /home/anna/Archive"
         );
         assert_eq!(
@@ -517,7 +479,7 @@ mod tests {
             CallError::Missing {
                 verb: "move_file".to_owned(),
                 argument: "into".to_owned(),
-                purpose: "the folder it goes into".to_owned(),
+                purpose: MOVING_INTO.key(),
             }
         );
         assert_eq!(
@@ -565,33 +527,82 @@ mod tests {
     /// decision its author wrote down rather than an empty list nobody noticed.
     #[test]
     fn a_verb_that_requires_no_grant_asks_nothing() {
+        const DISPLAYS: Word = Word::saying(
+            "testing.verb.list-displays.purpose",
+            "list the displays attached to this machine",
+        );
+        const DISPLAYS_SENTENCE: Word =
+            Word::saying("testing.verb.list-displays.sentence", "list the displays");
         let verb = Verb::checked(
             "list_displays",
-            "list the displays attached to this machine",
+            DISPLAYS,
             Effect::Read,
             vec![],
             Requires::nothing_because(
                 "a display is not a path, a file or an application, and naming one reaches nothing",
             ),
-            "list the displays",
+            DISPLAYS_SENTENCE,
         )
         .unwrap();
         let call = Call::of(&verb, &[]).unwrap();
         assert!(call.asks().is_empty());
-        assert_eq!(call.sentence(), "list the displays");
+        assert_eq!(
+            call.sentence(&crate::testing::speaking(&[DISPLAYS, DISPLAYS_SENTENCE]))
+                .text(),
+            "list the displays"
+        );
+        assert!(call.filling().is_nothing());
         assert!(call.permitted_by(&Grants::default(), &files(), noon()));
         assert!(!call.waits_for_approval());
     }
 
+    /// **The sentence a person approves is the one they read.** The words are
+    /// the translation's, the values are this call's, and the two paths are in
+    /// it because a translation that dropped one could not have been loaded.
+    ///
+    /// This is what item 9g bought: before it, a shell looked the key up and
+    /// the approval and the record kept the English the call had rendered.
+    #[test]
+    fn the_sentence_is_read_in_the_readers_own_language() {
+        let strings = translating(
+            &THE_WORDS,
+            &[(MOVING_SENTENCE, "{file} nach {into} verschieben")],
+        );
+        let said = moving_march().sentence(&strings);
+        assert!(said.is_translated());
+        assert!(said.unfilled().is_empty());
+        assert_eq!(
+            said.text(),
+            "/home/anna/Invoices/march.pdf nach /home/anna/Archive verschieben"
+        );
+    }
+
+    /// A verb nobody has translated says so, rather than looking like a
+    /// sentence somebody wrote in the reader's language.
+    #[test]
+    fn an_untranslated_sentence_says_where_it_came_from() {
+        let said = moving_march().sentence(&reading());
+        assert!(!said.is_translated());
+        assert!(!said.is_a_bug());
+        assert_eq!(said.came_from(), &alo_strings::CameFrom::TheSource);
+    }
+
     /// The record keeps what ran and what was refused, so a call has to survive
-    /// being written down.
+    /// being written down — **and what it carries is the key, not a rendering.**
+    /// A record written from this is rendered where somebody reads it.
     #[test]
     fn a_call_can_be_written_down() {
-        let written = serde_json::to_string(&moving_march()).unwrap();
+        let call = moving_march();
+        let written = serde_json::to_string(&call).unwrap();
         assert!(written.contains("move_file"), "{written}");
         assert!(written.contains("march.pdf"), "{written}");
         assert!(
-            written.contains("move /home/anna/Invoices/march.pdf into"),
+            written.contains("testing.verb.move-file.sentence"),
+            "{written}"
+        );
+        assert_eq!(call.sentence_key(), &MOVING_SENTENCE.key());
+        assert!(
+            !written.contains("move /home/anna/Invoices/march.pdf into"),
             "{written}"
         );
     }

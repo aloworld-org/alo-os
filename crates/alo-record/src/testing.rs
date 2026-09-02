@@ -12,6 +12,11 @@
 //! egress policy made, and a record that rendered it against a vocabulary
 //! missing those words would keep a key where the person read a sentence.
 //!
+//! Since item 9g it also holds the fixture verbs' own words, because a record
+//! now renders the sentence a person approved rather than keeping a copy of it.
+//! On a real machine that is `alo-files`' list; here it is
+//! [`crate::test_calls`]'.
+//!
 //! A file of its own rather than more of [`crate::test_calls`], which is the
 //! afternoon those tests are about: calls, grants and departures. What the
 //! machine can say changes for a different reason.
@@ -23,12 +28,39 @@
     reason = "in a fixture, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use alo_strings::Strings;
+use alo_strings::{Language, Strings, Translation, Word};
 
-/// Every string the two crates a record renders from can say, with nothing
-/// translated.
+/// Every string a record renders from, with nothing translated.
 pub(crate) fn in_english() -> Strings {
+    Strings::of(everything())
+}
+
+/// The same, with these said in German and German preferred.
+pub(crate) fn translated(words: &[(Word, &str)]) -> Strings {
+    let vocabulary = everything();
+    let mut into_german = Translation::into_language(german());
+    for (word, says) in words {
+        into_german = into_german.says(word.key(), *says);
+    }
+    let speaking = vocabulary.check(into_german).unwrap();
+    let mut strings = Strings::of(vocabulary);
+    strings.speaks(speaking).unwrap();
+    strings.prefers(&[german()]);
+    strings
+}
+
+/// German, as `alo-strings` names a language.
+pub(crate) fn german() -> Language {
+    Language::written("de").unwrap()
+}
+
+/// The vocabulary a record renders against here: two crates' refusals, and the
+/// fixture verbs' own words.
+fn everything() -> alo_strings::Vocabulary {
     let mut vocabulary = alo_capability::capability_words().unwrap();
     alo_egress::declare_into(&mut vocabulary).unwrap();
-    Strings::of(vocabulary)
+    for word in crate::test_calls::THE_WORDS {
+        vocabulary.says(word.phrase().unwrap()).unwrap();
+    }
+    vocabulary
 }

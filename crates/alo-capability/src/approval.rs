@@ -23,6 +23,8 @@
 
 use std::time::SystemTime;
 
+use alo_strings::{Said, Strings};
+
 use crate::approvals::ProposalId;
 use crate::authorised::{Authorised, Refused};
 use crate::call::Call;
@@ -71,10 +73,10 @@ impl Approved {
         self.call.verb()
     }
 
-    /// The sentence the person approved, word for word.
+    /// The sentence the person approved, in the language they read it in.
     #[must_use]
-    pub fn sentence(&self) -> &str {
-        self.call.sentence()
+    pub fn sentence(&self, strings: &Strings) -> Said {
+        self.call.sentence(strings)
     }
 
     /// Whose authority this was approved for.
@@ -105,17 +107,27 @@ impl Approved {
     ///
     /// ```
     /// use alo_capability::*;
+    /// use alo_strings::{Strings, Vocabulary, Word};
     /// use std::time::{Duration, SystemTime};
+    ///
+    /// // A verb is declared from the strings a translator is handed (item 9g),
+    /// // so what a person approves and what they are shown are one thing.
+    /// const ARCHIVING: Word =
+    ///     Word::saying("example.archive-file.purpose", "move a file into the archive");
+    /// const THE_FILE: Word =
+    ///     Word::saying("example.archive-file.file", "the file to archive");
+    /// const SENTENCE: Word =
+    ///     Word::saying("example.archive-file.sentence", "archive {file}");
     ///
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let hour = Duration::from_secs(60 * 60);
     /// let verb = Verb::checked(
     ///     "archive_file",
-    ///     "move a file into the archive",
+    ///     ARCHIVING,
     ///     Effect::Change,
-    ///     vec![Arg::taking("file", "the file to archive", Takes::Path)],
+    ///     vec![Arg::taking("file", THE_FILE, Takes::Path)],
     ///     Requires::grants_over(["file"]),
-    ///     "archive {file}",
+    ///     SENTENCE,
     /// )
     /// .unwrap();
     /// let call =
@@ -134,7 +146,16 @@ impl Approved {
     ///     approvals.propose(Proposal::checked(&call, &files, &grants, now, hour).unwrap());
     /// let approved = approvals.approve(id, now).unwrap();
     /// let running = approved.redeem(&grants, now).unwrap();
-    /// assert_eq!(running.sentence(), "archive /home/anna/Invoices/march.pdf");
+    ///
+    /// let mut vocabulary = Vocabulary::empty();
+    /// for word in [ARCHIVING, THE_FILE, SENTENCE] {
+    ///     vocabulary.says(word.phrase().unwrap()).unwrap();
+    /// }
+    /// let strings = Strings::of(vocabulary);
+    /// assert_eq!(
+    ///     running.sentence(&strings).text(),
+    ///     "archive /home/anna/Invoices/march.pdf",
+    /// );
     /// ```
     ///
     /// The same thing, redeemed twice, is not a program. This is the guarantee
@@ -142,17 +163,25 @@ impl Approved {
     ///
     /// ```compile_fail
     /// use alo_capability::*;
+    /// use alo_strings::Word;
     /// use std::time::{Duration, SystemTime};
+    ///
+    /// const ARCHIVING: Word =
+    ///     Word::saying("example.archive-file.purpose", "move a file into the archive");
+    /// const THE_FILE: Word =
+    ///     Word::saying("example.archive-file.file", "the file to archive");
+    /// const SENTENCE: Word =
+    ///     Word::saying("example.archive-file.sentence", "archive {file}");
     ///
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let hour = Duration::from_secs(60 * 60);
     /// let verb = Verb::checked(
     ///     "archive_file",
-    ///     "move a file into the archive",
+    ///     ARCHIVING,
     ///     Effect::Change,
-    ///     vec![Arg::taking("file", "the file to archive", Takes::Path)],
+    ///     vec![Arg::taking("file", THE_FILE, Takes::Path)],
     ///     Requires::grants_over(["file"]),
-    ///     "archive {file}",
+    ///     SENTENCE,
     /// )
     /// .unwrap();
     /// let call =
@@ -193,7 +222,7 @@ mod tests {
     use crate::grant::Grant;
     use crate::grants::Grants;
     use crate::reach::Reach;
-    use crate::test_calls::{archiving_march, files, granting_both, hour, noon};
+    use crate::test_calls::{archiving_march, files, granting_both, hour, noon, reading};
     use crate::testing::in_english;
 
     /// Propose the archiving change and approve it, which is where every test
@@ -215,7 +244,7 @@ mod tests {
         let (_, approved) = approved(&grants);
         assert_eq!(approved.verb(), "move_file");
         assert_eq!(
-            approved.sentence(),
+            approved.sentence(&reading()).text(),
             "move /home/anna/Invoices/march.pdf into /home/anna/Archive"
         );
         assert_eq!(approved.grantee(), &files());
@@ -238,7 +267,7 @@ mod tests {
         // Both folders had to be granted, so the record names both grants.
         assert_eq!(running.against(), held);
         assert_eq!(
-            running.sentence(),
+            running.sentence(&reading()).text(),
             "move /home/anna/Invoices/march.pdf into /home/anna/Archive"
         );
     }

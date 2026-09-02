@@ -187,14 +187,14 @@ mod tests {
 
         // A read, at noon.
         let read = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
-        record.keep(Entry::ran(&read));
+        record.keep(Entry::ran(&read, &in_english()));
 
         // A change, approved and run, an hour later.
         let mut approvals = Approvals::default();
         let id = approvals.propose(proposing(&archiving_march(), &grants));
         let approved = approvals.approve(id, noon() + hour()).unwrap();
         let running = approved.redeem(&grants, noon() + hour()).unwrap();
-        record.keep(Entry::ran(&running));
+        record.keep(Entry::ran(&running, &in_english()));
 
         // A refusal, and an attempt that never became a call, two hours later.
         let refused = Authorised::read(

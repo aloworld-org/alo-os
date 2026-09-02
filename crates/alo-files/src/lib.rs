@@ -54,10 +54,15 @@
 //! Nothing in this crate composes an English sentence for a screen. Every
 //! string it can say is declared in [`words`] and answered through
 //! `alo-strings` in the language the person in front of the machine reads:
-//! [`Failed::said`] and [`RealError::said`] for what could not be done,
-//! [`saying`] for what the six verbs are and what a person approves, and the
+//! [`Failed::said`] and [`RealError::said`] for what could not be done, and the
 //! two refusals this crate words itself rendered where they are made, so that
 //! what somebody was told is what the record keeps.
+//!
+//! **What the six verbs are, and what a person approves, is asked of the verb
+//! itself** since item 9g: [`verbs`] hands each declaration the constants from
+//! [`words`], so `alo_capability::Verb::purpose`, `Arg::purpose` and
+//! `Call::sentence` answer in the reader's language from what the verb carries.
+//! This crate no longer holds a second list saying the same thing.
 //!
 //! [`Failed`] and [`RealError`] therefore have no `Display`, which is the whole
 //! of the guarantee: a sentence cannot reach anybody without something having
@@ -92,7 +97,6 @@ pub mod failed;
 pub mod named;
 pub mod real;
 pub mod resolving;
-pub mod saying;
 pub mod touching;
 pub mod verbs;
 pub mod words;
@@ -113,7 +117,6 @@ pub use failed::Failed;
 pub use named::{Kind, Named};
 pub use real::{Real, RealError};
 pub use resolving::{OnThisMachine, Resolving};
-pub use saying::{purpose, purpose_of, sentence};
 pub use touching::Touching;
 pub use verbs::{Declaring, declare_into, file_verbs};
-pub use words::{Counted, EVERY_WORD, Spoken, THE_SIX, Word, WordsError, file_words};
+pub use words::{Counted, EVERY_WORD, Word, WordsError, file_words};
