@@ -1,0 +1,6 @@
+# Build output. Regenerable, and large enough to matter on a laptop.
+/target
+
+# Editor and OS noise.
+.DS_Store
+Thumbs.db

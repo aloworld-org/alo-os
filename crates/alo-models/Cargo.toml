@@ -1,0 +1,16 @@
+[package]
+name = "alo-models"
+version = "0.0.1"
+description = "The models alo OS will run, and what may be done with them."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

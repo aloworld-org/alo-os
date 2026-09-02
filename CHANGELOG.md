@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The first code: alo OS knows which models it offers, and what may legally be
+  done with each. Every entry states its licence and answers the commercial
+  question outright, and the catalogue refuses to load an entry that claims
+  conditions apply without saying which — a model an organisation may not use
+  commercially, offered under a tidy licence name, would be worse than not
+  offering it at all. European models are listed first. The catalogue is data,
+  so adding a model is an edit rather than a release.
+
 - Software can be installed, which the feature list had never said. Applications
   arrive sandboxed from Flathub or a repository the organisation runs, and reach
   the system through the XDG Desktop Portal interfaces every Linux application

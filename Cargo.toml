@@ -1,0 +1,35 @@
+[workspace]
+resolver = "3"
+members = ["crates/alo-models"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.97"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/aloworld-org/alo-os"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.9"
+thiserror = "2"
+
+# The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
+# forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is
+# a rule that survives until the reviewer is busy.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+indexing_slicing = "deny"
+missing_docs_in_private_items = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

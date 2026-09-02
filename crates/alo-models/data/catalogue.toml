@@ -1,0 +1,125 @@
+# The models alo OS offers.
+#
+# Data, not code: adding a model is a change to this file, never a release.
+#
+# Two rules for anyone editing it:
+#
+# 1. **Verify the licence against upstream before adding an entry.** Model
+#    licences change between versions and families, and a catalogue that states
+#    a licence wrongly is worse than one that omits the model — it invites an
+#    organisation into a breach while showing them a tidy licence name. Where
+#    commercial use carries conditions, write them down; the loader refuses an
+#    entry that says "conditions apply" without saying which.
+# 2. **Sizes are what the disk and the card actually lose**, for the
+#    quantisation named. "It worked for me" is not a useful report without one.
+#
+# `min_vram_gb` is what the model needs to run at a *useful* speed. The
+# certified machine in docs/hardware.md has 24 GB, so an entry above that is
+# offered with its cost visible rather than hidden.
+
+# ── European models first, because that is the point of this product ─────────
+
+[[model]]
+id = "eurollm-9b-instruct"
+name = "EuroLLM 9B Instruct"
+publisher = "EuroLLM (EU Horizon project)"
+parameters_b = 9.2
+quantisation = "Q4_K_M"
+download_bytes = 5_600_000_000
+min_vram_gb = 8.0
+upstream = "https://huggingface.co/utter-project/EuroLLM-9B-Instruct"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[[model]]
+id = "teuken-7b-instruct"
+name = "Teuken 7B Instruct"
+publisher = "OpenGPT-X"
+parameters_b = 7.0
+quantisation = "Q4_K_M"
+download_bytes = 4_600_000_000
+min_vram_gb = 6.0
+upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-research-v0.4"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[[model]]
+id = "mistral-7b-instruct"
+name = "Mistral 7B Instruct"
+publisher = "Mistral AI"
+parameters_b = 7.2
+quantisation = "Q4_K_M"
+download_bytes = 4_370_000_000
+min_vram_gb = 6.0
+upstream = "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[[model]]
+id = "mixtral-8x7b-instruct"
+name = "Mixtral 8x7B Instruct"
+publisher = "Mistral AI"
+parameters_b = 46.7
+quantisation = "Q4_K_M"
+download_bytes = 26_400_000_000
+min_vram_gb = 28.0
+upstream = "https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+# ── Others, with their conditions stated ────────────────────────────────────
+
+[[model]]
+id = "qwen2.5-7b-instruct"
+name = "Qwen2.5 7B Instruct"
+publisher = "Alibaba Cloud"
+parameters_b = 7.6
+quantisation = "Q4_K_M"
+download_bytes = 4_680_000_000
+min_vram_gb = 6.0
+upstream = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[[model]]
+id = "phi-3-mini-instruct"
+name = "Phi-3 Mini Instruct"
+publisher = "Microsoft"
+parameters_b = 3.8
+quantisation = "Q4_K_M"
+download_bytes = 2_400_000_000
+min_vram_gb = 4.0
+upstream = "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct"
+licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
+
+[[model]]
+id = "llama-3.1-8b-instruct"
+name = "Llama 3.1 8B Instruct"
+publisher = "Meta"
+parameters_b = 8.0
+quantisation = "Q4_K_M"
+download_bytes = 4_920_000_000
+min_vram_gb = 6.5
+upstream = "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct"
+
+[model.licence]
+name = "Llama 3.1 Community License"
+commercial_use = "with-conditions"
+note = """Commercial use is permitted, but not by an organisation with more than \
+700 million monthly active users on the version release date, who must request a \
+separate licence from Meta. Products built on it must display "Built with Llama", \
+and derived models must carry "Llama" in their name. Meta's Acceptable Use Policy \
+applies."""
+
+[[model]]
+id = "gemma-2-9b-instruct"
+name = "Gemma 2 9B Instruct"
+publisher = "Google"
+parameters_b = 9.2
+quantisation = "Q4_K_M"
+download_bytes = 5_760_000_000
+min_vram_gb = 8.0
+upstream = "https://huggingface.co/google/gemma-2-9b-it"
+
+[model.licence]
+name = "Gemma Terms of Use"
+commercial_use = "with-conditions"
+note = """Commercial use is permitted under Google's Gemma Terms of Use and \
+Prohibited Use Policy, which bind anyone the model or its derivatives are passed \
+on to — so the terms must travel with any distribution, and the use restrictions \
+apply to outputs as well as weights."""
