@@ -10,6 +10,8 @@ supervisor, so they appear only when they are true.
 
 ## 2026-09-02 — before the first iteration
 
+*(Superseded by the entry below. Kept because the warnings in it still hold.)*
+
 The queue is written and nothing has been taken from it yet.
 
 What exists already, outside the loop: `crates/alo-models` — the catalogue with
@@ -33,3 +35,38 @@ What the next iteration should know:
 - **Do not couple a test to a dependency's formatting.** One test asserted on
   the exact JSON its HTTP client emitted and failed over a space. A test that
   fails over whitespace is a test that eventually gets silenced.
+
+
+---
+
+## 2026-09-02 — queue refreshed, still before the first iteration
+
+The loop has still not run. Everything in `crates/alo-models` was built directly
+in a session, and four decisions arrived after the queue was first written, so
+the queue has been rewritten against what the code actually is.
+
+**What changed that a first iteration must know:**
+
+- **ADR 0007 — the CPU is the default.** A GPU is acceleration. The catalogue
+  states what a model costs in system memory and how it behaves without a card,
+  and `default_for_cpu` picks for an ordinary laptop. Anything later that assumes
+  a GPU is wrong.
+- **ADR 0008 — a question is answered in one of three places**, and the person is
+  always told which. `source.rs` carries that; item 4 (the record) must record
+  the source, and item 5 (egress policy) starts from `SourcePolicy` rather than
+  from nothing.
+- **The region is the customer's to name**, and alo OS ships no default that
+  chooses a provider. Built in Europe, not only for Europe. An item that
+  hardcodes a region or a provider is wrong however convenient it looks.
+- **`provider.rs` sets the pattern for anything holding a credential:** a
+  reference into the keyring, never the secret, with a test that renders the
+  struct through `Debug` and serde and asserts nothing secret-shaped survives.
+
+**One rule of the house, because it was broken in getting here:** the loop and a
+person must not work in the same checkout at once. `CLAUDE.md` forbids it, and
+the reason is exactly what happened — commits landing in a tree a loop believed
+it owned. Whoever starts the loop owns `C:\devlo-os` until it reports
+`LOOP COMPLETE` or halts.
+
+Ten ready items. Item 1 (grants) is first because items 2, 3, 4 and 6 all speak
+its vocabulary.
