@@ -1,0 +1,18 @@
+[package]
+name = "alo-shortcuts"
+version = "0.0.1"
+description = "What a key combination does, what a person changed it to, and what two of them wanting the same keys means."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

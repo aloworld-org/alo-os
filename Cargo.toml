@@ -6,6 +6,7 @@ members = [
   "crates/alo-files",
   "crates/alo-models",
   "crates/alo-record",
+  "crates/alo-shortcuts",
 ]
 
 [workspace.package]

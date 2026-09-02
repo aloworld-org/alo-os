@@ -751,3 +751,92 @@ interestingly rather than less often.
 
 Five ready items left. Item 7 (keyboard shortcuts) is next, and it is the first
 one since item 1 that starts somewhere the file verbs do not reach.
+
+---
+
+## 2026-09-02 — iteration 9: keyboard shortcuts
+
+**Built: item 7.** `crates/alo-shortcuts`, a new crate of eight files:
+`modifier.rs`, `key.rs`, `chord.rs`, `action.rs`, `defaults.rs`, `changes.rs`,
+`shortcuts.rs`, `clash.rs`. It depends on nothing else in the workspace — a
+shortcut is a person pressing a key on their own machine, so there is no verb,
+no grant and nothing to propose, and `lib.rs` says that outright so nobody
+later wonders where the capability check went.
+
+**Gate:** `cargo fmt --check` clean, `cargo clippy --workspace --all-targets -D
+warnings` clean, `cargo doc --workspace` clean. 41 unit tests and 1 doctest in
+the new crate; the workspace is 324 unit tests, 13 integration tests against a
+real filesystem and 12 doctests, all green and the rest untouched. A
+`CHANGELOG.md` line and the queue in the same change.
+
+**The item's sentence was right and incomplete, which is the thing to read.**
+"The model must express a conflict rather than letting the last binding win"
+reads like one refusal, and refusing at bind time is the easy half. The half
+that shaped the crate: **a release can add a default onto a chord a person
+already moved something else onto.** No refusal at the moment of binding could
+have caught it, because the binding was made before the default existed. So a
+clash is a thing the model holds and reports, not only one it prevents, and the
+resolution had to be decided rather than left to whichever list happened to be
+searched first:
+
+1. At the moment of binding, a clash is **refused**, and the refusal names what
+   already has the chord. Nothing changes.
+2. **A person's binding beats one we shipped.** Their chord still fires, our new
+   default does not, and `clashes()` says so where Settings can show it.
+   Dropping the binding they chose in favour of the one we chose would be the
+   wrong way round on a machine sold on control.
+3. **Two of their own on one chord fire nothing.** Only an unvalidated file can
+   produce it, and picking one would be right half the time — with the wrong
+   half closing a window somebody meant to maximise.
+
+**Three decisions that were not in the item.**
+
+- **Only the difference is written down.** The defaults live in the code and
+  `Changes` — the person's moves and clearings — is the whole settings file.
+  That is what makes a default improvable: a better one reaches every machine
+  that never touched it and no machine that did. It is also the direct cause of
+  rule 2 above, and the two belong together. `Changed` holds `Option<Chord>`
+  because *I want no shortcut for this* is a decision, and a file that could not
+  say it would hand the default back at the next sign-in.
+- **A promise in `docs/features.md` is a refusal here.** `Ctrl+C`, `Ctrl+X` and
+  `Ctrl+V` cannot be taken by a system shortcut, because copy and paste across
+  applications is a v0.01 promise and a system shortcut is a key taken away from
+  every application at once. Exactly those three chords, not those three keys —
+  `Ctrl+Shift+V` is nobody's clipboard. The same reasoning keeps `Action` short:
+  every action costs the whole machine a chord, so one arrives with the feature
+  that needs it, and dividing the screen from the keyboard is v0.5 and is not
+  there.
+- **A key is the one printed on the person's own keyboard**, not a position on
+  an American one, so `Super+Q` on a French keyboard is the key marked Q. What
+  that leaves for the compositor is written in `key.rs` rather than discovered
+  later: a layout that prints no Latin letters has no key marked Q at all, and
+  matching the chord against the person's Latin layout is a lookup that belongs
+  where the keyboard is read.
+
+Two smaller ones worth keeping. **Shift is a modifier that does not modify** —
+`Shift+2` is `@` — so every chord holds Super, Ctrl or Alt, and a bare key is
+not something this model can express. And **the shipped defaults are built by
+the compiler**, through a `pub(crate)` constructor that checks nothing, so a
+test puts every one of them back through `Chord::checked`: the list we ship is
+held to the rules a person is held to, or the rules are advice.
+
+**What the next iteration must know:**
+
+- **Item 8 (appearance) is next, and it should copy `changes.rs`.** Background,
+  lock-screen image, light and dark with a schedule, accent colour, text
+  scaling: same shape — what we ship lives in the code, what the person chose is
+  the file. It wants a crate of its own rather than joining this one; shortcuts
+  and wallpaper have no reason to change together.
+- **Item 4a is in *Ready* but is not this loop's.** It is where the record is
+  written and what prunes it, which is `alo-agentd`'s, and the daemon does not
+  exist. Item 8, 9 and 10 are the ready work; whoever starts the daemon should
+  move 4a out of Ready or start it there.
+- **Item 9's list grew**, and the queue now says how: `Action::purpose`,
+  `Key::label`, `Modifier::label`, the three `ChordError` sentences, and what
+  `Taken` and `Clash` say. Two of them need a translator's judgement rather than
+  their typing — a key is labelled with what is printed on it, and the Super key
+  is not called Super on most of the keyboards this will run on.
+- **Nothing here has been pressed.** The model is built and unit tested; no key
+  has reached it, because the compositor does not exist. Law 3's "on real
+  hardware" is owed, and `ROADMAP.md`'s "keyboard shortcuts a person can change"
+  stays unticked until a key on the certified machine does something.

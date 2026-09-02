@@ -272,9 +272,39 @@ items must follow:
   What it could not close is **item 6b, below under *blocked — linux***: the two
   gaps between checking a path and acting on it that only Linux calls close.
 
-- [ ] **7. Keyboard shortcuts** — the binding model, defaults, user overrides and
-  conflict detection. `docs/features.md` promises shortcuts a person can change,
-  so the model must express a conflict rather than letting the last binding win.
+- [x] **7. Keyboard shortcuts** — implements `docs/features.md`'s v0.01 "keyboard
+  shortcuts, and a person can change them". `crates/alo-shortcuts`, a **new
+  crate** that depends on nothing in this workspace: `modifier.rs` (what is held
+  down), `key.rs` (the closed list of keys), `chord.rs` (one combination, and the
+  three it refuses to be), `action.rs` (what a shortcut does), `defaults.rs`
+  (what alo OS ships with), `changes.rs` (what a person changed, which is all
+  that is written down), `shortcuts.rs` (the two resolved, and every question
+  asked of them), `clash.rs` (two actions wanting the same keys). 41 tests and a
+  doctest, clippy clean.
+
+  **The item's own sentence — express a conflict rather than letting the last
+  binding win — turned out to be two problems, and only one of them is a
+  refusal.** `bind` refusing a chord something else holds is the easy half. The
+  half that shapes the crate is that **a release can add a default onto a chord a
+  person already moved something onto**, which no refusal at bind time could have
+  seen coming, because the binding was made before the default existed. So a
+  clash is a thing the model *holds and reports* (`Clash`) as well as a thing it
+  refuses (`Taken`), and the resolution is stated rather than emergent: a
+  person's binding beats one we shipped, and two of their own on one chord fire
+  nothing, because choosing between them would close a window somebody meant to
+  maximise.
+
+  Three decisions the next items inherit. **Only the difference is stored** —
+  `Changes` is the settings file and the defaults live in the code, which is what
+  lets a default be improved for everybody who never touched it; item 8's
+  appearance model has the same shape and should copy it. **A promise elsewhere
+  is a refusal here**: `Ctrl+C`, `Ctrl+X` and `Ctrl+V` cannot be taken by a system
+  shortcut, because `docs/features.md` promises copy and paste across
+  applications at v0.01 and a system shortcut is a key taken away from every
+  application at once. **A key is the one printed on the person's own keyboard**,
+  not a position on an American one — which leaves the compositor one job written
+  down in `key.rs`: a layout with no Latin letters at all needs the shortcut
+  matched against the person's Latin layout.
 
 - [ ] **8. Appearance** — the personalisation model from "Making it yours":
   background per display (file, rotating folder, or colour), lock-screen image,
@@ -289,7 +319,13 @@ items must follow:
   the shell is written. The largest list of hardcoded English is `alo-files`:
   every `Failed` message, the `RealError` pair, `Touching`'s refusal, and the
   six verbs' purposes, argument purposes and sentences — the last of which are
-  the words a person approves.
+  the words a person approves. `alo-shortcuts` adds a second list, and it is the
+  one a person reads every time they open the shortcuts panel: `Action::purpose`,
+  `Key::label`, `Modifier::label`, the three `ChordError` sentences, and what
+  `Taken` and `Clash` say. Two of them are not sentences and need a translator's
+  judgement rather than a translator's typing — a key is labelled with what is
+  printed on it, which the person's own layout decides, and `Modifier::Super` is
+  called something different on the keyboard in front of most of them.
 
 - [ ] **10. Test a provider before saving it** — promised at v0.5 in
   `docs/features.md` and the one loose end in `provider.rs`. A mistyped key

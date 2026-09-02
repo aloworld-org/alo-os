@@ -12,6 +12,21 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The keyboard shortcuts are yours to change, and changing one never quietly
+  takes another away. Ask for a combination something else already uses and you
+  are told what has it — `Super+Left is already Put the window on the left half`
+  — rather than finding out days later that snapping stopped working. Only what
+  you changed is stored, so a later release can improve a default without
+  reaching over your choices, and if one of ours ever lands on a combination you
+  had already moved something onto, **yours keeps working** and the collision is
+  shown in Settings instead of being decided behind your back. Copy, cut and
+  paste cannot be taken by a system shortcut at all: they belong to whatever
+  you typed them into. A shortcut can also simply be cleared, and it stays
+  cleared. What the machine starts with is what these machines have always had —
+  `Alt+F4` closes, `Super+Up` maximises, `Super+Left` and `Super+Right` take the
+  halves, `Alt+Tab` moves between windows — with `Super+A` for the agent and
+  `Super+Space` for the launcher.
+
 - The six file verbs now actually do it. A folder is listed, a file is read, a
   search finds things by name in a folder and the folders inside it, a file is
   renamed or moved, and a folder becomes one archive — a zip, which every
