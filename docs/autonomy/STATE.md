@@ -1083,4 +1083,22 @@ cannot choose between them:
 Rust was touched. The workspace is as iteration 11 left it: 218-plus tests
 passing, clippy clean against the deny list.
 
-LOOP HALT
+`LOOP HALT` — raised at iteration 12, cleared below.
+
+
+---
+
+## 2026-09-02 — the halt is resolved: there was no business track
+
+The halt was correct and the cause was outside this repository: the supervisor
+was started without a track, so it defaulted to `business` and asked for a track
+this repository does not have. Nothing was wrong with the queue, and nothing had
+been invented.
+
+`LOOP.md` now says plainly that there are no tracks here and that the word in
+the prompt is noise. The marker above is cleared.
+
+Where the work stands: **eleven items done, eight crates, 492 tests passing,
+clippy clean.** The next ready item is **10 — test a provider before saving it**.
+After that only 9a–9d, 4a and 8a remain, and of those 4a belongs to
+`alo-agentd` and 8a needs a designer.

@@ -8,6 +8,16 @@ The loop exists because the work in `ROADMAP.md` is long and mostly independent,
 not because it is unsupervised. Every iteration ends in a commit that met the
 gate in `CLAUDE.md`, or in a halt that says why it could not.
 
+## There are no tracks here
+
+The supervisor's prompt names a "track", because the repository it came from has
+several. **This repository has one queue and one loop.** Whatever track the
+prompt names, the work is `docs/autonomy/QUEUE.md` — treat the word as noise
+rather than as scope you have been asked to invent.
+
+Halting on it once was right: an unknown track could have meant real work
+somebody expected. It is written down now, so it is answered.
+
 ## What one iteration does
 
 1. **Read `docs/autonomy/QUEUE.md`.** Take the first item that is not done and
