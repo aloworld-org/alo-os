@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Models can now be listed, downloaded, removed and taken out of video memory,
+  over the runtime alo OS pins. Downloads report progress as they go, because
+  these are gigabytes and twenty silent minutes is indistinguishable from a
+  hang. Only models the catalogue offers can be fetched, so the licence promise
+  holds at the point it would otherwise be bypassed. And what is on disk is kept
+  distinct from what is loaded in video memory — different questions, different
+  costs, and the pair a person needs to answer "why is nothing else fitting?"
+
 - The first code: alo OS knows which models it offers, and what may legally be
   done with each. Every entry states its licence and answers the commercial
   question outright, and the catalogue refuses to load an entry that claims

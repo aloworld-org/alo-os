@@ -13,7 +13,9 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod catalogue;
+pub mod ollama;
 pub mod runtime;
 
 pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model};
+pub use ollama::Ollama;
 pub use runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
