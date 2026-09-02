@@ -30,7 +30,9 @@ GPU, and it is useful to `alo-workplace` the day it lands.
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
-- [ ] Launcher and window management
+- [ ] Launcher and window management: move, resize, snap, tile
+- [ ] Copy, cut and paste across applications; switching between windows
+- [ ] Keyboard shortcuts a person can change
 - [ ] The workspace client runs as an application on the shell
 - [ ] **Image**: OCI-built, boots on the certified machine, firmware to sign-in
 
@@ -49,6 +51,17 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] Multi-monitor, scaling, hotplug
 - [ ] Recovery and rollback screen
 - [ ] Settings: network, display, sound, printers, storage, keyboard
+- [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
+      archives, USB storage, file associations, a text editor, an image viewer,
+      a terminal
+- [ ] **Capture**: screenshots, annotation, screen recording with audio, screen
+      sharing — and an indicator whenever screen, camera or microphone is in use
+- [ ] **Input**: drag and drop, context menus, gestures, virtual desktops,
+      keyboard layouts with dead keys and a compose key, input methods
+- [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
+      media playback, power management, night light
+- [ ] **Language and access**: the shell in the user's language, regional
+      formats, screen reader, magnifier, high contrast, keyboard-only operation
 - [ ] **Printing**
 - [ ] `.docx`, `.xlsx`, `.pptx` open
 - [ ] A web browser for the open web

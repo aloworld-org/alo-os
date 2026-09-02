@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The ordinary desktop is written down: copy and paste, keyboard shortcuts a
+  person can change, screenshots and screen recording, notifications, a file
+  manager, Bluetooth, audio that switches mid-call, keyboard layouts with dead
+  keys, a screen reader, and a terminal — because law 2 restrains the agent, not
+  the machine's owner. None of it is a differentiator and all of it is required;
+  a system with a brilliant agent and no working Bluetooth is not a product.
+  With one addition that is ours: a visible indicator whenever the screen,
+  camera or microphone is in use, by any application including our own.
 - The things everybody actually complains about become answerable, because an
   agent can reach the machine: where that file is, in your own words and without
   anything being uploaded; why the machine is slow and what is filling the disk;

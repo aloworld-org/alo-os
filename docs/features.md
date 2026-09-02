@@ -27,6 +27,63 @@ current release, and Non-goals below.
 - [v1] Themes and appearance, driven by the shared design tokens
 - [v1] Multi-user on one machine, with per-person grants and no shared agent memory
 
+## The ordinary things a desktop must do
+
+Everything above is why alo OS is worth building. **This section is why it is
+usable**, and it is where most of the engineering actually is. An operating
+system with a brilliant agent and no working Bluetooth is not a product, and a
+feature list that skips copy and paste is not honest about the work.
+
+Nothing here is a differentiator. All of it is required.
+
+**Input and interaction**
+
+- [v0.01] Copy, cut and paste — text, images and files, across applications
+- [v0.01] Keyboard shortcuts, and a person can change them
+- [v0.01] Window management: move, resize, snap, tile, minimise, maximise, close
+- [v0.01] Switching between windows, and between applications
+- [v0.5] Drag and drop between applications
+- [v0.5] Right-click context menus, wherever a person expects one
+- [v0.5] Touchpad gestures: scroll, zoom, swipe between workspaces
+- [v0.5] **Keyboard layouts, switched easily** — and dead keys and a compose key that work. "Müller" and "Liège" are test cases in a European product, not edge cases
+- [v0.5] Input methods for non-Latin scripts
+- [v0.5] Virtual desktops
+- [v1] Clipboard history, on the machine and never synced anywhere
+
+**Capture**
+
+- [v0.5] Screenshots: whole screen, one window, a selected region — to a file or the clipboard
+- [v0.5] Annotate a screenshot without opening anything else
+- [v0.5] **Screen recording**, with audio, to a file
+- [v0.5] Screen sharing for calls
+- [v0.5] ★ **A visible indicator whenever the screen, camera or microphone is in use** — by any application, including ours. Law 1 is about egress; this is the same instinct applied to the room you are sitting in
+
+**Desktop**
+
+- [v0.5] Notifications, with do-not-disturb
+- [v0.5] Status area: clock, battery, network, volume, brightness
+- [v0.5] A file manager, with trash, and archives that open
+- [v0.5] USB drives and external storage that appear when plugged in
+- [v0.5] File associations — what opens what, changeable by a person
+- [v0.5] A text editor and an image viewer, so a fresh machine is not helpless
+- [v0.5] **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+
+**Devices and media**
+
+- [v0.5] Audio in and out, with device switching that works mid-call
+- [v0.5] Bluetooth: pairing, audio, keyboards, mice
+- [v0.5] Camera and microphone
+- [v0.5] Media playback, and the codecs people actually have files in
+- [v0.5] Power management, battery, sleep on lid close
+- [v0.5] Night light and display colour
+
+**Language and access**
+
+- [v0.5] The shell in the user's language, with regional formats and timezones
+- [v0.5] Screen reader, magnifier, high contrast, larger text
+- [v0.5] Sticky keys, slow keys, and keyboard-only operation of everything
+- [v1] Voice control of the shell — which for us is the agent, arriving somewhere it was always going
+
 ## `alo-agentd` — the agent's reach into the machine (ADR 0001)
 
 - [v0.01] ★ **File verbs**: list, read, find, rename, move, archive — over granted paths only

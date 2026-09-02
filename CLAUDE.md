@@ -26,7 +26,9 @@ that boots.
    shell, no script the model authored, no "advanced" escape hatch.
    A model that can write code that runs has escaped every other
    control in this repository, so this law is what makes the rest
-   true rather than decorative.
+   true rather than decorative. It binds the **agent**, never the
+   person: alo OS ships a terminal, because a system that does not
+   trust its owner with a shell is a toy.
 3. **Done means the machine still works.** Input → validation →
    policy → execution → record → error paths, on real hardware. An
    OS that boots but cannot print is not a released OS. No `todo!()`,
