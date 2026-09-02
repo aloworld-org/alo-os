@@ -49,7 +49,13 @@ impl Region {
 }
 
 /// One of the three places a model may answer from (ADR 0008).
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// It is written down and read back, because "where did that answer come from"
+/// has to be answerable afterwards and not only at the moment the answer
+/// appeared — that is what `alo-record` keeps. Reading one back grants nothing
+/// and reaches nothing: it names a place, and naming a place is all it does.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum InferenceSource {
     /// The weights are on this machine. Nothing leaves.
     ThisMachine,
@@ -313,6 +319,30 @@ mod tests {
                 .refusal(&hosted("someone", Region::Unknown))
                 .is_none()
         );
+    }
+
+    /// Where an answer came from outlives the answer, so a source has to
+    /// survive being written down and read back — still saying the same thing
+    /// about egress and about the region it satisfies.
+    #[test]
+    fn a_source_survives_being_written_down_and_read_back() {
+        for source in [
+            InferenceSource::ThisMachine,
+            InferenceSource::PairedMachine {
+                machine: "the studio workstation".to_owned(),
+            },
+            hosted("alo", eu()),
+            hosted("someone", Region::Unknown),
+        ] {
+            let written = serde_json::to_string(&source).unwrap_or_default();
+            let read = serde_json::from_str::<InferenceSource>(&written).ok();
+            assert_eq!(read.as_ref(), Some(&source), "{written}");
+            assert_eq!(
+                read.map(|read| read.causes_egress()),
+                Some(source.causes_egress()),
+                "{written}"
+            );
+        }
     }
 
     /// The default permits everything, and that is the decision rather than an

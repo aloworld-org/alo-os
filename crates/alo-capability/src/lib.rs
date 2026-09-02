@@ -2,10 +2,18 @@
 //!
 //! This crate is
 //! [ADR 0001](../../../docs/decisions/0001-the-capability-model.md) as working
-//! code. It holds the part of `alo-agentd` that is pure logic — grants today,
-//! and the verb registry, approvals and the record beside it — so that the
-//! rules an agent is bound by can be read, tested and argued with on their own,
-//! rather than being discovered inside a running daemon.
+//! code. It holds the part of `alo-agentd` that decides: grants, the verb
+//! registry and approvals, so that the rules an agent is bound by can be read,
+//! tested and argued with on their own, rather than being discovered inside a
+//! running daemon.
+//!
+//! **What happened is remembered elsewhere**, in `alo-record`. Nothing in this
+//! crate writes anything down, and the separation is deliberate twice over: a
+//! crate that decides should not be reachable from one that observes, and this
+//! one deliberately cannot read its own decisions back — [`Call`], [`Value`],
+//! [`Proposal`] and [`Approvals`] serialise and do not deserialise, because a
+//! call read back off a disk would be one nothing had validated. A record has
+//! the opposite job, so it keeps types of its own.
 //!
 //! **Grants are the durable thing.** Verbs are what may be done; a grant is
 //! what they may be done *to*. Nothing else in the system decides reach: if a
@@ -67,7 +75,10 @@
 //!    redeeming it consumes it;
 //! 4. [`Authorised`] — a call that may run now, which an executor takes by
 //!    value. A read reaches it directly through [`Authorised::read`]; a change
-//!    reaches it only through [`Approved::redeem`].
+//!    reaches it only through [`Approved::redeem`]. It carries all four answers
+//!    ADR 0001 §7 asks of a record — what ran, under whose authority, from
+//!    which approval, and against which grant ([`Authorised::against`]) —
+//!    because this is the one moment all four are true at once.
 //!
 //! **The grants are asked last at the moment of execution**, which is what
 //! makes a revoked grant take effect immediately: an approval given at noon and

@@ -225,10 +225,13 @@ mod tests {
         let grants = granting_both();
         let (_, approved) = approved(&grants);
         let id = approved.id();
+        let held: Vec<_> = grants.active_at(noon()).map(|held| held.id).collect();
         let running = approved.redeem(&grants, noon()).unwrap();
         assert_eq!(running.call(), &archiving_march());
         assert_eq!(running.from_approval(), Some(id));
         assert_eq!(running.under(), &files());
+        // Both folders had to be granted, so the record names both grants.
+        assert_eq!(running.against(), held);
         assert_eq!(
             running.sentence(),
             "move /home/anna/Invoices/march.pdf into /home/anna/Archive"

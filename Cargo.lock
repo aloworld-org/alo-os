@@ -23,6 +23,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-record"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-models",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "base64"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

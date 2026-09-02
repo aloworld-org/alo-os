@@ -7,8 +7,10 @@
 //! one action takes a grant away ([`Grants::revoke`]).
 //!
 //! **The daemon** asks whether one agent may touch one thing, right now
-//! ([`Grants::permits`]), and when the answer is no it asks why in words a
-//! person will read afterwards ([`Grants::refusal`]).
+//! ([`Grants::permitting`]), and gets back the grant that said yes or the
+//! refusal in words. [`Grants::permits`] and [`Grants::refusal`] are the two
+//! halves of that one answer, so there is only ever one search and nothing can
+//! be permitted by a grant the record cannot name.
 //!
 //! Nothing here widens anything. Every query takes `&self`; asking about a path
 //! a hundred times leaves the same grants that were there before, which is the
@@ -144,16 +146,38 @@ impl Grants {
         self.held.is_empty()
     }
 
-    /// Whether this agent may touch this thing, at this moment.
+    /// Which grant permits this agent to touch this thing, at this moment —
+    /// or why none of them does.
     ///
     /// The whole crate exists for this method. Everything it does not permit
     /// is refused: there is no default, no fallback and no path that is
     /// reachable because nobody thought to forbid it.
-    #[must_use]
-    pub fn permits(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> bool {
+    ///
+    /// It answers with the grant rather than with `true` because a record owes
+    /// an answer to *against which grant* (ADR 0001 §7), and this search is the
+    /// only moment that answer exists. Deriving it again afterwards would be a
+    /// second search, made against a list that may have moved on, and two
+    /// searches that can disagree are worse than none.
+    ///
+    /// # Errors
+    /// The refusal in words — see [`Grants::refusal`] for what it says and why.
+    pub fn permitting(
+        &self,
+        grantee: &Grantee,
+        ask: &Ask,
+        now: SystemTime,
+    ) -> Result<GrantId, String> {
         self.held
             .iter()
-            .any(|held| held.grant.is_for(grantee) && held.grant.permits(ask, now))
+            .find(|held| held.grant.is_for(grantee) && held.grant.permits(ask, now))
+            .map(|held| held.id)
+            .ok_or_else(|| self.why_not(grantee, ask))
+    }
+
+    /// Whether this agent may touch this thing, at this moment.
+    #[must_use]
+    pub fn permits(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> bool {
+        self.permitting(grantee, ask, now).is_ok()
     }
 
     /// Why an agent may not touch something — `None` when it may.
@@ -164,16 +188,21 @@ impl Grants {
     /// that covered both would tell them to check something they already know.
     #[must_use]
     pub fn refusal(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> Option<String> {
-        if self.permits(grantee, ask, now) {
-            return None;
-        }
+        self.permitting(grantee, ask, now).err()
+    }
+
+    /// The refusal in words, for an ask no grant permitted.
+    ///
+    /// Private because it is only ever true alongside a failed search: called
+    /// on its own it would say no about something that is in fact granted.
+    fn why_not(&self, grantee: &Grantee, ask: &Ask) -> String {
         let agent = grantee.as_str();
         let wanted = ask.describe();
         let lapsed = self
             .held
             .iter()
             .find(|held| held.grant.is_for(grantee) && held.grant.reach.covers(ask));
-        Some(match lapsed {
+        match lapsed {
             Some(held) => format!(
                 "{agent} had a grant to {} and it has expired — grant it again to let {agent} reach {wanted}",
                 held.grant.reach.describe()
@@ -181,7 +210,7 @@ impl Grants {
             None => format!(
                 "{agent} has not been granted {wanted} — grants are made by picking a folder, never by asking for one"
             ),
-        })
+        }
     }
 }
 
@@ -236,6 +265,44 @@ mod tests {
         assert!(!grants.permits(&files(), &Ask::path("/home/anna/Taxes/2024.pdf"), noon()));
         assert!(!grants.permits(&files(), &Ask::path("/home/anna"), noon()));
         assert!(!grants.permits(&files(), &Ask::path("/etc/shadow"), noon()));
+    }
+
+    /// The record has to be able to say *which* grant permitted something, so
+    /// the answer is the grant rather than a yes — and it is the grant a person
+    /// can find in their list and revoke.
+    #[test]
+    fn what_permits_something_is_answered_by_name() {
+        let mut grants = one_grant();
+        let invoices = grants.active_at(noon()).next().unwrap().id;
+        let taxes = grants.grant(
+            Grant::checked(
+                "@files",
+                Reach::Folder(PathBuf::from("/home/anna/Taxes")),
+                noon(),
+                hour(),
+            )
+            .unwrap(),
+        );
+        assert_eq!(grants.permitting(&files(), &march(), noon()), Ok(invoices));
+        assert_eq!(
+            grants.permitting(&files(), &Ask::path("/home/anna/Taxes/2024.pdf"), noon()),
+            Ok(taxes)
+        );
+
+        // And a refusal is the same answer's other half, so nothing can be
+        // permitted by a grant that cannot be named.
+        assert!(
+            grants
+                .permitting(&files(), &Ask::path("/etc/shadow"), noon())
+                .is_err()
+        );
+        assert!(grants.revoke(invoices));
+        assert!(
+            grants
+                .permitting(&files(), &march(), noon())
+                .unwrap_err()
+                .contains("has not been granted")
+        );
     }
 
     /// A grant is for one agent. Another agent's grant is not a fallback.

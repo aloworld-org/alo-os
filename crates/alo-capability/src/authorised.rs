@@ -22,13 +22,18 @@
 //! A refusal comes back as [`Refused`], which carries the call it refused. A
 //! refusal is recorded (ADR 0001 §7), and a refusal that threw away what it
 //! refused would leave the record saying only that something was stopped.
+//!
+//! An [`Authorised`] carries all four answers ADR 0001 §7 asks of a record —
+//! what ran, under whose authority, from which approval, and against which
+//! grant — because this is the one moment all four are true at once. The
+//! `alo-record` crate writes them down; it never works them out again.
 
 use std::time::SystemTime;
 
 use crate::approvals::ProposalId;
 use crate::call::Call;
 use crate::grant::Grantee;
-use crate::grants::Grants;
+use crate::grants::{GrantId, Grants};
 
 /// Why a call may not run.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -91,6 +96,8 @@ pub struct Authorised {
     under: Grantee,
     /// Which approval it came from — `None` for a read, which needs none.
     from: Option<ProposalId>,
+    /// The grants that permitted it, one for each thing it touches.
+    against: Vec<GrantId>,
     /// The moment the grants were asked, which is the moment it may run.
     at: SystemTime,
 }
@@ -134,16 +141,17 @@ impl Authorised {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<Self, Refused> {
-        match call.refusal(grants, &under, now) {
-            Some(why) => Err(Refused {
-                call: Box::new(call),
-                why: NotAuthorised::NotGranted(why),
-            }),
-            None => Ok(Self {
+        match call.permitting(grants, &under, now) {
+            Ok(against) => Ok(Self {
                 call,
                 under,
                 from,
+                against,
                 at: now,
+            }),
+            Err(why) => Err(Refused {
+                call: Box::new(call),
+                why: NotAuthorised::NotGranted(why),
             }),
         }
     }
@@ -183,6 +191,21 @@ impl Authorised {
         self.from
     }
 
+    /// Which grants permitted it — one for each thing it touches, in the order
+    /// the verb named them.
+    ///
+    /// This is the last of the four answers ADR 0001 §7 asks of a record, and
+    /// it is carried here because here is where it was true. A record that
+    /// asked the grants again afterwards would be reporting a second search,
+    /// against a list a person may have changed since.
+    ///
+    /// Empty for a verb that requires no grant, which is the honest answer to
+    /// *against which grant*: none, for the reason its author wrote down.
+    #[must_use]
+    pub fn against(&self) -> &[GrantId] {
+        &self.against
+    }
+
     /// The moment the grants were last asked.
     #[must_use]
     pub fn at(&self) -> SystemTime {
@@ -213,6 +236,22 @@ mod tests {
         assert_eq!(authorised.under(), &files());
         assert_eq!(authorised.at(), noon());
         assert!(authorised.from_approval().is_none());
+    }
+
+    /// What ran carries all four of ADR 0001 §7's answers, and the fourth —
+    /// *against which grant* — is the grant a person can find and revoke.
+    #[test]
+    fn what_may_run_names_the_grant_that_permitted_it() {
+        let grants = granting(&["/home/anna/Invoices"]);
+        let held: Vec<_> = grants.active_at(noon()).map(|held| held.id).collect();
+        let authorised = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
+        assert_eq!(authorised.against(), held);
+
+        // Revoking that grant is what stops the same read a moment later, so
+        // the grant the record names is the one that was actually load-bearing.
+        let mut grants = grants;
+        assert_eq!(grants.revoke_everything_for(&files()), 1);
+        assert!(Authorised::read(&listing_invoices(), &files(), &grants, noon()).is_err());
     }
 
     /// Running inside the turn is about approval, never about reach. A read of

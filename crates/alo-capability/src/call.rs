@@ -27,7 +27,7 @@ use serde::Serialize;
 
 use crate::arg::{ArgError, Given, Value};
 use crate::grant::Grantee;
-use crate::grants::Grants;
+use crate::grants::{GrantId, Grants};
 use crate::reach::Ask;
 use crate::sentence::SentenceError;
 use crate::verb::{Effect, Requires, Verb};
@@ -193,29 +193,45 @@ impl Call {
         &self.values
     }
 
-    /// Whether this agent's grants permit every part of this call.
+    /// Which grants permit this call — one for each thing it would touch, in
+    /// the order the verb named them.
     ///
     /// Every ask, not one of them: a call that may touch one of two folders is
     /// refused, because half of a move is not a smaller move. The join lives
     /// here rather than in the daemon so that no caller can check some of the
-    /// asks and believe it checked them all.
-    #[must_use]
-    pub fn permitted_by(&self, grants: &Grants, grantee: &Grantee, now: SystemTime) -> bool {
+    /// asks and believe it checked them all, and it stops at the first refusal
+    /// so that a permitted answer is never half an answer.
+    ///
+    /// A verb that declared [`Requires::Nothing`] permits with an empty list.
+    /// That is the honest answer to *against which grant*: none, for the reason
+    /// its author wrote down.
+    ///
+    /// # Errors
+    /// The first refusal, in the grants' own words — because a person reading
+    /// one needs to know about the grant rather than about the verb: that it
+    /// expired, or that it was never made, and which folder it was over.
+    pub fn permitting(
+        &self,
+        grants: &Grants,
+        grantee: &Grantee,
+        now: SystemTime,
+    ) -> Result<Vec<GrantId>, String> {
         self.asks
             .iter()
-            .all(|ask| grants.permits(grantee, ask, now))
+            .map(|ask| grants.permitting(grantee, ask, now))
+            .collect()
+    }
+
+    /// Whether this agent's grants permit every part of this call.
+    #[must_use]
+    pub fn permitted_by(&self, grants: &Grants, grantee: &Grantee, now: SystemTime) -> bool {
+        self.permitting(grants, grantee, now).is_ok()
     }
 
     /// Why it is not permitted — `None` when it is.
-    ///
-    /// The words come from [`Grants::refusal`], because a person reading a
-    /// refusal needs to know about the grant rather than about the verb: that
-    /// it expired, or that it was never made, and which folder it was over.
     #[must_use]
     pub fn refusal(&self, grants: &Grants, grantee: &Grantee, now: SystemTime) -> Option<String> {
-        self.asks
-            .iter()
-            .find_map(|ask| grants.refusal(grantee, ask, now))
+        self.permitting(grants, grantee, now).err()
     }
 }
 
@@ -373,6 +389,28 @@ mod tests {
         let both = granting(&["/home/anna/Invoices", "/home/anna/Archive"]);
         assert!(call.permitted_by(&both, &files(), noon()));
         assert!(call.refusal(&both, &files(), noon()).is_none());
+    }
+
+    /// A permitted call says which grants permitted it, one for each thing it
+    /// would touch — the last of the four answers ADR 0001 §7 asks of a record.
+    #[test]
+    fn a_permitted_call_names_the_grants_that_permitted_it() {
+        let grants = granting(&["/home/anna/Invoices", "/home/anna/Archive"]);
+        let held: Vec<_> = grants.active_at(noon()).map(|held| held.id).collect();
+        assert_eq!(
+            moving_march().permitting(&grants, &files(), noon()),
+            Ok(held)
+        );
+
+        // Half a move names no grant at all, rather than the one that did say
+        // yes: a refused call touched nothing, so nothing permitted it.
+        let half = granting(&["/home/anna/Invoices"]);
+        assert!(
+            moving_march()
+                .permitting(&half, &files(), noon())
+                .unwrap_err()
+                .contains("/home/anna/Archive")
+        );
     }
 
     /// A grant that has run out permits nothing, and the call that was

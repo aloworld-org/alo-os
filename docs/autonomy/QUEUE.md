@@ -33,6 +33,8 @@ and stops when there are none left.
 
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
+`crates/alo-capability` and `crates/alo-record` were built by the loop and are
+described in the items below.
 
 | | |
 |---|---|
@@ -121,13 +123,34 @@ items must follow:
   carries what it refused** (`Refused::call`), because item 4 records refusals
   and one that threw away the call could only say that something was stopped.
 
-- [ ] **4. The record** — implements ADR 0001 §7. Every execution *and every
-  refusal*, with what ran, under whose authority, from which approval, against
-  which grant. "Explain what it did" is a query, not a log to grep. Refusals
-  matter most: a record keeping only successes cannot answer what a security
-  review actually asks. **Also records the inference source** (ADR 0008), so
-  "where did that answer come from" is answerable afterwards and not only at the
-  moment it appeared.
+- [x] **4. The record** — implements ADR 0001 §7. Seven files in
+  `crates/alo-record`, a **new crate** rather than more of `alo-capability`:
+  `line.rs` (text as the record keeps it), `written.rs` (one argument),
+  `what.rs` (what a call was), `happened.rs` (the four things that can happen),
+  `entry.rs` (one moment and what happened at it), `record.rs` (the list),
+  `explain.rs` (what can be asked). 42 tests, clippy clean.
+
+  **Why a crate of its own**, against what `alo-capability`'s docs previously
+  said. The deciding crate must not deserialise — `Call`, `Value` and `Proposal`
+  serialise and deliberately do not read back — while a record exists to be read
+  back, so it needs its own types either way. And the record needs
+  `InferenceSource` from `alo-models`, which would have put an HTTP client and a
+  TLS stack behind the crate whose whole value is being small enough to audit.
+  `alo-capability` still depends on nothing but serde and thiserror.
+
+  Three decisions the next items inherit. **`Grants::permitting` answers with
+  the grant rather than with a yes**, and `permits`/`refusal` are now two halves
+  of that one search — so nothing can be permitted by a grant the record cannot
+  name, and `Authorised::against` carries it. **A record is evidence, not an
+  instruction**: nothing in `alo-record` turns back into a call, and nothing
+  takes an entry out. **Two things are never kept** — the question a person
+  asked, and the arguments of a call that never validated.
+
+- [ ] **4a. Where the record is written, and what prunes it** — the daemon's,
+  cut from item 4 deliberately. `Record` keeps everything and has no `forget`,
+  because how long evidence is kept is one decision made in the open rather than
+  a method anything holding the list can reach for. That decision, the file it
+  is written to, and the appending are `alo-agentd`'s and do not exist yet.
 
 - [ ] **5. Egress policy** — implements law 1, and now sits on `source.rs` rather
   than starting from nothing. The decision and the indicator event: what an agent

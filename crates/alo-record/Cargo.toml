@@ -1,0 +1,19 @@
+[package]
+name = "alo-record"
+version = "0.0.1"
+description = "What an agent did, and what it was stopped from doing (ADR 0001 §7)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-capability = { path = "../alo-capability" }
+alo-models = { path = "../alo-models" }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

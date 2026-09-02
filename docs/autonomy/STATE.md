@@ -261,3 +261,87 @@ the pair cannot quietly become a test that a typo fails to compile.
   this iteration is a sentence somebody reads.
 
 Seven ready items left. Item 4 (the record) is next.
+
+
+---
+
+## 2026-09-02 — iteration 4: the record
+
+**Built: item 4.** `crates/alo-record`, ADR 0001 §7 as working code: every
+execution and every refusal, kept so that "explain what it did" is a question
+put to the record rather than a search through text.
+
+| | |
+|---|---|
+| `line.rs` | Text as the record keeps it: one line, printable, bounded. Everything that enters the record as words comes through here |
+| `written.rs` | One validated argument, written down — a mirror of `Value`, with an exhaustive `From` so a new kind of argument cannot be quietly lost |
+| `what.rs` | What a call was: the verb, its arguments, and the sentence a person read |
+| `happened.rs` | The four things that can happen — it ran, it was stopped, it never became a call, or a question was answered somewhere |
+| `entry.rs` | One moment and what happened at it, with one constructor per point in ADR 0001's journey |
+| `record.rs` | The list. Append, read back, and no way to take anything out |
+| `explain.rs` | What can be asked: by agent, by span, by grant, by approval, refusals only, egress only |
+
+One test-support file came with them: `test_calls.rs`, under `cfg(test)`.
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, 179 tests passing
+plus 2 doctests (42 new in `alo-record`, 3 new in `alo-capability`, 1 new in
+`alo-models`). `cargo doc --workspace --no-deps` clean. Built and unit tested on
+Windows; **no hardware verification, and none claimed** — nothing here touches a
+machine, and nothing writes to a disk yet either.
+
+The guarantee `CLAUDE.md` names — *every execution and every refusal leaves a
+record* — is a test in `record.rs`, and the three kinds of refusal are each a
+test of their own in `entry.rs`.
+
+**The one decision that went against a plan already written down.** Iterations 1
+to 3 said the record would live in `alo-capability`, and its module
+documentation said so. It does not, and the reason is worth the deviation:
+
+- **the deciding crate must not deserialise.** `Call`, `Value`, `Proposal` and
+  `Approvals` serialise and deliberately do not read back, because one read off
+  a disk would be a call nothing had validated. A record exists to be read back.
+  Housing both in one crate would mean the rule "nothing here deserialises" had
+  an exception in the same crate as the thing it protects;
+- **the record needs `InferenceSource`**, which lives in `alo-models` — and
+  `alo-models` carries `ureq` and a TLS stack for the Ollama adapter. Depending
+  on it from `alo-capability` would have put a TLS stack behind the crate whose
+  entire value is being small enough for somebody else to audit. `alo-capability`
+  still depends on nothing but `serde` and `thiserror`;
+- **a crate that decides should not be reachable from one that observes**, so a
+  future `Grants` cannot quietly start writing entries about itself.
+
+**What the next iteration must know:**
+
+- **`Grants::permitting` is the one search now**, answering with the `GrantId`
+  that permitted something or the refusal in words. `permits` and `refusal` are
+  thin wrappers over it, so there is no second search that could disagree with
+  the one that decided. `Call::permitting` joins it across every ask and stops
+  at the first refusal; `Authorised::against` carries the result. Item 6 gets
+  this for free and should not re-derive it.
+- **The record's four answers exist at exactly one moment**, inside
+  `Authorised`, and `Entry::ran` copies them rather than working them out. A
+  daemon that recorded from anywhere else would be recording a second opinion.
+- **`Record` has no `forget`**, and that is the item 4a now in the queue: how
+  long evidence is kept is one decision made in the open, and it belongs to
+  whatever writes the record to a disk. Nothing writes it to a disk yet.
+- **Two things are never recorded**, and both are tests rather than sentences:
+  the question a person asked (`Happened::Answered` has no field for it), and
+  the arguments of a call that never validated. Item 6 will be tempted by the
+  second one when file verbs start being refused in quantity.
+- **Everything the record shows goes through `Line`** — control characters out,
+  collapsed, bounded. The refusal path is why: text from a call that never
+  validated was written by whatever the model was persuaded to send, and a
+  record read in a terminal must not be able to show one thing and say another.
+- **`InferenceSource` now serialises**, which it did not before. It is an
+  additive change to `alo-models`' public surface, with a round-trip test beside
+  it. Item 5 (egress policy) will want the same of anything it adds.
+- **The new user-facing English is on item 9's list.** Less than expected: the
+  record deliberately composes no prose, because the explanation a person reads
+  is the sentence they already approved. What is there is `Stopped`'s stored
+  words, which come from `alo-capability`'s errors and are already on that list.
+
+Seven ready items left, one of them new. Item 5 (egress policy) is next, and it
+starts from `source.rs` in `alo-models` and from `Happened::Answered` here —
+`Asking::only(Only::Egress)` already answers *what left this machine*, so item 5
+is the decision and the indicator rather than the record of it.

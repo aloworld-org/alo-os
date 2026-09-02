@@ -12,6 +12,23 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- What an agent did is now kept, and so is everything it was stopped from
+  doing. Each entry says what ran, whose authority it ran under, which approval
+  it came from and which grant permitted it — and the grant it names is the one
+  you can find in your list and take away, so "what had this folder already been
+  used for?" is a question you can ask after revoking it. **The refusals are the
+  point**: a folder that was never granted, a grant that had expired, a change
+  you declined, and a request that was so malformed it never became a request at
+  all are all kept, because a record of successes alone cannot answer what
+  anybody actually asks of one. Where an answer came from is recorded too — on
+  this machine, on a machine on your network, or by a provider — so "where did
+  that go?" is answerable at the end of the week and not only in the second it
+  appeared. What you *asked* is never recorded, and there is nowhere in an entry
+  for it to go: this keeps a note of what your machine did, not a transcript of
+  what you said to it. Asking it something is a question you put to it — what
+  did this agent do this afternoon, what was it refused, what left this machine
+  — rather than a search through text. Nothing takes an entry back out.
+
 - A change an agent wants to make now waits for you, and one approval buys
   exactly one action. What you approve is the sentence describing what will
   happen, and what runs is what that sentence named — the arguments travel

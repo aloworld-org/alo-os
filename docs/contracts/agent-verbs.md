@@ -125,6 +125,27 @@ refusal is recorded too: "the agent tried and was stopped" is exactly the
 sentence a security review needs, and it is worthless if only successes are
 kept.
 
+The record lives in `alo-record`, and an entry is one of four things: a verb
+ran, a properly formed call was stopped, something never became a call at all,
+or a question was answered somewhere (ADR 0008). Three of the four are ways of
+not happening, and a stopped call says *where* it was stopped — nobody was
+asked, the person said no, or the grants said no at the last moment — because
+those are three different facts about a machine.
+
+Two things an entry never carries, and no adapter should expect to add them:
+
+- **the question a person asked.** Where an answer came from is recorded; what
+  was asked is not, and there is no field for it;
+- **the arguments of a call that never validated.** They are whatever arrived,
+  and an entry carrying them would look like every other entry while saying
+  something nobody did. The verb name and the refusal are kept, as one readable
+  line each.
+
+"Explain what it did" is a query put to the record in its own terms — by agent,
+by span, by grant, by approval, refusals only, egress only — and never a search
+for text. An adapter that wants a new question answered adds it there rather
+than formatting a line for somebody to match against.
+
 ## Adding a verb
 
 1. It is in `docs/features.md` with a tier, in the current release.
