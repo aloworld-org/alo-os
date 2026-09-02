@@ -22,7 +22,7 @@ use std::fmt;
 
 use alo_capability::Grantee;
 use alo_models::InferenceSource;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::destination::{Destination, DestinationError};
 
@@ -31,7 +31,13 @@ use crate::destination::{Destination, DestinationError};
 /// A closed list. Adding to it widens what an agent can cause, so it belongs in
 /// [ADR 0001](../../../docs/decisions/0001-the-capability-model.md) before it
 /// belongs here.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+///
+/// Read back as well as written down, like [`Destination`] and unlike
+/// [`Leaving`]: a record of what left this machine says *why* it left, and a
+/// record read at the end of a week has to be able to say it. Reading one back
+/// decides nothing and permits nothing — it names a reason, and naming a reason
+/// is all it does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Why {
     /// A question put to a model somewhere other than this machine
@@ -238,5 +244,17 @@ mod tests {
         // There is no `Deserialize` for `Leaving`, so this is as far as it
         // goes: the destination reads back, and the decision does not.
         assert!(serde_json::from_str::<Destination>(&written).is_err());
+
+        // The parts a record keeps do read back, because "what left, and why"
+        // is a question asked at the end of a week and not only in the second
+        // the indicator lit up.
+        for why in [Why::Asking, Why::Fetching, Why::Sending] {
+            let alone = serde_json::to_string(&why).unwrap();
+            assert_eq!(
+                serde_json::from_str::<Why>(&alone).ok(),
+                Some(why),
+                "{alone}"
+            );
+        }
     }
 }

@@ -9,7 +9,7 @@
 //!
 //! **The refusals are the point.** A record keeping only successes cannot
 //! answer what a security review actually asks, which is not *what did it do*
-//! but *what did it try*. So all four things that can happen to an attempt are
+//! but *what did it try*. So all six things that can happen to an attempt are
 //! kept, and three of them are ways of being stopped:
 //!
 //! | | |
@@ -17,7 +17,24 @@
 //! | [`Happened::Ran`] | It ran, with ADR 0001 §7's four answers |
 //! | [`Happened::Stopped`] | A properly formed call that was refused — and [`Stopped`] says where in the journey |
 //! | [`Happened::TurnedAway`] | Something that never became a call at all |
-//! | [`Happened::Answered`] | Where a question was answered ([ADR 0008](../../../docs/decisions/0008-where-inference-happens.md)) |
+//! | [`Happened::AnsweredHere`] | A question answered on this machine ([ADR 0008](../../../docs/decisions/0008-where-inference-happens.md)) |
+//! | [`Happened::Left`] | Something left this machine (law 1) |
+//! | [`Happened::HeldBack`] | Something the egress policy refused to let leave |
+//!
+//! # What left, kept once
+//!
+//! Law 1 asks *what left this machine today* and law 1's answer has to be one
+//! entry per departure. An answer from a provider is both a departure and where
+//! an answer came from, so it is **one** entry — the departure — and the
+//! destination says everything an inference source said. A question answered
+//! here never left and is [`Happened::AnsweredHere`], which has nowhere to
+//! name. [`happened`] has the reasoning.
+//!
+//! The guarantee that goes with it is [`departed`]'s: an egress entry can only
+//! be made from an [`alo_egress::Departing`], and the indicator is the only
+//! maker of one of those. **An egress the indicator never showed is not an
+//! entry that can be written**, and neither is one it showed and the record
+//! then contradicted.
 //!
 //! # Why this is not part of `alo-capability`
 //!
@@ -41,15 +58,16 @@
 //! # Telling the time
 //!
 //! Nothing here reads the clock, as in `alo-capability` and for the same
-//! reason. [`Entry::ran`] is the exception that proves it: it takes its moment
-//! from the [`alo_capability::Authorised`] it is recording, because the moment
-//! that matters is the one the grants were asked at, not the one the writing
-//! happened at.
+//! reason. [`Entry::ran`] and [`Entry::left`] are the exceptions that prove it:
+//! each takes its moment from the thing it is recording — the moment the grants
+//! were asked, and the moment the egress policy was — because that is the
+//! moment it was allowed to happen, and not the one the writing happened at.
 //!
 //! # What is not kept
 //!
-//! **Not what was asked.** [`Happened::Answered`] records *where* a question
-//! was answered and never the question — a record that kept those would be a
+//! **Not what was asked.** [`Happened::AnsweredHere`] records that a question
+//! was answered and never the question, and [`Happened::Left`] records where
+//! something went and never what went — a record that kept those would be a
 //! transcript of everything a person ever said to their machine, which is the
 //! thing this product exists not to be.
 //!
@@ -59,6 +77,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod departed;
 pub mod entry;
 pub mod explain;
 pub mod happened;

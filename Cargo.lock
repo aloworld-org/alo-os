@@ -38,6 +38,7 @@ name = "alo-record"
 version = "0.0.1"
 dependencies = [
  "alo-capability",
+ "alo-egress",
  "alo-models",
  "serde",
  "serde_json",

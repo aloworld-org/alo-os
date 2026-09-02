@@ -73,10 +73,10 @@ impl Record {
 mod tests {
     use super::*;
     use crate::test_calls::{
-        archiving_march, files, granting, granting_both, hour, listing_invoices, noon, proposing,
+        archiving_march, files, granting, granting_both, hour, listing_invoices, mail, noon,
+        proposing,
     };
-    use alo_capability::{Approvals, Authorised, Grantee};
-    use alo_models::InferenceSource;
+    use alo_capability::{Approvals, Authorised};
 
     /// One of each thing that can happen, in the order it happened.
     fn a_working_afternoon() -> Record {
@@ -101,11 +101,7 @@ mod tests {
         .unwrap_err();
         record.keep(Entry::refused(&refused, &files(), noon() + hour()));
 
-        record.keep(Entry::answered(
-            &Grantee::named("@mail"),
-            &InferenceSource::ThisMachine,
-            noon() + hour(),
-        ));
+        record.keep(Entry::answered_here(&mail(), noon() + hour()));
         record
     }
 

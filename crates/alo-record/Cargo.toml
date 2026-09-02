@@ -9,10 +9,13 @@ repository.workspace = true
 
 [dependencies]
 alo-capability = { path = "../alo-capability" }
-alo-models = { path = "../alo-models" }
+alo-egress = { path = "../alo-egress" }
 serde = { workspace = true }
 
 [dev-dependencies]
+# Only the tests name a source: what the record keeps about an answer from
+# somewhere else is the departure it caused, and a departure is `alo-egress`'s.
+alo-models = { path = "../alo-models" }
 serde_json = { workspace = true }
 
 [lints]

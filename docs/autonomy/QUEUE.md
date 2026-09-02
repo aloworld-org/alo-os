@@ -34,7 +34,10 @@ and stops when there are none left.
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record` and `crates/alo-egress` were built
-by the loop and are described in the items below.
+by the loop and are described in the items below. They depend on each other in
+one direction only: `alo-capability` decides and reaches nothing, `alo-egress`
+decides about what leaves, and `alo-record` observes both and is reachable from
+neither.
 
 | | |
 |---|---|
@@ -181,18 +184,33 @@ items must follow:
   Enforcement at the network boundary is Linux and is a later item; this crate
   guarantees the ordinary path, not code that never asked.
 
-- [ ] **5a. The record of what left** — cut from item 5 deliberately, and it is a
-  decision before it is code. `Departing` already carries what an entry needs —
-  agent, destination, why, and the moment — but where it goes in `alo-record` is
-  not obvious: `Happened::Answered` already records where an answer came from and
-  already answers `Only::Egress`, so an answer from a provider is both a
-  departure and a provenance, and a second entry beside it would count one
-  departure twice in the one query law 1 promises. Either `Answered` becomes
-  provenance only and a new `Happened::Left` is the single egress entry, or
-  `Entry` gains a constructor taking `&Departing` that produces `Answered` for
-  `Why::Asking` and `Left` otherwise. Pick one, write down why, and make the
-  entry unreachable except from a `Departing` so an egress cannot be recorded
-  that the indicator never showed.
+- [x] **5a. The record of what left** — implements law 1's second half in
+  `alo-record`. One new file, `departed.rs` (the only door from an egress into
+  the record), plus three new `Happened` variants and the query behind them. 12
+  new tests and 3 new doctests, two of them `compile_fail`; 218 tests and 8
+  doctests across the workspace, clippy clean.
+
+  **The decision, which the item asked for before it asked for code.** Neither
+  of the two options as written: `Answered` did not become provenance beside a
+  departure, it became `AnsweredHere` and stopped having a source at all. A
+  question answered somewhere else *is* the departure it caused, so it is
+  `Happened::Left` and nothing beside it; a question answered here is
+  `Happened::AnsweredHere`, which has nowhere to name and no field to name it
+  in. Nothing is lost — `Destination` says everything `InferenceSource` said,
+  and `alo-egress` already maps one to the other in one place — and two things
+  are gained. `caused_egress` became a variant rather than a calculation, so no
+  two readers can work it out differently. And the record can no longer
+  contradict itself: saying *the answer came from a provider* now requires a
+  `Departing`, which only the indicator makes.
+
+  Three decisions the next items inherit. **An egress entry is unreachable
+  except from a `Departing`, and a held-back one except from a `NotPermitted`**
+  — both `pub(crate)`-constructed by the indicator, asserted by `compile_fail`
+  doctests that were checked to fail on the privacy and not on a typo.
+  **`Why` now deserialises**, additively, like `InferenceSource` gained
+  `Serialize` in item 4; `Leaving` still does not. **`alo-record` depends on
+  `alo-egress` and no longer on `alo-models`** except in tests — the observer
+  reaches the decider, never the reverse.
 
 - [ ] **6. File verbs, the portable half** — the verb definitions, argument
   types, grant checks and sentence generation for list, read, find, rename,

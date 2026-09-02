@@ -1,10 +1,11 @@
-//! The calls, grants and moments the record's tests are written against.
+//! The calls, grants, departures and moments the record's tests are written
+//! against.
 //!
-//! One folder, one archive, one file and one clock reading, shared by
-//! [`crate::what`], [`crate::happened`], [`crate::entry`], [`crate::record`]
-//! and [`crate::explain`] — five files asking questions about the same
-//! afternoon, and five copies of the fixtures would eventually be five
-//! different afternoons.
+//! One folder, one archive, one file, one question sent elsewhere and one clock
+//! reading, shared by [`crate::what`], [`crate::happened`], [`crate::entry`],
+//! [`crate::departed`], [`crate::record`] and [`crate::explain`] — six files
+//! asking questions about the same afternoon, and six copies of the fixtures
+//! would eventually be six different afternoons.
 //!
 //! Deliberately a second copy of `alo-capability`'s own test fixtures rather
 //! than a shared one. Making them shared would mean shipping them in the
@@ -25,6 +26,8 @@ use std::time::{Duration, SystemTime};
 use alo_capability::{
     Arg, Call, Effect, Given, Grant, Grantee, Grants, Proposal, Reach, Requires, Takes, Verb,
 };
+use alo_egress::{Departing, Destination, EgressPolicy, Indicator, Leaving, NotPermitted, Why};
+use alo_models::Region;
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 pub(crate) fn noon() -> SystemTime {
@@ -118,4 +121,43 @@ pub(crate) fn granting_both() -> Grants {
 /// The archiving change, put to a person and standing for a day.
 pub(crate) fn proposing(call: &Call, grants: &Grants) -> Proposal {
     Proposal::checked(call, &files(), grants, noon(), hour() * 24).unwrap()
+}
+
+/// The agent that asks questions, so the egress fixtures are not the same agent
+/// as the file ones and a query by agent has something to separate.
+pub(crate) fn mail() -> Grantee {
+    Grantee::named("@mail")
+}
+
+/// A provider that has said where it runs.
+pub(crate) fn to_alo() -> Destination {
+    Destination::provider("alo", Region::Declared("the EU".to_owned())).unwrap()
+}
+
+/// A machine in the next room, paired deliberately — egress all the same.
+pub(crate) fn to_the_studio() -> Destination {
+    Destination::paired("the studio workstation").unwrap()
+}
+
+/// A question `@mail` is about to put to a model somewhere else.
+pub(crate) fn asking_alo() -> Leaving {
+    Leaving::because(&mail(), Why::Asking, to_alo())
+}
+
+/// A departure the policy permitted, already on an indicator.
+///
+/// The indicator is local to the fixture on purpose: a [`Departing`] is the
+/// only thing that means *this may leave*, and a test that could conjure one
+/// without an indicator having shown it would be testing something else.
+pub(crate) fn departing(leaving: Leaving, at: SystemTime) -> Departing {
+    Indicator::default()
+        .beginning(&EgressPolicy::Anywhere, leaving, at)
+        .unwrap()
+}
+
+/// An egress this policy refused.
+pub(crate) fn not_permitted(policy: &EgressPolicy, leaving: Leaving) -> NotPermitted {
+    Indicator::default()
+        .beginning(policy, leaving, noon())
+        .unwrap_err()
 }

@@ -125,12 +125,22 @@ refusal is recorded too: "the agent tried and was stopped" is exactly the
 sentence a security review needs, and it is worthless if only successes are
 kept.
 
-The record lives in `alo-record`, and an entry is one of four things: a verb
-ran, a properly formed call was stopped, something never became a call at all,
-or a question was answered somewhere (ADR 0008). Three of the four are ways of
+The record lives in `alo-record`, and an entry is one of six things: a verb ran,
+a properly formed call was stopped, something never became a call at all, a
+question was answered on this machine (ADR 0008), something left this machine
+(law 1), or the egress policy held something back. Three of the six are ways of
 not happening, and a stopped call says *where* it was stopped — nobody was
 asked, the person said no, or the grants said no at the last moment — because
 those are three different facts about a machine.
+
+**A departure is one entry, and it is the only kind that counts as egress.** A
+question answered somewhere else *is* the egress it caused, so where that answer
+came from is read off the departure rather than off a second entry beside it;
+otherwise "what left this machine today" would count one departure twice. An
+egress the policy refused is a refusal and never a departure, because nothing
+left. An adapter cannot write either kind of entry from a destination it names
+itself: what left is recorded from the departure the indicator showed, and what
+was held back from the refusal the policy made.
 
 Two things an entry never carries, and no adapter should expect to add them:
 

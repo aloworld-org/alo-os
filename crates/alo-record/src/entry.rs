@@ -1,11 +1,15 @@
 //! One entry: a moment, and what happened at it.
 //!
-//! There is one constructor for each point in the journey ADR 0001 describes,
-//! and between them they cover all of it: a call that never formed, a change
-//! that was never put to anybody, a change a person declined, a call refused at
-//! the moment it would have run, a call that ran, and a question that was
-//! answered somewhere. Anything an agent causes is one of those six, and there
-//! is no seventh that quietly goes unrecorded.
+//! There is one constructor for each point in the journey ADR 0001 §5 and §7
+//! describe, and between them they cover all of it: a call that never formed, a
+//! change that was never put to anybody, a change a person declined, a call
+//! refused at the moment it would have run, a call that ran, and a question
+//! answered on this machine.
+//!
+//! **Egress is the other half, and it is [`crate::departed`]'s.** What an agent
+//! caused to leave is decided by a different crate, guaranteed by a different
+//! type and changed for different reasons, so it is a file of its own — law 4.
+//! Between the two there is nothing an agent causes that goes unrecorded.
 //!
 //! **Nothing here reads the clock**, as in [`alo_capability`] and for the same
 //! reason: the moment is passed in, so a record can be written about a moment
@@ -33,6 +37,17 @@ pub struct Entry {
 }
 
 impl Entry {
+    /// A moment and what happened at it.
+    ///
+    /// Crate-private, and shared with [`crate::departed`] so the egress
+    /// constructors can live in a file of their own. There is no public way to
+    /// make an arbitrary entry: every public constructor is a named point in
+    /// the journey, which is what stops a record being handed something that
+    /// never happened.
+    pub(crate) fn new(at: SystemTime, happened: Happened) -> Self {
+        Self { at, happened }
+    }
+
     /// A verb ran.
     ///
     /// The moment comes from the authorisation rather than from the caller: it
@@ -116,19 +131,24 @@ impl Entry {
         }
     }
 
-    /// A question was answered, and this is where (ADR 0008).
+    /// A question was answered on this machine (ADR 0008).
     ///
-    /// Only where. What was asked is not passed in and there is no field for
-    /// it.
+    /// Who asked, and when. What was asked is not passed in and there is no
+    /// field for it.
+    ///
+    /// **There is no source to give**, because the only source this constructor
+    /// describes is this machine. A question answered anywhere else left the
+    /// machine, and what left is [`Entry::left`] — which can only be made from
+    /// a departure the indicator showed. That is what stops the record being
+    /// able to say an answer came from a provider while saying nothing left.
     #[must_use]
-    pub fn answered(agent: &Grantee, source: &alo_models::InferenceSource, at: SystemTime) -> Self {
-        Self {
+    pub fn answered_here(agent: &Grantee, at: SystemTime) -> Self {
+        Self::new(
             at,
-            happened: Happened::Answered {
+            Happened::AnsweredHere {
                 agent: Line::of(agent.as_str()),
-                source: source.clone(),
             },
-        }
+        )
     }
 
     /// A properly formed call that was stopped somewhere.
@@ -180,7 +200,8 @@ impl Entry {
 mod tests {
     use super::*;
     use crate::test_calls::{
-        archiving_march, files, granting, granting_both, hour, listing_invoices, noon, proposing,
+        archiving_march, files, granting, granting_both, hour, listing_invoices, mail, noon,
+        proposing,
     };
     use alo_capability::{Approvals, Grants};
 
@@ -322,23 +343,24 @@ mod tests {
         assert!(!written.contains('\u{1b}'), "{written}");
     }
 
-    /// ADR 0008: where an answer came from is recorded. **What was asked is
-    /// not**, and there is no field it could go in — a record that kept the
-    /// questions would be a transcript of everything a person said to their
-    /// machine.
+    /// ADR 0008: that a question was answered here is recorded. **What was
+    /// asked is not**, and there is no field it could go in — a record that
+    /// kept the questions would be a transcript of everything a person said to
+    /// their machine.
     #[test]
-    fn where_an_answer_came_from_is_recorded_and_the_question_is_not() {
-        let source = alo_models::InferenceSource::Hosted {
-            provider: "alo".to_owned(),
-            region: alo_models::Region::Declared("the EU".to_owned()),
-        };
-        let entry = Entry::answered(&Grantee::named("@mail"), &source, noon());
-        assert!(entry.happened().caused_egress());
-        assert_eq!(entry.happened().source(), Some(&source));
+    fn a_question_answered_here_is_recorded_and_the_question_is_not() {
+        let entry = Entry::answered_here(&mail(), noon());
+        assert!(entry.agent().is("@mail"));
         assert!(entry.what().is_none());
 
+        // An answer given here never left, so there is nothing for law 1's
+        // question to find — the zero-egress claim as an absence rather than as
+        // a counter that reads zero.
+        assert!(!entry.happened().caused_egress());
+        assert_eq!(entry.happened().destination(), None);
+
         // There is nowhere in an entry for a question to be, so an entry about
-        // an answer is the moment, the agent and the place, and nothing else.
+        // an answer is the moment and the agent, and nothing else.
         let written = serde_json::to_string(&entry).unwrap();
         for question in ["What is in", "the contract", "Northstar"] {
             assert!(!written.contains(question), "{written}");

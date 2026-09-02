@@ -35,10 +35,14 @@ use crate::entry::Entry;
 pub enum Only {
     /// What ran.
     Executions,
-    /// What was stopped — the well-formed calls that were refused, and the
-    /// attempts that never became calls at all.
+    /// What was stopped — the well-formed calls that were refused, the attempts
+    /// that never became calls at all, and the egress the policy held back.
     Refusals,
-    /// What caused something to leave this machine (law 1).
+    /// What left this machine (law 1).
+    ///
+    /// One entry per departure, because a departure is one entry: a question
+    /// answered somewhere else *is* the egress it caused rather than a second
+    /// thing beside it, and an egress the policy refused never left at all.
     Egress,
 }
 
@@ -158,10 +162,11 @@ mod tests {
     use super::*;
     use crate::record::Record;
     use crate::test_calls::{
-        archiving_march, files, granting, granting_both, hour, listing_invoices, noon, proposing,
+        archiving_march, asking_alo, departing, files, granting, granting_both, hour,
+        listing_invoices, noon, not_permitted, proposing,
     };
-    use alo_capability::{Approvals, Authorised, Grantee, Grants};
-    use alo_models::{InferenceSource, Region};
+    use alo_capability::{Approvals, Authorised, Grants};
+    use alo_egress::EgressPolicy;
 
     /// An afternoon with something of every kind in it, and the numbers the
     /// tests below ask about.
@@ -206,15 +211,9 @@ mod tests {
             noon() + hour() * 2,
         ));
 
-        // And another agent's question, answered somewhere else entirely.
-        record.keep(Entry::answered(
-            &Grantee::named("@mail"),
-            &InferenceSource::Hosted {
-                provider: "alo".to_owned(),
-                region: Region::Declared("the EU".to_owned()),
-            },
-            noon() + hour() * 2,
-        ));
+        // And another agent's question, answered somewhere else entirely —
+        // which is to say, a departure.
+        record.keep(Entry::left(&departing(asking_alo(), noon() + hour() * 2)));
         Afternoon {
             record,
             grant,
@@ -346,12 +345,30 @@ mod tests {
         // A working day answered on this machine leaves nothing to find, which
         // is the measurement law 1 promises rather than the promise itself.
         let mut local = Record::default();
-        local.keep(Entry::answered(
-            &files(),
-            &InferenceSource::ThisMachine,
+        for hours in 0..8 {
+            local.keep(Entry::answered_here(&files(), noon() + hour() * hours));
+        }
+        assert_eq!(local.len(), 8);
+        assert_eq!(how_many(&local, &asking), 0);
+    }
+
+    /// **An egress the policy refused is a refusal, not a departure.** A record
+    /// that counted what was stopped as something that left would answer law
+    /// 1's question with a number larger than the truth, which is the way of
+    /// being wrong that teaches people to stop reading it.
+    #[test]
+    fn what_was_held_back_answers_the_refusals_and_never_the_egress() {
+        let mut record = Record::default();
+        record.keep(Entry::held_back(
+            &not_permitted(&EgressPolicy::NothingLeaves, asking_alo()),
             noon(),
         ));
-        assert_eq!(how_many(&local, &asking), 0);
+        assert_eq!(how_many(&record, &Asking::anything().only(Only::Egress)), 0);
+        assert_eq!(
+            how_many(&record, &Asking::anything().only(Only::Refusals)),
+            1
+        );
+        assert_eq!(how_many(&record, &Asking::anything().by("@mail")), 1);
     }
 
     /// A span includes where it starts and stops before where it ends, so two

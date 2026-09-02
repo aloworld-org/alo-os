@@ -426,3 +426,92 @@ once at the moment it was allowed.
 Seven ready items left, one of them new. Item 5a (the record of what left) is
 next, and it is a decision to make before it is code to write; item 6 (file
 verbs, the portable half) is the next one that starts from a settled model.
+
+---
+
+## 2026-09-02 — iteration 6: the record of what left
+
+**Built: item 5a**, whole, including the refusal path the item did not name.
+`alo-record` now answers law 1's second half — *and afterwards in a record* —
+and it answers it with one entry per departure.
+
+| | |
+|---|---|
+| `departed.rs` | **New.** The only door from an egress into the record: `Entry::left` from a `Departing`, `Entry::held_back` from a `NotPermitted`, and nothing else |
+| `happened.rs` | `Answered` became `AnsweredHere` and lost its source; `Left` and `HeldBack` are new; `caused_egress` is now a variant rather than a calculation, and `why_stopped` answers across all three refusals |
+| `entry.rs` | `answered` became `answered_here`, which takes no source because there is only one it could name |
+| `explain.rs` | `Only::Egress` is departures; `Only::Refusals` now includes what the policy held back |
+| `leaving.rs` (egress) | `Why` deserialises, additively — a record of what left has to say why |
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, **218 tests
+passing plus 8 doctests** (12 new unit tests and 3 new doctests, two of them
+`compile_fail`). `cargo doc --workspace --no-deps` clean. Built and unit tested
+on Windows; **no hardware verification, and none claimed** — nothing here opens
+a socket.
+
+**The decision the item asked for, and why it is neither of the two it
+offered.** The queue put two options: make `Answered` provenance beside a new
+`Left`, or have one constructor choose the variant from `Why`. The second is
+not writable — `Answered` held an `InferenceSource` and a `Departing` holds a
+`Destination`, and there is no honest way back from an address a verb named to
+an inference source. The first works but leaves the record able to contradict
+itself: a daemon could write *the answer came from a provider* while the egress
+query answered *nothing left*, because nothing tied the two together.
+
+So `Answered` became `AnsweredHere` and stopped carrying a source at all. A
+question answered somewhere else **is** the departure it caused, kept once as
+`Happened::Left` with `Why::Asking`; a question answered here has nowhere to
+name and no field to name it in. **Nothing is lost by it** — `Destination` says
+everything `InferenceSource` said, the same three kinds under the same names,
+and `alo-egress` already maps one to the other in one place. Two things are
+gained, and both are the kind that stay true when somebody who has not read the
+file writes the next daemon: whether an entry is egress is a **variant** rather
+than something re-derived per reader, and an answer from somewhere else cannot
+be recorded without a departure the indicator showed.
+
+**What the item did not name and the gate did.** An egress the policy refused
+had no way into the record. `CLAUDE.md` requires every refusal to leave one, and
+`policy.rs` had already made `NotPermitted` carry what it refused *because* a
+refusal is recorded. So `Entry::held_back` is here, it is a refusal and not a
+departure, and the query proves both: a held-back egress answers `Only::Refusals`
+and answers `Only::Egress` with nothing. Recording only what succeeded would
+have been cutting depth, which is the one thing scope may never be cut into.
+
+**What the next iteration must know:**
+
+- **Two doors, both `pub(crate)` on the far side.** `Happened::Left` is
+  reachable only from a `Departing` and `Happened::HeldBack` only from a
+  `NotPermitted`, and neither has a public constructor in `alo-egress`. Two
+  `compile_fail` doctests assert it. They were checked by unmarking them and
+  reading the error — both fail with E0624 on the privacy of `new`, not on an
+  argument count, so they are not tests of a typo.
+- **`departed.rs` is a file rather than two more constructors in `entry.rs`,**
+  and that is law 4 applied honestly: `entry.rs` changes when the capability
+  journey does, this changes when what leaves the machine does. It uses an
+  inherent `impl Entry` in a sibling module, so the API is still `Entry::left`
+  and there is one `pub(crate) fn Entry::new` behind both files.
+- **`Why` now deserialises and `Leaving` still does not.** Same split as
+  `Destination`: the parts a record keeps read back, the decision does not.
+  Anything later that adds a field to what the record keeps about an egress
+  needs the same, and needs it to be a part rather than a decision.
+- **`alo-record` depends on `alo-egress`, and `alo-models` is now a
+  dev-dependency only.** The direction is the one item 4 established — the
+  observer reaches the decider, never the reverse — and `alo-egress` still does
+  not know `alo-record` exists.
+- **The contract moved**, so `docs/contracts/agent-verbs.md` moved with it: an
+  entry is one of six things, a departure is the only kind that counts as
+  egress, and an adapter cannot write an egress entry from a destination it
+  named itself.
+- **Item 4a is still the daemon's**, and it now has one more thing to get right:
+  whatever writes the record to a disk writes the departure at the moment it
+  begins, from the `Departing` it is holding, rather than reconstructing one
+  when the connection closes.
+- **No new user-facing English**, which is worth saying: the record composes no
+  prose, and the words in a `HeldBack` entry are the policy's own — already on
+  item 9's list from iteration 5.
+
+Six ready items left. Item 6 (file verbs, the portable half) is next, and it is
+the first item since 1 that starts with nothing cut from it: the vocabulary it
+needs — `Grants::permitting`, `Call::permitting`, `Authorised::against`, and now
+the record's two doors — is all settled and none of it should be re-derived.

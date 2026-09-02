@@ -12,6 +12,21 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- What left your machine is now kept alongside what your agents did, so "what
+  left this machine today?" is answerable at the end of a week and not only in
+  the second the indicator lit up. Every departure is one entry — who reached
+  out, where to, whether it was asking, fetching or sending, and when — **and
+  a departure can only be written down from one the indicator actually showed
+  you**, so the record cannot claim less than you saw or more. A question
+  answered somewhere else is that departure rather than a second note beside it,
+  which means the count is the number of things that really left rather than a
+  number inflated by writing the same event down twice. And an egress your
+  organisation's policy refused is kept as a refusal, with where it was going
+  and which setting stopped it: a record that only kept what left could not
+  answer the question somebody asks having just set a policy, which is what it
+  actually stopped. A question your own machine answers is still kept, and it
+  still names nowhere, because it went nowhere.
+
 - Anything an agent sends out of your machine now has to be decided about and
   shown while it happens, and not only when it is a question to a model. The
   indicator is a list you can read rather than a light that is on: who is

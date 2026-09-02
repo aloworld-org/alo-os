@@ -1,11 +1,10 @@
 //! What one entry says happened.
 //!
-//! Four things can happen to an agent's attempt on this machine, and the record
-//! keeps all four. Three of them are refusals or near-refusals, which is the
-//! point: **a record that keeps only successes cannot answer what a security
-//! review actually asks.** "The agent tried and was stopped" is the sentence
-//! that matters, and it is worthless if the only entries are the ones where
-//! nothing went wrong.
+//! Six things can happen to an agent's attempt on this machine, and the record
+//! keeps all six. Three of them are refusals, which is the point: **a record
+//! that keeps only successes cannot answer what a security review actually
+//! asks.** "The agent tried and was stopped" is the sentence that matters, and
+//! it is worthless if the only entries are the ones where nothing went wrong.
 //!
 //! - [`Happened::Ran`] — it ran, with the four answers ADR 0001 §7 asks for;
 //! - [`Happened::Stopped`] — a call that was properly formed and was refused
@@ -16,9 +15,39 @@
 //!   verb that is not on the list, or an argument that did not survive
 //!   validation. It has no arguments kept against it, and that is deliberate —
 //!   see [`Happened::TurnedAway`];
-//! - [`Happened::Answered`] — where a question was answered (ADR 0008), so that
-//!   "where did that answer come from" is answerable afterwards and not only at
-//!   the moment it appeared.
+//! - [`Happened::AnsweredHere`] — a question answered on this machine, which is
+//!   the ordinary day and the thing law 1 promises there will be a great many
+//!   of;
+//! - [`Happened::Left`] — something left this machine (law 1);
+//! - [`Happened::HeldBack`] — something the egress policy refused to let leave.
+//!
+//! # Where a question was answered is where it went
+//!
+//! The last three are one decision, and it is the decision this file exists to
+//! record. An answer from a provider is two facts at once — *where that answer
+//! came from* (ADR 0008) and *something left this machine* (law 1) — and an
+//! earlier shape of this enum kept the first as an `Answered` entry carrying an
+//! `InferenceSource`. Adding a departure entry beside it would have made one
+//! question two entries, and law 1's *what left this machine today* would have
+//! counted that departure twice.
+//!
+//! So there is one entry, and it is the departure. A question answered
+//! somewhere else **is** an egress and is kept as [`Happened::Left`] with
+//! [`Why::Asking`]; a question answered here is [`Happened::AnsweredHere`],
+//! which has no destination because there is nowhere for it to name. Nothing is
+//! lost by it: [`Destination`] says everything an `InferenceSource` said — the
+//! paired machine by name, the provider and the region it declared — and
+//! `alo-egress` already maps one to the other in one place.
+//!
+//! Two things follow, and both are worth more than the entry they cost.
+//! **Whether something caused egress is a variant rather than a calculation**,
+//! so the record cannot hold an entry whose egress-ness has to be worked out
+//! and could be worked out differently by the next reader. And **an answer from
+//! somewhere else cannot be recorded without a departure**, because
+//! [`Happened::Left`] is reachable only from an [`alo_egress::Departing`] —
+//! see [`crate::departed`]. A record that could say *the answer came from a
+//! provider* while saying *nothing left this machine* would be a record that
+//! contradicts itself, and that is now not a record that can be written.
 //!
 //! **Numbers, not handles.** An approval and a grant are recorded by their
 //! number rather than as an [`alo_capability::ProposalId`] or a
@@ -27,7 +56,7 @@
 //! no longer exist — and a record holds facts about the past, not references
 //! into the present.
 
-use alo_models::InferenceSource;
+use alo_egress::{Destination, Why};
 use serde::{Deserialize, Serialize};
 
 use crate::line::Line;
@@ -114,17 +143,48 @@ pub enum Happened {
         /// Why it did not become a call.
         why: Line,
     },
-    /// A question was answered, and this is where (ADR 0008).
+    /// A question was answered on this machine (ADR 0008).
     ///
-    /// **What was asked is not kept, and never will be.** The record answers
-    /// *where did that answer come from*; a record that also kept the question
-    /// would be a transcript of everything a person ever said to their machine,
-    /// which is the thing this product exists not to be.
-    Answered {
+    /// **What was asked is not kept, and never will be.** There is nowhere in
+    /// this variant for it to go: it holds who asked and nothing else. A record
+    /// that kept the questions would be a transcript of everything a person
+    /// ever said to their machine, which is the thing this product exists not
+    /// to be.
+    ///
+    /// A question answered anywhere else is [`Happened::Left`], because it is
+    /// one — see this module's documentation.
+    AnsweredHere {
         /// Which agent asked.
         agent: Line,
-        /// Where it was answered.
-        source: InferenceSource,
+    },
+    /// Something left this machine (law 1).
+    ///
+    /// Made only from an [`alo_egress::Departing`], which the indicator is the
+    /// only maker of, so an egress that was never shown to anybody is not an
+    /// entry that can be written. See [`crate::departed`].
+    Left {
+        /// Whose authority it left under.
+        agent: Line,
+        /// Where it went.
+        destination: Destination,
+        /// Why it left.
+        why: Why,
+    },
+    /// The egress policy refused to let something leave, so nothing did.
+    ///
+    /// A refusal is a thing that happened, and this one is the organisation's
+    /// rule doing exactly what it was set to do. Made only from an
+    /// [`alo_egress::NotPermitted`], so a refusal cannot be recorded that the
+    /// policy did not make.
+    HeldBack {
+        /// Whose authority it would have left under.
+        agent: Line,
+        /// Where it would have gone.
+        destination: Destination,
+        /// Why it would have left.
+        why: Why,
+        /// Why it was not permitted, in the policy's own words.
+        refused: Line,
     },
 }
 
@@ -136,7 +196,9 @@ impl Happened {
             Self::Ran { agent, .. }
             | Self::Stopped { agent, .. }
             | Self::TurnedAway { agent, .. }
-            | Self::Answered { agent, .. } => agent,
+            | Self::AnsweredHere { agent }
+            | Self::Left { agent, .. }
+            | Self::HeldBack { agent, .. } => agent,
         }
     }
 
@@ -145,18 +207,25 @@ impl Happened {
     pub fn what(&self) -> Option<&What> {
         match self {
             Self::Ran { what, .. } | Self::Stopped { what, .. } => Some(what),
-            Self::TurnedAway { .. } | Self::Answered { .. } => None,
+            Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. }
+            | Self::Left { .. }
+            | Self::HeldBack { .. } => None,
         }
     }
 
     /// Whether the agent was stopped.
     ///
-    /// Both refusals count, whether the call was well formed or not: a security
-    /// review asking what was refused wants the ones that never validated as
-    /// much as the ones the grants turned down.
+    /// All three refusals count, whether the call was well formed or not and
+    /// whether it was a call at all: a security review asking what was refused
+    /// wants the ones that never validated, and the egress the policy held
+    /// back, as much as the ones the grants turned down.
     #[must_use]
     pub fn was_stopped(&self) -> bool {
-        matches!(self, Self::Stopped { .. } | Self::TurnedAway { .. })
+        matches!(
+            self,
+            Self::Stopped { .. } | Self::TurnedAway { .. } | Self::HeldBack { .. }
+        )
     }
 
     /// Whether a verb ran.
@@ -171,7 +240,26 @@ impl Happened {
     pub fn stopped(&self) -> Option<&Stopped> {
         match self {
             Self::Stopped { how, .. } => Some(how),
-            Self::Ran { .. } | Self::TurnedAway { .. } | Self::Answered { .. } => None,
+            Self::Ran { .. }
+            | Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. }
+            | Self::Left { .. }
+            | Self::HeldBack { .. } => None,
+        }
+    }
+
+    /// Why it was stopped, in words — from wherever in the journey the refusal
+    /// came from.
+    ///
+    /// `None` when nothing was stopped, and when a person simply said no: "no"
+    /// is the whole answer, and a system that recorded a reason would be a
+    /// system that asked for one.
+    #[must_use]
+    pub fn why_stopped(&self) -> Option<&Line> {
+        match self {
+            Self::Stopped { how, .. } => how.why(),
+            Self::TurnedAway { why, .. } | Self::HeldBack { refused: why, .. } => Some(why),
+            Self::Ran { .. } | Self::AnsweredHere { .. } | Self::Left { .. } => None,
         }
     }
 
@@ -180,7 +268,11 @@ impl Happened {
     pub fn from_approval(&self) -> Option<u64> {
         match self {
             Self::Ran { from_approval, .. } => *from_approval,
-            Self::Stopped { .. } | Self::TurnedAway { .. } | Self::Answered { .. } => None,
+            Self::Stopped { .. }
+            | Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. }
+            | Self::Left { .. }
+            | Self::HeldBack { .. } => None,
         }
     }
 
@@ -189,34 +281,56 @@ impl Happened {
     pub fn against(&self) -> &[u64] {
         match self {
             Self::Ran { against, .. } => against,
-            Self::Stopped { .. } | Self::TurnedAway { .. } | Self::Answered { .. } => &[],
+            Self::Stopped { .. }
+            | Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. }
+            | Self::Left { .. }
+            | Self::HeldBack { .. } => &[],
         }
     }
 
-    /// Where a question was answered, when this entry is about one.
+    /// Where something went, or would have gone had the policy permitted it.
     #[must_use]
-    pub fn source(&self) -> Option<&InferenceSource> {
+    pub fn destination(&self) -> Option<&Destination> {
         match self {
-            Self::Answered { source, .. } => Some(source),
-            Self::Ran { .. } | Self::Stopped { .. } | Self::TurnedAway { .. } => None,
+            Self::Left { destination, .. } | Self::HeldBack { destination, .. } => {
+                Some(destination)
+            }
+            Self::Ran { .. }
+            | Self::Stopped { .. }
+            | Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. } => None,
+        }
+    }
+
+    /// Why something was leaving, when this entry is about an egress.
+    #[must_use]
+    pub fn why_it_was_leaving(&self) -> Option<Why> {
+        match self {
+            Self::Left { why, .. } | Self::HeldBack { why, .. } => Some(*why),
+            Self::Ran { .. }
+            | Self::Stopped { .. }
+            | Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. } => None,
         }
     }
 
     /// Whether this caused something to leave the machine.
     ///
-    /// Law 1: an answer from a paired machine on the same network left the
-    /// machine as surely as one from a hosted provider did, so both are egress
-    /// here and the difference is said in words rather than by staying silent.
+    /// A variant rather than a calculation, which is the whole point of the
+    /// shape this enum has: law 1 asks *what left this machine today* and gets
+    /// one entry per departure, worked out once at the moment the policy
+    /// permitted it rather than re-derived by whoever answers the question.
     #[must_use]
     pub fn caused_egress(&self) -> bool {
-        self.source().is_some_and(InferenceSource::causes_egress)
+        matches!(self, Self::Left { .. })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_calls::{archiving_march, listing_invoices};
+    use crate::test_calls::{archiving_march, listing_invoices, to_alo, to_the_studio};
 
     fn ran() -> Happened {
         Happened::Ran {
@@ -305,23 +419,107 @@ mod tests {
 
     /// Law 1: a paired machine on the same network is egress too. This is the
     /// exception somebody will one day argue for, so it is a test here as well
-    /// as in `alo-models`.
+    /// as in `alo-models` and `alo-egress`.
     #[test]
     fn an_answer_from_the_next_room_is_still_egress() {
-        let here = Happened::Answered {
+        let here = Happened::AnsweredHere {
             agent: Line::of("@mail"),
-            source: InferenceSource::ThisMachine,
         };
         assert!(!here.caused_egress());
 
-        let next_room = Happened::Answered {
+        let next_room = Happened::Left {
             agent: Line::of("@mail"),
-            source: InferenceSource::PairedMachine {
-                machine: "the studio workstation".to_owned(),
-            },
+            destination: to_the_studio(),
+            why: Why::Asking,
         };
         assert!(next_room.caused_egress());
+        assert!(
+            next_room
+                .destination()
+                .is_some_and(Destination::stays_in_the_building)
+        );
         assert!(!ran().caused_egress());
+    }
+
+    /// **The decision this file turns on.** A question answered somewhere else
+    /// is one entry, not two: the departure *is* where the answer came from, so
+    /// law 1's question and ADR 0008's question are answered by the same entry
+    /// and neither counts the other's.
+    #[test]
+    fn an_answer_from_somewhere_else_is_the_departure_it_caused_and_nothing_beside_it() {
+        let asked = Happened::Left {
+            agent: Line::of("@mail"),
+            destination: to_alo(),
+            why: Why::Asking,
+        };
+        assert!(asked.caused_egress());
+        assert_eq!(asked.why_it_was_leaving(), Some(Why::Asking));
+        assert_eq!(asked.destination(), Some(&to_alo()));
+
+        // A question answered here has nowhere to name, and there is no field
+        // in which it could name one.
+        let here = Happened::AnsweredHere {
+            agent: Line::of("@mail"),
+        };
+        assert_eq!(here.destination(), None);
+        assert_eq!(here.why_it_was_leaving(), None);
+        assert!(!here.caused_egress() && !here.was_stopped() && !here.ran());
+    }
+
+    /// **An egress the policy refused is a refusal, and nothing left.** It is
+    /// findable as a refusal and it is not findable as egress — a record that
+    /// counted it as a departure would be a record that says something left
+    /// when nothing did.
+    #[test]
+    fn an_egress_the_policy_refused_is_a_refusal_and_not_a_departure() {
+        let held = Happened::HeldBack {
+            agent: Line::of("@files"),
+            destination: to_alo(),
+            why: Why::Sending,
+            refused: Line::of("this machine is set to let nothing leave"),
+        };
+        assert!(held.was_stopped());
+        assert!(!held.caused_egress());
+        assert!(!held.ran());
+        assert!(
+            held.why_stopped()
+                .is_some_and(|why| why.as_str().contains("nothing leave"))
+        );
+        assert_eq!(held.destination(), Some(&to_alo()));
+        assert_eq!(held.why_it_was_leaving(), Some(Why::Sending));
+    }
+
+    /// Why something was stopped is one question however far it got, so the
+    /// three refusals answer it in one place rather than in three.
+    #[test]
+    fn why_something_was_stopped_is_one_question_across_all_three_refusals() {
+        let at_the_moment = Happened::Stopped {
+            agent: Line::of("@files"),
+            what: What::of(&archiving_march()),
+            how: Stopped::AtTheMoment(Line::of("the grant has expired")),
+        };
+        assert!(
+            at_the_moment
+                .why_stopped()
+                .is_some_and(|why| why.is("the grant has expired"))
+        );
+
+        let turned_away = Happened::TurnedAway {
+            agent: Line::of("@files"),
+            verb: Line::of("delete_everything"),
+            why: Line::of("there is no verb called delete_everything"),
+        };
+        assert!(turned_away.why_stopped().is_some());
+
+        // A person who says no is not asked to justify it, and something that
+        // was not stopped has nothing to explain.
+        let declined = Happened::Stopped {
+            agent: Line::of("@files"),
+            what: What::of(&archiving_march()),
+            how: Stopped::ByThePerson,
+        };
+        assert_eq!(declined.why_stopped(), None);
+        assert_eq!(ran().why_stopped(), None);
     }
 
     /// Everything the record keeps has to survive being written down and read
@@ -340,9 +538,19 @@ mod tests {
                 verb: Line::of("delete_everything"),
                 why: Line::of("there is no verb called delete_everything"),
             },
-            Happened::Answered {
+            Happened::AnsweredHere {
                 agent: Line::of("@mail"),
-                source: InferenceSource::ThisMachine,
+            },
+            Happened::Left {
+                agent: Line::of("@mail"),
+                destination: to_alo(),
+                why: Why::Asking,
+            },
+            Happened::HeldBack {
+                agent: Line::of("@files"),
+                destination: to_alo(),
+                why: Why::Sending,
+                refused: Line::of("this machine is set to let nothing leave"),
             },
         ] {
             let written = serde_json::to_string(&happened).unwrap_or_default();
