@@ -60,6 +60,9 @@ Nothing here is a differentiator. All of it is required.
 - [v0.01] Copy, cut and paste — text, images and files, across applications
 - [v0.01] Keyboard shortcuts, and a person can change them
 - [v0.01] Window management: move, resize, snap, tile, minimise, maximise, close
+- [v0.01] **The dock, and the person decides where it goes** — bottom, left, right or top, chosen in Settings. It works in both orientations rather than being a horizontal bar someone turned sideways: the status area reflows, and labels give way to icons where the short edge demands it
+- [v0.5] The dock's size, and whether it hides when a window needs the room
+- [v0.5] Per display, so the dock can sit along the bottom of the laptop and down the side of the external screen
 - [v0.5] ★ **Divide the screen** — drag a window to an edge to take half, a corner to take a quarter, or split what is already open with the keyboard. The split holds while you work: resizing one side resizes its neighbour rather than overlapping it
 - [v0.5] Remember a split, so returning to a pair of windows restores the arrangement rather than the last position of each
 - [v0.5] Splitting works on an external display independently of the laptop's own
@@ -83,7 +86,8 @@ Nothing here is a differentiator. All of it is required.
 **Desktop**
 
 - [v0.5] Notifications, with do-not-disturb
-- [v0.5] Status area: clock, battery, network, volume, brightness
+- [v0.5] Status area: clock, battery, network, volume, brightness — at the far end of the dock, wherever the dock is
+- [v0.5] ★ The egress indicator lives in the status area, so "nothing has left this machine" sits where a person already glances rather than somewhere they must learn to look
 - [v0.5] A file manager, with trash, and archives that open
 - [v0.5] USB drives and external storage that appear when plugged in
 - [v0.5] File associations — what opens what, changeable by a person

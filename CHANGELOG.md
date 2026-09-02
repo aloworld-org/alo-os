@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The dock goes where you want it: bottom, left, right or top, chosen in
+  Settings. It is built for both orientations rather than being a horizontal bar
+  turned on its side — the status area reflows, and where the short edge is
+  tight, labels give way to icons. Whichever edge you choose, the clock, the
+  battery and the indicator saying what has left this machine sit at the far end
+  of it.
+
 - An agent can now be asked to do six things with your files — list a folder,
   read a file, find something by name, rename, move, and make an archive of a
   folder — and each one says in ordinary words what it is for and what it would

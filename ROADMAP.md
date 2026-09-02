@@ -42,6 +42,8 @@ GPU, and it is useful to `alo-workplace` the day it lands.
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
 - [ ] Launcher and window management: move, resize, snap, tile
+- [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
+      built for both orientations rather than one rotated
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
 - [ ] Copy, cut and paste across applications; switching between windows
