@@ -34,6 +34,13 @@
 //! one action is a list a model picks from at random. So `archive_folder`
 //! makes one file out of a folder and puts it somewhere, and both places are
 //! granted.
+//!
+//! **An archive is a zip**, so the name it is given ends in `.zip` — a name
+//! that says otherwise is refused rather than corrected, because appending to a
+//! name would hand somebody a file they did not approve and accepting it would
+//! hand them one whose name lies about what is in it. Zip because it is the one
+//! archive every desktop opens without being told how; that the name has to say
+//! so is declared here, where a person reads it in the argument's purpose.
 
 use alo_capability::{Arg, Effect, Requires, Takes, Verb, VerbError, Verbs, VerbsError};
 
@@ -220,7 +227,7 @@ fn archive_folder() -> Result<Verb, VerbError> {
             Arg::taking("into", "the folder the archive goes into", Takes::Path),
             Arg::taking(
                 "name",
-                "what to call the archive",
+                "what to call the archive, ending in .zip",
                 Takes::name(LONGEST_NAME),
             ),
         ],

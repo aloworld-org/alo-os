@@ -85,26 +85,8 @@ impl Resolving for OnThisMachine {
 )]
 mod tests {
     use super::*;
+    use crate::testing::a_folder_of_our_own;
     use std::fs;
-    use std::path::PathBuf;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    /// A folder of this test's own, under whatever this machine calls its
-    /// temporary directory.
-    ///
-    /// Named after the test rather than at random, because a leftover folder
-    /// should say which test left it.
-    fn a_folder_of_our_own(what: &str) -> PathBuf {
-        static NEXT: AtomicU32 = AtomicU32::new(0);
-        let folder = std::env::temp_dir().join(format!(
-            "alo-files-{}-{what}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        let _ = fs::remove_dir_all(&folder);
-        fs::create_dir_all(&folder).unwrap();
-        folder
-    }
 
     /// The ordinary case, against a real filesystem: a file that is there
     /// resolves to what this machine would open.

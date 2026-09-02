@@ -76,6 +76,22 @@ A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
+### A zip has nowhere to say which clock its timestamps came from
+**Version:** the zip format as every reader implements it; seen 2026-09-02 in
+`alo-files`, against Windows 11 26200's own reader
+**Behaviour:** a zip keeps each file's time as a DOS date and time, which
+carries no timezone and is **conventionally the local time of whoever wrote the
+archive**. `std` cannot say what this machine's offset from UTC is, and every
+crate that can does it either through a dependency whose local-offset lookup is
+unsound in a threaded process or through code this repository forbids.
+**Our response:** the moment written is **UTC**, consistently, and it is
+documented where the archive is made rather than left to be discovered. A reader
+on a machine two hours ahead of UTC shows a file archived at 20:04 as 18:04.
+Seconds are also kept in two-second steps, which is the format and not us. The
+alternative — a guessed offset, or a dependency to find the real one — would be
+wrong more interestingly rather than less often.
+**Date:** 2026-09-02
+
 ### Resolving a path does not defeat a hard link
 **Version:** every filesystem alo OS will run on; seen 2026-09-02 in
 `alo-files`
@@ -100,11 +116,16 @@ about link counts at the moment of opening, not a cleverer path comparison.
 file is opened by that name. Anything with write access to a folder on the way
 can swap a link in between the two.
 **Our response:** the check is where it can be, and the fix is not another
-check. Whatever opens the file holds on to *what it opened* — `openat` from a
-directory handle on Linux — rather than resolving the same name twice. That is
-the acting half's, item 6a in `docs/autonomy/QUEUE.md`, and it is written into
-the item so it is not discovered afterwards.
-**Date:** 2026-09-02
+check. Whatever opens the file holds on to *what it opened* rather than
+resolving the same name twice. The acting half in `alo-files` does as much of
+that as `std` allows — a file is opened once and its size is asked of the open
+handle rather than of the name, and nothing resolves a path a second time — and
+what `std` does not allow is the rest: opening relative to a directory handle
+(`openat`) and renaming without replacing (`renameat2` with `RENAME_NOREPLACE`)
+are Linux calls with no portable spelling, so a destination is checked and then
+renamed onto, with a gap between the two. Narrowing it is item 6b in
+`docs/autonomy/QUEUE.md`, written down rather than left to be rediscovered.
+**Date:** 2026-09-02, extended 2026-09-02 by the acting half
 
 ### Windows returns a path spelled differently from the one it was given
 **Version:** Windows 11 26200, Rust 1.97 `std::fs::canonicalize`

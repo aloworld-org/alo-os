@@ -12,6 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The six file verbs now actually do it. A folder is listed, a file is read, a
+  search finds things by name in a folder and the folders inside it, a file is
+  renamed or moved, and a folder becomes one archive — a zip, which every
+  desktop opens without being told how. Four things are true of all of them.
+  **Nothing you did not name is replaced**: a rename or a move onto a name that
+  is already taken is refused and says so, rather than quietly writing over
+  somebody's file. **A grant covers where a file goes, not only where it comes
+  from**: if you granted one document, an agent cannot rename it to something
+  you never granted. **Nothing follows a link out of what you granted** — a
+  search steps over links, and an archive leaves them where they are and tells
+  you how many it left. And **every answer says when it stopped**: a listing, a
+  read or a search that reached its limit says there is more, because an answer
+  that quietly stopped looking reads exactly like one that found nothing.
+
 - The dock goes where you want it: bottom, left, right or top, chosen in
   Settings. It is built for both orientations rather than being a horizontal bar
   turned on its side — the status area reflows, and where the short edge is

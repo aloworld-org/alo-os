@@ -1,9 +1,11 @@
-//! What an agent may do to files, and the real path it is checked against.
+//! What an agent may do to files, the real path it is checked against, and the
+//! doing of it.
 //!
 //! `docs/features.md` promises six file verbs at v0.01 — list, read, find,
-//! rename, move, archive — **over granted paths only**. This crate is the
-//! portable half of that promise: the declarations, and the last question the
-//! grants have to be asked before anything opens a file.
+//! rename, move, archive — **over granted paths only**. This crate is the whole
+//! of that promise on any machine: the declarations, the last question the
+//! grants have to be asked before anything opens a file, and the `std::fs`
+//! calls behind the six.
 //!
 //! # The last question
 //!
@@ -41,26 +43,55 @@
 //! grant covers. A verb that forgot to require a grant over one of its paths is
 //! a mistake somebody will make, and it is not one that should reach a disk.
 //!
-//! # What this half does not do
+//! [`Did::of`] then asks one more question, and only of a change: **may this be
+//! created?** The paths a call names have been asked about twice; the name a
+//! rename invents, and the path a move or an archive puts something at, have
+//! not been asked about at all. A grant covers where a file goes, not only
+//! where it comes from.
 //!
-//! **It does not open anything.** The `std::fs` calls — reading the folder,
-//! moving the file, writing the archive — are item 6a in
-//! `docs/autonomy/QUEUE.md`, and they take a [`Touching`] rather than a path.
-//! What is here is complete: nothing is stubbed, and nothing half-built ships.
+//! # What acts, and what only decides
+//!
+//! Two files touch a disk on purpose: [`resolving`], which asks where a path
+//! really leads, and everything reached from [`Did::of`], which does the work.
+//! Everything that *decides* — [`touching`], [`verbs`], and the shapes an
+//! answer comes back in — is somewhere a test can reach without a filesystem,
+//! and the deciding is tested that way.
+//!
+//! # What this cannot do
 //!
 //! **It cannot close the gap between the check and the open.** A path resolved
 //! and then opened by name can have a link swapped in underneath it, and a hard
 //! link is a real name for a file that also lives somewhere else — neither is
 //! visible to any path-based check. Both are written down in `docs/quirks.md`,
-//! and closing them belongs to the code that opens the file.
+//! and what closes the first is opening relative to a directory handle rather
+//! than by name a second time, which is Linux's `openat` and a queue item of
+//! its own.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answer;
+pub mod doing;
+pub mod failed;
+pub mod named;
 pub mod real;
 pub mod resolving;
 pub mod touching;
 pub mod verbs;
 
+mod archiving;
+mod changing;
+mod crc;
+mod looking;
+mod walking;
+mod zip;
+
+#[cfg(test)]
+mod testing;
+
+pub use answer::{Answer, Archived, Listing, Search};
+pub use doing::Did;
+pub use failed::Failed;
+pub use named::{Kind, Named};
 pub use real::{Real, RealError};
 pub use resolving::{OnThisMachine, Resolving};
 pub use touching::Touching;

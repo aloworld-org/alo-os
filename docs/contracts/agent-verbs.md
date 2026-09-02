@@ -125,6 +125,28 @@ swapped in afterwards, or a hard link, which is a second real name for a file
 that also lives elsewhere and which no amount of resolving reveals. Both are in
 `docs/quirks.md`, and closing them belongs to the code that opens the file.
 
+### A grant covers where a file goes, not only where it comes from
+
+The three questions above are about the paths a call **names**. A change also
+creates one: `rename_file` invents a name, `move_file` and `archive_folder`
+invent a full path inside a folder. A grant can be over a single file — the
+document offered at invocation (§4) — and under one of those, renaming would
+put a file at a name nobody granted.
+
+So **whatever executes a change asks the grants one more question before it
+touches anything: may this be created?** A no is a refusal by the grants like
+any other, recorded like any other, and nothing has happened when it is
+answered.
+
+### Nothing is replaced that was not named
+
+A person approves *move march.pdf into Archive*. They do not approve
+*and overwrite the march.pdf that is already there*, which is what renaming
+over an existing file silently does on most systems. So a change whose
+destination already holds anything — a file, a folder, or a link — is refused
+and says the name is taken. This is a rule about the sentence, not about
+filesystems: what was approved is what happens, and nothing else is.
+
 ## The file verbs
 
 The six `docs/features.md` promises at v0.01, over granted paths only. Every one
@@ -142,7 +164,26 @@ is something that already exists — a new name is a **name**, never a path.
 
 **"Archive" means make an archive**, not move something to an archive folder.
 The second is `move_file` under another name, and a closed list with two names
-for one action is a list a model picks from at random.
+for one action is a list a model picks from at random. **An archive is a zip
+with nothing compressed**, and `name` therefore ends in `.zip`: a name that says
+otherwise is refused rather than corrected, because a file whose name lies about
+what is in it and a file whose name a person did not approve are both worse than
+being told to ask again.
+
+**Every answer is bounded, and every answer says when it was bounded.** A
+listing carries at most 1000 things, a read at most a megabyte, a search looks
+at at most 20,000 things, and an archive holds at most 20,000 things and two
+gigabytes. The first three answer with what they have *and a flag saying there
+is more*; an archive refuses instead, because an archive missing the half nobody
+mentioned is a file somebody keeps and finds out about later. A bounded answer
+that did not say it was bounded would read exactly like a complete one, so an
+adapter answering a question of its own is expected to do the same.
+
+**A name that cannot be shown is counted, not shown.** Filenames are not written
+by us: a file called `march.pdf\nran: deleted everything` would make an answer
+that shows one thing and says another. A listing leaves those out and says how
+many it left out — and nothing is lost that could have been acted on, because a
+name with a control character in it cannot arrive as an argument either.
 
 **There is no search expression.** `find_in_folder` takes one name and builds
 the search inside itself, which is §1 at the place somebody would most

@@ -623,3 +623,131 @@ random.
 Six ready items left, one of them new. Item 6a (the acting half) is next and is
 the natural continuation; item 7 (keyboard shortcuts) is the next one that
 starts somewhere else entirely.
+
+
+---
+
+## 2026-09-02 — iteration 8: the file verbs, doing it
+
+**Built: item 6a.** The `std::fs` calls behind the six, taking a `Touching`
+rather than a path. Ten new files in `crates/alo-files` — `doing.rs`,
+`answer.rs`, `failed.rs`, `named.rs`, `looking.rs`, `changing.rs`,
+`archiving.rs`, `walking.rs`, `zip.rs`, `crc.rs` — and one test module,
+`testing.rs`, which `resolving.rs` now shares rather than keeping its own copy
+of the temporary-folder fixture.
+
+**Gate:** `cargo fmt` clean, `cargo clippy --workspace --all-targets -D
+warnings` clean, `cargo doc --workspace` clean. 64 unit tests in `alo-files`
+(was 24), 13 integration tests against a real filesystem (was 3), 3 doctests,
+and the rest of the workspace green and untouched. Documentation in the same
+change — the contract, `docs/quirks.md`, and a `CHANGELOG.md` line.
+
+**The item asked for two things, and the third is the one worth reading.**
+It opens what `Touching` resolved and resolves nothing a second time, and a
+read asks the *open handle* how big a file is rather than asking the name
+again. The third was not in the item: **a change creates a path that nothing
+had asked the grants about.** `rename_file` invents a name, `move_file` and
+`archive_folder` invent a full path inside a folder — and a grant can be over a
+single file, which is what the document offered at invocation is (ADR 0001 §4).
+Under one of those, renaming would put a file at a name nobody granted. So
+`Did::of` asks the grants once more, at the authorisation's own moment, before
+anything is touched, and a no comes back as a `Refused` in the grants' own
+words. *A grant covers where a file goes, not only where it comes from* — the
+contract now says so beside the three questions item 6 added.
+
+**Four decisions that were not obvious, and are load-bearing.**
+
+- **A refusal by the grants and a refusal by the machine are different types.**
+  `Did::of` answers `Err(Refused)` when the capability model said no, and a
+  `Did` carrying a `Failed` when everything said yes and the disk could not. A
+  record that flattened the two would tell a security review that the grants
+  stopped a full disk. The authorisation comes back either way, because a call
+  that was permitted, approved and attempted is a thing that happened and
+  `Entry::ran` is written from it; what the disk made of it is the answer to
+  whoever asked, not evidence about the capability model.
+- **Nothing is replaced that was not named.** A person approved *move march.pdf
+  into Archive*, not *and overwrite the march.pdf already there* — which is
+  exactly what `fs::rename` does silently on Unix. So a destination that holds
+  anything at all, including a link, is refused. An archive is created with
+  `create_new`, one syscall that refuses a file, a folder and a link alike:
+  opening for writing and truncating would have followed a link and emptied
+  whatever it pointed at, which is this crate's own escape arriving by the back
+  door. **A test found the matching bug in the first draft** — the clean-up of a
+  half-written archive was deleting the file that was already there when the
+  archive was refused *for* existing. `Archive::beginning` now happens outside
+  what the failure path removes.
+- **A walk never follows a link, and an answer says what it left out.** Item 6
+  stopped a link the call *names*; a search or an archive that followed a link
+  it *found* would leave the granted folder by a door the grants were never
+  asked about. So links are stepped over and counted at every depth, and the
+  count comes back in the answer. Everything is bounded — 1000 things in a
+  listing, a megabyte in a read, 20,000 things in a walk, 20,000 things and two
+  gigabytes in an archive — and every bound says it was reached, because a
+  bounded answer that does not say so reads exactly like a complete one and
+  somebody will conclude from it that a file is not there. An archive refuses
+  rather than flagging: an archive missing the half nobody mentioned is a file a
+  person keeps and finds out about later.
+- **A name that cannot be shown is counted, not shown.** Filenames are not
+  written by us, and `march.pdf` followed by a newline and `ran: deleted
+  everything` is the attack `alo_capability::Value` refuses at the door, seen
+  from the other side. Such a name never becomes a `Named`, and the listing says
+  how many it left out. Nothing is lost that could have been acted on: a name
+  like that cannot arrive as an argument either, so no verb could name that file.
+
+**The archive, and why a format is written here at all.** `archive_folder` had
+to make something, and what it makes is a user-facing decision rather than an
+implementation detail: a **zip with everything stored**, because it is the one
+archive every desktop opens without being told how, and because compression is a
+second thing to be wrong about inside a security boundary. No ZIP64, no
+encryption, no data descriptors — the bounds above keep an archive inside what
+those absences allow, and a bound refused in words beats a format written
+half-way. Each file is copied once and its header corrected afterwards by
+seeking back to it, because reading a file twice to learn its size and checksum
+would let it change between the two readings and produce an archive whose header
+disagrees with its own contents. The name a person gives has to end in `.zip`:
+appending it would hand them a file they did not approve, and accepting
+`invoices.tar.gz` would hand them one whose name lies about what is in it.
+
+**Verified against a real reader, not only against ourselves.** The tests read
+an archive back through the offsets the format states, which proves it is
+self-consistent and nothing more. So one was also written to disk and opened
+with Windows 11's own zip reader: `System.IO.Compression.ZipFile` listed all six
+entries with their sizes and dates, and `Expand-Archive` unpacked the tree —
+nested folders, an empty folder, a 200 KB file and a text file — with the
+contents intact, which is also a check of every CRC. That run is where the new
+`docs/quirks.md` entry came from: a DOS timestamp carries no timezone and is
+conventionally local, `std` cannot say what this machine's offset is, so the
+moment written is UTC and a reader two hours ahead shows a file archived at
+20:04 as 18:04. The alternatives are a guessed offset or a dependency whose
+local-offset lookup is unsound in a threaded process, and both are wrong more
+interestingly rather than less often.
+
+**What the next iteration must know:**
+
+- **Item 6b is new and is blocked on Linux**, listed there rather than in Ready
+  so that this loop does not pick it up. Two gaps `std` cannot close: a path
+  checked and then opened by name can have a link swapped in between the two,
+  and `fs::rename` has no portable no-clobber form, so a destination is checked
+  for and then renamed onto. The Linux answers are `openat` with `O_NOFOLLOW`
+  from a directory handle and `renameat2` with `RENAME_NOREPLACE`; the workspace
+  forbids `unsafe`, so the item's first decision is a pinned dependency or an
+  ADR. It replaces syscalls under settled decisions; it is not a rewrite.
+- **`Did::of` takes the grants**, which is the shape anything else that acts on
+  a `Touching` should copy. The grants are now asked at four points: when the
+  call is made, when it is proposed, at the moment of execution about where the
+  named paths really lead, and at the moment of execution about what would be
+  created.
+- **A `Failed` is not a `Refused`, and `alo-record` has no variant for one.**
+  Whoever writes the daemon records `Entry::ran` from the authorisation
+  `Did::into_parts` hands back, whether or not the disk cooperated, and answers
+  the agent with the `Failed`. If that ever stops being right it is a change to
+  `Happened` and to the contract's "an entry is one of six things", not a quiet
+  reinterpretation of `Ran`.
+- **The new user-facing English is on item 9's list**, which the queue now says
+  outright: every `Failed` message, `RealError`'s pair, `Touching`'s refusal,
+  and the six verbs' purposes, argument purposes and sentences.
+- **`find_in_folder` matches a name, case-insensitively, and interprets
+  nothing.** There is still no expression, no wildcard, and no delete verb.
+
+Five ready items left. Item 7 (keyboard shortcuts) is next, and it is the first
+one since item 1 that starts somewhere the file verbs do not reach.

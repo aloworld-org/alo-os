@@ -240,14 +240,37 @@ items must follow:
   crate cannot ask itself comes back as the same type, so this refusal reaches
   the record by the road every other refusal takes.
 
-- [ ] **6a. File verbs, the acting half** — the `std::fs` calls behind the six,
-  taking a `Touching` rather than a path. Portable, not Linux: item 6 cut this
-  deliberately, and the blocked entry below is about *application* verbs.
-  Two things it must get right, both in `docs/quirks.md`: it opens **what
-  `Touching` resolved** and nothing it resolves again, and on Linux it should
-  open relative to a directory handle rather than by name a second time, because
-  a path checked and then opened by name can change in between. `find_in_folder`
-  builds its search from a name inside the verb; there is no expression.
+- [x] **6a. File verbs, the acting half** — the `std::fs` calls behind the six,
+  taking a `Touching` rather than a path. Nine files in `crates/alo-files`:
+  `doing.rs` (the one door, and the last grant question), `answer.rs` (what each
+  of the six answers with), `failed.rs` (why the machine could not), `named.rs`
+  (one thing in a folder), `looking.rs` (the three reads), `changing.rs` (rename
+  and move), `archiving.rs` (what goes into an archive), `walking.rs` (a folder,
+  without walking out of it), `zip.rs` and `crc.rs` (the format). 64 unit tests,
+  13 integration tests against a real filesystem, clippy clean.
+
+  **The item asked for two things and found a third.** It opens what `Touching`
+  resolved and resolves nothing twice, and a read asks the *open handle* how big
+  a file is rather than asking the name again. The third is `Did::of`'s: a
+  change **creates** a path that nothing had asked the grants about — a rename
+  invents a name, a move and an archive invent one inside a folder — and under a
+  grant over a single file (ADR 0001 §4) that name is one nobody granted. So the
+  grants are asked once more, at the authorisation's own moment, and a no is a
+  `Refused` like every other. *A grant covers where a file goes, not only where
+  it comes from.*
+
+  Three decisions the next items inherit. **A refusal by the grants and a
+  refusal by the machine are different types** — `Refused` leaves by `Err`, and
+  `Failed` travels inside a `Did` — because a record that called a full disk a
+  refusal would tell a security review the grants stopped something they did
+  not. **The authorisation comes back either way**, so `Entry::ran` is written
+  from a call that was attempted, whatever the disk made of it. **Every bound
+  says it was reached**: a listing, a read and a search answer with a flag, an
+  archive refuses, and a bounded answer that did not say so would read exactly
+  like a complete one.
+
+  What it could not close is **item 6b, below under *blocked — linux***: the two
+  gaps between checking a path and acting on it that only Linux calls close.
 
 - [ ] **7. Keyboard shortcuts** — the binding model, defaults, user overrides and
   conflict detection. `docs/features.md` promises shortcuts a person can change,
@@ -263,7 +286,10 @@ items must follow:
   catalogue, the lookup, the fallback chain, and a test that a missing
   translation is visible in development rather than silently English. No
   translations yet — the scaffolding is what stops English being hardcoded while
-  the shell is written.
+  the shell is written. The largest list of hardcoded English is `alo-files`:
+  every `Failed` message, the `RealError` pair, `Touching`'s refusal, and the
+  six verbs' purposes, argument purposes and sentences — the last of which are
+  the words a person approves.
 
 - [ ] **10. Test a provider before saving it** — promised at v0.5 in
   `docs/features.md` and the one loose end in `provider.rs`. A mistyped key
@@ -283,8 +309,19 @@ rather than only of what is convenient.
   management, copy and paste, window switching — all draw on the compositor.
 - **Application verbs, the acting half** — AT-SPI, D-Bus, the portal backend
   (ADR 0005). The *file* half of this was listed here and was wrong: opening a
-  folder needs no portal and no accessibility tree, so it is item 6a above and
-  is ready.
+  folder needs no portal and no accessibility tree, so it was item 6a above and
+  is built.
+- **6b. Opening from a handle, and renaming without replacing.**
+  `docs/quirks.md` records the two gaps the portable acting half cannot close: a
+  path checked and then opened *by name* can have a link swapped in between the
+  two, and `fs::rename` has no portable no-clobber form, so a destination is
+  checked for and then renamed onto. Both have Linux answers with no portable
+  spelling — `openat` with `O_NOFOLLOW` from a directory handle, and `renameat2`
+  with `RENAME_NOREPLACE` — and both need a Linux host to compile as well as to
+  test. Not a rewrite: the decisions, the refusals and the tests are settled,
+  and this replaces the syscalls underneath them. The workspace forbids
+  `unsafe`, so it needs either a pinned dependency wrapping the calls or an ADR,
+  and choosing between those is the first thing the item does.
 - **Egress enforcement** — item 5's policy, made true at the network boundary.
 - **The image** — OCI-built, bootable, atomic.
 - **The workspace client running as an application on the shell.**
