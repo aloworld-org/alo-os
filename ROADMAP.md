@@ -4,6 +4,11 @@ The only order things get built in. Items are checked when they meet the
 definition of done in `CLAUDE.md` law 3 — the full path, on real hardware — and
 a release is done only when its **exit gate** is fully checked.
 
+**A tick means done, not written.** Where something is built and tested but has
+not yet met law 3 on real hardware, the item says so in its own words rather
+than being ticked optimistically. A roadmap whose ticks are aspirations is worse
+than no roadmap, because somebody plans around it.
+
 Every item here appears in `docs/features.md` with a tier. If it is not there,
 it is not built.
 
@@ -21,7 +26,11 @@ One hardware target. No installer, no fleet management, no compatibility list.
 pipeline and no certified hardware — it runs on an ordinary Linux box with a
 GPU, and it is useful to `alo-workplace` the day it lands.
 
-- [ ] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned runtime
+- [x] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
+      runtime (ADR 0006). `crates/alo-models`: the catalogue with its licence
+      gate, `ModelRuntime`, and the Ollama adapter. 22 tests, nine of them
+      against a real socket. **Not yet run against a real Ollama or a GPU** —
+      law 3's "on real hardware" is owed on the certified machine.
 - [ ] **Agents point at the local model by default**, configured rather than coded
 - [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
 - [ ] **Egress indicator**, and no telemetry
@@ -50,7 +59,11 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] Lock screen, suspend and resume
 - [ ] Multi-monitor, scaling, hotplug
 - [ ] Recovery and rollback screen
-- [ ] Settings: network, display, sound, printers, storage, keyboard
+- [ ] **Settings, as one place**: network, display, sound, printers, storage,
+      keyboard, accounts, privacy, updates
+- [ ] **Making it yours**: background from a file, folder or colour and per
+      display; lock-screen image; light and dark; accent colour from the design
+      tokens; text scaling; wallpapers shipped in the image
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
@@ -127,6 +140,8 @@ managed machine means and what its person is told.
 - [ ] Backup and restore
 - [ ] **Adapter SDK published**, with a conformance suite
 - [ ] Multi-user on one machine, with per-person grants
+- [ ] ★ Ask for appearance changes — "use dark after six" — under the same
+      propose-then-approve as anything else; themes as a document for a fleet
 - [ ] **Third-party security audit** of `alo-agentd` and the broker, published
 - [ ] Compatibility list, grown outward from the certified machine
 - [ ] Support and SLA definitions

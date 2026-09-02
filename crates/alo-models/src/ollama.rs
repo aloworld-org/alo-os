@@ -37,6 +37,12 @@ pub const DEFAULT_ENDPOINT: &str = "http://127.0.0.1:11434";
 /// well, and saying so beats hanging a user interface.
 const QUICK_TIMEOUT: Duration = Duration::from_secs(10);
 
+/// How long a deliberately loaded model stays in video memory without use.
+/// Long enough that a person who loaded it on purpose does not find it gone by
+/// the time they have finished typing; short enough that a forgotten model
+/// eventually gives the card back.
+const DEFAULT_KEEP_ALIVE: &str = "30m";
+
 /// Ollama, reached over its HTTP API.
 #[derive(Debug, Clone)]
 pub struct Ollama {
@@ -269,13 +275,27 @@ impl ModelRuntime for Ollama {
         }
     }
 
+    fn load(&self, id: &str) -> Result<(), RuntimeError> {
+        // Ollama has no load call either: an empty generate with a non-zero
+        // keep-alive brings the weights into video memory and leaves them
+        // there. Same endpoint as unload, opposite keep-alive — which is
+        // precisely why both belong in this file and neither belongs in the
+        // trait's vocabulary.
+        self.keep_alive(id, DEFAULT_KEEP_ALIVE)
+    }
+
     fn unload(&self, id: &str) -> Result<(), RuntimeError> {
-        // Ollama unloads by generating with a zero keep-alive: there is no
-        // dedicated endpoint. This is exactly the kind of runtime-shaped detail
-        // that must not leak past this file.
+        self.keep_alive(id, "0")
+    }
+}
+
+impl Ollama {
+    /// Ask the runtime to hold a model in video memory for `keep_alive`, or to
+    /// let it go when that is `"0"`.
+    fn keep_alive(&self, id: &str, keep_alive: &str) -> Result<(), RuntimeError> {
         let body = serde_json::json!({
             "model": Self::runtime_name(id),
-            "keep_alive": 0,
+            "keep_alive": keep_alive,
         });
         let response = ureq::post(format!("{}/api/generate", self.endpoint))
             .config()
@@ -349,6 +369,13 @@ mod tests {
 
     fn catalogue() -> Catalogue {
         Catalogue::built_in().unwrap()
+    }
+
+    /// Compare request bodies without depending on how the HTTP client chooses
+    /// to lay JSON out — it pretty-prints today and may not tomorrow, and a
+    /// test that fails over a space is a test that will be silenced.
+    fn without_spaces(s: &str) -> String {
+        s.chars().filter(|c| !c.is_whitespace()).collect()
     }
 
     #[test]
@@ -488,15 +515,46 @@ mod tests {
         ));
     }
 
-    /// Unloading is `keep_alive: 0` on the generate endpoint — Ollama has no
-    /// unload call. The point of the test is that this stays inside this file.
+    /// Loading and unloading are the same Ollama endpoint with opposite
+    /// keep-alives — it has neither a load nor an unload call. What these two
+    /// tests hold is that the difference is a keep-alive and that it never
+    /// leaves this file.
+    #[test]
+    fn loading_asks_the_runtime_to_hold_the_model_in_video_memory() {
+        let (url, server) = serving("{}", 200);
+        let result = Ollama::at(&url, catalogue()).load("mistral-7b-instruct");
+        let request = server.join().unwrap();
+        assert!(result.is_ok(), "{result:?}");
+        assert!(request.contains("mistral-7b-instruct:latest"), "{request}");
+        assert!(
+            without_spaces(&request).contains(&format!(r#""keep_alive":"{DEFAULT_KEEP_ALIVE}""#)),
+            "loading must ask for a non-zero keep-alive: {request}"
+        );
+    }
+
     #[test]
     fn unloading_asks_the_runtime_to_stop_holding_video_memory() {
         let (url, server) = serving("{}", 200);
         let result = Ollama::at(&url, catalogue()).unload("mistral-7b-instruct");
         let request = server.join().unwrap();
         assert!(result.is_ok(), "{result:?}");
-        assert!(request.contains("keep_alive"), "{request}");
         assert!(request.contains("mistral-7b-instruct:latest"), "{request}");
+        assert!(
+            without_spaces(&request).contains(r#""keep_alive":"0""#),
+            "unloading must ask for a zero keep-alive: {request}"
+        );
+    }
+
+    #[test]
+    fn loading_something_not_installed_says_so_rather_than_failing_vaguely() {
+        let (url, server) = serving(r#"{"error":"model not found"}"#, 404);
+        let err = Ollama::at(&url, catalogue())
+            .load("mistral-7b-instruct")
+            .unwrap_err();
+        server.join().unwrap();
+        assert!(
+            matches!(&err, RuntimeError::NotInstalled(id) if id == "mistral-7b-instruct"),
+            "{err:?}"
+        );
     }
 }

@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- A machine can be made yours: set the background from a file, a folder that
+  rotates or a plain colour, per display; a lock-screen image of its own; light
+  and dark, following the time of day if you want; an accent colour the whole
+  shell follows rather than one button; and text scaling, which is an
+  accessibility setting as much as a matter of taste. Settings become one place
+  rather than a scattering of dialogues you have to know the name of. Later you
+  will be able to simply ask — "make the background this photo" — under the same
+  propose-then-approve as any other change.
+
 - Models can now be listed, downloaded, removed and taken out of video memory,
   over the runtime alo OS pins. Downloads report progress as they go, because
   these are gigabytes and twenty silent minutes is indistinguishable from a

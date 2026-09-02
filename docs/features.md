@@ -22,10 +22,26 @@ current release, and Non-goals below.
 - [v0.5] Lock screen, suspend and resume
 - [v0.5] Multi-monitor, display scaling, hotplug
 - [v0.5] Recovery and rollback screen — reachable when the workspace is not
-- [v0.5] Settings: network, display, sound, printers, storage, keyboard layout
+- [v0.5] **Settings, as one place** — network, display, sound, printers, storage, keyboard, accounts, privacy, updates. Not a scattering of dialogues a person has to know the name of
 - [v0.5] Accessibility: the AT-SPI tree the agent uses is the one a screen reader uses; EN 301 549 conformance is the same work, not extra work
-- [v1] Themes and appearance, driven by the shared design tokens
 - [v1] Multi-user on one machine, with per-person grants and no shared agent memory
+
+**Making it yours**
+
+The first thing anybody does with a new machine is change the picture. It is not
+a small feature: it is the moment a person decides whether the system is theirs
+or the company's, and an operating system that cannot do it feels unfinished
+however good the rest is.
+
+- [v0.5] **Set the background** — from a file, a folder that rotates, or a solid colour; per display on a multi-monitor desk
+- [v0.5] Set the lock-screen image, independently of the desktop
+- [v0.5] **Light and dark**, following the time of day if a person wants
+- [v0.5] Accent colour, drawn from the design tokens so the whole shell follows it rather than one button
+- [v0.5] Text size and scaling, which is an accessibility setting as much as a taste one
+- [v0.5] Wallpapers shipped with the image, so a fresh machine is not grey
+- [v1] Cursor size and colour; sounds, including silencing them
+- [v1] ★ **Ask for it** — "make the background this photo", "use dark after six" — the same propose-then-approve as any other change, because personalisation is exactly the low-stakes place people first learn to trust the agent
+- [v1] Themes as a document, so a machine's look can be set once and applied across a fleet (ADR 0004)
 
 ## The ordinary things a desktop must do
 

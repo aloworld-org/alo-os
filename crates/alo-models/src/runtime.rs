@@ -166,6 +166,17 @@ pub trait ModelRuntime: fmt::Debug + Send + Sync {
     /// [`RuntimeError::NotInstalled`] if it was not there to remove.
     fn remove(&self, id: &str) -> Result<(), RuntimeError>;
 
+    /// Put a model into video memory so it answers immediately.
+    ///
+    /// A model answers without this — the runtime loads on first use — but the
+    /// first answer then waits for gigabytes to move. Loading deliberately is
+    /// how a person avoids paying that at the moment they ask.
+    ///
+    /// # Errors
+    /// [`RuntimeError::NotInstalled`] if the weights are not on this machine,
+    /// and [`RuntimeError::Unreachable`] if the runtime is not answering.
+    fn load(&self, id: &str) -> Result<(), RuntimeError>;
+
     /// Take a model out of video memory without removing it from disk.
     ///
     /// The distinction people care about on a one-card machine: unloading
