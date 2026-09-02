@@ -13,7 +13,7 @@ repository is the system underneath both: the shell a person signs
 into, the service that lets an agent reach the machine, and the image
 that boots.
 
-## The three laws
+## The four laws
 
 1. **Nothing leaves silently.** Every network egress an agent causes
    is visible at the moment it happens and afterwards in a record. On
@@ -30,9 +30,54 @@ that boots.
 3. **Done means the machine still works.** Input → validation →
    policy → execution → record → error paths, on real hardware. An
    OS that boots but cannot print is not a released OS. No `todo!()`,
-   no `unwrap()` outside tests, no stubs. When time is short cut
-   scope — one printer that works, not half of all printers — never
-   depth.
+   no `unwrap()` outside tests, no stubs, no "we will finish it in
+   the next change". When time is short cut **scope** — one printer
+   that works, not half of all printers — never depth.
+4. **One file, one responsibility.** A file that gains a second
+   reason to change gets split in the same change that discovered it,
+   not noted for later. This is a law rather than a preference
+   because of what this repository is: a privileged service, a
+   compositor and a policy engine, where the file nobody wants to
+   open is where the security bug lives. Small files are how the
+   capability model stays reviewable by somebody who did not write
+   it.
+
+## The gate — nothing is done until all of this passes
+
+There is no "and we will add the tests afterwards". A change that ships
+without them has not been finished, it has been abandoned.
+
+- `cargo fmt` clean and `cargo clippy -D warnings` clean. **Zero**
+  warnings — not "known warnings", not "warnings we live with".
+- Unit tests for logic, and **the refusal path tested as carefully as
+  the happy path.** For anything an agent can reach, "and it was
+  stopped" is the test that matters. Code tested only when it works
+  has not been tested.
+- **The capability guarantees are tests, not prose.** Each of these
+  is a test that runs in CI, and each of them is a promise we make in
+  public:
+  - with no invocation, `alo-agentd` makes no context calls at all;
+  - a verb cannot reach outside its grant;
+  - a revoked grant takes effect immediately, and an expired one is
+    gone;
+  - one approval causes exactly one execution;
+  - every execution *and every refusal* leaves a record;
+  - no agent-caused egress escapes the indicator.
+- **An integration test on real hardware** for anything that touches
+  the machine. A green suite on a developer's laptop proves nothing
+  about a certified workstation, and this is an operating system.
+- Documentation in the same change: rustdoc on public items, the
+  contract updated if a public surface moved, `docs/quirks.md` when
+  reality disagreed with a specification.
+- A user-readable line in `CHANGELOG.md`, written while the knowledge
+  is fresh rather than reconstructed at release time.
+
+**And no rushing.** A date never justifies a shortcut. When something
+has to give it is scope — one printer, one certified machine, one
+adapter — because a system built in a hurry is a system nobody can
+trust, and being trustworthy is the only asset this product has. We
+would rather ship less, later, than ship something whose guarantees we
+cannot demonstrate.
 
 ## Standing rules
 
@@ -64,8 +109,6 @@ that boots.
 - **Certified before compatible.** One machine model that works
   completely beats a compatibility list nobody can honour. "Supports
   PCs" is not a claim we make.
-- **One file, one reason to change.** A file that gains a second
-  responsibility gets split in the same change that discovered it.
 - **Settled decisions live in `docs/decisions/`.** Read the ADR before
   proposing an alternative; relitigating without new facts wastes the
   scarcest resource we have.
@@ -96,3 +139,5 @@ that boots.
 - `docs/quirks.md` — where reality and the specification disagree:
   driver behaviour, application automation, firmware.
 - `SECURITY.md` — how to report something, and what is in scope.
+- `CHANGELOG.md` — what changed, in words a person outside this
+  repository can read.

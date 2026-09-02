@@ -38,16 +38,21 @@ wastes the scarcest thing this project has.
 
 ## What makes a good contribution
 
+**The gate is in `CLAUDE.md`** and it is not negotiable: zero warnings, the
+refusal path tested as carefully as the happy path, the capability guarantees
+as tests rather than prose, real hardware for anything touching the machine,
+documentation in the same change, and a changelog line. There is no "tests in
+a follow-up" — a change that ships without them has not been finished.
+
+Beyond the gate:
+
 - **Small and complete** beats large and partial. One verb, fully done —
   validation, refusal paths, record, test — is worth more than five sketched.
-- **Test the refusal path.** Code that has only been tested when it works has
-  not been tested. For anything the agent can reach, the "and it was stopped"
-  test is the important one.
-- **Documentation in the same change.** Rustdoc on public items; the contract
-  updated if a surface moved; `docs/quirks.md` if you learned something about
-  hardware or an application that the specification does not say.
+- **Take the time.** Nothing here is on a deadline that justifies a shortcut.
+  If a change is getting away from you, cut its scope rather than its depth,
+  and say in the pull request what you left out.
 - **Say what you verified.** "Tests pass" is weaker than "ran it on the
-  certified machine, here is what the record shows".
+  certified machine, and here is what the record shows".
 
 ## Adapters
 
@@ -67,12 +72,12 @@ tree: concurrent editors on one checkout produce work nobody can attribute.
 
 ## Before you open a pull request
 
-- It builds with no warnings, and `cargo fmt` and `cargo clippy -D warnings` are
-  clean.
-- Tests pass, including the refusal paths.
+- Every line of the gate in `CLAUDE.md` passes.
 - It is in `docs/features.md` with a tier, in the current release.
-- The diff has one reason to change. A file that grew a second responsibility
-  gets split in the same pull request that discovered it.
+- **One file, one responsibility** (law 4). A file that grew a second reason to
+  change gets split in the same pull request that discovered it — in this
+  repository the file nobody wants to open is where the security bug lives.
+- `CHANGELOG.md` has a line a person outside this repository can read.
 
 ## Security
 
