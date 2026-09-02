@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- A large organisation can deploy alo OS without abandoning how it already
+  works: sign-in against its own identity provider, smartcards and national
+  eID, policy by role, a curated model catalogue and signed adapter allowlist,
+  agent actions in its own SIEM, staged updates and an internal mirror, key
+  escrow so a machine survives its owner leaving, and a signed egress
+  attestation to hand an auditor. A machine is personal or it is managed, and a
+  managed machine says so at first sign-in — no silent enrollment, no
+  administrator watching a screen, no acting in somebody's name.
 - Machines on a company network will find each other with no configuration, so
   one GPU workstation can serve every desk and the inference stays in the
   building — working with no internet at all. Discovery is open and trust is

@@ -2,7 +2,9 @@
 
 Feature inventory. Three tiers, mapped to the releases in `ROADMAP.md`:
 **[v0.01]** = it boots and the agent acts · **[v0.5]** = a person can work on it
-all day · **[v1]** = an organisation can buy it. **★** marks differentiators —
+all day · **[v1]** = an organisation can buy it — from a fifty-seat firm to one
+with thousands of machines, which is a wider bar than it sounds and is where
+most of this list comes from. **★** marks differentiators —
 things no other operating system offers.
 
 Rule of the file: **nothing gets built that isn't listed here, and nothing gets
@@ -64,6 +66,29 @@ on the same WiFi confers nothing.
 - [v1] Files and printers shared between paired alo machines, with no server in the middle
 - [v1] Enrollment by discovery: a new machine appears to the fleet and asks; an administrator admits it
 - [v1] ★ Cross-machine agent work — an agent may **ask** a paired machine, and acts only under a grant made **on that machine, by its person**
+
+## Identity, fleet and compliance — what a large organisation requires (ADR 0004)
+
+A machine is **personal** — nobody above the person — or **managed**, in which
+case the organisation sets policy and holds a recovery key, and the person is
+told so at first sign-in. There is no silent enrollment.
+
+- [v1] **Sign in with the organisation's own identity provider** — SAML/OIDC against Entra ID, Okta or Keycloak. Nobody maintains a second set of identities for us
+- [v1] **Smartcard and national eID sign-in** — eIDAS and government ID cards; in much of EU public sector this is required, not preferred
+- [v1] **Disk-encryption key escrow**, so a machine survives the person leaving
+- [v1] **Remote lock and wipe** for a machine that is lost — destructive by design, and recorded
+- [v1] **Records export to their SIEM** — Splunk, Sentinel, Elastic, over syslog/OpenTelemetry. A security team needs agent actions in *their* console, not ours
+- [v1] **Update rings**: canary then broad, haltable. No organisation updates a fleet at once
+- [v1] **An update mirror they host**, for machines that never reach the internet
+- [v1] ★ **A private model catalogue** — the organisation curates which models may run, served from inside. No one lets staff pull arbitrary weights
+- [v1] ★ **An adapter allowlist**, signed and centrally permitted — an adapter is code that drives your applications
+- [v1] ★ **Agent policy by role**: which verbs, adapters and models, per department. A finance team's agent may raise an invoice; an intern's may not
+- [v1] ★ **Agent retention policy, centrally set** — what agents remember and for how long. A GDPR question with an actual answer
+- [v1] ★ **Inference accounting** — which team used the GPU, and for what. Whoever paid for the workstation asks within a month
+- [v1] ★ **Egress attestation**: a signed, printable statement of exactly what left this machine in a period. The artifact an auditor asks for and nobody can currently produce
+- [v1] Configuration as a document — image, policy, adapters and settings declared in one file, so an identical machine can be rebuilt
+- [v1] Helpdesk assistance as a **session a person starts and can end**, never a capability an administrator holds
+- [v1] Certification groundwork: ISO 27001, BSI Grundschutz, ANSSI, Common Criteria. Years and money rather than code, which is why it starts early
 
 ## Sovereignty, as testable claims
 

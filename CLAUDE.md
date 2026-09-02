@@ -111,6 +111,11 @@ cannot demonstrate.
   takes a deliberate pairing on both; an agent reaching across acts
   only under a grant made on the machine it acts upon. There is no
   trusted-network setting, and there will not be one (ADR 0003).
+- **Whose machine it is, is answerable in ten seconds.** A machine is
+  personal, or it is managed by an organisation that sets policy and
+  holds a recovery key — and on a managed machine the person is told
+  so at first sign-in. There is no silent enrollment, and no
+  administrator can watch a screen or act as a person (ADR 0004).
 - **Certified before compatible.** One machine model that works
   completely beats a compatibility list nobody can honour. "Supports
   PCs" is not a claim we make.

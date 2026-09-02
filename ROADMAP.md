@@ -73,6 +73,22 @@ cleanly.
 
 ## v1 — an organisation can buy it
 
+Not only a fifty-seat firm. v1 is the release a security team, a compliance
+officer and a procurement department can all say yes to, which is a much wider
+bar and is where most of this list comes from. **ADR 0004** settles what a
+managed machine means and what its person is told.
+
+- [ ] **Sign in with the organisation's identity provider** (SAML/OIDC)
+- [ ] **Smartcard and national eID sign-in**
+- [ ] **Disk-encryption key escrow**; remote lock and wipe
+- [ ] **Records export to their SIEM**
+- [ ] **Update rings**, and an update mirror they host
+- [ ] **Private model catalogue** and **signed adapter allowlist**
+- [ ] **Agent policy by role**; agent retention policy
+- [ ] **Inference accounting**
+- [ ] **Egress attestation** — signed, printable, per period
+- [ ] Configuration as a document; helpdesk assistance as a session a person ends
+- [ ] Certification groundwork: ISO 27001, BSI Grundschutz, ANSSI
 - [ ] Fleet enrollment by discovery — the machine asks, an administrator admits it
 - [ ] Fleet policy and signed updates, for alo OS machines
 - [ ] Files and printers shared between paired machines
@@ -85,9 +101,12 @@ cleanly.
 - [ ] Compatibility list, grown outward from the certified machine
 - [ ] Support and SLA definitions
 
-**Exit gate.** A fifty-seat organisation enrols a fleet, sets policy, receives a
-signed update, and has a documented egress guarantee, a published audit and
-somebody to call.
+**Exit gate.** An organisation enrols a fleet against its own identity
+provider, sets policy by role, receives a staged signed update, recovers a
+machine whose owner has left, sees agent actions in its own SIEM, and hands its
+auditor an egress attestation — with a published third-party audit and somebody
+to call. And a person signing in to one of those machines can say, in ten
+seconds, who else has power over it.
 
 ---
 
