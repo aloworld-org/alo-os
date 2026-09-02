@@ -10,6 +10,10 @@ repository.workspace = true
 [dependencies]
 alo-capability = { path = "../alo-capability" }
 alo-egress = { path = "../alo-egress" }
+# A refusal arrives as what it was, not as words: the record says it in the
+# language the person was told it in, so the screen and the record are one
+# rendering of one moment.
+alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 
 [dev-dependencies]

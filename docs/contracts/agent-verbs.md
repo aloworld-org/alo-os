@@ -52,6 +52,39 @@ An adapter that shows a person a sentence asks its own vocabulary for it. What
 a `Call` carries is the source sentence, and what a record keeps is what the
 person was actually shown — one rendering, never two accounts of one moment.
 
+## Being told no
+
+Every refusal the capability model makes is a **value**, not a sentence.
+`Grants::permitting` answers with the grant that said yes or with a
+`NotGranted` that carries what was asked for and, where there was one, the
+grant that has run out; `GrantError`, `ArgError`, `CallError`, `ProposalError`,
+`AnswerError` and `NotAuthorised` are the same shape. None of them has a
+`Display`. The road to words is `said(&Strings)`, which answers with something
+that says whether anybody translated it.
+
+Two things follow, and an adapter can rely on both.
+
+**Deciding never depends on a vocabulary.** A machine whose shell declared no
+words at all refuses exactly the same things and says so with the key of the
+sentence, marked. Nothing is permitted because a string table was missing.
+
+**The screen and the record cannot disagree.** They render the same value with
+the same strings, so a refusal cannot be English in one place and the reader's
+language in the other. `Entry::refused` takes the strings rather than words for
+that reason: there is no way to write down a sentence about something else.
+
+A refusal this crate cannot make itself — *this path really leads somewhere
+nobody granted* — is worded by whatever could ask, and arrives already said
+(`Refused::worded_elsewhere`). That is the same rule seen from the other side:
+the words are made once, where the question was answered.
+
+Three errors keep their English and are `std::error::Error`: `VerbError`,
+`VerbsError` and `SentenceError`. They refuse a **declaration**, so their reader
+is whoever is writing an adapter at the moment their own declaration fails its
+tests — a sentence in whichever language the machine happened to load is not
+what that person needs. An adapter's own declaration-time errors should do the
+same, and everything a person meets should not.
+
 ## What an argument can be
 
 A closed list, like the verbs themselves. An argument is one of:
@@ -146,11 +179,12 @@ swapped in afterwards, or a hard link, which is a second real name for a file
 that also lives elsewhere and which no amount of resolving reveals. Both are in
 `docs/quirks.md`, and closing them belongs to the code that opens the file.
 
-A refusal at question 2 or 3 is worded by whatever executes the verb rather than
-by the grants, so **it is worded in the language the person reads**, once — and
-that one rendering is what the record keeps. A refusal never depends on a
-string table: a machine whose shell declared no words at all refuses exactly the
-same things, and says so with the key.
+A refusal at question 1 is the grants' own and travels as the value they made.
+A refusal at question 2 or 3 is worded by whatever executes the verb, because
+only that code knows where the path really leads — so **it is worded in the
+language the person reads**, once, and that one rendering is what the record
+keeps. Both roads are in *Being told no* above, and neither of them lets a
+missing string table change what is refused.
 
 ### A grant covers where a file goes, not only where it comes from
 

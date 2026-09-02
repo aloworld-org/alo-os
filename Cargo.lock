@@ -16,6 +16,7 @@ dependencies = [
 name = "alo-capability"
 version = "0.0.1"
 dependencies = [
+ "alo-strings",
  "serde",
  "serde_json",
  "thiserror",
@@ -59,6 +60,7 @@ dependencies = [
  "alo-capability",
  "alo-egress",
  "alo-models",
+ "alo-strings",
  "serde",
  "serde_json",
 ]

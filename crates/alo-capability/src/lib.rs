@@ -95,6 +95,33 @@
 //! the decision in the caller's hands: the daemon answering a verb and the
 //! settings panel listing grants must agree on what "now" means, and the way to
 //! guarantee that is to pass it.
+//!
+//! # Saying no, in the language the person reads
+//!
+//! Almost every public error here is a sentence somebody is shown: a grant they
+//! could not make, an argument an agent sent that did not survive the boundary,
+//! a change that was never put to them, a call refused at the moment it would
+//! have run. [`words`] is the list of those sentences and none of them has a
+//! `Display` — the road to words is `said(&Strings)`, which answers with
+//! something that says whether anybody translated it.
+//!
+//! **Deciding does not depend on words.** A refusal is a value that carries
+//! what was refused ([`NotGranted`]), and it is worded when somebody shows it
+//! or writes it down. Handing [`Grants`] a vocabulary would have made
+//! *whether an agent may touch a folder* depend on a string table having been
+//! loaded, which is the wrong thing for the deciding crate to need — and the
+//! guarantee it buys is the stronger one, because the screen and the record
+//! render the same value and cannot become two accounts of one moment.
+//!
+//! Three errors keep their English and their `Display`, and that is the same
+//! decision rather than an exception to it: [`VerbError`], [`VerbsError`] and
+//! [`SentenceError`] refuse a **declaration**, and are read by whoever is
+//! writing an adapter against `docs/contracts/agent-verbs.md` at the moment
+//! their own declaration fails its tests.
+//!
+//! This is the crate's only dependency beyond serde and thiserror.
+//! `alo-strings` depends on nothing itself, so what it costs is a list of
+//! sentences rather than a stack somebody has to audit.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -108,12 +135,16 @@ pub mod grants;
 pub mod path;
 pub mod proposal;
 pub mod reach;
+pub mod refusing;
 pub mod sentence;
 pub mod verb;
 pub mod verbs;
+pub mod words;
 
 #[cfg(test)]
 mod test_calls;
+#[cfg(test)]
+mod testing;
 
 pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
@@ -124,6 +155,8 @@ pub use grant::{Grant, GrantError, Grantee};
 pub use grants::{GrantId, Grants, Held};
 pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};
+pub use refusing::NotGranted;
 pub use sentence::{Part, Sentence, SentenceError};
 pub use verb::{Effect, Requires, Verb, VerbError};
 pub use verbs::{Verbs, VerbsError};
+pub use words::{EVERY_WORD, WordsError, capability_words, declare_into};

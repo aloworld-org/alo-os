@@ -145,7 +145,8 @@ mod tests {
                 name: "run_shell".to_owned()
             }
         );
-        assert!(err.to_string().contains("the list is closed"), "{err}");
+        let said = err.said(&crate::testing::in_english());
+        assert!(said.text().contains("the list is closed"), "{said}");
         assert!(verbs.of("List_Folder").is_none());
     }
 

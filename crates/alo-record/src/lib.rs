@@ -88,6 +88,8 @@ pub mod written;
 
 #[cfg(test)]
 mod test_calls;
+#[cfg(test)]
+mod testing;
 
 pub use entry::Entry;
 pub use explain::{Asking, Only};

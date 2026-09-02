@@ -112,9 +112,9 @@ impl Touching {
             let resolved = match resolving.real(given) {
                 Ok(resolved) => resolved,
                 Err(why) => {
-                    return Err(Refused::not_granted(
+                    return Err(Refused::worded_elsewhere(
                         authorised.call().clone(),
-                        why.said(strings).into_text(),
+                        why.said(strings),
                     ));
                 }
             };
@@ -123,16 +123,14 @@ impl Touching {
                 .permitting(&under, &Ask::Path(resolved.as_path().to_owned()), at)
                 .is_err()
             {
-                return Err(Refused::not_granted(
+                return Err(Refused::worded_elsewhere(
                     authorised.call().clone(),
-                    strings
-                        .say(
-                            &words::REALLY_LEADS_ELSEWHERE.key(),
-                            &Filling::of("path", given.display().to_string())
-                                .and("really", resolved.describe())
-                                .and("who", under.as_str()),
-                        )
-                        .into_text(),
+                    strings.say(
+                        &words::REALLY_LEADS_ELSEWHERE.key(),
+                        &Filling::of("path", given.display().to_string())
+                            .and("really", resolved.describe())
+                            .and("who", under.as_str()),
+                    ),
                 ));
             }
             real.insert(argument.clone(), resolved);
@@ -195,7 +193,7 @@ impl Touching {
 mod tests {
     use super::*;
     use crate::real::RealError;
-    use crate::testing::in_english;
+    use crate::testing::{in_english, refusal};
     use crate::verbs::file_verbs;
     use alo_capability::{
         Approvals, Arg, Effect, Given, Grant, Grantee, NotAuthorised, Proposal, Reach, Requires,
@@ -321,15 +319,31 @@ mod tests {
             &in_english(),
         )
         .unwrap_err();
-        assert!(refused.to_string().contains("/etc/shadow"), "{refused}");
-        assert!(refused.to_string().contains("really leads to"), "{refused}");
         assert!(
-            refused.to_string().contains("not where a link to it sits"),
-            "{refused}"
+            refusal(&refused).contains("/etc/shadow"),
+            "{}",
+            refusal(&refused)
+        );
+        assert!(
+            refusal(&refused).contains("really leads to"),
+            "{}",
+            refusal(&refused)
+        );
+        assert!(
+            refusal(&refused).contains("not where a link to it sits"),
+            "{}",
+            refusal(&refused)
         );
         // And it knows what it refused, because it is about to be recorded.
         assert_eq!(refused.call(), &call);
-        assert!(matches!(refused.why(), NotAuthorised::NotGranted(_)));
+        // It is a refusal by the grants, worded here: the question *where does
+        // this really lead* is one only this crate can ask, so this crate says
+        // it, in the language the person reads, and the record keeps that
+        // rendering rather than a second one.
+        assert!(matches!(
+            refused.why(),
+            NotAuthorised::NotGrantedElsewhere(_)
+        ));
     }
 
     /// What may be touched is the **real** path, not the one that arrived. A
@@ -404,12 +418,14 @@ mod tests {
         let wherever = Wherever::plain(&["/home/anna/Invoices", "/home/anna/Taxes"]);
         let refused = Touching::of(authorised, &grants, &wherever, &in_english()).unwrap_err();
         assert!(
-            refused.to_string().contains("/home/anna/Taxes"),
-            "{refused}"
+            refusal(&refused).contains("/home/anna/Taxes"),
+            "{}",
+            refusal(&refused)
         );
         assert!(
-            refused.to_string().contains("has not been granted"),
-            "{refused}"
+            refusal(&refused).contains("has not been granted"),
+            "{}",
+            refusal(&refused)
         );
         assert_eq!(
             wherever.was_asked_about(),
@@ -431,8 +447,9 @@ mod tests {
         let wherever = Wherever::plain(&["/home/anna/Invoices"]);
         let refused = Touching::of(authorised, &grants, &wherever, &in_english()).unwrap_err();
         assert!(
-            refused.to_string().contains("has not been granted"),
-            "{refused}"
+            refusal(&refused).contains("has not been granted"),
+            "{}",
+            refusal(&refused)
         );
         assert!(wherever.was_asked_about().is_empty());
     }
@@ -448,10 +465,15 @@ mod tests {
         let refused =
             Touching::of(authorised, &grants, &Wherever::plain(&[]), &in_english()).unwrap_err();
         assert!(
-            refused.to_string().contains("there is nothing at"),
-            "{refused}"
+            refusal(&refused).contains("there is nothing at"),
+            "{}",
+            refusal(&refused)
         );
-        assert!(refused.to_string().contains("april.pdf"), "{refused}");
+        assert!(
+            refusal(&refused).contains("april.pdf"),
+            "{}",
+            refusal(&refused)
+        );
         assert_eq!(refused.call(), &call);
     }
 
@@ -532,8 +554,9 @@ mod tests {
         )
         .unwrap_err();
         assert!(
-            refused.to_string().contains("/mnt/usb/Archive"),
-            "{refused}"
+            refusal(&refused).contains("/mnt/usb/Archive"),
+            "{}",
+            refusal(&refused)
         );
         assert_eq!(refused.call().verb(), "move_file");
     }

@@ -21,36 +21,54 @@
 
 use std::time::{Duration, SystemTime};
 
+use alo_strings::{Filling, Said, Strings};
 use serde::Serialize;
 
 use crate::call::Call;
 use crate::grant::Grantee;
 use crate::grants::Grants;
+use crate::refusing::NotGranted;
+use crate::words;
 
 /// Why a change could not be proposed.
 ///
 /// Each of these is a refusal before anybody was asked anything, so nothing ran
 /// and nobody was interrupted. They are recorded like every other refusal
 /// (ADR 0001 §7), which is why the caller keeps hold of the call it offered.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`**, and the grants' half is the grants' own refusal rather
+/// than a copy of its words: what a person reads about a change that was never
+/// proposed is the same sentence they would read about one refused at the
+/// moment it ran.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProposalError {
     /// A read, which does not wait for anybody.
-    #[error(
-        "{verb} answers a question rather than changing anything — run it in the turn instead of asking about it"
-    )]
     ReadDoesNotWait {
         /// The verb that was offered.
         verb: String,
     },
-    /// Something the grants do not permit, in the grants' own words.
-    #[error("{0}")]
-    NotGranted(String),
+    /// Something the grants do not permit.
+    NotGranted(NotGranted),
     /// A question that stands for no time at all.
-    #[error("say how long the question stands — one that lapses at once cannot be answered")]
     NoTime,
     /// A question standing for longer than this machine can represent.
-    #[error("a question has to lapse — choose how long this one stands for")]
     NoEnd,
+}
+
+impl ProposalError {
+    /// What this says, in the language the person reads.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::NotGranted(why) => why.said(strings),
+            Self::ReadDoesNotWait { verb } => strings.say(
+                &words::READ_DOES_NOT_WAIT.key(),
+                &Filling::of("verb", verb.clone()),
+            ),
+            Self::NoTime => strings.say(&words::PROPOSAL_NO_TIME.key(), &Filling::nothing()),
+            Self::NoEnd => strings.say(&words::PROPOSAL_NO_END.key(), &Filling::nothing()),
+        }
+    }
 }
 
 /// A change that has been proposed, and is waiting for one person to answer.
@@ -178,6 +196,7 @@ impl Proposal {
 mod tests {
     use super::*;
     use crate::test_calls::{archiving_march, files, granting, hour, listing_invoices, noon};
+    use crate::testing::in_english;
 
     /// A read never becomes a question. It answers inside the turn, and asking
     /// about it would train a person to approve without reading.
@@ -197,7 +216,8 @@ mod tests {
                 verb: "list_folder".to_owned()
             }
         );
-        assert!(err.to_string().contains("run it in the turn"), "{err}");
+        let said = err.said(&in_english());
+        assert!(said.text().contains("run it in the turn"), "{said}");
     }
 
     /// A change the grants refuse is never put to a person: the refusal happens
@@ -212,10 +232,10 @@ mod tests {
             hour(),
         )
         .unwrap_err();
-        assert!(matches!(err, ProposalError::NotGranted(_)), "{err}");
-        let why = err.to_string();
-        assert!(why.contains("has not been granted"), "{why}");
-        assert!(why.contains("/home/anna/Archive"), "{why}");
+        assert!(matches!(err, ProposalError::NotGranted(_)), "{err:?}");
+        let why = err.said(&in_english());
+        assert!(why.text().contains("has not been granted"), "{why}");
+        assert!(why.text().contains("/home/anna/Archive"), "{why}");
     }
 
     /// The question has an end, like a grant does. There is no proposal that
@@ -286,10 +306,17 @@ mod tests {
     /// The errors say what to do, not what went wrong.
     #[test]
     fn the_errors_say_what_to_do() {
-        assert!(ProposalError::NoTime.to_string().contains("how long"));
+        let strings = in_english();
+        assert!(
+            ProposalError::NoTime
+                .said(&strings)
+                .text()
+                .contains("how long")
+        );
         assert!(
             ProposalError::NoEnd
-                .to_string()
+                .said(&strings)
+                .text()
                 .contains("how long this one stands")
         );
     }

@@ -76,6 +76,7 @@ mod tests {
         archiving_march, files, granting, granting_both, hour, listing_invoices, mail, noon,
         proposing,
     };
+    use crate::testing::in_english;
     use alo_capability::{Approvals, Authorised};
 
     /// One of each thing that can happen, in the order it happened.
@@ -99,7 +100,12 @@ mod tests {
             noon() + hour(),
         )
         .unwrap_err();
-        record.keep(Entry::refused(&refused, &files(), noon() + hour()));
+        record.keep(Entry::refused(
+            &refused,
+            &files(),
+            &in_english(),
+            noon() + hour(),
+        ));
 
         record.keep(Entry::answered_here(&mail(), noon() + hour()));
         record

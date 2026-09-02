@@ -22,10 +22,12 @@
 
 use std::time::{Duration, SystemTime};
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::path::{is_a_root, is_usable};
 use crate::reach::{Ask, Reach};
+use crate::words;
 
 /// Who a grant is for: one agent, by the name the system knows it by.
 ///
@@ -53,34 +55,55 @@ impl Grantee {
 ///
 /// The messages say what to do about it. Somebody reads these having just
 /// picked the wrong thing in a dialog, not having just read this file.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`, and therefore not a `std::error::Error`.** The only road to
+/// words is [`GrantError::said`], which takes the strings the person in front
+/// of the machine reads — a `Display` here would be an English sentence one
+/// `to_string()` away from a settings panel whose author had no reason to think
+/// about it. What is given up is `std::error::Error` on a type that was never
+/// an error a programmer handles.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GrantError {
     /// No agent was named.
-    #[error("say which agent this grant is for — a grant to nobody reaches nothing")]
     Anonymous,
     /// The folder, file or application was empty.
-    #[error("choose the folder, file or application this grant is over")]
     NothingNamed,
     /// A grant to `/`, or to any other spelling of the whole machine.
-    #[error("there is no grant to the whole machine — pick the folder you actually mean")]
     TheWholeMachine,
     /// A relative path, which means something different depending on where it
     /// is read from.
-    #[error(
-        "grant a folder by its full path, so it means the same thing wherever it is asked about"
-    )]
     NotAFullPath,
     /// A path containing `..`, which can leave the folder it appears to be in.
-    #[error(
-        "a path with .. in it can lead somewhere else — grant the folder you mean by its own path"
-    )]
     CouldLeadElsewhere,
     /// A grant lasting no time at all.
-    #[error("say how long the grant should last — a grant for no time reaches nothing")]
     NoTime,
     /// A grant so long it has no end this machine can represent.
-    #[error("a grant has to end — choose how long this one should last")]
     NoEnd,
+}
+
+impl GrantError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub fn word(self) -> words::Word {
+        match self {
+            Self::Anonymous => words::ANONYMOUS,
+            Self::NothingNamed => words::NOTHING_NAMED,
+            Self::TheWholeMachine => words::THE_WHOLE_MACHINE,
+            Self::NotAFullPath => words::GRANT_NOT_A_FULL_PATH,
+            Self::CouldLeadElsewhere => words::GRANT_COULD_LEAD_ELSEWHERE,
+            Self::NoTime => words::GRANT_NO_TIME,
+            Self::NoEnd => words::GRANT_NO_END,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given
+    /// [`crate::capability_words`] answers with the key, marked.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 }
 
 /// A grant a person made.
@@ -207,6 +230,7 @@ fn checked_reach(reach: Reach) -> Result<Reach, GrantError> {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
     use std::path::PathBuf;
 
     fn noon() -> SystemTime {
@@ -236,7 +260,8 @@ mod tests {
         }
         assert!(
             GrantError::TheWholeMachine
-                .to_string()
+                .said(&in_english())
+                .text()
                 .contains("pick the folder you actually mean")
         );
     }
@@ -319,12 +344,39 @@ mod tests {
     /// The errors say what to do, not what went wrong.
     #[test]
     fn the_errors_say_what_to_do() {
+        let strings = in_english();
         assert!(
             GrantError::Anonymous
-                .to_string()
+                .said(&strings)
+                .text()
                 .contains("say which agent")
         );
-        assert!(GrantError::NoTime.to_string().contains("how long"));
-        assert!(GrantError::NotAFullPath.to_string().contains("full path"));
+        assert!(
+            GrantError::NoTime
+                .said(&strings)
+                .text()
+                .contains("how long")
+        );
+        assert!(
+            GrantError::NotAFullPath
+                .said(&strings)
+                .text()
+                .contains("full path")
+        );
+    }
+
+    /// And they say it in the language the person reads, which is what this
+    /// type losing its `Display` is for: there is no way to a sentence that
+    /// does not go past the strings.
+    #[test]
+    fn a_grant_refusal_is_read_in_the_readers_own_language() {
+        let strings = translated(&[(
+            crate::words::THE_WHOLE_MACHINE,
+            "es gibt keine Berechtigung für den ganzen Rechner — wählen Sie den Ordner, den Sie \
+             wirklich meinen",
+        )]);
+        let said = GrantError::TheWholeMachine.said(&strings);
+        assert!(said.is_translated());
+        assert!(said.text().contains("den ganzen Rechner"), "{said}");
     }
 }

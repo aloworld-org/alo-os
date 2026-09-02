@@ -86,8 +86,17 @@ fn as_given(path: &Path) -> Given {
 
 /// This crate's words, with nothing translated — the machine a shell that has
 /// loaded no translations is running, and the one every step below refuses on.
+/// The strings this machine reads: **every crate's**, in one vocabulary.
+///
+/// That is the arrangement a shell has — `alo_strings::Vocabulary` holds one
+/// area per crate — and it is what these tests need, because a refusal a person
+/// meets here can have been worded by either crate: the file half words *this
+/// path really leads elsewhere*, and the capability model words *nobody granted
+/// it*.
 fn in_english() -> Strings {
-    Strings::of(file_words().unwrap())
+    let mut vocabulary = file_words().unwrap();
+    alo_capability::declare_into(&mut vocabulary).unwrap();
+    Strings::of(vocabulary)
 }
 
 /// A read, done: validated, permitted, resolved, and performed.
@@ -110,8 +119,8 @@ fn changing(verb: &str, given: &[(&str, Given)], grants: &Grants) -> Result<Did,
         .redeem(grants, noon())
         .unwrap();
     let touching = Touching::of(authorised, grants, &OnThisMachine, &in_english())
-        .map_err(|why| why.to_string())?;
-    Did::of(touching, grants, &in_english()).map_err(|why| why.to_string())
+        .map_err(|why| why.said(&in_english()).into_text())?;
+    Did::of(touching, grants, &in_english()).map_err(|why| why.said(&in_english()).into_text())
 }
 
 /// The ordinary day, from a declared verb to what is really in the folder.

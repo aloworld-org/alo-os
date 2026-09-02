@@ -23,32 +23,36 @@
 use std::collections::BTreeMap;
 use std::time::SystemTime;
 
+use alo_strings::{Filling, Said, Strings};
 use serde::Serialize;
 
 use crate::arg::{ArgError, Given, Value};
 use crate::grant::Grantee;
 use crate::grants::{GrantId, Grants};
 use crate::reach::Ask;
+use crate::refusing::NotGranted;
 use crate::sentence::SentenceError;
 use crate::verb::{Effect, Requires, Verb};
+use crate::words;
 
 /// Why a call could not be made.
 ///
 /// These are refusals at the boundary: the call never became a call, so nothing
 /// was executed and no grant was consulted. Each is recorded, because a refusal
 /// is exactly the thing a security review asks about (ADR 0001 §7).
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`**, like the two refusals it can carry. [`CallError::said`] is
+/// the road to words, and for an argument that did not survive validation it is
+/// [`ArgError::said`] — one sentence, said once, wherever the refusal came
+/// from.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallError {
     /// A verb that is not on the list.
-    #[error(
-        "there is no verb called {name} — the list is closed, so a verb that is not on it does not exist"
-    )]
     NoSuchVerb {
         /// The name that was asked for.
         name: String,
     },
     /// An argument the verb does not take.
-    #[error("{verb} does not take {argument}")]
     NoSuchArgument {
         /// The verb that was called.
         verb: String,
@@ -56,7 +60,6 @@ pub enum CallError {
         argument: String,
     },
     /// An argument the verb takes, that nothing gave.
-    #[error("{verb} needs {argument} — {purpose}")]
     Missing {
         /// The verb that was called.
         verb: String,
@@ -66,19 +69,69 @@ pub enum CallError {
         purpose: String,
     },
     /// The same argument given twice.
-    #[error("{argument} was given twice — a call gives each argument one value")]
     SameArgumentTwice {
         /// The argument that was given twice.
         argument: String,
     },
     /// An argument that did not survive validation.
-    #[error(transparent)]
-    Argument(#[from] ArgError),
+    Argument(ArgError),
     /// The sentence could not be filled in. A verb that passed
     /// [`Verb::checked`] cannot cause this; it is here so that no code path
     /// builds a sentence with a hole in it.
-    #[error(transparent)]
-    Unsayable(#[from] SentenceError),
+    ///
+    /// It carries the template's own refusal, which keeps its English because
+    /// it is read by whoever declared the verb — see [`crate::sentence`].
+    Unsayable {
+        /// The verb whose sentence could not be filled in.
+        verb: String,
+        /// What was wrong with the template, for whoever wrote it.
+        why: SentenceError,
+    },
+}
+
+impl From<ArgError> for CallError {
+    fn from(why: ArgError) -> Self {
+        Self::Argument(why)
+    }
+}
+
+impl CallError {
+    /// What this says, in the language the person reads.
+    ///
+    /// An argument's refusal is that argument's own sentence rather than a
+    /// second one wrapped around it: a person who sent a relative path needs to
+    /// be told to send a full one, not that a call could not be made.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::Argument(why) => why.said(strings),
+            Self::NoSuchVerb { name } => strings.say(
+                &words::NO_SUCH_VERB.key(),
+                &Filling::of("verb", name.clone()),
+            ),
+            Self::NoSuchArgument { verb, argument } => strings.say(
+                &words::NO_SUCH_ARGUMENT.key(),
+                &Filling::of("verb", verb.clone()).and("argument", argument.clone()),
+            ),
+            Self::Missing {
+                verb,
+                argument,
+                purpose,
+            } => strings.say(
+                &words::ARGUMENT_MISSING.key(),
+                &Filling::of("verb", verb.clone())
+                    .and("argument", argument.clone())
+                    .and("purpose", purpose.clone()),
+            ),
+            Self::SameArgumentTwice { argument } => strings.say(
+                &words::SAME_ARGUMENT_TWICE.key(),
+                &Filling::of("argument", argument.clone()),
+            ),
+            Self::Unsayable { verb, .. } => {
+                strings.say(&words::UNSAYABLE.key(), &Filling::of("verb", verb.clone()))
+            }
+        }
+    }
 }
 
 /// A call that has been validated, and is now a thing that could be run.
@@ -136,7 +189,13 @@ impl Call {
             }
         }
         let asks = asks_of(verb, &values);
-        let sentence = verb.sentence().render(&values)?;
+        let sentence = verb
+            .sentence()
+            .render(&values)
+            .map_err(|why| CallError::Unsayable {
+                verb: verb.name().to_owned(),
+                why,
+            })?;
         Ok(Self {
             verb: verb.name().to_owned(),
             effect: verb.effect(),
@@ -207,7 +266,7 @@ impl Call {
     /// its author wrote down.
     ///
     /// # Errors
-    /// The first refusal, in the grants' own words — because a person reading
+    /// The first refusal, in the grants' own terms — because a person reading
     /// one needs to know about the grant rather than about the verb: that it
     /// expired, or that it was never made, and which folder it was over.
     pub fn permitting(
@@ -215,7 +274,7 @@ impl Call {
         grants: &Grants,
         grantee: &Grantee,
         now: SystemTime,
-    ) -> Result<Vec<GrantId>, String> {
+    ) -> Result<Vec<GrantId>, NotGranted> {
         self.asks
             .iter()
             .map(|ask| grants.permitting(grantee, ask, now))
@@ -230,7 +289,12 @@ impl Call {
 
     /// Why it is not permitted — `None` when it is.
     #[must_use]
-    pub fn refusal(&self, grants: &Grants, grantee: &Grantee, now: SystemTime) -> Option<String> {
+    pub fn refusal(
+        &self,
+        grants: &Grants,
+        grantee: &Grantee,
+        now: SystemTime,
+    ) -> Option<NotGranted> {
         self.permitting(grants, grantee, now).err()
     }
 }
@@ -367,9 +431,12 @@ mod tests {
         .unwrap();
         let grants = granting(&["/home/anna/Invoices"]);
         assert!(!call.permitted_by(&grants, &files(), noon()));
-        let refusal = call.refusal(&grants, &files(), noon()).unwrap();
-        assert!(refusal.contains("has not been granted"), "{refusal}");
-        assert!(refusal.contains("/home/anna/Taxes"), "{refusal}");
+        let refusal = call
+            .refusal(&grants, &files(), noon())
+            .unwrap()
+            .said(&crate::testing::in_english());
+        assert!(refusal.text().contains("has not been granted"), "{refusal}");
+        assert!(refusal.text().contains("/home/anna/Taxes"), "{refusal}");
     }
 
     /// Every part of a call has to be granted. Half of a move is not a smaller
@@ -380,10 +447,9 @@ mod tests {
         let call = moving_march();
         let half = granting(&["/home/anna/Invoices"]);
         assert!(!call.permitted_by(&half, &files(), noon()));
-        assert!(
-            call.refusal(&half, &files(), noon())
-                .unwrap()
-                .contains("/home/anna/Archive")
+        assert_eq!(
+            call.refusal(&half, &files(), noon()).unwrap().wanted(),
+            &Ask::path("/home/anna/Archive")
         );
 
         let both = granting(&["/home/anna/Invoices", "/home/anna/Archive"]);
@@ -405,11 +471,12 @@ mod tests {
         // Half a move names no grant at all, rather than the one that did say
         // yes: a refused call touched nothing, so nothing permitted it.
         let half = granting(&["/home/anna/Invoices"]);
-        assert!(
+        assert_eq!(
             moving_march()
                 .permitting(&half, &files(), noon())
                 .unwrap_err()
-                .contains("/home/anna/Archive")
+                .wanted(),
+            &Ask::path("/home/anna/Archive")
         );
     }
 
@@ -422,7 +489,13 @@ mod tests {
         assert!(call.permitted_by(&grants, &files(), noon()));
         assert!(!call.permitted_by(&grants, &files(), noon() + hour()));
         let refusal = call.refusal(&grants, &files(), noon() + hour()).unwrap();
-        assert!(refusal.contains("has expired"), "{refusal}");
+        assert!(matches!(refusal, NotGranted::Lapsed { .. }), "{refusal:?}");
+        assert!(
+            refusal
+                .said(&crate::testing::in_english())
+                .text()
+                .contains("has expired")
+        );
     }
 
     /// One agent's grant is not another's, however well-formed the call is.

@@ -17,6 +17,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
 
+use alo_capability::Refused;
 use alo_strings::Strings;
 
 use crate::failed::Failed;
@@ -51,15 +52,32 @@ pub(crate) fn really(path: &Path) -> Real {
     OnThisMachine.real(path).unwrap()
 }
 
-/// This crate's own words, with nothing translated: what a machine that has no
-/// translations of them shows, which is what most of these tests are about.
+/// The words this machine reads, with nothing translated: what a machine that
+/// has no translations shows, which is what most of these tests are about.
+///
+/// **Both crates' lists.** A shell has one vocabulary and every crate declares
+/// into it, and these tests need that arrangement rather than a smaller one: a
+/// refusal met here can have been worded by the file half — *this path really
+/// leads elsewhere* — or by the capability model, which is where *nobody
+/// granted it* comes from.
 pub(crate) fn in_english() -> Strings {
-    Strings::of(file_words().unwrap())
+    let mut vocabulary = file_words().unwrap();
+    alo_capability::declare_into(&mut vocabulary).unwrap();
+    Strings::of(vocabulary)
 }
 
 /// What a failure says on such a machine.
 pub(crate) fn said(failed: &Failed) -> String {
     failed.said(&in_english()).into_text()
+}
+
+/// What a refusal says on such a machine.
+///
+/// `alo_capability::Refused` has no `Display` either, for the reason
+/// [`crate::Failed`] has none: the only road to words goes past the strings the
+/// person reads, whichever crate worded it.
+pub(crate) fn refusal(refused: &Refused) -> String {
+    refused.said(&in_english()).into_text()
 }
 
 /// One example of every way the machine can fail to do something it was

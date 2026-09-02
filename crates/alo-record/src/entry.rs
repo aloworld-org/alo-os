@@ -21,6 +21,7 @@
 use std::time::SystemTime;
 
 use alo_capability::{Authorised, Call, Grantee, Proposal, Refused};
+use alo_strings::Strings;
 use serde::{Deserialize, Serialize};
 
 use crate::happened::{Happened, Stopped};
@@ -77,12 +78,18 @@ impl Entry {
     /// [`alo_capability::Approved::redeem`] saying no — the grants asked last,
     /// or a change offered where only a read may go. The agent is passed in
     /// because a refusal is not an authority and does not carry one.
+    ///
+    /// **The strings are passed in rather than the words.** A refusal is a
+    /// value until somebody asks it for a sentence, so the record asks it here
+    /// with the vocabulary the person in front of the machine reads: what is
+    /// written down is what they were told, and it cannot be a sentence about
+    /// something else, because a caller has no way to hand one over.
     #[must_use]
-    pub fn refused(refused: &Refused, agent: &Grantee, at: SystemTime) -> Self {
+    pub fn refused(refused: &Refused, agent: &Grantee, strings: &Strings, at: SystemTime) -> Self {
         Self::stopped(
             refused.call(),
             agent,
-            Stopped::AtTheMoment(Line::of(&refused.why().to_string())),
+            Stopped::AtTheMoment(Line::of(refused.said(strings).text())),
             at,
         )
     }
@@ -203,6 +210,7 @@ mod tests {
         archiving_march, files, granting, granting_both, hour, listing_invoices, mail, noon,
         proposing,
     };
+    use crate::testing::in_english;
     use alo_capability::{Approvals, Grants};
 
     /// What ran, under whose authority, from which approval, against which
@@ -256,7 +264,7 @@ mod tests {
             noon(),
         )
         .unwrap_err();
-        let entry = Entry::refused(&refused, &files(), noon());
+        let entry = Entry::refused(&refused, &files(), &in_english(), noon());
         assert!(entry.happened().was_stopped());
         assert!(!entry.happened().ran());
         assert!(
@@ -284,7 +292,7 @@ mod tests {
         assert_eq!(grants.revoke_everything_for(&files()), 2);
 
         let refused = approved.redeem(&grants, noon()).unwrap_err();
-        let entry = Entry::refused(&refused, &files(), noon());
+        let entry = Entry::refused(&refused, &files(), &in_english(), noon());
         assert!(matches!(
             entry.happened().stopped(),
             Some(Stopped::AtTheMoment(_))
@@ -298,7 +306,8 @@ mod tests {
         let half = granting(&["/home/anna/Invoices"]);
         let why = Proposal::checked(&archiving_march(), &files(), &half, noon(), hour())
             .unwrap_err()
-            .to_string();
+            .said(&in_english())
+            .into_text();
         let entry = Entry::never_asked(&archiving_march(), &files(), &why, noon());
         assert!(matches!(
             entry.happened().stopped(),

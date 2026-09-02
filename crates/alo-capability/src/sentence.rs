@@ -17,10 +17,18 @@
 //! argument the verb declares, and it names nothing else. An argument missing
 //! from the sentence is an argument the person did not agree to.
 //!
-//! The words are English in the source, as everywhere else in this crate today.
-//! A sentence is a list of parts rather than a format string precisely so that
-//! translating it later is a matter of translating [`Part::Words`] — item 9 in
-//! `docs/autonomy/QUEUE.md` is where that happens.
+//! The words are the source, in the sense `alo-strings` means it: the sentence
+//! somebody translates rather than the sentence everybody is shown. A sentence
+//! is a list of parts rather than a format string precisely so that translating
+//! it moves [`Part::Words`] and nothing else.
+//!
+//! **A rendered sentence is still the source language, and that is the one
+//! thing item 9e did not move.** [`crate::Call`] renders its sentence when the
+//! call is made and keeps the result, so a shell shows a translated sentence
+//! (`alo-files` looks the key up) while the approval and the record keep the
+//! rendering made here. Making those one thing means a `Call` carrying a key
+//! and a filling rather than a string, which changes what a record *is* — it is
+//! item 9f in `docs/autonomy/QUEUE.md`, and it is not a rename.
 
 use std::collections::BTreeMap;
 
@@ -43,7 +51,15 @@ pub struct Sentence {
 }
 
 /// Why a sentence could not be written, or could not be filled in.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **This one keeps its English and its `Display`.** It is not read by whoever
+/// is using the machine: every variant is a refusal of a *template*, so the
+/// reader is whoever wrote the verb, at the moment their declaration fails its
+/// own tests. It is `alo-shortcuts`' `DefaultsError` in another crate — a
+/// sentence in whichever language happened to be loaded is not what that person
+/// needs. [`crate::CallError::Unsayable`] is where a person hears about it
+/// instead, in words they can act on.
+#[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum SentenceError {
     /// No template at all.
     #[error("write the sentence the person will approve — it is the thing they agree to")]

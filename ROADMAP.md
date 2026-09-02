@@ -73,12 +73,15 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       · Built: `alo-egress` — what counts as leaving, and what is said about it
       · Owed: the indicator, which is a compositor surface
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
-      · Built: `alo-capability` (the verbs, the grants, the approvals) and
-      `alo-files` (the six file verbs) · Owed: the daemon itself, application
-      verbs, and the context an agent is given when invoked
+      · Built: `alo-capability` (the verbs, the grants, the approvals, and every
+      refusal of theirs said in the language the person reads) and `alo-files`
+      (the six file verbs) · Owed: the daemon itself, application verbs, and the
+      context an agent is given when invoked
 - [ ] Every execution recorded with its origin, approval and grant
-      · Built: `alo-record` — the record, including refusals · Owed: queue 4a —
-      where it is written and what prunes it, which waits on `alo-agentd`
+      · Built: `alo-record` — the record, including refusals, which are now
+      written down in the same words the person was shown rather than in a
+      second rendering of their own · Owed: queue 4a — where it is written and
+      what prunes it, which waits on `alo-agentd`
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
@@ -146,18 +149,21 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       what the system says, the 24 languages listed each in its own language,
       English unable to hide, and a sentence that counts something counted with
       its reader's own plural rules, read from CLDR rather than recalled; and
-      three crates whose own English has moved onto it — `alo-files` (every file
+      four crates whose own English has moved onto it — `alo-files` (every file
       refusal, the six verbs, and the sentence a person approves before a file
       is renamed, moved or archived), `alo-shortcuts` (every row of the
       shortcuts panel, and every key named the way the reader's own keyboard
-      prints it rather than the way an English one does) and `alo-appearance`
+      prints it rather than the way an English one does), `alo-appearance`
       (the eleven colour names a person picks from, each with the note a
       translator needs where the word does not travel, and every refusal about a
-      value they chose)
-      · Owed: a shell to translate, the two crates still holding their own
-      English (9e — `alo-capability` and `alo-models`, which is also where the
-      sentence a person approves stops being rendered in English at the moment
-      the call is made), and every translation — there are none yet
+      value they chose) and `alo-capability` (every way the capability model
+      says no — the grant that could not be made, the argument that did not
+      survive the boundary, the change nobody was asked about, and the grants
+      themselves, which now refuse with a value that is worded in the reader's
+      language wherever it is shown or written down)
+      · Owed: a shell to translate, `alo-models` (9f) and the sentence a person
+      approves, which is still rendered in English at the moment the call is
+      made (9g), and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

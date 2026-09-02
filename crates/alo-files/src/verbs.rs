@@ -98,10 +98,13 @@ pub enum Declaring {
 /// use alo_files::file_verbs;
 ///
 /// let verbs = file_verbs()?;
+/// // A call that does not form is refused with a sentence a person reads, so
+/// // `alo_capability::CallError` is not a `std::error::Error` — see that
+/// // crate's `words` module, and `crate::saying` for the words.
 /// let call = verbs.call("move_file", &[
 ///     ("file", Given::text("/home/anna/Invoices/march.pdf")),
 ///     ("into", Given::text("/home/anna/Archive")),
-/// ])?;
+/// ]).expect("the six take these arguments");
 ///
 /// assert_eq!(
 ///     call.sentence(),
@@ -273,6 +276,7 @@ fn archive_folder() -> Result<Verb, VerbError> {
 )]
 mod tests {
     use super::*;
+    use crate::testing::in_english;
     use alo_capability::{CallError, Given};
 
     /// The six `docs/features.md` promised, and no seventh that arrived with
@@ -405,8 +409,9 @@ mod tests {
                     ],
                 )
                 .unwrap_err();
-            assert!(matches!(err, CallError::Argument(_)), "{attempt}: {err}");
-            assert!(err.to_string().contains("one name"), "{attempt}: {err}");
+            assert!(matches!(err, CallError::Argument(_)), "{attempt}: {err:?}");
+            let said = err.said(&in_english());
+            assert!(said.text().contains("one name"), "{attempt}: {said}");
         }
     }
 
@@ -425,12 +430,14 @@ mod tests {
                 ],
             )
             .unwrap_err();
-        assert!(too_many.to_string().contains("between 1 and"), "{too_many}");
+        let said = too_many.said(&in_english());
+        assert!(said.text().contains("between 1 and"), "{said}");
 
         let not_a_path = verbs
             .call("list_folder", &[("folder", Given::text("Invoices"))])
             .unwrap_err();
-        assert!(not_a_path.to_string().contains("full path"), "{not_a_path}");
+        let said = not_a_path.said(&in_english());
+        assert!(said.text().contains("full path"), "{said}");
 
         let missing = verbs
             .call(
@@ -438,7 +445,8 @@ mod tests {
                 &[("file", Given::text("/home/anna/Invoices/march.pdf"))],
             )
             .unwrap_err();
-        assert!(missing.to_string().contains("into"), "{missing}");
+        let said = missing.said(&in_english());
+        assert!(said.text().contains("into"), "{said}");
     }
 
     /// The list is closed, and these six do not open it.

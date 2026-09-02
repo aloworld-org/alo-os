@@ -272,16 +272,16 @@ fn may_create(
     let authorised = touching.authorised();
     let under = authorised.under();
     if let Err(why) = grants.permitting(under, &Ask::Path(creating.to_owned()), authorised.at()) {
-        return Err(Refused::not_granted(
+        return Err(Refused::worded_elsewhere(
             touching.call().clone(),
-            strings
-                .say(
-                    &words::WOULD_CREATE.key(),
-                    &Filling::of("verb", authorised.verb())
-                        .and("path", creating.display().to_string())
-                        .and("why", why),
-                )
-                .into_text(),
+            strings.say(
+                &words::WOULD_CREATE.key(),
+                &Filling::of("verb", authorised.verb())
+                    .and("path", creating.display().to_string())
+                    // The grants' own refusal, said here so that the sentence
+                    // it sits inside and the sentence it is are one language.
+                    .and("why", why.said(strings).into_text()),
+            ),
         ));
     }
     Ok(())

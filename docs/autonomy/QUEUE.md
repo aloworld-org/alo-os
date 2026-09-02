@@ -44,9 +44,11 @@ nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
 
-Three edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
-**`alo-shortcuts` does** since 9c and **`alo-appearance` does** since 9d,
-because those are the crates that have moved their English onto it.
+Five edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
+**`alo-shortcuts` does** since 9c, **`alo-appearance` does** since 9d, and
+**`alo-capability` and `alo-record` do** since 9e — the deciding crate because
+every refusal it makes is read by somebody, and the record because it writes
+down the words that person was shown rather than a second rendering of its own.
 `alo-strings` still depends on nothing, and the direction is the one every other
 edge here takes — a crate that says something reaches the crate that knows how
 things are said, never the reverse.
@@ -585,33 +587,71 @@ deny list.** Two patterns later items must follow:
   four tests live in `crates/alo-appearance/tests/what_this_crate_says.rs`,
   against the vocabulary the code actually uses rather than a copy of it.
 
-- [ ] **9e. `alo-capability` and `alo-models` onto `alo-strings`** — the two
-  crates no 9-series item names, noticed while item 10 added more English to the
-  second of them. `alo-capability` is the larger and the more delicate:
-  `GrantError`, `Grants::refusal`, `ArgError`, `VerbError`, `CallError`,
-  `ProposalError`, `AnswerError`, `NotAuthorised`, the `Refused` display, and
-  every `Sentence` — which is why `sentence.rs` was built as parts rather than a
-  format string, so translating one moves only `Part::Words`. `alo-models` is
-  `ProviderError`, `RuntimeError`, `SecretError`, `NotTried`, `Tried::describe`,
-  `InferenceSource::describe` and `SourcePolicy::refusal`. Two of those are read
-  by somebody deciding whether to paste a contract into a question, so they are
-  not strings to hurry. It follows 9b–9d, which are now all done: those three
-  are the crates whose strings a person meets every day, and the shape they
-  settled on — a `words.rs` of `alo_strings::Word` constants, `said(&Strings)`
-  in place of `Display`, and the key written where a deserialiser cannot ask —
-  is what this item copies rather than re-decides.
+- [x] **9e. `alo-capability` onto `alo-strings`** — every way the capability
+  model says no, in the language the person reads. Three new files in
+  `crates/alo-capability`: `words.rs` (33 phrases and one countable string, the
+  English beside each key, and the notes a translator cannot work without),
+  `refusing.rs` (`NotGranted` — why the grants refused, and what it says) and
+  `testing.rs` (the fixture the other files' tests are written against).
+  `GrantError`, `ArgError`, `CallError`, `ProposalError`, `AnswerError` and
+  `NotAuthorised` lost their `Display`; `Reach::describe` and `Ask::describe`
+  became `shown(&Strings)`. 107 unit tests (was 85), 6 new integration tests
+  against the real vocabulary, 655 tests and 20 doctests across the workspace,
+  clippy clean.
 
-  **9b left it one question, and it is the interesting one.** A `Call` renders
-  its sentence in English when the call is made and keeps it, so the sentence
-  the record keeps and the sentence a person is shown are two renderings of one
-  string; 9b made the second translatable and could not touch the first without
-  moving this whole crate. So 9e decides whether a `Call` carries a key and a
-  filling rather than a rendered string — which would make the approval, the
-  record and the screen one thing — or whether a record keeps the source
-  language on purpose. That is a decision about what a record is *for*, and
-  `alo-record`'s `Line` is on the other side of it. `alo-files` already shows
-  the shape either way: `words.rs` and `saying.rs`, and a declaration that reads
-  the constant rather than repeating it.
+  **The decision this item turns on: a refusal is a value, and it is worded
+  when somebody shows it.** Item 9b's rule — the words of a refusal are made
+  where the refusal is made, so the record and the screen cannot disagree — is
+  right and could not keep its shape here. Wording a refusal in this crate
+  would mean handing `Grants` a `Strings`, and then *whether an agent may touch
+  a folder* would depend on a vocabulary having been loaded. So
+  `Grants::permitting` answers with a `NotGranted` carrying what was asked for
+  and the grant that ran out, and `said(&Strings)` renders it. 9b's guarantee
+  survives in the stronger form: the screen and the record render **the same
+  value**, so neither can be a language the other is not.
+
+  Three decisions the next items inherit. **`Refused` has two doors and they
+  differ only in whose words they are**: `not_granted` for the refusal the
+  grants made, `worded_elsewhere` for one only the crate holding a resolved
+  path can say, which arrives already `Said`. **`Entry::refused` takes the
+  strings rather than the words**, so a record cannot be handed a sentence
+  about something else — `alo-record` depends on `alo-strings` for that and for
+  nothing else. **Three errors keep their English**: `VerbError`, `VerbsError`
+  and `SentenceError` refuse a *declaration* and are read by whoever is writing
+  an adapter, which is `alo-shortcuts`' `DefaultsError` one crate on.
+
+  What it could not close is 9f and 9g below.
+
+- [ ] **9f. `alo-models` onto `alo-strings`** — cut from 9e, which was two
+  crates and one decision. `ProviderError`, `RuntimeError`, `SecretError`,
+  `NotTried`, `Tried::describe`, `InferenceSource::describe` and
+  `SourcePolicy::refusal`. Two of those are read by somebody deciding whether to
+  paste a contract into a question, so they are not strings to hurry. The shape
+  is now four crates old and has not changed: a `words.rs` of
+  `alo_strings::Word` constants, a test walking every key back through
+  `Key::named`, `said(&Strings)` in place of `Display`, and the key written
+  wherever a `Strings` cannot be reached. `alo-capability` is the closest
+  precedent — same kind of reader, same split between what a person meets and
+  what a programmer does.
+
+- [ ] **9g. The sentence a person approves** — the question 9b left, 9c and 9d
+  did not touch, and 9e answered without moving. `Call` renders its sentence
+  when the call is made and keeps the string, so what a shell shows (`alo-files`
+  looks the key up) and what the approval and the record keep are two renderings
+  of one string. **9e's answer is that they should be one**, and the argument is
+  the one 9e made about refusals: a value carries what it is, and words are
+  asked for where somebody reads them, so two accounts of one moment cannot
+  drift. What that means here is a `Call` carrying a key and a filling rather
+  than a rendered sentence, `Verb::checked` taking the key of its sentence
+  (`alo-files` already declares its six *from* the constants, so it has one),
+  and the record keeping the rendering made at the moment the person read it.
+
+  It is its own item because it is a **public surface change** — third parties
+  declare verbs against `docs/contracts/agent-verbs.md` — and because it
+  reaches `alo-capability`, `alo-files` and `alo-record` at once. It is not a
+  rename: `alo-record`'s `Line` is on the other side of it, and what a record
+  keeps about a moment is what has to be decided rather than how a string is
+  spelled.
 
 - [x] **10. Test a provider before saving it** — implements `docs/features.md`'s
   v0.5 *test a provider before saving it* and closes the loose end in

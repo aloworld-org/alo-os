@@ -29,10 +29,12 @@
 
 use std::path::PathBuf;
 
+use alo_strings::{Counting, Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::path::steps_upwards;
 use crate::reach::Ask;
+use crate::words;
 
 /// What one argument takes.
 ///
@@ -182,53 +184,48 @@ impl Value {
 /// read by whoever is holding a call that did not run — a person looking at a
 /// refusal, or somebody writing an adapter against the contract — and "invalid
 /// argument" would tell neither of them anything.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`**, for the reason [`crate::GrantError`] has none: the road to
+/// words is [`ArgError::said`], and it goes past the strings the person reads.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ArgError {
     /// Text arrived where a number was declared.
-    #[error("give {argument} as a number, not as text")]
     WantedNumber {
         /// The argument that was wrong.
         argument: String,
     },
     /// A number arrived where text was declared.
-    #[error("give {argument} as text, not as a number")]
     WantedText {
         /// The argument that was wrong.
         argument: String,
     },
     /// Nothing, or only spaces.
-    #[error("say what {argument} is — it cannot be blank")]
     Empty {
         /// The argument that was wrong.
         argument: String,
     },
     /// A relative path, which means something different depending on where it
     /// is read from.
-    #[error("give {argument} as a full path, so it means the same thing wherever it is read")]
     NotAFullPath {
         /// The argument that was wrong.
         argument: String,
     },
     /// A path with `..` in it, which can leave the folder it appears to be in.
-    #[error("a path with .. in it can lead somewhere else — give {argument} as the path you mean")]
     CouldLeadElsewhere {
         /// The argument that was wrong.
         argument: String,
     },
     /// A path where one name was declared.
-    #[error("{argument} is one name, not a path — give the name on its own, without folders in it")]
     NotOneName {
         /// The argument that was wrong.
         argument: String,
     },
     /// Something that is not an application identifier.
-    #[error("give {argument} as an application identifier, like org.blender.Blender")]
     NotAnIdentifier {
         /// The argument that was wrong.
         argument: String,
     },
     /// Longer than the verb allows.
-    #[error("{argument} is longer than {longest} characters — shorten it")]
     TooLong {
         /// The argument that was wrong.
         argument: String,
@@ -236,13 +233,11 @@ pub enum ArgError {
         longest: usize,
     },
     /// A character that cannot be read in a sentence.
-    #[error("{argument} contains a character that cannot be shown — retype it in ordinary text")]
     NotPrintable {
         /// The argument that was wrong.
         argument: String,
     },
     /// A number outside the range the verb declared.
-    #[error("give {argument} as a number between {least} and {most}")]
     OutOfRange {
         /// The argument that was wrong.
         argument: String,
@@ -252,13 +247,75 @@ pub enum ArgError {
         most: i64,
     },
     /// Something that is not one of the options.
-    #[error("{argument} has to be one of: {options}")]
     NotOnTheList {
         /// The argument that was wrong.
         argument: String,
         /// The options the verb declared, as a person would read them.
         options: String,
     },
+}
+
+impl ArgError {
+    /// Which argument was wrong.
+    #[must_use]
+    pub fn argument(&self) -> &str {
+        match self {
+            Self::WantedNumber { argument }
+            | Self::WantedText { argument }
+            | Self::Empty { argument }
+            | Self::NotAFullPath { argument }
+            | Self::CouldLeadElsewhere { argument }
+            | Self::NotOneName { argument }
+            | Self::NotAnIdentifier { argument }
+            | Self::TooLong { argument, .. }
+            | Self::NotPrintable { argument }
+            | Self::OutOfRange { argument, .. }
+            | Self::NotOnTheList { argument, .. } => argument,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// One of them counts — a length is a number of characters, and how a
+    /// language counts is that language's business (`alo_strings::cldr`), so
+    /// *longer than one character* is not English's `{longest} characters` with
+    /// a one in it.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let named = Filling::of("argument", self.argument().to_owned());
+        match self {
+            Self::TooLong { longest, .. } => strings.count(
+                &words::TOO_LONG.key(),
+                // A length this machine cannot count in a `u64` is one no
+                // filesystem here can hold; saturating keeps the sentence
+                // countable rather than making the type carry the impossible.
+                &Counting::of(u64::try_from(*longest).unwrap_or(u64::MAX)),
+                &named,
+            ),
+            Self::OutOfRange { least, most, .. } => strings.say(
+                &words::OUT_OF_RANGE.key(),
+                &named
+                    .and("least", least.to_string())
+                    .and("most", most.to_string()),
+            ),
+            Self::NotOnTheList { options, .. } => strings.say(
+                &words::NOT_ON_THE_LIST.key(),
+                &named.and("options", options.clone()),
+            ),
+            Self::WantedNumber { .. } => strings.say(&words::WANTED_NUMBER.key(), &named),
+            Self::WantedText { .. } => strings.say(&words::WANTED_TEXT.key(), &named),
+            Self::Empty { .. } => strings.say(&words::ARGUMENT_EMPTY.key(), &named),
+            Self::NotAFullPath { .. } => {
+                strings.say(&words::ARGUMENT_NOT_A_FULL_PATH.key(), &named)
+            }
+            Self::CouldLeadElsewhere { .. } => {
+                strings.say(&words::ARGUMENT_COULD_LEAD_ELSEWHERE.key(), &named)
+            }
+            Self::NotOneName { .. } => strings.say(&words::NOT_ONE_NAME.key(), &named),
+            Self::NotAnIdentifier { .. } => strings.say(&words::NOT_AN_IDENTIFIER.key(), &named),
+            Self::NotPrintable { .. } => strings.say(&words::NOT_PRINTABLE.key(), &named),
+        }
+    }
 }
 
 /// One argument a verb declares.
@@ -415,6 +472,7 @@ impl Arg {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     fn folder() -> Arg {
         Arg::taking("folder", "the folder to list", Takes::Path)
@@ -535,7 +593,11 @@ mod tests {
                 options: "archive, trash".to_owned()
             }
         );
-        assert!(err.to_string().contains("archive, trash"));
+        assert!(
+            err.said(&crate::testing::in_english())
+                .text()
+                .contains("archive, trash")
+        );
     }
 
     /// A number is inside the range the verb declared, at both ends.
@@ -658,15 +720,63 @@ mod tests {
     /// about — a refusal that does neither is one somebody has to guess at.
     #[test]
     fn the_errors_say_what_to_do() {
+        let strings = in_english();
         let err = folder().validate(&Given::text("Invoices")).unwrap_err();
-        assert!(err.to_string().contains("folder"), "{err}");
-        assert!(err.to_string().contains("full path"), "{err}");
+        let said = err.said(&strings);
+        assert!(said.text().contains("folder"), "{said}");
+        assert!(said.text().contains("full path"), "{said}");
+        assert_eq!(err.argument(), "folder");
         assert!(
             new_name()
                 .validate(&Given::text("a/b"))
                 .unwrap_err()
-                .to_string()
+                .said(&strings)
+                .text()
                 .contains("without folders in it")
+        );
+    }
+
+    /// **A length is counted the reader's own way.** One character is not
+    /// `{longest} characters` with a one in it, and a language with more forms
+    /// than English has is not held to English's two — which is what declaring
+    /// this one as a countable string rather than a sentence is for.
+    #[test]
+    fn a_length_is_counted_rather_than_written_out() {
+        let strings = in_english();
+        let one = ArgError::TooLong {
+            argument: "name".to_owned(),
+            longest: 1,
+        };
+        assert_eq!(
+            one.said(&strings).text(),
+            "name is longer than one character — shorten it"
+        );
+        let many = ArgError::TooLong {
+            argument: "name".to_owned(),
+            longest: 255,
+        };
+        assert_eq!(
+            many.said(&strings).text(),
+            "name is longer than 255 characters — shorten it"
+        );
+    }
+
+    /// And the refusal a person reads is in their own language, with the
+    /// argument's name — which is a name in the contract — left alone.
+    #[test]
+    fn an_argument_refusal_is_read_in_the_readers_own_language() {
+        let strings = translated(&[(
+            crate::words::ARGUMENT_NOT_A_FULL_PATH,
+            "geben Sie {argument} als vollständigen Pfad an, damit er überall dasselbe bedeutet",
+        )]);
+        let said = folder()
+            .validate(&Given::text("Invoices"))
+            .unwrap_err()
+            .said(&strings);
+        assert!(said.is_translated());
+        assert_eq!(
+            said.text(),
+            "geben Sie folder als vollständigen Pfad an, damit er überall dasselbe bedeutet"
         );
     }
 

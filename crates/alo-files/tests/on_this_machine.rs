@@ -28,8 +28,17 @@ use alo_strings::Strings;
 
 /// This crate's words, with nothing translated: what a refusal says on a
 /// machine whose shell has loaded no translations.
+/// The strings this machine reads: **every crate's**, in one vocabulary.
+///
+/// That is the arrangement a shell has — `alo_strings::Vocabulary` holds one
+/// area per crate — and it is what these tests need, because a refusal a person
+/// meets here can have been worded by either crate: the file half words *this
+/// path really leads elsewhere*, and the capability model words *nobody granted
+/// it*.
 fn in_english() -> Strings {
-    Strings::of(file_words().unwrap())
+    let mut vocabulary = file_words().unwrap();
+    alo_capability::declare_into(&mut vocabulary).unwrap();
+    Strings::of(vocabulary)
 }
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
@@ -135,8 +144,12 @@ fn a_file_that_is_not_there_is_refused() {
     let refused = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap_err();
 
     assert!(
-        refused.to_string().contains("there is nothing at"),
-        "{refused}"
+        refused
+            .said(&in_english())
+            .into_text()
+            .contains("there is nothing at"),
+        "{}",
+        refused.said(&in_english())
     );
     assert_eq!(refused.call(), &call);
 
@@ -161,8 +174,12 @@ fn a_folder_nobody_granted_is_refused_whether_or_not_it_is_there() {
     // lexically, and nothing here is reached.
     let refused = Authorised::read(&call, &files(), &grants, noon()).unwrap_err();
     assert!(
-        refused.to_string().contains("has not been granted"),
-        "{refused}"
+        refused
+            .said(&in_english())
+            .into_text()
+            .contains("has not been granted"),
+        "{}",
+        refused.said(&in_english())
     );
 
     let _ = fs::remove_dir_all(&root);
@@ -197,8 +214,9 @@ fn a_link_out_of_a_granted_folder_is_refused_on_a_real_filesystem() {
     let authorised = Authorised::read(&call, &files(), &grants, noon()).unwrap();
 
     let refused = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap_err();
-    assert!(refused.to_string().contains("really leads to"), "{refused}");
-    assert!(refused.to_string().contains("secret.txt"), "{refused}");
+    let said = refused.said(&in_english());
+    assert!(said.text().contains("really leads to"), "{said}");
+    assert!(said.text().contains("secret.txt"), "{said}");
     assert_eq!(refused.call(), &call);
 
     let _ = fs::remove_dir_all(&root);

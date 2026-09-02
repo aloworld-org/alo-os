@@ -15,12 +15,23 @@
 //! Matching loosely means matching *more* than the person picked, and on this
 //! side of the system every widening is a security bug. Names people type are
 //! compared kindly elsewhere in alo OS; names the system enumerates are not.
+//!
+//! # Both of them are shown to somebody
+//!
+//! A [`Reach`] is the line in the list of grants a person reads, and both types
+//! appear inside a refusal ([`crate::NotGranted`]). So each has a `shown`, which
+//! answers with a `String` rather than a `Said` because what it produces is a
+//! **fragment placed inside a sentence** rather than a sentence — the same
+//! shape `alo-shortcuts` uses for a key's label. A path is not translated and
+//! is written as itself; what surrounds it is.
 
 use std::path::{Path, PathBuf};
 
+use alo_strings::{Filling, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::path::{is_exactly, is_inside};
+use crate::words;
 
 /// What a grant covers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -62,11 +73,21 @@ impl Ask {
     }
 
     /// What was asked for, in words a person can read in a refusal.
+    ///
+    /// A path is written as itself: it is a name off the person's own disk, and
+    /// a translation of it would be a different path. An application is
+    /// introduced by a word, because an identifier on its own reads like a
+    /// typing mistake.
     #[must_use]
-    pub fn describe(&self) -> String {
+    pub fn shown(&self, strings: &Strings) -> String {
         match self {
             Self::Path(path) => path.display().to_string(),
-            Self::Application(id) => format!("the application {id}"),
+            Self::Application(id) => strings
+                .say(
+                    &words::AN_APPLICATION.key(),
+                    &Filling::of("application", id.clone()),
+                )
+                .into_text(),
         }
     }
 }
@@ -101,21 +122,34 @@ impl Reach {
     /// What is granted, in words — the line a person reads in the list of
     /// grants, with the times left to whoever is displaying it.
     ///
-    /// Formatting an expiry here would hardcode English and a calendar, and
-    /// this crate is not where that decision belongs.
+    /// Formatting an expiry here would hardcode a calendar as well as a
+    /// language, and this crate is not where that decision belongs. The words
+    /// around the path are [`crate::words`]'; the path is the person's own and
+    /// is written as it is.
     #[must_use]
-    pub fn describe(&self) -> String {
-        match self {
-            Self::Folder(path) => format!("{} and everything in it", path.display()),
-            Self::File(path) => format!("the file {}", path.display()),
-            Self::Application(id) => format!("the application {id}"),
-        }
+    pub fn shown(&self, strings: &Strings) -> String {
+        let (word, filling) = match self {
+            Self::Folder(path) => (
+                words::A_FOLDER,
+                Filling::of("path", path.display().to_string()),
+            ),
+            Self::File(path) => (
+                words::A_FILE,
+                Filling::of("path", path.display().to_string()),
+            ),
+            Self::Application(id) => (
+                words::AN_APPLICATION,
+                Filling::of("application", id.clone()),
+            ),
+        };
+        strings.say(&word.key(), &filling).into_text()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     fn folder() -> Reach {
         Reach::Folder(PathBuf::from("/home/anna/Invoices"))
@@ -161,11 +195,43 @@ mod tests {
 
     #[test]
     fn what_is_granted_reads_as_a_sentence() {
-        assert!(folder().describe().contains("and everything in it"));
+        let strings = in_english();
+        assert!(folder().shown(&strings).contains("and everything in it"));
         assert!(
             Reach::File(PathBuf::from("/home/anna/march.pdf"))
-                .describe()
+                .shown(&strings)
                 .starts_with("the file")
+        );
+        assert_eq!(
+            Reach::Application("org.blender.Blender".to_owned()).shown(&strings),
+            "the application org.blender.Blender"
+        );
+        assert_eq!(
+            Ask::path("/home/anna/march.pdf").shown(&strings),
+            "/home/anna/march.pdf"
+        );
+        assert_eq!(
+            Ask::application("org.blender.Blender").shown(&strings),
+            "the application org.blender.Blender"
+        );
+    }
+
+    /// **A path is not a string, and the words around it are.** A person
+    /// reading their list of grants in German reads German about a path that is
+    /// still the path on their disk.
+    #[test]
+    fn the_words_around_a_path_are_translated_and_the_path_is_not() {
+        let strings = translated(&[
+            (crate::words::A_FOLDER, "{path} und alles darin"),
+            (crate::words::AN_APPLICATION, "die Anwendung {application}"),
+        ]);
+        assert_eq!(
+            folder().shown(&strings),
+            "/home/anna/Invoices und alles darin"
+        );
+        assert_eq!(
+            Ask::application("org.blender.Blender").shown(&strings),
+            "die Anwendung org.blender.Blender"
         );
     }
 }

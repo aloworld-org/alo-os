@@ -19,11 +19,13 @@
 
 use std::time::SystemTime;
 
+use alo_strings::{Filling, Said, Strings};
 use serde::Serialize;
 
 use crate::approval::Approved;
 use crate::grant::Grantee;
 use crate::proposal::Proposal;
+use crate::words;
 
 /// The number a person answers a proposal by.
 ///
@@ -52,22 +54,40 @@ pub struct Waiting {
 }
 
 /// Why a proposal could not be answered.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`**, like every other refusal a person reads here. The one that
+/// quotes the question quotes it in the words it was proposed in — see the note
+/// on [`crate::words::LAPSED`], which is where the quotation marks live so that
+/// a language can use its own.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AnswerError {
     /// A number that is not waiting for an answer.
-    #[error(
-        "nothing is waiting to be approved under number {number} — it has been answered already, or it was never asked"
-    )]
     NothingWaiting {
         /// The number that was answered.
         number: u64,
     },
     /// A question that stood too long.
-    #[error("\"{sentence}\" was proposed too long ago to answer — ask again if it is still wanted")]
     Lapsed {
         /// What the question was, since the person is being told to ask again.
         sentence: String,
     },
+}
+
+impl AnswerError {
+    /// What this says, in the language the person reads.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::NothingWaiting { number } => strings.say(
+                &words::NOTHING_WAITING.key(),
+                &Filling::of("number", number.to_string()),
+            ),
+            Self::Lapsed { sentence } => strings.say(
+                &words::LAPSED.key(),
+                &Filling::of("sentence", sentence.clone()),
+            ),
+        }
+    }
 }
 
 /// Every change waiting for one person to answer it.
@@ -193,6 +213,7 @@ mod tests {
     use crate::call::Call;
     use crate::grants::Grants;
     use crate::test_calls::{archiving_april, archiving_march, files, granting_both, hour, noon};
+    use crate::testing::{in_english, translated};
 
     fn proposing(call: &Call, grants: &Grants) -> Proposal {
         Proposal::checked(call, &files(), grants, noon(), hour()).unwrap()
@@ -213,7 +234,8 @@ mod tests {
         assert!(approvals.approve(id, noon()).is_ok());
         let err = approvals.approve(id, noon()).unwrap_err();
         assert_eq!(err, AnswerError::NothingWaiting { number: 0 });
-        assert!(err.to_string().contains("answered already"), "{err}");
+        let said = err.said(&in_english());
+        assert!(said.text().contains("answered already"), "{said}");
         assert!(approvals.is_empty());
     }
 
@@ -270,9 +292,34 @@ mod tests {
                 sentence: "move /home/anna/Invoices/march.pdf into /home/anna/Archive".to_owned()
             }
         );
-        assert!(err.to_string().contains("ask again"), "{err}");
+        let said = err.said(&in_english());
+        assert!(said.text().contains("ask again"), "{said}");
+        assert!(said.text().contains("march.pdf"), "{said}");
         // It is gone rather than left there for somebody to click again.
         assert!(approvals.is_empty());
+    }
+
+    /// **The quotation marks belong to the language, not to the code.** German
+    /// opens a quotation at the bottom of the line, and it can, because the
+    /// marks are inside the sentence a translator is handed rather than around
+    /// the gap this crate fills.
+    #[test]
+    fn the_quotation_marks_are_the_translators_to_place() {
+        let strings = translated(&[(
+            crate::words::LAPSED,
+            "„{sentence}“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, wenn es \
+             noch gewünscht ist",
+        )]);
+        let said = AnswerError::Lapsed {
+            sentence: "march.pdf verschieben".to_owned(),
+        }
+        .said(&strings);
+        assert!(said.is_translated());
+        assert_eq!(
+            said.text(),
+            "„march.pdf verschieben“ wurde vor zu langer Zeit vorgeschlagen — fragen Sie erneut, \
+             wenn es noch gewünscht ist"
+        );
     }
 
     /// Lapsed questions can be swept, and sweeping them changes nothing about

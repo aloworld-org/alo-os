@@ -8,6 +8,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# Every refusal in this crate is read by a person, and `CLAUDE.md` calls
+# hardcoded English a bug. `alo-strings` depends on nothing itself, so the crate
+# whose value is being small enough to audit stays that way.
+alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

@@ -24,12 +24,19 @@
 //! refused would leave the record saying only that something was stopped.
 //!
 //! **One question is asked from outside this crate**, and [`Refused::not_granted`]
-//! is how its answer comes back. Reach is decided lexically here and nothing
-//! touches a disk ([`crate::path`]), so whether the path a verb would *really*
-//! open is inside the grant can only be asked by whatever resolves it —
-//! `alo-files` does, after this file has said yes about the path as it was
-//! written. That refusal is the same fact as one made here, so it comes back as
-//! the same type and reaches the record by the same road.
+//! and [`Refused::worded_elsewhere`] are how its answer comes back. Reach is
+//! decided lexically here and nothing touches a disk ([`crate::path`]), so
+//! whether the path a verb would *really* open is inside the grant can only be
+//! asked by whatever resolves it — `alo-files` does, after this file has said
+//! yes about the path as it was written. That refusal is the same fact as one
+//! made here, so it comes back as the same type and reaches the record by the
+//! same road.
+//!
+//! The two doors differ in one thing only: whether the words are this crate's.
+//! A refusal the grants made is handed back as the value they made
+//! ([`crate::NotGranted`]) and worded whenever somebody asks; a refusal about
+//! something this crate cannot see — *this path really leads somewhere else* —
+//! is worded by the crate that could see it, and arrives already said.
 //!
 //! An [`Authorised`] carries all four answers ADR 0001 §7 asks of a record —
 //! what ran, under whose authority, from which approval, and against which
@@ -38,26 +45,52 @@
 
 use std::time::SystemTime;
 
+use alo_strings::{Filling, Said, Strings};
+
 use crate::approvals::ProposalId;
 use crate::call::Call;
 use crate::grant::Grantee;
 use crate::grants::{GrantId, Grants};
+use crate::refusing::NotGranted;
+use crate::words;
 
 /// Why a call may not run.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`**, like every other refusal a person reads: the road to words
+/// is [`NotAuthorised::said`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotAuthorised {
-    /// The grants do not permit it, in the grants' own words — which say
-    /// whether the grant expired or was never made.
-    #[error("{0}")]
-    NotGranted(String),
+    /// The grants do not permit it — the refusal they made, which says whether
+    /// the grant expired or was never made.
+    NotGranted(NotGranted),
+    /// The grants do not permit it, asked where this crate cannot ask, and
+    /// worded there. See [`Refused::worded_elsewhere`].
+    NotGrantedElsewhere(Said),
     /// A change offered where a read was expected.
-    #[error(
-        "{verb} changes something — propose it with the sentence describing it and let one person approve that, rather than running it in the turn"
-    )]
     ChangeWaits {
         /// The verb that was offered.
         verb: String,
     },
+}
+
+impl NotAuthorised {
+    /// What this says, in the language the person reads.
+    ///
+    /// A refusal that was already worded is handed back as it was said, because
+    /// it was said by the only code that knew what it was about. The strings
+    /// are a machine's rather than a caller's, so the two renderings are the
+    /// same language in every case that exists.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::NotGranted(why) => why.said(strings),
+            Self::NotGrantedElsewhere(said) => said.clone(),
+            Self::ChangeWaits { verb } => strings.say(
+                &words::CHANGE_WAITS.key(),
+                &Filling::of("verb", verb.clone()),
+            ),
+        }
+    }
 }
 
 /// A refusal, and the call it was a refusal of.
@@ -68,8 +101,7 @@ pub enum NotAuthorised {
 ///
 /// The call is boxed so that carrying it costs the happy path nothing: every
 /// authorisation returns this type in its `Err`, and a refusal is the rare one.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
-#[error("{why}")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refused {
     /// What was refused.
     call: Box<Call>,
@@ -78,7 +110,8 @@ pub struct Refused {
 }
 
 impl Refused {
-    /// A refusal made where this crate could not ask the last question itself.
+    /// A refusal by the grants, made where this crate could not ask the
+    /// question itself.
     ///
     /// Reach is decided lexically here and touches no disk, so *is the path
     /// this verb would really open inside the grant?* is asked by whatever
@@ -92,10 +125,25 @@ impl Refused {
     /// constructor of one here; a refusal made in error stops something, which
     /// is the safe way to be wrong.
     #[must_use]
-    pub fn not_granted(call: Call, why: String) -> Self {
+    pub fn not_granted(call: Call, why: NotGranted) -> Self {
         Self {
             call: Box::new(call),
             why: NotAuthorised::NotGranted(why),
+        }
+    }
+
+    /// The same, for a refusal whose words are not this crate's to write.
+    ///
+    /// *This path is granted where it was written and really leads somewhere
+    /// nobody granted* is a true sentence about the grants that only the crate
+    /// holding the resolved path can say. It arrives already said, in the
+    /// language the person reads, and travels into the record as it was said —
+    /// so what somebody was told and what is written down are one rendering.
+    #[must_use]
+    pub fn worded_elsewhere(call: Call, why: Said) -> Self {
+        Self {
+            call: Box::new(call),
+            why: NotAuthorised::NotGrantedElsewhere(why),
         }
     }
 
@@ -109,6 +157,12 @@ impl Refused {
     #[must_use]
     pub fn why(&self) -> &NotAuthorised {
         &self.why
+    }
+
+    /// Why it was refused, in the language the person reads.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        self.why.said(strings)
     }
 }
 
@@ -252,6 +306,8 @@ mod tests {
     use crate::test_calls::{
         archiving_march, files, granting, granting_both, hour, listing_invoices, noon,
     };
+    use crate::testing::in_english;
+    use alo_strings::Key;
 
     /// A read answers inside the turn: no proposal, no approval, no wait.
     #[test]
@@ -291,7 +347,12 @@ mod tests {
         let refused = Authorised::read(&call, &files(), &granting(&["/home/anna/Taxes"]), noon())
             .unwrap_err();
         assert!(matches!(refused.why(), NotAuthorised::NotGranted(_)));
-        assert!(refused.to_string().contains("has not been granted"));
+        assert!(
+            refused
+                .said(&in_english())
+                .text()
+                .contains("has not been granted")
+        );
         // And the refusal knows what it refused, because it will be recorded.
         assert_eq!(refused.call(), &call);
     }
@@ -306,23 +367,47 @@ mod tests {
             noon() + hour(),
         )
         .unwrap_err();
-        assert!(refused.to_string().contains("has expired"), "{refused}");
+        let said = refused.said(&in_english());
+        assert!(said.text().contains("has expired"), "{said}");
     }
 
     /// A refusal made outside this crate is the same fact and the same type, so
     /// the one question this crate cannot answer — whether the *real* path is
     /// inside the grant — reaches the record by the road every other refusal
     /// takes.
+    ///
+    /// Both doors are here: the grants' own refusal handed back as the value
+    /// they made, and one whose words belong to the crate that could ask.
     #[test]
     fn a_refusal_made_where_the_disk_is_can_be_brought_back_here() {
         let call = listing_invoices();
-        let refused = Refused::not_granted(
+        let strings = in_english();
+
+        let theirs = Refused::worded_elsewhere(
             call.clone(),
-            "/home/anna/Invoices/march.pdf really leads to /etc/shadow".to_owned(),
+            strings.say(
+                &Key::named("files.refused.really-leads-elsewhere").unwrap(),
+                &Filling::nothing(),
+            ),
         );
-        assert_eq!(refused.call(), &call);
-        assert!(matches!(refused.why(), NotAuthorised::NotGranted(_)));
-        assert!(refused.to_string().contains("/etc/shadow"), "{refused}");
+        assert_eq!(theirs.call(), &call);
+        assert!(matches!(
+            theirs.why(),
+            NotAuthorised::NotGrantedElsewhere(_)
+        ));
+        // A key this crate does not declare says so rather than pretending, and
+        // the words still travel: whoever declared it is the crate that asked.
+        assert!(theirs.said(&strings).is_a_bug());
+
+        let ours = Refused::not_granted(
+            call.clone(),
+            NotGranted::Never {
+                agent: "@files".to_owned(),
+                wanted: crate::reach::Ask::path("/etc/shadow"),
+            },
+        );
+        assert!(matches!(ours.why(), NotAuthorised::NotGranted(_)));
+        assert!(ours.said(&strings).text().contains("/etc/shadow"));
     }
 
     /// **Changes wait.** A change offered at the read door is refused there,
@@ -337,7 +422,8 @@ mod tests {
                 verb: "move_file".to_owned()
             }
         );
-        assert!(refused.to_string().contains("approve"), "{refused}");
+        let said = refused.said(&in_english());
+        assert!(said.text().contains("approve"), "{said}");
         assert_eq!(refused.call(), &call);
     }
 }

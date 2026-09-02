@@ -165,6 +165,7 @@ mod tests {
         archiving_march, asking_alo, departing, files, granting, granting_both, hour,
         listing_invoices, noon, not_permitted, proposing,
     };
+    use crate::testing::in_english;
     use alo_capability::{Approvals, Authorised, Grants};
     use alo_egress::EgressPolicy;
 
@@ -203,7 +204,12 @@ mod tests {
             noon() + hour() * 2,
         )
         .unwrap_err();
-        record.keep(Entry::refused(&refused, &files(), noon() + hour() * 2));
+        record.keep(Entry::refused(
+            &refused,
+            &files(),
+            &in_english(),
+            noon() + hour() * 2,
+        ));
         record.keep(Entry::turned_away(
             "delete_everything",
             "there is no verb called delete_everything",

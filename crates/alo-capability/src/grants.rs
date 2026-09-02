@@ -7,10 +7,16 @@
 //! one action takes a grant away ([`Grants::revoke`]).
 //!
 //! **The daemon** asks whether one agent may touch one thing, right now
-//! ([`Grants::permitting`]), and gets back the grant that said yes or the
-//! refusal in words. [`Grants::permits`] and [`Grants::refusal`] are the two
-//! halves of that one answer, so there is only ever one search and nothing can
-//! be permitted by a grant the record cannot name.
+//! ([`Grants::permitting`]), and gets back the grant that said yes or a
+//! [`NotGranted`] saying why none of them did. [`Grants::permits`] and
+//! [`Grants::refusal`] are the two halves of that one answer, so there is only
+//! ever one search and nothing can be permitted by a grant the record cannot
+//! name.
+//!
+//! **The refusal is a value and not a sentence.** Nothing here needs a
+//! vocabulary to decide, and deciding must never depend on one having been
+//! loaded — [`crate::refusing`] is where that is argued out, and where the
+//! words are.
 //!
 //! Nothing here widens anything. Every query takes `&self`; asking about a path
 //! a hundred times leaves the same grants that were there before, which is the
@@ -28,6 +34,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::grant::{Grant, Grantee};
 use crate::reach::Ask;
+use crate::refusing::NotGranted;
 
 /// The handle a person revokes a grant by.
 ///
@@ -160,13 +167,14 @@ impl Grants {
     /// searches that can disagree are worse than none.
     ///
     /// # Errors
-    /// The refusal in words — see [`Grants::refusal`] for what it says and why.
+    /// [`NotGranted`], carrying what was asked for and the grant that ran out
+    /// where there was one — see [`Grants::refusal`] for what it says and why.
     pub fn permitting(
         &self,
         grantee: &Grantee,
         ask: &Ask,
         now: SystemTime,
-    ) -> Result<GrantId, String> {
+    ) -> Result<GrantId, NotGranted> {
         self.held
             .iter()
             .find(|held| held.grant.is_for(grantee) && held.grant.permits(ask, now))
@@ -187,29 +195,32 @@ impl Grants {
     /// granted it" call for different things from the reader, and a message
     /// that covered both would tell them to check something they already know.
     #[must_use]
-    pub fn refusal(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> Option<String> {
+    pub fn refusal(&self, grantee: &Grantee, ask: &Ask, now: SystemTime) -> Option<NotGranted> {
         self.permitting(grantee, ask, now).err()
     }
 
-    /// The refusal in words, for an ask no grant permitted.
+    /// The refusal, for an ask no grant permitted.
     ///
     /// Private because it is only ever true alongside a failed search: called
-    /// on its own it would say no about something that is in fact granted.
-    fn why_not(&self, grantee: &Grantee, ask: &Ask) -> String {
-        let agent = grantee.as_str();
-        let wanted = ask.describe();
+    /// on its own it would say no about something that is in fact granted. It
+    /// looks for an expired grant that *would* have covered this, because that
+    /// is the difference between the two things a person can do about it.
+    fn why_not(&self, grantee: &Grantee, ask: &Ask) -> NotGranted {
+        let agent = grantee.as_str().to_owned();
         let lapsed = self
             .held
             .iter()
             .find(|held| held.grant.is_for(grantee) && held.grant.reach.covers(ask));
         match lapsed {
-            Some(held) => format!(
-                "{agent} had a grant to {} and it has expired — grant it again to let {agent} reach {wanted}",
-                held.grant.reach.describe()
-            ),
-            None => format!(
-                "{agent} has not been granted {wanted} — grants are made by picking a folder, never by asking for one"
-            ),
+            Some(held) => NotGranted::Lapsed {
+                agent,
+                reach: held.grant.reach.clone(),
+                wanted: ask.clone(),
+            },
+            None => NotGranted::Never {
+                agent,
+                wanted: ask.clone(),
+            },
         }
     }
 }
@@ -297,12 +308,10 @@ mod tests {
                 .is_err()
         );
         assert!(grants.revoke(invoices));
-        assert!(
-            grants
-                .permitting(&files(), &march(), noon())
-                .unwrap_err()
-                .contains("has not been granted")
-        );
+        assert!(matches!(
+            grants.permitting(&files(), &march(), noon()),
+            Err(NotGranted::Never { .. })
+        ));
     }
 
     /// A grant is for one agent. Another agent's grant is not a fallback.
@@ -416,20 +425,38 @@ mod tests {
 
     /// A refusal says which of the two reasons it was: an expiry is something
     /// a person fixes by granting again, and a path they never granted is not.
+    ///
+    /// It says it as a *value* — the words are asked for afterwards, from the
+    /// strings the person reads, and the value carries everything those words
+    /// need.
     #[test]
     fn a_refusal_says_whether_it_expired_or_was_never_granted() {
         let grants = one_grant();
         assert!(grants.refusal(&files(), &march(), noon()).is_none());
 
         let expired = grants.refusal(&files(), &march(), noon() + hour()).unwrap();
-        assert!(expired.contains("has expired"), "{expired}");
-        assert!(expired.contains("/home/anna/Invoices"), "{expired}");
+        assert_eq!(
+            expired,
+            NotGranted::Lapsed {
+                agent: "@files".to_owned(),
+                reach: invoices(),
+                wanted: march(),
+            }
+        );
 
-        let never = grants
-            .refusal(&files(), &Ask::path("/home/anna/Taxes/2024.pdf"), noon())
-            .unwrap();
-        assert!(never.contains("has not been granted"), "{never}");
-        assert!(never.contains("never by asking for one"), "{never}");
+        let taxes = Ask::path("/home/anna/Taxes/2024.pdf");
+        let never = grants.refusal(&files(), &taxes, noon()).unwrap();
+        assert_eq!(
+            never,
+            NotGranted::Never {
+                agent: "@files".to_owned(),
+                wanted: taxes,
+            }
+        );
+
+        let words = never.said(&crate::testing::in_english());
+        assert!(words.text().contains("has not been granted"), "{words}");
+        assert!(words.text().contains("never by asking for one"), "{words}");
     }
 
     /// The list a person reads: what is granted, to whom, and until when.
@@ -449,7 +476,13 @@ mod tests {
         assert_eq!(listed.len(), 2);
         let first = listed.first().unwrap();
         assert_eq!(first.grant.grantee.as_str(), "@files");
-        assert!(first.grant.reach.describe().contains("everything in it"));
+        assert!(
+            first
+                .grant
+                .reach
+                .shown(&crate::testing::in_english())
+                .contains("everything in it")
+        );
         assert_eq!(first.grant.expires_in(noon()), Some(hour()));
 
         let blender = Grantee::named("@blender");

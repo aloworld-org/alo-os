@@ -12,6 +12,31 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Every way alo OS can tell an agent no can now be read in your own
+  language** — which is the half of the system you meet when something does
+  *not* happen. A folder you tried to grant and could not, an agent that sent a
+  path that could lead somewhere else, a change that was never put to you
+  because nothing covered it, a question you answered too late, and the two
+  sentences the grants themselves say: *you have not granted this*, and *you
+  did grant it and it has run out*. Those two say different things because they
+  need different things from you, and both now name the folder and the agent in
+  the middle of a sentence that is yours.
+
+  The refusal and what it names are one language. A German machine reads
+  *@files wurde /home/anna/Archive nicht gewährt*, with the path and the agent
+  left exactly as your machine spells them, rather than a German sentence with
+  an English clause inside it. A message that counts something is counted the
+  reader's way: *longer than one character* is a different sentence from
+  *longer than 255 characters*, and a language with more forms than English has
+  is not held to English's two.
+
+  **What is written down is what you were told.** A refusal is now kept as what
+  it was until somebody asks it for words, so the sentence on your screen and
+  the sentence in the record are one rendering rather than two accounts of one
+  moment that nothing keeps equal. Nothing about what is refused changed: a
+  machine with no translations loaded refuses exactly what it refused before,
+  shows the same English, and says that is what it did.
+
 - The colours you make your machine out of can now be named in your own
   language, and so can everything alo OS says when a value you chose cannot be
   used — a colour that is not written the way a colour is written, a screen whose

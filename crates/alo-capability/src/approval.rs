@@ -99,11 +99,14 @@ impl Approved {
     /// Taking `self` is the other half of *one approval, one execution*: an
     /// approval that has been redeemed no longer exists to redeem again.
     ///
+    /// The refusals on this journey are sentences a person reads rather than
+    /// errors a programmer handles, so none of them is a `std::error::Error`
+    /// and this example unwraps rather than using `?` — see [`crate::words`].
+    ///
     /// ```
     /// use alo_capability::*;
     /// use std::time::{Duration, SystemTime};
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let hour = Duration::from_secs(60 * 60);
     /// let verb = Verb::checked(
@@ -113,8 +116,10 @@ impl Approved {
     ///     vec![Arg::taking("file", "the file to archive", Takes::Path)],
     ///     Requires::grants_over(["file"]),
     ///     "archive {file}",
-    /// )?;
-    /// let call = Call::of(&verb, &[("file", Given::text("/home/anna/Invoices/march.pdf"))])?;
+    /// )
+    /// .unwrap();
+    /// let call =
+    ///     Call::of(&verb, &[("file", Given::text("/home/anna/Invoices/march.pdf"))]).unwrap();
     /// let files = Grantee::named("@files");
     /// let mut grants = Grants::default();
     /// grants.grant(Grant::checked(
@@ -122,15 +127,14 @@ impl Approved {
     ///     Reach::Folder("/home/anna/Invoices".into()),
     ///     now,
     ///     hour,
-    /// )?);
+    /// ).unwrap());
     ///
     /// let mut approvals = Approvals::default();
-    /// let id = approvals.propose(Proposal::checked(&call, &files, &grants, now, hour)?);
-    /// let approved = approvals.approve(id, now)?;
-    /// let running = approved.redeem(&grants, now)?;
+    /// let id =
+    ///     approvals.propose(Proposal::checked(&call, &files, &grants, now, hour).unwrap());
+    /// let approved = approvals.approve(id, now).unwrap();
+    /// let running = approved.redeem(&grants, now).unwrap();
     /// assert_eq!(running.sentence(), "archive /home/anna/Invoices/march.pdf");
-    /// # Ok(())
-    /// # }
     /// ```
     ///
     /// The same thing, redeemed twice, is not a program. This is the guarantee
@@ -140,7 +144,6 @@ impl Approved {
     /// use alo_capability::*;
     /// use std::time::{Duration, SystemTime};
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let hour = Duration::from_secs(60 * 60);
     /// let verb = Verb::checked(
@@ -150,8 +153,10 @@ impl Approved {
     ///     vec![Arg::taking("file", "the file to archive", Takes::Path)],
     ///     Requires::grants_over(["file"]),
     ///     "archive {file}",
-    /// )?;
-    /// let call = Call::of(&verb, &[("file", Given::text("/home/anna/Invoices/march.pdf"))])?;
+    /// )
+    /// .unwrap();
+    /// let call =
+    ///     Call::of(&verb, &[("file", Given::text("/home/anna/Invoices/march.pdf"))]).unwrap();
     /// let files = Grantee::named("@files");
     /// let mut grants = Grants::default();
     /// grants.grant(Grant::checked(
@@ -159,15 +164,14 @@ impl Approved {
     ///     Reach::Folder("/home/anna/Invoices".into()),
     ///     now,
     ///     hour,
-    /// )?);
+    /// ).unwrap());
     ///
     /// let mut approvals = Approvals::default();
-    /// let id = approvals.propose(Proposal::checked(&call, &files, &grants, now, hour)?);
-    /// let approved = approvals.approve(id, now)?;
-    /// let once = approved.redeem(&grants, now)?;
-    /// let twice = approved.redeem(&grants, now)?; // the approval was spent above
-    /// # Ok(())
-    /// # }
+    /// let id =
+    ///     approvals.propose(Proposal::checked(&call, &files, &grants, now, hour).unwrap());
+    /// let approved = approvals.approve(id, now).unwrap();
+    /// let once = approved.redeem(&grants, now).unwrap();
+    /// let twice = approved.redeem(&grants, now).unwrap(); // the approval was spent above
     /// ```
     ///
     /// # Errors
@@ -190,6 +194,7 @@ mod tests {
     use crate::grants::Grants;
     use crate::reach::Reach;
     use crate::test_calls::{archiving_march, files, granting_both, hour, noon};
+    use crate::testing::in_english;
 
     /// Propose the archiving change and approve it, which is where every test
     /// below starts.
@@ -248,7 +253,12 @@ mod tests {
         assert_eq!(grants.revoke_everything_for(&files()), 2);
         let refused = approved.redeem(&grants, noon()).unwrap_err();
         assert!(matches!(refused.why(), NotAuthorised::NotGranted(_)));
-        assert!(refused.to_string().contains("has not been granted"));
+        assert!(
+            refused
+                .said(&in_english())
+                .text()
+                .contains("has not been granted")
+        );
         assert_eq!(refused.call(), &archiving_march());
     }
 
@@ -259,7 +269,8 @@ mod tests {
         let grants = granting_both();
         let (_, approved) = approved(&grants);
         let refused = approved.redeem(&grants, noon() + hour()).unwrap_err();
-        assert!(refused.to_string().contains("has expired"), "{refused}");
+        let said = refused.said(&in_english());
+        assert!(said.text().contains("has expired"), "{said}");
     }
 
     /// An approval is redeemed under the authority it was given, and there is
@@ -277,7 +288,8 @@ mod tests {
             );
         }
         let refused = approved.redeem(&someone_else, noon()).unwrap_err();
-        assert!(refused.to_string().contains("@files"), "{refused}");
-        assert!(refused.to_string().contains("has not been granted"));
+        let said = refused.said(&in_english());
+        assert!(said.text().contains("@files"), "{said}");
+        assert!(said.text().contains("has not been granted"), "{said}");
     }
 }
