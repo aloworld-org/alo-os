@@ -3,6 +3,15 @@
 version = 4
 
 [[package]]
+name = "alo-appearance"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-capability"
 version = "0.0.1"
 dependencies = [

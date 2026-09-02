@@ -12,6 +12,22 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The machine is yours to look at. Put a picture behind your windows, or a
+  folder of them that changes every so often, or a plain colour — and give one
+  screen something different if you want, without the other screens changing.
+  **A screen you have never set anything on shows what you chose**, so plugging
+  in a projector in front of a room puts your picture there rather than ours.
+  Light and dark can follow the clock — dark after six, light again at seven —
+  and a machine you have not asked will not change its own appearance on the
+  first evening. Text goes up to 300%, which is well past the 200% the
+  accessibility standard for European public-sector procurement requires. **And
+  the lock screen does not show a rotating folder of your photographs to
+  whoever walks past**: while your desktop rotates, following it means the
+  wallpaper alo OS shipped, unless you say outright that you want your pictures
+  there. As with the shortcuts, only what you changed is written down, so a
+  later release can ship a better wallpaper or a better schedule without
+  reaching over your choices.
+
 - The keyboard shortcuts are yours to change, and changing one never quietly
   takes another away. Ask for a combination something else already uses and you
   are told what has it — `Super+Left is already Put the window on the left half`

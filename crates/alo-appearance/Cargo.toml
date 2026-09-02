@@ -1,0 +1,18 @@
+[package]
+name = "alo-appearance"
+version = "0.0.1"
+description = "What a machine looks like: the background, the lock screen, light and dark, and the text size — and which of it a person chose."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

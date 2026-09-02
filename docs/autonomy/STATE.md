@@ -840,3 +840,107 @@ held to the rules a person is held to, or the rules are advice.
   has reached it, because the compositor does not exist. Law 3's "on real
   hardware" is owed, and `ROADMAP.md`'s "keyboard shortcuts a person can change"
   stays unticked until a key on the certified machine does something.
+
+---
+
+## 2026-09-02 — iteration 10: making it yours
+
+**Built: item 8, minus one part that was cut on purpose.**
+`crates/alo-appearance`, a new crate of thirteen files: `colour.rs`, `token.rs`,
+`picture.rs`, `rotating.rs`, `background.rs`, `display.rs`, `time.rs`,
+`scheme.rs`, `text.rs`, `lock.rs`, `shipped.rs`, `changes.rs`, `appearance.rs`.
+Like `alo-shortcuts` it depends on nothing else in the workspace, and `lib.rs`
+says why outright: a person choosing their own wallpaper in Settings is not an
+agent doing something to their machine, so there is no verb, no grant and
+nothing to propose. `docs/features.md` promises at v1 that an agent can be
+*asked* for an appearance change; that arrives as a verb in `alo-capability`
+proposing one of the values this crate defines, and nothing here has to move
+for it.
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -D warnings` clean, `cargo doc --workspace` clean. 58 unit tests
+and 1 doctest in the new crate; the workspace is 382 unit tests, 13 integration
+tests against a real filesystem and 13 doctests, all green and the rest
+untouched. A `CHANGELOG.md` line and the queue in the same change.
+
+**What was cut, and why it is a cut rather than a gap.** The item asked for an
+"accent colour drawn from the design tokens". Two documents disagree about what
+that means and neither is wrong: `docs/features.md` wants an accent a person
+picks that the whole shell follows, and `docs/design/figma-brief.md` says
+terracotta is the agent's colour, spent nowhere else, about five percent of any
+screen. An accent a person could set to terracotta would take away the one
+signal that says the machine is acting on their behalf — and the other five
+tokens are structure and grounds rather than accents, so navy is unreadable
+against the charcoal rail and cream against the cream ground and there is
+nothing left in the palette to offer. Resolving it means an accent set with a
+light and a dark value per hue, which is a designer's decision. So it is **item
+8a**, written into the queue with the whole argument, and `lib.rs` says in its
+own words what this crate does not answer yet. LOOP.md says cut scope and never
+depth; this is that, and the loop did not invent a palette to avoid writing the
+sentence.
+
+**The item's own words were wrong about one thing, and it matters.** "Background
+per display" is the obvious model and it fails the first time somebody plugs in
+a projector: the projector is a display nobody has set anything on, so a machine
+whose owner chose a photograph would show a room full of strangers the wallpaper
+*we* chose. So there is **one background — the person's — and a display they
+singled out is an exception they made on purpose.** A display renamed by a
+driver update loses its exception and falls back to their choice, which is the
+right way round to fail.
+
+**And the decision that was not in the item at all.** The desktop is seen by
+whoever is signed in. The lock screen is seen by whoever walks past. A person
+who pointed their background at a folder of their own photographs picked the
+*folder*; they did not pick, one by one, the pictures a machine left alone in a
+room shows to a corridor. So a lock screen that *follows* the desktop does not
+follow a rotating one — it shows the shipped wallpaper while the folder rotates,
+and `lock_is_holding_back` says so where Settings can put it in a line under the
+switch, rather than leaving somebody to notice. Nothing is taken away:
+`Lock::Its` takes any background including a rotating folder, so a person who
+says they want their photographs there gets them. The rule only decides what
+*following* means, which is the case where nobody said anything.
+
+**Three smaller ones worth keeping.**
+
+- **Nothing reads the clock or the disk**, which is item 1's rule reaching a
+  fourth crate. A schedule is answered at a time of day that is passed in, and a
+  rotating folder is asked *how many pictures it holds* and *how long it has
+  been running* rather than going to look — so `showing()` is a position, and
+  which file is at that position is decided where the folder is read. Both
+  answers are testable without a disk and without waiting.
+- **A wallpaper alo OS shipped is named; a person's picture is a path.** Not
+  tidiness: a name that were allowed to be a path would be a path chosen by
+  whoever wrote the settings file, pointed anywhere on the disk, wearing the
+  image's clothes. `Picture::shipped` refuses anything with a separator or a
+  component that is not an ordinary name, and the test walks `../../etc/shadow`
+  and four others past it.
+- **A promise in a standard is a test.** EN 301 549 — what an EU public-sector
+  desktop is procured against — requires text to resize to 200%, so `text.rs`
+  asserts its ceiling is at or above 200 rather than commenting that it ought to
+  be. The ceiling shipped is 300%, because a person who needs 200% is not always
+  a person who needs exactly 200%.
+
+**What the next iteration must know:**
+
+- **Item 9 (strings) is next**, and its list grew again — the queue now names
+  the third one. `alo-appearance` adds `Token::name` and eight error types'
+  sentences. `Token::name` needs a translator's judgement rather than their
+  typing: several languages have no ordinary word for terracotta and the one
+  reached for may not be the colour. Two things in that crate are deliberately
+  *not* on the list: a time of day is written `18:00` in the file whatever the
+  region does, and how a person is shown a time is the region's business.
+- **The image now owes a wallpaper named `alo`** (`shipped::THE_WALLPAPER`),
+  written into the image item under *blocked — linux*. An image without it boots
+  to nothing behind the windows. That is deliberately not papered over with a
+  colour nobody chose: a missing shipped wallpaper is the image's bug and should
+  look like one.
+- **Item 8a is a decision before it is code**, and it is not the loop's to make.
+  Whoever answers it should read `docs/design/figma-brief.md`'s five principles
+  first, because principle 1 is the constraint the answer has to survive.
+- **Item 4a is still in *Ready* and is still not this loop's** — it is where the
+  record is written and what prunes it, which is `alo-agentd`'s, and the daemon
+  does not exist. Items 9 and 10 are the ready work.
+- **Nothing here has been drawn.** The model is built and unit tested; no pixel
+  has reached a screen, because the compositor does not exist. Law 3's "on real
+  hardware" is owed, and `ROADMAP.md`'s "Making it yours" stays unticked until a
+  person changes their background on the certified machine and sees it change.

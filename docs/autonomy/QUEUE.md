@@ -33,12 +33,15 @@ and stops when there are none left.
 
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
-`crates/alo-capability`, `crates/alo-record`, `crates/alo-egress` and
-`crates/alo-files` were built by the loop and are described in the items below.
-They depend on each other in one direction only: `alo-capability` decides and
-reaches nothing, `alo-egress` decides about what leaves, `alo-files` is the only
-one that touches a disk, and `alo-record` observes them and is reachable from
-none of them.
+`crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
+`crates/alo-files`, `crates/alo-shortcuts` and `crates/alo-appearance` were
+built by the loop and are described in the items below. The first four depend on
+each other in one direction only: `alo-capability` decides and reaches nothing,
+`alo-egress` decides about what leaves, `alo-files` is the only one that touches
+a disk, and `alo-record` observes them and is reachable from none of them. The
+last two depend on nothing in this workspace at all, because a person pressing a
+key on their own machine or choosing their own wallpaper is not an agent doing
+something and needs no grant.
 
 | | |
 |---|---|
@@ -306,10 +309,66 @@ items must follow:
   down in `key.rs`: a layout with no Latin letters at all needs the shortcut
   matched against the person's Latin layout.
 
-- [ ] **8. Appearance** — the personalisation model from "Making it yours":
-  background per display (file, rotating folder, or colour), lock-screen image,
-  light/dark with a schedule, accent colour drawn from the design tokens, text
-  scaling. Model and storage; the drawing is the compositor's.
+- [x] **8. Appearance** — implements `docs/features.md`'s "Making it yours",
+  minus the accent, which is item 8a below. `crates/alo-appearance`, a **new
+  crate** that depends on nothing in this workspace: `colour.rs` (one colour and
+  how it is written), `token.rs` (the six in `docs/design/figma-brief.md`),
+  `picture.rs` (one picture and how it meets the edges), `rotating.rs` (a folder
+  of them, one at a time), `background.rs` (the three kinds), `display.rs`
+  (which screen), `time.rs` (a time of day), `scheme.rs` (light, dark and the
+  schedule), `text.rs` (how big the text is), `lock.rs` (what is on the screen
+  when nobody is signed in), `shipped.rs` (what a machine looks like before
+  anybody changes anything), `changes.rs` (what a person changed), and
+  `appearance.rs` (the two resolved). 58 tests and a doctest, clippy clean.
+
+  **The item said "background per display" and that turned out to be the wrong
+  shape.** A background *per display and nothing else* reads the same until a
+  projector is plugged in, at which point a machine whose owner chose a
+  photograph shows a room full of strangers the wallpaper we chose, because the
+  projector is a display nobody has set anything on. So there is one background
+  — the person's — and a display they singled out is an exception they made on
+  purpose. A display renamed by a driver update loses its exception and falls
+  back to their choice, which is the right way round to fail.
+
+  **The second decision was not in the item at all.** The desktop is seen by
+  whoever is signed in; the lock screen is seen by whoever walks past. A person
+  who pointed their background at a folder of their own photographs picked the
+  *folder* — they did not pick, one by one, the pictures a machine left alone in
+  a room shows to a corridor. So a lock screen that *follows* the desktop does
+  not follow a rotating one: it shows the shipped wallpaper while the folder
+  rotates, and says so (`lock_is_holding_back`) rather than leaving somebody to
+  notice. Nothing is taken away — a person who wants their photographs on the
+  lock screen sets them there and gets them, because saying so is a decision and
+  following is not.
+
+  Three decisions the next items inherit. **Only the difference is stored**, as
+  in item 7: an untouched machine writes `{}`, and there is a test that says so,
+  which is what lets a release ship a better wallpaper to every machine that
+  never touched it. **Nothing reads the clock or the disk** — a schedule is
+  answered at a time of day that is passed in, and a rotating folder is asked
+  *how many pictures it holds* and *how long it has been running* rather than
+  going to look — so item 1's rule now covers appearance too. **A promise in a
+  standard is a test**: EN 301 549 requires text to reach 200%, so `text.rs`
+  asserts the ceiling is at or above it rather than commenting that it should be.
+
+  What this owes elsewhere: **the image must ship a wallpaper named `alo`**
+  (`shipped::THE_WALLPAPER`), or a fresh machine has nothing behind its windows.
+  That is written into the image item under *blocked — linux*.
+
+- [ ] **8a. The accent colour, which needs a decision that is not the loop's** —
+  cut from item 8, and the reason is a real disagreement between two documents
+  rather than missing code. `docs/features.md` promises an accent "drawn from the
+  design tokens so the whole shell follows it"; `docs/design/figma-brief.md`
+  says terracotta is the agent's colour, spent nowhere else, about five percent
+  of any screen. Those cannot both hold: an accent a person can choose that is
+  terracotta would take away the one signal that says the machine is acting on
+  their behalf, and the other five tokens are structure and grounds rather than
+  accents — navy is unreadable against the charcoal rail, cream against the
+  cream ground, so there is nothing left in the palette to offer. Resolving it
+  means either an accent set with a light and a dark value per hue, which is a
+  designer's decision and not a loop's, or dropping the promise. `token.rs` and
+  the tension are in place; the item is a decision first and a small amount of
+  code second.
 
 - [ ] **9. Strings** — i18n scaffolding for the 24 official EU languages to begin
   with, and any language contributed after that (ADR-free, `CLAUDE.md`): the
@@ -326,6 +385,15 @@ items must follow:
   judgement rather than a translator's typing — a key is labelled with what is
   printed on it, which the person's own layout decides, and `Modifier::Super` is
   called something different on the keyboard in front of most of them.
+  `alo-appearance` adds a third list, and it is short but awkward:
+  `Token::name`, the two `ColourError` sentences, the three `PictureError` ones,
+  `RotatingError`, `DisplayError`, `ScheduleError`, `TimeError` and `TextError`.
+  `Token::name` is the awkward one — several languages have no ordinary word for
+  terracotta and the one a translator reaches for may not be the colour. Two
+  things in that crate are *not* on the list and are deliberately not: a time of
+  day is written `18:00` in the settings file whatever the region does, and how
+  a person is *shown* a time is the region's business rather than a translated
+  string.
 
 - [ ] **10. Test a provider before saving it** — promised at v0.5 in
   `docs/features.md` and the one loose end in `provider.rs`. A mistyped key
@@ -359,7 +427,10 @@ rather than only of what is convenient.
   `unsafe`, so it needs either a pinned dependency wrapping the calls or an ADR,
   and choosing between those is the first thing the item does.
 - **Egress enforcement** — item 5's policy, made true at the network boundary.
-- **The image** — OCI-built, bootable, atomic.
+- **The image** — OCI-built, bootable, atomic. It owes item 8 one thing: a
+  wallpaper named `alo` (`alo-appearance`'s `shipped::THE_WALLPAPER`), which is
+  what a fresh machine shows behind its windows. An image without it boots to
+  nothing behind the windows rather than to a colour nobody chose.
 - **The workspace client running as an application on the shell.**
 
 ## Blocked — hardware
