@@ -138,6 +138,25 @@ pub enum Amiss {
         /// The gap that was made up.
         name: String,
     },
+
+    /// A sentence about a number of something, in a language whose plural rules
+    /// alo OS does not have.
+    #[error(
+        "alo OS does not know how {language} counts, so it cannot tell which of these sentences to show for which number — the rules are CLDR's and have to be read rather than guessed at, so add {language} to the table in alo-strings and this file will load; everything in it that does not count a thing is already fine"
+    )]
+    CountingUnknown {
+        /// The language nobody has read the rules for.
+        language: Language,
+    },
+
+    /// A form this language does not use for any whole number.
+    #[error(
+        "nothing would ever show this: counting a whole number, this language uses {forms}, so put the sentence under one of those and take this line out"
+    )]
+    FormNotCounted {
+        /// The forms it does use, in order.
+        forms: String,
+    },
 }
 
 /// Everything wrong with one translation, which is what a person fixing it

@@ -140,10 +140,11 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       formats, timezones and a keyboard layout offered alongside each; RTL-ready
       even though no official EU language needs it yet
       · Built: `alo-strings` — every sentence named, translation checked against
-      what the system says, the 24 languages listed each in its own language, and
-      English unable to hide · Owed: a shell to translate, the plural rules
-      (queue 9a), the crates still holding their own English (9b–9e), and every
-      translation — there are none yet
+      what the system says, the 24 languages listed each in its own language,
+      English unable to hide, and a sentence that counts something counted with
+      its reader's own plural rules, read from CLDR rather than recalled
+      · Owed: a shell to translate, the crates still holding their own English
+      (9b–9e), and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

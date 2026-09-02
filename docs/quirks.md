@@ -141,6 +141,39 @@ them. Written into the contract and asserted in `alo-files`' integration test,
 which grants a resolved folder for exactly this reason.
 **Date:** 2026-09-02
 
+## Languages and counting
+
+A sentence with a number in it is the one string that cannot be translated
+line for line. Where what a plural form is called and what it actually covers
+come apart, write it here — because the person who would notice is the person
+reading that language, and there is nobody here who reads all 24.
+
+### A plural form's name says nothing about which numbers it covers
+**Version:** CLDR cardinal rules, `common/supplemental/plurals.xml` from
+`unicode-org/cldr`, read 2026-09-02. Not a disagreement with CLDR — CLDR is
+right — but with what the names lead a reader to assume.
+**Behaviour:** three assumptions that all look safe and are all wrong. **Every
+language has `other`:** Polish does not, for a whole number — its `one`, `few`
+and `many` cover every integer between them, and CLDR's Polish `other` has
+decimal samples only. A file offering a Polish translator `one` and `other` asks
+them for one sentence nothing will ever show and leaves out the two that most
+numbers take. **`one` means one:** Croatian's `one` covers 1, 21, 31 and 101;
+French's covers 0 as well as 1; Latvian's `zero` covers 0, 10, 11 and 20 alike.
+A translation that spells the number out — *jedna datoteka* — is then shown to
+somebody with twenty-one files. **A form is picked by the number:** it is picked
+by the number *and the language*, so English's forms cannot be used to look up a
+Polish sentence.
+**Our response:** `alo-strings`' `cldr.rs` holds the rules as code with each
+CLDR condition quoted beside the arm it became, and three things are refusals
+rather than conventions. A translation into a form its own language never uses
+is refused, naming the forms it does use. A form may leave the number out only
+where `names_one_number` says exactly one whole number takes it. A countable
+string translated into a language whose rules are not in the table is refused
+outright, in words addressed to whoever is contributing that language — nothing
+falls back to English's two forms, because a sentence wrong for most numbers in
+a language nobody here reads is worse than one that has not arrived.
+**Date:** 2026-09-02
+
 ## Models
 
 Open-weight models in the catalogue have their own personalities: refusing

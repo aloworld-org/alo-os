@@ -19,6 +19,9 @@
 //! | [`template`] | A sentence with named gaps in it |
 //! | [`filling`] | What goes into the gaps |
 //! | [`phrase`] | One string the code can say: its key, its English, its note to a translator |
+//! | [`plural`] | One string that counts something, and the shapes it takes |
+//! | [`form`] | The six shapes a counted sentence takes |
+//! | [`cldr`] | Which form a language uses for which number, read from CLDR |
 //! | [`vocabulary`] | Everything the code can say, and where a translation is checked against it |
 //! | [`translation`] | One language's strings as they arrive, and what can be wrong with them |
 //! | [`speaking`] | A translation that has been checked: the only thing the lookup accepts |
@@ -109,16 +112,60 @@
 //! nothing here needs a grant: a person reading their own machine in their own
 //! language is not an agent doing something.
 //!
+//! # A sentence that counts something
+//!
+//! *1 byte* and *2 bytes* are one sentence in English with two shapes. Polish
+//! has three, Irish five, and Latvian has one for nothing at all — so a
+//! sentence with a number in it is declared as a [`Plural`] rather than a
+//! [`Phrase`], asked for with [`Strings::count`] rather than [`Strings::say`],
+//! and answered with the form **the reader's own language** uses for **that**
+//! number.
+//!
+//! ```
+//! use alo_strings::{Counting, Filling, Key, Language, Plural, Strings, Translation, Vocabulary};
+//!
+//! let key = Key::named("files.found")?;
+//! let mut vocabulary = Vocabulary::empty();
+//! vocabulary.counts(Plural::counting(
+//!     key.clone(),
+//!     "how_many",
+//!     "1 file",
+//!     "{how_many} files",
+//! )?)?;
+//!
+//! // Polish counts in three for a whole number, and none of them is `other`.
+//! let polish = vocabulary
+//!     .check(
+//!         Translation::into_language(Language::written("pl")?)
+//!             .says(key.for_form(alo_strings::Form::One), "1 plik")
+//!             .says(key.for_form(alo_strings::Form::Few), "{how_many} pliki")
+//!             .says(key.for_form(alo_strings::Form::Many), "{how_many} plików"),
+//!     )
+//!     .map_err(|wrongs| wrongs.to_string())?;
+//!
+//! let mut strings = Strings::of(vocabulary);
+//! strings.speaks(polish)?;
+//! strings.prefers(&[Language::written("pl")?]);
+//!
+//! assert_eq!(strings.count(&key, &Counting::of(1), &Filling::nothing()).text(), "1 plik");
+//! assert_eq!(strings.count(&key, &Counting::of(3), &Filling::nothing()).text(), "3 pliki");
+//! assert_eq!(strings.count(&key, &Counting::of(7), &Filling::nothing()).text(), "7 plików");
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! **The rules are read, not remembered.** [`cldr`] is the cardinal plural
+//! table from `unicode-org/cldr`, quoted arm by arm, and it covers whole
+//! numbers because alo OS counts things and a thing is a whole number. A
+//! language whose rules nobody has read is not guessed at: a countable string
+//! translated into one is refused, addressed to whoever is contributing it.
+//!
 //! # What this crate does not answer yet
 //!
-//! **Plural forms**, which is item 9a in `docs/autonomy/QUEUE.md`. *1 byte* and
-//! *2 bytes* are one sentence in English and two in Polish, three in Irish, and
-//! Latvian has a form for zero. Getting that wrong for 24 languages from memory
-//! is exactly the kind of thing this repository refuses to do quickly, so it is
-//! a second item with the CLDR rules in front of it rather than a guess shipped
-//! as a promise. Nothing here has to move for it: a plural phrase becomes one
-//! key per form, and the vocabulary is already the place that would know which
-//! forms a language needs.
+//! **Counting something that is not a whole number.** *1.5 hours* takes a
+//! different form from *1 hour* in several languages, and nothing here can
+//! express it. That is a decision to reopen with the CLDR operands in front of
+//! it, not a form to pick as though the number had been whole; [`cldr`] says
+//! what it would cost.
 //!
 //! **The strings themselves.** `alo-files`, `alo-shortcuts` and
 //! `alo-appearance` still hold their English in their own error types and
@@ -127,10 +174,13 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod cldr;
 pub mod filling;
+pub mod form;
 pub mod key;
 pub mod language;
 pub mod phrase;
+pub mod plural;
 pub mod said;
 pub mod speaking;
 pub mod strings;
@@ -139,10 +189,13 @@ pub mod translation;
 pub mod union;
 pub mod vocabulary;
 
+pub use cldr::Counting;
 pub use filling::Filling;
+pub use form::{EVERY_FORM, Form};
 pub use key::{Key, KeyError};
 pub use language::{Direction, Language, LanguageError};
 pub use phrase::{Phrase, PhraseError};
+pub use plural::{Plural, PluralError};
 pub use said::{CameFrom, Said};
 pub use speaking::Speaking;
 pub use strings::{Showing, Strings, StringsError};

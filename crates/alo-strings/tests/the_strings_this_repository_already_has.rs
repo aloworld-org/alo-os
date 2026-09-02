@@ -18,7 +18,8 @@
 )]
 
 use alo_strings::{
-    CameFrom, Filling, Key, Language, Phrase, Showing, Strings, Translation, Vocabulary,
+    CameFrom, Counting, Filling, Form, Key, Language, Phrase, Plural, Showing, Strings,
+    Translation, Vocabulary,
 };
 
 /// One of the test's own keys.
@@ -49,12 +50,21 @@ fn what_the_repository_says() -> Vocabulary {
         "files.failed.not-a-folder",
         "{path} is not a folder — read it if it is a file, or list the folder it is in",
     );
-    phrase(
-        &mut vocabulary,
-        "files.failed.too-big",
-        "{path} holds {bytes} bytes and a verb reads at most {most} — open it in an application, \
-         or ask for part of the folder instead",
-    );
+    // The one item 9a exists for: as `alo-files` writes it today this message
+    // says "1 bytes" for a one-byte file, and it is three sentences in Polish.
+    vocabulary
+        .counts(
+            Plural::counting(
+                key("files.failed.too-big"),
+                "bytes",
+                "{path} holds one byte and a verb reads at most {most} — open it in an \
+                 application, or ask for part of the folder instead",
+                "{path} holds {bytes} bytes and a verb reads at most {most} — open it in an \
+                 application, or ask for part of the folder instead",
+            )
+            .unwrap(),
+        )
+        .unwrap();
     phrase(
         &mut vocabulary,
         "files.failed.into-itself",
@@ -90,7 +100,94 @@ fn every_string_the_repository_has_survives_being_named() {
         .phrases()
         .filter(|phrase| !phrase.source().gaps().is_empty())
         .count();
-    assert_eq!(with_gaps, 3, "three of them name something");
+    assert_eq!(with_gaps, 2, "two of the plain ones name something");
+    assert_eq!(
+        vocabulary.counted().count(),
+        1,
+        "and one of them counts something"
+    );
+}
+
+/// **The message item 9a exists for, in the three languages that make it worth
+/// doing.** Polish counts in three and never says `other` about a whole number,
+/// Irish counts in five, and Latvian has a word for none of them — and every
+/// one of those is a sentence a person is shown when their disk says no.
+#[test]
+fn the_message_that_counts_is_counted_in_each_languages_own_way() {
+    let vocabulary = what_the_repository_says();
+    let key = key("files.failed.too-big");
+
+    let polish = vocabulary
+        .check(
+            Translation::into_language(language("pl"))
+                .says(key.for_form(Form::One), "{path} ma jeden bajt, a {most}")
+                .says(key.for_form(Form::Few), "{path} ma {bytes} bajty, a {most}")
+                .says(
+                    key.for_form(Form::Many),
+                    "{path} ma {bytes} bajtów, a {most}",
+                ),
+        )
+        .unwrap();
+    let irish = vocabulary
+        .check(
+            Translation::into_language(language("ga"))
+                .says(key.for_form(Form::One), "{path}: beart amháin, {most}")
+                .says(key.for_form(Form::Two), "{path}: dhá bheart, {most}")
+                .says(key.for_form(Form::Few), "{path}: {bytes} bheart, {most}")
+                .says(key.for_form(Form::Many), "{path}: {bytes} mbeart, {most}")
+                .says(key.for_form(Form::Other), "{path}: {bytes} beart, {most}"),
+        )
+        .unwrap();
+
+    let mut strings = Strings::of(vocabulary);
+    strings.speaks(polish).unwrap();
+    strings.speaks(irish).unwrap();
+
+    let filling = Filling::of("path", "/home/ada/notes.txt").and("most", "1 000 000");
+
+    strings.prefers(&[language("pl")]);
+    for (how_many, expected) in [
+        (1_u64, "/home/ada/notes.txt ma jeden bajt, a 1 000 000"),
+        (3, "/home/ada/notes.txt ma 3 bajty, a 1 000 000"),
+        (7, "/home/ada/notes.txt ma 7 bajtów, a 1 000 000"),
+    ] {
+        let said = strings.count(&key, &Counting::of(how_many), &filling);
+        assert_eq!(said.text(), expected, "{how_many}");
+        assert!(said.is_translated() && !said.is_a_bug(), "{how_many}");
+    }
+
+    strings.prefers(&[language("ga")]);
+    for (how_many, expected) in [
+        (1_u64, "/home/ada/notes.txt: beart amháin, 1 000 000"),
+        (2, "/home/ada/notes.txt: dhá bheart, 1 000 000"),
+        (4, "/home/ada/notes.txt: 4 bheart, 1 000 000"),
+        (8, "/home/ada/notes.txt: 8 mbeart, 1 000 000"),
+        (40, "/home/ada/notes.txt: 40 beart, 1 000 000"),
+    ] {
+        assert_eq!(
+            strings
+                .count(&key, &Counting::of(how_many), &filling)
+                .text(),
+            expected,
+            "{how_many}"
+        );
+    }
+
+    // Latvian has translated none of it, and what a translator is handed is the
+    // three forms Latvian uses — one of which is a word for none.
+    assert_eq!(
+        strings
+            .missing_from(&language("lv"))
+            .iter()
+            .filter(|missing| missing.as_str().starts_with("files.failed.too-big"))
+            .map(Key::to_string)
+            .collect::<Vec<String>>(),
+        [
+            "files.failed.too-big.one",
+            "files.failed.too-big.other",
+            "files.failed.too-big.zero",
+        ]
+    );
 }
 
 /// A translation of the awkward ones, checked and shown. The German is real
@@ -102,7 +199,7 @@ fn a_translation_of_them_is_checked_and_then_shown() {
         .check(
             Translation::into_language(language("de"))
                 .says(
-                    key("files.failed.too-big"),
+                    key("files.failed.too-big").for_form(Form::Other),
                     "{path} ist {bytes} Bytes groß, und ein Verb liest höchstens {most} — öffnen \
                      Sie die Datei in einer Anwendung, oder fragen Sie nach einem Teil des Ordners",
                 )
@@ -117,11 +214,10 @@ fn a_translation_of_them_is_checked_and_then_shown() {
     strings.speaks(german).unwrap();
     strings.prefers(&[language("de")]);
 
-    let said = strings.say(
+    let said = strings.count(
         &key("files.failed.too-big"),
-        &Filling::of("path", "/home/ada/notes.txt")
-            .and("bytes", "4 000 000")
-            .and("most", "1 000 000"),
+        &Counting::written_as(4_000_000, "4 000 000"),
+        &Filling::of("path", "/home/ada/notes.txt").and("most", "1 000 000"),
     );
     assert!(
         said.text()
@@ -167,7 +263,7 @@ fn what_is_not_translated_yet_is_visible_rather_than_silently_english() {
 fn a_translation_that_lost_the_size_is_refused_before_anybody_sees_it() {
     let wrongs = what_the_repository_says()
         .check(Translation::into_language(language("de")).says(
-            key("files.failed.too-big"),
+            key("files.failed.too-big").for_form(Form::Other),
             "{path} ist zu groß — öffnen Sie die Datei in einer Anwendung",
         ))
         .unwrap_err();

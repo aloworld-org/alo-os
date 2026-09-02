@@ -1344,3 +1344,102 @@ languages put in front of it — read, not recalled, and an iteration that canno
 get them should say so plainly rather than write a plural table from memory. 9b
 is partly blocked behind 9a; 9c, 9d and 9e are not blocked by anything. 4a is
 `alo-agentd`'s and the daemon still does not exist.
+
+---
+
+## 2026-09-02 — iteration 15: the plural rules, read rather than recalled
+
+**Built: item 9a**, whole, including three refusal paths the item did not name.
+Four new files in `crates/alo-strings` — `form.rs`, `cldr.rs`, `plural.rs` — and
+the plural half wired through `key.rs`, `vocabulary.rs`, `translation.rs` and
+`strings.rs`.
+
+| | |
+|---|---|
+| `form.rs` | The six shapes a counted sentence takes, named as a translator's own tools name them |
+| `cldr.rs` | Which form a language uses for which number — the table — and `Counting`, the number a sentence counts |
+| `plural.rs` | One countable string the code can say: two English sentences, and the gap that holds the number |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-strings` is 116 unit tests (was 75), 6
+integration tests (was 5) and 5 doctests including the `compile_fail`; the
+workspace is **559 tests and 20 doctests**, all green and the rest untouched.
+`CHANGELOG.md`, `docs/quirks.md`, `QUEUE.md` and `ROADMAP.md` in the same change.
+
+**The item's first instruction was to get the rules in front of it, and that is
+what happened rather than being worked around.** `docs/autonomy/QUEUE.md` and
+iteration 11 both said outright that an iteration which could not obtain the
+CLDR cardinal rules should say so plainly instead of writing a plural table from
+memory. It could obtain them: `common/supplemental/plurals.xml` was fetched from
+`unicode-org/cldr`, and every arm in `cldr.rs` quotes the condition it came from
+so the next person checks this file against the source rather than against its
+own confidence. The samples Unicode publishes beside each rule are a test.
+
+**The scope that made the table tractable, stated rather than discovered.** alo
+OS counts things and a thing is a whole number, so `Counting` holds a `u64` and
+there is no shape for a fraction to arrive in — the same move as
+`alo-capability`'s closed `Takes`. That fixes five of CLDR's seven operands at
+zero, which is why Czech's and Lithuanian's `many` cannot happen here and
+French's keeps only the half about whole millions. What it costs is written into
+`lib.rs`: counting *1.5 hours* is a decision to reopen with the operands in
+front of it, not a form quietly picked as though the number had been whole.
+
+**Three things the names lead you to assume, all wrong, all now refusals.**
+This is the finding the item exists for and it is in `docs/quirks.md`:
+
+- **Not every language has `other`.** Polish does not, for a whole number: its
+  `one`, `few` and `many` cover every integer between them. A translator's file
+  built on *every language has one and other* asks a Pole for a sentence nothing
+  will ever show and leaves out the two forms most numbers take. So a form a
+  language never uses is refused, and the refusal names the forms it does use.
+- **`one` is not one number.** Croatian's covers 1, 21, 31 and 101; French's
+  covers 0 as well as 1; Latvian's `zero` covers 0, 10, 11 and 20 alike. So a
+  translation may spell the number out — *ein Ordner* — only where
+  `cldr::names_one_number` says exactly one whole number takes that form, and a
+  test walks every official language and every form against the rules to check
+  that claim rather than trusting the table.
+- **A form is picked by the number *and the language*.** `Strings::count` walks
+  the chain asking each language for *its* form of this number, so Polish's
+  `few` is never used to look up a Russian sentence, and a language whose rules
+  are not in the table is stepped over rather than lent English's two.
+
+**And the fourth, which is `Vocabulary::check`'s.** A countable string
+translated into a language whose plural rules nobody has read is refused
+outright, in words addressed to whoever is contributing that language, while
+every string in the same file that does not count still loads. Falling back to
+English's two forms would have been a sentence wrong for most numbers in a
+language nobody here reads, with nothing anywhere saying so — the exact failure
+`Said` was built to make impossible for plain strings.
+
+**What the next iteration must know:**
+
+- **`unanswered` and `missing_from` now answer `Vec<Key>`**, not `Vec<&Key>`,
+  because a countable string's form keys are made rather than stored. They are
+  plural-aware: `missing_from` hands a translator the forms *their* language
+  needs, and `unanswered` counts a countable string as answered only where one
+  chain language has every form it needs. The old signature would have reported
+  a Polish file holding `one` and `other` as complete, which is the "bounded
+  answer that does not say so" failure `alo-files` named in iteration 8.
+- **A countable string owns every form beneath its key**, in both directions:
+  `files.too-big` and a phrase called `files.too-big.one` cannot both exist,
+  and `Vocabulary::join` checks it too. `VocabularyError::AlreadyCounted` is new.
+- **Item 9b is unblocked**, and the shape it copies is already written down:
+  `alo-strings`' integration test now carries `Failed::TooBig` as a `Plural`
+  counting `bytes`, walked through Polish's three forms and Irish's five. The
+  English `one` form is *"holds one byte"*, which is the bug the item named —
+  `alo-files` says "1 bytes" today.
+- **`Plural::source` is English's two forms**, and `strings.rs` asserts that
+  the source language is one this table knows and counts in two rather than
+  assuming it. A source language that ever changed would fail that test rather
+  than silently answering with the general sentence.
+- **Nothing here has been read by anybody.** No Polish sentence has reached a
+  screen, because the compositor does not exist and there are still zero
+  translations. `ROADMAP.md`'s "Language" stays unticked; its *Built* clause
+  gains the plural rules and its *Owed* loses them.
+
+**What is left is 9b–9e and 4a.** 9b is the largest and is no longer blocked by
+anything; 9c, 9d and 9e were never blocked, and 9e should still follow the other
+three. 4a is `alo-agentd`'s and the daemon still does not exist — after the
+strings items, every remaining item in this queue belongs to a daemon, a Linux
+host or a certified machine.

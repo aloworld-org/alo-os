@@ -47,11 +47,15 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+use crate::cldr::{self, Counting};
 use crate::filling::Filling;
+use crate::form::Form;
 use crate::key::Key;
 use crate::language::Language;
+use crate::plural::Plural;
 use crate::said::{CameFrom, Said};
 use crate::speaking::Speaking;
+use crate::union;
 use crate::vocabulary::Vocabulary;
 
 /// Who is being shown these strings.
@@ -195,12 +199,68 @@ impl Strings {
         )
     }
 
+    /// What this string says about this many of something, with its gaps filled
+    /// in and the number put where the sentence says it goes.
+    ///
+    /// The form is chosen with **the language's own rules**, language by
+    /// language down the chain: Polish's `few` is not English's, so a Polish
+    /// translation is asked for the Polish form of this number and a Russian
+    /// one after it for the Russian form. A language whose rules alo OS does
+    /// not have is stepped over rather than guessed at.
+    ///
+    /// Never fails and never panics, as [`Strings::say`] does not. Asking for a
+    /// countable string with [`Strings::say`], or a plain one here, shows the
+    /// key and answers [`crate::Said::is_a_bug`] — the mistake is in the calling
+    /// code and there is no honest sentence to show for it.
+    #[must_use]
+    pub fn count(&self, key: &Key, counting: &Counting, filling: &Filling) -> Said {
+        let Some(plural) = self.vocabulary.plural(key) else {
+            return Said::new(format!("«{key}»"), CameFrom::NoPhrase, Vec::new());
+        };
+        // The number that picked the form is the number the sentence shows, so
+        // it is filled in here rather than left to every call site to remember.
+        let filling = filling.clone().and(plural.number(), counting.written());
+        for language in &self.chain {
+            let Some(speaking) = self
+                .speaking
+                .iter()
+                .find(|speaking| speaking.language() == language)
+            else {
+                continue;
+            };
+            let Some(form) = cldr::form_for(language, counting.how_many()) else {
+                continue;
+            };
+            if let Some(template) = speaking.text(&key.for_form(form)) {
+                let filled = template.fill(&filling);
+                return Said::new(
+                    filled.text().to_owned(),
+                    CameFrom::Translation(language.clone()),
+                    filled.unfilled().to_vec(),
+                );
+            }
+        }
+        let filled = plural.source(source_form(counting)).fill(&filling);
+        Said::new(
+            self.showing.mark(filled.text()),
+            CameFrom::TheSource,
+            filled.unfilled().to_vec(),
+        )
+    }
+
     /// Every string that would reach a person in the source language, in key
     /// order — which is what a release note counts and what a translator is
     /// handed next.
+    ///
+    /// **A countable string is listed once, under its own name**, and is
+    /// counted as answered only where one language in the chain has every form
+    /// that language needs. Two half-translated languages might between them
+    /// cover every number, and this says they do not: erring towards *finish
+    /// it* is the right way round for a list a translator is handed.
     #[must_use]
-    pub fn unanswered(&self) -> Vec<&Key> {
-        self.vocabulary
+    pub fn unanswered(&self) -> Vec<Key> {
+        let plain = self
+            .vocabulary
             .phrases()
             .map(crate::phrase::Phrase::key)
             .filter(|key| {
@@ -210,22 +270,71 @@ impl Strings {
                         .any(|speaking| speaking.language() == language && speaking.says(key))
                 })
             })
-            .collect()
+            .cloned();
+        let counted = self
+            .vocabulary
+            .counted()
+            .filter(|plural| !self.counted_in_full(plural))
+            .map(Plural::key)
+            .cloned();
+        let mut keys: Vec<Key> = plain.chain(counted).collect();
+        keys.sort();
+        keys
     }
 
     /// Every string this language has not translated, in key order, whatever
     /// anybody's preference is — which is what one translator asks for.
+    ///
+    /// **A countable string is listed by the forms this language needs** —
+    /// `files.too-big.few` and the rest — because that is what the person doing
+    /// the work has to write, and a Polish file that has `one` and `other` is
+    /// not two thirds done, it is missing `few` and `many` and has an `other`
+    /// no whole number reaches. A language whose plural rules alo OS does not
+    /// have is listed the base key instead: nobody can translate a sentence
+    /// that counts until somebody adds how the language counts.
     #[must_use]
-    pub fn missing_from(&self, language: &Language) -> Vec<&Key> {
+    pub fn missing_from(&self, language: &Language) -> Vec<Key> {
         let speaking = self
             .speaking
             .iter()
             .find(|speaking| speaking.language() == language);
-        self.vocabulary
+        let mut keys: Vec<Key> = self
+            .vocabulary
             .phrases()
             .map(crate::phrase::Phrase::key)
             .filter(|key| speaking.is_none_or(|speaking| !speaking.says(key)))
-            .collect()
+            .cloned()
+            .collect();
+        for plural in self.vocabulary.counted() {
+            match cldr::forms(language) {
+                None => keys.push(plural.key().clone()),
+                Some(forms) => {
+                    for key in forms.iter().map(|form| plural.key().for_form(*form)) {
+                        if speaking.is_none_or(|speaking| !speaking.says(&key)) {
+                            keys.push(key);
+                        }
+                    }
+                }
+            }
+        }
+        keys.sort();
+        keys
+    }
+
+    /// Whether one language in the chain has every form it needs for this
+    /// countable string.
+    fn counted_in_full(&self, plural: &Plural) -> bool {
+        self.chain.iter().any(|language| {
+            let Some(forms) = cldr::forms(language) else {
+                return false;
+            };
+            self.speaking.iter().any(|speaking| {
+                speaking.language() == language
+                    && forms
+                        .iter()
+                        .all(|form| speaking.says(&plural.key().for_form(*form)))
+            })
+        })
     }
 
     /// Every language that has been taken on.
@@ -239,6 +348,20 @@ impl Strings {
     pub fn vocabulary(&self) -> &Vocabulary {
         &self.vocabulary
     }
+}
+
+/// Which of the source language's two forms this many takes.
+///
+/// English counts in one and other, which
+/// `the_source_language_counts_and_counts_in_two` asserts rather than assumes.
+/// [`Form::Other`] is the general sentence, so a source language whose rules
+/// were somehow missing would answer with the sentence that fits every number
+/// rather than with nothing.
+fn source_form(counting: &Counting) -> Form {
+    Language::written(union::THE_SOURCE)
+        .ok()
+        .and_then(|source| cldr::form_for(&source, counting.how_many()))
+        .unwrap_or(Form::Other)
 }
 
 /// Why a language could not be taken on.
@@ -262,6 +385,7 @@ pub enum StringsError {
 mod tests {
     use super::*;
     use crate::phrase::Phrase;
+    use crate::plural::Plural;
     use crate::translation::Translation;
 
     fn key(named: &str) -> Key {
@@ -464,12 +588,12 @@ mod tests {
         let strings = german();
         assert_eq!(
             strings.unanswered(),
-            [&key("shortcuts.close")],
+            [key("shortcuts.close")],
             "one string is still English"
         );
         assert_eq!(
             strings.missing_from(&language("de")),
-            [&key("shortcuts.close")]
+            [key("shortcuts.close")]
         );
         assert_eq!(
             strings.missing_from(&language("lv")).len(),
@@ -494,6 +618,237 @@ mod tests {
         assert_eq!(
             strings.say(&key("files.gone"), &Filling::nothing()).text(),
             "Weg"
+        );
+    }
+
+    /// One countable string, and the languages that make it interesting:
+    /// Polish, which counts in three and never says `other`; Irish, which
+    /// counts in five; and Latvian, which has a word for none.
+    fn counting_vocabulary() -> Vocabulary {
+        Vocabulary::empty()
+            .and(Phrase::says(key("files.gone"), "It is not there any more").unwrap())
+            .unwrap()
+            .counting(
+                Plural::counting(key("files.found"), "how_many", "1 file", "{how_many} files")
+                    .unwrap(),
+            )
+            .unwrap()
+    }
+
+    fn polish() -> Strings {
+        let vocabulary = counting_vocabulary();
+        let polish = speaking(
+            &vocabulary,
+            "pl",
+            &[
+                ("files.found.one", "1 plik"),
+                ("files.found.few", "{how_many} pliki"),
+                ("files.found.many", "{how_many} plików"),
+            ],
+        );
+        let mut strings = Strings::of(vocabulary);
+        strings.speaks(polish).unwrap();
+        strings.prefers(&[language("pl")]);
+        strings
+    }
+
+    /// **The form is the reader's language's, not English's.** Polish's `few`
+    /// covers 2 to 4 and not 22 to 24's teens; its `many` covers 0, 5 to 19 and
+    /// 100. Nothing about English decides any of that.
+    #[test]
+    fn a_counted_string_takes_the_readers_own_form() {
+        let strings = polish();
+        for (how_many, expected) in [
+            (1_u64, "1 plik"),
+            (2, "2 pliki"),
+            (4, "4 pliki"),
+            (5, "5 plików"),
+            (0, "0 plików"),
+            (12, "12 plików"),
+            (22, "22 pliki"),
+            (100, "100 plików"),
+        ] {
+            let said = strings.count(
+                &key("files.found"),
+                &Counting::of(how_many),
+                &Filling::nothing(),
+            );
+            assert_eq!(said.text(), expected, "{how_many}");
+            assert!(said.is_translated(), "{how_many}");
+        }
+    }
+
+    /// **The number that picked the form is the number the sentence shows.**
+    /// It is filled in from the same value, so no call site can pass four to
+    /// the rules and write three on the screen — and how it is written is still
+    /// whoever knows the region's business.
+    #[test]
+    fn the_number_shown_is_the_number_that_picked_the_form() {
+        let strings = polish();
+        let said = strings.count(
+            &key("files.found"),
+            &Counting::written_as(4_000_000, "4 000 000"),
+            &Filling::of("how_many", "nine hundred"),
+        );
+        assert_eq!(said.text(), "4 000 000 plików");
+        assert!(said.unfilled().is_empty());
+    }
+
+    /// A person reading a language nobody has translated gets English, in the
+    /// English form for that number, and the answer says so.
+    #[test]
+    fn an_untranslated_countable_string_falls_back_to_the_source_in_the_sources_own_forms() {
+        let mut strings = Strings::of(counting_vocabulary());
+        strings.prefers(&[language("ga")]);
+        assert_eq!(
+            strings
+                .count(&key("files.found"), &Counting::of(1), &Filling::nothing())
+                .text(),
+            "1 file"
+        );
+        let two = strings.count(&key("files.found"), &Counting::of(2), &Filling::nothing());
+        assert_eq!(two.text(), "2 files");
+        assert_eq!(two.came_from(), &CameFrom::TheSource);
+        assert!(!two.is_translated());
+    }
+
+    /// **A language whose plural rules alo OS does not have is stepped over,
+    /// not guessed at**, and the person meets the next language they read — or
+    /// the source, which is honest — rather than a Icelandic sentence in
+    /// whichever form English would have used.
+    #[test]
+    fn a_language_we_cannot_count_in_is_stepped_over() {
+        let vocabulary = counting_vocabulary();
+        // Icelandic can hold the plain strings; a countable one could not have
+        // been checked into it at all.
+        let icelandic = speaking(&vocabulary, "is", &[("files.gone", "Það er farið")]);
+        let mut strings = Strings::of(vocabulary);
+        strings.speaks(icelandic).unwrap();
+        strings.prefers(&[language("is")]);
+        assert_eq!(
+            strings
+                .count(&key("files.found"), &Counting::of(2), &Filling::nothing())
+                .came_from(),
+            &CameFrom::TheSource
+        );
+        assert!(
+            strings
+                .say(&key("files.gone"), &Filling::nothing())
+                .is_translated(),
+            "everything that does not count is still translated"
+        );
+    }
+
+    /// A form the person's language does have but the translator has not
+    /// written falls through to the next language, exactly as a missing plain
+    /// string does.
+    #[test]
+    fn a_form_nobody_has_written_yet_falls_through() {
+        let vocabulary = counting_vocabulary();
+        let half = speaking(&vocabulary, "pl", &[("files.found.one", "1 plik")]);
+        let mut strings = Strings::of(vocabulary);
+        strings.speaks(half).unwrap();
+        strings.prefers(&[language("pl")]);
+        assert_eq!(
+            strings
+                .count(&key("files.found"), &Counting::of(1), &Filling::nothing())
+                .text(),
+            "1 plik"
+        );
+        let five = strings.count(&key("files.found"), &Counting::of(5), &Filling::nothing());
+        assert_eq!(five.text(), "5 files");
+        assert_eq!(five.came_from(), &CameFrom::TheSource);
+    }
+
+    /// Asking the wrong way round is a mistake in this repository, and it is
+    /// reported the way every other one is: the key on the screen, and
+    /// [`Said::is_a_bug`].
+    #[test]
+    fn asking_the_wrong_way_round_shows_the_key() {
+        let strings = polish();
+        let counted_as_plain = strings.say(&key("files.found"), &Filling::nothing());
+        assert_eq!(counted_as_plain.text(), "«files.found»");
+        assert!(counted_as_plain.is_a_bug());
+
+        let plain_as_counted =
+            strings.count(&key("files.gone"), &Counting::of(1), &Filling::nothing());
+        assert_eq!(plain_as_counted.text(), "«files.gone»");
+        assert!(plain_as_counted.is_a_bug());
+    }
+
+    /// **A half-translated countable string is not a translated one.** A Polish
+    /// file holding `one` and `other` looks two thirds done and is missing the
+    /// two forms most numbers take — so it is listed until every form that
+    /// language needs is there.
+    #[test]
+    fn what_a_translator_is_handed_is_the_forms_their_own_language_needs() {
+        let strings = polish();
+        assert_eq!(
+            strings.unanswered(),
+            [key("files.gone")],
+            "the countable one is complete in Polish"
+        );
+        assert_eq!(
+            strings.missing_from(&language("pl")),
+            [key("files.gone")],
+            "one plain string left"
+        );
+        assert_eq!(
+            strings.missing_from(&language("ga")),
+            [
+                key("files.found.few"),
+                key("files.found.many"),
+                key("files.found.one"),
+                key("files.found.other"),
+                key("files.found.two"),
+                key("files.gone"),
+            ],
+            "Irish counts in five and has translated none of them"
+        );
+        assert!(
+            !strings
+                .missing_from(&language("pl"))
+                .iter()
+                .any(|key| key.as_str().ends_with(".other")),
+            "Polish is never asked for a form no whole number reaches"
+        );
+    }
+
+    /// A language whose rules nobody has read is handed the countable string
+    /// under its own name: the first thing to do is add how the language
+    /// counts, not translate five sentences into forms nothing would show.
+    #[test]
+    fn a_language_we_cannot_count_in_is_handed_the_string_itself() {
+        let strings = polish();
+        assert_eq!(
+            strings.missing_from(&language("is")),
+            [key("files.found"), key("files.gone")]
+        );
+    }
+
+    /// The source language has to be countable, or every countable string falls
+    /// back to a form nothing chose. English counts in two, which is what
+    /// [`Plural`] is built on.
+    #[test]
+    fn the_source_language_counts_and_counts_in_two() {
+        let source = Language::written(union::THE_SOURCE).unwrap();
+        assert_eq!(cldr::forms(&source), Some(&[Form::One, Form::Other][..]));
+        assert_eq!(source_form(&Counting::of(1)), Form::One);
+        assert_eq!(source_form(&Counting::of(0)), Form::Other);
+        assert_eq!(source_form(&Counting::of(2)), Form::Other);
+    }
+
+    /// A countable string is marked in a development build exactly as a plain
+    /// one is, because falling back to English is the same gap either way.
+    #[test]
+    fn an_untranslated_countable_string_is_marked_in_development() {
+        let mut strings = Strings::of(counting_vocabulary());
+        strings.shown(Showing::InDevelopment);
+        assert_eq!(
+            strings
+                .count(&key("files.found"), &Counting::of(3), &Filling::nothing())
+                .text(),
+            "«3 files»"
         );
     }
 

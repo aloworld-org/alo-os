@@ -431,17 +431,36 @@ deny list.** Two patterns later items must follow:
   `union.rs` holds the 24 endonyms, and a picker that said *Greek* would be one
   the people it exists for cannot read.
 
-  What it could not close is items 9a–9d below.
+  What it could not close is items 9a–9e below; 9a is now built.
 
-- [ ] **9a. Plural forms** — cut from item 9, and cut because the loop does not
-  have what it needs to do it well. *1 byte* and *2 bytes* is one sentence in
-  English, two in Polish, three in Irish, and Latvian has a form for zero;
-  `alo-files`' `Failed::TooBig` needs it today and is wrong in English without
-  it. The rules are CLDR's and are a real table, and a table written from memory
-  and shipped as a tested promise is exactly what `CLAUDE.md` forbids — so this
-  item starts by putting the CLDR cardinal rules for the 24 in front of whoever
-  does it. Nothing in `alo-strings` has to move: a plural phrase becomes one key
-  per form, and `Vocabulary` is already where a language's forms would be known.
+- [x] **9a. Plural forms** — cut from item 9, and built once the rules could be
+  read rather than recalled: the loop fetched CLDR's
+  `common/supplemental/plurals.xml` from `unicode-org/cldr` and worked from it.
+  Four new files in `crates/alo-strings`: `form.rs` (the six shapes),
+  `cldr.rs` (the table, each arm quoting the condition it came from, plus
+  `Counting`), `plural.rs` (one countable string), and the plural half of
+  `key.rs`, `vocabulary.rs`, `translation.rs` and `strings.rs`. 41 new tests and
+  1 new doctest; 559 tests and 20 doctests across the workspace, clippy clean.
+
+  **Whole numbers are the scope, and that is what made the table tractable.**
+  alo OS counts things and a thing is a whole number, so `Counting` holds a
+  `u64` and CLDR's `v`, `w`, `f`, `t` and `e` operands are all zero — which is
+  why Czech's `many` and Lithuanian's `many` cannot happen here and French's
+  `many` keeps only the half about whole millions. Each condition is quoted in
+  full anyway, so what was dropped is visible. Counting something that is not
+  whole is a decision to reopen, stated in `lib.rs`, not a form quietly picked.
+
+  Three decisions the next items inherit. **A form's name says nothing about
+  which numbers it covers** — Polish has no `other` for a whole number,
+  Croatian's `one` covers 21, French's covers 0 — so three things are refusals:
+  a form a language never uses, a number spelled out in a form that is not one
+  number, and a countable string in a language whose rules are not in the table.
+  `docs/quirks.md` records all three. **A countable string owns every form
+  beneath its key**, in both directions, so `files.too-big` and
+  `files.too-big.one` cannot both exist. **`unanswered` and `missing_from` now
+  answer `Vec<Key>`** and expand a countable string into the forms *that*
+  language needs — a Polish file with `one` and `other` is not two thirds done,
+  and the old signature would have reported it complete.
 
 - [ ] **9b. `alo-files` onto `alo-strings`** — the largest list, and the one that
   includes words a person approves. Every `Failed` message, the `RealError`
@@ -450,9 +469,10 @@ deny list.** Two patterns later items must follow:
   `alo-capability` refuses a verb whose sentence does not name every argument,
   and that refusal has to keep holding when the sentence comes from a
   translation — which is what `Vocabulary::check`'s gap matching is for, and
-  what the item has to wire up rather than re-invent. Blocked behind 9a for
-  `Failed::TooBig` alone, so either do 9a first or leave that one message
-  behind and say so.
+  what the item has to wire up rather than re-invent. **No longer blocked**:
+  9a is built, and `Failed::TooBig` becomes a `Plural` counting `bytes`, which
+  `alo-strings`' integration test already carries verbatim as the shape to
+  copy.
 
 - [ ] **9c. `alo-shortcuts` onto `alo-strings`** — the list a person reads every
   time they open the shortcuts panel: `Action::purpose`, `Key::label`,

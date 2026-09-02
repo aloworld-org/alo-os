@@ -16,6 +16,8 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+use crate::form::Form;
+
 /// What names one string.
 ///
 /// Checked when it is made, so everything downstream — the vocabulary, a
@@ -85,6 +87,40 @@ impl Key {
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.named
+    }
+
+    /// This key with a plural form on the end: `files.too-big` becomes
+    /// `files.too-big.one`.
+    ///
+    /// This is how a countable string reaches a translator's file — one line
+    /// per form, sorted next to each other because they share everything up to
+    /// the last part. It cannot fail: every form is named in lowercase letters,
+    /// which is what a part of a key is made of.
+    #[must_use]
+    pub fn for_form(&self, form: Form) -> Self {
+        Self {
+            named: format!("{}.{}", self.named, form.tag()),
+        }
+    }
+
+    /// The key this one is a form of, and which form — or `None` when the last
+    /// part is not a form's name.
+    ///
+    /// A key whose last part happens to be a form's name is not a form of
+    /// anything unless something declared it countable, which is
+    /// [`crate::Vocabulary`]'s question rather than this one's.
+    pub(crate) fn without_form(&self) -> Option<(Self, Form)> {
+        let (before, last) = self.named.rsplit_once('.')?;
+        let form = Form::of_tag(last)?;
+        if !before.contains('.') {
+            return None;
+        }
+        Some((
+            Self {
+                named: before.to_owned(),
+            },
+            form,
+        ))
     }
 }
 
@@ -256,6 +292,40 @@ mod tests {
             assert!(said.len() > 30, "{said}");
             assert!(!said.starts_with("invalid"), "{said}");
         }
+    }
+
+    /// A countable string reaches a translator as one key per form, sorted next
+    /// to each other because they share everything up to the last part.
+    #[test]
+    fn a_key_takes_a_form_on_the_end_and_gives_it_back() {
+        let key = Key::named("files.too-big").unwrap();
+        assert_eq!(key.for_form(Form::One).as_str(), "files.too-big.one");
+        assert_eq!(key.for_form(Form::Other).as_str(), "files.too-big.other");
+        for form in crate::form::EVERY_FORM {
+            assert_eq!(
+                key.for_form(form).without_form(),
+                Some((key.clone(), form)),
+                "{form}"
+            );
+        }
+        // And it is still a key, checked like any other.
+        assert!(Key::named(key.for_form(Form::Few).as_str()).is_ok());
+    }
+
+    /// A key whose last part is not a form's name is not a form of anything,
+    /// and neither is one that would leave no area behind.
+    #[test]
+    fn a_key_that_is_not_a_form_of_something_says_so() {
+        assert_eq!(Key::named("files.too-big").unwrap().without_form(), None);
+        assert_eq!(
+            Key::named("files.gone.someday").unwrap().without_form(),
+            None
+        );
+        assert_eq!(
+            Key::named("files.one").unwrap().without_form(),
+            None,
+            "there would be no area left"
+        );
     }
 
     /// A key read back off a disk is checked the same way as one written in

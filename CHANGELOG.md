@@ -12,6 +12,25 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- A sentence that counts something is now counted in your own language, and the
+  rules for that were read rather than remembered. *1 byte* and *2 bytes* is one
+  sentence in English with two shapes; it is three in Polish, five in Irish, and
+  Latvian has a word for none of them — so a message like *this file holds 4 000
+  000 bytes* is written once, translated once per shape, and shown in the shape
+  **your** language uses for **that** number. The shapes come from the Unicode
+  common locale data, quoted line by line beside the code that implements it,
+  because a plural table written from memory is wrong in a language nobody here
+  reads and nothing would ever say so. Three things follow that a translator
+  meets rather than a programmer: a file that offers a form your language never
+  uses for a whole number is refused, and the refusal names the forms it does
+  use; a sentence may spell the number out — *one file* — only where that form
+  really is one number, which Croatian's *one* (1, 21, 31, 101) and French's
+  (none as well as one) are not; and what a translator is handed is the forms
+  **their** language needs, so a half-done one is not mistaken for a finished
+  one. A language whose counting rules nobody has added yet can still translate
+  every string that does not count, and is told plainly what is missing rather
+  than being quietly given English's two shapes.
+
 - A provider you add can be tested before you save it, so a key with a
   character missing is found while you are still looking at the field you typed
   it into — not days later, in the middle of a question, as an answer that
