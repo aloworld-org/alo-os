@@ -46,7 +46,10 @@ however good the rest is.
 ## The ordinary things a desktop must do
 
 Everything above is why alo OS is worth building. **This section is why it is
-usable**, and it is where most of the engineering actually is. An operating
+usable**, and it is where most of the engineering actually is. It is also the
+whole product for anybody who declines the agent (ADR 0009) — so the bar is not
+"good enough alongside an agent" but "worth choosing with the agent switched
+off". An operating
 system with a brilliant agent and no working Bluetooth is not a product, and a
 feature list that skips copy and paste is not honest about the work.
 
@@ -57,6 +60,9 @@ Nothing here is a differentiator. All of it is required.
 - [v0.01] Copy, cut and paste — text, images and files, across applications
 - [v0.01] Keyboard shortcuts, and a person can change them
 - [v0.01] Window management: move, resize, snap, tile, minimise, maximise, close
+- [v0.5] ★ **Divide the screen** — drag a window to an edge to take half, a corner to take a quarter, or split what is already open with the keyboard. The split holds while you work: resizing one side resizes its neighbour rather than overlapping it
+- [v0.5] Remember a split, so returning to a pair of windows restores the arrangement rather than the last position of each
+- [v0.5] Splitting works on an external display independently of the laptop's own
 - [v0.01] Switching between windows, and between applications
 - [v0.5] Drag and drop between applications
 - [v0.5] Right-click context menus, wherever a person expects one
@@ -148,6 +154,7 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.01] ★ **Add your own provider in Settings** — a name, an address, and a key: Mistral, your own endpoint, or whatever you already pay for. The key goes to the keyring, never into a settings file, so it cannot leak through a backup or a support bundle. You say where the provider runs; nothing is guessed from its address
 - [v0.5] An address that is not https is refused rather than warned about, unless it is a service on this machine — "it is only our internal network" is how a key ends up on the wire in clear
 - [v0.5] Test a provider before saving it, so a mistyped key is found now rather than in the middle of a question
+- [v0.01] ★ **Or not at all** (ADR 0009). Setup's fourth choice, with the same weight as the other three: no model, no provider, no agent. Everything else in this document still works, the agent's surfaces are absent rather than greyed out, and turning it on later is a setting rather than a reinstall
 - [v0.01] ★ **Or use an API instead** (ADR 0008). A model may answer on this machine, on a machine on your network, or behind a provider's API — for a laptop too thin to run one, or an organisation that would rather buy inference than operate it
 - [v0.01] ★ **Where the answer came from is said where the answer appears** — "on this machine", "on the studio workstation, on your network", "by alo, in the EU". Not in a settings page somebody would have to go looking for, because a person about to paste a contract into a question is entitled to know where it is going first
 - [v0.01] ★ **Never a silent fallback.** A local model that fails does not quietly become an API call: failing to answer is recoverable, a person's records leaving the building because a download was corrupt is not

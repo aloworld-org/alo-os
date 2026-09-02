@@ -42,6 +42,8 @@ GPU, and it is useful to `alo-workplace` the day it lands.
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
 - [ ] Launcher and window management: move, resize, snap, tile
+- [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
+      is complete without it (ADR 0009)
 - [ ] Copy, cut and paste across applications; switching between windows
 - [ ] Keyboard shortcuts a person can change
 - [ ] The workspace client runs as an application on the shell
@@ -71,6 +73,8 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       a terminal
 - [ ] **Capture**: screenshots, annotation, screen recording with audio, screen
       sharing — and an indicator whenever screen, camera or microphone is in use
+- [ ] ★ **Divide the screen**: halves and quarters by drag or keyboard, splits
+      that hold while you work and are remembered, per display
 - [ ] **Input**: drag and drop, context menus, gestures, virtual desktops,
       keyboard layouts with dead keys and a compose key, input methods
 - [ ] **Software**: install sandboxed applications, update and remove them; the

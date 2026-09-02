@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- You can run alo OS with no AI at all. Setup's fourth choice is simply "not at
+  all", with the same weight as the other three and nothing trying to talk you
+  out of it — and what is left is the whole system: files, windows, printing,
+  settings, updates, applications. The agent's surfaces are absent rather than
+  greyed out, because a disabled panel is an advertisement, and turning it on
+  later is a setting rather than a reinstall. A system sold on control that
+  required the agent would not be a coherent thing to sell.
+- The screen divides: drag a window to an edge for half or a corner for a
+  quarter, or split what is open from the keyboard. The split holds while you
+  work — resizing one side resizes its neighbour instead of overlapping it — and
+  a pair you return to comes back arranged as you left it.
+
 - What left your machine is now kept alongside what your agents did, so "what
   left this machine today?" is answerable at the end of a week and not only in
   the second the indicator lit up. Every departure is one entry — who reached
