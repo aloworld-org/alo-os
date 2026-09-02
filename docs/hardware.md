@@ -24,12 +24,20 @@ external displays, and printing.
 |---|---|---|---|---|
 | _(none yet)_ | | | | |
 
-**alo OS AI** targets one GPU workstation configuration with **24 GB VRAM or
-more**. The 24 GB floor is what makes a useful open-weight model run at a useful
-speed; below it the promise in `README.md` stops being true.
+**Two machines are certified, not one** (ADR 0007), and the first matters more.
 
-**alo OS Desktop** — the non-GPU SKU — is not scheduled. It follows once the AI
-SKU has customers, starting with one recent business-class model and then the
+**An ordinary business laptop** — no discrete graphics, 16 GB of memory — running
+its agents on the CPU. This is the machine that decides whether this project has
+a market: the Windows 10 fleet it exists to catch has almost no discrete GPUs in
+it, and a system those machines cannot run agents on is a system they cannot
+adopt.
+
+**A GPU workstation** with **24 GB VRAM or more**, for alo OS AI. The 24 GB floor
+is what makes a large model run at a useful speed and makes fine-tuning
+practical. It is acceleration, not an entry price.
+
+**alo OS Desktop** — the non-GPU SKU — inherits the CPU default and is where
+most machines will land. Starting with one recent business-class model, then the
 Windows 10 fleet by generation.
 
 ## Compatible

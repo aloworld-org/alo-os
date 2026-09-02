@@ -141,7 +141,8 @@ each portal request is a grant in the sense of ADR 0001.
 
 ## The AI stack — models on your own hardware
 
-- [v0.01] ★ **The GPU works on first boot.** No driver installation, no CUDA archaeology. This is the promise the SKU exists for.
+- [v0.01] ★ **It runs on the machine you already own.** No graphics card required: the catalogue carries models that answer comfortably on an ordinary business laptop's CPU, and the system picks one (ADR 0007). This is what puts alo OS on the Windows 10 fleet rather than on a few hundred workstations
+- [v0.01] ★ **The GPU works on first boot**, where there is one — no driver installation, no CUDA archaeology. Acceleration, not an entry price
 - [v0.01] ★ **A model runs in one command**, from a curated catalogue of open-weight models with their licences stated
 - [v0.01] ★ The agents point at the **local** model by default — sovereignty is the default configuration, not an option to find
 - [v0.01] Model lifecycle: pull, list, serve, unload, remove; disk accounted honestly

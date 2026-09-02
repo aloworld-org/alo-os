@@ -27,6 +27,8 @@ parameters_b = 9.2
 quantisation = "Q4_K_M"
 download_bytes = 5_600_000_000
 min_vram_gb = 8.0
+min_ram_gb = 12.0
+on_cpu = "slow"
 upstream = "https://huggingface.co/utter-project/EuroLLM-9B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -38,6 +40,8 @@ parameters_b = 7.0
 quantisation = "Q4_K_M"
 download_bytes = 4_600_000_000
 min_vram_gb = 6.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-research-v0.4"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -49,6 +53,8 @@ parameters_b = 7.2
 quantisation = "Q4_K_M"
 download_bytes = 4_370_000_000
 min_vram_gb = 6.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -60,6 +66,8 @@ parameters_b = 46.7
 quantisation = "Q4_K_M"
 download_bytes = 26_400_000_000
 min_vram_gb = 28.0
+min_ram_gb = 48.0
+on_cpu = "slow"
 upstream = "https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -73,6 +81,8 @@ parameters_b = 7.6
 quantisation = "Q4_K_M"
 download_bytes = 4_680_000_000
 min_vram_gb = 6.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -84,6 +94,8 @@ parameters_b = 3.8
 quantisation = "Q4_K_M"
 download_bytes = 2_400_000_000
 min_vram_gb = 4.0
+min_ram_gb = 6.0
+on_cpu = "comfortable"
 upstream = "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct"
 licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
 
@@ -95,6 +107,8 @@ parameters_b = 8.0
 quantisation = "Q4_K_M"
 download_bytes = 4_920_000_000
 min_vram_gb = 6.5
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct"
 
 [model.licence]
@@ -114,6 +128,8 @@ parameters_b = 9.2
 quantisation = "Q4_K_M"
 download_bytes = 5_760_000_000
 min_vram_gb = 8.0
+min_ram_gb = 12.0
+on_cpu = "slow"
 upstream = "https://huggingface.co/google/gemma-2-9b-it"
 
 [model.licence]
@@ -123,3 +139,73 @@ note = """Commercial use is permitted under Google's Gemma Terms of Use and \
 Prohibited Use Policy, which bind anyone the model or its derivatives are passed \
 on to — so the terms must travel with any distribution, and the use restrictions \
 apply to outputs as well as weights."""
+
+# ── small enough for a machine with no graphics card (ADR 0007) ─────────────
+#
+# These carry the default experience. A three-billion-parameter model that
+# answers in seconds is a better agent than a nine-billion one that answers in
+# minutes, because a turn is several calls and the waiting multiplies.
+
+[[model]]
+id = "llama-3.2-3b-instruct"
+name = "Llama 3.2 3B Instruct"
+publisher = "Meta"
+parameters_b = 3.2
+quantisation = "Q4_K_M"
+download_bytes = 2_020_000_000
+min_vram_gb = 3.0
+min_ram_gb = 5.0
+on_cpu = "comfortable"
+upstream = "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct"
+
+[model.licence]
+name = "Llama 3.2 Community License"
+commercial_use = "with-conditions"
+note = """Commercial use is permitted, but not by an organisation with more than 700 million monthly active users on the version release date, who must request a separate licence from Meta. Products built on it must display "Built with Llama", and derived models must carry "Llama" in their name. Meta's Acceptable Use Policy applies."""
+
+[[model]]
+id = "qwen2.5-3b-instruct"
+name = "Qwen2.5 3B Instruct"
+publisher = "Alibaba Cloud"
+parameters_b = 3.1
+quantisation = "Q4_K_M"
+download_bytes = 1_930_000_000
+min_vram_gb = 3.0
+min_ram_gb = 5.0
+on_cpu = "comfortable"
+upstream = "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct"
+
+[model.licence]
+name = "Qwen Research License"
+commercial_use = "with-conditions"
+note = """The 3B model is published under Qwen's own licence rather than Apache-2.0, unlike the 7B. Read it before deploying commercially; where that is unwelcome, qwen2.5-7b-instruct is Apache-2.0 and unconditional."""
+
+[[model]]
+id = "gemma-2-2b-instruct"
+name = "Gemma 2 2B Instruct"
+publisher = "Google"
+parameters_b = 2.6
+quantisation = "Q4_K_M"
+download_bytes = 1_710_000_000
+min_vram_gb = 2.5
+min_ram_gb = 4.0
+on_cpu = "comfortable"
+upstream = "https://huggingface.co/google/gemma-2-2b-it"
+
+[model.licence]
+name = "Gemma Terms of Use"
+commercial_use = "with-conditions"
+note = """Commercial use is permitted under Google's Gemma Terms of Use and Prohibited Use Policy, which bind anyone the model or its derivatives are passed on to — so the terms must travel with any distribution, and the use restrictions apply to outputs as well as weights."""
+
+[[model]]
+id = "smollm2-1.7b-instruct"
+name = "SmolLM2 1.7B Instruct"
+publisher = "Hugging Face"
+parameters_b = 1.7
+quantisation = "Q4_K_M"
+download_bytes = 1_060_000_000
+min_vram_gb = 2.0
+min_ram_gb = 3.0
+on_cpu = "comfortable"
+upstream = "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }

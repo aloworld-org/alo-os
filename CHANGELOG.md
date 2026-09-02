@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- alo OS runs its agents on the CPU by default. A graphics card makes the same
+  system faster and makes fine-tuning practical, but it is acceleration rather
+  than an entry price — because the Windows 10 fleet this project exists to
+  catch has almost no discrete GPUs in it, and a system those machines cannot
+  run agents on is a system they cannot adopt. The catalogue now states what a
+  model costs in system memory and how it behaves without a card, and carries
+  models small enough to answer comfortably on an ordinary laptop: a
+  three-billion-parameter model that answers in seconds is a better agent than a
+  nine-billion one that answers in minutes, because a turn makes several calls
+  and the waiting multiplies.
+
 - alo OS will speak all 24 official EU languages — Maltese and Irish included,
   not "English plus the big five", because a sovereignty product that skips a
   member state's language is selling sovereignty to some Europeans and not

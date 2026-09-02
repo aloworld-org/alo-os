@@ -64,6 +64,32 @@ pub enum CommercialUse {
     Forbidden,
 }
 
+/// How a model behaves with no graphics card, on the machine most people
+/// actually have.
+///
+/// [ADR 0007](../../../docs/decisions/0007-the-cpu-is-the-default.md) makes the
+/// CPU the default, which means the catalogue has to answer "will this run on
+/// my laptop" and not only "will this run well on a card". Judged on a recent
+/// eight-core business laptop, because a class that depends on nobody's machine
+/// in particular is a class that tells nobody anything.
+///
+/// It matters more here than it would for a chatbot: an agent turn is several
+/// model calls — the first ask, one after each read, one per handoff, one per
+/// check — so per-call latency multiplies.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum OnCpu {
+    /// Answers quickly enough that a person does not wait on it. This is what
+    /// a default must be.
+    Comfortable,
+    /// Usable, and noticeably slower. Fine for one question; tiring across a
+    /// turn that makes four model calls.
+    Workable,
+    /// Runs, but nobody should be offered it as a default without a card. Not
+    /// hidden — somebody may have a good reason and the patience for it.
+    Slow,
+}
+
 /// The licence a model's weights are published under.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Licence {
@@ -99,10 +125,15 @@ pub struct Model {
     pub quantisation: String,
     /// Download size in bytes — what the disk actually loses.
     pub download_bytes: u64,
-    /// The video memory this needs to run at a useful speed. `docs/hardware.md`
-    /// puts the certified floor at 24 GB, and a model above that on a machine
-    /// below it is offered with its cost visible rather than hidden.
+    /// The video memory this needs to run at a useful speed on a graphics card.
+    /// A model above a machine's card is offered with its cost visible rather
+    /// than hidden.
     pub min_vram_gb: f32,
+    /// The system memory this needs to run on the CPU — the question that
+    /// decides whether an ordinary laptop can use it at all (ADR 0007).
+    pub min_ram_gb: f32,
+    /// How it behaves with no graphics card.
+    pub on_cpu: OnCpu,
     /// The licence, which every entry must state.
     pub licence: Licence,
     /// Where the weights come from. We never redistribute them
@@ -221,6 +252,36 @@ impl Catalogue {
             .filter(|m| m.min_vram_gb <= vram_gb)
             .collect()
     }
+
+    /// The models a machine with no graphics card can run, given its system
+    /// memory — the default question on most machines (ADR 0007).
+    #[must_use]
+    pub fn runnable_on_cpu(&self, ram_gb: f32) -> Vec<&Model> {
+        self.models
+            .iter()
+            .filter(|m| m.min_ram_gb <= ram_gb && m.on_cpu != OnCpu::Slow)
+            .collect()
+    }
+
+    /// What to run on a machine with no graphics card: the largest model that
+    /// still answers without making a person wait, that they may use
+    /// commercially, and that fits in the memory they have.
+    ///
+    /// Comfortable before workable, then larger before smaller. A model that
+    /// answers slowly is not a better default for being cleverer: an agent turn
+    /// makes several calls, and the waiting multiplies.
+    #[must_use]
+    pub fn default_for_cpu(&self, ram_gb: f32) -> Option<&Model> {
+        self.runnable_on_cpu(ram_gb)
+            .into_iter()
+            .filter(|m| m.safe_default_for_business())
+            .max_by(|a, b| {
+                let rank = |m: &Model| u8::from(m.on_cpu == OnCpu::Comfortable);
+                rank(a)
+                    .cmp(&rank(b))
+                    .then(a.parameters_b.total_cmp(&b.parameters_b))
+            })
+    }
 }
 
 #[cfg(test)]
@@ -276,6 +337,8 @@ parameters_b = 7.0
 quantisation = "Q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://example.test/one"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -287,6 +350,8 @@ parameters_b = 7.0
 quantisation = "Q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://example.test/two"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -310,6 +375,8 @@ parameters_b = 7.0
 quantisation = "Q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "https://example.test/vague"
 licence = { name = "Custom Community Licence", commercial_use = "with-conditions" }
 "#;
@@ -330,6 +397,8 @@ parameters_b = 7.0
 quantisation = "Q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
+min_ram_gb = 10.0
+on_cpu = "workable"
 upstream = "   "
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -337,6 +406,67 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
             Catalogue::parse(nowhere),
             Err(CatalogueError::Invalid { .. })
         ));
+    }
+
+    /// ADR 0007: the CPU is the default, so the catalogue must be able to
+    /// answer "what runs on this laptop" and not only "what runs on a card".
+    #[test]
+    fn a_machine_with_no_graphics_card_is_offered_something() {
+        let c = Catalogue::built_in().unwrap();
+        // 16 GB is an ordinary business laptop, which is the machine this
+        // product exists to reach.
+        let chosen = c.default_for_cpu(16.0);
+        assert!(
+            chosen.is_some(),
+            "a laptop with no card must have a default to run"
+        );
+        let chosen = chosen.unwrap();
+        assert_eq!(chosen.on_cpu, OnCpu::Comfortable, "{}", chosen.id);
+        assert!(chosen.safe_default_for_business(), "{}", chosen.id);
+        assert!(chosen.min_ram_gb <= 16.0, "{}", chosen.id);
+    }
+
+    /// A model nobody should wait on is not offered as a CPU default, however
+    /// capable it is. An agent turn is several calls and the waiting multiplies.
+    #[test]
+    fn a_slow_model_is_never_a_cpu_default() {
+        let c = Catalogue::built_in().unwrap();
+        for m in c.runnable_on_cpu(64.0) {
+            assert_ne!(m.on_cpu, OnCpu::Slow, "{} was offered for CPU use", m.id);
+        }
+    }
+
+    /// A small machine gets a smaller model rather than nothing, and never one
+    /// that will not fit in its memory.
+    #[test]
+    fn a_smaller_machine_is_offered_a_smaller_model() {
+        let c = Catalogue::built_in().unwrap();
+        let small = c.default_for_cpu(4.0);
+        let large = c.default_for_cpu(32.0);
+        assert!(small.is_some(), "even 4 GB must be offered something");
+        for m in c.runnable_on_cpu(4.0) {
+            assert!(m.min_ram_gb <= 4.0, "{} does not fit in 4 GB", m.id);
+        }
+        // More memory should not produce a *smaller* default.
+        if let (Some(s), Some(l)) = (small, large) {
+            assert!(l.parameters_b >= s.parameters_b, "{} vs {}", l.id, s.id);
+        }
+    }
+
+    /// The commercial gate applies to the CPU default too: a machine with no
+    /// card must not be quietly handed the one model an organisation may not
+    /// use.
+    #[test]
+    fn the_cpu_default_is_still_licence_gated() {
+        let c = Catalogue::built_in().unwrap();
+        if let Some(m) = c.default_for_cpu(16.0) {
+            assert_eq!(
+                m.licence.commercial_use,
+                CommercialUse::Permitted,
+                "{}",
+                m.id
+            );
+        }
     }
 
     #[test]
