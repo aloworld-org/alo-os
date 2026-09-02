@@ -12,6 +12,22 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- What an agent can do is now a list, and a closed one: if something is not on
+  it, the agent does not have it, and asking for it comes back saying so rather
+  than being attempted. Each entry says what it is for in ordinary words,
+  whether it answers a question or changes something, what it takes, and what
+  has to be granted before it can run. Arguments are checked before anything
+  happens: a path that is not a full path, a name with a folder hidden in it, a
+  number outside its range, an option nobody offered — all refused at the door,
+  with a message saying what to send instead. There is no argument that can
+  carry a command, because there is no kind of argument that accepts free text,
+  which is what stops a model that has been talked into something from writing
+  what runs. And the sentence you would be approving is written by whoever wrote
+  the verb, filled in from the checked arguments and from nothing else — a verb
+  whose sentence would leave one of its arguments out cannot be added at all,
+  because an approval that does not describe what will happen is not an
+  approval.
+
 - What an agent may reach is now decided by the grants you made, and by nothing
   else. A grant covers one folder and what is in it, one file, or one
   application; it names the agent it is for; it can be taken away in one action

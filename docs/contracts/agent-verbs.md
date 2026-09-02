@@ -31,6 +31,35 @@ Two rules that are easy to state and easy to violate:
    be generated from its arguments is refused, because an approval a person
    cannot understand is not an approval.
 
+## What an argument can be
+
+A closed list, like the verbs themselves. An argument is one of:
+
+| Kind | What it takes |
+|---|---|
+| **path** | A full path, with no `..` in it. What a grant is usually over. |
+| **application** | An installed application, by its identifier. |
+| **name** | One name — a file's, a folder's, or what is being searched for — of at most the length the verb declares. One name, never a path. |
+| **count** | A whole number inside a range the verb declares, both ends included. |
+| **choice** | One of a list of options the verb wrote down, matched exactly. |
+
+**None of them is free text**, and that is the point: a model choosing
+arguments cannot compose anything, because there is no shape a composition
+could arrive in. Adding a kind is a change to what an agent can express and
+belongs in ADR 0001 before it belongs in an implementation.
+
+Two consequences worth stating outright:
+
+- **Every argument is required.** There is no optional argument. An argument
+  that may or may not be there makes the approval sentence conditional, and a
+  conditional sentence describes less than what will happen. A verb that needs
+  to behave two ways declares a **choice** and says so in its sentence, or it is
+  two verbs.
+- **A value that cannot be read in a sentence is refused** — a control
+  character, an escape sequence, a newline — including inside a path, where an
+  operating system would allow it. The person approves the sentence, so a value
+  able to rewrite what the sentence appears to say never becomes one.
+
 ## `effect: read` — runs inside the turn
 
 Reads answer. They execute under the run's budget without a tap, exactly as in
@@ -103,7 +132,17 @@ kept.
    one that only changes something "small".
 3. Its arguments are typed and validated at the boundary, and none of them
    reaches an interpreter.
-4. Its sentence generates from those arguments.
-5. It names the grant it requires. A verb that requires no grant needs a written
-   reason in its ADR.
+4. Its sentence generates from those arguments, and **names every one of them**.
+   An argument the sentence leaves out is an argument the person did not agree
+   to, so a verb whose sentence omits one cannot be declared at all.
+5. It names the grant it requires, and names it over an argument a grant can
+   cover — a path or an application. A verb that requires no grant needs a
+   written reason in its ADR, and the reason is carried in the declaration
+   rather than only in prose.
 6. It has a test for the refusal path, not only the happy one.
+
+Rules 1 to 5 are enforced where a verb is declared, in `alo-capability`: a
+declaration that breaks one of them is refused, and the registry has no way to
+hold a verb that was not checked. The one thing no check can reach is a verb's
+*implementation* passing an argument to an interpreter, which stays rule 1 and
+stays on whoever writes one.

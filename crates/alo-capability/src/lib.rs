@@ -28,6 +28,32 @@
 //! There is no grant to `/`, and [`GrantError::TheWholeMachine`] is what
 //! happens to code that tries.
 //!
+//! # Verbs
+//!
+//! A grant is what may be touched; a [`Verb`] is what may be done. [`Verbs`] is
+//! the closed list of them — `docs/contracts/agent-verbs.md` says that a
+//! capability not written down does not exist, and this is where that stops
+//! being a sentence. Nothing here executes anything: a name and a set of
+//! arguments become a [`Call`], which knows what it would touch, what a person
+//! would be approving, and whether it waits for that approval at all.
+//!
+//! Law 2 — no verb runs an arbitrary command — is carried by two things
+//! together. [`Takes`] is a closed list of what an argument can be, and none of
+//! them is free text, so there is no shape in which something to run could
+//! arrive. And [`Verb::checked`] refuses a declaration that announces an
+//! interpreter, which catches the plausible mistake at the moment it is
+//! written. What neither can do is stop a verb's *implementation* from passing
+//! an argument to a shell, and that stays a rule on whoever writes one.
+//!
+//! Three questions are kept apart, because merging any two of them is how the
+//! model would come undone:
+//!
+//! 1. **is the call well-formed** — [`Verbs::call`], which validates every
+//!    argument at the boundary and generates the sentence;
+//! 2. **is it permitted** — [`Call::permitted_by`], against the grants;
+//! 3. **is it approved** — not here. One approval, one execution, and that is
+//!    item 3 in `docs/autonomy/QUEUE.md`.
+//!
 //! # Telling the time
 //!
 //! Every question that depends on time takes `now` as an argument. Nothing here
@@ -38,11 +64,21 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod arg;
+pub mod call;
 pub mod grant;
 pub mod grants;
 pub mod path;
 pub mod reach;
+pub mod sentence;
+pub mod verb;
+pub mod verbs;
 
+pub use arg::{Arg, ArgError, Given, Takes, Value};
+pub use call::{Call, CallError};
 pub use grant::{Grant, GrantError, Grantee};
 pub use grants::{GrantId, Grants, Held};
 pub use reach::{Ask, Reach};
+pub use sentence::{Part, Sentence, SentenceError};
+pub use verb::{Effect, Requires, Verb, VerbError};
+pub use verbs::{Verbs, VerbsError};

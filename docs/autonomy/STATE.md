@@ -133,3 +133,67 @@ Nine ready items left. Item 2 (the verb registry) is next, and it speaks this
 crate's vocabulary — read `reach.rs` before starting it, because `Ask` is what a
 verb's arguments have to reduce to when the registry asks whether a call is
 within its grant.
+
+
+---
+
+## 2026-09-02 — iteration 2: the verb registry
+
+**Built: item 2.** Five files in `crates/alo-capability`, beside the grants
+rather than in a crate of their own, because a verb that cannot be compared
+against a grant is not a capability model.
+
+| | |
+|---|---|
+| `arg.rs` | What an argument can be, what may arrive (`Given`), and what survives arriving (`Value`) |
+| `sentence.rs` | The sentence a person approves: words from the verb, holes filled from validated values |
+| `verb.rs` | One verb, and everything that has to be true of one — checked where it is declared |
+| `verbs.rs` | The closed list, and the only way into it |
+| `call.rs` | A validated call: what it would touch, what it would say, and whether the grants permit it |
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, 109 tests passing
+(37 new, 28 in item 1, 44 in `alo-models`). Built and unit tested on Windows;
+**no hardware verification, and none claimed** — nothing here touches a machine,
+and the file verbs that will are item 6.
+
+The guarantee `CLAUDE.md` names — *a verb cannot reach outside its grant* — is
+now a test rather than a sentence, in `call.rs`: a well-formed call with a
+generated sentence over an ungranted folder is refused, and half a move is
+refused too.
+
+**What the next iteration must know:**
+
+- **Law 2 is carried by two things, and only one of them is a guarantee.** The
+  guarantee is that `Takes` is closed and has no free-text kind, so nothing a
+  model composes can arrive as an argument at all. The other is a word list that
+  refuses `run_command`, `filter_expression`, `sql_query` at declaration time —
+  a tripwire, documented as one in `verb.rs`. **Neither stops a verb's
+  implementation from passing an argument to a shell**, and item 6 is where that
+  becomes a real temptation. It is on review, and the module docs say so.
+- **Being permitted and being approved are separate questions**, and `call.rs`
+  answers only the first on purpose. Item 3 must not add "and approved" to
+  `Call::permitted_by`: merging them is how "one approval, one execution"
+  quietly becomes "one approval, whatever the grant allows". A `Call` is
+  `Serialize` and not `Deserialize`, so an approval cannot be built from a call
+  read back off a disk.
+- **Every argument is required, and the sentence names every argument.** Both
+  are refusals at declaration, both are now in the contract, and both exist for
+  the same reason: the person approves the sentence, so anything it does not
+  describe is something they did not agree to. An item that wants an optional
+  argument wants two verbs.
+- **The registry starts empty and no verb is declared anywhere yet.** That is
+  item 6 (file verbs) and the adapters. Nothing shipped a default capability.
+- **`Value` serialises and does not deserialise**, like `Call`. Item 4 (the
+  record) can therefore write what ran without inventing a second type — and
+  must not add `Deserialize` to either to read its own records back, because a
+  value nothing validated would then exist. Read records into a type of the
+  record's own.
+- **`GrantError`, `Grants::refusal`, `ArgError`, `VerbError`, `CallError` and
+  every `Sentence` are English in the source.** Item 9's list is now
+  considerably longer, and `sentence.rs` was built as parts rather than a format
+  string precisely so that translating it moves only `Part::Words`.
+
+Eight ready items left. Item 3 (approvals) is next, and it speaks this
+iteration's vocabulary: read `call.rs` before starting it, because an approval
+is over exactly one `Call` and exactly its arguments.

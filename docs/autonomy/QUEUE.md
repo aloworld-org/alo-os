@@ -75,12 +75,27 @@ items must follow:
   Storage is serde, as with `Providers` — where the list is written and when is
   the daemon's, and it does not exist yet.
 
-- [ ] **2. The verb registry** — implements `docs/contracts/agent-verbs.md` and
-  law 2. A verb is `name`, `purpose`, `effect` (read or change), typed `args`,
-  the grant it requires, and how its approval sentence is generated **from the
-  validated arguments**. The registry refuses to hold a verb that breaks the
-  contract: an argument that reaches an interpreter, a change whose sentence
-  cannot be generated, a verb requiring no grant without a written reason.
+- [x] **2. The verb registry** — implements `docs/contracts/agent-verbs.md` and
+  law 2. Five files in `crates/alo-capability`: `arg.rs` (what an argument can
+  be, and what survives arriving), `sentence.rs` (the approval sentence and
+  where its words come from), `verb.rs` (everything that has to be true of a
+  verb), `verbs.rs` (the closed list), `call.rs` (a validated call, what it
+  would touch, and whether the grants permit it). 37 tests, clippy clean.
+
+  **The registry cannot hold a verb that breaks the contract, and it manages
+  that by not being able to receive one:** `Verb::checked` is the only
+  constructor and there is no `Deserialize` around it. Law 2 is carried by
+  `Takes` being a closed list with no free-text kind in it — a model cannot
+  compose something to run because there is no shape for it to arrive in — plus
+  a declaration-time refusal of names that announce an interpreter, which is a
+  tripwire and is documented as one. A verb's implementation passing an argument
+  to a shell is still only stopped by review, and `verb.rs` says so.
+
+  Three items inherit decisions from this. **Every argument is required** — an
+  optional one makes the sentence conditional. **The sentence names every
+  argument**, or the verb is refused. **Being permitted and being approved are
+  separate**: `call.rs` answers the first and deliberately does not answer the
+  second, which is item 3's.
 
 - [ ] **3. Approvals** — implements ADR 0001 §5. One approval, one execution, of
   exactly those arguments. No "remember this", no duration, no "always allow for
