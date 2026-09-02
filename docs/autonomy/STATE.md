@@ -1233,3 +1233,114 @@ wrote to this repository within seven minutes of each other today. Nothing was
 lost — the work was in different crates and git did the rest — but the next
 overlap will not be as lucky, and the reason it was survivable this time is that
 both commits were small and pushed promptly, not that concurrency is safe here.
+
+
+---
+
+## 2026-09-02 — iteration 14: the accent set, measured
+
+**Built: item 8a**, whole, including a refusal path and a measurement the item
+did not name. Two new files in `crates/alo-appearance` — `accent.rs` and
+`contrast.rs` — and the setting wired through `changes.rs`, `shipped.rs` and
+`appearance.rs`.
+
+| | |
+|---|---|
+| `accent.rs` | The five a person can choose from, both values each, and the three refusals |
+| `contrast.rs` | How far apart two colours are to look at, to the standard EN 301 549 points at |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-appearance` is 75 unit tests (was 58); the
+workspace is **517 tests and 19 doctests**, all green and the rest untouched.
+`CHANGELOG.md`, `QUEUE.md` and ADR 0010 in the same change.
+
+**The item said "`Token` gains the set and refuses terracotta", and the stronger
+shape was to make terracotta unreachable rather than refused.** `Accent` is a
+closed list of five, so a settings file naming terracotta does not read at all
+and a picker has nothing to omit — the same reasoning as `alo-capability`'s
+`Takes`, where law 2 is carried by there being no shape for the thing to arrive
+in. The refusal in words is still there, for the one road a colour can arrive
+by: `Accent::of_colour`, which is where a panel that let somebody type a hex
+lands, and where `docs/features.md`'s old promise of an accent "drawn from the
+design tokens" lands, and where at v1 an agent asked to *make the accent this
+colour* will land — that one is a proposal a person approves, so it has to be
+refusable in a sentence they can read. Three refusals rather than one, because
+asking for the agent's colour, asking for a ground, and asking for a colour
+nobody designed are three different mistakes that send a person to three
+different places.
+
+**The decision that was not in the item: a colour set is a claim about
+legibility, so it is measured.** ADR 0010 says outright that the five hexes are
+a designer's proposal rather than a measurement, and a proposal nobody measures
+is how a hue that reads beautifully in a design tool reaches somebody who cannot
+read it. So `contrast.rs` implements the sRGB relative luminance and the ratio
+the standard defines, and `accent.rs` holds every accent to the 4.5:1 EN 301 549
+requires of ordinary text — the light-ground value against cream *and* the
+porcelain canvas, the dark-ground value against the charcoal rail. All five
+clear it as designed; moss on porcelain is the closest at 4.75:1. A sixth hue
+cannot be added now without being measured, which is the point.
+
+**And the measurement found something the decision had not claimed.**
+**Terracotta on cream is 2.87:1** — under the 4.5 a word needs and under the 3.0
+WCAG 2.1 §1.4.11 asks of a shape carrying meaning. ADR 0010 argued the mark and
+the word from colour blindness; the arithmetic says the agent's colour on the
+reading ground does not reach the threshold for *anybody*. Nothing in the
+decision changes and nothing was relitigated — the note is appended to the ADR
+under *since it was accepted*, and it makes "never alone" a measured requirement
+rather than a principled one. It is the shell's to honour, as the item said.
+
+**Three smaller ones worth keeping.**
+
+- **The accent is stored by name and resolved against the scheme at the moment
+  of asking.** One choice, two values, and `Appearance::accent_at` is the fourth
+  resolution in that file — so an accent picked in the morning is still readable
+  at eight in the evening, and a release that corrects a hex corrects it for
+  everybody who chose that colour rather than freezing the number they happened
+  to be shown. It is *only the difference is stored* (item 7) reaching one more
+  setting, and it reads the clock no more than the schedule does.
+- **What ships is held to what a person is offered.** `Shipped` carries
+  verdigris, and a test asserts it is one of the five — a default outside the
+  offered set would be an accent somebody could lose by touching the setting and
+  never get back.
+- **`Shipped::of` gained a parameter**, which is a break in a public constructor
+  and is deliberate: the alternative is a set of defaults where one of them is
+  invisible, and every caller is in this workspace and in this commit. Anything
+  a release ships is stated in one place or it is not stated.
+
+**What the next iteration must know:**
+
+- **`Colour::contrast_with` is public and is the crate's first piece of
+  arithmetic about colour.** Anything later that puts text on a ground —
+  the compositor drawing a label on an accent fill, a settings panel previewing
+  a colour — should ask it rather than reason about hexes, and `ENOUGH_FOR_TEXT`
+  and `ENOUGH_FOR_A_SHAPE` are the two numbers the standard has.
+- **Contrast says nothing about colour blindness**, and `contrast.rs` says so.
+  The hue-distance test in `accent.rs` is arithmetic and is documented as a
+  floor rather than a perceptual claim — it catches a hue added later that is
+  terracotta with two digits changed, and it cannot catch that deuteranopia
+  makes terracotta and moss neighbours. That is what the mark and the word are
+  for.
+- **Item 9d's list grew**: `Accent::name` and the three `AccentError`
+  sentences. The names are the same translator's judgement as `Token::name` —
+  verdigris is the colour of weathered copper, two words in some languages and
+  none in others — and these are names a person picks from a list rather than
+  reads once.
+- **Nothing here has been drawn.** No accent has reached a screen, because the
+  compositor does not exist, and the mark-and-word half of ADR 0010 cannot be
+  tested until it does. `ROADMAP.md`'s "Making it yours" stays unticked.
+
+**The roadmap line moved, which is `LOOP.md` step 6 as it was rewritten while
+this iteration was running.** *Making it yours* stays an empty box — half a
+capability is not a capability — and its clause now says the accent set is
+working code rather than a decision, its description drops "accent colour from
+the design tokens" because ADR 0010 says it is not drawn from them, and its
+*Owed* gains the mark and the word. This iteration was rebased onto that commit;
+there was no conflict, and the file it added is the one this entry now honours.
+
+**What is left is 9a–9e and 4a.** 8a was the last item that was neither a
+strings item nor the daemon's. 9a needs the CLDR cardinal rules for the 24
+languages put in front of it — read, not recalled, and an iteration that cannot
+get them should say so plainly rather than write a plural table from memory. 9b
+is partly blocked behind 9a; 9c, 9d and 9e are not blocked by anything. 4a is
+`alo-agentd`'s and the daemon still does not exist.

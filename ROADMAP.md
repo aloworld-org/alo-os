@@ -113,11 +113,14 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] **Settings, as one place**: network, display, sound, printers, storage,
       keyboard, accounts, privacy, updates
 - [ ] **Making it yours**: background from a file, folder or colour and per
-      display; lock-screen image; light and dark; accent colour from the design
-      tokens; text scaling; wallpapers shipped in the image
+      display; lock-screen image; light and dark; an accent from the five
+      designed hues, terracotta reserved (ADR 0010); text scaling; wallpapers
+      shipped in the image
       · Built: `alo-appearance` — background per display, light and dark, text
-      scaling, and the accent set of ADR 0010, terracotta reserved · Owed: the
-      Settings panel, and the wallpapers themselves
+      scaling, and the accent set as working code: five hues, each value
+      measured against the ground it is drawn on, terracotta unreachable rather
+      than refused · Owed: the Settings panel, the wallpapers themselves, and
+      the mark and word that must appear wherever the agent's colour does
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal

@@ -13,8 +13,9 @@
 //! machine is doing something on their behalf. A person may still put it behind
 //! their windows if they want it there — a background is not a signal, and
 //! nothing on top of it changes meaning. What may *not* happen is the shell
-//! adopting it as its accent, which is the tension item 8a in
-//! `docs/autonomy/QUEUE.md` exists to settle.
+//! adopting it as an accent, and ADR 0010 is where that was settled: the accents
+//! a person chooses from are [`crate::accent`]'s five, none of which is in this
+//! list, and asking for one of these as an accent is refused in words.
 
 use serde::{Deserialize, Serialize};
 

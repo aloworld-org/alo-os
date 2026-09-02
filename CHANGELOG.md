@@ -41,6 +41,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
   carried by hue alone is no signal at all for the one man in twelve who cannot
   distinguish it.
 
+  **Choosing one is now a thing the system does**, and the accent follows the
+  machine: pick rose in the morning and it is still rose at eight in the
+  evening, in the value drawn for a dark screen rather than the one that stops
+  reading against it. Your choice is stored as the colour's name and not as a
+  number, so a release that corrects a value corrects it for everybody who chose
+  that colour, and putting the setting back gives you what the machine ships
+  with. **Every one of the ten values has been measured** against the grounds it
+  is drawn on and clears what EN 301 549 requires of ordinary text — a hue that
+  did not would fail the build rather than reach somebody who cannot read it.
+  Asking for terracotta by any road — by name in a settings file, or by its hex
+  — is refused in a sentence that says why and what to choose instead.
+
 - alo OS can now be translated, and English has stopped being able to hide.
   Every sentence the system says is named, and the answer to *what does this
   say* always carries **whether anybody translated it** — so a screen that is

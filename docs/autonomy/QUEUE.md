@@ -357,16 +357,34 @@ deny list.** Two patterns later items must follow:
   (`shipped::THE_WALLPAPER`), or a fresh machine has nothing behind its windows.
   That is written into the image item under *blocked — linux*.
 
-- [ ] **8a. The accent set** — the decision the loop was right to refuse is made:
-  **ADR 0010**. Terracotta is reserved for the agent and is not offered as a
-  personal accent; five designed hues are, each with a value for a light ground
-  and one for a dark, because a single hex that reads on cream is illegible on
-  charcoal. Verdigris `#22707E`/`#5FB3C2`, Indigo `#3A5AA8`/`#8AA0E6`, Violet
-  `#7A4E99`/`#BE97DE`, Moss `#4A7546`/`#8DBE85`, Rose `#A0466A`/`#E093AF`;
-  verdigris is the default. `Token` gains the set and **refuses terracotta as a
-  personal accent** rather than silently accepting it. The ADR also says the
-  agent is never signalled by colour alone — that part is the shell's to honour,
-  not this crate's, so note it and move on.
+- [x] **8a. The accent set** — implements **ADR 0010**. Two new files in
+  `crates/alo-appearance`: `accent.rs` (the five, both values each, and the
+  three refusals) and `contrast.rs` (how far apart two colours are to look at,
+  to the standard). `Changes`, `Shipped` and `Appearance` gain the setting, and
+  `Setting::Accent` puts it back. 17 new tests, 536 across the workspace,
+  clippy clean.
+
+  **Terracotta is unreachable rather than refused-at-the-door**, which is the
+  shape the item asked for made stronger: the accent is a closed set of five, so
+  a settings file naming terracotta fails to read at all, and the refusal in
+  words is for the one road a colour can still arrive by —
+  `Accent::of_colour`, which is where a panel that let somebody type a hex, and
+  at v1 an agent asked to *make the accent this colour*, both land. Three
+  refusals rather than one, because asking for the agent's colour, asking for a
+  ground, and asking for a colour nobody designed are three different mistakes
+  and send a person to three different places.
+
+  Three decisions the next items inherit. **A colour set is a claim about
+  legibility, so it is measured** — `contrast.rs` is EN 301 549 by way of WCAG
+  2.1, and every accent is held to the text threshold against the grounds the
+  design brief names, which is ADR 0010's "wants contrast verified" turned into
+  a test. **The accent is stored by name and resolved against the scheme at the
+  moment of asking**, so one choice covers both grounds and a release can
+  correct a value for everybody who chose that colour. **The measurement found
+  something the decision did not claim**: terracotta on cream is 2.87:1, under
+  the threshold for a word *and* for a shape, so ADR 0010's mark and word are a
+  measured requirement rather than a courtesy — noted in the ADR, and the
+  shell's to honour.
 
 - [x] **9. Strings** — implements `CLAUDE.md`'s *user-facing strings are
   externalized from day one* and `docs/features.md`'s "Language and access"
@@ -445,12 +463,16 @@ deny list.** Two patterns later items must follow:
   called something different on the keyboard in front of most of them.
 
 - [ ] **9d. `alo-appearance` onto `alo-strings`** — short but awkward:
-  `Token::name`, the two `ColourError` sentences, the three `PictureError` ones,
-  `RotatingError`, `DisplayError`, `ScheduleError`, `TimeError` and `TextError`.
+  `Token::name`, `Accent::name`, the three `AccentError` sentences, the two
+  `ColourError` ones, the three `PictureError` ones, `RotatingError`,
+  `DisplayError`, `ScheduleError`, `TimeError` and `TextError`.
   `Token::name` is the awkward one and its note is already drafted in
   `alo-strings`' integration test — several languages have no ordinary word for
   terracotta and the loanword a translator reaches for may name a different
-  colour. Two things in that crate are *not* on the list and are deliberately
+  colour. `Accent::name` is the same problem five more times: verdigris is the
+  colour of weathered copper, said with two words in some languages and with
+  none in others, and these are names a person picks from a list rather than
+  reads once. Two things in that crate are *not* on the list and are deliberately
   not: a time of day is written `18:00` in the settings file whatever the region
   does, and how a person is *shown* a time is the region's business rather than
   a translated string.

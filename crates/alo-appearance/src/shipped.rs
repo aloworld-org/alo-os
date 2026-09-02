@@ -22,6 +22,7 @@
 //! switch away and [`Shipped::the_evening_schedule`] is the schedule the switch
 //! turns on.
 
+use crate::accent::Accent;
 use crate::lock::Lock;
 use crate::picture::Picture;
 use crate::scheme::{Following, Schedule, Scheme};
@@ -46,6 +47,8 @@ pub struct Shipped {
     following: Following,
     /// How big the text is.
     text: TextScale,
+    /// Which of the five accents the shell follows.
+    accent: Accent,
 }
 
 impl Shipped {
@@ -57,18 +60,26 @@ impl Shipped {
             lock: Lock::TheDesktop,
             following: Following::Always(Scheme::Light),
             text: TextScale::ordinary(),
+            accent: Accent::default(),
         }
     }
 
     /// A different set of defaults — a release being tried out against a
     /// person's changes, or a test of what a new default would do to them.
     #[must_use]
-    pub fn of(background: Picture, lock: Lock, following: Following, text: TextScale) -> Self {
+    pub fn of(
+        background: Picture,
+        lock: Lock,
+        following: Following,
+        text: TextScale,
+        accent: Accent,
+    ) -> Self {
         Self {
             background,
             lock,
             following,
             text,
+            accent,
         }
     }
 
@@ -100,6 +111,12 @@ impl Shipped {
     #[must_use]
     pub fn text(&self) -> TextScale {
         self.text
+    }
+
+    /// Which accent the shell follows.
+    #[must_use]
+    pub fn accent(&self) -> Accent {
+        self.accent
     }
 }
 
@@ -166,6 +183,20 @@ mod tests {
         assert_eq!(shipped.text(), TextScale::ordinary());
     }
 
+    /// **What ships is verdigris, and it is one of the five.** A default that
+    /// was not in the offered set would be an accent a person could lose by
+    /// touching the setting and never get back.
+    #[test]
+    fn what_ships_is_an_accent_a_person_could_also_have_chosen() {
+        let shipped = Shipped::of_the_image();
+        assert_eq!(shipped.accent(), Accent::Verdigris);
+        assert!(Accent::ALL.contains(&shipped.accent()));
+        assert_eq!(
+            Accent::of_colour(shipped.accent().on(Scheme::Light)),
+            Ok(shipped.accent())
+        );
+    }
+
     /// The evening schedule is dark after six and light at seven, which is what
     /// the switch in the settings panel means.
     #[test]
@@ -185,8 +216,10 @@ mod tests {
             Lock::TheDesktop,
             Following::from(Shipped::the_evening_schedule()),
             TextScale::percent(125).unwrap(),
+            Accent::Indigo,
         );
         assert_ne!(other, Shipped::of_the_image());
         assert_eq!(other.text().as_percent(), 125);
+        assert_eq!(other.accent(), Accent::Indigo);
     }
 }

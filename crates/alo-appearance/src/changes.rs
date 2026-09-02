@@ -17,6 +17,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::accent::Accent;
 use crate::background::Background;
 use crate::display::DisplayId;
 use crate::lock::Lock;
@@ -36,6 +37,8 @@ pub enum Setting {
     Following,
     /// How big the text is.
     Text,
+    /// Which of the five accents the shell follows.
+    Accent,
 }
 
 /// Everything a person has changed about how their machine looks.
@@ -56,6 +59,8 @@ pub struct Changes {
     following: Option<Following>,
     /// How big they made the text.
     text: Option<TextScale>,
+    /// Which accent they chose.
+    accent: Option<Accent>,
 }
 
 impl Changes {
@@ -74,6 +79,7 @@ impl Changes {
             && self.lock.is_none()
             && self.following.is_none()
             && self.text.is_none()
+            && self.accent.is_none()
     }
 
     /// Put this behind the windows, on every display they have not singled out.
@@ -105,6 +111,16 @@ impl Changes {
         self.text = Some(text);
     }
 
+    /// Make this the accent the shell follows.
+    ///
+    /// One of the five (ADR 0010) rather than a colour, so what is written down
+    /// is the choice rather than the hex somebody happened to be shown: a
+    /// release that corrects a value corrects it for everybody who chose that
+    /// colour, and the light and the dark value stay two halves of one decision.
+    pub fn set_accent(&mut self, accent: Accent) {
+        self.accent = Some(accent);
+    }
+
     /// Forget that this was ever changed, which puts it back to what the
     /// running release ships.
     ///
@@ -115,6 +131,7 @@ impl Changes {
             Setting::Lock => self.lock.take().is_some(),
             Setting::Following => self.following.take().is_some(),
             Setting::Text => self.text.take().is_some(),
+            Setting::Accent => self.accent.take().is_some(),
         }
     }
 
@@ -173,6 +190,12 @@ impl Changes {
     pub fn text(&self) -> Option<TextScale> {
         self.text
     }
+
+    /// Which accent they chose, if they chose one.
+    #[must_use]
+    pub fn accent(&self) -> Option<Accent> {
+        self.accent
+    }
 }
 
 /// Changes as a settings file holds them: everything untouched is absent rather
@@ -194,6 +217,9 @@ struct Written {
     /// How big the text is.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     text: Option<TextScale>,
+    /// Which accent the shell follows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    accent: Option<Accent>,
 }
 
 impl From<Written> for Changes {
@@ -207,6 +233,7 @@ impl From<Written> for Changes {
             lock: written.lock,
             following: written.following,
             text: written.text,
+            accent: written.accent,
         };
         for (display, background) in written.displays {
             changes.set_background_on(display, background);
@@ -223,6 +250,7 @@ impl From<Changes> for Written {
             lock: changes.lock,
             following: changes.following,
             text: changes.text,
+            accent: changes.accent,
         }
     }
 }
@@ -266,6 +294,8 @@ mod tests {
         changes.set_lock(Lock::from(plain(Token::Cream)));
         changes.follow(Following::from(Scheme::Dark));
         changes.set_text(TextScale::percent(125).unwrap());
+        changes.set_accent(Accent::Rose);
+        assert_eq!(changes.accent(), Some(Accent::Rose));
         assert!(!changes.is_untouched());
 
         for setting in [
@@ -273,6 +303,7 @@ mod tests {
             Setting::Lock,
             Setting::Following,
             Setting::Text,
+            Setting::Accent,
         ] {
             assert!(changes.forget(setting), "{setting:?} was there to forget");
             assert!(!changes.forget(setting), "and is not there twice");
@@ -322,8 +353,29 @@ mod tests {
         changes.set_background_on(laptop(), plain(Token::Navy));
         changes.set_lock(Lock::TheDesktop);
         changes.follow(Following::from(Scheme::Dark));
+        changes.set_accent(Accent::Moss);
         let written = serde_json::to_string(&changes).unwrap();
+        assert!(
+            written.contains(r#""accent":"Moss""#),
+            "an accent is written by name: {written}"
+        );
         assert_eq!(serde_json::from_str::<Changes>(&written).unwrap(), changes);
+    }
+
+    /// **A settings file cannot ask for the agent's colour.** The accent is one
+    /// of five names, so terracotta is not a value the file can hold — a
+    /// hand-edited file naming it is refused where it is read rather than
+    /// becoming an accent nobody offered (ADR 0010).
+    #[test]
+    fn a_file_cannot_name_the_reserved_colour_as_an_accent() {
+        assert!(serde_json::from_str::<Changes>(r#"{"accent":"Terracotta"}"#).is_err());
+        assert!(serde_json::from_str::<Changes>(r##"{"accent":"#E76F51"}"##).is_err());
+        assert_eq!(
+            serde_json::from_str::<Changes>(r#"{"accent":"Verdigris"}"#)
+                .unwrap()
+                .accent(),
+            Some(Accent::Verdigris)
+        );
     }
 
     /// A hand-edited file that names one display twice means what it says last,

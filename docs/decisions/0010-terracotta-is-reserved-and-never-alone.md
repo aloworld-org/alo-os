@@ -106,3 +106,22 @@ choose it.
 `docs/features.md` said, and the loop demonstrated it cannot be done: the tokens
 that are not terracotta are grounds and structure, and neither is legible as an
 accent on both grounds.
+
+## Since it was accepted — the proposal has been measured
+
+`crates/alo-appearance` now carries the set, and the contrast the consequences
+above asked for is a test rather than an intention
+(`contrast.rs`, `accent.rs`). Against the grounds the design brief names —
+cream and porcelain for the light-ground value, charcoal for the dark one — the
+five clear the 4.5:1 that EN 301 549 requires of ordinary text, with **moss on
+porcelain the closest at 4.75:1** and indigo on cream the furthest at 6.07:1.
+The values in the table stand as designed.
+
+One measurement was not asked for and is worth recording: **terracotta on cream
+is 2.87:1**, which is under 4.5:1 for a word and under the 3.0:1 that WCAG 2.1
+§1.4.11 asks of a shape carrying meaning. So the mark and the word are not a
+concession to colour blindness alone — the agent's colour on the reading ground
+does not by itself reach the threshold for *anybody*. Nothing in the decision
+changes; what changes is that "never alone" is now a measured requirement rather
+than a principled one, and anything the shell draws in terracotta on cream has
+to carry its meaning some other way as well.

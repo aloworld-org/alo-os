@@ -23,9 +23,16 @@
 //! 3. **Light and dark are answered at a time of day that is passed in**, never
 //!    read, so the answer is testable and the panel and the compositor cannot
 //!    disagree about what the schedule says.
+//! 4. **The accent follows light and dark.** A person picks one of the five
+//!    (ADR 0010), and which of its two values is showing is decided by the
+//!    scheme at the moment of asking — so an accent chosen in the morning is
+//!    still readable at eight in the evening. [`Appearance::accent_at`] is
+//!    where that happens, and it is the only place the two questions meet.
 
+use crate::accent::Accent;
 use crate::background::Background;
 use crate::changes::{Changes, Setting};
+use crate::colour::Colour;
 use crate::display::DisplayId;
 use crate::lock::Lock;
 use crate::scheme::{Following, Scheme};
@@ -109,6 +116,11 @@ impl Appearance {
         self.changes.set_text(text);
     }
 
+    /// Make this the accent the shell follows.
+    pub fn set_accent(&mut self, accent: Accent) {
+        self.changes.set_accent(accent);
+    }
+
     /// Put one setting back to what this release ships.
     ///
     /// Says whether there was anything to put back.
@@ -190,6 +202,25 @@ impl Appearance {
         self.changes.text().unwrap_or(self.shipped.text())
     }
 
+    /// Which accent the shell follows.
+    #[must_use]
+    pub fn accent(&self) -> Accent {
+        self.changes.accent().unwrap_or(self.shipped.accent())
+    }
+
+    /// The accent as a colour, at this time of day.
+    ///
+    /// **The fourth resolution, and the reason the accent is a name rather than
+    /// a hex.** An accent has a value for a light ground and one for a dark, and
+    /// which of them is showing follows the same schedule everything else does —
+    /// so a machine that turns dark at six turns its accent with it, and nobody
+    /// has to remember to. The time is passed in, like every other question this
+    /// crate answers about a clock it does not read.
+    #[must_use]
+    pub fn accent_at(&self, now: TimeOfDay) -> Colour {
+        self.accent().on(self.scheme_at(now))
+    }
+
     /// The background the person chose for everywhere, or the shipped one.
     fn their_background(&self) -> Background {
         self.changes
@@ -252,7 +283,52 @@ mod tests {
         assert_eq!(appearance.lock_on(&laptop()), the_shipped_wallpaper());
         assert_eq!(appearance.scheme_at(at(22)), Scheme::Light);
         assert_eq!(appearance.text(), TextScale::ordinary());
+        assert_eq!(appearance.accent(), Accent::Verdigris);
         assert!(appearance.changes().is_untouched());
+    }
+
+    /// **The accent follows light and dark.** One choice, two values, and the
+    /// one showing is decided by the scheme at the moment of asking rather than
+    /// at the moment it was chosen — so an accent picked in the morning is still
+    /// readable in the evening, on the ground that is actually behind it.
+    #[test]
+    fn the_accent_is_the_value_for_the_ground_it_is_on() {
+        let mut appearance = Appearance::shipped();
+        appearance.set_accent(Accent::Rose);
+        appearance.follow(Following::from(Shipped::the_evening_schedule()));
+
+        assert_eq!(appearance.accent(), Accent::Rose);
+        assert_eq!(appearance.accent_at(at(9)), Accent::Rose.on(Scheme::Light));
+        assert_eq!(appearance.accent_at(at(20)), Accent::Rose.on(Scheme::Dark));
+        assert_ne!(appearance.accent_at(at(9)), appearance.accent_at(at(20)));
+
+        assert!(appearance.put_back(Setting::Accent));
+        assert!(!appearance.put_back(Setting::Accent));
+        assert_eq!(
+            appearance.accent_at(at(20)),
+            Accent::Verdigris.on(Scheme::Dark),
+            "and putting it back is the shipped accent, on the right ground"
+        );
+    }
+
+    /// **Terracotta is not reachable from here.** Whatever a person has chosen,
+    /// and at whatever hour it is asked, the accent is never the colour that
+    /// means the agent is present or acting (ADR 0010).
+    #[test]
+    fn the_accent_is_never_the_agents_colour() {
+        let mut appearance = Appearance::shipped();
+        appearance.follow(Following::from(Shipped::the_evening_schedule()));
+        for accent in Accent::ALL {
+            appearance.set_accent(accent);
+            for hour in 0..24 {
+                assert_ne!(
+                    appearance.accent_at(at(hour)),
+                    Token::Terracotta.colour(),
+                    "{} at {hour} o'clock",
+                    accent.name()
+                );
+            }
+        }
     }
 
     /// **A display nobody singled out shows what the person chose**, which is
@@ -396,6 +472,7 @@ mod tests {
             Lock::TheDesktop,
             Following::from(Shipped::the_evening_schedule()),
             TextScale::ordinary(),
+            Accent::Moss,
         );
         let after =
             Appearance::over(next_release).with(serde_json::from_str::<Changes>(&written).unwrap());
@@ -414,6 +491,11 @@ mod tests {
             after.text(),
             TextScale::percent(125).unwrap(),
             "and what they chose is untouched"
+        );
+        assert_eq!(
+            after.accent(),
+            Accent::Moss,
+            "and a release that changes the accent reaches somebody who never picked one"
         );
     }
 
