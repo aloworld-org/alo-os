@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- A model can answer from one of three places, and you are always told which: on
+  this machine, on a machine on your network, or behind a provider's API — so a
+  laptop too thin to run a model, or an organisation that would rather buy
+  inference than operate it, can still use alo OS. Where the answer came from is
+  said where the answer appears, not in a settings page, because somebody about
+  to paste a contract into a question should know where it is going before they
+  paste it. A provider that will not say where it runs is reported as unknown
+  rather than assumed to be nearby. And a local model that fails never quietly
+  becomes an API call: failing to answer is recoverable, your records leaving
+  the building because a download was corrupt is not.
+
 - alo OS runs its agents on the CPU by default. A graphics card makes the same
   system faster and makes fine-tuning practical, but it is acceleration rather
   than an entry price — because the Windows 10 fleet this project exists to

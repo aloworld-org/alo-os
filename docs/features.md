@@ -145,6 +145,11 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.01] ★ **The GPU works on first boot**, where there is one — no driver installation, no CUDA archaeology. Acceleration, not an entry price
 - [v0.01] ★ **A model runs in one command**, from a curated catalogue of open-weight models with their licences stated
 - [v0.01] ★ The agents point at the **local** model by default — sovereignty is the default configuration, not an option to find
+- [v0.01] ★ **Or use an API instead** (ADR 0008). A model may answer on this machine, on a machine on your network, or behind a provider's API — for a laptop too thin to run one, or an organisation that would rather buy inference than operate it
+- [v0.01] ★ **Where the answer came from is said where the answer appears** — "on this machine", "on the studio workstation, on your network", "by alo, in the EU". Not in a settings page somebody would have to go looking for, because a person about to paste a contract into a question is entitled to know where it is going first
+- [v0.01] ★ **Never a silent fallback.** A local model that fails does not quietly become an API call: failing to answer is recoverable, a person's records leaving the building because a download was corrupt is not
+- [v0.5] A provider that will not say where it runs is reported as **unknown**, never assumed to be nearby — and unknown never satisfies a policy requiring the EU
+- [v1] Policy over where inference may happen: anywhere, in the building, EU-only, or this machine alone (ADR 0004)
 - [v0.01] Model lifecycle: pull, list, serve, unload, remove; disk accounted honestly
 - [v0.5] ★ **Guided fine-tune**: LoRA/QLoRA over a granted folder or a tenant's records, as a flow rather than a toolchain
 - [v0.5] ★ The dataset, the adapter and the resulting weights never leave the machine
