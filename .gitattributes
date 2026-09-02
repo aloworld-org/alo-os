@@ -1,0 +1,27 @@
+# Line endings are LF in the repository, whatever the checkout is on.
+#
+# Without this, a Windows checkout commits CRLF and the first Linux contributor
+# sees a diff of phantom changes across every file — which on an operating
+# system that is mostly built on Linux would be a poor first impression.
+* text=auto eol=lf
+
+# Shell scripts and anything the image runs must never gain CRLF: a script with
+# CRLF line endings fails at the shebang with an error that names the wrong
+# thing entirely.
+*.sh text eol=lf
+*.bash text eol=lf
+Containerfile text eol=lf
+Dockerfile text eol=lf
+
+# Binary, so git never tries to normalise or diff them as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.gguf binary
+*.img binary
+*.iso binary
