@@ -1102,3 +1102,134 @@ Where the work stands: **eleven items done, eight crates, 492 tests passing,
 clippy clean.** The next ready item is **10 — test a provider before saving it**.
 After that only 9a–9d, 4a and 8a remain, and of those 4a belongs to
 `alo-agentd` and 8a needs a designer.
+
+
+---
+
+## 2026-09-02 — iteration 13: testing a provider before it is saved
+
+**Built: item 10**, whole, including two refusal paths the item did not name.
+Three files in `crates/alo-models` — `secret.rs`, `tried.rs`, `trying.rs` — and
+one test-support file, `testing.rs`, which `ollama.rs` now shares rather than
+keeping its own copy of the stub server. No new dependency: ureq was already
+here, as the item said.
+
+| | |
+|---|---|
+| `secret.rs` | A key as it was just typed, for the length of one call. No accessor, no `Display`, no `Serialize`, no `Clone`, a hand-written `Debug` |
+| `tried.rs` | What a person is told: `Tried` when it worked, `NotTried` when it did not — both shapes of one answer, read in one dialogue |
+| `trying.rs` | The only file that knows what a provider's API looks like: the policy question, the request, and what each answer means |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-models` is 70 unit tests (was 44) and 2
+doctests (was 0); the workspace is **500 tests and 19 doctests**, all green and
+the rest untouched. `CHANGELOG.md`, `docs/quirks.md` and the queue in the same
+change. The `compile_fail` was checked by unmarking it and reading the error —
+E0624, *method `bearer` is private* — so it is not a test of a typo, and it has
+a passing twin.
+
+**The item is one sentence, and the design is the three things that sentence
+does not say.** *A mistyped key should be found when it is typed* describes a
+request; what it leaves open is what else that request is allowed to be.
+
+- **The policy is asked first, and there is no way to skip it.** `Trying` has
+  one method and it takes a `SourcePolicy`, so testing is not a second road to
+  a provider that the machine's policy forbids. A refused test opens no
+  connection — the test that proves it points at an address nothing is
+  listening on, so a leak would come back `Unreachable` and say so — and the
+  refusal is `SourcePolicy::refusal`'s own words rather than a second
+  explanation that could drift from the first.
+- **A redirect is refused, never followed.** The address the policy answered
+  about is the address that gets reached; following one would open a connection
+  to a host nobody decided about, carrying a credential. ureq would not have
+  forwarded the header (`redirect_auth_headers` is `Never` by default) — but
+  *the key would have been safe* is not the objection. The connection is.
+- **Nothing of the person's leaves.** The test is a `GET` with no body: no
+  question, no document, no sample prompt to "check the model answers". What
+  leaves is that somebody with this key asked this provider what it offers. The
+  test asserts it on what actually went out on the socket, not on the intent.
+
+**The two refusals the item did not name, and why they are not tidy-ups.**
+*Given no key and refused* is a different sentence from *given a key and
+refused*: telling somebody their key was rejected when they never typed one is
+how they spend an hour checking a key that does not exist, so 401 with a key is
+`KeyNotAccepted` and 401 without one is `NeedsAKey`. And *something answered,
+but not like a provider* is neither — it is the address of the website instead
+of the address of the API, and reporting it as a bad key sends somebody to
+change the one thing that was right.
+
+**Three smaller decisions worth keeping.**
+
+- **A key goes into this crate and does not come out.** `Secret::bearer` is
+  `pub(crate)` and is the only reader that exists. What the file says outright
+  is what it does *not* claim: the bytes are not scrubbed on drop, because doing
+  that honestly needs `unsafe` or a dependency and the workspace forbids the
+  first — and a promise made and not kept is worse than one not made. What is
+  kept is narrow and real: never written down, never rendered, never sent
+  anywhere but to the provider it belongs to. A pasted key's surrounding
+  whitespace is dropped (that *is* the mistyped key), and a control character
+  in one is refused rather than quietly removed — a credential silently altered
+  is an afternoon lost to a key that was right.
+- **Names a provider wrote are held to `alo-files`' rule.** They arrive from
+  somebody else's service and land in a settings panel beside things the system
+  said itself, so a name that cannot be shown is counted and left out, a list
+  longer than anybody reads is cut, and the answer says both happened. A
+  bounded answer that does not say so reads exactly like a complete one.
+- **No sentence in this item counts anything out loud.** *One model* and *two
+  models* is one sentence in English and three in Polish, and item 9a is where
+  the CLDR rules get read rather than remembered. So `Tried::describe` carries
+  no number, and the numbers are accessors for whatever shows them later. This
+  is the first place the loop has designed *around* a known gap rather than
+  adding to it.
+
+**What the next iteration must know:**
+
+- **Item 9e is new in the queue.** No 9-series item named `alo-capability` or
+  `alo-models`, and this item added `SecretError`, `NotTried` and
+  `Tried::describe` to the second — so the gap is written down rather than
+  discovered when somebody thinks the strings work is finished. It should follow
+  9b–9d, not lead them.
+- **This egress is deliberately not on the indicator, and the reasoning is in
+  `trying.rs` where somebody will argue with it.** A person pressing *Test* on
+  the screen they typed the address into is not an agent doing something; the
+  indicator answers *what is my machine sending that I did not ask for*. Any
+  egress an **agent** causes — a question put to this provider once it is saved
+  — goes through `alo-egress` and is shown, as it does today. If that reasoning
+  is ever rejected, the fix is not a comment: it is `alo-egress` gaining a way
+  to say *the person did this*, and `alo-models` cannot depend on `alo-egress`
+  because `alo-egress` depends on it.
+- **Nothing here has met a real provider.** The tests drive a stub on a real
+  socket, which is what `ollama.rs` does and is honest about what it proves.
+  Testing against a service somebody pays for is owed with the rest of the
+  hardware verification, and `docs/quirks.md`'s new entry says the same about
+  the `/v1` convention it depends on: documented, not observed.
+- **`ROADMAP.md` was not ticked and has no line to tick.** *Test a provider
+  before saving it* is a v0.5 promise in `docs/features.md` that the roadmap
+  covers only inside "Settings, as one place", and there is no Settings panel
+  to press the button in. The model is built; the screen is the compositor's.
+
+**Item 10 was the last numbered item, and what is left is the loop's own cuts —
+with one of them unblocked while this iteration was running.** A person answered
+item 8a in `ADR 0010` and pushed it: terracotta is reserved for the agent, five
+designed hues are offered instead with a value for a light ground and one for a
+dark, and the queue item is rewritten as work rather than as a question. That
+commit is docs and a decision, no code, and this iteration was rebased onto it —
+the only conflict was two `CHANGELOG.md` entries wanting the same line, and both
+are kept.
+
+So **8a is the next ready item, and it is now buildable here**: `Token` gains
+the set and refuses terracotta as a personal accent, which is a refusal test
+before it is a colour table. The part of ADR 0010 saying the agent is never
+signalled by colour alone is the shell's and not `alo-appearance`'s — note it,
+do not build it there. After 8a: 9a (the CLDR plural rules, which must be read
+and not recalled — the loop should say so plainly if it cannot get them),
+9b–9e (each crate's English onto `alo-strings`, which 9a partly blocks), and 4a,
+which stays the daemon's because `alo-agentd` does not exist.
+
+**And the rule that nearly broke.** `CLAUDE.md` says one agent per working tree
+and that whoever starts the loop owns the checkout until it stops. Two sessions
+wrote to this repository within seven minutes of each other today. Nothing was
+lost — the work was in different crates and git did the rest — but the next
+overlap will not be as lucky, and the reason it was survivable this time is that
+both commits were small and pushed promptly, not that concurrency is safe here.

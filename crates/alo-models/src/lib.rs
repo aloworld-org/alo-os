@@ -16,10 +16,19 @@ pub mod catalogue;
 pub mod ollama;
 pub mod provider;
 pub mod runtime;
+pub mod secret;
 pub mod source;
+pub mod tried;
+pub mod trying;
+
+#[cfg(test)]
+mod testing;
 
 pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model};
 pub use ollama::Ollama;
 pub use provider::{Provider, ProviderError, Providers, SecretRef};
 pub use runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
+pub use secret::{Secret, SecretError};
 pub use source::{InferenceSource, Region, SourcePolicy};
+pub use tried::{NotTried, Tried};
+pub use trying::Trying;

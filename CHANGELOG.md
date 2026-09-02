@@ -12,6 +12,25 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- A provider you add can be tested before you save it, so a key with a
+  character missing is found while you are still looking at the field you typed
+  it into — not days later, in the middle of a question, as an answer that
+  failed for no stated reason. The answer says which thing went wrong, because
+  they send people to different places: *that key was not accepted* is not *this
+  provider wants a key and was given none*, and neither is *that address
+  answered, but not like a provider this system can use*, which is what you get
+  when the address is of the website rather than of the API. A provider that
+  works comes back with the models it offers, ready to be saved with it.
+  **Testing sends nothing of yours** — no question, no document, no sample
+  prompt — and it asks this machine's policy first: on a machine set to keep
+  questions in the building, testing a provider outside it does not quietly
+  happen anyway, it is refused in the policy's own words before anything is
+  sent. The address you typed is the address that is reached: an address that
+  redirects somewhere else is refused rather than followed, because a key does
+  not travel to a host nobody agreed to. And the key itself is held for the one
+  request and nothing else: it is never written down, never rendered in a log or
+  an error, and cannot be read back out of the code that sends it.
+
 - Your accent colour is yours, and terracotta is not one of the choices. It
   means alo is present or acting, and an accent somebody could set to terracotta
   would take away the one signal that says the machine is doing something on

@@ -51,9 +51,10 @@ language is not an agent doing something and needs no grant.
 | `ollama.rs` | The adapter, and the only file that knows Ollama exists (ADR 0006) |
 | `source.rs` | Where a question is answered and what that costs in egress (ADR 0008); the region policy an organisation names |
 | `provider.rs` | Providers somebody adds themselves; the key lives in the keyring, never in the settings |
+| `secret.rs`, `tried.rs`, `trying.rs` | Added later by the loop — testing a provider before it is saved (item 10) |
 
-**44 tests, clippy clean against the workspace deny list.** Two patterns later
-items must follow:
+**44 tests when the loop started, 70 now, clippy clean against the workspace
+deny list.** Two patterns later items must follow:
 
 - **A promise in `docs/` is a test, not a sentence.** "Every model states its
   licence" and "a paired machine is egress too" are tests. Anything an item
@@ -454,11 +455,55 @@ items must follow:
   does, and how a person is *shown* a time is the region's business rather than
   a translated string.
 
-- [ ] **10. Test a provider before saving it** — promised at v0.5 in
-  `docs/features.md` and the one loose end in `provider.rs`. A mistyped key
-  should be found when it is typed, not in the middle of a question. Reuse the
-  stub-server pattern from `ollama.rs`'s tests; do not add an HTTP client, ureq
-  is already here.
+- [ ] **9e. `alo-capability` and `alo-models` onto `alo-strings`** — the two
+  crates no 9-series item names, noticed while item 10 added more English to the
+  second of them. `alo-capability` is the larger and the more delicate:
+  `GrantError`, `Grants::refusal`, `ArgError`, `VerbError`, `CallError`,
+  `ProposalError`, `AnswerError`, `NotAuthorised`, the `Refused` display, and
+  every `Sentence` — which is why `sentence.rs` was built as parts rather than a
+  format string, so translating one moves only `Part::Words`. `alo-models` is
+  `ProviderError`, `RuntimeError`, `SecretError`, `NotTried`, `Tried::describe`,
+  `InferenceSource::describe` and `SourcePolicy::refusal`. Two of those are read
+  by somebody deciding whether to paste a contract into a question, so they are
+  not strings to hurry. It should follow 9b–9d rather than lead them: those
+  three are the crates whose strings a person meets every day.
+
+- [x] **10. Test a provider before saving it** — implements `docs/features.md`'s
+  v0.5 *test a provider before saving it* and closes the loose end in
+  `provider.rs`. Three files in `crates/alo-models`: `secret.rs` (a key as it
+  was just typed, for the length of one call), `tried.rs` (what a person is told
+  — both shapes of one answer), `trying.rs` (the only file that knows what a
+  provider's API looks like). One test-support file came with them,
+  `testing.rs`, which `ollama.rs` now shares rather than keeping its own copy of
+  the stub server. 26 new unit tests and 2 new doctests, one of them
+  `compile_fail`; no new dependency.
+
+  **The item is one sentence — a mistyped key is found now — and the design is
+  the three things that sentence does not say.** *The policy is asked first, and
+  there is no way to skip it*: `Trying::under` takes a `SourcePolicy`, so a
+  machine set to keep questions in the building does not reach a provider
+  outside it to see whether the key works, and a refused test opens no
+  connection at all. *A redirect is refused rather than followed*, because the
+  address the policy answered about is the address that gets reached and a key
+  does not travel to a host nobody decided about. *Nothing of the person's
+  leaves* — the test is a `GET` with no body, and the test that proves it reads
+  what actually went out on the socket.
+
+  Three decisions the next items inherit. **A key goes into this crate and does
+  not come out**: `Secret` has no accessor, no `Display`, no `Serialize`, a
+  hand-written `Debug`, and a `pub(crate)` reader asserted by a `compile_fail`
+  doctest checked to fail on the privacy (E0624) — and it says outright what it
+  does *not* claim, which is that the bytes are scrubbed on drop. **Names a
+  provider wrote are held to `alo-files`' rule**: one that cannot be shown is
+  counted and left out, a list longer than anybody reads is cut, and both are
+  said in the answer. **A sentence here counts nothing out loud** — the plural
+  rules are item 9a and are not written from memory — so `Tried::describe`
+  carries no number and the numbers are accessors.
+
+  Built and unit tested against a stub on a real socket. **Not run against a
+  provider anybody pays for**, which is owed with the rest of the hardware
+  verification; `docs/quirks.md` records the one convention this depends on and
+  says the same thing about it.
 
 ---
 

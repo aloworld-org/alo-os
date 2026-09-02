@@ -150,3 +150,29 @@ the agents, record it here with the exact model and quantisation — "it was fin
 for me" is usually a different quantisation.
 
 _(no entries yet)_
+
+## Providers and their APIs
+
+A provider somebody adds themselves is a service nobody here operates, behind an
+address nobody here chose. Where the convention every provider claims to follow
+turns out to be followed differently, record it here — with what the evidence
+actually is, because a provider's documentation is not a run against it.
+
+### An OpenAI-compatible address is documented both with and without `/v1`
+**Version:** documented behaviour as of 2026-09-02 — Mistral publishes an
+address ending `/v1`, the pinned runtime's OpenAI-compatible surface is the bare
+address with `/v1/…` beneath it. **Not yet observed against either live
+service**; the tests in `alo-models` are against a stub on a real socket, and
+checking this against a provider somebody pays for is owed alongside the rest of
+the hardware verification.
+**Behaviour:** there is no single spelling of "the address of the API". Half the
+world writes `https://api.example.com/v1` in the settings field and half writes
+`https://api.example.com`, and appending `/v1/models` to the first gives
+`/v1/v1/models` and a 404.
+**Our response:** `trying.rs` appends `/v1/models`, or just `/models` when the
+address already ends `/v1`. It is one line and it is deliberately not cleverer
+than that: a 404 here would be read by a person as *my address is wrong* when
+their address was right, which sends them to change the one thing that was
+correct. A provider that answers on neither is reported as one this system
+cannot use, which is what it is.
+**Date:** 2026-09-02
