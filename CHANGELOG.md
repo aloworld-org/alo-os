@@ -12,6 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- An agent can now be asked to do six things with your files — list a folder,
+  read a file, find something by name, rename, move, and make an archive of a
+  folder — and each one says in ordinary words what it is for and what it would
+  do before it does it. Looking answers straight away; renaming, moving and
+  archiving wait for you to approve one sentence, once. **And a folder you
+  granted covers where your files really are, not where something points.** A
+  file inside a folder you granted that is really a shortcut to somewhere else —
+  your keys, another person's folder, a disk you did not grant — is refused, and
+  refused as what it is: something your grants do not cover, kept in the record
+  beside every other refusal. A path you never granted is refused without your
+  machine being looked at on its behalf, so an agent cannot learn whether a file
+  exists by being told it is missing. There is no way to ask for a file by
+  writing a search expression, and there is no verb that deletes anything.
+
 - You can run alo OS with no AI at all. Setup's fourth choice is simply "not at
   all", with the same weight as the other three and nothing trying to talk you
   out of it — and what is left is the whole system: files, windows, printing,

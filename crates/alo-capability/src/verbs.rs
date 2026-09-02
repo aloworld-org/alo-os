@@ -14,8 +14,10 @@
 //! declared once and never means a second thing.
 //!
 //! The list starts empty. What goes on it is decided verb by verb, in
-//! `docs/features.md` and in this contract — the file verbs are item 6 in
-//! `docs/autonomy/QUEUE.md` and are not smuggled in here as defaults.
+//! `docs/features.md` and in this contract, and nothing is smuggled in here as
+//! a default: the file verbs are declared in the `alo-files` crate and put on a
+//! list by whoever wants them, so a registry that was never given one has no
+//! capabilities at all.
 
 use crate::arg::Given;
 use crate::call::{Call, CallError};

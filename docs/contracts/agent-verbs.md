@@ -95,6 +95,61 @@ may be done to.
 
 There is no grant to `/`.
 
+### A grant is over a place, so the path is resolved before reach is decided
+
+A grant is compared against a path **lexically** — component by component,
+touching no disk, so that it means the same thing whether or not the file
+exists. That leaves one thing undone, and it is the thing an attacker reaches
+for: a link inside a granted folder can point outside it.
+
+So **whatever executes a verb resolves every path the call names and asks the
+grants again about where it really leads**, before it opens anything. The three
+questions are asked in this order, and the order is part of the contract:
+
+1. do the grants permit the path as it was written? If not, that is the refusal
+   and **nothing is looked for on the disk** — otherwise a refusal would tell an
+   agent whether a file it may not touch exists, and the verb list would have a
+   side channel in it;
+2. where does the path really lead;
+3. do the grants permit *that*? A link out of a granted folder is refused here,
+   as a refusal by the grants, and it is recorded like any other.
+
+Two consequences an adapter author should know. **Every path a call names is
+asked about**, not only the ones the verb declared its grant is over — a verb
+that forgot one should not be a verb that reaches a disk. And **a grant is made
+over a resolved path**: a person picking a folder grants the real one, so a
+grant over a link would otherwise be a grant over wherever it points today.
+
+What this cannot do is close the gap between the check and the open — a link
+swapped in afterwards, or a hard link, which is a second real name for a file
+that also lives elsewhere and which no amount of resolving reveals. Both are in
+`docs/quirks.md`, and closing them belongs to the code that opens the file.
+
+## The file verbs
+
+The six `docs/features.md` promises at v0.01, over granted paths only. Every one
+of them requires a grant over **every** path it names, and every path it names
+is something that already exists — a new name is a **name**, never a path.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `list_folder` | read | `folder` (path) | list what is in {folder} |
+| `read_file` | read | `file` (path) | read what is in {file} |
+| `find_in_folder` | read | `folder` (path), `named` (name), `most` (count 1–1000) | find up to {most} files in {folder} whose name contains {named} |
+| `rename_file` | change | `file` (path), `name` (name) | rename {file} to {name} |
+| `move_file` | change | `file` (path), `into` (path) | move {file} into {into} |
+| `archive_folder` | change | `folder` (path), `into` (path), `name` (name) | make an archive of {folder} called {name}, in {into} |
+
+**"Archive" means make an archive**, not move something to an archive folder.
+The second is `move_file` under another name, and a closed list with two names
+for one action is a list a model picks from at random.
+
+**There is no search expression.** `find_in_folder` takes one name and builds
+the search inside itself, which is §1 at the place somebody would most
+reasonably ask for a pattern language. There is no delete verb either: nothing
+on this list destroys anything, and adding one goes through the scope gate like
+anything else.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |

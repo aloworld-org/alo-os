@@ -515,3 +515,111 @@ Six ready items left. Item 6 (file verbs, the portable half) is next, and it is
 the first item since 1 that starts with nothing cut from it: the vocabulary it
 needs — `Grants::permitting`, `Call::permitting`, `Authorised::against`, and now
 the record's two doors — is all settled and none of it should be re-derived.
+
+
+---
+
+## 2026-09-02 — iteration 7: the file verbs, and the real path
+
+**Built: item 6.** `crates/alo-files`, a **new crate**: the six file verbs
+`docs/features.md` promises at v0.01, and the last question the grants have to
+be asked before anything opens a file.
+
+| | |
+|---|---|
+| `verbs.rs` | The six, declared: `list_folder`, `read_file`, `find_in_folder`, `rename_file`, `move_file`, `archive_folder` |
+| `real.rs` | `Real` — the path this machine would really open — and why it cannot be made outside the crate |
+| `resolving.rs` | `Resolving`, and `OnThisMachine`: the only thing in the crate that touches a disk |
+| `touching.rs` | `Touching` — the only type meaning *this may touch the disk*, and the three questions asked to get one |
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, **246 tests
+passing plus 11 doctests** (24 new unit tests, 3 new integration tests against
+a real filesystem, 1 new in `alo-capability`, 3 new doctests one of which is
+`compile_fail`). `cargo doc --workspace --no-deps` clean. Built and unit tested
+on Windows, with the integration tests run against a real filesystem there;
+**no hardware verification, and none claimed** — that is a certified machine,
+and this was a developer's.
+
+**The item existed for one sentence iteration 1 left behind**: containment is
+lexical, so whatever executes a verb resolves the real path and asks about
+*that*, and getting it wrong here defeats item 1 entirely. `Touching::of` takes
+an `Authorised` — the end of ADR 0001 §5's journey, already permitted and
+approved — and asks three questions of **every path the call names**:
+
+1. do the grants permit it as it was written? If not, that is the refusal and
+   nothing is looked for on the disk;
+2. where does it really lead;
+3. do the grants permit *that*?
+
+The third is where a link out of a granted folder dies, and it dies as a
+refusal by the grants rather than as an error of this crate's own. **The order
+is the security property, not tidiness.** If the disk were touched first, a
+refusal would tell an agent whether a file it may not reach exists, and the
+capability model would have a side channel in it that no grant list could see.
+
+**Three decisions that were not obvious, and are load-bearing.**
+
+- **Every path a call names is asked about, not only the ones the verb declared
+  its grant is over.** The contract lets a verb require a grant over some of its
+  paths; the test that proves this uses a verb whose author forgot one, and
+  asserts both that it is refused and that the disk was never asked about the
+  forgotten path. The six file verbs require a grant over all of theirs, and a
+  test asserts that too — a verb that needed the enforcement to save it would be
+  a verb declared wrongly.
+- **`Real` has no public constructor, which seals `Resolving`.** One
+  implementation ships, so nothing anywhere can hand the grant check a "real"
+  path it made up — the same reasoning that keeps the clock out of
+  `alo-capability`. The trait exists at all for one reason that earns it: the
+  escape this crate exists to stop needs a symbolic link, and making one on
+  Windows needs a privilege a developer's account may not have. So the
+  *decision* is tested against a filesystem written down in the test, on every
+  platform, and `OnThisMachine` is tested against a real disk — with the link
+  followed for real under `#[cfg(unix)]`. A test that quietly skips itself is a
+  test that stops being run, so neither of these does.
+- **`Refused::not_granted` is new in `alo-capability`**, and it is the one
+  addition to a shipped crate this iteration made. The deciding crate cannot
+  ask the third question — it touches no disk — so the answer comes back as the
+  same type, and `Entry::refused` writes it down like every other refusal. It is
+  public and safe to be: it grants nothing, and a refusal made in error stops
+  something, which is the safe way to be wrong.
+
+**What was cut, and it is written down rather than left.** The `std::fs` calls
+are item 6a, ready and not blocked — the queue had the file half sitting under
+*blocked — linux* beside the application half, and that was wrong: opening a
+folder needs no portal and no accessibility tree. The item names the two things
+`docs/quirks.md` now records, so they are not rediscovered.
+
+**One decision about words.** "Archive" here means *make an archive*, not *move
+it to the archive folder*. The second is `move_file` under another name, and a
+closed list with two names for one action is a list a model picks from at
+random.
+
+**What the next iteration must know:**
+
+- **A grant is made over a resolved path.** A person picking a folder grants the
+  real one. This is not a nicety: on Windows a resolved path carries a `\\?\`
+  prefix the typed one does not, and the two compare as different paths — a
+  grant over the unresolved spelling would match nothing. It is in
+  `docs/quirks.md`, in the contract, and in the integration test.
+- **Two things no path check can do**, both now in `docs/quirks.md`: a hard link
+  is a second real name for a file that also lives elsewhere and resolves to the
+  granted name; and a path checked and then opened by name can change in
+  between. The answer to the second is the acting half holding on to what it
+  opened — `openat` from a directory handle — rather than resolving twice, and
+  item 6a says so.
+- **`alo-files` is the only crate that touches a disk**, and only in
+  `resolving.rs`. Anything later that wants to read a file should reach for a
+  `Touching`, not for a `PathBuf` — the paths inside one have been checked, and
+  the path a call arrived with has not been checked *as the thing to open*.
+- **The new user-facing English is on item 9's list**: `RealError`'s two
+  messages, `Touching`'s "really leads to" refusal, and the six verbs' purposes,
+  argument purposes and sentences. The sentences are the largest addition to
+  that list since item 2, and they are the words a person approves.
+- **There is no delete verb and no search expression**, and both absences are
+  now stated in the contract so that adding either is a deliberate act rather
+  than an oversight being corrected.
+
+Six ready items left, one of them new. Item 6a (the acting half) is next and is
+the natural continuation; item 7 (keyboard shortcuts) is the next one that
+starts somewhere else entirely.

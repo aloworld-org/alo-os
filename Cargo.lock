@@ -23,6 +23,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-files"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-models"
 version = "0.0.1"
 dependencies = [

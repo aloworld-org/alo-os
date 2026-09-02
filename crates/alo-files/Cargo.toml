@@ -1,0 +1,15 @@
+[package]
+name = "alo-files"
+version = "0.0.1"
+description = "What an agent may do to files, and the real path it is checked against."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-capability = { path = "../alo-capability" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

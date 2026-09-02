@@ -33,11 +33,12 @@ and stops when there are none left.
 
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
-`crates/alo-capability`, `crates/alo-record` and `crates/alo-egress` were built
-by the loop and are described in the items below. They depend on each other in
-one direction only: `alo-capability` decides and reaches nothing, `alo-egress`
-decides about what leaves, and `alo-record` observes both and is reachable from
-neither.
+`crates/alo-capability`, `crates/alo-record`, `crates/alo-egress` and
+`crates/alo-files` were built by the loop and are described in the items below.
+They depend on each other in one direction only: `alo-capability` decides and
+reaches nothing, `alo-egress` decides about what leaves, `alo-files` is the only
+one that touches a disk, and `alo-record` observes them and is reachable from
+none of them.
 
 | | |
 |---|---|
@@ -212,10 +213,41 @@ items must follow:
   `alo-egress` and no longer on `alo-models`** except in tests — the observer
   reaches the decider, never the reverse.
 
-- [ ] **6. File verbs, the portable half** — the verb definitions, argument
-  types, grant checks and sentence generation for list, read, find, rename,
-  move, archive. The filesystem calls are trivial; what is worth testing is that
-  a path outside a grant never reaches them.
+- [x] **6. File verbs, the portable half** — implements `docs/features.md`'s
+  v0.01 file verbs and the rule item 1 left for it. `crates/alo-files`, a **new
+  crate**: `verbs.rs` (the six, declared), `real.rs` (the path this machine
+  would really open), `resolving.rs` (the one thing here that touches a disk),
+  `touching.rs` (the only type meaning *this may touch the disk*). 24 tests, 3
+  integration tests against a real filesystem, 3 doctests, clippy clean.
+
+  **The item exists for one sentence in item 1**: containment is lexical, so
+  whatever executes a verb resolves the real path and asks about *that*.
+  `Touching::of` takes an `Authorised` — the end of ADR 0001 §5's journey — and
+  asks three questions of every path the call names, in this order: do the
+  grants permit it as written; where does it really lead; do they permit that.
+  A link out of a granted folder dies at the third, as a refusal by the grants,
+  in their own words. The order is the security property: **a path nobody
+  granted is refused before the disk is touched**, so a refusal cannot tell an
+  agent whether a file it may not reach exists.
+
+  Three decisions the next items inherit. **Every path a call names is asked
+  about**, not only the ones the verb declared its grant is over — the test that
+  proves it uses a verb whose author forgot one. **`Real` has no public
+  constructor**, which seals `Resolving`: one implementation ships, so nothing
+  can hand the grant check a real path it made up, and the crate's decision is
+  still testable on a platform where making a symbolic link needs a privilege.
+  **`Refused::not_granted` is new in `alo-capability`** — the one question that
+  crate cannot ask itself comes back as the same type, so this refusal reaches
+  the record by the road every other refusal takes.
+
+- [ ] **6a. File verbs, the acting half** — the `std::fs` calls behind the six,
+  taking a `Touching` rather than a path. Portable, not Linux: item 6 cut this
+  deliberately, and the blocked entry below is about *application* verbs.
+  Two things it must get right, both in `docs/quirks.md`: it opens **what
+  `Touching` resolved** and nothing it resolves again, and on Linux it should
+  open relative to a directory handle rather than by name a second time, because
+  a path checked and then opened by name can change in between. `find_in_folder`
+  builds its search from a name inside the verb; there is no expression.
 
 - [ ] **7. Keyboard shortcuts** — the binding model, defaults, user overrides and
   conflict detection. `docs/features.md` promises shortcuts a person can change,
@@ -249,8 +281,10 @@ rather than only of what is convenient.
 - **Compositor** — Wayland via Smithay, one display, keyboard and pointer.
 - **Sign-in and the local account**, the agent overlay, the launcher and window
   management, copy and paste, window switching — all draw on the compositor.
-- **File and application verbs, the acting half** — AT-SPI, D-Bus, the portal
-  backend (ADR 0005).
+- **Application verbs, the acting half** — AT-SPI, D-Bus, the portal backend
+  (ADR 0005). The *file* half of this was listed here and was wrong: opening a
+  folder needs no portal and no accessibility tree, so it is item 6a above and
+  is ready.
 - **Egress enforcement** — item 5's policy, made true at the network boundary.
 - **The image** — OCI-built, bootable, atomic.
 - **The workspace client running as an application on the shell.**

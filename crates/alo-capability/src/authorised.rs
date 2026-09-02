@@ -23,6 +23,14 @@
 //! refusal is recorded (ADR 0001 §7), and a refusal that threw away what it
 //! refused would leave the record saying only that something was stopped.
 //!
+//! **One question is asked from outside this crate**, and [`Refused::not_granted`]
+//! is how its answer comes back. Reach is decided lexically here and nothing
+//! touches a disk ([`crate::path`]), so whether the path a verb would *really*
+//! open is inside the grant can only be asked by whatever resolves it —
+//! `alo-files` does, after this file has said yes about the path as it was
+//! written. That refusal is the same fact as one made here, so it comes back as
+//! the same type and reaches the record by the same road.
+//!
 //! An [`Authorised`] carries all four answers ADR 0001 §7 asks of a record —
 //! what ran, under whose authority, from which approval, and against which
 //! grant — because this is the one moment all four are true at once. The
@@ -70,6 +78,27 @@ pub struct Refused {
 }
 
 impl Refused {
+    /// A refusal made where this crate could not ask the last question itself.
+    ///
+    /// Reach is decided lexically here and touches no disk, so *is the path
+    /// this verb would really open inside the grant?* is asked by whatever
+    /// resolved it — see [`crate::path`] and the `alo-files` crate. The answer
+    /// comes back as this type because it is the same fact as the last check in
+    /// [`Authorised`] saying no: the grants were asked at the moment something
+    /// would have run, and they refused.
+    ///
+    /// **It grants nothing**, which is why it can be public at all. The
+    /// dangerous direction is a type that means may-run, and there is no
+    /// constructor of one here; a refusal made in error stops something, which
+    /// is the safe way to be wrong.
+    #[must_use]
+    pub fn not_granted(call: Call, why: String) -> Self {
+        Self {
+            call: Box::new(call),
+            why: NotAuthorised::NotGranted(why),
+        }
+    }
+
     /// What was refused, for the record.
     #[must_use]
     pub fn call(&self) -> &Call {
@@ -278,6 +307,22 @@ mod tests {
         )
         .unwrap_err();
         assert!(refused.to_string().contains("has expired"), "{refused}");
+    }
+
+    /// A refusal made outside this crate is the same fact and the same type, so
+    /// the one question this crate cannot answer — whether the *real* path is
+    /// inside the grant — reaches the record by the road every other refusal
+    /// takes.
+    #[test]
+    fn a_refusal_made_where_the_disk_is_can_be_brought_back_here() {
+        let call = listing_invoices();
+        let refused = Refused::not_granted(
+            call.clone(),
+            "/home/anna/Invoices/march.pdf really leads to /etc/shadow".to_owned(),
+        );
+        assert_eq!(refused.call(), &call);
+        assert!(matches!(refused.why(), NotAuthorised::NotGranted(_)));
+        assert!(refused.to_string().contains("/etc/shadow"), "{refused}");
     }
 
     /// **Changes wait.** A change offered at the read door is refused there,
