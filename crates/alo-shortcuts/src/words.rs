@@ -7,8 +7,8 @@
 //! (item 9b) reaches the keyboard.
 //!
 //! The shape is `alo-files`' and is copied rather than re-decided: constants
-//! under one area, `alo_strings::Key::unchecked` because these are literals in
-//! this file, and a test at the bottom putting every one of them back through
+//! under one area, `alo_strings::Word` because these are literals in this file,
+//! and a test at the bottom putting every one of them back through
 //! `Key::named`.
 //!
 //! # What is not here, and why that is the interesting half
@@ -43,62 +43,15 @@
 //! languages would collapse into one. Where the sentence cannot be translated
 //! from its own words, the note says so.
 
-use alo_strings::{Phrase, Vocabulary};
+use alo_strings::Vocabulary;
 
-/// One string this crate can say.
+/// One string a crate can say.
 ///
-/// The key and the English live together, because a key with its sentence
-/// somewhere else is two files to change and one of them will be forgotten.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Word {
-    /// What names it.
-    named: &'static str,
-    /// What it says in the language the code is written in.
-    says: &'static str,
-    /// What a translator needs to know that the sentence does not tell them.
-    note: Option<&'static str>,
-}
-
-impl Word {
-    /// A string this crate can say.
-    const fn saying(named: &'static str, says: &'static str) -> Self {
-        Self {
-            named,
-            says,
-            note: None,
-        }
-    }
-
-    /// The same string, with something a translator has to be told.
-    const fn noting(self, note: &'static str) -> Self {
-        Self {
-            note: Some(note),
-            ..self
-        }
-    }
-
-    /// What names it.
-    ///
-    /// [`alo_strings::Key::unchecked`], because these are literals in this file
-    /// and `every_key_is_a_key` walks every one of them through the checked
-    /// door.
-    #[must_use]
-    pub fn key(&self) -> alo_strings::Key {
-        alo_strings::Key::unchecked(self.named)
-    }
-
-    /// What it says in the language the code is written in.
-    #[must_use]
-    pub const fn says(&self) -> &'static str {
-        self.says
-    }
-
-    /// What a translator needs to know that the sentence does not tell them.
-    #[must_use]
-    pub const fn note(&self) -> Option<&'static str> {
-        self.note
-    }
-}
+/// Lifted into `alo-strings` by item 9d, when `alo-appearance` would have been
+/// the third crate to write the same four fields. Re-exported here because this
+/// crate's own files, and the tests that read its list, name it as
+/// `crate::words::Word`.
+pub use alo_strings::Word;
 
 // ---------------------------------------------------------------------------
 // What a shortcut does — [`crate::Action`]. These are rows in a list, read by
@@ -419,12 +372,10 @@ pub const EVERY_WORD: [Word; 38] = [
 /// already holds one of these keys.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum WordsError {
-    /// A sentence that is not one.
+    /// A word that is not a phrase: a sentence that is not one, or a note that
+    /// could not be attached.
     #[error(transparent)]
-    Sentence(#[from] alo_strings::TemplateError),
-    /// A note that could not be attached.
-    #[error(transparent)]
-    Note(#[from] alo_strings::PhraseError),
+    Word(#[from] alo_strings::WordError),
     /// A key the vocabulary already has.
     #[error(transparent)]
     List(#[from] alo_strings::VocabularyError),
@@ -451,12 +402,7 @@ pub fn shortcut_words() -> Result<Vocabulary, WordsError> {
 /// first said what that string is.
 pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     for word in EVERY_WORD {
-        let phrase = Phrase::says(word.key(), word.says())?;
-        let phrase = match word.note() {
-            Some(note) => phrase.noting(note)?,
-            None => phrase,
-        };
-        vocabulary.says(phrase)?;
+        vocabulary.says(word.phrase()?)?;
     }
     Ok(())
 }
@@ -479,11 +425,11 @@ mod tests {
     fn every_key_is_a_key() {
         for word in EVERY_WORD {
             assert_eq!(
-                alo_strings::Key::named(word.named),
+                alo_strings::Key::named(word.named()),
                 Ok(word.key()),
                 "{}: {}",
-                word.named,
-                alo_strings::Key::named(word.named).unwrap_err()
+                word.named(),
+                alo_strings::Key::named(word.named()).unwrap_err()
             );
         }
     }
@@ -492,7 +438,7 @@ mod tests {
     /// declared second is a string nobody can reach.
     #[test]
     fn no_two_words_are_named_the_same() {
-        let named: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named).collect();
+        let named: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named()).collect();
         assert_eq!(named.len(), EVERY_WORD.len());
     }
 
@@ -501,7 +447,7 @@ mod tests {
     #[test]
     fn everything_this_crate_says_says_it_is_this_crate() {
         for word in EVERY_WORD {
-            assert_eq!(word.key().area(), "shortcuts", "{}", word.named);
+            assert_eq!(word.key().area(), "shortcuts", "{}", word.named());
         }
     }
 
@@ -535,8 +481,8 @@ mod tests {
             (TAKEN, "chord"),
             (CLASH, "chord"),
         ] {
-            let phrase = Phrase::says(word.key(), word.says()).unwrap();
-            assert!(phrase.source().has(gap), "{}", word.named);
+            let phrase = word.phrase().unwrap();
+            assert!(phrase.source().has(gap), "{}", word.named());
         }
         assert!(TAKEN.says().contains("{action}"));
     }
@@ -546,8 +492,8 @@ mod tests {
     #[test]
     fn a_label_names_nothing() {
         for word in [THE_AGENT, SUPER, PAGE_UP, THE_CLIPBOARD_COPIES] {
-            let phrase = Phrase::says(word.key(), word.says()).unwrap();
-            assert!(phrase.source().gaps().is_empty(), "{}", word.named);
+            let phrase = word.phrase().unwrap();
+            assert!(phrase.source().gaps().is_empty(), "{}", word.named());
         }
     }
 
@@ -585,7 +531,7 @@ mod tests {
             TAKEN,
             CLASH,
         ] {
-            assert!(word.note().is_some(), "{}", word.named);
+            assert!(word.note().is_some(), "{}", word.named());
         }
         assert!(
             HOME.note()

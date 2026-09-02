@@ -15,18 +15,47 @@
 //! the other way round — dark from 07:00 to 18:00 — is a person who works
 //! nights, and it works without a second kind of schedule.
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::time::TimeOfDay;
+use crate::unreadable::NotRead;
+use crate::words;
 
 /// Why two times are not a schedule.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`: the only road to words is [`ScheduleError::said`], and
+/// what a settings file that did not read writes is [`NotRead`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScheduleError {
     /// The same time twice.
-    #[error(
-        "give two different times — a day that turns dark and light at {0} is a day that never changes"
-    )]
     TheSameMoment(TimeOfDay),
+}
+
+impl ScheduleError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(self) -> Word {
+        match self {
+            Self::TheSameMoment(_) => words::THE_SAME_MOMENT,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    ///
+    /// The time goes in as the settings file writes it — `18:00`, on a
+    /// twenty-four hour clock — because that is what a person editing the file
+    /// is looking at. How a *person* is shown a time elsewhere belongs to their
+    /// region rather than to their language, and is not one of this crate's
+    /// strings.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::TheSameMoment(time) => Filling::of("time", time.to_string()),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// Light or dark.
@@ -114,10 +143,11 @@ struct Written {
 }
 
 impl TryFrom<Written> for Schedule {
-    type Error = ScheduleError;
+    type Error = NotRead;
 
     fn try_from(written: Written) -> Result<Self, Self::Error> {
         Self::checked(written.dark_from, written.light_from)
+            .map_err(|refused| NotRead::about(refused.word()))
     }
 }
 
@@ -173,6 +203,7 @@ impl From<Schedule> for Following {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// A time, spelled shortly enough to read a table of them.
     fn at(hour: u8, minute: u8) -> TimeOfDay {
@@ -231,18 +262,46 @@ mod tests {
             Schedule::checked(at(18, 0), at(18, 0)),
             Err(ScheduleError::TheSameMoment(at(18, 0)))
         );
+        let said = Schedule::checked(at(18, 0), at(18, 0))
+            .unwrap_err()
+            .said(&in_english());
         assert_eq!(
-            Schedule::checked(at(18, 0), at(18, 0))
-                .unwrap_err()
-                .to_string(),
-            "give two different times — a day that turns dark and light at 18:00 is a day that never changes"
+            said.text(),
+            "give two different times — a day that turns dark and light at 18:00 is a day that \
+             never changes"
         );
+        assert!(said.unfilled().is_empty());
+
+        let refused = serde_json::from_str::<Schedule>(
+            r#"{"dark_from":{"hour":18,"minute":0},"light_from":{"hour":18,"minute":0}}"#,
+        )
+        .unwrap_err();
         assert!(
-            serde_json::from_str::<Schedule>(
-                r#"{"dark_from":{"hour":18,"minute":0},"light_from":{"hour":18,"minute":0}}"#
-            )
-            .is_err()
+            refused
+                .to_string()
+                .contains("appearance.schedule.the-same-moment"),
+            "a file that did not read names the string rather than saying it: {refused}"
         );
+    }
+
+    /// The same refusal, read on a machine that has been translated — with the
+    /// time still written the way the settings file writes it.
+    #[test]
+    fn the_refusal_is_read_in_the_readers_language() {
+        let strings = translated(&[(
+            words::THE_SAME_MOMENT,
+            "geben Sie zwei verschiedene Zeiten an — ein Tag, der um {time} dunkel und hell wird, \
+             ändert sich nie",
+        )]);
+        let said = Schedule::checked(at(18, 0), at(18, 0))
+            .unwrap_err()
+            .said(&strings);
+        assert_eq!(
+            said.text(),
+            "geben Sie zwei verschiedene Zeiten an — ein Tag, der um 18:00 dunkel und hell wird, \
+             ändert sich nie"
+        );
+        assert!(said.is_translated());
     }
 
     /// Both kinds survive a settings file unchanged.

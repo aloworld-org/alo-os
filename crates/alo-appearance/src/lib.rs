@@ -27,36 +27,48 @@
 //! | [`shipped`] | What a machine looks like before anybody changes anything |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`appearance`] | The two resolved, and every question asked of them |
+//! | [`words`] | Every string this crate can say, and the English beside each |
+//! | [`unreadable`] | What a settings file that did not read says, where nobody can be asked for words |
 //!
 //! ```
 //! use alo_appearance::{
 //!     Accent, Appearance, Background, DisplayId, Following, Scheme, Shipped, TextScale,
-//!     TimeOfDay, Token,
+//!     TimeOfDay, Token, appearance_words,
 //! };
+//! use alo_strings::Strings;
+//!
+//! // What this machine reads. Nothing is translated here, so every answer
+//! // below is English and says so.
+//! let strings = Strings::of(appearance_words()?);
 //!
 //! let mut appearance = Appearance::shipped();
-//! let laptop = DisplayId::named("eDP-1")?;
-//! let projector = DisplayId::named("HDMI-1")?;
+//! let laptop = DisplayId::named("eDP-1").expect("a screen is named");
+//! let projector = DisplayId::named("HDMI-1").expect("a screen is named");
 //!
 //! // Dark after six, answered at a time that is given rather than read.
 //! appearance.follow(Following::from(Shipped::the_evening_schedule()));
-//! assert_eq!(appearance.scheme_at(TimeOfDay::checked(19, 30)?), Scheme::Dark);
-//! assert_eq!(appearance.scheme_at(TimeOfDay::checked(9, 0)?), Scheme::Light);
+//! let evening = TimeOfDay::checked(19, 30).expect("half past seven is a time");
+//! let morning = TimeOfDay::checked(9, 0).expect("nine is a time");
+//! assert_eq!(appearance.scheme_at(evening), Scheme::Dark);
+//! assert_eq!(appearance.scheme_at(morning), Scheme::Light);
 //!
 //! // One background, and a display can be an exception to it — so a screen
 //! // nobody has chosen for shows what the person chose, not what we chose.
-//! let navy = Background::from(alo_appearance::Token::Navy.colour());
+//! let navy = Background::from(Token::Navy.colour());
 //! appearance.set_background(navy.clone());
 //! assert_eq!(appearance.background_on(&projector), navy);
+//! assert_eq!(Token::Navy.said(&strings).text(), "Navy");
 //!
 //! // Text reaches the 200% EN 301 549 requires.
-//! appearance.set_text(TextScale::percent(200)?);
+//! appearance.set_text(TextScale::percent(200).expect("200% is the standard's floor"));
 //! assert_eq!(appearance.text().to_string(), "200%");
 //!
-//! // An accent follows light and dark, and terracotta is never one of them.
+//! // An accent follows light and dark, and terracotta is never one of them —
+//! // refused in a sentence the person can read, in the language they read it.
 //! appearance.set_accent(Accent::Rose);
-//! assert_eq!(appearance.accent_at(TimeOfDay::checked(19, 30)?), Accent::Rose.on(Scheme::Dark));
-//! assert!(Accent::of_colour(Token::Terracotta.colour()).is_err());
+//! assert_eq!(appearance.accent_at(evening), Accent::Rose.on(Scheme::Dark));
+//! let refused = Accent::of_colour(Token::Terracotta.colour()).unwrap_err();
+//! assert!(refused.said(&strings).text().contains("choose verdigris"));
 //!
 //! // Only the difference is written down.
 //! assert!(!appearance.changes().is_untouched());
@@ -104,6 +116,28 @@
 //! **Where the settings file is written, and when.** [`changes::Changes`] is
 //! serde, as `alo-shortcuts` is: which file it lives in and who writes it is the
 //! shell's, and the shell does not exist yet.
+//!
+//! # Nothing here says anything in English by itself
+//!
+//! Every string a person reads — the eleven colour names and the seventeen
+//! refusals — is declared in [`words`] and answered through `alo-strings`. No
+//! type in this crate has a `Display` that would put English on a screen: what
+//! replaces it is `said`, which answers with an `alo_strings::Said` that says
+//! whether anybody translated it.
+//!
+//! The two `Display` implementations that remain are deliberate, and neither is
+//! a sentence: [`Colour`] writes itself as `#102A43` and [`TextScale`] as
+//! `200%`, which is the spelling a settings file holds and a design tool uses.
+//! How a *number* or a *time* is written for a person to read belongs to their
+//! region rather than to their language — somebody reading Swedish in Finland
+//! writes a time the Finnish way — so it is not a string in this list, and
+//! [`TimeOfDay`] keeps its `18:00` for the same reason.
+//!
+//! **A refusal never depends on a string table.** A machine that was never given
+//! [`appearance_words`] refuses exactly what it refused before and answers with
+//! the key, marked, rather than with a sentence it invented. And a settings file
+//! that did not read writes the *key* of the refusal — [`unreadable::NotRead`] —
+//! because a deserialiser has no `Strings` to ask and never will.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -122,6 +156,11 @@ pub mod shipped;
 pub mod text;
 pub mod time;
 pub mod token;
+pub mod unreadable;
+pub mod words;
+
+#[cfg(test)]
+mod testing;
 
 pub use accent::{Accent, AccentError};
 pub use appearance::Appearance;
@@ -138,3 +177,5 @@ pub use shipped::{Shipped, THE_WALLPAPER};
 pub use text::{TextError, TextScale};
 pub use time::{TimeError, TimeOfDay};
 pub use token::Token;
+pub use unreadable::NotRead;
+pub use words::{Word, WordsError, appearance_words, declare_into};

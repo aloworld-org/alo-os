@@ -216,6 +216,30 @@ genuinely needs a list inside it, the list patterns are CLDR data like the plura
 rules and are read rather than recalled.
 **Date:** 2026-09-02
 
+### A deserialiser is required to have a sentence and has nobody to ask for one
+**Version:** `serde` 1, `#[serde(try_from = "…")]`, observed 2026-09-02.
+**Behaviour:** every value in this repository that a settings file holds is
+checked again on the way in, because a settings file is a thing a person edits —
+a colour, a screen's name, a rotation, a schedule, a text size, a time of day, a
+key combination. `serde` implements that with `try_from`, and it requires the
+error to have a `Display`, because it turns it into a message with
+`de::Error::custom`. That is exactly the thing our rule forbids: a `Display` on a
+user-facing refusal is an English sentence one `to_string()` away from a screen.
+And the deserialiser is the one caller that genuinely cannot obey the rule the
+other way either — it is handed a value and a format, never the language the
+person in front of the machine reads, and there is no argument to give it one.
+**Our response:** what a refusal writes at that point is the **key** of the
+string rather than the string. `alo-appearance`'s `NotRead` is that, shared by
+its six deserialisers, and `alo-shortcuts`' `Chord` has a private one of its own
+from item 9c. Whoever reports a settings file that did not read looks the key up
+and shows the same words a settings panel shows for the same refusal — one
+rendering, in the reader's own language, rather than an English line in a log
+beside a translated line on a screen. The refusal itself is unchanged: the same
+files are refused as before, and `said(&Strings)` is still the only road to
+words. What is given up is `std::error::Error` on ten types that were never
+errors a programmer handles.
+**Date:** 2026-09-02
+
 ## Models
 
 Open-weight models in the catalogue have their own personalities: refusing

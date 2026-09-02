@@ -19,6 +19,7 @@
 //! | [`template`] | A sentence with named gaps in it |
 //! | [`filling`] | What goes into the gaps |
 //! | [`phrase`] | One string the code can say: its key, its English, its note to a translator |
+//! | [`word`] | The same thing as a crate writes it: three literals in a `const` |
 //! | [`plural`] | One string that counts something, and the shapes it takes |
 //! | [`form`] | The six shapes a counted sentence takes |
 //! | [`cldr`] | Which form a language uses for which number, read from CLDR |
@@ -167,12 +168,14 @@
 //! it, not a form to pick as though the number had been whole; [`cldr`] says
 //! what it would cost.
 //!
-//! **The strings of the crates that have not moved.** `alo-files` has moved
-//! (item 9b) and declares its own words; `alo-shortcuts` and `alo-appearance`
-//! still hold their English in their own labels and error types, and moving
-//! each of them onto this crate is its own item — 9c and 9d — because a
-//! half-moved crate reads exactly like a finished one. `alo-capability` and
-//! `alo-models` are 9e, and should follow the other two.
+//! **The strings of the crates that have not moved.** `alo-files` (item 9b),
+//! `alo-shortcuts` (9c) and `alo-appearance` (9d) have moved and declare their
+//! own words, each in a `words` module built out of [`Word`]. `alo-capability`
+//! and `alo-models` still hold their English in their own error types and
+//! sentences; moving them is item 9e, which was left until last because the
+//! other three are the crates whose strings a person meets every day. Until it
+//! is done, a `Sentence` a person approves is rendered in English at the moment
+//! the call is made — 9e is where the record and the screen become one string.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -190,6 +193,7 @@ pub mod template;
 pub mod translation;
 pub mod union;
 pub mod vocabulary;
+pub mod word;
 
 pub use cldr::Counting;
 pub use filling::Filling;
@@ -205,3 +209,4 @@ pub use template::{Filled, Template, TemplateError};
 pub use translation::{Amiss, Translation, Wrong, Wrongs};
 pub use union::{OFFICIAL, Official, THE_SOURCE};
 pub use vocabulary::{Vocabulary, VocabularyError};
+pub use word::{Word, WordError};

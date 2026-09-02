@@ -15,17 +15,44 @@
 
 use std::fmt;
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
+use crate::unreadable::NotRead;
+use crate::words;
+
 /// Why an hour and a minute are not a time of day.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`: the only road to words is [`TimeError::said`], and
+/// what a settings file that did not read writes is [`NotRead`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TimeError {
     /// An hour past 23.
-    #[error("{0} is not an hour of the day — the day runs from 0 to 23")]
     NoSuchHour(u8),
     /// A minute past 59.
-    #[error("{0} is not a minute of the hour — an hour runs from 0 to 59")]
     NoSuchMinute(u8),
+}
+
+impl TimeError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(self) -> Word {
+        match self {
+            Self::NoSuchHour(_) => words::NO_SUCH_HOUR,
+            Self::NoSuchMinute(_) => words::NO_SUCH_MINUTE,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::NoSuchHour(hour) => Filling::of("hour", hour.to_string()),
+            Self::NoSuchMinute(minute) => Filling::of("minute", minute.to_string()),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// A time of day on the clock the person is looking at.
@@ -97,10 +124,11 @@ struct Written {
 }
 
 impl TryFrom<Written> for TimeOfDay {
-    type Error = TimeError;
+    type Error = NotRead;
 
     fn try_from(written: Written) -> Result<Self, Self::Error> {
         Self::checked(written.hour, written.minute)
+            .map_err(|refused| NotRead::about(refused.word()))
     }
 }
 
@@ -120,6 +148,7 @@ impl From<TimeOfDay> for Written {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// Both ends of the day are ordinary times, and the middle of the night is
     /// not a special case.
@@ -156,16 +185,41 @@ mod tests {
         assert_eq!(serde_json::from_str::<TimeOfDay>(&written).unwrap(), six);
     }
 
-    /// A refusal says the range rather than the number.
+    /// A refusal says the range rather than the number, in the language the
+    /// person reads.
     #[test]
     fn a_refusal_says_what_the_range_is() {
+        let strings = in_english();
         assert_eq!(
-            TimeOfDay::checked(24, 0).unwrap_err().to_string(),
+            TimeOfDay::checked(24, 0).unwrap_err().said(&strings).text(),
             "24 is not an hour of the day — the day runs from 0 to 23"
         );
         assert_eq!(
-            TimeOfDay::checked(6, 60).unwrap_err().to_string(),
+            TimeOfDay::checked(6, 60).unwrap_err().said(&strings).text(),
             "60 is not a minute of the hour — an hour runs from 0 to 59"
+        );
+
+        let auf_deutsch = translated(&[(
+            words::NO_SUCH_HOUR,
+            "{hour} ist keine Stunde des Tages — der Tag läuft von 0 bis 23",
+        )]);
+        let said = TimeOfDay::checked(24, 0).unwrap_err().said(&auf_deutsch);
+        assert_eq!(
+            said.text(),
+            "24 ist keine Stunde des Tages — der Tag läuft von 0 bis 23"
+        );
+        assert!(said.is_translated());
+        assert!(said.unfilled().is_empty());
+    }
+
+    /// A settings file holding a twenty-fifth hour writes the key of the
+    /// refusal, because a deserialiser has no `Strings` to ask.
+    #[test]
+    fn a_file_that_did_not_read_names_the_string_rather_than_saying_it() {
+        let refused = serde_json::from_str::<TimeOfDay>(r#"{"hour":24,"minute":0}"#).unwrap_err();
+        assert!(
+            refused.to_string().contains("appearance.time.no-such-hour"),
+            "{refused}"
         );
     }
 }

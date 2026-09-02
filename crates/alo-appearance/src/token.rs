@@ -16,10 +16,20 @@
 //! adopting it as an accent, and ADR 0010 is where that was settled: the accents
 //! a person chooses from are [`crate::accent`]'s five, none of which is in this
 //! list, and asking for one of these as an accent is refused in words.
+//!
+//! **In the language they read.** A [`Token`] has no name in English here: what
+//! it has is [`Token::word`], the declaration in [`crate::words`], and
+//! [`Token::said`], which answers in the reader's own language and says whether
+//! anybody translated it. A colour name is the hardest kind of string to
+//! translate and the easiest to get silently wrong — several languages have no
+//! ordinary word for terracotta — so each of the six carries a note describing
+//! the colour rather than assuming the word travels.
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::colour::Colour;
+use crate::words;
 
 /// One of the colours alo OS is built out of.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -62,22 +72,31 @@ impl Token {
         }
     }
 
-    /// What this colour is called where a person picks it.
-    ///
-    /// English, and one of the strings item 9 in `docs/autonomy/QUEUE.md`
-    /// externalises. A colour name is a translator's judgement rather than a
-    /// translator's typing: several languages have no ordinary word for
-    /// terracotta, and the one they reach for may not be the colour.
+    /// The string this crate declares for it: the key a translator's file is
+    /// sorted by, and the English beside it.
     #[must_use]
-    pub const fn name(self) -> &'static str {
+    pub const fn word(self) -> Word {
         match self {
-            Self::Navy => "Navy",
-            Self::Terracotta => "Terracotta",
-            Self::Cream => "Cream",
-            Self::Porcelain => "Porcelain",
-            Self::Charcoal => "Charcoal",
-            Self::WarmStone => "Warm stone",
+            Self::Navy => words::NAVY,
+            Self::Terracotta => words::TERRACOTTA,
+            Self::Cream => words::CREAM,
+            Self::Porcelain => words::PORCELAIN,
+            Self::Charcoal => words::CHARCOAL,
+            Self::WarmStone => words::WARM_STONE,
         }
+    }
+
+    /// What this colour is called where a person picks it, in the language they
+    /// read.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not. A
+    /// `Strings` that was never given [`crate::appearance_words`] answers with
+    /// the key, marked, and `Said::is_a_bug` — which is the honest answer to
+    /// *the shell forgot to declare what this crate can say*, and is not
+    /// something this crate can paper over with a word of its own.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
     }
 }
 
@@ -88,6 +107,7 @@ impl Token {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// **The palette is the one in `docs/design/figma-brief.md`**, and this test
     /// is what stops the two from drifting apart: a colour changed here without
@@ -113,12 +133,34 @@ mod tests {
     /// picker with two identical entries is a picker a person cannot use.
     #[test]
     fn every_colour_is_named_and_distinct() {
+        let strings = in_english();
         for (at, token) in Token::ALL.iter().enumerate() {
-            assert!(!token.name().is_empty());
+            let said = token.said(&strings);
+            assert!(!said.text().is_empty(), "{token:?}");
+            assert!(!said.is_a_bug(), "{token:?} is not declared");
             for other in Token::ALL.iter().skip(at.saturating_add(1)) {
                 assert_ne!(token.colour(), other.colour());
-                assert_ne!(token.name(), other.name());
+                assert_ne!(said.text(), other.said(&strings).text());
             }
         }
+    }
+
+    /// **A colour is named in the language of whoever is picking it.** German
+    /// has an ordinary word for one of these and a borrowed one for the other,
+    /// which is the pair the notes in [`crate::words`] were written for.
+    #[test]
+    fn a_colour_is_named_in_the_readers_language() {
+        let strings = translated(&[
+            (words::NAVY, "Marineblau"),
+            (words::WARM_STONE, "Warmer Stein"),
+        ]);
+        assert_eq!(Token::Navy.said(&strings).text(), "Marineblau");
+        assert!(Token::Navy.said(&strings).is_translated());
+
+        // And the one nobody translated is still English, and says it is.
+        let untranslated = Token::Terracotta.said(&strings);
+        assert_eq!(untranslated.text(), "Terracotta");
+        assert!(!untranslated.is_translated());
+        assert!(!untranslated.is_a_bug());
     }
 }

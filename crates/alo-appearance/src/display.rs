@@ -11,19 +11,49 @@
 //! display nobody has chosen for yet, and gets the background the person set for
 //! everywhere.
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
+use crate::unreadable::NotRead;
+use crate::words;
+
 /// Why a piece of text does not name a display.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`: the only road to words is [`DisplayError::said`], and
+/// what a settings file that did not read writes is [`NotRead`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DisplayError {
     /// Nothing at all.
-    #[error("name the display — it is the name the shell shows for the screen")]
     Unnamed,
     /// A name with a space at one end, which reads as the same name and is not.
-    #[error(
-        "{0:?} begins or ends with a space, and a display is matched exactly — give the name without it"
-    )]
     Spaced(String),
+}
+
+impl DisplayError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(&self) -> Word {
+        match *self {
+            Self::Unnamed => words::DISPLAY_UNNAMED,
+            Self::Spaced(_) => words::DISPLAY_SPACED,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    ///
+    /// The name goes in **quoted**, because the whole of what is wrong with it
+    /// is a space nobody can see. Where the quotation marks come from is this
+    /// crate's rather than the sentence's: a sentence that carried them would be
+    /// a sentence a translator had to keep them in.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::Unnamed => Filling::nothing(),
+            Self::Spaced(name) => Filling::of("name", format!("{name:?}")),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// What one display is called.
@@ -63,10 +93,10 @@ impl DisplayId {
 }
 
 impl TryFrom<String> for DisplayId {
-    type Error = DisplayError;
+    type Error = NotRead;
 
     fn try_from(name: String) -> Result<Self, Self::Error> {
-        Self::named(&name)
+        Self::named(&name).map_err(|refused| NotRead::about(refused.word()))
     }
 }
 
@@ -83,6 +113,7 @@ impl From<DisplayId> for String {
 )]
 mod tests {
     use super::*;
+    use crate::testing::in_english;
 
     /// The name is kept as it was given, and survives a settings file.
     #[test]
@@ -123,5 +154,23 @@ mod tests {
             Err(DisplayError::Spaced("DP-1 ".to_owned()))
         );
         assert!(serde_json::from_str::<DisplayId>(r#""""#).is_err());
+    }
+
+    /// **The refusal shows the space.** A name whose problem is invisible is
+    /// quoted where it goes into the sentence, so a person can see the thing
+    /// they have to remove.
+    #[test]
+    fn the_refusal_shows_the_space_nobody_can_see() {
+        let strings = in_english();
+        let said = DisplayId::named("DP-1 ").unwrap_err().said(&strings);
+        assert!(said.text().contains("\"DP-1 \""), "{said}");
+        assert!(said.unfilled().is_empty(), "{said}");
+        assert!(!said.is_a_bug());
+
+        let unnamed = DisplayError::Unnamed.said(&strings);
+        assert_eq!(
+            unnamed.text(),
+            "name the display — it is the name the shell shows for the screen"
+        );
     }
 }

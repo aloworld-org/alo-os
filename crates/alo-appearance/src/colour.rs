@@ -11,20 +11,48 @@
 
 use std::fmt;
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
+
+use crate::unreadable::NotRead;
+use crate::words;
 
 /// Why a piece of text is not a colour.
 ///
 /// Both say the shape a colour has, because somebody seeing one of these is
 /// looking at a file they typed into and wants to know what to type instead.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`: the only road to words is [`ColourError::said`]. What
+/// a settings file that did not read writes instead is [`NotRead`], which is the
+/// key of the refusal rather than an English sentence nothing could translate.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ColourError {
     /// Not a hash and six digits.
-    #[error("a colour is a hash and six hexadecimal digits, as in #102A43 — {0} is not")]
     NotAColour(String),
     /// A character that is not a hexadecimal digit.
-    #[error("{0} is not a hexadecimal digit — a colour uses 0 to 9 and A to F, as in #102A43")]
     NotADigit(char),
+}
+
+impl ColourError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(&self) -> Word {
+        match *self {
+            Self::NotAColour(_) => words::NOT_A_COLOUR,
+            Self::NotADigit(_) => words::NOT_A_DIGIT,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::NotAColour(text) => Filling::of("text", text.clone()),
+            Self::NotADigit(character) => Filling::of("character", character.to_string()),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// One colour.
@@ -120,10 +148,10 @@ impl fmt::Display for Colour {
 }
 
 impl TryFrom<String> for Colour {
-    type Error = ColourError;
+    type Error = NotRead;
 
     fn try_from(text: String) -> Result<Self, Self::Error> {
-        Self::written(&text)
+        Self::written(&text).map_err(|refused| NotRead::about(refused.word()))
     }
 }
 
@@ -140,6 +168,7 @@ impl From<Colour> for String {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// What is written is what comes back, in the spelling the design tokens
     /// use.
@@ -198,13 +227,51 @@ mod tests {
     /// mid-edit and wants the next thing to type.
     #[test]
     fn a_refusal_says_what_a_colour_looks_like() {
+        let strings = in_english();
         assert_eq!(
-            Colour::written("blue").unwrap_err().to_string(),
+            Colour::written("blue").unwrap_err().said(&strings).text(),
             "a colour is a hash and six hexadecimal digits, as in #102A43 — blue is not"
         );
         assert_eq!(
-            Colour::written("#10ZZ43").unwrap_err().to_string(),
+            Colour::written("#10ZZ43")
+                .unwrap_err()
+                .said(&strings)
+                .text(),
             "Z is not a hexadecimal digit — a colour uses 0 to 9 and A to F, as in #102A43"
+        );
+    }
+
+    /// **And it says it in the language the person reads**, with what they
+    /// actually typed in the middle of it — which is not translated, because it
+    /// came off their own settings file.
+    #[test]
+    fn a_refusal_is_read_in_the_readers_language() {
+        let strings = translated(&[(
+            words::NOT_A_COLOUR,
+            "eine Farbe ist ein Rautezeichen und sechs Hexadezimalziffern, etwa #102A43 — {text} \
+             ist keine",
+        )]);
+        let said = Colour::written("blau").unwrap_err().said(&strings);
+        assert_eq!(
+            said.text(),
+            "eine Farbe ist ein Rautezeichen und sechs Hexadezimalziffern, etwa #102A43 — blau \
+             ist keine"
+        );
+        assert!(said.is_translated());
+        assert!(said.unfilled().is_empty());
+    }
+
+    /// **A settings file that did not read writes the key, not a sentence.**
+    /// A deserialiser has no `Strings` and never will, so what it writes is what
+    /// whoever reports the file looks up to show the same words a panel shows.
+    #[test]
+    fn a_file_that_did_not_read_names_the_string_rather_than_saying_it() {
+        let refused = serde_json::from_str::<Colour>(r#""blue""#).unwrap_err();
+        assert!(
+            refused
+                .to_string()
+                .contains("appearance.colour.not-a-colour"),
+            "{refused}"
         );
     }
 }

@@ -21,24 +21,48 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::picture::Fitting;
+use crate::unreadable::NotRead;
+use crate::words;
 
 /// The shortest a picture may stay on the screen.
 const AT_LEAST: Duration = Duration::from_secs(60);
 
 /// Why a rotating background cannot be used.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`: the only road to words is [`RotatingError::said`], and
+/// what a settings file that did not read writes is [`NotRead`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RotatingError {
     /// A folder given as a relative path.
-    #[error(
-        "give the whole path to {0}, starting from the top of the disk — where a relative path leads depends on where the shell was started from"
-    )]
     NotAWholePath(PathBuf),
     /// A rotation faster than a minute.
-    #[error("leave each picture up for at least a minute — anything quicker is a flicker")]
     TooQuick,
+}
+
+impl RotatingError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(&self) -> Word {
+        match *self {
+            Self::NotAWholePath(_) => words::FOLDER_NOT_A_WHOLE_PATH,
+            Self::TooQuick => words::TOO_QUICK,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::NotAWholePath(folder) => Filling::of("folder", folder.display().to_string()),
+            Self::TooQuick => Filling::nothing(),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// How often the picture changes.
@@ -88,10 +112,10 @@ impl Every {
 }
 
 impl TryFrom<Duration> for Every {
-    type Error = RotatingError;
+    type Error = NotRead;
 
     fn try_from(long: Duration) -> Result<Self, Self::Error> {
-        Self::checked(long)
+        Self::checked(long).map_err(|refused| NotRead::about(refused.word()))
     }
 }
 
@@ -177,6 +201,7 @@ impl Rotating {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// A folder that exists on no machine: nothing here reads a disk.
     fn folder() -> PathBuf {
@@ -264,6 +289,51 @@ mod tests {
         assert_eq!(
             Rotating::folder(relative.clone(), ten_minutes()),
             Err(RotatingError::NotAWholePath(relative))
+        );
+    }
+
+    /// **Both refusals are read in the reader's language**, and the one about a
+    /// folder names the folder — which came off their disk and is not
+    /// translated. The flicker one names nothing, because what is wrong is the
+    /// rule rather than the value.
+    #[test]
+    fn the_refusals_are_read_in_the_readers_language() {
+        let strings = in_english();
+        let flicker = Every::minutes(0).unwrap_err().said(&strings);
+        assert_eq!(
+            flicker.text(),
+            "leave each picture up for at least a minute — anything quicker is a flicker"
+        );
+        assert!(flicker.unfilled().is_empty());
+
+        let relative = Rotating::folder(PathBuf::from("Pictures"), ten_minutes())
+            .unwrap_err()
+            .said(&strings);
+        assert!(relative.text().contains("Pictures"), "{relative}");
+        assert!(relative.unfilled().is_empty(), "{relative}");
+
+        let auf_deutsch = translated(&[(
+            words::TOO_QUICK,
+            "lassen Sie jedes Bild mindestens eine Minute stehen — alles Schnellere flackert",
+        )]);
+        let said = Every::minutes(0).unwrap_err().said(&auf_deutsch);
+        assert_eq!(
+            said.text(),
+            "lassen Sie jedes Bild mindestens eine Minute stehen — alles Schnellere flackert"
+        );
+        assert!(said.is_translated());
+    }
+
+    /// A settings file that asked for a flicker writes the key of the refusal,
+    /// because a deserialiser has no `Strings` to ask.
+    #[test]
+    fn a_file_that_did_not_read_names_the_string_rather_than_saying_it() {
+        let refused = serde_json::from_str::<Every>(r#"{"secs":1,"nanos":0}"#).unwrap_err();
+        assert!(
+            refused
+                .to_string()
+                .contains("appearance.rotating.too-quick"),
+            "{refused}"
         );
     }
 

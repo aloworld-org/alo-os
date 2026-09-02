@@ -325,7 +325,7 @@ mod tests {
                     appearance.accent_at(at(hour)),
                     Token::Terracotta.colour(),
                     "{} at {hour} o'clock",
-                    accent.name()
+                    accent.word().says()
                 );
             }
         }

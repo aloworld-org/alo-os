@@ -37,66 +37,15 @@
 //! translated, a name in a message came off somebody's disk — the note says so.
 //! A note nobody wrote is a sentence somebody guesses at.
 
-use alo_strings::{Key, Phrase, Plural, Vocabulary};
+use alo_strings::{Key, Plural, Vocabulary};
 
-/// One string this crate can say.
+/// One string a crate can say.
 ///
-/// The key and the English live together, because a key with its sentence
-/// somewhere else is two files to change and one of them will be forgotten.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Word {
-    /// What names it.
-    named: &'static str,
-    /// What it says in the language the code is written in.
-    says: &'static str,
-    /// What a translator needs to know that the sentence does not tell them.
-    note: Option<&'static str>,
-}
-
-impl Word {
-    /// A string this crate can say.
-    const fn saying(named: &'static str, says: &'static str) -> Self {
-        Self {
-            named,
-            says,
-            note: None,
-        }
-    }
-
-    /// The same string, with something a translator has to be told.
-    const fn noting(self, note: &'static str) -> Self {
-        Self {
-            note: Some(note),
-            ..self
-        }
-    }
-
-    /// What names it.
-    ///
-    /// [`Key::unchecked`], because these are literals in this file and
-    /// [`every_key_is_a_key`](self#tests) walks every one of them through the
-    /// checked door.
-    #[must_use]
-    pub fn key(&self) -> Key {
-        Key::unchecked(self.named)
-    }
-
-    /// What it says in the language the code is written in.
-    ///
-    /// This is what [`crate::verbs`] declares a verb with, so that the sentence
-    /// a person approves and the sentence a translator is handed cannot be two
-    /// different sentences.
-    #[must_use]
-    pub const fn says(&self) -> &'static str {
-        self.says
-    }
-
-    /// What a translator needs to know that the sentence does not tell them.
-    #[must_use]
-    pub const fn note(&self) -> Option<&'static str> {
-        self.note
-    }
-}
+/// Lifted into `alo-strings` by item 9d, when `alo-appearance` would have been
+/// the third crate to write the same four fields. Re-exported here because this
+/// crate's own files, and the tests that read its list, name it as
+/// `crate::words::Word`.
+pub use alo_strings::Word;
 
 /// One string this crate can say about a number of things.
 ///
@@ -552,12 +501,10 @@ pub const EVERY_WORD: [Word; 41] = [
 /// already holds one of these keys.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum WordsError {
-    /// A sentence that is not one.
+    /// A word that is not a phrase: a sentence that is not one, or a note that
+    /// could not be attached.
     #[error(transparent)]
-    Sentence(#[from] alo_strings::TemplateError),
-    /// A note that could not be attached.
-    #[error(transparent)]
-    Note(#[from] alo_strings::PhraseError),
+    Word(#[from] alo_strings::WordError),
     /// A countable string that could not be declared.
     #[error(transparent)]
     Counting(#[from] alo_strings::PluralError),
@@ -587,12 +534,7 @@ pub fn file_words() -> Result<Vocabulary, WordsError> {
 /// first said what that string is.
 pub fn declare_into(vocabulary: &mut Vocabulary) -> Result<(), WordsError> {
     for word in EVERY_WORD {
-        let phrase = Phrase::says(word.key(), word.says())?;
-        let phrase = match word.note() {
-            Some(note) => phrase.noting(note)?,
-            None => phrase,
-        };
-        vocabulary.says(phrase)?;
+        vocabulary.says(word.phrase()?)?;
     }
     vocabulary.counts(
         Plural::counting(TOO_BIG.key(), TOO_BIG.number, TOO_BIG.one, TOO_BIG.other)?
@@ -619,11 +561,11 @@ mod tests {
     fn every_key_is_a_key() {
         for word in EVERY_WORD {
             assert_eq!(
-                Key::named(word.named),
+                Key::named(word.named()),
                 Ok(word.key()),
                 "{}: {}",
-                word.named,
-                Key::named(word.named).unwrap_err()
+                word.named(),
+                Key::named(word.named()).unwrap_err()
             );
         }
         assert_eq!(Key::named(TOO_BIG.named), Ok(TOO_BIG.key()));
@@ -633,7 +575,7 @@ mod tests {
     /// declared second is a string nobody can reach.
     #[test]
     fn no_two_words_are_named_the_same() {
-        let named: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named).collect();
+        let named: BTreeSet<&str> = EVERY_WORD.iter().map(|word| word.named()).collect();
         assert_eq!(named.len(), EVERY_WORD.len());
         assert!(!named.contains(TOO_BIG.named));
     }
@@ -643,7 +585,7 @@ mod tests {
     #[test]
     fn everything_this_crate_says_says_it_is_this_crate() {
         for word in EVERY_WORD {
-            assert_eq!(word.key().area(), "files", "{}", word.named);
+            assert_eq!(word.key().area(), "files", "{}", word.named());
         }
         assert_eq!(TOO_BIG.key().area(), "files");
     }
@@ -700,7 +642,7 @@ mod tests {
             UNREADABLE,
             ARCHIVE_FOLDER_NAME,
         ] {
-            assert!(word.note().is_some(), "{}", word.named);
+            assert!(word.note().is_some(), "{}", word.named());
         }
         assert!(!TOO_BIG.note.is_empty());
     }

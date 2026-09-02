@@ -15,27 +15,53 @@
 
 use std::path::{Component, Path, PathBuf};
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
+
+use crate::words;
 
 /// Why a picture cannot be used as a background.
 ///
 /// Each says what to give instead, because the person is in the middle of
-/// picking a picture.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+/// picking a picture. There is no `Display`: the only road to words is
+/// [`PictureError::said`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PictureError {
     /// A shipped wallpaper with no name.
-    #[error("name the wallpaper — it is how the image is asked for the picture it shipped")]
     Unnamed,
     /// A shipped wallpaper whose name is a path.
-    #[error(
-        "{0} is a path, and a wallpaper that came with alo OS is named rather than pathed — use your own picture instead if it is a file on this disk"
-    )]
     NameIsAPath(String),
     /// A person's picture, given as a relative path.
-    #[error(
-        "give the whole path to {0}, starting from the top of the disk — where a relative path leads depends on where the shell was started from"
-    )]
     NotAWholePath(PathBuf),
+}
+
+impl PictureError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(&self) -> Word {
+        match *self {
+            Self::Unnamed => words::PICTURE_UNNAMED,
+            Self::NameIsAPath(_) => words::NAME_IS_A_PATH,
+            Self::NotAWholePath(_) => words::PICTURE_NOT_A_WHOLE_PATH,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    ///
+    /// A path is shown the way this machine writes one. It came off somebody's
+    /// own disk, so it is not translated — and a name this crate could not show
+    /// is not a case that arises here, because a settings file that held one
+    /// would have been refused as a path before it reached a screen.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::Unnamed => Filling::nothing(),
+            Self::NameIsAPath(name) => Filling::of("name", name.clone()),
+            Self::NotAWholePath(path) => Filling::of("path", path.display().to_string()),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// Which picture: one alo OS shipped, or one of the person's own.
@@ -155,6 +181,7 @@ impl Picture {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// The absolute path a test uses, spelled for whichever machine is running
     /// it: this crate touches no disk, so nothing here has to exist.
@@ -211,19 +238,41 @@ mod tests {
         );
     }
 
-    /// A refusal says what to give instead.
+    /// A refusal says what to give instead, and names the picture it is about.
     #[test]
     fn a_refusal_says_what_to_give_instead() {
+        let strings = in_english();
         assert_eq!(
-            Picture::shipped("").unwrap_err().to_string(),
+            Picture::shipped("").unwrap_err().said(&strings).text(),
             "name the wallpaper — it is how the image is asked for the picture it shipped"
         );
+        let relative = Picture::file(PathBuf::from("harbour.jpg"))
+            .unwrap_err()
+            .said(&strings);
         assert!(
-            Picture::file(PathBuf::from("harbour.jpg"))
-                .unwrap_err()
-                .to_string()
+            relative
+                .text()
                 .contains("starting from the top of the disk")
         );
+        assert!(relative.text().contains("harbour.jpg"));
+        assert!(relative.unfilled().is_empty(), "{relative}");
+    }
+
+    /// **The refusal is read in the reader's language, and the file name in it
+    /// is not.** A name off somebody's own disk is theirs, whatever language the
+    /// sentence around it is in.
+    #[test]
+    fn a_refusal_is_read_in_the_readers_language() {
+        let strings = translated(&[(
+            words::NAME_IS_A_PATH,
+            "{name} ist ein Pfad; ein mitgeliefertes Hintergrundbild hat einen Namen — wählen Sie \
+             Ihr eigenes Bild, wenn es eine Datei auf dieser Festplatte ist",
+        )]);
+        let said = Picture::shipped("../../etc/shadow")
+            .unwrap_err()
+            .said(&strings);
+        assert!(said.text().starts_with("../../etc/shadow ist ein Pfad"));
+        assert!(said.is_translated());
     }
 
     /// A picture survives a settings file unchanged.

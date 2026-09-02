@@ -12,6 +12,24 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The colours you make your machine out of can now be named in your own
+  language, and so can everything alo OS says when a value you chose cannot be
+  used — a colour that is not written the way a colour is written, a screen whose
+  name has a space on the end of it, a background set to change faster than the
+  eye can follow, a schedule that turns dark and light at the same minute, a text
+  size past either end of what the screen can show. The colour names are the part
+  worth saying twice: they are single words, they are what you pick from rather
+  than read once, and several of them have no ordinary word in most languages —
+  so every one carries a note describing the colour rather than assuming the
+  English word travels. German reads *Grünspan* where English borrowed
+  *verdigris*, and *Anthrazit* where English named a grey after burnt wood, and
+  neither list could have been reached from the other word by word. A refusal and
+  the colour inside it are now in one language, so a German machine does not put
+  an English colour in the middle of a German sentence. Nothing you have set
+  changes: the settings file is written exactly as it was, and a machine with no
+  translations loaded refuses exactly what it refused before and shows the same
+  English — while saying that is what it did.
+
 - The keyboard shortcuts can now be read in your own language — every row in the
   list, every key named in it, and everything alo OS says when a combination
   cannot be a shortcut. That includes the keys themselves, which is the part

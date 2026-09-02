@@ -120,8 +120,10 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       · Built: `alo-appearance` — background per display, light and dark, text
       scaling, and the accent set as working code: five hues, each value
       measured against the ground it is drawn on, terracotta unreachable rather
-      than refused · Owed: the Settings panel, the wallpapers themselves, and
-      the mark and word that must appear wherever the agent's colour does
+      than refused; and every word of it readable in the reader's own language
+      rather than in English · Owed: the Settings panel, the wallpapers
+      themselves, and the mark and word that must appear wherever the agent's
+      colour does
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
@@ -144,13 +146,18 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       what the system says, the 24 languages listed each in its own language,
       English unable to hide, and a sentence that counts something counted with
       its reader's own plural rules, read from CLDR rather than recalled; and
-      two crates whose own English has moved onto it — `alo-files` (every file
+      three crates whose own English has moved onto it — `alo-files` (every file
       refusal, the six verbs, and the sentence a person approves before a file
-      is renamed, moved or archived) and `alo-shortcuts` (every row of the
+      is renamed, moved or archived), `alo-shortcuts` (every row of the
       shortcuts panel, and every key named the way the reader's own keyboard
-      prints it rather than the way an English one does)
-      · Owed: a shell to translate, the crates still holding their own English
-      (9d–9e), and every translation — there are none yet
+      prints it rather than the way an English one does) and `alo-appearance`
+      (the eleven colour names a person picks from, each with the note a
+      translator needs where the word does not travel, and every refusal about a
+      value they chose)
+      · Owed: a shell to translate, the two crates still holding their own
+      English (9e — `alo-capability` and `alo-models`, which is also where the
+      sentence a person approves stops being rendered in English at the moment
+      the call is made), and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

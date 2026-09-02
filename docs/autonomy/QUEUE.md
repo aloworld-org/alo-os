@@ -44,12 +44,12 @@ nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
 
-Two edges cross that: **`alo-files` depends on `alo-strings`** since item 9b and
-**`alo-shortcuts` does** since item 9c, because those are the crates that have
-moved their English onto it. `alo-strings` still depends on nothing, and the
-direction is the one every other edge here takes — a crate that says something
-reaches the crate that knows how things are said, never the reverse. 9d adds the
-same edge from `alo-appearance`.
+Three edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
+**`alo-shortcuts` does** since 9c and **`alo-appearance` does** since 9d,
+because those are the crates that have moved their English onto it.
+`alo-strings` still depends on nothing, and the direction is the one every other
+edge here takes — a crate that says something reaches the crate that knows how
+things are said, never the reverse.
 
 | | |
 |---|---|
@@ -545,29 +545,45 @@ deny list.** Two patterns later items must follow:
   The stored format did not move: the settings file is written exactly as
   before, and the two serde tests say so.
 
-- [ ] **9d. `alo-appearance` onto `alo-strings`** — short but awkward:
-  `Token::name`, `Accent::name`, the three `AccentError` sentences, the two
-  `ColourError` ones, the three `PictureError` ones, `RotatingError`,
-  `DisplayError`, `ScheduleError`, `TimeError` and `TextError`.
-  `Token::name` is the awkward one and its note is already drafted in
-  `alo-strings`' integration test — several languages have no ordinary word for
-  terracotta and the loanword a translator reaches for may name a different
-  colour. `Accent::name` is the same problem five more times: verdigris is the
-  colour of weathered copper, said with two words in some languages and with
-  none in others, and these are names a person picks from a list rather than
-  reads once. Two things in that crate are *not* on the list and are deliberately
-  not: a time of day is written `18:00` in the settings file whatever the region
-  does, and how a person is *shown* a time is the region's business rather than
-  a translated string.
+- [x] **9d. `alo-appearance` onto `alo-strings`** — the eleven names a person
+  picks a colour from, and every refusal about a value they chose. Three new
+  files in `crates/alo-appearance`: `words.rs` (28 phrases, the English beside
+  each key, and a note on every one of them), `unreadable.rs` (`NotRead` — what
+  a settings file that did not read says, where nobody can be asked for words)
+  and `testing.rs` (the fixture the other files' tests are written against).
+  `Token`, `Accent` and all eight error types lost their `name` or their
+  `Display` and gained `word` and `said`. `Word` moved into `alo-strings` as
+  `word.rs` and all three declaring crates now use it. 98 unit tests (was 75), 8
+  new integration tests; 635 tests and 20 doctests across the workspace, clippy
+  clean.
 
-  **It writes the third `Word`, and that is where the type should move.** 9b and
-  9c each declared their own — the same four fields and the same
-  `Key::unchecked` — and two copies were not yet a pattern. A third is, so 9d
-  lifts `Word` into `alo-strings` beside `Phrase` and has all three crates
-  declare from it, rather than adding a third copy and leaving somebody else to
-  find them. It is additive to `alo-strings` and it touches `alo-files` and
-  `alo-shortcuts` in the same change, which is small: neither crate's constants
-  move, only where the type they are is written down.
+  **A colour name is the one string that carries none of itself.** A sentence
+  can be translated from its own words; *verdigris* cannot, and neither can
+  *terracotta*, *charcoal* or *warm stone*. So every one of the 28 carries a
+  note — the only one of the three lists where that is true — and the eleven
+  colour ones describe the colour rather than assuming the word travels. The
+  integration test is the argument made in German: *Grünspan* where English
+  borrowed from French, *Anthrazit* where English named a grey after burnt wood,
+  neither reachable from the other word by word.
+
+  Three decisions the next items inherit. **`Word` lives in `alo-strings`
+  now**, with `Word::phrase` replacing the loop each declaring crate had written
+  out; `WordsError` in all three crates gained one `Word` variant in place of
+  its `Sentence` and `Note` pair. **A deserialiser writes the key, and six of
+  them share one type**: `serde(try_from)` requires a `Display` at the one point
+  no `Strings` exists, so `NotRead` writes the key of the refusal and
+  `docs/quirks.md` records it — `alo-shortcuts`' private `NotAChord` was the
+  first of these and this is the sixth through tenth. **A number is not a
+  string**: `TextScale` keeps `200%` and `TimeOfDay` keeps `18:00`, because how
+  a number or a time is written belongs to the region rather than the language —
+  but the percent sign is *in* the sentence, so a language that writes *200 %*
+  can, and there is a test that says so.
+
+  **`alo-strings`' integration test has gone**, which is what that file said
+  would happen: it carried copies of four `alo-appearance` strings because it
+  was built before any of its users existed, and all three users exist now. Its
+  four tests live in `crates/alo-appearance/tests/what_this_crate_says.rs`,
+  against the vocabulary the code actually uses rather than a copy of it.
 
 - [ ] **9e. `alo-capability` and `alo-models` onto `alo-strings`** — the two
   crates no 9-series item names, noticed while item 10 added more English to the
@@ -579,8 +595,11 @@ deny list.** Two patterns later items must follow:
   `ProviderError`, `RuntimeError`, `SecretError`, `NotTried`, `Tried::describe`,
   `InferenceSource::describe` and `SourcePolicy::refusal`. Two of those are read
   by somebody deciding whether to paste a contract into a question, so they are
-  not strings to hurry. It should follow 9b–9d rather than lead them: those
-  three are the crates whose strings a person meets every day.
+  not strings to hurry. It follows 9b–9d, which are now all done: those three
+  are the crates whose strings a person meets every day, and the shape they
+  settled on — a `words.rs` of `alo_strings::Word` constants, `said(&Strings)`
+  in place of `Display`, and the key written where a deserialiser cannot ask —
+  is what this item copies rather than re-decides.
 
   **9b left it one question, and it is the interesting one.** A `Call` renders
   its sentence in English when the call is made and keeps it, so the sentence

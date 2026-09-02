@@ -97,7 +97,7 @@ mod tests {
             assert!(
                 (colour.contrast_with(colour) - 1.0).abs() < CLOSE_ENOUGH,
                 "{} against itself",
-                token.name()
+                token.word().says()
             );
         }
     }

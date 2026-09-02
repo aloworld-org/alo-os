@@ -1656,3 +1656,129 @@ one inside it.
 9e should still follow 9d. 4a is `alo-agentd`'s and the daemon still does not
 exist — after the strings items, every remaining item in this queue belongs to a
 daemon, a Linux host or a certified machine.
+
+---
+
+## 2026-09-02 — iteration 18: the colours, named the way the reader names colours
+
+**Built: item 9d**, whole, including one thing the item did not name and one
+file it did not expect to delete. Three new files in `crates/alo-appearance`,
+one new file in `crates/alo-strings`, and every type in the appearance crate
+that says something moved onto the strings crate.
+
+| | |
+|---|---|
+| `alo-strings/word.rs` | **New.** `Word` and `Word::phrase` — lifted out of `alo-files` and `alo-shortcuts`, which had written the same four fields twice |
+| `alo-appearance/words.rs` | **New.** Every string this crate can say: 28 phrases, the English beside each key, and a note on **every one of them** |
+| `alo-appearance/unreadable.rs` | **New.** `NotRead` — what a settings file that did not read writes, which is the key of the refusal and never a sentence |
+| `alo-appearance/testing.rs` | **New.** The two fixtures the crate's own tests are written against |
+| `token.rs`, `accent.rs` | `name` became `word` and `said`; `AccentError` lost its `Display` |
+| `colour.rs`, `display.rs`, `picture.rs`, `rotating.rs`, `scheme.rs`, `text.rs`, `time.rs` | The other seven error types, the same way |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-appearance` is 98 unit tests (was 75) and 8
+new integration tests against the real vocabulary; `alo-strings` is 120 unit
+tests (was 117). The workspace is **635 tests and 20 doctests**, all green.
+`CHANGELOG.md`, `docs/quirks.md`, `QUEUE.md` and `ROADMAP.md` in the same
+change.
+
+**The item said eleven of these are colour names, and that turned out to be the
+whole of what is different about this list.** A sentence carries enough of
+itself for a translator to work from — *there is already something at {path}*
+can be translated by somebody who has never seen alo OS. A single word naming a
+colour cannot. *Verdigris* is a French loanword for the blue-green of weathered
+copper; German has an ordinary word, *Grünspan*, and reaching it from the
+English requires knowing what the colour **is**. *Charcoal* names a grey after
+burnt wood and German names the same grey after a mineral, *Anthrazit*. Neither
+list is reachable from the other word by word, and a colour name got wrong is
+not a sentence that reads oddly — it is a row in a picker that does not match
+the swatch beside it.
+
+So **every one of the 28 carries a note**, which is not true of either of the
+other two crates that declare words, and the eleven colour ones describe the
+colour rather than assuming the word travels: *the colour of fired clay, an
+orange-brown*; *the blue-green of weathered copper — a church roof, an old
+statue*. `words.rs` says outright that describing it instead of borrowing it is
+allowed. That is what `alo_strings::Phrase`'s note was built for — the queue
+named terracotta as the example before this crate existed — and this is the
+first list where it is load-bearing rather than occasional.
+
+**The decision that was not in the item: six deserialisers needed a sentence and
+had nobody to ask.** Six things in this crate are read back out of a settings
+file through `serde(try_from = …)`, and `serde` requires that error to have a
+`Display` — which is exactly what ten error types losing their `Display` was
+for. `alo-shortcuts` met this once in item 9c and answered it with a private
+`NotAChord`; six copies of that would have been the third pattern this change
+exists to stop. So `NotRead` is one public type shared by all six: it writes the
+**key** of the refusal, so whoever reports a settings file that did not read
+looks it up and shows the same words a settings panel shows. `docs/quirks.md`
+records it as the entry it is — a specification that disagrees with ours at the
+one point where obeying ours is impossible.
+
+**And the file this change deleted.** `alo-strings`' integration test carried
+copies of four `alo-appearance` strings, and said from the day it was written
+that a crate's strings leave it when the crate moves. All three of its users
+exist now, so what was left in it was copies of strings that are declared for
+real one crate away — which is the *half-moved crate reads exactly like a
+finished one* failure wearing a test's clothes. Its four tests moved into
+`crates/alo-appearance/tests/what_this_crate_says.rs`, where they run against
+the vocabulary the code actually uses: a translation checked and shown, what is
+not translated being visible and countable, a key nobody declared saying it is a
+bug, and the notes on the two words the queue singled out.
+
+**Three smaller ones worth keeping.**
+
+- **`Word` moved, and `Word::phrase` moved with it.** The item asked only for
+  the type; three copies of the seven-line loop that turns a `Word` into a
+  `Phrase` is the same argument the item makes about the struct, so the loop is
+  a method now and each crate's `declare_into` is two lines. The cost is one
+  variant: `WordsError` in all three crates has a `Word` variant where it had a
+  `Sentence` and a `Note`. Nobody's constants moved.
+- **A number is not a string, and the percent sign is.** `TextScale` keeps
+  `200%` and `TimeOfDay` keeps `18:00`, because how a number or a time is
+  *written* belongs to the region rather than the language and a settings file
+  holds one spelling whatever the region does — the queue settled that in item 8
+  and it still holds. But the two refusals that carry a percentage put the
+  numbers in bare and keep the sign in the sentence, so a language that writes
+  *200 %* with a space, or puts the sign in front, can;
+  `the_percent_sign_is_the_translators_to_place` is the test.
+- **A refusal and the colour inside it are in one language.**
+  `AccentError::NotAnAccent` names a `Token`, and what goes into the gap is that
+  token *said* — so a German machine does not read a German sentence with an
+  English colour in the middle of it. It is `alo-shortcuts`' *{chord} is already
+  {action}* property reaching the palette.
+
+**What the next iteration must know:**
+
+- **9e is the last of the 9-series and it is the one with a decision in it.**
+  `alo-capability` and `alo-models` still hold their English. The question 9b
+  left and 9c and 9d did not touch is unchanged: a `Call` renders its sentence
+  in English when the call is made and keeps it, so the sentence the record
+  keeps and the sentence a person is shown are two renderings of one string.
+  Whether a `Call` should carry a key and a filling instead is a decision about
+  what a record is *for*, and `alo-record`'s `Line` is on the other side of it.
+  What 9d adds to that question is only evidence: `NotRead` shows that writing a
+  key where words cannot be asked for works and is readable.
+- **The shape to copy is now three crates old and has not changed**: a
+  `words.rs` of `alo_strings::Word` constants under one area, a test walking
+  every key back through `Key::named`, `said(&Strings)` in place of `Display`,
+  and the key written wherever a `Strings` cannot be reached. `alo-capability`'s
+  `Sentence` is the one part with no precedent, because it is parts rather than
+  a template — which is why `sentence.rs` was built that way in item 2.
+- **`alo-strings` has no integration test of its own any more**, and that is
+  deliberate rather than an oversight. Its 120 unit tests are the crate's, and
+  the whole path a translation takes is now walked three times over, in
+  `alo-files`, `alo-shortcuts` and `alo-appearance`, against real vocabularies.
+  Anything later that wants to test the scaffolding should test it through a
+  crate that uses it.
+- **Nothing here has been seen.** No colour name has reached a screen, because
+  the compositor does not exist, and there are still zero translations in this
+  repository — the German in the tests is the tests'. `ROADMAP.md`'s *Language*
+  stays unticked, its *Built* clause gains `alo-appearance` and its *Owed* now
+  names 9e and the two crates it covers; *Making it yours* stays unticked and
+  its *Built* clause gains being readable in the reader's own language.
+
+**What is left is 9e and 4a.** 9e is not blocked by anything. 4a is
+`alo-agentd`'s and the daemon still does not exist — after 9e, every remaining
+item in this queue belongs to a daemon, a Linux host or a certified machine.

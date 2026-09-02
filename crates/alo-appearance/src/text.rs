@@ -14,7 +14,11 @@
 
 use std::fmt;
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
+
+use crate::unreadable::NotRead;
+use crate::words;
 
 /// The smallest text alo OS will draw, as a percentage.
 const SMALLEST: u16 = 75;
@@ -31,14 +35,48 @@ const ORDINARY: u16 = 100;
 ///
 /// Both name the end of the range they are outside, because a person setting
 /// this may be doing it because they cannot read the screen as it is.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`: the only road to words is [`TextError::said`], and
+/// what a settings file that did not read writes is [`NotRead`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TextError {
-    /// Smaller than the shell can be read at.
-    #[error("{0}% is smaller than this screen can be read at — {1}% is as small as it goes")]
+    /// Smaller than the shell can be read at: what was asked for, then the
+    /// smallest there is.
     TooSmall(u16, u16),
-    /// Larger than the shell has room for.
-    #[error("{0}% is larger than the shell has room for — {1}% is as large as it goes")]
+    /// Larger than the shell has room for: what was asked for, then the largest
+    /// there is.
     TooLarge(u16, u16),
+}
+
+impl TextError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(self) -> Word {
+        match self {
+            Self::TooSmall(_, _) => words::TOO_SMALL,
+            Self::TooLarge(_, _) => words::TOO_LARGE,
+        }
+    }
+
+    /// What this says, in the language the person reads. Never fails and never
+    /// panics.
+    ///
+    /// Both numbers go in without a percent sign on them, and the sign is part
+    /// of the sentence — so a language that writes *200 %* with a space, or puts
+    /// the sign in front, can. Where a number goes is a translator's; what the
+    /// number *is* is not.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::TooSmall(percent, smallest) => {
+                Filling::of("percent", percent.to_string()).and("smallest", smallest.to_string())
+            }
+            Self::TooLarge(percent, largest) => {
+                Filling::of("percent", percent.to_string()).and("largest", largest.to_string())
+            }
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// How big the text is, as a percentage of the size the shell was designed at.
@@ -99,10 +137,10 @@ impl fmt::Display for TextScale {
 }
 
 impl TryFrom<u16> for TextScale {
-    type Error = TextError;
+    type Error = NotRead;
 
     fn try_from(percent: u16) -> Result<Self, Self::Error> {
-        Self::percent(percent)
+        Self::percent(percent).map_err(|refused| NotRead::about(refused.word()))
     }
 }
 
@@ -119,6 +157,7 @@ impl From<TextScale> for u16 {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// **EN 301 549 is a test, not a sentence.** The standard an EU public-sector
     /// desktop is procured against requires text to reach 200%, so 200% is a
@@ -155,16 +194,36 @@ mod tests {
             TextScale::percent(largest.saturating_add(1)),
             Err(TextError::TooLarge(largest.saturating_add(1), largest))
         );
+        let strings = in_english();
         assert_eq!(
-            TextScale::percent(0).unwrap_err().to_string(),
+            TextScale::percent(0).unwrap_err().said(&strings).text(),
             "0% is smaller than this screen can be read at — 75% is as small as it goes"
         );
         assert_eq!(
-            TextScale::percent(1000).unwrap_err().to_string(),
+            TextScale::percent(1000).unwrap_err().said(&strings).text(),
             "1000% is larger than the shell has room for — 300% is as large as it goes"
         );
         assert!(TextScale::percent(smallest).is_ok());
         assert!(TextScale::percent(largest).is_ok());
+    }
+
+    /// **The percent sign belongs to the sentence, not to the number.** A
+    /// language that writes a space before it — or puts it in front — can, and
+    /// this is the test that says the numbers arrive bare.
+    #[test]
+    fn the_percent_sign_is_the_translators_to_place() {
+        let strings = translated(&[(
+            words::TOO_SMALL,
+            "{percent} % ist kleiner, als dieser Bildschirm lesbar ist — {smallest} % ist das \
+             Kleinste",
+        )]);
+        let said = TextScale::percent(10).unwrap_err().said(&strings);
+        assert_eq!(
+            said.text(),
+            "10 % ist kleiner, als dieser Bildschirm lesbar ist — 75 % ist das Kleinste"
+        );
+        assert!(said.is_translated());
+        assert!(said.unfilled().is_empty());
     }
 
     /// A file is a thing a person edits, so the range is checked again where it

@@ -30,11 +30,13 @@
 //! of every screen the shell draws and cannot be true of a colour, so it belongs
 //! where the drawing happens rather than here.
 
+use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::colour::Colour;
 use crate::scheme::Scheme;
 use crate::token::Token;
+use crate::words;
 
 /// Why a colour is not an accent a person can choose.
 ///
@@ -43,25 +45,49 @@ use crate::token::Token;
 /// They are three sentences rather than one because they are three different
 /// mistakes: asking for the agent's colour, asking for a colour the system is
 /// built out of, and asking for a colour nobody designed.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// There is no `Display`, and therefore no `std::error::Error`: the only road to
+/// words is [`AccentError::said`], which takes the strings this machine reads.
+/// **A refusal and everything inside it are in one language** —
+/// [`AccentError::NotAnAccent`] names a [`Token`], and what goes into the
+/// sentence is that token said in the reader's own language rather than an
+/// English word left in the middle of a translated one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AccentError {
     /// Terracotta, which is the agent's and nobody else's.
-    #[error(
-        "terracotta is how this machine says alo is present or acting, so it is not offered as a personal accent — choose verdigris, indigo, violet, moss or rose"
-    )]
     Reserved,
     /// A ground or a piece of structure: a colour the system is built out of
     /// rather than one it can be accented with.
-    #[error(
-        "{} is a ground or a structure colour rather than an accent — choose verdigris, indigo, violet, moss or rose",
-        .0.name()
-    )]
     NotAnAccent(Token),
     /// A colour from somewhere else entirely.
-    #[error(
-        "{0} is not one of the accents this system offers — choose verdigris, indigo, violet, moss or rose, each of which is drawn to read on a light ground and on a dark one"
-    )]
     NotOffered(Colour),
+}
+
+impl AccentError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub const fn word(self) -> Word {
+        match self {
+            Self::Reserved => words::RESERVED,
+            Self::NotAnAccent(_) => words::NOT_AN_ACCENT,
+            Self::NotOffered(_) => words::NOT_OFFERED,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not. A
+    /// `Strings` that was never given [`crate::appearance_words`] answers with
+    /// the key, marked, and `Said::is_a_bug`.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::Reserved => Filling::nothing(),
+            Self::NotAnAccent(token) => Filling::of("colour", token.said(strings).into_text()),
+            Self::NotOffered(colour) => Filling::of("colour", colour.to_string()),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// One of the five colours a person can make their machine.
@@ -117,21 +143,28 @@ impl Accent {
         }
     }
 
-    /// What this accent is called where a person picks it.
-    ///
-    /// English, and one of the strings item 9d in `docs/autonomy/QUEUE.md`
-    /// externalises. These are the same kind of translator's judgement as
-    /// [`Token::name`]: verdigris is the colour of weathered copper and several
-    /// languages say it with two words or with none.
+    /// The string this crate declares for it: the key a translator's file is
+    /// sorted by, and the English beside it.
     #[must_use]
-    pub const fn name(self) -> &'static str {
+    pub const fn word(self) -> Word {
         match self {
-            Self::Verdigris => "Verdigris",
-            Self::Indigo => "Indigo",
-            Self::Violet => "Violet",
-            Self::Moss => "Moss",
-            Self::Rose => "Rose",
+            Self::Verdigris => words::VERDIGRIS,
+            Self::Indigo => words::INDIGO,
+            Self::Violet => words::VIOLET,
+            Self::Moss => words::MOSS,
+            Self::Rose => words::ROSE,
         }
+    }
+
+    /// What this accent is called where a person picks it, in the language they
+    /// read.
+    ///
+    /// The same kind of translator's judgement as [`Token::said`]: verdigris is
+    /// the colour of weathered copper, and several languages say it with two
+    /// words or with none. Never fails and never panics.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
     }
 
     /// The accent a colour is, if it is one of them.
@@ -187,6 +220,7 @@ impl Default for Accent {
 mod tests {
     use super::*;
     use crate::contrast::ENOUGH_FOR_TEXT;
+    use crate::testing::{in_english, translated};
 
     /// How far a hue has to sit from terracotta's before this crate will say
     /// they are different colours. Thirty degrees is a floor rather than a
@@ -233,7 +267,8 @@ mod tests {
         assert!(
             asked
                 .unwrap_err()
-                .to_string()
+                .said(&in_english())
+                .text()
                 .contains("not offered as a personal accent")
         );
 
@@ -243,7 +278,7 @@ mod tests {
                     accent.on(scheme),
                     Token::Terracotta.colour(),
                     "{} on {scheme:?} is not terracotta by another name",
-                    accent.name()
+                    accent.word().says()
                 );
             }
         }
@@ -259,23 +294,65 @@ mod tests {
     /// different mistakes.
     #[test]
     fn a_ground_or_a_structure_colour_is_refused_as_itself() {
+        let strings = in_english();
         for token in Token::ALL {
             let refused = Accent::of_colour(token.colour()).unwrap_err();
+            let said = refused.said(&strings);
+            assert!(said.unfilled().is_empty(), "{said}");
             match token {
                 Token::Terracotta => assert_eq!(refused, AccentError::Reserved),
                 other => {
                     assert_eq!(refused, AccentError::NotAnAccent(other));
                     assert!(
-                        refused.to_string().contains(other.name()),
+                        said.text().contains(other.said(&strings).text()),
                         "the refusal names the colour that was asked for"
                     );
                 }
             }
             assert!(
-                refused.to_string().contains("verdigris"),
+                said.text().contains("verdigris"),
                 "and every refusal says what can be had instead"
             );
         }
+    }
+
+    /// **A refusal and everything inside it are in one language.** The colour
+    /// the sentence names is one of this crate's own strings, so a German
+    /// machine does not read a German sentence with an English colour in the
+    /// middle of it.
+    #[test]
+    fn a_refusal_names_the_colour_in_the_readers_language() {
+        let strings = translated(&[
+            (words::NAVY, "Marineblau"),
+            (
+                words::NOT_AN_ACCENT,
+                "{colour} ist eine Grund- oder Strukturfarbe und keine Akzentfarbe — wählen Sie \
+                 Grünspan, Indigo, Violett, Moos oder Rosé",
+            ),
+        ]);
+        let said = Accent::of_colour(Token::Navy.colour())
+            .unwrap_err()
+            .said(&strings);
+        assert_eq!(
+            said.text(),
+            "Marineblau ist eine Grund- oder Strukturfarbe und keine Akzentfarbe — wählen Sie \
+             Grünspan, Indigo, Violett, Moos oder Rosé"
+        );
+        assert!(said.is_translated());
+        assert!(said.unfilled().is_empty());
+    }
+
+    /// A machine that was never given this crate's words still refuses exactly
+    /// what it refused before, and says which rule it broke rather than
+    /// pretending to a sentence. **A refusal never depends on a string table.**
+    #[test]
+    fn a_refusal_without_the_words_still_names_the_rule() {
+        let nothing_declared = Strings::of(alo_strings::Vocabulary::empty());
+        let said = Accent::of_colour(Token::Terracotta.colour())
+            .unwrap_err()
+            .said(&nothing_declared);
+        assert!(said.is_a_bug());
+        assert!(said.text().contains("appearance.accent.reserved"), "{said}");
     }
 
     /// **A colour from somewhere else is refused too**, and each of the ten
@@ -298,9 +375,10 @@ mod tests {
         assert!(
             Accent::of_colour(invented)
                 .unwrap_err()
-                .to_string()
+                .said(&in_english())
+                .text()
                 .contains("#123456"),
-            "the refusal says which colour was asked for"
+            "the refusal says which colour was asked for, and a hex is not translated"
         );
     }
 
@@ -323,8 +401,8 @@ mod tests {
                 assert!(
                     measured >= ENOUGH_FOR_TEXT,
                     "{} on {} measured {measured}",
-                    accent.name(),
-                    ground.name()
+                    accent.word().says(),
+                    ground.word().says()
                 );
             }
             let measured = accent
@@ -333,7 +411,7 @@ mod tests {
             assert!(
                 measured >= ENOUGH_FOR_TEXT,
                 "{} on charcoal measured {measured}",
-                accent.name()
+                accent.word().says()
             );
         }
     }
@@ -347,17 +425,22 @@ mod tests {
         for accent in Accent::ALL {
             let light = accent.on(Scheme::Light);
             let dark = accent.on(Scheme::Dark);
-            assert_ne!(light, dark, "{} needs a value per ground", accent.name());
+            assert_ne!(
+                light,
+                dark,
+                "{} needs a value per ground",
+                accent.word().says()
+            );
             assert!(
                 apart(hue(light), hue(dark)) <= 15.0,
                 "{} is {} degrees apart from itself",
-                accent.name(),
+                accent.word().says(),
                 apart(hue(light), hue(dark))
             );
             assert!(
                 dark.relative_luminance() > light.relative_luminance(),
                 "{} is the lighter of the two on a dark ground",
-                accent.name()
+                accent.word().says()
             );
         }
     }
@@ -376,7 +459,7 @@ mod tests {
                 assert!(
                     distance >= FAR_ENOUGH_FROM_TERRACOTTA,
                     "{} on {scheme:?} is {distance} degrees from terracotta",
-                    accent.name()
+                    accent.word().says()
                 );
             }
         }
@@ -386,10 +469,12 @@ mod tests {
     /// with two identical entries is a picker a person cannot use.
     #[test]
     fn every_accent_is_named_and_distinct() {
+        let strings = in_english();
         for (at, accent) in Accent::ALL.iter().enumerate() {
-            assert!(!accent.name().is_empty());
+            assert!(!accent.said(&strings).text().is_empty());
+            assert!(!accent.said(&strings).is_a_bug(), "{accent:?}");
             for other in Accent::ALL.iter().skip(at.saturating_add(1)) {
-                assert_ne!(accent.name(), other.name());
+                assert_ne!(accent.said(&strings).text(), other.said(&strings).text());
                 assert_ne!(accent.on(Scheme::Light), other.on(Scheme::Light));
                 assert_ne!(accent.on(Scheme::Dark), other.on(Scheme::Dark));
             }
