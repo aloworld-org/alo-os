@@ -68,7 +68,7 @@ The rules are in `CLAUDE.md`, and they are short enough to read.
 |---|---|
 | `alo-os` | This one: the shell, `alo-agentd`, the system services, the image. |
 | `alo-workplace` | The workspace that runs on it — mail, files, chat, documents, the product agents. |
-| `alo-engine` | The rendering engine, in Rust. |
+| `alo-engine` | The rendering engine, in Rust. **Decided, not started, not scheduled** — no repository yet. |
 
 alo OS is **useful with no account at all**: local files, local models,
 downloading and fine-tuning, and agents driving the applications you

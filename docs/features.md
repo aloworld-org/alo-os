@@ -67,7 +67,7 @@ current release, and Non-goals below.
 - [v0.5] ★ Atomic updates with rollback — the previous deployment stays bootable
 - [v0.5] Printing. Unglamorous, and it decides public-sector deals
 - [v0.5] The documents people are actually sent open: `.docx`, `.xlsx`, `.pptx`
-- [v0.5] A web browser for the open web, alongside our own engine for the workspace
+- [v0.5] A web browser for the open web — a pinned upstream one, since our own engine is not scheduled
 - [v0.5] Installer
 - [v1] Fleet enrollment, policy and signed updates — **for alo OS machines only**
 - [v1] Backup and restore

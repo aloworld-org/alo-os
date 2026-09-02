@@ -8,9 +8,10 @@ everything else is judgment.
 
 The workspace that runs on it — mail, files, chat, documents and the
 product agents — lives in `alo-workplace`. The rendering engine lives
-in `alo-engine`. This repository is the system underneath both: the
-shell a person signs into, the service that lets an agent reach the
-machine, and the image that boots.
+in `alo-engine` — decided, but not started and not scheduled. This
+repository is the system underneath both: the shell a person signs
+into, the service that lets an agent reach the machine, and the image
+that boots.
 
 ## The three laws
 

@@ -3,7 +3,7 @@
 **Status:** accepted
 **Date:** 2026-09-02
 **Context:** the session shell, the compositor, `alo-workplace` (the workspace
-client), `alo-engine` (the rendering engine)
+client), `alo-engine` (the rendering engine — decided, unscheduled)
 
 ## The decision in one line
 
@@ -44,14 +44,16 @@ for performance and GPU acceleration, as the foundation of every session.
 - the agent's invocation overlay — it has to work when the workspace does not
 
 **An application on top:** the alo workplace client, which today is a web
-application and tomorrow is rendered by `alo-engine`. It is one program among
+application, and is intended one day to be rendered by `alo-engine` — a
+decision taken, but not started and not scheduled. It is one program among
 others, exactly as a browser is one program on GNOME. That the workspace is
 currently a web app is a fact about that application, not about this operating
 system.
 
-**And the swap is incremental.** When `alo-engine` can render a workspace
-module, it does, behind a stable boundary — screen by screen, with no visible
-break and nothing thrown away.
+**And the swap, if it comes, is incremental.** Nothing here depends on it: the
+shell is native whether or not the engine is ever built. When `alo-engine` can
+render a workspace module, it does, behind a stable boundary — screen by screen,
+with no visible break and nothing thrown away.
 
 ## Consequences
 
@@ -63,9 +65,10 @@ break and nothing thrown away.
   stylesheet, which a native Rust shell cannot read. The tokens become a
   language-neutral source generating both the CSS the workspace uses and the
   constants the shell uses — otherwise the two drift apart within months.
-- The UI runtime built for the shell is the same runtime `alo-engine` needs for
-  its first stage. That work is the engine's foundation arriving early, not a
-  detour.
+- The UI runtime built for the shell is the same runtime `alo-engine` would
+  need for its first stage. If the engine is ever scheduled, that work is its
+  foundation arriving early rather than a detour; if it never is, the shell
+  still needed it.
 - The agent overlay being native is what lets the invocation rule in ADR 0001
   hold under failure: the one key that summons an agent works even when the
   workspace is wedged.
