@@ -62,11 +62,12 @@ the queue has been rewritten against what the code actually is.
   reference into the keyring, never the secret, with a test that renders the
   struct through `Debug` and serde and asserts nothing secret-shaped survives.
 
-**One rule of the house, because it was broken in getting here:** the loop and a
-person must not work in the same checkout at once. `CLAUDE.md` forbids it, and
-the reason is exactly what happened — commits landing in a tree a loop believed
-it owned. Whoever starts the loop owns `C:\devlo-os` until it reports
-`LOOP COMPLETE` or halts.
+**One rule of the house, before it is broken:** the loop and a person must not
+work in the same checkout at once. `CLAUDE.md` forbids it, and this session came
+close — the loop was reported as running in `C:/dev/alo-os` while ten commits
+were being made there. It was not running; the check that said so had matched its
+own command line. Whoever starts the loop owns that checkout until it reports
+`LOOP COMPLETE` or halts, and nobody else edits it meanwhile.
 
 Ten ready items. Item 1 (grants) is first because items 2, 3, 4 and 6 all speak
 its vocabulary.
