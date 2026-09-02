@@ -68,6 +68,25 @@ Nothing here is a differentiator. All of it is required.
 - [v0.5] A text editor and an image viewer, so a fresh machine is not helpless
 - [v0.5] **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
 
+**Software, and what applications expect (ADR 0005)**
+
+Applications install sandboxed and reach the system through the XDG Desktop
+Portal interfaces — the contract every Linux application already speaks. Meeting
+it is what makes existing software work on alo OS without knowing we exist, and
+each portal request is a grant in the sense of ADR 0001.
+
+- [v0.5] **Install applications**, sandboxed, from Flathub or a repository the organisation runs; update and remove them
+- [v0.5] ★ **One list of what has been granted to what** — agents and applications in the same place, revoked the same way
+- [v0.5] Portals: file chooser and documents, open-with and default applications, notifications, print, screenshot, screen capture, camera, microphone, clipboard, trash, wallpaper, settings, inhibit (no sleep mid-presentation), network and power-profile monitors
+- [v0.5] **Secret storage** — one keyring behind the Secret portal, so applications stop inventing credential storage
+- [v0.5] **Session management**: log out, switch user, lock, and reopen what was open
+- [v0.5] **Corporate proxy support**, machine-wide and honoured by applications. A great many company networks have no other route out
+- [v1] Portals: USB devices, global shortcuts an application registers, dynamic launchers, remote desktop
+- [v1] **Location services**, off by default, per-application, with an indicator when in use
+- [v1] Applications contribute to search — one place to look, not one per program
+- [v1] Realtime scheduling for audio work, which is what a workstation is often bought for
+- [v1] Unsandboxed installation as a deliberate, clearly-marked act — never the default, and forbiddable by policy on a managed machine
+
 **Devices and media**
 
 - [v0.5] Audio in and out, with device switching that works mid-call
@@ -81,6 +100,7 @@ Nothing here is a differentiator. All of it is required.
 
 - [v0.5] The shell in the user's language, with regional formats and timezones
 - [v0.5] Screen reader, magnifier, high contrast, larger text
+- [v1] ★ **A published accessibility conformance report against EN 301 549** — the harmonised European standard, and the mandatory technical specification for public-sector ICT procurement across the EU. Procurement asks for the report, not the intention
 - [v0.5] Sticky keys, slow keys, and keyboard-only operation of everything
 - [v1] Voice control of the shell — which for us is the agent, arriving somewhere it was always going
 
@@ -192,8 +212,10 @@ told so at first sign-in. There is no silent enrollment.
 **No kernel.** Linux, unmodified — hardware support is where OS projects die and
 we do not fight that battle. **No inference kernels** — we do not compete with
 llama.cpp or vLLM. **No model training from scratch** — we serve and adapt open
-weights. **No general-purpose distribution** — no package manager for the world,
-no attempt to be Ubuntu. **No third-party device management** — fleet features
+weights. **No general-purpose distribution** — no package manager for the world and
+no attempt to be Ubuntu; software is installed as sandboxed Flatpaks from
+repositories other people run (ADR 0005), which is how we have applications
+without packaging them. **No third-party device management** — fleet features
 exist for alo OS machines; an MDM product is a different company. **No phone or
 tablet** — not in v1, possibly never. **No directory service** — we do not
 rebuild Active Directory or LDAP, and we do not become the place a company's

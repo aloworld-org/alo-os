@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Software can be installed, which the feature list had never said. Applications
+  arrive sandboxed from Flathub or a repository the organisation runs, and reach
+  the system through the XDG Desktop Portal interfaces every Linux application
+  already speaks — so existing software works here without knowing we exist. And
+  it is not a second permission system: a portal request is a grant, so there is
+  one list of what has been granted to what, agents and applications together,
+  revoked the same way. With it comes the plumbing that list implies — a
+  keyring, session management, corporate proxy support, and the portals for
+  screenshots, capture, camera, printing, clipboard and the rest.
 - The ordinary desktop is written down: copy and paste, keyboard shortcuts a
   person can change, screenshots and screen recording, notifications, a file
   manager, Bluetooth, audio that switches mid-call, keyboard layouts with dead

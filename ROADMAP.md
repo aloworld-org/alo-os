@@ -58,6 +58,10 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       sharing — and an indicator whenever screen, camera or microphone is in use
 - [ ] **Input**: drag and drop, context menus, gestures, virtual desktops,
       keyboard layouts with dead keys and a compose key, input methods
+- [ ] **Software**: install sandboxed applications, update and remove them; the
+      XDG portal backend against our own shell; one grant list covering agents
+      and applications alike; secret storage; session management; corporate
+      proxy support
 - [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
       media playback, power management, night light
 - [ ] **Language and access**: the shell in the user's language, regional
@@ -112,6 +116,9 @@ managed machine means and what its person is told.
 - [ ] A new colleague working on day one
 - [ ] Configuration as a document; helpdesk assistance as a session a person ends
 - [ ] Certification groundwork: ISO 27001, BSI Grundschutz, ANSSI
+- [ ] **Published EN 301 549 accessibility conformance report**
+- [ ] Remaining portals: USB, application-registered shortcuts, remote desktop;
+      location services off by default; applications contribute to search
 - [ ] Fleet enrollment by discovery — the machine asks, an administrator admits it
 - [ ] Fleet policy and signed updates, for alo OS machines
 - [ ] Files and printers shared between paired machines
