@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The things everybody actually complains about become answerable, because an
+  agent can reach the machine: where that file is, in your own words and without
+  anything being uploaded; why the machine is slow and what is filling the disk;
+  printers that get found, set up and fixed; a file you cannot open, converted
+  or plainly explained; updates that never interrupt; a replacement machine made
+  like your old one — and, the one nobody else offers, undo everything the agent
+  did this afternoon.
 - A large organisation can deploy alo OS without abandoning how it already
   works: sign-in against its own identity provider, smartcards and national
   eID, policy by role, a curated model catalogue and signed adapter allowlist,

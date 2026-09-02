@@ -53,6 +53,22 @@ current release, and Non-goals below.
 - [v1] Serving more than one person from one workstation
 - [v1] Evaluation: compare a fine-tune against the base model on your own questions, before trusting it
 
+## Everyday pain — what people actually complain about
+
+Not a category an operating system usually has. Each of these is a thing
+everybody has suffered this month, none of them is solvable without an agent
+that can reach the machine, and every one of them demonstrates in fifteen
+seconds.
+
+- [v0.5] ★ **"Where is that file?"** Ask in words — *"the contract Anna sent before the summer"* — over granted paths, indexed on the machine and never uploaded. Every cloud assistant can do this if you send it your documents; this one never sends them
+- [v0.5] ★ **"Why is it slow?" and "what is filling my disk?"** Every operating system is opaque about itself and everyone has typed these into a search engine. With system verbs and the record, the agent can actually answer
+- [v0.5] ★ **Printers, solved.** The agent finds it, sets it up, and fixes it when it stops. The most hated object in computing, and a small feature people tell other people about
+- [v0.5] ★ **"I can't open this file."** A `.pages`, a `.heic`, a `.dwg`: the system converts it where it can, and where it cannot says plainly what will open it, instead of shrugging
+- [v0.5] ★ **Undo what the agent did.** Every execution is already recorded with its origin and the image already rolls back — together they make *"undo everything the agent did this afternoon"* real. An agent you can reverse is an agent people let do more, and no other system offers it
+- [v0.5] **Updates that never interrupt.** Atomic images mean an update can be genuinely invisible and instantly reversible. On the system people are leaving, this is the single most hated behaviour there is
+- [v1] ★ **"Make this machine like my old one."** Configuration as a document, pointed at a person rather than an administrator: a replacement machine that is actually yours, not a week of rebuilding
+- [v1] **A new colleague working on day one** — a managed machine that arrives with the right applications, policy and grants already in place
+
 ## The local network — machines that find each other (ADR 0003)
 
 Discovery is open; **use requires a deliberate pairing on both machines**. Being

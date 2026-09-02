@@ -59,15 +59,23 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] **Atomic updates with rollback**
 - [ ] Installer
 - [ ] Accessibility: EN 301 549 conformance on the shell
+- [ ] ★ **"Where is that file?"** — local retrieval over granted paths, nothing uploaded
+- [ ] ★ **"Why is it slow?"** and **"what is filling my disk?"**
+- [ ] ★ **Printers, solved** — found, set up, and fixed when they stop
+- [ ] ★ **"I can't open this file"** — converted, or plainly explained
+- [ ] ★ **Undo what the agent did**
+- [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing
 - [ ] **One GPU box serves the office** — shared local inference over a pairing
 - [ ] A self-hosted workspace on the network is discovered, not configured
 - [ ] **Zero inference egress over a working day**, measured and published
 
-**Exit gate.** A person works a full day on alo OS — mail, documents,
-a video call, printing something, driving one installed application through its
-agent — and does not need another machine. An update lands and rolls back
-cleanly.
+**Exit gate.** A person works a full day on alo OS — mail, documents, a video
+call, printing something, driving one installed application through its agent —
+and does not need another machine. An update lands and rolls back cleanly. And
+the four questions everybody asks a computer are answerable out loud: where is
+that file, why is it slow, what is filling my disk, and undo what the agent just
+did.
 
 ---
 
@@ -87,6 +95,8 @@ managed machine means and what its person is told.
 - [ ] **Agent policy by role**; agent retention policy
 - [ ] **Inference accounting**
 - [ ] **Egress attestation** — signed, printable, per period
+- [ ] ★ **"Make this machine like my old one"** — configuration as a document, for a person
+- [ ] A new colleague working on day one
 - [ ] Configuration as a document; helpdesk assistance as a session a person ends
 - [ ] Certification groundwork: ISO 27001, BSI Grundschutz, ANSSI
 - [ ] Fleet enrollment by discovery — the machine asks, an administrator admits it
