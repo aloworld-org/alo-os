@@ -127,8 +127,12 @@ cannot demonstrate.
 - **Scope is gated.** Nothing gets built that isn't in
   `docs/features.md` with a tier, inside the current release, and
   outside Non-goals.
-- **User-facing strings are externalized (i18n) from day one.**
-  Hardcoded English is a bug in a European product.
+- **User-facing strings are externalized (i18n) from day one, and the
+  target is all 24 official EU languages.** Hardcoded English is a bug
+  in a European product, and "English plus the big five" is the same
+  bug wearing a business case: it sells sovereignty to some member
+  states and not others, and the ones it skips are those with the least
+  software in their own language already.
 - **Names are for strangers:** files, commit subjects and branches
   describe the subject matter. Release codes live in `ROADMAP.md` and
   commit trailers. Commit subjects follow conventional style —
@@ -153,3 +157,7 @@ cannot demonstrate.
 - `SECURITY.md` — how to report something, and what is in scope.
 - `CHANGELOG.md` — what changed, in words a person outside this
   repository can read.
+- `docs/autonomy/` — the build loop: `LOOP.md` is how one iteration
+  works, `QUEUE.md` is the work and what each item is blocked on,
+  `STATE.md` is the journal. The loop never weakens the gate to pass
+  it, and never ticks what it did not finish.

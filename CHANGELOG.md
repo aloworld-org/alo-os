@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- alo OS will speak all 24 official EU languages — Maltese and Irish included,
+  not "English plus the big five", because a sovereignty product that skips a
+  member state's language is selling sovereignty to some Europeans and not
+  others. Each language brings its regional formats, its timezones and a
+  keyboard layout offered alongside it, and the agent answers in whichever
+  language you asked in.
+
 - A machine can be made yours: set the background from a file, a folder that
   rotates or a plain colour, per display; a lock-screen image of its own; light
   and dark, following the time of day if you want; an accent colour the whole

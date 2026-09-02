@@ -77,8 +77,12 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       proxy support
 - [ ] **Devices**: audio with mid-call switching, Bluetooth, camera, microphone,
       media playback, power management, night light
-- [ ] **Language and access**: the shell in the user's language, regional
-      formats, screen reader, magnifier, high contrast, keyboard-only operation
+- [ ] **Language**: the shell in all 24 official EU languages, with regional
+      formats, timezones and a keyboard layout offered alongside each; RTL-ready
+      even though no official EU language needs it yet
+- [ ] ★ The agent answers in the language it was asked in
+- [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
+      operation of everything
 - [ ] **Printing**
 - [ ] `.docx`, `.xlsx`, `.pptx` open
 - [ ] A web browser for the open web

@@ -114,7 +114,12 @@ each portal request is a grant in the sense of ADR 0001.
 
 **Language and access**
 
-- [v0.5] The shell in the user's language, with regional formats and timezones
+- [v0.5] **The shell in the user's language — all 24 official EU languages.** Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Irish, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish and Swedish. Not "English plus the big five": a sovereignty product that cannot speak Maltese or Irish is selling sovereignty to some Europeans and not others, and those are exactly the member states with the least software in their own language
+- [v0.5] Regional formats and timezones per language, and a keyboard layout offered with it — choosing Greek and then hunting for a Greek keyboard is the same bug twice
+- [v0.5] **Right-to-left ready**, so adding a language later is translation rather than rework, even though no official EU language needs it today
+- [v0.5] ★ **The agent answers in the language you asked in** — the shell being translated is table stakes; being able to say "wo ist die Rechnung von Northstar?" and get an answer is the thing a cloud assistant does badly for smaller languages
+- [v1] EEA and candidate languages as translations arrive: Norwegian, Icelandic, and the accession languages
+- [v1] Community translation, so a language nobody sold us on can still be complete
 - [v0.5] Screen reader, magnifier, high contrast, larger text
 - [v1] ★ **A published accessibility conformance report against EN 301 549** — the harmonised European standard, and the mandatory technical specification for public-sector ICT procurement across the EU. Procurement asks for the report, not the intention
 - [v0.5] Sticky keys, slow keys, and keyboard-only operation of everything
