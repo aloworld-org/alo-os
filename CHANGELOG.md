@@ -12,6 +12,41 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **An agent can now be allowed to open, focus and close an application — and
+  closing one asks it rather than taking it away.** These are the first
+  capabilities alo OS has that are about applications rather than files, and
+  each of them waits for you to approve one sentence: *open
+  org.blender.Blender*, *bring it to the front*, *ask it to close*. A grant is
+  over one application and covers nothing else, so allowing the agent to close
+  your editor is not allowing it to close your browser.
+
+  **"Ask it to close" is exactly what happens.** The application is asked, the
+  same as pressing its close button: if it has unsaved work it puts its own
+  question up and you answer that. Nothing here takes a window away, because
+  approving *close this* is not approving *and throw away the afternoon you
+  have not saved* — and unsaved work is the one thing on this list that cannot
+  be undone afterwards.
+
+  **Bringing a window to the front waits for approval too.** That may read as
+  fussy for something so small, and it is not: a window that can put itself in
+  front of the one you are typing into gets your next keystrokes.
+
+  Two things it deliberately cannot do. **There is no way for an agent to ask
+  what you have installed or what you have open** — it is told what is in front
+  of you at the moment you invoke it, and nothing else, because the list of
+  applications on a machine says a great deal about the person using it. And a
+  refusal never leaks that either: an application you have not granted is
+  refused in the same words whether or not it is installed.
+
+  What you approve names the application the way the system knows it
+  (`org.blender.Blender`) with its ordinary name shown beside it, rather than
+  the other way round. Two applications can call themselves *Mail*; no two
+  share an identifier, and the thing you are agreeing to should not be a name
+  chosen by the thing you are agreeing to.
+
+  The fourth verb `docs/features.md` promises — arranging a window — is not
+  here yet, and `docs/contracts/agent-verbs.md` says what is owed first.
+
 - **The record of what the agent did now survives the machine being turned
   off, and a record that has been shortened says so.** Until now what an agent
   did was kept in memory, which answers *what did it do this afternoon* and

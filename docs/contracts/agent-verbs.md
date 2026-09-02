@@ -263,12 +263,85 @@ reasonably ask for a pattern language. There is no delete verb either: nothing
 on this list destroys anything, and adding one goes through the scope gate like
 anything else.
 
+## The application verbs
+
+`docs/features.md` promises four at v0.01 — open, focus, arrange, close — over
+granted applications only. **Three are declared; `arrange` is not yet**, and the
+reason is at the end of this section.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `open_application` | change | `application` (application) | open {application} |
+| `focus_application` | change | `application` (application) | bring {application} to the front |
+| `close_application` | change | `application` (application) | ask {application} to close |
+
+**All three are changes, and there is no read on this list.** A verb that
+listed the running applications or the open windows would be a background
+reader, and context is offered at invocation and never watched — so what is
+open reaches an agent as *context*, for that turn, rather than as something it
+can ask for whenever it likes. An adapter must not add one either.
+
+Focus is a change because bringing a window forward while somebody is typing
+sends the next keystrokes somewhere they did not choose. "It only changes
+something small" is exactly the reasoning rule 2 of *adding a verb* refuses.
+
+**`close_application` asks; nothing kills anything.** It does what pressing the
+close button does: the application is asked, it may put up its own *save your
+changes?*, and the person answers that. A person approving *ask Blender to
+close* has approved closing an application and has not approved discarding
+unsaved work — everything else on this list is reversible, and that is not. The
+word **ask** is therefore in the approval sentence rather than only in
+documentation, and a translation that promised otherwise would be promising
+something alo OS does not do.
+
+### The identifier is approved; the name is only shown
+
+An application has two names: the identifier this machine knows it by
+(`org.blender.Blender`) and whatever its desktop entry calls it (*Blender*).
+**Only the identifier is ever granted or approved.** The second is written by
+whoever packaged the application, and two applications can claim the same one —
+*approve: open Mail* reads identically whichever *Mail* is behind it, and an
+approval sentence the approved thing can choose is not an approval. No two
+applications share an identifier, so a shell shows the name **beside** the
+identifier and never in place of it.
+
+A name that cannot be shown in one line is dropped and the application stays:
+nothing is ever acted on by name, so nothing is lost, and refusing the
+application would let whoever packaged it decide what this machine can reach.
+
+### An application is checked for after the grants have answered, never before
+
+Reach is decided by matching the identifier exactly, and that leaves one
+question the capability model cannot ask: **is there such an application here?**
+Whatever executes an application verb asks it, and asks it **second**:
+
+1. do the grants permit this application? If not, that is the refusal, and the
+   list of what is installed is not consulted;
+2. is it installed? A no is a refusal in its own words, recorded like any other,
+   and nothing has happened.
+
+The order is part of the contract, for the reason the file verbs' order is. A
+refusal that answered *that is not installed* about an application nobody
+granted would tell an agent what somebody has on their machine — which
+applications a person uses is a fingerprint of who they are, what they do and
+who they work for. Asked in this order, an ungranted application refuses
+identically whether it is installed or not.
+
+### Why `arrange` is not declared
+
+It needs an argument saying where the window goes, which is a **choice** — and a
+chosen option reaches the approval sentence as the stable identifier the model
+picked it by. *Put Blender on the `left_half`* puts untranslated English inside
+the one string a person is asked to agree to, which is the guarantee in *the
+words are the declaration's* failing for one argument kind. Closing it is a
+change to how a choice is declared, and it is owed before `arrange` is added.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |
 |---|---|---|
 | **Files** | List, read, find, rename, move, archive — within granted paths | `alo-agentd`, as the person |
-| **Applications** | Open, focus, arrange, close | `alo-agentd`, as the person |
+| **Applications** | Open, focus, arrange, close — over granted applications | `alo-agentd`, as the person |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs | See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |

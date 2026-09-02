@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/alo-appearance",
+  "crates/alo-applications",
   "crates/alo-capability",
   "crates/alo-egress",
   "crates/alo-files",

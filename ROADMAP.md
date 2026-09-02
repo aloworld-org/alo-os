@@ -82,9 +82,14 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       refusal of theirs said in the language the person reads, and — since 9g —
       the sentence a person approves, carried as what names it and the values
       that fill it rather than as words in whichever language the verb was
-      declared in) and `alo-files` (the six file verbs, declared from the words
-      a translator is handed) · Owed: the daemon itself, application verbs, and
-      the context an agent is given when invoked
+      declared in), `alo-files` (the six file verbs, declared from the words
+      a translator is handed) and `alo-applications` (three of the four
+      application verbs — open, focus and ask-to-close — the list of what is
+      installed they are checked against, and the rule that an ungranted
+      application refuses identically whether or not it is here) · Owed: the
+      daemon itself, the acting half of the application verbs, which is Wayland
+      and D-Bus, `arrange` and the readable choice it needs (queue 11a), and the
+      context an agent is given when invoked
 - [ ] Every execution recorded with its origin, approval and grant
       · Built: `alo-record` — the record, including refusals, which are written
       down in the same words the person was shown rather than in a second

@@ -1,0 +1,19 @@
+[package]
+name = "alo-applications"
+version = "0.0.1"
+description = "What an agent may do to applications, and the list it is checked against."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-capability = { path = "../alo-capability" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+alo-record = { path = "../alo-record" }

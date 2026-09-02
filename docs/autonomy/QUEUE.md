@@ -34,9 +34,12 @@ and stops when there are none left.
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
-`crates/alo-files`, `crates/alo-keeping`, `crates/alo-shortcuts`,
-`crates/alo-appearance` and `crates/alo-strings` were built by the loop and are
-described in the items below. The first four depend on each other in one
+`crates/alo-files`, `crates/alo-applications`, `crates/alo-keeping`,
+`crates/alo-shortcuts`, `crates/alo-appearance` and `crates/alo-strings` were
+built by the loop and are described in the items below. `alo-applications` sits
+exactly where `alo-files` does — it reaches `alo-capability` and `alo-strings`,
+nothing reaches it, and it is the other half of what an agent may do to this
+machine. The first four depend on each other in one
 direction only: `alo-capability` decides and reaches nothing, `alo-egress`
 decides about what leaves, `alo-files` is the only one an agent can reach that
 touches a disk, and `alo-record` observes them and is reachable from none of
@@ -62,7 +65,8 @@ workspace has now crossed it, so *hardcoded English is a bug* is a rule with no
 exceptions left in it rather than a rule with a list. **`alo-keeping` is the
 first crate that never had to cross**: it was written after the 9-series, so it
 has never held an English sentence and no type in it has ever had a `Display`.
-That is what the rule looks like once it is finished being applied.
+That is what the rule looks like once it is finished being applied, and
+`alo-applications` is the second crate it is true of.
 
 Since **item 9g** the edge is load-bearing rather than incidental: a verb is
 *declared* from `alo_strings::Word`s, so `alo-capability` cannot express a
@@ -843,6 +847,81 @@ deny list.** Two patterns later items must follow:
   verification; `docs/quirks.md` records the one convention this depends on and
   says the same thing about it.
 
+- [x] **11. Application verbs, the portable half** — implements
+  `docs/features.md`'s v0.01 *application verbs: open, focus, arrange, close*,
+  and `docs/contracts/agent-verbs.md`, which gained a section for them.
+  `crates/alo-applications`, a **new crate**: `verbs.rs` (three of the four,
+  declared), `application.rs` (one installed application — the identifier it is
+  granted by, and the name a person only ever sees), `installed.rs` (what this
+  machine has, and how it is matched), `reaching.rs` (the only type meaning
+  *this may reach an application*), `refusing.rs` (why this half says no),
+  `words.rs` (13 phrases, the English beside each key, and a note on the ones
+  that need one). 38 unit tests, 11 integration tests — 6 against the real
+  vocabulary and 5 through the whole capability journey into `alo-record` — and
+  1 doctest. **830 tests and 21 doctests across the workspace**, clippy clean.
+
+  **The item was not on any list**, and finding it was the whole of the reading
+  step. The queue had *application verbs, the acting half* under **blocked —
+  linux** and nothing anywhere for the portable half, so a v0.01 promise had no
+  item at all. That is item 6's shape a second time — the file verbs' acting
+  half was listed as Linux's and was not — and it is the third blocker in three
+  iterations that turned out to be part portable. **A blocker is a claim about
+  code, and the claim about applications was only ever true of the half that
+  drives a compositor.**
+
+  **Three of the four, and the fourth is 11a below, because of what a choice
+  does to an approval sentence.** `arrange` needs an argument saying where the
+  window goes; that is a `Takes::Choice`, and a chosen option reaches the
+  sentence as the stable identifier a model picked it by — *put Blender on the
+  `left_half`*. That is untranslated English inside the one string the whole
+  capability model is built around, which is item 9g's guarantee failing for the
+  one argument kind 9g did not reach. Wording around it here would have hidden
+  it; declaring the verb anyway would have shipped it. So the scope was cut and
+  the depth was not.
+
+  **The decision the item did not contain: closing asks, and the word is in the
+  sentence.** `close_application` does what pressing the close button does — the
+  application may put up its own *save your changes?* and the person answers
+  that. Everything else these verbs do is reversible and unsaved work is not, and
+  one approval covers one sentence: *ask Blender to close* is an approval to
+  close an application, never to discard what is in it. Putting **ask** in the
+  approval string rather than in a comment makes it a thing a translator is
+  warned about and a reader cannot miss, and there is a test on the note.
+
+  Three decisions the next items inherit. **The identifier is approved and the
+  name is only shown**: the name is written by whoever packaged the application
+  and two can claim one, so an approval sentence naming *Mail* could be chosen by
+  the thing being approved — no two share an identifier, and a name that cannot
+  be shown in one line is dropped while the application stays. **The list of what
+  is installed is consulted second, never first**, and for a different reason
+  than `alo-files`' order: answering *that is not installed* about an ungranted
+  application would let an agent enumerate somebody's machine, so an ungranted
+  application refuses identically either way and a test asserts the two refusals
+  are the same string. **There is no read on this list at all** — what is running
+  reaches an agent as context at invocation, and a `list_applications` would be
+  the background reader `CLAUDE.md` forbids.
+
+  Built and unit tested. **Nothing here has opened a window**: the acting half is
+  Wayland and D-Bus and stays under *blocked — linux*.
+
+- [ ] **11a. A choice a person can read** — cut from item 11, and the reason
+  `arrange` is not built. `alo_capability::Takes::Choice` holds plain strings,
+  so `Value::Choice` reaches `Call::filling` as the identifier a model chose it
+  by and lands untranslated in the approval sentence. No verb in the workspace
+  uses a choice today, so nothing shipped is wrong — and nothing can declare one
+  honestly until this is fixed, which is why it blocks a v0.01 promise.
+
+  What it has to decide: the options are declared as `alo_strings::Word`s, as a
+  verb's own words have been since 9g, while `Value::Choice` keeps the stable
+  identifier the record and the model need — so `Call::filling` renders the
+  option through the vocabulary and stops being a plain `String` map. That
+  reaches `alo-capability` and everything that fills a sentence from a call.
+  Then `arrange_application` is declared, with the arrangements v0.01 promises
+  (`docs/features.md`: snap and tile at v0.01, quarters at v0.5), and
+  `docs/contracts/agent-verbs.md`'s application table gains its fourth row.
+
+  Ready: it needs no Linux host and no hardware.
+
 ---
 
 ## Blocked — linux
@@ -854,9 +933,14 @@ rather than only of what is convenient.
 - **Sign-in and the local account**, the agent overlay, the launcher and window
   management, copy and paste, window switching — all draw on the compositor.
 - **Application verbs, the acting half** — AT-SPI, D-Bus, the portal backend
-  (ADR 0005). The *file* half of this was listed here and was wrong: opening a
-  folder needs no portal and no accessibility tree, so it was item 6a above and
-  is built.
+  (ADR 0005): starting an application, bringing one to the front, and asking one
+  to close, given a `Reaching`. The *file* half of this was listed here and was
+  wrong: opening a folder needs no portal and no accessibility tree, so it was
+  item 6a above and is built. **The portable half of the application verbs was
+  wrong here too, and in a worse way** — it was not listed anywhere at all, so a
+  v0.01 promise had no item until iteration 24 read this line properly. It is
+  item 11 above. What is left here is genuinely Linux: nothing in this
+  repository can start a program on a machine that has no compositor.
 - **6b. Opening from a handle, and renaming without replacing.**
   `docs/quirks.md` records the two gaps the portable acting half cannot close: a
   path checked and then opened *by name* can have a link swapped in between the

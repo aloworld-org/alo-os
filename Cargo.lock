@@ -13,6 +13,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-applications"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-record",
+ "alo-strings",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-capability"
 version = "0.0.1"
 dependencies = [

@@ -11,6 +11,7 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 
 use alo_keeping::words::{self, EVERY_WORD, FOR_DAYS};
@@ -28,12 +29,26 @@ fn in_english() -> Strings {
     Strings::of(keeping_words().unwrap())
 }
 
-/// A record read back from a string, for the sentences that are about one.
+/// A record read back from a file, for the sentences that are about one.
+///
+/// **A folder of this call's own**, counted as well as named after the process.
+/// Four tests in this file ask for one and the test harness runs them in
+/// parallel threads of a single process, so a folder named after the process
+/// alone is one path being written and read by four threads at once — which is
+/// exactly what it looked like: a failure that appeared once in a whole-workspace
+/// run and never again in isolation. `alo-files`' `a_folder_of_our_own` has
+/// counted for this reason since item 6a, and this is the same fixture without
+/// the counter.
 fn a_shortened_record() -> Reading {
+    static NEXT: AtomicU32 = AtomicU32::new(0);
     // Written by this crate at some point and shortened once.
     let head = "{\"format\":1,\"since\":{\"secs_since_epoch\":1760000000,\
                 \"nanos_since_epoch\":0},\"under\":{\"for-days\":30}}\n";
-    let folder = std::env::temp_dir().join(format!("alo-keeping-said-{}", std::process::id()));
+    let folder = std::env::temp_dir().join(format!(
+        "alo-keeping-said-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
     std::fs::create_dir_all(&folder).unwrap();
     let path = folder.join("record.jsonl");
     std::fs::write(&path, head).unwrap();

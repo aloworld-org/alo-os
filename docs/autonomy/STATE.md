@@ -2372,3 +2372,137 @@ that has done nothing.*
   machine. The next iteration should expect to find nothing ready — and, having
   now seen one "blocked" item that was two thirds portable, should read each
   blocker once before writing `LOOP COMPLETE` rather than trusting the label.
+
+## 2026-09-03 — iteration 24: what an agent may do to an application
+
+**Built: item 11, which was not in the queue when this iteration started.** The
+reading step is the whole first half of this entry, because iteration 23 left an
+instruction — *read each blocker once before writing `LOOP COMPLETE` rather than
+trusting the label* — and following it found not a mislabelled item but a
+missing one.
+
+Every *ready* item was ticked. The blocked lists name a compositor, sign-in and
+window management, `6b`, `4b`, egress enforcement, the image, the workspace
+client, and **"application verbs, the acting half"**. That last line is the one
+that matters: `docs/features.md` promises *[v0.01] ★ Application verbs: open,
+focus, arrange, close*, and the queue had an item for the acting half and
+**nothing anywhere for the portable half**. A v0.01 promise had no item at all.
+Item 6 is the precedent it should have had from the start — file verbs, the
+portable half, then 6a for the acting one — and the same split was never written
+for applications.
+
+That is the third iteration running to find a blocker that was part portable
+(6a, 4a, now 11). It is worth stating plainly rather than as a coincidence: **a
+blocker is a claim about code, and a claim written once tends to be about the
+hardest part of an item rather than about all of it.** The queue line now says
+what is genuinely Linux — nothing here can start a program on a machine with no
+compositor — instead of covering the whole subject.
+
+`crates/alo-applications`, a **new crate**.
+
+| | |
+|---|---|
+| `verbs.rs` | Three of the four, declared from the words a translator is handed |
+| `application.rs` | One installed application: the identifier it is granted by, and the name a person only ever sees |
+| `installed.rs` | What this machine has, matched exactly, first entry keeping the identifier |
+| `reaching.rs` | The only type meaning *this may reach an application*, and the order the two questions are asked in |
+| `refusing.rs` | Why this half says no: not installed, and an entry no verb could name |
+| `words.rs` | 13 phrases, the English beside each key, and a note on every one that needs one |
+| `testing.rs` | The fixtures the other files' tests are written against |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. 38 unit tests, 11 integration tests — 6 against
+the real vocabulary in German and Maltese, 5 through the whole capability
+journey and into `alo-record` — and 1 doctest. The workspace is **830 tests and
+21 doctests**, all green. `CHANGELOG.md`, `docs/contracts/agent-verbs.md`,
+`QUEUE.md` and `ROADMAP.md` in the same change.
+
+**The scope was cut to three verbs, and the cut is the most useful thing this
+iteration found.** `arrange` needs an argument saying where the window goes.
+That is a `Takes::Choice`, and `Call::filling` fills a sentence from
+`Value::describe` — so the chosen option arrives in the approval sentence as the
+stable identifier the model picked it by: *put Blender on the `left_half`*.
+Untranslated English, inside the one string the whole capability model is built
+around, in every language on earth.
+
+It is item 9g's guarantee failing for the one argument kind 9g did not reach. A
+verb is declared from `Word`s so that the string a translator is handed is the
+string the declaration was checked against — and a choice's options were never
+`Word`s, so `alo-capability` can express a capability whose words are not
+translatable after all. Nothing shipped is wrong, because no verb in this
+workspace uses a choice. But nothing could declare one honestly either, and
+wording around it here would have buried the finding while declaring `arrange`
+anyway would have shipped it. So it is **item 11a**, it is *ready*, and it names
+what it has to decide: the options declared as `Word`s while `Value::Choice`
+keeps the stable identifier the record and the model need, which makes
+`Call::filling` render through the vocabulary and reaches everything that fills
+a sentence from a call.
+
+**The decision the item did not contain: closing asks, and the word is in the
+sentence a person approves.** `close_application` does what pressing the close
+button does — the application is asked, it may put its own *save your changes?*
+up, and the person answers that. The reasoning is what one approval covers.
+Every other thing these verbs do is reversible: an application that was opened
+can be closed, one brought forward can be sent back. Unsaved work is not, and
+*ask Blender to close* is an approval to close an application and not an
+approval to discard what is in it. Putting **ask** into the approval string
+rather than into a comment makes it something a translator is warned about —
+its note says a translation reading *close {application}* would promise
+something alo OS does not do — and something a reader cannot miss.
+
+**Three decisions the next iteration inherits.**
+
+- **The identifier is approved; the name is only shown.** An application has two
+  names and the second is written by whoever packaged it, so *approve: open
+  Mail* reads identically whichever *Mail* is behind it — an approval sentence
+  the approved thing can choose is not an approval. No two applications share an
+  identifier. A name that cannot be shown in one line is dropped and the
+  application stays, because nothing is ever acted on by name and refusing it
+  would let a packager decide what this machine can reach.
+- **What is installed is consulted second, and the reason is not `alo-files`'.**
+  There, asking the disk first would tell an agent whether a file it may not
+  touch exists. Here, answering *that is not installed* about an ungranted
+  application would let an agent enumerate somebody's machine, and which
+  applications a person uses says who they are and who they work for. The test
+  is stronger than a spy on the list: the two refusals are asserted to be **the
+  same string**, so the answer carries nothing either way.
+- **There is no read on this list at all**, and the absence is the design. What
+  is running and what is in front of a person reach an agent as *context*, for
+  that turn. A `list_applications` would be the background reader `CLAUDE.md`
+  calls a bug in this product, and `docs/contracts/agent-verbs.md` now says so
+  to whoever writes an adapter.
+
+**What the gate found that the design did not.** One test outside this crate
+failed once, on the first whole-workspace run, and then passed in every run
+afterwards and in isolation: `alo-keeping`'s
+`a_shell_that_forgot_to_declare_these_words_shows_that_it_forgot`. It was not
+this iteration's doing and it was not a fluke worth shrugging at — the fixture
+`a_shortened_record` names its folder after the **process** alone, four tests in
+that file call it, and the harness runs them in parallel threads of one process.
+Four threads writing and reading one path. `alo-files`' `a_folder_of_our_own`
+has counted as well as named since item 6a for exactly this reason, and the
+counter is now in the `alo-keeping` fixture too, with the failure written into
+the comment so the next person to meet it knows what it was. **A flaky test is a
+gate that does not hold**, and fixing one is the opposite of weakening it.
+
+**What the next iteration must know:**
+
+- **The queue has a ready item again**, which it did not have when this
+  iteration began: **11a**, and it is a change to `alo-capability`'s public
+  surface rather than a new crate. It should be read beside item 9g in this
+  journal, because it is the same argument about the same guarantee.
+- **`alo-applications` is the second crate that never had to cross onto
+  `alo-strings`**, after `alo-keeping`: written after the 9-series, it has never
+  held an English sentence and no type in it has ever had a `Display`.
+- **A dev-dependency on `alo-record` is new**, and deliberate. Two of the gate's
+  guarantees — *one approval causes exactly one execution* and *every execution
+  and every refusal leaves a record* — cannot be demonstrated inside one crate,
+  so `tests/from_a_call_to_a_window.rs` walks the real journey and asserts the
+  record kept **the sentence that was approved**, not a second rendering of it.
+- **Nothing here has opened a window, and nothing has been read by anybody.**
+  There is no compositor, and there are still zero translations in this
+  repository; the German and Maltese in the tests are the tests'. `ROADMAP.md`'s
+  `alo-agentd` line gains `alo-applications` to its *Built* and now owes the
+  acting half, `arrange` and the context an agent is given; it stays unticked,
+  because there is no daemon and no shell.
