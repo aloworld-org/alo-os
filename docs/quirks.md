@@ -266,7 +266,7 @@ rather than two that agree is the rule the whole 9-series is built on.
 
 ### A translated error cannot be a `std::error::Error`
 **Version:** Rust 1.x, `std::error::Error: Debug + Display`, met again at item
-9f on 2026-09-02.
+9f on 2026-09-02 and at item 9h on 2026-09-03.
 **Behaviour:** `std::error::Error` requires `Display`, and `Display` takes no
 argument but a formatter — so a type that can only say what it is when it is
 handed the reader's language cannot implement it. Everything downstream of that
@@ -287,7 +287,16 @@ documentation says so where they will look. Two doctests in `alo-models` had to
 drop their `?` for this reason and were re-checked afterwards, because a
 `compile_fail` that starts failing on a missing conversion has stopped testing
 what it was written for.
-**Date:** 2026-09-02
+
+Item 9h met it in the place where it costs the most and is still worth paying:
+`alo_egress::NotPermitted` is what `Indicator::beginning` returns, so an egress
+refusal no longer arrives as an `Error` a caller can `?` into a box. The person
+holding the machine when that appears is the owner watching the indicator, so
+the refusal gives up `Display` like the rest — and three doctests, one of them
+in `alo-record`, dropped their `?`. The `compile_fail` beside them was
+re-checked outside the doctest harness and still fails on **E0624, associated
+function `new` is private**, which is what it was written to test.
+**Date:** 2026-09-03
 
 ## Models
 

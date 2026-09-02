@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 alo-capability = { path = "../alo-capability" }
 alo-models = { path = "../alo-models" }
+alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

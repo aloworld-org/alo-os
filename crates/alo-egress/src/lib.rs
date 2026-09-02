@@ -9,12 +9,14 @@
 //!
 //! ```
 //! use alo_capability::Grantee;
-//! use alo_egress::{Destination, EgressPolicy, Indicator, Leaving};
+//! use alo_egress::{Destination, EgressPolicy, Indicator, Leaving, egress_words};
 //! use alo_models::{InferenceSource, Region};
+//! use alo_strings::Strings;
 //! use std::time::{Duration, SystemTime};
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() {
 //! let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
+//! let strings = Strings::of(egress_words().expect("this crate's own words"));
 //! let mut indicator = Indicator::default();
 //!
 //! // A question answered on this machine is not a departure at all, so there
@@ -23,24 +25,26 @@
 //! assert!(Leaving::asking(&mail, &InferenceSource::ThisMachine).is_err());
 //! assert!(indicator.is_quiet());
 //!
-//! // One answered elsewhere is, and the person is told while it happens.
+//! // One answered elsewhere is, and the person is told while it happens — in
+//! // the language they read, which is what `strings` is for.
 //! let elsewhere = InferenceSource::Hosted {
 //!     provider: "alo".to_owned(),
 //!     region: Region::Declared("the EU".to_owned()),
 //! };
-//! let departing = indicator.beginning(
-//!     &EgressPolicy::Anywhere,
-//!     Leaving::asking(&mail, &elsewhere)?,
-//!     now,
-//! )?;
+//! let departing = indicator
+//!     .beginning(
+//!         &EgressPolicy::Anywhere,
+//!         Leaving::asking(&mail, &elsewhere).expect("this one leaves"),
+//!         now,
+//!     )
+//!     .expect("nothing forbids it");
 //! assert_eq!(
-//!     indicator.showing()[0].describe(),
+//!     indicator.showing()[0].said(&strings).text(),
 //!     "@mail is asking a question of alo, in the EU",
 //! );
 //!
 //! indicator.ended(departing);
 //! assert!(indicator.is_quiet());
-//! # Ok(())
 //! # }
 //! ```
 //!
@@ -86,6 +90,19 @@
 //! the same reason: the moment is passed in, so what a person saw on the
 //! indicator and what a record says about it cannot disagree about when it
 //! happened.
+//!
+//! # Saying it in a language
+//!
+//! Nothing here has a `Display`, and neither the indicator line nor a refusal
+//! is a `String` this crate assembled (item 9h). [`words`] is everything this
+//! crate can say; [`Leaving::said`], [`Destination::shown`] and
+//! [`NotPermitted::said`] are the roads to it, each taking the vocabulary the
+//! person in front of the machine actually reads.
+//!
+//! The order matters more here than anywhere else in this workspace: the policy
+//! is asked **before a socket opens**, so it decides without words and is worded
+//! afterwards. A machine whose egress rules stopped working because a
+//! translation failed to load would not be a machine sold on sovereignty.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -94,9 +111,16 @@ pub mod destination;
 pub mod indicator;
 pub mod leaving;
 pub mod policy;
+pub mod refusing;
+pub mod words;
+
+#[cfg(test)]
+mod testing;
 
 pub use departing::Departing;
 pub use destination::{Destination, DestinationError};
 pub use indicator::{Indicator, Shown, ShownId};
 pub use leaving::{Leaving, Why};
-pub use policy::{EgressPolicy, NotPermitted};
+pub use policy::EgressPolicy;
+pub use refusing::{NotPermitted, Refusal};
+pub use words::{Word, WordsError, declare_into, egress_words};

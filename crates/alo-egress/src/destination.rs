@@ -18,11 +18,19 @@
 //! line: text carrying a newline or an escape code can make the line say
 //! something other than what is happening. That is the same reason
 //! [`alo_capability::Arg`] refuses control characters, and the same refusal.
-
-use std::fmt;
+//!
+//! **Neither of the two things here that a person reads has a `Display`**
+//! (item 9h, following `alo-models` in 9f). A `Display` is one `to_string()`
+//! away from a screen whose author had no reason to think about language, so
+//! the only road to words is [`Destination::shown`] and
+//! [`DestinationError::said`], both of which need the strings the reader in
+//! front of the machine actually reads.
 
 use alo_models::{InferenceSource, Region};
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
+
+use crate::words;
 
 /// The most characters an address may be.
 ///
@@ -32,30 +40,51 @@ const LONGEST: usize = 253;
 
 /// Why something could not become a destination.
 ///
-/// The messages say what to do about them. They are read by whoever is holding
+/// The sentences say what to do about them. They are read by whoever is holding
 /// an egress that was never shown — somebody writing an adapter, or somebody
 /// reading a refusal — and "invalid destination" would tell neither anything.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DestinationError {
     /// Nothing, or only spaces.
-    #[error("say where this is going — an egress with nowhere named cannot be shown to anybody")]
     Nameless,
     /// A character that cannot be read on one line.
-    #[error(
-        "the address contains a character that cannot be shown — the indicator has to be readable in one line"
-    )]
     NotPrintable,
     /// Longer than an address can be.
-    #[error("an address is at most {longest} characters — this one is longer")]
     TooLong {
         /// The most characters an address may be.
+        ///
+        /// A number beside the sentence rather than inside it, because a
+        /// sentence that counted characters would be English's two plural
+        /// shapes standing in for Polish's three — `words.rs` has the
+        /// reasoning. Whoever draws this writes the number the way the reader's
+        /// region writes one.
         longest: usize,
     },
     /// A source that is this machine, which is not a departure at all.
-    #[error(
-        "an answer on this machine goes nowhere — ask whether the source causes egress before making a destination of it"
-    )]
     NothingLeaves,
+}
+
+impl DestinationError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub fn word(&self) -> words::Word {
+        match self {
+            Self::Nameless => words::NOWHERE_NAMED,
+            Self::NotPrintable => words::NOT_SHOWABLE,
+            Self::TooLong { .. } => words::TOO_LONG,
+            Self::NothingLeaves => words::NOTHING_LEAVES,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not: a
+    /// `Strings` that was never given [`crate::egress_words`] answers with the
+    /// key, marked, and `Said::is_a_bug`.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 }
 
 /// Where something is going.
@@ -172,27 +201,68 @@ impl Destination {
         }
     }
 
+    /// The string this crate declares for describing this place, where there
+    /// is one.
+    ///
+    /// [`None`] for a host a verb's argument named, and that is the honest
+    /// answer rather than a gap: `alo.example` is somebody's data, shown as it
+    /// was written like a filename in `alo-files`, and a translation of it
+    /// would be an invention.
+    #[must_use]
+    pub fn word(&self) -> Option<words::Word> {
+        match self {
+            Self::PairedMachine { .. } => Some(words::A_PAIRED_MACHINE),
+            Self::Provider {
+                region: Region::Declared(_),
+                ..
+            } => Some(words::A_PROVIDER),
+            Self::Provider {
+                region: Region::Unknown,
+                ..
+            } => Some(words::A_PROVIDER_SOMEWHERE),
+            Self::Address { .. } => None,
+        }
+    }
+
     /// What to show a person, at the moment it is happening.
     ///
     /// A phrase rather than a sentence, because the sentence is
-    /// [`crate::Leaving::describe`]'s and there is one of those, in one place,
-    /// for whoever translates it.
+    /// [`crate::Leaving::said`]'s and there is one of those, in one place, for
+    /// whoever translates it.
+    ///
+    /// A `String` rather than a [`Said`], for the reason
+    /// [`InferenceSource::shown`] is one: this is a clause. It goes inside the
+    /// indicator line *and* inside every refusal
+    /// [`EgressPolicy`](crate::EgressPolicy) makes, so that a line and the
+    /// place named in it are one language.
     #[must_use]
-    pub fn describe(&self) -> String {
+    pub fn shown(&self, strings: &Strings) -> String {
         match self {
-            Self::PairedMachine { machine } => format!("{machine}, on your network"),
-            Self::Provider { provider, region } => match region {
-                Region::Declared(where_) => format!("{provider}, in {where_}"),
-                Region::Unknown => format!("{provider}, which has not said where it runs"),
-            },
+            Self::PairedMachine { machine } => strings
+                .say(
+                    &words::A_PAIRED_MACHINE.key(),
+                    &Filling::of("machine", machine.clone()),
+                )
+                .into_text(),
+            Self::Provider { provider, region } => {
+                let named = Filling::of("provider", provider.clone());
+                match region {
+                    Region::Declared(where_) => strings
+                        .say(
+                            &words::A_PROVIDER.key(),
+                            &named.and("region", where_.clone()),
+                        )
+                        .into_text(),
+                    Region::Unknown => strings
+                        .say(&words::A_PROVIDER_SOMEWHERE.key(), &named)
+                        .into_text(),
+                }
+            }
+            // A host is data: shown exactly as it was written, which is what
+            // [`Destination::word`] answering [`None`] is about. It went
+            // through `readable` before it could become a destination at all.
             Self::Address { host } => host.clone(),
         }
-    }
-}
-
-impl fmt::Display for Destination {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.describe())
     }
 }
 
@@ -219,6 +289,7 @@ fn readable(text: &str) -> Result<String, DestinationError> {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     fn eu() -> Region {
         Region::Declared("the EU".to_owned())
@@ -317,37 +388,98 @@ mod tests {
         assert!(Destination::at(&"x".repeat(LONGEST)).is_ok());
     }
 
-    /// The refusals say what to do, not only what went wrong.
+    /// The refusals say what to do, not only what went wrong — and the one
+    /// that carries a number keeps it beside the sentence rather than inside
+    /// it, so nobody writes English's plural shapes into a language with more.
     #[test]
     fn the_refusals_say_what_to_do() {
-        let nowhere = DestinationError::Nameless.to_string();
-        assert!(nowhere.contains("say where this is going"), "{nowhere}");
-        let here = DestinationError::NothingLeaves.to_string();
-        assert!(here.contains("causes egress"), "{here}");
+        let strings = in_english();
+        let nowhere = DestinationError::Nameless.said(&strings);
+        assert!(
+            nowhere.text().contains("say where this is going"),
+            "{nowhere}"
+        );
+        let here = DestinationError::NothingLeaves.said(&strings);
+        assert!(here.text().contains("causes egress"), "{here}");
+
+        let long = DestinationError::TooLong { longest: LONGEST };
+        assert!(long.said(&strings).text().contains("hostname"), "{long:?}");
+        assert!(
+            !long
+                .said(&strings)
+                .text()
+                .chars()
+                .any(|char| char.is_ascii_digit()),
+            "the number is a field, not a word in the sentence"
+        );
+        assert_eq!(long, DestinationError::TooLong { longest: 253 });
     }
 
     /// What a person reads says the uncomfortable thing plainly: a provider
     /// that has not said where it runs says so rather than sounding settled.
     #[test]
     fn an_undeclared_provider_says_so_rather_than_sounding_safe() {
+        let strings = in_english();
         let said = Destination::provider("someone", Region::Unknown)
             .unwrap()
-            .describe();
+            .shown(&strings);
         assert!(said.contains("has not said where it runs"), "{said}");
         assert_eq!(
-            Destination::provider("alo", eu()).unwrap().describe(),
+            Destination::provider("alo", eu()).unwrap().shown(&strings),
             "alo, in the EU"
         );
         assert_eq!(
             Destination::paired("the studio workstation")
                 .unwrap()
-                .to_string(),
+                .shown(&strings),
             "the studio workstation, on your network"
         );
+    }
+
+    /// **A host is data, not a string.** It is shown exactly as it was written
+    /// — like a filename in `alo-files` — and there is nothing here for a
+    /// translator to be handed, which is what [`Destination::word`] answering
+    /// [`None`] says.
+    #[test]
+    fn a_host_nobody_declared_anything_about_is_shown_as_it_was_written() {
+        let address = Destination::at("alo.example").unwrap();
+        assert_eq!(address.word(), None);
+        assert_eq!(address.shown(&in_english()), "alo.example");
         assert_eq!(
-            Destination::at("alo.example").unwrap().describe(),
-            "alo.example"
+            address.shown(&Strings::of(alo_strings::Vocabulary::empty())),
+            "alo.example",
+            "a host does not stop being shown because nothing was declared"
         );
+    }
+
+    /// **The word a destination names is the string it is shown by.** They are
+    /// written in two places — one answers *which string*, the other fills it
+    /// — and a test rather than a comment is what keeps them the same.
+    #[test]
+    fn the_string_a_destination_names_is_the_one_it_is_shown_by() {
+        for (destination, german) in [
+            (
+                Destination::paired("the studio workstation").unwrap(),
+                "anderswo: {machine}",
+            ),
+            (
+                Destination::provider("alo", eu()).unwrap(),
+                "anderswo: {provider}, in {region}",
+            ),
+            (
+                Destination::provider("someone", Region::Unknown).unwrap(),
+                "anderswo: {provider}",
+            ),
+        ] {
+            let word = destination.word().unwrap();
+            let strings = translated(&[(word, german)]);
+            assert!(
+                destination.shown(&strings).starts_with("anderswo:"),
+                "{}: {}",
+                word.named(),
+                destination.shown(&strings)
+            );
+        }
     }
 
     /// Where something went outlives the moment it went, so a destination has

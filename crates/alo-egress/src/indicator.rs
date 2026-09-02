@@ -24,11 +24,13 @@
 
 use std::time::SystemTime;
 
+use alo_strings::{Said, Strings};
 use serde::Serialize;
 
 use crate::departing::Departing;
 use crate::leaving::Leaving;
-use crate::policy::{EgressPolicy, NotPermitted};
+use crate::policy::EgressPolicy;
+use crate::refusing::NotPermitted;
 
 /// Which line on the indicator an egress is.
 ///
@@ -76,10 +78,10 @@ impl Shown {
         &self.leaving
     }
 
-    /// The line a person reads.
+    /// The line a person reads, in the language they read it in.
     #[must_use]
-    pub fn describe(&self) -> String {
-        self.leaving.describe()
+    pub fn said(&self, strings: &Strings) -> Said {
+        self.leaving.said(strings)
     }
 }
 
@@ -111,28 +113,31 @@ impl Indicator {
     ///
     /// ```
     /// use alo_capability::Grantee;
-    /// use alo_egress::{Destination, EgressPolicy, Indicator, Leaving, Why};
+    /// use alo_egress::{Destination, EgressPolicy, Indicator, Leaving, Why, egress_words};
+    /// use alo_strings::Strings;
     /// use std::time::{Duration, SystemTime};
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() {
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
+    /// let strings = Strings::of(egress_words().expect("this crate's own words"));
     /// let mut indicator = Indicator::default();
     /// assert!(indicator.is_quiet());
     ///
     /// let leaving = Leaving::because(
     ///     &Grantee::named("@files"),
     ///     Why::Fetching,
-    ///     Destination::at("alo.example")?,
+    ///     Destination::at("alo.example").expect("a host that can be shown"),
     /// );
-    /// let departing = indicator.beginning(&EgressPolicy::Anywhere, leaving, now)?;
+    /// let departing = indicator
+    ///     .beginning(&EgressPolicy::Anywhere, leaving, now)
+    ///     .expect("nothing forbids this");
     /// assert_eq!(
-    ///     indicator.showing()[0].describe(),
+    ///     indicator.showing()[0].said(&strings).text(),
     ///     "@files is fetching something from alo.example",
     /// );
     ///
     /// indicator.ended(departing);
     /// assert!(indicator.is_quiet());
-    /// # Ok(())
     /// # }
     /// ```
     ///
@@ -144,18 +149,19 @@ impl Indicator {
     /// use alo_egress::{Destination, EgressPolicy, Indicator, Leaving, Why};
     /// use std::time::{Duration, SystemTime};
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() {
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let mut indicator = Indicator::default();
     /// let leaving = Leaving::because(
     ///     &Grantee::named("@files"),
     ///     Why::Fetching,
-    ///     Destination::at("alo.example")?,
+    ///     Destination::at("alo.example").expect("a host that can be shown"),
     /// );
-    /// let departing = indicator.beginning(&EgressPolicy::Anywhere, leaving, now)?;
+    /// let departing = indicator
+    ///     .beginning(&EgressPolicy::Anywhere, leaving, now)
+    ///     .expect("nothing forbids this");
     /// indicator.ended(departing);
     /// indicator.ended(departing); // the departure was spent above
-    /// # Ok(())
     /// # }
     /// ```
     ///
@@ -168,8 +174,8 @@ impl Indicator {
         leaving: Leaving,
         now: SystemTime,
     ) -> Result<Departing, NotPermitted> {
-        if let Some(why) = policy.refusal(&leaving) {
-            return Err(NotPermitted::new(leaving, why));
+        if let Some(refused) = policy.refusal(&leaving) {
+            return Err(refused);
         }
         let id = ShownId(self.next);
         self.next += 1;
@@ -217,6 +223,7 @@ mod tests {
     use super::*;
     use crate::destination::Destination;
     use crate::leaving::Why;
+    use crate::testing::in_english;
     use alo_capability::Grantee;
     use alo_models::{InferenceSource, Region};
     use std::time::Duration;
@@ -267,7 +274,7 @@ mod tests {
         assert_eq!(shown.id(), departing.shown());
         assert_eq!(shown.at(), noon());
         assert_eq!(
-            shown.describe(),
+            shown.said(&in_english()).text(),
             "@mail is asking a question of alo, in the EU"
         );
     }
@@ -282,7 +289,13 @@ mod tests {
             .unwrap_err();
         assert!(indicator.is_quiet());
         assert!(indicator.showing().is_empty());
-        assert!(refused.why().contains("nothing leave"), "{refused}");
+        assert!(
+            refused
+                .said(&in_english())
+                .text()
+                .contains("let nothing leave"),
+            "{refused:?}"
+        );
         assert_eq!(refused.leaving().agent(), &mail());
     }
 
@@ -295,7 +308,7 @@ mod tests {
             .beginning(&EgressPolicy::InTheBuilding, fetching(), noon())
             .unwrap_err();
         assert_eq!(
-            refused.leaving().describe(),
+            refused.leaving().said(&in_english()).text(),
             "@files is fetching something from alo.example"
         );
         assert_eq!(

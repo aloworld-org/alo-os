@@ -12,6 +12,29 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The line that says something is leaving your machine is now in your own
+  language.** It is the one alo OS is sold on: *@mail is asking a question of
+  someone, which has not said where it runs*, read while it is happening rather
+  than in a log afterwards. Read in a language you do not speak it is a light
+  that blinks, so it moved — whole sentences, one for each of the three things
+  an agent can cause, rather than a stem with a place glued onto the end, because
+  where the name of a place goes in a sentence is not something a program can
+  work out.
+
+  The place inside the line moved with it, and says the same uncomfortable thing
+  as the sentence you read beside an answer: a provider that has not said where
+  it runs says so in both. A host an agent named — `alo.example` — is shown
+  exactly as it was written, because it is somebody's address and not a phrase.
+  So are every refusal your organisation's egress policy makes, and every reason
+  an address could not be shown at all.
+
+  Nothing about **what may leave** changed, and that is the part worth saying
+  plainly: the policy is asked before a connection opens, it is asked without
+  words, and a machine that failed to load a translation still refuses exactly
+  what it refused before. What was refused is now kept as what it was rather
+  than as an English sentence, so the words on your screen and the words in the
+  record are one rendering of one refusal.
+
 - **Where your question is about to go is now said in your own language** —
   and so is every reason it will not go there. That is the sentence you read
   beside an answer before you decide whether to paste a contract into the next

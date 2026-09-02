@@ -17,14 +17,20 @@
 //! person reads on the indicator, so there is one thing to translate and one
 //! thing to review, rather than a phrase in the shell and a different one in the
 //! settings panel.
-
-use std::fmt;
+//!
+//! **And it has no `Display`** (item 9h). The three sentences are the whole of
+//! what law 1 shows a person, so the road to them is [`Leaving::said`], which
+//! takes the words the reader in front of the machine actually reads and
+//! answers something that says whether anybody translated it. A `Display` here
+//! would be one `to_string()` from an English indicator on a Latvian machine.
 
 use alo_capability::Grantee;
 use alo_models::InferenceSource;
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::destination::{Destination, DestinationError};
+use crate::words;
 
 /// Why an agent is causing something to leave.
 ///
@@ -111,25 +117,39 @@ impl Leaving {
         &self.destination
     }
 
+    /// The string this crate declares for this line.
+    #[must_use]
+    pub fn word(&self) -> words::Word {
+        match self.why {
+            Why::Asking => words::IS_ASKING,
+            Why::Fetching => words::IS_FETCHING,
+            Why::Sending => words::IS_SENDING,
+        }
+    }
+
     /// The line a person reads at the moment it happens.
     ///
     /// One sentence, naming all three things, because an indicator that said
     /// only *something is leaving* would be a diagnostic rather than a feature.
+    ///
+    /// One sentence in the string table too, rather than a stem with a place
+    /// glued onto it: the preposition before the destination is not punctuation
+    /// a program can pick — English wants *of* after a question and *from*
+    /// after a fetch — and a language that inflects the place needs the whole
+    /// sentence in front of it to choose.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not: a
+    /// `Strings` that was never given [`crate::egress_words`] answers with the
+    /// key, marked, and `Said::is_a_bug`. **What is leaving never depends on
+    /// the string table** — this describes an egress that has already been
+    /// decided about, and calling it cannot change what was decided.
     #[must_use]
-    pub fn describe(&self) -> String {
-        let agent = self.agent.as_str();
-        let destination = self.destination.describe();
-        match self.why {
-            Why::Asking => format!("{agent} is asking a question of {destination}"),
-            Why::Fetching => format!("{agent} is fetching something from {destination}"),
-            Why::Sending => format!("{agent} is sending something to {destination}"),
-        }
-    }
-}
-
-impl fmt::Display for Leaving {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.describe())
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(
+            &self.word().key(),
+            &Filling::of("agent", self.agent.as_str().to_owned())
+                .and("destination", self.destination.shown(strings)),
+        )
     }
 }
 
@@ -140,6 +160,7 @@ impl fmt::Display for Leaving {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
     use alo_models::Region;
 
     fn mail() -> Grantee {
@@ -173,7 +194,7 @@ mod tests {
         assert_eq!(leaving.why(), Why::Asking);
         assert!(leaving.destination().stays_in_the_building());
         assert_eq!(
-            leaving.describe(),
+            leaving.said(&in_english()).text(),
             "@mail is asking a question of the studio workstation, on your network"
         );
     }
@@ -182,6 +203,7 @@ mod tests {
     /// said only that something was leaving would be a diagnostic.
     #[test]
     fn the_line_a_person_reads_names_who_why_and_where() {
+        let strings = in_english();
         let asking = Leaving::asking(
             &mail(),
             &InferenceSource::Hosted {
@@ -191,7 +213,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            asking.to_string(),
+            asking.said(&strings).text(),
             "@mail is asking a question of alo, in the EU"
         );
 
@@ -201,7 +223,7 @@ mod tests {
             Destination::at("alo.example").unwrap(),
         );
         assert_eq!(
-            fetching.describe(),
+            fetching.said(&strings).text(),
             "@files is fetching something from alo.example"
         );
 
@@ -211,9 +233,54 @@ mod tests {
             Destination::at("alo.example").unwrap(),
         );
         assert_eq!(
-            sending.describe(),
+            sending.said(&strings).text(),
             "@files is sending something to alo.example"
         );
+    }
+
+    /// **The line and the place named in it are one language.** The whole
+    /// sentence is translated, not a stem with an English clause on the end of
+    /// it, and the agent's name is the machine's rather than the language's.
+    #[test]
+    fn the_indicator_line_and_the_place_in_it_are_one_language() {
+        let strings = translated(&[
+            (words::IS_ASKING, "{agent} stellt {destination} eine Frage"),
+            (
+                words::A_PROVIDER_SOMEWHERE,
+                "{provider}, der nicht gesagt hat, wo er läuft",
+            ),
+        ]);
+        let said = Leaving::asking(
+            &mail(),
+            &InferenceSource::Hosted {
+                provider: "someone".to_owned(),
+                region: Region::Unknown,
+            },
+        )
+        .unwrap()
+        .said(&strings);
+        assert!(said.is_translated());
+        assert!(said.text().starts_with("@mail stellt"), "{said}");
+        assert!(said.text().contains("nicht gesagt hat"), "{said}");
+        assert!(!said.text().contains("is asking"), "{said}");
+        assert!(!said.text().contains("has not said"), "{said}");
+    }
+
+    /// **The indicator does not go blank because nobody declared the words.**
+    /// A machine whose shell forgot this crate's vocabulary still says
+    /// something is leaving and still names the key, which is how the person
+    /// who has to fix it finds out.
+    #[test]
+    fn a_line_without_the_words_still_says_something_is_leaving() {
+        let nothing = Strings::of(alo_strings::Vocabulary::empty());
+        let said = Leaving::because(
+            &mail(),
+            Why::Sending,
+            Destination::at("alo.example").unwrap(),
+        )
+        .said(&nothing);
+        assert!(said.is_a_bug());
+        assert!(said.text().contains("egress.leaving.sending"), "{said}");
     }
 
     /// Whose authority an egress is under is an identity, matched exactly like

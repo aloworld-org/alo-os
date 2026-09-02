@@ -37,6 +37,7 @@
 use std::time::SystemTime;
 
 use alo_egress::{Departing, NotPermitted};
+use alo_strings::Strings;
 
 use crate::entry::Entry;
 use crate::happened::Happened;
@@ -60,20 +61,22 @@ impl Entry {
     /// use alo_record::{Asking, Entry, Only, Record};
     /// use std::time::{Duration, SystemTime};
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() {
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let mut indicator = Indicator::default();
     /// let mut record = Record::default();
     ///
-    /// let departing = indicator.beginning(
-    ///     &EgressPolicy::Anywhere,
-    ///     Leaving::because(
-    ///         &Grantee::named("@files"),
-    ///         Why::Fetching,
-    ///         Destination::at("alo.example")?,
-    ///     ),
-    ///     now,
-    /// )?;
+    /// let departing = indicator
+    ///     .beginning(
+    ///         &EgressPolicy::Anywhere,
+    ///         Leaving::because(
+    ///             &Grantee::named("@files"),
+    ///             Why::Fetching,
+    ///             Destination::at("alo.example").expect("a host that can be shown"),
+    ///         ),
+    ///         now,
+    ///     )
+    ///     .expect("nothing forbids it");
     /// record.keep(Entry::left(&departing));
     /// indicator.ended(departing);
     ///
@@ -84,7 +87,6 @@ impl Entry {
     ///
     /// // And a departure comes from one place, which is the guarantee:
     /// let _ = Indicator::beginning;
-    /// # Ok(())
     /// # }
     /// ```
     ///
@@ -114,18 +116,23 @@ impl Entry {
     /// stopped. The moment is passed in, because a refusal is not an authority
     /// and does not carry one.
     ///
-    /// The policy's words are kept as written, through [`Line`] like every
-    /// other refusal: they name a destination that came from a verb's argument.
+    /// **The strings come in, and the rendering is made here** — as
+    /// [`Entry::refused`] does since item 9e, and for the same reason. A
+    /// refusal reaches this crate as the value the policy made, so what a
+    /// person was shown and what the record keeps are one rendering of one
+    /// value rather than two accounts of one moment. It goes through [`Line`]
+    /// like every other refusal, because it names a destination that came from
+    /// a verb's argument.
     ///
     /// A refusal cannot be made up either — [`NotPermitted`] has no public
     /// constructor:
     ///
     /// ```compile_fail
-    /// // `NotPermitted::new` is the indicator's alone.
-    /// let _ = alo_egress::policy::NotPermitted::new;
+    /// // `NotPermitted::new` is the egress policy's alone.
+    /// let _ = alo_egress::refusing::NotPermitted::new;
     /// ```
     #[must_use]
-    pub fn held_back(refused: &NotPermitted, at: SystemTime) -> Self {
+    pub fn held_back(refused: &NotPermitted, strings: &Strings, at: SystemTime) -> Self {
         let leaving = refused.leaving();
         Self::new(
             at,
@@ -133,7 +140,7 @@ impl Entry {
                 agent: Line::of(leaving.agent().as_str()),
                 destination: leaving.destination().clone(),
                 why: leaving.why(),
-                refused: Line::of(refused.why()),
+                refused: Line::of(refused.said(strings).text()),
             },
         )
     }
@@ -151,6 +158,7 @@ mod tests {
     use crate::test_calls::{
         asking_alo, departing, files, hour, mail, noon, not_permitted, to_alo, to_the_studio,
     };
+    use crate::testing::in_english;
     use alo_egress::{Destination, EgressPolicy, Leaving, Why};
 
     /// **Law 1's second half.** What left is kept with everything a person or a
@@ -216,7 +224,7 @@ mod tests {
     #[test]
     fn an_egress_the_policy_refused_is_recorded_and_is_not_counted_as_egress() {
         let refused = not_permitted(&EgressPolicy::NothingLeaves, asking_alo());
-        let entry = Entry::held_back(&refused, noon());
+        let entry = Entry::held_back(&refused, &in_english(), noon());
 
         assert!(entry.happened().was_stopped());
         assert!(!entry.happened().caused_egress());
@@ -255,6 +263,7 @@ mod tests {
         let mut record = Record::default();
         record.keep(Entry::held_back(
             &not_permitted(&EgressPolicy::InTheBuilding, asking_alo()),
+            &in_english(),
             noon(),
         ));
         record.keep(Entry::left(&departing(
@@ -295,7 +304,8 @@ mod tests {
                 Destination::at("alo.example").unwrap(),
             ),
         );
-        let written = serde_json::to_string(&Entry::held_back(&refused, noon())).unwrap();
+        let written =
+            serde_json::to_string(&Entry::held_back(&refused, &in_english(), noon())).unwrap();
         assert!(!written.contains('\u{1b}'), "{written}");
     }
 
@@ -308,6 +318,7 @@ mod tests {
             Entry::left(&departing(asking_alo(), noon())),
             Entry::held_back(
                 &not_permitted(&EgressPolicy::NothingLeaves, asking_alo()),
+                &in_english(),
                 noon(),
             ),
             Entry::answered_here(&mail(), noon()),

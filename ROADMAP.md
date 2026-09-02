@@ -72,8 +72,11 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       panel to type it into
 - [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
 - [ ] **Egress indicator**, and no telemetry
-      · Built: `alo-egress` — what counts as leaving, and what is said about it
-      · Owed: the indicator, which is a compositor surface
+      · Built: `alo-egress` — what counts as leaving, and the line said about it
+      while it happens, now in the language the person reads rather than in
+      English; the policy still decides before a socket opens and without
+      needing a vocabulary to do it · Owed: the indicator itself, which is a
+      compositor surface
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
       · Built: `alo-capability` (the verbs, the grants, the approvals, and every
       refusal of theirs said in the language the person reads) and `alo-files`
@@ -151,7 +154,7 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       what the system says, the 24 languages listed each in its own language,
       English unable to hide, and a sentence that counts something counted with
       its reader's own plural rules, read from CLDR rather than recalled; and
-      four crates whose own English has moved onto it — `alo-files` (every file
+      six crates whose own English has moved onto it — `alo-files` (every file
       refusal, the six verbs, and the sentence a person approves before a file
       is renamed, moved or archived), `alo-shortcuts` (every row of the
       shortcuts panel, and every key named the way the reader's own keyboard
@@ -162,14 +165,16 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       says no — the grant that could not be made, the argument that did not
       survive the boundary, the change nobody was asked about, and the grants
       themselves, which now refuse with a value that is worded in the reader's
-      language wherever it is shown or written down) and `alo-models` (where an
+      language wherever it is shown or written down), `alo-models` (where an
       answer is about to come from, which is read before somebody decides
       whether to send a document at all; the rule an organisation set and why it
-      refused; and every refusal about a provider, a key or the runtime)
-      · Owed: a shell to translate, `alo-egress` — whose indicator sentence and
-      destinations are the last English left in a crate (9h) — and the sentence
-      a person approves, which is still rendered in English at the moment the
-      call is made (9g), and every translation — there are none yet
+      refused; and every refusal about a provider, a key or the runtime) and
+      `alo-egress` (the line a person reads while something is leaving their
+      machine — the visible half of law 1 — the place it names, and every
+      refusal the egress policy makes)
+      · Owed: a shell to translate, the sentence a person approves, which is
+      still rendered in English at the moment the call is made (9g), and every
+      translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

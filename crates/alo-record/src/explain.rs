@@ -367,6 +367,7 @@ mod tests {
         let mut record = Record::default();
         record.keep(Entry::held_back(
             &not_permitted(&EgressPolicy::NothingLeaves, asking_alo()),
+            &in_english(),
             noon(),
         ));
         assert_eq!(how_many(&record, &Asking::anything().only(Only::Egress)), 0);

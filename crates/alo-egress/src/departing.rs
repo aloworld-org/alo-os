@@ -97,6 +97,7 @@ mod tests {
     use super::*;
     use crate::indicator::Indicator;
     use crate::policy::EgressPolicy;
+    use crate::testing::in_english;
     use std::time::Duration;
 
     fn noon() -> SystemTime {
@@ -127,6 +128,9 @@ mod tests {
             &Destination::at("alo.example").unwrap()
         );
         assert_eq!(departing.at(), noon());
-        assert_eq!(departing.leaving().describe(), leaving().describe());
+        assert_eq!(
+            departing.leaving().said(&in_english()).text(),
+            leaving().said(&in_english()).text()
+        );
     }
 }

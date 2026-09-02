@@ -1,4 +1,9 @@
-//! What an organisation permits to leave, and the refusal in words.
+//! What an organisation permits to leave.
+//!
+//! The rule and nothing else: which egress is permitted, and — when one is not
+//! — which rule refused it, as a value. What that refusal *says* is
+//! [`crate::refusing`]'s, because a policy asked before a socket opens must not
+//! depend on a vocabulary having been loaded.
 //!
 //! [ADR 0001](../../../docs/decisions/0001-the-capability-model.md) §8: *egress
 //! policy lives in a Rust service, not a settings checkbox.* This file is that
@@ -23,6 +28,7 @@
 use alo_models::SourcePolicy;
 
 use crate::leaving::Leaving;
+use crate::refusing::{NotPermitted, Refusal};
 
 /// What may leave this machine
 /// ([ADR 0004](../../../docs/decisions/0004-the-organisations-machine.md)
@@ -54,29 +60,37 @@ impl EgressPolicy {
         }
     }
 
-    /// Why this egress is not permitted, in words a person on this machine can
-    /// read — a policy nobody can understand is a policy people work around.
+    /// Why this egress is not permitted — the rule that refused it and the
+    /// egress it refused, as a value.
     ///
     /// `None` when it is permitted, so this is the refusal and the question in
     /// one, and there is no second decision that could disagree with the first.
+    ///
+    /// **Not a sentence** (item 9h, following `alo-models` in 9f). Wording it
+    /// here would mean handing this type a `Strings`, and then whether a
+    /// connection may open would depend on somebody having loaded a vocabulary.
+    /// [`NotPermitted::said`] renders it where it is read, so the screen and
+    /// the record cannot be two accounts of one moment — a policy nobody can
+    /// understand is still a policy people work around, and this is where that
+    /// is answered rather than where it is worded.
+    ///
+    /// [`Anywhere`](Self::Anywhere) refuses nothing and so answers [`None`]
+    /// without a branch of its own: there is no variant of [`Refusal`] standing
+    /// in for a rule that never refuses.
     #[must_use]
-    pub fn refusal(&self, leaving: &Leaving) -> Option<String> {
+    pub fn refusal(&self, leaving: &Leaving) -> Option<NotPermitted> {
         if self.permits(leaving) {
             return None;
         }
-        let destination = leaving.destination().describe();
-        Some(match self {
-            Self::Anywhere => nothing_forbids_it(),
-            Self::InTheBuilding => format!(
-                "this machine is set to keep everything in the building, and {destination} is outside it"
-            ),
-            Self::InRegion(region) => format!(
-                "this machine is set to reach {region} only, and {destination} does not meet that"
-            ),
-            Self::NothingLeaves => format!(
-                "this machine is set to let nothing leave, and {destination} is somewhere else"
-            ),
-        })
+        let why = match self {
+            Self::Anywhere => return None,
+            Self::InTheBuilding => Refusal::OutsideTheBuilding,
+            Self::InRegion(region) => Refusal::OutsideTheRegion {
+                region: region.clone(),
+            },
+            Self::NothingLeaves => Refusal::NothingMayLeave,
+        };
+        Some(NotPermitted::new(leaving.clone(), why))
     }
 }
 
@@ -90,45 +104,6 @@ impl From<&SourcePolicy> for EgressPolicy {
             SourcePolicy::InRegion(region) => Self::InRegion(region.clone()),
             SourcePolicy::ThisMachineOnly => Self::NothingLeaves,
         }
-    }
-}
-
-/// `Anywhere` permits everything, so this branch is unreachable — but law 2's
-/// repository has no `unreachable!()` either, so it says something true instead.
-fn nothing_forbids_it() -> String {
-    "no policy forbids this".to_owned()
-}
-
-/// An egress that was refused, and what it was a refusal of.
-///
-/// The egress comes back for the same reason [`alo_capability::Refused`]
-/// carries its call: a refusal is recorded, and one that threw away what it
-/// refused could only say that something was stopped.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
-#[error("{why}")]
-pub struct NotPermitted {
-    /// What was refused.
-    leaving: Leaving,
-    /// Why it was, in the policy's own words.
-    why: String,
-}
-
-impl NotPermitted {
-    /// A refusal of this egress, for this reason.
-    pub(crate) fn new(leaving: Leaving, why: String) -> Self {
-        Self { leaving, why }
-    }
-
-    /// What was refused.
-    #[must_use]
-    pub fn leaving(&self) -> &Leaving {
-        &self.leaving
-    }
-
-    /// Why it was refused.
-    #[must_use]
-    pub fn why(&self) -> &str {
-        &self.why
     }
 }
 
@@ -172,7 +147,7 @@ mod tests {
     fn the_default_permits_whatever_the_person_needs() {
         assert_eq!(EgressPolicy::default(), EgressPolicy::Anywhere);
         for leaving in everywhere() {
-            assert!(EgressPolicy::default().permits(&leaving), "{leaving}");
+            assert!(EgressPolicy::default().permits(&leaving), "{leaving:?}");
             assert!(EgressPolicy::default().refusal(&leaving).is_none());
         }
     }
@@ -215,8 +190,8 @@ mod tests {
     fn nothing_leaves_permits_nothing_at_all() {
         let policy = EgressPolicy::NothingLeaves;
         for leaving in everywhere() {
-            assert!(!policy.permits(&leaving), "{leaving}");
-            assert!(policy.refusal(&leaving).is_some(), "{leaving}");
+            assert!(!policy.permits(&leaving), "{leaving:?}");
+            assert!(policy.refusal(&leaving).is_some(), "{leaving:?}");
         }
     }
 
@@ -262,26 +237,35 @@ mod tests {
         }
     }
 
-    /// A refusal says what the policy is and what was asked for. A policy
-    /// nobody can understand is a policy people work around.
+    /// A refusal says which rule refused and carries what it refused — the
+    /// words are `refusing.rs`'s, and are asked for where somebody reads them.
     #[test]
-    fn a_refusal_says_what_the_policy_is_and_where_it_was_going() {
+    fn a_refusal_names_the_rule_and_carries_what_it_refused() {
         let leaving = to(Destination::provider("someone", Region::Unknown).unwrap());
-        let refusal = EgressPolicy::InRegion("the EU".to_owned())
+        let refused = EgressPolicy::InRegion("the EU".to_owned())
             .refusal(&leaving)
-            .unwrap_or_default();
-        assert!(refusal.contains("reach the EU only"), "{refusal}");
-        assert!(refusal.contains("someone"), "{refusal}");
+            .unwrap();
+        assert_eq!(
+            refused.why(),
+            &Refusal::OutsideTheRegion {
+                region: "the EU".to_owned()
+            }
+        );
+        assert_eq!(refused.leaving(), &leaving);
     }
 
-    /// A refusal carries what it refused, because a refusal is recorded and one
-    /// that threw away what it refused could only say something was stopped.
+    /// **A policy that refuses nothing produces no refusal**, and there is no
+    /// variant standing in for one. The previous shape of this needed a
+    /// sentence for a state nobody could reach, and wrote *"no policy forbids
+    /// this"* to fill the hole.
     #[test]
-    fn a_refusal_carries_what_it_refused() {
-        let leaving = to(Destination::at("alo.example").unwrap());
-        let refused = NotPermitted::new(leaving.clone(), "nothing may leave".to_owned());
-        assert_eq!(refused.leaving(), &leaving);
-        assert_eq!(refused.why(), "nothing may leave");
-        assert_eq!(refused.to_string(), "nothing may leave");
+    fn a_policy_that_permits_everything_produces_no_refusal_at_all() {
+        for leaving in everywhere() {
+            assert_eq!(EgressPolicy::Anywhere.refusal(&leaving), None);
+        }
+        assert_eq!(
+            EgressPolicy::InTheBuilding.refusal(&to(Destination::paired("the box").unwrap())),
+            None
+        );
     }
 }

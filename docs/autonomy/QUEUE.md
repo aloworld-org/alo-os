@@ -44,17 +44,19 @@ nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
 
-Six edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
+Seven edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
 **`alo-shortcuts` does** since 9c, **`alo-appearance` does** since 9d,
 **`alo-capability` and `alo-record` do** since 9e — the deciding crate because
 every refusal it makes is read by somebody, and the record because it writes
 down the words that person was shown rather than a second rendering of its own —
-and **`alo-models` does** since 9f, because where an answer came from is a
-sentence somebody reads before they decide what to send. `alo-strings` still
-depends on nothing, and the direction is the one every other edge here takes — a
-crate that says something reaches the crate that knows how things are said,
-never the reverse. `alo-egress` is the one crate that has not crossed, and 9h is
-where it does.
+**`alo-models` does** since 9f, because where an answer came from is a
+sentence somebody reads before they decide what to send, and **`alo-egress`
+does** since 9h — the last to cross, and the one whose sentence a person reads
+while it is happening. `alo-strings` still depends on nothing, and the direction
+is the one every other edge here takes — a crate that says something reaches the
+crate that knows how things are said, never the reverse. Every crate in this
+workspace has now crossed it, so *hardcoded English is a bug* is a rule with no
+exceptions left in it rather than a rule with a list.
 
 | | |
 |---|---|
@@ -663,24 +665,48 @@ deny list.** Two patterns later items must follow:
   What it did not touch is `alo-egress`, which is 9h below and was not on any
   list before this iteration.
 
-- [ ] **9h. `alo-egress` onto `alo-strings`** — the last crate holding English,
-  found by 9f while checking what was left rather than named by anything.
-  `DestinationError`'s four messages, `Destination::describe`,
-  `Leaving::describe` — **the indicator line**, which is the sentence law 1
-  exists to put in front of somebody — and `EgressPolicy::refusal`. Iteration 5
-  put all four on item 9's list in `STATE.md` and the queue never carried them
-  across, so eight iterations of the 9-series went past them.
+- [x] **9h. `alo-egress` onto `alo-strings`** — the last crate holding English,
+  and the one with the indicator in it. Three new files in `crates/alo-egress`:
+  `words.rs` (13 phrases, the English beside each key, and the notes a
+  translator cannot work without), `refusing.rs` (`Refusal` — which rule refused
+  — and `NotPermitted`, which moved here out of `policy.rs`) and `testing.rs`
+  (the fixture the other files' tests are written against). `DestinationError`
+  lost its `Display`, `Destination::describe` became `shown(&Strings)`,
+  `Leaving::describe` became `said(&Strings)` and `Shown::describe` with it, and
+  `EgressPolicy::refusal` answers with a value rather than a sentence. 45 unit
+  tests (was 27), 7 new integration tests against the real vocabulary; 707 tests
+  and 20 doctests across the workspace, clippy clean.
 
-  It is the smallest of the six and the one with the most exposure: the
-  indicator is the promise on the box. The shape is five crates old and has not
-  changed. Two things are already decided for it. `EgressPolicy::refusal` is the
-  same problem `SourcePolicy::refusal` was in 9f and takes the same answer — a
-  value, not a sentence, because `alo-egress` decides whether a connection may
-  open and must not need a vocabulary to do it; `NotPermitted` already carries
-  what it refused, so the change is what it carries. And `Destination::describe`
-  is `InferenceSource::shown`'s twin by construction — `alo-egress` maps one to
-  the other in one place — so the two must not become two different sentences
-  about the same provider.
+  **The indicator line is one sentence per reason, and that is the decision the
+  item did not contain.** *`{agent} is asking a question of {destination}`* could
+  have been a stem plus a place, which is three fewer strings and would have
+  been wrong in English before it was wrong anywhere else: a question goes *of*
+  somewhere, a fetch comes *from* it, and a language that inflects the place
+  needs the whole sentence in front of it to choose. So there are three, each
+  whole, and the preposition is inside the translated string where a translator
+  can move it — `alo-shortcuts`' *a sentence never joins a list* met from the
+  other side.
+
+  Three decisions the next items inherit. **A destination that is data is not a
+  string**: `Destination::word` answers `None` for a host a verb's argument
+  named, because `alo.example` is somebody's address and a translation of it
+  would be an invention — the rule a filename is held to in `alo-files`, now
+  written into a type rather than a comment. **The rule and the refusal are two
+  types**, because `alo-record` writes a held-back entry from a `NotPermitted`
+  and from nothing else (item 5a): an enum carrying the egress in each variant
+  would have made every variant a way to write down a refusal that never
+  happened, so `NotPermitted` keeps private fields and a `pub(crate)`
+  constructor the policy alone calls, and `Refusal` is the public value beside
+  it. **`Entry::held_back` takes the strings**, as `Entry::refused` has since
+  9e, so the record keeps the rendering the person read.
+
+  What the twin guarantee turned out to be: `Destination::shown` and
+  `InferenceSource::shown` **cannot** be one string, because one names where an
+  answer came from (*by someone…*) and the other where a thing is going
+  (*…of someone…*), which is a different grammatical position. What they must
+  not do is differ about the provider, and that is a test walking every source
+  that leaves: both name it, both name the region, and both say *has not said
+  where it runs* when nobody has.
 
 - [ ] **9g. The sentence a person approves** — the question 9b left, 9c and 9d
   did not touch, and 9e answered without moving. `Call` renders its sentence

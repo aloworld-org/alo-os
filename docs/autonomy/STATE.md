@@ -2020,3 +2020,109 @@ is the smaller and the one with the indicator in it, 9g is the one with a public
 surface reaching three crates. 4a is `alo-agentd`'s and the daemon still does not
 exist — after the strings items, every remaining item in this queue belongs to a
 daemon, a Linux host or a certified machine.
+
+## 2026-09-03 — iteration 21: the line that says something is leaving, in the reader's language
+
+**Built: item 9h**, whole. `alo-egress` now says everything it says through
+`alo-strings`, and it is the sixth crate to move and the last one that held
+English. Three new files, and every type in it that a person reads moved onto
+them.
+
+| | |
+|---|---|
+| `words.rs` | **New.** 13 phrases, the English beside each key, and the notes a translator cannot work without |
+| `refusing.rs` | **New.** `Refusal` — which rule refused — and `NotPermitted`, which moved here out of `policy.rs` |
+| `testing.rs` | **New.** The two string fixtures the other files' tests are written against |
+| `leaving.rs` | `describe` became `said(&Strings)`; lost its `Display`. **The indicator line** |
+| `destination.rs` | `describe` became `shown(&Strings)`; `DestinationError` lost its `Display` and gained `said` |
+| `indicator.rs` | `Shown::describe` became `said(&Strings)`; `beginning` returns the policy's own refusal |
+| `policy.rs` | `refusal` answers with a value; the unreachable branch went with it |
+| `alo-record` | `Entry::held_back` takes the strings and renders there, as `Entry::refused` has since 9e |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-egress` is 45 unit tests (was 27) and 7 new
+integration tests against the real vocabulary; the workspace is **707 tests and
+20 doctests**, all green. `CHANGELOG.md`, `docs/quirks.md`, `QUEUE.md` and
+`ROADMAP.md` in the same change.
+
+**The decision the item did not contain: the indicator line is three whole
+sentences, not a stem and a place.** *`{agent} is asking a question of
+{destination}`* could have been one string plus a destination appended, which is
+two fewer strings to translate and would have been wrong in English before it was
+wrong anywhere else — a question goes *of* somewhere, a fetch comes *from* it, a
+send goes *to* it, and the preposition is not punctuation a program can pick.
+Any language that inflects a place needs the whole sentence in front of it to
+choose the form. So there are three, each whole, and the preposition sits inside
+the translated string where a translator can move it. That is `alo-shortcuts`'
+*a sentence never joins a list* from item 9c met from the other side: there the
+machine must not assemble a list, here it must not assemble a sentence.
+
+**The twin the queue asked for is not one string, and could not be.**
+`Destination::of` maps an `InferenceSource` onto a destination in one place, and
+the item said the two must not become two different sentences about the same
+provider. They are already two sentences and have to be: `alo-models` says where
+an answer **came from** — *by someone, which has not said where it runs* — and
+this crate names a **place a thing is going to**, and *"…is asking a question of
+by someone…"* is not English. What must not differ is what they say about the
+provider, so that is a test rather than a shared constant: for every source that
+leaves, both name the provider, both name the region, and both say *has not said
+where it runs* when nobody has. A note on each of the three points at its twin.
+
+**The third decision was about who may write down a refusal.** `alo-models`'
+`NotAllowed` is a public enum and nothing depends on its being unforgeable. Here
+item 5a's guarantee does: `alo-record` writes a held-back entry from a
+`NotPermitted` and from nothing else, so an enum carrying the egress in each
+variant would have made every variant a way to write down a refusal that nothing
+stopped. So it is two types — `Refusal`, the public value saying which rule
+refused, and `NotPermitted`, a struct with private fields and a `pub(crate)`
+constructor that `EgressPolicy::refusal` alone calls. The `compile_fail` doctest
+in `alo-record` that asserts this moved with the type and was **re-checked
+outside the doctest harness**: it still fails with E0624, associated function
+`new` is private, so it is still a test of the privacy and not of the new path.
+
+**Three smaller ones worth keeping.**
+
+- **A destination that is data is not a string.** `Destination::word` answers
+  `None` for a host a verb's argument named, and `shown` returns it exactly as
+  written. `alo.example` is somebody's address; a translation of it would be an
+  invention, and declaring `"{host}"` as a phrase would have handed 24
+  translators a row with nothing in it but a gap. It is the rule a filename is
+  held to in `alo-files`, now carried by a type rather than by a comment.
+- **The unreachable branch went, as it did in 9f.** `EgressPolicy::Anywhere`
+  permits everything, so the old `Option<String>` had a case that could not
+  happen and had been filled with *"no policy forbids this"* — a sentence for a
+  state nobody can reach, which would have become a sentence 24 translators were
+  asked to translate. There is no variant for it now.
+- **A sentence that would have to count has the number beside it instead.**
+  `DestinationError::TooLong` said *an address is at most 253 characters — this
+  one is longer*, which is a count in a sentence. It now says *that address is
+  longer than an address can be — check it is a hostname and nothing more*, and
+  `longest` stays a field. There is a test that no sentence in this crate holds
+  a digit, and that the crate declares no plural at all.
+
+**What the next iteration must know:**
+
+- **Every crate in this workspace has now crossed onto `alo-strings`**, so
+  *hardcoded English is a bug* is a rule with no exceptions rather than a rule
+  with a list. What is left of the 9-series is **9g**, which is not a
+  translation item: it is the public surface change that makes the sentence a
+  person approves one string instead of two renderings, and it reaches
+  `alo-capability`, `alo-files` and `alo-record` at once.
+- **`alo-egress` is not an `Error` crate any more.** `DestinationError` and
+  `NotPermitted` have no `Display`, so `Indicator::beginning` and
+  `Destination::at` cannot be `?`-ed into a `Box<dyn Error>`. Three doctests
+  dropped their `?` — two here, one in `alo-record` — and `docs/quirks.md`
+  records it beside 9f's entry rather than as a second quirk.
+- **`alo-record`'s test fixture now declares two crates' words.** A record
+  renders a capability refusal and an egress refusal, and a vocabulary holding
+  only one of them would keep a key where the person read a sentence. The
+  fixture says why.
+- **Nothing here has been read by anybody.** There are still zero translations
+  in this repository; the German in the tests is the tests'. `ROADMAP.md`'s
+  *Language* line gains `alo-egress` and its *Owed* now names only 9g, a shell
+  and the translations themselves; *Egress indicator* gains the line said in the
+  reader's language and stays unticked, because the indicator itself is a
+  compositor surface and there is no compositor.
+- **What is left is 9g and 4a.** After 9g, every remaining item in this queue
+  belongs to a daemon, a Linux host or a certified machine.
