@@ -36,7 +36,9 @@ however good the rest is.
 - [v0.5] **Set the background** — from a file, a folder that rotates, or a solid colour; per display on a multi-monitor desk
 - [v0.5] Set the lock-screen image, independently of the desktop
 - [v0.5] **Light and dark**, following the time of day if a person wants
-- [v0.5] Accent colour, drawn from the design tokens so the whole shell follows it rather than one button
+- [v0.5] **Accent colour** — five designed hues, each with a value for a light ground and one for a dark, so it reads properly either way. The whole shell follows it, not one button (ADR 0010)
+- [v0.5] ★ **Terracotta is not one of them.** It means the agent and nothing else, so it is reserved rather than offered — an accent somebody could set to terracotta would take away the one signal that says the machine is acting on their behalf
+- [v0.5] ★ **The agent is never signalled by colour alone** — terracotta always arrives with a mark and a word. A signal carried by hue fails for anybody who cannot distinguish that hue, and EN 301 549 does not allow colour to be the only means of conveying anything
 - [v0.5] Text size and scaling, which is an accessibility setting as much as a taste one
 - [v0.5] Wallpapers shipped with the image, so a fresh machine is not grey
 - [v1] Cursor size and colour; sounds, including silencing them

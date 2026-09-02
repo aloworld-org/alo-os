@@ -4,9 +4,21 @@ The screens of alo OS, for whoever designs them — a person or a model. It is a
 brief rather than a specification: it says what each screen has to do and what
 the system must never do, and leaves how it looks to the designer.
 
-Thirty screens for a working system; the twelve in part 1 carry the identity and
-are enough to test whether the idea reads. Where a screen and an ADR disagree,
-the ADR is the one that has been argued.
+**The screens are in Figma:**
+<https://www.figma.com/design/8q0JVtnLroZYNdDkIQeJni>
+
+Four pages, the same screens on each: **Light** and **Dark** at 1440×900, then
+**Laptop 1920×1080** and **External 2560×1440**. Colours are Figma variables
+bound to the palette below, so a page is pinned to a mode rather than redrawn.
+
+Where a screen and an ADR disagree, the ADR is the one that has been argued —
+and where a screen and this brief disagree, say so rather than picking one: it
+has happened once already, and ADR 0010 is the result.
+
+The two later pages are **mechanically adapted rather than redesigned**: elements
+keep their size and move to the edge they were anchored to. That is right for the
+laptop and only a starting point for the external display, where a 2560-wide
+Settings screen has an empty right-hand third that a designer would use.
 
 Two parts. **Part 1 is what you paste into Claude Desktop**; part 2 is the
 detail behind it, to paste as a follow-up if the first pass needs grounding.
@@ -79,9 +91,14 @@ Screens, in this order:
 
 ### The five principles
 
-1. **Terracotta means the agent.** Navy structure on a warm cream ground.
-   Terracotta appears where — and only where — the agent is present or acting.
-   Spend the accent nowhere else.
+1. **Terracotta means the agent — with a mark and a word beside it.** Navy
+   structure on a warm cream ground. Terracotta appears where, and only where,
+   the agent is present or acting; it is reserved, and never offered as a
+   personal accent. But it never carries the signal alone: wherever it appears,
+   a small mark and a word appear with it. Hue alone fails for anybody who
+   cannot distinguish that hue, and EN 301 549 forbids colour as the only means
+   of conveying anything (ADR 0010). A person's own accent comes from five other
+   hues, each with a light-ground and a dark-ground value.
 2. **Conventional where it is conventional.** Windows, launcher, settings,
    notifications: excellent and unsurprising. Invention here costs adoption and
    buys nothing.

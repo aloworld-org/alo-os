@@ -12,6 +12,16 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Your accent colour is yours, and terracotta is not one of the choices. It
+  means alo is present or acting, and an accent somebody could set to terracotta
+  would take away the one signal that says the machine is doing something on
+  their behalf. Five designed hues are offered instead — verdigris, indigo,
+  violet, moss and rose — each with a value for a light background and one for a
+  dark, because a colour that reads well on cream is illegible on charcoal. And
+  wherever alo appears, its colour arrives with a mark and a word: a signal
+  carried by hue alone is no signal at all for the one man in twelve who cannot
+  distinguish it.
+
 - alo OS can now be translated, and English has stopped being able to hide.
   Every sentence the system says is named, and the answer to *what does this
   say* always carries **whether anybody translated it** — so a screen that is

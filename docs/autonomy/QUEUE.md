@@ -356,20 +356,16 @@ items must follow:
   (`shipped::THE_WALLPAPER`), or a fresh machine has nothing behind its windows.
   That is written into the image item under *blocked — linux*.
 
-- [ ] **8a. The accent colour, which needs a decision that is not the loop's** —
-  cut from item 8, and the reason is a real disagreement between two documents
-  rather than missing code. `docs/features.md` promises an accent "drawn from the
-  design tokens so the whole shell follows it"; `docs/design/figma-brief.md`
-  says terracotta is the agent's colour, spent nowhere else, about five percent
-  of any screen. Those cannot both hold: an accent a person can choose that is
-  terracotta would take away the one signal that says the machine is acting on
-  their behalf, and the other five tokens are structure and grounds rather than
-  accents — navy is unreadable against the charcoal rail, cream against the
-  cream ground, so there is nothing left in the palette to offer. Resolving it
-  means either an accent set with a light and a dark value per hue, which is a
-  designer's decision and not a loop's, or dropping the promise. `token.rs` and
-  the tension are in place; the item is a decision first and a small amount of
-  code second.
+- [ ] **8a. The accent set** — the decision the loop was right to refuse is made:
+  **ADR 0010**. Terracotta is reserved for the agent and is not offered as a
+  personal accent; five designed hues are, each with a value for a light ground
+  and one for a dark, because a single hex that reads on cream is illegible on
+  charcoal. Verdigris `#22707E`/`#5FB3C2`, Indigo `#3A5AA8`/`#8AA0E6`, Violet
+  `#7A4E99`/`#BE97DE`, Moss `#4A7546`/`#8DBE85`, Rose `#A0466A`/`#E093AF`;
+  verdigris is the default. `Token` gains the set and **refuses terracotta as a
+  personal accent** rather than silently accepting it. The ADR also says the
+  agent is never signalled by colour alone — that part is the shell's to honour,
+  not this crate's, so note it and move on.
 
 - [x] **9. Strings** — implements `CLAUDE.md`'s *user-facing strings are
   externalized from day one* and `docs/features.md`'s "Language and access"

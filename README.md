@@ -89,6 +89,13 @@ installed. An alo workplace tenant adds your mail, calendar and
 business records. A machine that was a brick without a subscription
 would be a worse product and a dishonest one.
 
+## Design
+
+The screens live in Figma: <https://www.figma.com/design/8q0JVtnLroZYNdDkIQeJni>
+
+`docs/design/figma-brief.md` is the brief they were drawn from — what each screen
+has to do, and what the system must never do.
+
 ## Licence
 
 GPL-3.0-or-later for the code in this repository. The system image is
