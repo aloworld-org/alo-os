@@ -106,6 +106,11 @@ cannot demonstrate.
   channel are public surfaces. Third parties build adapters against
   ours; they change additively, and a break requires versioning and
   deprecation.
+- **The network is not authority.** Machines discover each other with no
+  configuration and trust none of them for it. Using another machine
+  takes a deliberate pairing on both; an agent reaching across acts
+  only under a grant made on the machine it acts upon. There is no
+  trusted-network setting, and there will not be one (ADR 0003).
 - **Certified before compatible.** One machine model that works
   completely beats a compatibility list nobody can honour. "Supports
   PCs" is not a claim we make.

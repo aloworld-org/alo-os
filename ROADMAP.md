@@ -59,6 +59,9 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] **Atomic updates with rollback**
 - [ ] Installer
 - [ ] Accessibility: EN 301 549 conformance on the shell
+- [ ] **Machines find each other** on a local network, with pairing
+- [ ] **One GPU box serves the office** — shared local inference over a pairing
+- [ ] A self-hosted workspace on the network is discovered, not configured
 - [ ] **Zero inference egress over a working day**, measured and published
 
 **Exit gate.** A person works a full day on alo OS — mail, documents,
@@ -70,7 +73,10 @@ cleanly.
 
 ## v1 — an organisation can buy it
 
-- [ ] Fleet enrollment, policy and signed updates, for alo OS machines
+- [ ] Fleet enrollment by discovery — the machine asks, an administrator admits it
+- [ ] Fleet policy and signed updates, for alo OS machines
+- [ ] Files and printers shared between paired machines
+- [ ] Cross-machine agent work, under grants made on the target machine
 - [ ] Signed images verified before boot; Secure Boot with our key
 - [ ] Backup and restore
 - [ ] **Adapter SDK published**, with a conformance suite

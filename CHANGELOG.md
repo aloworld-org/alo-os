@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Machines on a company network will find each other with no configuration, so
+  one GPU workstation can serve every desk and the inference stays in the
+  building — working with no internet at all. Discovery is open and trust is
+  not: using another machine takes a deliberate pairing on both, and an agent
+  reaching across only ever acts under a grant made on the machine it is acting
+  upon. Being on the same WiFi confers nothing.
 - alo OS has its constitution, its capability model and its contracts. No
   code yet: the decisions that have to hold before anything is reviewable,
   written down first. The load-bearing one is that an agent reaches the

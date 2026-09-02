@@ -51,6 +51,20 @@ current release, and Non-goals below.
 - [v1] Serving more than one person from one workstation
 - [v1] Evaluation: compare a fine-tune against the base model on your own questions, before trusting it
 
+## The local network — machines that find each other (ADR 0003)
+
+Discovery is open; **use requires a deliberate pairing on both machines**. Being
+on the same WiFi confers nothing.
+
+- [v0.5] Machines find each other with zero configuration — no addresses typed, no accounts
+- [v0.5] ★ **One GPU box serves the office**: a machine without a GPU discovers the one with it, and the agents just work. The inference never leaves the building; it moves down the corridor.
+- [v0.5] Pairing: mutual, deliberate, enumerated, revocable in one action, and expiring — grants, across a machine boundary
+- [v0.5] ★ **The whole of it works with no internet at all.** An office that cannot connect still has working AI
+- [v0.5] A self-hosted workspace on the network is **discovered, not configured** — no DNS step
+- [v1] Files and printers shared between paired alo machines, with no server in the middle
+- [v1] Enrollment by discovery: a new machine appears to the fleet and asks; an administrator admits it
+- [v1] ★ Cross-machine agent work — an agent may **ask** a paired machine, and acts only under a grant made **on that machine, by its person**
+
 ## Sovereignty, as testable claims
 
 - [v0.01] ★ **The egress indicator**: every network egress an agent causes, visible at the moment it happens
@@ -83,7 +97,11 @@ llama.cpp or vLLM. **No model training from scratch** — we serve and adapt ope
 weights. **No general-purpose distribution** — no package manager for the world,
 no attempt to be Ubuntu. **No third-party device management** — fleet features
 exist for alo OS machines; an MDM product is a different company. **No phone or
-tablet** — not in v1, possibly never. **No arbitrary command verb**, ever
+tablet** — not in v1, possibly never. **No directory service** — we do not
+rebuild Active Directory or LDAP, and we do not become the place a company's
+identities live; alo identities and pairing are what we offer. **No trusted
+network setting**, ever (ADR 0003) — the switch that would turn pairing off is
+the vulnerability, not a convenience we have not got round to. **No arbitrary command verb**, ever
 (ADR 0001 §1); this one is not a scope decision and is not revisitable without
 replacing that ADR.
 
