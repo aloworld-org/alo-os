@@ -15,10 +15,20 @@
 //! **The order is fixed.** Held modifiers are shown Super, Ctrl, Alt, Shift
 //! whatever order they were pressed in, because a person looking for the
 //! shortcut they set should find the same words every time they look.
+//!
+//! **Three of the four are printed differently on the keyboards this will run
+//! on** — a German keyboard says *Strg* and a French one *Maj* — so what a
+//! modifier is called is a string like any other, and the only road to it is
+//! [`Modifier::said`]. Neither type here has a `Display`; the reasoning is in
+//! [`crate::action`], and what replaces it for a whole set is
+//! [`Modifiers::shown`].
 
 use std::fmt;
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
+
+use crate::words::{self, Word};
 
 /// One key that changes what another key does.
 ///
@@ -41,15 +51,22 @@ impl Modifier {
     /// Every modifier there is, in the order they are shown in.
     pub const ALL: [Self; 4] = [Self::Super, Self::Ctrl, Self::Alt, Self::Shift];
 
-    /// What this is called where a person can see it.
+    /// The string this crate declares for it.
     #[must_use]
-    pub fn label(self) -> &'static str {
+    pub fn word(self) -> Word {
         match self {
-            Self::Super => "Super",
-            Self::Ctrl => "Ctrl",
-            Self::Alt => "Alt",
-            Self::Shift => "Shift",
+            Self::Super => words::SUPER,
+            Self::Ctrl => words::CTRL,
+            Self::Alt => words::ALT,
+            Self::Shift => words::SHIFT,
         }
+    }
+
+    /// What this is called where a person can see it, in the language they
+    /// read.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
     }
 
     /// Whether holding this makes a key mean something other than itself.
@@ -63,12 +80,6 @@ impl Modifier {
     }
 }
 
-impl fmt::Display for Modifier {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.label())
-    }
-}
-
 /// The modifiers held down at one moment.
 ///
 /// A set rather than a list: holding Ctrl twice is not a thing, and two chords
@@ -77,7 +88,7 @@ impl fmt::Display for Modifier {
 /// `["Super", "Shift"]` rather than as four booleans, and normalised on the way
 /// in so a hand-written file with duplicates or a different order still means
 /// what it says.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(from = "Vec<Modifier>", into = "Vec<Modifier>")]
 pub struct Modifiers {
     /// Super held.
@@ -158,6 +169,28 @@ impl Modifiers {
     pub fn enough(self) -> bool {
         self.held().any(Modifier::changes_the_meaning)
     }
+
+    /// What is held, written the way a keyboard shortcut is written: the names
+    /// in the reader's own language, joined with `+`, in the fixed order.
+    /// Empty when nothing is held.
+    ///
+    /// A `String` rather than a `Said`, because it is composed rather than
+    /// looked up — each name is a string of its own and whether any one of them
+    /// was translated is [`Modifier::said`]'s to answer. **The `+` is not a
+    /// string.** It is the notation every desktop writes a chord in, the same
+    /// decision `alo-appearance` makes about a time of day being written
+    /// `18:00` in a settings file whatever the region does.
+    #[must_use]
+    pub fn shown(self, strings: &Strings) -> String {
+        let mut written = String::new();
+        for modifier in self.held() {
+            if !written.is_empty() {
+                written.push('+');
+            }
+            written.push_str(modifier.said(strings).text());
+        }
+        written
+    }
 }
 
 impl From<Vec<Modifier>> for Modifiers {
@@ -172,15 +205,21 @@ impl From<Modifiers> for Vec<Modifier> {
     }
 }
 
-impl fmt::Display for Modifiers {
-    /// Joined with `+`, in the fixed order, and empty when nothing is held.
+impl fmt::Debug for Modifiers {
+    /// The names a settings file holds, joined with `+` — `Super+Shift` rather
+    /// than four booleans.
+    ///
+    /// Hand-written because the derived one is four fields of which three are
+    /// usually `false`, and because this is the rendering a programmer reads:
+    /// stable names that are nobody's language, which is what
+    /// [`crate::DefaultsError`] says a contradictory set of defaults with.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut first = true;
         for modifier in self.held() {
             if !first {
                 f.write_str("+")?;
             }
-            write!(f, "{modifier}")?;
+            write!(f, "{modifier:?}")?;
             first = false;
         }
         Ok(())
@@ -194,15 +233,20 @@ impl fmt::Display for Modifiers {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     /// Holding something and then asking about it agrees, for all four.
     #[test]
     fn what_is_held_is_what_was_pressed() {
         for modifier in Modifier::ALL {
             let held = Modifiers::just(modifier);
-            assert!(held.holds(modifier), "{modifier}");
+            assert!(held.holds(modifier), "{modifier:?}");
             for other in Modifier::ALL {
-                assert_eq!(held.holds(other), other == modifier, "{other} in {held}");
+                assert_eq!(
+                    held.holds(other),
+                    other == modifier,
+                    "{other:?} in {held:?}"
+                );
             }
         }
     }
@@ -223,13 +267,41 @@ mod tests {
     /// person looking for the shortcut they set has to find it twice.
     #[test]
     fn the_order_shown_is_always_the_same() {
+        let strings = in_english();
         let held = Modifiers::just(Modifier::Shift)
             .and(Modifier::Alt)
             .and(Modifier::Ctrl)
             .and(Modifier::Super);
-        assert_eq!(held.to_string(), "Super+Ctrl+Alt+Shift");
-        assert_eq!(Modifiers::none().to_string(), "");
+        assert_eq!(held.shown(&strings), "Super+Ctrl+Alt+Shift");
+        assert_eq!(Modifiers::none().shown(&strings), "");
         assert!(Modifiers::none().is_empty());
+    }
+
+    /// **What is held is read in the person's own language.** A German keyboard
+    /// prints Strg where an English one prints Ctrl, so a shortcuts panel that
+    /// said Ctrl would be naming a key that is not on the keyboard in front of
+    /// them.
+    #[test]
+    fn what_is_held_is_read_in_the_persons_own_language() {
+        let strings = translated(&[(words::CTRL, "Strg"), (words::SHIFT, "Umschalt")]);
+        let held = Modifiers::just(Modifier::Ctrl).and(Modifier::Shift);
+        assert_eq!(held.shown(&strings), "Strg+Umschalt");
+        assert!(Modifier::Ctrl.said(&strings).is_translated());
+
+        // Alt is Alt on a German keyboard, and nobody had to translate it for
+        // the sentence to read — it just says it was not translated.
+        let alt = Modifier::Alt.said(&strings);
+        assert_eq!(alt.text(), "Alt");
+        assert!(!alt.is_translated());
+    }
+
+    /// A programmer reading a set reads the names a settings file holds, which
+    /// are nobody's language and do not move when a translation arrives.
+    #[test]
+    fn a_programmer_reads_the_names_the_file_holds() {
+        let held = Modifiers::just(Modifier::Super).and(Modifier::Shift);
+        assert_eq!(format!("{held:?}"), "Super+Shift");
+        assert_eq!(format!("{:?}", Modifiers::none()), "");
     }
 
     /// **Shift does not change what a key means**, it changes which character
@@ -241,11 +313,11 @@ mod tests {
         assert!(!Modifiers::just(Modifier::Shift).enough());
         assert!(!Modifier::Shift.changes_the_meaning());
         for modifier in [Modifier::Super, Modifier::Ctrl, Modifier::Alt] {
-            assert!(modifier.changes_the_meaning(), "{modifier}");
-            assert!(Modifiers::just(modifier).enough(), "{modifier}");
+            assert!(modifier.changes_the_meaning(), "{modifier:?}");
+            assert!(Modifiers::just(modifier).enough(), "{modifier:?}");
             assert!(
                 Modifiers::just(modifier).and(Modifier::Shift).enough(),
-                "{modifier}"
+                "{modifier:?}"
             );
         }
     }

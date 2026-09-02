@@ -66,6 +66,7 @@ dependencies = [
 name = "alo-shortcuts"
 version = "0.0.1"
 dependencies = [
+ "alo-strings",
  "serde",
  "serde_json",
  "thiserror",

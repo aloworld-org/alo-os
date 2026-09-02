@@ -44,12 +44,12 @@ nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
 
-One edge crosses that: **`alo-files` depends on `alo-strings`** since item 9b,
-because it is the first crate to have moved its English onto it. `alo-strings`
-still depends on nothing, and the direction is the one every other edge here
-takes — a crate that says something reaches the crate that knows how things are
-said, never the reverse. 9c and 9d add the same edge from `alo-shortcuts` and
-`alo-appearance`.
+Two edges cross that: **`alo-files` depends on `alo-strings`** since item 9b and
+**`alo-shortcuts` does** since item 9c, because those are the crates that have
+moved their English onto it. `alo-strings` still depends on nothing, and the
+direction is the one every other edge here takes — a crate that says something
+reaches the crate that knows how things are said, never the reverse. 9d adds the
+same edge from `alo-appearance`.
 
 | | |
 |---|---|
@@ -505,20 +505,45 @@ deny list.** Two patterns later items must follow:
   What it does **not** do is put a translated sentence into a `Call` or an
   approval: `Call` renders and keeps its own, and moving that is 9e.
 
-- [ ] **9c. `alo-shortcuts` onto `alo-strings`** — the list a person reads every
-  time they open the shortcuts panel: `Action::purpose`, `Key::label`,
-  `Modifier::label`, the three `ChordError` sentences, and what `Taken` and
-  `Clash` say. Two of them need a translator's judgement rather than their
-  typing and so need a note written for them: a key is labelled with what is
-  printed on it, which the person's own layout decides, and `Modifier::Super` is
-  called something different on the keyboard in front of most of them.
+- [x] **9c. `alo-shortcuts` onto `alo-strings`** — the list a person reads every
+  time they open the shortcuts panel. Two new files in `crates/alo-shortcuts`:
+  `words.rs` (every string this crate can say — 38 phrases, the English beside
+  each key, and the notes a translator cannot work without) and `refusing.rs`
+  (why a combination cannot be a shortcut, and what it says). `Action`,
+  `Modifier`, `Modifiers`, `Key`, `Chord`, `Taken` and `Clash` all lost their
+  `Display` and gained `said` or `shown`. 63 unit tests (was 41), 6 new
+  integration tests, 606 tests and 20 doctests across the workspace, clippy
+  clean.
 
-  **The shape is settled by 9b and should be copied rather than re-decided**: a
-  `words.rs` of `Word` constants under one area, `Key::unchecked` with a test
-  walking every key through `Key::named`, a `said(&Strings)` on each type that
-  says something, and no `Display` left behind to say it in English instead.
-  Unlike 9b nothing here is carried into a refusal somebody else keeps, so no
-  signature has to grow a `&Strings` — a label is asked for where it is shown.
+  **The item said "`Key::label`" and half of those labels turned out not to be
+  strings at all.** Fifty-three of the sixty-nine keys print a mark that is the
+  same on every keyboard in the union — `Q`, `7`, `,`, `F1` — and translating one
+  would be naming a *position*, which is the model `key.rs` was built to reject:
+  `Super+Q` is the key marked Q on the person's own keyboard. The other sixteen
+  print a word, and it is a different word almost everywhere — *Entf*, *Pos1*,
+  *Bild ↑* — so those are the strings, and they are the ones whose notes matter.
+  Declaring all sixty-nine would have handed a translator forty-one rows reading
+  `A`, `B`, `C` and made `unanswered` — *what a release note has to count* —
+  report fifty-three strings nobody should ever translate. `docs/quirks.md`
+  records it.
+
+  Three decisions the next items inherit. **A sentence never joins a list**:
+  `Taken` names the one action holding the chord in a gap, and `Clash` names the
+  chord and hands `actions()` over to be drawn as rows, because the separator is
+  not punctuation a program can pick — Greek writes `;` where English writes a
+  question mark — and the conjunction would be a string placed by a machine that
+  does not know the sentence. **A deserialiser has no `Strings` and never will**,
+  so the one thing that still needs words where none can be asked for —
+  `Chord`'s `serde(try_from)` — writes the *key* of the refusal rather than a
+  sentence, and whoever shows it looks that key up. **`DefaultsError` keeps its
+  English and its `Display`** and now names things by the stable names a
+  settings file holds: it says a *release's* own defaults contradict themselves,
+  which is read by whoever is fixing them, and `SnapLeft` is what they need
+  rather than a row in whichever language was loaded. `Debug` on `Modifiers` and
+  `Chord` is hand-written for the same reader.
+
+  The stored format did not move: the settings file is written exactly as
+  before, and the two serde tests say so.
 
 - [ ] **9d. `alo-appearance` onto `alo-strings`** — short but awkward:
   `Token::name`, `Accent::name`, the three `AccentError` sentences, the two
@@ -534,6 +559,15 @@ deny list.** Two patterns later items must follow:
   not: a time of day is written `18:00` in the settings file whatever the region
   does, and how a person is *shown* a time is the region's business rather than
   a translated string.
+
+  **It writes the third `Word`, and that is where the type should move.** 9b and
+  9c each declared their own — the same four fields and the same
+  `Key::unchecked` — and two copies were not yet a pattern. A third is, so 9d
+  lifts `Word` into `alo-strings` beside `Phrase` and has all three crates
+  declare from it, rather than adding a third copy and leaving somebody else to
+  find them. It is additive to `alo-strings` and it touches `alo-files` and
+  `alo-shortcuts` in the same change, which is small: neither crate's constants
+  move, only where the type they are is written down.
 
 - [ ] **9e. `alo-capability` and `alo-models` onto `alo-strings`** — the two
   crates no 9-series item names, noticed while item 10 added more English to the

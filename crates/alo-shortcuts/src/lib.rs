@@ -19,32 +19,40 @@
 //! |---|---|
 //! | [`modifier`] | What is held down, and why Shift is not enough on its own |
 //! | [`key`] | The closed list of keys a shortcut can be built on |
-//! | [`chord`] | One combination, and the three it refuses to be |
+//! | [`chord`] | One combination, and what a person reads it as |
+//! | [`refusing`] | The three a combination refuses to be, and what it is told |
 //! | [`action`] | What a shortcut does — the system's list, not an application's |
 //! | [`defaults`] | What alo OS ships with, and why it ships in the code |
 //! | [`changes`] | What a person changed, which is all that is written down |
 //! | [`shortcuts`] | The two resolved, and every question asked of them |
 //! | [`clash`] | Two actions wanting the same keys |
+//! | [`words`] | Every string this crate can say, and the English beside each |
 //!
 //! ```
-//! use alo_shortcuts::{Action, Chord, Key, Modifier, Modifiers, Shortcuts};
+//! use alo_shortcuts::{Action, Chord, Key, Modifier, Modifiers, Shortcuts, shortcut_words};
+//! use alo_strings::Strings;
+//!
+//! // What this machine reads. Nothing is translated here, so every answer
+//! // below is English and says so.
+//! let strings = Strings::of(shortcut_words()?);
 //!
 //! let mut shortcuts = Shortcuts::shipped();
 //! let ctrl_alt_space = Chord::checked(
 //!     Modifiers::just(Modifier::Ctrl).and(Modifier::Alt),
 //!     Key::Space,
-//! )?;
+//! ).expect("Ctrl+Alt+Space is a chord");
 //!
 //! // The agent answers to Super+A until somebody says otherwise.
-//! assert_eq!(shortcuts.chord_for(Action::TheAgent).map(|c| c.to_string()),
+//! assert_eq!(shortcuts.chord_for(Action::TheAgent).map(|c| c.shown(&strings)),
 //!            Some("Super+A".to_owned()));
-//! shortcuts.bind(Action::TheAgent, ctrl_alt_space)?;
+//! shortcuts.bind(Action::TheAgent, ctrl_alt_space).expect("nothing else has it");
 //! assert_eq!(shortcuts.action_for(ctrl_alt_space), Some(Action::TheAgent));
 //!
-//! // Super+Left is how a window goes to the left half, and it says so.
+//! // Super+Left is how a window goes to the left half, and it says so — in
+//! // the language the person reads, whichever one that is.
 //! let taken = shortcuts.chord_for(Action::SnapLeft).expect("it ships bound");
 //! let refused = shortcuts.bind(Action::Launcher, taken).unwrap_err();
-//! assert_eq!(refused.to_string(),
+//! assert_eq!(refused.said(&strings).text(),
 //!            "Super+Left is already Put the window on the left half \
 //!             — change that one first, or use another key");
 //!
@@ -76,6 +84,22 @@
 //! *what does this action answer to*; doing it is the compositor's, and it does
 //! not exist yet.
 //!
+//! # Nothing here says anything in English by itself
+//!
+//! Every string a person reads — the row for each action, what each key and
+//! each modifier is called, the three refusals, and what a clash says — is
+//! declared in [`words`] and answered through `alo-strings`. No type in this
+//! crate has a `Display` that would put English on a screen: what replaces it
+//! is `said`, which answers with a `alo_strings::Said` that says whether
+//! anybody translated it, and `shown`, which composes one of those with the
+//! marks that are the same in every language. The one exception is
+//! [`DefaultsError`], which says that a *release's* own list of defaults
+//! contradicts itself and is read by whoever is fixing it.
+//!
+//! A machine with no translations loaded behaves exactly as it did before there
+//! was a string table: it refuses the same combinations and shows the same
+//! English, and every answer says that is what happened.
+//!
 //! # The agent
 //!
 //! There is no connection between this crate and `alo-capability`, and that is
@@ -95,13 +119,20 @@ pub mod clash;
 pub mod defaults;
 pub mod key;
 pub mod modifier;
+pub mod refusing;
 pub mod shortcuts;
+pub mod words;
+
+#[cfg(test)]
+mod testing;
 
 pub use action::Action;
 pub use changes::{Changed, Changes};
-pub use chord::{Chord, ChordError};
+pub use chord::Chord;
 pub use clash::{Clash, Taken};
 pub use defaults::{Defaults, DefaultsError};
 pub use key::Key;
 pub use modifier::{Modifier, Modifiers};
+pub use refusing::{ChordError, Clipboard};
 pub use shortcuts::{Binding, Shortcuts};
+pub use words::{Word, WordsError, declare_into, shortcut_words};

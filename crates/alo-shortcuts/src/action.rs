@@ -19,10 +19,20 @@
 //! What each action *does* is the compositor's, which does not exist yet. What
 //! it is *called* is here, because a person rebinding a shortcut is choosing
 //! from this list and needs to read it.
+//!
+//! **In the language they read.** An [`Action`] has no `Display`: the only road
+//! to words is [`Action::said`], which takes the strings this machine reads and
+//! answers with a `Said` that says whether anybody translated it. A `Display`
+//! would be an English row one `to_string()` away from a settings panel whose
+//! author had no reason to think about it, and *hardcoded English is a bug*
+//! rather than a preference. What the code holds instead is [`Action::word`] —
+//! the declaration in [`crate::words`], which is the sentence a translator is
+//! handed.
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
-use std::fmt;
+use crate::words::{self, Word};
 
 /// Something the system does when a chord is pressed.
 ///
@@ -73,28 +83,37 @@ impl Action {
         Self::PreviousApplication,
     ];
 
-    /// What this does, said the way it would be said in a list of shortcuts.
+    /// The string this crate declares for it: the key a translator's file is
+    /// sorted by, and the English beside it.
     #[must_use]
-    pub fn purpose(self) -> &'static str {
+    pub fn word(self) -> Word {
         match self {
-            Self::TheAgent => "Ask the agent",
-            Self::Launcher => "Open the launcher",
-            Self::CloseWindow => "Close the window",
-            Self::MinimiseWindow => "Minimise the window",
-            Self::MaximiseWindow => "Maximise the window, or put it back",
-            Self::SnapLeft => "Put the window on the left half",
-            Self::SnapRight => "Put the window on the right half",
-            Self::NextWindow => "Next window",
-            Self::PreviousWindow => "Previous window",
-            Self::NextApplication => "Next application",
-            Self::PreviousApplication => "Previous application",
+            Self::TheAgent => words::THE_AGENT,
+            Self::Launcher => words::LAUNCHER,
+            Self::CloseWindow => words::CLOSE_WINDOW,
+            Self::MinimiseWindow => words::MINIMISE_WINDOW,
+            Self::MaximiseWindow => words::MAXIMISE_WINDOW,
+            Self::SnapLeft => words::SNAP_LEFT,
+            Self::SnapRight => words::SNAP_RIGHT,
+            Self::NextWindow => words::NEXT_WINDOW,
+            Self::PreviousWindow => words::PREVIOUS_WINDOW,
+            Self::NextApplication => words::NEXT_APPLICATION,
+            Self::PreviousApplication => words::PREVIOUS_APPLICATION,
         }
     }
-}
 
-impl fmt::Display for Action {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.purpose())
+    /// What this does, in the language the person reads — the row a settings
+    /// panel draws.
+    ///
+    /// Never fails and never panics, because `alo_strings::Strings` does not:
+    /// there is always something to put on the screen, and what there was to
+    /// say about where it came from is on the [`Said`]. A `Strings` that was
+    /// never given [`crate::shortcut_words`] answers with the key, marked, and
+    /// `Said::is_a_bug` — which is the honest answer to *the shell forgot to
+    /// declare what this crate can say*.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
     }
 }
 
@@ -105,6 +124,7 @@ impl fmt::Display for Action {
 )]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
     use std::collections::BTreeSet;
 
     /// The list a settings panel walks holds every action once. An action
@@ -121,13 +141,35 @@ mod tests {
     /// two rows reading "Next window" would be a list nobody could set from.
     #[test]
     fn every_action_says_what_it_does_and_no_two_say_the_same() {
+        let strings = in_english();
         let mut said = BTreeSet::new();
         for action in Action::ALL {
-            let purpose = action.purpose();
-            assert!(!purpose.is_empty(), "{action:?}");
-            assert!(said.insert(purpose), "two actions are both {purpose}");
-            assert_eq!(action.to_string(), purpose);
+            let row = action.said(&strings);
+            assert!(!row.text().is_empty(), "{action:?}");
+            assert!(!row.is_a_bug(), "{action:?} is not declared");
+            assert!(
+                said.insert(row.text().to_owned()),
+                "two actions are both {row}"
+            );
+            assert_eq!(row.text(), action.word().says());
         }
+    }
+
+    /// **A row a person reads is the translation when there is one**, and says
+    /// so — which is the whole of what moving this crate onto `alo-strings`
+    /// bought.
+    #[test]
+    fn a_row_is_read_in_the_language_the_person_reads() {
+        let strings = translated(&[(words::SNAP_LEFT, "Fenster auf die linke Hälfte legen")]);
+        let said = Action::SnapLeft.said(&strings);
+        assert_eq!(said.text(), "Fenster auf die linke Hälfte legen");
+        assert!(said.is_translated());
+
+        // And the one nobody translated is still English, and says it is.
+        let untranslated = Action::SnapRight.said(&strings);
+        assert_eq!(untranslated.text(), "Put the window on the right half");
+        assert!(!untranslated.is_translated());
+        assert!(!untranslated.is_a_bug());
     }
 
     /// A settings file holds the name, so a person's binding survives a release

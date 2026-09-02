@@ -12,17 +12,18 @@
 //! These are copies. Moving the crates themselves onto `alo-strings` is items
 //! 9b, 9c and 9d, and when a crate moves its strings leave here.
 //!
-//! **`alo-files` has moved (item 9b), so its strings have gone.** They are
-//! declared for real in that crate's own `words` module now, and what they do
-//! in Polish, Irish, Latvian and German is asserted there, against the
-//! vocabulary the code actually uses rather than against a copy of it —
-//! including the countable one, and including the refusal a translator meets
-//! when they drop a gap out of a sentence somebody has to approve. What is left
-//! here is `alo-shortcuts`' and `alo-appearance`', which have not moved.
+//! **`alo-files` has moved (item 9b) and `alo-shortcuts` has moved (item 9c),
+//! so their strings have gone.** They are declared for real in those crates'
+//! own `words` modules now, and what they do in Polish, Irish, Latvian, Maltese
+//! and German is asserted there, against the vocabulary the code actually uses
+//! rather than against a copy of it — including the countable one, the refusal
+//! a translator meets when they drop a gap out of a sentence somebody has to
+//! approve, and a whole shortcuts panel read on a German keyboard. What is left
+//! here is `alo-appearance`', which has not moved.
 //!
-//! Both of those are labels rather than sentences: no gaps, nothing counted,
-//! and one word each where a word is the hardest thing to translate. That is
-//! why the note is what this file now mostly asserts.
+//! Those are labels rather than sentences: no gaps, nothing counted, and one
+//! word each where a word is the hardest thing to translate. That is why the
+//! note is what this file now mostly asserts.
 
 #![expect(
     clippy::unwrap_used,
@@ -50,30 +51,29 @@ fn phrase(vocabulary: &mut Vocabulary, named: &str, source: &str) {
         .unwrap();
 }
 
-/// The strings item 9 singles out in the two crates that still hold their own
+/// The strings item 9d singles out in the one crate that still holds its own
 /// English, as they are written today.
+///
+/// Two colour names and one refusal: short, and two of the three need a
+/// decision rather than a dictionary.
 fn what_the_repository_says() -> Vocabulary {
     let mut vocabulary = Vocabulary::empty();
 
-    // alo-shortcuts: what a person reads every time they open the panel.
-    phrase(
-        &mut vocabulary,
-        "shortcuts.action.snap-left",
-        "Put the window on the left half",
-    );
-    phrase(&mut vocabulary, "shortcuts.modifier.super", "Super");
-
-    // alo-appearance: short, and two of them need a decision rather than a
-    // dictionary.
     phrase(&mut vocabulary, "appearance.token.terracotta", "Terracotta");
     phrase(&mut vocabulary, "appearance.token.warm-stone", "Warm stone");
+    phrase(&mut vocabulary, "appearance.accent.verdigris", "Verdigris");
+    phrase(
+        &mut vocabulary,
+        "appearance.accent.not-offered",
+        "{colour} is not one of the accents this system offers — choose verdigris, indigo, \
+         violet, moss or rose, each of which is drawn to read on a light ground and on a dark one",
+    );
 
     vocabulary
 }
 
-/// What is left here is labels, and a label has nothing in it to fill in. The
-/// crate whose strings *do* name things has moved, which is what makes that
-/// true rather than a gap in the exercise.
+/// Three labels and one refusal: the labels name nothing, and the refusal names
+/// the colour it is about, which is the thing a translator has to keep.
 #[test]
 fn every_string_the_repository_has_survives_being_named() {
     let vocabulary = what_the_repository_says();
@@ -82,8 +82,11 @@ fn every_string_the_repository_has_survives_being_named() {
         .phrases()
         .filter(|phrase| !phrase.source().gaps().is_empty())
         .count();
-    assert_eq!(with_gaps, 0, "a label names nothing");
-    assert_eq!(vocabulary.counted().count(), 0, "and counts nothing");
+    assert_eq!(
+        with_gaps, 1,
+        "a label names nothing and a refusal names one"
+    );
+    assert_eq!(vocabulary.counted().count(), 0, "and nothing counts");
 }
 
 /// A translation of them is checked and then shown, which is the whole path a
@@ -92,18 +95,18 @@ fn every_string_the_repository_has_survives_being_named() {
 fn a_translation_of_them_is_checked_and_then_shown() {
     let vocabulary = what_the_repository_says();
     let german = vocabulary
-        .check(Translation::into_language(language("de")).says(
-            key("shortcuts.action.snap-left"),
-            "Fenster auf die linke Hälfte legen",
-        ))
+        .check(
+            Translation::into_language(language("de"))
+                .says(key("appearance.token.warm-stone"), "Warmer Stein"),
+        )
         .unwrap();
 
     let mut strings = Strings::of(vocabulary);
     strings.speaks(german).unwrap();
     strings.prefers(&[language("de")]);
 
-    let said = strings.say(&key("shortcuts.action.snap-left"), &Filling::nothing());
-    assert_eq!(said.text(), "Fenster auf die linke Hälfte legen");
+    let said = strings.say(&key("appearance.token.warm-stone"), &Filling::nothing());
+    assert_eq!(said.text(), "Warmer Stein");
     assert!(said.is_translated());
     assert!(!said.is_a_bug());
 }
@@ -115,10 +118,10 @@ fn a_translation_of_them_is_checked_and_then_shown() {
 fn what_is_not_translated_yet_is_visible_rather_than_silently_english() {
     let vocabulary = what_the_repository_says();
     let german = vocabulary
-        .check(Translation::into_language(language("de")).says(
-            key("shortcuts.action.snap-left"),
-            "Fenster auf die linke Hälfte legen",
-        ))
+        .check(
+            Translation::into_language(language("de"))
+                .says(key("appearance.token.warm-stone"), "Warmer Stein"),
+        )
         .unwrap();
 
     let mut strings = Strings::of(vocabulary);
@@ -132,8 +135,8 @@ fn what_is_not_translated_yet_is_visible_rather_than_silently_english() {
     assert_eq!(terracotta.text(), "«Terracotta»");
     assert_eq!(terracotta.came_from(), &CameFrom::TheSource);
 
-    let translated = strings.say(&key("shortcuts.action.snap-left"), &Filling::nothing());
-    assert_eq!(translated.text(), "Fenster auf die linke Hälfte legen");
+    let translated = strings.say(&key("appearance.token.warm-stone"), &Filling::nothing());
+    assert_eq!(translated.text(), "Warmer Stein");
 }
 
 /// A key that nothing declares is a mistake in this repository and says so,
@@ -143,15 +146,19 @@ fn what_is_not_translated_yet_is_visible_rather_than_silently_english() {
 #[test]
 fn a_label_nobody_declared_says_it_is_a_bug() {
     let strings = Strings::of(what_the_repository_says());
-    let said = strings.say(&key("appearance.token.verdigris"), &Filling::nothing());
+    let said = strings.say(&key("appearance.accent.moss"), &Filling::nothing());
     assert!(said.is_a_bug());
     assert_eq!(said.came_from(), &CameFrom::NoPhrase);
-    assert_eq!(said.text(), "«appearance.token.verdigris»");
+    assert_eq!(said.text(), "«appearance.accent.moss»");
 }
 
 /// The two `docs/autonomy/QUEUE.md` calls out as needing a translator's
 /// judgement rather than their typing. Both are one word, and one word with no
 /// note is where a translation goes wrong quietly.
+///
+/// The third one this file used to carry — `alo-shortcuts`' name for the key
+/// between Ctrl and Alt — has moved into that crate, where it is a note on a
+/// string the code actually uses.
 #[test]
 fn the_two_words_that_need_a_decision_carry_their_note() {
     let terracotta = Phrase::says(key("appearance.token.terracotta"), "Terracotta")
@@ -168,12 +175,13 @@ fn the_two_words_that_need_a_decision_carry_their_note() {
             .is_some_and(|note| note.contains("orange-brown"))
     );
 
-    let modifier = Phrase::says(key("shortcuts.modifier.super"), "Super")
+    let verdigris = Phrase::says(key("appearance.accent.verdigris"), "Verdigris")
         .unwrap()
         .noting(
-            "The key between Ctrl and Alt. Name it whatever is printed on it on the keyboards \
-             most of your readers have, which is not always what we call it.",
+            "The blue-green of weathered copper — a church roof, an old statue. Two words in some \
+             languages and none in others; this is a colour a person picks from a list, so name \
+             it in whatever way they would recognise it.",
         )
         .unwrap();
-    assert!(modifier.note().is_some());
+    assert!(verdigris.note().is_some());
 }

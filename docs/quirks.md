@@ -174,6 +174,48 @@ falls back to English's two forms, because a sentence wrong for most numbers in
 a language nobody here reads is worse than one that has not arrived.
 **Date:** 2026-09-02
 
+### Half the keys on a keyboard are not printed with a word anybody translates
+**Version:** physical keyboard layouts, EU national variants, observed 2026-09-02.
+**Behaviour:** *what a key is called* looks like one list of strings and is two.
+`Q`, `7`, `,` and `F1` are printed identically on every keyboard sold in the
+union, and translating them is not translation at all — it names a **position**,
+which is the model `alo-shortcuts` exists to reject, since `Super+Q` on a French
+keyboard is the key marked Q and not the one where an English keyboard has Q. The
+other sixteen print a *word*, and it is a different word almost everywhere: a
+German keyboard prints **Entf** for Delete, **Einfg** for Insert, **Pos1** for
+Home, **Strg** for Ctrl and **Bild ↑** for Page Up; a French one prints **Maj**
+for Shift. A shortcuts panel translated from one English list would either name
+keys that are not on the keyboard in front of the person, or invite a translator
+to render `Q` as `Й`.
+**Our response:** the two kinds are different questions in the code.
+`Key::mark` answers for the fifty-three that print a mark and is not a string at
+all; `Key::said` answers for the sixteen that print a word, each declared in
+`alo-shortcuts`' `words` with a note naming what a keyboard in another country
+prints; and `Key::shown` is what a panel draws for either. Declaring all
+sixty-nine was the alternative and is worse twice over: it hands a translator
+forty-one rows reading `A`, `B`, `C`, and it makes `Strings::unanswered` — *what
+a release note has to count* — report fifty-three strings nobody should ever
+translate.
+**Date:** 2026-09-02
+
+### A machine cannot punctuate a list it assembled
+**Version:** Greek orthography; CLDR list patterns, `common/main/*.xml`, not
+implemented here.
+**Behaviour:** a sentence that names two or more things has to join them, and
+the joining is not punctuation a program can pick. Greek writes `;` where
+English writes a question mark and `·` where English writes a semicolon, so a
+list joined with `"; "` reads as a row of questions to the people it is for. The
+conjunction before the last item is a word — *and*, *und*, *et* — that would
+have to be its own string, placed by a machine that does not know the sentence.
+**Our response:** no sentence in this repository joins a list. Where one thing
+is named it goes in a gap, as `alo-shortcuts`' *{chord} is already {action}*
+does; where two or more are, the sentence says so and the things are handed over
+to be drawn as rows — `Clash::said` names the chord and `Clash::actions` hands
+over what wants it, each said in the reader's own language. If a sentence ever
+genuinely needs a list inside it, the list patterns are CLDR data like the plural
+rules and are read rather than recalled.
+**Date:** 2026-09-02
+
 ## Models
 
 Open-weight models in the catalogue have their own personalities: refusing

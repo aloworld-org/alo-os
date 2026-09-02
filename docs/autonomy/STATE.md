@@ -1545,3 +1545,114 @@ from a file still has to be checked and refused.
 9e should still follow the other two. 4a is `alo-agentd`'s and the daemon still
 does not exist — after the strings items, every remaining item in this queue
 belongs to a daemon, a Linux host or a certified machine.
+
+---
+
+## 2026-09-02 — iteration 17: the keyboard, said the way the keyboard is printed
+
+**Built: item 9c**, whole, including a division of the key list the item did not
+name. Two new files in `crates/alo-shortcuts`, and every type in the crate that
+says something moved onto `alo-strings`.
+
+| | |
+|---|---|
+| `words.rs` | **New.** Every string this crate can say: 38 phrases, the English beside each key, and the notes a translator cannot work without |
+| `refusing.rs` | **New.** Why a combination cannot be a shortcut — `ChordError`, the `Clipboard` trio, and what each says |
+| `action.rs` | `Action::word` and `said(&Strings)`, and **no `Display`** |
+| `modifier.rs` | The same for `Modifier`; `Modifiers::shown` replaces its `Display` |
+| `key.rs` | One macro, two lists: the keys that print a mark and the keys that print a word |
+| `chord.rs` | `Chord::shown`, a hand-written `Debug`, and a serde error that names a key rather than composing a sentence |
+| `clash.rs` | `Taken::said` and `Clash::said` |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-shortcuts` is 63 unit tests (was 41) and 6
+new integration tests against the real vocabulary; the workspace is **606 tests
+and 20 doctests**, all green. `CHANGELOG.md`, `docs/quirks.md`, `QUEUE.md` and
+`ROADMAP.md` in the same change.
+
+**The item said `Key::label` and half of those labels are not strings.** This is
+the finding, and it is the crate's own doctrine held to rather than a new idea.
+`key.rs` has said from the day it was written that a key is *the one printed on
+the person's own keyboard*, so `Super+Q` on a French keyboard is the key marked
+Q. Fifty-three of the sixty-nine print a mark that is identical on every keyboard
+in the union — `Q`, `7`, `,`, `F1` — and a translator rendering `Q` as `Й` would
+be naming a **position**, which is exactly the model the file exists to reject.
+The other sixteen print a word, and it is a different word almost everywhere:
+*Entf*, *Einfg*, *Pos1*, *Strg*, *Bild ↑*. So the sixteen are the strings, and
+they are the ones whose notes matter.
+
+Declaring all sixty-nine was the alternative and is worse twice: it hands a
+translator forty-one rows reading `A`, `B`, `C`, and it makes
+`Strings::unanswered` — *what a release note has to count*, built in iteration 11
+— report fifty-three strings nobody should ever translate. `docs/quirks.md`
+records the split with what each keyboard actually prints, so the next person
+inherits the reasoning rather than the argument.
+
+**The second decision was not in the item either: a sentence never joins a
+list.** `Clash` used to read *Super+Left is set to do more than one thing: Put
+the window on the left half; Next window; change one of them*, which cannot be
+translated — the separator is not punctuation a program can pick, since Greek
+writes `;` where English writes a question mark and `·` where it writes a
+semicolon, and the conjunction before the last item is a word a machine would
+have to place inside a sentence it does not know. So `Clash::said` names the
+chord and says *more than one thing*, and `Clash::actions` hands a panel the list
+to draw as rows, each said in the reader's own language. Nothing is lost and the
+rows are better UI than the sentence was. `Taken` is untouched by this: it names
+exactly one action, which a gap holds. Also in `docs/quirks.md`, with the note
+that CLDR's list patterns are data to be read if a sentence ever genuinely needs
+one inside it.
+
+**Three smaller ones worth keeping.**
+
+- **A deserialiser has no `Strings` and never will.** `Chord` deserialises
+  through `Chord::checked`, and `serde(try_from)` needs its error to have a
+  `Display` — which is the one thing `ChordError` was supposed to lose. A
+  message composed there would be English nothing could translate. So a private
+  `NotAChord` writes the **key** of the refusal, and whoever reports a settings
+  file that did not read looks that key up and shows the same words a settings
+  panel shows. It is `Refused` carrying words (item 9b) with the other answer,
+  because the two are in different positions: `alo-files` can ask, and a
+  deserialiser cannot.
+- **`DefaultsError` keeps its English, and that is the honest line.** It says a
+  *release's* own list of defaults contradicts itself, so it is read by whoever
+  is fixing it rather than by whoever is using the machine — it stays a
+  `std::error::Error` and now names things by the stable names a settings file
+  holds. `SnapLeft` is what a programmer needs; *Put the window on the left
+  half*, in whichever language happened to be loaded, is not. `Debug` on
+  `Modifiers` and `Chord` is hand-written to that same reader — `Super+Shift+Tab`
+  — which is what made this possible without inventing a second label.
+- **The stored format did not move.** Every `Action`, `Key` and `Modifier` name
+  a settings file holds is unchanged, `Chord` serialises the same bytes, and the
+  two serde tests say so. Somebody's shortcuts survive this change without
+  anything having to migrate.
+
+**What the next iteration must know:**
+
+- **9d writes the third `Word` and should not.** `alo-files` and `alo-shortcuts`
+  each declared their own — the same four fields, the same `Key::unchecked`, the
+  same `declare_into` — and two copies were deliberately not treated as a
+  pattern. A third is one. The queue item now says to lift `Word` into
+  `alo-strings` beside `Phrase` and have all three declare from it; it is
+  additive there and touches the other two crates only where the type is
+  written down, not where their constants are.
+- **`alo-strings`' integration test gave two more strings back**, as that file
+  says happens when a crate moves. What is left in it is `alo-appearance`'s
+  alone, and it now carries a real one with a gap in it — `AccentError::NotOffered`
+  — so 9d still has the whole path exercised in front of it before it starts.
+- **A refusal still never depends on a string table.** A `Strings` that was given
+  no words refuses exactly what it refused before and answers with the key,
+  marked; `refusing::tests::a_refusal_without_the_words_still_names_the_rule` is
+  this crate's copy of the property `alo-files` established, and anything later
+  that renders a refusal should keep it.
+- **Nothing here has been pressed.** No key has reached this model, because the
+  compositor does not exist, and there are still zero translations in this
+  repository — the German, Maltese and the rest are the tests'. `ROADMAP.md`'s
+  *Language* stays unticked, its *Built* clause gains `alo-shortcuts` and its
+  *Owed* now says 9d–9e; *Keyboard shortcuts a person can change* stays unticked
+  and its clause gains the panel being readable in the reader's own language.
+
+**What is left is 9d, 9e and 4a.** Neither 9d nor 9e is blocked by anything, and
+9e should still follow 9d. 4a is `alo-agentd`'s and the daemon still does not
+exist — after the strings items, every remaining item in this queue belongs to a
+daemon, a Linux host or a certified machine.

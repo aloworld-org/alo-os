@@ -91,8 +91,9 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       · Built: the decision (ADR 0009), not code · Owed: all of it
 - [ ] Copy, cut and paste across applications; switching between windows
 - [ ] Keyboard shortcuts a person can change
-      · Built: `alo-shortcuts` — the shortcuts, rebindable, and nothing quietly
-      taking one away · Owed: a shell to press them in
+      · Built: `alo-shortcuts` — the shortcuts, rebindable, nothing quietly
+      taking one away, and every row and key of the panel said in the language
+      the person reads · Owed: a shell to press them in
 - [ ] The workspace client runs as an application on the shell
 - [ ] **Image**: OCI-built, boots on the certified machine, firmware to sign-in
 
@@ -143,11 +144,13 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       what the system says, the 24 languages listed each in its own language,
       English unable to hide, and a sentence that counts something counted with
       its reader's own plural rules, read from CLDR rather than recalled; and
-      `alo-files`, the first crate whose own English has moved onto it — every
-      file refusal, the six verbs, and the sentence a person approves before a
-      file is renamed, moved or archived
+      two crates whose own English has moved onto it — `alo-files` (every file
+      refusal, the six verbs, and the sentence a person approves before a file
+      is renamed, moved or archived) and `alo-shortcuts` (every row of the
+      shortcuts panel, and every key named the way the reader's own keyboard
+      prints it rather than the way an English one does)
       · Owed: a shell to translate, the crates still holding their own English
-      (9c–9e), and every translation — there are none yet
+      (9d–9e), and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

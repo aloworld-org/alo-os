@@ -59,14 +59,23 @@ const SHIPPED: [(Action, Chord); 11] = [
 /// Only reachable through [`Defaults::of`]. The shipped list is a constant and
 /// is checked by a test instead, because a program that could fail to start over
 /// its own defaults would be a program with a worse problem than a clash.
+///
+/// **This is the one thing in the crate that still says something in English,
+/// and it is not read by a person using the machine.** It says that a release's
+/// own list of defaults contradicts itself, which is a mistake in this
+/// repository — so it keeps its `Display` and its `std::error::Error`, and what
+/// it names things by is the stable names a settings file holds rather than the
+/// rows a settings panel draws. `SnapLeft` is what somebody debugging this needs
+/// to see; *Put the window on the left half*, in whichever language happened to
+/// be loaded, is not.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum DefaultsError {
     /// One action was given two defaults, so neither could be said to be it.
-    #[error("{0} is in the defaults twice")]
+    #[error("{0:?} is in the defaults twice")]
     Twice(Action),
     /// Two actions were given the same chord, which is the thing a person is
     /// refused for doing.
-    #[error("{0}")]
+    #[error("more than one default is on {:?}: {:?}", .0.chord(), .0.actions())]
     Clash(Clash),
 }
 
@@ -139,6 +148,7 @@ impl Default for Defaults {
 )]
 mod tests {
     use super::*;
+    use crate::testing::in_english;
 
     /// **The list we ship is held to the rules a person is held to.** These
     /// chords are built by the compiler and never go through [`Chord::checked`]
@@ -148,7 +158,7 @@ mod tests {
     fn every_shipped_default_is_a_chord_a_person_could_have_set() {
         for (action, chord) in Defaults::shipped().iter() {
             let checked = Chord::checked(chord.modifiers(), chord.key());
-            assert!(checked.is_ok(), "{action}: {chord} would be refused");
+            assert!(checked.is_ok(), "{action:?}: {chord:?} would be refused");
             assert_eq!(checked.unwrap_or(chord), chord);
         }
     }
@@ -162,7 +172,7 @@ mod tests {
         for action in Action::ALL {
             assert!(
                 shipped.chord_for(*action).is_some(),
-                "{action} ships unbound"
+                "{action:?} ships unbound"
             );
         }
         assert_eq!(shipped.iter().count(), Action::ALL.len());
@@ -180,10 +190,11 @@ mod tests {
     #[test]
     fn the_conventional_ones_are_the_conventional_ones() {
         let shipped = Defaults::shipped();
+        let strings = in_english();
         let said = |action| {
             shipped
                 .chord_for(action)
-                .map_or_else(|| "unbound".to_owned(), |chord| chord.to_string())
+                .map_or_else(|| "unbound".to_owned(), |chord| chord.shown(&strings))
         };
         assert_eq!(said(Action::CloseWindow), "Alt+F4");
         assert_eq!(said(Action::MaximiseWindow), "Super+Up");
@@ -221,6 +232,11 @@ mod tests {
             refused,
             DefaultsError::Clash(Clash::over(chord, vec![Action::TheAgent, Action::Launcher]))
         );
-        assert!(refused.to_string().contains("more than one thing"));
+        // Said with the names a settings file holds, because whoever reads this
+        // is fixing a list of defaults rather than using the machine.
+        assert_eq!(
+            refused.to_string(),
+            "more than one default is on Super+A: [TheAgent, Launcher]"
+        );
     }
 }

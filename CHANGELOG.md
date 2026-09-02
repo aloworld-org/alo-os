@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The keyboard shortcuts can now be read in your own language — every row in the
+  list, every key named in it, and everything alo OS says when a combination
+  cannot be a shortcut. That includes the keys themselves, which is the part
+  that would have been wrong on a German machine: the panel now says *Entf*,
+  *Pos1*, *Strg* and *Bild ↑* where the keyboard in front of you does, rather
+  than Delete, Home, Ctrl and Page Up. The keys that print the same mark
+  everywhere — Q, 7, the comma, F1 — are shown as that mark and are deliberately
+  not offered for translation, because `Super+Q` means the key marked Q on your
+  own keyboard and always did. Nothing you have set changes: the settings file
+  is written exactly as it was, a machine with no translations loaded shows the
+  same English it showed before, and it says so rather than passing it off as
+  your language.
+
 - Everything the file half of alo OS says to you can now be said in your own
   language — and none of it can reach you in English without the system knowing
   it did. That is every refusal a file verb can give you (*there is already

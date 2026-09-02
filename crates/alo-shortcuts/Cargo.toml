@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
