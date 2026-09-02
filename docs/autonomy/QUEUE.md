@@ -44,14 +44,17 @@ nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
 
-Five edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
-**`alo-shortcuts` does** since 9c, **`alo-appearance` does** since 9d, and
+Six edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
+**`alo-shortcuts` does** since 9c, **`alo-appearance` does** since 9d,
 **`alo-capability` and `alo-record` do** since 9e — the deciding crate because
 every refusal it makes is read by somebody, and the record because it writes
-down the words that person was shown rather than a second rendering of its own.
-`alo-strings` still depends on nothing, and the direction is the one every other
-edge here takes — a crate that says something reaches the crate that knows how
-things are said, never the reverse.
+down the words that person was shown rather than a second rendering of its own —
+and **`alo-models` does** since 9f, because where an answer came from is a
+sentence somebody reads before they decide what to send. `alo-strings` still
+depends on nothing, and the direction is the one every other edge here takes — a
+crate that says something reaches the crate that knows how things are said,
+never the reverse. `alo-egress` is the one crate that has not crossed, and 9h is
+where it does.
 
 | | |
 |---|---|
@@ -61,8 +64,9 @@ things are said, never the reverse.
 | `source.rs` | Where a question is answered and what that costs in egress (ADR 0008); the region policy an organisation names |
 | `provider.rs` | Providers somebody adds themselves; the key lives in the keyring, never in the settings |
 | `secret.rs`, `tried.rs`, `trying.rs` | Added later by the loop — testing a provider before it is saved (item 10) |
+| `words.rs`, `refusing.rs` | Added later by the loop — everything this crate says, and which rule refused a question (item 9f) |
 
-**44 tests when the loop started, 70 now, clippy clean against the workspace
+**44 tests when the loop started, 90 now, clippy clean against the workspace
 deny list.** Two patterns later items must follow:
 
 - **A promise in `docs/` is a test, not a sentence.** "Every model states its
@@ -622,17 +626,61 @@ deny list.** Two patterns later items must follow:
 
   What it could not close is 9f and 9g below.
 
-- [ ] **9f. `alo-models` onto `alo-strings`** — cut from 9e, which was two
-  crates and one decision. `ProviderError`, `RuntimeError`, `SecretError`,
-  `NotTried`, `Tried::describe`, `InferenceSource::describe` and
-  `SourcePolicy::refusal`. Two of those are read by somebody deciding whether to
-  paste a contract into a question, so they are not strings to hurry. The shape
-  is now four crates old and has not changed: a `words.rs` of
-  `alo_strings::Word` constants, a test walking every key back through
-  `Key::named`, `said(&Strings)` in place of `Display`, and the key written
-  wherever a `Strings` cannot be reached. `alo-capability` is the closest
-  precedent — same kind of reader, same split between what a person meets and
-  what a programmer does.
+- [x] **9f. `alo-models` onto `alo-strings`** — cut from 9e, which was two
+  crates and one decision. Two new files in `crates/alo-models`: `words.rs` (29
+  phrases, the English beside each key, and the notes a translator needs) and
+  `refusing.rs` (`NotAllowed` — which rule refused a question and where it would
+  have gone). `ProviderError`, `SecretError`, `RuntimeError` and `NotTried` lost
+  their `Display`; `InferenceSource::describe` became `shown(&Strings)` and lost
+  its `Display` too; `Tried::describe` became `said` and `caveats`. 20 new unit
+  tests and 7 new integration tests against the real vocabulary; 682 tests and
+  20 doctests across the workspace, clippy clean.
+
+  **Two of these are not refusals, and that is what is different about this
+  list.** *By someone, which has not said where it runs* is read **before** a
+  person decides whether to paste a contract into a question (ADR 0008), so it
+  is the one string here where a translation that softened it would take away
+  the only thing on the screen saying the question is about to leave the
+  building. Its note says so. The policy's three refusals put that clause inside
+  themselves, which is why the source is a string rather than something a caller
+  assembles: a refusal and the place named in it are one language.
+
+  Three decisions the next items inherit. **A sentence that would have to count
+  is a sentence with the number beside it** — item 10 settled that in this crate
+  before `alo-strings` existed, and 9f kept it: `NotEnoughDisk` says *there is
+  not enough room on this disk for that download* and carries the two numbers as
+  fields, so nobody writes English's two plural shapes where a language has
+  three. There is no `Plural` in this crate and a test says so. **A reason is a
+  variant, never a `&'static str`**: `RuntimeError::Refused("…")` carried a
+  sentence an adapter wrote in English, one `to_string()` from a screen, and is
+  now `DownloadIncomplete` with a string of its own — an adapter that needs
+  another reason adds one, the way a verb is added to a closed list. **A refusal
+  the policy made is carried whole**: `NotTried::Forbidden` holds the
+  `NotAllowed` rather than a rendering of it, so the words are the policy's in
+  whichever language the person reads, and `Trying::under` still takes no
+  `Strings` — what is permitted does not depend on a vocabulary having loaded.
+
+  What it did not touch is `alo-egress`, which is 9h below and was not on any
+  list before this iteration.
+
+- [ ] **9h. `alo-egress` onto `alo-strings`** — the last crate holding English,
+  found by 9f while checking what was left rather than named by anything.
+  `DestinationError`'s four messages, `Destination::describe`,
+  `Leaving::describe` — **the indicator line**, which is the sentence law 1
+  exists to put in front of somebody — and `EgressPolicy::refusal`. Iteration 5
+  put all four on item 9's list in `STATE.md` and the queue never carried them
+  across, so eight iterations of the 9-series went past them.
+
+  It is the smallest of the six and the one with the most exposure: the
+  indicator is the promise on the box. The shape is five crates old and has not
+  changed. Two things are already decided for it. `EgressPolicy::refusal` is the
+  same problem `SourcePolicy::refusal` was in 9f and takes the same answer — a
+  value, not a sentence, because `alo-egress` decides whether a connection may
+  open and must not need a vocabulary to do it; `NotPermitted` already carries
+  what it refused, so the change is what it carries. And `Destination::describe`
+  is `InferenceSource::shown`'s twin by construction — `alo-egress` maps one to
+  the other in one place — so the two must not become two different sentences
+  about the same provider.
 
 - [ ] **9g. The sentence a person approves** — the question 9b left, 9c and 9d
   did not touch, and 9e answered without moving. `Call` renders its sentence

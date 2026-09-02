@@ -23,7 +23,10 @@
 //! said questions stay in the building does not have a machine that reaches out
 //! to a provider anyway to see whether the key works. A refused test sends
 //! nothing at all — not a connection, not a DNS lookup — and the refusal is the
-//! policy's own words rather than a second explanation.
+//! policy's own, carried whole rather than reworded. **Nothing here takes a
+//! `Strings`**, which is item 9f's shape: the decision is made without words
+//! and the words are asked for where somebody reads them, so a machine with no
+//! vocabulary loaded refuses exactly what it refused before.
 //!
 //! **A redirect is refused, never followed.** The address the policy answered
 //! about is the address that gets reached. Following a redirect would open a
@@ -249,8 +252,9 @@ mod tests {
 
         assert_eq!(error, NotTried::KeyNotAccepted);
         // Neither the key nor the provider's own words travel into ours.
-        assert!(!error.to_string().contains("sk-live"), "{error}");
-        assert!(!error.to_string().contains("request_id"), "{error}");
+        let said = error.said(&crate::testing::in_english());
+        assert!(!said.text().contains("sk-live"), "{said}");
+        assert!(!said.text().contains("request_id"), "{said}");
     }
 
     /// The same status means something different when no key was given, and
@@ -290,11 +294,10 @@ mod tests {
             let error = Trying::provider(&provider, Some(&key))
                 .under(&policy)
                 .unwrap_err();
-            assert!(
-                matches!(&error, NotTried::Forbidden(said) if said == &policy
-                    .refusal(&provider.source())
-                    .unwrap_or_default()),
-                "{error:?} under {policy:?}"
+            assert_eq!(
+                Some(error),
+                policy.refusal(&provider.source()).map(NotTried::Forbidden),
+                "under {policy:?}"
             );
         }
     }
@@ -360,7 +363,8 @@ mod tests {
             .unwrap_err();
         server.join().unwrap();
         assert_eq!(error, NotTried::NotWell(503));
-        assert!(!error.to_string().contains("capacity"), "{error}");
+        let said = error.said(&crate::testing::in_english());
+        assert!(!said.text().contains("capacity"), "{said}");
     }
 
     #[test]
@@ -371,7 +375,8 @@ mod tests {
             .under(&SourcePolicy::Anywhere)
             .unwrap_err();
         assert_eq!(error, NotTried::Unreachable);
-        assert!(error.to_string().contains("check the address"), "{error}");
+        let said = error.said(&crate::testing::in_english());
+        assert!(said.text().contains("check the address"), "{said}");
     }
 
     /// Providers document their address both ways. A second `/v1` would come

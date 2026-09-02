@@ -10,10 +10,18 @@
 //! it — `https://…` is equally an appliance in the next room and a provider on
 //! another continent — so the kind of place is carried explicitly and travels
 //! with every answer.
+//!
+//! **Neither of the two things here that a person reads has a `Display`**
+//! (item 9f). A `Display` is one `to_string()` away from a screen whose author
+//! had no reason to think about language, so the only road to words is
+//! [`InferenceSource::shown`] and [`SourcePolicy::refusal`], both of which need
+//! the strings the reader in front of the machine actually reads.
 
-use std::fmt;
-
+use alo_strings::{Filling, Strings};
 use serde::{Deserialize, Serialize};
+
+use crate::refusing::NotAllowed;
+use crate::words;
 
 /// Where a provider runs, as **the provider states it** — never inferred.
 ///
@@ -109,29 +117,49 @@ impl InferenceSource {
         }
     }
 
+    /// The string this crate declares for describing this place.
+    #[must_use]
+    pub fn word(&self) -> words::Word {
+        match self {
+            Self::ThisMachine => words::ON_THIS_MACHINE,
+            Self::PairedMachine { .. } => words::ON_A_PAIRED_MACHINE,
+            Self::Hosted {
+                region: Region::Declared(_),
+                ..
+            } => words::BY_A_PROVIDER,
+            Self::Hosted {
+                region: Region::Unknown,
+                ..
+            } => words::BY_A_PROVIDER_SOMEWHERE,
+        }
+    }
+
     /// What to show a person **where the answer appears** — not in a settings
     /// page they would have to go looking for.
     ///
     /// Somebody about to paste a contract into a question is entitled to know
-    /// where it is going before they paste it.
+    /// where it is going before they paste it, and they are entitled to read it
+    /// in their own language.
+    ///
+    /// A `String` rather than a [`Said`](alo_strings::Said), because this is a
+    /// clause: it is shown on its own beside an answer *and* it goes inside
+    /// every refusal [`SourcePolicy`] makes, so a refusal and the place named
+    /// in it are one language. That is `alo-capability`'s `Reach::shown` in
+    /// this crate.
     #[must_use]
-    pub fn describe(&self) -> String {
-        match self {
-            Self::ThisMachine => "on this machine".to_owned(),
-            Self::PairedMachine { machine } => format!("on {machine}, on your network"),
-            Self::Hosted { provider, region } => match region {
-                Region::Declared(where_) => format!("by {provider}, in {where_}"),
-                Region::Unknown => {
-                    format!("by {provider}, which has not said where it runs")
+    pub fn shown(&self, strings: &Strings) -> String {
+        let filling = match self {
+            Self::ThisMachine => Filling::nothing(),
+            Self::PairedMachine { machine } => Filling::of("machine", machine.clone()),
+            Self::Hosted { provider, region } => {
+                let named = Filling::of("provider", provider.clone());
+                match region {
+                    Region::Declared(where_) => named.and("region", where_.clone()),
+                    Region::Unknown => named,
                 }
-            },
-        }
-    }
-}
-
-impl fmt::Display for InferenceSource {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.describe())
+            }
+        };
+        strings.say(&self.word().key(), &filling).into_text()
     }
 }
 
@@ -169,35 +197,37 @@ impl SourcePolicy {
         }
     }
 
-    /// Why a source is not permitted, in words a person on this machine can
-    /// read — a policy nobody can understand is a policy people work around.
+    /// Why a source is not permitted — the rule that refused it and the place
+    /// it refused, as a value.
+    ///
+    /// **Not a sentence** (item 9f). Wording it here would mean handing this
+    /// type a `Strings`, and then whether a question may be asked somewhere
+    /// would depend on somebody having loaded a vocabulary. [`NotAllowed::said`]
+    /// renders it where it is read, so the screen and the record cannot be two
+    /// accounts of one moment.
+    ///
+    /// [`Anywhere`](Self::Anywhere) refuses nothing and so answers [`None`]
+    /// without a branch of its own: there is no variant of [`NotAllowed`]
+    /// standing in for a rule that never refuses.
     #[must_use]
-    pub fn refusal(&self, source: &InferenceSource) -> Option<String> {
+    pub fn refusal(&self, source: &InferenceSource) -> Option<NotAllowed> {
         if self.permits(source) {
             return None;
         }
-        Some(match self {
-            Self::Anywhere => unreachable_policy(),
-            Self::InTheBuilding => format!(
-                "this machine is set to keep questions in the building, and {} would send this one outside it",
-                source.describe()
-            ),
-            Self::InRegion(region) => format!(
-                "this machine is set to use inference in {region} only, and {} does not meet that",
-                source.describe()
-            ),
-            Self::ThisMachineOnly => format!(
-                "this machine is set to answer only on itself, and {} is somewhere else",
-                source.describe()
-            ),
-        })
+        match self {
+            Self::Anywhere => None,
+            Self::InTheBuilding => Some(NotAllowed::OutsideTheBuilding {
+                source: source.clone(),
+            }),
+            Self::InRegion(region) => Some(NotAllowed::OutsideTheRegion {
+                region: region.clone(),
+                source: source.clone(),
+            }),
+            Self::ThisMachineOnly => Some(NotAllowed::NotThisMachine {
+                source: source.clone(),
+            }),
+        }
     }
-}
-
-/// `Anywhere` permits everything, so this branch is unreachable — but law 2's
-/// repository has no `unreachable!()` either, so it says something true instead.
-fn unreachable_policy() -> String {
-    "no policy forbids this".to_owned()
 }
 
 #[cfg(test)]
@@ -268,13 +298,41 @@ mod tests {
     /// question, so it must say the uncomfortable thing plainly.
     #[test]
     fn an_undeclared_provider_says_so_rather_than_sounding_safe() {
-        let said = hosted("someone", Region::Unknown).describe();
+        let strings = crate::testing::in_english();
+        let said = hosted("someone", Region::Unknown).shown(&strings);
         assert!(said.contains("has not said where it runs"), "{said}");
 
-        let said = hosted("alo", eu()).describe();
+        let said = hosted("alo", eu()).shown(&strings);
         assert!(said.contains("in the EU"), "{said}");
 
-        assert_eq!(InferenceSource::ThisMachine.describe(), "on this machine");
+        assert_eq!(
+            InferenceSource::ThisMachine.shown(&strings),
+            "on this machine"
+        );
+    }
+
+    /// **Where an answer came from is read in the reader's own language**, and
+    /// the parts of it that are not language — a provider's name, the region it
+    /// stated — come through as they were written.
+    #[test]
+    fn where_an_answer_came_from_is_said_in_the_language_the_person_reads() {
+        let strings = crate::testing::translated(&[
+            (crate::words::BY_A_PROVIDER, "von {provider}, in {region}"),
+            (
+                crate::words::ON_A_PAIRED_MACHINE,
+                "auf {machine}, in Ihrem Netzwerk",
+            ),
+        ]);
+        let said = hosted("alo", eu()).shown(&strings);
+        assert!(said.starts_with("von alo"), "{said}");
+        assert!(said.contains("the EU"), "{said}");
+
+        let said = InferenceSource::PairedMachine {
+            machine: "the studio workstation".to_owned(),
+        }
+        .shown(&strings);
+        assert!(said.contains("Ihrem Netzwerk"), "{said}");
+        assert!(said.contains("the studio workstation"), "{said}");
     }
 
     #[test]
@@ -306,19 +364,21 @@ mod tests {
     }
 
     /// A refusal explains itself. A policy nobody can understand is a policy
-    /// people work around.
+    /// people work around — and the words are `refusing.rs`'s, so what is
+    /// checked here is that the right rule refused and that it carries what it
+    /// refused.
     #[test]
-    fn a_refusal_says_what_the_policy_is_and_what_was_asked_for() {
-        let refusal = SourcePolicy::InRegion("the EU".to_owned())
-            .refusal(&hosted("someone", Region::Unknown))
-            .unwrap_or_default();
-        assert!(refusal.contains("inference in the EU only"), "{refusal}");
-        assert!(refusal.contains("someone"), "{refusal}");
-        assert!(
-            SourcePolicy::Anywhere
-                .refusal(&hosted("someone", Region::Unknown))
-                .is_none()
+    fn a_refusal_names_the_rule_and_carries_what_was_asked_for() {
+        let somewhere = hosted("someone", Region::Unknown);
+        let refusal = SourcePolicy::InRegion("the EU".to_owned()).refusal(&somewhere);
+        assert_eq!(
+            refusal,
+            Some(NotAllowed::OutsideTheRegion {
+                region: "the EU".to_owned(),
+                source: somewhere.clone(),
+            })
         );
+        assert_eq!(SourcePolicy::Anywhere.refusal(&somewhere), None);
     }
 
     /// Where an answer came from outlives the answer, so a source has to
@@ -358,8 +418,8 @@ mod tests {
             hosted("mistral", Region::Declared("France".to_owned())),
             hosted("somebody", Region::Unknown),
         ] {
-            assert!(policy.permits(&source), "{source}");
-            assert!(policy.refusal(&source).is_none(), "{source}");
+            assert!(policy.permits(&source), "{source:?}");
+            assert!(policy.refusal(&source).is_none(), "{source:?}");
         }
     }
 }

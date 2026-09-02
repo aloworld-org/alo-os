@@ -61,12 +61,14 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       law 3's "on real hardware" is owed on the certified machine.
 - [ ] **Agents point at the local model by default**, configured rather than coded
       · Built: `alo-models` — where an answer may come from, and the policy that
-      keeps it in the building, on the machine, or in a region · Owed: something
+      keeps it in the building, on the machine, or in a region, both now said in
+      the language the person reads rather than in English · Owed: something
       that points, which is `alo-agentd`
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
       · Built: `alo-models` — the provider, the key held as a keyring handle and
-      never in the record, and testing it before it is saved · Owed: the Settings
+      never in the record, testing it before it is saved, and every refusal about
+      any of the three readable in the reader's own language · Owed: the Settings
       panel to type it into
 - [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
 - [ ] **Egress indicator**, and no telemetry
@@ -156,14 +158,18 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       prints it rather than the way an English one does), `alo-appearance`
       (the eleven colour names a person picks from, each with the note a
       translator needs where the word does not travel, and every refusal about a
-      value they chose) and `alo-capability` (every way the capability model
+      value they chose), `alo-capability` (every way the capability model
       says no — the grant that could not be made, the argument that did not
       survive the boundary, the change nobody was asked about, and the grants
       themselves, which now refuse with a value that is worded in the reader's
-      language wherever it is shown or written down)
-      · Owed: a shell to translate, `alo-models` (9f) and the sentence a person
-      approves, which is still rendered in English at the moment the call is
-      made (9g), and every translation — there are none yet
+      language wherever it is shown or written down) and `alo-models` (where an
+      answer is about to come from, which is read before somebody decides
+      whether to send a document at all; the rule an organisation set and why it
+      refused; and every refusal about a provider, a key or the runtime)
+      · Owed: a shell to translate, `alo-egress` — whose indicator sentence and
+      destinations are the last English left in a crate (9h) — and the sentence
+      a person approves, which is still rendered in English at the moment the
+      call is made (9g), and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

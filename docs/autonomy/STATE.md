@@ -1897,3 +1897,126 @@ the queue with the argument, so 9g implements rather than re-decides.
 9g is the one with a public surface in it. 4a is `alo-agentd`'s and the daemon
 still does not exist — after the strings items, every remaining item in this
 queue belongs to a daemon, a Linux host or a certified machine.
+
+---
+
+## 2026-09-02 — iteration 20: the models crate, and where a question is about to go
+
+**Built: item 9f**, whole. `alo-models` now says everything it says through
+`alo-strings`, and it is the fifth crate to move. Two new files, and every type
+in it that a person reads moved onto them.
+
+| | |
+|---|---|
+| `words.rs` | **New.** 29 phrases, the English beside each key, and the notes a translator needs |
+| `refusing.rs` | **New.** `NotAllowed` — which rule refused a question, and where it would have gone |
+| `source.rs` | `InferenceSource::describe` became `shown(&Strings)` and lost its `Display`; `SourcePolicy::refusal` answers with a value |
+| `tried.rs` | `Tried::describe` became `said` and `caveats`; `NotTried` lost its `Display` and carries the policy's refusal whole |
+| `provider.rs`, `secret.rs`, `runtime.rs` | Three error types lost their `Display` and gained `said(&Strings)` |
+| `testing.rs` | Gained the two string fixtures beside the socket one |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. `alo-models` is 90 unit tests (was 70) and 7 new
+integration tests against the real vocabulary; the workspace is **682 tests and
+20 doctests**, all green. `CHANGELOG.md`, `docs/quirks.md`, `QUEUE.md` and
+`ROADMAP.md` in the same change.
+
+**What is different about this list, and it is not a refusal.** Four of the 29
+are where an answer came from — *on this machine*, *by Mistral, in the EU*, *by
+someone, which has not said where it runs* — and ADR 0008 puts them where the
+answer appears, which means they are read **before** somebody decides whether to
+paste a contract into the next question. Every other list in the 9-series is
+somebody being told that something did not happen. This one is somebody deciding
+something, and the last of those four is the only thing on the screen saying the
+question is about to leave the building. A translation that softened it would
+take that away, so its note says so in the words a translator needs.
+
+The policy's three refusals put that same clause inside themselves, which is why
+the source is a string this crate declares rather than something a caller
+assembles: **a refusal and the place named in it are one language**, which is
+`alo-appearance`'s colour-inside-a-refusal property reaching the network.
+
+**The decision that was not in the item: `SourcePolicy::refusal` had an
+unreachable branch, and moving it deleted the branch rather than translating
+it.** `Anywhere` permits everything, so the old `Option<String>` had a case that
+could not happen, and a repository that forbids `unreachable!()` had filled it
+with *"no policy forbids this"* — a sentence for a state nobody can reach, which
+would have become a sentence 24 translators were asked to translate. As a value
+it is simply absent: `NotAllowed` has three variants because there are three
+rules that refuse, and a policy that refuses nothing produces no refusal.
+
+**And the one that was not in the item at all: a reason is a variant, never a
+`&'static str`.** `RuntimeError::Refused("the download did not complete")`
+carried a sentence the Ollama adapter wrote, in English, one `to_string()` from
+a screen — the exact failure item 9b named when it took `Display` off `Failed`,
+wearing a payload instead of a trait. It is `DownloadIncomplete` now, with a
+string of its own, and an adapter that needs another reason adds a variant and a
+word beside it. That is a public surface change to `RuntimeError` and the
+`CHANGELOG` says so.
+
+**Three smaller ones worth keeping.**
+
+- **A sentence that would have to count has the number beside it instead.**
+  `NotEnoughDisk` said *not enough disk: 5000000000 bytes needed, 1000000000
+  free*, which is two numbers and a plural noun in one sentence — and a `Plural`
+  counts one number, not two. So the sentence is *there is not enough room on
+  this disk for that download* and the two numbers stay fields, for whoever
+  writes a size the way the region writes one. That is item 10's own decision in
+  this crate — *a sentence here counts nothing out loud* — kept rather than
+  quietly dropped now that item 9a exists, and there is a test asserting the
+  sentence holds no digits and the crate declares no plural at all.
+- **`Tried` answers with a line and up to two more, not one sentence with
+  clauses glued on.** It built its answer by pushing `" — the list was cut"` onto
+  the end, and that dash is punctuation a program picked — which is exactly what
+  `alo-shortcuts` refused in item 9c. `said` is the answer and `caveats` is
+  nought, one or two whole sentences to be drawn beneath it.
+- **A key cannot reach a sentence in any language.** Neither of the two strings
+  about a key has a gap, and `alo-strings` refuses a translation that invents
+  one — so `models.key.blank` cannot become *paste the key {key}* in a language
+  nobody here reads. It is asserted twice: once on the constants, once through
+  the checker from outside the crate.
+
+**What the next iteration must know:**
+
+- **`alo-egress` is the last crate holding English, and nothing had it written
+  down.** `DestinationError`, `Destination::describe`, `Leaving::describe` — the
+  **indicator line**, which is the sentence law 1 exists to put in front of
+  somebody — and `EgressPolicy::refusal`. Iteration 5 put all four on item 9's
+  list in this journal and the queue never carried them across, so the whole
+  9-series went past them. It is **item 9h** in the queue now, with the two
+  decisions 9f already made for it: the policy refusal is a value for the same
+  reason `SourcePolicy`'s is, and `Destination::describe` is
+  `InferenceSource::shown`'s twin by construction and must not become a second
+  sentence about the same provider.
+- **A translated error cannot be a `std::error::Error`**, and 9f is where that
+  reached a **public trait's** signature — `ModelRuntime` returns `RuntimeError`
+  and third parties implement `ModelRuntime`. `docs/quirks.md` records it as the
+  general form of the deserialiser entry from 9c/9d. The line held is *who is
+  holding the machine when this appears*: `CatalogueError` refuses the catalogue
+  this repository ships and keeps its English, like `VerbError` and
+  `DefaultsError` before it.
+- **Two doctests dropped their `?` and were re-checked.** `SecretError` is no
+  longer a `std::error::Error`, so the `compile_fail` on `Secret::bearer` would
+  have started failing on the conversion instead of on the privacy. It was
+  compiled outside the doctest harness against the real rlib and still fails
+  with **E0624, method `bearer` is private** — so it is still a test of *a key
+  cannot be read back out*, and its passing twin still passes.
+- **`CommercialUse` and `OnCpu` have no words at all**, and that is not a bug
+  this item left. They are enums a licence panel would label and nothing in this
+  repository labels them yet, so there is no English to move; whoever builds
+  that panel declares those words rather than inventing them here. A model's
+  name, its licence's name and its note are a publisher's data and are shown as
+  written, like a filename in `alo-files`.
+- **Nothing here has been read by anybody.** There are still zero translations
+  in this repository; the German in the tests is the tests'. `ROADMAP.md`'s
+  *Language* stays unticked, its *Built* clause gains `alo-models` and its *Owed*
+  now names 9h and 9g; *Agents point at the local model* and *Add your own
+  provider* gained clauses and stay unticked, because there is no Settings panel
+  and no daemon.
+
+**What is left is 9g, 9h and 4a.** Neither 9g nor 9h is blocked by anything; 9h
+is the smaller and the one with the indicator in it, 9g is the one with a public
+surface reaching three crates. 4a is `alo-agentd`'s and the daemon still does not
+exist — after the strings items, every remaining item in this queue belongs to a
+daemon, a Linux host or a certified machine.

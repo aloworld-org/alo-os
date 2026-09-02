@@ -8,6 +8,10 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# Every refusal and every description in this crate is read by a person, and
+# `CLAUDE.md` calls hardcoded English a bug. `alo-strings` depends on nothing
+# itself, so nothing is added behind this crate but a list of sentences.
+alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }

@@ -12,6 +12,34 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Where your question is about to go is now said in your own language** —
+  and so is every reason it will not go there. That is the sentence you read
+  beside an answer before you decide whether to paste a contract into the next
+  one: *on this machine*, *on the studio workstation, on your network*, *by
+  Mistral, in the EU*, or the uncomfortable one, *by someone, which has not
+  said where it runs*. Reading the last of those in a language you do not speak
+  is the same as not reading it, which is why it moved: it is the only thing on
+  the screen telling you the question is about to leave the building.
+
+  When your organisation has set a rule — questions stay in the building, or in
+  a named region, or on this machine and nowhere else — the refusal now names
+  the rule and the place it stopped, in one language, whichever language you
+  read. It is kept as what it was rather than as a sentence, so the words on
+  your screen and the words in the record are one rendering. And a machine set
+  to keep questions in the building still never reaches out to a provider to
+  find out whether its key works: nothing about what is permitted depends on
+  which language is loaded, and there is a test that says so.
+
+  Everything else this part of the system says moved with it: the provider you
+  were adding and could not, the key you pasted the line around, the model that
+  is not installed, the download that stopped. Two of those are worth naming.
+  A key never reaches a sentence in any language — neither of the two strings
+  about one has a gap for anything to be put into, and a translation that
+  invented one is refused. And *there is not enough room for that download* now
+  says exactly that: the two numbers sit beside it, for whoever writes a size
+  the way your region writes one, rather than inside a sentence that would have
+  to count in English.
+
 - **Every way alo OS can tell an agent no can now be read in your own
   language** — which is the half of the system you meet when something does
   *not* happen. A folder you tried to grant and could not, an agent that sent a

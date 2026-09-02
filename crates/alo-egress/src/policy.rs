@@ -251,7 +251,7 @@ mod tests {
                     Ok(leaving) => assert_eq!(
                         egress.permits(&leaving),
                         sources_policy.permits(source),
-                        "{sources_policy:?} disagreed about {source}"
+                        "{sources_policy:?} disagreed about {source:?}"
                     ),
                     // A question answered here never departs, so there is
                     // nothing for the wider boundary to decide about — and the

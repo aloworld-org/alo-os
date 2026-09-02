@@ -23,22 +23,48 @@
 
 use std::fmt;
 
+use alo_strings::{Filling, Said, Strings};
+
+use crate::words;
+
 /// Why something typed into the key field is not a key.
 ///
-/// Neither message repeats what was typed. A key in an error is a key in a log.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+/// Neither message repeats what was typed, and neither may start: a key in an
+/// error is a key in a log. That is also why there is **no `Display`** (item
+/// 9f): the only road to words is [`SecretError::said`], and a type in this
+/// file with a `Display` is one `to_string()` away from every log line that
+/// ever formats something holding one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SecretError {
     /// Nothing was typed. A provider that needs no key is given none at all,
     /// which is a different thing from being given an empty one.
-    #[error("paste the key this provider gave you, or leave it out if it does not need one")]
     Blank,
     /// Something is in it that cannot be sent — a line break pasted along with
     /// the key, or a stray control character. Sending it would either be
     /// refused by the provider or, worse, split the request in two.
-    #[error(
-        "that key has something in it that cannot be sent — copy it again, without the line around it"
-    )]
     NotSendable,
+}
+
+impl SecretError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub fn word(self) -> words::Word {
+        match self {
+            Self::Blank => words::KEY_BLANK,
+            Self::NotSendable => words::KEY_NOT_SENDABLE,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given
+    /// [`crate::model_words`] answers with the key, marked. Neither sentence
+    /// has a gap in it, which is deliberate — there is nothing here that could
+    /// be put into one except what was typed.
+    #[must_use]
+    pub fn said(self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
 }
 
 /// A key, held for one call and never written down.
@@ -90,23 +116,21 @@ impl fmt::Debug for Secret {
 
 /// A key cannot be read back out of this crate.
 ///
+/// Neither of these uses `?`: [`SecretError`] lost its `Display` in item 9f and
+/// so is no longer a `std::error::Error`, and a pair of doctests that failed on
+/// a conversion would be a pair testing the conversion.
+///
 /// ```compile_fail
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let key = alo_models::Secret::typed("sk-the-real-thing")?;
+/// let key = alo_models::Secret::typed("sk-the-real-thing").expect("a key");
 /// // `bearer` is pub(crate): there is no way to get the key back.
 /// let _ = key.bearer();
-/// # Ok(())
-/// # }
 /// ```
 ///
 /// The twin that passes, so the pair cannot rot into a test of a typo:
 ///
 /// ```
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let key = alo_models::Secret::typed("sk-the-real-thing")?;
+/// let key = alo_models::Secret::typed("sk-the-real-thing").expect("a key");
 /// assert_eq!(format!("{key:?}"), "Secret(…)");
-/// # Ok(())
-/// # }
 /// ```
 #[cfg(doctest)]
 pub struct AKeyCannotBeReadBackOut;
@@ -166,18 +190,32 @@ mod tests {
     /// say what to do — and neither of them repeats what was pasted.
     #[test]
     fn the_errors_say_what_to_do_without_quoting_the_key() {
+        let strings = crate::testing::in_english();
         assert!(
             SecretError::Blank
-                .to_string()
+                .said(&strings)
+                .text()
                 .contains("paste the key this provider gave you")
         );
         assert!(
             SecretError::NotSendable
-                .to_string()
+                .said(&strings)
+                .text()
                 .contains("copy it again")
         );
         for error in [SecretError::Blank, SecretError::NotSendable] {
-            assert!(!error.to_string().contains("sk-"), "{error}");
+            assert!(!error.said(&strings).text().contains("sk-"), "{error:?}");
+        }
+    }
+
+    /// **A key never reaches a sentence, in any language.** Neither of these
+    /// strings has a gap, so a translation cannot invent one to put the key in
+    /// — `alo-strings` refuses a gap the source does not have, and this is the
+    /// test that says so about the two strings where it matters most.
+    #[test]
+    fn neither_sentence_has_a_gap_for_anything_to_be_put_into() {
+        for word in [words::KEY_BLANK, words::KEY_NOT_SENDABLE] {
+            assert!(!word.says().contains('{'), "{}", word.named());
         }
     }
 }

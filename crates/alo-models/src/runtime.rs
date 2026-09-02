@@ -14,6 +14,10 @@
 
 use std::fmt;
 
+use alo_strings::{Filling, Said, Strings};
+
+use crate::words;
+
 /// A model's weights, on this machine's disk.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Installed {
@@ -74,21 +78,34 @@ impl Progress {
 /// Coarse on purpose, and it never carries a backend response body: an error
 /// surface that quotes whatever the runtime said is a way for one component's
 /// internals to end up in another's logs.
-#[derive(Debug, thiserror::Error)]
+///
+/// **No `Display`, and therefore not a `std::error::Error`** (item 9f). Every
+/// one of these is read by a person waiting for a download or for an answer,
+/// which is the moment they are least willing to guess, so the only road to
+/// words is [`RuntimeError::said`] and it takes the strings that person reads.
+///
+/// **Every reason is a variant**, and that is what item 9f changed here rather
+/// than only how the words are reached. The old `Refused(&'static str)` carried
+/// a sentence an adapter wrote in English — one `to_string()` from a screen, in
+/// a file whose author had no reason to think about language. An adapter that
+/// needs to refuse for a reason not on this list adds one, and adds the string
+/// beside it in [`crate::words`], the same way a verb is added to a closed list.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuntimeError {
     /// The runtime is not running, or not reachable where it was expected.
-    #[error("the model runtime is not reachable")]
     Unreachable,
     /// The model is not in the catalogue, so alo OS does not offer it. This is
     /// a refusal, not a failure: the catalogue is what makes the licence
     /// promise in `docs/features.md` true.
-    #[error("{0} is not a model this system offers")]
     NotOffered(String),
     /// The runtime does not have this model, and was not asked to fetch it.
-    #[error("{0} is not installed")]
     NotInstalled(String),
     /// There is not enough disk for the download.
-    #[error("not enough disk: {needed_bytes} bytes needed, {free_bytes} free")]
+    ///
+    /// The two numbers are **beside** the sentence rather than inside it: a
+    /// size is counted, how a language counts is that language's business
+    /// (item 9a), and this crate settled in item 10 that it says nothing out
+    /// loud that it would have to count.
     NotEnoughDisk {
         /// What the download will take.
         needed_bytes: u64,
@@ -96,11 +113,42 @@ pub enum RuntimeError {
         free_bytes: u64,
     },
     /// The runtime answered, but not with anything usable.
-    #[error("the model runtime gave an answer that could not be used")]
     Unusable,
-    /// The operation was refused by the runtime itself.
-    #[error("the model runtime refused: {0}")]
-    Refused(&'static str),
+    /// A download stopped before it had everything, so nothing was installed.
+    DownloadIncomplete,
+}
+
+impl RuntimeError {
+    /// The string this crate declares for this failure.
+    #[must_use]
+    pub fn word(&self) -> words::Word {
+        match self {
+            Self::Unreachable => words::RUNTIME_UNREACHABLE,
+            Self::NotOffered(_) => words::MODEL_NOT_OFFERED,
+            Self::NotInstalled(_) => words::MODEL_NOT_INSTALLED,
+            Self::NotEnoughDisk { .. } => words::NOT_ENOUGH_DISK,
+            Self::Unusable => words::RUNTIME_UNUSABLE,
+            Self::DownloadIncomplete => words::DOWNLOAD_INCOMPLETE,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given
+    /// [`crate::model_words`] answers with the key, marked.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::NotOffered(model) | Self::NotInstalled(model) => {
+                Filling::of("model", model.clone())
+            }
+            Self::Unreachable
+            | Self::NotEnoughDisk { .. }
+            | Self::Unusable
+            | Self::DownloadIncomplete => Filling::nothing(),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// A sink for download progress.
@@ -157,7 +205,7 @@ pub trait ModelRuntime: fmt::Debug + Send + Sync {
     /// # Errors
     /// [`RuntimeError::NotEnoughDisk`] before starting where the size is known,
     /// [`RuntimeError::Unreachable`] if the runtime is not answering, and
-    /// [`RuntimeError::Refused`] if the runtime declined.
+    /// [`RuntimeError::DownloadIncomplete`] if it stopped part-way.
     fn fetch(&self, id: &str, progress: &mut dyn ProgressSink) -> Result<(), RuntimeError>;
 
     /// Remove a model's weights, giving the disk back.
@@ -234,15 +282,48 @@ mod tests {
     }
 
     /// The error text is what a person reads when a download fails at 3am, so
-    /// it says what to do about it rather than naming an internal state.
+    /// it says what happened rather than naming an internal state — and the two
+    /// numbers are beside it, in the variant, for whoever writes them the way
+    /// this region writes a size.
     #[test]
-    fn a_full_disk_says_how_much_was_needed() {
-        let e = RuntimeError::NotEnoughDisk {
+    fn a_full_disk_says_so_and_carries_the_numbers_beside_the_sentence() {
+        let full = RuntimeError::NotEnoughDisk {
             needed_bytes: 5_000_000_000,
             free_bytes: 1_000_000_000,
         };
-        let said = e.to_string();
-        assert!(said.contains("5000000000"), "{said}");
-        assert!(said.contains("1000000000"), "{said}");
+        let said = full.said(&crate::testing::in_english());
+        assert!(said.text().contains("not enough room"), "{said}");
+        // The sentence counts nothing out loud, so it holds no digits at all.
+        assert!(!said.text().chars().any(|c| c.is_ascii_digit()), "{said}");
+        assert!(matches!(
+            full,
+            RuntimeError::NotEnoughDisk {
+                needed_bytes: 5_000_000_000,
+                free_bytes: 1_000_000_000
+            }
+        ));
+    }
+
+    /// **A model id is the machine's and the sentence around it is the
+    /// reader's.** The id is what a person types back to ask for it again, so
+    /// translating it would make the sentence unusable in the one way that
+    /// matters.
+    #[test]
+    fn a_model_that_is_not_installed_says_so_in_the_readers_language() {
+        let strings = crate::testing::translated(&[(
+            crate::words::MODEL_NOT_INSTALLED,
+            "{model} ist nicht installiert",
+        )]);
+        let said = RuntimeError::NotInstalled("mistral-7b-instruct".to_owned()).said(&strings);
+        assert!(said.is_translated());
+        assert_eq!(said.text(), "mistral-7b-instruct ist nicht installiert");
+    }
+
+    /// A download that stopped is a reason of its own rather than a sentence an
+    /// adapter wrote, which is what item 9f changed about this type.
+    #[test]
+    fn a_download_that_stopped_says_nothing_was_installed() {
+        let said = RuntimeError::DownloadIncomplete.said(&crate::testing::in_english());
+        assert!(said.text().contains("nothing was installed"), "{said}");
     }
 }

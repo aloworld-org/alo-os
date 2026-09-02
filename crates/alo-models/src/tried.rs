@@ -16,7 +16,21 @@
 //! than terse: *one model* and *two models* is one sentence in English and
 //! three in Polish, and the plural rules are item 9a in `docs/autonomy/QUEUE.md`
 //! and are not written from memory. The numbers are here as numbers, for
-//! whatever shows them once that exists.
+//! whatever shows them — and item 9a is built now, so whoever shows them counts
+//! them with `alo_strings::Strings::count` in the reader's own language.
+//!
+//! **The answer is lines rather than a sentence with clauses appended.** It was
+//! one string with `" — "` between its parts, and that separator is punctuation
+//! a program picked: `alo-shortcuts` settled in item 9c that a sentence never
+//! joins a list, because the separator is not the same everywhere and the
+//! joining word would be placed by a machine that does not know the sentence.
+//! So [`Tried::said`] is the line that answers the question, and
+//! [`Tried::caveats`] is nought, one or two lines to be drawn beneath it.
+
+use alo_strings::{Filling, Said, Strings};
+
+use crate::refusing::NotAllowed;
+use crate::words;
 
 /// The most names kept from one answer. A provider offering more than this is
 /// offering a list nobody reads in a settings dialogue, and the cut is
@@ -101,21 +115,42 @@ impl Tried {
         self.all_of_them
     }
 
-    /// The line a person reads when the test comes back.
+    /// The string this crate declares for the line that answers the question.
     #[must_use]
-    pub fn describe(&self) -> String {
-        let mut said = if self.models.is_empty() {
-            "that worked, and this provider offers no models to choose from".to_owned()
+    pub fn word(&self) -> words::Word {
+        if self.models.is_empty() {
+            words::THAT_WORKED_WITH_NOTHING
         } else {
-            "that worked, and this provider says what it offers".to_owned()
-        };
+            words::THAT_WORKED
+        }
+    }
+
+    /// The line a person reads when the test comes back, in their own language.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given
+    /// [`crate::model_words`] answers with the key, marked.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(&self.word().key(), &Filling::nothing())
+    }
+
+    /// What else the person needs to know, one line each, in the order they are
+    /// worth reading.
+    ///
+    /// Empty for every provider anybody will actually meet. **Lines rather than
+    /// clauses**, for the reason at the top of this file: a machine that pushed
+    /// them onto the end of [`said`](Self::said) with a dash between would be
+    /// choosing punctuation the sentence's own language chooses.
+    #[must_use]
+    pub fn caveats(&self, strings: &Strings) -> Vec<Said> {
+        let mut lines = Vec::new();
         if !self.all_of_them {
-            said.push_str(" — the list is longer than this and was cut");
+            lines.push(strings.say(&words::THE_LIST_WAS_CUT.key(), &Filling::nothing()));
         }
         if self.unshowable > 0 {
-            said.push_str(" — some names could not be shown and were left out");
+            lines.push(strings.say(&words::SOME_NAMES_LEFT_OUT.key(), &Filling::nothing()));
         }
-        said
+        lines
     }
 }
 
@@ -124,48 +159,84 @@ impl Tried {
 /// Every message says what to do, and none of them repeats the provider's own
 /// words: an error surface that quotes whatever a remote service said is a way
 /// for somebody else's text to arrive on a person's screen wearing ours.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`, and therefore not a `std::error::Error`** (item 9f). The
+/// only road to words is [`NotTried::said`].
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NotTried {
     /// This machine's policy does not permit reaching that provider at all, so
-    /// nothing was sent. Carries the policy's own words
-    /// ([`SourcePolicy::refusal`](crate::SourcePolicy::refusal)) rather than
-    /// composing a second explanation that could disagree with the first.
-    #[error("{0}")]
-    Forbidden(String),
+    /// nothing was sent.
+    ///
+    /// Carries the policy's own refusal
+    /// ([`SourcePolicy::refusal`](crate::SourcePolicy::refusal)) rather than a
+    /// second explanation that could disagree with the first — as a **value**
+    /// since item 9f, so the words are the policy's in whichever language the
+    /// person reads, rather than a rendering made before anybody knew who was
+    /// reading.
+    Forbidden(NotAllowed),
     /// Nothing answered.
-    #[error(
-        "nothing answered at that address — check the address, and that this machine is online"
-    )]
     Unreachable,
     /// The address sent us somewhere else. Refused rather than followed: the
     /// address the policy answered about is the address that gets reached.
-    #[error(
-        "that address sends this machine somewhere else, and a key is not carried to an address nobody agreed to — use the address the provider documents"
-    )]
     Redirected,
     /// The provider will not answer without a key, and none was given.
-    #[error("this provider will not answer without a key — add the one it gave you")]
     NeedsAKey,
     /// A key was given and the provider did not accept it. **The whole reason
     /// this feature exists**: found while somebody is looking at the settings
     /// panel they typed it into, rather than in the middle of a question.
-    #[error(
-        "that key was not accepted — check it is the whole key, and that it is this provider's"
-    )]
     KeyNotAccepted,
     /// Something answered, but not like a provider this system can talk to.
-    #[error(
-        "that address answered, but not like a provider this system can use — check it is the address of the API rather than of the website"
-    )]
     NotUnderstood,
-    /// The provider answered, and said it was having trouble.
-    #[error("the provider answered {0}, which is a problem at their end — try again in a moment")]
+    /// The provider answered, and said it was having trouble. Carries the
+    /// status it answered with, which is an identifier rather than a count.
     NotWell(u16),
+}
+
+impl NotTried {
+    /// The string this crate declares for this refusal.
+    ///
+    /// For [`Forbidden`](Self::Forbidden) it is the policy's own, because the
+    /// rule that refused is the thing to say.
+    #[must_use]
+    pub fn word(&self) -> words::Word {
+        match self {
+            Self::Forbidden(refusal) => refusal.word(),
+            Self::Unreachable => words::PROVIDER_UNREACHABLE,
+            Self::Redirected => words::PROVIDER_REDIRECTED,
+            Self::NeedsAKey => words::PROVIDER_NEEDS_A_KEY,
+            Self::KeyNotAccepted => words::KEY_NOT_ACCEPTED,
+            Self::NotUnderstood => words::NOT_A_PROVIDER,
+            Self::NotWell(_) => words::PROVIDER_NOT_WELL,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given
+    /// [`crate::model_words`] answers with the key, marked. **What was refused
+    /// never depends on the string table** — the test had already not happened
+    /// before this was called.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        match self {
+            Self::Forbidden(refusal) => refusal.said(strings),
+            Self::NotWell(status) => strings.say(
+                &self.word().key(),
+                &Filling::of("status", status.to_string()),
+            ),
+            Self::Unreachable
+            | Self::Redirected
+            | Self::NeedsAKey
+            | Self::KeyNotAccepted
+            | Self::NotUnderstood => strings.say(&self.word().key(), &Filling::nothing()),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::{in_english, translated};
 
     fn names(of: &[&str]) -> Tried {
         Tried::of(of.iter().map(|n| (*n).to_owned()))
@@ -180,7 +251,12 @@ mod tests {
         );
         assert!(tried.is_all());
         assert_eq!(tried.unshowable(), 0);
-        assert!(tried.describe().starts_with("that worked"), "{tried:?}");
+        let strings = in_english();
+        assert!(
+            tried.said(&strings).text().starts_with("that worked"),
+            "{tried:?}"
+        );
+        assert!(tried.caveats(&strings).is_empty());
     }
 
     /// A provider writes these, and they land next to things the system said
@@ -196,10 +272,14 @@ mod tests {
         ]);
         assert_eq!(tried.models(), ["mistral-small-latest"]);
         assert_eq!(tried.unshowable(), 3);
+        let strings = in_english();
+        let caveats = tried.caveats(&strings);
+        assert_eq!(caveats.len(), 1);
         assert!(
-            tried.describe().contains("could not be shown"),
-            "{}",
-            tried.describe()
+            caveats
+                .first()
+                .is_some_and(|line| line.text().contains("could not be shown")),
+            "{caveats:?}"
         );
     }
 
@@ -222,7 +302,34 @@ mod tests {
         let tried = Tried::of(many);
         assert_eq!(tried.models().len(), MOST_NAMES);
         assert!(!tried.is_all());
-        assert!(tried.describe().contains("was cut"), "{}", tried.describe());
+        let strings = in_english();
+        let caveats = tried.caveats(&strings);
+        assert_eq!(caveats.len(), 1);
+        assert!(
+            caveats
+                .first()
+                .is_some_and(|line| line.text().contains("was cut")),
+            "{caveats:?}"
+        );
+    }
+
+    /// **Two things to say are two lines, not one sentence with a dash in it.**
+    /// The order is the order they are worth reading, and each one is whole —
+    /// which is what lets a translator write a sentence rather than a fragment
+    /// somebody else's punctuation will be glued to.
+    #[test]
+    fn two_caveats_are_two_lines_and_the_answer_is_a_third() {
+        let long = "m".repeat(LONGEST_NAME + 1);
+        let mut many: Vec<String> = (0..MOST_NAMES + 3).map(|n| format!("model-{n}")).collect();
+        many.push(long);
+        let tried = Tried::of(many);
+        let strings = in_english();
+        let caveats = tried.caveats(&strings);
+        assert_eq!(caveats.len(), 2);
+        for line in &caveats {
+            assert!(!line.text().contains('—'), "{line}");
+        }
+        assert!(!tried.said(&strings).text().contains('—'), "{tried:?}");
     }
 
     /// A provider that answers with an empty list has still answered, and the
@@ -233,7 +340,10 @@ mod tests {
         let tried = names(&[]);
         assert!(tried.models().is_empty());
         assert!(tried.is_all());
-        assert!(tried.describe().contains("no models"), "{tried:?}");
+        assert!(
+            tried.said(&in_english()).text().contains("no models"),
+            "{tried:?}"
+        );
     }
 
     /// The refusals are read by somebody who has just typed something in, so
@@ -241,42 +351,65 @@ mod tests {
     /// other say plainly which one this is.
     #[test]
     fn the_refusals_say_what_to_do_and_which_one_this_is() {
-        assert!(
-            NotTried::KeyNotAccepted
-                .to_string()
-                .contains("check it is the whole key")
-        );
-        assert!(NotTried::NeedsAKey.to_string().contains("add the one it"));
-        assert!(
-            NotTried::Unreachable
-                .to_string()
-                .contains("check the address")
-        );
-        assert!(
-            NotTried::Redirected
-                .to_string()
-                .contains("nobody agreed to")
-        );
-        assert!(
-            NotTried::NotUnderstood
-                .to_string()
-                .contains("rather than of the website")
-        );
+        let strings = in_english();
+        let said = |not: &NotTried| not.said(&strings).into_text();
+        assert!(said(&NotTried::KeyNotAccepted).contains("check it is the whole key"));
+        assert!(said(&NotTried::NeedsAKey).contains("add the one it"));
+        assert!(said(&NotTried::Unreachable).contains("check the address"));
+        assert!(said(&NotTried::Redirected).contains("nobody agreed to"));
+        assert!(said(&NotTried::NotUnderstood).contains("rather than of the website"));
         assert_eq!(
-            NotTried::NotWell(503).to_string(),
+            said(&NotTried::NotWell(503)),
             "the provider answered 503, which is a problem at their end — try again in a moment"
         );
     }
 
     /// The policy's refusal is carried rather than reworded, so the machine
-    /// cannot explain the same rule two ways.
+    /// cannot explain the same rule two ways — and since it is carried as a
+    /// value, both explanations are in whichever language the person reads.
     #[test]
     fn a_policy_refusal_is_the_policys_own_words() {
-        let said = "this machine is set to answer only on itself";
+        let refusal = NotAllowed::NotThisMachine {
+            source: crate::source::InferenceSource::PairedMachine {
+                machine: "the studio workstation".to_owned(),
+            },
+        };
+        let strings = in_english();
         assert_eq!(
-            NotTried::Forbidden(said.to_owned()).to_string(),
-            said,
+            NotTried::Forbidden(refusal.clone()).said(&strings).text(),
+            refusal.said(&strings).text(),
             "the policy's words are the message, not a summary of them"
+        );
+    }
+
+    /// **A test that never happened is said in the reader's own language**, and
+    /// the status a provider answered with is not translated because it is not
+    /// a word.
+    #[test]
+    fn a_refusal_is_said_in_the_language_the_person_reads() {
+        let strings = translated(&[(
+            words::PROVIDER_NOT_WELL,
+            "der Anbieter antwortete {status}, das ist ein Problem auf seiner Seite — versuchen \
+             Sie es gleich noch einmal",
+        )]);
+        let said = NotTried::NotWell(503).said(&strings);
+        assert!(said.is_translated());
+        assert!(
+            said.text().starts_with("der Anbieter antwortete 503"),
+            "{said}"
+        );
+    }
+
+    /// **A refusal never depends on a string table.** With no words at all it
+    /// says the same thing about what happened and names the rule by its key.
+    #[test]
+    fn a_refusal_without_the_words_still_names_the_rule() {
+        let nothing = Strings::of(alo_strings::Vocabulary::empty());
+        let said = NotTried::KeyNotAccepted.said(&nothing);
+        assert!(said.is_a_bug());
+        assert!(
+            said.text().contains("models.not-tried.key-not-accepted"),
+            "{said}"
         );
     }
 }

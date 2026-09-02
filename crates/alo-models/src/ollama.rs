@@ -245,8 +245,10 @@ impl ModelRuntime for Ollama {
         }
         if saw_error.is_some() {
             // The runtime's own words are not repeated: this crate's errors
-            // never carry a backend response body.
-            return Err(RuntimeError::Refused("the download did not complete"));
+            // never carry a backend response body, and since item 9f they
+            // cannot — the reason is a variant with a string of its own rather
+            // than a sentence this file wrote.
+            return Err(RuntimeError::DownloadIncomplete);
         }
         Ok(())
     }
@@ -439,11 +441,11 @@ mod tests {
             .fetch("mistral-7b-instruct", &mut Progress::ignored())
             .unwrap_err();
         server.join().unwrap();
-        assert!(matches!(err, RuntimeError::Refused(_)), "{err:?}");
-        assert!(
-            !err.to_string().contains("manifest"),
-            "the runtime's own words must not travel: {err}"
-        );
+        assert_eq!(err, RuntimeError::DownloadIncomplete);
+        // The runtime's own words must not travel, and there is now nowhere
+        // for them to travel in: the variant carries nothing.
+        let said = err.said(&crate::testing::in_english());
+        assert!(!said.text().contains("manifest"), "{said}");
     }
 
     #[test]

@@ -264,6 +264,31 @@ working around it would mean a second copy of a declaration, and one string
 rather than two that agree is the rule the whole 9-series is built on.
 **Date:** 2026-09-02
 
+### A translated error cannot be a `std::error::Error`
+**Version:** Rust 1.x, `std::error::Error: Debug + Display`, met again at item
+9f on 2026-09-02.
+**Behaviour:** `std::error::Error` requires `Display`, and `Display` takes no
+argument but a formatter — so a type that can only say what it is when it is
+handed the reader's language cannot implement it. Everything downstream of that
+trait goes with it: `?` into a `Box<dyn Error>`, `#[from]`, `anyhow`, and the
+`{e}` a programmer writes without thinking. It is the same collision the
+deserialiser entry above describes, met from the other side, and item 9f is
+where it reached a type in a **public trait's** signature — `ModelRuntime`
+returns `RuntimeError`, and third parties implement `ModelRuntime`.
+**Our response:** the types a person reads give up `Display` and answer
+`said(&Strings)`, and the ones a programmer reads keep it. The line between
+them is *who is holding the machine when this appears*: `CatalogueError`
+refuses the catalogue this repository ships, `VerbError` refuses a verb
+declaration, `alo-shortcuts`' `DefaultsError` refuses a release's own defaults —
+all read by whoever is fixing the thing that failed, so all still English and
+still `std::error::Error`. What an adapter author gives up is `?` into a boxed
+error, and what they get is a refusal their user can read; `RuntimeError`'s own
+documentation says so where they will look. Two doctests in `alo-models` had to
+drop their `?` for this reason and were re-checked afterwards, because a
+`compile_fail` that starts failing on a missing conversion has stopped testing
+what it was written for.
+**Date:** 2026-09-02
+
 ## Models
 
 Open-weight models in the catalogue have their own personalities: refusing

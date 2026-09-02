@@ -22,9 +22,11 @@
 //! product that inferred a region from a domain name would hand somebody a
 //! reassuring label while putting them in breach.
 
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::source::{InferenceSource, Region};
+use crate::words;
 
 /// Where a key lives in the keyring. Not the key.
 ///
@@ -48,23 +50,51 @@ impl SecretRef {
 }
 
 /// Why a provider could not be added.
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+///
+/// **No `Display`, and therefore not a `std::error::Error`** (item 9f). The
+/// only road to words is [`ProviderError::said`], which takes the strings the
+/// person in front of the machine reads — a `Display` here would be an English
+/// sentence one `to_string()` away from a settings panel whose author had no
+/// reason to think about language. What is given up is `std::error::Error` on a
+/// type that was never an error a programmer handles: every one of these is
+/// somebody having just typed something.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProviderError {
     /// A provider with no name cannot be shown to anybody or chosen.
-    #[error("give the provider a name — it is what you will see when it answers")]
     Unnamed,
     /// The endpoint is not a URL we can use.
-    #[error("that does not look like an address: it should start with https://")]
     NotAnAddress,
     /// A key would travel in clear over this connection.
-    #[error(
-        "this address is not https, so your key and your questions would travel unencrypted — use https, or a service on this machine"
-    )]
     InsecureEndpoint,
     /// The same name is already configured, so an answer could not say which
     /// one produced it.
-    #[error("you already have a provider called {0}")]
     AlreadyAdded(String),
+}
+
+impl ProviderError {
+    /// The string this crate declares for this refusal.
+    #[must_use]
+    pub fn word(&self) -> words::Word {
+        match self {
+            Self::Unnamed => words::PROVIDER_UNNAMED,
+            Self::NotAnAddress => words::NOT_AN_ADDRESS,
+            Self::InsecureEndpoint => words::INSECURE_ENDPOINT,
+            Self::AlreadyAdded(_) => words::PROVIDER_ALREADY_ADDED,
+        }
+    }
+
+    /// What this says, in the language the person reads.
+    ///
+    /// Never fails and never panics: a `Strings` that was never given
+    /// [`crate::model_words`] answers with the key, marked.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        let filling = match self {
+            Self::AlreadyAdded(name) => Filling::of("name", name.clone()),
+            Self::Unnamed | Self::NotAnAddress | Self::InsecureEndpoint => Filling::nothing(),
+        };
+        strings.say(&self.word().key(), &filling)
+    }
 }
 
 /// A provider a person configured.
@@ -239,7 +269,12 @@ mod tests {
         let err = Provider::checked("Somewhere", "http://api.example.com", Region::Unknown, None)
             .unwrap_err();
         assert_eq!(err, ProviderError::InsecureEndpoint);
-        assert!(err.to_string().contains("unencrypted"), "{err}");
+        assert!(
+            err.said(&crate::testing::in_english())
+                .text()
+                .contains("unencrypted"),
+            "{err:?}"
+        );
 
         // A runtime on this machine never puts anything on a wire.
         assert!(
@@ -257,11 +292,8 @@ mod tests {
             .unwrap();
         assert_eq!(p.region, Region::Unknown);
         assert!(!p.source().is_in("the EU"));
-        assert!(
-            p.source().describe().contains("has not said where it runs"),
-            "{}",
-            p.source().describe()
-        );
+        let said = p.source().shown(&crate::testing::in_english());
+        assert!(said.contains("has not said where it runs"), "{said}");
     }
 
     /// A provider on this machine is not "hosted" however it was typed in: the
@@ -315,11 +347,32 @@ mod tests {
     /// it says what to do rather than what is wrong.
     #[test]
     fn the_errors_say_what_to_do() {
+        let strings = crate::testing::in_english();
         assert!(
             ProviderError::Unnamed
-                .to_string()
+                .said(&strings)
+                .text()
                 .contains("give the provider a name")
         );
-        assert!(ProviderError::NotAnAddress.to_string().contains("https://"));
+        assert!(
+            ProviderError::NotAnAddress
+                .said(&strings)
+                .text()
+                .contains("https://")
+        );
+    }
+
+    /// **And they say it in the language the person reads**, with the name they
+    /// typed coming through as they typed it.
+    #[test]
+    fn a_refusal_about_a_name_keeps_the_name_and_translates_the_rest() {
+        let strings = crate::testing::translated(&[(
+            words::PROVIDER_ALREADY_ADDED,
+            "Sie haben bereits einen Anbieter namens {name}",
+        )]);
+        let said = ProviderError::AlreadyAdded("Mistral".to_owned()).said(&strings);
+        assert!(said.is_translated());
+        assert!(said.text().starts_with("Sie haben bereits"), "{said}");
+        assert!(said.text().ends_with("Mistral"), "{said}");
     }
 }

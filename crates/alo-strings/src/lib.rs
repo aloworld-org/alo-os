@@ -168,14 +168,19 @@
 //! it, not a form to pick as though the number had been whole; [`cldr`] says
 //! what it would cost.
 //!
-//! **The strings of the crates that have not moved.** `alo-files` (item 9b),
-//! `alo-shortcuts` (9c) and `alo-appearance` (9d) have moved and declare their
-//! own words, each in a `words` module built out of [`Word`]. `alo-capability`
-//! and `alo-models` still hold their English in their own error types and
-//! sentences; moving them is item 9e, which was left until last because the
-//! other three are the crates whose strings a person meets every day. Until it
-//! is done, a `Sentence` a person approves is rendered in English at the moment
-//! the call is made — 9e is where the record and the screen become one string.
+//! **The strings of the crate that has not moved.** `alo-files` (item 9b),
+//! `alo-shortcuts` (9c), `alo-appearance` (9d), `alo-capability` (9e) and
+//! `alo-models` (9f) have all moved and declare their own words, each in a
+//! `words` module built out of [`Word`]. `alo-egress` has not: its
+//! destinations, its indicator line and its policy refusal are still English in
+//! the source, and moving them is item 9h.
+//!
+//! **The sentence a person approves.** `alo_capability::Call` renders its
+//! sentence when the call is made and keeps the string, so what a shell shows
+//! and what the approval and the record keep are two renderings of one string
+//! rather than one value worded twice. Item 9e decided they should be one —
+//! the argument it made about refusals, applied to the sentence — and item 9g
+//! is where a `Call` starts carrying a key and a filling instead.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
