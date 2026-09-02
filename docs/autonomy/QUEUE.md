@@ -55,14 +55,25 @@ items must follow:
 
 ## Ready
 
-- [ ] **1. Grants** — implements ADR 0001 §3 and `docs/contracts/agent-verbs.md`.
-  A grant is what makes reach possible: enumerated, visible, revocable in one
-  action taking effect immediately, and expiring by default. No grant to `/`.
-  Model, storage and the queries the shell will ask ("what is granted, to whom,
-  until when"). Tests must include: an expired grant grants nothing; a revoked
-  one stops immediately; a path outside a grant is refused; a grant is never
-  widened by use. **Everything after this depends on its vocabulary — read the
-  ADR in full, not the summary here.**
+- [x] **1. Grants** — implements ADR 0001 §3 and `docs/contracts/agent-verbs.md`.
+  `crates/alo-capability`: `reach.rs` (what a grant covers, what a verb asks
+  for), `grant.rs` (one grant and what has to be true of it), `grants.rs` (the
+  list, its queries and its refusals), `path.rs` (containment, decided
+  lexically). 28 tests, clippy clean. **This is the vocabulary items 2–5 speak**
+  — `Grantee`, `Reach`, `Ask`, `Grant`, `Grants`, `GrantId` — and they belong in
+  this crate beside it rather than in one of their own.
+
+  Three decisions the next items inherit. **Nothing reads the clock:** every
+  question that depends on time takes `now`, so expiry is testable without
+  sleeping and the daemon and the settings panel cannot disagree about the
+  moment. **Identities are matched exactly** — agent names, application ids and
+  paths — because matching loosely matches more than the person picked.
+  **Containment is lexical and touches no disk**, so whatever executes a verb
+  must resolve symbolic links *before* asking whether a path is granted; the
+  reasoning is in `path.rs` and item 6 is where it gets honoured.
+
+  Storage is serde, as with `Providers` — where the list is written and when is
+  the daemon's, and it does not exist yet.
 
 - [ ] **2. The verb registry** — implements `docs/contracts/agent-verbs.md` and
   law 2. A verb is `name`, `purpose`, `effect` (read or change), typed `args`,

@@ -12,6 +12,21 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- What an agent may reach is now decided by the grants you made, and by nothing
+  else. A grant covers one folder and what is in it, one file, or one
+  application; it names the agent it is for; it can be taken away in one action
+  and stops on the next question rather than at the next sign-in; and it ends —
+  a grant that never expires is not something this machine can hold, because a
+  grant that outlives the reason you made it is exactly how a machine stops
+  being yours. There is no grant to the whole machine, however it is spelled. A
+  folder you granted covers what is inside it and stops there, so granting
+  `Invoices` does not quietly hand over `Invoices2` next to it. And asking about
+  a file never grants it: an agent that asks a hundred times is refused a
+  hundred times, and every refusal says which it was — the grant expired, or you
+  never made one — because those need different things from you. This is the
+  rule underneath the file and application verbs rather than a settings panel
+  you can open yet; the panel comes with the shell.
+
 - You can add your own model provider in Settings — a name, an address and a
   key. Use Mistral, your own endpoint, or whatever you already pay for. The key
   is stored in the keyring and never written into a settings file, so it cannot

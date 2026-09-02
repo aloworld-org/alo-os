@@ -71,3 +71,65 @@ own command line. Whoever starts the loop owns that checkout until it reports
 
 Ten ready items. Item 1 (grants) is first because items 2, 3, 4 and 6 all speak
 its vocabulary.
+
+
+---
+
+## 2026-09-02 — iteration 1: grants
+
+**Built: item 1.** `crates/alo-capability`, a new crate holding ADR 0001 as
+working code — grants now, and items 2 to 5 beside them later. The name is not
+`alo-agentd` on purpose: this is the portable logic a daemon will one day serve,
+and calling it the daemon would invite the Linux half to be written into it.
+
+Four files, one job each:
+
+| | |
+|---|---|
+| `reach.rs` | `Reach` — what a grant covers; `Ask` — what a verb wants to touch. Facing each other, with no method turning one into the other |
+| `grant.rs` | One grant, and everything that has to be true of it, checked where it is made rather than where it is used |
+| `grants.rs` | The list: what is granted to whom until when, revoke, and the refusal in words |
+| `path.rs` | Whether one path is inside another, component by component, touching no disk |
+
+**The gate:** `cargo fmt --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, 72 tests passing
+(28 new, 44 in `alo-models`). Built and unit tested on Windows; **no hardware
+verification, and none claimed** — there is nothing here that touches a machine
+yet.
+
+Every promise the queue asked for is a test rather than a sentence: an expired
+grant permits nothing (including at the exact moment it expires), a revoked one
+stops on the next question, a path outside a grant is refused, and asking about
+a path a hundred times leaves the list byte-identical.
+
+**What the next iteration must know:**
+
+- **Nothing in the crate reads the clock.** Every time-dependent question takes
+  `now`. Item 3 (approvals) has the same shape of problem and should do the same
+  — an approval that expires needs the same testability, and a second way of
+  telling the time is a second thing to disagree about.
+- **Containment is lexical.** `path.rs` decides without a syscall, which means a
+  symbolic link inside a granted folder can point outside it. The rule is
+  written in that file's docs: whatever executes a verb resolves the real path
+  and asks about *that*. **Item 6 is where this becomes real, and getting it
+  wrong there defeats item 1 entirely.**
+- **Identities are matched exactly** — agent names, application ids, paths. This
+  differs from `alo-models`, where provider names are compared
+  case-insensitively, and the difference is deliberate: a name a person types is
+  matched kindly, a name that decides reach is not. If item 2 adds verb names,
+  they are identities.
+- **A grant cannot be made without an end.** There is no "for ever" variant and
+  zero is refused. If something later genuinely needs an indefinite grant, that
+  is an ADR, not a new enum variant.
+- **The errors are English in the source**, as in `alo-models`. Item 9 (strings)
+  is where that gets fixed, and `GrantError` plus `Grants::refusal` are on its
+  list — they are user-facing text, and `provider.rs` is not the only file
+  holding some.
+- **Storage is serde only.** `Grants` round-trips and handles keep counting from
+  where they were, so a revoke from a stale list cannot land on a grant made
+  since. *Where* the list is written belongs to the daemon and does not exist.
+
+Nine ready items left. Item 2 (the verb registry) is next, and it speaks this
+crate's vocabulary — read `reach.rs` before starting it, because `Ask` is what a
+verb's arguments have to reduce to when the registry asks whether a call is
+within its grant.
