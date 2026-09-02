@@ -38,9 +38,25 @@ somebody expected. It is written down now, so it is answered.
    same change, a `CHANGELOG.md` line.
 5. **Commit and push.** One item, one commit, a message that says what changed
    and why somebody would care.
-6. **Update the queue and the journal.** Tick the item. Append to
-   `docs/autonomy/STATE.md`: what was built, what the gate said, and anything
-   the next iteration should know.
+6. **Update the queue, the roadmap and the journal.** Tick the queue item.
+   Append to `docs/autonomy/STATE.md`: what was built, what the gate said, and
+   anything the next iteration should know.
+
+   **Then open `ROADMAP.md` and move the line this item served** — in the same
+   commit. Almost never a tick: a queue item builds a crate, a roadmap line is a
+   whole capability, and the screen or daemon that finishes it is usually still
+   missing. What you write is the `· Built: … · Owed: …` clause described at the
+   top of that file, naming the crate that now exists and the thing still owed.
+
+   If the item served no roadmap line, **say so in `STATE.md` and say why** —
+   the way iteration 10 did when it found *test a provider* lived only inside
+   "Settings, as one place". That is a real answer. Silence is not, and silence
+   is what happened: eight consecutive iterations left `ROADMAP.md` untouched
+   while eight crates landed, so the file reported that nothing had been built.
+
+   **Never resolve this by ticking.** A roadmap tick means law 3 on real
+   hardware, this loop has no hardware, and a loop that learns to tick to
+   discharge an obligation is worse than one that never updated the file.
 7. **Stop.** One item per iteration. Two is how a bad decision gets made twice
    before anybody reads the first one.
 
@@ -80,6 +96,7 @@ more than one that invents a way past a problem nobody has looked at.
 |---|---|
 | `docs/autonomy/QUEUE.md` | The work, in order, with what each is blocked on |
 | `docs/autonomy/STATE.md` | The journal: one entry per iteration, newest last |
+| `ROADMAP.md` | What a person outside the loop reads to know where the product is. Moved every iteration, per step 6 |
 | `CLAUDE.md` | The four laws and the gate |
 | `docs/decisions/` | Why things are the way they are. Read before proposing otherwise |
 

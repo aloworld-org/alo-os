@@ -12,6 +12,34 @@ than no roadmap, because somebody plans around it.
 Every item here appears in `docs/features.md` with a tier. If it is not there,
 it is not built.
 
+## Three states, because two are not enough
+
+Almost every item below is one capability spanning two halves: a crate that
+decides, and a screen or daemon that shows and runs it. The crates are being
+built first, deliberately — they need no compositor and no certified machine.
+So an item is routinely *half done* for months, and a box that can only be empty
+or ticked has no way to say that.
+
+It said the wrong thing instead. For eight commits this file did not move while
+eight crates and several hundred tests landed, and the two commits before that
+moved it only by **adding** unticked lines. Read literally, it reported that
+nothing had happened. That is a reporting failure, not a dishonest tick, but
+somebody planning from it is misled either way.
+
+So a line is written in one of three states, and there is no fourth:
+
+- `- [ ]` **Not started.** Nothing exists.
+- `- [ ]` **· Built: … · Owed: …** — part done. The clause names the crate that
+  exists *and* the thing still missing. It stays an empty box: half a capability
+  is not a capability, and a person planning around this file must never read
+  the annotation as delivery.
+- `- [x]` **Done** — law 3 on real hardware, or the line states in its own words
+  what remains owed on the certified machine.
+
+**The Built/Owed clause is a claim about code, so it names the crate.** A clause
+that cannot name one is decoration, and decoration here is how a roadmap starts
+lying slowly.
+
 ---
 
 ## v0.01 — it boots and the agent acts
@@ -32,22 +60,39 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       against a real socket. **Not yet run against a real Ollama or a GPU** —
       law 3's "on real hardware" is owed on the certified machine.
 - [ ] **Agents point at the local model by default**, configured rather than coded
+      · Built: `alo-models` — where an answer may come from, and the policy that
+      keeps it in the building, on the machine, or in a region · Owed: something
+      that points, which is `alo-agentd`
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
+      · Built: `alo-models` — the provider, the key held as a keyring handle and
+      never in the record, and testing it before it is saved · Owed: the Settings
+      panel to type it into
 - [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
 - [ ] **Egress indicator**, and no telemetry
+      · Built: `alo-egress` — what counts as leaving, and what is said about it
+      · Owed: the indicator, which is a compositor surface
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
+      · Built: `alo-capability` (the verbs, the grants, the approvals) and
+      `alo-files` (the six file verbs) · Owed: the daemon itself, application
+      verbs, and the context an agent is given when invoked
 - [ ] Every execution recorded with its origin, approval and grant
+      · Built: `alo-record` — the record, including refusals · Owed: queue 4a —
+      where it is written and what prunes it, which waits on `alo-agentd`
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
 - [ ] Launcher and window management: move, resize, snap, tile
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated
+      · Built: nothing — the commit that added this line added no code · Owed: all of it
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
+      · Built: the decision (ADR 0009), not code · Owed: all of it
 - [ ] Copy, cut and paste across applications; switching between windows
 - [ ] Keyboard shortcuts a person can change
+      · Built: `alo-shortcuts` — the shortcuts, rebindable, and nothing quietly
+      taking one away · Owed: a shell to press them in
 - [ ] The workspace client runs as an application on the shell
 - [ ] **Image**: OCI-built, boots on the certified machine, firmware to sign-in
 
@@ -70,6 +115,9 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] **Making it yours**: background from a file, folder or colour and per
       display; lock-screen image; light and dark; accent colour from the design
       tokens; text scaling; wallpapers shipped in the image
+      · Built: `alo-appearance` — background per display, light and dark, text
+      scaling, and the accent set of ADR 0010, terracotta reserved · Owed: the
+      Settings panel, and the wallpapers themselves
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
@@ -88,6 +136,11 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] **Language**: the shell in all 24 official EU languages, with regional
       formats, timezones and a keyboard layout offered alongside each; RTL-ready
       even though no official EU language needs it yet
+      · Built: `alo-strings` — every sentence named, translation checked against
+      what the system says, the 24 languages listed each in its own language, and
+      English unable to hide · Owed: a shell to translate, the plural rules
+      (queue 9a), the crates still holding their own English (9b–9e), and every
+      translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything
