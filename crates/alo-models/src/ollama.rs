@@ -40,29 +40,42 @@ const QUICK_TIMEOUT: Duration = Duration::from_secs(10);
 /// Ollama, reached over its HTTP API.
 #[derive(Debug, Clone)]
 pub struct Ollama {
+    /// Where the runtime listens, without a trailing slash.
     endpoint: String,
+    /// What alo OS offers. Held here because it is the gate on `fetch`.
     catalogue: Catalogue,
 }
+
+// Ollama's wire shapes. Every field is `#[serde(default)]` on purpose: a
+// runtime that adds, renames or omits a field between versions should cost us
+// a missing value, never a failed parse of an otherwise good response.
 
 /// `/api/tags` — what is on disk.
 #[derive(Deserialize)]
 struct TagsResponse {
+    /// One entry per set of weights the runtime holds.
     #[serde(default)]
     models: Vec<TagEntry>,
 }
 
+/// One installed model, as `/api/tags` describes it.
 #[derive(Deserialize)]
 struct TagEntry {
+    /// Ollama's own `family:tag` name, which never escapes this file.
     #[serde(default)]
     name: String,
+    /// Bytes on disk, as the runtime measures them.
     #[serde(default)]
     size: u64,
+    /// Present on recent versions; absent on older ones.
     #[serde(default)]
     details: Option<TagDetails>,
 }
 
+/// The nested detail block of a `/api/tags` entry.
 #[derive(Deserialize)]
 struct TagDetails {
+    /// The quantisation actually installed, spelled Ollama's way.
     #[serde(default)]
     quantization_level: Option<String>,
 }
@@ -70,14 +83,19 @@ struct TagDetails {
 /// `/api/ps` — what is in video memory now.
 #[derive(Deserialize)]
 struct PsResponse {
+    /// One entry per loaded model.
     #[serde(default)]
     models: Vec<PsEntry>,
 }
 
+/// One loaded model, as `/api/ps` describes it.
 #[derive(Deserialize)]
 struct PsEntry {
+    /// Ollama's `family:tag` name.
     #[serde(default)]
     name: String,
+    /// Video memory held. The same object also carries the disk size, which is
+    /// the wrong number for this question.
     #[serde(default)]
     size_vram: u64,
 }
@@ -85,10 +103,13 @@ struct PsEntry {
 /// One line of `/api/pull`'s streamed response.
 #[derive(Deserialize)]
 struct PullLine {
+    /// Bytes fetched so far, absent on lines that only report status.
     #[serde(default)]
     completed: Option<u64>,
+    /// Bytes expected, which the runtime does not always know at the start.
     #[serde(default)]
     total: Option<u64>,
+    /// Set when the download failed. Its text is never repeated to a caller.
     #[serde(default)]
     error: Option<String>,
 }
@@ -129,6 +150,8 @@ impl Ollama {
             .to_owned()
     }
 
+    /// One GET against the runtime, read to a string. Only for the small
+    /// replies — a download is streamed, not buffered.
     fn get(&self, path: &str) -> Result<String, RuntimeError> {
         ureq::get(format!("{}{path}", self.endpoint))
             .config()
@@ -268,7 +291,11 @@ impl ModelRuntime for Ollama {
 }
 
 #[cfg(test)]
-#[expect(clippy::unwrap_used, reason = "a failing unwrap is a failing test")]
+#[expect(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "in a test, a panic on a bad index or a None is the failure being reported"
+)]
 mod tests {
     use std::io::{BufRead as _, Read as _, Write as _};
     use std::net::TcpListener;
