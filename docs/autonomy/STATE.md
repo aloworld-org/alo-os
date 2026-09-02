@@ -2233,3 +2233,142 @@ public surface will meet it.
   and what prunes it. The daemon does not exist, so **every remaining item in
   this queue belongs to a daemon, a Linux host or a certified machine.** The
   next iteration should expect to find nothing ready and say so.
+
+## 2026-09-03 — iteration 23: the record outlives the machine being turned off
+
+**Built: item 4a**, whole — and the first thing this iteration did was decide
+whether it was buildable at all. The queue listed it under *Ready* and described
+it as "the daemon's", and iteration 22 predicted that nothing would be ready and
+that this one should say so. Reading it again, that was two thirds right and one
+third wrong, which is why the item was built rather than skipped.
+
+**The item names three things, and only one of them is the daemon's.** *How long
+evidence is kept* is a rule — pure logic, exhaustively testable here. *The file
+it is written to* and *the appending* are `std::fs`, which `alo-files` has been
+doing on this machine since item 6a. What is genuinely `alo-agentd`'s is **which
+path** and **when a shortening runs**, and those are now item **4b** under
+*blocked — linux*. This is item 6's shape met a second time: the queue listed
+the file verbs' acting half under *blocked — linux* too, and a later iteration
+found that opening a folder needs no portal. A blocker is a claim about code,
+and a claim is worth reading twice before a loop stops on it.
+
+`crates/alo-keeping`, a **new crate**.
+
+| | |
+|---|---|
+| `keeping.rs` | The rule: kept for good, or for a number of whole days. The decision `alo-record` said belongs to whatever writes it to a disk |
+| `head.rs` | The first line of the file: what shape it is in, and where the record now starts |
+| `writing.rs` | Appending, one entry at a time, on the disk before the write answers |
+| `reading.rs` | Reading it back: the beginning, what happened, and what could not be read |
+| `pruning.rs` | The only thing in alo OS that removes evidence |
+| `damage.rs` | What could not be read, which is never stepped over |
+| `failing.rs` | Why there is no record to write to, or none to read |
+| `words.rs` | 14 phrases and one countable string, the English beside each key, and a note on every one |
+| `testing.rs` | The fixtures the other files' tests are written against |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. 59 unit tests, 6 integration tests through the
+whole capability journey onto a real filesystem, 9 more against the real
+vocabulary; the workspace is **781 tests and 20 doctests**, all green.
+`CHANGELOG.md`, `docs/contracts/record-file.md` (new), `docs/quirks.md`,
+`QUEUE.md` and `ROADMAP.md` in the same change.
+
+**A new crate rather than more of `alo-record`, and the reason is a promise.**
+`alo-record` says, in its own documentation and in a test, that nothing takes an
+entry out: no `remove`, no `edit`, no `forget`. Something has to be able to, or
+a record grows until the disk is full. Putting the two together would leave that
+promise true of a type and false of the crate around it — and it is exactly the
+kind of promise a security reviewer checks by reading the file list. So the
+crate that can shorten a record is separate, it is small, and everything in it
+is built to make shortening hard to do quietly: what goes is decided by a rule
+and a moment with no way to name an entry, an agent or a day; shortening is a
+method on the writer, so nothing that is not already holding the record open can
+reach it; and it refuses a record it cannot read all of. That is item 4's own
+argument for not being part of `alo-capability`, one crate further along.
+
+**The decision the item did not contain: a shortening has to leave a mark, and
+the mark cannot be an entry.** A record that aged out its first six months and a
+machine that did nothing are the same short file, so *what did the agent do in
+March* answers *nothing* and somebody believes it. An entry saying *this record
+was shortened* is the obvious fix and is wrong in a way that only shows up on
+the second round: an entry has a moment, so the next shortening ages it out, and
+after two prunes the record looks untouched again. The mark is therefore the
+**first line**, which pruning never walks — and there is a test that shortens
+twice and asserts the record still says so. It is also why `Head` exists rather
+than a seventh `alo_record::Happened` variant.
+
+**The second decision was not in the item either: a missing record is not an
+empty one.** `Reading::at` refuses a file that is not there rather than
+answering with a record of nothing. The obvious response to a missing record is
+to make a fresh one, and that is precisely how a deleted record becomes an
+innocent one — so creating it is a deliberate act by the daemon
+(`Writing::opening`) and never a side effect of somebody asking a question. The
+sentence a person reads says why: *a machine with no record is not a machine
+that has done nothing.*
+
+**Three smaller ones worth keeping.**
+
+- **A line that cannot be read is reported, and a record with one in it is not
+  shortened at all.** A reader that skipped unparseable lines would make
+  corrupting one line a way to lose an entry with no mark anywhere, and a
+  shortening that rewrote the file would tidy away the only evidence that
+  something was wrong. The **last** line, unparseable with no newline after it,
+  is a different thing — a write the machine interrupted — and is tolerated and
+  dropped. Two kinds of damage, one alarming, one ordinary, and two sentences
+  rather than one with a clause glued on.
+- **Zero days is unrepresentable, not refused at the door.** `Keeping::ForDays`
+  holds a `NonZeroU32`, so a settings file saying zero fails to read, and the
+  worded refusal exists for the one road a number can still arrive by — a panel
+  where somebody typed it. That is `alo-appearance`'s shape from item 8a
+  applied to a number instead of to a colour.
+- **`alo-keeping` is the first crate that never had to cross onto
+  `alo-strings`.** It was written after the 9-series, so it has never held an
+  English sentence and no type in it has ever had a `Display`. Its `words.rs`
+  also closes a small hole rather than copying one: `alo-files` says *{path}
+  could not be {doing}* and fills `{doing}` with an English word, and this crate
+  does four things to a file, so it has four whole sentences and no gap holding
+  untranslated English. That is `alo-egress`' item 9h decision met again.
+
+**What the gate found that the design did not.** Two entries in
+`docs/quirks.md`, both from tests rather than from reasoning:
+
+- **`SystemTime::checked_sub` walks back past 1970 on Windows.** The retention
+  boundary was written the obvious way — `now` minus thirty days — and the test
+  asserting that a machine whose clock says it is 1970 removes nothing *failed*,
+  because Windows counts from 1601 and answered with a moment in 1969 where a
+  Unix representation answers `None`. The window is now measured from the epoch
+  forwards, so the boundary is the same on every platform and a wrong clock is
+  never a way to empty a record.
+- **A record is replaced while its own append handle is open**, and Windows
+  allows it because `std` opens files with `FILE_SHARE_DELETE`. It works, the
+  handle is reopened immediately after the rename, and the quirk says what to do
+  if a filesystem ever refuses — close before renaming, never copy over the old
+  file in place.
+
+**What the next iteration must know:**
+
+- **The record file is a public surface and now has a contract**,
+  `docs/contracts/record-file.md`: one line of JSON per entry, a format number
+  in the first line, additive change only, and a record from a newer alo OS
+  refused rather than appended to. `docs/features.md` promises a SIEM export at
+  v1, and that export reads this file — so the shape was fixed now rather than
+  when somebody outside started depending on it.
+- **Nothing here reads the clock or decides where the record lives.**
+  `Writing::prune` takes the moment, `Writing::opening` takes the path, and the
+  crate creates no folders. That is item 4b's, and it is `alo-agentd`'s.
+- **Nothing here has been read by anybody.** There are still zero translations
+  in this repository; the German in the tests is the tests'. `ROADMAP.md`'s
+  *Every execution recorded* line gains `alo-keeping` to its *Built* and now
+  owes 4b rather than 4a; it stays unticked, because there is no daemon writing
+  to it and no screen reading it.
+- **Built and unit tested, on whatever this loop runs on.** The integration
+  tests write real files on a real filesystem, and that is Windows rather than
+  the certified machine. What is owed with the rest of the hardware
+  verification is a run on the machine alo OS ships on, where the two quirks
+  above have their other halves.
+- **What is left is 4b, and everything else was already blocked.** Every
+  remaining item in this queue belongs to a daemon, a Linux host or a certified
+  machine. The next iteration should expect to find nothing ready — and, having
+  now seen one "blocked" item that was two thirds portable, should read each
+  blocker once before writing `LOOP COMPLETE` rather than trusting the label.

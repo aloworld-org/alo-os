@@ -141,6 +141,50 @@ them. Written into the contract and asserted in `alo-files`' integration test,
 which grants a resolved folder for exactly this reason.
 **Date:** 2026-09-02
 
+## Clocks and moments
+
+A record is evidence about when something happened, so what a moment means when
+it is written down, read back and compared is this section's subject.
+
+### `SystemTime` walks back past 1970, and how far is the platform's
+**Version:** Rust 1.97 `std::time::SystemTime`, seen 2026-09-03 in
+`alo-keeping` against Windows 11 26200
+**Behaviour:** a retention rule is naturally written as *keep anything after
+`now - 30 days`*, and `SystemTime::checked_sub` is the obvious way to say it.
+On Windows a `SystemTime` is counted from 1601, so subtracting thirty days from
+a machine whose clock says it is the first minute of 1970 answers with a moment
+in **1969** rather than `None`. On a platform where the representation is a Unix
+`timespec` the same call can answer `None` instead. Both are correct for the
+type; they are not the same boundary.
+**Our response:** the window is measured **from the epoch forwards**, not from
+`now` backwards. `Keeping::oldest_kept` asks how far `now` is past the epoch,
+subtracts the window from *that*, and answers `None` when it does not reach —
+so a boundary before 1970 is *nothing is removed*, identically on every
+platform. It matters because the case it covers is a machine whose clock is
+wrong, and a wrong clock must never be a way to empty a record. The test that
+says so is `a_wrong_clock_never_removes_more`, and it was the failing test that
+found this.
+**Date:** 2026-09-03
+
+### A record is replaced while it is open for appending, and Windows allows it
+**Version:** Rust 1.97 `std::fs::rename`, Windows 11 26200; seen 2026-09-03 in
+`alo-keeping`
+**Behaviour:** shortening a record writes the replacement beside the old file
+and renames it over. On Windows that is `MoveFileEx` with
+`MOVEFILE_REPLACE_EXISTING`, and replacing a file another handle has open is
+the classic way to get *access is denied*. It succeeds here, because `std`
+opens files with `FILE_SHARE_DELETE` among the share flags — which is `std`'s
+choice rather than a documented guarantee of the platform.
+**Our response:** the rename happens with the writer's own append handle still
+open, and the handle is **reopened immediately afterwards** — an old handle
+goes on writing into a file that is no longer the record, which is a lost entry
+rather than an error. Shortening is therefore a method on the writer taking
+`&mut self`, so nothing can append during it and nothing else is expected to be
+holding the record open. If a filesystem ever refuses the replace, the answer
+is to close the handle before renaming and not to copy over the old file in
+place: nothing is removed until the replacement is whole on the disk.
+**Date:** 2026-09-03
+
 ## Languages and counting
 
 A sentence with a number in it is the one string that cannot be translated

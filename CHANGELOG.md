@@ -12,6 +12,38 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The record of what the agent did now survives the machine being turned
+  off, and a record that has been shortened says so.** Until now what an agent
+  did was kept in memory, which answers *what did it do this afternoon* and
+  nothing about last month. It is written to a file as it happens — one line
+  per thing that happened, on the disk before the write finishes, so an entry
+  is not lost to a machine that loses power a moment later.
+
+  **How long it is kept is one setting, and a machine ships keeping
+  everything.** You can say *keep the last 30 days*; you cannot say *keep
+  nothing*, and there is no way at all to say *remove that particular
+  afternoon*. What ages out is decided by the rule and by the date, so what you
+  set is what happens.
+
+  **And a record that has had anything removed from it says so, permanently.**
+  This is the point of the whole thing: a machine whose evidence has aged out
+  and a machine that did nothing would otherwise be the same short file, and
+  somebody asking *what did it do in March* would be told nothing and believe
+  it. The record says where it now begins, in the language you read, and no
+  later shortening can remove that sentence.
+
+  Two more things it will not do quietly. A line it cannot read is **reported**
+  rather than skipped, and a record with one in it is **not shortened at all**
+  until somebody has looked at it — tidying the file would tidy away the
+  evidence that something was wrong. And a record that is missing is refused
+  rather than answered as an empty one, because a deleted record must not read
+  as an innocent machine.
+
+  For anybody whose tooling will read these files: the format is written down
+  in `docs/contracts/record-file.md` and is a public surface, so it changes
+  additively. A record written by a newer alo OS is refused rather than
+  appended to.
+
 - **The sentence you approve, the record of it and the refusal that quotes it
   are now one sentence rather than three renderings of it.** *Move
   march.pdf into Archive* is what an agent puts in front of you before it

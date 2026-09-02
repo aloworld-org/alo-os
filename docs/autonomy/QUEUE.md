@@ -34,12 +34,15 @@ and stops when there are none left.
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
-`crates/alo-files`, `crates/alo-shortcuts`, `crates/alo-appearance` and
-`crates/alo-strings` were built by the loop and are described in the items
-below. The first four depend on each other in one direction only:
-`alo-capability` decides and reaches nothing, `alo-egress` decides about what
-leaves, `alo-files` is the only one that touches a disk, and `alo-record`
-observes them and is reachable from none of them. The last three depend on
+`crates/alo-files`, `crates/alo-keeping`, `crates/alo-shortcuts`,
+`crates/alo-appearance` and `crates/alo-strings` were built by the loop and are
+described in the items below. The first four depend on each other in one
+direction only: `alo-capability` decides and reaches nothing, `alo-egress`
+decides about what leaves, `alo-files` is the only one an agent can reach that
+touches a disk, and `alo-record` observes them and is reachable from none of
+them. `alo-keeping` reaches `alo-record` and puts it on a disk; nothing reaches
+back, which is what keeps *nothing takes an entry out* true of `alo-record`
+while something, somewhere, can shorten a record. The last three depend on
 nothing in this workspace at all, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
 language is not an agent doing something and needs no grant.
@@ -56,7 +59,10 @@ while it is happening. `alo-strings` still depends on nothing, and the direction
 is the one every other edge here takes — a crate that says something reaches the
 crate that knows how things are said, never the reverse. Every crate in this
 workspace has now crossed it, so *hardcoded English is a bug* is a rule with no
-exceptions left in it rather than a rule with a list.
+exceptions left in it rather than a rule with a list. **`alo-keeping` is the
+first crate that never had to cross**: it was written after the 9-series, so it
+has never held an English sentence and no type in it has ever had a `Display`.
+That is what the rule looks like once it is finished being applied.
 
 Since **item 9g** the edge is load-bearing rather than incidental: a verb is
 *declared* from `alo_strings::Word`s, so `alo-capability` cannot express a
@@ -177,11 +183,50 @@ deny list.** Two patterns later items must follow:
   takes an entry out. **Two things are never kept** — the question a person
   asked, and the arguments of a call that never validated.
 
-- [ ] **4a. Where the record is written, and what prunes it** — the daemon's,
-  cut from item 4 deliberately. `Record` keeps everything and has no `forget`,
-  because how long evidence is kept is one decision made in the open rather than
-  a method anything holding the list can reach for. That decision, the file it
-  is written to, and the appending are `alo-agentd`'s and do not exist yet.
+- [x] **4a. Where the record is written, and what prunes it** — cut from item 4,
+  and listed here as the daemon's until this iteration read it again. Two of the
+  three things it names are portable and testable on any machine: **the file it
+  is written to** and **the decision about how long evidence is kept**. Only
+  *which* path and *when* a shortening runs are `alo-agentd`'s, and those are
+  item 4b under *blocked — linux*. `crates/alo-keeping`, a **new crate**:
+  `keeping.rs` (the rule), `head.rs` (the first line, and where the record
+  starts), `writing.rs` (appending, one entry at a time), `reading.rs` (reading
+  it back), `pruning.rs` (the only thing in alo OS that removes evidence),
+  `damage.rs` (what could not be read), `failing.rs` (why there is no record to
+  write to), `words.rs` (14 phrases and one countable string). 59 unit tests, 15
+  integration tests against a real filesystem, 781 tests and 20 doctests across
+  the workspace, clippy clean.
+
+  **A new crate rather than more of `alo-record`, and the reason is the
+  promise.** `alo-record` says nothing takes an entry out — no `remove`, no
+  `edit`, no `forget` — and something has to be able to. In one crate that
+  promise would be true of a type and false of the file list around it, which is
+  how a security reviewer checks it. So the crate that *can* shorten a record is
+  separate and small, and everything in it is about making that hard to do
+  quietly: what goes is decided by a rule and a moment with no way to name an
+  entry, shortening is a method on the writer so nothing that is not holding the
+  record open can do it, and it refuses a record it cannot read all of rather
+  than rewriting the evidence that something was wrong.
+
+  **The decision the item did not contain: where the mark goes.** A record that
+  has aged out its first six months and a machine that did nothing are the same
+  short file, so the shortening has to leave one. An *entry* saying so was the
+  obvious answer and is wrong — an entry has a moment, so the next shortening
+  ages it out, and after two rounds the record looks untouched again. The mark
+  is therefore the **first line**, which pruning never walks: a record says
+  where it now starts, and no later shortening can take that back.
+
+  Three decisions the next items inherit. **The record file is a public
+  surface**, written down in `docs/contracts/record-file.md`: one line of JSON
+  per entry, a format number in the first line, additive change only, and a
+  record from a newer alo OS refused rather than appended to. **A missing record
+  is not an empty one** — reading refuses it, because a deleted record answered
+  as *nothing happened* is the failure this crate exists to prevent, and making
+  one is a deliberate act by the daemon. **A window is measured from the epoch
+  forwards, not from `now` backwards**: `SystemTime::checked_sub` walks into
+  1969 on Windows and answers `None` elsewhere, so a wrong clock would remove
+  different things on different machines. `docs/quirks.md` records that and the
+  rename-over-an-open-handle it also found.
 
 - [x] **5. Egress policy** — implements law 1 §8. Five files in
   `crates/alo-egress`, a **new crate**: `destination.rs` (where something is
@@ -823,6 +868,16 @@ rather than only of what is convenient.
   and this replaces the syscalls underneath them. The workspace forbids
   `unsafe`, so it needs either a pinned dependency wrapping the calls or an ADR,
   and choosing between those is the first thing the item does.
+- **4b. Where the record file lives, and when it is shortened.** What item 4a
+  could not close, and the whole of what is left of it: a path under `/var/lib`
+  that the package decides, the setting the retention rule is read from and
+  written to, and something with a timer that calls `Writing::prune`. All three
+  are `alo-agentd`'s. The crate takes a path and a moment and holds no opinion
+  about either, so this is wiring rather than design — but it is the daemon's
+  wiring, and there is no daemon. It also owes one thing to the person: a
+  managed machine's rule is the organisation's (ADR 0004), so where the setting
+  is read from is a question about enrollment and not only about a file.
+
 - **Egress enforcement** — item 5's policy, made true at the network boundary.
 - **The image** — OCI-built, bootable, atomic. It owes item 8 one thing: a
   wallpaper named `alo` (`alo-appearance`'s `shipped::THE_WALLPAPER`), which is

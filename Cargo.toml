@@ -5,6 +5,7 @@ members = [
   "crates/alo-capability",
   "crates/alo-egress",
   "crates/alo-files",
+  "crates/alo-keeping",
   "crates/alo-models",
   "crates/alo-record",
   "crates/alo-shortcuts",

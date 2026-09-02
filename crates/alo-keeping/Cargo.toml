@@ -1,0 +1,27 @@
+[package]
+name = "alo-keeping"
+version = "0.0.1"
+description = "Where the record is written, and how long what an agent did is kept."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-record = { path = "../alo-record" }
+# Everything this crate says about a record that could not be written, or one
+# that no longer goes all the way back, is read by somebody.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+# One entry, one line. The format is the record's public surface, so it is a
+# format other people's tools can read rather than one of ours.
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# Only the tests make an entry, and making one needs the agent it was made
+# under. Nothing in this crate decides anything about a capability.
+alo-capability = { path = "../alo-capability" }
+
+[lints]
+workspace = true

@@ -90,8 +90,12 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       down in the same words the person was shown rather than in a second
       rendering of their own; since 9g that covers what *ran* as well as what
       did not, so the sentence in the record is the sentence somebody approved
-      · Owed: queue 4a — where it is written and what prunes it, which waits on
-      `alo-agentd`
+      — and `alo-keeping`, which puts it on a disk so it outlives the session:
+      one line per thing that happened, synced as it happens, a retention rule
+      that cannot be set to keep nothing, and a shortened record that says so
+      permanently in the first line so an absence is never read as an innocence
+      · Owed: queue 4b — the path it is written to and the timer that shortens
+      it, both `alo-agentd`'s, and the daemon does not exist
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
