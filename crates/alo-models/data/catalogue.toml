@@ -17,7 +17,12 @@
 # certified machine in docs/hardware.md has 24 GB, so an entry above that is
 # offered with its cost visible rather than hidden.
 
-# ── European models first, because that is the point of this product ─────────
+# ── European models first, because nobody else lists them ───────────────────
+#
+# Not because others are excluded: the catalogue carries whatever is good and
+# openly licensed. European models are first because a catalogue assembled
+# anywhere else would omit them, and somebody in Europe looking for a model
+# trained on their own languages should not have to go hunting.
 
 [[model]]
 id = "eurollm-9b-instruct"

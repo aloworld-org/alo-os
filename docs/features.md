@@ -114,7 +114,7 @@ each portal request is a grant in the sense of ADR 0001.
 
 **Language and access**
 
-- [v0.5] **The shell in the user's language — all 24 official EU languages.** Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Irish, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish and Swedish. Not "English plus the big five": a sovereignty product that cannot speak Maltese or Irish is selling sovereignty to some Europeans and not others, and those are exactly the member states with the least software in their own language
+- [v0.5] **The shell in the user's language — all 24 official EU languages to begin with**, and any language somebody contributes after that. Bulgarian, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Irish, Italian, Latvian, Lithuanian, Maltese, Polish, Portuguese, Romanian, Slovak, Slovenian, Spanish and Swedish. Not "English plus the big five": a sovereignty product that cannot speak Maltese or Irish is selling sovereignty to some Europeans and not others, and those are exactly the member states with the least software in their own language
 - [v0.5] Regional formats and timezones per language, and a keyboard layout offered with it — choosing Greek and then hunting for a Greek keyboard is the same bug twice
 - [v0.5] **Right-to-left ready**, so adding a language later is translation rather than rework, even though no official EU language needs it today
 - [v0.5] ★ **The agent answers in the language you asked in** — the shell being translated is table stakes; being able to say "wo ist die Rechnung von Northstar?" and get an answer is the thing a cloud assistant does badly for smaller languages
@@ -148,8 +148,8 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.01] ★ **Or use an API instead** (ADR 0008). A model may answer on this machine, on a machine on your network, or behind a provider's API — for a laptop too thin to run one, or an organisation that would rather buy inference than operate it
 - [v0.01] ★ **Where the answer came from is said where the answer appears** — "on this machine", "on the studio workstation, on your network", "by alo, in the EU". Not in a settings page somebody would have to go looking for, because a person about to paste a contract into a question is entitled to know where it is going first
 - [v0.01] ★ **Never a silent fallback.** A local model that fails does not quietly become an API call: failing to answer is recoverable, a person's records leaving the building because a download was corrupt is not
-- [v0.5] A provider that will not say where it runs is reported as **unknown**, never assumed to be nearby — and unknown never satisfies a policy requiring the EU
-- [v1] Policy over where inference may happen: anywhere, in the building, EU-only, or this machine alone (ADR 0004)
+- [v0.5] A provider that will not say where it runs is reported as **unknown**, never assumed to be nearby — and unknown never satisfies a policy naming a region
+- [v1] Policy over where inference may happen: anywhere, in the building, inside a region **the organisation names**, or this machine alone. We ship the mechanism, never a region of our own (ADR 0004, ADR 0008)
 - [v0.01] Model lifecycle: pull, list, serve, unload, remove; disk accounted honestly
 - [v0.5] ★ **Guided fine-tune**: LoRA/QLoRA over a granted folder or a tenant's records, as a flow rather than a toolchain
 - [v0.5] ★ The dataset, the adapter and the resulting weights never leave the machine

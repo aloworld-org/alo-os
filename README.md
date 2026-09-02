@@ -24,10 +24,23 @@ holds the decisions and contracts that have to exist before the code
 is reviewable. See `ROADMAP.md` for what is actually being built and
 in what order.
 
+## Who it is for
+
+Anyone who wants an operating system whose interface is an agent and whose model
+they control. **Built in Europe, not only for Europe** — a hospital in Ohio, a
+law firm in São Paulo and a bank in Singapore have the same problem as a German
+municipality: work that AI would help with, and records that cannot be sent to
+somebody else's inference provider.
+
+Europe is where we start, because that is where the migration window and the
+procurement rules are. It is not where the product stops. Where alo OS lets an
+organisation set a rule — which region inference may happen in, which providers
+are permitted — the rule is theirs to name, not ours to ship.
+
 ## Why it exists
 
-Three things arrived together. Windows 10 support ended in October
-2025, and a large share of European business and public-sector
+Three things arrived together, first in Europe and not only there. Windows 10
+support ended in October 2025, and a large share of business and public-sector
 machines cannot run Windows 11. European public bodies are genuinely
 moving off Microsoft, with procurement language and budget behind it.
 And AI arrived in places the data cannot follow: hospitals, law firms,

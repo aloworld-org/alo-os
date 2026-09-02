@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Which model provider you use is yours to choose — Mistral, alo, your own
+  endpoint, or none. alo OS ships no default that decides for you, and where an
+  organisation does have a rule, the region is theirs to name: "the EU",
+  "Switzerland", "the United States". Built in Europe and not only for Europe; a
+  product that hardcoded its own region would make everybody else a special case
+  in their own operating system.
+
 - A model can answer from one of three places, and you are always told which: on
   this machine, on a machine on your network, or behind a provider's API — so a
   laptop too thin to run a model, or an organisation that would rather buy

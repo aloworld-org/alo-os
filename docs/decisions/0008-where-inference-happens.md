@@ -59,14 +59,22 @@ Somebody about to paste a contract into a question is entitled to know where it
 is going before they paste it, not afterwards.
 
 **An organisation can forbid the ones it does not want** (ADR 0004): a managed
-machine may permit local only, or local and EU-hosted, or a named provider. The
-policy is stated in words a person on that machine can read.
+machine may permit local only, or anything inside a region it names, or a named
+provider. The policy is stated in words a person on that machine can read.
 
-**Where a provider runs is a stated fact, not an inference.** "EU-hosted" is
+**Where a provider runs is a stated fact, not an inference.** A region is
 something a provider declares and we record; a provider that has not declared it
-is `unknown`, and unknown never satisfies a policy that requires the EU. Guessing
+is `unknown`, and unknown never satisfies a policy that names a region. Guessing
 from a domain name would put a customer in breach while showing them a
 reassuring label.
+
+**We ship no default that chooses a provider, and no region of our own.**
+Whether somebody uses Mistral, alo, their own endpoint or nothing at all is
+their decision. The policy type exists so an organisation with a rule can state
+it — "in the EU", "in Switzerland", "in the United States" — and have it
+enforced; it does not exist so alo OS can have a rule. A product built in Europe
+that hardcoded Europe would make everybody else a special case in their own
+operating system.
 
 ## Consequences
 

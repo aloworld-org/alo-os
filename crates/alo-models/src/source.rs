@@ -15,18 +15,34 @@ use std::fmt;
 
 /// Where a provider runs, as **the provider states it** — never inferred.
 ///
+/// Deliberately not an enum of places. alo OS is built in Europe and is not
+/// only for Europe: a hospital in Ohio and a bank in Singapore have the same
+/// problem and the same right to name the region they must stay inside. A type
+/// that knew only about the EU would make everybody else a special case.
+///
 /// Guessing from a domain name is how a customer ends up in breach while
 /// looking at a reassuring label, so a provider that has not said is
-/// [`Region::Unknown`], and unknown never satisfies a policy that requires the
-/// EU.
+/// [`Region::Unknown`], and unknown never satisfies a policy that names a
+/// region.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Region {
-    /// Declared to run inside the EU or EEA.
-    Eu,
-    /// Declared to run somewhere else, named as the provider names it.
-    Elsewhere(String),
+    /// Declared by the provider, in the provider's own words — "the EU",
+    /// "Switzerland", "the United States".
+    Declared(String),
     /// The provider has not said. Not a synonym for "probably fine".
     Unknown,
+}
+
+impl Region {
+    /// Whether this is the named region. Compared case-insensitively on the
+    /// stated name, because "the EU" and "the eu" are the same promise.
+    #[must_use]
+    pub fn is(&self, region: &str) -> bool {
+        match self {
+            Self::Declared(said) => said.eq_ignore_ascii_case(region.trim()),
+            Self::Unknown => false,
+        }
+    }
 }
 
 /// One of the three places a model may answer from (ADR 0008).
@@ -68,16 +84,19 @@ impl InferenceSource {
         matches!(self, Self::ThisMachine | Self::PairedMachine { .. })
     }
 
-    /// Whether this satisfies a policy of EU-only inference.
+    /// Whether this satisfies a policy naming a region.
     ///
-    /// Local and paired machines qualify by being where the customer is. A
-    /// hosted service qualifies only when the provider has **declared** the EU:
-    /// [`Region::Unknown`] does not, on purpose.
+    /// Local and paired machines qualify wherever the customer is: their
+    /// machines are in their region by definition. A hosted service qualifies
+    /// only when the provider has **declared** that region;
+    /// [`Region::Unknown`] never does, on purpose.
     #[must_use]
-    pub fn is_eu_only(&self) -> bool {
+    pub fn is_in(&self, region: &str) -> bool {
         match self {
             Self::ThisMachine | Self::PairedMachine { .. } => true,
-            Self::Hosted { region, .. } => *region == Region::Eu,
+            Self::Hosted {
+                region: declared, ..
+            } => declared.is(region),
         }
     }
 
@@ -92,8 +111,7 @@ impl InferenceSource {
             Self::ThisMachine => "on this machine".to_owned(),
             Self::PairedMachine { machine } => format!("on {machine}, on your network"),
             Self::Hosted { provider, region } => match region {
-                Region::Eu => format!("by {provider}, in the EU"),
-                Region::Elsewhere(where_) => format!("by {provider}, in {where_}"),
+                Region::Declared(where_) => format!("by {provider}, in {where_}"),
                 Region::Unknown => {
                     format!("by {provider}, which has not said where it runs")
                 }
@@ -109,15 +127,23 @@ impl fmt::Display for InferenceSource {
 }
 
 /// What an organisation permits on a machine (ADR 0004 §policy).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+///
+/// **The default permits everything, and that is deliberate.** Which provider
+/// somebody uses is their decision — Mistral, alo, their own endpoint, or
+/// nothing at all. This type exists so an organisation that *has* a rule can
+/// state it and have it enforced, not so that alo OS can have one of its own.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum SourcePolicy {
-    /// Anything the person chooses. The default on a personal machine.
+    /// Anything the person chooses. The default, everywhere, unless an
+    /// organisation has said otherwise on a machine it manages.
     #[default]
     Anywhere,
     /// Local and paired machines only — nothing leaves the building.
     InTheBuilding,
-    /// Anything that is declared to run in the EU, hosted included.
-    EuOnly,
+    /// Anything declared to run in the named region, hosted included. The
+    /// region is the organisation's to name: "the EU", "Switzerland",
+    /// "the United States".
+    InRegion(String),
     /// This machine only. Nothing leaves at all.
     ThisMachineOnly,
 }
@@ -129,7 +155,7 @@ impl SourcePolicy {
         match self {
             Self::Anywhere => true,
             Self::InTheBuilding => source.stays_in_the_building(),
-            Self::EuOnly => source.is_eu_only(),
+            Self::InRegion(region) => source.is_in(region),
             Self::ThisMachineOnly => matches!(source, InferenceSource::ThisMachine),
         }
     }
@@ -147,8 +173,8 @@ impl SourcePolicy {
                 "this machine is set to keep questions in the building, and {} would send this one outside it",
                 source.describe()
             ),
-            Self::EuOnly => format!(
-                "this machine is set to use EU inference only, and {} does not meet that",
+            Self::InRegion(region) => format!(
+                "this machine is set to use inference in {region} only, and {} does not meet that",
                 source.describe()
             ),
             Self::ThisMachineOnly => format!(
@@ -168,6 +194,10 @@ fn unreachable_policy() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn eu() -> Region {
+        Region::Declared("the EU".to_owned())
+    }
 
     fn hosted(provider: &str, region: Region) -> InferenceSource {
         InferenceSource::Hosted {
@@ -190,10 +220,39 @@ mod tests {
 
     /// A provider that has not said where it runs is not treated as if it had.
     #[test]
-    fn a_provider_that_has_not_said_where_it_runs_does_not_satisfy_eu_only() {
-        assert!(!hosted("someone", Region::Unknown).is_eu_only());
-        assert!(hosted("alo", Region::Eu).is_eu_only());
-        assert!(!hosted("someone", Region::Elsewhere("the US".to_owned())).is_eu_only());
+    fn a_provider_that_has_not_said_where_it_runs_satisfies_no_region() {
+        assert!(!hosted("someone", Region::Unknown).is_in("the EU"));
+        assert!(hosted("alo", eu()).is_in("the EU"));
+        assert!(!hosted("someone", Region::Declared("the US".to_owned())).is_in("the EU"));
+    }
+
+    /// The region is whatever an organisation names, not a list we shipped.
+    /// alo OS is built in Europe and is not only for Europe.
+    #[test]
+    fn any_region_can_be_required_not_only_the_eu() {
+        let swiss = hosted(
+            "a swiss provider",
+            Region::Declared("Switzerland".to_owned()),
+        );
+        assert!(SourcePolicy::InRegion("Switzerland".to_owned()).permits(&swiss));
+        assert!(!SourcePolicy::InRegion("the EU".to_owned()).permits(&swiss));
+
+        let us = hosted(
+            "a us provider",
+            Region::Declared("the United States".to_owned()),
+        );
+        assert!(SourcePolicy::InRegion("the United States".to_owned()).permits(&us));
+    }
+
+    /// A person's own machines are in their region wherever that is, so a
+    /// regional policy never locks somebody out of their own hardware.
+    #[test]
+    fn your_own_machines_satisfy_any_region() {
+        let policy = SourcePolicy::InRegion("Singapore".to_owned());
+        assert!(policy.permits(&InferenceSource::ThisMachine));
+        assert!(policy.permits(&InferenceSource::PairedMachine {
+            machine: "the office box".to_owned()
+        }));
     }
 
     /// The description is what a person reads before pasting a contract into a
@@ -203,8 +262,8 @@ mod tests {
         let said = hosted("someone", Region::Unknown).describe();
         assert!(said.contains("has not said where it runs"), "{said}");
 
-        let eu = hosted("alo", Region::Eu).describe();
-        assert!(eu.contains("in the EU"), "{eu}");
+        let said = hosted("alo", eu()).describe();
+        assert!(said.contains("in the EU"), "{said}");
 
         assert_eq!(InferenceSource::ThisMachine.describe(), "on this machine");
     }
@@ -216,13 +275,13 @@ mod tests {
         assert!(policy.permits(&InferenceSource::PairedMachine {
             machine: "box".to_owned()
         }));
-        assert!(!policy.permits(&hosted("alo", Region::Eu)));
+        assert!(!policy.permits(&hosted("alo", eu())));
     }
 
     #[test]
-    fn eu_only_permits_a_declared_eu_provider_but_not_an_undeclared_one() {
-        let policy = SourcePolicy::EuOnly;
-        assert!(policy.permits(&hosted("alo", Region::Eu)));
+    fn a_named_region_permits_a_declared_provider_but_not_an_undeclared_one() {
+        let policy = SourcePolicy::InRegion("the EU".to_owned());
+        assert!(policy.permits(&hosted("alo", eu())));
         assert!(!policy.permits(&hosted("someone", Region::Unknown)));
         assert!(policy.permits(&InferenceSource::ThisMachine));
     }
@@ -234,17 +293,17 @@ mod tests {
         assert!(!policy.permits(&InferenceSource::PairedMachine {
             machine: "box".to_owned()
         }));
-        assert!(!policy.permits(&hosted("alo", Region::Eu)));
+        assert!(!policy.permits(&hosted("alo", eu())));
     }
 
     /// A refusal explains itself. A policy nobody can understand is a policy
     /// people work around.
     #[test]
     fn a_refusal_says_what_the_policy_is_and_what_was_asked_for() {
-        let refusal = SourcePolicy::EuOnly
+        let refusal = SourcePolicy::InRegion("the EU".to_owned())
             .refusal(&hosted("someone", Region::Unknown))
             .unwrap_or_default();
-        assert!(refusal.contains("EU inference only"), "{refusal}");
+        assert!(refusal.contains("inference in the EU only"), "{refusal}");
         assert!(refusal.contains("someone"), "{refusal}");
         assert!(
             SourcePolicy::Anywhere
@@ -253,9 +312,21 @@ mod tests {
         );
     }
 
-    /// The default is a personal machine's default: nobody above the person.
+    /// The default permits everything, and that is the decision rather than an
+    /// oversight: which provider somebody uses is theirs to choose. This type
+    /// exists so an organisation that has a rule can state it, not so alo OS
+    /// can have one.
     #[test]
-    fn the_default_policy_permits_what_the_person_chooses() {
+    fn the_default_policy_permits_whatever_the_person_chooses() {
         assert_eq!(SourcePolicy::default(), SourcePolicy::Anywhere);
+        let policy = SourcePolicy::default();
+        for source in [
+            InferenceSource::ThisMachine,
+            hosted("mistral", Region::Declared("France".to_owned())),
+            hosted("somebody", Region::Unknown),
+        ] {
+            assert!(policy.permits(&source), "{source}");
+            assert!(policy.refusal(&source).is_none(), "{source}");
+        }
     }
 }
