@@ -4994,3 +4994,70 @@ that was not whole, and no machine half was touched.
   coverage means re-measuring everything that was measured. `docs/quirks.md`
   says so, and the set is a `&'static` array in the source so it cannot drift
   quietly.
+
+## 2026-09-03 — iteration 43: the queue has nothing left this loop can build
+
+**No item was built, because there is no ready item to build.** The queue was
+read top to bottom. Every item is either done, or unfinished for a reason this
+machine cannot remove.
+
+The gate was run anyway, because *nothing left to do* and *something has quietly
+broken* look identical in a file and not at all alike in a terminal, and a
+completion claimed over a red suite would be the worst line this journal could
+hold. `cargo fmt --all -- --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` clean with zero warnings, **1460 tests and
+doctests passing, zero failing** — exactly what iteration 42 left behind
+(1417 tests and 43 doctests), so nothing has rotted between the two.
+
+### What is left, and what each one waits on
+
+- **16b — finding machines on the local network, on the indicator or not.**
+  Not blocked by anything outside; not ready by its own account. There is no
+  discovery code in this repository and none of it is portable, so the decision
+  it asks for — an `Errand` with a destination of its own, or a documented
+  exception — would be made about a shape nobody has built. It is a real hole in
+  law 1's coverage and it is written down as one.
+- **19b — what a turn does with an application verb.** Waits on Wayland and
+  D-Bus. `alo-applications` decides all four verbs and stops at `Reaching`;
+  until something can move a window, a turn that carried the call that far would
+  be a new way to be refused rather than a thing the machine can do.
+- **20 — where the record is written, and what prunes it.** Waits on 21c. It is
+  a path, a setting and a timer, and a timer needs a long-lived process.
+- **21c — the daemon itself.** Waits on Linux. A Unix socket and its peer
+  credentials have no portable spelling, and peer credentials are what make
+  21a's two doors a division rather than a convention.
+- **23a — the measurement, run against real models.** Waits on a machine with a
+  model on it. Until somebody runs it, every entry in `data/catalogue.toml` says
+  `not-measured` and no machine is offered a local agent. It produces a data
+  change rather than a release.
+
+The two *blocked — hardware* entries beneath it are the same shape: the model
+stack against a real Ollama, the GPU on first boot, and the v0.01 exit gate,
+which is one person in front of one machine and is not substitutable by any
+suite.
+
+### Nothing was ticked, and that is the point
+
+No queue item moved, `ROADMAP.md` was not touched, and `CHANGELOG.md` gained no
+line — there is no change for a person outside this repository to read, and a
+changelog entry saying the loop looked and found nothing would be noise in the
+file people check to see what shipped. Ticking something to make this iteration
+look productive is the exact failure `LOOP.md` names, and the honest record of
+an iteration that built nothing is an iteration that says so.
+
+**What the next iteration must know:**
+
+- **The loop is complete, not finished.** Roughly half of v0.01 is still owed
+  and none of it is owed by this loop: it is a compositor, a daemon, a bootable
+  image, and one person sitting in front of a certified machine. What this loop
+  was for — the capability model as working code, tested including every refusal
+  path — is done, and it is what everything above it now gets to assume.
+- **Restarting the loop needs new work in the queue, not another read of it.**
+  Anything added should name its ADR, its contract and its line in
+  `docs/features.md`, the way every built item above does, or the iteration that
+  picks it up will spend itself deciding what it was asked for.
+- **The one item that could become ready without a Linux host is 16b**, and what
+  would make it ready is a decision rather than a machine — but the decision
+  wants the discovery code in front of it, and that code is Linux.
+
+LOOP COMPLETE
