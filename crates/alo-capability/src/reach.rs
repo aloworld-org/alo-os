@@ -19,15 +19,22 @@
 //! # Both of them are shown to somebody
 //!
 //! A [`Reach`] is the line in the list of grants a person reads, and both types
-//! appear inside a refusal ([`crate::NotGranted`]). So each has a `shown`, which
-//! answers with a `String` rather than a `Said` because what it produces is a
-//! **fragment placed inside a sentence** rather than a sentence — the same
-//! shape `alo-shortcuts` uses for a key's label. A path is not translated and
-//! is written as itself; what surrounds it is.
+//! appear inside a refusal ([`crate::NotGranted`]). So each has a `shown`,
+//! which answers with a `String` for a caller putting the clause on a line of
+//! its own — a path is not translated and is written as itself; what surrounds
+//! it is.
+//!
+//! **A caller putting one inside a sentence wants the other road** (item 15):
+//! [`Reach::said`], and [`Ask::fills`] for the one of the two that is sometimes
+//! a person's own path and sometimes a word. A refusal is only as translated as
+//! the clause in the middle of it, and a gap holding text alone could not say
+//! so — which is how *the grant over your Invoices folder and everything in it
+//! has expired* would have reached a German reader half in English, marked by
+//! nothing.
 
 use std::path::{Path, PathBuf};
 
-use alo_strings::{Filling, Strings};
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::path::{is_exactly, is_inside};
@@ -72,22 +79,59 @@ impl Ask {
         Self::Application(id.trim().to_owned())
     }
 
+    /// What was asked for as a clause, carrying where its words came from.
+    ///
+    /// [`None`] for a path: it is a name off the person's own disk, there is
+    /// nothing in it anybody could have translated, and a translation of it
+    /// would be a different path. An application is introduced by a word,
+    /// because an identifier on its own reads like a typing mistake.
+    ///
+    /// **Anything putting this inside another sentence wants
+    /// [`fills`](Self::fills)**, which is this and the path together in one
+    /// door.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Option<Said> {
+        match self {
+            Self::Path(_) => None,
+            Self::Application(id) => Some(strings.say(
+                &words::AN_APPLICATION.key(),
+                &Filling::of("application", id.clone()),
+            )),
+        }
+    }
+
     /// What was asked for, in words a person can read in a refusal.
     ///
-    /// A path is written as itself: it is a name off the person's own disk, and
-    /// a translation of it would be a different path. An application is
-    /// introduced by a word, because an identifier on its own reads like a
-    /// typing mistake.
+    /// [`said`](Self::said) with the provenance dropped, and the path written
+    /// as it is. One rendering rather than two, so a refusal and a list cannot
+    /// describe one ask differently.
     #[must_use]
     pub fn shown(&self, strings: &Strings) -> String {
+        self.said(strings)
+            .map_or_else(|| self.as_written(), Said::into_text)
+    }
+
+    /// What was asked for, put into the gap named `name` of another sentence.
+    ///
+    /// The one door for a refusal with an ask in it, because the branch is this
+    /// type's own: an application is introduced by a word and carries where
+    /// that word came from, and a path carries none because there is nothing in
+    /// it to translate.
+    #[must_use]
+    pub fn fills(&self, name: &str, filling: Filling, strings: &Strings) -> Filling {
+        match self.said(strings) {
+            Some(said) => filling.and_said(name, &said),
+            None => filling.and(name, self.as_written()),
+        }
+    }
+
+    /// What was asked for, written as it stands with no words around it.
+    ///
+    /// What the other two fall back to for the kind that has no words.
+    fn as_written(&self) -> String {
         match self {
             Self::Path(path) => path.display().to_string(),
-            Self::Application(id) => strings
-                .say(
-                    &words::AN_APPLICATION.key(),
-                    &Filling::of("application", id.clone()),
-                )
-                .into_text(),
+            Self::Application(id) => id.clone(),
         }
     }
 }
@@ -122,12 +166,25 @@ impl Reach {
     /// What is granted, in words — the line a person reads in the list of
     /// grants, with the times left to whoever is displaying it.
     ///
+    /// [`said`](Self::said) with the provenance dropped, for a caller putting
+    /// the clause on a line of its own.
+    #[must_use]
+    pub fn shown(&self, strings: &Strings) -> String {
+        self.said(strings).into_text()
+    }
+
+    /// What is granted, as a clause carrying where its words came from.
+    ///
+    /// Always a word, unlike [`Ask::said`]: every one of the three kinds is
+    /// introduced by one, because a bare path in a list of grants would not say
+    /// whether the folder or only the file was granted.
+    ///
     /// Formatting an expiry here would hardcode a calendar as well as a
     /// language, and this crate is not where that decision belongs. The words
     /// around the path are [`crate::words`]'; the path is the person's own and
     /// is written as it is.
     #[must_use]
-    pub fn shown(&self, strings: &Strings) -> String {
+    pub fn said(&self, strings: &Strings) -> Said {
         let (word, filling) = match self {
             Self::Folder(path) => (
                 words::A_FOLDER,
@@ -142,7 +199,7 @@ impl Reach {
                 Filling::of("application", id.clone()),
             ),
         };
-        strings.say(&word.key(), &filling).into_text()
+        strings.say(&word.key(), &filling)
     }
 }
 

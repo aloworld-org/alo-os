@@ -25,6 +25,12 @@
 //! the only road to words is [`Destination::shown`] and
 //! [`DestinationError::said`], both of which need the strings the reader in
 //! front of the machine actually reads.
+//!
+//! **And a place goes inside a sentence through [`Destination::fills`]**
+//! (item 15), never as a bare `String`. Both sentences a place appears in — the
+//! indicator line law 1 shows while something is leaving, and the refusal a
+//! policy makes — are only as translated as the place named in the middle of
+//! them, and a gap holding text alone could not say so.
 
 use alo_models::{InferenceSource, Region};
 use alo_strings::{Filling, Said, Strings};
@@ -224,44 +230,80 @@ impl Destination {
         }
     }
 
+    /// This place as a clause, carrying where its words came from.
+    ///
+    /// [`None`] for a host a verb's argument named, for the reason
+    /// [`Destination::word`] answers `None`: `alo.example` is somebody's
+    /// address, there is nothing in it anybody could have translated, and a
+    /// [`Said`] about it would be a claim that somebody should have.
+    ///
+    /// **Anything putting this inside another sentence wants
+    /// [`fills`](Self::fills)**, which is this and the host together in one
+    /// door.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Option<Said> {
+        let (word, filling) = match self {
+            Self::PairedMachine { machine } => (
+                words::A_PAIRED_MACHINE,
+                Filling::of("machine", machine.clone()),
+            ),
+            Self::Provider { provider, region } => {
+                let named = Filling::of("provider", provider.clone());
+                match region {
+                    Region::Declared(where_) => {
+                        (words::A_PROVIDER, named.and("region", where_.clone()))
+                    }
+                    Region::Unknown => (words::A_PROVIDER_SOMEWHERE, named),
+                }
+            }
+            Self::Address { .. } => return None,
+        };
+        Some(strings.say(&word.key(), &filling))
+    }
+
     /// What to show a person, at the moment it is happening.
     ///
     /// A phrase rather than a sentence, because the sentence is
     /// [`crate::Leaving::said`]'s and there is one of those, in one place, for
     /// whoever translates it.
     ///
-    /// A `String` rather than a [`Said`], for the reason
-    /// [`InferenceSource::shown`] is one: this is a clause. It goes inside the
-    /// indicator line *and* inside every refusal
-    /// [`EgressPolicy`](crate::EgressPolicy) makes, so that a line and the
-    /// place named in it are one language.
+    /// [`said`](Self::said) with the provenance dropped, for a caller putting
+    /// the clause on a line of its own. **One rendering, not two**: a place
+    /// described here and described again inside a refusal would be two things
+    /// that can disagree.
     #[must_use]
     pub fn shown(&self, strings: &Strings) -> String {
+        self.said(strings)
+            .map_or_else(|| self.as_named().to_owned(), Said::into_text)
+    }
+
+    /// This place, put into the gap named `name` of another sentence.
+    ///
+    /// The one door for a line with a place in it, because the branch is this
+    /// type's own and not its callers': a place this crate has words for
+    /// carries where those words came from, so the line around it is only as
+    /// translated as the place inside it, and a host carries none because there
+    /// is nothing in it to translate. Two callers deciding that for themselves
+    /// would be two chances to put an English clause inside a German line with
+    /// nothing anywhere counting it.
+    #[must_use]
+    pub fn fills(&self, name: &str, filling: Filling, strings: &Strings) -> Filling {
+        match self.said(strings) {
+            Some(said) => filling.and_said(name, &said),
+            None => filling.and(name, self.as_named().to_owned()),
+        }
+    }
+
+    /// This place as it was named, with no words around it.
+    ///
+    /// What [`shown`](Self::shown) falls back to for the one kind that has no
+    /// words. It went through [`readable`] before it could become a destination
+    /// at all, so it is something a person can be shown whichever kind it is.
+    fn as_named(&self) -> &str {
         match self {
-            Self::PairedMachine { machine } => strings
-                .say(
-                    &words::A_PAIRED_MACHINE.key(),
-                    &Filling::of("machine", machine.clone()),
-                )
-                .into_text(),
-            Self::Provider { provider, region } => {
-                let named = Filling::of("provider", provider.clone());
-                match region {
-                    Region::Declared(where_) => strings
-                        .say(
-                            &words::A_PROVIDER.key(),
-                            &named.and("region", where_.clone()),
-                        )
-                        .into_text(),
-                    Region::Unknown => strings
-                        .say(&words::A_PROVIDER_SOMEWHERE.key(), &named)
-                        .into_text(),
-                }
-            }
-            // A host is data: shown exactly as it was written, which is what
-            // [`Destination::word`] answering [`None`] is about. It went
-            // through `readable` before it could become a destination at all.
-            Self::Address { host } => host.clone(),
+            Self::PairedMachine { machine } => machine,
+            Self::Provider { provider, .. } => provider,
+            Self::Address { host } => host,
         }
     }
 }

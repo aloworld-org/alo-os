@@ -3063,3 +3063,124 @@ would have been a second item in one iteration.
   translations in this repository; the Greek and the Estonian in the tests are
   the tests'. `ROADMAP.md`'s line stays unticked, because a machine that will
   not fall back is not a machine until something asks.
+
+## 2026-09-03 — iteration 29: a gap that holds a sentence
+
+**Built: item 15**, the third iteration running whose work was already a ready
+item, because iteration 28 put it there and deliberately did not build it. The
+reading step went to the two worked examples the item named —
+`alo-models`' `source.rs` and `alo-answering`'s `offer.rs` — and then to a grep
+of its own, which is where the item turned out to be bigger and differently
+shaped than it was written.
+
+A **public surface change reaching seven crates**, additive in six.
+
+| | |
+|---|---|
+| `alo-strings/filling.rs` | `and_composed` — a gap holding a value assembled out of several things this crate said; `and_said` now carries the gaps of the answer it is given; `came_from` answers `&[CameFrom]` |
+| `alo-strings/template.rs` | A gap's provenances are flattened into the filled sentence's, rather than one per gap |
+| `alo-capability/reach.rs` | `Reach::said`, `Ask::said`, `Ask::fills` |
+| `alo-context/focused.rs` | `Focused::said`, `Focused::fills` |
+| `alo-egress/destination.rs` | `Destination::said`, `Destination::fills` |
+| `alo-shortcuts/chord.rs`, `key.rs` | `Chord::fills` and its pieces, `Key::fills` |
+
+Ten call sites moved: `alo-capability`'s `refusing.rs` (2), `alo-context`'s
+`context.rs` (1), `alo-egress`'s `leaving.rs` and `refusing.rs` (2),
+`alo-shortcuts`' `clash.rs` (3, one of them the item did not count) and
+`refusing.rs` (1), `alo-appearance`'s `accent.rs` (1) and `alo-files`'
+`doing.rs` (1).
+
+**The gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. **1042 tests and 28 doctests across the
+workspace** (was 1027 and 28), all green. `CHANGELOG.md`,
+`docs/contracts/agent-verbs.md`, `QUEUE.md` and `ROADMAP.md` in the same change.
+
+**A correction to the last entry's arithmetic before anything else.** Iteration
+28 wrote *1055 tests and 28 doctests*; the workspace held 1027 tests and 28
+doctests, and 1055 is 1027 plus the doctests counted a second time. The number
+above is every `test result` line outside the `Doc-tests` sections added up,
+which is the count that goes up when a test is written. Said here so the next
+iteration does not read a rise as a fall.
+
+**The item's own shape was wrong in a way worth reading, and finding out was
+the design.** It prescribed *a `said(&Strings) -> Said` beside the
+`shown(&Strings) -> String`* at every site, which assumes a clause is one string
+somebody translated. Two of the four kinds are not:
+
+- a **chord** is composed. `Super+Bild ↑` is the notation every desktop writes a
+  shortcut in, holding a name for each key, and no translator is ever handed it
+  whole — so there is no single place its words came from and no `Said` that
+  could honestly be made for it;
+- a **destination**, a **key that prints a mark**, an **ask that is a path** and
+  a **window with no title** are each sometimes a word and sometimes somebody's
+  own data, decided by which one it is rather than by who is asking.
+
+So the change is one level lower than the item put it: **the provenance of a gap
+is a list.** Empty for data, one entry for a clause, several for a composed one.
+That is `Filling::came_from` answering `&[CameFrom]` — the single break in an
+otherwise additive change — and it is what makes *only as translated as its
+least translated piece* true of a chord and of a nested refusal by the same rule
+rather than by two.
+
+**Two sites the item's grep could not see, and the second is the worst of the
+ten.** It looked for a gap filled from a `shown(strings)`; two were filled from
+`said(strings).into_text()` — a `Said` made correctly and thrown away on the next
+line. `alo-appearance`'s `accent.rs` is one. `alo-files`' `doing.rs` is the
+other, and it is the one sentence in the workspace with **another crate's
+sentence inside it**: *rename_file would put something at …, and @files has not
+been granted it — a grant covers where a file goes, not only where it comes
+from*. A German machine with `alo-files` translated and `alo-capability` not read
+that line with its second clause in English, answered that it was German, and
+was counted as done. Closing it needed `and_said` to carry the **gaps** of what
+it is given as well as its own provenance, so the rule holds at any depth; there
+is a test in `alo-strings` for the depth and one in `alo-files`' whole-journey
+integration test for the line itself.
+
+**Three decisions the next items inherit.**
+
+- **A gap holding data can never make a line untranslated**, and every one of
+  the new tests has a twin asserting it. A German line naming `alo.example`,
+  `/home/anna/Taxes/2024.pdf`, `#7F4A2D`, `org.gimp.GIMP` or `Super+Q` **is** a
+  German line. The opposite rule would have been easy to write and quietly
+  ruinous: a release note's count of what is left to translate would be out by
+  the number of files, hosts and hex values anybody happened to mention, and a
+  count nobody can trust is a count nobody reads.
+- **A word whose translation is the same as its source is still a translation
+  somebody has to make.** `alo-shortcuts`' German fixture had never translated
+  *Super* or *Alt* — German writes both the same way — and nothing had ever
+  noticed, because the text matched either way. The first thing this item did to
+  that crate was fail `a_refusal_and_everything_inside_it_are_in_one_language`.
+  It is fixed in the fixture with the reason written beside it, and it is the
+  shape of a gap this rule will keep finding.
+- **`shown` is `said` with the provenance dropped, and where there is no `said`
+  there is a total private fallback rather than an unreachable branch.**
+  `Destination::as_named` and `Ask::as_written` are that: each answers something
+  meaningful for every variant and is only *reached* for the kind with no words,
+  so there is one rendering per type and no `String::new()` standing in for a
+  case that cannot happen.
+
+**What the next iteration must know:**
+
+- **The queue has no ready item.** Item 15 was the last one, and every remaining
+  entry is under *blocked — linux*, *blocked — hardware* or *not ours*. The next
+  iteration's first job is therefore the reading step that has found work in
+  five of the last six: **`docs/features.md` against the queue**, promise by
+  promise. The blocked lists record what somebody once thought was hard; the
+  feature list is what was promised.
+- **★ *No telemetry* still has no item anywhere**, and this is the third
+  iteration to say so. It is the fifth v0.01 promise this journal has watched go
+  unlisted and the only one still unlisted. Whoever reads next should decide
+  whether its portable half is a rule in `alo-egress` or whether all of it is
+  the daemon's, and **write the answer down either way** — a queue entry saying
+  *it is the daemon's* is worth as much as the crate would be, and would end
+  three entries of this paragraph.
+- **`Filling::came_from` changed shape**, from `Option<&CameFrom>` to
+  `&[CameFrom]`. It is the only non-additive change in this iteration and the
+  only one in the workspace since 9g. Anything written against the old signature
+  is in this repository and has moved with it; nothing outside it exists yet.
+- **Nothing here has been read by anybody.** There are still no translations in
+  this repository — the German, the Greek and the Estonian in the tests are the
+  tests' — so what this iteration changed is invisible today and is exactly what
+  makes the first real translation honest about how far it got. `ROADMAP.md`'s
+  Language line gains a clause and stays unticked.

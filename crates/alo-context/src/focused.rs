@@ -24,8 +24,13 @@
 //! person is reading, so a title that cannot be shown is **dropped** and the
 //! window is shown by its identifier alone. Nothing is lost that could have
 //! been acted on, because nothing is ever acted on by a title.
+//!
+//! The words *around* the title are ours, which is why a window goes into a row
+//! through [`Focused::fills`] rather than as text (item 15): the row is only as
+//! translated as the clause in the middle of it, and a window with no title is
+//! an identifier — data, with no language in it to be wrong about.
 
-use alo_strings::{Filling, Strings};
+use alo_strings::{Filling, Said, Strings};
 
 use crate::refusing::NotOffered;
 use crate::words;
@@ -83,24 +88,47 @@ impl Focused {
         self.titled.as_deref()
     }
 
+    /// How a shell shows it, as a clause carrying where its words came from.
+    ///
+    /// [`None`] for a window with no title to show: what is left is the
+    /// identifier alone, which is this machine's own data and has no language
+    /// anybody could have got wrong.
+    ///
+    /// **Anything putting this inside another sentence wants
+    /// [`fills`](Self::fills)**, which is this and the bare identifier together
+    /// in one door.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Option<Said> {
+        self.titled.as_ref().map(|title| {
+            strings.say(
+                &words::WINDOW_CALLED.key(),
+                &Filling::of("title", title.clone()).and("application", self.application.clone()),
+            )
+        })
+    }
+
     /// How a shell shows it — the title and the identifier together, or the
     /// identifier alone when there is no title to show.
     ///
-    /// A `String` rather than a `Said`, because what comes out is a **fragment
-    /// placed inside something** — the row [`crate::Context::shown`] builds —
-    /// which is the shape `alo_capability::Reach::shown` uses for the same
-    /// reason.
+    /// [`said`](Self::said) with the provenance dropped, for a caller putting
+    /// the clause on a line of its own. One rendering rather than two.
     #[must_use]
     pub fn shown(&self, strings: &Strings) -> String {
-        match &self.titled {
-            Some(title) => strings
-                .say(
-                    &words::WINDOW_CALLED.key(),
-                    &Filling::of("title", title.clone())
-                        .and("application", self.application.clone()),
-                )
-                .into_text(),
-            None => self.application.clone(),
+        self.said(strings)
+            .map_or_else(|| self.application.clone(), Said::into_text)
+    }
+
+    /// This window, put into the gap named `name` of another sentence.
+    ///
+    /// The one door for the row [`crate::Context::shown`] builds, because the
+    /// branch is this type's own: a window with a title is introduced by a word
+    /// and carries where that word came from, and one known only by its
+    /// identifier carries none because there is nothing in it to translate.
+    #[must_use]
+    pub fn fills(&self, name: &str, filling: Filling, strings: &Strings) -> Filling {
+        match self.said(strings) {
+            Some(said) => filling.and_said(name, &said),
+            None => filling.and(name, self.application.clone()),
         }
     }
 }

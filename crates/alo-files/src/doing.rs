@@ -279,8 +279,10 @@ fn may_create(
                 &Filling::of("verb", authorised.verb())
                     .and("path", creating.display().to_string())
                     // The grants' own refusal, said here so that the sentence
-                    // it sits inside and the sentence it is are one language.
-                    .and("why", why.said(strings).into_text()),
+                    // it sits inside and the sentence it is are one language —
+                    // and put in as a *word* rather than as text, so this
+                    // sentence is only as translated as the refusal inside it.
+                    .and_said("why", &why.said(strings)),
             ),
         ));
     }

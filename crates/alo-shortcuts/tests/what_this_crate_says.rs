@@ -71,7 +71,16 @@ fn auf_deutsch() -> Strings {
             (words::PREVIOUS_WINDOW, "Vorheriges Fenster"),
             (words::NEXT_APPLICATION, "Nächste Anwendung"),
             (words::PREVIOUS_APPLICATION, "Vorherige Anwendung"),
+            // Super and Alt are written the same way in German, and they are
+            // here for that reason rather than in spite of it. Item 15 made a
+            // sentence only as translated as the pieces put into it, and the
+            // two words a German translator would leave exactly as they found
+            // them are the two this fixture had quietly never translated —
+            // invisible while a chord went into a refusal as text, and a row
+            // that would have gone out counted as done.
+            (words::SUPER, "Super"),
             (words::CTRL, "Strg"),
+            (words::ALT, "Alt"),
             (words::SHIFT, "Umschalt"),
             (words::SPACE, "Leertaste"),
             (words::TAB, "Tabulator"),

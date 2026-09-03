@@ -1138,33 +1138,52 @@ deny list.** Two patterns later items must follow:
   asking arrives with the daemon, and this is the decision that had to be
   settled before then so that a fallback cannot be written into it by accident.
 
-- [ ] **15. A gap that holds a sentence** — cut from item 14, which needed one
-  case of it and found the rest. `alo_strings::Filling::and_said` arrived in
-  item 11a with the rule that **a sentence is only as translated as its least
-  translated piece**; the crates written before it still fill gaps that hold a
-  *worded clause* with `Filling::of` and a `String`, which reports a
-  half-English line as translated. Item 14 closed
-  `alo_models::NotAllowed::said` because it could not build its own sentences
-  correctly otherwise, and left the sweep.
+- [x] **15. A gap that holds a sentence** — cut from item 14, which needed one
+  case of it and found the rest. A **public surface change reaching seven
+  crates**, additive in six of them. `alo-strings`: `Filling::and_composed` (a
+  gap holding a value assembled out of several things this crate said),
+  `Filling::and_said` now carrying the gaps of the answer it is given, and
+  `Filling::came_from` answering `&[CameFrom]` — the one break, and the only
+  way either of the other two could be honest. `alo-capability`: `Reach::said`,
+  `Ask::said` and `Ask::fills`. `alo-context`: `Focused::said` and
+  `Focused::fills`. `alo-egress`: `Destination::said` and `Destination::fills`.
+  `alo-shortcuts`: `Chord::fills` and `Key::fills`. Ten call sites moved, in
+  `alo-capability`, `alo-context`, `alo-egress`, `alo-shortcuts`,
+  `alo-appearance` and `alo-files`. **1042 tests and 28 doctests across the
+  workspace** (was 1027 and 28), clippy clean.
 
-  What is left is **eight sites in five crates**, found by grepping the
-  production code for a gap filled from a `shown(strings)`:
-  `alo-capability`'s `refusing.rs` (2 — `wanted`, and `Lapsed`'s `reach`),
-  `alo-context`'s `context.rs` (1 — `window`), `alo-egress`'s `leaving.rs` and
-  `refusing.rs` (2 — the destination, on the indicator line itself and in the
-  policy's refusal) and `alo-shortcuts`' `clash.rs` and `refusing.rs` (3 — a
-  chord and a key, whose sixteen worded labels are exactly the translatable
-  part). The egress two are the ones to do first: that line is what law 1 shows
-  a person while something is leaving. Each needs the same shape — a
-  `said(&Strings) -> Said` beside the `shown(&Strings) -> String`, with `shown`
-  becoming `said(…).into_text()` so there is one rendering rather than two —
-  and each needs the test item 14 wrote: a sentence translated, its clause not,
-  and `is_translated()` answering **false**.
+  **The item said eight sites and there were ten**, because its grep looked for
+  a gap filled from a `shown(strings)` and two of them were filled from
+  `said(strings).into_text()` — a `Said` made correctly and then thrown away one
+  line later. `alo-appearance`'s `accent.rs` is one and `alo-files`' `doing.rs`
+  is the other, and the second is the worst of the ten: it is the one sentence
+  in the workspace with **another crate's sentence** inside it.
 
-  It is a **public surface change** in two crates and additive in both. Read
-  `alo-models`' `source.rs` and `alo-answering`'s `offer.rs` first: between them
-  they are the worked example, and the second is the case where getting it
-  wrong would put an English clause inside a sentence somebody approves.
+  **The item's prescribed shape did not fit two of the four kinds, and that is
+  the design this iteration had to make.** *A `said` beside the `shown`* assumes
+  a clause is one string somebody translated. Two are not. A **chord** is
+  composed — `Super+Bild ↑` is notation with a name in it for each key, and no
+  translator is handed it whole — and a **destination**, a **key that prints a
+  mark**, an **ask that is a path** and a **window with no title** are each
+  sometimes a word and sometimes somebody's own data. So the provenance of a gap
+  became a **list**: empty for data, one entry for a clause, several for a
+  composed one. That is `Filling::came_from` answering a slice, and it is what
+  makes *only as translated as its least translated piece* true of a chord and
+  of a nested refusal at the same time, by the same rule.
+
+  Three decisions the next items inherit. **A gap holding data can never make a
+  line untranslated**, and that is asserted as carefully as its opposite: a
+  German line naming `alo.example`, `/home/anna/Taxes/2024.pdf`, `#7F4A2D`,
+  `org.gimp.GIMP` or `Super+Q` is a German line, and a rule that said otherwise
+  would put a release note's count permanently out by the number of files
+  anybody happened to ask about. **`and_said` carries the gaps of what it is
+  given**, so the rule holds at any depth rather than one level down —
+  `alo-files`' refusal with `alo-capability`'s inside it is the case, and it had
+  no other honest answer. **A word whose translation is the same as its source
+  is still a translation somebody has to make**: `alo-shortcuts`' German fixture
+  had never translated *Super* or *Alt*, nothing had ever noticed because the
+  text matched, and the first thing this item did on that crate was fail that
+  test.
 
   What is **not** covered anywhere and is not this item: *★ No telemetry*
   (v0.01, the egress section). `alo-egress` decides about egress an **agent**
@@ -1172,7 +1191,7 @@ deny list.** Two patterns later items must follow:
   agent behind it, and there is neither a crate nor a blocked entry for it.
   Whoever reads next should decide whether its portable half is a rule in
   `alo-egress` or whether all of it is the daemon's — it is the fifth promise
-  the journal has watched go unlisted.
+  the journal has watched go unlisted, and the third iteration to say so.
 
 ---
 

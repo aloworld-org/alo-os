@@ -154,7 +154,7 @@ impl Context {
         if let Some(window) = &self.window {
             rows.push(strings.say(
                 &words::THE_WINDOW.key(),
-                &Filling::of("window", window.shown(strings)),
+                &window.fills("window", Filling::nothing(), strings),
             ));
         }
         rows
@@ -273,6 +273,30 @@ mod tests {
             nothing[0].text(),
             "von Ihrem Bildschirm wurde nichts übergeben"
         );
+    }
+
+    /// **A row is only as translated as the window named inside it.** What a
+    /// window is called is introduced by a word of this crate's, so a German
+    /// row with that word still in English says so rather than being counted as
+    /// done — and the identifier and the title inside it stay as they are,
+    /// because neither is anybody's to translate.
+    #[test]
+    fn a_row_naming_an_untranslated_window_does_not_claim_to_be_translated() {
+        let half = translated(&[(words::THE_WINDOW, "das Fenster vor Ihnen: {window}")]);
+        let rows = Context::at_invocation(noon())
+            .and_window(Focused::titled("org.blender.Blender", "untitled.blend").unwrap())
+            .shown(&half);
+        assert!(!rows[0].is_translated(), "{}", rows[0]);
+        assert!(rows[0].text().starts_with("das Fenster"), "{}", rows[0]);
+        assert!(rows[0].text().contains("untitled.blend"), "{}", rows[0]);
+
+        // A window with no title to show is its identifier, which is data: a
+        // row naming one is as translated as it reads.
+        let bare = Context::at_invocation(noon())
+            .and_window(Focused::window("org.gimp.GIMP").unwrap())
+            .shown(&half);
+        assert!(bare[0].is_translated(), "{}", bare[0]);
+        assert_eq!(bare[0].text(), "das Fenster vor Ihnen: org.gimp.GIMP");
     }
 
     /// A shell that never declared this crate's words shows the key and says it

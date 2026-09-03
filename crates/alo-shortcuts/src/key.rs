@@ -207,6 +207,20 @@ impl Key {
         self.word()
             .map(|word| strings.say(&word.key(), &Filling::nothing()))
     }
+
+    /// This key, put into the gap named `name` of another sentence.
+    ///
+    /// The one door for a refusal naming the key somebody pressed, because the
+    /// branch is this type's own: one of the sixteen carries where its word came
+    /// from, so the sentence around it is only as translated as the key in it,
+    /// and one of the fifty-three carries none because a mark is not a string.
+    #[must_use]
+    pub fn fills(self, name: &str, filling: Filling, strings: &Strings) -> Filling {
+        match self.said(strings) {
+            Some(said) => filling.and_said(name, &said),
+            None => filling.and(name, self.shown(strings)),
+        }
+    }
 }
 
 #[cfg(test)]

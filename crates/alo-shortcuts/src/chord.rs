@@ -30,10 +30,17 @@
 //! person reads — `Strg+Entf` on a German machine — and the derived `Debug`
 //! writes the names a settings file holds, which are nobody's language. The two
 //! are for two different readers and neither is the other's fallback.
+//!
+//! **And there is no `said`**, because a chord is not one string anybody
+//! translates (item 15). It is composed: the `+` is notation, and each name
+//! beside it is a string of its own — three of them in `Super+Strg+Entf`. So a
+//! chord goes into a sentence through [`Chord::fills`], which hands over every
+//! piece it was made of, and a refusal naming a chord is only as translated as
+//! the least translated key in it.
 
 use std::fmt;
 
-use alo_strings::Strings;
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::key::Key;
@@ -103,6 +110,37 @@ impl Chord {
         }
         written.push_str(&self.key.shown(strings));
         written
+    }
+
+    /// This chord, put into the gap named `name` of another sentence.
+    ///
+    /// The one door for a sentence with a chord in it, and it hands over the
+    /// **pieces** rather than a provenance of its own: a chord is composed, so
+    /// where its words came from is a list, and a sentence naming one is only
+    /// as translated as the least translated name in it. `Super+Page Up` inside
+    /// a German refusal is a line whose reader is told to press a key their
+    /// keyboard calls something else.
+    ///
+    /// The keys that print a mark are in the list and contribute nothing to it,
+    /// which is [`Key::said`] answering [`None`]: `Q` is the same mark on every
+    /// keyboard in the union, and translating it would be naming a position.
+    #[must_use]
+    pub fn fills(self, name: &str, filling: Filling, strings: &Strings) -> Filling {
+        filling.and_composed(name, self.shown(strings), &self.spoken(strings))
+    }
+
+    /// Every piece of this chord that is a word somebody translates.
+    ///
+    /// The modifiers, which are always words, and the key when it is one of the
+    /// sixteen that print a word rather than a mark.
+    fn spoken(self, strings: &Strings) -> Vec<Said> {
+        let mut spoken: Vec<Said> = self
+            .modifiers
+            .held()
+            .map(|modifier| modifier.said(strings))
+            .collect();
+        spoken.extend(self.key.said(strings));
+        spoken
     }
 }
 

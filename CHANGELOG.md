@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A line that is half in a language you do not read now says so, wherever the
+  half is.** alo OS builds a lot of its sentences out of smaller ones: *the
+  grant over your Invoices folder and everything in it has expired*, *@mail is
+  asking a question of alo, in the EU*, *Super+Bild ↑ is already doing
+  something else*. Until now only the outer sentence counted, so a line whose
+  outer half somebody had translated passed as finished while the clause in the
+  middle of it was still English — invisible to the person reading it, and to
+  the count of what is left to translate.
+
+  Every one of those clauses now answers for itself, at any depth. A refusal
+  naming a place is only as translated as the place; a refusal with another
+  part of the system's refusal inside it is only as translated as that one; a
+  shortcut is only as translated as the least translated key in it. What has
+  **not** changed is what counts as a language: your own paths, hostnames, a
+  window's identifier, a colour you typed and the keys that print `Q` or `7`
+  are yours and this machine's, not anybody's to translate, and they never mark
+  a line as unfinished.
+
+  Nothing you read changes today, because there are still no translations. What
+  changes is that the day the first one arrives, half-done work looks half done.
+
 - **When the model you chose cannot answer, alo OS stops and tells you —
   it never quietly asks somebody else instead.** A local model that fails does
   not become an API call. You are told what went wrong and *where* it went

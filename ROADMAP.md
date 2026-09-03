@@ -225,7 +225,16 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       somebody translates rather than the identifier a model sent, and **a
       sentence is only as translated as its least translated piece**, so a
       finished sentence with an unfinished word in it cannot pass for a
-      translated line
+      translated line. Since **15** that rule is true of every sentence this
+      system composes rather than only of the one a person approves: the place
+      inside the line law 1 shows while something is leaving, the grant inside a
+      refusal, the key inside a shortcut, the colour inside a settings refusal,
+      and another crate's whole refusal inside `alo-files`' — each of them
+      answers for itself, at any depth, so a half-translated line says it is
+      half translated wherever the half is. What stayed data stayed data: a
+      path, a hostname, a window's identifier, a colour somebody typed and the
+      fifty-three keys that print a mark are nobody's to translate and never
+      count a line as unfinished
       · Owed: a shell to translate, and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only

@@ -76,11 +76,14 @@ impl Clash {
     ///
     /// It names the chord and not the actions; the module documentation says
     /// why, and [`Clash::actions`] is what a panel draws beside it.
+    ///
+    /// The chord goes in through [`Chord::fills`], not as text, so this report
+    /// is only as translated as the least translated key in the chord it names.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         strings.say(
             &words::CLASH.key(),
-            &Filling::of("chord", self.chord.shown(strings)),
+            &self.chord.fills("chord", Filling::nothing(), strings),
         )
     }
 }
@@ -122,12 +125,20 @@ impl Taken {
     /// is itself one of this crate's strings — so a German shell reads a German
     /// refusal naming a German row, rather than a German sentence with an
     /// English row inside it.
+    ///
+    /// Both gaps hold words, and both are put in as words rather than as text
+    /// ([`Chord::fills`] and [`alo_strings::Filling::and_said`]). This is the
+    /// only sentence in the crate with two clauses in it, so it is also the one
+    /// where the old shape was most misleading: either of them still English
+    /// made the whole line half unreadable, and neither would have been counted.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         strings.say(
             &words::TAKEN.key(),
-            &Filling::of("chord", self.chord.shown(strings))
-                .and("action", self.by.said(strings).into_text()),
+            &self
+                .chord
+                .fills("chord", Filling::nothing(), strings)
+                .and_said("action", &self.by.said(strings)),
         )
     }
 }
@@ -187,6 +198,62 @@ mod tests {
              zuerst diese Zuordnung, oder nehmen Sie eine andere Taste"
         );
         assert!(said.is_translated());
+    }
+
+    /// **A refusal is only as translated as the chord and the row inside it**,
+    /// and there are two ways for it not to be. A German sentence naming
+    /// `Super+Left` or naming an English row is half a line its reader cannot
+    /// act on, and neither half would have been counted while the gaps held
+    /// text.
+    #[test]
+    fn a_refusal_naming_an_untranslated_key_or_row_does_not_claim_to_be_translated() {
+        let sentence = (
+            words::TAKEN,
+            "{chord} ist bereits {action} — ändern Sie zuerst diese Zuordnung, oder nehmen Sie \
+             eine andere Taste",
+        );
+
+        // The key in the chord is still English.
+        let no_key = translated(&[
+            sentence,
+            (words::SUPER, "Super"),
+            (words::SNAP_LEFT, "Fenster auf die linke Hälfte legen"),
+        ]);
+        let said = Taken::new(chord(), Action::SnapLeft).said(&no_key);
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().starts_with("Super+Left"), "{said}");
+
+        // The row is.
+        let no_row = translated(&[
+            sentence,
+            (words::SUPER, "Super"),
+            (words::LEFT, "Pfeil links"),
+        ]);
+        let said = Taken::new(chord(), Action::SnapLeft).said(&no_row);
+        assert!(!said.is_translated(), "{said}");
+        assert!(
+            said.text().contains("Put the window on the left half"),
+            "{said}"
+        );
+    }
+
+    /// **A chord made only of keys that print a mark carries no language at
+    /// all**, so a translated report naming `Super+Q` is a translated report.
+    /// A rule that said otherwise would mark a sentence untranslated because of
+    /// a letter that is the same on every keyboard in the union.
+    #[test]
+    fn a_report_naming_a_chord_of_marks_is_as_translated_as_it_reads() {
+        let strings = translated(&[
+            (words::SUPER, "Super"),
+            (words::CLASH, "{chord} tut mehr als eine Sache"),
+        ]);
+        let clash = Clash::over(
+            Chord::checked(Modifiers::just(Modifier::Super), Key::Q).unwrap(),
+            vec![Action::SnapLeft, Action::NextWindow],
+        );
+        let said = clash.said(&strings);
+        assert!(said.is_translated(), "{said}");
+        assert_eq!(said.text(), "Super+Q tut mehr als eine Sache");
     }
 
     /// A report says the chord is doing more than one thing, and hands over

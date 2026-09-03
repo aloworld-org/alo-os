@@ -31,7 +31,7 @@ use alo_files::{
     Answer, Did, Failed, Kind, Named, OnThisMachine, Real, Resolving, Touching, file_verbs,
     file_words,
 };
-use alo_strings::{Strings, Word};
+use alo_strings::{Language, Strings, Translation, Word};
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 fn noon() -> SystemTime {
@@ -97,6 +97,29 @@ fn in_english() -> Strings {
     let mut vocabulary = file_words().unwrap();
     alo_capability::declare_into(&mut vocabulary).unwrap();
     Strings::of(vocabulary)
+}
+
+/// The same vocabulary with **this crate's half** of the refusal below
+/// translated and the capability model's half not.
+///
+/// A real translation would be both, and the point of it being one is that a
+/// half-translated line has to be able to say so: this is what a German machine
+/// reads on the day somebody has done one crate's strings and not the other's.
+fn in_german() -> Strings {
+    let mut vocabulary = file_words().unwrap();
+    alo_capability::declare_into(&mut vocabulary).unwrap();
+    let german = Language::written("de").unwrap();
+    let speaking = vocabulary
+        .check(Translation::into_language(german.clone()).says(
+            alo_files::words::WOULD_CREATE.key(),
+            "{verb} würde etwas unter {path} anlegen, und {why} — eine Berechtigung deckt ab, \
+             wohin eine Datei geht, nicht nur, woher sie kommt",
+        ))
+        .unwrap();
+    let mut strings = Strings::of(vocabulary);
+    strings.speaks(speaking).unwrap();
+    strings.prefers(&[german]);
+    strings
 }
 
 /// A read, done: validated, permitted, resolved, and performed.
@@ -246,6 +269,55 @@ fn a_change_that_would_create_a_name_nobody_granted_is_refused() {
     // Nothing happened: the file is where it was, under the name it had.
     assert_eq!(fs::read(&file).unwrap(), b"an invoice");
     assert!(!root.join("march-2026.pdf").exists());
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+/// **That refusal is only as translated as the refusal inside it** (item 15).
+///
+/// It is the one sentence in this crate with another crate's sentence in the
+/// middle of it: this half says *a grant covers where a file goes*, and the
+/// capability model's half says which grant was missing. A German machine that
+/// had only the outer half translated read a line whose second clause was
+/// English, said it was German, and was counted as done — so the clause goes in
+/// as a word and the whole line answers for it.
+#[test]
+fn a_refusal_with_another_crates_refusal_inside_it_is_as_translated_as_that_one() {
+    let root = a_folder_of_our_own("saying");
+    let file = root.join("march.pdf");
+    fs::write(&file, b"an invoice").unwrap();
+
+    let mut grants = Grants::default();
+    grants.grant(Grant::checked("@files", Reach::File(file.clone()), noon(), hour()).unwrap());
+
+    let call = file_verbs()
+        .unwrap()
+        .call(
+            "rename_file",
+            &[
+                ("file", as_given(&file)),
+                ("name", Given::text("march-2026.pdf")),
+            ],
+        )
+        .unwrap();
+    let mut approvals = Approvals::default();
+    let id =
+        approvals.propose(Proposal::checked(&call, &files(), &grants, noon(), hour()).unwrap());
+    let authorised = approvals
+        .approve(id, noon())
+        .unwrap()
+        .redeem(&grants, noon())
+        .unwrap();
+    let touching = Touching::of(authorised, &grants, &OnThisMachine, &in_english()).unwrap();
+
+    // Only the outer sentence translated: the line is not a German line, and it
+    // says so rather than being counted as one.
+    let half = Did::of(touching, &grants, &in_german())
+        .unwrap_err()
+        .said(&in_german());
+    assert!(!half.is_translated(), "{half}");
+    assert!(half.text().starts_with("rename_file würde"), "{half}");
+    assert!(half.text().contains("has not been granted"), "{half}");
 
     let _ = fs::remove_dir_all(&root);
 }

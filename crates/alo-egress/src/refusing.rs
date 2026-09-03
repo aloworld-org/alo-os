@@ -127,14 +127,25 @@ impl NotPermitted {
 
     /// What this says, in the language the person reads.
     ///
+    /// The place goes in through [`Destination::fills`], not as text, so that
+    /// the refusal is only as translated as the place named inside it — the
+    /// same rule the indicator line is held to, and for the same reason: the
+    /// half a reader could not read would be the half saying where their
+    /// records were going.
+    ///
     /// Never fails and never panics, because `alo_strings::Strings` does not: a
     /// `Strings` that was never given [`crate::egress_words`] answers with the
     /// key, marked, and `Said::is_a_bug`. **What is refused never depends on
     /// the string table** — the refusal was decided before this was called, and
     /// calling it cannot change the answer.
+    ///
+    /// [`Destination::fills`]: crate::Destination::fills
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        let filling = Filling::of("destination", self.leaving.destination().shown(strings));
+        let filling = self
+            .leaving
+            .destination()
+            .fills("destination", Filling::nothing(), strings);
         let filling = match &self.why {
             Refusal::OutsideTheRegion { region } => filling.and("region", region.clone()),
             Refusal::OutsideTheBuilding | Refusal::NothingMayLeave => filling,
@@ -204,6 +215,26 @@ mod tests {
         assert!(!said.text().contains("has not said"), "{said}");
         // The provider's name is the person's, not the language's.
         assert!(said.text().contains("someone"), "{said}");
+    }
+
+    /// **A refusal is only as translated as the place named inside it.** The
+    /// half a reader could not read is the half saying where their records were
+    /// going, so a German refusal with an English place in it says outright
+    /// that it is not a German line.
+    #[test]
+    fn a_refusal_naming_an_untranslated_place_does_not_claim_to_be_translated() {
+        let half = translated(&[(
+            words::NOTHING_MAY_LEAVE,
+            "dieser Rechner ist so eingestellt, dass nichts ihn verlässt, und {destination} ist \
+             anderswo",
+        )]);
+        let said = EgressPolicy::NothingLeaves
+            .refusal(&to_someone())
+            .unwrap()
+            .said(&half);
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().starts_with("dieser Rechner"), "{said}");
+        assert!(said.text().contains("has not said where it runs"), "{said}");
     }
 
     /// **A refusal never depends on a string table.** With no words at all the

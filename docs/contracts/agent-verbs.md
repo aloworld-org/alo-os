@@ -418,6 +418,18 @@ somebody translated with an option nobody has translated inside it answers
 `alo_strings::Said::is_translated` with `false`, so a half-translated approval
 line cannot pass for a finished one.
 
+The rule holds of every sentence alo OS composes, not only of an approval, and
+it holds **at any depth**: a refusal with a place named inside it is only as
+translated as that place, and one with another crate's refusal inside it is only
+as translated as that refusal. What decides the difference is what the gap
+holds. A gap holding **data** — a path, a hostname, a window's identifier, a
+colour somebody typed, a key that prints `Q` — carries no language and can never
+make a line untranslated; a gap holding a **word** carries where that word came
+from. So an adapter that puts one of its own strings into another one puts it in
+through `alo_strings::Filling::and_said`, or through `Filling::and_composed`
+where the value is assembled out of several — never as text, which reports every
+half-English line as finished.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |

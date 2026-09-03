@@ -172,8 +172,7 @@ impl Template {
             .gaps
             .iter()
             .filter(|name| filling.value(name).is_some())
-            .filter_map(|name| filling.came_from(name))
-            .cloned()
+            .flat_map(|name| filling.came_from(name).iter().cloned())
             .collect();
         Filled {
             text,

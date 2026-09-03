@@ -87,6 +87,12 @@ impl NotGranted {
 
     /// What this says, in the language the person reads.
     ///
+    /// What was asked for and what the expired grant was over both go in as
+    /// clauses rather than as text ([`Ask::fills`] and [`Reach::said`]), so
+    /// this refusal is only as translated as the pieces named inside it. The
+    /// agent's name and the path are the machine's and stay as they are, which
+    /// is exactly the distinction a gap holding text alone could not make.
+    ///
     /// Never fails and never panics, because `alo_strings::Strings` does not: a
     /// `Strings` that was never given [`crate::capability_words`] answers with
     /// the key, marked, and `Said::is_a_bug`. **What is refused never depends
@@ -94,10 +100,13 @@ impl NotGranted {
     /// called, and calling it cannot change the answer.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        let filling = Filling::of("agent", self.agent().to_owned())
-            .and("wanted", self.wanted().shown(strings));
+        let filling = self.wanted().fills(
+            "wanted",
+            Filling::of("agent", self.agent().to_owned()),
+            strings,
+        );
         let filling = match self {
-            Self::Lapsed { reach, .. } => filling.and("reach", reach.shown(strings)),
+            Self::Lapsed { reach, .. } => filling.and_said("reach", &reach.said(strings)),
             Self::Never { .. } => filling,
         };
         strings.say(&self.word().key(), &filling)
@@ -167,6 +176,38 @@ mod tests {
             said.text().contains("/home/anna/Invoices/march.pdf"),
             "{said}"
         );
+    }
+
+    /// **A refusal is only as translated as the clause inside it.** A German
+    /// sentence naming the grant in English is a line half its reader cannot
+    /// read, and the half they cannot read is the one saying which grant to go
+    /// and make again.
+    #[test]
+    fn a_refusal_naming_an_untranslated_grant_does_not_claim_to_be_translated() {
+        let half = translated(&[(
+            words::HAS_EXPIRED,
+            "{agent} durfte {reach} erreichen, und das ist abgelaufen — erteilen Sie es erneut, \
+             damit {agent} {wanted} erreichen kann",
+        )]);
+        let said = lapsed().said(&half);
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().starts_with("@files durfte"), "{said}");
+        assert!(said.text().contains("and everything in it"), "{said}");
+    }
+
+    /// **A path is data, and data cannot make a refusal untranslated.** Nobody
+    /// translates `/home/anna/Taxes/2024.pdf`, so a German refusal naming one
+    /// is a German refusal — and a rule that said otherwise would put a release
+    /// note's count out by the number of files anybody happened to ask about.
+    #[test]
+    fn a_refusal_naming_a_path_is_as_translated_as_it_reads() {
+        let strings = translated(&[(
+            words::NEVER_GRANTED,
+            "{agent} hat keine Berechtigung für {wanted} — erteilen Sie eine, wenn das gewollt ist",
+        )]);
+        let said = never().said(&strings);
+        assert!(said.is_translated(), "{said}");
+        assert!(said.text().contains("/home/anna/Taxes/2024.pdf"), "{said}");
     }
 
     /// **A refusal never depends on a string table.** With no words at all it

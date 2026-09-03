@@ -97,6 +97,12 @@ impl ChordError {
 
     /// What this says, in the language the person reads.
     ///
+    /// The key goes in through [`Key::fills`], not as text, so this refusal is
+    /// only as translated as the key named inside it — *halten Sie zusätzlich
+    /// Super, Strg oder Alt — Page Up allein…* names a key a German keyboard
+    /// calls `Bild ↑`, and the person it is addressed to is in the middle of
+    /// pressing one.
+    ///
     /// Never fails and never panics, because `alo_strings::Strings` does not.
     /// A `Strings` that was never given [`crate::shortcut_words`] answers with
     /// the key, marked, and `Said::is_a_bug` — which is the honest answer to
@@ -106,7 +112,7 @@ impl ChordError {
     pub fn said(self, strings: &Strings) -> Said {
         let filling = match self {
             Self::NothingHeld(key) | Self::ShiftIsNotEnough(key) => {
-                Filling::of("key", key.shown(strings))
+                key.fills("key", Filling::nothing(), strings)
             }
             Self::TheClipboardNeedsIt(_) => Filling::nothing(),
         };
@@ -171,6 +177,29 @@ mod tests {
         assert!(said.text().contains("Bild ↑"), "{said}");
         assert!(said.is_translated());
         assert!(said.unfilled().is_empty());
+    }
+
+    /// **A refusal is only as translated as the key named inside it**, for the
+    /// sixteen keys that print a word. A German sentence telling somebody about
+    /// `Page Up` names a key their keyboard calls something else, and they are
+    /// in the middle of pressing one.
+    #[test]
+    fn a_refusal_naming_an_untranslated_key_does_not_claim_to_be_translated() {
+        let half = translated(&[(
+            words::NOTHING_HELD,
+            "halten Sie zusätzlich Super, Strg oder Alt — {key} allein wäre eine Taste weniger \
+             für alles, was Sie schreiben",
+        )]);
+        let said = ChordError::NothingHeld(Key::PageUp).said(&half);
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().contains("Page Up"), "{said}");
+
+        // A key that prints a mark carries no language, so the same sentence
+        // naming one is as translated as it reads: `Q` is `Q` everywhere, and
+        // marking this line would be counting a position as a string.
+        let said = ChordError::NothingHeld(Key::Q).said(&half);
+        assert!(said.is_translated(), "{said}");
+        assert!(said.text().contains("Q allein"), "{said}");
     }
 
     /// The three the clipboard needs are three sentences rather than one with

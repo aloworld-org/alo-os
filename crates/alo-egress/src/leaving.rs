@@ -138,6 +138,12 @@ impl Leaving {
     /// after a fetch — and a language that inflects the place needs the whole
     /// sentence in front of it to choose.
     ///
+    /// The place goes in through [`Destination::fills`], not as text, so that
+    /// this line is only as translated as the place named in the middle of it.
+    /// A German indicator saying *@mail stellt someone, which has not said
+    /// where it runs eine Frage* is half a line its reader cannot read, and it
+    /// is the half about where their question is going.
+    ///
     /// Never fails and never panics, because `alo_strings::Strings` does not: a
     /// `Strings` that was never given [`crate::egress_words`] answers with the
     /// key, marked, and `Said::is_a_bug`. **What is leaving never depends on
@@ -147,8 +153,11 @@ impl Leaving {
     pub fn said(&self, strings: &Strings) -> Said {
         strings.say(
             &self.word().key(),
-            &Filling::of("agent", self.agent.as_str().to_owned())
-                .and("destination", self.destination.shown(strings)),
+            &self.destination.fills(
+                "destination",
+                Filling::of("agent", self.agent.as_str().to_owned()),
+                strings,
+            ),
         )
     }
 }
@@ -264,6 +273,46 @@ mod tests {
         assert!(said.text().contains("nicht gesagt hat"), "{said}");
         assert!(!said.text().contains("is asking"), "{said}");
         assert!(!said.text().contains("has not said"), "{said}");
+    }
+
+    /// **A line is only as translated as the place named in the middle of it.**
+    /// This is the one law 1 shows a person while something is leaving, so a
+    /// German sentence with an English place inside it that answered
+    /// `is_translated` with `true` would be marked by nothing, counted by
+    /// nothing, and read by somebody in Berlin.
+    #[test]
+    fn an_indicator_line_naming_an_untranslated_place_does_not_claim_to_be_translated() {
+        let half = translated(&[(words::IS_ASKING, "{agent} stellt {destination} eine Frage")]);
+        let said = Leaving::asking(
+            &mail(),
+            &InferenceSource::Hosted {
+                provider: "someone".to_owned(),
+                region: Region::Unknown,
+            },
+        )
+        .unwrap()
+        .said(&half);
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().starts_with("@mail stellt"), "{said}");
+        assert!(said.text().contains("has not said where it runs"), "{said}");
+    }
+
+    /// **A host is data, and data cannot make a line untranslated.** Nobody
+    /// translates `alo.example` — it is somebody's address — so a German line
+    /// fetching from one is a German line, and saying otherwise would put a
+    /// release note's count of untranslated strings permanently out by the
+    /// number of addresses anybody happened to reach.
+    #[test]
+    fn a_line_naming_a_host_nobody_declared_anything_about_is_as_translated_as_it_reads() {
+        let strings = translated(&[(words::IS_FETCHING, "{agent} holt etwas von {destination}")]);
+        let said = Leaving::because(
+            &Grantee::named("@files"),
+            Why::Fetching,
+            Destination::at("alo.example").unwrap(),
+        )
+        .said(&strings);
+        assert!(said.is_translated(), "{said}");
+        assert_eq!(said.text(), "@files holt etwas von alo.example");
     }
 
     /// **The indicator does not go blank because nobody declared the words.**

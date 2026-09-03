@@ -76,6 +76,13 @@ impl AccentError {
 
     /// What this says, in the language the person reads.
     ///
+    /// The colour's **name** goes in as a word and the colour's **value** goes
+    /// in as data, which is the whole difference between the two refusals: a
+    /// person who asked for terracotta is told the name of a colour somebody
+    /// translated, and a person who typed a hex is shown back what they typed.
+    /// So this refusal is only as translated as the name inside it, and a hex
+    /// cannot make it less translated than it is.
+    ///
     /// Never fails and never panics, because `alo_strings::Strings` does not. A
     /// `Strings` that was never given [`crate::appearance_words`] answers with
     /// the key, marked, and `Said::is_a_bug`.
@@ -83,7 +90,7 @@ impl AccentError {
     pub fn said(self, strings: &Strings) -> Said {
         let filling = match self {
             Self::Reserved => Filling::nothing(),
-            Self::NotAnAccent(token) => Filling::of("colour", token.said(strings).into_text()),
+            Self::NotAnAccent(token) => Filling::nothing().and_said("colour", &token.said(strings)),
             Self::NotOffered(colour) => Filling::of("colour", colour.to_string()),
         };
         strings.say(&self.word().key(), &filling)
@@ -340,6 +347,42 @@ mod tests {
         );
         assert!(said.is_translated());
         assert!(said.unfilled().is_empty());
+    }
+
+    /// **A refusal is only as translated as the colour named inside it**
+    /// (item 15). A colour name is the one string in this crate that carries
+    /// none of itself — *Grünspan* is not reachable from *verdigris* word by
+    /// word — so a German sentence with an English colour in it is a line whose
+    /// reader is told to pick something they have never seen written down.
+    #[test]
+    fn a_refusal_naming_an_untranslated_colour_does_not_claim_to_be_translated() {
+        let half = translated(&[(
+            words::NOT_AN_ACCENT,
+            "{colour} ist eine Grund- oder Strukturfarbe und keine Akzentfarbe — wählen Sie \
+             Grünspan, Indigo, Violett, Moos oder Rosé",
+        )]);
+        let said = Accent::of_colour(Token::Navy.colour())
+            .unwrap_err()
+            .said(&half);
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().starts_with("Navy ist eine"), "{said}");
+    }
+
+    /// **A colour somebody typed is data, and data cannot make a refusal
+    /// untranslated.** Nobody translates `#7f4a2d`, so a German refusal quoting
+    /// one back is a German refusal — which is the distinction the two variants
+    /// of this error exist to make.
+    #[test]
+    fn a_refusal_quoting_a_value_back_is_as_translated_as_it_reads() {
+        let strings = translated(&[(
+            words::NOT_OFFERED,
+            "{colour} ist keine der Farben, die alo OS anbietet — wählen Sie eine davon",
+        )]);
+        let said = Accent::of_colour(Colour::of(0x7f, 0x4a, 0x2d))
+            .unwrap_err()
+            .said(&strings);
+        assert!(said.is_translated(), "{said}");
+        assert!(said.text().starts_with("#7F4A2D"), "{said}");
     }
 
     /// A machine that was never given this crate's words still refuses exactly

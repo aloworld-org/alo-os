@@ -25,6 +25,20 @@
 //! screen` in the middle of it would answer [`crate::Said::is_translated`] with
 //! `true`, so nothing would mark it, nothing would count it, and the first
 //! person to find out would be the person reading it.
+//!
+//! # And a gap can hold more than one word
+//!
+//! A chord is the case: `Super+Bild ↑` is the notation every desktop writes a
+//! shortcut in, holding a name for each key, and no translator is ever handed
+//! it whole. There is no single place its words came from, so
+//! [`Filling::and_composed`] takes the list — and *where did the words in this
+//! gap come from* has a list for an answer everywhere, which is what lets a
+//! clause with a clause inside it carry both.
+//!
+//! The gap that is **sometimes** a word needs nothing new. A destination that
+//! is a host somebody's verb named, a key that prints `Q`, a window known only
+//! by its identifier: each is a word or it is data, and a caller that knows
+//! which puts it in through [`Filling::and_said`] or through [`Filling::and`].
 
 use crate::said::{CameFrom, Said};
 
@@ -35,9 +49,11 @@ struct Given {
     name: String,
     /// What goes in it.
     text: String,
-    /// Where the text came from, when the text is itself a string somebody
-    /// translates. `None` for data, which is the ordinary case.
-    came_from: Option<CameFrom>,
+    /// Where the words in the text came from, one entry for each piece of it
+    /// that is itself a string somebody translates. Empty for data, which is
+    /// the ordinary case; one entry for a clause the vocabulary said; more than
+    /// one for a clause composed out of several.
+    came_from: Vec<CameFrom>,
 }
 
 /// The values that go into a sentence's gaps.
@@ -65,7 +81,7 @@ impl Filling {
     /// which the reader looked at first.
     #[must_use]
     pub fn and(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
-        self.put(name.into(), value.into(), None);
+        self.put(name.into(), value.into(), Vec::new());
         self
     }
 
@@ -77,11 +93,32 @@ impl Filling {
     /// a sentence is only as translated as its least translated piece.
     #[must_use]
     pub fn and_said(mut self, name: impl Into<String>, said: &Said) -> Self {
-        self.put(
-            name.into(),
-            said.text().to_owned(),
-            Some(said.came_from().clone()),
-        );
+        self.put(name.into(), said.text().to_owned(), everywhere_from(said));
+        self
+    }
+
+    /// Another value, composed out of the things this crate said to make it.
+    ///
+    /// The text is the composer's — a `+` between the names of the keys in a
+    /// chord is notation and not a string — and what is kept beside it is where
+    /// **every** piece's words came from. So a sentence with a chord in it is
+    /// only as translated as the least translated key in that chord, which is
+    /// the rule [`Filling::and_said`] carries for one piece, carried for
+    /// several.
+    ///
+    /// **Passing no pieces says there were no words in it**, which is
+    /// [`Filling::and`] said a longer way. A caller composing out of a list
+    /// that turned out to be empty gets the honest answer rather than a
+    /// provenance invented to fill the argument.
+    #[must_use]
+    pub fn and_composed(
+        mut self,
+        name: impl Into<String>,
+        text: impl Into<String>,
+        of: &[Said],
+    ) -> Self {
+        let came_from = of.iter().flat_map(everywhere_from).collect();
+        self.put(name.into(), text.into(), came_from);
         self
     }
 
@@ -91,11 +128,19 @@ impl Filling {
         self.given(name).map(|given| given.text.as_str())
     }
 
-    /// Where the value for this gap came from, when it came from the vocabulary
-    /// rather than from a caller holding a piece of data.
+    /// Where the words in this gap's value came from, one entry for each piece
+    /// of it that came from the vocabulary rather than from a caller holding a
+    /// piece of data.
+    ///
+    /// Empty when the gap holds data, and empty for a gap nothing was given
+    /// for — in both cases for the same reason, which is that there are no
+    /// words in it whose language anybody could be wrong about.
     #[must_use]
-    pub fn came_from(&self, name: &str) -> Option<&CameFrom> {
-        self.given(name).and_then(|given| given.came_from.as_ref())
+    pub fn came_from(&self, name: &str) -> &[CameFrom] {
+        match self.given(name) {
+            Some(given) => &given.came_from,
+            None => &[],
+        }
     }
 
     /// Every name a value was given for.
@@ -119,7 +164,7 @@ impl Filling {
     }
 
     /// Put a value in, replacing whatever was under that name.
-    fn put(&mut self, name: String, text: String, came_from: Option<CameFrom>) {
+    fn put(&mut self, name: String, text: String, came_from: Vec<CameFrom>) {
         self.values.retain(|already| already.name != name);
         self.values.push(Given {
             name,
@@ -127,6 +172,22 @@ impl Filling {
             came_from,
         });
     }
+}
+
+/// Everywhere the words of one answer came from: the sentence itself, and every
+/// word already put into one of its gaps.
+///
+/// The second half is what makes the rule hold at any depth. A clause with a
+/// clause inside it stopped being hypothetical as soon as two crates worded
+/// something between them — `alo-egress` puts a place inside a refusal, and a
+/// shell will one day put that refusal inside a line of its own — and keeping
+/// only the outer provenance would report the innermost English as translated.
+/// That is the failure this whole file exists to prevent, one level further in.
+fn everywhere_from(said: &Said) -> Vec<CameFrom> {
+    let mut all = Vec::with_capacity(1 + said.gaps_came_from().len());
+    all.push(said.came_from().clone());
+    all.extend(said.gaps_came_from().iter().cloned());
+    all
 }
 
 #[cfg(test)]
@@ -178,8 +239,8 @@ mod tests {
     fn a_value_that_is_data_came_from_nowhere() {
         let filling = Filling::of("path", "/home/ada/notes");
         assert_eq!(filling.value("path"), Some("/home/ada/notes"));
-        assert_eq!(filling.came_from("path"), None);
-        assert_eq!(filling.came_from("nothing-of-that-name"), None);
+        assert!(filling.came_from("path").is_empty());
+        assert!(filling.came_from("nothing-of-that-name").is_empty());
     }
 
     /// A gap filled with something this crate said keeps where that came from,
@@ -200,9 +261,9 @@ mod tests {
         );
         assert!(matches!(
             filling.came_from("where"),
-            Some(&CameFrom::Translation(_))
+            [CameFrom::Translation(_)]
         ));
-        assert_eq!(filling.came_from("application"), None);
+        assert!(filling.came_from("application").is_empty());
     }
 
     /// A name given twice keeps the last value **and the last provenance**. A
@@ -212,11 +273,63 @@ mod tests {
     fn a_word_replaced_by_data_stops_carrying_a_language() {
         let said = Said::new("the left half".to_owned(), CameFrom::TheSource, Vec::new());
         let filling = Filling::of("where", "left_half").and_said("where", &said);
-        assert_eq!(filling.came_from("where"), Some(&CameFrom::TheSource));
+        assert_eq!(filling.came_from("where"), [CameFrom::TheSource]);
 
         let back = filling.and("where", "left_half");
         assert_eq!(back.value("where"), Some("left_half"));
-        assert_eq!(back.came_from("where"), None);
+        assert!(back.came_from("where").is_empty());
         assert_eq!(back.names(), ["where"]);
+    }
+
+    /// **A clause with a clause inside it carries both.** Keeping only the
+    /// outer one would say a German refusal was German while the place named in
+    /// the middle of it was still English — the same failure as filling the gap
+    /// with a bare `String`, one level further in.
+    #[test]
+    fn a_word_put_into_a_gap_brings_the_words_that_were_put_into_it() {
+        let german = CameFrom::Translation(crate::Language::written("de").unwrap());
+        let clause = Said::new(
+            "von jemandem, der nicht gesagt hat, wo er läuft".to_owned(),
+            german.clone(),
+            Vec::new(),
+        );
+        let refusal = Said::new(
+            "dieser Rechner lässt nichts hinaus, und von jemandem, der nicht gesagt hat, wo er \
+             läuft ist anderswo"
+                .to_owned(),
+            german.clone(),
+            Vec::new(),
+        )
+        .filled_with(vec![CameFrom::TheSource]);
+
+        // The clause alone brings one provenance; the refusal brings its own
+        // and the untranslated place already inside it.
+        let one = Filling::nothing().and_said("what", &clause);
+        assert_eq!(one.came_from("what"), std::slice::from_ref(&german));
+        let both = Filling::nothing().and_said("what", &refusal);
+        assert_eq!(both.came_from("what"), [german, CameFrom::TheSource]);
+    }
+
+    /// **A composed value is as translated as its least translated piece**, and
+    /// a chord is the case it exists for: the `+` is notation, and each name
+    /// beside it is a string of its own.
+    #[test]
+    fn a_composed_value_carries_where_every_piece_came_from() {
+        let german = CameFrom::Translation(crate::Language::written("de").unwrap());
+        let held = Said::new("Super".to_owned(), german.clone(), Vec::new());
+        let pressed = Said::new("Page Up".to_owned(), CameFrom::TheSource, Vec::new());
+        let filling = Filling::nothing().and_composed("chord", "Super+Page Up", &[held, pressed]);
+        assert_eq!(filling.value("chord"), Some("Super+Page Up"));
+        assert_eq!(filling.came_from("chord"), [german, CameFrom::TheSource]);
+    }
+
+    /// **A composed value made of no words is data.** A caller whose list of
+    /// pieces turned out empty is told the truth about it rather than handed a
+    /// provenance invented to fill the argument.
+    #[test]
+    fn a_composed_value_with_no_words_in_it_is_data() {
+        let filling = Filling::nothing().and_composed("chord", "Super+Q", &[]);
+        assert_eq!(filling.value("chord"), Some("Super+Q"));
+        assert!(filling.came_from("chord").is_empty());
     }
 }
