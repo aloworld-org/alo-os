@@ -2026,6 +2026,26 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   which is owed with the rest of the hardware verification and is item 23a
   below.
 
+- [ ] **24. No rented name reaches a person.** Every word somebody reads is
+  declared in `alo-strings`, which makes this checkable rather than a habit: a
+  test that walks every string every crate registers and fails on the name of
+  anything we rent — Ollama, Flatpak, Wayland, Smithay, systemd, Docker, Podman,
+  bootc, `taffy`, and whatever the list grows to.
+
+  **It passes today, and that is exactly why it is worth writing.** A sweep found
+  zero leaks in the current strings, so this costs nothing now and catches the
+  first one later — which is when somebody, mid-refusal, writes *the Flatpak
+  could not be installed* because that is what the log said.
+
+  The list of names lives beside the test with a line saying why each is on it,
+  so adding a rented engine means adding its name here in the same change. And
+  the test explains itself when it fails: not *forbidden word*, but **a person
+  reading this would have to learn what a Flatpak is**.
+
+  *Documentation is exempt and must be.* `docs/` names these things constantly
+  and should — the rule is about sentences a person meets, not about engineers
+  being unable to say what they built on.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
