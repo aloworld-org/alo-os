@@ -9,9 +9,15 @@ It boots into a native shell you sign into with an alo identity. The
 agents reach the whole machine — the real filesystem, the applications
 you installed, the window in front of you, the printer nobody can
 configure — through one enumerated list of verbs, each proposed before
-it runs and recorded after. And the model those agents run on lives on
-the same machine, so for the organisations who need it, **nothing
-leaves the building at all**.
+it runs and recorded after.
+
+**It can run entirely on your own hardware — and it works just as well if
+you would rather it did not.** A model on this machine, a model on a
+machine you paired with, a provider you added, or no model at all: four
+supported ways, none of them a fallback for another, and nothing moving
+between them without you saying so. For the organisations who need the
+first one, **nothing leaves the building at all** — and the machine says
+so, out loud, whichever one you chose.
 
 The distinguishing claim is narrow and testable:
 

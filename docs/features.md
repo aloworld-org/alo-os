@@ -158,7 +158,29 @@ each portal request is a grant in the sense of ADR 0001.
 - [v1] Policy: which verbs and adapters are permitted, set per machine or per fleet
 - [v1] Screenshot-and-click, marked in the record and disabled by policy by default — last resort only, never the default mechanism
 
-## The AI stack — models on your own hardware
+## The AI stack — four ways to run it, and none is a fallback
+
+**alo OS works well with a model on this machine, with a model on a machine on
+your network, with a provider you added — and with no model at all.** Those are
+four supported configurations, not one real one and three compromises, and
+**“works well” is a measured bar in each of them rather than a hope in three.**
+
+Each has its own bar, and they are not interchangeable:
+
+- **On this machine** — CPU or GPU, and the model must actually drive the verbs,
+  not merely produce sentences (ADR 0007, as corrected).
+- **On a machine on your network** — a deliberate pairing made on both machines,
+  and it is egress: the indicator fires, because *it only went down the
+  corridor* is how a guarantee stops meaning anything (ADR 0003).
+- **With a provider you added** — including alo's own, which says who and where
+  in the same words as anyone else's and gets no exemption (ADR 0008, ADR 0014).
+- **With none at all** — the whole machine still works, the agent's surfaces are
+  absent rather than greyed out, and every capability an agent has is reachable
+  by hand (ADR 0009). A person who never turns it on has a complete computer.
+
+**Nothing moves between them on its own.** A local model that fails does not
+become an API call, a provider that runs out does not become a local model, and
+a machine with the agent off is never talked into turning it on.
 
 - [v0.01] ★ **It runs on the machine you already own.** No graphics card required: the catalogue carries models that answer comfortably on an ordinary business laptop's CPU, and the system picks one (ADR 0007). This is what puts alo OS on the Windows 10 fleet rather than on a few hundred workstations
 - [v0.01] ★ **It works well on a CPU and it works well on a GPU** (ADR 0007, as corrected). Neither is the other's fallback and neither is a “default”: the machine runs a model sized for what it has, and **“works well” is a measured bar in both cases rather than a hope in one of them**. A card buys a larger model and practical fine-tuning — not entry, and not the real version of the product
