@@ -279,12 +279,13 @@ mod tests {
     /// quietly succeeding.
     #[test]
     fn a_provider_the_policy_forbids_is_never_reached_at_all() {
-        // Not `127.0.0.1`: that address *is* this machine as far as
+        // Nothing on `127.0.0.0/8`: the whole of it *is* this machine as far as
         // `Provider::source` is concerned, and a policy has nothing to forbid
         // about a runtime running here. This one is a hosted provider to every
-        // question the policy asks, and a refused connection to every question
-        // the network asks.
-        let provider = hosted("https://127.0.0.2:1");
+        // question the policy asks, and a refused connection with no name
+        // lookup to every question the network asks — so a leak comes back
+        // `Unreachable` rather than hanging.
+        let provider = hosted("https://0.0.0.0:1");
         let key = key();
         for policy in [
             SourcePolicy::InTheBuilding,

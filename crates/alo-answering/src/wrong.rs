@@ -24,13 +24,28 @@
 //!
 //! # And a reason has to be possible where it is said to have happened
 //!
-//! [`WentWrong::KeyNotAccepted`] cannot happen on this machine or on a paired
-//! one, because neither is given a key. A person told *the key for this
-//! provider was not accepted* about their own machine would go looking for a
-//! key that does not exist — which is exactly the confusion
-//! `alo-models`' *needs a key* and *key not accepted* pair was written to
-//! prevent. So it is refused where it is impossible, at the moment the failure
-//! is reported rather than at the moment it is shown.
+//! [`WentWrong::KeyNotAccepted`] cannot happen on a paired machine, because
+//! nothing in this repository reaches one at all, let alone with a key. A
+//! person told *the key for this provider was not accepted* about a machine in
+//! the next room would go looking for a key that does not exist — which is
+//! exactly the confusion `alo-models`' *needs a key* and *key not accepted*
+//! pair was written to prevent. So it is refused where it is impossible, at the
+//! moment the failure is reported rather than at the moment it is shown.
+//!
+//! **This machine used to be on that list and no longer is, and the reason is
+//! item 18b.** A key was impossible here while the only thing on this machine
+//! that could answer was the runtime alo OS ships, which is never given one.
+//! Since a person can point alo OS at an OpenAI-compatible service they run
+//! themselves — vLLM started with `--api-key`, and it is `InferenceSource::
+//! ThisMachine` because nothing leaves — a refused key here is an ordinary
+//! thing that really happens, and refusing to report it would send somebody to
+//! look at a service that is working for a key that is wrong.
+//!
+//! What kept the runtime's half of the guarantee is not this check: it is that
+//! `alo_asking::locally` translates `alo_models::RuntimeError` into this list
+//! and has no arm that can produce [`WentWrong::KeyNotAccepted`] at all, which
+//! is a test in that file. A guarantee carried by the absence of a branch is
+//! the stronger of the two, and it is where the runtime path actually is.
 
 use alo_models::InferenceSource;
 
@@ -65,7 +80,9 @@ pub enum WentWrong {
     /// The model itself was not there to answer: the weights are not on this
     /// machine any more, or the provider no longer offers it.
     NoModelThere,
-    /// The key was refused. Only a hosted provider can do this.
+    /// The key was refused. Only somewhere that was given a key can do this,
+    /// which is a hosted provider or a service on this machine that somebody
+    /// configured one for.
     KeyNotAccepted,
     /// The address answered by sending this machine somewhere else, and the
     /// question was not carried to an address nobody agreed to.
@@ -95,11 +112,13 @@ impl WentWrong {
     /// Whether this is something that could have happened at this place.
     ///
     /// Everything can happen everywhere except being refused a key, which
-    /// needs somewhere that was given one.
+    /// needs somewhere that was given one — and the one place in ADR 0008 that
+    /// nothing here can give a key to is a machine on this network, because
+    /// nothing here reaches one at all.
     #[must_use]
     pub fn can_happen(&self, source: &InferenceSource) -> bool {
         match self {
-            Self::KeyNotAccepted => matches!(source, InferenceSource::Hosted { .. }),
+            Self::KeyNotAccepted => !matches!(source, InferenceSource::PairedMachine { .. }),
             Self::NothingAnswered
             | Self::TookTooLong
             | Self::NothingUsable
@@ -131,8 +150,9 @@ impl WentWrong {
 pub enum NotWhatFailed {
     /// A key was refused somewhere that is never given one.
     #[error(
-        "only a hosted provider is given a key, so a question answered on this machine or on a \
-         paired one cannot have been refused for one — report what actually went wrong"
+        "nothing in this repository reaches a machine on this network, let alone with a key, so a \
+         question answered on a paired one cannot have been refused for one — report what actually \
+         went wrong"
     )]
     NoKeyThere,
 }
@@ -162,19 +182,36 @@ mod tests {
         }
     }
 
-    /// **A person told their own machine refused their key would go looking for
-    /// a key that does not exist.** The two sentences about keys are the pair
-    /// `alo-models` already found people confuse, so the impossible one is
-    /// refused where it is reported rather than corrected where it is shown.
+    /// **A person told a machine in the next room refused their key would go
+    /// looking for a key that does not exist.** The two sentences about keys
+    /// are the pair `alo-models` already found people confuse, so the
+    /// impossible one is refused where it is reported rather than corrected
+    /// where it is shown.
     #[test]
-    fn a_key_cannot_have_been_refused_where_no_key_is_ever_sent() {
-        for source in [here(), paired()] {
-            assert!(!WentWrong::KeyNotAccepted.can_happen(&source), "{source:?}");
-            assert_eq!(
-                WentWrong::KeyNotAccepted.checked(&source),
-                Err(NotWhatFailed::NoKeyThere)
-            );
-        }
+    fn a_key_cannot_have_been_refused_where_nothing_can_send_one() {
+        assert!(!WentWrong::KeyNotAccepted.can_happen(&paired()));
+        assert_eq!(
+            WentWrong::KeyNotAccepted.checked(&paired()),
+            Err(NotWhatFailed::NoKeyThere)
+        );
+    }
+
+    /// **And this machine is not that place, since item 18b.** A service
+    /// somebody runs on their own machine — vLLM started with `--api-key` — is
+    /// `InferenceSource::ThisMachine` because nothing leaves, and it really can
+    /// refuse a key. Reporting that as something else would send a person to
+    /// look at a service that is working.
+    ///
+    /// The runtime alo OS ships is still never given a key, and what keeps that
+    /// true is `alo_asking::locally`, which has no arm that can produce this
+    /// reason at all.
+    #[test]
+    fn a_service_on_this_machine_can_refuse_a_key_and_say_so() {
+        assert!(WentWrong::KeyNotAccepted.can_happen(&here()));
+        assert_eq!(
+            WentWrong::KeyNotAccepted.checked(&here()),
+            Ok(WentWrong::KeyNotAccepted)
+        );
         assert!(WentWrong::KeyNotAccepted.can_happen(&hosted()));
     }
 

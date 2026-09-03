@@ -66,7 +66,7 @@ its empty one:
 **Why this shape rather than one box.** The rule "a tick means done on real
 hardware" is right and is not being weakened — but with one box per line it made
 this file report **one done item out of eighty** while thirteen crates and
-1,128 passing tests sat underneath it — fourteen crates and 1,178 now. That is not honesty; it is a different
+1,128 passing tests sat underneath it — fourteen crates and 1,183 now. That is not honesty; it is a different
 inaccuracy, and somebody reading it would conclude nothing had been built. Two
 boxes tell the truth twice: what is finished, and what is still owed to a
 machine nobody has yet plugged in.
@@ -161,10 +161,16 @@ compositor is not required for, which is why it runs unbroken.
         three of the ADR's places that this repository can reach are
         reachable**: `to_this_machine` puts the same question to the model
         alo OS ships, with no indicator, no departure and no rule to ask,
-        because nothing on that path goes anywhere. Two doors that divide on
-        law 1 rather than on what speaks at the far end, and each refuses a
-        permission the other one is behind. 57 tests, most of them against a
-        stub on a real socket or a stub of the runtime trait
+        because nothing on that path goes anywhere. Since item 18b a third
+        door, `to_a_service_on_this_machine`, reaches an OpenAI-compatible
+        service somebody runs here themselves — vLLM, llama.cpp's server,
+        LM Studio — which is this machine and not a provider, and which
+        **cannot be pointed anywhere else**: the door with no indicator on it
+        takes a value that exists only for an address `alo-models` calls this
+        machine. Three doors that divide on law 1 rather than on what speaks
+        at the far end, and each refuses a permission another one is behind.
+        73 tests, most of them against a stub on a real socket or a stub of
+        the runtime trait
   - [ ] **On the machine.**
         a provider somebody pays for, answering a real question with a real
         key, and a real model runtime answering one on this machine — neither
@@ -224,7 +230,13 @@ compositor is not required for, which is why it runs unbroken.
   - [x] **The code.**
         `alo-models` — the provider, the key held as a keyring handle and
         never in the record, testing it before it is saved, and every
-        refusal about any of the three readable in the reader's own language
+        refusal about any of the three readable in the reader's own language.
+        Since item 18b **"https required off this machine" is true rather
+        than approximately true**: `address.rs` reads the host out of the
+        address and matches it whole, so `localhost.attacker.example` and
+        `127.0.0.1@attacker.example` are somewhere else — they were this
+        machine to a prefix check, which meant an unencrypted connection
+        carrying a key, and an answer that claimed never to have left
   - [ ] **On the machine.**
         the Settings panel to type it into
 

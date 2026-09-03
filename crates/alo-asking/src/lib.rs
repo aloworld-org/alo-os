@@ -121,8 +121,13 @@ pub mod asked;
 pub mod asking;
 pub mod hosted;
 pub mod locally;
+// The wire, and nothing in it is anybody else's to call: a public function that
+// puts a question on a socket is precisely what this crate's guarantees are
+// about. `openai.rs` has the reasoning.
+mod openai;
 pub mod question;
 pub mod refusing;
+pub mod served;
 pub mod unanswered;
 pub mod words;
 
@@ -135,5 +140,6 @@ pub use asking::Asking;
 pub use hosted::Hosted;
 pub use question::{NotAQuestion, Question};
 pub use refusing::{Miswired, NotAnswered, NotAsked};
+pub use served::Served;
 pub use unanswered::DidNotAnswer;
 pub use words::{EVERY_WORD, Word, WordsError, asking_words, declare_into};

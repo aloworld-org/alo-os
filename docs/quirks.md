@@ -446,11 +446,11 @@ cannot use, which is what it is.
 
 ### Loopback is taken at face value, and one thing can therefore lie
 **Version:** the whole of this repository as of 2026-09-03 — `alo-models`'
-`Provider::source`, `alo-egress`' `Leaving::asking` and `alo-asking`'s two
+`Provider::source`, `alo-egress`' `Leaving::asking` and `alo-asking`'s three
 doors. Reasoned rather than observed: there is nothing to observe, because it is
 what the code believes rather than what a service does.
-**Behaviour:** `Provider::source` answers `InferenceSource::ThisMachine` for any
-address on `127.0.0.1`, `localhost` or `::1`, and everything downstream follows:
+**Behaviour:** `Provider::source` answers `InferenceSource::ThisMachine` for a
+loopback address, and everything downstream follows:
 nothing leaves, law 1 shows nothing, the answer says *on this machine*, and
 `SourcePolicy::ThisMachineOnly` permits it. That is right for a runtime and for
 a service somebody runs on their own machine. It is **wrong for a proxy** — a
@@ -466,4 +466,31 @@ network boundary**, which is a Linux item in `docs/autonomy/QUEUE.md` and is
 where law 1's measurement actually happens: a proxy's own connection leaves the
 machine, whatever this repository believed about the socket in front of it. Law
 2 is what keeps the hole small — an agent cannot start the proxy.
+
+**What this entry did not cover, and now does not need to:** *whether an address
+is loopback at all* was decided by a prefix match until item 18b, so
+`http://localhost.attacker.example` and `http://127.0.0.1@attacker.example/`
+were this machine to every type here. That was a hole rather than a quirk and it
+is fixed — `alo_models::address` parses the host — but it is worth recording
+that the two questions look alike and are not: *is this loopback* is answerable,
+and *is what is listening on loopback honest* is the one above.
+**Date:** 2026-09-03
+
+### Two addresses that really are this machine are treated as somewhere else
+**Version:** `alo-models`' `address.rs` as of 2026-09-03. Reasoned rather than
+observed, and both cases were checked against `std::net`'s parsers rather than
+recalled.
+**Behaviour:** `http://127.1` is loopback to curl, to browsers and to most of
+libc, which read a short-form IPv4 address; `std::net::Ipv4Addr` refuses it, so
+alo OS reads `127.1` as a **name**, which is not `localhost`, and therefore as
+somewhere else. `[::ffff:127.0.0.1]` genuinely reaches loopback and
+`Ipv6Addr::is_loopback` answers `false` for it, with the same result.
+**Our response:** left as it is, because the consequences all fall the safe way.
+An address alo OS reads as somewhere else is refused over `http://` (so no key
+travels in clear), is shown on the indicator if it is asked at all, and cannot
+become an `alo_asking::Served`. The cost is that a person who typed `127.1` is
+told to write the address in full, which is a sentence about a keystroke; the
+cost of guessing the other way is a question leaving with the indicator quiet.
+Handling short-form IPv4 would mean writing an address parser more permissive
+than the standard library's, in the one file where being wrong is law 1 failing.
 **Date:** 2026-09-03

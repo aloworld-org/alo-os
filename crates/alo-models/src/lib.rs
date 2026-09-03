@@ -20,6 +20,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+mod address;
 pub mod catalogue;
 pub mod ollama;
 pub mod provider;

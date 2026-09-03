@@ -124,7 +124,7 @@ impl Asking<'_> {
             // which is the half of ADR 0008 that was missing from it until
             // somebody pointed out that it read as though only one direction
             // mattered.
-            InferenceSource::Hosted { .. } => return Err(Miswired::NotTheRuntime.into()),
+            InferenceSource::Hosted { .. } => return Err(Miswired::NotOnThisMachine.into()),
             InferenceSource::PairedMachine { .. } => {
                 return Err(Miswired::NoPathToAPairedMachine.into());
             }
@@ -164,6 +164,13 @@ impl Asking<'_> {
 /// they are still mapped rather than left to a wildcard: a runtime that answered
 /// a question with *there is not enough disk* has answered with something that
 /// is not an answer, which is exactly what `NothingUsable` says.
+///
+/// **And no arm of it can produce `WentWrong::KeyNotAccepted`**, which is where
+/// *the runtime is never given a key* now lives. `alo-answering` used to refuse
+/// that reason for `InferenceSource::ThisMachine` outright, and stopped when
+/// item 18b gave a person a way to run a service here that has a key of its own
+/// — so the guarantee moved to the one place it is still total. It is a test
+/// below rather than this sentence.
 fn what_went_wrong(why: RuntimeError) -> WentWrong {
     match why {
         RuntimeError::Unreachable => WentWrong::NothingAnswered,
@@ -383,13 +390,13 @@ mod tests {
     #[test]
     fn a_permission_for_somewhere_else_asks_the_runtime_nothing() {
         for (permitted_place, expected) in [
-            (mistral_source(), Miswired::NotTheRuntime),
+            (mistral_source(), Miswired::NotOnThisMachine),
             (
                 InferenceSource::Hosted {
                     provider: "alo".to_owned(),
                     region: Region::Unknown,
                 },
-                Miswired::NotTheRuntime,
+                Miswired::NotOnThisMachine,
             ),
             (
                 InferenceSource::PairedMachine {
@@ -436,6 +443,37 @@ mod tests {
         let said = did_not_answer(not_answered).unwrap().said(&strings);
         assert!(said.is_translated(), "{said}");
         assert_eq!(said.text(), "auf diesem Rechner hat nicht geantwortet");
+    }
+
+    /// **The runtime alo OS ships is never given a key, and this is where that
+    /// is now true.** `alo-answering` refused
+    /// `WentWrong::KeyNotAccepted` on this machine outright until item 18b made
+    /// a key here possible for a service somebody else runs; what keeps the
+    /// runtime's half of it is that no `RuntimeError` maps to that reason, and
+    /// the list is walked so a variant added later cannot quietly acquire one.
+    ///
+    /// A person told *the key for this provider was not accepted* about the
+    /// model alo OS ships would go looking for a key that does not exist.
+    #[test]
+    fn nothing_the_runtime_can_say_becomes_a_refused_key() {
+        for why in [
+            RuntimeError::Unreachable,
+            RuntimeError::TookTooLong,
+            RuntimeError::Unusable,
+            RuntimeError::DownloadIncomplete,
+            RuntimeError::NotInstalled("a-model".to_owned()),
+            RuntimeError::NotOffered("a-model".to_owned()),
+            RuntimeError::NotEnoughDisk {
+                needed_bytes: 5,
+                free_bytes: 1,
+            },
+        ] {
+            assert_ne!(
+                what_went_wrong(why.clone()),
+                WentWrong::KeyNotAccepted,
+                "{why:?}"
+            );
+        }
     }
 
     /// The passing twin of the `compile_fail` on this door: one permission is

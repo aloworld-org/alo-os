@@ -4137,3 +4137,113 @@ No half was ticked that was not whole, and no machine half was touched.
 - **A `ModelRuntime` implementor now has seven methods.** A second implementation
   (vLLM, at v1) is a bigger job than it was this morning by exactly one method,
   which is the trait doing its job rather than a cost.
+
+---
+
+## 2026-09-03 — iteration 36: the door with no indicator on it, and the rule it stood on
+
+**Item 18b — an OpenAI-compatible service somebody runs on this machine.**
+`alo-asking` gained a third door: `served.rs` (`Served`, and
+`Asking::to_a_service_on_this_machine`), plus `openai.rs`, which is the wire
+lifted out of `hosted.rs` so that two things speaking one convention are not two
+renderings of it. `alo-models` gained `address.rs`, which is the security half
+and was not in the item. `alo-answering` narrowed one refusal. 64 unit tests in
+`alo-asking` (was 48), 103 in `alo-models` (was 96), 2 new integration tests
+through `alo-record` and the indicator, 1 new `compile_fail` doctest checked by
+unmarking it (E0382, not a typo). **1183 tests and 40 doctests across the
+workspace** (was 1157 and 39), `cargo fmt` clean,
+`cargo clippy --workspace --all-targets` clean with zero warnings.
+
+### The item named the danger, and the danger was one level below where it pointed
+
+The item's warning was right: this door reaches a socket **without** an
+`alo_egress::Departing`, which is a second road in the crate whose whole design
+is that there is one. A `Served` pointed at `https://api.mistral.ai` would be a
+way to send somebody's question to a provider with the indicator quiet. So the
+address is policed at construction — `Served::at` refuses anything
+`alo_models::Provider::source` does not call this machine, and there is no other
+constructor. *What may be reached without an indicator is decided by whether a
+value exists*, which is `alo_files::Touching` and `alo_egress::Departing`'s shape
+arriving at the one path in this crate that had no token of its own.
+
+Writing that check meant reading the rule it delegates to, and **the rule did not
+hold.** `Provider::source` asked whether the address *started with* `127.0.0.1`,
+`localhost` or `::1` once the scheme was stripped. So:
+
+| Address | Was | Is |
+|---|---|---|
+| `http://localhost.attacker.example` | this machine | somewhere else |
+| `http://127.0.0.1.attacker.example` | this machine | somewhere else |
+| `http://127.0.0.1@attacker.example/` | this machine | somewhere else |
+| `http://127.0.0.2:8000` | somewhere else | this machine |
+
+The first three were already wrong before this item: each could be added as a
+provider over unencrypted `http://` **with a key attached**, because
+`Provider::checked` permits http only to this machine and believed them. Once
+this door existed they would also have been a question leaving with the
+indicator quiet, which is law 1 failing in the exact manner law 1 exists to
+prevent. `alo_models::address` now takes the authority apart the way a URL is
+written — scheme, then up to the first `/`, `?` or `#`, then whatever follows the
+**last** `@`, then the host with its port off — and matches the host whole.
+`is_loopback` is gone.
+
+**The fix is in `alo-models`, not in the new door, and that is the decision.** A
+loopback check written in `alo-asking` would have been a second rule about
+loopback, and two rules about loopback is one machine able to disagree with
+itself about whether a question left. There is one, and the three places that
+rest on it — http being permitted, the indicator being silent, and this door
+opening at all — ask it rather than repeat it.
+
+### Three things this changed that the item did not mention
+
+- **`WentWrong::KeyNotAccepted` is no longer impossible on this machine.**
+  `alo-answering` refused that reason for `InferenceSource::ThisMachine`
+  outright, on the reasoning that only a hosted provider is given a key. A
+  service somebody started with `--api-key` breaks that, and it is *their own
+  machine* — so the refusal narrowed to a paired machine, where nothing in this
+  repository reaches at all. The runtime's half of the guarantee moved to
+  `locally.rs`, where it is total rather than approximate: no arm of
+  `what_went_wrong` can produce that reason, and a test walks every
+  `RuntimeError` to say so. A guarantee carried by the absence of a branch beats
+  one carried by a check that has to keep being true of a whole variant.
+- **`Miswired::NotTheRuntime` is now `NotOnThisMachine`.** One variant for both
+  local doors, because what it refuses is the same thing at each — answering here
+  a question somebody chose a provider for — and the old name became false the
+  moment the runtime stopped being the only thing here that can answer. A public
+  surface renamed rather than duplicated; nothing outside this repository builds
+  against it yet.
+- **`127.0.0.2` moved sides**, which broke two test fixtures that used it to mean
+  *a hosted provider nothing is listening on*. They are `0.0.0.0:1` now — still
+  no name lookup, still a refused connection, and no longer inside `127.0.0.0/8`.
+
+### What was deliberately not built
+
+A `ModelRuntime` implementation for such a service, which is item 18a's answer
+kept: alo OS cannot list, fetch, load or remove models on something it did not
+install, so it would be four methods that only refuse. `Served` takes an address
+and a key, and manages nothing.
+
+### `ROADMAP.md` moved, and two lines were written into
+
+- **★ Or use an API instead** — the code half now names the third door and says
+  what makes it safe, and the test count on that line went from 57 to 73.
+- **Add your own provider in Settings** — its code half claimed *https required
+  off this machine*, which was true of the sentence and not of the check. It now
+  records why that is true rather than approximately true.
+
+No half was ticked that was not whole, and no machine half was touched.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 19**, a turn end to end and headless. All
+  three of ADR 0008's reachable places now have a door, so the model half of that
+  turn is a call rather than a gap.
+- **Read the rule before depending on it.** This item's own check would have
+  passed against a broken `Provider::source`, and the queue would have recorded a
+  guarantee that was not there. The tests that matter here assert against
+  *addresses*, not against the function.
+- **Nothing here has been run against a real vLLM, llama.cpp server or LM
+  Studio**, on any machine. Everything is a stub on a real socket, and
+  `docs/quirks.md` gained one entry — two addresses that really are this machine
+  and are deliberately treated as somewhere else — which says the same thing
+  about what has not been checked.

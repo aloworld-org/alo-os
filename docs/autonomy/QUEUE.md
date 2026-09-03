@@ -41,10 +41,13 @@ style the rest should match, and two of its decisions constrain later items.
 below. **`alo-asking` is the only one of them that does anything to the world
 outside this machine**, and it is the only one that reaches five others: it
 holds no decision of its own, and every step it takes is one of theirs, in the
-order they have to happen in. Since item 18a it has **two doors that divide on
-law 1** — one that leaves and one that does not — so the sentence above is
+order they have to happen in. Since item 18b it has **three doors that divide on
+law 1** — one that leaves and two that do not — so the sentence above is
 narrower than it reads: it is the only crate that does anything outside this
-machine, and one of its two doors deliberately does nothing outside it at all.
+machine, and two of its three doors deliberately do nothing outside it at all.
+The address that decides which side a door is on is `alo-models`', asked rather
+than repeated, which is what stops the crate that opens the socket from holding
+an opinion about whether the socket leaves.
 Nothing reaches it, and it deliberately does not
 reach `alo-record` — it hands back the departure instead, which is what keeps
 *the record observes, and is reachable from none of the crates it observes* true
@@ -1536,24 +1539,58 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   is owed with the rest of the hardware verification; `docs/quirks.md` records
   the runtime's two chat APIs and says the same thing about them.
 
-- [ ] **18b. An OpenAI-compatible service somebody runs on this machine.** Cut
+- [x] **18b. An OpenAI-compatible service somebody runs on this machine.** Cut
   from 18a, which answered what it is and did not build it: vLLM, llama.cpp's
   server or LM Studio on loopback, which alo OS did not install and cannot
   manage. It is `InferenceSource::ThisMachine` and causes no egress, so it
   belongs behind the local door — and it is not a `ModelRuntime`, so
-  `to_this_machine` as it stands cannot carry it.
+  `to_this_machine` as it stands could not carry it. **A third door**:
+  `crates/alo-asking/served.rs` (`Served`, and
+  `Asking::to_a_service_on_this_machine`) and `openai.rs`, which is the wire
+  moved out of `hosted.rs` so that two things speaking one convention cannot
+  become two renderings of it. `crates/alo-models/address.rs` is new and is the
+  security half. 64 unit tests in `alo-asking` (was 48), 103 in `alo-models`
+  (was 96), 2 new integration tests through `alo-record` and the indicator, and
+  1 new `compile_fail` doctest. **1183 tests and 40 doctests across the
+  workspace** (was 1157 and 39), clippy clean.
 
-  **The dangerous part is the reason it is its own item.** Whatever carries it
-  reaches `hosted.rs`'s request shape without a `Departing`, which is a second
-  road to a socket in the crate whose whole design is that there is one. It must
-  therefore police loopback itself — a `Hosted` pointed at
-  `https://api.mistral.ai` must not become a way to send a question with the
-  indicator quiet — and that check is the item rather than the plumbing around
-  it.
+  **The dangerous part was the reason it was its own item, and it was worse than
+  the item said.** Whatever carries this reaches the request shape without a
+  `Departing`, which is a second road to a socket in the crate whose whole design
+  is that there is one — so `Served::at` refuses any address
+  `alo_models::Provider::source` does not call this machine, and there is no
+  other constructor. **What may be reached without an indicator is decided by
+  whether a value exists**, which is `Touching` and `Departing`'s shape brought
+  to the one path in this crate that had no token of its own.
 
-  Ready when somebody wants it. Nothing is blocked on it: a person who has such
-  a service today can add it as a provider and reach it through neither door,
-  which is a hole they can see rather than one that answers wrongly.
+  Then the check it delegates to turned out not to hold. `Provider::source`
+  asked whether the address *started with* `127.0.0.1`, `localhost` or `::1`
+  after the scheme, so `http://localhost.attacker.example`,
+  `http://127.0.0.1.attacker.example` and `http://127.0.0.1@attacker.example/`
+  were all this machine: reachable over unencrypted http **with a key attached**,
+  and — once this door existed — a question leaving with the indicator quiet,
+  which is law 1 failing in the one way law 1 exists to prevent. `address.rs`
+  parses the authority the way a URL is written and matches the host whole;
+  `is_loopback` no longer exists. That is why the fix is in `alo-models` rather
+  than in the new door: **two rules about loopback is one machine able to
+  disagree with itself about whether a question left.**
+
+  Three decisions the next items inherit. **A rule the new code depends on is
+  read before it is depended on** — this item's own check would have passed
+  against a broken one, and the queue would have recorded a guarantee that was
+  not there. **An address that cannot be parsed is somewhere else**, so every
+  unreadable case falls towards *refused over http, shown on the indicator, not
+  carried by the local door*; `http://127.1` is the cost and `docs/quirks.md`
+  says why that is the right way round. **`WentWrong::KeyNotAccepted` is no
+  longer impossible on this machine** — a service somebody started with
+  `--api-key` really can refuse one — so `alo-answering` narrowed that refusal to
+  a paired machine, and *the runtime is never given a key* moved to where it is
+  still total: `locally.rs` has no arm that can produce that reason, and a test
+  walks every `RuntimeError` to say so.
+
+  Built and unit tested against a stub on a real socket. **Not run against a real
+  vLLM, llama.cpp server or LM Studio on any machine**, which is owed with the
+  rest of the hardware verification.
 
 - [ ] **19. A turn, end to end, headless.** The item that makes the other twelve
   crates one system: invocation → `alo-context` for what was offered →

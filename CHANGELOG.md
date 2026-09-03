@@ -12,6 +12,38 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **An address that only looked like your own machine is no longer trusted as
+  one.** alo OS decided whether an address was on your machine by checking how
+  it *started*, so `http://localhost.attacker.example`,
+  `http://127.0.0.1.attacker.example` and `http://127.0.0.1@attacker.example/`
+  all counted as your own computer. Any of the three could be added as a
+  provider over an unencrypted connection, with your key attached — and a
+  question sent to one would have left your machine **without appearing on the
+  indicator**, which is the one thing this system exists to make impossible. The
+  address is now read properly: the host is taken out of it and matched whole,
+  and the whole of `127.x.x.x` counts rather than only `127.0.0.1`.
+
+  One thing got stricter as a side effect: an address written in the short form
+  `http://127.1` is now treated as somewhere else, so alo OS asks you to write it
+  out in full. `docs/quirks.md` says why that is the right way round to be wrong.
+
+- **A question can now be answered by an OpenAI-compatible service you run on
+  your own machine** — vLLM, llama.cpp's server, LM Studio — and it counts as
+  your machine, not as a provider. Nothing leaves, the indicator stays quiet,
+  and the answer says *on this machine*, because that is what actually happened.
+  alo OS does not manage such a service: it did not install it, and it will not
+  pretend to list or download models on your behalf.
+
+  **It will not carry your question to an address that is not your machine.**
+  That is a refusal in the type rather than a check somebody has to remember: the
+  door with no indicator on it cannot be pointed at a provider, so the one way a
+  question could have left unseen does not exist. An address anywhere else is
+  sent back to be added as a provider, where you watch it go.
+
+  If your service was started with a key of its own and the key is wrong, you are
+  now told that is what happened, rather than being told nothing answered. The
+  model alo OS ships is still never given a key and still cannot report one.
+
 - **A question can now be answered by the model on your own machine, and that
   path sends nothing anywhere.** The other half of the change below: alo OS
   could ask a provider you added, and could not ask the model it ships. Now it

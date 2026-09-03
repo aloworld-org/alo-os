@@ -309,9 +309,14 @@ mod tests {
 
     /// A refusal the machine could not have made is refused where it is
     /// reported: the door into this crate is the only place that can catch it.
+    ///
+    /// A machine on this network is the place that cannot have refused a key,
+    /// because nothing in this repository reaches one. This machine was on that
+    /// list until item 18b gave a person a way to run a service here that has
+    /// a key of their own — `wrong.rs` has the reasoning.
     #[test]
-    fn a_key_refused_on_this_machine_never_becomes_a_failure_at_all() {
-        let refused = Answering::chosen(here(), &SourcePolicy::Anywhere)
+    fn a_key_refused_where_nothing_can_send_one_never_becomes_a_failure_at_all() {
+        let refused = Answering::chosen(paired(), &SourcePolicy::Anywhere)
             .unwrap()
             .did_not_answer(WentWrong::KeyNotAccepted, &[], &SourcePolicy::Anywhere)
             .unwrap_err();

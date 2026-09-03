@@ -1,9 +1,13 @@
 //! Why a question was not asked, or why what came back is not an answer.
 //!
-//! # Two doors, two lists, and the shorter one is the whole of law 1
+//! # Three doors, two lists, and the shorter one is the whole of law 1
 //!
 //! [`NotAsked`] is what comes back from [`crate::Asking::to_a_provider`] and
-//! [`NotAnswered`] from [`crate::Asking::to_this_machine`]. The second is the
+//! [`NotAnswered`] from the two doors that answer on this machine —
+//! [`crate::Asking::to_this_machine`] and
+//! [`crate::Asking::to_a_service_on_this_machine`]. **The lists divide on law 1
+//! rather than on how many doors there are**: one list for the door where
+//! something leaves, one for the doors where nothing does. The second is the
 //! first with law 1's two refusals taken out of it — no
 //! [`CannotBeShown`](NotAsked::CannotBeShown), no
 //! [`HeldBack`](NotAsked::HeldBack) — because a question answered on this
@@ -162,16 +166,22 @@ impl From<NotWhatFailed> for NotAnswered {
 /// this file. Its reader is whoever wired a question to somewhere, and every one
 /// of these says what to do about it rather than naming a state.
 ///
-/// # One list for two doors, and none of it says *ask somewhere else instead*
+/// # One list for three doors, and none of it says *ask somewhere else instead*
 ///
 /// Three of these are a permission arriving at the wrong door, and each names
 /// **the door the permission's own place is behind** — never a different place.
 /// The distinction is ADR 0008's: sending a question to the door the person
-/// already chose is routing, and sending it to the other one because this one
+/// already chose is routing, and sending it to another one because this one
 /// refused is the substitution that ADR forbids in both directions. A refusal
 /// that said *ask the runtime instead* about a paired machine would be exactly
 /// that mistake worded as advice, and until item 18a there was no local path for
 /// it to be advice towards.
+///
+/// [`ReachesOffThisMachine`](Miswired::ReachesOffThisMachine) is the odd one and
+/// is not about a permission at all: it refuses an *address*, before any
+/// question exists to be routed. It still keeps the rule — the door it names is
+/// the one an address anywhere else belongs to, which is the same road law 1
+/// would have made that question take anyway.
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Eq)]
 pub enum Miswired {
     /// The permission names a provider, and it is not this one.
@@ -184,17 +194,36 @@ pub enum Miswired {
     /// The permission names this machine, and a provider was asked.
     #[error(
         "this question was permitted to be answered on this machine, which is not a hosted \
-         provider — put it to the runtime with `to_this_machine`, where nothing leaves and there \
-         is nothing to show"
+         provider — put it to the runtime with `to_this_machine`, or to a service running here \
+         with `to_a_service_on_this_machine`, where nothing leaves and there is nothing to show"
     )]
     NotAProvider,
-    /// The permission names a hosted provider, and the runtime was asked.
+    /// The permission names a hosted provider, and something on this machine
+    /// was asked.
+    ///
+    /// One variant for both local doors, because what it refuses is the same
+    /// thing at each: answering a question here that a person chose a provider
+    /// for. It was called `NotTheRuntime` until item 18b, when the runtime
+    /// stopped being the only thing on this machine that can answer.
     #[error(
-        "this question was permitted to go to a hosted provider, so it is not the runtime's to \
+        "this question was permitted to go to a hosted provider, so it is not this machine's to \
          answer — send it there with `to_a_provider`, where law 1 shows it leaving; answering it \
-         here instead would be a smaller model wearing the same face"
+         here instead, on the runtime or on a service somebody runs here, would be a different \
+         model wearing the same face"
     )]
-    NotTheRuntime,
+    NotOnThisMachine,
+    /// The address given for a service on this machine is not on this machine.
+    ///
+    /// **The one refusal here that is not about a permission at all**, and the
+    /// reason `crate::Served` exists as a type. A question carried to this
+    /// address would leave the machine with law 1 having shown nothing, because
+    /// the door that carries it is the one with no indicator in it.
+    #[error(
+        "this address is not on this machine, so a question put to it would leave with nothing on \
+         the indicator — add it as a provider and ask it with `to_a_provider`, which is where an \
+         address anywhere else belongs"
+    )]
+    ReachesOffThisMachine,
     /// The permission names a machine on this network, and neither door goes
     /// there.
     #[error(
@@ -239,7 +268,7 @@ mod tests {
                 .contains("`to_this_machine`")
         );
         assert!(
-            Miswired::NotTheRuntime
+            Miswired::NotOnThisMachine
                 .to_string()
                 .contains("`to_a_provider`")
         );
@@ -247,6 +276,11 @@ mod tests {
             Miswired::NoPathToAPairedMachine
                 .to_string()
                 .contains("no path to one")
+        );
+        assert!(
+            Miswired::ReachesOffThisMachine
+                .to_string()
+                .contains("nothing on the indicator")
         );
         assert_eq!(
             Miswired::from(NotWhatFailed::NoKeyThere).to_string(),
@@ -260,22 +294,39 @@ mod tests {
     /// behind; the one that has no door says so and offers neither.
     #[test]
     fn no_refusal_offers_the_place_the_person_did_not_choose() {
-        // The permission is for this machine, so the runtime is where it goes.
+        // The permission is for this machine, so the two doors on this machine
+        // are where it goes — and a provider is not offered as one of them.
         let local = Miswired::NotAProvider.to_string();
         assert!(local.contains("`to_this_machine`"), "{local}");
+        assert!(local.contains("`to_a_service_on_this_machine`"), "{local}");
         assert!(!local.contains("`to_a_provider`"), "{local}");
 
         // The permission is for a provider, so that is where it goes — and the
         // sentence says outright why answering it here instead would be wrong.
-        let hosted = Miswired::NotTheRuntime.to_string();
+        let hosted = Miswired::NotOnThisMachine.to_string();
         assert!(hosted.contains("`to_a_provider`"), "{hosted}");
         assert!(!hosted.contains("`to_this_machine`"), "{hosted}");
         assert!(hosted.contains("same face"), "{hosted}");
 
-        // And the place with no door offers neither of the other two.
+        // And the place with no door offers none of the other three.
         let paired = Miswired::NoPathToAPairedMachine.to_string();
         assert!(!paired.contains("`to_a_provider`"), "{paired}");
         assert!(!paired.contains("`to_this_machine`"), "{paired}");
         assert!(paired.contains("neither is a substitute"), "{paired}");
+    }
+
+    /// **An address refused for reaching off this machine is sent to the door
+    /// where law 1 would show it**, which is the one road that address was ever
+    /// going to be allowed to take. It is advice towards the rule rather than
+    /// around it.
+    #[test]
+    fn an_address_somewhere_else_is_sent_to_the_door_that_shows_it_leaving() {
+        let elsewhere = Miswired::ReachesOffThisMachine.to_string();
+        assert!(elsewhere.contains("`to_a_provider`"), "{elsewhere}");
+        assert!(!elsewhere.contains("`to_this_machine`"), "{elsewhere}");
+        assert!(
+            !elsewhere.contains("`to_a_service_on_this_machine`"),
+            "{elsewhere}"
+        );
     }
 }

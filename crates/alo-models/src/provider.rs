@@ -21,10 +21,15 @@
 //! it runs, or does not. `api.example.fr` is not evidence of anything, and a
 //! product that inferred a region from a domain name would hand somebody a
 //! reassuring label while putting them in breach.
+//!
+//! Both of the questions this file asks about an *address* — may a key travel to
+//! it over http, and does an answer from it leave this machine — belong to
+//! `address.rs`, asked once and answered in one place.
 
 use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
+use crate::address::is_on_this_machine;
 use crate::source::{InferenceSource, Region};
 use crate::words;
 
@@ -143,7 +148,7 @@ impl Provider {
         // else over http would put the key and the question on the wire in
         // clear, and "it is only our internal network" is how that gets
         // shipped.
-        if endpoint.starts_with("http://") && !is_loopback(endpoint) {
+        if endpoint.starts_with("http://") && !is_on_this_machine(endpoint) {
             return Err(ProviderError::InsecureEndpoint);
         }
         Ok(Self {
@@ -156,9 +161,16 @@ impl Provider {
     }
 
     /// How this provider appears when it answers something (ADR 0008).
+    ///
+    /// **This is the question `alo-asking`'s local door asks**, and the reason
+    /// it asks this rather than a check of its own: a service somebody runs on
+    /// their own machine may be reached without law 1 showing anything, and
+    /// what makes that true is this answer. One rule, in one place, so the
+    /// address a question is carried to cannot be judged one way here and
+    /// another way there.
     #[must_use]
     pub fn source(&self) -> InferenceSource {
-        if is_loopback(&self.endpoint) {
+        if is_on_this_machine(&self.endpoint) {
             return InferenceSource::ThisMachine;
         }
         InferenceSource::Hosted {
@@ -166,17 +178,6 @@ impl Provider {
             region: self.region.clone(),
         }
     }
-}
-
-/// Whether an address points at this machine.
-fn is_loopback(endpoint: &str) -> bool {
-    let host = endpoint
-        .trim_start_matches("https://")
-        .trim_start_matches("http://");
-    host.starts_with("127.0.0.1")
-        || host.starts_with("localhost")
-        || host.starts_with("[::1]")
-        || host.starts_with("::1")
 }
 
 /// The providers configured on this machine.
@@ -285,6 +286,26 @@ mod tests {
         );
     }
 
+    /// **An address that only begins like this machine is not this machine**,
+    /// and the whole of what this file promises about http rests on it: each of
+    /// these was accepted over http, with a key attached, until
+    /// [`crate::address`] started reading the host rather than the first few
+    /// characters of it.
+    #[test]
+    fn an_address_dressed_up_as_this_machine_is_refused_over_http() {
+        for endpoint in [
+            "http://localhost.attacker.example",
+            "http://127.0.0.1.attacker.example/v1",
+            "http://127.0.0.1@attacker.example/",
+        ] {
+            assert_eq!(
+                Provider::checked("Local", endpoint, Region::Unknown, None).unwrap_err(),
+                ProviderError::InsecureEndpoint,
+                "{endpoint}"
+            );
+        }
+    }
+
     /// The region is stated or unknown. `api.example.fr` is not evidence.
     #[test]
     fn a_region_is_never_guessed_from_the_address() {
@@ -300,10 +321,40 @@ mod tests {
     /// answer never leaves, and the indicator must say so.
     #[test]
     fn a_provider_on_this_machine_reports_as_this_machine() {
-        let p =
-            Provider::checked("Local", "http://127.0.0.1:11434", Region::Unknown, None).unwrap();
-        assert_eq!(p.source(), InferenceSource::ThisMachine);
-        assert!(!p.source().causes_egress());
+        for endpoint in [
+            "http://127.0.0.1:11434",
+            "http://localhost:8000/v1",
+            "http://[::1]:8080",
+        ] {
+            let p = Provider::checked("Local", endpoint, Region::Unknown, None).unwrap();
+            assert_eq!(p.source(), InferenceSource::ThisMachine, "{endpoint}");
+            assert!(!p.source().causes_egress(), "{endpoint}");
+        }
+    }
+
+    /// **Law 1's half of the same fix.** An address that reads as local and is
+    /// not must cause an egress that the indicator shows — a provider reported
+    /// as this machine would be a question leaving while a person is shown a
+    /// quiet day, which is the one failure `CLAUDE.md`'s first law is written
+    /// against.
+    #[test]
+    fn an_address_dressed_up_as_this_machine_still_causes_visible_egress() {
+        for endpoint in [
+            "https://localhost.attacker.example",
+            "https://127.0.0.1.attacker.example/v1",
+            "https://127.0.0.1@attacker.example/",
+        ] {
+            let p = Provider::checked("Local", endpoint, eu(), None).unwrap();
+            assert_eq!(
+                p.source(),
+                InferenceSource::Hosted {
+                    provider: "Local".to_owned(),
+                    region: eu(),
+                },
+                "{endpoint}"
+            );
+            assert!(p.source().causes_egress(), "{endpoint}");
+        }
     }
 
     #[test]
