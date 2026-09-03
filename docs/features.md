@@ -213,6 +213,9 @@ a machine with the agent off is never talked into turning it on.
 - [v0.5] A provider that will not say where it runs is reported as **unknown**, never assumed to be nearby — and unknown never satisfies a policy naming a region
 - [v1] Policy over where inference may happen: anywhere, in the building, inside a region **the organisation names**, or this machine alone. We ship the mechanism, never a region of our own (ADR 0004, ADR 0008)
 - [v0.01] Model lifecycle: pull, list, serve, unload, remove; disk accounted honestly
+- [v0.5] ★ **Run a model we never catalogued.** Point alo OS at weights you already have and it runs them. **The catalogue recommends; it does not gate** — its job is stating licences and honest costs so somebody can choose well, never deciding what they may run on hardware they own. A machine where the only models are the ones we approved is a walled garden with a sovereign label on it
+- [v0.5] **The machine warns and then gets out of the way.** A model too large for the memory in this laptop is *said so plainly, once* — and then run anyway if that is what somebody asked for. The honest costs the catalogue states are for deciding with, not for refusing with
+- [v0.5] **What you bring is yours, including its licence.** We state the licence of everything we offer and gate our own catalogue on it. Weights somebody brings themselves come with their own terms and their own responsibility, and alo OS does not pretend to have checked them
 - [v0.5] ★ **Guided fine-tune**: LoRA/QLoRA over a granted folder or a tenant's records, as a flow rather than a toolchain
 - [v0.5] ★ The dataset, the adapter and the resulting weights never leave the machine
 - [v0.5] Model runtime versioned *with* the drivers it needs, so an upgrade cannot break a working stack
@@ -300,8 +303,7 @@ told so at first sign-in. There is no silent enrollment.
 
 **No kernel.** Linux, unmodified — hardware support is where OS projects die and
 we do not fight that battle. **No inference kernels** — we do not compete with
-llama.cpp or vLLM. **No model training from scratch** — we serve and adapt open
-weights. **No general-purpose distribution** — no package manager for the world and
+llama.cpp or vLLM. **No model training toolchain from us** — we serve and adapt open weights, and building a trainer is somebody else's product. **That is a decision about what we build, never a limit on what the machine allows**: a person with the hardware runs whatever training they like on it, with the tools they choose, because it is their machine and their electricity. **No general-purpose distribution** — no package manager for the world and
 no attempt to be Ubuntu; software is installed as sandboxed Flatpaks from
 repositories other people run (ADR 0005), which is how we have applications
 without packaging them. **No third-party device management** — fleet features

@@ -2046,6 +2046,29 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   and should — the rule is about sentences a person meets, not about engineers
   being unable to say what they built on.
 
+- [ ] **25. Weights somebody brought themselves.** `alo-models` can only offer
+  what `data/catalogue.toml` lists, so today the curated list is the only way a
+  model reaches this machine — which makes a walled garden out of a product whose
+  whole claim is *your models, your hardware*. Nobody decided that; it is what a
+  catalogue turns into when nothing sits beside it.
+
+  A model that came from somewhere else needs the same three answers a catalogued
+  one has — where it is, what it costs to run here, and whether it can drive the
+  verbs (item 23) — with two differences that are the point:
+
+  - **The licence is theirs, not ours.** The catalogue's gate exists because we
+    are offering something; weights somebody already has come with their own
+    terms and we do not pretend to have checked them.
+  - **The costs warn rather than refuse.** `runnable_on_cpu` and the memory
+    figures are for deciding with. Say plainly, once, that this model is larger
+    than this machine's memory — then run it if that is the answer, because
+    refusing to try on somebody's own hardware is not a sovereignty product's
+    decision to make.
+
+  What this is not: a training toolchain. `docs/features.md` is explicit that we
+  do not build one, and equally explicit that nothing here stops a person running
+  theirs.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
