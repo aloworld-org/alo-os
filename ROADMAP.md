@@ -84,9 +84,27 @@ explained — and the model that proposed it ran on the customer's own machine.*
 
 One hardware target. No installer, no fleet management, no compatibility list.
 
-**Order.** The AI stack comes first because it needs no kernel work, no image
-pipeline and no certified hardware — it runs on an ordinary Linux box with a
-GPU, and it is useful to `alo-workplace` the day it lands.
+**Order, and why the ticks below are contiguous.** v0.01 divides on exactly one
+question — *does this need a screen?* — and the answer sorts it perfectly:
+
+- **Twelve capabilities need no screen. All twelve have their code finished.**
+- **Eight need the compositor or the certified machine. None of the eight is started.**
+
+There is no third group and nothing in between. The two bands used to be
+interleaved in this list, so a completely consistent rule read as items being
+skipped over at random; they are separated now, and the list is in the order the
+work actually happened.
+
+The AI stack leads the first band for the reason it always did: no kernel work,
+no image pipeline, no certified hardware, and it is useful to `alo-workplace`
+the day it lands.
+
+### Everything that needs no screen — built first, and all of it is built
+
+Twelve capabilities. Each has its code finished, tested and gated on an ordinary
+laptop, and each is still owed the half only a machine can give it. **This band
+was not chosen line by line**: it is simply everything in v0.01 that a
+compositor is not required for, which is why it runs unbroken.
 
 - [ ] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
       runtime (ADR 0006)
@@ -100,6 +118,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         sentence said law 3's "on real hardware" was owed — a tick and its
         own footnote contradicting each other, which is exactly what the
         parent box is now not allowed to do*
+
 - [ ] ★ **It runs on the machine you already own** — no graphics card required.
       The catalogue carries models that work on a CPU, and says honestly which
       ones are comfortable there and which are merely possible
@@ -112,6 +131,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         the setup screen that asks it on somebody's behalf, and a real
         measurement — *comfortable* is a judgement in a table until a model
         has run on a machine without a GPU
+
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
       machine, from a machine on your network, or from a provider you named, and
       the choice is the person's
@@ -124,6 +144,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
   - [ ] **On the machine.**
         `alo-agentd`, which is the thing that would actually put a question
         to any of the three
+
 - [ ] ★ **Where the answer came from is said where the answer appears** — "on
       this machine", "on the studio workstation", "by a provider you added" —
       beside the answer, not buried in a setting
@@ -136,6 +157,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         and therefore the compositor. **This is the one on this list most
         easily lost**: it is a sentence that must appear every single time,
         and nothing yet forces it to
+
 - [ ] **Agents point at the local model by default**, configured rather than coded
       — and, since the default is only a sovereignty guarantee if it does not
       quietly un-point itself, **★ never a silent fallback** (ADR 0008) is
@@ -153,6 +175,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         something that points and something that asks, both `alo-agentd`;
         there is still no method anywhere in this repository that puts a
         question to a model
+
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
   - [x] **The code.**
@@ -161,7 +184,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         refusal about any of the three readable in the reader's own language
   - [ ] **On the machine.**
         the Settings panel to type it into
-- [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
+
 - [ ] **Egress indicator**, and no telemetry
   - [x] **The code.**
         `alo-egress` — what counts as leaving, and the line said about it
@@ -192,6 +215,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         update, none of which exists yet; and the enforcement at the network
         boundary, without which all of this describes only the code that
         asked
+
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
   - [x] **The code.**
         `alo-capability` (the verbs, the grants, the approvals, every
@@ -219,6 +243,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         move a window — and the half of the context that **reads** a screen,
         which is Wayland and AT-SPI and is where *with no invocation, no
         context calls at all* becomes something anybody can test
+
 - [ ] Every execution recorded with its origin, approval and grant
   - [x] **The code.**
         `alo-record` — the record, including refusals, which are written
@@ -235,10 +260,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
   - [ ] **On the machine.**
         queue 4b — the path it is written to and the timer that shortens it,
         both `alo-agentd`'s, and the daemon does not exist
-- [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
-- [ ] **Sign-in**: alo identity, and a local account that needs no tenant
-- [ ] **The agent overlay**: one key, from anywhere
-- [ ] Launcher and window management: move, resize, snap, tile
+
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated
   - [x] **The code.**
@@ -256,6 +278,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         that is a picture rather than a measurement — the icons, what is in
         the status area (v0.5), and the hover and screen-reader name the
         *gave way* sentence promises is still there
+
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
   - [x] **The code.**
@@ -281,7 +304,7 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         nothing, the overlay not existing, and Grants, Models and providers
         being absent from Settings rather than greyed out. All of that is
         the compositor's and the settings panel's, and neither exists
-- [ ] Copy, cut and paste across applications; switching between windows
+
 - [ ] Keyboard shortcuts a person can change
   - [x] **The code.**
         `alo-shortcuts` — the shortcuts, rebindable, nothing quietly taking
@@ -289,7 +312,32 @@ GPU, and it is useful to `alo-workplace` the day it lands.
         the person reads
   - [ ] **On the machine.**
         a shell to press them in
+
+### Everything that needs the compositor or the certified machine
+
+Eight capabilities, and **not one of them is started**. That is not eight things
+skipped over — it is the same dividing line read from the other side. The
+compositor is the one that matters most here, because sign-in, the overlay, the
+launcher, copy and paste and the workspace client all wait on it; the GPU and
+the image are their own hardware bring-up and wait on the certified machine.
+
+They were interleaved with the band above until this ordering was corrected,
+which made a completely consistent rule look like work being taken out of turn.
+
+- [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
+
+- [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+
+- [ ] **Sign-in**: alo identity, and a local account that needs no tenant
+
+- [ ] **The agent overlay**: one key, from anywhere
+
+- [ ] Launcher and window management: move, resize, snap, tile
+
+- [ ] Copy, cut and paste across applications; switching between windows
+
 - [ ] The workspace client runs as an application on the shell
+
 - [ ] **Image**: OCI-built, boots on the certified machine, firmware to sign-in
 
 **Exit gate.** On the certified machine, from a cold boot: sign in, press the
@@ -302,6 +350,16 @@ the record — with the egress indicator having stayed dark throughout.
 ## v0.5 — a person can work on it all day
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
+
+**Two lines here already have code**, which is why a tick appears in a list that
+is otherwise untouched: *Making it yours* (`alo-appearance`) and *Language*
+(`alo-strings`). Both were reached early because v0.01 work ran through them —
+appearance carries the accent set, and every crate's English moved onto the
+strings layer. Nothing else in v0.5 is started.
+
+Unlike v0.01, this list is **not** ordered by what was built. It is a plan, and
+it is grouped by subject so it can be read; when work begins here it will be
+sorted the same way v0.01 now is.
 
 - [ ] Lock screen, suspend and resume
 - [ ] Multi-monitor, scaling, hotplug
