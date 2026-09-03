@@ -655,3 +655,26 @@ is the one that ends the service. Working it out exactly would mean a second
 clock read in `crates/alo-agentd/src/unix.rs`, which is the file whose whole
 value is that it asks the kernel and decides nothing.
 **Date:** 2026-09-03
+
+### An agent that is a login of its own cannot reach a socket under `$XDG_RUNTIME_DIR`
+**Version:** systemd-logind as shipped with Ubuntu 24.04, kernel 6.6, found by
+running `alo-agentd` as two real users rather than by reading anything.
+**Behaviour:** `logind` creates `/run/user/<uid>` with mode `0700`, owned by the
+person. `alo_agentd::place` then makes `alo/` beneath it `0750` and hands it to
+the group the agent is in, and the socket `0660` — all of which is correct and
+none of which helps: reaching a path means traversing every directory above it,
+and the agent is a **different user** with no `x` on the person's session
+directory. Every connection from the agent's login is `EACCES` before the two
+locks this repository designed are consulted at all. The person's own door works,
+which is why item 21c's tests never saw it: telling the two doors apart takes two
+logins and a test process has one.
+**Our response:** written down and left, in this iteration. It is not a bug in
+`place.rs` — the directory and the socket are exactly the modes they should be —
+it is the socket being in the wrong place, and where it goes instead is a
+decision with security in it: a directory outside the session has to be made by
+something privileged, has to be per-person on a machine that may have more than
+one, and has to disappear when they sign out, which is the whole reason
+`$XDG_RUNTIME_DIR` was chosen. `docs/autonomy/QUEUE.md` item 21j is that
+decision. Until it is taken, the agent's door is reachable by tests and by
+nothing on a real machine, and no claim to the contrary is made anywhere.
+**Date:** 2026-09-03

@@ -51,9 +51,15 @@ key. **`alo-agentd` is the only one
 that is not portable**: since item 21c it is a Unix socket and the credentials a
 kernel keeps for one, so on any other host it compiles to nothing at all rather
 than to a version of itself that pretends. It is also the only one that rents
-something the standard library will not do — `SO_PEERCRED` and `poll`, in one
-file, because `peer_cred` is unstable, waiting on several descriptors at once
-has no spelling in std at all, and `unsafe` is forbidden. Since **item 21d** it
+something the standard library will not do, and since item 21f it rents two:
+`SO_PEERCRED` and `poll` in `unix.rs`, because `peer_cred` is unstable and
+waiting on several descriptors at once has no spelling in std at all, and a
+`SIGTERM` handler in `signalling.rs`, because `sigaction` has no safe spelling
+anywhere. All three are the same argument — `unsafe` is forbidden, so what the
+kernel will only be asked through `unsafe` is asked through somebody else's
+crate, in the one file that names it. It is also **the only crate in this
+workspace that is a process**: `main.rs` is the order the decisions in
+`starting.rs` are made in, and nothing else here has a `main` at all. Since **item 21d** it
 is the crate that reaches the most of this workspace and is reached by none of
 it: six crates since **item 21e**, and the second half of that sentence is what
 a service is — everything decides, one thing runs. The sixth is `alo-keeping`,
@@ -2161,25 +2167,66 @@ out.
   one takes a privilege the tests do not have on every machine they run on, so
   that rule is asked of the decision rather than of a disk.
 
-- [ ] **21f. The process.** What is left of 21e: the `main`, and everything it
-  does with a `Described`. It installs the `SIGTERM` handler `stopping.rs` was
-  shaped for — one call long, because a handler may write a byte to an open
-  descriptor and may not allocate or take a lock — it refuses to run as root at
-  all (ADR 0001 §2, which 21c left to whatever has a `main`, 21d did not become
-  and 21e deliberately left to the thing that is really running), and it
-  assembles the machine a turn happens against: the resolver, the indicator, the
-  record `alo-keeping` opens at the path the description named, and which model
-  or provider answers a question under which policy.
+- [x] **21f. The process.** What was left of 21e: the `main`, and everything it
+  does with a `Described`. Three new files in `crates/alo-agentd`: `main.rs`
+  (the order, the service log and what an exit code means), `starting.rs`
+  (everything between a process beginning and a service running, each step a
+  value a test can reach), `signalling.rs` (`SIGTERM`, and the one call a
+  handler may be). `refusing.rs` gained `NotStarted` — the ninth type, and the
+  one a process ends in — `stopping.rs` gained the door the handler owns the
+  socket through, and `testing.rs` lost its hand-written list of eight crates'
+  words. 8 new unit tests, 157 in the crate on Linux (was 149); **1637 tests and
+  44 doctests on Linux, 1464 and 44 on Windows**, `cargo fmt` clean, clippy
+  clean with zero warnings on both hosts and `cargo doc` clean.
 
-  **Blocked on nothing, and the vocabulary half is answered.** This item said
-  its first half was *where the machine's vocabulary comes from* — which crates
-  are collected, whether a translation is loaded from a disk and from where, and
-  what a service does when it cannot be — and that it wanted writing down before
-  it was written. It is **item 21g**, below, and what is left here is three
-  lines of `main`: `everything_this_machine_can_say()`, `alo_agentd::declare_into`
-  on top of it because the daemon says three strings the rest of the machine
-  does not, and `Loaded::at(vocabulary, the_translations())` with the damage
-  written into the service log.
+  **It was really run.** Not by systemd and not on a certified machine, but as a
+  process: two Unix logins, a description in `/etc/alo/agentd.toml` written by
+  root, a session directory, a socket bound at `0660` in a directory at `0750`,
+  a record created at the path the file named with its first line already in it,
+  a real request answered on the person's door, and `SIGTERM` ending it with an
+  exit code of 0 and the socket taken away. Every refusal above was exercised
+  the same way, root included.
+
+  **The decision the item did not contain: the order, and what it is holding
+  up.** The vocabulary is loaded **before** the record is opened, because a
+  record that will not open is refused in `alo-keeping`'s own words and a
+  process that had not loaded a vocabulary would have nothing to render them
+  with — the one refusal in `NotStarted` that is not this crate's English. The
+  socket is bound **last**, because it is the only thing anybody else on the
+  machine can see, and nothing should be able to knock on a service that is
+  still deciding whether it can run.
+
+  **The second was forced by law rather than chosen.** Installing a signal
+  handler is `sigaction` and there is no safe spelling of it anywhere in Rust,
+  while `unsafe_code` is forbidden workspace-wide — so it is a dependency or an
+  exception, and it is the same choice `unix.rs` made about peer credentials.
+  `signal-hook`'s self-pipe registration is the second rented thing in this
+  crate and does exactly what `stopping.rs` was shaped for: one byte to a
+  descriptor, from a handler that allocates nothing.
+
+  Three decisions the next items inherit. **A process ends in one refusal
+  type**, so a service log holds one sentence saying what to go and change, and
+  `NotServed` stays the narrower thing that ends a service which had already
+  started. **The fixture is the machine's vocabulary now** — `testing.rs`
+  collected eight crates by hand and collects all fourteen through `alo-saying`,
+  because the day there is a process assembling the real one, a shorter list
+  that happens to be enough is a second answer. **A machine that has just
+  started has granted nothing**, and that is a state rather than a hole: no
+  request on this socket grants anything, so every verb is refused in the
+  grants' own words and every refusal is written down, which is the capability
+  model running. Item 21i is where they come from.
+
+  **What it did not do, and each is an item below.** Which model or provider
+  answers a question is **21h** — `doing.rs` still refuses one in words, so this
+  does *not* unblock the last of *agents point at the local model*, and the item
+  claiming it would was written before anybody looked at what the description
+  would have to grow. Where a machine's grants are kept is **21i**. And what
+  really running it found is **21j**: on a machine with two logins the agent
+  cannot reach a socket under `$XDG_RUNTIME_DIR` at all, because `logind` makes
+  that directory `0700` and the agent is a different user — nothing to do with
+  the two locks `place.rs` sets, and invisible to every test in this repository
+  because telling the doors apart takes two logins and a test process has one.
+  `docs/quirks.md` has it.
 
   What the process still owes the vocabulary is **which language**:
   `Strings::prefers` is called by whoever knows whose machine this is, and where
@@ -2189,11 +2236,64 @@ out.
   invent. Until it is decided, a service that prefers nothing shows English and
   says it is English, which is what a machine with no translations does anyway.
 
-  It unblocks the last of *agents point at the local model*: `doing.rs` refuses
-  a question in words today because nothing tells the service what was chosen,
-  and the sentence stops being the only answer the moment something does. It
-  does not unblock the application verbs, which are Wayland and D-Bus and stay
-  below.
+- [ ] **21h. Which model or provider answers, and under which policy.** Cut from
+  21f, which claimed it in one clause and would have had to invent three things
+  to keep the claim. `alo_turn::Turning::asking` exists and works;
+  `crates/alo-agentd/src/doing.rs` refuses a question in words because nothing
+  tells the service what was chosen, and `agentd.nothing-answers-questions` is
+  the true sentence about a machine where nobody has chosen either.
+
+  **Blocked on a decision that is not the description's.** ADR 0008 puts *where
+  a question may be answered* with the person, and ADR 0004 gives
+  `/etc/alo/agentd.toml` to the organisation — so the model a person picked
+  cannot simply become a key in that file, and the `SourcePolicy` an
+  organisation sets probably can. Two halves of one question, stored in two
+  places, and the person's half has the same owner as *which language they
+  read*: neither is decided anywhere, and both are `alo-appearance`-shaped.
+  Whoever takes this takes that first.
+
+  What it is worth when it lands: `alo-asking`, `alo-models` and
+  `alo-answering` are already loaded into the machine's vocabulary (21f), so
+  what is missing is the setting and the wiring rather than anything either
+  crate can say.
+
+- [ ] **21i. Where a machine's grants are kept.** The storage item 1 left —
+  *storage is serde, as with `Providers`; where the list is written and when is
+  the daemon's, and it does not exist yet* — asked again now that there is a
+  daemon. `starting.rs` begins with `Grants::default()`, and says why: nothing
+  on this socket grants anything, so a list read from a file would be a list
+  nothing writes.
+
+  **Blocked on the same thing, and it is the shell.** A grant is made by a
+  person picking a folder (ADR 0001 §3) in a surface that does not exist, and
+  item 17 put `Grants` **inside** `alo_capability::Agent` — so what is written
+  down is the *choice* as well as the list, and reading one without a way to
+  make one would be building the half that cannot be checked. It also needs the
+  file rules `trusting.rs` already wrote for the description, and probably not
+  the same ones: a description is the organisation's and grants are the
+  person's.
+
+- [ ] **21j. Where the socket goes, so the agent can reach it.** Found by
+  running the process rather than by reading anything, and `docs/quirks.md` has
+  the measurement: `logind` creates `$XDG_RUNTIME_DIR` as `0700` owned by the
+  person, so an agent that is a login of its own is refused by the *parent*
+  directory before either of the two locks `place.rs` sets is consulted. The
+  person's door works; the agent's cannot be reached on a real machine at all.
+
+  **Blocked on nothing here, and it is a decision rather than a fix.**
+  `place.rs` is right — the directory is `0750` and handed to the agent's group,
+  the socket is `0660` — and `session.rs` chose `$XDG_RUNTIME_DIR` for reasons
+  that are all still true: `/tmp` is anybody's, and a service that made
+  `/run/user/<uid>` itself would be standing in for a session that has not
+  started. A directory outside the session has to be created by something
+  privileged (`tmpfiles.d`, which is the image's), has to be per-person on a
+  machine that may have more than one, and has to go when they sign out. That is
+  the shape of the answer and it wants writing down before it is written; it
+  moves `docs/contracts/daemon-protocol.md`, which is a public surface.
+
+  Until it is taken, **no claim is made that an agent can connect**: item 21c
+  said a connection from a second user had never been made, and this is what was
+  behind that sentence.
 
 - [x] **21g. The machine's vocabulary, and where a translation comes from** —
   cut from 21f, which said this half wanted writing down before it was written.

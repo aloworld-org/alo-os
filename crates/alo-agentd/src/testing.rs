@@ -24,17 +24,21 @@
 //! there is a test in [`crate::knocking`] that the real one answers the same
 //! shape.
 //!
-//! # Every word this machine could say is loaded, and the list is short for a
-//! reason
+//! # The vocabulary is the machine's, and it is no longer a list written here
 //!
-//! [`in_english`] declares eight crates' words: everything a turn on this
-//! machine can be refused by, plus this crate's own and the protocol's. What is
-//! **not** here is `alo-models`, `alo-asking` and `alo-answering`, and that is
-//! a fact about the service rather than a shortcut — a question put to a model
-//! is refused by [`crate::doing`] before it reaches `alo_turn::Turning::asking`,
-//! because nothing tells this service yet what a machine has been set to answer
-//! with. The day queue item 21e tells it, those three lists arrive with the
-//! setting.
+//! [`in_english`] used to name eight crates and leave three out, which was true
+//! of the service and became a second answer the day there was a process: item
+//! 21f loads `alo_saying::everything_this_machine_can_say` and declares this
+//! crate's three on top, so the fixture is what a machine really has rather than
+//! a shorter list that happens to be enough. A test asking whether a sentence is
+//! translated is then asking about the vocabulary that ships.
+//!
+//! The three that were absent are `alo-models`, `alo-asking` and
+//! `alo-answering`, and they are here now — which changes nothing about what
+//! this service does with a question put to a model. [`crate::doing`] still
+//! refuses one before it reaches `alo_turn::Turning::asking`, because nothing
+//! tells this service what a machine has been set to answer with; the words for
+//! *when it does* are loaded and unused, which is the honest way round.
 //!
 //! Nothing here is compiled into the crate: it exists under `cfg(test)` only.
 
@@ -53,7 +57,7 @@ use std::time::{Duration, SystemTime};
 use alo_capability::{Grant, Grants, Reach};
 use alo_context::Context;
 use alo_egress::Indicator;
-use alo_files::{OnThisMachine, Resolving as _, file_words};
+use alo_files::{OnThisMachine, Resolving as _};
 use alo_record::Record;
 use alo_strings::{Strings, Vocabulary};
 use alo_turn::{Machine, Turning};
@@ -163,21 +167,16 @@ pub(crate) fn granting(folder: &Path, at: SystemTime) -> Grants {
 
 /// The words this machine reads, with nothing translated.
 ///
-/// Eight crates' lists, which is the arrangement this service is really in.
-/// See this file's own header for the three that are deliberately absent.
+/// The machine's own vocabulary, assembled the way the process assembles it —
+/// `alo-saying`'s fourteen lists and this crate's three on top. See this file's
+/// header for why it is no longer a list written out here.
 pub(crate) fn in_english() -> Strings {
     Strings::of(everything_this_machine_says())
 }
 
 /// Every word a machine running this service has loaded.
 fn everything_this_machine_says() -> Vocabulary {
-    let mut vocabulary = file_words().unwrap();
-    alo_capability::declare_into(&mut vocabulary).unwrap();
-    alo_context::declare_into(&mut vocabulary).unwrap();
-    alo_egress::declare_into(&mut vocabulary).unwrap();
-    alo_keeping::declare_into(&mut vocabulary).unwrap();
-    alo_protocol::declare_into(&mut vocabulary).unwrap();
-    alo_turn::declare_into(&mut vocabulary).unwrap();
+    let mut vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
     crate::words::declare_into(&mut vocabulary).unwrap();
     vocabulary
 }

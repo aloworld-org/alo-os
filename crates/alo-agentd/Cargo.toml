@@ -20,6 +20,13 @@ repository.workspace = true
 rustix = { workspace = true }
 thiserror = { workspace = true }
 
+# The second rented thing, and `signalling.rs` is the only file that names it.
+# A service is asked to stop by `SIGTERM`, installing a handler for one is
+# `sigaction`, and there is no safe spelling of that anywhere — so the choice is
+# this crate or `unsafe`, which the workspace forbids. What is used of it is one
+# function: register a signal to write one byte to a descriptor we already hold.
+signal-hook = { workspace = true }
+
 # What a machine says about itself, and the one format it says it in. TOML
 # rather than the JSON the record and the protocol use, because those two are
 # written by programs and read by programs and this one is typed by whoever
@@ -41,6 +48,16 @@ alo-protocol = { path = "../alo-protocol" }
 alo-strings = { path = "../alo-strings" }
 alo-turn = { path = "../alo-turn" }
 
+# What the process assembles a machine out of, which is queue item 21f and the
+# reason the first two moved up here out of the dev-dependencies below: a
+# resolver and an indicator were something only a test made until there was a
+# `main` to make the real ones. `alo-saying` is where the machine's one
+# vocabulary comes from, and this crate is the process that adds its own three
+# strings on top of it.
+alo-egress = { path = "../alo-egress" }
+alo-files = { path = "../alo-files" }
+alo-saying = { path = "../alo-saying" }
+
 # The sixth, and the first that is reached for something a machine is *told*
 # rather than something a turn does: `Keeping` is how long the record is kept,
 # which ADR 0004 gives to the organisation that manages the machine, and a
@@ -48,14 +65,19 @@ alo-turn = { path = "../alo-turn" }
 # beside the one `alo-keeping` already writes into the record's first line.
 alo-keeping = { path = "../alo-keeping" }
 
-# What a machine is arranged out of, for the tests only. The service is handed a
-# `Machine` rather than building one, so which resolver, which indicator and
-# where the record goes stay one decision made in one place — and that place is
-# the process (queue item 21e), not this crate.
+# Somewhere for a test's machine to write what happened that is not a file on a
+# disk. The process writes to `alo-keeping`'s real one; a test wants to read the
+# entries back and count them, which is what `alo_record::Record` is.
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-alo-egress = { path = "../alo-egress" }
-alo-files = { path = "../alo-files" }
 alo-record = { path = "../alo-record" }
+
+# The service, as a machine really runs it. `src/lib.rs` is every decision and
+# this is the process that makes them in order — thin on purpose, because what a
+# process does is one sequence and one exit code, and everything it decides on
+# the way is in `starting.rs` where a test can reach it.
+[[bin]]
+name = "alo-agentd"
+path = "src/main.rs"
 
 [lints]
 workspace = true

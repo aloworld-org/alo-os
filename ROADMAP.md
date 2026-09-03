@@ -277,8 +277,11 @@ compositor is not required for, which is why it runs unbroken.
         questions* — because nothing yet reads what the person chose. Since
         item 21e a machine describes itself — two logins, two lengths of time
         and where the record goes — and which model or provider answers is not
-        yet among the things it says. That, and the process that would do
-        anything with it, is queue 21f
+        yet among the things it says. Since item 21f the process exists and runs
+        all of that, so what is left is only the setting: `alo-asking`,
+        `alo-models` and `alo-answering` are loaded into the machine's
+        vocabulary and unused, and where the person's own choice of model lives
+        is not decided anywhere. That is queue 21h
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
@@ -406,12 +409,22 @@ compositor is not required for, which is why it runs unbroken.
         call until somebody says something, exactly as it did before there was
         a timer. It happens between turns and never inside one, which is not a
         rule anybody has to remember: while a turn is under way it holds the
-        machine, so there is nothing there to ask
+        machine, so there is nothing there to ask. And since item 21f it is a
+        **process** rather than a library nothing runs: a `main` that refuses to
+        be root at all, loads the one vocabulary the whole machine says
+        everything out of and its own three strings on top, opens the record
+        before it opens the socket, and arranges for `SIGTERM` to stop it the
+        way anything else does — one byte on a descriptor, from a handler that
+        allocates nothing. It has been started, talked to and stopped as a real
+        process with two real logins, which is what nothing above this sentence
+        could previously claim
   - [ ] **On the machine.**
-        the `main` that starts all of the above (queue 21f) — the signal
-        handler, the refusal to run as root at all, the vocabulary the words a
-        person reads come out of, and which model answers a question — without
-        which the service above is code nothing runs; the acting half of the application
+        a socket the agent can actually reach — running the process found that
+        `$XDG_RUNTIME_DIR` is `0700` and the agent is a different user, so its
+        door is refused by the directory above the socket on any real machine
+        (queue 21j, `docs/quirks.md`); which model or provider answers a
+        question, which needs somewhere for a person's own choice to live
+        (queue 21h); the acting half of the application
         verbs, which is Wayland and D-Bus and is the whole of what makes any
         of these move a window; and the half of the context that **reads** a
         screen, which is Wayland and AT-SPI and is where *with no invocation,
@@ -443,10 +456,12 @@ compositor is not required for, which is why it runs unbroken.
         **more** than its rule, which is the opposite failure from one that
         cannot write
   - [ ] **On the machine.**
-        the process that starts the service and keeps it running (queue 21f),
-        and a certified machine showing a record surviving a restart and a
-        shortening. The path, the retention and the timer are all code now —
-        what is left is that nothing has yet been started by systemd
+        a certified machine showing a record surviving a restart and a
+        shortening. The path, the retention and the timer are all code now, and
+        since item 21f a real process really opens the record at the path its
+        description named and writes the first line into it — what is left is
+        that nothing has yet been started by systemd, and no shortening has
+        fired on a machine nobody was watching
 
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated

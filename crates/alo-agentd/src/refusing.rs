@@ -1,12 +1,13 @@
 //! Everything this crate refuses, and who reads it.
 //!
-//! Eight types, divided by what somebody has to do about them. [`NotDescribed`]
+//! Nine types, divided by what somebody has to do about them. [`NotDescribed`]
 //! is the file a machine is described by, [`NoSession`] is the directory the
 //! socket would have gone in, [`NotTwoSides`] and [`NotAUser`] are a machine
 //! described wrongly, [`NotBound`] is a machine whose socket cannot be put where
 //! it belongs, [`NotACaller`] is one connection that will not be served,
-//! [`NotHeard`] is one connection that cannot go on being read, and
-//! [`NotServed`] is the service itself stopping.
+//! [`NotHeard`] is one connection that cannot go on being read, [`NotServed`]
+//! is the service itself stopping, and [`NotStarted`] is the process: the one
+//! that gathers the rest, because a process ends in exactly one of them.
 //!
 //! # The line between one connection and the service
 //!
@@ -444,6 +445,89 @@ pub enum NotServed {
     NothingIsWrittenDown,
 }
 
+/// Why there is no service on this machine.
+///
+/// The process's own refusal, and the one type that gathers the others: a
+/// process ends in exactly one of these, so this is what a service log holds
+/// when `alo-agentd` did not come up. Every one of them leaves nothing running
+/// — no socket bound, no turn begun, nothing written down — which is what makes
+/// a failed start safe to retry rather than something to clean up after.
+///
+/// It is **not** how a running service reports trouble. A stranger at the door,
+/// a message that is not a request and a caller that hangs up are all served
+/// and survived, and [`NotServed`] is the narrower type for the ones that end a
+/// service that had already started.
+#[derive(Debug, Error)]
+pub enum NotStarted {
+    /// The machine would not say who this process is running as.
+    #[error("could not tell who alo-agentd is running as: {0}")]
+    NotAUser(#[from] NotAUser),
+    /// This process is root.
+    ///
+    /// ADR 0001 §2, and the check `crate::side` deliberately left here:
+    /// refusing a *number in a file* that says the agent is root is one thing,
+    /// and it has been done since item 21e. This is the other — a process that
+    /// really is root, whatever any file says.
+    #[error(
+        "alo-agentd is running as root, and it holds a person's authority rather than a machine's (ADR 0001 §2); start it as a user service of the signed-in person"
+    )]
+    AsRoot,
+    /// This machine's description was not believed.
+    #[error("{0}")]
+    NotDescribed(#[from] NotDescribed),
+    /// alo OS's own words contradict each other.
+    ///
+    /// Not this machine's fault and not fixable on it — see
+    /// `alo_saying::NotCollected`.
+    #[error("{0}")]
+    NotCollected(#[from] alo_saying::NotCollected),
+    /// This crate's own three strings could not be added to the machine's
+    /// vocabulary.
+    #[error("alo-agentd's own words could not be declared: {0}")]
+    NotDeclared(#[from] crate::words::WordsError),
+    /// There is no record to write what happens down in.
+    ///
+    /// The one refusal here that is not this crate's English, and the reason
+    /// the vocabulary is loaded before the record is opened: `alo-keeping`
+    /// already words a record that will not open, and a second sentence written
+    /// here would be this file disagreeing with the one a person is shown.
+    #[error(
+        "nothing that happens on this machine could be written down: {said}; alo-agentd will not run without a record"
+    )]
+    NoRecord {
+        /// What `alo-keeping` said, in the language this machine loaded.
+        said: String,
+    },
+    /// There is nowhere for this session's socket to go.
+    #[error("{0}")]
+    NoSession(#[from] NoSession),
+    /// The socket could not be put where it belongs.
+    #[error("{0}")]
+    NotBound(#[from] NotBound),
+    /// The verbs this machine offers could not be declared.
+    #[error("the verbs this machine can carry out could not be declared: {0}")]
+    NoVerbs(#[from] alo_files::Declaring),
+    /// There is no way to ask this service to stop.
+    #[error(
+        "could not make the pair a stop arrives on: {why}; alo-agentd is not started without one, because a service that cannot be asked to stop can only be killed"
+    )]
+    NoStop {
+        /// What the machine said.
+        why: std::io::Error,
+    },
+    /// `SIGTERM` could not be made to ask the service to stop.
+    #[error(
+        "could not arrange for SIGTERM to stop alo-agentd: {why}; without it a stop would kill the service mid-turn"
+    )]
+    NoHandler {
+        /// What the machine said.
+        why: std::io::Error,
+    },
+    /// The service started and then stopped for a reason that is the machine's.
+    #[error("{0}")]
+    NotServed(#[from] NotServed),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -590,5 +674,48 @@ mod tests {
         let said = NotHeard::TooLong { was: 1_048_577 }.to_string();
         assert!(said.contains("1048577"), "{said}");
         assert_ne!(said, NotHeard::NotText.to_string());
+    }
+
+    /// **A process that did not start says what to go and change too**, and
+    /// each of these is a different place to go: a service file, a disk, a
+    /// kernel that would not take a handler.
+    #[test]
+    fn a_process_that_did_not_start_says_what_to_go_and_change() {
+        let said = NotStarted::AsRoot.to_string();
+        assert!(said.contains("root"), "{said}");
+        assert!(said.contains("user service"), "{said}");
+
+        let said = NotStarted::NoRecord {
+            said: "there is no room left on the disk holding the record".to_owned(),
+        }
+        .to_string();
+        assert!(said.contains("no room left"), "{said}");
+
+        let said = NotStarted::NoHandler {
+            why: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+        }
+        .to_string();
+        assert!(said.contains("SIGTERM"), "{said}");
+    }
+
+    /// **What a process gathers, it carries whole.** Every refusal it did not
+    /// make itself reaches the service log as the sentence whoever made it
+    /// wrote — the rule the rest of this workspace keeps about a person's
+    /// language, asked here about the one reader who has none.
+    #[test]
+    fn a_process_carries_the_refusal_somebody_else_made() {
+        let stranger = NotACaller::Stranger { uid: 65534 };
+        let inside = NotServed::NotTaken(stranger).to_string();
+        assert_eq!(
+            NotStarted::NotServed(NotServed::NotTaken(NotACaller::Stranger { uid: 65534 }))
+                .to_string(),
+            inside
+        );
+
+        let session = NoSession::NotSet;
+        assert_eq!(
+            NotStarted::NoSession(NoSession::NotSet).to_string(),
+            session.to_string()
+        );
     }
 }

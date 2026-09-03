@@ -12,6 +12,37 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The agent service is now something a machine can start.** Everything it is
+  made of has been here for a while; what was missing was the process that puts
+  it in order. `alo-agentd` now starts, reads what this machine is, loads every
+  word alo OS can say, opens the record before it opens its socket, serves, and
+  stops when it is asked to — and it has been run that way on a real Linux
+  machine with a real person's login and a real agent's, rather than only in
+  tests.
+
+  **It refuses to run as root**, whatever any file says, because a service
+  holding authority you do not have yourself is the thing every grant in alo OS
+  exists to make unnecessary. **It stops cleanly when it is told to**: a stop
+  arrives as a signal, ends the turn that was open, gives back the grant that
+  turn was holding and takes the socket away, rather than the service being
+  killed mid-sentence.
+
+  **A machine with no translations still starts**, says everything in English,
+  and writes into the service log exactly what failed to load. So does a machine
+  whose record file does not exist yet — it is created, with its first line
+  already in it, so a record that is missing can never be read afterwards as a
+  day on which nothing happened.
+
+  **What it cannot do yet is say so plainly.** Nothing has been granted on a
+  freshly started machine, because nothing can yet grant anything — there is no
+  screen to pick a folder in — so every verb an agent asks for is refused, and
+  every refusal is written down. And running it for real turned up something no
+  test here could see: your session's directory is private to you, so an agent
+  that runs as a login of its own cannot reach the socket underneath it at all.
+  Where the socket goes instead is being decided rather than patched around, and
+  until it is, the agent's side of this service works in tests and not on a
+  machine.
+
 - **alo OS can now be translated, and a translation is a file rather than a
   rebuild.** Every sentence the system says has been named and written down for
   a while; what was missing was anywhere for the other language to come from.

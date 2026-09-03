@@ -128,6 +128,12 @@ under a description nobody wrote.
 agent did wherever the service happened to be started from, and somewhere else
 the next time. The file itself is `docs/contracts/record-file.md`.
 
+**The file is made if it is not there; the folder holding it is not.** A machine
+that has never run has no record and gets one on its first start, with its first
+line already written. The directory above it is whoever installs the machine's,
+and `alo-agentd` refuses to start rather than making one — a typo in this key
+would otherwise become a second record nobody is reading.
+
 **`keeping` is the retention rule**, and `n` may not be `0` — a record kept for
 no days is a record deleted as it is written, which is the record turned off
 wearing a retention setting's clothes. ADR 0004 gives this to the organisation

@@ -78,6 +78,18 @@ impl Stop {
         (&self.0).write_all(&[0]).is_ok()
     }
 
+    /// The socket underneath, for the one thing that has to own it.
+    ///
+    /// `pub(crate)`, and there is exactly one caller: `crate::signalling`,
+    /// which hands it to the signal handler. The handler outlives every scope
+    /// this process has, so the descriptor it writes to has to be owned by the
+    /// registration rather than borrowed from a value that could be dropped
+    /// while a signal is on its way. Giving it away is therefore the honest
+    /// shape, and it is why [`Stop::again`] exists.
+    pub(crate) fn into_stream(self) -> UnixStream {
+        self.0
+    }
+
     /// Another handle onto the same stop.
     ///
     /// For a process that has more than one reason to stop — a signal, and

@@ -103,15 +103,35 @@
 //!
 //! [`Turning`]: alo_turn::Turning
 //!
+//! # The process, and what is left in it
+//!
+//! `src/main.rs` is the process and it is three dozen lines, because everything
+//! it decides is [`starting`]: refusing to run as root at all (ADR 0001 §2),
+//! the machine's one vocabulary and this crate's three strings on top of it,
+//! and the assembling of the [`Machine`] a turn happens against. What is left
+//! in the `main` is the order those happen in, what a service log is told, and
+//! what an exit code means — which is the part no test can reach, because it
+//! reads `/etc/alo/agentd.toml` and opens a record on a real disk.
+//!
+//! [`signalling`] is the other half of [`stopping`]: `SIGTERM` writes one byte
+//! to a descriptor and nothing else, which is all a signal handler may do.
+//!
+//! [`Machine`]: alo_turn::Machine
+//!
 //! # What this crate deliberately does not do
 //!
-//! **It is not the process.** There is no `main` here and no signal handler:
-//! reading the description at [`THE_DESCRIPTION`], refusing to run as root at
-//! all (ADR 0001 §2), assembling the machine a turn happens against, and which
-//! model or provider answers a question under which policy are what the process
-//! does with all of the above, and that is the rest of queue item 21e.
-//! [`unix::us`] is what it will check itself with and [`stopping::Stop`] is the
-//! shape its handler is owed.
+//! **It does not know which model or provider answers a question.** [`doing`]
+//! refuses one in words, and it is the true sentence about a machine where
+//! nobody has chosen either rather than a placeholder. What a machine says
+//! about itself has no key for it yet, and where a question may be answered is
+//! the person's (ADR 0008) rather than the description's — a queue item of its
+//! own.
+//!
+//! **It starts with no grants**, and [`starting`] is where that is argued: no
+//! request on this socket grants anything, so a list read from a file would be
+//! a list nothing writes. Every verb is refused in the grants' own words and
+//! every refusal is written down, which is the capability model running rather
+//! than missing.
 //!
 //! **It decides nothing an agent asks for.** Every verb is
 //! `alo_capability::Verbs`', every grant question is `alo_capability::Grants`',
@@ -174,6 +194,10 @@ pub mod session;
 #[cfg(target_os = "linux")]
 pub mod side;
 #[cfg(target_os = "linux")]
+pub mod signalling;
+#[cfg(target_os = "linux")]
+pub mod starting;
+#[cfg(target_os = "linux")]
 pub mod stopping;
 #[cfg(target_os = "linux")]
 pub mod trusting;
@@ -209,7 +233,8 @@ pub use listening::{Accepted, Listening};
 pub use place::Place;
 #[cfg(target_os = "linux")]
 pub use refusing::{
-    NoSession, NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotTwoSides,
+    NoSession, NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotStarted,
+    NotTwoSides,
 };
 #[cfg(target_os = "linux")]
 pub use serving::{Served, Serving};
@@ -217,6 +242,10 @@ pub use serving::{Served, Serving};
 pub use session::where_it_runs;
 #[cfg(target_os = "linux")]
 pub use side::{Side, Sides};
+#[cfg(target_os = "linux")]
+pub use signalling::on_sigterm;
+#[cfg(target_os = "linux")]
+pub use starting::{not_as_root, until_stopped, what_this_machine_says};
 #[cfg(target_os = "linux")]
 pub use stopping::{Stop, Waking};
 #[cfg(target_os = "linux")]

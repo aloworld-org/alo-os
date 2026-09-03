@@ -41,6 +41,15 @@ serde_json = "1"
 # `unsafe`.
 rustix = { version = "1.1", features = ["net", "process", "fs", "event"] }
 
+# The second thing the kernel will only be asked through somebody else's crate,
+# and for the same reason as the first: installing a signal handler is
+# `sigaction`, every spelling of it in Rust is `unsafe`, and `unsafe_code` is
+# forbidden above. `signal-hook`'s self-pipe registration is the one safe API
+# for it, and it does exactly what `alo-agentd`'s `stopping.rs` was shaped for —
+# a handler that writes one byte to an already-open descriptor and does nothing
+# else. Reached only by `alo-agentd`, and only from `signalling.rs`.
+signal-hook = { version = "0.4", default-features = false }
+
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is
 # a rule that survives until the reviewer is busy.

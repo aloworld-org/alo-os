@@ -5798,3 +5798,138 @@ test that matters and it is not this loop's to write.
 - **`alo-saying` is where item 24 becomes possible.** *No rented name reaches a
   person* wants a test that walks every string every crate registers, and
   `everything_this_machine_can_say()` is that walk.
+
+---
+
+## Iteration — item 21f: the process
+
+**`alo-agentd` is a program now.** Everything it is made of had been built over
+four items; what was missing was the `main` that puts it in order. Three new
+files in `crates/alo-agentd`: `main.rs` (the order, the service log, and what an
+exit code means), `starting.rs` (everything between a process beginning and a
+service running, each step a value a test can reach), `signalling.rs` (`SIGTERM`,
+and the one call a handler may be). `refusing.rs` gained `NotStarted`,
+`stopping.rs` gained the door a handler owns the socket through, and `Cargo.toml`
+gained a `[[bin]]`, three workspace crates that had been dev-dependencies or
+absent, and one from outside.
+
+### It was really run, and that is the point of the item
+
+Not by systemd and not on a certified machine — but as a **process**, on Linux,
+with two real Unix logins:
+
+- as root it refuses and exits 1, with ADR 0001 §2's sentence;
+- as the person it binds `srw-rw---- alo-person:alo` at
+  `/run/user/1000/alo/agentd.sock`, in a directory it made `0750`;
+- it creates `/var/lib/alo/record.jsonl` with `{"format":1}` already in it,
+  because a machine that has never run has no record and gets one;
+- it answers a real protocol request on the person's door —
+  `{"format":1,"tells":{"waiting":{"changes":[]}}}`;
+- it logs *no translations were loaded … this machine speaks English until it is
+  fixed* and serves anyway;
+- `SIGTERM` ends it with exit 0, the summary line, and the socket gone.
+
+Every claim in the paragraph above is a command that was run, not a test that
+passed. The tests are separate and there are 157 of them in that crate.
+
+### The decision the item did not contain: the order
+
+**The vocabulary is loaded before the record is opened.** A record that will not
+open is refused in `alo-keeping`'s own words — `NotKept` has no `Display`, only
+`said(&Strings)`, which is the 9-series' rule — so a process that had not loaded
+a vocabulary yet would have had to write a second English sentence about a disk.
+`NotStarted::NoRecord` carries what `alo-keeping` said, and it is the one refusal
+in that type that is not this crate's own English.
+
+**The socket is bound last**, because it is the only thing anybody else on the
+machine can see. Nothing should be able to knock on a service that is still
+deciding whether it can run.
+
+### The second decision was forced, not chosen
+
+Installing a signal handler is `sigaction`, and there is no safe spelling of it
+anywhere in Rust — `rustix`'s is in its `runtime` module and is `unsafe`, like
+every other. `unsafe_code = "forbid"` is workspace-wide, so the choice was a
+dependency or an exception to a law, and it is the same choice `unix.rs` made
+about peer credentials. `signal-hook` is the second rented thing in this crate
+and it does exactly what `stopping.rs` was shaped for: one byte to a descriptor
+it owns, from a handler that allocates nothing.
+
+### What running it found, and it is not in any test
+
+**On a real machine the agent cannot reach the socket at all.** `logind` creates
+`$XDG_RUNTIME_DIR` as `0700` owned by the person; `place.rs` makes `alo/`
+beneath it `0750` and hands it to the agent's group, and the socket `0660` — all
+correct, and none of it reachable, because traversing the *parent* needs `x` and
+the agent is a different user. Every connection from the agent's login is
+`EACCES` before either of this repository's two locks is consulted.
+
+It is invisible to every test here for the reason item 21c wrote down: telling
+the two doors apart takes two logins and a test process has one. It took running
+the thing to see it. `docs/quirks.md` has the measurement and **item 21j** is the
+decision — it is not a bug in `place.rs`, it is the socket being in the wrong
+place, and where it goes instead has to be created by something privileged, be
+per-person, and disappear at sign-out, which is why `$XDG_RUNTIME_DIR` was chosen
+in the first place.
+
+### What was cut, and why each cut is real
+
+The item's own first paragraph claimed *which model or provider answers a
+question under which policy*. That is **21h**, and it was cut because keeping it
+would have meant inventing where a person's choice of model lives — ADR 0008 puts
+that with the person and ADR 0004 gives `/etc/alo/agentd.toml` to the
+organisation, so it cannot simply become a key in that file. It has the same
+owner as *which language a person reads*, which is decided nowhere either.
+
+`starting.rs` begins with `Grants::default()` and says why: nothing on this
+socket grants anything, so a list read from a file would be a list nothing
+writes. Where they are kept is **21i**, and it is blocked on the same missing
+thing — a surface to make a grant in.
+
+So this item does **not** unblock *agents point at the local model*, and the
+queue entry that said it would has been corrected rather than quietly left.
+
+### One thing was removed rather than added
+
+`testing.rs` collected eight crates' words by hand, with a header explaining
+which three were deliberately absent. It now calls
+`alo_saying::everything_this_machine_can_say` and declares this crate's three on
+top — the same three lines the process runs. A shorter list that happens to be
+enough is a second answer to *what can this machine say*, and the day there is a
+process assembling the real one is the day to stop keeping it.
+
+### The gate
+
+`cargo fmt --all --check` clean.
+`cargo clippy --workspace --all-targets -- -D warnings` clean with zero warnings
+on Windows and on Linux. `cargo doc -p alo-agentd -p alo-saying --no-deps` clean.
+**1637 tests and 44 doctests on Linux** (was 1629 and 44), **1464 and 44 on
+Windows** (unchanged) — counted by summing every `test result` line per host, as
+iteration 47 asked. 157 unit tests in `alo-agentd` (was 149).
+
+### `ROADMAP.md` moved
+
+The **`alo-agentd`** line's *code* half gained the process: a `main` that refuses
+root, loads the machine's one vocabulary, opens the record before the socket, and
+stops on `SIGTERM`. Its *On the machine* half lost the `main` and gained two
+things that are true: a socket the agent can actually reach, and which model
+answers a question. **Two other lines moved** — *or use an API instead* now says
+what is really left (the setting, not the process), and *every execution
+recorded* says a real process really opens a real record. **No half was ticked
+that was not whole, and no machine half was touched.**
+
+**What the next iteration must know:**
+
+- **There are no ready items left that are not blocked on a decision.** 21h and
+  21i both want somewhere a person's own settings live, 21j wants an answer about
+  the socket, 16b and 19b are unchanged. 24, 25, 26 and 27 are the remaining
+  unblocked ones and 24 is the cheapest — `alo-saying` made it possible.
+- **21j is the most valuable of the three**, because it is the difference between
+  a service that works and a service that works for one of its two doors.
+- **A second login is now easy to arrange.** The commands are in this entry: two
+  users, a group, `/etc/alo/agentd.toml`, and `setpriv`. Anything claiming
+  something about the agent's door on a real machine can be checked that way, and
+  should be.
+- **`Loaded::at` takes the vocabulary by value**, so a process saying something
+  the rest of the machine does not must declare it before loading translations.
+  `starting::what_this_machine_says` is where that order lives.
