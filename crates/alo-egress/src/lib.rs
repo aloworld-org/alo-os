@@ -55,6 +55,15 @@
 //! person sees while it does, and [`Departing`] is the only thing that means
 //! *this may leave*.
 //!
+//! **And what alo OS does itself.** [`Errand`] is the closed list of reasons
+//! this machine reaches the network with no agent behind it, [`OnItsOwn`] is
+//! one of them about to happen, and [`Underway`] is the only thing that means
+//! *alo OS may do this*. They go on the **same** [`Indicator`], because ★ *no
+//! telemetry* is a promise only somebody who can see what their machine does
+//! unasked is in a position to check. [`errand`] is where that argument lives,
+//! including why the organisation's egress policy is deliberately not asked
+//! about a model download.
+//!
 //! **Not the enforcement.** Making this true at the network boundary — so that
 //! code which never asked cannot open a socket either — is Linux, and it is a
 //! later item. What this crate guarantees is that the ordinary path cannot
@@ -108,10 +117,14 @@
 
 pub mod departing;
 pub mod destination;
+pub mod errand;
 pub mod indicator;
+pub mod itself;
 pub mod leaving;
 pub mod policy;
 pub mod refusing;
+pub mod showing;
+pub mod underway;
 pub mod words;
 
 #[cfg(test)]
@@ -119,8 +132,12 @@ mod testing;
 
 pub use departing::Departing;
 pub use destination::{Destination, DestinationError};
+pub use errand::Errand;
 pub use indicator::{Indicator, Shown, ShownId};
+pub use itself::OnItsOwn;
 pub use leaving::{Leaving, Why};
 pub use policy::EgressPolicy;
 pub use refusing::{NotPermitted, Refusal};
+pub use showing::Showing;
+pub use underway::Underway;
 pub use words::{Word, WordsError, declare_into, egress_words};

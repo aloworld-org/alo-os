@@ -12,6 +12,32 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The indicator now shows what alo OS itself does on the network, not only
+  what its agents do — and there are three things it does, none of them about
+  you.** Until now the light that says *something is leaving this machine*
+  answered for agents alone. That is the promise law 1 makes, and it left the
+  quieter question unanswered: what does the operating system do when nobody has
+  asked it anything? On most systems the answer is telemetry, and you find out
+  by reading a settings page.
+
+  Here the answer is a list of three, and it is a closed one: signing you in,
+  fetching a model so this machine can answer questions on its own hardware, and
+  checking whether there is a newer release. Each of them appears on the same
+  indicator, in the same place, in your own language — *alo OS is fetching a
+  model from …* — so "nothing has left this machine" stays one thing to look at
+  rather than two. Beside the list is the promise itself, and it is a sentence
+  you read rather than one we published: **alo OS reaches the network for these
+  reasons and no others, and never to say anything about how you use this
+  machine.**
+
+  There is no measurement, no diagnostics, no crash reporting and no anonymised
+  anything — not switched off, but absent: there is no fourth reason a future
+  version could quietly turn on, because adding one means editing a list that
+  three tests and a feature-scope rule stand in front of. And your
+  organisation's egress policy is deliberately not asked about these: a machine
+  set to answer every question on its own hardware has to be able to download
+  the model it answers with.
+
 - **A line that is half in a language you do not read now says so, wherever the
   half is.** alo OS builds a lot of its sentences out of smaller ones: *the
   grant over your Invoices folder and everything in it has expired*, *@mail is

@@ -84,8 +84,19 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       · Built: `alo-egress` — what counts as leaving, and the line said about it
       while it happens, now in the language the person reads rather than in
       English; the policy still decides before a socket opens and without
-      needing a vocabulary to do it · Owed: the indicator itself, which is a
-      compositor surface
+      needing a vocabulary to do it. Since item 16 the second half of this line
+      has code too: egress with **no agent behind it** is a closed list of three
+      reasons alo OS reaches the network — signing somebody in, fetching a
+      model, checking for an update — with no member for measuring anything and
+      no way to add one that is not an edit to a public enum. They go on the
+      **same** indicator as an agent's egress, so *nothing has left this
+      machine* stays one thing to look at, and the promise beside the list is a
+      sentence a person reads in their own language rather than one this
+      repository publishes · Owed: the indicator itself, which is a compositor
+      surface; the record of an errand, which is queue 16a and turns on what a
+      record says about a departure nobody caused; and the enforcement at the
+      network boundary, without which all of this describes only the code that
+      asked
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
       · Built: `alo-capability` (the verbs, the grants, the approvals, every
       refusal of theirs said in the language the person reads, and — since 9g —

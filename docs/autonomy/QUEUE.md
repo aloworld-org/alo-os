@@ -1192,6 +1192,132 @@ deny list.** Two patterns later items must follow:
   Whoever reads next should decide whether its portable half is a rule in
   `alo-egress` or whether all of it is the daemon's — it is the fifth promise
   the journal has watched go unlisted, and the third iteration to say so.
+  **Answered by item 16 below**: most of it is portable, and it is a rule in
+  `alo-egress`.
+
+- [x] **16. Egress with no agent behind it** — implements `docs/features.md`'s
+  v0.01 *★ No telemetry. Not "anonymised telemetry". None — and the policy lives
+  in a Rust service, not a checkbox*, which three iterations of this journal
+  watched go unlisted. Four new files in `crates/alo-egress`: `errand.rs` (the
+  closed list of reasons alo OS itself reaches the network, and the promise
+  beside it), `itself.rs` (`OnItsOwn` — one of them about to happen, and the
+  line a person reads), `underway.rs` (the only type meaning *alo OS may do
+  this*), `showing.rs` (what one line of the indicator is about, whichever kind
+  it is). `indicator.rs` gains a second door onto the same list; `words.rs`
+  gains four phrases. 70 unit tests in the crate (was 45), 9 integration tests
+  (was 7) — in German and Greek — and 5 doctests, two of them `compile_fail`.
+  **1066 tests and 30 doctests across the workspace** (was 1042 and 28), clippy
+  clean.
+
+  **The question the item had to answer first — a rule here, or all of it the
+  daemon's — turned out to have an answer neither iteration 27, 28 nor 29 had
+  in front of them: the promise is a *type*, and the daemon's half is only the
+  wiring.** *No telemetry* is law 2's shape applied to what the system does
+  rather than to what an agent does: `Errand` is a closed list of three, there
+  is no `Other(String)` and no diagnostics member, so a machine cannot report on
+  its owner for the same reason a verb cannot run a shell — there is no shape
+  for it to arrive in. A checkbox is what the feature list contrasts the promise
+  with, and the difference is exactly that a checkbox has the code behind it
+  either way.
+
+  **The decision the item did not contain, and the one that shaped every file:
+  it goes on the same indicator.** A second list would be a second place to
+  forget, and the failure law 1 exists to prevent is not *the policy was wrong*
+  but *nobody could see it*. So `Indicator::is_quiet` is false while alo OS
+  fetches a model, `Shown` holds either kind, and the promise being kept is
+  stronger than *no telemetry*: it is *nothing at all that you cannot see*.
+
+  Three decisions the next items inherit. **The organisation's egress policy is
+  not asked about an errand**, and that is deliberate rather than an omission:
+  `EgressPolicy` is `From<&SourcePolicy>` — a rule about where a *question* may
+  be answered — and applying it to a model download would stop a machine set to
+  `ThisMachineOnly` from ever fetching the model it is set to answer with. A
+  policy that defeats the setting it came from is worse than no policy, and
+  there is a test named for that machine. **There is no agent, and the type has
+  no room for one**: giving alo OS a `Grantee` would say the system acts under a
+  grant and would put it inside the capability model, so `Showing::agent`
+  answers `None` for an errand rather than naming something invented. **A twin
+  type rather than a widened one**: `Underway` is `Departing`'s twin because
+  widening `Departing` would make `alo-record`'s *whose authority was this
+  under* an `Option` in every entry it writes, in the crate whose whole job is
+  saying who did what — the one break is `Shown::leaving`, which now answers
+  `Option<&Leaving>`, and nothing outside this repository exists to break.
+
+  Built and unit tested. **Nothing here has opened a connection**: what fetches
+  a model, signs somebody in or checks for an update is the daemon's, and item
+  16a below is what the record of it owes.
+
+- [ ] **16a. The record of what alo OS did on its own** — cut from item 16, and
+  cut for a question rather than for size. Law 1's second half is *and
+  afterwards in a record*, and `alo-record`'s `Happened::Left` names an agent in
+  every entry it can write, because `Entry::left` takes a `Departing` and
+  `Happened::agent` answers a `Line` for every variant there is. An errand has
+  nobody to name, so this item's first job is to decide **what the record says
+  about a departure nobody caused** — a new `Happened` variant with no agent in
+  it (additive, which `docs/contracts/record-file.md` requires) and what
+  `Entry::agent` then answers, or a stable identity for the system that is not a
+  `Grantee`. Neither is obviously right and the wrong one is hard to take back,
+  because the record file is a public surface.
+
+  Portable and testable here: `alo-record`, `alo-egress` and a `Underway`, all
+  of which exist. It is **ready**, and it is deliberately not this iteration's —
+  one item per iteration, and a public record format decided in the last hour of
+  one is how a format nobody can change gets written.
+
+  What it must not do is make the entry from anything but an `Underway`, which
+  is item 5a's rule: an egress the indicator never showed must not be an entry
+  that can be written, and a `compile_fail` doctest is how that is asserted here.
+
+- [ ] **16b. Finding machines on the local network, on the indicator or not** —
+  the one thing item 16's list does not cover and says so. Discovery (ADR 0003,
+  `docs/features.md` v0.5) announces and listens rather than reaching a named
+  destination, so there is no `Destination` for it to be an errand about — and
+  `alo-egress` has said since item 5 that a host answering on the same wire is
+  *outside* the building, which makes multicast on that wire a thing a person
+  might reasonably expect to see. This item decides which it is: an `Errand`
+  with a destination of its own, or a documented exception with the reasoning
+  written where somebody checking the no-telemetry claim will find it.
+
+  **Blocked on nothing here, and not ready either**: there is no discovery code
+  in this repository and none of it is portable, so deciding now would be
+  deciding in the abstract about a shape nobody has built. It is listed so the
+  hole in the list is a known hole rather than a discovered one, which is what
+  the last four iterations kept finding was the difference.
+
+- [ ] **17. A machine with no agent at all** — implements **ADR 0009** and
+  `docs/features.md`'s v0.01 *★ Or not at all. Setup's fourth choice, with the
+  same weight as the other three: no model, no provider, no agent.* Found by
+  iteration 30 while checking a claim that every v0.01 promise finally had an
+  item — it did not, and this was the second one that day. `ROADMAP.md`'s line
+  has said *Built: the decision (ADR 0009), not code · Owed: all of it* since it
+  was written, and nothing ever turned that into work.
+
+  **Most of the ADR is the shell's and is not this item.** The hotkey doing
+  nothing, the overlay not existing, and Grants, Models and providers being
+  *absent* from Settings rather than greyed out are all compositor and
+  settings-panel work, and they belong under *blocked — linux* when somebody
+  writes them down. What is portable is the part the ADR is sharpest about and
+  the part that would be quietly got wrong: **turning the agent off removes its
+  reach at once.** *Grants end* is `alo_capability::Grants` — the same
+  immediacy item 3 built for a revoked grant, applied to every grant on the
+  machine at once and to the ones a `Turn` makes (item 12). *Nothing further is
+  recorded as agent activity* is `alo-record`, and it is not the same as
+  recording nothing: the ADR keeps the record and the egress indicator on a
+  machine with no agent, on the grounds that somebody who declined an agent may
+  want **more** than average to know what left their machine — which is item
+  16's errands, and is why this item is worth doing after that one rather than
+  before it.
+
+  **The decision it has to make first**, and the reason it is not a five-minute
+  change: whether *the agent is off* is a state something asks about, or whether
+  it is the absence of any grant and any grantee. The first is a flag every
+  caller must remember to check, which is the shape this repository refuses
+  everywhere else; the second is stronger and may not be expressible, because a
+  machine with the agent off must be able to be turned back on without a
+  reinstall, and something has to remember that it is off across a restart.
+
+  **Ready**: it names its ADR, its feature line and the two crates it touches,
+  and neither of them needs a compositor.
 
 ---
 

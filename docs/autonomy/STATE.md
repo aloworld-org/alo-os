@@ -3184,3 +3184,156 @@ integration test for the line itself.
   tests' — so what this iteration changed is invisible today and is exactly what
   makes the first real translation honest about how far it got. `ROADMAP.md`'s
   Language line gains a clause and stays unticked.
+
+## 2026-09-03 — iteration 30: what this machine does when nobody has asked it to
+
+**Built: item 16**, which did not exist when this iteration started. The
+reading step was the one iteration 29 prescribed — `docs/features.md` against
+the queue, promise by promise — and it found exactly the thing three previous
+entries had written down and left: **★ *No telemetry*** (v0.01, the
+sovereignty section) had no queue item, no crate, and no blocked entry under
+any name. It was the fifth v0.01 promise this journal has watched go unlisted
+and the last one still unlisted.
+
+Four new files in `crates/alo-egress`, one file's shape changed, and the words.
+
+| | |
+|---|---|
+| `errand.rs` | `Errand` — the closed list of reasons alo OS itself reaches the network, `Errand::EVERY`, and `Errand::nothing_else`, which is the promise as a string a person reads |
+| `itself.rs` | `OnItsOwn` — one errand about to happen, and the line said about it while it happens |
+| `underway.rs` | `Underway` — the only type meaning *alo OS may open this connection*, made by the indicator alone |
+| `showing.rs` | `Showing` — what one line of the indicator is about, whichever kind caused it |
+| `indicator.rs` | `beginning_on_its_own` and `ended_on_its_own`, one private `line` both doors go through, and `Shown` holding either kind |
+| `words.rs` | Four phrases: three errand lines and the promise |
+
+**The gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. **1066 tests and 30 doctests across the
+workspace** (was 1042 and 28), all green. `CHANGELOG.md`, `QUEUE.md` and
+`ROADMAP.md` in the same change.
+
+**The question three iterations left, and the answer.** They asked whether the
+portable half of *no telemetry* is a rule in `alo-egress` or whether all of it
+is the daemon's. It is a rule here, and the reason it was worth asking is that
+the answer is not a rule at all — **it is a type**. *No telemetry* is law 2's
+shape applied to what the system does rather than to what an agent does: a verb
+cannot run a shell because `Takes` has no free-text kind for one to arrive in,
+and this machine cannot report on its owner because `Errand` has no member for
+it. There is no `Other(String)`, no diagnostics, no crash report, no *usage*
+anything. What the daemon owes is the wiring — the code that actually signs
+somebody in, fetches a model or checks for an update — and none of it can
+introduce a fourth reason without editing a public enum and failing a test
+written to be a tripwire.
+
+`docs/features.md` says the policy lives *in a Rust service, not a checkbox*,
+and the difference this file can now point at is that a checkbox has the code
+behind it either way.
+
+**The decision the item did not contain, and the one that shaped every file: it
+goes on the same indicator.** The tempting shape is a list of the system's own
+egress beside the list of the agents' — two lists, two screens, each correct.
+It is wrong for the reason law 1 exists: the failure being prevented is not
+*the policy was wrong*, it is *nobody could see it*, and a second place to look
+is a second place to forget. So `Indicator::is_quiet` is now false while alo OS
+fetches a model, `Shown` holds either kind, and the promise being kept is
+strictly stronger than the one in `docs/features.md` — not *no telemetry* but
+*nothing at all that you cannot see*.
+
+That cost one public signature. `Shown::leaving` answered a `Leaving`, and it
+cannot any more; it answers `Option<&Leaving>`. It is the only break in the
+change and the only one in the workspace since item 15's `Filling::came_from`,
+and it is the change rather than a casualty of it: a line that could always name
+an agent would be a list that could only hold one kind.
+
+**Three decisions the next items inherit.**
+
+- **The organisation's egress policy is deliberately not asked about an
+  errand.** `EgressPolicy` is `From<&SourcePolicy>` — a rule an organisation
+  stated about *where a question may be answered*, widened to everything an
+  agent can cause. `SourcePolicy::ThisMachineOnly` maps to
+  `EgressPolicy::NothingLeaves`, so asking it about a model download would stop
+  a machine set to answer on its own hardware from ever fetching the model it
+  would answer with: a policy that defeats the setting it came from. An errand
+  is decided by being on the list and by nothing else, and there is a test named
+  for that machine. What an organisation controls about updates is *where they
+  come from* (v1, a mirror they host), which is a destination and not a
+  permission.
+- **There is no agent here, and the type has no room for one to be missing
+  from.** Giving alo OS a `Grantee` would have made `Leaving` do both jobs in
+  one type and would have said the system acts under a grant — nobody granted
+  their machine permission to sign them in. So `Showing::agent` answers `None`
+  for an errand, and `OnItsOwn` has no `agent()` at all: the honest shape is a
+  field that does not exist rather than one that is always empty.
+- **A twin type rather than a widened one, and `alo-record` is why.**
+  `Underway` duplicates `Departing` almost exactly, which looks like the thing
+  law 4 dislikes until you follow the alternative: widening `Departing` makes
+  `alo_record::Happened::Left`'s *whose authority was this under* an `Option` in
+  every entry the crate writes, in the crate whose whole job is saying who did
+  what. Two authorities, one indicator — the sharing happens where a person
+  looks, not where a record is written.
+
+**Two things worth keeping that are smaller.**
+
+- **The promise is a string, not a paragraph in a README.**
+  `Errand::nothing_else` says *alo OS reaches the network for these reasons and
+  no others, and never to say anything about how you use this machine*, and it
+  is shown beside the list. That is `alo-answering`'s *nothing was sent
+  anywhere* made about the machine rather than about one failed question, and it
+  is here for the same reason that one is: the person it is for does not read
+  this repository and may not read English. Its note warns a translator that
+  both halves are load-bearing and a shorter rendering must drop neither, and
+  the integration test that reads it is in Greek.
+- **The tripwire test is a tautology on purpose.** `Errand::EVERY.len() == 3`
+  plus an exhaustive match over the three is a test that asserts nothing about
+  behaviour and everything about who reads what. A fourth reason cannot be added
+  without both failing, so whoever adds one arrives in `errand.rs` and finds out
+  there that measurement is not a scope decision somebody may revisit.
+
+**What the next iteration must know:**
+
+- **The queue has two entries it did not have: 16a is ready, 16b is not.**
+  **16a** is the record of what alo OS did on its own — law 1's second half for
+  the half of egress this iteration built — and it was cut for a question rather
+  than for size: `alo-record`'s `Happened::agent` answers a `Line` for every
+  variant there is, an errand has nobody to name, and the record file is a
+  public surface where the wrong answer is hard to take back. It is portable and
+  it is the obvious next item. **16b** is discovery: ADR 0003's
+  zero-configuration machine-finding announces and listens rather than reaching
+  a named destination, so it is the one thing item 16's closed list does not
+  cover — and since item 5 this crate has held that a host answering on the same
+  wire is *outside* the building, which makes that traffic something a person
+  might reasonably expect to see. It is deliberately **not** ready: there is no
+  discovery code here and none of it is portable, so deciding now would be
+  deciding in the abstract.
+- **The reading step found a second unlisted v0.01 promise, and it is a ★ one:
+  *Or not at all* (ADR 0009).** This entry very nearly claimed that every v0.01
+  promise finally had an item; checking that claim rather than writing it is
+  what turned it up. There is nothing anywhere in `QUEUE.md` for the fourth
+  choice at setup — no model, no provider, no agent — and `ROADMAP.md`'s line
+  for it says *Built: the decision (ADR 0009), not code · Owed: all of it*,
+  which was accurate and which nothing had ever converted into work. It is
+  **item 17**, written into the queue by this iteration and deliberately not
+  built. Two thirds of it are the shell's, but the third that is not is the
+  sharpest part of the ADR: *turning it off again removes the agent's reach at
+  once — grants end, nothing further is recorded as agent activity*, which is
+  `alo-capability` and `alo-record` and is portable.
+- **So the count is now six unlisted v0.01 promises found by reading
+  `docs/features.md`, in seven iterations.** The lesson has stopped being *do
+  the reading step* and become something narrower: **the blocked lists and the
+  roadmap are both written by people who already know what is hard, and neither
+  of them is a list of what was promised.** Only `docs/features.md` is. The next
+  iteration should read it again — v0.01 first, since it has now been wrong
+  twice about being complete — and should treat a `ROADMAP.md` line whose
+  *Built* clause cannot name a crate as the strongest available signal that the
+  queue is missing an item.
+- **Nothing here has opened a connection.** There is no code in this repository
+  that signs anybody in, downloads a model or asks about an update; `alo-models`
+  fetches over `ureq`, and it does so under `ModelRuntime` rather than under an
+  errand. What was built is the shape those three will have to arrive in, and it
+  was built before them for the reason item 14 was: a fourth reason to phone
+  home is not designed, it is written into the first one by accident.
+- **`ROADMAP.md`'s *Egress indicator, and no telemetry* line gains the second
+  half of its subject and stays unticked**, because an indicator nothing draws
+  is a measurement of what the code believes rather than of what the machine
+  does. The line now names all three things owed: the compositor surface, queue
+  16a, and enforcement at the network boundary.

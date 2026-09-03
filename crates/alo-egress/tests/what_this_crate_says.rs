@@ -19,8 +19,8 @@
 
 use alo_capability::Grantee;
 use alo_egress::{
-    Destination, DestinationError, EgressPolicy, Indicator, Leaving, Why, declare_into,
-    egress_words, words,
+    Destination, DestinationError, EgressPolicy, Errand, Indicator, Leaving, OnItsOwn, Why,
+    declare_into, egress_words, words,
 };
 use alo_models::{InferenceSource, Region};
 use alo_strings::{Key, Language, Strings, Translation, Vocabulary};
@@ -292,4 +292,116 @@ fn a_translation_that_drops_where_something_is_going_is_refused() {
         .unwrap_err();
     assert_eq!(wrongs.how_many(), 2);
     assert!(wrongs.to_string().contains("destination"), "{wrongs}");
+}
+
+/// **★ No telemetry, read from outside the crate and in a language that is not
+/// English.** What alo OS does with nobody having asked it to is on the same
+/// indicator as what an agent does, said in the reader's own words, and the
+/// promise beside the list is one of those words rather than a sentence in a
+/// document.
+#[test]
+fn what_the_machine_does_on_its_own_is_read_in_the_language_the_person_reads() {
+    let strings = speaking_german(&[
+        (
+            words::ALO_IS_FETCHING_A_MODEL,
+            "alo OS holt ein Modell von {destination}",
+        ),
+        (words::IS_ASKING, "{agent} stellt {destination} eine Frage"),
+        (
+            words::A_PROVIDER_SOMEWHERE,
+            "{provider}, der nicht gesagt hat, wo er läuft",
+        ),
+    ]);
+
+    let mut indicator = Indicator::default();
+    let departing = indicator
+        .beginning(
+            &EgressPolicy::Anywhere,
+            Leaving::asking(&Grantee::named("@mail"), &somewhere()).unwrap(),
+            noon(),
+        )
+        .unwrap();
+    let underway = indicator.beginning_on_its_own(
+        OnItsOwn::for_(
+            Errand::FetchingAModel,
+            Destination::at("models.alo.example").unwrap(),
+        ),
+        noon(),
+    );
+
+    // One list, two kinds of line, one language.
+    let lines: Vec<String> = indicator
+        .showing()
+        .iter()
+        .map(|shown| shown.said(&strings).text().to_owned())
+        .collect();
+    assert_eq!(lines.len(), 2);
+    assert!(
+        lines.iter().all(|line| !line.contains("is asking")),
+        "{lines:?}"
+    );
+    assert_eq!(
+        lines.last().map(String::as_str),
+        Some("alo OS holt ein Modell von models.alo.example")
+    );
+    assert!(
+        indicator
+            .showing()
+            .iter()
+            .all(|shown| shown.said(&strings).is_translated()),
+        "{lines:?}"
+    );
+
+    // And the line about the machine's own errand names nobody, because
+    // nobody asked for it.
+    assert_eq!(
+        indicator
+            .showing()
+            .last()
+            .and_then(|shown| shown.showing().agent()),
+        None
+    );
+
+    indicator.ended(departing);
+    indicator.ended_on_its_own(underway);
+    assert!(indicator.is_quiet());
+}
+
+/// **The promise itself is a string a person reads**, and it is worth what it
+/// is worth in the language they read it in.
+///
+/// Greek, because *no telemetry* is the sentence a sovereignty product is
+/// bought on and the member states this repository exists for do not read
+/// English by default. A promise a person cannot read is a promise made to
+/// somebody else.
+#[test]
+fn the_no_telemetry_promise_is_read_by_somebody_who_does_not_read_english() {
+    let greek = Language::written("el").unwrap();
+    let vocabulary = egress_words().unwrap();
+    let speaking = vocabulary
+        .check(Translation::into_language(greek.clone()).says(
+            words::ALO_REACHES_NOTHING_ELSE.key(),
+            "το alo OS συνδέεται στο δίκτυο για αυτούς τους λόγους και για κανέναν άλλον, και ποτέ \
+             για να πει κάτι για το πώς χρησιμοποιείτε αυτόν τον υπολογιστή",
+        ))
+        .unwrap();
+    let mut strings = Strings::of(vocabulary);
+    strings.speaks(speaking).unwrap();
+    strings.prefers(&[greek]);
+
+    let said = Errand::nothing_else(&strings);
+    assert!(said.is_translated(), "{said}");
+    assert!(said.text().contains("κανέναν άλλον"), "{said}");
+    assert!(!said.text().contains("no others"), "{said}");
+
+    // Every reason on the list has a line of its own, so the promise is about
+    // something a person can also check one line at a time.
+    assert_eq!(Errand::EVERY.len(), 3);
+    for errand in Errand::EVERY {
+        assert!(
+            words::EVERY_WORD.contains(&errand.word()),
+            "{}",
+            errand.word().named()
+        );
+    }
 }

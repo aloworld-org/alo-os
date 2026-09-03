@@ -145,6 +145,68 @@ pub const IS_SENDING: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// What alo OS is doing itself — [`crate::Errand`], and the promise beside it.
+//
+// The other kind of egress: no agent, and so no sentence with an {agent} in
+// it. Three reasons and no more, on the same indicator as an agent's egress,
+// because *no telemetry* is only checkable by somebody who can see what the
+// machine does when nobody has asked it to.
+//
+// "alo OS" is the product's name and stays as it is in every language.
+// ---------------------------------------------------------------------------
+
+/// Signing a person in against their alo identity.
+pub const ALO_IS_SIGNING_YOU_IN: Word = Word::saying(
+    "egress.itself.signing-in",
+    "alo OS is signing you in at {destination}",
+)
+.noting(
+    "Shown while it is happening, on the same indicator as everything else that leaves. \"You\" is \
+     the person at the machine, so a language that distinguishes formal and familiar should use \
+     whichever the rest of the shell uses. {destination} is where the sign-in is going and arrives \
+     already in the reader's language. \"alo OS\" is the product's name and is never translated.",
+);
+
+/// Downloading a model from the catalogue.
+pub const ALO_IS_FETCHING_A_MODEL: Word = Word::saying(
+    "egress.itself.fetching-a-model",
+    "alo OS is fetching a model from {destination}",
+)
+.noting(
+    "This is the download that lets the machine answer questions on its own hardware, so it is the \
+     one egress a person is most likely to want to see and least likely to be alarmed by. \"A \
+     model\" is the thing that answers questions, not a shape or an example. {destination} arrives \
+     already in the reader's language; \"alo OS\" is never translated.",
+);
+
+/// Asking whether there is a newer deployment.
+pub const ALO_IS_CHECKING_FOR_AN_UPDATE: Word = Word::saying(
+    "egress.itself.checking-for-an-update",
+    "alo OS is checking for an update at {destination}",
+)
+.noting(
+    "Checking, not installing: this line is about the question, and it is the place where other \
+     operating systems send a description of your machine along with it. It must not read as \
+     though something is being sent. {destination} arrives already in the reader's language; \"alo \
+     OS\" is never translated.",
+);
+
+/// The promise that goes with the list of three.
+pub const ALO_REACHES_NOTHING_ELSE: Word = Word::saying(
+    "egress.itself.nothing-else",
+    "alo OS reaches the network for these reasons and no others, and never to say anything about \
+     how you use this machine",
+)
+.noting(
+    "★ The no-telemetry promise, shown beside the list of reasons rather than kept in a document \
+     nobody reads. Both halves matter and a shorter translation must not drop either: \"and no \
+     others\" is what makes the list a list rather than an example, and the second half is the \
+     promise itself — no measurement, no diagnostics, no anonymised anything. It is a statement of \
+     fact about the machine, not a reassurance, so it should read as flatly as the rest of the \
+     shell.",
+);
+
+// ---------------------------------------------------------------------------
 // What this machine's policy will not let leave — [`crate::Refusal`].
 //
 // An organisation named the rule (ADR 0004) and this is it in words. A policy
@@ -240,13 +302,17 @@ pub const NOTHING_LEAVES: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 17] = [
     A_PAIRED_MACHINE,
     A_PROVIDER,
     A_PROVIDER_SOMEWHERE,
     IS_ASKING,
     IS_FETCHING,
     IS_SENDING,
+    ALO_IS_SIGNING_YOU_IN,
+    ALO_IS_FETCHING_A_MODEL,
+    ALO_IS_CHECKING_FOR_AN_UPDATE,
+    ALO_REACHES_NOTHING_ELSE,
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
     NOTHING_MAY_LEAVE,
@@ -372,6 +438,10 @@ mod tests {
             IS_ASKING,
             IS_FETCHING,
             IS_SENDING,
+            ALO_IS_SIGNING_YOU_IN,
+            ALO_IS_FETCHING_A_MODEL,
+            ALO_IS_CHECKING_FOR_AN_UPDATE,
+            ALO_REACHES_NOTHING_ELSE,
             A_PAIRED_MACHINE,
             A_PROVIDER,
             A_PROVIDER_SOMEWHERE,
@@ -381,6 +451,44 @@ mod tests {
         ] {
             assert!(word.note().is_some(), "{}", word.named());
         }
+    }
+
+    /// **What alo OS does on its own names the place too.** These lines are
+    /// what makes ★ *no telemetry* checkable rather than claimed, and a line
+    /// that said only *alo OS is doing something* would be worth nothing to the
+    /// person reading it.
+    #[test]
+    fn every_line_about_the_machines_own_errands_names_where_it_is_reaching() {
+        for word in [
+            ALO_IS_SIGNING_YOU_IN,
+            ALO_IS_FETCHING_A_MODEL,
+            ALO_IS_CHECKING_FOR_AN_UPDATE,
+        ] {
+            assert!(word.says().contains("{destination}"), "{}", word.named());
+            // No agent caused these, so no line about one may name an agent.
+            assert!(!word.says().contains("{agent}"), "{}", word.named());
+        }
+    }
+
+    /// **The promise says both halves.** *These reasons and no others* is what
+    /// makes the list a list; *nothing about how you use this machine* is the
+    /// promise itself. A translation that kept one and dropped the other would
+    /// pass every check `alo-strings` makes, because neither half is a gap — so
+    /// this is the test, and the note is where a translator is warned.
+    #[test]
+    fn the_no_telemetry_promise_says_both_halves_and_fills_nothing() {
+        assert!(ALO_REACHES_NOTHING_ELSE.says().contains("no others"));
+        assert!(
+            ALO_REACHES_NOTHING_ELSE
+                .says()
+                .contains("how you use this machine")
+        );
+        assert!(!ALO_REACHES_NOTHING_ELSE.says().contains('{'));
+        assert!(
+            ALO_REACHES_NOTHING_ELSE
+                .note()
+                .is_some_and(|note| note.contains("drop either"))
+        );
     }
 
     /// **The three lines name all three things.** An indicator that said only

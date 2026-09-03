@@ -21,6 +21,18 @@
 //! **Nothing here reads the clock**, as everywhere else in this repository: the
 //! moment is passed in, so what the indicator shows and what a record says
 //! cannot disagree about when something happened.
+//!
+//! # One list, and alo OS is on it too
+//!
+//! Law 1 is written about egress an *agent* causes, and so is
+//! [`Indicator::beginning`]. `docs/features.md` makes a second promise beside
+//! it — ★ *no telemetry* — which is about egress with **no agent behind it**,
+//! and [`Indicator::beginning_on_its_own`] is where that promise stops being a
+//! sentence. The two are decided differently ([`crate::errand`] says why) and
+//! they appear in one place, because a person watching for *nothing has left
+//! this machine* must not have a second indicator somewhere they have not
+//! thought to look. [`Indicator::is_quiet`] is therefore false while alo OS
+//! itself is fetching a model, and that is the answer rather than a gap in it.
 
 use std::time::SystemTime;
 
@@ -28,9 +40,12 @@ use alo_strings::{Said, Strings};
 use serde::Serialize;
 
 use crate::departing::Departing;
+use crate::itself::OnItsOwn;
 use crate::leaving::Leaving;
 use crate::policy::EgressPolicy;
 use crate::refusing::NotPermitted;
+use crate::showing::Showing;
+use crate::underway::Underway;
 
 /// Which line on the indicator an egress is.
 ///
@@ -55,8 +70,8 @@ pub struct Shown {
     id: ShownId,
     /// When it began.
     at: SystemTime,
-    /// What is leaving.
-    leaving: Leaving,
+    /// What is leaving, and whether anybody caused it.
+    showing: Showing,
 }
 
 impl Shown {
@@ -72,16 +87,34 @@ impl Shown {
         self.at
     }
 
-    /// What is leaving.
+    /// What is leaving, whichever kind it is.
     #[must_use]
-    pub fn leaving(&self) -> &Leaving {
-        &self.leaving
+    pub fn showing(&self) -> &Showing {
+        &self.showing
+    }
+
+    /// The agent's egress this line is, if it is one.
+    ///
+    /// Answers `None` for an errand alo OS is running itself. This used to
+    /// answer a [`Leaving`] outright, and it stopped being able to when the
+    /// machine's own egress joined the list rather than getting an indicator of
+    /// its own — which is the point of the change, so the honest signature is
+    /// this one.
+    #[must_use]
+    pub fn leaving(&self) -> Option<&Leaving> {
+        self.showing.leaving()
+    }
+
+    /// The machine's own errand this line is, if it is one.
+    #[must_use]
+    pub fn on_its_own(&self) -> Option<&OnItsOwn> {
+        self.showing.on_its_own()
     }
 
     /// The line a person reads, in the language they read it in.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        self.leaving.said(strings)
+        self.showing.said(strings)
     }
 }
 
@@ -177,14 +210,89 @@ impl Indicator {
         if let Some(refused) = policy.refusal(&leaving) {
             return Err(refused);
         }
+        let id = self.line(now, Showing::Agent(leaving.clone()));
+        Ok(Departing::new(leaving, now, id))
+    }
+
+    /// Begin showing something alo OS is doing on its own.
+    ///
+    /// The other door onto the same list, for the egress law 1's sentence does
+    /// not cover: no agent caused it, so there is nobody whose authority it is
+    /// under and no [`EgressPolicy`] to ask — [`crate::errand`] has the whole
+    /// of why, and the short version is that the rule an organisation stated
+    /// about where questions may be answered would, applied here, stop a
+    /// machine set to answer on its own hardware from ever downloading the
+    /// model it would answer with.
+    ///
+    /// **So this cannot refuse, and it can never fail to show.** What it
+    /// guarantees is the half that is worth having: an
+    /// [`Underway`] is the only thing that means alo OS may open this
+    /// connection, this is the only thing that makes one, and it puts the
+    /// errand in front of the person first.
+    ///
+    /// ```
+    /// use alo_egress::{Destination, Errand, Indicator, OnItsOwn, egress_words};
+    /// use alo_strings::Strings;
+    /// use std::time::{Duration, SystemTime};
+    ///
+    /// # fn main() {
+    /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
+    /// let strings = Strings::of(egress_words().expect("this crate's own words"));
+    /// let mut indicator = Indicator::default();
+    /// assert!(indicator.is_quiet());
+    ///
+    /// let underway = indicator.beginning_on_its_own(
+    ///     OnItsOwn::for_(
+    ///         Errand::FetchingAModel,
+    ///         Destination::at("models.alo.example").expect("a host that can be shown"),
+    ///     ),
+    ///     now,
+    /// );
+    /// assert_eq!(
+    ///     indicator.showing()[0].said(&strings).text(),
+    ///     "alo OS is fetching a model from models.alo.example",
+    /// );
+    /// assert!(indicator.showing()[0].leaving().is_none(), "no agent caused it");
+    ///
+    /// indicator.ended_on_its_own(underway);
+    /// assert!(indicator.is_quiet());
+    /// # }
+    /// ```
+    ///
+    /// The same errand ended twice is not a program, as with a departure:
+    ///
+    /// ```compile_fail
+    /// use alo_egress::{Destination, Errand, Indicator, OnItsOwn};
+    /// use std::time::{Duration, SystemTime};
+    ///
+    /// # fn main() {
+    /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
+    /// let mut indicator = Indicator::default();
+    /// let underway = indicator.beginning_on_its_own(
+    ///     OnItsOwn::for_(
+    ///         Errand::FetchingAModel,
+    ///         Destination::at("models.alo.example").expect("a host that can be shown"),
+    ///     ),
+    ///     now,
+    /// );
+    /// indicator.ended_on_its_own(underway);
+    /// indicator.ended_on_its_own(underway); // the errand was spent above
+    /// # }
+    /// ```
+    pub fn beginning_on_its_own(&mut self, on_its_own: OnItsOwn, now: SystemTime) -> Underway {
+        let id = self.line(now, Showing::Itself(on_its_own.clone()));
+        Underway::new(on_its_own, now, id)
+    }
+
+    /// Put one line on the list and answer which line it is.
+    ///
+    /// The one place a line is added, so neither door can be the one that
+    /// forgot to show something.
+    fn line(&mut self, at: SystemTime, showing: Showing) -> ShownId {
         let id = ShownId(self.next);
         self.next += 1;
-        self.showing.push(Shown {
-            id,
-            at: now,
-            leaving: leaving.clone(),
-        });
-        Ok(Departing::new(leaving, now, id))
+        self.showing.push(Shown { id, at, showing });
+        id
     }
 
     /// Stop showing a departure that has finished.
@@ -194,8 +302,22 @@ impl Indicator {
     /// departure from another indicator entirely is a programming mistake worth
     /// noticing rather than a silent no-op.
     pub fn ended(&mut self, departing: Departing) -> bool {
+        self.take_off(departing.shown())
+    }
+
+    /// Stop showing an errand of alo OS's own that has finished.
+    ///
+    /// Takes the [`Underway`] rather than borrowing it, so one connection ends
+    /// exactly one line — the rule [`Indicator::ended`] keeps, kept by the same
+    /// means for the door with no agent behind it.
+    pub fn ended_on_its_own(&mut self, underway: Underway) -> bool {
+        self.take_off(underway.shown())
+    }
+
+    /// Take one line off, and answer whether it was on this indicator.
+    fn take_off(&mut self, id: ShownId) -> bool {
         let before = self.showing.len();
-        self.showing.retain(|shown| shown.id != departing.shown());
+        self.showing.retain(|shown| shown.id != id);
         self.showing.len() < before
     }
 
@@ -207,7 +329,12 @@ impl Indicator {
 
     /// Whether nothing is leaving.
     ///
-    /// The state a machine answering its own questions is in all day.
+    /// The state a machine answering its own questions is in all day — and it
+    /// counts what alo OS is doing itself, not only what its agents are. A
+    /// quiet indicator that stayed quiet while the machine checked for an
+    /// update would be the more comfortable answer and the less true one, and
+    /// this is the claim `CLAUDE.md` promises to measure at the network
+    /// boundary rather than to assert.
     #[must_use]
     pub fn is_quiet(&self) -> bool {
         self.showing.is_empty()
@@ -222,11 +349,19 @@ impl Indicator {
 mod tests {
     use super::*;
     use crate::destination::Destination;
+    use crate::errand::Errand;
     use crate::leaving::Why;
     use crate::testing::in_english;
     use alo_capability::Grantee;
     use alo_models::{InferenceSource, Region};
     use std::time::Duration;
+
+    fn fetching_a_model() -> OnItsOwn {
+        OnItsOwn::for_(
+            Errand::FetchingAModel,
+            Destination::at("models.alo.example").unwrap(),
+        )
+    }
 
     fn noon() -> SystemTime {
         SystemTime::UNIX_EPOCH + Duration::from_secs(60 * 60 * 12)
@@ -277,6 +412,95 @@ mod tests {
             shown.said(&in_english()).text(),
             "@mail is asking a question of alo, in the EU"
         );
+        assert_eq!(shown.leaving().map(Leaving::agent), Some(&mail()));
+    }
+
+    /// **★ No telemetry, from the person's side of it.** What alo OS does with
+    /// nobody having asked goes on the same list as what its agents do, so
+    /// *nothing has left this machine* is one thing to look at rather than two.
+    /// An errand shown somewhere else would be an errand nobody looks at.
+    #[test]
+    fn what_the_machine_does_on_its_own_is_on_the_same_list_as_what_agents_do() {
+        let mut indicator = Indicator::default();
+        let departing = indicator
+            .beginning(&EgressPolicy::Anywhere, asking_alo(), noon())
+            .unwrap();
+        let underway = indicator.beginning_on_its_own(fetching_a_model(), noon() + hour());
+
+        assert_eq!(indicator.showing().len(), 2);
+        assert_eq!(
+            indicator
+                .showing()
+                .iter()
+                .map(|shown| shown.said(&in_english()).text().to_owned())
+                .collect::<Vec<_>>(),
+            vec![
+                "@mail is asking a question of alo, in the EU".to_owned(),
+                "alo OS is fetching a model from models.alo.example".to_owned(),
+            ]
+        );
+
+        // And which is which is answerable without reading the sentence.
+        assert_eq!(
+            indicator.showing().first().and_then(Shown::on_its_own),
+            None
+        );
+        assert_eq!(indicator.showing().last().and_then(Shown::leaving), None);
+        assert_eq!(
+            indicator.showing().last().map(Shown::on_its_own),
+            Some(Some(&fetching_a_model()))
+        );
+
+        assert!(indicator.ended(departing));
+        assert!(!indicator.is_quiet(), "the machine is still fetching");
+        assert!(indicator.ended_on_its_own(underway));
+        assert!(indicator.is_quiet());
+    }
+
+    /// **The two doors share their line numbers**, so a departure cannot end an
+    /// errand's line and an errand cannot end a departure's. One list means one
+    /// counter, and reusing a number is how one connection takes another's line
+    /// off.
+    #[test]
+    fn a_departure_and_an_errand_never_share_a_line_number() {
+        let mut indicator = Indicator::default();
+        let departing = indicator
+            .beginning(&EgressPolicy::Anywhere, fetching(), noon())
+            .unwrap();
+        let underway = indicator.beginning_on_its_own(fetching_a_model(), noon());
+        assert_ne!(departing.shown(), underway.shown());
+
+        assert!(indicator.ended_on_its_own(underway));
+        assert_eq!(indicator.showing().len(), 1);
+        assert_eq!(
+            indicator.showing().first().map(Shown::id),
+            Some(departing.shown())
+        );
+        assert!(indicator.ended(departing));
+        assert!(indicator.is_quiet());
+    }
+
+    /// **The machine's own errand is not the organisation's policy to refuse**,
+    /// and this is the case that says why: a machine whose organisation set
+    /// *questions are answered on this machine only* must still be able to
+    /// fetch the model it will answer with. The policy derived from that
+    /// setting is [`EgressPolicy::NothingLeaves`], and a machine it also
+    /// stopped from downloading a model would be a machine the setting had
+    /// broken.
+    #[test]
+    fn a_machine_that_lets_nothing_leave_can_still_fetch_the_model_it_answers_with() {
+        let mut indicator = Indicator::default();
+        assert!(
+            indicator
+                .beginning(&EgressPolicy::NothingLeaves, asking_alo(), noon())
+                .is_err(),
+            "an agent's question is refused"
+        );
+
+        let underway = indicator.beginning_on_its_own(fetching_a_model(), noon());
+        assert_eq!(underway.errand(), Errand::FetchingAModel);
+        assert!(!indicator.is_quiet(), "and it is shown while it happens");
+        assert!(indicator.ended_on_its_own(underway));
     }
 
     /// **A refusal shows nothing, because nothing left.** An indicator that lit
@@ -398,5 +622,13 @@ mod tests {
         assert!(written.contains("alo"), "{written}");
         assert!(written.contains("asking"), "{written}");
         assert_eq!(departing.shown().as_u64(), 0);
+
+        // And so can an errand, told apart from an agent's egress in the text.
+        let mut own = Indicator::default();
+        let underway = own.beginning_on_its_own(fetching_a_model(), noon());
+        let written = serde_json::to_string(own.showing()).unwrap();
+        assert!(written.contains("itself"), "{written}");
+        assert!(written.contains("fetching-a-model"), "{written}");
+        assert_eq!(underway.shown().as_u64(), 0);
     }
 }
