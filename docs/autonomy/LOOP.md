@@ -126,6 +126,37 @@ is built and gated on Windows; reaching for WSL by habit would mean the ordinary
 path stops being tested. And an item that needs Linux says so in the queue, with
 the reason, so nobody has to guess which is which.
 
+**The BPF toolchain is installed, and getting there was not obvious.** Items 26
+and 27 build a BPF programme with `aya`, which needs nightly with `rust-src` and
+`bpf-linker`. Both are on the WSL box as of 2026-09-04:
+
+```
+rustc 1.100.0-nightly, component rust-src
+bpf-linker 0.11.0, built against LLVM 21
+export LLVM_PREFIX=/usr/lib/llvm-21
+export PATH=/usr/lib/llvm-21/bin:$PATH    # both are in /root/.bashrc
+```
+
+Three things cost five attempts, and every one of them pointed at the wrong
+cause:
+
+- **The variable is `LLVM_PREFIX`, bpf-linker's own** — not `llvm-sys`'s
+  `LLVM_SYS_<version>_PREFIX`, which is the one every search result names.
+  Setting the `llvm-sys` variable correctly changes nothing.
+- **The binary must be called exactly `llvm-config` and be on `PATH`.** Ubuntu
+  installs `/usr/bin/llvm-config-21`, which does not match, and a plain
+  `llvm-config` only under `/usr/lib/llvm-21/bin`, which is not on `PATH`. The
+  error says *could not find llvm-config in … `PATH`*, so it reads as a missing
+  package — and installing more packages never fixes it.
+- **A plain `cargo install bpf-linker` cannot work on Ubuntu 26.04.** Its
+  default feature is `llvm-23`; the distribution ships `llvm-dev` only to 22. The
+  feature has to be pinned: `--no-default-features --features llvm-21`.
+
+Do **not** install `clang` or `bpftool` to get around any of this. `aya` builds
+the programme from Rust and neither is needed; reaching for them is how C would
+enter the toolchain unnoticed. LLVM here is a build tool on the machine, in the
+same category as the linker cargo already uses — it puts no C in the repository.
+
 **`alo-agentd` is never gated on Windows.** Every module in it is
 `#[cfg(target_os = "linux")]`, so on Windows the crate compiles to almost
 nothing, runs **no tests, and exits 0** — which is the same exit code, and the
