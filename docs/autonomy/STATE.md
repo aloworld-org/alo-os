@@ -3607,3 +3607,134 @@ and it is not this file.
   item 17a and needs a shell. What exists is the model those screens will read:
   one question for whether the surfaces are there at all, one line for the place
   Settings still offers, and one act that ends every grant on the machine.
+
+---
+
+## 2026-09-03 — iteration 33: the queue is a true picture of v0.01, and it is empty
+
+**Built: nothing, and that is the finding rather than the failure.** Every item
+in `QUEUE.md`'s *Ready* section is ticked. The two unticked entries are 16b,
+which is deliberately not ready, and 17a, which is under *blocked — linux*.
+`QUEUE.md` says in its own words what happens here: *the loop takes ready items
+and stops when there are none left.*
+
+**The gate was run anyway, on unchanged code.** `cargo fmt --all --check` clean,
+`cargo clippy --workspace --all-targets -- -D warnings` zero warnings and zero
+errors, **1094 tests and 34 doctests, all green** — the same numbers iteration
+32 left. An entry that stops the loop is making a claim about the state of the
+workspace, and taking the previous iteration's word for it is exactly the case
+`LOOP.md` names as a halt: *a test that used to pass has started failing*. None
+has. `ROADMAP.md` was not moved, because nothing was built for it to report —
+which is the one honest reason for leaving that file alone, and this entry says
+so rather than passing over it in silence.
+
+**What the reading step covered, since it was the whole of the work.** All of
+`docs/features.md`, v0.01 line by line, against `QUEUE.md` and `ROADMAP.md`.
+Every v0.01 promise now has an item:
+
+| Promise | Where it lives |
+|---|---|
+| File verbs; application verbs; context on invocation; grants; every execution recorded | items 6/6a, 11/11a, 12, 1–4, 4a — built |
+| Keyboard shortcuts; the dock | items 7, 13 — built |
+| Egress indicator; no telemetry | items 5, 5a, 16, 16a — built |
+| The model stack, a provider of your own, an API instead, never a silent fallback, or no agent at all | `alo-models`, items 10, 14, 17 — built |
+| Compositor, sign-in, overlay, launcher, window management, copy and paste, window switching, the image | *blocked — linux* |
+| The GPU on first boot, a real Ollama, the exit gate | *blocked — hardware* |
+| Agents point at the local model | *not ours* — `alo-workplace` |
+
+**Six unlisted v0.01 promises were found by seven previous iterations reading
+that file. This one found none**, and unlike iterations 31 and 32 it read the
+whole of v0.01 rather than the section its item lived in. That is as strong a
+claim as the method supports, and it is still not a proof: what it means is that
+whoever finds the next hole will find it in another tier, not in the v0.01 list.
+
+LOOP COMPLETE
+
+**Everything that remains, and what each is waiting on:**
+
+- **Not ready — 16b, discovery on the local network.** Whether multicast is an
+  `Errand` or a documented exception to the no-telemetry claim. Nothing about
+  discovery has been built since iteration 30 wrote the item, so deciding now
+  would still be deciding in the abstract about a shape nobody has.
+- **Blocked — linux.** The compositor and everything drawn on it: sign-in and
+  the local account, the agent overlay, the launcher, window management, copy
+  and paste, window switching, the workspace client, and the image itself. Plus
+  **17a** (the surfaces a machine with no agent does not have), the **reading
+  half of context on invocation** — Wayland and AT-SPI, and with it the one
+  capability guarantee no portable test can make, *with no invocation,
+  `alo-agentd` makes no context calls at all* — the **acting half of the
+  application verbs** (D-Bus and the portal backend), **6b** (`openat` with
+  `O_NOFOLLOW` and `renameat2` with `RENAME_NOREPLACE`), **4b** (where the
+  record file lives and the timer that shortens it), and **egress enforcement at
+  the network boundary**, without which item 5 describes only the code that
+  asked.
+- **Blocked — hardware.** The model stack against a real Ollama, the GPU on
+  first boot, and the v0.01 exit gate: one person, one machine, one cold boot.
+- **Not ours.** Agents pointing at the local model is `alo-workplace`, and this
+  loop never touches another repository.
+
+**What is left behind is thirteen crates, 1094 tests and no daemon.** The
+capability model is working code — grants, verbs, approvals, the record and what
+keeps it, egress with and without an agent behind it, the portable halves of the
+file and application verbs, what an invocation offers, the dock, appearance, the
+shortcuts, every string in the reader's own language, and the machine somebody
+chose not to have an agent on. What none of it has ever done is open a window,
+read a screen, put a question to a model, or open a connection.
+
+**The decision now, and why the loop must not make it.** There is portable,
+promised, testable work left — but all of it is **v0.5**, and `QUEUE.md` is
+titled *Queue — v0.01*. `CLAUDE.md` gates scope to *this file, the current
+release, and Non-goals*, so a loop that wrote v0.5 items into a v0.01 queue
+would be widening its own scope on its own authority, which is the one thing a
+build loop should never be trusted to do. Opening a v0.5 queue is a person's
+call. Three candidates turned up while reading, listed so that call is informed
+rather than a fresh survey:
+
+- **Regional formats** (v0.5, *Language and access*). `alo-appearance`'s
+  `words.rs` already says outright that how a number is written belongs to the
+  region rather than the language, and that nothing here does it: `TextScale`
+  shows `200%` and `TimeOfDay` shows `18:00` because those are what the settings
+  file holds, not what a person in Finland reads. `alo-models`' `NotEnoughDisk`
+  hands two `u64`s to a caller with nowhere to write them, `alo-keeping` has a
+  retention window, `alo-dock` has measures. **Strings are finished — every
+  crate in the workspace has crossed onto `alo-strings` — and numbers are the
+  half of *hardcoded English is a bug* that nobody has started.** It is a data
+  item, so item 9a's rule governs it: read CLDR rather than recall it, which
+  means it needs the network the way 9a did.
+- **The capture indicator** (v0.5 ★): *a visible indicator whenever the screen,
+  camera or microphone is in use — by any application, including ours*. It has
+  no queue entry, blocked or otherwise, and no `ROADMAP.md` *Built* clause.
+  `alo-egress` is the proven shape — the decision and the showing are one call,
+  and the token it hands back is the only thing a caller can hold — and item
+  16's argument applies exactly: an indicator written *after* the capture code
+  is one somebody can bypass. The decision it exists to make is whether it is
+  law 1's indicator or a second one.
+- **One list of what has been granted to what** (v0.5 ★): agents and
+  applications in the same place, revoked the same way. ADR 0005 already says a
+  portal request is a grant in ADR 0001's sense, so the question is whether that
+  is a `Grantee` and a `Reach` or a second list joined only at a panel. The most
+  valuable of the three and the heaviest: it moves a public surface every other
+  crate reads.
+
+**One smaller thing, and it was answered while this iteration was reading.**
+*★ Where the answer came from is said where the answer appears* had no
+`ROADMAP.md` line of its own — it rode on the provider line and the local-model
+line — and this entry was going to say so as advice. Commit `d0a1baf` landed on
+the remote first and wrote it, together with lines for *★ It runs on the machine
+you already own* and *★ Or use an API instead*: two promises this reading step
+had counted as covered because their **code** exists, without asking the
+narrower question of whether the roadmap could name them. It also makes that
+file's rule run both ways — every promise at a release now has a line there, or
+is named on the line that carries it — which is this journal's own conclusion
+turned into a rule rather than advice repeated once an iteration.
+
+None of the three changes the finding above. What each owes is the setup screen,
+the daemon and the overlay, so none is a ready item; and the last of them is
+flagged on its own line as the likeliest of the three to be lost, because it is
+a sentence that must appear every single time and nothing in this repository yet
+forces it to.
+
+**No `CHANGELOG.md` line was written, and the absence is deliberate.** That file
+is what somebody outside this repository can read, and nothing changed for them
+this iteration. A changelog entry announcing that the loop stopped would be the
+loop reporting on itself in the one file that is not about it.
