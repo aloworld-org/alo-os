@@ -12,6 +12,21 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **alo OS now says in public what its kernel has to be able to do before it can
+  enforce a grant — and how to check, in a way that does not flatter the
+  answer.** The promise is that a verb reaching outside what you granted it
+  fails at the kernel rather than being declined by our own code, which is the
+  difference between an audit log and a guarantee. That needs a kernel with the
+  BPF security module both **built in** and **actually started**, and those are
+  two different questions: a kernel can have it compiled in and never start it,
+  at which point the obvious check says yes and nothing is enforced. So
+  `docs/hardware.md` asks the kernel what it is running rather than what it was
+  built with, and anyone judging a machine for alo OS can run the same three
+  commands and get the same answer we would.
+
+  The first kernel we measured this way fails it, and it is written down beside
+  the requirement rather than left out of it.
+
 - **When your machine has no model for the agent, it now tells you about the
   weights you may already have.** That screen used to name two ways out — a
   machine on your network you have paired with, or a provider you add — and both

@@ -25,7 +25,38 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ## Hardware and firmware
 
-_(no entries yet)_
+### The BPF LSM is compiled into the WSL2 kernel and does not start
+**Version:** `6.6.87.2-microsoft-standard-WSL2`, Ubuntu under WSL2 on Windows 11,
+measured 2026-09-03 by reading the kernel's own config and its own list of
+running security modules.
+**Behaviour:** the kernel has `CONFIG_BPF_LSM=y`, so every account of it that
+stops there says the BPF LSM is available. It is not. `CONFIG_LSM` is
+`"landlock,lockdown,yama,loadpin,safesetid,integrity,selinux,apparmor,tomoyo"`
+with no `bpf` in it, `/proc/cmdline` carries no `lsm=` parameter to replace that
+list, and the kernel's own answer — `/sys/kernel/security/lsm` — is
+`capability,landlock,yama,safesetid,selinux`. A security module that is not in
+that list never registered its hooks, so nothing it would have decided is asked
+of it. **Compiled in and started are two different questions**, and only the
+second one matters.
+
+Two smaller things go with it, both of which cost time before the answer
+appeared. `securityfs` is **not mounted** on this kernel, so
+`/sys/kernel/security/lsm` reads as a missing file rather than as an answer until
+`mount -t securityfs securityfs /sys/kernel/security` is run — an empty result
+here means *you have not asked yet*, not *no modules*. And `bpftool` is not
+installed in the Ubuntu image, so `bpftool feature probe` returns nothing at all
+and exits `0`, which reads exactly like a clean probe that found no LSM support.
+Neither absence is an answer; both look like one.
+**Our response:** the measurement is the finding, and no work around it was
+attempted. `docs/autonomy/QUEUE.md` items 26 and 27 — the whole of ADR 0015 —
+are blocked on a kernel that starts the BPF LSM, and `docs/hardware.md` now
+states the requirement as two checks in order rather than one, because checking
+only `CONFIG_BPF_LSM` is how this kernel passes. WSL2 can be given
+`lsm=…,bpf` through `kernelCommandLine` in a `.wslconfig`, and the build loop
+deliberately did not: that is a change to somebody's own machine, made outside
+this repository, that restarts every distribution running on it, and it is the
+machine owner's to make rather than a loop's.
+**Date:** 2026-09-03
 
 <!--
 ### <Machine or component> — <one-line summary>

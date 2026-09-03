@@ -780,6 +780,19 @@ sorted the same way v0.01 now is.
       patched. **Ordered behind `alo-agentd` and the turn** — there is nothing
       to enforce until a turn exists, and this is written down now so the turn
       is built with a boundary rather than retrofitted into one
+  - [ ] The code. **No crate yet, and the reason is measured rather than
+        scheduled.** ADR 0015 is the mechanism — a BPF LSM on `file_open`,
+        written in Rust through `aya`, with one grant per cgroup — and a BPF
+        LSM cannot be written against a kernel that does not run one. The only
+        Linux host this repository can reach has the BPF LSM **compiled in and
+        not started**, so the first line of code has nowhere to be tested.
+        `docs/quirks.md` has the measurement and `docs/autonomy/QUEUE.md` items
+        26 and 27 are the work
+  - [ ] On the machine. The certified machine, and a kernel requirement that is
+        a **configuration** and not a patch: `CONFIG_BPF_LSM=y` **and** `bpf`
+        among the security modules that actually start. Those are two checks
+        rather than one, and `docs/hardware.md` says how to ask both — the
+        second is the one machines fail
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing

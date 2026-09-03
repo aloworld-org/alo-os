@@ -6260,3 +6260,139 @@ half moved, because neither has been on a machine.
   beside it. Whoever hits this next should look at `THE_OTHER_PLACES` — its
   sentence is unchanged, and its *note* now says so, because a note is
   guidance to a translator rather than a string anybody reads.
+
+---
+
+## Iteration — item 26: the kernel that has it and does not run it
+
+**Item 26 asked for a measurement before it asked for code, and the measurement
+is the answer.** ADR 0015 is the largest idea in this repository and the most
+dangerous one — a BPF LSM sees every syscall by construction — so the item was
+written to be tiny and to fail fast: check the machine can do it at all, and if
+it cannot, say what a certified machine will need and stop. It cannot. Nothing
+was worked around and no code was written.
+
+### What was asked, and what the kernel said
+
+The item names two checks. There is a third, and it is the one that decides.
+
+| Asked | Answer |
+|---|---|
+| `CONFIG_BPF_LSM=y` | **yes** |
+| `bpf` in `CONFIG_LSM` | **no** — `landlock,lockdown,yama,loadpin,safesetid,integrity,selinux,apparmor,tomoyo`, and `/proc/cmdline` has no `lsm=` to replace it |
+| `bpf` in `/sys/kernel/security/lsm` — what actually started | **no** — `capability,landlock,yama,safesetid,selinux` |
+
+Kernel `6.6.87.2-microsoft-standard-WSL2`, the only Linux host this repository
+can reach. A security module that is not in the third list never registered its
+hooks, so nothing it would have decided is ever asked of it.
+
+**The third row is worth more than the finding it produced.** The first row is
+the check people run, and on this kernel it says yes. *Compiled in* and
+*started* are two questions, and only the second one is about whether a grant
+can be enforced — so `docs/hardware.md` now asks the kernel what it is running
+rather than what it was built with, and puts this kernel underneath as the
+worked counterexample. ADR 0015 said the requirement belonged in that file; it
+is there, as three commands in order rather than as a sentence.
+
+### Two things that look like answers and are not
+
+Both cost time, and both are in `docs/quirks.md` beside the entry, because the
+next person to measure a kernel will meet them in the same order.
+
+- **`securityfs` is not mounted on this kernel.** `cat /sys/kernel/security/lsm`
+  reads as a missing file until `mount -t securityfs securityfs
+  /sys/kernel/security` is run. An empty result means *you have not asked yet*.
+- **`bpftool` is not installed in the Ubuntu image.** `bpftool feature probe`
+  therefore prints nothing and **exits `0`**, which is indistinguishable from a
+  probe that ran and found no LSM support. A tool that is absent reports the
+  same shape as a kernel that is incapable.
+
+Neither absence is an answer, and both look like one. That is the reason the
+finding rests on the kernel's own two files rather than on a tool.
+
+### The escape route exists and was deliberately not taken
+
+WSL2 accepts a kernel command line through `kernelCommandLine` in a
+`.wslconfig`, so `lsm=capability,landlock,yama,safesetid,selinux,bpf` would very
+likely make this machine able to carry item 26. The loop did not do it, for
+reasons that are not about difficulty: it is a change to somebody's own machine
+made outside this repository, it restarts every distribution running on that
+machine, and the item's own words are *do not work around it*. It is the
+machine owner's to make, and it is written down in the queue and the quirk so
+that whoever wants item 26 next knows exactly which one line to add.
+
+What was **not** measured, and is not claimed: what a BPF LSM program would do
+if it were loaded against a kernel in this state. That is a question about
+kernel internals, the loop has no way to ask it here, and the answer changes
+nothing — the decision is the same either way.
+
+### The gate
+
+No Rust moved, and the gate was run anyway rather than assumed.
+`cargo fmt --all --check` clean on both hosts.
+`cargo clippy --workspace --all-targets -- -D warnings` clean with zero warnings
+and zero errors on Windows and on Linux. **1502 tests and 44 doctests on
+Windows, 1676 and 44 on Linux** — unchanged, which is the correct result for an
+iteration whose product is a measurement and four documents.
+
+Nothing was built. **No claim of hardware verification is made anywhere**, and
+the two items this blocks say so in their own words.
+
+### `ROADMAP.md` moved
+
+The line this served is v0.5's *★ The grant enforced by the kernel* (ADR 0013),
+and it had no boxes. It has two now, **both empty, and neither was ticked**. The
+code half says what is unusual about this line: there is no crate, and the
+reason is measured rather than scheduled — a BPF LSM cannot be written against a
+kernel that does not run one, so the first line of code has nowhere to be
+tested. The machine half carries the kernel requirement as a configuration
+expectation and points at the two checks. This is the first time the two-box
+shape has been used on a line where **neither** half has started, and it is the
+right use of it: a reader planning v0.5 needs to know the prerequisite is a
+kernel config before they need anything else about this line.
+
+**What the next iteration must know:**
+
+- **There are no ready items left.** Items 26 and 27 stay in the *Ready*
+  section by the queue's own convention — an item blocked on something names
+  what in a paragraph of its own, as 16b, 19b, 21h, 21i and 21j do — but there
+  is nothing in the queue this loop can take.
+- **Item 27 is blocked by 26 and always was**, by its own words: the
+  decides-and-forgets test is written *with* item 26 rather than after it, so it
+  cannot start before the LSM it would run under.
+- **The one line that unblocks both** is `bpf` in the kernel's started LSM list.
+  On WSL2 that is `kernelCommandLine` in a `.wslconfig` and a restart, and it is
+  the machine owner's decision. On the certified machine it is
+  `docs/hardware.md`'s requirement, and ADR 0015's claim that the ADR 0011 base
+  ships it is **read and not measured** — the three commands in that file are
+  how somebody settles it.
+- **`docs/quirks.md`'s Hardware and firmware section has its first entry**,
+  after being empty since the file was written. It is worth noticing what kind
+  of entry it turned out to be: not a firmware bug, but a configuration that is
+  true in one place and false in another, where the check everybody runs is the
+  one that cannot tell.
+
+LOOP COMPLETE
+
+Every item in `docs/autonomy/QUEUE.md` is done or blocked. The blocked ones, and
+what each waits on:
+
+- **16b** — finding machines on the local network. No discovery code exists here
+  and none of it is portable; deciding now would be deciding in the abstract.
+- **19b** — what a turn does with an application verb. Blocked on the acting
+  half, which is Wayland and D-Bus.
+- **21h** — which model or provider answers. Blocked on a decision that is not
+  the loop's: where a person's choice is stored, which has the same owner as
+  which language they read, and neither is decided anywhere.
+- **21i** — where a machine's grants are kept. Blocked on the shell: a grant is
+  made by a person picking a folder in a surface that does not exist.
+- **21j** — where the socket goes. Blocked on a decision with security in it
+  that wants writing down first, and it moves a public surface.
+- **26** — one hook, one grant. Blocked on a kernel that starts the BPF LSM,
+  measured this iteration.
+- **27** — the LSM decides and forgets. Blocked on 26, by its own words.
+
+Everything else needs the compositor, the image or the certified machine, and is
+listed under *Blocked — linux* and *Blocked — hardware*. The loop has finished
+the part of v0.01 that is portable logic, which is what the queue said at the
+start it could do and no more than that.

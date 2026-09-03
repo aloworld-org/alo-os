@@ -2650,9 +2650,39 @@ out.
   is no, that is the finding: say so, say what the certified machine will need,
   and stop. Do not work around it.
 
-  Blocked on nothing but the turn existing (21d). It is deliberately tiny: it
-  either works in a week or it does not, which is the right shape for the first
-  piece of a hard idea.
+  **The check was run, and the answer is no.** Iteration 36 asked the WSL2
+  kernel — `6.6.87.2-microsoft-standard-WSL2` — all three questions rather than
+  the two the item names, and the third is the one that decides:
+
+  - `CONFIG_BPF_LSM=y` — **yes.**
+  - `CONFIG_LSM` is `"landlock,lockdown,yama,loadpin,safesetid,integrity,selinux,apparmor,tomoyo"` — **no `bpf` in it**, and `/proc/cmdline` has no `lsm=` to replace it.
+  - `/sys/kernel/security/lsm`, which is what actually started, is `capability,landlock,yama,safesetid,selinux` — **no `bpf`.**
+
+  So the item is **blocked on a kernel that starts the BPF LSM**, and the loop
+  did not work around it. The escape route exists and is deliberately not taken:
+  WSL2 accepts `lsm=…,bpf` through `kernelCommandLine` in a `.wslconfig`, which
+  is a change to the machine's owner's own machine, made outside this
+  repository, that restarts every distribution on it. That is theirs to make.
+
+  **What the finding is worth beyond a stop.** ADR 0015 names two requirements
+  and it is the second that machines fail, because the first is the one people
+  check: a kernel can have the BPF LSM compiled in and never start it, and then
+  `CONFIG_BPF_LSM=y` is a true answer to the wrong question. That is now in
+  `docs/hardware.md` as three commands in order — how it was built, then what
+  actually started — with this kernel as the worked counterexample, and in
+  `docs/quirks.md` with the two smaller traps beside it: `securityfs` is not
+  mounted by default, so the answer reads as a missing file, and `bpftool` is
+  absent, so a probe for LSM support returns nothing and exits `0`, which looks
+  exactly like a probe that ran and found none. **Neither absence is an answer,
+  and both look like one.** ADR 0015's *the Fedora-derived base ships both* is
+  read rather than measured, and whoever certifies the first machine runs those
+  three commands and writes down what it said.
+
+  Blocked on nothing but the turn existing (21d) when it was written; the turn
+  exists, and this is what stopped it instead. It is still deliberately tiny —
+  it either works in a week or it does not, which is the right shape for the
+  first piece of a hard idea — and the week has to start on a kernel that has
+  `bpf` in that list.
 
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
@@ -2665,6 +2695,15 @@ out.
 
   When it fails it must say what it caught: not *assertion failed*, but **a
   syscall outside an agent turn left a trace, and nothing outside a turn may**.
+
+  **Blocked on item 26, by its own words.** *Written with item 26 rather than
+  after it* is not a scheduling preference — this test runs ordinary programs
+  **under the loaded LSM**, so there is nothing to run it under until one loads,
+  and the kernel this repository can reach does not start the BPF LSM at all
+  (item 26's finding, `docs/quirks.md`). Nothing here can be written early
+  either: a test that asserted an empty record with no LSM loaded would pass on
+  any machine in the world and prove nothing, which is the exact failure mode
+  the item exists to prevent a year from now.
 
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the

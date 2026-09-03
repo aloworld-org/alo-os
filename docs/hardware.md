@@ -69,6 +69,46 @@ image:
 If any of those is false on a machine, that machine is not certified, whatever
 else works.
 
+## What the kernel must be able to do
+
+A certified machine's kernel has to be able to enforce a grant, which is a
+requirement about how the kernel was **configured** and not about the silicon.
+ADR 0015 names two things, and they are not the same thing:
+
+- **`CONFIG_BPF_LSM=y`** — the BPF LSM is compiled into the kernel.
+- **`bpf` present in the list of security modules that actually start**, which
+  is `CONFIG_LSM` unless an `lsm=` boot parameter replaces it.
+
+The second is the one that gets missed, because the first is the one people
+check. A kernel can have the BPF LSM compiled in and never start it, and then
+`CONFIG_BPF_LSM=y` is a true answer to the wrong question.
+
+Ask the machine both, in this order:
+
+```
+zcat /proc/config.gz | grep -E '^CONFIG_(BPF_LSM|LSM)='   # how it was built
+mount -t securityfs securityfs /sys/kernel/security       # if not already mounted
+cat /sys/kernel/security/lsm                              # what actually started
+```
+
+The last line is the answer. It lists the security modules this kernel is
+running, and `bpf` is either in it or the grant cannot be enforced by the kernel
+on this machine.
+
+**A worked counterexample, measured rather than supposed.** The WSL2 kernel this
+repository can reach — `6.6.87.2-microsoft-standard-WSL2`, 2026-09-03 — has
+`CONFIG_BPF_LSM=y` and answers `capability,landlock,yama,safesetid,selinux`. It
+is a kernel that passes the first check, fails the second, and is therefore no
+use for proving ADR 0015. `docs/quirks.md` has the entry.
+
+**This is a configuration expectation, not a patch.** `CLAUDE.md`'s *engines are
+configured, never patched* holds: what a certified machine needs is a kernel
+built and booted with the BPF LSM on, and if the base of ADR 0011 does not ship
+that, the answer is a boot parameter in the image rather than a kernel of our
+own. Whoever certifies the first machine runs the three lines above and writes
+the answer into the table, because *the Fedora-derived base ships both* is at
+present something this repository has read and not something it has measured.
+
 ## Reporting hardware
 
 Tell us the machine, the GPU and VRAM, the image version, what worked, and what
