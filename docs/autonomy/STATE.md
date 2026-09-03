@@ -3648,7 +3648,7 @@ whole of v0.01 rather than the section its item lived in. That is as strong a
 claim as the method supports, and it is still not a proof: what it means is that
 whoever finds the next hole will find it in another tier, not in the v0.01 list.
 
-LOOP COMPLETE
+- `LOOP COMPLETE` — written here by that iteration, and **discharged**: items 18–21 were added afterwards. Kept as a record behind a bullet so it reads as history rather than acting as a signal, which is how this journal refers to its own markers everywhere else.
 
 **Everything that remains, and what each is waiting on:**
 
