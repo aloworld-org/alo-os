@@ -318,7 +318,7 @@ mod tests {
 
     /// **Every application a call names is asked about**, not only the ones the
     /// verb declared its grant is over. The verb here requires a grant over one
-    /// of its two, which the contract permits and the three do not do.
+    /// of its two, which the contract permits and the four do not do.
     #[test]
     fn an_application_the_verb_forgot_to_require_a_grant_over_is_still_asked_about() {
         let forgetful = Verb::checked(

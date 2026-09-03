@@ -225,14 +225,23 @@ fn with_no_translations_at_all_every_sentence_is_still_a_sentence() {
     assert_eq!(strings.unanswered().len(), EVERY_WORD.len());
 }
 
-/// **Every word the three verbs are declared with is one this crate declares**,
+/// **Every word the four verbs are declared with is one this crate declares**,
 /// asked of the real vocabulary rather than of a fixture — the test
 /// `docs/contracts/agent-verbs.md` asks of every crate that declares verbs.
+///
+/// Since item 11a that reaches an argument's *options* as well. An arrangement
+/// left out of [`EVERY_WORD`] would compile, declare and reach a person as a
+/// key in the middle of the sentence they are approving, which is one place
+/// further in than the hole this test was written for.
 #[test]
 fn nothing_a_verb_says_is_a_key_nobody_declared() {
     let strings = in_english();
     let verbs = application_verbs().unwrap();
-    assert_eq!(verbs.len(), 3);
+    assert_eq!(verbs.len(), 4);
+    let given = [
+        ("application", Given::text("org.blender.Blender")),
+        ("where", Given::text("left_half")),
+    ];
     for verb in verbs.all() {
         assert!(!verb.purpose(&strings).is_a_bug(), "{}", verb.name());
         for arg in verb.args() {
@@ -243,11 +252,9 @@ fn nothing_a_verb_says_is_a_key_nobody_declared() {
                 arg.name()
             );
         }
+        let takes_where = verb.arg("where").is_some();
         let said = verbs
-            .call(
-                verb.name(),
-                &[("application", Given::text("org.blender.Blender"))],
-            )
+            .call(verb.name(), if takes_where { &given } else { &given[..1] })
             .unwrap()
             .sentence(&strings);
         assert!(!said.is_a_bug(), "{}: {said}", verb.name());
@@ -255,6 +262,36 @@ fn nothing_a_verb_says_is_a_key_nobody_declared() {
             said.text().contains("org.blender.Blender"),
             "{}",
             verb.name()
+        );
+    }
+}
+
+/// **The arrangement inside the sentence is a string this crate declares too.**
+///
+/// The failure this closes is quieter than a missing sentence: the verb's own
+/// sentence would still be there, so a shell asking "is this a bug" would be
+/// told no while a person read *put org.blender.Blender
+/// «applications.where.left-half»*.
+#[test]
+fn an_arrangement_nobody_declared_would_be_a_bug_and_is_not_one() {
+    let strings = in_english();
+    let verbs = application_verbs().unwrap();
+    for sent in ["left_half", "right_half", "whole_screen"] {
+        let said = verbs
+            .call(
+                "arrange_application",
+                &[
+                    ("application", Given::text("org.blender.Blender")),
+                    ("where", Given::text(sent)),
+                ],
+            )
+            .unwrap()
+            .sentence(&strings);
+        assert!(!said.is_a_bug(), "{sent}: {said}");
+        assert!(!said.text().contains('«'), "{sent}: {said}");
+        assert!(
+            said.text().starts_with("put org.blender.Blender "),
+            "{said}"
         );
     }
 }

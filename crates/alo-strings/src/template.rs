@@ -24,6 +24,7 @@ use std::fmt;
 use serde::Serialize;
 
 use crate::filling::Filling;
+use crate::said::CameFrom;
 
 /// One piece of a template: text as written, or a gap to be filled.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -140,6 +141,10 @@ impl Template {
     /// A gap with no value stays as `{name}` and is named in
     /// [`Filled::unfilled`]; see this module's documentation for why it is not
     /// simply dropped.
+    ///
+    /// A gap filled with something the vocabulary said carries that provenance
+    /// through to [`Filled::gaps_came_from`], because a sentence is only as
+    /// translated as the pieces put into it.
     #[must_use]
     pub fn fill(&self, filling: &Filling) -> Filled {
         let mut text = String::new();
@@ -160,7 +165,21 @@ impl Template {
                 },
             }
         }
-        Filled { text, unfilled }
+        // Walked over the gap list rather than over the parts, because that
+        // list holds each name once: a sentence naming one option twice is
+        // still one option, and counting it twice would say nothing new.
+        let gaps_came_from = self
+            .gaps
+            .iter()
+            .filter(|name| filling.value(name).is_some())
+            .filter_map(|name| filling.came_from(name))
+            .cloned()
+            .collect();
+        Filled {
+            text,
+            unfilled,
+            gaps_came_from,
+        }
     }
 }
 
@@ -204,6 +223,10 @@ pub struct Filled {
     text: String,
     /// The gaps nobody gave a value for, in the order they appear.
     unfilled: Vec<String>,
+    /// Where the gaps that were filled with a *word* came from, in the order
+    /// the sentence names them. Empty is the ordinary case, because almost
+    /// every gap holds data.
+    gaps_came_from: Vec<CameFrom>,
 }
 
 impl Filled {
@@ -217,6 +240,18 @@ impl Filled {
     #[must_use]
     pub fn unfilled(&self) -> &[String] {
         &self.unfilled
+    }
+
+    /// Where each gap that was filled with something the vocabulary said came
+    /// from.
+    ///
+    /// Empty when every gap held data, which is almost always. What reads it is
+    /// [`crate::Strings::say`], so that the answer it builds cannot claim to be
+    /// translated while a piece dropped into it is still in the source
+    /// language.
+    #[must_use]
+    pub fn gaps_came_from(&self) -> &[CameFrom] {
+        &self.gaps_came_from
     }
 
     /// Whether every gap was filled.
@@ -288,6 +323,7 @@ pub enum TemplateError {
 )]
 mod tests {
     use super::*;
+    use crate::said::Said;
 
     #[test]
     fn a_sentence_with_no_gaps_is_a_template() {
@@ -396,5 +432,49 @@ mod tests {
     fn a_template_is_written_back_as_it_arrived() {
         let written = "{path} holds {bytes} bytes — {{that}} is a lot";
         assert_eq!(Template::written(written).unwrap().to_string(), written);
+    }
+
+    /// A gap filled with data carries no language, so nothing about it can make
+    /// the sentence around it look less translated than it is.
+    #[test]
+    fn a_gap_filled_with_data_carries_no_language() {
+        let template = Template::written("{path} is not a folder").unwrap();
+        let filled = template.fill(&Filling::of("path", "/tmp/x"));
+        assert!(filled.gaps_came_from().is_empty());
+    }
+
+    /// **A gap filled with a word carries where that word came from**, and an
+    /// unfilled one carries nothing — there was no word to have a language.
+    #[test]
+    fn a_gap_filled_with_a_word_carries_where_it_came_from() {
+        let template = Template::written("put {application} {where}").unwrap();
+        let said = Said::new(
+            "on the left half".to_owned(),
+            CameFrom::TheSource,
+            Vec::new(),
+        );
+        let filled = template
+            .fill(&Filling::of("application", "org.blender.Blender").and_said("where", &said));
+        assert_eq!(filled.text(), "put org.blender.Blender on the left half");
+        assert_eq!(filled.gaps_came_from(), [CameFrom::TheSource]);
+
+        let nothing = template.fill(&Filling::of("application", "org.blender.Blender"));
+        assert_eq!(nothing.unfilled(), ["where"]);
+        assert!(nothing.gaps_came_from().is_empty());
+    }
+
+    /// One option named twice in a sentence is one option. Counting it twice
+    /// would say nothing the first one did not.
+    #[test]
+    fn a_word_used_twice_is_counted_once() {
+        let template = Template::written("{where} — put it {where}").unwrap();
+        let said = Said::new(
+            "on the left half".to_owned(),
+            CameFrom::TheSource,
+            Vec::new(),
+        );
+        let filled = template.fill(&Filling::nothing().and_said("where", &said));
+        assert_eq!(filled.text(), "on the left half — put it on the left half");
+        assert_eq!(filled.gaps_came_from().len(), 1);
     }
 }

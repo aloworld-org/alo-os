@@ -2506,3 +2506,119 @@ gate that does not hold**, and fixing one is the opposite of weakening it.
   `alo-agentd` line gains `alo-applications` to its *Built* and now owes the
   acting half, `arrange` and the context an agent is given; it stays unticked,
   because there is no daemon and no shell.
+
+## 2026-09-03 — iteration 25: a choice a person can read
+
+**Built: item 11a**, and with it the fourth application verb. It is the first
+item since 9g that changes a public surface in four crates at once, and the
+reading step was worth doing carefully for the same reason 9g's was: the item
+described one change, and doing it honestly required a second one the item did
+not contain.
+
+| | |
+|---|---|
+| `alo-capability/offered.rs` | **New.** One option a verb offers: the name a model sends and the word a person reads, and why those cannot be one string |
+| `alo-capability/arg.rs` | `Takes::Choice` holds `Offered`s; `Value::Choice` carries the name **and** what names its words; `Value::words` is the new question |
+| `alo-capability/verb.rs` | Three refusals at declaration: an option that is not an identifier, one offered twice, one with nothing to say |
+| `alo-capability/call.rs` | `Call::filling` takes the vocabulary, because one kind of value is a string somebody translates |
+| `alo-strings/filling.rs` | `Filling::and_said` — a gap that holds a word rather than data |
+| `alo-strings/template.rs` | `Filled::gaps_came_from` — the provenance of each word put in |
+| `alo-strings/said.rs` | `Said::is_translated` answers about the whole line, not only the sentence |
+| `alo-applications/verbs.rs` | `arrange_application`, and the three arrangements v0.01 promises |
+| `alo-applications/words.rs` | Seven new strings: the verb, its sentence, its two arguments, and the three arrangements |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. The workspace is **853 tests and 21 doctests**
+(was 830 and 21), all green. `CHANGELOG.md`, `docs/contracts/agent-verbs.md`,
+`QUEUE.md` and `ROADMAP.md` in the same change.
+
+**The shape the item asked for, and the direction it does not go.** An option is
+two things at once: a **name** — `left_half` — which is what a model sends, what
+the record keeps and what a script writes, matched exactly and never translated;
+and a **word**, which is what a person reads inside the sentence they approve.
+`Offered` is both, and `Value::Choice` carries both, so `Call::filling` can look
+the word up without holding the verb.
+
+Making the *word* the identity would have been the smaller change and is wrong
+in three ways at once: a model would have to send `on the left half of the
+screen`, a translator editing a sentence would be editing what a verb can be
+called, and the record would hold a different value on a German machine than on
+a Greek one. It is `alo-applications`' own identifier-versus-name decision from
+iteration 24, one level down and for the same reason — **what is approved and
+recorded must not be something anybody downstream can rewrite.**
+
+**The half the item did not contain, and the reason this iteration is bigger
+than it looks.** Rendering the option through the vocabulary puts one string
+somebody translates *inside* another one, and until now every gap in every
+sentence held data — a path, a size, an identifier. So a German approval
+sentence with an untranslated arrangement in it would have come back from
+`Strings::say` answering `Said::is_translated` with **true**: marked by nothing,
+counted by nothing, and read by somebody in Berlin. That is item 9's entire
+failure mode arriving through a gap instead of through a key, and shipping the
+item without answering it would have been cutting depth rather than scope.
+
+So `alo-strings` grew one door and one rule. `Filling::and_said` is how a gap is
+filled with something the vocabulary said; `Filled::gaps_came_from` carries
+those through the fill; and **a sentence is only as translated as its least
+translated piece** — `is_translated` is now the sentence *and* every word put
+into it, and a word whose key nothing declares makes the line `is_a_bug` wherever
+it is sitting. The mark in a development build lands on the word rather than on
+the sentence, which is where the work actually is.
+
+**What `arrange_application` is, and what it deliberately is not.** Three
+arrangements: `left_half`, `right_half`, `whole_screen`. Two windows on opposite
+halves is what `docs/features.md` calls *tile* at v0.01 and the whole screen is
+*maximise*; **quarters are v0.5** and are not offered, so an agent cannot ask
+for one. Minimising is not here either, and that is a judgement rather than an
+oversight: it appears on v0.01's *window management* list, which is what a
+person does with their own keyboard, and this verb says where a window **goes** —
+*out of the way* is not a place, and a verb for it would need a sentence of its
+own that nothing in `docs/features.md` asks for.
+
+**Three decisions the next iteration inherits.**
+
+- **An option's words complete the sentence; they do not label a button.** The
+  preposition lives in the option — *on the left half of the screen* — because a
+  language that inflects the place needs the whole phrase in front of it, and
+  the gap can then move to wherever that language puts it. That is
+  `alo-egress`' 9h decision about its indicator line met from a third side, and
+  every one of the three arrangements carries a note saying so, because a
+  translator handed *on the left half of the screen* with no context would
+  reasonably write a label.
+- **A refusal names the options by name, not by their words.**
+  `ArgError::NotOnTheList` lists what has to be *sent*, because a call that
+  never validated is a refusal about what arrived. It also keeps `Arg::validate`
+  free of a vocabulary, which is item 9e's rule — what is permitted does not
+  depend on a string table having loaded — reaching the last place it could have
+  been broken.
+- **Three things about an option are refused where the verb is declared**: a
+  name that is not a lower-case identifier, one name offered twice, and an
+  option with nothing to say. They are `check_args`' three rules one level down,
+  and none of them was a thing that *could* be checked while a choice was a list
+  of plain strings.
+
+**What the next iteration must know:**
+
+- **`Call::filling` takes `&Strings` now**, and `Value::describe` answers with
+  data rather than with words. Anything that fills a sentence from a call has to
+  ask the vocabulary, and `Value::words` is the question that says whether it
+  must.
+- **Every crate that declares a verb with a choice owes two tests**, and
+  `alo-applications` has both: that every option's word is one the crate
+  declares (the 9g test, widened — an option nobody declared reaches a person as
+  a key *inside* the sentence, which is harder to notice than one in place of
+  it), and that the whole line is one language.
+- **The queue has no ready items again.** Every remaining one belongs to a
+  daemon, a Linux host or a certified machine. Iteration 23 left the standing
+  instruction and it still holds: **read each blocker once before writing `LOOP
+  COMPLETE` rather than trusting the label** — three iterations running found a
+  blocker that was part portable, and iteration 24 found a v0.01 promise with no
+  item at all. What is genuinely left here is the acting halves.
+- **Nothing here has moved a window, and nothing has been read by anybody.**
+  There is no compositor, and there are still zero translations in this
+  repository; the German in the tests is the tests'. `ROADMAP.md`'s `alo-agentd`
+  line gains the fourth verb and the readable choice to its *Built* and now owes
+  only the daemon, the acting half and the context an agent is given; the
+  *Language* line gains the rule about a sentence and the words put into it.
+  Both stay unticked, because there is no daemon and no shell.

@@ -106,7 +106,7 @@ A closed list, like the verbs themselves. An argument is one of:
 | **application** | An installed application, by its identifier. |
 | **name** | One name — a file's, a folder's, or what is being searched for — of at most the length the verb declares. One name, never a path. |
 | **count** | A whole number inside a range the verb declares, both ends included. |
-| **choice** | One of a list of options the verb wrote down, matched exactly. |
+| **choice** | One of a list of options the verb wrote down, matched exactly by name. Each option is a name a model sends and a word a person reads — see *an option is a name a model sends and a word a person reads*, below. |
 
 **None of them is free text**, and that is the point: a model choosing
 arguments cannot compose anything, because there is no shape a composition
@@ -266,16 +266,22 @@ anything else.
 ## The application verbs
 
 `docs/features.md` promises four at v0.01 — open, focus, arrange, close — over
-granted applications only. **Three are declared; `arrange` is not yet**, and the
-reason is at the end of this section.
+granted applications only. **All four are declared.**
 
 | Verb | Effect | Arguments | Sentence |
 |---|---|---|---|
 | `open_application` | change | `application` (application) | open {application} |
 | `focus_application` | change | `application` (application) | bring {application} to the front |
 | `close_application` | change | `application` (application) | ask {application} to close |
+| `arrange_application` | change | `application` (application), `where` (choice) | put {application} {where} |
 
-**All three are changes, and there is no read on this list.** A verb that
+`arrange_application` offers three arrangements at v0.01: `left_half`,
+`right_half` and `whole_screen`. Two windows on opposite halves is *tile*, and
+the whole screen is *maximise*; **quarters are v0.5** and are not offered.
+Minimising is not on this list at all — this verb says where a window goes, and
+*out of the way* is not a place.
+
+**All four are changes, and there is no read on this list.** A verb that
 listed the running applications or the open windows would be a background
 reader, and context is offered at invocation and never watched — so what is
 open reaches an agent as *context*, for that turn, rather than as something it
@@ -327,14 +333,40 @@ applications a person uses is a fingerprint of who they are, what they do and
 who they work for. Asked in this order, an ungranted application refuses
 identically whether it is installed or not.
 
-### Why `arrange` is not declared
+### An option is a name a model sends and a word a person reads
 
-It needs an argument saying where the window goes, which is a **choice** — and a
-chosen option reaches the approval sentence as the stable identifier the model
-picked it by. *Put Blender on the `left_half`* puts untranslated English inside
-the one string a person is asked to agree to, which is the guarantee in *the
-words are the declaration's* failing for one argument kind. Closing it is a
-change to how a choice is declared, and it is owed before `arrange` is added.
+This is the rule for **every** verb with a choice in it, not only for
+`arrange_application`.
+
+An option is declared as two things at once. Its **name** — `left_half` — is an
+identity: it is what a model sends, what the record keeps, what a script writes,
+and it is matched exactly and never translated. Its **word** is what a person
+reads, and it goes into the approval sentence, so it is a string somebody
+translates, declared from `alo_strings::Word` exactly as a verb's own sentence
+is. Neither can stand in for the other: a sentence built from the name reads
+*put Blender on the `left_half`*, and an option identified by its word would let
+a translation change what a verb can be called and make the record say something
+different on a German machine than on a Greek one.
+
+Three things about an option are refused where a verb is declared, and they are
+the argument rules one level down: a name that is not a lower-case identifier,
+one name offered twice, and an option with nothing to say.
+
+**The words are written to complete the sentence, not to label a button.** The
+preposition belongs in the option — *on the left half of the screen* — because a
+language that inflects the place needs the whole phrase in front of it, and the
+gap can then move to wherever that language puts it. Whoever adds a choice owes
+the translator a note on both halves saying so.
+
+**A refusal names the options by name.** `{argument} has to be one of: …` lists
+what has to be *sent*, because a call that never validated is about what
+arrived; and validation never consults a vocabulary, so what an agent may do
+does not depend on a string table having loaded.
+
+**A sentence is as translated as the words put into it.** A verb sentence
+somebody translated with an option nobody has translated inside it answers
+`alo_strings::Said::is_translated` with `false`, so a half-translated approval
+line cannot pass for a finished one.
 
 ## The verb classes
 

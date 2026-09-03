@@ -7,12 +7,14 @@
 //! questions that have to be answered before anything reaches a window. It is
 //! `alo-files`' shape one column along in the same table, and deliberately so.
 //!
-//! Three of the four are here. `arrange` is not, and [`verbs`] says why in the
-//! place somebody looking for it will read: its *where* argument is a choice,
-//! and a chosen option reaches the approval sentence as the identifier a model
-//! picked it by — untranslated English in the one string the capability model
-//! is built around. That is queue item 11a and a change to
-//! `alo_capability::Takes`, not something this crate can word around.
+//! All four are here. `arrange` was the last to arrive and it waited for a
+//! change one crate down: its *where* argument is a choice, and a chosen option
+//! used to reach the approval sentence as the identifier a model picked it by —
+//! *put Blender on the `left_half`*, untranslated English in the one string the
+//! capability model is built around. `alo_capability::Offered` closed that (item
+//! 11a), so an option is a name a model sends beside a word a person reads, and
+//! this crate declares the three arrangements v0.01 promises from its own
+//! [`words`] like everything else it says.
 //!
 //! # The two questions this crate exists to ask
 //!

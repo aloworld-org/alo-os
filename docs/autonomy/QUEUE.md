@@ -869,15 +869,15 @@ deny list.** Two patterns later items must follow:
   code, and the claim about applications was only ever true of the half that
   drives a compositor.**
 
-  **Three of the four, and the fourth is 11a below, because of what a choice
+  **Three of the four, and the fourth was 11a below, because of what a choice
   does to an approval sentence.** `arrange` needs an argument saying where the
-  window goes; that is a `Takes::Choice`, and a chosen option reaches the
+  window goes; that is a `Takes::Choice`, and a chosen option reached the
   sentence as the stable identifier a model picked it by — *put Blender on the
   `left_half`*. That is untranslated English inside the one string the whole
   capability model is built around, which is item 9g's guarantee failing for the
   one argument kind 9g did not reach. Wording around it here would have hidden
   it; declaring the verb anyway would have shipped it. So the scope was cut and
-  the depth was not.
+  the depth was not, and 11a built the fourth verb once the hole was closed.
 
   **The decision the item did not contain: closing asks, and the word is in the
   sentence.** `close_application` does what pressing the close button does — the
@@ -904,23 +904,48 @@ deny list.** Two patterns later items must follow:
   Built and unit tested. **Nothing here has opened a window**: the acting half is
   Wayland and D-Bus and stays under *blocked — linux*.
 
-- [ ] **11a. A choice a person can read** — cut from item 11, and the reason
-  `arrange` is not built. `alo_capability::Takes::Choice` holds plain strings,
-  so `Value::Choice` reaches `Call::filling` as the identifier a model chose it
-  by and lands untranslated in the approval sentence. No verb in the workspace
-  uses a choice today, so nothing shipped is wrong — and nothing can declare one
-  honestly until this is fixed, which is why it blocks a v0.01 promise.
+- [x] **11a. A choice a person can read** — cut from item 11, and the reason
+  `arrange` was not built. A **public surface change** reaching `alo-strings`,
+  `alo-capability`, `alo-record` and `alo-applications` at once.
+  `alo-capability`: `offered.rs` (a new file — one option a verb offers),
+  `Takes::Choice` holding `Offered`s, `Value::Choice` carrying the name **and**
+  the key, `Call::filling` taking the strings, and three new declaration
+  refusals in `verb.rs`. `alo-strings`: `Filling::and_said`, the provenance of a
+  filled gap carried through `Template::fill`, and `Said::is_translated`
+  answering about the whole line. `alo-applications`: `arrange_application`,
+  three arrangements, seven new words. 853 tests and 21 doctests across the
+  workspace (was 830 and 21), clippy clean.
 
-  What it has to decide: the options are declared as `alo_strings::Word`s, as a
-  verb's own words have been since 9g, while `Value::Choice` keeps the stable
-  identifier the record and the model need — so `Call::filling` renders the
-  option through the vocabulary and stops being a plain `String` map. That
-  reaches `alo-capability` and everything that fills a sentence from a call.
-  Then `arrange_application` is declared, with the arrangements v0.01 promises
-  (`docs/features.md`: snap and tile at v0.01, quarters at v0.5), and
-  `docs/contracts/agent-verbs.md`'s application table gains its fourth row.
+  **The answer is the one item 11 predicted and one half it did not.** An option
+  is two things — a name a model sends and the record keeps, and a word a person
+  reads — so `Offered` is both and neither stands in for the other; the reverse,
+  identifying an option by its word, would let a translator change what a verb
+  can be called and make the record say something different on a German machine
+  than on a Greek one.
 
-  Ready: it needs no Linux host and no hardware.
+  **The half the item did not contain is what `Call::filling` does to a
+  `Said`.** Rendering the option through the vocabulary puts a *string somebody
+  translates* inside another one, and until now every gap held data — so a
+  German sentence with an untranslated arrangement in it would have answered
+  `Said::is_translated` with `true`, and been marked by nothing, counted by
+  nothing, and read by somebody in Berlin. That is item 9's whole failure mode
+  arriving through a gap rather than through a key. So `Filling::and_said` is
+  the door for a gap that holds a word, `Filled::gaps_came_from` carries it, and
+  **a sentence is only as translated as its least translated piece**.
+
+  Three decisions the next items inherit. **An option's words complete the
+  sentence rather than labelling a button** — the preposition lives in the
+  option where a translator can move it, which is `alo-egress`' 9h decision met
+  from the third side, and every option carries a note saying so. **A refusal
+  names the options by name**, not by their words: a call that never validated is
+  about what arrived, and `Arg::validate` still takes no `Strings`, so what an
+  agent may do does not depend on a vocabulary having loaded. **Three things
+  about an option are refused at declaration** — a name that is not an
+  identifier, one offered twice, and one with nothing to say — which are the
+  argument rules one level down.
+
+  Built and unit tested. **Nothing here has moved a window**: the acting half is
+  Wayland and stays under *blocked — linux*.
 
 ---
 

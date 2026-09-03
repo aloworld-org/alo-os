@@ -12,6 +12,32 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **An agent can now be allowed to move a window to the left half, the right
+  half or the whole of the screen — and what you approve reads as a sentence in
+  your own language.** *Put org.blender.Blender on the left half of the screen*
+  is the whole of what you agree to, and the agent gets exactly that: it is a
+  grant over one application, and where a window goes is not something anybody
+  grants at all. Two windows put on opposite halves is how you tile a pair of
+  them. Quarters are a later release and are not offered, so an agent cannot ask
+  for one.
+
+  **The reason it took until now is worth the sentence.** Everywhere an agent
+  picks from a list of options — this is the first, and it will not be the last
+  — the option had two jobs it could not do at once. Software has to send
+  something fixed and unambiguous (`left_half`); you have to read something in
+  your own language. Until this release those were one string, so a machine
+  reading German would have shown you a German sentence with `left_half` sitting
+  in the middle of it. Now they are two: the fixed name is what is sent and what
+  the record keeps, and the phrase is what you read and what a translator
+  translates.
+
+  **And a half-translated sentence can no longer pass for a finished one.** If
+  the sentence has been translated into your language but the arrangement inside
+  it has not, alo OS knows the line is not really in your language — so it can
+  be marked while the system is being built and counted in what is still owed,
+  rather than reaching you as one English phrase in the middle of a sentence
+  with nothing anywhere saying so.
+
 - **An agent can now be allowed to open, focus and close an application — and
   closing one asks it rather than taking it away.** These are the first
   capabilities alo OS has that are about applications rather than files, and
@@ -44,8 +70,8 @@ grant now takes effect immediately instead of at the next sign-in" is.
   share an identifier, and the thing you are agreeing to should not be a name
   chosen by the thing you are agreeing to.
 
-  The fourth verb `docs/features.md` promises — arranging a window — is not
-  here yet, and `docs/contracts/agent-verbs.md` says what is owed first.
+  The fourth verb `docs/features.md` promises — arranging a window — arrived in
+  the entry above.
 
 - **The record of what the agent did now survives the machine being turned
   off, and a record that has been shortened says so.** Until now what an agent

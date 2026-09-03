@@ -188,7 +188,8 @@ impl Strings {
                     filled.text().to_owned(),
                     CameFrom::Translation(language.clone()),
                     filled.unfilled().to_vec(),
-                );
+                )
+                .filled_with(filled.gaps_came_from().to_vec());
             }
         }
         let filled = phrase.source().fill(filling);
@@ -197,6 +198,7 @@ impl Strings {
             CameFrom::TheSource,
             filled.unfilled().to_vec(),
         )
+        .filled_with(filled.gaps_came_from().to_vec())
     }
 
     /// What this string says about this many of something, with its gaps filled
@@ -237,7 +239,8 @@ impl Strings {
                     filled.text().to_owned(),
                     CameFrom::Translation(language.clone()),
                     filled.unfilled().to_vec(),
-                );
+                )
+                .filled_with(filled.gaps_came_from().to_vec());
             }
         }
         let filled = plural.source(source_form(counting)).fill(&filling);
@@ -246,6 +249,7 @@ impl Strings {
             CameFrom::TheSource,
             filled.unfilled().to_vec(),
         )
+        .filled_with(filled.gaps_came_from().to_vec())
     }
 
     /// Every string that would reach a person in the source language, in key
@@ -482,6 +486,64 @@ mod tests {
                 .say(&key("shortcuts.close"), &Filling::nothing())
                 .is_translated()
         );
+    }
+
+    /// **A translated sentence with an untranslated word dropped into it is not
+    /// a translated line**, and the third way of noticing — the mark in a
+    /// development build — is put on the word rather than on the sentence,
+    /// which is where the work actually is.
+    ///
+    /// This is the shape of an approval sentence for an arrangement: the verb's
+    /// own sentence is translated, and the option it names is a string of its
+    /// own that may not be.
+    #[test]
+    fn a_sentence_holding_an_untranslated_word_says_it_is_not_translated() {
+        let mut strings = german();
+        // `shortcuts.close` has no German; `files.gone` does.
+        let untranslated = strings.say(&key("shortcuts.close"), &Filling::nothing());
+        let whole = strings.say(&key("files.gone"), &Filling::nothing());
+
+        let mixed = strings.say(
+            &key("files.not-a-folder"),
+            &Filling::nothing().and_said("path", &untranslated),
+        );
+        assert_eq!(mixed.text(), "Close the window ist kein Ordner");
+        assert_eq!(mixed.came_from(), &CameFrom::Translation(language("de")));
+        assert!(!mixed.is_translated(), "a piece of it is still English");
+        assert!(!mixed.is_a_bug(), "not translated yet is work, not a fault");
+        assert_eq!(mixed.gaps_came_from(), [CameFrom::TheSource]);
+
+        let all_german = strings.say(
+            &key("files.not-a-folder"),
+            &Filling::nothing().and_said("path", &whole),
+        );
+        assert!(all_german.is_translated());
+
+        // And the mark lands on the word, because the word is what nobody has
+        // written yet — the sentence around it is finished.
+        strings.shown(Showing::InDevelopment);
+        let marked = strings.say(&key("shortcuts.close"), &Filling::nothing());
+        let sentence = strings.say(
+            &key("files.not-a-folder"),
+            &Filling::nothing().and_said("path", &marked),
+        );
+        assert_eq!(sentence.text(), "«Close the window» ist kein Ordner");
+    }
+
+    /// A word whose key nothing declares is a bug wherever it is put, so a
+    /// sentence built around one says so rather than reading as finished
+    /// German with a key in the middle of it.
+    #[test]
+    fn a_word_nothing_declares_makes_the_sentence_around_it_a_bug() {
+        let strings = german();
+        let missing = strings.say(&key("files.never-declared"), &Filling::nothing());
+        let sentence = strings.say(
+            &key("files.not-a-folder"),
+            &Filling::nothing().and_said("path", &missing),
+        );
+        assert_eq!(sentence.text(), "«files.never-declared» ist kein Ordner");
+        assert!(sentence.is_a_bug());
+        assert!(!sentence.is_translated());
     }
 
     /// A person who asked for Brazilian Portuguese and met a string only

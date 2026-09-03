@@ -83,13 +83,17 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       the sentence a person approves, carried as what names it and the values
       that fill it rather than as words in whichever language the verb was
       declared in), `alo-files` (the six file verbs, declared from the words
-      a translator is handed) and `alo-applications` (three of the four
-      application verbs — open, focus and ask-to-close — the list of what is
+      a translator is handed) and `alo-applications` (all four application
+      verbs — open, focus, ask-to-close and arrange — the list of what is
       installed they are checked against, and the rule that an ungranted
-      application refuses identically whether or not it is here) · Owed: the
-      daemon itself, the acting half of the application verbs, which is Wayland
-      and D-Bus, `arrange` and the readable choice it needs (queue 11a), and the
-      context an agent is given when invoked
+      application refuses identically whether or not it is here). Since 11a an
+      argument that offers a choice offers a name a model sends beside a word a
+      person reads, so an option cannot reach an approval sentence as
+      untranslated English, and a sentence holding a word nobody has translated
+      says the line is not translated · Owed: the daemon itself, the acting half
+      of the application verbs — which is Wayland and D-Bus, and is the whole of
+      what makes any of these move a window — and the context an agent is given
+      when invoked
 - [ ] Every execution recorded with its origin, approval and grant
       · Built: `alo-record` — the record, including refusals, which are written
       down in the same words the person was shown rather than in a second
@@ -190,7 +194,12 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       than two renderings of it**: a verb is declared from the words a
       translator is handed, a call carries what names its sentence and the
       values that fill it, and the screen, the approval and the record all ask
-      the reader's own vocabulary for the words
+      the reader's own vocabulary for the words. Since 11a that holds for what
+      goes *into* the sentence as well: an option a verb offers is a word
+      somebody translates rather than the identifier a model sent, and **a
+      sentence is only as translated as its least translated piece**, so a
+      finished sentence with an unfinished word in it cannot pass for a
+      translated line
       · Owed: a shell to translate, and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only

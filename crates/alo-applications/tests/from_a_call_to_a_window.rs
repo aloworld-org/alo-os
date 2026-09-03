@@ -70,11 +70,19 @@ fn this_machine() -> Installed {
     Installed::holding([Application::called("org.blender.Blender", "Blender").unwrap()])
 }
 
-/// A call of one of the three, naming one application.
+/// A call of one of the four, naming one application — and, for the one that
+/// asks for it, an arrangement.
 fn calling(verb: &str, application: &str) -> Call {
-    application_verbs()
-        .unwrap()
-        .call(verb, &[("application", Given::text(application))])
+    let verbs = application_verbs().unwrap();
+    let given = [
+        ("application", Given::text(application)),
+        ("where", Given::text("left_half")),
+    ];
+    let takes_where = verbs
+        .of(verb)
+        .is_some_and(|declared| declared.arg("where").is_some());
+    verbs
+        .call(verb, if takes_where { &given } else { &given[..1] })
         .unwrap()
 }
 
@@ -220,12 +228,68 @@ fn every_refusal_is_written_down_in_the_words_the_person_read() {
     }
 }
 
+/// **What a person approved and what the record keeps are one sentence, with
+/// the arrangement in it as words** — and underneath it the record still holds
+/// the name the model sent, which is the half of item 11a that a security
+/// review reads rather than a person.
+#[test]
+fn an_arrangement_is_approved_as_words_and_recorded_as_both() {
+    let strings = in_english();
+    let grants = granting("org.blender.Blender");
+    let call = calling("arrange_application", "org.blender.Blender");
+
+    let mut approvals = Approvals::default();
+    let proposal = Proposal::checked(&call, &agent(), &grants, noon(), hour()).unwrap();
+    assert_eq!(
+        proposal.sentence(&strings).text(),
+        "put org.blender.Blender on the left half of the screen",
+        "the approval sentence is the one place an identifier must never appear"
+    );
+    let id = approvals.propose(proposal);
+    let authorised = approvals
+        .approve(id, noon())
+        .unwrap()
+        .redeem(&grants, noon())
+        .unwrap();
+
+    // The grant is over the application and over nothing else: an arrangement
+    // is not a thing anybody grants.
+    assert_eq!(authorised.against().len(), 1);
+
+    let reaching = Reaching::of(authorised, &grants, &this_machine(), &strings).unwrap();
+    let mut record = Record::default();
+    record.keep(Entry::ran(&reaching.into_authorised(), &strings));
+
+    let entry = record.everything().next().unwrap();
+    let what = entry.happened().what().unwrap();
+    assert!(what.verb().is("arrange_application"));
+    assert!(
+        what.sentence()
+            .is("put org.blender.Blender on the left half of the screen"),
+        "the record kept a different sentence from the one that was approved: {}",
+        what.sentence().as_str()
+    );
+    // And the argument itself, kept by the name that was sent rather than by
+    // the words somebody happened to be reading.
+    assert!(
+        what.arguments()
+            .get("where")
+            .is_some_and(|written| written.describe().is("left_half")),
+        "the record lost the arrangement that was chosen"
+    );
+}
+
 /// **A change cannot take the read door**, whichever verb it is. Every one of
-/// the three is a change, so none of them ever answers inside a turn.
+/// the four is a change, so none of them ever answers inside a turn.
 #[test]
 fn nothing_here_runs_without_somebody_approving_it() {
     let grants = granting("org.blender.Blender");
-    for verb in ["open_application", "focus_application", "close_application"] {
+    for verb in [
+        "open_application",
+        "focus_application",
+        "close_application",
+        "arrange_application",
+    ] {
         let call = calling(verb, "org.blender.Blender");
         assert!(call.waits_for_approval(), "{verb}");
         let refused = Authorised::read(&call, &agent(), &grants, noon()).unwrap_err();

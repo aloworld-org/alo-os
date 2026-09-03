@@ -289,8 +289,10 @@ pub const NOT_ON_THE_LIST: Word = Word::saying(
     "{argument} has to be one of: {options}",
 )
 .noting(
-    "{options} is a list of values a verb wrote down, separated by commas. They are values rather \
-     than words and are never translated; the punctuation before them is yours to place.",
+    "{options} is a list of the names a verb offers, separated by commas — left_half, right_half. \
+     They are what has to be sent rather than what a person reads, so they are never translated, \
+     even though the same options are shown as ordinary words elsewhere; the punctuation before \
+     them is yours to place.",
 );
 
 // ---------------------------------------------------------------------------

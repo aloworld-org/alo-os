@@ -1,14 +1,13 @@
 //! The application verbs, declared.
 //!
 //! `docs/features.md` promises **open, focus, arrange, close** at v0.01 and
-//! `docs/contracts/agent-verbs.md` says what a verb has to be. Three of the
-//! four are here; `arrange` is not, and the reason is written down at the
-//! bottom of this file rather than left for somebody to notice.
+//! `docs/contracts/agent-verbs.md` says what a verb has to be. All four are
+//! here.
 //!
 //! **Nothing is declared by default.** [`application_verbs`] hands back a list;
 //! [`declare_into`] puts them on somebody else's.
 //!
-//! # All three are changes, and there is no read
+//! # All four are changes, and there is no read
 //!
 //! No verb here answers a question, and the absence is the design rather than
 //! an omission. A verb that listed the running applications, or the open
@@ -22,7 +21,9 @@
 //! front while somebody is typing sends the next keystrokes somewhere they did
 //! not choose, and a window that can put itself in front of the one being typed
 //! into is the oldest trick there is. So it waits for an approval like any other
-//! change, and the sentence says what will happen.
+//! change, and the sentence says what will happen. Arranging is a change for the
+//! same reason and one more: a window that moved is a window something else is
+//! now underneath.
 //!
 //! # Closing asks; nothing here kills anything
 //!
@@ -35,28 +36,38 @@
 //! discarding the model they have not saved, and one approval covers one
 //! sentence and nothing beyond it. Everything else an agent does here is
 //! recoverable — an application that was opened can be closed, one brought to
-//! the front can be sent back — and unsaved work is the one thing on this list
-//! that is gone for good. So the word **ask** is in the sentence a person
-//! approves, where a translator can see that it matters and a reader cannot
-//! miss it, rather than only in this documentation.
+//! the front can be sent back, a window that was moved can be moved again — and
+//! unsaved work is the one thing on this list that is gone for good. So the word
+//! **ask** is in the sentence a person approves, where a translator can see that
+//! it matters and a reader cannot miss it, rather than only in this
+//! documentation.
 //!
-//! # Why `arrange` is not here
+//! # Three arrangements, and the two that are not here
 //!
-//! It needs an argument saying *where*, which is a `Takes::Choice` — and a
-//! choice's chosen option goes into the approval sentence as the stable
-//! identifier the model picked it by. *Put Blender on the `left_half`* is a
-//! sentence with a piece of untranslated English in the middle of it, in the
-//! one string the whole capability model is built around. That is a hole in
-//! item 9g's guarantee rather than a thing this crate can word its way out of,
-//! and closing it is a change to `alo_capability::Takes`. It is queue item 11a.
+//! `arrange_application` offers the left half, the right half and the whole
+//! screen. Two windows put on opposite halves is what `docs/features.md`
+//! promises as *tile* at v0.01, and the whole screen is *maximise*; **quarters
+//! are v0.5** and are deliberately absent, along with the split that holds while
+//! you work, because the scope gate is a gate.
+//!
+//! Minimising is not an arrangement and is not here either. It is on the v0.01
+//! *window management* list, which is what a person does with their own
+//! keyboard and mouse; this verb says where a window **goes**, and *out of the
+//! way* is not a place. A verb for it would be a verb of its own, with its own
+//! sentence, and nothing in `docs/features.md` asks for one.
+//!
+//! **The option a person approves is a word, not an identifier** (item 11a).
+//! `Takes::Choice` holds `alo_capability::Offered`s, so *put Blender on the left
+//! half of the screen* is one sentence in the reader's language rather than a
+//! German sentence with `left_half` in the middle of it.
 
-use alo_capability::{Arg, Effect, Requires, Takes, Verb, VerbError, Verbs, VerbsError};
+use alo_capability::{Arg, Effect, Offered, Requires, Takes, Verb, VerbError, Verbs, VerbsError};
 
 use crate::words;
 
 /// Why the application verbs could not be declared.
 ///
-/// Neither of these can happen to the three as they are written — the tests in
+/// Neither of these can happen to the four as they are written — the tests in
 /// this file are what say so. They are here because a `Result` that cannot fail
 /// is still better than an unwrap in a library, and because [`declare_into`]
 /// can genuinely fail against a list that already has one of these names.
@@ -80,7 +91,7 @@ pub enum Declaring {
 /// let verbs = application_verbs()?;
 /// let call = verbs.call("close_application", &[
 ///     ("application", Given::text("org.blender.Blender")),
-/// ]).expect("the three take one application each");
+/// ]).expect("three of the four take one application each");
 ///
 /// // The sentence says *ask*, because that is what happens: an application
 /// // with unsaved work still gets to ask its own question.
@@ -91,7 +102,7 @@ pub enum Declaring {
 /// ```
 ///
 /// # Errors
-/// [`Declaring`], which the three as written cannot cause.
+/// [`Declaring`], which the four as written cannot cause.
 pub fn application_verbs() -> Result<Verbs, Declaring> {
     let mut verbs = Verbs::default();
     declare_into(&mut verbs)?;
@@ -100,7 +111,7 @@ pub fn application_verbs() -> Result<Verbs, Declaring> {
 
 /// Put the application verbs on an existing list.
 ///
-/// All three or none of them, as `alo-files` does with its six: a name already
+/// All four or none of them, as `alo-files` does with its six: a name already
 /// taken is found before anything is added, so a list never ends up holding
 /// half a set of capabilities that nobody chose.
 ///
@@ -113,6 +124,7 @@ pub fn declare_into(verbs: &mut Verbs) -> Result<(), Declaring> {
         open_application()?,
         focus_application()?,
         close_application()?,
+        arrange_application()?,
     ];
     for verb in &declaring {
         if verbs.of(verb.name()).is_some() {
@@ -175,6 +187,48 @@ fn close_application() -> Result<Verb, VerbError> {
     )
 }
 
+/// Put an application's window somewhere on the screen.
+///
+/// The only verb in this crate with two arguments, and the only one anywhere in
+/// this workspace that offers a choice. The grant is over the application and
+/// not over the arrangement: *where* is not a thing a grant could be about, and
+/// `alo_capability::Takes::can_be_a_grant` refuses a declaration that says
+/// otherwise.
+fn arrange_application() -> Result<Verb, VerbError> {
+    Verb::checked(
+        "arrange_application",
+        words::ARRANGE_APPLICATION,
+        Effect::Change,
+        vec![
+            Arg::taking(
+                "application",
+                words::ARRANGE_APPLICATION_APPLICATION,
+                Takes::Application,
+            ),
+            Arg::taking(
+                "where",
+                words::ARRANGE_APPLICATION_WHERE,
+                Takes::choice(arrangements()),
+            ),
+        ],
+        Requires::grants_over(["application"]),
+        words::ARRANGE_APPLICATION_SENTENCE,
+    )
+}
+
+/// Where a window may be put, at v0.01.
+///
+/// Declared from the words a translator is handed, as everything else in this
+/// crate is: the name is what a model sends and the record keeps, and the word
+/// is what a person approves. Quarters are v0.5 and are not here.
+fn arrangements() -> [Offered; 3] {
+    [
+        Offered::called("left_half", words::LEFT_HALF),
+        Offered::called("right_half", words::RIGHT_HALF),
+        Offered::called("whole_screen", words::WHOLE_SCREEN),
+    ]
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -185,18 +239,36 @@ mod tests {
     use crate::testing::in_english;
     use alo_capability::{CallError, Given};
 
-    /// The three that are here, and no fourth that arrived with them.
+    /// The four `docs/features.md` promises at v0.01, and no fifth that arrived
+    /// with them.
     #[test]
-    fn the_list_is_the_three_this_crate_declares() {
+    fn the_list_is_the_four_this_crate_declares() {
         let verbs = application_verbs().unwrap();
         let names: Vec<_> = verbs.all().map(Verb::name).collect();
         assert_eq!(
             names,
-            ["open_application", "focus_application", "close_application"]
+            [
+                "open_application",
+                "focus_application",
+                "close_application",
+                "arrange_application"
+            ]
         );
-        // The fourth the feature list promises is item 11a, and until it exists
-        // it is not on the list under a name that half means it.
-        assert!(verbs.of("arrange_application").is_none());
+    }
+
+    /// One call of one verb, with the arguments the tests below all use.
+    fn calling(named: &str) -> alo_capability::Call {
+        let verbs = application_verbs().unwrap();
+        let given = [
+            ("application", Given::text("org.blender.Blender")),
+            ("where", Given::text("left_half")),
+        ];
+        let takes_where = verbs
+            .of(named)
+            .is_some_and(|verb| verb.arg("where").is_some());
+        verbs
+            .call(named, if takes_where { &given } else { &given[..1] })
+            .unwrap()
     }
 
     /// **Every one of them waits for an approval, and none of them answers a
@@ -217,6 +289,11 @@ mod tests {
 
     /// Each requires a grant, and it is over the application it names — the one
     /// thing `Takes::Application` can be a grant over.
+    ///
+    /// **`arrange_application` takes a second argument and the grant is not
+    /// over it**, which is the honest shape rather than an omission: *where* is
+    /// not a thing anybody can grant, and a declaration claiming otherwise is
+    /// refused by `Takes::can_be_a_grant`.
     #[test]
     fn every_application_verb_needs_a_grant_over_the_application_it_names() {
         for verb in application_verbs().unwrap().all() {
@@ -226,20 +303,29 @@ mod tests {
                 "{}",
                 verb.name()
             );
-            assert_eq!(verb.args().len(), 1, "{}", verb.name());
             assert_eq!(
                 verb.args().first().map(Arg::takes),
-                Some(&Takes::Application)
+                Some(&Takes::Application),
+                "{}",
+                verb.name()
             );
         }
+        let verbs = application_verbs().unwrap();
+        let arranging = verbs.of("arrange_application").unwrap();
+        assert_eq!(arranging.args().len(), 2);
+        assert!(matches!(
+            arranging.args().get(1).map(Arg::takes),
+            Some(&Takes::Choice(_))
+        ));
+        assert!(!Takes::choice(arrangements()).can_be_a_grant());
     }
 
-    /// The sentence a person approves, for each of the three. It is generated
-    /// from the argument and it names it — a verb that broke either rule could
-    /// not have been declared — so this asserts what somebody actually reads.
+    /// The sentence a person approves, for each of the four. It is generated
+    /// from the arguments and it names all of them — a verb that broke either
+    /// rule could not have been declared — so this asserts what somebody
+    /// actually reads.
     #[test]
     fn what_a_person_would_be_approving_reads_as_a_sentence() {
-        let verbs = application_verbs().unwrap();
         let strings = in_english();
         for (named, expected) in [
             ("open_application", "open org.blender.Blender"),
@@ -248,16 +334,123 @@ mod tests {
                 "bring org.blender.Blender to the front",
             ),
             ("close_application", "ask org.blender.Blender to close"),
+            (
+                "arrange_application",
+                "put org.blender.Blender on the left half of the screen",
+            ),
         ] {
-            let call = verbs
-                .call(
-                    named,
-                    &[("application", Given::text("org.blender.Blender"))],
-                )
-                .unwrap();
+            let call = calling(named);
             assert_eq!(call.sentence(&strings).text(), expected, "{named}");
             assert_eq!(call.asks().len(), 1, "{named}");
         }
+    }
+
+    /// **The arrangement a person approves is a phrase, never the name a model
+    /// sent.** This is item 11a as a person meets it: before it, the sentence
+    /// read *put org.blender.Blender left_half*.
+    #[test]
+    fn the_arrangement_reaches_the_sentence_as_words_and_the_value_as_a_name() {
+        let verbs = application_verbs().unwrap();
+        for (sent, reads) in [
+            ("left_half", "on the left half of the screen"),
+            ("right_half", "on the right half of the screen"),
+            ("whole_screen", "across the whole screen"),
+        ] {
+            let call = verbs
+                .call(
+                    "arrange_application",
+                    &[
+                        ("application", Given::text("org.blender.Blender")),
+                        ("where", Given::text(sent)),
+                    ],
+                )
+                .unwrap();
+            assert_eq!(
+                call.sentence(&in_english()).text(),
+                format!("put org.blender.Blender {reads}"),
+                "{sent}"
+            );
+            // And the value underneath is still the name that was sent, which
+            // is what the record keeps.
+            assert_eq!(
+                call.value("where").map(alo_capability::Value::describe),
+                Some(sent.to_owned()),
+                "{sent}"
+            );
+        }
+    }
+
+    /// **The whole line is one language.** A German machine reads a German
+    /// sentence with a German arrangement in it — and one that has translated
+    /// the sentence but not the arrangement says so rather than looking
+    /// finished, which is what item 11a bought in `alo-strings`.
+    #[test]
+    fn the_arrangement_is_read_in_the_readers_own_language() {
+        let whole = crate::testing::translated(&[
+            (
+                words::ARRANGE_APPLICATION_SENTENCE,
+                "{application} {where} platzieren",
+            ),
+            (words::LEFT_HALF, "auf der linken Bildschirmhälfte"),
+        ]);
+        let said = calling("arrange_application").sentence(&whole);
+        assert_eq!(
+            said.text(),
+            "org.blender.Blender auf der linken Bildschirmhälfte platzieren"
+        );
+        assert!(said.is_translated());
+        assert!(said.unfilled().is_empty());
+
+        let half = crate::testing::translated(&[(
+            words::ARRANGE_APPLICATION_SENTENCE,
+            "{application} {where} platzieren",
+        )]);
+        let mixed = calling("arrange_application").sentence(&half);
+        assert_eq!(
+            mixed.text(),
+            "org.blender.Blender on the left half of the screen platzieren"
+        );
+        assert!(
+            !mixed.is_translated(),
+            "an untranslated arrangement is untranslated English on the line"
+        );
+        assert!(!mixed.is_a_bug(), "not translated yet is work, not a fault");
+    }
+
+    /// An arrangement nobody offered never becomes a call, and the refusal
+    /// names **what has to be sent** rather than what a person would read: a
+    /// call that never validated is about what arrived.
+    #[test]
+    fn an_arrangement_that_is_not_offered_is_refused_by_name() {
+        let verbs = application_verbs().unwrap();
+        for attempt in ["left", "LEFT_HALF", "top_left_quarter", "on the left half"] {
+            let said = verbs
+                .call(
+                    "arrange_application",
+                    &[
+                        ("application", Given::text("org.blender.Blender")),
+                        ("where", Given::text(attempt)),
+                    ],
+                )
+                .unwrap_err()
+                .said(&in_english());
+            assert!(
+                said.text().contains("left_half, right_half, whole_screen"),
+                "{attempt}: {said}"
+            );
+        }
+    }
+
+    /// Quarters are v0.5, so they are absent rather than half-present under a
+    /// name that suggests otherwise. The scope gate is a gate.
+    #[test]
+    fn a_quarter_is_not_offered_at_this_version() {
+        assert_eq!(arrangements().len(), 3);
+        assert!(
+            !arrangements()
+                .iter()
+                .any(|offered| offered.name().contains("quarter"))
+        );
     }
 
     /// **Closing asks.** The sentence a person approves says so, so this is a
@@ -291,9 +484,22 @@ mod tests {
         let missing = verbs.call("focus_application", &[]).unwrap_err();
         let said = missing.said(&in_english());
         assert!(said.text().contains("application"), "{said}");
+
+        // And two arguments given the wrong way round are refused rather than
+        // read as whichever one they happen to fit.
+        let sideways = verbs
+            .call(
+                "arrange_application",
+                &[
+                    ("application", Given::text("left_half")),
+                    ("where", Given::text("org.blender.Blender")),
+                ],
+            )
+            .unwrap_err();
+        assert!(matches!(sideways, CallError::Argument(_)), "{sideways:?}");
     }
 
-    /// The list is closed, and these three do not open it.
+    /// The list is closed, and these four do not open it.
     #[test]
     fn nothing_that_runs_something_is_on_the_list() {
         let verbs = application_verbs().unwrap();
@@ -313,21 +519,21 @@ mod tests {
         let mut verbs = application_verbs().unwrap();
         let again = declare_into(&mut verbs).unwrap_err();
         assert!(matches!(again, Declaring::List(_)), "{again}");
-        assert_eq!(verbs.len(), 3);
+        assert_eq!(verbs.len(), 4);
 
-        // The clash is on the last of the three, and the two before it are not
+        // The clash is on the last of the four, and the three before it are not
         // added on the way to finding it.
         let theirs = application_verbs().unwrap();
         let mut mine = Verbs::default();
-        mine.declare(theirs.of("close_application").unwrap().clone())
+        mine.declare(theirs.of("arrange_application").unwrap().clone())
             .unwrap();
         let clash = declare_into(&mut mine).unwrap_err();
-        assert!(clash.to_string().contains("close_application"), "{clash}");
+        assert!(clash.to_string().contains("arrange_application"), "{clash}");
         assert_eq!(mine.len(), 1);
         assert!(mine.of("open_application").is_none());
     }
 
-    /// The three sit beside the file verbs on one list, which is the
+    /// The four sit beside the file verbs on one list, which is the
     /// arrangement a daemon has: one registry, every crate declaring into it.
     #[test]
     fn they_join_a_list_that_already_holds_another_crates_verbs() {
@@ -356,20 +562,25 @@ mod tests {
             )
             .unwrap();
         declare_into(&mut verbs).unwrap();
-        assert_eq!(verbs.len(), 4);
+        assert_eq!(verbs.len(), 5);
         assert!(verbs.of("open_application").is_some());
         assert!(verbs.of("list_folder").is_some());
     }
 
-    /// **Every word the three are declared with is one this crate declares.**
+    /// **Every word the four are declared with is one this crate declares.**
     ///
     /// The risk item 9g introduced and the test that closes it, which
     /// `docs/contracts/agent-verbs.md` asks of every crate declaring verbs: a
     /// constant left out of [`crate::words`]'s list would compile, declare, and
     /// reach a person as a key in the place where the sentence they are
     /// approving belongs.
+    ///
+    /// **Item 11a widened it to the options**, which are declared the same way
+    /// and can be left out the same way — and an arrangement nobody declared
+    /// would reach a person as a key inside the sentence rather than in place
+    /// of it, which is harder to notice rather than easier.
     #[test]
-    fn everything_the_three_say_is_something_this_crate_declares() {
+    fn everything_the_four_say_is_something_this_crate_declares() {
         let strings = in_english();
         let verbs = application_verbs().unwrap();
         for verb in verbs.all() {
@@ -379,15 +590,13 @@ mod tests {
                 let said = arg.purpose(&strings);
                 assert!(!said.is_a_bug(), "{} {}: {said}", verb.name(), arg.name());
             }
-            let call = verbs
-                .call(
-                    verb.name(),
-                    &[("application", Given::text("org.blender.Blender"))],
-                )
-                .unwrap();
-            let said = call.sentence(&strings);
+            let said = calling(verb.name()).sentence(&strings);
             assert!(!said.is_a_bug(), "{}: {said}", verb.name());
             assert!(said.unfilled().is_empty(), "{:?}", said.unfilled());
+        }
+        for offered in arrangements() {
+            let said = offered.shown(&strings);
+            assert!(!said.is_a_bug(), "{}: {said}", offered.name());
         }
     }
 
@@ -399,6 +608,6 @@ mod tests {
         assert!(empty.of("open_application").is_none());
         let mut mine = Verbs::default();
         declare_into(&mut mine).unwrap();
-        assert_eq!(mine.len(), 3);
+        assert_eq!(mine.len(), 4);
     }
 }

@@ -231,7 +231,7 @@ impl Call {
     /// verb is a fact something can see.
     #[must_use]
     pub fn sentence(&self, strings: &Strings) -> Said {
-        strings.say(&self.sentence, &self.filling())
+        strings.say(&self.sentence, &self.filling(strings))
     }
 
     /// What names the sentence a person approves.
@@ -246,11 +246,28 @@ impl Call {
 
     /// What goes into the sentence's gaps: each validated value, under the name
     /// of the argument that carried it.
+    ///
+    /// **Almost every value is data and goes in as it is** — a path, an
+    /// identifier, a name, a number — because those came off this machine and
+    /// translating one would be inventing a value nobody chose. One kind is
+    /// not: an option a verb offered is a string somebody translates, so it is
+    /// looked up here rather than written in as the name a model sent (item
+    /// 11a). That is why this takes the vocabulary at all.
+    ///
+    /// The lookup goes in through [`Filling::and_said`], so the answer built
+    /// around it knows that a word was put into it: a sentence somebody
+    /// translated with an option nobody has translated inside it is not a
+    /// translated sentence, and [`Said::is_translated`] says so.
     #[must_use]
-    pub fn filling(&self) -> Filling {
+    pub fn filling(&self, strings: &Strings) -> Filling {
         let mut filling = Filling::nothing();
         for (argument, value) in &self.values {
-            filling = filling.and(argument.clone(), value.describe());
+            filling = match value.words() {
+                Some(words) => {
+                    filling.and_said(argument.clone(), &strings.say(words, &Filling::nothing()))
+                }
+                None => filling.and(argument.clone(), value.describe()),
+            };
         }
         filling
     }
@@ -551,7 +568,10 @@ mod tests {
                 .text(),
             "list the displays"
         );
-        assert!(call.filling().is_nothing());
+        assert!(
+            call.filling(&crate::testing::speaking(&[DISPLAYS, DISPLAYS_SENTENCE]))
+                .is_nothing()
+        );
         assert!(call.permitted_by(&Grants::default(), &files(), noon()));
         assert!(!call.waits_for_approval());
     }

@@ -37,7 +37,16 @@ pub enum Written {
     Name(Line),
     /// A whole number.
     Count(i64),
-    /// One of the options the verb declared.
+    /// One of the options the verb declared, by **the name it was chosen by**
+    /// and never by the words a person read for it.
+    ///
+    /// Item 11a gave an option two halves and the record keeps the identity,
+    /// for the reason it keeps an application's identifier rather than its
+    /// name: a record that held *on the left half of the screen* would say
+    /// something different on a German machine than on a Greek one, and a
+    /// question put to it six months later would depend on which language
+    /// somebody happened to be reading at the time. What the person actually
+    /// read is kept once, whole, as [`crate::What::sentence`].
     Choice(Line),
 }
 
@@ -78,7 +87,7 @@ impl From<&Value> for Written {
             Value::Application(id) => Self::Application(Line::of(id)),
             Value::Name(name) => Self::Name(Line::of(name)),
             Value::Count(number) => Self::Count(*number),
-            Value::Choice(option) => Self::Choice(Line::of(option)),
+            Value::Choice { chosen, .. } => Self::Choice(Line::of(chosen)),
         }
     }
 }
@@ -86,12 +95,17 @@ impl From<&Value> for Written {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alo_capability::{Arg, Given, Takes};
+    use alo_capability::{Arg, Given, Offered, Takes};
     use alo_strings::Word;
 
     /// What an argument is for, which none of these tests is about — they are
     /// about the value that came out the other side of validation.
     const A_PURPOSE: Word = Word::saying("testing.argument.purpose", "whatever it is for");
+
+    /// The two options the choice case offers. An option is a name and a word
+    /// since item 11a; the record keeps the name.
+    const TO_THE_ARCHIVE: Word = Word::saying("testing.into.archive", "into the archive");
+    const TO_THE_TRASH: Word = Word::saying("testing.into.trash", "into the wastebasket");
 
     fn validated(arg: &Arg, given: &Given) -> Option<Value> {
         arg.validate(given).ok()
@@ -123,7 +137,14 @@ mod tests {
                 "7",
             ),
             (
-                Arg::taking("into", A_PURPOSE, Takes::choice(["archive", "trash"])),
+                Arg::taking(
+                    "into",
+                    A_PURPOSE,
+                    Takes::choice([
+                        Offered::called("archive", TO_THE_ARCHIVE),
+                        Offered::called("trash", TO_THE_TRASH),
+                    ]),
+                ),
                 Given::text("archive"),
                 "archive",
             ),

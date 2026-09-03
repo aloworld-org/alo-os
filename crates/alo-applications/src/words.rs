@@ -6,7 +6,7 @@
 //! asked whether anybody translated it**. `alo-strings` is the machinery;
 //! this file is what this crate hands it.
 //!
-//! **The three verbs are declared from here, not copied from here.**
+//! **The four verbs are declared from here, not copied from here.**
 //! [`crate::verbs`] passes these constants to `alo_capability::Verb::checked`,
 //! so the sentence a person approves and the sentence a translator is handed
 //! are one string rather than two a test hopes are equal (item 9g).
@@ -19,6 +19,23 @@
 //! carry, and it is written into the note on each of those strings, because a
 //! translator with no product in front of them would otherwise reasonably
 //! assume the gap holds a word they should have translated around.
+//!
+//! # And the one gap that arrives already translated
+//!
+//! `arrange_application`'s `{where}` is the other kind, and this crate is the
+//! first to have one: it holds an *arrangement*, which is one of the three
+//! strings at the bottom of this file rendered in the reader's own language
+//! (item 11a). So the three are written as they will read **inside** the
+//! sentence rather than as labels — the preposition lives in the arrangement
+//! where a translator can move it, which is `alo-egress`' decision about its
+//! indicator line met from the other side.
+//!
+//! A sentence and a word put into it that were translated by two people at two
+//! times can disagree, and nothing here can stop that. What alo OS does instead
+//! is refuse to hide it: a sentence holding a word nobody has translated
+//! answers `alo_strings::Said::is_translated` with `false`, so a machine
+//! showing a German approval with an English arrangement in it is a fact
+//! something can see.
 
 use alo_strings::Vocabulary;
 
@@ -82,7 +99,7 @@ pub const CALLED: Word = Word::saying("applications.called", "{called} ({applica
 );
 
 // ---------------------------------------------------------------------------
-// The three verbs: what each does, what a person approves, and what its
+// The four verbs: what each does, what a person approves, and what its
 // argument is for. `crate::verbs` declares them from these.
 // ---------------------------------------------------------------------------
 
@@ -147,10 +164,74 @@ pub const CLOSE_APPLICATION_APPLICATION: Word = Word::saying(
     "which application to ask to close",
 );
 
+/// What `arrange_application` does.
+pub const ARRANGE_APPLICATION: Word = Word::saying(
+    "applications.verb.arrange-application.purpose",
+    "put an application's window somewhere on the screen",
+);
+/// **The sentence a person approves before a window moves.**
+///
+/// The one sentence in this crate with two gaps in it, and they are different
+/// in kind: `{application}` is an identifier off this machine and `{where}` is
+/// one of the three arrangements below, which arrives **already translated**.
+/// The note says both, because a translator has nothing else to tell them apart
+/// by.
+pub const ARRANGE_APPLICATION_SENTENCE: Word = Word::saying(
+    "applications.verb.arrange-application.sentence",
+    "put {application} {where}",
+)
+.noting(
+    "{application} is the identifier this machine knows an application by, like \
+     org.blender.Blender. It is never translated. {where} is one of the arrangements below — \
+     applications.where.left-half and its two neighbours — and it arrives already translated, so \
+     write this sentence and those three as one sentence between them: whatever preposition or \
+     case your language needs goes into the arrangement rather than here, and the gap can move to \
+     wherever your language puts the place.",
+);
+/// `arrange_application`'s first argument.
+pub const ARRANGE_APPLICATION_APPLICATION: Word = Word::saying(
+    "applications.verb.arrange-application.argument.application",
+    "which application's window to move",
+);
+/// `arrange_application`'s second argument.
+pub const ARRANGE_APPLICATION_WHERE: Word = Word::saying(
+    "applications.verb.arrange-application.argument.where",
+    "where on the screen the window goes",
+);
+
+// ---------------------------------------------------------------------------
+// The three arrangements. Each of them completes the sentence above, so they
+// are written as they will read inside it rather than as labels.
+// ---------------------------------------------------------------------------
+
+/// What a translator has to know about all three: they are not labels.
+const COMPLETES_THE_SENTENCE: &str = "This is not a label; it finishes applications.verb.arrange-application.sentence — read the \
+     two together and write them so the whole line reads as one sentence in your language. The \
+     preposition and the case belong here rather than in the sentence, because a language that \
+     inflects the place needs the whole phrase in front of it. It is also what a person reads \
+     beside the option when they are shown the choice.";
+
+/// The window takes the left half of the screen.
+pub const LEFT_HALF: Word = Word::saying(
+    "applications.where.left-half",
+    "on the left half of the screen",
+)
+.noting(COMPLETES_THE_SENTENCE);
+/// The window takes the right half of the screen.
+pub const RIGHT_HALF: Word = Word::saying(
+    "applications.where.right-half",
+    "on the right half of the screen",
+)
+.noting(COMPLETES_THE_SENTENCE);
+/// The window takes the whole screen.
+pub const WHOLE_SCREEN: Word =
+    Word::saying("applications.where.whole-screen", "across the whole screen")
+        .noting(COMPLETES_THE_SENTENCE);
+
 /// Every string this crate can say, in the order a translator meets them: what
-/// it could not reach, what could not join the list, how one is shown, and then
-/// the three verbs.
-pub const EVERY_WORD: [Word; 13] = [
+/// it could not reach, what could not join the list, how one is shown, the four
+/// verbs, and the arrangements one of them offers.
+pub const EVERY_WORD: [Word; 20] = [
     NOT_INSTALLED,
     NO_IDENTIFIER,
     NOT_AN_IDENTIFIER,
@@ -164,6 +245,13 @@ pub const EVERY_WORD: [Word; 13] = [
     CLOSE_APPLICATION,
     CLOSE_APPLICATION_SENTENCE,
     CLOSE_APPLICATION_APPLICATION,
+    ARRANGE_APPLICATION,
+    ARRANGE_APPLICATION_SENTENCE,
+    ARRANGE_APPLICATION_APPLICATION,
+    ARRANGE_APPLICATION_WHERE,
+    LEFT_HALF,
+    RIGHT_HALF,
+    WHOLE_SCREEN,
 ];
 
 /// Why this crate's own words could not be declared.

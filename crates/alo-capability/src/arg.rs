@@ -32,6 +32,7 @@ use std::path::PathBuf;
 use alo_strings::{Counting, Filling, Key, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
+use crate::offered::Offered;
 use crate::path::steps_upwards;
 use crate::reach::Ask;
 use crate::words;
@@ -64,7 +65,11 @@ pub enum Takes {
     /// One of a list of options the verb wrote down. This is how a verb offers
     /// a choice without accepting free text: the options exist before the model
     /// does, and anything else is refused.
-    Choice(Vec<String>),
+    ///
+    /// Each option is an [`Offered`] — a name a model sends and a word a person
+    /// reads — and never a bare string. See [`crate::offered`] for why those
+    /// cannot be one thing.
+    Choice(Vec<Offered>),
 }
 
 impl Takes {
@@ -80,13 +85,9 @@ impl Takes {
         Self::Count { least, most }
     }
 
-    /// One of these options, matched exactly.
-    pub fn choice<I, S>(options: I) -> Self
-    where
-        I: IntoIterator<Item = S>,
-        S: Into<String>,
-    {
-        Self::Choice(options.into_iter().map(Into::into).collect())
+    /// One of these options, matched by name, exactly.
+    pub fn choice(options: impl IntoIterator<Item = Offered>) -> Self {
+        Self::Choice(options.into_iter().collect())
     }
 
     /// Whether a grant can be over this kind of argument.
@@ -145,19 +146,59 @@ pub enum Value {
     Name(String),
     /// A number inside the range the verb declared.
     Count(i64),
-    /// One of the options the verb declared.
-    Choice(String),
+    /// One of the options the verb declared: the name it was chosen by, and
+    /// what names the words a person reads for it.
+    Choice {
+        /// The option, by the name the verb declared it under. The identity —
+        /// what a model sent, what the record keeps, and what nothing
+        /// downstream may rewrite.
+        chosen: String,
+        /// What names the words a person reads for it. Carried rather than
+        /// rendered here, so the sentence and the record are one value looked
+        /// up wherever somebody reads it (item 9g).
+        words: Key,
+    },
 }
 
 impl Value {
-    /// What this value is, in the words that go into the sentence a person
-    /// approves.
+    /// One of a verb's options, as the value it becomes.
+    #[must_use]
+    pub fn chosen(offered: &Offered) -> Self {
+        Self::Choice {
+            chosen: offered.name().to_owned(),
+            words: offered.key(),
+        }
+    }
+
+    /// What this value **is**: the path, the identifier, the name, the number,
+    /// or the name of the option that was chosen.
+    ///
+    /// Data rather than words. What goes into the sentence a person approves is
+    /// [`Call::sentence`](crate::Call::sentence), which asks [`Value::words`]
+    /// first and looks a chosen option up — because an option is the one kind
+    /// of argument that is a string somebody translates rather than something
+    /// off this machine.
     #[must_use]
     pub fn describe(&self) -> String {
         match self {
             Self::Path(path) => path.display().to_string(),
-            Self::Application(id) | Self::Name(id) | Self::Choice(id) => id.clone(),
+            Self::Application(id) | Self::Name(id) | Self::Choice { chosen: id, .. } => id.clone(),
             Self::Count(number) => number.to_string(),
+        }
+    }
+
+    /// What names the words a person reads for this value, when it is the one
+    /// kind that has any.
+    ///
+    /// `None` for a path, an identifier, a name and a number: those came off
+    /// this machine or out of a model, and translating one would be inventing a
+    /// value nobody chose — the rule `alo-files` holds a filename to and
+    /// `alo-egress` holds an address to.
+    #[must_use]
+    pub fn words(&self) -> Option<&Key> {
+        match self {
+            Self::Choice { words, .. } => Some(words),
+            Self::Path(_) | Self::Application(_) | Self::Name(_) | Self::Count(_) => None,
         }
     }
 
@@ -173,7 +214,7 @@ impl Value {
         match self {
             Self::Path(path) => Some(Ask::Path(path.clone())),
             Self::Application(id) => Some(Ask::Application(id.clone())),
-            Self::Name(_) | Self::Count(_) | Self::Choice(_) => None,
+            Self::Name(_) | Self::Count(_) | Self::Choice { .. } => None,
         }
     }
 }
@@ -250,7 +291,11 @@ pub enum ArgError {
     NotOnTheList {
         /// The argument that was wrong.
         argument: String,
-        /// The options the verb declared, as a person would read them.
+        /// The **names** of the options the verb declared, separated by commas
+        /// — what has to be sent, not what a person reads. A refusal of a call
+        /// that never validated is about what arrived, so it names the values
+        /// whoever is fixing it must send, the way it already names the
+        /// argument.
         options: String,
     },
 }
@@ -459,14 +504,23 @@ impl Arg {
     }
 
     /// Text that has to be one of the options.
-    fn as_choice(&self, text: &str, options: &[String]) -> Result<Value, ArgError> {
+    ///
+    /// **Matched against the name, never against the word.** The word is what a
+    /// person reads and it changes with the reader's language; a model sending
+    /// what a verb offers has to be able to send the same thing on every
+    /// machine, and the refusal has to name the same things back.
+    fn as_choice(&self, text: &str, options: &[Offered]) -> Result<Value, ArgError> {
         let text = self.readable(text)?;
-        if options.iter().any(|option| option == &text) {
-            return Ok(Value::Choice(text));
+        if let Some(offered) = options.iter().find(|offered| offered.name() == text) {
+            return Ok(Value::chosen(offered));
         }
         Err(ArgError::NotOnTheList {
             argument: self.name.clone(),
-            options: options.join(", "),
+            options: options
+                .iter()
+                .map(Offered::name)
+                .collect::<Vec<_>>()
+                .join(", "),
         })
     }
 
@@ -510,13 +564,26 @@ impl Arg {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{in_english, translated};
+    use crate::testing::{in_english, translated, translating};
 
     /// What an argument is for is a word now, so the fixtures declare theirs
     /// like any other crate would.
     const A_FOLDER: Word = Word::saying("testing.argument.folder", "the folder to list");
     const A_NAME: Word = Word::saying("testing.argument.name", "what to call it");
     const WHATEVER: Word = Word::saying("testing.argument.whatever", "whatever it is for");
+
+    /// The two options the choice tests are written against. An option is a
+    /// name and a word since item 11a, so a fixture that offers one declares
+    /// both.
+    const TO_THE_ARCHIVE: Word = Word::saying("testing.into.archive", "into the archive");
+    const TO_THE_TRASH: Word = Word::saying("testing.into.trash", "into the wastebasket");
+
+    fn into_two() -> [Offered; 2] {
+        [
+            Offered::called("archive", TO_THE_ARCHIVE),
+            Offered::called("trash", TO_THE_TRASH),
+        ]
+    }
 
     fn folder() -> Arg {
         Arg::taking("folder", A_FOLDER, Takes::Path)
@@ -620,14 +687,18 @@ mod tests {
         );
     }
 
-    /// A choice is one of the options the verb wrote down, matched exactly.
-    /// Matching kindly here would let a model pick an option nobody declared.
+    /// A choice is one of the options the verb wrote down, matched by name,
+    /// exactly. Matching kindly here would let a model pick an option nobody
+    /// declared.
     #[test]
     fn a_choice_is_one_of_the_options_and_is_matched_exactly() {
-        let arg = Arg::taking("into", WHATEVER, Takes::choice(["archive", "trash"]));
+        let arg = Arg::taking("into", WHATEVER, Takes::choice(into_two()));
         assert_eq!(
             arg.validate(&Given::text("archive")).unwrap(),
-            Value::Choice("archive".to_owned())
+            Value::Choice {
+                chosen: "archive".to_owned(),
+                words: TO_THE_ARCHIVE.key(),
+            }
         );
         let err = arg.validate(&Given::text("Archive")).unwrap_err();
         assert_eq!(
@@ -642,6 +713,56 @@ mod tests {
                 .text()
                 .contains("archive, trash")
         );
+    }
+
+    /// **An option is matched by its name and never by its word**, so a machine
+    /// reading German and a machine reading English take the same call — and
+    /// the refusal names the same two things back, because what a model must
+    /// send does not move when somebody translates a screen.
+    #[test]
+    fn an_option_is_matched_by_its_name_in_every_language() {
+        let arg = Arg::taking("into", WHATEVER, Takes::choice(into_two()));
+        let german = translating(
+            &[TO_THE_ARCHIVE, TO_THE_TRASH],
+            &[(TO_THE_ARCHIVE, "in das Archiv")],
+        );
+        assert!(
+            arg.validate(&Given::text("in das Archiv"))
+                .unwrap_err()
+                .said(&german)
+                .text()
+                .contains("archive, trash")
+        );
+        assert_eq!(
+            arg.validate(&Given::text("archive")).unwrap().describe(),
+            "archive"
+        );
+    }
+
+    /// A chosen option carries what names the words a person reads; nothing
+    /// else does, because nothing else is a string somebody translates.
+    #[test]
+    fn only_a_chosen_option_has_words_to_look_up() {
+        let chosen = Arg::taking("into", WHATEVER, Takes::choice(into_two()))
+            .validate(&Given::text("trash"))
+            .unwrap();
+        assert_eq!(chosen.words(), Some(&TO_THE_TRASH.key()));
+        assert_eq!(chosen.describe(), "trash");
+
+        for value in [
+            folder()
+                .validate(&Given::text("/home/anna/Invoices"))
+                .unwrap(),
+            new_name().validate(&Given::text("april.pdf")).unwrap(),
+            Arg::taking("application", WHATEVER, Takes::Application)
+                .validate(&Given::text("org.blender.Blender"))
+                .unwrap(),
+            Arg::taking("most", WHATEVER, Takes::count(1, 100))
+                .validate(&Given::number(7))
+                .unwrap(),
+        ] {
+            assert_eq!(value.words(), None, "{value:?}");
+        }
     }
 
     /// A number is inside the range the verb declared, at both ends.
@@ -692,7 +813,7 @@ mod tests {
             Takes::Application,
             Takes::name(255),
             Takes::count(1, 10),
-            Takes::choice(["archive", "trash"]),
+            Takes::choice(into_two()),
         ] {
             let named = match &takes {
                 Takes::Path => "folder",
@@ -723,7 +844,7 @@ mod tests {
         assert!(Takes::Application.can_be_a_grant());
         assert!(!Takes::name(255).can_be_a_grant());
         assert!(!Takes::count(1, 10).can_be_a_grant());
-        assert!(!Takes::choice(["a", "b"]).can_be_a_grant());
+        assert!(!Takes::choice(into_two()).can_be_a_grant());
 
         let path = folder()
             .validate(&Given::text("/home/anna/Invoices/march.pdf"))

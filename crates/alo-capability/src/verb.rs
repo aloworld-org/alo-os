@@ -30,6 +30,7 @@ use alo_strings::{Filling, Said, Strings, Word};
 use serde::{Deserialize, Serialize};
 
 use crate::arg::{Arg, Takes};
+use crate::offered::Offered;
 use crate::sentence::{Sentence, SentenceError};
 
 /// What a verb does to the machine, and therefore when it may run.
@@ -157,6 +158,36 @@ pub enum VerbError {
     ChoiceOfOne {
         /// The argument as given.
         argument: String,
+    },
+    /// An option named something a model could not reliably send.
+    #[error(
+        "name the option in lower-case words joined by underscores, like left_half — {option} on {argument} is not one, and an option's name is what a model sends and what the record keeps"
+    )]
+    OptionNotAnIdentifier {
+        /// The argument as given.
+        argument: String,
+        /// The option as named.
+        option: String,
+    },
+    /// Two options of one name.
+    #[error(
+        "{option} is offered twice by {argument} — a name means one option, and which of the two a call chose would depend on the order they were written"
+    )]
+    SameOptionTwice {
+        /// The argument as given.
+        argument: String,
+        /// The option as named.
+        option: String,
+    },
+    /// An option a person could not read.
+    #[error(
+        "say what {option} means in the words a person would use — {argument} puts it into the sentence they are asked to approve, so an option with nothing to say leaves a hole in it"
+    )]
+    OptionWithoutWords {
+        /// The argument as given.
+        argument: String,
+        /// The option as named.
+        option: String,
     },
     /// A range with no numbers in it.
     #[error("give {argument} a range with numbers in it — its smallest is above its largest")]
@@ -410,18 +441,48 @@ fn check_takes(arg: &Arg) -> Result<(), VerbError> {
         Takes::Choice(options) if options.len() < 2 => Err(VerbError::ChoiceOfOne {
             argument: arg.name().to_owned(),
         }),
+        Takes::Choice(options) => check_options(arg.name(), options),
         Takes::Count { least, most } if least > most => Err(VerbError::EmptyRange {
             argument: arg.name().to_owned(),
         }),
         Takes::Name { longest } if *longest == 0 => Err(VerbError::NoLength {
             argument: arg.name().to_owned(),
         }),
-        Takes::Path
-        | Takes::Application
-        | Takes::Name { .. }
-        | Takes::Count { .. }
-        | Takes::Choice(_) => Ok(()),
+        Takes::Path | Takes::Application | Takes::Name { .. } | Takes::Count { .. } => Ok(()),
     }
+}
+
+/// Everything that has to be true of the options a choice offers.
+///
+/// The same three things that have to be true of the arguments themselves, and
+/// for the same reasons one level down: a name is an identity, one name means
+/// one thing, and anything a person is asked to approve has to say something.
+fn check_options(argument: &str, options: &[Offered]) -> Result<(), VerbError> {
+    for (position, offered) in options.iter().enumerate() {
+        if offered.name().is_empty() || !is_an_identifier(offered.name()) {
+            return Err(VerbError::OptionNotAnIdentifier {
+                argument: argument.to_owned(),
+                option: offered.name().to_owned(),
+            });
+        }
+        if options
+            .iter()
+            .take(position)
+            .any(|earlier| earlier.name() == offered.name())
+        {
+            return Err(VerbError::SameOptionTwice {
+                argument: argument.to_owned(),
+                option: offered.name().to_owned(),
+            });
+        }
+        if offered.as_written().trim().is_empty() {
+            return Err(VerbError::OptionWithoutWords {
+                argument: argument.to_owned(),
+                option: offered.name().to_owned(),
+            });
+        }
+    }
+    Ok(())
 }
 
 /// Whether what the verb requires can be granted at all.
@@ -493,6 +554,9 @@ mod tests {
     const LISTING: Word = Word::saying("testing.verb.list-folder", "list what is in a folder");
     const LISTING_SENTENCE: Word =
         Word::saying("testing.sentence.list-folder", "list what is in {folder}");
+    /// The words the choice tests offer, because an option is a name and a word.
+    const TO_THE_ARCHIVE: Word = Word::saying("testing.into.archive", "into the archive");
+    const TO_THE_TRASH: Word = Word::saying("testing.into.trash", "into the wastebasket");
 
     /// A purpose or a sentence a test does not care about the words of.
     fn saying(says: &'static str) -> Word {
@@ -779,7 +843,7 @@ mod tests {
             vec![Arg::taking(
                 "into",
                 saying("where it goes"),
-                Takes::choice(["archive"]),
+                Takes::choice([Offered::called("archive", TO_THE_ARCHIVE)]),
             )],
             Requires::nothing_because("the destination is decided by the system, not by a path"),
             saying("archive it into {into}"),
@@ -810,6 +874,85 @@ mod tests {
             VerbError::EmptyRange {
                 argument: "lines".to_owned()
             }
+        );
+    }
+
+    /// **An option is held to the rules an argument is held to**, one level
+    /// down, and for the same three reasons: a name is an identity a model
+    /// sends, one name means one option, and anything that goes into the
+    /// sentence a person approves has to say something.
+    ///
+    /// This is what item 11a bought. Before it, a choice was a list of plain
+    /// strings and none of these three was a thing that could be checked.
+    #[test]
+    fn an_option_that_could_not_be_sent_or_could_not_be_read_is_refused() {
+        let choosing = |options: Vec<Offered>| {
+            Verb::checked(
+                "archive_file",
+                saying("archive a file"),
+                Effect::Change,
+                vec![Arg::taking(
+                    "into",
+                    saying("where it goes"),
+                    Takes::Choice(options),
+                )],
+                Requires::nothing_because("the destination is decided by the system, not a path"),
+                saying("archive it {into}"),
+            )
+        };
+
+        for named in ["To The Archive", "the archive", "Archive", "1st"] {
+            assert_eq!(
+                choosing(vec![
+                    Offered::called(named, TO_THE_ARCHIVE),
+                    Offered::called("trash", TO_THE_TRASH),
+                ])
+                .unwrap_err(),
+                VerbError::OptionNotAnIdentifier {
+                    argument: "into".to_owned(),
+                    option: named.trim().to_owned(),
+                },
+                "{named}"
+            );
+        }
+
+        let twice = choosing(vec![
+            Offered::called("archive", TO_THE_ARCHIVE),
+            Offered::called("archive", TO_THE_TRASH),
+        ])
+        .unwrap_err();
+        assert_eq!(
+            twice,
+            VerbError::SameOptionTwice {
+                argument: "into".to_owned(),
+                option: "archive".to_owned(),
+            }
+        );
+        assert!(
+            twice.to_string().contains("order they were written"),
+            "{twice}"
+        );
+
+        let silent = choosing(vec![
+            Offered::called("archive", TO_THE_ARCHIVE),
+            Offered::called("trash", Word::saying("testing.into.trash", "   ")),
+        ])
+        .unwrap_err();
+        assert_eq!(
+            silent,
+            VerbError::OptionWithoutWords {
+                argument: "into".to_owned(),
+                option: "trash".to_owned(),
+            }
+        );
+        assert!(silent.to_string().contains("approve"), "{silent}");
+
+        assert!(
+            choosing(vec![
+                Offered::called("archive", TO_THE_ARCHIVE),
+                Offered::called("trash", TO_THE_TRASH),
+            ])
+            .is_ok()
         );
     }
 
