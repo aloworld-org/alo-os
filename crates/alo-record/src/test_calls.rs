@@ -26,7 +26,10 @@ use std::time::{Duration, SystemTime};
 use alo_capability::{
     Arg, Call, Effect, Given, Grant, Grantee, Grants, Proposal, Reach, Requires, Takes, Verb,
 };
-use alo_egress::{Departing, Destination, EgressPolicy, Indicator, Leaving, NotPermitted, Why};
+use alo_egress::{
+    Departing, Destination, EgressPolicy, Errand, Indicator, Leaving, NotPermitted, OnItsOwn,
+    Underway, Why,
+};
 use alo_models::Region;
 use alo_strings::Word;
 
@@ -210,4 +213,24 @@ pub(crate) fn not_permitted(policy: &EgressPolicy, leaving: Leaving) -> NotPermi
     Indicator::default()
         .beginning(policy, leaving, noon())
         .unwrap_err()
+}
+
+/// Where this machine fetches a model from.
+pub(crate) fn the_catalogue() -> Destination {
+    Destination::at("models.alo.example").unwrap()
+}
+
+/// An errand of alo OS's own, already on an indicator.
+///
+/// The indicator is local to the fixture for the reason [`departing`]'s is: an
+/// [`Underway`] is the only thing that means *alo OS may do this*, and a test
+/// that could conjure one without an indicator having shown it would be testing
+/// something else.
+pub(crate) fn underway(errand: Errand, destination: Destination, at: SystemTime) -> Underway {
+    Indicator::default().beginning_on_its_own(OnItsOwn::for_(errand, destination), at)
+}
+
+/// The errand the record's tests follow: this machine fetching a model.
+pub(crate) fn fetching_a_model(at: SystemTime) -> Underway {
+    underway(Errand::FetchingAModel, the_catalogue(), at)
 }

@@ -33,10 +33,32 @@
 //! just set one. It takes a [`NotPermitted`], which only the indicator
 //! produces, so a refusal cannot be recorded that the policy did not make —
 //! and it is not egress, because nothing left.
+//!
+//! # And what nobody caused
+//!
+//! Law 1's sentence is about egress an *agent* causes, and `docs/features.md`
+//! makes a second promise beside it — ★ *no telemetry* — about egress with none.
+//! [`Entry::left_on_its_own`] is that promise's second half: the machine's own
+//! errands are shown while they happen (`alo-egress`' indicator) **and
+//! afterwards in a record**, which is the only part of law 1 a person can check
+//! at the end of a week rather than in the second it happened.
+//!
+//! It is the same guarantee by the same means. An [`Underway`] is made only by
+//! [`Indicator::beginning_on_its_own`](alo_egress::Indicator::beginning_on_its_own),
+//! which shows the errand before it hands one back, so **an errand the
+//! indicator never showed is not an entry that can be written** — and there is
+//! no way to write one from a bare [`alo_egress::Errand`] and a
+//! [`Destination`](alo_egress::Destination), which is what would let a record
+//! claim a departure that never appeared to anybody.
+//!
+//! There is no refusal beside it, and the absence is deliberate: an errand is
+//! decided by being on the closed list and by nothing else (`alo-egress`'
+//! `errand.rs` says why the organisation's egress policy is not asked), so
+//! there is no refusal for a `held_back` twin to record.
 
 use std::time::SystemTime;
 
-use alo_egress::{Departing, NotPermitted};
+use alo_egress::{Departing, NotPermitted, Underway};
 use alo_strings::Strings;
 
 use crate::entry::Entry;
@@ -144,6 +166,70 @@ impl Entry {
             },
         )
     }
+
+    /// alo OS reached the network on its own (★ *no telemetry*).
+    ///
+    /// The moment comes from the errand rather than from the caller, as
+    /// [`Entry::left`] takes its moment from the departure: it is the moment
+    /// the errand went on the indicator, so what a person saw and what the
+    /// record says about it cannot disagree about when.
+    ///
+    /// The errand is borrowed rather than consumed, because the caller still
+    /// has to end it on the indicator when the connection closes.
+    ///
+    /// **Nothing is passed in about whose it was, because there is nothing to
+    /// pass.** [`crate::happened`] has the whole of why an invented identity for
+    /// the system would be a lie in the one field a security review reads
+    /// first; the short version is that nobody granted alo OS anything.
+    ///
+    /// ```
+    /// use alo_egress::{Destination, Errand, Indicator, OnItsOwn};
+    /// use alo_record::{Asking, Entry, Only, Record};
+    /// use std::time::{Duration, SystemTime};
+    ///
+    /// # fn main() {
+    /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
+    /// let mut indicator = Indicator::default();
+    /// let mut record = Record::default();
+    ///
+    /// let underway = indicator.beginning_on_its_own(
+    ///     OnItsOwn::for_(
+    ///         Errand::FetchingAModel,
+    ///         Destination::at("models.alo.example").expect("a host that can be shown"),
+    ///     ),
+    ///     now,
+    /// );
+    /// record.keep(Entry::left_on_its_own(&underway));
+    /// indicator.ended_on_its_own(underway);
+    ///
+    /// // It left, so law 1's question finds it — and it was nobody's doing,
+    /// // so the question about that finds it too.
+    /// assert!(indicator.is_quiet());
+    /// assert_eq!(record.answering(&Asking::anything().only(Only::Egress)).count(), 1);
+    /// assert_eq!(record.answering(&Asking::anything().only(Only::OnItsOwn)).count(), 1);
+    ///
+    /// // And no agent's day includes it, because there is no agent on it.
+    /// assert_eq!(record.answering(&Asking::anything().by("alo OS")).count(), 0);
+    /// # }
+    /// ```
+    ///
+    /// There is no other way to make one, so there is no way to record an
+    /// errand that was never shown:
+    ///
+    /// ```compile_fail
+    /// // `Underway::new` is the indicator's alone.
+    /// let _ = alo_egress::underway::Underway::new;
+    /// ```
+    #[must_use]
+    pub fn left_on_its_own(underway: &Underway) -> Self {
+        Self::new(
+            underway.at(),
+            Happened::LeftOnItsOwn {
+                errand: underway.errand(),
+                destination: underway.destination().clone(),
+            },
+        )
+    }
 }
 
 #[cfg(test)]
@@ -156,10 +242,11 @@ mod tests {
     use crate::explain::{Asking, Only};
     use crate::record::Record;
     use crate::test_calls::{
-        asking_alo, departing, files, hour, mail, noon, not_permitted, to_alo, to_the_studio,
+        asking_alo, departing, fetching_a_model, files, hour, mail, noon, not_permitted,
+        the_catalogue, to_alo, to_the_studio, underway,
     };
     use crate::testing::in_english;
-    use alo_egress::{Destination, EgressPolicy, Leaving, Why};
+    use alo_egress::{Destination, EgressPolicy, Errand, Leaving, Why};
 
     /// **Law 1's second half.** What left is kept with everything a person or a
     /// security review needs afterwards — who, where to, why, and when — worked
@@ -168,7 +255,7 @@ mod tests {
     fn what_left_is_recorded_with_who_where_why_and_when() {
         let entry = Entry::left(&departing(asking_alo(), noon()));
         assert_eq!(entry.at(), noon());
-        assert!(entry.agent().is("@mail"));
+        assert!(entry.agent().is_some_and(|agent| agent.is("@mail")));
         assert_eq!(entry.happened().destination(), Some(&to_alo()));
         assert_eq!(entry.happened().why_it_was_leaving(), Some(Why::Asking));
         assert!(entry.happened().caused_egress());
@@ -228,7 +315,7 @@ mod tests {
 
         assert!(entry.happened().was_stopped());
         assert!(!entry.happened().caused_egress());
-        assert!(entry.agent().is("@mail"));
+        assert!(entry.agent().is_some_and(|agent| agent.is("@mail")));
         assert_eq!(entry.happened().destination(), Some(&to_alo()));
         assert!(
             entry
@@ -309,6 +396,101 @@ mod tests {
         assert!(!written.contains('\u{1b}'), "{written}");
     }
 
+    /// **Law 1's second half, for the egress its first sentence does not
+    /// cover.** What alo OS did with nobody having asked is kept with what it
+    /// was, where it reached and when — and with nobody, because there was
+    /// nobody.
+    #[test]
+    fn what_the_machine_did_on_its_own_is_recorded_with_what_where_and_when() {
+        let entry = Entry::left_on_its_own(&fetching_a_model(noon()));
+        assert_eq!(entry.at(), noon());
+        assert_eq!(entry.agent(), None);
+        assert_eq!(entry.happened().errand(), Some(Errand::FetchingAModel));
+        assert_eq!(entry.happened().destination(), Some(&the_catalogue()));
+        assert!(entry.happened().caused_egress());
+        assert!(entry.happened().on_its_own());
+        assert!(!entry.happened().was_stopped());
+    }
+
+    /// **The moment is the errand's**, as it is the departure's, so what a
+    /// person saw on the indicator and what the record says cannot disagree
+    /// about when the machine reached the network.
+    #[test]
+    fn the_moment_comes_from_the_errand_rather_than_from_whoever_wrote_it_down() {
+        let underway = fetching_a_model(noon() + hour());
+        assert_eq!(Entry::left_on_its_own(&underway).at(), underway.at());
+        assert_eq!(Entry::left_on_its_own(&underway).at(), noon() + hour());
+    }
+
+    /// **Every reason there is can be recorded, and there are only three.** A
+    /// reason that could happen and could not be written down would be the hole
+    /// in the *no telemetry* promise that the closed list exists to prevent.
+    #[test]
+    fn every_reason_alo_os_reaches_the_network_can_be_written_down() {
+        let mut record = Record::default();
+        for (index, errand) in Errand::EVERY.into_iter().enumerate() {
+            let at = noon() + hour() * u32::try_from(index).unwrap();
+            record.keep(Entry::left_on_its_own(&underway(
+                errand,
+                the_catalogue(),
+                at,
+            )));
+        }
+        assert_eq!(record.len(), Errand::EVERY.len());
+        assert_eq!(
+            record
+                .answering(&Asking::anything().only(Only::OnItsOwn))
+                .filter_map(|entry| entry.happened().errand())
+                .collect::<Vec<_>>(),
+            Errand::EVERY.to_vec()
+        );
+    }
+
+    /// **What left and who caused it are two questions.** An agent's departure
+    /// and the machine's errand are both things that left, so law 1's question
+    /// answers with both — and *which of them nobody asked for* is the second
+    /// question rather than a different list.
+    #[test]
+    fn what_left_this_machine_counts_the_errands_too() {
+        let mut record = Record::default();
+        record.keep(Entry::left(&departing(asking_alo(), noon())));
+        record.keep(Entry::left_on_its_own(&fetching_a_model(noon() + hour())));
+
+        assert_eq!(
+            record
+                .answering(&Asking::anything().only(Only::Egress))
+                .count(),
+            2
+        );
+        assert_eq!(
+            record
+                .answering(&Asking::anything().only(Only::OnItsOwn))
+                .count(),
+            1
+        );
+        assert_eq!(
+            record
+                .answering(&Asking::anything().only(Only::Refusals))
+                .count(),
+            0,
+            "nothing was refused, and an errand is never refused"
+        );
+
+        // **No agent's day includes an errand**, whatever it is called. This is
+        // the decision as a query: an identity for the system would have made
+        // one of these answer 1.
+        for name in ["alo OS", "alo", "@alo", "system", "@mail"] {
+            let asking = Asking::anything().by(name);
+            let mine = record.answering(&asking);
+            assert_eq!(
+                mine.filter(|entry| entry.happened().on_its_own()).count(),
+                0,
+                "{name}"
+            );
+        }
+        assert_eq!(record.answering(&Asking::anything().by("@mail")).count(), 1);
+    }
+
     /// An egress entry outlives the session that wrote it, so it has to survive
     /// being written down and read back — still saying that something left, and
     /// still saying where.
@@ -322,6 +504,7 @@ mod tests {
                 noon(),
             ),
             Entry::answered_here(&mail(), noon()),
+            Entry::left_on_its_own(&fetching_a_model(noon())),
         ] {
             let written = serde_json::to_string(&entry).unwrap();
             let read = serde_json::from_str::<Entry>(&written).ok();

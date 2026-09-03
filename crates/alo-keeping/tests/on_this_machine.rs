@@ -378,6 +378,67 @@ fn a_record_with_something_wrong_in_it_is_looked_at_rather_than_tidied() {
     assert_eq!(fs::read_to_string(&path).unwrap(), damaged);
 }
 
+/// **★ No telemetry, on a real disk and after the machine is turned off.**
+/// What alo OS did with nobody having asked — fetching a model — is written
+/// down like anything else and reads back saying what it was, where it reached
+/// and that nobody was behind it.
+///
+/// The entry is made from the errand the indicator showed and from nothing
+/// else, which is the guarantee `alo-record` carries and this walks: there is
+/// no way here to write down a departure that never appeared to anybody.
+#[test]
+fn what_the_machine_did_on_its_own_is_on_the_disk_and_names_nobody() {
+    let folder = a_folder_of_our_own("errand");
+    let path = folder.join("record.jsonl");
+    let strings = what_the_machine_can_say();
+
+    let mut indicator = alo_egress::Indicator::default();
+    let mut writing = an_afternoon_onto(&path, &strings, noon());
+    let underway = indicator.beginning_on_its_own(
+        alo_egress::OnItsOwn::for_(
+            alo_egress::Errand::FetchingAModel,
+            alo_egress::Destination::at("models.alo.example").unwrap(),
+        ),
+        noon() + Duration::from_secs(60),
+    );
+    writing.keep(&Entry::left_on_its_own(&underway)).unwrap();
+    indicator.ended_on_its_own(underway);
+    // The machine is turned off.
+    drop(writing);
+
+    let reading = Reading::at(&path).unwrap();
+    assert!(reading.damage().nothing_wrong());
+    let record = reading.into_record();
+    assert_eq!(record.len(), 4);
+
+    let on_its_own = Asking::anything().only(Only::OnItsOwn);
+    let errands: Vec<_> = record.answering(&on_its_own).collect();
+    assert_eq!(errands.len(), 1);
+    let errand = errands.first().unwrap();
+    assert_eq!(errand.at(), noon() + Duration::from_secs(60));
+    assert_eq!(
+        errand.happened().errand(),
+        Some(alo_egress::Errand::FetchingAModel)
+    );
+    assert!(errand.happened().caused_egress());
+
+    // **Nobody, and nobody in the file either.** A tool that is not alo OS
+    // reads one line with no agent on it, so nothing downstream can attribute
+    // the machine's own errand to something that was granted anything.
+    assert_eq!(errand.agent(), None);
+    assert_eq!(
+        record.answering(&Asking::anything().by("@files")).count(),
+        3
+    );
+    let written = fs::read_to_string(&path).unwrap();
+    let line = written
+        .lines()
+        .find(|line| line.contains("left-on-its-own"))
+        .unwrap();
+    assert!(line.contains("models.alo.example"), "{line}");
+    assert!(!line.contains("agent"), "{line}");
+}
+
 /// **A record that is not there is refused rather than answered with
 /// nothing.** A machine whose record has been deleted must not read as a
 /// machine that has done nothing.

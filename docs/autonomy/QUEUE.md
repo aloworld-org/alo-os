@@ -1247,26 +1247,65 @@ deny list.** Two patterns later items must follow:
   a model, signs somebody in or checks for an update is the daemon's, and item
   16a below is what the record of it owes.
 
-- [ ] **16a. The record of what alo OS did on its own** — cut from item 16, and
-  cut for a question rather than for size. Law 1's second half is *and
-  afterwards in a record*, and `alo-record`'s `Happened::Left` names an agent in
-  every entry it can write, because `Entry::left` takes a `Departing` and
-  `Happened::agent` answers a `Line` for every variant there is. An errand has
-  nobody to name, so this item's first job is to decide **what the record says
-  about a departure nobody caused** — a new `Happened` variant with no agent in
-  it (additive, which `docs/contracts/record-file.md` requires) and what
-  `Entry::agent` then answers, or a stable identity for the system that is not a
-  `Grantee`. Neither is obviously right and the wrong one is hard to take back,
-  because the record file is a public surface.
+- [x] **16a. The record of what alo OS did on its own** — cut from item 16, and
+  cut for a question rather than for size: law 1's second half is *and
+  afterwards in a record*, and until this item there was no shape for a
+  departure nobody caused to be written in. A **public surface change** reaching
+  `alo-record` and the record file. `alo-record`: `Happened::LeftOnItsOwn` (a
+  new variant, no agent field), `Happened::agent` answering `Option<&Line>`,
+  `Happened::errand` and `Happened::on_its_own` new beside it,
+  `Entry::left_on_its_own` in `departed.rs`, and `Only::OnItsOwn` in
+  `explain.rs`. `alo-keeping` gains `alo-egress` as a dev-dependency and one
+  integration test onto a real disk. 9 new tests and 2 new doctests, one of them
+  `compile_fail`; **1076 tests and 32 doctests across the workspace** (was 1066
+  and 30), clippy clean.
 
-  Portable and testable here: `alo-record`, `alo-egress` and a `Underway`, all
-  of which exist. It is **ready**, and it is deliberately not this iteration's —
-  one item per iteration, and a public record format decided in the last hour of
-  one is how a format nobody can change gets written.
+  **The decision the item asked for, and it is the first of the two it named.**
+  A *stable identity for the system that is not a `Grantee`* was the tempting
+  answer and is wrong in the one place it matters: whatever type it was, it
+  reduces at the record file to a string in the position that answers *whose
+  authority was this under*, and nobody granted alo OS anything. It would be
+  read back by `Asking::by`, so a question about one agent's day could be
+  answered with the machine's; it would sit in a SIEM's *who did what* column
+  beside agents that really were granted something; and no spelling of it could
+  be reserved, because the record is written by one alo OS and read by tools
+  that are not it. So the variant has **no agent field**, `Happened::agent`
+  answers `None`, and there is a test that walks five plausible spellings and
+  finds nothing. It is `alo-egress`' answer one crate on — *the honest shape is
+  a field that does not exist rather than one that is always empty* — and the
+  record follows the indicator because a person watching something leave and a
+  person reading about it afterwards are asking one question.
 
-  What it must not do is make the entry from anything but an `Underway`, which
-  is item 5a's rule: an egress the indicator never showed must not be an entry
-  that can be written, and a `compile_fail` doctest is how that is asserted here.
+  **The half the item did not contain: whether a new `Happened` is additive.**
+  It called one additive in passing, and `docs/contracts/record-file.md` did not
+  say — its additive rule was written about *fields* inside an entry, and a new
+  tag is the case it does not cover. An older reader cannot parse
+  `left-on-its-own` at all. The answer written into the contract is that it **is
+  additive and does not raise `format`**, for two reasons that are about what
+  the alternative does: raising it makes the whole file unreadable to that
+  reader rather than one line of it, and it would tie the record's version to
+  the growth of the capability model, so a security team's tooling would stop
+  reading a machine's record the first time alo OS learned to do something new.
+  What makes it safe is already built — the file is appended to and never
+  rewritten, so an older writer loses nothing, and an older *shortening* refuses
+  a record with a line it could not read, so the version that does not
+  understand an entry is the version that will not remove it.
+
+  Three decisions the next items inherit. **`Only::Egress` counts everything
+  that left**, errands included, because item 16's *one indicator, not two* is
+  the same argument asked afterwards: a question that answered with the agents'
+  share would be the second place to look. Which of the two it was is
+  `Only::OnItsOwn`, which narrows rather than sits beside. **An entry is still
+  made from the type the indicator hands out and from nothing else** —
+  `Entry::left_on_its_own` takes an `Underway`, and the `compile_fail` doctest
+  was checked to fail on the privacy (E0624) and not on a typo. **There is no
+  `held_back` twin, and the absence is the design**: an errand is decided by
+  being on the closed list and by nothing else, so there is no refusal for a
+  record of one to be made from.
+
+  Built and unit tested, and written to a real filesystem by `alo-keeping`'s
+  integration test. **Nothing here has opened a connection**: what fetches a
+  model, signs somebody in or checks for an update is still the daemon's.
 
 - [ ] **16b. Finding machines on the local network, on the indicator or not** —
   the one thing item 16's list does not cover and says so. Discovery (ADR 0003,

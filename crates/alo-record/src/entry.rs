@@ -207,9 +207,13 @@ impl Entry {
         &self.happened
     }
 
-    /// Whose authority it was.
+    /// Whose authority it was — `None` when nobody's was.
+    ///
+    /// Every entry an agent caused answers this. The one that does not is the
+    /// machine's own errand, and `None` is the answer rather than a gap in it:
+    /// see [`crate::happened`].
     #[must_use]
-    pub fn agent(&self) -> &Line {
+    pub fn agent(&self) -> Option<&Line> {
         self.happened.agent()
     }
 
@@ -251,7 +255,7 @@ mod tests {
 
         let entry = Entry::ran(&authorised, &in_english());
         assert_eq!(entry.at(), noon());
-        assert!(entry.agent().is("@files"));
+        assert!(entry.agent().is_some_and(|agent| agent.is("@files")));
         assert_eq!(entry.happened().from_approval(), Some(id.as_u64()));
         assert_eq!(entry.happened().against(), held);
         assert!(
@@ -352,7 +356,7 @@ mod tests {
             None,
             "a person is not asked to justify saying no"
         );
-        assert!(entry.agent().is("@files"));
+        assert!(entry.agent().is_some_and(|agent| agent.is("@files")));
     }
 
     /// A verb that is not on the list never became a call, so nothing about its
@@ -380,7 +384,7 @@ mod tests {
     #[test]
     fn a_question_answered_here_is_recorded_and_the_question_is_not() {
         let entry = Entry::answered_here(&mail(), noon());
-        assert!(entry.agent().is("@mail"));
+        assert!(entry.agent().is_some_and(|agent| agent.is("@mail")));
         assert!(entry.what().is_none());
 
         // An answer given here never left, so there is nothing for law 1's

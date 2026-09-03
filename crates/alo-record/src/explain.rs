@@ -9,6 +9,7 @@
 //! - what ran under the grant I have just revoked?
 //! - what did that one approval cause?
 //! - what left this machine today?
+//! - what did the machine do with nobody having asked it to?
 //!
 //! — are asked here in the record's own terms, and answered from the fields the
 //! entries carry. None of them is a search for text. A record answered by
@@ -43,7 +44,24 @@ pub enum Only {
     /// One entry per departure, because a departure is one entry: a question
     /// answered somewhere else *is* the egress it caused rather than a second
     /// thing beside it, and an egress the policy refused never left at all.
+    ///
+    /// **Everything that left, not only what an agent caused**, which is item
+    /// 16's *one indicator, not two* asked afterwards rather than watched at
+    /// the time: a person who wants to know what left their machine is not
+    /// asking a question about authorship. [`Only::OnItsOwn`] is the half of
+    /// this with nobody behind it.
     Egress,
+    /// What alo OS did with nobody having asked it to (★ *no telemetry*).
+    ///
+    /// The three reasons on [`alo_egress::Errand`] and nothing else, because
+    /// there is nothing else — this is the question somebody puts to the record
+    /// having just read that promise, and a promise nobody can check afterwards
+    /// is a sentence.
+    ///
+    /// It narrows [`Only::Egress`] rather than sitting beside it: every errand
+    /// left the machine. What an agent caused is the rest, and is asked for by
+    /// naming the agent.
+    OnItsOwn,
 }
 
 /// A question put to the record.
@@ -81,6 +99,12 @@ impl Asking {
     /// Exactly, like every identity in the capability model: a question about
     /// `@files` that also answered for `@Files` would be answering about an
     /// agent nobody asked about.
+    ///
+    /// **An errand answers no name at all.** What alo OS did on its own is
+    /// under nobody's authority, so no spelling of any agent finds it — which
+    /// is what stops a question about one agent's day from quietly including
+    /// the machine's, and is why the record has no identity for the system to
+    /// be asked about by.
     #[must_use]
     pub fn by(mut self, agent: &str) -> Self {
         self.agent = Some(agent.trim().to_owned());
@@ -131,7 +155,7 @@ impl Asking {
     pub fn matches(&self, entry: &Entry) -> bool {
         self.agent
             .as_ref()
-            .is_none_or(|agent| entry.agent().is(agent))
+            .is_none_or(|agent| entry.agent().is_some_and(|whose| whose.is(agent)))
             && self.from.is_none_or(|from| entry.at() >= from)
             && self.until.is_none_or(|until| entry.at() < until)
             && self.only.is_none_or(|only| is_only(entry, only))
@@ -150,6 +174,7 @@ fn is_only(entry: &Entry, only: Only) -> bool {
         Only::Executions => entry.happened().ran(),
         Only::Refusals => entry.happened().was_stopped(),
         Only::Egress => entry.happened().caused_egress(),
+        Only::OnItsOwn => entry.happened().on_its_own(),
     }
 }
 
@@ -162,8 +187,8 @@ mod tests {
     use super::*;
     use crate::record::Record;
     use crate::test_calls::{
-        archiving_march, asking_alo, departing, files, granting, granting_both, hour,
-        listing_invoices, noon, not_permitted, proposing,
+        archiving_march, asking_alo, departing, fetching_a_model, files, granting, granting_both,
+        hour, listing_invoices, noon, not_permitted, proposing,
     };
     use crate::testing::in_english;
     use alo_capability::{Approvals, Authorised, Grants};
@@ -220,6 +245,13 @@ mod tests {
         // And another agent's question, answered somewhere else entirely —
         // which is to say, a departure.
         record.keep(Entry::left(&departing(asking_alo(), noon() + hour() * 2)));
+
+        // And the machine itself, fetching a model with nobody having asked
+        // it to. An afternoon with no errand in it would be an afternoon these
+        // questions were never put an errand about.
+        record.keep(Entry::left_on_its_own(&fetching_a_model(
+            noon() + hour() * 3,
+        )));
         Afternoon {
             record,
             grant,
@@ -335,17 +367,17 @@ mod tests {
     }
 
     /// **Law 1, as a query.** What left this machine is answerable afterwards
-    /// and not only at the moment the indicator fired.
+    /// and not only at the moment the indicator fired — and it counts what alo
+    /// OS did itself, because that left too.
     #[test]
     fn what_left_the_machine_is_a_question_the_record_answers() {
         let afternoon = afternoon();
         let asking = Asking::anything().only(Only::Egress);
-        assert_eq!(how_many(&afternoon.record, &asking), 1);
-        assert!(
-            afternoon
-                .record
-                .answering(&asking)
-                .all(|entry| entry.agent().is("@mail"))
+        assert_eq!(how_many(&afternoon.record, &asking), 2);
+        assert_eq!(
+            how_many(&afternoon.record, &asking.clone().by("@mail")),
+            1,
+            "one of the two was an agent's"
         );
 
         // A working day answered on this machine leaves nothing to find, which
@@ -356,6 +388,46 @@ mod tests {
         }
         assert_eq!(local.len(), 8);
         assert_eq!(how_many(&local, &asking), 0);
+    }
+
+    /// **★ No telemetry, as a question rather than as a promise.** Somebody who
+    /// has just read *alo OS reaches the network for these reasons and no
+    /// others* can put that to the record and be answered with what it actually
+    /// did, which is the only half of a promise anybody can check.
+    #[test]
+    fn what_the_machine_did_on_its_own_is_a_question_the_record_answers() {
+        let afternoon = afternoon();
+        let asking = Asking::anything().only(Only::OnItsOwn);
+        assert_eq!(how_many(&afternoon.record, &asking), 1);
+        assert!(
+            afternoon
+                .record
+                .answering(&asking)
+                .all(|entry| entry.happened().errand().is_some() && entry.agent().is_none())
+        );
+
+        // A machine that has done nothing on its own answers with nothing,
+        // rather than with everything that left.
+        let mut agents_only = Record::default();
+        agents_only.keep(Entry::left(&departing(asking_alo(), noon())));
+        assert_eq!(how_many(&agents_only, &asking), 0);
+        assert_eq!(
+            how_many(&agents_only, &Asking::anything().only(Only::Egress)),
+            1
+        );
+    }
+
+    /// **An errand belongs to no agent's day.** This is the decision item 16a
+    /// made, asked as the query that would have exposed the other answer: an
+    /// identity for the system — however carefully it was chosen not to be a
+    /// `Grantee` — would be a name somebody's question could match.
+    #[test]
+    fn no_agent_however_it_is_spelled_answers_for_what_the_machine_did_itself() {
+        let afternoon = afternoon();
+        for name in ["alo OS", "alo", "@alo", "alo-os", "system", "@files"] {
+            let asking = Asking::anything().by(name).only(Only::OnItsOwn);
+            assert_eq!(how_many(&afternoon.record, &asking), 0, "{name}");
+        }
     }
 
     /// **An egress the policy refused is a refusal, not a departure.** A record

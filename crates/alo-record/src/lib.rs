@@ -9,8 +9,8 @@
 //!
 //! **The refusals are the point.** A record keeping only successes cannot
 //! answer what a security review actually asks, which is not *what did it do*
-//! but *what did it try*. So all six things that can happen to an attempt are
-//! kept, and three of them are ways of being stopped:
+//! but *what did it try*. So all seven things that can happen are kept, and
+//! three of them are ways of being stopped:
 //!
 //! | | |
 //! |---|---|
@@ -20,6 +20,20 @@
 //! | [`Happened::AnsweredHere`] | A question answered on this machine ([ADR 0008](../../../docs/decisions/0008-where-inference-happens.md)) |
 //! | [`Happened::Left`] | Something left this machine (law 1) |
 //! | [`Happened::HeldBack`] | Something the egress policy refused to let leave |
+//! | [`Happened::LeftOnItsOwn`] | alo OS reached the network with nobody having asked (★ *no telemetry*) |
+//!
+//! # The seventh, and the one with nobody in it
+//!
+//! Six of the seven are an agent's, and answer *whose authority was this
+//! under*. The seventh is the machine's own errand, and it has **no agent
+//! field** — [`Entry::agent`] answers `None` for it, because nobody granted alo
+//! OS permission to sign somebody in and a name in that position would be an
+//! authority the record invented. [`happened`] has the reasoning, and it is the
+//! answer `alo-egress` already gave one crate earlier.
+//!
+//! It is still a departure: [`Only::Egress`] finds it, so *what left this
+//! machine today* answers with everything that left. [`Only::OnItsOwn`] is the
+//! half of that nobody caused.
 //!
 //! # What left, kept once
 //!
@@ -34,7 +48,9 @@
 //! be made from an [`alo_egress::Departing`], and the indicator is the only
 //! maker of one of those. **An egress the indicator never showed is not an
 //! entry that can be written**, and neither is one it showed and the record
-//! then contradicted.
+//! then contradicted. The same holds of an errand and an
+//! [`alo_egress::Underway`], which is the whole of what makes the record of
+//! ★ *no telemetry* worth more than the sentence.
 //!
 //! # Why this is not part of `alo-capability`
 //!
@@ -58,10 +74,11 @@
 //! # Telling the time
 //!
 //! Nothing here reads the clock, as in `alo-capability` and for the same
-//! reason. [`Entry::ran`] and [`Entry::left`] are the exceptions that prove it:
-//! each takes its moment from the thing it is recording — the moment the grants
-//! were asked, and the moment the egress policy was — because that is the
-//! moment it was allowed to happen, and not the one the writing happened at.
+//! reason. [`Entry::ran`], [`Entry::left`] and [`Entry::left_on_its_own`] are
+//! the exceptions that prove it: each takes its moment from the thing it is
+//! recording — the moment the grants were asked, and the moment the egress went
+//! on the indicator — because that is the moment it was allowed to happen, and
+//! not the one the writing happened at.
 //!
 //! # What is not kept
 //!

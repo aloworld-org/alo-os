@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **What your machine did on its own is now in the record too — and it is the
+  one entry with nobody's name on it.** The indicator already showed alo OS
+  reaching the network for the three things it does with nobody having asked:
+  signing you in, fetching a model, checking for an update. That answered *is
+  anything leaving right now*. It did not answer *what left last Tuesday*, which
+  is the half of the promise you can actually check, and a promise you can only
+  check while you are watching is not much of one.
+
+  Now every one of those errands is written down as it happens, with what it was
+  and where it reached, and you can ask the record two questions afterwards:
+  what left this machine, and which of it was the machine's own doing. The
+  first counts everything that left, because everything that left, left.
+
+  **There is no name on an errand, and that is deliberate.** It would have been
+  easy to write *alo OS* into the column that says whose authority something was
+  under, and it would have been a lie: nobody granted this machine permission to
+  sign you in. So that column is simply empty on those entries — no invented
+  identity, nothing for a security tool to file next to your agents, and no
+  spelling of any name that answers for them when you ask what one of your
+  agents did today.
+
 - **The indicator now shows what alo OS itself does on the network, not only
   what its agents do — and there are three things it does, none of them about
   you.** Until now the light that says *something is leaving this machine*

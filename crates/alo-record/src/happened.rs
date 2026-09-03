@@ -1,10 +1,10 @@
 //! What one entry says happened.
 //!
-//! Six things can happen to an agent's attempt on this machine, and the record
-//! keeps all six. Three of them are refusals, which is the point: **a record
-//! that keeps only successes cannot answer what a security review actually
-//! asks.** "The agent tried and was stopped" is the sentence that matters, and
-//! it is worthless if the only entries are the ones where nothing went wrong.
+//! Seven things can happen on this machine, and the record keeps all seven.
+//! Three of them are refusals, which is the point: **a record that keeps only
+//! successes cannot answer what a security review actually asks.** "The agent
+//! tried and was stopped" is the sentence that matters, and it is worthless if
+//! the only entries are the ones where nothing went wrong.
 //!
 //! - [`Happened::Ran`] — it ran, with the four answers ADR 0001 §7 asks for;
 //! - [`Happened::Stopped`] — a call that was properly formed and was refused
@@ -19,7 +19,40 @@
 //!   the ordinary day and the thing law 1 promises there will be a great many
 //!   of;
 //! - [`Happened::Left`] — something left this machine (law 1);
-//! - [`Happened::HeldBack`] — something the egress policy refused to let leave.
+//! - [`Happened::HeldBack`] — something the egress policy refused to let leave;
+//! - [`Happened::LeftOnItsOwn`] — alo OS reached the network with nobody having
+//!   asked it to (★ *no telemetry*).
+//!
+//! # The one entry with nobody in it
+//!
+//! Six of the seven name whose authority they were under, and the seventh
+//! cannot. An errand — signing somebody in, fetching a model, checking for an
+//! update — is caused by the machine rather than by an agent, and
+//! `alo-egress`'s [`Errand`] is the closed list of them.
+//!
+//! There were two ways to write it down and only one of them is honest. **A
+//! stable identity for the system** — some name in the `agent` position that is
+//! not an [`alo_capability::Grantee`] — reads well in a file and is a lie in
+//! exactly the field whose whole job is *whose authority was this under*.
+//! Nothing granted alo OS anything; a name there would be answered by
+//! [`crate::Asking::by`] as though somebody had asked for it, and would sit in
+//! a SIEM's *who did what* column next to agents that really were granted
+//! something. So the seventh variant has **no agent field**, and
+//! [`Happened::agent`] answers `None` for it.
+//!
+//! That is the same answer `alo-egress` gave one crate earlier, where
+//! `Showing::agent` answers `None` and `OnItsOwn` has no `agent()` at all: the
+//! honest shape is a field that does not exist rather than one that is always
+//! empty. The record follows the indicator because a person reading what left
+//! their machine afterwards and a person watching it leave are asking one
+//! question, and two answers to it would be two things to keep in agreement.
+//!
+//! **It is still egress.** [`Happened::caused_egress`] is true of it, so law
+//! 1's *what left this machine today* answers with everything that left rather
+//! than with the agents' share of it — item 16's *one indicator, not two*, made
+//! about the record. Which of the two it was is asked with
+//! [`crate::Only::OnItsOwn`], and asking by agent never answers with an errand,
+//! because there is no agent for the question to match.
 //!
 //! # Where a question was answered is where it went
 //!
@@ -56,7 +89,7 @@
 //! no longer exist — and a record holds facts about the past, not references
 //! into the present.
 
-use alo_egress::{Destination, Why};
+use alo_egress::{Destination, Errand, Why};
 use serde::{Deserialize, Serialize};
 
 use crate::line::Line;
@@ -186,20 +219,71 @@ pub enum Happened {
         /// Why it was not permitted, in the policy's own words.
         refused: Line,
     },
+    /// alo OS reached the network on its own, for one of the three reasons
+    /// there are (★ *no telemetry*).
+    ///
+    /// **There is no agent here and no field for one**, which is this
+    /// variant's whole point — see this module's documentation. It is made
+    /// only from an [`alo_egress::Underway`], which the indicator is the only
+    /// maker of, so an errand that was never shown to anybody is not an entry
+    /// that can be written. See [`crate::departed`].
+    ///
+    /// There is no refusal beside it, and that is deliberate rather than
+    /// missing: an errand is decided by being on [`Errand`]'s closed list and
+    /// by nothing else, so there is no policy that could have said no and no
+    /// held-back entry it could have written.
+    LeftOnItsOwn {
+        /// Which of the three reasons it was.
+        errand: Errand,
+        /// Where it reached.
+        destination: Destination,
+    },
 }
 
 impl Happened {
-    /// Whose authority this was.
+    /// Whose authority this was — `None` when nobody's was.
+    ///
+    /// The one entry with no answer here is [`Happened::LeftOnItsOwn`], and
+    /// `None` is that answer rather than a gap in it: nobody granted alo OS
+    /// permission to sign somebody in, so a name in this position would be an
+    /// authority the record invented. This module's documentation has the
+    /// whole of why, and it is the reason this answers an [`Option`] where it
+    /// used to answer a [`Line`].
     #[must_use]
-    pub fn agent(&self) -> &Line {
+    pub fn agent(&self) -> Option<&Line> {
         match self {
             Self::Ran { agent, .. }
             | Self::Stopped { agent, .. }
             | Self::TurnedAway { agent, .. }
             | Self::AnsweredHere { agent }
             | Self::Left { agent, .. }
-            | Self::HeldBack { agent, .. } => agent,
+            | Self::HeldBack { agent, .. } => Some(agent),
+            Self::LeftOnItsOwn { .. } => None,
         }
+    }
+
+    /// Which errand this was, when alo OS did it on its own.
+    ///
+    /// `None` for everything an agent caused, which is the other half of
+    /// [`Happened::agent`]: exactly one of the two answers something, for every
+    /// entry there is.
+    #[must_use]
+    pub fn errand(&self) -> Option<Errand> {
+        match self {
+            Self::LeftOnItsOwn { errand, .. } => Some(*errand),
+            Self::Ran { .. }
+            | Self::Stopped { .. }
+            | Self::TurnedAway { .. }
+            | Self::AnsweredHere { .. }
+            | Self::Left { .. }
+            | Self::HeldBack { .. } => None,
+        }
+    }
+
+    /// Whether nobody caused this — whether it is the machine's own errand.
+    #[must_use]
+    pub fn on_its_own(&self) -> bool {
+        matches!(self, Self::LeftOnItsOwn { .. })
     }
 
     /// What ran or would have run — absent when nothing ever became a call.
@@ -210,7 +294,8 @@ impl Happened {
             Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
-            | Self::HeldBack { .. } => None,
+            | Self::HeldBack { .. }
+            | Self::LeftOnItsOwn { .. } => None,
         }
     }
 
@@ -244,7 +329,8 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
-            | Self::HeldBack { .. } => None,
+            | Self::HeldBack { .. }
+            | Self::LeftOnItsOwn { .. } => None,
         }
     }
 
@@ -259,7 +345,10 @@ impl Happened {
         match self {
             Self::Stopped { how, .. } => how.why(),
             Self::TurnedAway { why, .. } | Self::HeldBack { refused: why, .. } => Some(why),
-            Self::Ran { .. } | Self::AnsweredHere { .. } | Self::Left { .. } => None,
+            Self::Ran { .. }
+            | Self::AnsweredHere { .. }
+            | Self::Left { .. }
+            | Self::LeftOnItsOwn { .. } => None,
         }
     }
 
@@ -272,7 +361,8 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
-            | Self::HeldBack { .. } => None,
+            | Self::HeldBack { .. }
+            | Self::LeftOnItsOwn { .. } => None,
         }
     }
 
@@ -285,7 +375,8 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
-            | Self::HeldBack { .. } => &[],
+            | Self::HeldBack { .. }
+            | Self::LeftOnItsOwn { .. } => &[],
         }
     }
 
@@ -293,9 +384,9 @@ impl Happened {
     #[must_use]
     pub fn destination(&self) -> Option<&Destination> {
         match self {
-            Self::Left { destination, .. } | Self::HeldBack { destination, .. } => {
-                Some(destination)
-            }
+            Self::Left { destination, .. }
+            | Self::HeldBack { destination, .. }
+            | Self::LeftOnItsOwn { destination, .. } => Some(destination),
             Self::Ran { .. }
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
@@ -303,7 +394,14 @@ impl Happened {
         }
     }
 
-    /// Why something was leaving, when this entry is about an egress.
+    /// Why an *agent's* egress was leaving, when this entry is about one.
+    ///
+    /// `None` for an errand, which has an [`Errand`] rather than a [`Why`] and
+    /// answers [`Happened::errand`] instead. The two lists are kept apart for
+    /// the reason `alo-egress` keeps [`alo_egress::Underway`] and
+    /// [`alo_egress::Departing`] apart: an agent's reasons are open to any verb
+    /// that needs one, and the machine's own are a closed list of three that
+    /// nothing may quietly extend.
     #[must_use]
     pub fn why_it_was_leaving(&self) -> Option<Why> {
         match self {
@@ -311,7 +409,8 @@ impl Happened {
             Self::Ran { .. }
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
-            | Self::AnsweredHere { .. } => None,
+            | Self::AnsweredHere { .. }
+            | Self::LeftOnItsOwn { .. } => None,
         }
     }
 
@@ -321,17 +420,31 @@ impl Happened {
     /// shape this enum has: law 1 asks *what left this machine today* and gets
     /// one entry per departure, worked out once at the moment the policy
     /// permitted it rather than re-derived by whoever answers the question.
+    ///
+    /// **An errand counts.** Something the machine did with nobody having asked
+    /// still left it, and a question that answered with the agents' share alone
+    /// would be the second place to look that item 16 refused to build on the
+    /// indicator. Which of the two it was is [`Happened::on_its_own`].
     #[must_use]
     pub fn caused_egress(&self) -> bool {
-        matches!(self, Self::Left { .. })
+        matches!(self, Self::Left { .. } | Self::LeftOnItsOwn { .. })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_calls::{archiving_march, listing_invoices, to_alo, to_the_studio};
+    use crate::test_calls::{
+        archiving_march, listing_invoices, the_catalogue, to_alo, to_the_studio,
+    };
     use crate::testing::in_english;
+
+    fn fetching_a_model() -> Happened {
+        Happened::LeftOnItsOwn {
+            errand: Errand::FetchingAModel,
+            destination: the_catalogue(),
+        }
+    }
 
     fn ran() -> Happened {
         Happened::Ran {
@@ -347,7 +460,7 @@ mod tests {
     #[test]
     fn an_execution_answers_what_under_whom_from_which_approval_and_against_which_grant() {
         let happened = ran();
-        assert!(happened.agent().is("@files"));
+        assert!(happened.agent().is_some_and(|agent| agent.is("@files")));
         assert!(
             happened
                 .what()
@@ -523,6 +636,75 @@ mod tests {
         assert_eq!(ran().why_stopped(), None);
     }
 
+    /// **The decision item 16a exists to make.** An errand names no agent, and
+    /// the field does not exist rather than holding a name nobody granted —
+    /// which is what stops *whose authority was this under* from being answered
+    /// with an invention in the one column a security review reads first.
+    #[test]
+    fn what_the_machine_did_on_its_own_is_under_nobodys_authority() {
+        let errand = fetching_a_model();
+        assert_eq!(errand.agent(), None);
+        assert!(errand.on_its_own());
+        assert_eq!(errand.errand(), Some(Errand::FetchingAModel));
+
+        // And the other six answer, so exactly one of the two questions is
+        // answered by every entry there is.
+        let asked = Happened::AnsweredHere {
+            agent: Line::of("@mail"),
+        };
+        assert!(asked.agent().is_some());
+        assert_eq!(asked.errand(), None);
+        assert!(!asked.on_its_own());
+        assert_eq!(ran().errand(), None);
+
+        // And there is no agent in the file either, so nothing reading the
+        // record with a JSON parser can find one to attribute it to.
+        let written = serde_json::to_string(&errand).unwrap_or_default();
+        assert!(written.contains("left-on-its-own"), "{written}");
+        assert!(written.contains("fetching-a-model"), "{written}");
+        assert!(!written.contains("agent"), "{written}");
+    }
+
+    /// **★ No telemetry, afterwards.** An errand left the machine, so law 1's
+    /// question finds it; a record that counted only the agents' share would
+    /// answer *what left this machine today* with less than what left it, which
+    /// is the way of being wrong that teaches people to stop reading it.
+    #[test]
+    fn an_errand_left_the_machine_and_is_counted_as_something_that_left() {
+        let errand = fetching_a_model();
+        assert!(errand.caused_egress());
+        assert!(!errand.was_stopped());
+        assert!(!errand.ran());
+        assert_eq!(errand.destination(), Some(&the_catalogue()));
+
+        // It carries nothing an agent's entry carries, because none of it
+        // happened: no call, no approval, no grant, and no refusal.
+        assert_eq!(errand.what(), None);
+        assert_eq!(errand.from_approval(), None);
+        assert_eq!(errand.against(), [] as [u64; 0]);
+        assert_eq!(errand.stopped(), None);
+        assert_eq!(errand.why_stopped(), None);
+    }
+
+    /// **Two reasons, two lists.** An errand has an [`Errand`] and no [`Why`],
+    /// because an agent's reasons are open to whatever verb needs one and the
+    /// machine's own are a closed list of three — a single field would be a
+    /// place for a fourth reason to arrive without anybody editing that list.
+    #[test]
+    fn why_an_agent_was_leaving_and_why_the_machine_was_are_two_questions() {
+        let errand = fetching_a_model();
+        assert_eq!(errand.why_it_was_leaving(), None);
+        assert_eq!(errand.errand(), Some(Errand::FetchingAModel));
+
+        let asked = Happened::Left {
+            agent: Line::of("@mail"),
+            destination: to_alo(),
+            why: Why::Asking,
+        };
+        assert_eq!(asked.why_it_was_leaving(), Some(Why::Asking));
+        assert_eq!(asked.errand(), None);
+    }
+
     /// Everything the record keeps has to survive being written down and read
     /// back, or the record only answers questions asked in the same session.
     #[test]
@@ -553,6 +735,7 @@ mod tests {
                 why: Why::Sending,
                 refused: Line::of("this machine is set to let nothing leave"),
             },
+            fetching_a_model(),
         ] {
             let written = serde_json::to_string(&happened).unwrap_or_default();
             assert_eq!(

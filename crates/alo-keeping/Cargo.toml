@@ -22,6 +22,10 @@ thiserror = { workspace = true }
 # Only the tests make an entry, and making one needs the agent it was made
 # under. Nothing in this crate decides anything about a capability.
 alo-capability = { path = "../alo-capability" }
+# And an entry about what alo OS did on its own needs the indicator that showed
+# it, because there is no other way to make one. Nothing in this crate decides
+# anything about egress either.
+alo-egress = { path = "../alo-egress" }
 
 [lints]
 workspace = true

@@ -29,7 +29,7 @@ use alo_capability::{
     Takes, Verb, Verbs,
 };
 use alo_context::{Context, Document, Focused, Selection, Turn};
-use alo_record::{Asking, Entry, Only, Record};
+use alo_record::{Asking, Entry, Line, Only, Record};
 use alo_strings::{Strings, Word};
 
 /// The moment the person pressed the key.
@@ -153,7 +153,7 @@ fn a_document_offered_at_invocation_is_a_change_a_person_can_approve() {
 
     assert_eq!(record.len(), 1);
     let entry = record.everything().next().unwrap();
-    assert_eq!(entry.agent().as_str(), "@files");
+    assert_eq!(entry.agent().map(Line::as_str), Some("@files"));
     assert_eq!(
         entry.what().unwrap().sentence().as_str(),
         "archive /home/anna/Invoices/march.pdf"

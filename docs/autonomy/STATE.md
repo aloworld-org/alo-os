@@ -3337,3 +3337,135 @@ an agent would be a list that could only hold one kind.
   is a measurement of what the code believes rather than of what the machine
   does. The line now names all three things owed: the compositor surface, queue
   16a, and enforcement at the network boundary.
+
+---
+
+## 2026-09-03 — iteration 31: the one entry with nobody's name on it
+
+**Built: item 16a**, which was the first ready item on the queue and had been
+written there by the iteration before this one, cut from item 16 for a question
+rather than for size. Law 1's second half is *and afterwards in a record*, and
+until this change there was no shape in `alo-record` for a departure nobody
+caused: `Entry::left` takes a `Departing`, which carries a `Grantee`, and
+`Happened::agent` answered a `Line` for every variant there was.
+
+A **public surface change** in `alo-record`, and one in the record file with it.
+
+| | |
+|---|---|
+| `happened.rs` | `Happened::LeftOnItsOwn` — a new variant with no agent field; `agent()` now answering `Option<&Line>`; `errand()` and `on_its_own()` beside it; `caused_egress()` true of it |
+| `departed.rs` | `Entry::left_on_its_own`, made from an `Underway` and from nothing else |
+| `explain.rs` | `Only::OnItsOwn` — the question somebody puts to the record having just read the *no telemetry* promise |
+| `entry.rs`, `lib.rs` | `Entry::agent` answering an `Option`, and the seventh row of the table |
+| `docs/contracts/record-file.md` | What an entry says happened, the entry with no `agent` on it, and what a new kind of `happened` means for a reader that predates it |
+
+**The gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. **1076 tests and 32 doctests across the
+workspace** (was 1066 and 30), all green. `CHANGELOG.md`, `QUEUE.md` and
+`ROADMAP.md` in the same change.
+
+**The decision the item existed to make, and it named both candidates.** *A
+stable identity for the system that is not a `Grantee`* is the one that reads
+well and is wrong. Whatever type it were, it reduces at the record file to a
+string in the position that answers *whose authority was this under* — and
+nobody granted alo OS anything. Three things follow that are not opinions:
+`Asking::by` would answer a question about one agent's day with the machine's;
+a SIEM export (`docs/features.md`, v1) would file it in the *who did what*
+column beside agents that really were granted something; and no spelling could
+be reserved against collision, because the record is written by one alo OS and
+read by tools that are not it.
+
+So the seventh variant has **no agent field**, `Happened::agent` answers `None`,
+and `Entry::agent` answers an `Option` — the one break in the change, and the
+change rather than a casualty of it, exactly as `Shown::leaving` was in item 16.
+It is the same answer `alo-egress` gave one crate earlier: *the honest shape is
+a field that does not exist rather than one that is always empty*. The record
+follows the indicator because a person watching something leave and a person
+reading about it a week later are asking one question, and two answers to one
+question are two things to keep in agreement.
+
+**The half the item did not contain, and the reason it was worth an iteration:
+whether a new `Happened` is additive at all.** The queue item called one
+additive in passing. `docs/contracts/record-file.md` did not say — its additive
+rule was written about *fields inside an entry*, and a new tag on `happened` is
+the third case, which it did not cover. An older reader cannot parse
+`left-on-its-own`; it reports that line as one it could not read, with its line
+number, alongside everything it could.
+
+The contract now says outright that this **is** additive and does not raise
+`format`, and the argument is about what the alternative costs. Raising it makes
+the whole file unreadable to that reader rather than one line of it — the
+contract already says a record from a newer alo OS is refused rather than
+appended to — and it would tie the record's version to the growth of the
+capability model, so a security team's tooling would stop reading a machine's
+record the first time alo OS learned to do something new. What makes it safe was
+already built and is now written down: the file is appended to and never
+rewritten, so an older *writer* loses nothing, and `alo-keeping` refuses to
+shorten a record with a line it could not read — so the version that does not
+understand an entry is also the version that will not remove it.
+
+**Three decisions the next items inherit.**
+
+- **`Only::Egress` counts everything that left, errands included.** This is item
+  16's *one indicator, not two* asked afterwards rather than watched at the
+  time. A person asking what left their machine is not asking a question about
+  authorship, and a query that answered with the agents' share would be the
+  second place to look that item 16 refused to build. `Only::OnItsOwn` narrows
+  it rather than sitting beside it, because every errand left.
+- **An entry is still made from the type the indicator hands out and from
+  nothing else.** `Entry::left_on_its_own` takes an `Underway`, whose only
+  constructor is `Indicator::beginning_on_its_own`, so an errand the indicator
+  never showed is not an entry that can be written. The `compile_fail` doctest
+  asserting it was checked to fail on the privacy (E0624) and not on a typo, by
+  compiling `Underway::at` beside `Underway::new` and watching only the second
+  one fail.
+- **There is no `held_back` twin, and the absence is the design.** An errand is
+  decided by being on `Errand`'s closed list and by nothing else (item 16), so
+  there is no policy that could have refused one and no refusal for a record of
+  one to be made from. A twin constructor would have been a door for a refusal
+  that cannot happen.
+
+**Two smaller things worth keeping.**
+
+- **`Why` and `Errand` stayed two questions.** `why_it_was_leaving()` answers
+  `None` for an errand and `errand()` answers for it, rather than one field
+  holding either. An agent's reasons are open to whatever verb needs one; the
+  machine's own are a closed list of three, and a shared field would have been a
+  place for a fourth to arrive without anybody editing that list.
+- **`alo-keeping` gained `alo-egress` as a dev-dependency and one test.** The
+  contract now makes a claim about the *file*, so the claim is checked on a real
+  filesystem: an errand written down, the machine turned off, the record read
+  back, and the line inspected as text to assert it contains
+  `models.alo.example` and does not contain `agent`. Nothing in `alo-keeping`
+  itself decides anything about egress, and the dependency says so.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 17** — *a machine with no agent at all* (ADR
+  0009), written in by iteration 30 and untouched since. It is `alo-capability`
+  and `alo-record`, and item 16a is the one it was deliberately sequenced after:
+  the ADR keeps the record and the egress indicator alive on a machine with no
+  agent, on the grounds that somebody who declined an agent may want **more**
+  than average to know what left their machine — which is precisely the entry
+  this iteration built, and is now something that exists rather than something
+  item 17 would have had to invent on the way past.
+- **16b is still not ready and should stay that way.** Nothing about discovery
+  has been built since iteration 30 wrote it down, so deciding whether multicast
+  is an errand or a documented exception would still be deciding in the
+  abstract.
+- **The reading step found no unlisted v0.01 promise this time**, and this entry
+  is deliberately not claiming that none is left — iteration 30's entry nearly
+  made that claim, and checking it rather than writing it is what turned up item
+  17. What was read here was `docs/features.md`'s v0.01 sovereignty and record
+  sections against the queue, which is narrower than iteration 30's sweep
+  because this item's subject was narrow. The standing advice from that entry
+  holds and is not discharged: **only `docs/features.md` is a list of what was
+  promised**, and a `ROADMAP.md` line whose *Built* clause cannot name a crate
+  is the strongest available signal that the queue is missing an item.
+- **Nothing here has opened a connection.** There is still no code in this
+  repository that signs anybody in, downloads a model or asks about an update.
+  What exists now is the whole of what those three will have to travel through:
+  a closed list with no member for measuring anything, an indicator that cannot
+  be bypassed, and a record entry that names nobody because there is nobody to
+  name.

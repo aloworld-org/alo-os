@@ -59,6 +59,23 @@ so that a later shortening cannot remove it. A record shortened twice still says
 it was shortened. Without it, a machine whose evidence has aged out and a
 machine that did nothing are the same file.
 
+## What an entry says happened
+
+Every entry carries `at` and `happened`. `happened` is tagged with what kind of
+thing it was — `ran`, `stopped`, `turned-away`, `answered-here`, `left`,
+`held-back`, `left-on-its-own` — and the fields under it depend on that tag.
+`crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
+them is kept.
+
+**Every entry names whose authority it was under, except one.** `agent` is
+present on all of them but `left-on-its-own`, which is alo OS reaching the
+network with nobody having asked it to: signing somebody in, fetching a model,
+checking for an update. There is no name in that position and there is not going
+to be one — nobody granted the system anything, so a name there would be an
+authority the record invented, and it would appear in a *who did what* column
+beside agents that really were granted something. A reader looking for what the
+machine did on its own looks for the entries with no `agent`.
+
 ## Versioning
 
 `format` is `1`. Anything that would stop this version reading a record
@@ -68,6 +85,23 @@ correctly raises it; anything additive does not.
 appended to.** Adding a line in a shape the writer does not understand would
 leave a file neither version can read. A reader that does not recognise a field
 inside an entry ignores it, which is what makes additive changes additive.
+
+**A new kind of `happened` is additive, and does not raise `format`.** This is
+the one that needs saying, because it looks like the opposite: an older reader
+*cannot* parse a tag it has never heard of. What it does is report that line as
+one it could not read, with its line number, alongside everything it could —
+which is the rule below, and this is the case it exists for. Raising `format`
+instead would make the whole file unreadable to that reader rather than one line
+of it, and would tie the record's version to the growth of the capability model,
+so that a security team's tooling stopped reading a machine's record the first
+time alo OS learned to do something new.
+
+Two things make that safe rather than merely tolerable. **An older writer is
+never endangered**: the file is appended to and never rewritten, so it goes on
+writing its own entries beside ones it cannot read, and loses nothing. And **an
+older shortening refuses**, because a record with a line it could not read is
+never shortened — so the version that does not understand an entry is also the
+version that will not remove it.
 
 ## Reading one
 

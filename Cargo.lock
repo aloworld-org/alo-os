@@ -91,6 +91,7 @@ name = "alo-keeping"
 version = "0.0.1"
 dependencies = [
  "alo-capability",
+ "alo-egress",
  "alo-record",
  "alo-strings",
  "serde",

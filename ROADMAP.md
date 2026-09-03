@@ -92,11 +92,19 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       **same** indicator as an agent's egress, so *nothing has left this
       machine* stays one thing to look at, and the promise beside the list is a
       sentence a person reads in their own language rather than one this
-      repository publishes · Owed: the indicator itself, which is a compositor
-      surface; the record of an errand, which is queue 16a and turns on what a
-      record says about a departure nobody caused; and the enforcement at the
-      network boundary, without which all of this describes only the code that
-      asked
+      repository publishes. Since item 16a law 1's *and afterwards in a record*
+      covers that second half as well: `alo-record` writes an errand down as
+      `Happened::LeftOnItsOwn`, made only from the `Underway` the indicator
+      showed, and it is the one entry in the record with **no agent field** —
+      because nobody granted this machine permission to sign somebody in, and a
+      name in that column would be an authority the record invented. *What left
+      this machine* and *what did it do on its own* are two queries over one
+      list, and `docs/contracts/record-file.md` now says what a new kind of
+      entry means for a reader that predates it · Owed: the indicator itself,
+      which is a compositor surface; the daemon code that actually signs
+      somebody in, fetches a model or checks for an update, none of which exists
+      yet; and the enforcement at the network boundary, without which all of
+      this describes only the code that asked
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
       · Built: `alo-capability` (the verbs, the grants, the approvals, every
       refusal of theirs said in the language the person reads, and — since 9g —
@@ -128,9 +136,12 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       — and `alo-keeping`, which puts it on a disk so it outlives the session:
       one line per thing that happened, synced as it happens, a retention rule
       that cannot be set to keep nothing, and a shortened record that says so
-      permanently in the first line so an absence is never read as an innocence
-      · Owed: queue 4b — the path it is written to and the timer that shortens
-      it, both `alo-agentd`'s, and the daemon does not exist
+      permanently in the first line so an absence is never read as an innocence.
+      Since 16a it also holds the one thing on the machine that no execution,
+      approval or grant is behind — what alo OS did on its own — and holds it
+      without naming anybody for it · Owed: queue 4b — the path it is written to
+      and the timer that shortens it, both `alo-agentd`'s, and the daemon does
+      not exist
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
