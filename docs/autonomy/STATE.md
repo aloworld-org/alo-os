@@ -5201,6 +5201,20 @@ and `cargo test -p alo-agentd` reports **zero tests**. So it is real work that
 stopped before the half `LOOP.md` cares most about. It is not half-finished
 code; it is finished-looking code with nothing yet proving it.
 
+> **Correction, 2026-09-04. The paragraph above is wrong, and the way it is
+> wrong matters more than the fact.** That measurement was run on Windows. Every
+> module in `alo-agentd` is `#[cfg(target_os = "linux")]`, so on Windows the
+> crate compiles to almost nothing, runs no tests, and **exits 0** — the same
+> exit code as a clean pass. `zero tests` was not the absence of tests; it was
+> the absence of a platform. Run on Linux, the same code reports **170 passing**
+> (158 + 4 + 8 across its targets).
+>
+> The instruction that followed — *assume nothing about them is verified* — was
+> good advice reached by bad evidence, and it slandered work that was in fact
+> tested. The rule that comes out of it is in `LOOP.md`: **`alo-agentd` is never
+> measured on Windows**, because the false answer there is indistinguishable
+> from success.
+
 **What the next iteration on 21d should do:**
 
 - **Read those files before writing any.** They are a design somebody already

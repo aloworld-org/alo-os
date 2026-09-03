@@ -126,6 +126,21 @@ is built and gated on Windows; reaching for WSL by habit would mean the ordinary
 path stops being tested. And an item that needs Linux says so in the queue, with
 the reason, so nobody has to guess which is which.
 
+**`alo-agentd` is never gated on Windows.** Every module in it is
+`#[cfg(target_os = "linux")]`, so on Windows the crate compiles to almost
+nothing, runs **no tests, and exits 0** — which is the same exit code, and the
+same green, as a full pass. This is not a slow path or a partial one; it is a
+result that cannot be told apart from success while being worth nothing. It has
+already produced one wrong entry in `STATE.md`, where *zero tests* was written
+down as a fact about the code when it was a fact about the platform, and the
+correction sits under that entry.
+
+So for that crate the WSL command above is **the** gate, not a supplement to
+one, and the number of tests it ran is part of what gets reported. A crate whose
+test count silently drops to zero is the failure this rule exists to catch —
+check the count, not just the colour. Any crate that acquires a
+`[target.'cfg(target_os = "linux")']` block joins this rule the day it does.
+
 ## Where things are
 
 | | |
