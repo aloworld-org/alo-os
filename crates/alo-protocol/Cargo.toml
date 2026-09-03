@@ -13,6 +13,12 @@ repository.workspace = true
 # and this crate is that boundary. Nothing else is needed from it: a `Call` is
 # made by `Verbs::call` inside a turn, and never here.
 alo-capability = { path = "../alo-capability" }
+# What a read found, on the way back: `Answer`'s six shapes, the rule a name is
+# held to before it can be shown, and the bound a read is held to — which is
+# where `LONGEST_ANSWER` comes from. The wire shape is made here rather than
+# derived there, because a path is not always text; `naming.rs` is the whole of
+# that argument. Light enough to be safe: `alo-files` is `std::fs` and no more.
+alo-files = { path = "../alo-files" }
 # Every refusal in this crate is read by somebody, so none of them is English.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
@@ -28,6 +34,5 @@ workspace = true
 [dev-dependencies]
 alo-context = { path = "../alo-context" }
 alo-egress = { path = "../alo-egress" }
-alo-files = { path = "../alo-files" }
 alo-record = { path = "../alo-record" }
 alo-turn = { path = "../alo-turn" }

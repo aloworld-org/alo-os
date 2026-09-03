@@ -31,11 +31,28 @@
 //! they are `docs/contracts/record-file.md`'s: additive change does not raise
 //! it, because a request this version has never heard of is refused rather than
 //! misread.
+//!
+//! # The three rules hold in both directions, and one number does not
+//!
+//! What goes back is one line, of a bounded length, stating the format it is
+//! written in — the same envelope, because the reasons are the same and a
+//! second set of rules for the way back is a second place to get them right.
+//!
+//! The length is where the two directions genuinely differ. A request carries a
+//! verb's name, a few paths or a question somebody composed; an **answer** can
+//! carry a file, and `alo-files` bounds a read at [`alo_files::MOST_READ`] — a
+//! megabyte, which JSON escaping can multiply by six on a file made of control
+//! characters. One bound for both would therefore have been a bound that a
+//! legitimate read cannot fit inside, so a verb that succeeded would produce a
+//! message no client is allowed to read. [`LONGEST_ANSWER`] is derived from
+//! that number rather than guessed beside it, and a test builds the worst case
+//! and measures it.
 
 use serde::{Deserialize, Serialize};
 
 use crate::asked::Asked;
 use crate::refusing::NotUnderstood;
+use crate::told::Told;
 
 /// The format this alo OS writes and reads.
 ///
@@ -54,6 +71,21 @@ pub const FORMAT: u32 = 1;
 /// machine has to hold rather than what somebody wrote.
 pub const LONGEST: usize = 1024 * 1024;
 
+/// The most an answer may be, in bytes.
+///
+/// Eight mebibytes, and the number is derived rather than chosen. The largest
+/// thing an answer can carry is a file's contents, which `alo-files` bounds at
+/// [`alo_files::MOST_READ`]; JSON writes a control character as six bytes, so
+/// a file of a megabyte of them is six megabytes on the wire. Eight leaves the
+/// envelope, the longest listing and the longest search comfortably inside it,
+/// and `a_worst_case_read_fits_inside_the_bound` is the test that says so
+/// rather than the sentence.
+///
+/// **Nothing this machine can answer with is longer than this**, so a reply
+/// that exceeds it did not come from an alo OS verb — which is what a client
+/// refusing it is really refusing.
+pub const LONGEST_ANSWER: usize = 8 * 1024 * 1024;
+
 /// One message, as it goes on the wire.
 ///
 /// Public so that a client written in Rust builds a message from this type
@@ -65,6 +97,35 @@ pub(crate) struct Envelope {
     format: u32,
     /// The request itself.
     asks: Asked,
+}
+
+/// One answer, as it goes on the wire.
+///
+/// Its own envelope name — `tells` beside the request's `asks` — so that a
+/// message says which way it is going. A client that read an answer as a
+/// request would be a client that could be handed one by anything on the
+/// machine that can connect.
+#[derive(Debug, Serialize)]
+pub(crate) struct Reply {
+    /// Which format this answer is written in.
+    format: u32,
+    /// The answer itself.
+    tells: Told,
+}
+
+/// The same, as it is read back.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Heard {
+    /// Which format it is written in. Checked already, and read again here so
+    /// that an answer with no `format` at all cannot arrive by this road.
+    #[expect(
+        dead_code,
+        reason = "read so that the field is required; its value was checked by `Stated`"
+    )]
+    format: u32,
+    /// The answer itself.
+    tells: Told,
 }
 
 /// The same, as it is read back — with the request left unread.
@@ -153,6 +214,56 @@ pub(crate) fn message(line: &str) -> Result<Asked, NotUnderstood> {
 /// cannot be taken is still not a road that invents an answer.
 pub(crate) fn line(asks: Asked) -> Result<String, serde_json::Error> {
     serde_json::to_string(&Envelope::around(asks))
+}
+
+/// Read one line as an answer, and answer with what it says.
+///
+/// The same three rules as [`message`], in the same order, against
+/// [`LONGEST_ANSWER`] — see this file's header for why that is a different
+/// number and where it comes from.
+///
+/// # Errors
+/// [`NotUnderstood`], which says which of the five it was.
+pub(crate) fn reply(line: &str) -> Result<Told, NotUnderstood> {
+    if line.len() > LONGEST_ANSWER {
+        return Err(NotUnderstood::TooLong {
+            most: LONGEST_ANSWER,
+            was: line.len(),
+        });
+    }
+    let line = line.trim_end_matches(['\n', '\r']);
+    if line.contains('\n') || line.contains('\r') {
+        return Err(NotUnderstood::MoreThanOneMessage);
+    }
+
+    let stated: Stated = serde_json::from_str(line).map_err(|_| NotUnderstood::NotReadable)?;
+    if stated.format > FORMAT {
+        return Err(NotUnderstood::FromANewerAloOs {
+            format: stated.format,
+        });
+    }
+    if stated.format < FORMAT {
+        return Err(NotUnderstood::NotAFormat {
+            format: stated.format,
+        });
+    }
+
+    let heard: Heard = serde_json::from_str(line).map_err(|_| NotUnderstood::NotReadable)?;
+    Ok(heard.tells)
+}
+
+/// Write one answer as the line that carries it.
+///
+/// `pub(crate)`: the two doors expose it, each for the answers its own side is
+/// given.
+///
+/// # Errors
+/// A `serde_json::Error`, handed back for [`line`]'s reason.
+pub(crate) fn spoken(tells: Told) -> Result<String, serde_json::Error> {
+    serde_json::to_string(&Reply {
+        format: FORMAT,
+        tells,
+    })
 }
 
 #[cfg(test)]
@@ -266,5 +377,93 @@ mod tests {
         let written = line(asks.clone()).unwrap();
         assert!(written.contains("\"format\":1"), "{written}");
         assert_eq!(message(&written).unwrap(), asks);
+    }
+
+    /// An answer travels in an envelope of its own, and reads back as what was
+    /// written.
+    #[test]
+    fn an_answer_is_written_and_read_in_its_own_envelope() {
+        let tells = Told::Declined {};
+        let written = spoken(tells.clone()).unwrap();
+        assert_eq!(written, r#"{"format":1,"tells":{"declined":{}}}"#);
+        assert_eq!(reply(&written).unwrap(), tells);
+    }
+
+    /// **A request is not an answer.** The two envelopes name the direction, so
+    /// a client cannot be handed a request by whatever else on the machine can
+    /// open a socket, and a daemon cannot be answered into.
+    #[test]
+    fn a_request_is_not_an_answer_and_an_answer_is_not_a_request() {
+        let asked = line(Asked::Approve { number: 7 }).unwrap();
+        assert_eq!(reply(&asked), Err(NotUnderstood::NotReadable));
+
+        let told = spoken(Told::Declined {}).unwrap();
+        assert_eq!(message(&told), Err(NotUnderstood::NotReadable));
+    }
+
+    /// The envelope's other three rules hold for an answer too: one line, a
+    /// format this version reads, and nothing else in the envelope.
+    #[test]
+    fn an_answer_is_held_to_the_same_envelope_rules() {
+        let two = concat!(
+            r#"{"format":1,"tells":{"declined":{}}}"#,
+            "\n",
+            r#"{"format":1,"tells":{"declined":{}}}"#
+        );
+        assert_eq!(reply(two), Err(NotUnderstood::MoreThanOneMessage));
+
+        assert!(reply(&format!("{}\r\n", spoken(Told::Declined {}).unwrap())).is_ok());
+
+        assert_eq!(
+            reply(r#"{"format":2,"tells":{"reticulated":{}}}"#),
+            Err(NotUnderstood::FromANewerAloOs { format: 2 })
+        );
+        assert_eq!(
+            reply(r#"{"format":0,"tells":{"declined":{}}}"#),
+            Err(NotUnderstood::NotAFormat { format: 0 })
+        );
+        assert_eq!(
+            reply(r#"{"format":1,"tells":{"declined":{}},"from":"root"}"#),
+            Err(NotUnderstood::NotReadable)
+        );
+    }
+
+    /// **The worst answer this machine can produce fits inside the bound.**
+    /// The one thing the item did not contain and the tests did: a read is
+    /// bounded at a megabyte and a message at a megabyte, so one bound for both
+    /// directions would have meant a verb that succeeded and an answer nobody
+    /// was allowed to read. A megabyte of control characters is the worst JSON
+    /// escaping can do, and this is what it measures.
+    #[test]
+    fn a_worst_case_read_fits_inside_the_bound() {
+        let most_read = usize::try_from(alo_files::MOST_READ).unwrap();
+        let worst = "\u{1}".repeat(most_read);
+        let written = spoken(Told::Did(crate::done::Done::Read { text: worst })).unwrap();
+        assert!(written.len() > most_read * 5, "{}", written.len());
+        assert!(
+            written.len() <= LONGEST_ANSWER,
+            "a read of {most_read} bytes crosses as {} and the bound is {LONGEST_ANSWER}",
+            written.len()
+        );
+        assert_eq!(reply(&written).map(|_| ()), Ok(()));
+    }
+
+    /// And an answer longer than that is refused before it is parsed, for the
+    /// reason a request is: nothing that reads a socket may be told how much
+    /// memory to take.
+    #[test]
+    fn an_answer_longer_than_the_bound_is_refused_before_it_is_read() {
+        let enormous = format!(
+            r#"{{"format":1,"tells":{{"did":{{"read":{{"text":"{}"}}}}}}}}"#,
+            "a".repeat(LONGEST_ANSWER)
+        );
+        let was = enormous.len();
+        assert_eq!(
+            reply(&enormous),
+            Err(NotUnderstood::TooLong {
+                most: LONGEST_ANSWER,
+                was
+            })
+        );
     }
 }

@@ -1,38 +1,41 @@
-# Contract — what a client asks `alo-agentd`
+# Contract — what a client asks `alo-agentd`, and what it is told
 
 **Status:** contract. Additive changes only; a break requires versioning and a
 deprecation period. See `CLAUDE.md`, "Contracts outlive code".
 
-This is what goes **in** to the daemon: the messages a shell and an agent put on
-its socket. Third parties build against it — a workspace client, a shell that is
-not ours, an agent runtime somebody else wrote — so it is a public surface from
-the first version rather than from the version somebody outside starts depending
-on it.
+This is what goes across the daemon's socket in both directions: the messages a
+shell and an agent send, and what the daemon says back. Third parties build
+against it — a workspace client, a shell that is not ours, an agent runtime
+somebody else wrote — so it is a public surface from the first version rather
+than from the version somebody outside starts depending on it.
 
 Read `docs/decisions/0001-the-capability-model.md` first, and
 `docs/contracts/agent-verbs.md` beside it: what a verb *is* belongs to those, and
-this describes only how one is asked for. `crates/alo-protocol` is this document
+this describes only how one is asked for and what it answers with. `crates/alo-protocol` is this document
 as working code.
-
-**What comes back is not here yet.** A read answers with what the machine found,
-a proposal with a number and a sentence, a question with an answer — and every
-one of those is its own decision (`alo_files::Answer` carries paths, and a path
-is not always text). It is written down when it is built.
 
 ## The shape
 
 One message is one line of JSON, compact, with no newline inside it. A JSON
-string escapes control characters, so one message is always exactly one line.
+string escapes control characters, so one message is always exactly one line —
+including one carrying a file that has line breaks in it.
 
 ```
 {"format":1,"asks":{"read":{"verb":"list_folder","given":[{"named":"folder","is":"/home/anna/Invoices"}]}}}
 {"format":1,"asks":{"approve":{"number":7}}}
+{"format":1,"tells":{"did":{"read":{"text":"March\n4180.00"}}}}
+{"format":1,"tells":{"proposed":{"number":7,"sentence":{"text":"rename march.pdf to march-final.pdf","came_from":"the-source"},"lapses_in":300}}}
 ```
 
 | Field | Meaning |
 |---|---|
 | `format` | Which shape the message is in. Required. `1` today. |
-| `asks` | The request. One of the names below, and nothing else. |
+| `asks` | A request, going to the daemon. One of the names below, and nothing else. |
+| `tells` | An answer, coming back. One of the names below, and nothing else. |
+
+**A message names its direction**, which is why the two field names differ. A
+client that read an answer as a request would be a client that anything on the
+machine able to open a socket could hand one to.
 
 A field nobody declared — in the envelope, in a request or in an argument — is
 **refused rather than ignored**. A client that asked for something this machine
@@ -42,15 +45,25 @@ does not do is told so, rather than having the part it cared about dropped.
 
 There are two kinds of caller and they do not share a list.
 
-**An agent, during a turn**, may ask for `read`, `propose` and `ask`.
+**An agent, during a turn**, may ask for `read`, `propose` and `ask`, and is
+told `did`, `proposed`, `answered` and `refused`.
 
-**A person's shell** may send `approve` and `decline`.
+**A person's shell** may send `approve`, `decline` and `waiting`, and is told
+`did`, `waiting`, `declined` and `refused`.
 
 If one door took both, the side that proposed a change could approve it, and
 ADR 0001 §5 — one approval, one execution, given by a person — would be true of
 the capability model and false of the socket in front of it. So `approve`
 arriving on an agent's connection is refused, in words, and so is `read`
 arriving on a person's.
+
+**The answers divide the same way, and for a second reason.** What is waiting
+is the person's own list, and `alo_turn::Turning::waiting_at` is a method a
+daemon holding an agent's connection can call. One answer type would be one
+where writing that onto the agent's connection compiles; two make it
+impossible. So `waiting` and `declined` arriving at an agent are refused, and so
+are `proposed` and `answered` arriving at a person's shell — and a client
+meeting either is meeting a fault in alo OS rather than in whatever asked.
 
 **Which side a connection is on is not decided by the message.** It is peer
 credentials on the socket, and it is the daemon's. Nothing a client sends says
@@ -88,11 +101,12 @@ The question and nothing else. **Where it is answered is not on the wire**:
 ADR 0008 puts that decision with the person, and a request naming a place would
 be an agent choosing which machine its question goes to.
 
-## What a person answers
+## What a person sends
 
 ```json
 {"approve":{"number":7}}
 {"decline":{"number":7}}
+{"waiting":{}}
 ```
 
 `number` is the number the change was waiting under. It is **a number and not a
@@ -102,6 +116,76 @@ somewhere it was not aimed.
 
 There is no shape here for approving two things, everything from an agent, or
 whatever an agent asks next. An approval is of one sentence (ADR 0001 §5).
+
+`waiting` asks what the person has been asked and has not answered. It **carries
+nothing**: what is waiting is what this turn has put to this person, and a field
+naming an agent, a number or a moment would be a way to ask about somebody
+else's. It is on this door because the list is the person's; an agent asking for
+it is refused in the same words as an agent trying to approve something.
+
+## What comes back
+
+```json
+{"did":{"listed":{"things":[{"name":"march.pdf","kind":"file","bytes":4180}],"could_not_be_named":0,"cut_short":false}}}
+{"did":{"read":{"text":"March, 4180.00"}}}
+{"did":{"found":{"files":["/home/anna/Invoices/march.pdf"],"could_not_be_named":0,"cut_short":false}}}
+{"did":{"renamed":{"now_at":"/home/anna/Invoices/march-final.pdf"}}}
+{"did":{"moved":{"now_at":"/home/anna/Archive/march.pdf"}}}
+{"did":{"archived":{"at":"/home/anna/Archive/2026.zip","things":12,"left_out":1,"bytes":40960}}}
+{"proposed":{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}}
+{"answered":{"text":"Three are unpaid.","came_from":{"text":"by Mistral, in the EU","came_from":"translation"},"model":"mistral-small-latest"}}
+{"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}]}}
+{"declined":{}}
+{"refused":{"text":"@files has not been granted the folder /home/anna/Secrets — grants are made by picking a folder, never by asking for one","came_from":"the-source"}}
+```
+
+`did` is `alo_files::Answer`'s six shapes: what a read found, and what a change
+did once the person approved it. **Every answer that was bounded says it was
+bounded** — a listing and a search carry `cut_short`, an archive carries
+`left_out` — because a bounded answer that does not say so reads exactly like a
+complete one.
+
+`proposed` and `waiting` carry the number **and the sentence it stands on**. A
+number alone would let a shell offer *approve change 7*, and what a person
+approves is a sentence (ADR 0001 §5). `lapses_in` is seconds, and is absent once
+the question has stopped standing.
+
+`answered` carries where the answer came from, and there is no shape without it:
+`docs/features.md` promises *where the answer came from is said where the answer
+appears*, and this is the last boundary at which that could be lost.
+
+`declined` carries nothing about why, because nothing was asked.
+
+### Every sentence says whether anybody translated it
+
+A sentence crosses as `{"text": …, "came_from": …}`, where `came_from` is
+`translation`, `the-source` or `no-sentence`.
+
+The daemon holds the vocabulary, so the daemon renders — and text alone would
+have thrown away the one thing `alo-strings` exists for: a Latvian shell shown
+English with nothing anywhere knowing it had happened. `the-source` says nobody
+has translated this yet; `no-sentence` says the daemon asked for a string
+nothing declares, which is a bug in alo OS rather than a translation nobody has
+done, and is the one case where a client is shown a key.
+
+### A path that cannot be shown is counted, never dropped
+
+`alo_files::Answer` carries `PathBuf`s, and a path is not always text: it is
+bytes on Linux and ill-formed UTF-16 on Windows. A format that assumed
+otherwise would fail on somebody's filename rather than on nobody's, and what
+that person would see is a read that succeeded arriving as an error.
+
+So a path crosses only if it can be shown — spellable in Unicode, and with
+nothing in it that could rewrite the answer around it, which is the rule
+`alo_files::Named` already holds a *name* to. What cannot be shown is **counted**
+(`could_not_be_named`) or, for a change that names one path, left out while the
+change is still reported: the file really was moved, and saying it failed would
+be untrue about the disk.
+
+**A file's contents are not held to that rule.** Contents are contents rather
+than a name inside a sentence, so a file with a tab, a line break or a terminal
+escape in it crosses as it is — JSON escaping is what keeps the message one
+line.
 
 ## Arguments
 
@@ -145,10 +229,20 @@ field for one to arrive in. That is law 2 at the one place a caller can reach.
 
 ## Bounds
 
-A message is at most **1 MiB**, in bytes, and one longer is refused before
+A request is at most **1 MiB**, in bytes, and one longer is refused before
 anything is parsed. A client that can make a privileged service allocate without
 a bound has taken the machine away from its owner without ever being granted
 anything.
+
+An answer is at most **8 MiB**, and the number is derived rather than chosen: the
+largest thing an answer can carry is a file's contents, `docs/contracts/agent-verbs.md`
+bounds a read at a megabyte, and JSON writes a control character as six bytes —
+so a megabyte of them is six on the wire. One bound for both directions would
+have been a bound a legitimate read cannot fit inside, and a verb that succeeded
+would have produced a message no client is allowed to read.
+
+Nothing this machine can answer with is longer than that, so an answer that
+exceeds it did not come from an alo OS verb.
 
 A message with a line break inside it is refused as more than one message. The
 alternative is answering the first and dropping the rest, and a service that
@@ -165,10 +259,13 @@ message comes from a newer alo OS than this one* rather than told its message
 was gibberish, which would send whoever holds it looking for a bug instead of an
 update.
 
-**A new request is additive and does not raise `format`.** An older daemon
+**A new request or a new answer is additive and does not raise `format`.** An older daemon
 cannot parse a name it has never heard of — and what it does is *refuse* that
-one message, in words, which is the only thing it could safely do with a request
-it does not understand. Raising `format` instead would tie the protocol's
+one message, in words, which is the only thing it could safely do with a message
+it does not understand. A client meeting an answer it has never heard of does
+the same, and what it must not do is guess: an answer nobody can read is a
+message that did not arrive, and a client that treated it as *nothing happened*
+would be a client that says nothing happened when something did. Raising `format` instead would tie the protocol's
 version to the growth of the capability model, so that every client stopped
 working the first time alo OS learned to do something new. The record file's
 contract makes the same argument about a new kind of entry, for the same reason.
@@ -182,9 +279,19 @@ A message that is not a request is **refused in the reader's own language, and
 never dropped**. A privileged service that answers silence is one nobody can
 tell apart from one that has stopped.
 
-There are seven, and `crates/alo-protocol`'s `words.rs` is where their sentences
-live: too long, more than one message, from a newer alo OS, not a format
-anything wrote, not readable at all, not for an agent, not for a person.
+There are nine, and `crates/alo-protocol`'s `words.rs` is where their sentences
+live. Five are about the envelope and hold in both directions: too long, more
+than one message, from a newer alo OS, not a format anything wrote, not readable
+at all. Two are about a request on the wrong door — not for an agent, not for a
+person — and two about an answer on the wrong one.
+
+**A refusal the daemon makes about a request is not one of these.** A call that
+never formed, the grants at the moment of execution, a full disk, a question
+nothing answered: all of those are worded by the crate that made them and cross
+as `refused`, with the sentence and its provenance and nothing else. Which
+refusal it was is deliberately not on the wire — a client that could branch on it
+is a client that would, and an agent choosing what to try next from *the grants
+said no* is an agent working around the capability model.
 
 **A refusal never quotes the message back.** What arrived is text nobody has
 checked, and repeating it would put it in front of a person — `alo-record`'s
@@ -193,6 +300,7 @@ The numbers a reader might want (how long the message was, what format it
 claimed) are carried beside the sentence rather than inside it.
 
 ## The transport, and the process
+
 
 Not here. A Unix socket, its permissions, peer credentials, and a long-lived
 service that holds a turn per connection are `alo-agentd`'s, and they need a

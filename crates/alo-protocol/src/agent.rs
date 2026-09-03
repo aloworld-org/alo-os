@@ -16,8 +16,11 @@
 //! to prevent. So there is no `begin` on this list and no `end`: the turn is
 //! the connection's, and both ends of it are somebody else's act.
 //!
-//! **Nothing approves anything.** That is [`crate::person`], and the division
-//! is argued in [`crate::asked`].
+//! **Nothing approves anything, and nothing reads what is waiting.** Both are
+//! [`crate::person`]'s, and the division is argued in [`crate::asked`]. The
+//! second is worth saying out loud: what is waiting is the person's own list,
+//! and an agent asking for it is refused in the same words as one trying to
+//! approve something, because it is the same list.
 //!
 //! **Nothing names a turn.** A number identifying which turn a request belongs
 //! to would be a number an agent could change, and there is no field for one:
@@ -84,7 +87,9 @@ impl FromAnAgent {
             Asked::Read { verb, given } => Ok(Self::Read { verb, given }),
             Asked::Propose { verb, given } => Ok(Self::Propose { verb, given }),
             Asked::Ask { question } => Ok(Self::Ask { question }),
-            Asked::Approve { .. } | Asked::Decline { .. } => Err(NotUnderstood::NotForAnAgent),
+            Asked::Approve { .. } | Asked::Decline { .. } | Asked::Waiting {} => {
+                Err(NotUnderstood::NotForAnAgent)
+            }
         }
     }
 
@@ -202,6 +207,7 @@ mod tests {
         for message in [
             r#"{"format":1,"asks":{"approve":{"number":7}}}"#,
             r#"{"format":1,"asks":{"decline":{"number":7}}}"#,
+            r#"{"format":1,"asks":{"waiting":{}}}"#,
         ] {
             assert_eq!(
                 FromAnAgent::read(message),

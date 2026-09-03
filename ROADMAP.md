@@ -310,20 +310,29 @@ compositor is not required for, which is why it runs unbroken.
         grants are asked again at the moment it runs, and the machine offers
         exactly the verbs it can carry out. Since item 21a there is
         `alo-protocol`, which is what somebody else's code is allowed to say
-        to all of that: five requests and no sixth, none of them able to
+        to all of that: six requests and no seventh, none of them able to
         carry a command, and two doors rather than one — so the side that
         proposes a change cannot be the side that approves it. What is not on
         the wire is as much of it as what is: no moment, no context, no turn
         and no place a question goes, because each of those would be a caller
-        helping itself to something the machine is supposed to know
+        helping itself to something the machine is supposed to know. Since
+        item 21b the same crate is what the daemon may say **back**: what a
+        read found and what a change did, a change waiting with the sentence
+        it waits on rather than only its number, a model's answer with where
+        it came from beside it and no shape that carries one without the
+        other, and every refusal in the workspace as the sentence whoever
+        made it worded — each carrying whether anybody translated it, which
+        is the one thing text alone would have lost at the last boundary
+        before a person reads it. The answers divide by side as the requests
+        do, so a daemon cannot put the person's own list onto an agent's
+        connection
   - [ ] **On the machine.**
         the daemon itself — the socket, its peer credentials and a
-        long-lived process (queue 21c), plus what it answers with (21b) — the
-        acting half of the application verbs, which is Wayland and D-Bus and
-        is the whole of what makes any of these move a window, and the half
-        of the context that **reads** a screen, which is Wayland and AT-SPI
-        and is where *with no invocation, no context calls at all* becomes
-        something anybody can test
+        long-lived process (queue 21c) — the acting half of the application
+        verbs, which is Wayland and D-Bus and is the whole of what makes any
+        of these move a window, and the half of the context that **reads** a
+        screen, which is Wayland and AT-SPI and is where *with no invocation,
+        no context calls at all* becomes something anybody can test
 
 - [ ] Every execution recorded with its origin, approval and grant
   - [x] **The code.**

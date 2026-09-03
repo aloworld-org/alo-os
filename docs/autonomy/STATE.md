@@ -4602,3 +4602,133 @@ touched.
   transport. Everything in it is a `&str` in and a value out.
 - **Nothing here has been run on a certified machine**, and no client that is
   not a test has ever spoken to this format.
+## 2026-09-03 — iteration 40: what the daemon answers with
+
+**Item 21b — the answering half of the protocol, and the decision the item
+existed to make.** Eight new files in `crates/alo-protocol`: `told.rs` (the
+closed list of everything that goes back), `to_an_agent.rs` and `to_a_person.rs`
+(the two doors), `done.rs` (`alo_files::Answer`'s six as they cross), `thing.rs`
+(one thing in a folder), `standing.rs` (a change waiting, with the sentence it
+waits on), `wording.rs` (a sentence and whether anybody translated it),
+`naming.rs` (the rule a path is held to). `frame.rs` gained the answer envelope
+and `LONGEST_ANSWER`; `asked.rs` and `person.rs` gained the `waiting` request;
+`refusing.rs` and `words.rs` gained two refusals. `alo-files` made `MOST_READ`
+and `can_be_shown` public. 89 unit tests in `alo-protocol` (was 45), 22
+integration tests (was 14), 1 doctest extended. **1358 tests and 43 doctests
+across the workspace** (was 1307 and 43), `cargo fmt` clean, `cargo clippy
+--workspace --all-targets -- -D warnings` clean with zero warnings.
+
+Items 16b, 19b and 20 were read first and skipped for the reasons the queue
+gives — 16b is *blocked on nothing here, and not ready either*, 19b waits on
+Wayland, 20 on a long-lived process. The previous entry said the next ready item
+was 22; it is 21b, which stands above 22 in the file and is not blocked. The
+loop's rule is the first item that is not done and is not blocked, so it was
+taken in that order.
+
+### The decision the item asked for: no `Serialize` on `alo_files::Answer`
+
+Three reasons, and the third decided it.
+
+A derived `Serialize` on a `PathBuf` **fails** on a path that is not UTF-8. So
+the road that works for everybody's files is a road that errors on somebody's,
+and what that person's shell shows them is not *this file has an unusual name*
+but whatever a daemon does with an answer it cannot write down: a read that
+succeeded, arriving as a failure.
+
+It would also put the wire's shape inside the crate that touches the disk. The
+format is a public surface, and a crate whose job is `std::fs` should not be a
+crate a protocol change has to be made in — item 4's argument for `alo-record`
+being its own crate, met from the other end.
+
+And `alo-files` had already decided what to do with text it did not write.
+`Named` refuses a name that could rewrite what an answer appears to say, and the
+listing **counts** what it left out. A path in an answer is the same text with
+the same problem, so it is the same rule asked one crate further out —
+`can_be_shown` is public now rather than copied — and the count travels beside
+every list. A change that names one path is still reported as the change when
+that path cannot be shown: the file really did move, and saying it failed would
+be untrue about the disk.
+
+**A file's contents are deliberately not held to that rule.** Contents are
+contents rather than a name inside a sentence, and a read that refused a file
+with a tab in it would be a verb that works on prose and nothing else. What
+keeps it safe is the format rather than a check: JSON escapes a control
+character, so a file with line breaks still crosses as one line. There is an
+integration test that reads a real file with two of them.
+
+### What the tests found that the design did not say: two bounds cannot be one
+
+`alo-files` bounds a read at a megabyte. `frame.rs` bounded a message at a
+megabyte. So the largest legitimate answer this machine can produce did not fit
+in a message at all — and with JSON escaping, which writes a control character
+as six bytes, a worst-case file is six megabytes on the wire.
+
+One bound for both directions would therefore have meant a verb that succeeded
+and a message no client is allowed to read. `LONGEST_ANSWER` is 8 MiB and is
+**derived** from `alo_files::MOST_READ` rather than chosen beside it;
+`MOST_READ` is public so the derivation is checkable from the crate that depends
+on it, and `a_worst_case_read_fits_inside_the_bound` builds the worst case and
+measures it rather than asserting the sentence.
+
+### Three decisions the next items inherit
+
+- **A sentence crosses with where it came from.** The daemon holds the
+  vocabulary, so the daemon renders — and text alone would have put item 9's
+  hole back at the last boundary before a person reads a sentence, for every
+  string in the workspace at once. `Wording` carries `translation`,
+  `the-source` or `no-sentence`, read off `Said` rather than judged again, so a
+  shell can mark English shown in a Latvian session exactly as a development
+  build does.
+- **The answers divide by side as the requests do.** The requests divide because
+  an agent must not approve its own change. The answers divide because
+  `Turning::waiting_at` is a method a daemon holding an agent's connection can
+  call: one public answer type is one where writing the person's own list onto
+  that connection compiles. `ToAnAgent` has no shape for it, so it does not.
+- **A refusal crosses as a sentence and carries no kind.** No code, no variant,
+  no name of the crate that made it. A client that could branch on which refusal
+  it was is a client that would, and an agent choosing what to try next from
+  *the grants said no* rather than from the sentence is an agent working around
+  the capability model.
+
+### Two things the item named and one it did not
+
+*What is waiting* is now a request on the person's door, which is what the item
+said it owed. `person.rs` used to argue there was no `waiting` **yet**, on the
+ground that what a shell draws is something the daemon answers rather than
+something a person asks for. Half of that was right; the half that was wrong is
+that a shell which never asked has nothing to draw if it started, restarted or
+attached after the change was proposed. It carries no field at all, and what
+comes back carries the sentence with every number.
+
+The thing the item did not name is that `alo-protocol` now depends on
+`alo-files` — the first time this crate reaches anything but `alo-capability`
+and `alo-strings`. It deliberately does **not** reach `alo-asking`: a model's
+answer arrives as text and a rendered sentence rather than as the type that
+fetched it, because that crate carries an HTTP client and a TLS stack and item 4
+refused exactly that dependency for `alo-record`.
+
+`docs/quirks.md` gained nothing. Nothing in this iteration found reality
+disagreeing with a specification; what it found was two of our own numbers
+disagreeing, which is written into the contract and above.
+
+### `ROADMAP.md` moved, and one code half was written into
+
+**`alo-agentd`: grants, file verbs, application verbs, context on invocation** —
+the code half now says what the daemon may say back and what divides it, and its
+machine half no longer names 21b. No half was ticked that was not whole, and no
+machine half was touched.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 22**, *running out is not a fault* — a
+  provider answering *payment required* has no variant in `alo-answering`, so it
+  arrives as a key problem or as a number. **23** is ready after it. **21c**,
+  **20** and **19b** are blocked on Linux and on a long-lived process, and
+  **16b** is not ready by its own account.
+- **`FromAPerson::number` answers `Option<u64>` now**, because the third request
+  answers no change. A source-level change to an unreleased crate, and the wire
+  format did not move: `waiting` is additive and does not raise `format`, which
+  is what the contract already said about a new request.
+- **Nothing has opened a socket.** Both halves of the protocol are a `&str` in
+  and a value out, and no client that is not a test has ever read one of these
+  answers.

@@ -45,7 +45,14 @@ for the one type in this workspace whose job is being read off a socket, and
 nothing reaches it. It is also the only crate whose value is partly a set of
 fields that do not exist — no moment, no context, no turn, no place a question
 goes — because each of those on the wire would be a way for a caller to help
-itself to something. **`alo-turn` is the only one that reaches
+itself to something. Since item 21b it is the boundary in **both** directions
+and reaches two more crates for it: `alo-files`, whose `Answer` it carries back
+and whose rule about a name that cannot be shown it asks rather than repeats,
+and `alo-strings`, which it already had. What it deliberately does not reach is
+`alo-asking` — that crate carries an HTTP client and a TLS stack, and item 4
+refused the same dependency for `alo-record` for the same reason — so a model's
+answer arrives at this crate as text and a rendered sentence rather than as the
+type that fetched it. **`alo-turn` is the only one that reaches
 another crate in order to hold it to an order** rather than to ask it
 something: since item 19 it is where an invocation, a call, an approval, an
 execution and the record are joined, and it is the first crate whose value is
@@ -1432,7 +1439,9 @@ the indicator because nothing goes anywhere. What is left of the sentence is the
 third place, a machine on this network, which neither door reaches and both
 refuse in words. **Item 19 joined the rest of them**: fifteen crates decide
 correctly, two of them act, one holds the order the others happen in, and there
-is still no daemon holding that.
+is still no daemon holding that. **Items 21a and 21b are both halves of what
+that daemon would say and be told**, so what is left of item 21 is the process,
+the socket and peer credentials — which is 21c, and is Linux's.
 
 **All of it is portable.** No compositor, no certified machine, no GPU. A turn
 is a function call, and its result is a value to assert on. The acting halves
@@ -1810,17 +1819,61 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   `alo-turn` onto a real filesystem. **No socket has been opened**: nothing here
   has listened on anything, and there is still no daemon.
 
-- [ ] **21b. What the daemon answers with.** The other half of the protocol, and
-  it is a decision rather than a mirror. A read answers with an
-  `alo_files::Answer` — a listing, a file's contents, a search — a proposal with
-  a number and the sentence the person is being asked, a question with a model's
-  answer, and every refusal in the workspace with a `Said`. **`Answer` has no
-  `Serialize` and the first thing this item decides is whether it should**: it
-  carries `PathBuf`s, and a path is not always text, so a format that assumed it
-  was would lose a filename on somebody's machine rather than refuse it. It also
-  owes the person's side one request this repository has not written —
-  *what is waiting* — which is a read of the turn rather than an answer to it,
-  and belongs with the answers it is shaped like.
+- [x] **21b. What the daemon answers with** — the other half of the protocol,
+  and a decision rather than a mirror. Eight new files in `crates/alo-protocol`:
+  `told.rs` (the closed list of everything that goes back, and why it is one
+  list behind two doors), `to_an_agent.rs` and `to_a_person.rs` (the two doors),
+  `done.rs` (`alo_files::Answer`'s six, as they cross), `thing.rs` (one thing in
+  a folder), `standing.rs` (a change waiting, with the sentence it waits on),
+  `wording.rs` (a sentence and whether anybody translated it), `naming.rs` (the
+  rule a path is held to, and the whole argument for it). `frame.rs` gains the
+  answer envelope and `LONGEST_ANSWER`; `asked.rs` and `person.rs` gain
+  `waiting`; `refusing.rs` and `words.rs` gain two refusals. `alo-files` makes
+  `MOST_READ` and `can_be_shown` public. 89 unit tests in `alo-protocol` (was
+  45), 22 integration tests (was 14) — 7 of them new, carrying real answers off
+  a real disk. **1358 tests and 43 doctests across the workspace** (was 1307 and
+  43), clippy clean. `docs/contracts/daemon-protocol.md` now says what comes
+  back as well as what goes in.
+
+  **The decision the item asked for, answered as it feared: `alo_files::Answer`
+  does not gain a `Serialize`.** A derived one on a `PathBuf` *fails* on a path
+  that is not UTF-8, so the road that works for everybody's files errors on
+  somebody's — and what that person's shell would show them is not *this file
+  has an unusual name* but whatever a daemon does with an answer it cannot
+  write. A read that succeeded would arrive as a failure. It would also put the
+  wire's shape inside the crate that touches the disk, which is item 4's
+  argument for `alo-record` met from the other end. What replaced it is
+  `alo-files`' own rule, asked one crate further out rather than written down
+  twice: a path that cannot be shown is **counted** (`could_not_be_named`), and
+  a change that names one is still reported as the change — the file really did
+  move, and saying it failed would be untrue about the disk.
+
+  **What the item did not contain, and the tests found: two bounds cannot be
+  one.** `alo-files` bounds a read at a megabyte and `frame.rs` bounded a
+  message at a megabyte, so a legitimate read could not fit inside a message at
+  all — worse with JSON escaping, which writes a control character as six bytes.
+  `LONGEST_ANSWER` is therefore derived from `alo_files::MOST_READ` rather than
+  chosen beside it, `MOST_READ` is public so the derivation is checkable, and a
+  test builds the worst case and measures it.
+
+  Three decisions the next items inherit. **A sentence crosses with where it
+  came from**, never as bare text: the daemon holds the vocabulary and renders,
+  and text alone would have put item 9's hole back at the last boundary before a
+  person reads the sentence — for every string in the workspace at once.
+  **The answers divide by side as the requests do**, because
+  `Turning::waiting_at` is a method a daemon holding an agent's connection can
+  call: one public answer type is one where writing the person's list onto that
+  connection compiles. **A refusal crosses as a sentence and carries no kind** —
+  no code, no variant, no name of the crate that made it — because a client that
+  could branch on which refusal it was is a client that would, and an agent
+  choosing what to try next from *the grants said no* is an agent working around
+  the capability model.
+
+  Built and unit tested, and walked end to end against a real filesystem: a real
+  folder listed, a real file read with its line breaks intact, a real rename
+  approved and a real archive made, each carried back onto the wire and read
+  back. **No socket has been opened**, and no client that is not a test has ever
+  read one of these answers.
 
 - [ ] **21c. The daemon itself.** What is left of item 21 once 21a and 21b are
   out of it: a long-lived process, a socket, and one file naming the transport

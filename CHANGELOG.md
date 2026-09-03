@@ -12,6 +12,34 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **What the service says back is now written down too, and every sentence in it
+  says whether anybody translated it.** A read answers with what your machine
+  found — what is in a folder, what is in a file, what a search turned up — as a
+  shape rather than as prose, so neither your screen nor a model has to parse a
+  sentence to know what happened. A change you approved answers with what it
+  did. A question answers with the model's words **and where they came from**,
+  and there is no shape that carries one without the other.
+
+  **Your screen can now ask what is waiting.** Until now the list of changes an
+  agent has put to you existed only inside a turn, so a screen that started,
+  restarted or attached late had nothing to draw. It can ask, and what comes
+  back is the number *and* the sentence for each one — because a number on its
+  own would be a screen asking you to approve *change 7*.
+
+  Every sentence that crosses says where it came from: somebody translated this,
+  nobody has translated it yet, or alo OS asked for a string it never declared.
+  So English shown in a Latvian session is something your screen can mark rather
+  than something nobody finds out about.
+
+  **A file whose name your machine cannot spell is counted, never quietly
+  dropped.** A path is not always text, and a format that assumed otherwise
+  would have failed on somebody's real filename. So a search that found five
+  files and can show four says four *and one it could not name*, and a file that
+  really was moved is still reported as moved even when there is no way to spell
+  where to. What your screen never has to wonder is whether a list was complete.
+
+  The socket itself and the long-lived process behind it are still to come.
+
 - **Your agent and your screen now speak to alo OS over two separate doors, and
   an agent cannot approve its own change.** Everything a client can say to the
   service that runs verbs is now a closed, written-down list of five requests:
@@ -39,8 +67,8 @@ grant now takes effect immediately instead of at the next sign-in" is.
   sends you to an update rather than to a bug report. None of those refusals
   quotes the message back at you, because what arrived is text nobody checked.
 
-  What comes back from the service, the socket itself, and the long-lived
-  process are still to come; this is what goes in.
+  The socket itself and the long-lived process are still to come; this is what
+  goes in, and the entry above it is what comes back.
 
 - **Your agent can now put a question to a model inside a turn, and what left
   your machine is on the disk before the answer reaches it.** The three ways

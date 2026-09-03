@@ -179,7 +179,7 @@ fn a_change_is_proposed_on_one_door_and_approved_on_the_other() {
         assert!(answered.is_yes());
         let waiting = turning
             .waiting_at(noon())
-            .find(|waiting| waiting.id.as_u64() == answered.number())
+            .find(|waiting| Some(waiting.id.as_u64()) == answered.number())
             .map(|waiting| waiting.id)
             .unwrap();
 

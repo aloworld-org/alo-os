@@ -40,7 +40,15 @@ const MOST_LISTED: usize = 1000;
 /// A megabyte is a long document and a great deal of text. Past it, an answer
 /// stops being something a person can read or a model can hold, and what the
 /// person wants is an application rather than a verb.
-const MOST_READ: u64 = 1024 * 1024;
+///
+/// **Public because an answer leaves this machine's process**: what a read
+/// answers with crosses the daemon's socket, and the bound on that message is
+/// derived from this number rather than guessed beside it. Two crates each
+/// deciding how big an answer may be is two bounds that can disagree, and the
+/// way they would disagree is a read that succeeded and an answer that could
+/// not be sent. `docs/contracts/agent-verbs.md` states it as *a read at most a
+/// megabyte*, and `crates/alo-protocol` is where it is read.
+pub const MOST_READ: u64 = 1024 * 1024;
 
 /// List what is in a folder.
 ///

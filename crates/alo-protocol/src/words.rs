@@ -7,10 +7,17 @@
 //! # Every one of these is a refusal, and there are no others
 //!
 //! A request that is understood produces nothing to say — what happens next is
-//! a turn's, and a turn words its own answers. So this list is exactly the
-//! seven ways a message can fail to be a request, which is the whole of what
-//! item 21 means by *a malformed request is refused in the reader's own
+//! a turn's, and a turn words its own answers. So this list is exactly the nine
+//! ways a message can fail to be one this side can act on, which is the whole
+//! of what item 21 means by *a malformed request is refused in the reader's own
 //! language, not dropped*.
+//!
+//! **An answer says nothing of this crate's own either.** What crosses on the
+//! way back is a sentence somebody else worded — a refusal from the capability
+//! model, the sentence a change was proposed under, where a model's answer came
+//! from — carried in a `crate::Wording` that says whether anybody translated
+//! it. This crate renders none of it, which is why nine refusals is still the
+//! whole list after the answering half was built.
 //!
 //! # Nothing here quotes the message back
 //!
@@ -122,8 +129,35 @@ pub const NOT_FOR_A_PERSON: Word = Word::saying(
      Said when a request an agent makes arrives on the side a person's screen speaks over.",
 );
 
+// ---------------------------------------------------------------------------
+// The two doors again, on the way back: an answer given to the wrong side.
+// ---------------------------------------------------------------------------
+
+/// An answer a person's screen is given, arriving at an agent.
+pub const NOT_AN_ANSWER_FOR_AN_AGENT: Word = Word::saying(
+    "protocol.not-an-answer-for-an-agent",
+    "that answer was meant for a person's screen, and an agent was given it",
+)
+.noting(
+    "Said when this machine answers an agent with something only a person is ever told — what is \
+     waiting for them to approve, or that they declined something. It means alo OS put one side's \
+     answer on the other side's connection, which is a fault in the machine rather than in \
+     whatever asked. \"Agent\" is the assistant running on the machine, not the person using it.",
+);
+
+/// An answer an agent is given, arriving at a person's shell.
+pub const NOT_AN_ANSWER_FOR_A_PERSON: Word = Word::saying(
+    "protocol.not-an-answer-for-a-person",
+    "that answer was meant for an agent, and a person's screen was given it",
+)
+.noting(
+    "The same fault as the one above, the other way round: what an agent is told during a turn — a \
+     model's answer, or that a change is now waiting — arriving where a person answers. \"A turn\" \
+     is one exchange, from the moment the person calls the agent until it is over.",
+);
+
 /// Everything this crate can say, in one list.
-pub const EVERY_WORD: [Word; 7] = [
+pub const EVERY_WORD: [Word; 9] = [
     TOO_LONG,
     MORE_THAN_ONE_MESSAGE,
     FROM_A_NEWER_ALO_OS,
@@ -131,6 +165,8 @@ pub const EVERY_WORD: [Word; 7] = [
     NOT_READABLE,
     NOT_FOR_AN_AGENT,
     NOT_FOR_A_PERSON,
+    NOT_AN_ANSWER_FOR_AN_AGENT,
+    NOT_AN_ANSWER_FOR_A_PERSON,
 ];
 
 /// Why this crate's own list could not be declared.

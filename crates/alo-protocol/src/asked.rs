@@ -1,6 +1,6 @@
 //! Everything that can arrive, in one closed list.
 //!
-//! Five requests, and there is no sixth. What makes this file worth having on
+//! Six requests, and there is no seventh. What makes this file worth having on
 //! its own is that it is deliberately **not** public: the two types a caller of
 //! this crate ever holds are [`FromAnAgent`](crate::FromAnAgent) and
 //! [`FromAPerson`](crate::FromAPerson), and this is the list they are each cut
@@ -16,9 +16,9 @@
 //! two different types, and neither can produce the other's.
 //!
 //! Keeping the list itself in one place is what makes that a division rather
-//! than two lists that could drift: a sixth request has to be given to one door
-//! or the other before this crate will compile, and a request that is not one
-//! of the five is not a request at all.
+//! than two lists that could drift: a seventh request has to be given to one
+//! door or the other before this crate will compile, and a request that is not
+//! one of the six is not a request at all.
 //!
 //! **Which side of a socket a caller is really on is not this crate's
 //! question.** That is peer credentials on a Unix socket, and it is
@@ -84,6 +84,14 @@ pub(crate) enum Asked {
         /// The number they answered.
         number: u64,
     },
+    /// What is waiting for the person to answer.
+    ///
+    /// The one request item 21b added, and the only one on either door that
+    /// asks a question about the turn rather than doing something in it. It
+    /// carries nothing: what is waiting is *what this turn has put to this
+    /// person*, and a field naming an agent, a number or a moment would be a
+    /// way to ask about somebody else's.
+    Waiting {},
 }
 
 #[cfg(test)]
@@ -95,9 +103,9 @@ mod tests {
     use super::*;
     use alo_capability::Given;
 
-    /// The five, as they are written on the wire.
+    /// The six, as they are written on the wire.
     #[test]
-    fn the_five_read_back_as_what_was_written() {
+    fn the_six_read_back_as_what_was_written() {
         let read: Asked =
             serde_json::from_str(r#"{"read":{"verb":"list_folder","given":[]}}"#).unwrap();
         assert!(matches!(read, Asked::Read { .. }));
@@ -127,13 +135,31 @@ mod tests {
 
         let decline: Asked = serde_json::from_str(r#"{"decline":{"number":7}}"#).unwrap();
         assert_eq!(decline, Asked::Decline { number: 7 });
+
+        let waiting: Asked = serde_json::from_str(r#"{"waiting":{}}"#).unwrap();
+        assert_eq!(waiting, Asked::Waiting {});
     }
 
-    /// **There is no sixth.** A name that is not one of the five has nowhere to
-    /// land, which is the shape law 2 takes at this boundary: a caller cannot
-    /// invent a request any more than it can invent a verb.
+    /// **Asking what is waiting asks about nothing but this turn.** A field
+    /// naming an agent, a number or a moment would be a request to look at
+    /// somebody else's changes, so there is no field at all.
     #[test]
-    fn a_request_that_is_not_one_of_the_five_is_not_a_request() {
+    fn asking_what_is_waiting_cannot_name_whose() {
+        for message in [
+            r#"{"waiting":{"agent":"@files"}}"#,
+            r#"{"waiting":{"turn":3}}"#,
+            r#"{"waiting":{"since":1760000000}}"#,
+            r#"{"waiting":{"number":7}}"#,
+        ] {
+            assert!(serde_json::from_str::<Asked>(message).is_err(), "{message}");
+        }
+    }
+
+    /// **There is no seventh.** A name that is not one of the six has nowhere
+    /// to land, which is the shape law 2 takes at this boundary: a caller
+    /// cannot invent a request any more than it can invent a verb.
+    #[test]
+    fn a_request_that_is_not_one_of_the_six_is_not_a_request() {
         for message in [
             r#"{"run":{"command":"rm -rf /"}}"#,
             r#"{"exec":{"verb":"sh","given":[]}}"#,

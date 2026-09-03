@@ -123,7 +123,15 @@ impl Named {
 /// The same rule [`alo_capability`] applies to text arriving, applied to text
 /// leaving: nothing that can move a cursor, clear a line, or make one name look
 /// like two.
-pub(crate) fn can_be_shown(name: &str) -> bool {
+///
+/// **Public because the rule outlives this crate's own answers.** A whole path
+/// goes back to a client across the daemon's socket — where a file was moved
+/// to, what a search found — and it is the same text with the same problem. A
+/// second copy of this rule in the crate that writes the wire is two rules that
+/// have to agree about what a name may contain, which is exactly the shape the
+/// 9-series spent six items removing.
+#[must_use]
+pub fn can_be_shown(name: &str) -> bool {
     !name.is_empty() && !name.chars().any(char::is_control)
 }
 

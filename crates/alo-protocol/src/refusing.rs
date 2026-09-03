@@ -1,10 +1,21 @@
-//! Why a message is not a request, and what whoever sent it is told.
+//! Why a message is not one this side can act on, and what whoever sent it is
+//! told.
 //!
 //! Item 21's sentence is *a malformed request is refused in the reader's own
 //! language, not dropped*, and this is both halves of it. A privileged service
 //! that answers a message it could not read with silence is a service nobody
 //! can tell apart from one that has stopped — and one that answers in English
 //! is one whose diagnosis is unreadable to the person whose machine it is.
+//!
+//! # One list, both directions
+//!
+//! Five of these are about the **envelope** — how long, how many, which format,
+//! and whether it could be read at all — and an envelope is an envelope
+//! whichever way it is going. Two are about a request arriving on the wrong
+//! door, and two about an answer arriving on the wrong one. Splitting them into
+//! a type per direction would have meant writing the five shared ones twice, in
+//! two places that then have to agree; the 9-series spent six items removing
+//! exactly that shape.
 //!
 //! # A refusal is a value, and it is worded when somebody shows it
 //!
@@ -68,6 +79,10 @@ pub enum NotUnderstood {
     NotForAnAgent,
     /// A request only an agent makes, arriving on the person's side.
     NotForAPerson,
+    /// An answer only a person's screen is given, arriving on the agent's side.
+    NotAnAnswerForAnAgent,
+    /// An answer only an agent is given, arriving on the person's side.
+    NotAnAnswerForAPerson,
 }
 
 impl NotUnderstood {
@@ -82,6 +97,8 @@ impl NotUnderstood {
             Self::NotReadable => words::NOT_READABLE,
             Self::NotForAnAgent => words::NOT_FOR_AN_AGENT,
             Self::NotForAPerson => words::NOT_FOR_A_PERSON,
+            Self::NotAnAnswerForAnAgent => words::NOT_AN_ANSWER_FOR_AN_AGENT,
+            Self::NotAnAnswerForAPerson => words::NOT_AN_ANSWER_FOR_A_PERSON,
         }
     }
 
@@ -107,6 +124,23 @@ impl NotUnderstood {
     pub fn is_about_who_asked(&self) -> bool {
         matches!(self, Self::NotForAnAgent | Self::NotForAPerson)
     }
+
+    /// Whether this is about who an **answer** was for rather than about the
+    /// message.
+    ///
+    /// The twin of [`NotUnderstood::is_about_who_asked`], on the way back. A
+    /// separate question because the two mean different things about the
+    /// machine: a request on the wrong door is a client asking for something it
+    /// may not have, and an answer on the wrong door is a **daemon** that put
+    /// one side's answer on the other side's connection — which is a bug in alo
+    /// OS, and the more serious of the two.
+    #[must_use]
+    pub fn is_about_who_it_was_for(&self) -> bool {
+        matches!(
+            self,
+            Self::NotAnAnswerForAnAgent | Self::NotAnAnswerForAPerson
+        )
+    }
 }
 
 #[cfg(test)]
@@ -129,6 +163,8 @@ mod tests {
             NotUnderstood::NotReadable,
             NotUnderstood::NotForAnAgent,
             NotUnderstood::NotForAPerson,
+            NotUnderstood::NotAnAnswerForAnAgent,
+            NotUnderstood::NotAnAnswerForAPerson,
         ]
     }
 
@@ -208,8 +244,27 @@ mod tests {
             NotUnderstood::NotAFormat { format: 9 },
             NotUnderstood::FromANewerAloOs { format: 9 },
             NotUnderstood::TooLong { most: 1, was: 2 },
+            NotUnderstood::NotAnAnswerForAnAgent,
+            NotUnderstood::NotAnAnswerForAPerson,
         ] {
             assert!(!why.is_about_who_asked(), "{why:?}");
         }
+    }
+
+    /// **And an answer on the wrong door is a different thing again**, worth
+    /// asking about separately because it is a mistake in this machine rather
+    /// than in whatever is talking to it.
+    #[test]
+    fn an_answer_on_the_wrong_door_is_answerable_as_that() {
+        assert!(NotUnderstood::NotAnAnswerForAnAgent.is_about_who_it_was_for());
+        assert!(NotUnderstood::NotAnAnswerForAPerson.is_about_who_it_was_for());
+        for why in every_refusal() {
+            assert!(
+                !(why.is_about_who_asked() && why.is_about_who_it_was_for()),
+                "{why:?}"
+            );
+        }
+        assert!(!NotUnderstood::NotForAnAgent.is_about_who_it_was_for());
+        assert!(!NotUnderstood::NotReadable.is_about_who_it_was_for());
     }
 }

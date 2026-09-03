@@ -1,10 +1,12 @@
-//! What a person answers, through the shell in front of them.
+//! What a person's shell sends, on behalf of the person in front of it.
 //!
-//! Two requests, and both of them are the same act: answering a change that was
-//! put to them in one sentence. ADR 0001 §5 says a person approves a sentence
-//! rather than a session, so there is nothing here that approves more than one
-//! thing, nothing that approves everything from an agent, and nothing that
-//! stands until it is revoked.
+//! Three requests. Two of them are the same act — answering a change that was
+//! put to them in one sentence — and ADR 0001 §5 says a person approves a
+//! sentence rather than a session, so there is nothing here that approves more
+//! than one thing, nothing that approves everything from an agent, and nothing
+//! that stands until it is revoked.
+//!
+//! The third is the one that makes the other two usable: what is waiting.
 //!
 //! # A number is not a handle
 //!
@@ -19,18 +21,33 @@
 //! It is `alo_capability::GrantId`'s rule met one crate out: an answer to a
 //! stale list must fail rather than land somewhere it was not aimed.
 //!
-//! # There is no `waiting` here yet
+//! # `waiting` is a read of the turn, and it is the person's
 //!
-//! What a shell **draws** — the changes waiting and the sentence for each — is
-//! something the daemon answers rather than something a person asks for, and
-//! what comes back over this socket is the other half of item 21. This list is
-//! what a person *sends*, and a person sends an answer.
+//! This file used to say there was no `waiting` here *yet*, on the ground that
+//! what a shell draws is something the daemon answers rather than something a
+//! person asks for. Half of that was right, and the half that was wrong is the
+//! half that matters: a daemon answers what it was asked, and a shell that
+//! never asked would be drawing whatever it happened to have been told — which
+//! is nothing at all if it was started, restarted or attached after the change
+//! was proposed.
+//!
+//! So it is a request, and it is on this door rather than the agent's, because
+//! what is waiting is what the **person** has been asked. An agent reaching for
+//! it is refused in the same words as an agent trying to approve something,
+//! because it is the same fact about the same list.
+//! [`crate::ToAPerson::waiting`] is what comes back, and it carries the
+//! sentence with every number: a number on its own would be an approval of
+//! something nobody read.
+//!
+//! It carries **nothing** on the way in: no agent, no number, no moment. What
+//! is waiting is what this turn has put to this person, and a field would be a
+//! way to ask about somebody else's.
 
 use crate::asked::Asked;
 use crate::frame;
 use crate::refusing::NotUnderstood;
 
-/// One answer a person gave to a change that was put to them.
+/// One thing a person's shell sent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FromAPerson {
     /// They approved the change waiting under this number. Worth exactly one
@@ -45,6 +62,11 @@ pub enum FromAPerson {
         /// The number they answered.
         number: u64,
     },
+    /// What is waiting for them to answer.
+    ///
+    /// A read of the turn rather than an answer to it — see this file's header
+    /// — and the one request on either door that carries nothing at all.
+    Waiting,
 }
 
 impl FromAPerson {
@@ -58,6 +80,7 @@ impl FromAPerson {
         match frame::message(line)? {
             Asked::Approve { number } => Ok(Self::Approve { number }),
             Asked::Decline { number } => Ok(Self::Decline { number }),
+            Asked::Waiting {} => Ok(Self::Waiting),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -73,13 +96,16 @@ impl FromAPerson {
         frame::line((*self).into())
     }
 
-    /// The number they answered.
+    /// The number they answered, for the two that answer one.
     ///
-    /// A number and not a handle: see this file's header.
+    /// A number and not a handle: see this file's header. Nothing for
+    /// [`FromAPerson::Waiting`], which answers no change and asks about all of
+    /// them.
     #[must_use]
-    pub fn number(&self) -> u64 {
+    pub fn number(&self) -> Option<u64> {
         match self {
-            Self::Approve { number } | Self::Decline { number } => *number,
+            Self::Approve { number } | Self::Decline { number } => Some(*number),
+            Self::Waiting => None,
         }
     }
 
@@ -88,6 +114,16 @@ impl FromAPerson {
     pub fn is_yes(&self) -> bool {
         matches!(self, Self::Approve { .. })
     }
+
+    /// Whether this asks about the turn rather than answering something in it.
+    ///
+    /// A convenience for a daemon choosing what to do next: what is waiting is
+    /// read off the turn and changes nothing, so it is the one request on this
+    /// door that spends no approval.
+    #[must_use]
+    pub fn is_a_question_about_the_turn(&self) -> bool {
+        matches!(self, Self::Waiting)
+    }
 }
 
 impl From<FromAPerson> for Asked {
@@ -95,6 +131,7 @@ impl From<FromAPerson> for Asked {
         match answered {
             FromAPerson::Approve { number } => Self::Approve { number },
             FromAPerson::Decline { number } => Self::Decline { number },
+            FromAPerson::Waiting => Self::Waiting {},
         }
     }
 }
@@ -107,17 +144,24 @@ impl From<FromAPerson> for Asked {
 mod tests {
     use super::*;
 
-    /// The two, off the wire.
+    /// The three, off the wire.
     #[test]
-    fn the_two_a_person_may_answer_read_back() {
+    fn the_three_a_persons_shell_may_send_read_back() {
         let yes = FromAPerson::read(r#"{"format":1,"asks":{"approve":{"number":7}}}"#).unwrap();
         assert_eq!(yes, FromAPerson::Approve { number: 7 });
         assert!(yes.is_yes());
-        assert_eq!(yes.number(), 7);
+        assert_eq!(yes.number(), Some(7));
+        assert!(!yes.is_a_question_about_the_turn());
 
         let no = FromAPerson::read(r#"{"format":1,"asks":{"decline":{"number":7}}}"#).unwrap();
         assert!(!no.is_yes());
-        assert_eq!(no.number(), 7);
+        assert_eq!(no.number(), Some(7));
+
+        let waiting = FromAPerson::read(r#"{"format":1,"asks":{"waiting":{}}}"#).unwrap();
+        assert_eq!(waiting, FromAPerson::Waiting);
+        assert!(waiting.is_a_question_about_the_turn());
+        assert_eq!(waiting.number(), None);
+        assert!(!waiting.is_yes());
     }
 
     /// **A person's side is not a way in for a verb.** The division goes both
@@ -165,7 +209,7 @@ mod tests {
     fn a_number_is_carried_and_not_turned_into_a_handle() {
         let nothing_waiting =
             FromAPerson::read(r#"{"format":1,"asks":{"approve":{"number":9999}}}"#).unwrap();
-        assert_eq!(nothing_waiting.number(), 9999);
+        assert_eq!(nothing_waiting.number(), Some(9999));
     }
 
     /// A shell and a daemon built from this crate cannot disagree about the
@@ -175,6 +219,7 @@ mod tests {
         for answered in [
             FromAPerson::Approve { number: 1 },
             FromAPerson::Decline { number: 2 },
+            FromAPerson::Waiting,
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);

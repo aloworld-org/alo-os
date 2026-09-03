@@ -10,17 +10,22 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use alo_protocol::{EVERY_WORD, FromAPerson, FromAnAgent, NotUnderstood, protocol_words, words};
-use alo_strings::{Language, Strings, Translation, Vocabulary};
+use alo_protocol::{
+    EVERY_WORD, FromAPerson, FromAnAgent, NotUnderstood, ToAPerson, ToAnAgent, protocol_words,
+    words,
+};
+use alo_strings::{Filling, Language, Strings, Translation, Vocabulary};
 
-/// Every way a message can fail to be a request, made by the doors themselves
-/// rather than built by hand — so a refusal that no message can actually
-/// produce would fail here rather than pass.
+/// Every way a message can fail to be one a side can act on, made by the doors
+/// themselves rather than built by hand — so a refusal that no message can
+/// actually produce would fail here rather than pass.
 fn every_refusal_a_door_can_make() -> Vec<NotUnderstood> {
     let too_long = format!(
         r#"{{"format":1,"asks":{{"ask":{{"question":"{}"}}}}}}"#,
         "a".repeat(alo_protocol::LONGEST)
     );
+    let a_sentence =
+        Strings::of(protocol_words().unwrap()).say(&words::NOT_READABLE.key(), &Filling::nothing());
     vec![
         FromAnAgent::read(&too_long).unwrap_err(),
         FromAnAgent::read("{\"format\":1,\"asks\":{\"ask\":{\"question\":\"a\"}}}\nand again")
@@ -30,6 +35,13 @@ fn every_refusal_a_door_can_make() -> Vec<NotUnderstood> {
         FromAnAgent::read("nothing like a message").unwrap_err(),
         FromAnAgent::read(r#"{"format":1,"asks":{"approve":{"number":7}}}"#).unwrap_err(),
         FromAPerson::read(r#"{"format":1,"asks":{"ask":{"question":"a"}}}"#).unwrap_err(),
+        ToAnAgent::read(&ToAPerson::Declined.written().unwrap()).unwrap_err(),
+        ToAPerson::read(
+            &ToAnAgent::answered("three", &a_sentence, "mistral-small-latest")
+                .written()
+                .unwrap(),
+        )
+        .unwrap_err(),
     ]
 }
 
