@@ -3,7 +3,8 @@
 **Status:** accepted
 **Date:** 2026-09-02
 **Context:** the session shell, the compositor, `alo-workplace` (the workspace
-client), `alo-engine` (the rendering engine — decided, unscheduled)
+client), `alo-engine` (the rendering engine — since started; see the last
+section)
 
 ## The decision in one line
 
@@ -45,7 +46,9 @@ for performance and GPU acceleration, as the foundation of every session.
 
 **An application on top:** the alo workplace client, which today is a web
 application, and is intended one day to be rendered by `alo-engine` — a
-decision taken, but not started and not scheduled. It is one program among
+decision taken, and — **since this ADR was accepted** — started: `alo-engine`
+is a repository of its own (`aloworld-org/alo-browser`) with an engine that
+already renders an alo screen and diffs it on every run. It is one program among
 others, exactly as a browser is one program on GNOME. That the workspace is
 currently a web app is a fact about that application, not about this operating
 system.
@@ -87,3 +90,19 @@ when the engine earns it.
 Rejected: the shell is where the agent lives and where the sovereignty guarantees
 are enforced. Building the product's defining surface as a plugin to somebody
 else's shell puts our roadmap behind theirs.
+
+## Since it was accepted
+
+**The engine is started.** This ADR said `alo-engine` was "a decision taken,
+but not started and not scheduled". It is now `aloworld-org/alo-browser`: a
+Rust engine with its own DOM, cascade, layout, text, paint and agent tree, which
+renders `alo-workplace`'s sign-in screen and diffs it against a committed
+reference on every run. Its stage 1 needs no operating system and no hardware,
+so it does not wait on this repository and this repository does not wait on it —
+the incremental swap described above is unchanged, and still incremental.
+
+**The design tokens have not left CSS.** That consequence is real work and had
+no line in `ROADMAP.md` and no entry in `docs/features.md` until an audit of
+these ADRs found it missing. It is now listed at v0.01, because the shell cannot
+draw an alo screen in alo's colours until it exists, and because the longer two
+sources of visual truth run in parallel the further apart they drift.

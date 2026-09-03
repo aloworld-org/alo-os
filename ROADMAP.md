@@ -349,6 +349,13 @@ which made a completely consistent rule look like work being taken out of turn.
       if it ever cannot, the promise this release is built on has been broken and
       the fault is here rather than in the gate
 
+- [ ] **The design tokens leave CSS** — one language-neutral source generating
+      both the stylesheet `alo-workplace` uses and the constants the native
+      shell uses (ADR 0002). A Rust compositor cannot read a `.css` file, so
+      until this exists the shell cannot draw an alo screen in alo's colours,
+      and every day the two sources run in parallel they drift further apart.
+      *Found missing by an audit of the ADRs: it was a consequence of ADR 0002
+      with no line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
@@ -486,9 +493,15 @@ sorted the same way v0.01 now is.
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing
-- [ ] **One GPU box serves the office** — shared local inference over a pairing
+- [ ] **One GPU box serves the office** — shared local inference over a pairing.
+      **Still egress, and the indicator still fires** (ADR 0003): the pairing is
+      what makes it wanted, not what makes it silent
 - [ ] A self-hosted workspace on the network is discovered, not configured
-- [ ] **Zero inference egress over a working day**, measured and published
+- [ ] **Zero inference egress over a working day**, measured and published —
+      *with a local model*, which is the claim `docs/features.md` makes and the
+      only one that is true. A machine using the office GPU box or a hosted
+      provider has non-zero inference egress by design, shown on the indicator,
+      and the published test says which machine it measured
 
 **Exit gate.** A person works a full day on alo OS — mail, documents, a video
 call, printing something, driving one installed application through its agent —

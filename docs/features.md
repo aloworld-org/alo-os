@@ -15,6 +15,7 @@ current release, and Non-goals below.
 
 ## The shell — what a person signs into (ADR 0002)
 
+- [v0.01] **The design tokens leave CSS** — one language-neutral source generating both the stylesheet `alo-workplace` uses and the constants the native shell uses (ADR 0002). A Rust compositor cannot read a `.css` file, so nothing below can be drawn in alo's own colours until this exists, and two sources of visual truth drift apart within months
 - [v0.01] Compositor: Wayland via Smithay, one display, keyboard and pointer
 - [v0.01] Sign-in with an alo identity, and a local account that needs no tenant
 - [v0.01] ★ The agent overlay: one key, from anywhere, with the current context offered and never harvested
@@ -161,6 +162,7 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.5] An address that is not https is refused rather than warned about, unless it is a service on this machine — "it is only our internal network" is how a key ends up on the wire in clear
 - [v0.5] Test a provider before saving it, so a mistyped key is found now rather than in the middle of a question
 - [v0.01] ★ **Or not at all** (ADR 0009). Setup's fourth choice, with the same weight as the other three: no model, no provider, no agent. Everything else in this document still works, the agent's surfaces are absent rather than greyed out, and turning it on later is a setting rather than a reinstall
+- [v0.01] **Anything an agent verb can do, a person can do by hand** (ADR 0009). A standing rule rather than a feature, and the check on every verb anybody proposes: a machine with the agent switched off must lose *convenience* and never *capability*. It was a consequence of that ADR with no entry here until an audit found it missing
 - [v0.01] ★ **Or use an API instead** (ADR 0008). A model may answer on this machine, on a machine on your network, or behind a provider's API — for a laptop too thin to run one, or an organisation that would rather buy inference than operate it
 - [v0.01] ★ **Where the answer came from is said where the answer appears** — "on this machine", "on the studio workstation, on your network", "by alo, in the EU". Not in a settings page somebody would have to go looking for, because a person about to paste a contract into a question is entitled to know where it is going first
 - [v0.01] ★ **Never a silent fallback.** A local model that fails does not quietly become an API call: failing to answer is recoverable, a person's records leaving the building because a download was corrupt is not
@@ -195,7 +197,7 @@ Discovery is open; **use requires a deliberate pairing on both machines**. Being
 on the same WiFi confers nothing.
 
 - [v0.5] Machines find each other with zero configuration — no addresses typed, no accounts
-- [v0.5] ★ **One GPU box serves the office**: a machine without a GPU discovers the one with it, and the agents just work. The inference never leaves the building; it moves down the corridor.
+- [v0.5] ★ **One GPU box serves the office**: a machine without a GPU discovers the one with it, and the agents just work. The inference never leaves the building; it moves down the corridor. **It is still egress, and the indicator still fires** (ADR 0003) — *"it only went to the machine down the corridor"* is exactly the kind of exception that quietly ends a guarantee, so shared inference is shown like any other departure and the pairing is what makes it wanted rather than what makes it silent
 - [v0.5] Pairing: mutual, deliberate, enumerated, revocable in one action, and expiring — grants, across a machine boundary
 - [v0.5] ★ **The whole of it works with no internet at all.** An office that cannot connect still has working AI
 - [v0.5] A self-hosted workspace on the network is **discovered, not configured** — no DNS step
