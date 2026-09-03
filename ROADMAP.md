@@ -349,13 +349,20 @@ which made a completely consistent rule look like work being taken out of turn.
       if it ever cannot, the promise this release is built on has been broken and
       the fault is here rather than in the gate
 
-- [ ] **The design tokens leave CSS** — one language-neutral source generating
-      both the stylesheet `alo-workplace` uses and the constants the native
-      shell uses (ADR 0002). A Rust compositor cannot read a `.css` file, so
-      until this exists the shell cannot draw an alo screen in alo's colours,
-      and every day the two sources run in parallel they drift further apart.
-      *Found missing by an audit of the ADRs: it was a consequence of ADR 0002
-      with no line here and no entry in `docs/features.md`*
+- [ ] **The colours come from a source this repository can read** — and that is
+      not CSS. **There is no CSS in alo OS and there will not be**: this
+      repository is Rust, and the shell is native (ADR 0002). The problem is
+      only that alo's palette currently *lives* in
+      `alo-workplace/web/src/ds/tokens.css`, 327 lines calling themselves "the
+      single source of visual truth", which a Rust compositor cannot read.
+      The work is to move that source into something language-neutral — TOML,
+      alongside the fifteen manifests already here — and **generate** from it:
+      Rust constants for this shell, and the custom properties the workspace's
+      web client still needs, because that client is a web application and its
+      stylesheet is a fact about it rather than about this operating system.
+      The point is to end CSS's authority over the palette, not to import it.
+      *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
+      line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant

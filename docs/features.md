@@ -15,7 +15,7 @@ current release, and Non-goals below.
 
 ## The shell — what a person signs into (ADR 0002)
 
-- [v0.01] **The design tokens leave CSS** — one language-neutral source generating both the stylesheet `alo-workplace` uses and the constants the native shell uses (ADR 0002). A Rust compositor cannot read a `.css` file, so nothing below can be drawn in alo's own colours until this exists, and two sources of visual truth drift apart within months
+- [v0.01] **The colours come from a source this repository can read, and it is not CSS.** There is no CSS in alo OS and there will not be — the shell is native Rust (ADR 0002). But alo's palette currently *lives* in `alo-workplace`'s `tokens.css`, which a Rust compositor cannot read, so the source moves somewhere language-neutral and **generates** both: constants for this shell, and the custom properties the workspace's web client still needs. This ends CSS's authority over the palette rather than importing it, and nothing below can be drawn in alo's own colours until it exists
 - [v0.01] Compositor: Wayland via Smithay, one display, keyboard and pointer
 - [v0.01] Sign-in with an alo identity, and a local account that needs no tenant
 - [v0.01] ★ The agent overlay: one key, from anywhere, with the current context offered and never harvested
