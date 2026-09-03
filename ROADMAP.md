@@ -58,9 +58,10 @@ its empty one:
 - **The code** is ticked when that half is whole and gated — built, tested, no
   stubs. It is the half this repository can finish today, and every crate below
   was finished on an ordinary laptop.
-- **On the machine** is ticked only under law 3: the certified machine, the
-  compositor, a real GPU. Nothing in this repository can tick it, and no loop
-  may.
+- **On the machine** is ticked only under law 3: the certified machine, and the
+  compositor once it exists. Nothing in this repository can tick it, and no loop
+  may. *Not a GPU* — no machine half below needs one except the GPU line itself,
+  which is acceleration rather than an entry price.
 
 **Why this shape rather than one box.** The rule "a tick means done on real
 hardware" is right and is not being weakened — but with one box per line it made
@@ -82,7 +83,15 @@ The point is to prove one sentence on real hardware: *an action a person would
 take by hand can be proposed by an agent, approved in one click, and afterwards
 explained — and the model that proposed it ran on the customer's own machine.*
 
-One hardware target. No installer, no fleet management, no compatibility list.
+**Two certified machines, and the ordinary one matters more** (ADR 0007,
+`docs/hardware.md`): a business laptop with no discrete graphics and 16 GB of
+memory, running its agents on the CPU, and a GPU workstation for alo OS AI. The
+laptop is the machine that decides whether this project has a market — the
+Windows 10 fleet it exists to catch has almost no discrete GPUs in it. **A
+graphics card is acceleration, never an entry price**, and nothing in v0.01
+requires one.
+
+No installer, no fleet management, no compatibility list.
 
 **Order, and why the ticks below are contiguous.** v0.01 divides on exactly one
 question — *does this need a screen?* — and the answer sorts it perfectly:
@@ -113,11 +122,12 @@ compositor is not required for, which is why it runs unbroken.
         and the Ollama adapter, the one file allowed to name it. 91 tests,
         several of them against a real socket rather than a mock
   - [ ] **On the machine.**
-        it has never been run against a real Ollama or a GPU. *This line was
-        ticked outright until the two boxes existed, while its own last
-        sentence said law 3's "on real hardware" was owed — a tick and its
-        own footnote contradicting each other, which is exactly what the
-        parent box is now not allowed to do*
+        it has never been run against a real Ollama — on any machine, with or
+        without a card, because a CPU-only box is the one this has to work on
+        first. *This line was ticked outright until the two boxes existed,
+        while its own last sentence said law 3's "on real hardware" was owed —
+        a tick and its own footnote contradicting each other, which is exactly
+        what the parent box is now not allowed to do*
 
 - [ ] ★ **It runs on the machine you already own** — no graphics card required.
       The catalogue carries models that work on a CPU, and says honestly which
@@ -318,13 +328,26 @@ compositor is not required for, which is why it runs unbroken.
 Eight capabilities, and **not one of them is started**. That is not eight things
 skipped over — it is the same dividing line read from the other side. The
 compositor is the one that matters most here, because sign-in, the overlay, the
-launcher, copy and paste and the workspace client all wait on it; the GPU and
-the image are their own hardware bring-up and wait on the certified machine.
+launcher, copy and paste and the workspace client all wait on it; the image is
+its own bring-up and waits on the certified machine.
+
+**The GPU line is in this band but is not a requirement of it.** No graphics
+card is needed anywhere in v0.01 — the whole product rests on running on the
+machine somebody already owns, and the exit gate below neither mentions a GPU
+nor may depend on one. That line is here only because *acceleration where a card
+exists* still has to be verified on hardware.
 
 They were interleaved with the band above until this ordering was corrected,
 which made a completely consistent rule look like work being taken out of turn.
 
-- [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
+- [ ] ★ **The GPU works on first boot, where there is one** — drivers and runtime
+      pinned together, no driver installation, no CUDA archaeology.
+      **Acceleration, not an entry price** (`docs/features.md`): alo OS runs on
+      the machine somebody already owns, and this line is what happens when that
+      machine turns out to have a card in it. **It does not gate v0.01.** The
+      exit gate below never mentions a GPU and must pass on a machine with none —
+      if it ever cannot, the promise this release is built on has been broken and
+      the fault is here rather than in the gate
 
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 
@@ -525,5 +548,13 @@ seconds, who else has power over it.
 ## Not scheduled
 
 The engine (`alo-engine`) replaces the workspace's rendering incrementally and
-has its own roadmap. alo OS Desktop — the non-GPU SKU for the Windows 10 fleet —
-follows once the AI SKU has customers, and inherits everything built here.
+has its own roadmap.
+
+**alo OS Desktop** — the packaging for the Windows 10 fleet at scale — follows
+once alo OS AI has customers, and inherits everything built here. It used to be
+described as "the non-GPU SKU", which ADR 0007 makes wrong twice over: the CPU
+is the *default* of the product being built now, not a stripped variant of it
+arriving later, and a card is never what a person pays to get in. What Desktop
+adds is breadth — a compatibility list, fleet packaging, machine generations —
+and none of that is a different engine, a different agent or a different
+promise.

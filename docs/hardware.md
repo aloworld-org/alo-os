@@ -1,8 +1,12 @@
 # Hardware
 
-**Certified first, compatible later.** One machine model, bought twice, working
+**Certified first, compatible later.** A machine model bought twice and working
 completely — that is the standard. A compatibility list grows outward from
 there.
+
+Since ADR 0007 that standard is held **twice**: an ordinary business laptop and
+a GPU workstation, with the laptop first. This line said "one machine model"
+until the ADR landed, two paragraphs above the section that already said two.
 
 "Supports PCs" is not a claim anyone can honour, and hardware support is where
 operating system projects die. The discipline of refusing scope here is the only
