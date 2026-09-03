@@ -19,7 +19,7 @@
 
 use alo_models::{
     InferenceSource, NotTried, Provider, ProviderError, Region, RuntimeError, Secret, SecretError,
-    SourcePolicy, declare_into, model_words, words,
+    SourcePolicy, Weights, declare_into, model_words, words,
 };
 use alo_strings::{Key, Language, Strings, Translation, Vocabulary};
 
@@ -157,6 +157,49 @@ fn a_person_is_told_no_in_the_language_they_read() {
     let key = Secret::typed("sk-live\r\nx-something: else").unwrap_err();
     assert_eq!(key, SecretError::NotSendable);
     assert!(key.said(&strings).text().starts_with("dieser Schlüssel"));
+}
+
+/// **Somebody who brings their own weights is told two things in their own
+/// language, and neither of them is a refusal.**
+///
+/// This is the promise `docs/features.md` makes about hardware somebody owns —
+/// *the machine warns and then gets out of the way* — asked from outside the
+/// crate that keeps it. A German reader gets the warning about their machine's
+/// memory and the line saying the licence is theirs, and the model is on the
+/// list either way.
+#[test]
+fn weights_somebody_brought_are_costed_and_the_licence_stays_theirs() {
+    let strings = speaking_german(&[
+        (
+            words::WEIGHTS_LARGER_THAN_MEMORY,
+            "diese Gewichte sind größer als der Speicher dieses Rechners — alo OS führt sie \
+             trotzdem aus, und dieser Rechner wird langsam sein",
+        ),
+        (
+            words::LICENCE_IS_YOURS,
+            "diese Gewichte gehören Ihnen, und ihre Bedingungen auch — alo OS hat die Lizenz \
+             eines Modells nicht gelesen, das es Ihnen nicht angeboten hat",
+        ),
+    ]);
+
+    // Forty gigabytes of somebody's own weights on a sixteen gigabyte machine.
+    let theirs = Weights::checked("their-own-70b", 40_000_000_000).unwrap();
+    let [cost, licence] = theirs.lines(&strings, 16.0);
+    assert!(cost.is_translated());
+    assert!(cost.text().contains("trotzdem"), "{cost}");
+    assert!(licence.is_translated());
+    assert!(licence.text().contains("nicht gelesen"), "{licence}");
+
+    // Neither line counts anything out loud, and both numbers are still
+    // available to whoever writes them the way this region writes a size.
+    for line in [&cost, &licence] {
+        assert!(!line.text().chars().any(|c| c.is_ascii_digit()), "{line}");
+    }
+    assert!(theirs.costs_on(16.0).larger_than_memory());
+    assert_eq!(theirs.costs_on(16.0).machine_gb(), 16.0);
+
+    // And nothing anywhere in this refused it: the weights are what they were.
+    assert_eq!(theirs.bytes_on_disk, 40_000_000_000);
 }
 
 /// **What nobody has translated is English, and says so.** Half a vocabulary is

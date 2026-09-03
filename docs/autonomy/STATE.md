@@ -6049,3 +6049,117 @@ it.
 - **A new crate that says words owes two lists now**, not one: `collecting.rs`
   and its `EVERY_LIST`, as before, and nothing else — the rented check reads
   whatever the vocabulary holds, so it needs no registration.
+
+---
+
+## Iteration — item 25: weights somebody brought themselves
+
+**Item 25, built and gated on both hosts.** `alo-models` could only offer what
+`data/catalogue.toml` lists, so the curated list was the only way a model
+reached this machine at all — a walled garden nobody decided on, in a product
+whose whole claim is *your models, your hardware*. There is now a second list
+beside the catalogue, and the two differences between them are the item.
+
+Three new files in `crates/alo-models`: `weights.rs` (`Weights`, one set
+somebody brought, and the two refusals at the door), `costing.rs` (`Cost`, what
+running them here costs and the fact that it is never a refusal), `brought.rs`
+(`Brought`, the list, its queries and its refusal). Five new words, and
+`Driving` gained `Serialize`.
+
+### The licence answer is the absence of a field, not a field saying unknown
+
+`docs/features.md`: *we state the licence of everything we offer and gate our
+own catalogue on it. Weights somebody brings themselves come with their own
+terms and their own responsibility, and alo OS does not pretend to have checked
+them.*
+
+A `Licence` on `Weights` — even one whose value is *unknown* — is a field
+somebody downstream reads as an answer, and a panel showing *licence: unknown*
+beside a person's own model would be implying alo OS went and looked. So the
+type cannot express one, cannot be filtered by one, and has no
+`safe_default_for_business` for a settings panel to call. What it has instead is
+one line said to the person, and `Weights::lines` is the only road to a sentence
+about the cost — so the cost cannot be shown without whose licence it is. That
+is `NoAgentHere::lines`' shape from item 23, applied to a different promise, and
+the test that holds it is a destructure naming every field the type has: whoever
+adds a `licence` is stopped by the compiler and sent to read the header.
+
+### The decision the item did not contain: the floor, and two answers not three
+
+The item says *say plainly, once, that this model is larger than this machine's
+memory*, and does not say how a machine knows. It does not, for weights nobody
+catalogued: `Model::min_ram_gb` is a figure whoever added the entry knew, and
+there is nobody to ask about somebody's own weights.
+
+**The floor rather than an estimate.** A model answers out of memory, so what it
+needs is at least what its weights take on disk — the one figure the machine
+really has. The overhead a runtime adds on top depends on the runtime, the
+context length and the quantisation, so multiplying by a guess would make
+`Cost::Fits` a claim alo OS cannot support. The warning therefore fires only on
+the case that is certain, and *it fits* means *the weights fit*, which is
+written into the file rather than implied.
+
+**Two answers rather than three.** A middle band — *tight*, *only just* — was
+the obvious third and is alo OS inventing a threshold about somebody else's
+machine: nobody has measured where "only just" is, it would differ per runtime
+and per quantisation, and a warning at a number we made up is a warning people
+learn to ignore.
+
+### What still gates, and why keeping it is not the walled garden again
+
+`Weights::can_be_the_agent` asks one question where `Model::can_be_the_agent` is
+the third of three. The memory question warns; the licence question has no field
+to read; the measurement stays. It is not a permission — it is whether an agent
+turn works at all, and handing somebody's files to a model that produces
+sentences and loses structure would be alo OS being useless rather than alo OS
+being sovereign. `alo-driving` puts its ten requests to any model, so somebody
+can measure their own weights and write down what they earned, which is what
+`Driving` gaining `Serialize` is for.
+
+### The gate
+
+`cargo fmt --all --check` clean on both hosts.
+`cargo clippy --workspace --all-targets -- -D warnings` clean with zero warnings
+on Windows and on Linux. `cargo doc -p alo-models --no-deps` clean on both —
+which it was **not** before this change: a public doc comment in `secret.rs` had
+linked to a private item since item 10, and the link is now a name. That is the
+only thing in this change that is not item 25's, and it is here because
+otherwise this iteration would have had to report the crate it touched as not
+doc-clean. **1671 tests and 44 doctests on Linux** (was 1650 and 44), **1497 and
+44 on Windows** (was 1476 and 44). 137 unit tests in `alo-models` (was 117), 8
+integration tests (was 7).
+
+Built and unit tested. **Nothing here has been pointed at real weights on a real
+machine**: `Weights::found` reads what a runtime reported, and no runtime in this
+repository's tests is a real one. That is owed with the rest of the hardware
+verification, beside item 23a.
+
+### `ROADMAP.md` moved, and the line had to be written first
+
+**There was no line for this promise anywhere.** `docs/features.md` carries
+three of them at v0.5 — *★ Run a model we never catalogued*, *the machine warns
+and then gets out of the way*, *what you bring is yours, including its licence*
+— and none of them appeared in `ROADMAP.md` under any heading. That is the
+seventh time an iteration has found a promise with nowhere to be, and the rule
+at the top of that file says what to do about it: the line gets written before
+the work is recorded. It is written, with its two boxes, and the **code** half
+is ticked; the machine half names the Settings panel and the choice between the
+two lists, and is not this loop's. The v0.5 preamble said *two lines here
+already have code* and now says three.
+
+**What the next iteration must know:**
+
+- **The ready list is now 25a, 26 and 27.** 16b, 19b, 21h, 21i and 21j are
+  unchanged and all still blocked on a decision or on Linux work this loop does
+  not have.
+- **25a is new and is a decision about a shipped string**, not a fix: a machine
+  with no model for the agent can now be told about a third thing it could do,
+  and `THE_OTHER_PLACES` cannot gain a clause because changing what a key says
+  under the same key leaves every translation of it saying the old thing. It
+  wants a new key and `NoAgentHere::lines` answering `[Said; 3]`.
+- **26 is still the one worth taking after that**, and its first step is a
+  measurement rather than code: whether the WSL2 kernel has `CONFIG_BPF_LSM=y`
+  and `bpf` in `CONFIG_LSM`. If it does not, that is the finding.
+- **A settings file now holds a `Driving`**, so the grade's spelling is a stored
+  format rather than only a catalogue one. `driving.rs` has the round-trip test;
+  changing a name there breaks somebody's own measurement on their own machine.

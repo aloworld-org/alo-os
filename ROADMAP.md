@@ -584,11 +584,14 @@ the record — with the egress indicator having stayed dark throughout.
 
 Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 
-**Two lines here already have code**, which is why a tick appears in a list that
-is otherwise untouched: *Making it yours* (`alo-appearance`) and *Language*
-(`alo-strings`). Both were reached early because v0.01 work ran through them —
-appearance carries the accent set, and every crate's English moved onto the
-strings layer. Nothing else in v0.5 is started.
+**Three lines here already have code**, which is why a tick appears in a list
+that is otherwise untouched: *Making it yours* (`alo-appearance`), *Language*
+(`alo-strings`) and *Run a model we never catalogued* (`alo-models`). The first
+two were reached early because v0.01 work ran through them — appearance carries
+the accent set, and every crate's English moved onto the strings layer. The
+third was taken on its own, because a catalogue with nothing beside it had
+quietly become the only way a model could reach the machine, and that is a
+walled garden nobody decided on. Nothing else in v0.5 is started.
 
 Unlike v0.01, this list is **not** ordered by what was built. It is a plan, and
 it is grouped by subject so it can be read; when work begins here it will be
@@ -599,6 +602,35 @@ sorted the same way v0.01 now is.
 - [ ] Recovery and rollback screen
 - [ ] **Settings, as one place**: network, display, sound, printers, storage,
       keyboard, accounts, privacy, updates
+- [ ] ★ **Run a model we never catalogued** — point alo OS at weights you
+      already have and it runs them; the catalogue recommends and does not
+      gate. What you bring is yours, including its licence, and a model too
+      large for this machine's memory is said so plainly once and then run
+      anyway. *This line was missing entirely until iteration 34 went looking
+      for it — three v0.5 promises in `docs/features.md` with nowhere to be,
+      which is the seventh time that has happened and the reason the rule at
+      the top of this file runs both ways*
+  - [x] **The code.**
+        `alo-models` — `Weights`, a set somebody brought, beside `Model`
+        rather than inside it: **no licence field at all**, because one
+        saying *unknown* is read downstream as an answer and a machine
+        showing it would be implying alo OS went and looked. `Cost`, which
+        warns and has nothing to refuse with — two answers rather than
+        three, measured against what the weights take on disk, because that
+        is the floor the machine actually knows and a middle band would be
+        us inventing a threshold about somebody else's hardware. And
+        `Brought`, the list beside the catalogue, whose only filter is the
+        measurement — the one thing still held back, because it is whether
+        an agent turn works rather than what somebody is allowed to run.
+        The cost cannot be shown without the line saying whose licence
+        these are: `Weights::lines` is the only road to either
+  - [ ] **On the machine.**
+        the Settings panel that lists what the runtime already holds and
+        lets somebody take one of them, and the choice between a catalogued
+        model and one they brought — which is the same unbuilt setting the
+        line below waits on. Nothing here has been pointed at real weights
+        on a real machine
+
 - [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
       as a provider like any other, with a test that proves it: our address is
       not privileged in `alo-egress`, and a policy refusing hosted inference

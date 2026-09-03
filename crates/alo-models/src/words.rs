@@ -19,6 +19,16 @@
 //! that softened the second one would take away the only thing on the screen
 //! saying the question is about to leave the building, so its note says so.
 //!
+//! # And three of them are not refusals at all
+//!
+//! [`crate::Cost`]'s two lines and [`LICENCE_IS_YOURS`] are read by somebody
+//! who has just pointed alo OS at weights of their own, and nothing was
+//! stopped. `docs/features.md` promises the machine *warns and then gets out of
+//! the way*, so a translation that made *larger than the memory this machine
+//! has* sound like a door closing would take away the promise rather than the
+//! politeness. Their notes say so, and `weights.rs` is where the code makes it
+//! structurally true.
+//!
 //! The rest say what to do. That was true of this crate's English before it
 //! moved here — `provider.rs`'s *give the provider a name — it is what you will
 //! see when it answers* is the queue's own reference for the rule — and the
@@ -256,6 +266,74 @@ pub const PROVIDER_ALREADY_ADDED: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// Weights somebody brought themselves — [`crate::WeightsError`],
+// [`crate::Cost`], and the line about whose licence these are.
+//
+// Read at the moment somebody points alo OS at a model of their own. Two of
+// them are refusals of something just typed and say what to do; the other three
+// are not refusals at all, and that is the thing a translation here must not
+// lose. `docs/features.md` promises the machine *warns and then gets out of the
+// way*, so the sentence about a model too large for this machine has to read as
+// a fact somebody was told rather than as a door being closed.
+// ---------------------------------------------------------------------------
+
+/// Weights with no name for the runtime to answer to.
+pub const WEIGHTS_UNNAMED: Word = Word::saying(
+    "models.brought.unnamed",
+    "say which weights: the name the model runtime on this machine knows them by",
+)
+.noting(
+    "Said to somebody pointing alo OS at a model they already have. The name is the one the \
+     runtime answers to rather than one they invent, because it is what alo OS will ask that \
+     runtime for.",
+);
+
+/// Weights already on this machine's list.
+pub const WEIGHTS_ALREADY_BROUGHT: Word = Word::saying(
+    "models.brought.already-brought",
+    "you already have weights called {name}",
+)
+.noting(
+    "{name} is the name the runtime knows those weights by, as it reports it, and is never \
+     translated.",
+);
+
+/// They fit in the memory this machine has.
+pub const WEIGHTS_FIT: Word = Word::saying(
+    "models.brought.fits",
+    "these weights fit in the memory this machine has",
+)
+.noting(
+    "Shown once, where somebody adds a model of their own. What they need and what the machine \
+     has are numbers shown beside this line rather than inside it.",
+);
+
+/// They are larger than the memory this machine has.
+pub const WEIGHTS_LARGER_THAN_MEMORY: Word = Word::saying(
+    "models.brought.larger-than-memory",
+    "these weights are larger than the memory this machine has — alo OS will still run them, and \
+     this machine will be slow",
+)
+.noting(
+    "This is a warning and never a refusal, and the second half is not a softener: the model runs. \
+     A translation that made it sound like alo OS had declined would take away the thing this \
+     product promises about hardware somebody owns. Shown once, where they add the model. The two \
+     sizes are numbers shown beside this line rather than inside it.",
+);
+
+/// Whose terms these weights come with.
+pub const LICENCE_IS_YOURS: Word = Word::saying(
+    "models.brought.licence-is-yours",
+    "these weights are yours, and so are their terms — alo OS states the licence of what it offers \
+     and has not read the licence of a model it did not offer you",
+)
+.noting(
+    "A second line, shown under whichever of the two lines above was said and never on its own. It \
+     is not a warning that something is wrong and not a judgement about the model: it says who is \
+     answerable for the terms. Do not shorten it into a disclaimer.",
+);
+
+// ---------------------------------------------------------------------------
 // A key as it was just typed — [`crate::SecretError`].
 //
 // Neither of them repeats what was typed, and neither may start: a key in a
@@ -477,7 +555,7 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 34] = [
+pub const EVERY_WORD: [Word; 39] = [
     ON_THIS_MACHINE,
     ON_A_PAIRED_MACHINE,
     BY_A_PROVIDER,
@@ -493,6 +571,11 @@ pub const EVERY_WORD: [Word; 34] = [
     NOT_AN_ADDRESS,
     INSECURE_ENDPOINT,
     PROVIDER_ALREADY_ADDED,
+    WEIGHTS_UNNAMED,
+    WEIGHTS_ALREADY_BROUGHT,
+    WEIGHTS_FIT,
+    WEIGHTS_LARGER_THAN_MEMORY,
+    LICENCE_IS_YOURS,
     KEY_BLANK,
     KEY_NOT_SENDABLE,
     THAT_WORKED,
@@ -634,6 +717,7 @@ mod tests {
             OUTSIDE_THE_REGION,
             NOT_ON_THIS_MACHINE,
             PROVIDER_ALREADY_ADDED,
+            WEIGHTS_ALREADY_BROUGHT,
             PROVIDER_NOT_WELL,
             MODEL_NOT_OFFERED,
         ] {

@@ -180,6 +180,7 @@ same thing become one.
 | `provider.rs` | Providers somebody adds themselves; the key lives in the keyring, never in the settings |
 | `secret.rs`, `tried.rs`, `trying.rs` | Added later by the loop — testing a provider before it is saved (item 10) |
 | `words.rs`, `refusing.rs` | Added later by the loop — everything this crate says, and which rule refused a question (item 9f) |
+| `weights.rs`, `costing.rs`, `brought.rs` | Added later by the loop — weights somebody brought themselves, what they cost here, and the list beside the catalogue (item 25) |
 
 **44 tests when the loop started, 90 now, clippy clean against the workspace
 deny list.** Two patterns later items must follow:
@@ -2257,6 +2258,13 @@ out.
   what is missing is the setting and the wiring rather than anything either
   crate can say.
 
+  **Item 25 made the question one size larger and did not answer it.** There
+  are now two lists of models on a machine — the catalogue and
+  `alo_models::Brought` — and whoever holds both at once is what decides which
+  one answers. Neither list knows about the other on purpose, so choosing
+  between a catalogued model and weights somebody brought is this item's, in
+  the same place as choosing between a model and a provider.
+
 - [ ] **21i. Where a machine's grants are kept.** The storage item 1 left —
   *storage is serde, as with `Providers`; where the list is written and when is
   the daemon's, and it does not exist yet* — asked again now that there is a
@@ -2524,28 +2532,86 @@ out.
   checked**, and it cannot be: a translation is a file, so the rule is written
   into `docs/contracts/translations.md` for whoever writes one.
 
-- [ ] **25. Weights somebody brought themselves.** `alo-models` can only offer
-  what `data/catalogue.toml` lists, so today the curated list is the only way a
-  model reaches this machine — which makes a walled garden out of a product whose
-  whole claim is *your models, your hardware*. Nobody decided that; it is what a
-  catalogue turns into when nothing sits beside it.
+- [x] **25. Weights somebody brought themselves** — implements
+  `docs/features.md`'s v0.5 *★ Run a model we never catalogued*, *the machine
+  warns and then gets out of the way*, and *what you bring is yours, including
+  its licence* (ADR-free; ADR 0007 is what the measurement half rests on).
+  `alo-models` could only offer what `data/catalogue.toml` lists, so the curated
+  list was the only way a model reached this machine — a walled garden nobody
+  decided on, and what a catalogue turns into when nothing sits beside it. Three
+  new files in `crates/alo-models`: `weights.rs` (`Weights` — one set somebody
+  brought, and the two refusals at the door), `costing.rs` (`Cost` — what
+  running them here costs, and the fact that it is never a refusal), `brought.rs`
+  (`Brought` — the list beside the catalogue, its queries and its refusal). Five
+  new words, `Driving` gained `Serialize`, and `secret.rs` lost a rustdoc link
+  to a private item that had made this crate's `cargo doc` unclean since item
+  10. 20 new unit tests and 1 new integration test; **1671 tests on Linux and
+  1497 on Windows** (was 1650 and 1476), 44 doctests on both, clippy clean on
+  both hosts and `cargo doc -p alo-models` clean on both.
 
-  A model that came from somewhere else needs the same three answers a catalogued
-  one has — where it is, what it costs to run here, and whether it can drive the
-  verbs (item 23) — with two differences that are the point:
+  **A model that came from somewhere else needs the same three answers a
+  catalogued one has, and two of them stopped being ours.** *Where it is* is the
+  id the runtime answers to and there is no `upstream`, because nothing fetches
+  these — the licence gate lives on `ModelRuntime::fetch` and `answers` has
+  never had one. *What it costs* is `Cost`, which warns. *Whether it drives the
+  verbs* is the same `Driving` from the same measurement, and is the one thing
+  kept: it is not a permission, it is whether an agent turn works at all, and a
+  model that loses structure is a bad agent on anybody's hardware.
 
-  - **The licence is theirs, not ours.** The catalogue's gate exists because we
-    are offering something; weights somebody already has come with their own
-    terms and we do not pretend to have checked them.
-  - **The costs warn rather than refuse.** `runnable_on_cpu` and the memory
-    figures are for deciding with. Say plainly, once, that this model is larger
-    than this machine's memory — then run it if that is the answer, because
-    refusing to try on somebody's own hardware is not a sovereignty product's
-    decision to make.
+  **The licence answer is the absence of a field, not a field saying unknown.**
+  A `Licence` here — even one saying nothing — is read downstream as an answer,
+  and a panel showing *licence: unknown* beside somebody's own model would imply
+  alo OS went and looked. So `Weights` cannot express one, cannot be filtered by
+  one, and has no `safe_default_for_business`; what it has is one line said to
+  the person, and `Weights::lines` is the only road to a sentence about the cost
+  — so the cost cannot be shown without it. `NoAgentHere::lines`' shape, applied
+  to a different promise.
 
-  What this is not: a training toolchain. `docs/features.md` is explicit that we
-  do not build one, and equally explicit that nothing here stops a person running
-  theirs.
+  **The decision the item did not contain: the floor rather than an estimate,
+  and two answers rather than three.** A model answers out of memory, so what it
+  needs is at least what its weights take on disk — the only figure the machine
+  actually knows, since the overhead depends on the runtime, the context length
+  and the quantisation. Multiplying by a guess would make *it fits* a claim alo
+  OS cannot support, so the warning fires only on the case that is certain. And
+  a middle band — *tight*, *only just* — was the obvious third and is alo OS
+  inventing a threshold about somebody else's machine: a warning at a number we
+  made up is a warning people learn to ignore.
+
+  Three decisions the next items inherit. **`Driving` serialises now**, additively
+  and with the same spelling in both directions: the catalogue is only ever read,
+  and a list a person owns has to survive being written down. **An id is matched
+  exactly**, which is item 1's rule and the opposite answer from `Providers` —
+  a provider's name is a word a person typed, an id is what a runtime answers
+  to, and two ids differing in case are two models to it. **No list method
+  filters on memory**: `Brought::for_the_agent` asks the measurement and nothing
+  else, because the refusal this item exists to not make must not reappear in a
+  helper nobody would think to look in.
+
+  What it is not: a training toolchain. `docs/features.md` is explicit that we
+  build none, and equally explicit that nothing here stops a person running
+  theirs. What it could not close is **25a below**, and the wiring — *which* of
+  the two lists this machine actually uses is item 21h's, and is blocked on
+  where a person's choice is stored.
+
+- [ ] **25a. The third thing a machine with no agent can still do.** Found by
+  item 25, which made it true and deliberately did not say it.
+  `NoAgentHere::lines` hands back a refusal and `THE_OTHER_PLACES` under it —
+  *a machine you have paired with, or a provider you add* — and since 25 there
+  is a third answer for somebody whose catalogue offers them nothing: weights
+  they already have. The sentence is the most valuable one this subject could
+  add, because it is read at exactly the moment a person is told they cannot
+  have the thing they came for.
+
+  **Blocked on nothing, and it is a decision about a shipped string rather than
+  a fix.** `THE_OTHER_PLACES` cannot gain a clause: a translator has been handed
+  that string, and changing what a key says under the same key leaves every
+  translation of it saying the old thing with nothing anywhere noticing (item
+  21g). So it is a **new** key and `lines` answers `[Said; 3]`, which moves a
+  public surface — and it wants deciding rather than typing, because the note on
+  `THE_OTHER_PLACES` says *do not reorder them into a recommendation* and a
+  third line raises the same question about the order it goes in. ADR 0008 is
+  about **where** a question is answered and this is about **which model**, so
+  whether the two belong in one list at all is the first thing the item asks.
 
 - [ ] **26. One hook, one grant — the kernel refuses.** The whole of ADR 0015,
   proven or disproven in the smallest thing that can carry it. A BPF LSM program

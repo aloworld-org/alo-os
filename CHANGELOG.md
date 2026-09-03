@@ -12,6 +12,30 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can run a model we never catalogued.** Point alo OS at weights that are
+  already on your machine and it keeps them beside the ones we offer, rather
+  than only offering ours. The catalogue is a recommendation — it states
+  licences and honest costs so you can choose well — and it was quietly the only
+  way a model could reach the machine at all, which made a walled garden out of
+  a product whose whole claim is that the hardware is yours.
+
+  **What you bring is yours, including its licence.** alo OS states the licence
+  of everything it offers and will not download a model whose terms it has not
+  stated. It says nothing at all about the licence of weights you brought
+  yourself — not "unknown", not a warning, nothing — because a machine that
+  printed a licence field beside your model would be implying it went and
+  looked. What it says instead is one line: these are yours, and so are the
+  terms.
+
+  **And it warns rather than refuses.** A model larger than the memory in your
+  machine is said so plainly, once, at the moment you add it — and then run
+  anyway if that is what you asked for. There is no size at which alo OS
+  declines to try on hardware you own. The one thing it still holds back is
+  giving a model your agent turn without a measurement, because a model that
+  cannot produce a valid instruction is a bad agent on anybody's machine — and
+  you can run that measurement against your own weights and write down what it
+  earned.
+
 - **alo OS will not put the name of something it rents in front of you.**
   Your machine runs on parts we chose and you did not — the thing that runs a
   model on it, the thing that packages an application, the thing that starts

@@ -116,8 +116,10 @@ impl Secret {
     ///
     /// The whole of what a crate outside this one can do with a key. It is a
     /// request in and a request out, so the bytes never become a `String`
-    /// anybody else holds, and [`bearer`](Self::bearer) stays private with its
-    /// `compile_fail` doctest intact.
+    /// anybody else holds, and `bearer` stays private with its `compile_fail`
+    /// doctest intact — named here rather than linked, because a link to it
+    /// from a public item is a rustdoc warning about exactly the privacy this
+    /// sentence is describing.
     ///
     /// Generic over the request's kind because the two callers differ: asking a
     /// provider what it offers is a `GET` with no body, and putting a question

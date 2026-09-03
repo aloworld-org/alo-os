@@ -39,7 +39,7 @@
 //! costs them an agent that proposes the wrong thing three times out of five,
 //! which is a product nobody keeps.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// How dependably a model produces a verb call this machine would act on.
 ///
@@ -54,7 +54,14 @@ use serde::Deserialize;
 /// and different days; what the machine actually needs to know is whether this
 /// model may be given the agent, and the bar for that is one line in
 /// `alo-driving`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+/// **It serialises as well as deserialises**, which it did not until weights
+/// somebody brought themselves existed (item 25). The catalogue is only ever
+/// read — it ships with the release — but [`crate::Weights`] is a list a person
+/// owns and a settings file holds, and the grade a person's own measurement
+/// earned has to survive being written down. Additive, and the spelling is the
+/// same in both directions because `rename_all` covers both, so what is written
+/// is what a catalogue would have to say.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Driving {
     /// It produces a call this machine would act on almost every time. This is
@@ -138,5 +145,32 @@ mod tests {
                 "{invented}"
             );
         }
+    }
+
+    /// **A grade written down is a grade that reads back as itself.** Item 25
+    /// added `Serialize` for the list a person owns; a spelling that differed
+    /// between the two directions would mean somebody's own measurement failed
+    /// to load on the machine that made it.
+    #[test]
+    fn a_grade_that_was_written_down_reads_back_the_same() {
+        for grade in [
+            Driving::Reliably,
+            Driving::Sometimes,
+            Driving::Rarely,
+            Driving::NotMeasured,
+        ] {
+            let written = serde_json::to_string(&grade).ok();
+            assert_eq!(
+                written
+                    .as_deref()
+                    .and_then(|w| serde_json::from_str::<Driving>(w).ok()),
+                Some(grade),
+                "{grade:?}"
+            );
+        }
+        assert_eq!(
+            serde_json::to_string(&Driving::NotMeasured).ok(),
+            Some("\"not-measured\"".to_owned())
+        );
     }
 }
