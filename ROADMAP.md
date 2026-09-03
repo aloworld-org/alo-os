@@ -66,7 +66,7 @@ its empty one:
 **Why this shape rather than one box.** The rule "a tick means done on real
 hardware" is right and is not being weakened — but with one box per line it made
 this file report **one done item out of eighty** while thirteen crates and
-1,128 passing tests sat underneath it. That is not honesty; it is a different
+1,128 passing tests sat underneath it — fourteen crates and 1,178 now. That is not honesty; it is a different
 inaccuracy, and somebody reading it would conclude nothing had been built. Two
 boxes tell the truth twice: what is finished, and what is still owed to a
 machine nobody has yet plugged in.
@@ -150,10 +150,17 @@ compositor is not required for, which is why it runs unbroken.
         hosted provider with its region — and `SourcePolicy`, which can hold
         an answer in the building, on the machine, or inside a named region,
         and refuses in the policy's own words rather than silently routing
-        elsewhere
+        elsewhere. **And `alo-asking`, which actually puts the question**: a
+        provider is asked over https, the egress is on the indicator before
+        the socket opens, the rule in force at that moment decides, and the
+        answer comes back carrying where it came from. 46 tests, most of them
+        against a stub on a real socket
   - [ ] **On the machine.**
-        `alo-agentd`, which is the thing that would actually put a question
-        to any of the three
+        a provider somebody pays for, answering a real question with a real
+        key — none of this has been run against one. The **same path to a
+        model on this machine** is code rather than machine and is not built:
+        it needs a `ModelRuntime` that can be asked something, which is the
+        next item in the queue
 
 - [ ] ★ **Where the answer came from is said where the answer appears** — "on
       this machine", "on the studio workstation", "by a provider you added" —
@@ -161,12 +168,17 @@ compositor is not required for, which is why it runs unbroken.
   - [x] **The code.**
         `alo-models` — every source can say itself (`shown`, `said`) in the
         language the reader reads, so provenance is a translated sentence
-        rather than English a shell would have to reword
+        rather than English a shell would have to reword — and `alo-asking`'s
+        `Answer`, which **cannot be made without one**: the only constructor
+        takes the source, so a shell holding an answer is holding the
+        sentence about where it came from
   - [ ] **On the machine.**
         the surface that shows it beside an answer, which is the overlay,
-        and therefore the compositor. **This is the one on this list most
-        easily lost**: it is a sentence that must appear every single time,
-        and nothing yet forces it to
+        and therefore the compositor. **This was the one on this list most
+        easily lost** — a sentence that must appear every time, with nothing
+        forcing it to. The type now forces it as far as a type can: showing
+        an answer without its provenance is a thing somebody has to decide to
+        do rather than a thing they can forget
 
 - [ ] **Agents point at the local model by default**, configured rather than coded
       — and, since the default is only a sovereignty guarantee if it does not
@@ -182,9 +194,13 @@ compositor is not required for, which is why it runs unbroken.
         somewhere else as one sentence a person approves for exactly one
         question rather than a setting anybody can leave on
   - [ ] **On the machine.**
-        something that points and something that asks, both `alo-agentd`;
-        there is still no method anywhere in this repository that puts a
-        question to a model
+        something that points, which is `alo-agentd`. *Something that asks*
+        is no longer owed here: `alo-asking` puts a question to a hosted
+        provider and hands back a failure whose only door onward is an offer
+        a person answered, so **never a silent fallback** is now carried by
+        the code that would have had to contain the fallback. What is left of
+        the machine half is the daemon that points at the local model, and
+        the local model being asked at all
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine

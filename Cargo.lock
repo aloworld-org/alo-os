@@ -35,6 +35,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-asking"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-capability",
+ "alo-egress",
+ "alo-models",
+ "alo-record",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "ureq",
+]
+
+[[package]]
 name = "alo-capability"
 version = "0.0.1"
 dependencies = [

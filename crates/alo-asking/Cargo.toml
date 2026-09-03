@@ -1,0 +1,37 @@
+[package]
+name = "alo-asking"
+version = "0.0.1"
+description = "Putting a question to a model, with what leaves the machine decided and shown first."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The place a question may go, and the failure it becomes when it does not
+# answer. This crate never decides where a question goes; it carries out a
+# decision `alo-answering` already made, and hands back the failure that crate
+# is the only maker of.
+alo-answering = { path = "../alo-answering" }
+# Whose authority the egress is under.
+alo-capability = { path = "../alo-capability" }
+# Law 1. Nothing here opens a socket without a `Departing`, and the only maker
+# of one is the indicator.
+alo-egress = { path = "../alo-egress" }
+# The provider, its key, and where an answer came from.
+alo-models = { path = "../alo-models" }
+# Two refusals a person reads, in the language they read.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+ureq = { workspace = true }
+
+[dev-dependencies]
+# The record is nobody's dependency here — this crate hands back the departure
+# and writes nothing down. The integration test walks the whole journey into it
+# to prove the handing back is enough.
+alo-record = { path = "../alo-record" }
+
+[lints]
+workspace = true

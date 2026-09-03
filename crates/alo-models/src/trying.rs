@@ -133,7 +133,7 @@ impl<'a> Trying<'a> {
             .http_status_as_error(false)
             .build();
         let request = match self.key {
-            Some(key) => request.header("authorization", key.bearer()),
+            Some(key) => key.carried_by(request),
             None => request,
         };
 

@@ -12,6 +12,33 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **alo OS can now put a question to a model.** Until this change nothing in
+  the system did: it knew where an answer may come from, what your
+  organisation's rule permits, what to do when the place you chose cannot
+  answer, and how to show you what is leaving — and nothing joined those up.
+  A question can now go to a provider you added, over https, and come back.
+
+  **You see it go.** The indicator says *@mail is asking a question of Mistral,
+  in the EU* while it happens, in your own language, and the line is up before
+  the connection opens rather than after. If your machine's rule does not permit
+  it, **nothing is sent at all** — not a connection, not a name lookup — and you
+  read why in the rule's own words. The rule is asked at the moment the question
+  would leave, so one tightened this morning is in force this afternoon.
+
+  **The answer knows where it came from.** *by Mistral, in the EU* travels with
+  it, so the sentence beside an answer is one nothing can forget to show: there
+  is no way to hold an answer without it.
+
+  **And nothing is ever asked somewhere else on your behalf.** A question that
+  fails is a question that failed: you are told what happened, told outright
+  that nothing was sent anywhere, and asked — once, about one question — whether
+  to try somewhere else. A provider that answers by pointing your machine at a
+  different address is refused rather than followed, with your question and your
+  key still on this side of it.
+
+  What is not built yet is the same path to a model on your own machine, and
+  nothing here has been run against a provider anybody pays for.
+
 - **You can have alo OS with no agent at all, and turning it off takes the
   agent's reach with it that second.** Setup's question about where your AI
   should run has a fourth answer — *not at all* — and it is a setting rather

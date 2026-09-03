@@ -105,6 +105,21 @@ pub const KEY_NOT_ACCEPTED: Word = Word::saying(
      credential.",
 );
 
+/// The address answered by pointing somewhere else, and nothing was carried
+/// there.
+pub const SENT_SOMEWHERE_ELSE: Word = Word::saying(
+    "answering.wrong.sent-somewhere-else",
+    "nothing was answered {source} — that address sends this machine somewhere nobody agreed to, \
+     and the question was not carried there",
+)
+.noting(
+    "The only sentence in this list where alo OS is the one that stopped something, and the last \
+     clause is why it is worth reading: the question did not go anywhere. Do not soften it into \
+     \"the address is wrong\" — the address may be exactly what the provider documents, and what \
+     happened is that it answered by pointing elsewhere. {source} is where the question was to be \
+     answered and arrives already in the reader's language.",
+);
+
 /// It answered, and what it answered was that it was in trouble.
 pub const HAVING_TROUBLE: Word = Word::saying(
     "answering.wrong.having-trouble",
@@ -221,12 +236,13 @@ pub const NOT_ON_OFFER: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 12] = [
+pub const EVERY_WORD: [Word; 13] = [
     NOTHING_ANSWERED,
     TOOK_TOO_LONG,
     NOTHING_USABLE,
     NO_MODEL_THERE,
     KEY_NOT_ACCEPTED,
+    SENT_SOMEWHERE_ELSE,
     HAVING_TROUBLE,
     NOTHING_WAS_SENT,
     ASK_HERE_INSTEAD,
@@ -401,6 +417,7 @@ mod tests {
             NOTHING_USABLE,
             NO_MODEL_THERE,
             KEY_NOT_ACCEPTED,
+            SENT_SOMEWHERE_ELSE,
             HAVING_TROUBLE,
         ] {
             for suggesting in ["instead", "try ", "another"] {

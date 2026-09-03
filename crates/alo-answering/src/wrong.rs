@@ -38,9 +38,20 @@ use crate::words;
 
 /// Why the place a question was put did not answer it.
 ///
-/// Six, and a seventh belongs here only if it is a different thing to be
+/// Seven, and an eighth belongs here only if it is a different thing to be
 /// **told** — not a different thing to have happened. *The runtime crashed* and
 /// *the runtime was not running* are one sentence to the person reading them.
+///
+/// [`SentSomewhereElse`] is the seventh, added by `alo-asking` when there was
+/// finally something that put a question anywhere, and it passes that bar in a
+/// way the others do not: it is not a failure at the far end at all. It is a
+/// **refusal alo OS made** — the address answered by pointing somewhere nobody
+/// agreed to, and the question was not carried there — and telling somebody
+/// *nothing usable came back* would hide the one thing that happened, which is
+/// that their machine stopped it. `alo_models::NotTried::Redirected` is the
+/// same call about testing a provider, made where the stakes were smaller.
+///
+/// [`SentSomewhereElse`]: WentWrong::SentSomewhereElse
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WentWrong {
     /// Nothing was listening, or nothing was running.
@@ -56,6 +67,9 @@ pub enum WentWrong {
     NoModelThere,
     /// The key was refused. Only a hosted provider can do this.
     KeyNotAccepted,
+    /// The address answered by sending this machine somewhere else, and the
+    /// question was not carried to an address nobody agreed to.
+    SentSomewhereElse,
     /// It answered, and what it answered was that it was having trouble.
     ///
     /// Carries the status it answered with, which is an identifier and not a
@@ -73,6 +87,7 @@ impl WentWrong {
             Self::NothingUsable => words::NOTHING_USABLE,
             Self::NoModelThere => words::NO_MODEL_THERE,
             Self::KeyNotAccepted => words::KEY_NOT_ACCEPTED,
+            Self::SentSomewhereElse => words::SENT_SOMEWHERE_ELSE,
             Self::HavingTrouble(_) => words::HAVING_TROUBLE,
         }
     }
@@ -89,6 +104,7 @@ impl WentWrong {
             | Self::TookTooLong
             | Self::NothingUsable
             | Self::NoModelThere
+            | Self::SentSomewhereElse
             | Self::HavingTrouble(_) => true,
         }
     }
@@ -136,6 +152,7 @@ mod tests {
             WentWrong::TookTooLong,
             WentWrong::NothingUsable,
             WentWrong::NoModelThere,
+            WentWrong::SentSomewhereElse,
             WentWrong::HavingTrouble(503),
         ] {
             for source in [here(), paired(), hosted()] {
@@ -179,6 +196,7 @@ mod tests {
             WentWrong::NothingUsable,
             WentWrong::NoModelThere,
             WentWrong::KeyNotAccepted,
+            WentWrong::SentSomewhereElse,
             WentWrong::HavingTrouble(503),
         ];
         let mut keys: Vec<String> = every.iter().map(|w| w.word().named().to_owned()).collect();

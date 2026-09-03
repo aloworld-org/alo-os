@@ -36,8 +36,15 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
-`crates/alo-dock`, `crates/alo-answering` and `crates/alo-strings` were
-built by the loop and are described in the items below. **`alo-answering` is
+`crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking` and
+`crates/alo-strings` were built by the loop and are described in the items
+below. **`alo-asking` is the only one of them that does anything to the world
+outside this machine**, and it is the only one that reaches five others: it
+holds no decision of its own, and every step it takes is one of theirs, in the
+order they have to happen in. Nothing reaches it, and it deliberately does not
+reach `alo-record` — it hands back the departure instead, which is what keeps
+*the record observes, and is reachable from none of the crates it observes* true
+of the crate that causes the largest egress this product has. **`alo-answering` is
 the second crate to reach `alo-models`**, after `alo-egress`, and the two reach
 it for halves of one thing: `alo-egress` decides about a question that is
 already leaving, and `alo-answering` about one that was answered nowhere. It is
@@ -1396,38 +1403,97 @@ deny list.** Two patterns later items must follow:
 **Five roadmap halves are all waiting on this one thing**, and it has never been
 started: *or use an API instead*, *agents point at the local model*, *every
 execution recorded*, `alo-agentd` itself, and the model stack's own last mile.
-The roadmap says the same sentence three separate times — **there is still no
-method anywhere in this repository that puts a question to a model.** Thirteen
-crates decide correctly and nothing joins them up.
+The roadmap said the same sentence three separate times — *there is still no
+method anywhere in this repository that puts a question to a model* — and
+**item 18 answered it for a hosted provider**: `alo-asking` sends one, shows it
+leaving, and brings back the answer, the departure and the failure. What is
+still true is the rest of the sentence. Fourteen crates decide correctly, one of
+them acts, and there is no daemon holding any of them.
 
 **All of it is portable.** No compositor, no certified machine, no GPU. A turn
 is a function call, and its result is a value to assert on. The acting halves
 that genuinely need Wayland and D-Bus are marked below and stay out.
 
-- [ ] **18. Putting a question to a model — the hosted provider first.** The gap
-  named three times in `ROADMAP.md`. `alo-models` already knows *where* an answer
-  may come from (`InferenceSource`), what policy permits (`SourcePolicy`), and
-  how to say where it came from — but nothing sends anything. This is the method
-  that does, with **`alo-egress` consulted before a socket opens and the source
-  recorded with the answer** so provenance is carried rather than reconstructed.
-  A refusal from the policy is an answer, not an error to unwrap.
+- [x] **18. Putting a question to a model — the hosted provider first.** The gap
+  named three times in `ROADMAP.md`, and the first thing in this repository that
+  ever sent anything on somebody's behalf. `crates/alo-asking`, a **new crate**:
+  `question.rs` (what was asked, held the way a key is), `hosted.rs` (the only
+  file that knows what a provider's chat API looks like), `asking.rs` (the one
+  door, and the order the four steps happen in), `asked.rs` (an answer and the
+  departure it came with), `unanswered.rs` (a question that left and did not come
+  back, and the departure it left with), `answer.rs` (what came back, and always
+  where it came from), `refusing.rs` (the four things that can come back
+  instead), `words.rs` (2 phrases), `testing.rs`. 39 unit tests, 7 integration
+  tests — 4 against the real vocabulary in Greek, 3 through `alo-egress` and into
+  `alo-record` — and 4 doctests, two of them `compile_fail`. **1140 tests and 38
+  doctests across the workspace** (was 1094 and 34), clippy clean.
 
-  **Build the `Hosted` path first and the local one after it**, which is a
-  deliberate inversion of how the crate was written. ADR 0008 makes a hosted API
-  a first-class choice rather than a fallback, so this is the supported path
-  being built in the order it can actually be *exercised*: a provider answers
-  over https from any machine, while `ThisMachine` needs a runtime installed and
-  a model downloaded before it can say anything at all. Doing the harder-to-run
-  path first is how a method ends up shaped around the case nobody tested.
+  **A new crate rather than more of `alo-models`, and the dependency graph
+  decides it.** The item's own sentence is *`alo-egress` consulted before a
+  socket opens*, and `alo-egress` depends on `alo-models` — so the method cannot
+  live in the crate that holds the provider without inverting an edge that
+  exists for a reason. What is left in `alo-models` is what was always there: the
+  provider, the key, and where an answer came from. This crate is the joining-up,
+  and it reaches five crates and is reached by none.
 
-  It also puts the sharper half of the promise first. A local model that fails
-  is a bad afternoon; **a hosted one is where the egress line, the region, the
-  refusal in the policy's own words and *never a silent fallback* all have to be
-  true**, and none of those can be proven against a runtime on `localhost`.
+  **The whole of it is the order, and every step produces what the next one
+  needs.** The permission and the provider must be the same place; the place must
+  be showable; the rule in force **now** must permit it, which is the same call
+  that puts it on the indicator; and only then is anything opened. `hosted.rs` is
+  `pub(crate)`, so there is no public function here that reaches a provider
+  without law 1 having shown it first.
 
-  Tests drive a stub on a real socket, as `ollama.rs` already does, plus a
-  refusal path per `SourcePolicy` variant. **No key is needed to pass this
-  item** — a real provider is the machine half, not the code half.
+  **The decision the item did not contain: the departure comes back either
+  way.** `alo_record::Entry::left` is made from a `Departing` and from nothing
+  else, so a crate that took the line off the indicator itself would leave the
+  record of what left *impossible to write* — in the one crate that causes the
+  largest egress this product has. So both `Asked` and `DidNotAnswer` carry the
+  departure and an `ended(&mut Indicator)` that spends it, and this crate still
+  reaches `alo-record` from nowhere. It is item 6a's *the authorisation comes
+  back either way*, about a departure. The other half of it is that **a question
+  that failed still left the machine**: a machine that recorded only the
+  questions that were answered would report a quieter day than it had.
+
+  Three decisions the next items inherit. **The rule is asked twice and the
+  second time is the one that counts** — item 3's *the grants are asked last, at
+  the moment of execution* arriving at egress, so an organisation that tightened
+  its rule between the choosing and the asking has a machine that sends nothing.
+  **A question and an answer are held the way a key is**: no `Serialize`, a
+  `Debug` written by hand, and the question's only reader `pub(crate)` — ADR 0001
+  §7 keeps neither, and this is the only crate that has to hold them at all.
+  **`alo_models::Secret` gained one method and no accessor**:
+  `Secret::carried_by` takes a request and gives it back with the key on it, so
+  a second crate can *send* a key without any crate being able to read one, and
+  `bearer` stays private with its `compile_fail` doctest intact.
+
+  **`alo-answering` gained a seventh `WentWrong`** — `SentSomewhereElse`, and it
+  passes that crate's own bar in a way the other six do not: it is not a failure
+  at the far end at all but a **refusal alo OS made**, and telling somebody
+  *nothing usable came back* would hide the one thing that happened, which is
+  that their machine stopped their question going to an address nobody agreed to.
+
+  Built and unit tested against a stub on a real socket. **Not run against a
+  provider anybody pays for**, which is owed with the rest of the hardware
+  verification — `docs/quirks.md` records the two conventions it depends on and
+  says the same thing about both.
+
+- [ ] **18a. The same path to a model on this machine.** The half item 18 cut,
+  and cut for the reason it was written to be cut: `InferenceSource::ThisMachine`
+  causes no egress, so there is no `Leaving`, no `Departing` and nothing for law
+  1 to show — which makes it a different path rather than a branch, and
+  `alo-asking`'s door refuses it in words that say so. It needs the thing the
+  hosted path did not: `ModelRuntime` has no method that puts a question to a
+  model, so this item adds one to the trait and to the Ollama adapter (ADR 0006's
+  *the only file that knows Ollama exists*), and answers the question that comes
+  with it — whether an OpenAI-compatible provider a person pointed at loopback is
+  the runtime's path or `alo-asking`'s.
+
+  **What it must not do** is grow a branch inside `to_a_provider`, and must not
+  become a place where either path can substitute for the other: ADR 0008 runs
+  both ways, and neither is the other's fallback.
+
+  Buildable here and testable here — a stub on a real socket, as item 18's is —
+  but *running* it against a real Ollama stays under **blocked — hardware**.
 
 - [ ] **19. A turn, end to end, headless.** The item that makes the other twelve
   crates one system: invocation → `alo-context` for what was offered →

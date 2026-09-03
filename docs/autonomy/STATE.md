@@ -3810,3 +3810,175 @@ and nothing may be ticked for it — but a crate that has never been compiled fo
 its target platform is a different kind of unknown, and that one is now closed.
 
 The loop may proceed from item 18.
+
+---
+
+## 2026-09-03 — iteration 34: the first thing here that ever sent anything
+
+**Built: item 18, putting a question to a model — the hosted provider first.**
+`crates/alo-asking`, a new crate, and the sentence three iterations of this
+journal quoted from `ROADMAP.md` is no longer true of a provider: there is now a
+method in this repository that puts a question to a model, shows it leaving, and
+brings back the answer, the departure and the failure.
+
+**The gate.** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, **1140 tests and 38
+doctests, all green** (was 1094 and 34). The new crate is 39 unit tests, 7
+integration tests — 4 against the real vocabulary in Greek, 3 through
+`alo-egress` and into `alo-record` — and 4 doctests, two of them `compile_fail`,
+both checked by unmarking them: **E0624, method `text` is private** and
+**E0382, use of moved value**.
+
+### A new crate, and the dependency graph decided it rather than taste
+
+The item's own sentence is *`alo-egress` consulted before a socket opens*.
+`alo-egress` depends on `alo-models`, so a method living beside the provider
+would have had to invert an edge that exists for a reason — the crate that
+decides about a departure reaches the crate that knows where an answer comes
+from, never the other way. There was no version of this that stayed in
+`alo-models`.
+
+What that leaves is a crate whose whole value is an **order**, and it reaches
+five others while nothing reaches it. It holds no decision of its own: where a
+question may go is `alo-answering`'s, what may leave is `alo-egress`', what a
+provider is called is `alo-models`', and every sentence a person reads around
+the moment belongs to one of the three. `words.rs` is two strings, the shortest
+list in the workspace, and it says why in its own module documentation.
+
+### The decision the item did not contain: the departure comes back either way
+
+`alo_record::Entry::left` is made from an `alo_egress::Departing` and from
+nothing else — that is item 4's guarantee, and it is what makes an egress the
+indicator never showed an entry nobody can write. Which means a crate that took
+the line off the indicator itself would leave **the record of what left
+impossible to write**, in the one crate that causes the largest egress this
+product has.
+
+Three ways out were available and two are wrong. Taking `&mut Record` would make
+this the first crate in the workspace to reach `alo-record`, breaking *the
+record observes and is reachable from none of the crates it observes*. Ending
+the line and returning nothing would keep the graph and lose law 1's second
+half. So `Asked` and `DidNotAnswer` both carry the departure and both have
+`ended(&mut Indicator)`, which spends it — the caller keeps the entry and then
+takes the line off:
+
+```
+record.keep(Entry::left(asked.departing()));
+let answer = asked.ended(&mut indicator);
+```
+
+It is item 6a's *the authorisation comes back either way*, one crate on and
+about a departure. The half of it that is easy to lose is the other path: **a
+question that failed still left the machine**, so the departure comes back
+there too. A machine that recorded only the questions that were answered would
+report a quieter day than it had.
+
+What it costs is a moment where the indicator shows an egress that has just
+finished. The alternative is a moment of not showing one that is happening, and
+only one of those two is a lie law 1 cares about.
+
+### The rule is asked twice, and the second time is the one that counts
+
+`Answering::chosen` asked `SourcePolicy` when the place was chosen, which may
+have been at the start of a turn or when somebody answered an offer about a
+question that had already failed once. `to_a_provider` asks again at the moment
+the socket would open, and asks the wider rule — `EgressPolicy` made from that
+same `SourcePolicy` rather than stated a second time.
+
+That is item 3's *the grants are asked last, at the moment of execution, which
+is where a revoked grant becomes immediate*, arriving at egress. It is also what
+makes the refusal path testable rather than dead: an organisation that tightened
+its rule between the two has a machine that sends nothing, and there is a test
+per `SourcePolicy` variant that says so — each against an address nothing is
+listening on, so that a question which *had* been sent would come back as a
+different answer.
+
+### A question and an answer are held the way a key is
+
+ADR 0001 §7 names two things alo OS never keeps, and the first is the question a
+person asked. `alo-record` keeps that by having no field for one and
+`alo-answering` by holding no question at all — neither of which is available to
+the crate that has to put one on a wire. So it is `alo_models::Secret`'s shape:
+no `Serialize`, a `Debug` written by hand, and `Question::text` `pub(crate)`
+with its one caller in the file that builds the request body. `Answer` is the
+same, and for the same reason: an answer is made out of somebody's question and
+whatever they had open.
+
+**And the key still cannot be read out of `alo-models`.** `Secret::carried_by`
+takes a request and gives it back with the header on it, so a second crate can
+*send* a key without any crate being able to read one; `bearer` stays
+`pub(crate)` with its `compile_fail` doctest intact, and `trying.rs` now goes
+through the same door.
+
+### `alo-answering` gained a seventh `WentWrong`, and it earns its place
+
+`SentSomewhereElse`. That crate's bar for a new reason is *a different thing to
+be told*, not a different thing to have happened, and this one clears it from an
+angle none of the other six do: it is not a failure at the far end at all. It is
+a refusal **alo OS made** — the address answered by pointing somewhere nobody
+agreed to, and the question was not carried there. Telling somebody *nothing
+usable came back* would hide the only thing that happened, which is that their
+machine stopped it. `alo_models::NotTried::Redirected` is the same call about
+testing a provider, made where the stakes were smaller.
+
+### The honest edge, written here because a reviewer will find it
+
+`alo-asking` checks that the permission and the provider are the same place by
+comparing the `Answering`'s source against **what the person wrote down** — the
+provider's name and the region they stated — and not against
+`alo_models::Provider::source`, which additionally answers *is this address on
+this machine*. A daemon that derives the `Answering` from the provider, which is
+the only sane way a person's choice becomes one, cannot pair them wrongly. A
+caller that builds both by hand can, and this crate would not catch it.
+
+The tests are how it was found: `Provider::source` answers `ThisMachine` for
+**any** loopback address, so a hosted provider cannot be stubbed on `127.0.0.1`
+at all, and checking against `Provider::source` would have made the successful
+hosted path — the main path — untestable on any machine without a second host.
+The refusal that is kept is the one that matters most: the indicator line is
+composed out of the source and the socket is opened out of the endpoint, so what
+is checked is that the line names the place the permission was for. It is
+`alo-files`' honest edge, and it is written into `hosted.rs` and `asking.rs`
+rather than only here.
+
+### `ROADMAP.md` moved, and three lines were written into
+
+- **★ Or use an API instead** — the code half now names `alo-asking` and what it
+  does; the machine half is a provider somebody pays for, answering a real
+  question with a real key, plus the local path, which is code and is item 18a.
+- **★ Where the answer came from is said where the answer appears** — the file
+  called this the promise on its list most easily lost, *a sentence that must
+  appear every single time, and nothing yet forces it to*. `Answer` has no
+  constructor that does not take the source, so a shell holding an answer is
+  holding the sentence. The machine half is still the overlay.
+- **Agents point at the local model / ★ never a silent fallback** — its machine
+  half said *there is still no method anywhere in this repository that puts a
+  question to a model*, which was half of what is now true. It says the half
+  that still is.
+
+No half was ticked that was not whole, and no machine half was touched.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 18a**, the same path to a model on this
+  machine, written by this iteration as the cut. It is not a branch inside
+  `to_a_provider` and must not become one: `ThisMachine` causes no egress, so
+  there is no `Leaving`, no `Departing` and nothing for law 1 to show, and
+  `alo-asking`'s door refuses it in words that say so. What it needs first is a
+  method on `ModelRuntime` that puts a question to a model, which that trait has
+  never had — it loads, unloads, fetches and lists. **ADR 0008 runs both ways**
+  and neither path may substitute for the other.
+- **Then 19, 20 and 21**, unchanged: a turn end to end, where the record is
+  written, and the daemon.
+- **The reading step found no unlisted v0.01 promise.** What it read was
+  `docs/features.md`'s AI-stack section and all three `ROADMAP.md` lines this
+  item touches, against the queue. The standing advice holds: only
+  `docs/features.md` is a list of what was promised, and a `ROADMAP.md` line
+  whose *Built* clause cannot name a crate is the strongest available signal
+  that the queue is missing an item.
+- **Nothing here has been run against a provider anybody pays for.** Everything
+  is a stub on a real socket, which is what `alo-models`' own tests do and is
+  worth exactly what that is worth: the wire is real and the far end is ours.
+  `docs/quirks.md` gained two entries — what a provider's status code means when
+  a *question* fails, and ureq sending a pretty-printed body — and both of them
+  say plainly that they have not been checked against a live service.

@@ -60,7 +60,21 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
-_(no entries yet)_
+### ureq 3.4.0 — `send_json` puts a pretty-printed body on the wire
+**Behaviour:** the request body is `serde_json::to_writer_pretty`-shaped —
+indented, with a newline after every field — where the obvious assumption is the
+compact form. It is documented nowhere either way. Observed on a real socket by
+`alo-asking`'s stub, which reads what actually arrives.
+**Our response:** nothing is configured, because nothing is wrong: a provider
+parses either, and the few hundred extra bytes on a question that is already
+kilobytes of somebody's text are not worth a hand-built body. What changed is
+the **test**: `alo-asking` asserts on the request body *parsed* rather than on
+its text, so it says *these three fields and nothing else* — which is the
+promise worth keeping (nothing of the person's leaves except the question) and
+is also the assertion that does not break the next time ureq changes its
+whitespace.
+**Upstream:** not reported; it is not a defect.
+**Date:** 2026-09-03
 
 <!--
 ### <Engine> <version> — <one-line summary>
@@ -360,6 +374,31 @@ A provider somebody adds themselves is a service nobody here operates, behind an
 address nobody here chose. Where the convention every provider claims to follow
 turns out to be followed differently, record it here — with what the evidence
 actually is, because a provider's documentation is not a run against it.
+
+### What a provider's status code means when a *question* fails
+**Version:** the OpenAI-compatible convention as documented by its publishers as
+of 2026-09-03. **Not observed against any live provider**; `alo-asking`'s tests
+drive a stub on a real socket, and checking this against a provider somebody
+pays for is owed alongside the rest of the hardware verification.
+**Behaviour:** the convention says what the *endpoint* is and says almost
+nothing about which status a provider answers with when it will not answer a
+question. In particular **404 means the model, not the address**: a provider
+that does not offer the model somebody asked for answers 404 on an endpoint that
+exists, which is indistinguishable at the protocol level from an address that is
+wrong. 400 is used for a request the provider would not accept and 429 for one
+it would have accepted later, and neither is a thing the person who asked can
+do anything about.
+**Our response:** `alo-asking`'s `hosted.rs` maps each status to the sentence a
+person is actually told, and the mapping is written down there beside the
+reasoning: 404 and 405 become *the model this question needed was not there*,
+400 and 422 become *something answered, and not with an answer*, 401 and 403
+become *the key was not accepted*, and everything else becomes *it answered
+{status}, which is a problem at that end rather than yours*. What is
+deliberately **not** done is guessing between "the model is gone" and "the
+address is wrong" — both send a person to look at something, and only one of
+them is worth their afternoon, so the sentence names what was needed rather than
+what to fix.
+**Date:** 2026-09-03
 
 ### An OpenAI-compatible address is documented both with and without `/v1`
 **Version:** documented behaviour as of 2026-09-02 — Mistral publishes an

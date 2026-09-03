@@ -11,8 +11,17 @@
 //! So the key goes in and does not come out. There is no accessor, no
 //! [`Display`](std::fmt::Display), no `Serialize`, no `Clone`, and the
 //! [`Debug`](std::fmt::Debug) is written by hand to say nothing. The one thing
-//! this crate does with a [`Secret`] is put it on one request to the one
-//! address the policy was asked about — see [`crate::trying`].
+//! that is done with a [`Secret`] is put it on one request to the one address
+//! the policy was asked about — see [`crate::trying`].
+//!
+//! **And a request from another crate is handed to the key, never the key to
+//! the crate.** `alo-asking` puts questions to a provider and needs the same
+//! header on the same kind of request; giving it the bytes would mean a
+//! `pub fn bearer` and the end of everything above. So [`Secret::carried_by`]
+//! takes the request and gives it back with the key on it, and what a caller
+//! outside this crate can do with a key is *send* it somewhere — never read it,
+//! log it, or keep it. What that caller owes, and what no type here can check,
+//! is that the request is the one the policy answered about.
 //!
 //! **What this does not claim.** The bytes are not scrubbed from memory when
 //! the value is dropped: doing that honestly needs either `unsafe` or a
@@ -24,6 +33,7 @@
 use std::fmt;
 
 use alo_strings::{Filling, Said, Strings};
+use ureq::RequestBuilder;
 
 use crate::words;
 
@@ -100,6 +110,21 @@ impl Secret {
     /// compile from outside.
     pub(crate) fn bearer(&self) -> String {
         format!("Bearer {}", self.0)
+    }
+
+    /// Put this key on a request, without letting it out.
+    ///
+    /// The whole of what a crate outside this one can do with a key. It is a
+    /// request in and a request out, so the bytes never become a `String`
+    /// anybody else holds, and [`bearer`](Self::bearer) stays private with its
+    /// `compile_fail` doctest intact.
+    ///
+    /// Generic over the request's kind because the two callers differ: asking a
+    /// provider what it offers is a `GET` with no body, and putting a question
+    /// to one is a `POST` with one.
+    #[must_use]
+    pub fn carried_by<Any>(&self, request: RequestBuilder<Any>) -> RequestBuilder<Any> {
+        request.header("authorization", self.bearer())
     }
 }
 
