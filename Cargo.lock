@@ -43,6 +43,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-dock"
+version = "0.0.1"
+dependencies = [
+ "alo-appearance",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-egress"
 version = "0.0.1"
 dependencies = [

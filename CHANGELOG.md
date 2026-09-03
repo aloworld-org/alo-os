@@ -12,6 +12,38 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You choose which edge of the screen your dock sits on — bottom, left, right
+  or top — and it is a dock built for that edge rather than the bottom one
+  turned sideways.** A dock down the side of the screen puts each application's
+  name *beside* its icon and still reads the ordinary way round, because a name
+  turned ninety degrees is a name nobody can read at a glance. A dock along the
+  bottom or the top puts the name underneath. The clock and the battery sit at
+  the far end of the dock as a column when it runs down the screen and as a row
+  when it runs across — and the far end of a row is the end you reach last, so
+  for somebody reading Arabic or Hebrew it is the left.
+
+  **When there is no room for the names, they give way to icons — and the name
+  is still there.** Turn your text up far enough and a dock that had names on it
+  becomes a dock of icons, because otherwise it would take a share of your
+  screen it has no claim to. Resting on an icon still gives you its name, and a
+  screen reader still reads it out; alo OS says so, in your language, in the same
+  sentence that tells you what happened. Nothing has been taken away — it has
+  moved.
+
+  **Where that line falls is measured rather than judged.** The dock may take
+  one part in six of the side of the screen it sits on, a name needs a line of
+  text under an icon or five times the text's own size beside one, and the names
+  stay for as long as both fit. Those numbers are set by a requirement rather
+  than by an eye: text has to reach 200% without losing anything (EN 301 549),
+  so on the smallest screen alo OS lays out for, on all four edges, the names
+  are still there at 200%. A bigger screen keeps them longer. And the icons
+  themselves never shrink below the smallest thing the same standard lets you be
+  asked to press.
+
+  Your settings file holds only the edge you picked. A machine nobody has
+  touched writes nothing at all, which is what lets a later release move the
+  default for everybody who never changed it and nobody who did.
+
 - **What is on your screen when you ask an agent something now reaches it at
   that moment, for that question, and never afterwards.** The window in front of
   you, the text you had selected and the document you had open go with the

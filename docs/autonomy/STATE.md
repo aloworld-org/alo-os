@@ -2756,3 +2756,151 @@ asserts it.
   owes, under *blocked — linux*. `ROADMAP.md`'s `alo-agentd` line gains
   `alo-context` to its *Built* and names that half in its *Owed*; it stays
   unticked, because there is no daemon and no shell.
+
+## 2026-09-03 — iteration 27: where the dock goes, and when a name gives way
+
+**Built: item 13, the dock's portable half** — the first iteration in four whose
+work was already sitting in the queue as a ready item, because iteration 26 put
+it there and deliberately did not build it. The reading step was therefore
+short: the item names `docs/features.md`'s v0.01 promise, the promise names four
+edges and two orientations and a threshold, and `ROADMAP.md`'s dock line had been
+saying *· Built: nothing — the commit that added this line added no code* since
+it was written.
+
+`crates/alo-dock`, a **new crate**.
+
+| | |
+|---|---|
+| `edge.rs` | The four, and the whole of what a person chooses at v0.01 |
+| `along.rs` | Which way it runs, and the one thing that never turns with it |
+| `measures.rs` | The numbers this crate is built out of, and what each answers to |
+| `room.rs` | How much room something takes, and the arithmetic that says so |
+| `screen.rs` | The screen it is laid out on, and the side it takes its thickness from |
+| `labels.rs` | What became of the names |
+| `status.rs` | The status area: which end, and which way it runs |
+| `layout.rs` | The whole answer, worked out |
+| `shipped.rs` | Where the dock is before anybody moves it |
+| `changes.rs` | What a person changed, which is all that is written down |
+| `dock.rs` | The two resolved, and every question asked of them |
+| `words.rs` | 9 phrases, the English beside each key, and a note on every one |
+| `testing.rs` | The vocabularies the other files' tests are written against |
+
+**The gate:** `cargo fmt` clean, `cargo clippy --workspace --all-targets -D
+warnings` clean, 56 unit tests in this crate, 8 integration tests against the
+real vocabulary in German and Greek, 1 doctest. **976 tests and 25 doctests
+across the workspace**, up from 912 and 24.
+
+**The threshold, which is the whole item.** *Labels give way to icons where the
+short edge demands it* was the clause the item said had to be decided before
+anything was written, and it is now arithmetic: a dock may take **one part in
+six** of the side of the screen it sits on, a name needs **a line of text** under
+an icon or **five ems** of width beside one, and the names stay while both fit.
+Neither number is taste. They are the loosest pair that keeps EN 301 549's *200%
+without loss of content* on the smallest screen alo OS lays out for — 1366 by
+768, which is what `docs/hardware.md` says the Windows 10 fleet this product
+exists to catch is full of — on all four edges. `layout.rs` has the test that
+says so and a second that says a tighter share would fail it, so the numbers are
+fixed *by* the requirement rather than checked against it afterwards.
+
+**An em is the unit because nothing here can measure text.** An em is the text's
+own size, so it scales with the setting without a font in the room, and five of
+them is a floor on *room* rather than a promise about a particular name — a name
+too long for its room is elided by whoever draws it. Anything else would have
+been this crate guessing at metrics it cannot have.
+
+**The decision the item did not contain: which side a dock takes from.** The
+obvious reading of *the short edge* is the screen's short side, and it is wrong.
+One number would let a dock down the left of a wide screen grow to a quarter of
+it while a dock along the bottom of the same screen was squeezed — which is
+precisely the *horizontal bar somebody turned sideways* the promise refuses,
+arriving through the measurement instead of through the drawing. So a dock takes
+from **the side it sits on**: the height for a bottom dock, the width for a side
+one. A wide screen gives a side dock more room, and the two orientations become
+two layouts rather than one rotated.
+
+Two more halves of the same decision fell out of it. A name **beside** an icon
+needs a width where a name **under** one needs a line height, and those are
+different sizes at every text size — so on that screen a side dock loses its
+names at 214% where a bottom dock keeps them to 274%, and neither number could
+have been derived from the other. And **text is never turned ninety degrees**,
+which is why a vertical dock's names sit beside rather than along: rotated text
+is unreadable at a glance and no magnifier or screen reader expects it.
+`Along::text_runs` is a method rather than a comment, so a later change that
+wants to rotate a label has to delete a rule instead of adding one.
+
+**The status area, and the one asymmetry worth defending.** The far end of a
+*row* is the end the reader reaches last — the right in every official EU
+language, the left in Arabic or Hebrew — so a horizontal dock's status area
+follows `alo_strings::Direction`. The far end of a *column* does not: every
+script alo OS ships or is likely to be given is read downwards, so a vertical
+dock's status area is at the bottom in both directions. Mirroring the column
+because the language mirrors the row would put the clock above the applications
+for readers who did not ask for it. Nothing in the Union needs the row half
+today, which is exactly why it is asserted now — `docs/features.md`'s
+right-to-left promise is that adding a language later is translation rather than
+rework, and this is the second crate to pay it in advance.
+
+**Giving way is not taking away, and the reassurance is inside the string.** A
+dock that dropped names as the text grew would be losing content in the one
+setting a person turns up because they cannot read the screen, which is what
+EN 301 549 forbids — unless the name is still there. So `dock.labels.gave-way`
+says, in one sentence, that resting on an icon still gives its name and a screen
+reader still reads it. Putting that in the string rather than beside it means a
+translator is handed it, a checked translation cannot drop it silently, and the
+note tells them which half matters. There is a test on the note, and the
+compositor now owes that sentence a hover and an accessible name — written into
+*blocked — linux*, because a compositor that drew icons without them would make
+this repository say something untrue in twenty-four languages.
+
+**Three smaller ones worth keeping.**
+
+- **A refusal at the door is what lets an answer be an answer.** `Screen::of`
+  refuses a screen too small to hold a dock, so `Layout::of` returns a `Layout`
+  rather than a `Result` and nothing downstream has to handle a layout that
+  could not be made. The floor it refuses below is *worked out* from the
+  ceiling — six times a dock of icons, 384 — rather than picked, and a test
+  asserts one pixel less would not hold a dock, so it is the tightest floor that
+  works rather than a round number above it.
+- **A standard is asserted about what the code hands out, never about the
+  constant behind it.** `assert!(ICON >= SMALLEST_TARGET)` is a test that cannot
+  fail: clippy's `assertions_on_constants` folds it, and without the lint it
+  would still be a compile-time truth dressed as a runtime check. It is written
+  about `Room::an_icon()` instead. This matters beyond this crate —
+  `alo-appearance`'s 200% test survives only because its ceiling comes back from
+  `TextScale::range()` — so **any later crate asserting a floor should assert it
+  about the value the crate produces**, and `room.rs` says why in the test's own
+  documentation.
+- **`alo-dock` is the first of the person's-own-machine crates to reach
+  another.** `alo-shortcuts` and `alo-strings` depend on nothing here and
+  `alo-appearance` on `alo-strings` alone; this one asks `alo-appearance` how big
+  the person has made their text, because how much room a name needs *is* that
+  answer and a second `TextScale` would be a second answer. Nothing reaches it,
+  and it is as far from `alo-capability` as the rest of that group: somebody
+  moving their own dock is not an agent doing anything.
+
+**What the next iteration must know:**
+
+- **The queue has a ready item again: 14, *never a silent fallback*.** Found by
+  this iteration's reading step and deliberately not built. It is the **third**
+  v0.01 promise found with no item at all, after items 11 and 13, and it is a ★
+  one: ADR 0008's *a local model that fails does not quietly become an API call*.
+  Nothing in `crates/` mentions a fallback — searching the whole tree for the
+  word returns nothing — so the thing between *where an answer would come from*
+  and *a departure that is already happening* has never been written. The item
+  names what it must decide first: whether asking somewhere else is a change in
+  the sense of ADR 0001 §5 or a setting turned on in advance.
+- **And one more that is not an item yet: ★ *No telemetry* (v0.01).**
+  `alo-egress` decides about egress an **agent** causes. A promise that alo OS
+  itself sends nothing is about egress with **no agent behind it**, and there is
+  neither a crate nor a blocked entry for it under any name. Whoever reads next
+  should decide whether its portable half is a rule in `alo-egress` or whether
+  all of it is the daemon's — and should write the answer down either way, since
+  that is the fourth promise this file has watched go unlisted.
+- **Reading `docs/features.md` against the queue is still what finds these.**
+  Four iterations in five now. The blocked lists record what somebody once
+  thought was hard; the feature list is the promise.
+- **Nothing here has drawn a dock**, and nothing has been seen by anybody. There
+  is no compositor, no screen and still zero translations in this repository; the
+  German and the Greek in the tests are the tests'. `ROADMAP.md`'s dock line
+  gains a *Built* clause naming `alo-dock` and stays unticked, because a layout
+  model is not a dock until something draws it.

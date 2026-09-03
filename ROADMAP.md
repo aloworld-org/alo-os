@@ -117,7 +117,18 @@ GPU, and it is useful to `alo-workplace` the day it lands.
 - [ ] Launcher and window management: move, resize, snap, tile
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated
-      · Built: nothing — the commit that added this line added no code · Owed: all of it
+      · Built: `alo-dock` — the layout model, and the two orientations as two
+      layouts rather than one turned sideways: names sit under an icon across
+      the screen and beside it down the screen, the thickness comes off the side
+      the dock actually sits on, and the status area is a column at the bottom
+      of a vertical dock while the far end of a horizontal one follows which way
+      the person reads. *Labels give way to icons where the short edge demands
+      it* is arithmetic now rather than a designer's eye, and the threshold is
+      held to EN 301 549's 200% on the smallest screen alo OS lays out for, on
+      all four edges · Owed: the compositor that draws it, and with it everything
+      about the dock that is a picture rather than a measurement — the icons,
+      what is in the status area (v0.5), and the hover and screen-reader name
+      the *gave way* sentence promises is still there
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
       · Built: the decision (ADR 0009), not code · Owed: all of it

@@ -1,0 +1,20 @@
+[package]
+name = "alo-dock"
+version = "0.0.1"
+description = "Where the dock sits, which way it runs, and when a name gives way to an icon — the layout model, measured rather than judged by eye."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-appearance = { path = "../alo-appearance" }
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

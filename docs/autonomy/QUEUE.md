@@ -35,8 +35,8 @@ and stops when there are none left.
 style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
-`crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance` and
-`crates/alo-strings` were
+`crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
+`crates/alo-dock` and `crates/alo-strings` were
 built by the loop and are described in the items below. `alo-context` sits where
 `alo-files` and `alo-applications` do — it reaches `alo-capability` and
 `alo-strings`, nothing reaches it — and it is the only one of the three that
@@ -49,10 +49,16 @@ decides about what leaves, `alo-files` is the only one an agent can reach that
 touches a disk, and `alo-record` observes them and is reachable from none of
 them. `alo-keeping` reaches `alo-record` and puts it on a disk; nothing reaches
 back, which is what keeps *nothing takes an entry out* true of `alo-record`
-while something, somewhere, can shorten a record. The last three depend on
-nothing in this workspace at all, because a person pressing a key on their own
+while something, somewhere, can shorten a record. `alo-shortcuts` and
+`alo-strings` depend on nothing in this workspace at all, and `alo-appearance`
+on nothing but `alo-strings`, because a person pressing a key on their own
 machine, choosing their own wallpaper or reading their own machine in their own
-language is not an agent doing something and needs no grant.
+language is not an agent doing something and needs no grant. **`alo-dock` is the
+first crate in that group to reach another one of it** — it asks
+`alo-appearance` how big the person has made their text, because how much room a
+name needs is that answer and a second `TextScale` would be a second answer.
+Nothing reaches it, and it is as far from `alo-capability` as the other three:
+somebody moving their own dock is not an agent doing anything either.
 
 Seven edges cross that: **`alo-files` depends on `alo-strings`** since item 9b,
 **`alo-shortcuts` does** since 9c, **`alo-appearance` does** since 9d,
@@ -1009,28 +1015,96 @@ deny list.** Two patterns later items must follow:
   somebody, what they have selected and what they have open are Wayland's and
   AT-SPI's to answer, and that half is under *blocked — linux* below.
 
-- [ ] **13. The dock, and the edge a person puts it on** — implements
+- [x] **13. The dock, and the edge a person puts it on** — implements
   `docs/features.md`'s v0.01 *★ the dock, and the person decides where it goes*.
-  **Found by iteration 26's reading step and not built by it**, one item per
-  iteration. It is the second v0.01 promise found with no item at all, and
-  `ROADMAP.md` has been saying so in plain words since the line was added:
-  *· Built: nothing — the commit that added this line added no code*.
+  `crates/alo-dock`, a **new crate**: `edge.rs` (the four, and the whole of what
+  a person chooses), `along.rs` (which way it runs, and the one thing that never
+  turns with it), `measures.rs` (the numbers, and what each answers to),
+  `room.rs` (how much room something takes, and the arithmetic), `screen.rs`
+  (the screen it is laid out on, and the side it takes from), `labels.rs` (what
+  became of the names), `status.rs` (the status area: which end, which way),
+  `layout.rs` (the whole answer, worked out), `shipped.rs`, `changes.rs`,
+  `dock.rs` (the two resolved), `words.rs` (9 phrases), `testing.rs`. 56 unit
+  tests, 8 integration tests — against the real vocabulary in German and Greek —
+  and 1 doctest. **976 tests and 25 doctests across the workspace**, clippy
+  clean.
 
-  The portable half is a layout model and is `alo-appearance`'s shape: which
-  edge (bottom, left, right, top), the orientation that follows from it, the
-  status area that reflows rather than being a horizontal bar someone turned
-  sideways, and the rule that labels give way to icons where the short edge
-  demands it. `alo-shortcuts`' *only the difference is stored* applies, and so
-  does its reason: a better default has to be able to reach every machine that
-  never changed it.
+  **The item said the threshold was the thing to decide, and it was.** *Labels
+  give way to icons where the short edge demands it* is arithmetic now: a dock
+  may take one part in six of the side of the screen it sits on, a name needs a
+  line of text under an icon or five ems of width beside one, and the names stay
+  while both fit. The two numbers are not taste — they are the loosest pair that
+  keeps EN 301 549's *200% without loss of content* on the smallest screen alo
+  OS lays out for, on all four edges, and `layout.rs` has the test that says a
+  tighter share would fail it. **An em is the unit** because nothing in this
+  crate can measure text and an em is the text's own size, so it scales without
+  a font in the room.
 
-  What it must decide before it writes anything is what *the short edge demands
-  it* means, because that is a threshold and a threshold picked by feel is one
-  nobody can test. Two things constrain it and both are already in this
-  repository: `alo-appearance`'s text scaling reaches 300%, so the room a label
-  needs is not a constant, and EN 301 549 is what the answer is measured
-  against rather than a designer's eye. **Per display and hiding when a window
-  needs the room are v0.5** and are not this item.
+  **The decision the item did not contain: which side a dock takes from.** The
+  obvious reading of *the short edge* is the screen's short side, and it is
+  wrong — one number would let a dock down the left of a wide screen grow while
+  a dock along its bottom was squeezed. A dock takes from **the side it sits
+  on**, so a wide screen gives a side dock more room than a bottom one, which is
+  what makes the two orientations two layouts rather than one rotated. The other
+  two halves of that: a name **beside** an icon needs a width where a name
+  **under** one needs a line height, and text is never turned ninety degrees; and
+  the status area is a **column** at the bottom of a vertical dock, while the far
+  end of a horizontal one follows which way the person reads — the left for
+  somebody reading Arabic. A column does not turn over when the reading does,
+  because every script alo OS ships is read downwards.
+
+  Three decisions the next items inherit. **A refusal at the door is what lets an
+  answer be an answer**: `Screen::of` refuses a screen too small to hold a dock,
+  so `Layout::of` returns a `Layout` rather than a `Result` — and the floor it
+  refuses below is worked out from the ceiling rather than picked. **Giving way is
+  not taking away**, and the reassurance is *inside* the string rather than beside
+  it: `dock.labels.gave-way` says the name is still announced and still shown on
+  hover, so a translator is handed it and a checked translation cannot lose it
+  quietly — which is what keeps the 200% rule true when the names do eventually
+  go. **A standard is asserted about what the code hands out, never about the
+  constant behind it**: clippy folds an assertion whose expression is a constant,
+  so `ICON >= 24` written directly is a test that cannot fail; it is written
+  about `Room::an_icon()` instead, and the same is true of every crate that will
+  later assert a floor.
+
+  Built and unit tested. **Nothing here has drawn a dock**: the icons, what is in
+  the status area (v0.5), and the hover and screen-reader name the *gave way*
+  sentence promises are all the compositor's, and that half is under *blocked —
+  linux* below. Per display and hiding when a window needs the room are v0.5 and
+  are deliberately not built.
+
+- [ ] **14. Never a silent fallback** — implements **ADR 0008** and
+  `docs/features.md`'s v0.01 *★ Never a silent fallback: a local model that
+  fails does not quietly become an API call*. **Found by iteration 27's reading
+  step and not built by it**, one item per iteration. It is the third v0.01
+  promise found with no item at all, after the application verbs' portable half
+  (item 11) and the dock (item 13), and the pattern is the same one the journal
+  has been warning about: the blocked lists record what somebody once thought
+  was hard, and the feature list is the promise.
+
+  Nothing in `crates/` mentions a fallback — not `alo-models`, whose
+  `source.rs` says where an answer *would* come from, and not `alo-egress`,
+  which decides about a departure that is already happening. What is missing is
+  the thing between them: **what happens when the source a person chose cannot
+  answer.** `docs/features.md` states the reason in one sentence — *failing to
+  answer is recoverable, a person's records leaving the building because a
+  download was corrupt is not* — so the answer is a refusal that says which
+  source failed and what would have to be approved to ask elsewhere, never a
+  second attempt somewhere else.
+
+  It is buildable here: `alo-models` already has `NotAllowed` for a question the
+  policy refused and `RuntimeError` for a runtime that could not, and the
+  failing half of `Trying` is the shape. What it must decide before writing
+  anything is whether *asking somewhere else* is a change in the sense of ADR
+  0001 §5 — one sentence, one approval, one attempt — or a setting a person
+  turned on in advance, and ADR 0008 is where that is read rather than guessed.
+
+  What is **not** covered anywhere and is not this item: *★ No telemetry* (v0.01,
+  the egress section). `alo-egress` decides about egress an **agent** causes; a
+  promise that alo OS itself sends nothing is about egress with no agent behind
+  it, and there is neither a crate nor a blocked entry for it. Whoever reads
+  next should decide whether its portable half is a rule in `alo-egress` or
+  whether all of it is the daemon's.
 
 ---
 
@@ -1039,7 +1113,13 @@ deny list.** Two patterns later items must follow:
 Not this loop's, on this machine. Listed so the queue is a true picture of v0.01
 rather than only of what is convenient.
 
-- **Compositor** — Wayland via Smithay, one display, keyboard and pointer.
+- **Compositor** — Wayland via Smithay, one display, keyboard and pointer. It
+  owes item 13 the half of the dock that is a picture rather than a
+  measurement: the icons, and the hover and screen-reader name that
+  `dock.labels.gave-way` promises is still there when the names give way. That
+  sentence is a promise made to somebody who turned their text up because they
+  could not read the screen, so a compositor that drew icons without it would
+  make this repository say something untrue in twenty-four languages.
 - **Sign-in and the local account**, the agent overlay, the launcher and window
   management, copy and paste, window switching — all draw on the compositor.
 - **Context on invocation, the reading half** — what is in front of the person,
