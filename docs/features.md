@@ -145,6 +145,9 @@ each portal request is a grant in the sense of ADR 0001.
 - [v0.01] ★ **Context on invocation**: focused window, selection, open document — offered, never watched
 - [v0.01] ★ Grants: pick a folder, see what is granted, revoke it, and it expires
 - [v0.01] Every execution recorded with its origin, approval and grant
+- [v0.5] ★ **The grant is a boundary the kernel imposes, not a rule the daemon follows** (ADR 0013). For the length of one turn, everything outside the grant is *unreachable* — Landlock for the files, seccomp for the syscalls, an eBPF programme on the turn's own cgroup for the sockets. A verb that overreached would fail at the syscall, not be talked out of it
+- [v0.5] ★ **So the record stops being a claim and becomes an observation.** Today it is `alo-agentd`'s honest account of itself, which is an audit log; with the boundary in place, what a turn touched is what the kernel watched it touch. *What did the agent do* is answered by the machine rather than by the program being asked about
+- [v0.5] A turn whose boundary cannot be applied **does not run** — a refusal, not a warning, the same rule `alo-egress` already follows when a policy cannot be evaluated
 - [v0.5] ★ **System verbs** through the privileged broker: printers, network, updates, storage
 - [v0.5] ★ **Application adapters** — installed applications become agents with typed verbs (`@blender`, `@resolve`, `@gimp`); see `docs/contracts/app-adapters.md`
 - [v0.5] The accessibility fallback: any application with no adapter is still readable and operable through its AT-SPI tree

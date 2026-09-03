@@ -537,6 +537,14 @@ sorted the same way v0.01 now is.
 - [ ] ★ **"Why is it slow?"** and **"what is filling my disk?"**
 - [ ] ★ **Printers, solved** — found, set up, and fixed when they stop
 - [ ] ★ **"I can't open this file"** — converted, or plainly explained
+- [ ] ★ **The grant enforced by the kernel** (ADR 0013) — Landlock, seccomp and an
+      eBPF programme on the turn's cgroup, so a verb outside its grant fails at
+      the syscall rather than being refused by our own code, and the record
+      becomes what the kernel watched rather than what the daemon reported.
+      Linux's own extension points from userspace: no kernel written, none
+      patched. **Ordered behind `alo-agentd` and the turn** — there is nothing
+      to enforce until a turn exists, and this is written down now so the turn
+      is built with a boundary rather than retrofitted into one
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing
