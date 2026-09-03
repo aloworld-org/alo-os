@@ -1,8 +1,16 @@
 //! The fixtures this crate's tests are written against.
 //!
-//! Three of them, because this crate is tested against three things it does not
-//! own: a service on the far end of a socket, the words a person reads, and the
-//! places a question may go.
+//! Four of them, because this crate is tested against four things it does not
+//! own: a service on the far end of a socket, a model runtime on this machine,
+//! the words a person reads, and the places a question may go.
+//!
+//! **The runtime is a stub of the trait and the provider is a real socket**,
+//! and the difference is ADR 0006's rather than a shortcut. That ADR put
+//! `alo_models::ModelRuntime` in front of Ollama so that code deciding *what*
+//! to do is testable without a five gigabyte download; the adapter is tested
+//! against a socket in `alo_models::ollama`, which is where the wire actually
+//! is. What this crate decides is the order, and the order is the same whatever
+//! is behind the trait.
 //!
 //! **A real server rather than a mocked HTTP client**, for the reason
 //! `alo-models`' own fixture gives: the thing worth testing is what goes out on
@@ -27,9 +35,12 @@
 
 use std::io::{BufRead as _, Read as _, Write as _};
 use std::net::TcpListener;
+use std::sync::Mutex;
 use std::thread;
 
-use alo_models::{InferenceSource, Provider, Region};
+use alo_models::{
+    InferenceSource, Installed, Loaded, ModelRuntime, ProgressSink, Provider, Region, RuntimeError,
+};
 use alo_strings::{Language, Strings, Translation, Vocabulary, Word};
 
 /// Everything the crates in this journey can say, in one vocabulary.
@@ -86,6 +97,92 @@ pub(crate) fn translated(extra: &[(Word, &str)]) -> Strings {
 /// German, as `alo-strings` names a language.
 pub(crate) fn german() -> Language {
     Language::written("de").unwrap()
+}
+
+/// A model runtime on this machine, which answers one way or fails one way.
+///
+/// It records what it was asked, so a test can assert that a question reached
+/// the runtime exactly as it was written — and, more usefully, that it reached
+/// nothing at all when the permission named somewhere else.
+///
+/// The six methods this crate never calls answer [`RuntimeError::Unreachable`]
+/// rather than panicking: a fixture that panicked would turn a door reaching
+/// for the wrong method into a crash report instead of a test failure with a
+/// name on it.
+///
+/// A `Mutex` rather than a `RefCell`, because `ModelRuntime` is `Sync` — a
+/// runtime is reached by whatever holds a turn, and the trait says so.
+#[derive(Debug)]
+pub(crate) struct Stub {
+    /// What it says when asked, or why it will not.
+    says: Result<String, RuntimeError>,
+    /// Every question put to it, with the model it was put to.
+    asked: Mutex<Vec<(String, String)>>,
+}
+
+impl Stub {
+    /// A runtime that answers with this.
+    pub(crate) fn answering(said: &str) -> Self {
+        Self {
+            says: Ok(said.to_owned()),
+            asked: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// A runtime that fails this way.
+    pub(crate) fn failing(why: RuntimeError) -> Self {
+        Self {
+            says: Err(why),
+            asked: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// The one question it was asked, if it was asked exactly one.
+    pub(crate) fn asked(&self) -> Option<(String, String)> {
+        match self.asked.lock().unwrap().as_slice() {
+            [only] => Some(only.clone()),
+            _ => None,
+        }
+    }
+
+    /// How many questions reached it.
+    pub(crate) fn times_asked(&self) -> usize {
+        self.asked.lock().unwrap().len()
+    }
+}
+
+impl ModelRuntime for Stub {
+    fn installed(&self) -> Result<Vec<Installed>, RuntimeError> {
+        Err(RuntimeError::Unreachable)
+    }
+
+    fn loaded(&self) -> Result<Vec<Loaded>, RuntimeError> {
+        Err(RuntimeError::Unreachable)
+    }
+
+    fn fetch(&self, _id: &str, _progress: &mut dyn ProgressSink) -> Result<(), RuntimeError> {
+        Err(RuntimeError::Unreachable)
+    }
+
+    fn remove(&self, _id: &str) -> Result<(), RuntimeError> {
+        Err(RuntimeError::Unreachable)
+    }
+
+    fn load(&self, _id: &str) -> Result<(), RuntimeError> {
+        Err(RuntimeError::Unreachable)
+    }
+
+    fn unload(&self, _id: &str) -> Result<(), RuntimeError> {
+        Err(RuntimeError::Unreachable)
+    }
+
+    fn answers(&self, question: &str, of_model: &str) -> Result<String, RuntimeError> {
+        self.asked
+            .lock()
+            .unwrap()
+            .push((question.to_owned(), of_model.to_owned()));
+        self.says.clone()
+    }
 }
 
 /// A provider a person added, at this address.

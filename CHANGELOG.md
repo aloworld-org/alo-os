@@ -12,6 +12,36 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A question can now be answered by the model on your own machine, and that
+  path sends nothing anywhere.** The other half of the change below: alo OS
+  could ask a provider you added, and could not ask the model it ships. Now it
+  can, through the runtime, and the difference is one you can check rather than
+  one we describe.
+
+  **Nothing leaves, and nothing pretends to.** There is no indicator line
+  because there is no connection to show — a day of questions answered here
+  leaves a record whose *what left this machine* is empty while the day itself
+  is still in it. That is the promise about zero inference egress with the half
+  of it that is code actually built; the other half is a measurement at the
+  network boundary, on a machine, and is still owed.
+
+  **No rule can stop your machine answering its own question.** A machine set by
+  its organisation to keep everything on this machine answers exactly as
+  normally as one set to permit anything: the strictest rule alo OS has is not a
+  rule about you using your own computer.
+
+  **And neither place is ever a substitute for the other.** A model on this
+  machine that cannot answer does not quietly become a call to a provider you
+  pay for — you are told it failed, told outright that nothing was sent
+  anywhere, and asked once, about that one question, whether to try somewhere
+  else. It runs the other way too: a question you chose a provider for is not
+  answered by the smaller model on your laptop wearing the same face.
+
+  A model that is slow now says so — *the model on this machine did not answer
+  in the time alo OS waits* — rather than reporting that nothing was running,
+  which on a machine without a graphics card is the ordinary case rather than a
+  fault. Nothing here has been run against a real model runtime on any machine.
+
 - **alo OS can now put a question to a model.** Until this change nothing in
   the system did: it knew where an answer may come from, what your
   organisation's rule permits, what to do when the place you chose cannot

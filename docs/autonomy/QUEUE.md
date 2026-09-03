@@ -41,7 +41,11 @@ style the rest should match, and two of its decisions constrain later items.
 below. **`alo-asking` is the only one of them that does anything to the world
 outside this machine**, and it is the only one that reaches five others: it
 holds no decision of its own, and every step it takes is one of theirs, in the
-order they have to happen in. Nothing reaches it, and it deliberately does not
+order they have to happen in. Since item 18a it has **two doors that divide on
+law 1** — one that leaves and one that does not — so the sentence above is
+narrower than it reads: it is the only crate that does anything outside this
+machine, and one of its two doors deliberately does nothing outside it at all.
+Nothing reaches it, and it deliberately does not
 reach `alo-record` — it hands back the departure instead, which is what keeps
 *the record observes, and is reachable from none of the crates it observes* true
 of the crate that causes the largest egress this product has. **`alo-answering` is
@@ -1404,11 +1408,15 @@ deny list.** Two patterns later items must follow:
 started: *or use an API instead*, *agents point at the local model*, *every
 execution recorded*, `alo-agentd` itself, and the model stack's own last mile.
 The roadmap said the same sentence three separate times — *there is still no
-method anywhere in this repository that puts a question to a model* — and
-**item 18 answered it for a hosted provider**: `alo-asking` sends one, shows it
-leaving, and brings back the answer, the departure and the failure. What is
-still true is the rest of the sentence. Fourteen crates decide correctly, one of
-them acts, and there is no daemon holding any of them.
+method anywhere in this repository that puts a question to a model* — and it is
+now false in both of the two places this repository can reach. **Item 18
+answered it for a hosted provider**: `alo-asking` sends one, shows it leaving,
+and brings back the answer, the departure and the failure. **Item 18a answered
+it for a model on this machine**: the same crate, a second door, and nothing on
+the indicator because nothing goes anywhere. What is left of the sentence is the
+third place, a machine on this network, which neither door reaches and both
+refuse in words. Fourteen crates decide correctly, one of them acts, and there
+is no daemon holding any of them.
 
 **All of it is portable.** No compositor, no certified machine, no GPU. A turn
 is a function call, and its result is a value to assert on. The acting halves
@@ -1477,23 +1485,75 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   verification — `docs/quirks.md` records the two conventions it depends on and
   says the same thing about both.
 
-- [ ] **18a. The same path to a model on this machine.** The half item 18 cut,
-  and cut for the reason it was written to be cut: `InferenceSource::ThisMachine`
-  causes no egress, so there is no `Leaving`, no `Departing` and nothing for law
-  1 to show — which makes it a different path rather than a branch, and
-  `alo-asking`'s door refuses it in words that say so. It needs the thing the
-  hosted path did not: `ModelRuntime` has no method that puts a question to a
-  model, so this item adds one to the trait and to the Ollama adapter (ADR 0006's
-  *the only file that knows Ollama exists*), and answers the question that comes
-  with it — whether an OpenAI-compatible provider a person pointed at loopback is
-  the runtime's path or `alo-asking`'s.
+- [x] **18a. The same path to a model on this machine.** The half item 18 cut,
+  and the third thing this repository has ever done to a model. `alo-models`:
+  `ModelRuntime::answers` — the method that trait never had — plus
+  `RuntimeError::TookTooLong` and its word, and the Ollama adapter carrying a
+  question over `/api/chat` (ADR 0006's *the only file that knows Ollama
+  exists*). `alo-asking`: `locally.rs`, the second door, and `NotAnswered` in
+  `refusing.rs`. 96 unit tests in `alo-models` (was 90), 48 in `alo-asking` (was
+  39), 3 new integration tests through `alo-answering`, `alo-egress` and
+  `alo-record` at once, and 1 new `compile_fail` doctest. **1157 tests and 39
+  doctests across the workspace** (was 1140 and 38), clippy clean.
 
-  **What it must not do** is grow a branch inside `to_a_provider`, and must not
-  become a place where either path can substitute for the other: ADR 0008 runs
-  both ways, and neither is the other's fallback.
+  **Two doors, and what divides them is law 1 rather than what speaks at the far
+  end.** `to_a_provider` is four steps because something leaves;
+  `to_this_machine` is two because nothing does. It takes no `Indicator`, makes
+  no `Departing` and asks no policy — the last because there is no rule that can
+  forbid a machine answering its own question, which is walked as a test over
+  every `SourcePolicy` rather than written down as a sentence, so a fifth
+  variant that did forbid it fails there instead of being permitted by a door
+  that never asks. `docs/features.md`'s *a working day with a local model
+  produces zero inference egress* is as far as code can carry it: the door has
+  no parameter for an indicator, so there is no line to forget.
 
-  Buildable here and testable here — a stub on a real socket, as item 18's is —
-  but *running* it against a real Ollama stays under **blocked — hardware**.
+  **The decision the item asked for, and both halves of it.** An
+  OpenAI-compatible service somebody pointed at loopback is **this machine** in
+  what it means — `Provider::source` already says so, nothing leaves, an answer
+  from it says *on this machine* — and it is **not the runtime** in what it is:
+  alo OS cannot list, fetch, load or remove models on a service it did not
+  install, so a `ModelRuntime` for one would be four methods that only refuse,
+  which is a stub wearing an interface. So this door takes the runtime alo OS
+  ships and item 18b below is the other local shape. `docs/quirks.md` records
+  what came with that: **loopback is taken at face value**, so a proxy on
+  `127.0.0.1` would be believed by every type here, and the place that is caught
+  is egress enforcement at the network boundary.
+
+  Three decisions the next items inherit. **A refusal names the door the
+  permission's own place is behind, and never the other one** — `Miswired` gained
+  `NotTheRuntime` and `NoPathToAPairedMachine`, and `NotAProvider` stopped saying
+  *ask the runtime instead* about a paired machine, which was harmless advice
+  while no local path existed and is a substitution ADR 0008 forbids now that one
+  does. **The catalogue gates downloading and not asking**: offering is what we
+  fetch, and a model already on somebody's disk is theirs — refusing to use it
+  would be alo OS overruling the owner of the machine. **A slow model is not a
+  missing one**: `RuntimeError::TookTooLong` exists because ADR 0007 makes the
+  CPU the default, so thinking for five minutes is ordinary, and *nothing was
+  running* would send somebody to look at a fault that is not there.
+
+  Built and unit tested against a stub of the trait, and the adapter against a
+  stub on a real socket. **Not run against a real Ollama on any machine**, which
+  is owed with the rest of the hardware verification; `docs/quirks.md` records
+  the runtime's two chat APIs and says the same thing about them.
+
+- [ ] **18b. An OpenAI-compatible service somebody runs on this machine.** Cut
+  from 18a, which answered what it is and did not build it: vLLM, llama.cpp's
+  server or LM Studio on loopback, which alo OS did not install and cannot
+  manage. It is `InferenceSource::ThisMachine` and causes no egress, so it
+  belongs behind the local door — and it is not a `ModelRuntime`, so
+  `to_this_machine` as it stands cannot carry it.
+
+  **The dangerous part is the reason it is its own item.** Whatever carries it
+  reaches `hosted.rs`'s request shape without a `Departing`, which is a second
+  road to a socket in the crate whose whole design is that there is one. It must
+  therefore police loopback itself — a `Hosted` pointed at
+  `https://api.mistral.ai` must not become a way to send a question with the
+  indicator quiet — and that check is the item rather than the plumbing around
+  it.
+
+  Ready when somebody wants it. Nothing is blocked on it: a person who has such
+  a service today can add it as a provider and reach it through neither door,
+  which is a hole they can see rather than one that answers wrongly.
 
 - [ ] **19. A turn, end to end, headless.** The item that makes the other twelve
   crates one system: invocation → `alo-context` for what was offered →

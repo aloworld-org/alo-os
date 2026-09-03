@@ -1,6 +1,13 @@
-//! The one door: a question, a provider, and the order the two are joined in.
+//! The door that leaves: a question, a provider, and the order the two are
+//! joined in.
 //!
-//! Everything this crate is for is the **order**, and it is four steps that
+//! There are two doors, and they divide on law 1 rather than on what speaks at
+//! the far end. This is the one where something leaves the machine, which is
+//! why it is four steps rather than two; [`crate::locally`] is the other, and
+//! has no indicator, no departure and no rule to ask because nothing on it goes
+//! anywhere.
+//!
+//! Everything this door is for is the **order**, and it is four steps that
 //! cannot be taken in any other sequence, because each one produces what the
 //! next one needs.
 //!
@@ -67,16 +74,20 @@ use crate::unanswered::DidNotAnswer;
 #[derive(Debug)]
 pub struct Asking<'a> {
     /// Whose authority the egress is under.
-    agent: &'a Grantee,
+    ///
+    /// `pub(crate)` so that [`crate::locally`] — the other door — reads the
+    /// same four fields rather than being handed them again through
+    /// accessors nothing outside this crate would ever call.
+    pub(crate) agent: &'a Grantee,
     /// Where the question may go, decided before this crate was reached.
-    answering: Answering,
+    pub(crate) answering: Answering,
     /// Every other place this machine has, in the order the person set them up
     /// — for the offer, if this one does not answer. Not a list of fallbacks:
     /// nothing here reads it except to hand it to `alo-answering`, which makes
     /// offers out of it that only a person can take.
-    others: &'a [InferenceSource],
+    pub(crate) others: &'a [InferenceSource],
     /// What this machine is set to permit.
-    policy: &'a SourcePolicy,
+    pub(crate) policy: &'a SourcePolicy,
 }
 
 impl<'a> Asking<'a> {
@@ -151,9 +162,15 @@ impl<'a> Asking<'a> {
         match &source {
             // A question answered on this machine causes no egress at all, so
             // there is no departure to be made and nothing for this door to
-            // show — the runtime answers it, and that is not this crate's.
-            InferenceSource::ThisMachine | InferenceSource::PairedMachine { .. } => {
+            // show. Since item 18a there is a door that does answer it, and the
+            // refusal names that one — never a provider, because the person
+            // chose this machine.
+            InferenceSource::ThisMachine => {
                 return Err(Miswired::NotAProvider.into());
+            }
+            // And nothing anywhere reaches a machine on this network yet.
+            InferenceSource::PairedMachine { .. } => {
+                return Err(Miswired::NoPathToAPairedMachine.into());
             }
             InferenceSource::Hosted { .. } if source != hosted.named_source() => {
                 return Err(Miswired::AnotherPlace.into());
@@ -444,7 +461,7 @@ mod tests {
                 InferenceSource::PairedMachine {
                     machine: "the studio workstation".to_owned(),
                 },
-                Miswired::NotAProvider,
+                Miswired::NoPathToAPairedMachine,
             ),
         ] {
             let not_asked = Asking::by(

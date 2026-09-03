@@ -10,19 +10,33 @@
 //!
 //! Two things this deliberately does **not** do.
 //!
-//! It does not offer a model the catalogue does not list. Ollama's own library
-//! is not curated and states no licences; `docs/features.md` promises a curated
-//! catalogue with licences, and that promise would be hollow if any name could
-//! be passed through. So [`Ollama::fetch`] refuses an id the catalogue does not
-//! carry, with [`RuntimeError::NotOffered`].
+//! It does not *offer* a model the catalogue does not list. Ollama's own
+//! library is not curated and states no licences; `docs/features.md` promises a
+//! curated catalogue with licences, and that promise would be hollow if any
+//! name could be downloaded through here. So [`Ollama::fetch`] refuses an id the
+//! catalogue does not carry, with [`RuntimeError::NotOffered`] — and
+//! [`Ollama::answers`] deliberately does not, because offering is downloading:
+//! a model already on somebody's disk is theirs, and refusing to ask it
+//! anything would be alo OS overruling the owner of the machine about their own
+//! hardware rather than keeping a promise about what we ship.
 //!
 //! And it exposes no way to send an arbitrary request. The trait forbids it
 //! (law 2), and an adapter that quietly added one would put the escape hatch
-//! back where the trait had removed it.
+//! back where the trait had removed it. [`Ollama::answers`] is not that hatch
+//! and is worth saying so about: it carries a question to a model, which is
+//! text for a model to read, never a command for this machine to run.
+//!
+//! # What a question does to this file, and what it does not
+//!
+//! A question is the only thing here that is somebody's own words, and it is
+//! borrowed for the length of one request. It goes into one JSON body and
+//! nowhere else: not into a `RuntimeError`, which has no field for it, and not
+//! into anything this file keeps. ADR 0001 §7 is what that is for, and
+//! `a_question_goes_into_the_body_and_nowhere_else` is the test.
 
 use std::time::Duration;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::catalogue::Catalogue;
 use crate::runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
@@ -35,7 +49,31 @@ pub const DEFAULT_ENDPOINT: &str = "http://127.0.0.1:11434";
 /// How long to wait on a call that should be quick. Listing what is installed
 /// is a local read; if it has not answered in this long, the runtime is not
 /// well, and saying so beats hanging a user interface.
+///
+/// A timeout here stays [`RuntimeError::Unreachable`] rather than becoming
+/// [`RuntimeError::TookTooLong`], and the difference is real: a listing that
+/// takes ten seconds means something is wrong, while a model that takes five
+/// minutes means it is thinking. Only [`Ollama::answers`] can say the second.
 const QUICK_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// How long this machine waits for a model on it to answer.
+///
+/// Longer than the two minutes `alo_asking::hosted` waits for a provider, and
+/// deliberately: ADR 0007 makes the CPU the default, and a model thinking on a
+/// CPU is slower than the same question put to somebody's service on a card
+/// they own. **This machine waits longer for itself than for anybody else.**
+/// Finite all the same — a wait with no end is indistinguishable from a hang,
+/// and [`RuntimeError::TookTooLong`] is a sentence a person can act on.
+const WHILE_A_MODEL_THINKS: Duration = Duration::from_secs(300);
+
+/// The most of an answer that is read.
+///
+/// The reply is on this machine and is still not read without a bound: no model
+/// writes a megabyte in one answer, so this costs nothing real, and an answer
+/// past it is [`RuntimeError::Unusable`] rather than half of what the model
+/// said. `alo_asking::hosted` holds a provider to the same number for the same
+/// reason.
+const MOST_OF_AN_ANSWER: u64 = 1_000_000;
 
 /// How long a deliberately loaded model stays in video memory without use.
 /// Long enough that a person who loaded it on purpose does not find it gone by
@@ -104,6 +142,49 @@ struct PsEntry {
     /// the wrong number for this question.
     #[serde(default)]
     size_vram: u64,
+}
+
+/// `/api/chat` — one question, put to a model on this machine.
+///
+/// Ollama's own chat call rather than its OpenAI-compatible one. Both work; this
+/// is the runtime speaking its own language, which is what keeps ADR 0006's
+/// promise literal — the file that knows Ollama exists uses Ollama's API, and
+/// nothing about our shape is chosen to look like somebody else's.
+#[derive(Serialize)]
+struct ChatRequest<'a> {
+    /// Ollama's `family:tag` name, applied here and nowhere else.
+    model: String,
+    /// The conversation, which is one message: alo OS composes no preamble of
+    /// its own and sends no previous turn.
+    messages: [ChatMessage<'a>; 1],
+    /// Whole answers only. Nothing in this repository has decided what a
+    /// half-arrived answer is, so none is asked for.
+    stream: bool,
+}
+
+/// One message in that call.
+#[derive(Serialize)]
+struct ChatMessage<'a> {
+    /// Who is speaking. Always the person.
+    role: &'a str,
+    /// What they asked. Borrowed, and this is the only place it goes.
+    content: &'a str,
+}
+
+/// What `/api/chat` answers with.
+#[derive(Deserialize)]
+struct ChatResponse {
+    /// What the model wrote, absent on a reply that is not an answer.
+    #[serde(default)]
+    message: Option<ChatSaid>,
+}
+
+/// The message a model wrote.
+#[derive(Deserialize)]
+struct ChatSaid {
+    /// Its text.
+    #[serde(default)]
+    content: String,
 }
 
 /// One line of `/api/pull`'s streamed response.
@@ -288,6 +369,53 @@ impl ModelRuntime for Ollama {
 
     fn unload(&self, id: &str) -> Result<(), RuntimeError> {
         self.keep_alive(id, "0")
+    }
+
+    fn answers(&self, question: &str, of_model: &str) -> Result<String, RuntimeError> {
+        let body = ChatRequest {
+            model: Self::runtime_name(of_model),
+            messages: [ChatMessage {
+                role: "user",
+                content: question,
+            }],
+            stream: false,
+        };
+        let response = ureq::post(format!("{}/api/chat", self.endpoint))
+            .config()
+            .timeout_global(Some(WHILE_A_MODEL_THINKS))
+            .build()
+            .send_json(&body);
+        let mut response = match response {
+            Ok(response) => response,
+            // Ollama answers 404 for a model it does not hold. The person asked
+            // a model that is not on this machine, which is a different thing
+            // from the runtime not being there.
+            Err(ureq::Error::StatusCode(404)) => {
+                return Err(RuntimeError::NotInstalled(of_model.to_owned()));
+            }
+            // It is there and it is thinking. ADR 0007's CPU default makes this
+            // ordinary rather than broken, and saying "nothing was running"
+            // would send somebody to look at a runtime that is busy.
+            Err(ureq::Error::Timeout(_)) => return Err(RuntimeError::TookTooLong),
+            // Something answered, and not with an answer. Its own words are not
+            // repeated: this crate's errors never carry a backend response body.
+            Err(ureq::Error::StatusCode(_)) => return Err(RuntimeError::Unusable),
+            Err(_) => return Err(RuntimeError::Unreachable),
+        };
+        let body = response
+            .body_mut()
+            .with_config()
+            .limit(MOST_OF_AN_ANSWER)
+            .read_to_string()
+            .map_err(|_| RuntimeError::Unusable)?;
+        let said: ChatResponse = serde_json::from_str(&body).map_err(|_| RuntimeError::Unusable)?;
+        let said = said.message.map(|m| m.content).unwrap_or_default();
+        if said.trim().is_empty() {
+            // A reply with no answer in it is not an empty answer to show
+            // somebody: they asked something and nothing came back.
+            return Err(RuntimeError::Unusable);
+        }
+        Ok(said)
     }
 }
 
@@ -498,6 +626,118 @@ mod tests {
             without_spaces(&request).contains(r#""keep_alive":"0""#),
             "unloading must ask for a zero keep-alive: {request}"
         );
+    }
+
+    /// **The path the zero-egress promise is about.** A question goes to a
+    /// model on this machine, the answer comes back as the model wrote it, and
+    /// the whole of what went out is the model, the one message and
+    /// `stream: false` — no preamble alo OS composed, no previous turn, nothing
+    /// identifying the machine or the person.
+    #[test]
+    fn a_question_goes_into_the_body_and_nowhere_else() {
+        let (url, server) = serving(
+            r#"{"model":"mistral-7b-instruct:latest","message":{"role":"assistant","content":"No, not without written consent."},"done":true}"#,
+            200,
+        );
+        let answer = Ollama::at(&url, catalogue())
+            .answers("may the tenant sublet?", "mistral-7b-instruct")
+            .unwrap();
+        let request = server.join().unwrap();
+
+        assert_eq!(answer, "No, not without written consent.");
+        assert!(request.starts_with("POST /api/chat "), "{request}");
+        let body = request.split("\r\n\r\n").nth(1).unwrap_or_default();
+        let sent: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert_eq!(
+            sent,
+            serde_json::json!({
+                // Ollama's naming convention, applied here and nowhere else.
+                "model": "mistral-7b-instruct:latest",
+                "messages": [{"role": "user", "content": "may the tenant sublet?"}],
+                "stream": false,
+            }),
+            "{request}"
+        );
+    }
+
+    /// **A question is somebody's own words and this crate keeps none of
+    /// them.** It goes into one body; nothing that comes back out of this file
+    /// carries it, because no error here has a field it could travel in.
+    #[test]
+    fn a_question_never_comes_back_out_in_anything_this_file_answers_with() {
+        let (url, server) = serving(r#"{"error":"model not found"}"#, 404);
+        let err = Ollama::at(&url, catalogue())
+            .answers("what is in this contract?", "mistral-7b-instruct")
+            .unwrap_err();
+        server.join().unwrap();
+        assert!(
+            matches!(&err, RuntimeError::NotInstalled(id) if id == "mistral-7b-instruct"),
+            "{err:?}"
+        );
+        let rendered = format!("{err:?}");
+        assert!(!rendered.contains("contract"), "{rendered}");
+        let said = err.said(&crate::testing::in_english()).text().to_owned();
+        assert!(!said.contains("contract"), "{said}");
+    }
+
+    /// **Asking is not gated by the catalogue, and downloading is.** A model on
+    /// somebody's own disk is theirs; the licence promise is about what alo OS
+    /// offers to fetch, and refusing to use what is already installed would be
+    /// this system overruling the owner of the machine.
+    #[test]
+    fn a_model_the_catalogue_does_not_list_can_still_be_asked_if_it_is_installed() {
+        let (url, server) = serving(
+            r#"{"message":{"role":"assistant","content":"it answered anyway"}}"#,
+            200,
+        );
+        let ollama = Ollama::at(&url, catalogue());
+        let answer = ollama.answers("anything?", "some-uncurated-model").unwrap();
+        let request = server.join().unwrap();
+        assert_eq!(answer, "it answered anyway");
+        assert!(request.contains("some-uncurated-model:latest"), "{request}");
+
+        // And the gate that is a gate is still shut, on a runtime nothing is
+        // listening on — so a leak would read as Unreachable rather than pass.
+        let err = Ollama::at("http://127.0.0.1:1", catalogue())
+            .fetch("some-uncurated-model", &mut Progress::ignored())
+            .unwrap_err();
+        assert!(matches!(err, RuntimeError::NotOffered(_)), "{err:?}");
+    }
+
+    /// Something answered, and it was not an answer. Four shapes of the same
+    /// sentence to the person who asked: they asked, and nothing came back.
+    #[test]
+    fn a_reply_that_is_not_an_answer_is_unusable_rather_than_shown() {
+        for (body, status) in [
+            ("<!doctype html><title>Welcome</title>", 200),
+            (r#"{"done":true}"#, 200),
+            (r#"{"message":{"role":"assistant","content":"   "}}"#, 200),
+            (r#"{"error":"something at that end"}"#, 500),
+        ] {
+            let (url, server) = serving(body, status);
+            let err = Ollama::at(&url, catalogue())
+                .answers("may the tenant sublet?", "mistral-7b-instruct")
+                .unwrap_err();
+            server.join().unwrap();
+            assert_eq!(err, RuntimeError::Unusable, "{body}");
+            // Whatever it said about itself does not travel into what a person
+            // reads: there is nowhere in the variant for it to travel.
+            let said = err.said(&crate::testing::in_english()).text().to_owned();
+            assert!(!said.contains("something at that end"), "{said}");
+        }
+    }
+
+    /// A runtime that is not running is not a model that is slow, and the two
+    /// sentences send a person to different places.
+    #[test]
+    fn nothing_listening_is_unreachable_and_not_a_model_thinking() {
+        let err = Ollama::at("http://127.0.0.1:1", catalogue())
+            .answers("may the tenant sublet?", "mistral-7b-instruct")
+            .unwrap_err();
+        assert_eq!(err, RuntimeError::Unreachable);
+        assert_ne!(err, RuntimeError::TookTooLong);
+        let said = RuntimeError::TookTooLong.said(&crate::testing::in_english());
+        assert!(said.text().contains("did not answer in the time"), "{said}");
     }
 
     #[test]

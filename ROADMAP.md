@@ -119,8 +119,12 @@ compositor is not required for, which is why it runs unbroken.
       runtime (ADR 0006)
   - [x] **The code.**
         `alo-models` — the catalogue with its licence gate, `ModelRuntime`,
-        and the Ollama adapter, the one file allowed to name it. 91 tests,
-        several of them against a real socket rather than a mock
+        and the Ollama adapter, the one file allowed to name it. Since item
+        18a the *serve* in this line is real rather than a heading:
+        `ModelRuntime::answers` puts a question to a model and the adapter
+        carries it over the runtime's own chat API, so the trait manages
+        models **and** uses one. 96 tests, several of them against a real
+        socket rather than a mock
   - [ ] **On the machine.**
         it has never been run against a real Ollama — on any machine, with or
         without a card, because a CPU-only box is the one this has to work on
@@ -153,14 +157,21 @@ compositor is not required for, which is why it runs unbroken.
         elsewhere. **And `alo-asking`, which actually puts the question**: a
         provider is asked over https, the egress is on the indicator before
         the socket opens, the rule in force at that moment decides, and the
-        answer comes back carrying where it came from. 46 tests, most of them
-        against a stub on a real socket
+        answer comes back carrying where it came from. Since item 18a **all
+        three of the ADR's places that this repository can reach are
+        reachable**: `to_this_machine` puts the same question to the model
+        alo OS ships, with no indicator, no departure and no rule to ask,
+        because nothing on that path goes anywhere. Two doors that divide on
+        law 1 rather than on what speaks at the far end, and each refuses a
+        permission the other one is behind. 57 tests, most of them against a
+        stub on a real socket or a stub of the runtime trait
   - [ ] **On the machine.**
         a provider somebody pays for, answering a real question with a real
-        key — none of this has been run against one. The **same path to a
-        model on this machine** is code rather than machine and is not built:
-        it needs a `ModelRuntime` that can be asked something, which is the
-        next item in the queue
+        key, and a real model runtime answering one on this machine — neither
+        has been run against the real thing. A question to **a machine on
+        your network** is the third place and has no path in this repository
+        at all: both doors refuse a permission naming one, in words that say
+        so and offer neither of the other two instead
 
 - [ ] ★ **Where the answer came from is said where the answer appears** — "on
       this machine", "on the studio workstation", "by a provider you added" —
@@ -192,15 +203,21 @@ compositor is not required for, which is why it runs unbroken.
         cannot answer: the failure named with the place it happened, the
         line saying nothing was sent and nothing will be, and asking
         somewhere else as one sentence a person approves for exactly one
-        question rather than a setting anybody can leave on
+        question rather than a setting anybody can leave on. Since item 18a
+        **★ never a silent fallback runs both ways in code and not only in
+        the ADR**: the local door is where *a local model that fails becomes
+        an API call* would have been written as a convenience, and what it
+        does instead is hand back the same failure, whose only way onward is
+        an offer somebody answered
   - [ ] **On the machine.**
         something that points, which is `alo-agentd`. *Something that asks*
-        is no longer owed here: `alo-asking` puts a question to a hosted
-        provider and hands back a failure whose only door onward is an offer
-        a person answered, so **never a silent fallback** is now carried by
-        the code that would have had to contain the fallback. What is left of
-        the machine half is the daemon that points at the local model, and
-        the local model being asked at all
+        is no longer owed here at all: `alo-asking` puts a question to a
+        hosted provider **and** to the model on this machine, and hands back
+        a failure whose only door onward is an offer a person answered — so
+        the fallback is carried by the code that would have had to contain
+        it, in both directions. What is left of the machine half is the
+        daemon that points at the local model, and a real runtime answering
+        a real question, which needs Ollama installed
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine

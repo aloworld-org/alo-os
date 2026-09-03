@@ -3982,3 +3982,158 @@ No half was ticked that was not whole, and no machine half was touched.
   `docs/quirks.md` gained two entries — what a provider's status code means when
   a *question* fails, and ureq sending a pretty-printed body — and both of them
   say plainly that they have not been checked against a live service.
+
+---
+
+## 2026-09-03 — iteration 35: the question that goes nowhere
+
+**Item 18a — the same path to a model on this machine.** `alo-models` gained
+`ModelRuntime::answers`, the method that trait has never had, plus
+`RuntimeError::TookTooLong` and its word; `ollama.rs` carries a question over the
+runtime's own `/api/chat`. `alo-asking` gained `locally.rs` — a second door — and
+`NotAnswered` beside `NotAsked`. 96 unit tests in `alo-models` (was 90), 48 in
+`alo-asking` (was 39), 3 new integration tests, 1 new `compile_fail` doctest.
+**1157 tests and 39 doctests across the workspace**, `cargo fmt` clean,
+`cargo clippy --workspace --all-targets -D warnings` clean.
+
+### The two doors divide on law 1, not on what speaks at the far end
+
+The item's own warning was *do not grow a branch inside `to_a_provider`*, and the
+useful form of that turned out to be a sentence about what the two paths actually
+are. It is tempting to read them as *hosted* and *local*, which makes the local
+one look like the hosted one with the network taken out — and then every
+difference is an omission somebody could put back for convenience.
+
+They are **the path where something leaves** and **the path where nothing does**,
+and that is the only difference that matters:
+
+| | `to_a_provider` | `to_this_machine` |
+|---|---|---|
+| Steps | Four | Two |
+| The indicator | Shown before a socket opens | Not a parameter |
+| The rule in force now | Asked again, and can refuse | Nothing to ask |
+| What comes back | `Asked` — an answer **and** the departure | `Answer` — there is no departure |
+| Refusals | `NotAsked`, four | `NotAnswered`, two |
+
+`NotAnswered` is `NotAsked` with law 1's two variants removed, and **the two
+missing variants are the zero-egress claim**. There is no `CannotBeShown` because
+nothing is shown, and no `HeldBack` because nothing can be held back. A type with
+either would be a type that believed something might leave.
+
+### The refusal that had to change, and 18a is what made it wrong
+
+`Miswired::NotAProvider` said *ask the runtime instead, and do not send it here*
+for both `ThisMachine` **and** `PairedMachine`. That was written in iteration 34
+and was harmless then, because there was no runtime path for it to be advice
+towards. It is not harmless now.
+
+For `ThisMachine` it is correct and is routing: the runtime is the place the
+permission names. For `PairedMachine` it is **a substitution ADR 0008 forbids**,
+worded as helpfulness — the person chose a machine in the next room, and the
+sentence tells whoever is wiring it to answer them from this one instead.
+
+So `Miswired` is five variants now, and the rule they are all held to is a test:
+each names the door the permission's own place is behind, and the one place with
+no door offers neither of the other two. `NoPathToAPairedMachine` is that place.
+It is not a stub — there is nothing half-built behind it — it is the honest
+answer that this repository cannot carry a question to a paired machine, said
+where somebody would otherwise have to find out.
+
+### The decision the item asked for, and it has two halves
+
+*Whether an OpenAI-compatible provider a person pointed at loopback is the
+runtime's path or `alo-asking`'s.*
+
+**What it means: this machine.** `Provider::source` already answers
+`ThisMachine` for any loopback address, nothing leaves, law 1 shows nothing, and
+an answer from it says *on this machine*. Which door a question takes is decided
+by whether it leaves — not by what shape the far end speaks.
+
+**What it is: not the runtime.** alo OS cannot list, fetch, load or remove models
+on a service it did not install. A `ModelRuntime` implementation whose four
+management methods only refuse would be a stub wearing an interface, which law 3
+forbids, and it would make the trait mean less everywhere else.
+
+So the door takes the runtime alo OS ships, and the other local shape is **item
+18b**, written into the queue with the reason it is its own item: whatever
+carries it reaches `hosted.rs`'s request shape *without* a `Departing`, which is
+a second road to a socket in the crate whose whole design is that there is one.
+It must police loopback itself, and that check is the item.
+
+### The thing that came with it, and is now written down
+
+**Loopback is taken at face value**, everywhere in this repository. A process
+listening on `127.0.0.1` that forwards a question off the machine would be
+believed by `Provider::source`, by `Leaving::asking`, by the policy and by both
+doors, and the person would read a quiet indicator.
+
+Nothing is done about it in code, deliberately. Refusing loopback breaks the
+ordinary case ADR 0007 makes the default; inspecting what is listening is a guess
+about a process. The place it is caught is **egress enforcement at the network
+boundary**, which is already a Linux item, and law 2 is what keeps the hole small
+— an agent cannot start the proxy. `docs/quirks.md` has it, because a promise
+with a hole nobody wrote down is a promise somebody will discover.
+
+### Three smaller decisions, each of which could have gone the lazy way
+
+- **The catalogue gates downloading and does not gate asking.** The licence
+  promise in `docs/features.md` is about what alo OS *offers*, which is what it
+  fetches. A model already on somebody's disk was either fetched through that
+  gate or put there by the person whose machine it is, and refusing to ask it
+  anything would be this system overruling the owner of the machine about their
+  own hardware. `ollama.rs`'s module documentation used to say it does not offer
+  a model the catalogue does not list; it now says which of the two calls that is
+  true of, and why.
+- **A slow model is not a missing one.** Every ureq error in `ollama.rs` used to
+  become `RuntimeError::Unreachable`. On a question that would tell somebody
+  *nothing was running* about a machine that was thinking — and ADR 0007 makes
+  the CPU the default, so thinking for minutes is the ordinary case. Hence
+  `TookTooLong`, one new variant and one new word. A timeout on a *listing* stays
+  `Unreachable`, and the comment on `QUICK_TIMEOUT` says why: ten seconds for a
+  local read means something is wrong.
+- **This machine waits longer for itself than for anybody else.** Five minutes
+  for the runtime against two for a provider, for the same ADR 0007 reason.
+
+### No new string, and that is the finding rather than an omission
+
+`alo-asking` still declares two words, the shortest list in the workspace. A
+second door and nothing to say: *on this machine* is `alo-models`', *nothing
+answered on this machine* is `alo-answering`'s, and `Miswired` keeps its English
+because its reader is whoever wired the door. A list that grew with every path
+would be a list that had started saying things twice, which is the failure the
+9-series spent six items removing.
+
+### `ROADMAP.md` moved, and three lines were written into
+
+- **Model stack: catalogue, pull, serve, unload, remove** — the *serve* in that
+  line was a heading over a trait that could not be asked anything. Its code half
+  now names `ModelRuntime::answers` and the adapter that carries it.
+- **★ Or use an API instead** — the code half now says all three of ADR 0008's
+  places that this repository can reach are reachable, and the machine half says
+  plainly that the third place, a machine on your network, has no path here at
+  all and that both doors refuse it.
+- **Agents point at the local model / ★ never a silent fallback** — its machine
+  half said *the local model being asked at all* was still owed. It is not. The
+  code half now records that the ADR's both-ways rule is carried by the code that
+  would have had to contain the fallback, in both directions.
+
+No half was ticked that was not whole, and no machine half was touched.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 19**, a turn end to end and headless: the item
+  that makes the other fourteen crates one system. Both ways of getting an answer
+  now exist, so the model half of that turn is a call rather than a gap. 18b is
+  ready and is nobody's blocker; 16b is still *not ready* rather than blocked,
+  for the reason it states.
+- **`Miswired` is a public surface that changed shape**, not only grew:
+  `NotAProvider` narrowed to mean `ThisMachine` alone. Nothing outside this
+  repository builds against it yet, and the `CHANGELOG.md` line is about what a
+  person can do rather than about the enum.
+- **Nothing here has been run against a real Ollama**, on any machine. Everything
+  is a stub of the trait or a stub on a real socket, and `docs/quirks.md` gained
+  two entries — the runtime's two chat APIs and what its 404 means, and the
+  loopback one above — both of which say outright what has not been checked.
+- **A `ModelRuntime` implementor now has seven methods.** A second implementation
+  (vLLM, at v1) is a bigger job than it was this morning by exactly one method,
+  which is the trait doing its job rather than a cost.

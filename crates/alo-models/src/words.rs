@@ -345,6 +345,19 @@ pub const RUNTIME_UNREACHABLE: Word = Word::saying(
              them. It is on this machine.",
 );
 
+/// The runtime is there and has not answered a question yet.
+pub const RUNTIME_TOOK_TOO_LONG: Word = Word::saying(
+    "models.runtime.took-too-long",
+    "the model on this machine did not answer in the time alo OS waits — a smaller model, or a \
+     shorter question, answers sooner",
+)
+.noting(
+    "Read after a long wait, and it is the one runtime line that is not about something being \
+     wrong: the model is running and is slow. On a machine with no graphics card that is ordinary, \
+     so a translation that made it sound like a crash would send somebody looking for a fault that \
+     is not there.",
+);
+
 /// A model alo OS does not offer.
 pub const MODEL_NOT_OFFERED: Word = Word::saying(
     "models.runtime.not-offered",
@@ -392,7 +405,7 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 29] = [
+pub const EVERY_WORD: [Word; 30] = [
     ON_THIS_MACHINE,
     ON_A_PAIRED_MACHINE,
     BY_A_PROVIDER,
@@ -417,6 +430,7 @@ pub const EVERY_WORD: [Word; 29] = [
     NOT_A_PROVIDER,
     PROVIDER_NOT_WELL,
     RUNTIME_UNREACHABLE,
+    RUNTIME_TOOK_TOO_LONG,
     MODEL_NOT_OFFERED,
     MODEL_NOT_INSTALLED,
     NOT_ENOUGH_DISK,

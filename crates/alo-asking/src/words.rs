@@ -23,6 +23,13 @@
 //! removing. What is left for this crate to say is the only thing none of them
 //! knows about: that there is nothing here to ask with yet.
 //!
+//! **Item 18a added a second door and no string.** Everything a person reads
+//! about a question answered on this machine was already somebody's:
+//! *on this machine* is `alo-models`', *nothing answered on this machine* is
+//! `alo-answering`'s, and the refusals [`crate::Miswired`] makes are read by
+//! whoever wired the door rather than by anybody using the machine. A list that
+//! grew with every path would be a list that had started saying things twice.
+//!
 //! # Nothing here counts, and nothing here quotes
 //!
 //! There is no [`alo_strings::Plural`], for the reason `alo-models` gives: a

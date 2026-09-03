@@ -5,12 +5,25 @@
 //! outside the adapter names an Ollama endpoint or response field: the runtime
 //! is a dependency we can replace, not a shape the product is stuck in.
 //!
-//! The vocabulary here is deliberately about **disk and memory**, because that
-//! is what a person actually experiences. "Installed" means the weights are on
-//! this machine and something is using the space. "Loaded" means the model is
-//! in video memory now and answering quickly. Those are different questions,
-//! they have different costs, and a runtime that conflates them makes the
-//! honest disk accounting `docs/features.md` promises impossible.
+//! Most of the vocabulary here is deliberately about **disk and memory**,
+//! because that is what a person actually experiences. "Installed" means the
+//! weights are on this machine and something is using the space. "Loaded" means
+//! the model is in video memory now and answering quickly. Those are different
+//! questions, they have different costs, and a runtime that conflates them
+//! makes the honest disk accounting `docs/features.md` promises impossible.
+//!
+//! # And one of them is a question
+//!
+//! [`ModelRuntime::answers`] is the newest and the odd one out: the other six
+//! manage models and this one uses one. It was missing until item 18a, which is
+//! why `ROADMAP.md` said three separate times that nothing in this repository
+//! could put a question to a model — `alo-asking` closed the half of that
+//! sentence about a provider, and this closes the half about this machine.
+//!
+//! It is on this trait rather than beside the adapter for
+//! [ADR 0006](../../../docs/decisions/0006-the-pinned-model-runtime.md)'s
+//! reason: nothing outside `crate::ollama` names an Ollama endpoint, and a
+//! question is exactly the call somebody would be most tempted to make directly.
 
 use std::fmt;
 
@@ -94,6 +107,17 @@ impl Progress {
 pub enum RuntimeError {
     /// The runtime is not running, or not reachable where it was expected.
     Unreachable,
+    /// The runtime is there, and did not answer inside the time this machine
+    /// waits.
+    ///
+    /// **Only [`ModelRuntime::answers`] produces this**, and the difference
+    /// from [`Unreachable`](Self::Unreachable) is the whole reason it exists: a
+    /// listing that takes ten seconds means the runtime is not well, and a
+    /// model that takes five minutes means it is thinking. ADR 0007 makes the
+    /// CPU the default, so thinking slowly is the ordinary case rather than the
+    /// broken one, and a person told *nothing was running* about a machine that
+    /// was busy would go looking for a fault that is not there.
+    TookTooLong,
     /// The model is not in the catalogue, so alo OS does not offer it. This is
     /// a refusal, not a failure: the catalogue is what makes the licence
     /// promise in `docs/features.md` true.
@@ -124,6 +148,7 @@ impl RuntimeError {
     pub fn word(&self) -> words::Word {
         match self {
             Self::Unreachable => words::RUNTIME_UNREACHABLE,
+            Self::TookTooLong => words::RUNTIME_TOOK_TOO_LONG,
             Self::NotOffered(_) => words::MODEL_NOT_OFFERED,
             Self::NotInstalled(_) => words::MODEL_NOT_INSTALLED,
             Self::NotEnoughDisk { .. } => words::NOT_ENOUGH_DISK,
@@ -143,6 +168,7 @@ impl RuntimeError {
                 Filling::of("model", model.clone())
             }
             Self::Unreachable
+            | Self::TookTooLong
             | Self::NotEnoughDisk { .. }
             | Self::Unusable
             | Self::DownloadIncomplete => Filling::nothing(),
@@ -233,6 +259,39 @@ pub trait ModelRuntime: fmt::Debug + Send + Sync {
     /// # Errors
     /// [`RuntimeError::NotInstalled`] if the model is not on this machine.
     fn unload(&self, id: &str) -> Result<(), RuntimeError>;
+
+    /// Put a question to a model on this machine, and answer with what it said.
+    ///
+    /// **Nothing leaves the machine** (ADR 0008): this is the path law 1's
+    /// zero-egress claim is about, and it is why there is no indicator, no
+    /// destination and no policy anywhere in this signature. There is nothing
+    /// here for a rule to permit, because there is nothing here that goes
+    /// anywhere.
+    ///
+    /// # The question is borrowed, and no implementation may keep it
+    ///
+    /// A `&str` for the length of one call. ADR 0001 §7 says alo OS never keeps
+    /// the question a person asked, and this trait is the one place in
+    /// `alo-models` where one arrives at all — so it arrives borrowed, it goes
+    /// into one request body, and nothing in [`RuntimeError`] has a field it
+    /// could come back in. An adapter that logged it, cached it or put it in an
+    /// error would be breaking that promise on behalf of every caller, and
+    /// `crate::ollama` has the test that says it does not.
+    ///
+    /// **The catalogue does not gate this, and [`fetch`](Self::fetch) does.**
+    /// The licence promise in `docs/features.md` is about what alo OS *offers*,
+    /// which is what it downloads; a model already on somebody's own disk was
+    /// either fetched through that gate or put there by the person whose
+    /// machine it is, and refusing to use it would be alo OS overruling its
+    /// owner about their own hardware.
+    ///
+    /// # Errors
+    /// [`RuntimeError::NotInstalled`] if the model is not on this machine,
+    /// [`RuntimeError::Unreachable`] if the runtime is not answering,
+    /// [`RuntimeError::TookTooLong`] if it is answering and the model has not
+    /// finished, and [`RuntimeError::Unusable`] if what came back is not an
+    /// answer.
+    fn answers(&self, question: &str, of_model: &str) -> Result<String, RuntimeError>;
 }
 
 #[cfg(test)]

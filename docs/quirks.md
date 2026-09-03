@@ -76,6 +76,31 @@ whitespace.
 **Upstream:** not reported; it is not a defect.
 **Date:** 2026-09-03
 
+### Ollama — a question has two APIs, and 404 means the model rather than the address
+**Version:** Ollama's documented HTTP API as of 2026-09-03. **Not observed
+against a running Ollama on any machine**; `alo-models`' tests drive a stub on a
+real socket, and a run against the real runtime is owed with the rest of the
+hardware verification (`ROADMAP.md` carries it as the model stack's machine
+half).
+**Behaviour:** the runtime answers questions two ways — its own `/api/chat`, and
+an OpenAI-compatible `/v1/chat/completions` that speaks the shape a hosted
+provider does. They are not the same reply: the native one puts the answer at
+`message.content` and the compatible one at `choices[0].message.content`. And on
+either, a model the runtime does not hold comes back **404 on an endpoint that
+exists**, which at the protocol level is indistinguishable from an address that
+is wrong — the same ambiguity a hosted provider has, recorded below.
+**Our response:** `ollama.rs` uses `/api/chat`, the runtime's own. ADR 0006 says
+Ollama's API is not our API and that one file may know what it is; using the
+surface that imitates somebody else's would make the adapter's shape a guess
+about a provider rather than a fact about the runtime, and the two could drift
+apart in a release without anything here noticing. The 404 becomes
+`RuntimeError::NotInstalled`, which names what was needed rather than what to
+fix, and a person who typed the endpoint wrongly reads *that model is not
+installed* — wrong, and wrong in the direction that costs them the least,
+because a runtime alo OS ships is not an address anybody typed.
+**Upstream:** not reported; both are documented behaviour.
+**Date:** 2026-09-03
+
 <!--
 ### <Engine> <version> — <one-line summary>
 **Behaviour:** what it does, versus what is documented
@@ -418,3 +443,27 @@ their address was right, which sends them to change the one thing that was
 correct. A provider that answers on neither is reported as one this system
 cannot use, which is what it is.
 **Date:** 2026-09-02
+
+### Loopback is taken at face value, and one thing can therefore lie
+**Version:** the whole of this repository as of 2026-09-03 — `alo-models`'
+`Provider::source`, `alo-egress`' `Leaving::asking` and `alo-asking`'s two
+doors. Reasoned rather than observed: there is nothing to observe, because it is
+what the code believes rather than what a service does.
+**Behaviour:** `Provider::source` answers `InferenceSource::ThisMachine` for any
+address on `127.0.0.1`, `localhost` or `::1`, and everything downstream follows:
+nothing leaves, law 1 shows nothing, the answer says *on this machine*, and
+`SourcePolicy::ThisMachineOnly` permits it. That is right for a runtime and for
+a service somebody runs on their own machine. It is **wrong for a proxy** — a
+process listening on loopback that forwards the question off the machine would
+be believed by every type in this repository, and a person reading their
+indicator would see a quiet day.
+**Our response:** nothing here, deliberately, and it is written down rather than
+worked around. Deciding it in code would mean either refusing loopback (which
+breaks the ordinary case ADR 0007 makes the default) or inspecting what is
+listening (which is a guess about a process, and a guess this repository is not
+in a position to make). The place it is caught is **egress enforcement at the
+network boundary**, which is a Linux item in `docs/autonomy/QUEUE.md` and is
+where law 1's measurement actually happens: a proxy's own connection leaves the
+machine, whatever this repository believed about the socket in front of it. Law
+2 is what keeps the hole small — an agent cannot start the proxy.
+**Date:** 2026-09-03
