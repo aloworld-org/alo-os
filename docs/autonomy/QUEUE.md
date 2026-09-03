@@ -1404,16 +1404,30 @@ crates decide correctly and nothing joins them up.
 is a function call, and its result is a value to assert on. The acting halves
 that genuinely need Wayland and D-Bus are marked below and stay out.
 
-- [ ] **18. Putting a question to a model.** The gap named three times in
-  `ROADMAP.md`. `alo-models` already knows *where* an answer may come from
-  (`InferenceSource`), what policy permits (`SourcePolicy`), and how to say
-  where it came from — but nothing sends anything. This is the method that
-  does: through `ModelRuntime` for a model on this machine, through the provider
-  path for a hosted one, with **`alo-egress` consulted before a socket opens and
-  the source recorded with the answer** so provenance is carried rather than
-  reconstructed. A refusal from the policy is an answer, not an error to unwrap.
+- [ ] **18. Putting a question to a model — the hosted provider first.** The gap
+  named three times in `ROADMAP.md`. `alo-models` already knows *where* an answer
+  may come from (`InferenceSource`), what policy permits (`SourcePolicy`), and
+  how to say where it came from — but nothing sends anything. This is the method
+  that does, with **`alo-egress` consulted before a socket opens and the source
+  recorded with the answer** so provenance is carried rather than reconstructed.
+  A refusal from the policy is an answer, not an error to unwrap.
+
+  **Build the `Hosted` path first and the local one after it**, which is a
+  deliberate inversion of how the crate was written. ADR 0008 makes a hosted API
+  a first-class choice rather than a fallback, so this is the supported path
+  being built in the order it can actually be *exercised*: a provider answers
+  over https from any machine, while `ThisMachine` needs a runtime installed and
+  a model downloaded before it can say anything at all. Doing the harder-to-run
+  path first is how a method ends up shaped around the case nobody tested.
+
+  It also puts the sharper half of the promise first. A local model that fails
+  is a bad afternoon; **a hosted one is where the egress line, the region, the
+  refusal in the policy's own words and *never a silent fallback* all have to be
+  true**, and none of those can be proven against a runtime on `localhost`.
+
   Tests drive a stub on a real socket, as `ollama.rs` already does, plus a
-  refusal path per `SourcePolicy` variant.
+  refusal path per `SourcePolicy` variant. **No key is needed to pass this
+  item** — a real provider is the machine half, not the code half.
 
 - [ ] **19. A turn, end to end, headless.** The item that makes the other twelve
   crates one system: invocation → `alo-context` for what was offered →
