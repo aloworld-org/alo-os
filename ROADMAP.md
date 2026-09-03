@@ -88,11 +88,18 @@ One hardware target. No installer, no fleet management, no compatibility list.
 pipeline and no certified hardware — it runs on an ordinary Linux box with a
 GPU, and it is useful to `alo-workplace` the day it lands.
 
-- [x] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
-      runtime (ADR 0006). `crates/alo-models`: the catalogue with its licence
-      gate, `ModelRuntime`, and the Ollama adapter. 22 tests, nine of them
-      against a real socket. **Not yet run against a real Ollama or a GPU** —
-      law 3's "on real hardware" is owed on the certified machine.
+- [ ] **Model stack**: catalogue, pull, serve, unload, remove — over the pinned
+      runtime (ADR 0006)
+  - [x] **The code.**
+        `alo-models` — the catalogue with its licence gate, `ModelRuntime`,
+        and the Ollama adapter, the one file allowed to name it. 91 tests,
+        several of them against a real socket rather than a mock
+  - [ ] **On the machine.**
+        it has never been run against a real Ollama or a GPU. *This line was
+        ticked outright until the two boxes existed, while its own last
+        sentence said law 3's "on real hardware" was owed — a tick and its
+        own footnote contradicting each other, which is exactly what the
+        parent box is now not allowed to do*
 - [ ] ★ **It runs on the machine you already own** — no graphics card required.
       The catalogue carries models that work on a CPU, and says honestly which
       ones are comfortable there and which are merely possible
