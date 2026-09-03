@@ -88,3 +88,61 @@ part of the market this product exists to serve, and leaves the Windows 10 fleet
 **Ship CPU support as a degraded mode, with warnings.** Rejected: a default that
 apologises for itself teaches people the product is not for them. If a model is
 too slow for a machine, do not offer it there; do not offer it with a caveat.
+
+## Since it was accepted — "default" was the wrong word
+
+This ADR corrected a real error: the GPU workstation had been put first, and
+everything downstream inherited it. That correction stands and nothing below
+weakens it — **a graphics card is never an entry price, and the Windows 10 fleet
+is still the market that decides whether this project has one.**
+
+But *default* was the wrong word for it, and the wrong word did damage.
+
+**A default implies a ranking**, and a ranking invited the reading that the CPU
+path is the real one and the GPU path is a bonus. What follows from that reading
+is a system tuned for the smallest model that will run anywhere — and an agent
+built on that is an agent that is mediocre everywhere, including on the
+workstation somebody paid for.
+
+### The framing, corrected
+
+**alo OS runs its agents well on the machine it is on, with or without a
+graphics card. Both are first-class, and neither is the other's fallback.**
+
+- On a machine with no graphics card, it runs a model sized for that machine —
+  and that model must be **good enough to actually drive the verbs**, not merely
+  good enough to produce sentences.
+- On a machine with a card, it runs a larger model, and fine-tuning becomes
+  practical. That is not a bonus feature; it is the same product using what it
+  has been given.
+
+**"Works well" is a bar in both cases, not a hope in one of them.**
+
+### Why the wording change is not cosmetic
+
+Naming the CPU as *the default* hid a tension nobody had written down:
+**an agent turn asks a model to emit a typed verb call with valid arguments,
+several times over** — and that is the thing small models are worst at. Sentences
+they manage. Structure they lose. So "it runs on a CPU" and "the agent works on a
+CPU" are two different claims, and this ADR was read as making the second while
+only having evidence for the first.
+
+The capability model keeps that from becoming dangerous: every verb is typed and
+validated, so a confused model is refused rather than obeyed, and every change is
+a sentence somebody approves. **A weak model costs an experience, never a file.**
+But an agent that proposes the wrong thing three times out of five is a product
+nobody keeps, and safety is not the same as usefulness.
+
+### What follows
+
+- **The catalogue records whether a model can drive verbs, and it is measured.**
+  Today an entry states `parameters_b`, `min_ram_gb`, `on_cpu` and `licence` —
+  everything about whether a model will *run*, and nothing about whether it can
+  *work*. A model that runs beautifully on a laptop and cannot emit a valid verb
+  call is useless as an agent, and the catalogue would currently recommend it.
+- **It is measured by us, not claimed by the publisher** — the same honesty
+  `on_cpu` already applies to speed.
+- **A machine is only offered agent work it can actually do.** Where no
+  catalogued model clears the bar on a given machine, the honest answers are the
+  ones ADR 0008 already provides — a paired machine, or a provider — offered as
+  a choice, never substituted silently.

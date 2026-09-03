@@ -161,6 +161,10 @@ each portal request is a grant in the sense of ADR 0001.
 ## The AI stack — models on your own hardware
 
 - [v0.01] ★ **It runs on the machine you already own.** No graphics card required: the catalogue carries models that answer comfortably on an ordinary business laptop's CPU, and the system picks one (ADR 0007). This is what puts alo OS on the Windows 10 fleet rather than on a few hundred workstations
+- [v0.01] ★ **It works well on a CPU and it works well on a GPU** (ADR 0007, as corrected). Neither is the other's fallback and neither is a “default”: the machine runs a model sized for what it has, and **“works well” is a measured bar in both cases rather than a hope in one of them**. A card buys a larger model and practical fine-tuning — not entry, and not the real version of the product
+- [v0.01] ★ **The catalogue says whether a model can drive the verbs, not just whether it will run.** An agent turn asks a model to emit a typed verb call with valid arguments several times over, which is exactly what small models are worst at — sentences they manage, structure they lose. A model that runs beautifully on a laptop and cannot emit a valid call is useless as an agent, and a catalogue that only knew about memory would recommend it
+- [v0.01] **And it is measured by us, not claimed by the publisher** — the same honesty already applied to how a model behaves on a CPU
+- [v0.01] **A machine is only offered agent work it can actually do.** Where nothing catalogued clears the bar on a given machine, the honest answers are the ones already on offer — a paired machine, or a provider — shown as a choice and never substituted silently
 - [v0.01] ★ **The GPU works on first boot**, where there is one — no driver installation, no CUDA archaeology. Acceleration, not an entry price
 - [v0.01] ★ **A model runs in one command**, from a curated catalogue of open-weight models with their licences stated
 - [v0.01] ★ The agents point at the **local** model by default — sovereignty is the default configuration, not an option to find

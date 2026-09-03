@@ -1707,6 +1707,25 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   variant rather than to a key problem; and a test that nothing in the crate can
   turn it into an attempt somewhere else.
 
+- [ ] **23. A catalogue entry says whether the model can drive the verbs.** The
+  catalogue records `parameters_b`, `min_ram_gb`, `on_cpu` and `licence` — all of
+  it about whether a model will *run*, none of it about whether it can *work*. An
+  agent turn asks for a typed verb call with valid arguments several times over,
+  and that is what small models fail at: they manage sentences and lose
+  structure. **A model that runs beautifully on a laptop and cannot emit a valid
+  call is useless as an agent, and this catalogue would recommend it.**
+
+  Add the property, and make it **measured rather than claimed** — the honesty
+  `OnCpu` already applies to speed. The measurement is a fixed set of verb calls
+  a model is asked to produce, scored on whether the call names a real verb and
+  whether every argument survives `alo-capability`'s validation, which is the
+  same gate a real turn puts it through.
+
+  ADR 0007's *since it was accepted* section is what this implements. Tests: an
+  entry cannot be built without stating it; a model below the bar is not offered
+  for agent work on a machine, and the refusal names the alternatives ADR 0008
+  already provides rather than substituting one.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
