@@ -1,7 +1,7 @@
 [package]
 name = "alo-agentd"
 version = "0.0.1"
-description = "The socket the agent service listens on, and which of its two doors a caller is on."
+description = "The agent service: the socket, which door a caller is on, and the turn it holds."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -12,19 +12,36 @@ repository.workspace = true
 # version of itself that pretends; `lib.rs` is the whole of that argument.
 [target.'cfg(target_os = "linux")'.dependencies]
 # The one rented thing here, and `unix.rs` is the only file that names it.
-# `UnixStream::peer_cred` is unstable in std (rust-lang#42839), `CLAUDE.md`
-# forbids unsafe, and a daemon nobody else can build on a stable compiler is not
-# a daemon we ship — so asking the kernel who is on the other end is a crate.
+# `UnixStream::peer_cred` and waiting on several descriptors at once are both
+# outside what std will do on a stable compiler, `CLAUDE.md` forbids unsafe, and
+# a daemon nobody else can build on a stable compiler is not a daemon we ship —
+# so asking the kernel who is on the other end, and which end has something on
+# it, is a crate.
 rustix = { workspace = true }
 thiserror = { workspace = true }
 
-# The whole point of a door is what comes through it, so the test that says
-# these two doors are the protocol's two doors reads a real request off a real
-# socket with the reader the door chose. Nothing here is compiled into the
-# crate: a door that knew what was being carried through it would be two
-# responsibilities in one place.
-[target.'cfg(target_os = "linux")'.dev-dependencies]
+# What crosses the socket, and what is behind it. Since item 21d this crate
+# holds a turn, so it reaches both: `alo-protocol` for the two doors' requests
+# and answers, and `alo-turn` for the order the steps happen in. It decides
+# nothing either of them decides — `alo-capability` is here for the grants a
+# turn is begun with and the one refusal a number nobody proposed gets,
+# `alo-context` for what an invocation offered, and `alo-strings` because every
+# sentence that goes back is rendered from the machine's own vocabulary.
+alo-capability = { path = "../alo-capability" }
+alo-context = { path = "../alo-context" }
 alo-protocol = { path = "../alo-protocol" }
+alo-strings = { path = "../alo-strings" }
+alo-turn = { path = "../alo-turn" }
+
+# What a machine is arranged out of, for the tests only. The service is handed a
+# `Machine` rather than building one, so which resolver, which indicator and
+# where the record goes stay one decision made in one place — and that place is
+# the process (queue item 21e), not this crate.
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+alo-egress = { path = "../alo-egress" }
+alo-files = { path = "../alo-files" }
+alo-keeping = { path = "../alo-keeping" }
+alo-record = { path = "../alo-record" }
 
 [lints]
 workspace = true

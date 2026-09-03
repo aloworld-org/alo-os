@@ -271,7 +271,11 @@ compositor is not required for, which is why it runs unbroken.
         the fallback is carried by the code that would have had to contain
         it, in both directions. What is left of the machine half is the
         daemon that points at the local model, and a real runtime answering
-        a real question, which needs Ollama installed
+        a real question, which needs Ollama installed. Since item 21d the
+        daemon exists and holds a turn, and a question put to it is refused
+        in words — *nothing on this machine has been chosen to answer
+        questions* — because nothing yet reads what the person chose; that
+        reading is queue 21e
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
@@ -371,16 +375,25 @@ compositor is not required for, which is why it runs unbroken.
         socket at all, because on that machine both doors would be one —
         which is what turns 21a's division from a promise the code makes
         into one the operating system makes. It is the first crate here that
-        is Linux rather than portable, and it holds no turn: what it hands
-        back is a connection and who is on it
+        is Linux rather than portable. Since item 21d it also holds the turn:
+        one machine, two connections and one turn, answered as readiness in a
+        single thread with no lock anywhere near the capability model — a turn
+        is an agent's connection and ends with it, an approval arrives on the
+        person's while it is open, and a second agent is refused in words
+        rather than let into a grant another invocation made. A message that
+        is not a request is answered and the caller stays; a line this machine
+        will not read is answered and then closed; and a machine that could
+        not write down what it did stops serving rather than going on without
+        evidence
   - [ ] **On the machine.**
-        the long-lived service that holds a turn per connection (queue 21d),
-        without which the socket above is a door with nobody behind it; the
-        acting half of the application verbs, which is Wayland and D-Bus and
-        is the whole of what makes any of these move a window; and the half
-        of the context that **reads** a screen, which is Wayland and AT-SPI
-        and is where *with no invocation, no context calls at all* becomes
-        something anybody can test
+        the `main` that says what this machine is (queue 21e) — which
+        directory, which two users, which model answers a question, and the
+        refusal to run as root at all — without which the service above is
+        code with nothing to configure it; the acting half of the application
+        verbs, which is Wayland and D-Bus and is the whole of what makes any
+        of these move a window; and the half of the context that **reads** a
+        screen, which is Wayland and AT-SPI and is where *with no invocation,
+        no context calls at all* becomes something anybody can test
 
 - [ ] Every execution recorded with its origin, approval and grant
   - [x] **The code.**
@@ -401,8 +414,10 @@ compositor is not required for, which is why it runs unbroken.
         not write one stops doing anything at all
   - [ ] **On the machine.**
         queue 20 — the path it is written to and the timer that shortens it,
-        both `alo-agentd`'s. The crate exists since item 21c, and what it has
-        is a socket; a timer needs the long-lived process, which is queue 21d
+        both `alo-agentd`'s. Since item 21d there is a service to hold a timer
+        and a loop for it to fire in; what is missing is the thing that says
+        *which* path and *how long*, which is a machine describing itself and
+        is queue 21e
 
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated

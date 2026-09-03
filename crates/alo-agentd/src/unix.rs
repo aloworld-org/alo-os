@@ -31,9 +31,26 @@
 //! it. A process that has since exited, or been replaced by something else at
 //! the same process id, does not change the answer — which is one more reason
 //! [`crate::Caller`] never decides anything on a process id.
+//!
+//! # And the second question: which of these has something on it
+//!
+//! [`ready`] is `poll`, and it is here for the same reason [`who`] is: the
+//! standard library has no way to wait on more than one thing at once, and
+//! [`crate::Serving`] must wait on the socket, on both connections and on the
+//! end a stop arrives on **at the same time**. Waiting on them one after
+//! another is the deadlock item 21c cut this decision out of itself rather than
+//! take in a hurry — an agent waiting to be told what happened, and the message
+//! that would tell it arriving on a connection nobody is reading.
+//!
+//! It waits with no timeout, so a quiet machine costs nothing at all: the
+//! process sleeps in one call until somebody says something, and there is no
+//! interval on which it wakes up to discover that nobody has.
 
+use std::os::fd::BorrowedFd;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
+
+use rustix::event::{PollFd, PollFlags};
 
 use crate::caller::{Caller, Gid, Uid};
 use crate::refusing::{NotACaller, NotAUser};
@@ -111,6 +128,68 @@ pub(crate) fn give_to_group(path: &Path, group: Gid) -> Result<(), std::io::Erro
         .map_err(std::io::Error::from)
 }
 
+/// Sleep until one of these has something on it, and say which ones do.
+///
+/// The answer is one `bool` per place asked about, in the order they were
+/// asked, so a caller reads it by destructuring rather than by matching an
+/// index to a meaning. A `None` is something this service is not holding at the
+/// moment — no connection on that door — and is never ready.
+///
+/// **A connection that has been closed is ready**, not quiet. The read that
+/// follows answers with nothing, which is how the end of a connection is
+/// noticed at all; a `poll` that hid a hangup would leave a service asleep
+/// beside a caller that has gone, holding a turn nothing can end.
+///
+/// **An interrupted wait is resumed rather than reported.** A signal arriving
+/// while this sleeps ends the call with `EINTR`, and on this machine the signal
+/// *is* the ordinary way a stop arrives (see [`crate::stopping`]) — so treating
+/// it as a failure would turn the intended shutdown into a service that says it
+/// broke. The byte the handler wrote is still on the socket, and the wait that
+/// resumes finds it.
+///
+/// # Errors
+///
+/// Whatever the machine said, as a `std::io::Error`. `InvalidInput` when there
+/// is nothing at all to wait on: a wait nothing can end is a hang, and a
+/// service asking for one is a bug in the service rather than a quiet machine.
+pub(crate) fn ready<const N: usize>(
+    waiting_on: &[Option<BorrowedFd<'_>>; N],
+) -> Result<[bool; N], std::io::Error> {
+    let asking: Vec<usize> = waiting_on
+        .iter()
+        .enumerate()
+        .filter_map(|(which, held)| held.map(|_| which))
+        .collect();
+    let mut polling: Vec<PollFd<'_>> = waiting_on
+        .iter()
+        .flatten()
+        .map(|fd| PollFd::from_borrowed_fd(*fd, PollFlags::IN))
+        .collect();
+    if polling.is_empty() {
+        return Err(std::io::Error::from(std::io::ErrorKind::InvalidInput));
+    }
+
+    loop {
+        match rustix::event::poll(&mut polling, None) {
+            Ok(_) => break,
+            Err(rustix::io::Errno::INTR) => {
+                for polled in &mut polling {
+                    polled.clear_revents();
+                }
+            }
+            Err(why) => return Err(std::io::Error::from(why)),
+        }
+    }
+
+    let mut answered = [false; N];
+    for (which, polled) in asking.iter().zip(polling.iter()) {
+        if let Some(said) = answered.get_mut(*which) {
+            *said = !polled.revents().is_empty();
+        }
+    }
+    Ok(answered)
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -118,6 +197,8 @@ pub(crate) fn give_to_group(path: &Path, group: Gid) -> Result<(), std::io::Erro
 )]
 mod tests {
     use super::*;
+    use std::io::Write as _;
+    use std::os::fd::AsFd as _;
 
     /// **The credentials are the kernel's, and they are this process's own.**
     /// A pair of connected sockets is made, and what comes back is the process
@@ -141,6 +222,58 @@ mod tests {
     fn both_ends_are_asked_the_same_way() {
         let (ours, theirs) = UnixStream::pair().unwrap();
         assert_eq!(who(&ours).unwrap(), who(&theirs).unwrap());
+    }
+
+    /// **Only the one that was spoken on is ready**, and the answer is in the
+    /// order the places were asked about — which is what lets a service read it
+    /// by destructuring rather than by keeping an index and a meaning in step.
+    #[test]
+    fn only_the_place_something_arrived_on_is_ready() {
+        let (quiet, _quiet_other_end) = UnixStream::pair().unwrap();
+        let (spoken, mut speaking) = UnixStream::pair().unwrap();
+        speaking.write_all(b"something").unwrap();
+
+        assert_eq!(
+            ready(&[Some(quiet.as_fd()), Some(spoken.as_fd())]).unwrap(),
+            [false, true]
+        );
+    }
+
+    /// **A door this service is not holding is never ready**, and it does not
+    /// move the others along: the `None` keeps its place in the answer, so a
+    /// service with no agent connected reads the same positions it reads with
+    /// one.
+    #[test]
+    fn a_place_nothing_is_held_on_keeps_its_place_and_is_quiet() {
+        let (spoken, mut speaking) = UnixStream::pair().unwrap();
+        speaking.write_all(b"something").unwrap();
+
+        assert_eq!(
+            ready(&[None, Some(spoken.as_fd()), None]).unwrap(),
+            [false, true, false]
+        );
+    }
+
+    /// **A caller that has gone is ready, not quiet.** The read that follows
+    /// answers with nothing, which is the only way the end of a connection is
+    /// noticed — and a wait that treated a hangup as silence would sleep beside
+    /// a caller that has gone, holding a turn nothing could end.
+    #[test]
+    fn a_connection_whose_caller_has_gone_is_ready() {
+        let (ours, theirs) = UnixStream::pair().unwrap();
+        drop(theirs);
+
+        assert_eq!(ready(&[Some(ours.as_fd())]).unwrap(), [true]);
+    }
+
+    /// **A wait with nothing to wait on is refused rather than slept in.**
+    /// `poll` with no descriptors and no timeout sleeps until the machine is
+    /// turned off, so the one thing that must not happen here is that it
+    /// succeeds quietly.
+    #[test]
+    fn waiting_on_nothing_at_all_is_refused() {
+        let refused = ready(&[None::<BorrowedFd<'_>>; 3]).unwrap_err();
+        assert_eq!(refused.kind(), std::io::ErrorKind::InvalidInput);
     }
 
     /// Handing a path to the group it is already in changes nothing and

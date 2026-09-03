@@ -33,11 +33,12 @@ toml = "0.9"
 thiserror = "2"
 ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
 serde_json = "1"
-# The kernel, for the one question the standard library will not answer on a
-# stable compiler: who is at the other end of a Unix socket. Reached only by
-# `alo-agentd`, and only from `unix.rs`; see that file for why it is a crate
-# rather than five lines of `unsafe`.
-rustix = { version = "1.1", features = ["net", "process", "fs"] }
+# The kernel, for the two questions the standard library will not answer on a
+# stable compiler: who is at the other end of a Unix socket, and which of
+# several descriptors has something on it. Reached only by `alo-agentd`, and
+# only from `unix.rs`; see that file for why it is a crate rather than lines of
+# `unsafe`.
+rustix = { version = "1.1", features = ["net", "process", "fs", "event"] }
 
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is

@@ -351,11 +351,57 @@ The process id the kernel reports **decides nothing**. It is there for whoever
 is reading a service log; a process id is reused, so a door that turned on one
 would turn on whatever started next.
 
-## The process
+## A turn is a connection
 
-Not here yet. A long-lived service that holds one turn per connection, and what
-happens when a person's shell answers a change an agent's connection proposed,
-are still owed — `crates/alo-agentd` today opens the door and says who is
-through it. What this contract fixes is the message and the transport, so that
-whatever writes one and whatever reads it cannot disagree about what it is or
-where it goes.
+**A turn begins when an agent connects and ends when that connection closes.**
+Nothing on the wire says either, which is why there is no message for it: a
+number naming a turn would be a number an agent could change, and a turn that
+outlived the connection that opened it would be a grant nobody could see the end
+of. A client that wants a second turn opens a second connection.
+
+**One turn at a time, therefore one agent at a time.** A second agent connecting
+while a turn is under way is refused in words and closed, and so is a second
+shell on the person's side. Both sentences are `crates/alo-agentd`'s `words.rs`;
+they are refusals a client shows its person, so they are translated like every
+other.
+
+An agent that connects while the *previous* agent's turn is ending is **not**
+refused: it waits for the round that ends the turn and then gets a turn of its
+own. A connection is never adopted into a turn somebody else's invocation began,
+because the grant that turn holds was made for that invocation.
+
+**A turn is begun with nothing offered.** No document, no window, no selection —
+ADR 0001 §4's context arrives at the moment of invocation and there is no
+compositor here yet to answer what is in front of the person. An agent gets what
+it was granted and nothing more.
+
+**Every answer is at one moment.** The service reads a clock once per round, so
+two messages answered in the same round cannot disagree about whether a grant
+had expired between them.
+
+## What stops the service
+
+A message that is not a request, a stranger at the door, a caller that hangs up
+mid-message: all of these are answered or closed, and the service goes on. Four
+things stop it, and each is the machine rather than a client:
+
+- somebody asked it to stop;
+- a turn could not be begun at all — a machine that named no agent, or named a
+  turn lasting no time;
+- the kernel would not let it wait on its own socket;
+- **something happened and could not be written down.** `CLAUDE.md` asks that
+  every execution and every refusal leaves a record, and a service that went on
+  acting once it could not write one would be doing exactly what that sentence
+  exists to prevent.
+
+In the first three nothing has been done that is not in the record. In the
+fourth, one thing has, and that is what the stop is about.
+
+## What is still owed
+
+There is no `main`. Which directory the socket goes in, which two users this
+machine has, which model answers a question, how long a turn and a proposal
+last, and the refusal to run as root at all (ADR 0001 §2) are what a machine
+says about itself, and nothing in this repository reads that yet. Until it does,
+a question put to a model is refused in words: *nothing on this machine has been
+chosen to answer questions*.

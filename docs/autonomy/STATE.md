@@ -5219,3 +5219,147 @@ way through, and it would be worse for arriving during an outage nobody caused.
 
 **The loop was stopped deliberately**, rather than left retrying into an
 overloaded API every four minutes. Restart it when the API is answering.
+
+---
+
+## 2026-09-03 — iteration 45: there is a service behind the socket
+
+**Item 21d, built.** `crates/alo-agentd` is a service now rather than a door:
+seven new files, five new dependencies, and the decision item 21c cut out of
+itself taken with `alo-protocol`'s two doors and `alo-turn`'s borrow both in
+front of it. 87 unit tests (was 36) and 4 integration tests; **1555 tests and
+doctests on Linux** (was 1464), **1460 on Windows** (unchanged), `cargo fmt`
+clean and `cargo clippy --workspace --all-targets -- -D warnings` clean with
+zero warnings on both.
+
+The Linux half was built and gated through WSL2 as `LOOP.md` describes. Windows
+is unchanged at 1460, which is what says the crate compiling to nothing off
+Linux is still nothing rather than something that broke quietly.
+
+### The work was half in the tree, and reading it first was right
+
+The previous entry recorded seven untracked files left by an iteration an API
+outage cut off: about two thousand lines that compiled, with **no test having
+run against any of them** and no clippy pass. It said to read them before
+writing any, to assume nothing about them was verified, and to hold whatever
+was kept to the whole gate. All three were followed.
+
+What it did **not** say, and what this iteration found in the first ten
+minutes: they had never been declared in `lib.rs`, and the tracked files they
+were written against had never been changed. `cargo check` was clean because
+nothing compiled them. So five things they needed did not exist — `unix::ready`,
+`refusing::NotHeard`, `refusing::NotServed`,
+`NotACaller::is_only_this_connection` and `Listening::waiting_on` — along with
+eight fixtures and every dependency in `Cargo.toml`. **"It compiles" was true
+of a crate that did not contain it.**
+
+That is worth writing down as a rule rather than as an anecdote: *an untracked
+file that compiles has proved nothing until something declares it.* A future
+iteration finding work in this state should check `lib.rs` before believing a
+`cargo check`.
+
+### Two things in that work were wrong, and the tests are what found them
+
+**The smaller.** A test answered a proposal by the literal number `1`;
+`Approvals` starts counting at `0`, so it failed on the first run. Replaced by
+reading the number out of what the person was actually shown, through
+`ToAPerson::read`, which is the property worth asserting anyway — *the number
+you answer with is the number you were shown* — and cannot rot when the
+capability model changes where it starts counting.
+
+**The larger, and it is a real defect rather than a test artefact.** An agent
+hanging up and the next one knocking can be noticed in the **same** `poll`
+wake-up. The round emptied the agent's slot and then answered the door, so the
+newcomer landed in a slot that had just been emptied — *inside the turn the
+previous agent's invocation made*, holding a grant that was never for it, and
+never counted as a turn of its own. The test
+`the_turn_ends_with_the_connection_and_the_next_one_gets_its_own` failed on the
+count; the grant is the part that matters.
+
+Closed with two changes, because they answer two different questions:
+
+- **A round that ends a turn returns before the door.** Nothing is let in until
+  the turn really is over. Nothing is lost by it: `poll` reports what is
+  *there* rather than what has changed, so whoever is knocking is still
+  knocking on the next round and gets a turn of their own.
+- **The agent's door refuses while a turn is under way at all**, rather than
+  while its slot is full. *An agent never acts under a grant another
+  invocation made* is now carried by the condition rather than by the ordering
+  happening to be right.
+
+### Three decisions this iteration made that were not in the item
+
+- **One clock, read once a round.** Item 1 said nothing reads the clock and
+  every question that depends on time takes `now`; a rule like that needs
+  somewhere to end, and a service is the honest place because it is the thing
+  really running while time passes. Once a round rather than once a message, so
+  two messages answered together cannot disagree about whether a grant expired
+  between them. `alo-agentd` is now the only crate in this workspace that reads
+  a clock.
+- **An interrupted wait is resumed rather than reported.** `poll` ends with
+  `EINTR` when a signal arrives, and on this machine the signal *is* the
+  ordinary way a stop arrives — so treating it as a failure would turn the
+  intended shutdown into a service that says it broke. The byte the handler
+  wrote is still on the socket and the resumed wait finds it.
+- **A wait with nothing to wait on is refused, not slept in.** `poll` with no
+  descriptors and no timeout sleeps until the machine is turned off. It cannot
+  happen while the two loops are the only callers, and it is an error rather
+  than a comment, with a test.
+
+### One thing renamed against the gate rather than silenced
+
+`Line::next` tripped `clippy::should_implement_trait`. It is now `Line::heard`,
+and the reason is better than the lint: a connection is not an iterator and must
+not be read as one — an iterator that answered `None` and then something again
+would be broken, and that is exactly what a socket does between two messages.
+No `#[allow]` was added.
+
+### `ROADMAP.md` moved, and the contract gained three sections
+
+The `alo-agentd` line's **code** half now says the crate holds the turn and how;
+its **On the machine** half was rewritten from "the long-lived service (21d)" to
+the `main` that says what the machine is (21e). *Every execution recorded* and
+*or use an API instead* had their machine halves corrected the same way: both
+were waiting on a process that now exists, and what they are really waiting on
+is a machine describing itself. **No half was ticked that was not whole, and no
+machine half was touched.**
+
+`docs/contracts/daemon-protocol.md` said the process was "not here yet". It has
+three sections now — *a turn is a connection*, *what stops the service*, and
+*what is still owed* — because a client author needs to know that a turn ends
+with its connection, that a second agent is refused, and that a question to a
+model is answered with a sentence today.
+
+### What this service does not claim
+
+**Nothing has run as a service.** There is no `main`, no signal handler
+installed, and nothing has been started by systemd. Every test drives the loop
+from a thread and stops it with the byte `Stop::stop` writes.
+
+**A connection from a second user has never been made**, which is 21c's limit
+unchanged: telling the two doors apart takes two logins and a test process has
+one. `Pretending` is what stands in for it — a real socket, real connections,
+real reading and closing, *told* which login each connection would have come
+from — and `crate::knocking` has the test that the real socket answers the same
+shape. Nothing about the mapping is faked.
+
+**What the next iteration must know:**
+
+- **21e is ready and is a file format before it is code.** What a machine says
+  about itself is a public surface the moment anything reads or writes it, so it
+  belongs in `docs/contracts/` beside the protocol. It unblocks item 20 and the
+  last of *agents point at the local model*.
+- **Item 20 is no longer blocked on a process.** It is blocked on 21e: the loop
+  a timer would fire in exists, and what is missing is *which* path and *how
+  long*.
+- **The Linux half of the gate is not optional for this crate**, and it now
+  matters more than it did: 87 of its tests do not exist on Windows, so an
+  iteration that touches `alo-agentd` and runs only the Windows gate has tested
+  nothing it changed.
+- **ADR 0015 landed while this iteration was building, and 21d is what it was
+  waiting on.** Queue item 26 — one BPF LSM hook, one grant, and a turn that
+  reaches for `~/.ssh` getting `EACCES` from the kernel rather than a
+  talking-to from us — says *blocked on nothing but the turn existing (21d)*.
+  It exists now. Its first step is checking whether the WSL2 kernel has
+  `CONFIG_BPF_LSM=y` and `bpf` in `CONFIG_LSM` at all, and the ADR is explicit
+  that a no is a finding rather than something to work around.

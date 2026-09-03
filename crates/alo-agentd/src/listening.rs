@@ -41,6 +41,7 @@
 //! an alo OS daemon here and what version it is, and they cannot be told
 //! anything else — so they are told nothing.
 
+use std::os::fd::{AsFd as _, BorrowedFd};
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::net::{UnixListener, UnixStream};
 
@@ -155,6 +156,17 @@ impl Listening {
     #[must_use]
     pub const fn sides(&self) -> &Sides {
         &self.sides
+    }
+
+    /// What to wait on while nobody is knocking.
+    ///
+    /// One descriptor, because there is one front door. [`Listening::next`]
+    /// blocks until somebody connects, and a service holding connections as
+    /// well cannot afford to block there — so it sleeps on this beside them and
+    /// only accepts once this says there is somebody to accept.
+    #[must_use]
+    pub fn waiting_on(&self) -> BorrowedFd<'_> {
+        self.listener.as_fd()
     }
 
     /// Wait for a connection, and answer who is on it.

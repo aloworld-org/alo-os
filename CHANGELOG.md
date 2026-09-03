@@ -12,6 +12,46 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **There is something behind the door now: your agent can ask for a change, and
+  you can approve it from where you are, while it waits.** This is the first
+  time in alo OS that the whole of a turn happens on a running machine rather
+  than in a test — your agent connects and asks for something, what it proposes
+  comes back to you as one sentence, you say yes or no in your own window, and
+  it is done or it is not before the agent hears anything.
+
+  That sounds obvious and it is the hardest thing here, because the two of you
+  are on two different connections. A service that finished listening to your
+  agent before it looked at you would wait forever: the agent is waiting to be
+  told what happened, and the only thing that can tell it is an answer from a
+  window nobody is listening to. So it listens to both at once — and it does it
+  by sleeping until one of you says something rather than by checking on a
+  timer, which means **a machine nobody is asking anything of costs nothing at
+  all.** No waking up every few seconds to discover that nothing has happened.
+
+  **A turn is your agent's connection, and it ends when that connection does.**
+  A change nobody answered goes away with it rather than standing over into
+  whatever you ask next; a grant the turn made goes back at the same moment,
+  including when the service stops or the machine runs out of room to write
+  things down. Your machine holds one turn at a time, so a second agent
+  arriving is told so and turned away rather than let into the first one's
+  turn — it is not handed anything that was granted for somebody else's
+  question. A second window on your own side gets a sentence too, telling you
+  which of the two things in front of you to close.
+
+  **And a machine that cannot write down what it did stops doing things.** If
+  the disk holding the record fills up, the service does not carry on obliging
+  your agent with no evidence of any of it — it stops, and says which disk to
+  make room on. Everything smaller than that is survived and answered: a
+  message that is nonsense gets a sentence and the connection stays open, a
+  message with no end to it gets a sentence and then goes, and somebody who is
+  neither of you is still closed on without a word.
+
+  What is still owed is the file that tells this service what your machine is:
+  which folder, which two logins, and which model answers a question. Until
+  that exists, asking your agent to put a question to a model is answered
+  honestly — *nothing on this machine has been chosen to answer questions* —
+  rather than guessed at.
+
 - **Your agent and you now reach the machine through the same door, and it can
   tell the two of you apart — because the operating system does, not because
   either of you says so.** alo OS has always had two lists: what an agent may
@@ -39,9 +79,9 @@ grant now takes effect immediately instead of at the next sign-in" is.
   socket belongs is left exactly where it is, and it says what to move rather
   than moving it.
 
-  What is still owed is the service that stays running: today this is the door
-  and who is through it, not yet the thing holding a conversation on the other
-  side.
+  What was still owed when this landed was the service that stays running:
+  the door and who is through it, not yet the thing holding a conversation on
+  the other side. The line above it is that thing.
 
 - **The catalogue now says whether a model can actually work as your agent, not
   only whether it will run — and it stops recommending ones nobody has

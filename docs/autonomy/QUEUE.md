@@ -43,11 +43,14 @@ the loop and are described in the items below. **`alo-agentd` is the only one
 that is not portable**: since item 21c it is a Unix socket and the credentials a
 kernel keeps for one, so on any other host it compiles to nothing at all rather
 than to a version of itself that pretends. It is also the only one that rents
-something the standard library will not do — `SO_PEERCRED`, in one file, because
-`peer_cred` is unstable and `unsafe` is forbidden — and the only one that
-reaches nothing in this workspace *and* is reached by nothing: a door that knew
-what was being carried through it would be `alo-protocol`'s work done a second
-time, so the two meet only in a test. **`alo-driving` is the only one
+something the standard library will not do — `SO_PEERCRED` and `poll`, in one
+file, because `peer_cred` is unstable, waiting on several descriptors at once
+has no spelling in std at all, and `unsafe` is forbidden. Since **item 21d** it
+is the crate that reaches the most of this workspace and is reached by none of
+it: five crates, and the second half of that sentence is what a service is —
+everything decides, one thing runs. It is also **the only one that reads a
+clock**, once a round, which is where item 1's *nothing reads the clock* was
+always going to have to end.  **`alo-driving` is the only one
 nothing on a machine ever reads**: it measures whether a model can produce a
 verb call, it is run by whoever adds a catalogue entry, and what ships is the
 grade they wrote down. It is also the only crate that reaches `alo-protocol` —
@@ -1777,8 +1780,10 @@ out.
   blocked all this time on the daemon not existing. The path a record is written
   to, the retention the organisation sets (ADR 0004), and the timer that
   shortens it. `alo-keeping` holds the shape; this gives it somewhere to live.
-  **Blocked on 21d**, which is where a long-lived process with a timer in it
-  lives — 21c put the socket on the machine, and a socket has no timer.
+  **Blocked on 21e.** 21d built the loop a timer would fire in, so what is left
+  is not a process but the thing that says *which* path and *how long* — a
+  retention an organisation sets is a machine describing itself, and nothing
+  reads that yet.
 
 - [x] **21a. What a client may ask the daemon** — the half of item 21 that is
   law 2 rather than a socket, cut from it and built. `crates/alo-protocol`, a
@@ -1962,26 +1967,98 @@ out.
   service on a machine that boots — the socket is bound and answered by tests,
   never by systemd.
 
-- [ ] **21d. The process that holds a turn.** What is left of 21c: a
-  long-lived service, the accept loop, and the turn. It reads
-  `$XDG_RUNTIME_DIR` and the two users from wherever a machine says them,
-  refuses to run as root at all (ADR 0001 §2, which 21c deliberately left to
-  whatever has a `main`), and stops cleanly.
+- [x] **21d. The process that holds a turn** — the decision 21c cut out of
+  itself, taken. Seven new files in `crates/alo-agentd`: `serving.rs` (one
+  machine, two connections, one turn), `doing.rs` (one line from an agent,
+  against the turn), `answering.rs` (one line from the person, against the turn
+  if there is one), `lines.rs` (one connection as messages in and answers out),
+  `stopping.rs` (asking a running service to stop), `knocking.rs` (where
+  connections come from), `words.rs` (3 phrases). `unix.rs` gains `ready`,
+  `refusing.rs` gains `NotHeard` and `NotServed`, `listening.rs` gains
+  `waiting_on`, and the crate reaches five more: `alo-protocol`, `alo-turn`,
+  `alo-capability`, `alo-context` and `alo-strings`. 87 unit tests (was 36) and
+  4 integration tests. **1555 tests on Linux** (was 1464), 1460 on Windows,
+  `cargo fmt` clean and clippy clean with zero warnings on both.
+  `docs/contracts/daemon-protocol.md` gained three sections.
 
-  **The decision it exists to make, and it should not be made anywhere else: a
-  turn is an agent's connection, and the person's approval arrives on a
-  different one.** `alo_turn::Turning` borrows the machine mutably and there is
-  one machine, so a person's shell cannot hold a second `Turning` — and serving
-  one connection at a time would deadlock on the first proposal, because the
-  approval that would release it can only arrive on a connection nobody is
-  reading. Whatever shape answers that (one thread owning the machine with the
-  connections handing it messages, or something better) is this item, and it
-  wants writing down before it is written.
+  **The answer to *one machine, two connections, one turn* is readiness, and it
+  is one thread.** Nothing inside a turn blocks — a read answers, a proposal
+  comes back as a number and a sentence, an approval runs and answers — so the
+  only thing to wait for is somebody saying something, and that is one `poll`
+  over the socket, both connections and the end a stop arrives on. No threads,
+  no channels, no lock around the machine: the machine is a local variable that
+  one loop owns. That matters because the obvious shape for *two connections at
+  once* is a thread each and a mutex, and it would have put the capability model
+  behind a lock in the one service whose whole value is being small enough to
+  read.
 
-  It also inherits the refusal 21c could not word: what a person is told when
-  somebody who is neither of them knocks. **Blocked on nothing** — `alo-agentd`
-  exists and the Linux host is reachable — but it is a design decision first and
-  should be taken with the whole of `alo-protocol`'s two doors in front of it.
+  **The item's other half was already in the tree, and untested.** An iteration
+  cut off by an API outage left about two thousand lines that compiled and had
+  never had a test run against them; `STATE.md` said to read them before writing
+  any, and this iteration did. Two things in them were wrong, and both were
+  found by making the tests run. The smaller: a test that answered a proposal by
+  the literal number 1 when `Approvals` starts counting at 0 — replaced by
+  reading the number out of what the person was shown, which is the property
+  worth asserting anyway. The larger is below.
+
+  **The defect the untracked work had, and the shape that closes it: an agent
+  hanging up and the next one knocking can be noticed in the same wake-up.** The
+  round emptied the agent's slot and then answered the door, so the newcomer
+  landed inside the turn the *previous* agent's invocation had made — holding a
+  grant that was never for it, and never counted as a turn of its own. Two
+  changes rather than one, because they answer different questions. A round that
+  ends a turn now returns before the door, so nothing is let in until the turn
+  really is over — and nothing is lost by it, since `poll` reports what is there
+  rather than what has changed, so whoever is knocking is still knocking on the
+  next round and gets a turn of their own. And the agent's door refuses while a
+  turn is under way *at all* rather than while its slot is full, so *an agent
+  never acts under a grant another invocation made* is carried by the condition
+  rather than by the ordering being right.
+
+  Three decisions the next items inherit. **One clock, once a round**: every
+  crate underneath takes `now` as an argument (item 1), and a rule needs
+  somewhere to end — a service is the honest place, because it is the thing that
+  is really running while time passes, and reading once a round means two
+  messages answered together cannot disagree about whether a grant expired
+  between them. **A stop is a byte on a socket, not a flag**: a flag can only be
+  noticed by a loop that wakes to look at it, which is a laptop waking several
+  times a minute forever to learn that nothing has happened — and a signal
+  handler may write a byte to an open descriptor when it may not take a lock, so
+  the shape is also the one 21e's handler is owed. **The service is handed a
+  `Machine` rather than building one**, so which resolver, which indicator and
+  where the record goes stay one decision made in one place, and that place is
+  the process rather than this crate.
+
+  **The one refusal it left is the one 21c left it.** A stranger is still told
+  nothing — answering would say there is an alo OS daemon here — and this item
+  added the other half rather than a sentence: they are **counted**, because
+  being told nothing is not the same as nothing being noticed.
+
+  Built and unit tested on a real socket, on Linux, through WSL2. **Nothing has
+  run as a service**: there is no `main`, no signal handler installed, and
+  nothing has been started by systemd. That is 21e.
+
+- [ ] **21e. What a machine says about itself.** The `main`, and everything the
+  service is handed rather than decides: `$XDG_RUNTIME_DIR` and what to do when
+  it is not set, the two users, which model or provider answers a question and
+  under which policy, how long a turn and a proposal last, and where the record
+  is written. It installs the `SIGTERM` handler `stopping.rs` was shaped for —
+  one call long, because a handler may write a byte to an open descriptor and
+  may not allocate or take a lock — and it refuses to run as root at all (ADR
+  0001 §2, which 21c left to whatever has a `main` and 21d did not become).
+
+  **Blocked on nothing**, and it is a decision about a file format before it is
+  a decision about code: what a machine is described by is a public surface the
+  moment anything else reads or writes it, so it belongs in `docs/contracts/`
+  beside the protocol. Item 20 waits on this rather than on 21d — a timer needs
+  a loop, which now exists, but *how long* is a retention an organisation sets
+  (ADR 0004) and nothing reads one yet.
+
+  Two things it unblocks and one it does not. It unblocks **item 20** and the
+  last of *agents point at the local model*: `doing.rs` refuses a question in
+  words today because nothing tells the service what was chosen, and the
+  sentence stops being the only answer the moment something does. It does not
+  unblock the application verbs, which are Wayland and D-Bus and stay below.
 
 - [x] **22. Running out is not a fault** — implements ADR 0009's *since it was
   accepted* section and `docs/features.md`'s v0.01 *running out of credit is its
