@@ -3738,3 +3738,27 @@ forces it to.
 is what somebody outside this repository can read, and nothing changed for them
 this iteration. A changelog entry announcing that the loop stopped would be the
 loop reporting on itself in the one file that is not about it.
+
+---
+
+## The queue was refilled, and that `LOOP COMPLETE` above is spent
+
+The entry above is correct about the moment it was written: every ready item was
+done, and the only thing left was blocked. It stopped for the right reason.
+
+**Four items were added afterwards** — 18 to 21, `alo-agentd` — and they are
+what five roadmap halves have been waiting on the whole time. The gap is one
+sentence the roadmap already said three times and nobody had turned into work:
+*there is no method anywhere in this repository that puts a question to a
+model.* Thirteen crates decide correctly and nothing joins them up.
+
+All four are portable. No compositor, no certified machine, no GPU: a turn is a
+function call and its result is a value to assert on. What genuinely needs
+Wayland and D-Bus — the acting half of the application verbs, the reading half
+of context — stays under **Blocked — linux**, unchanged.
+
+A decision also landed while the loop was stopped: **ADR 0011**, the base is
+rented and the image is a bootable container. It changes nothing here; it is
+recorded so the next iteration reads it before proposing an alternative.
+
+The loop may proceed from item 18.
