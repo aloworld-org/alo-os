@@ -5171,3 +5171,51 @@ on the wire.
   `alo-agentd` compiles to nothing and its 40 tests do not exist, so an
   iteration that touches it and runs only the Windows gate has tested nothing it
   changed.
+
+
+---
+
+## An iteration was cut off mid-item, and its work is still in the tree
+
+**Not a halt, and nothing is wrong with the code.** Anthropic's API returned
+`529 Overloaded` to six consecutive headless iterations over twenty-two
+minutes. Each one died before doing anything — but one earlier iteration was
+already building **item 21d** when it was cut off, and its work was never
+committed because it never reached the gate.
+
+**Read this before starting 21d.** Seven files are sitting untracked in
+`crates/alo-agentd/src/`, along with changes to `Cargo.toml` and `Cargo.lock`:
+
+| File | Lines |
+|---|---|
+| `serving.rs` | 875 |
+| `answering.rs` | 319 |
+| `lines.rs` | 318 |
+| `doing.rs` | 311 |
+| `words.rs` | 181 |
+| `stopping.rs` | 163 |
+| `knocking.rs` | 94 |
+
+**Measured, not assumed:** it compiles, `cargo check -p alo-agentd` is clean —
+and `cargo test -p alo-agentd` reports **zero tests**. So it is real work that
+stopped before the half `LOOP.md` cares most about. It is not half-finished
+code; it is finished-looking code with nothing yet proving it.
+
+**What the next iteration on 21d should do:**
+
+- **Read those files before writing any.** They are a design somebody already
+  chose. Starting over would throw away two thousand lines that compile, and
+  worse, would produce a second design for the same item.
+- **Assume nothing about them is verified.** No test has run against any of it,
+  no clippy pass, no refusal path exercised. Treat every claim in them as
+  unproven until a test says otherwise.
+- **The gate is unchanged.** Whatever is kept from this work goes through
+  `cargo fmt`, clippy at zero, tests including the refusal paths, the roadmap
+  line, and a changelog entry — exactly as if it had been written fresh.
+
+**Nothing was committed on their behalf.** Committing code that compiles but
+has never been tested would be the dishonest tick this file has refused all the
+way through, and it would be worse for arriving during an outage nobody caused.
+
+**The loop was stopped deliberately**, rather than left retrying into an
+overloaded API every four minutes. Restart it when the API is answering.
