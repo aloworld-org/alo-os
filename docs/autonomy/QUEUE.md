@@ -2140,6 +2140,38 @@ out.
   do not build one, and equally explicit that nothing here stops a person running
   theirs.
 
+- [ ] **26. One hook, one grant — the kernel refuses.** The whole of ADR 0015,
+  proven or disproven in the smallest thing that can carry it. A BPF LSM program
+  on `file_open`, a BPF map keyed by cgroup id holding one grant, and two tests:
+  a turn granted a folder opens a file inside it and succeeds; the same turn
+  reaches for `~/.ssh/id_ed25519` and **the kernel returns `EACCES`** — not our
+  code, the kernel.
+
+  **Rust on both sides, via `aya`.** One file names it, as `ollama.rs` names the
+  runtime and `unix.rs` names `SO_PEERCRED`. `libbpf` would put C in this
+  repository and `CLAUDE.md` calls a third language a bug.
+
+  **First, check the machine can do it at all** — `CONFIG_BPF_LSM=y` and `bpf`
+  in `CONFIG_LSM`, on the WSL2 kernel this repository can reach. If the answer
+  is no, that is the finding: say so, say what the certified machine will need,
+  and stop. Do not work around it.
+
+  Blocked on nothing but the turn existing (21d). It is deliberately tiny: it
+  either works in a week or it does not, which is the right shape for the first
+  piece of a hard idea.
+
+- [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
+  dangerous property: a BPF LSM sees every syscall by construction, so the same
+  mechanism that enforces a grant could record a person's whole day.
+
+  The test runs ordinary programs — not agent turns — under the loaded LSM and
+  asserts the record is **empty**. No log line, no counter, no timestamp.
+  Written *with* item 26 rather than after it, because a rule with no test is a
+  rule that erodes in a year, one reasonable-sounding feature at a time.
+
+  When it fails it must say what it caught: not *assertion failed*, but **a
+  syscall outside an agent turn left a trace, and nothing outside a turn may**.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
