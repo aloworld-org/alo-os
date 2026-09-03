@@ -29,6 +29,25 @@
 //! there is no way to show somebody the refusal without the alternatives under
 //! it. Nothing here returns an [`crate::InferenceSource`]: this crate cannot
 //! substitute a place, because it has no method that answers with one.
+//!
+//! # And there is a third alternative, which is not one of ADR 0008's
+//!
+//! [`crate::Weights`] made a machine able to run a model this catalogue never
+//! listed, and that is the answer somebody refused here most wants: it needs no
+//! other machine, no account and no network. It is **not** a third entry in
+//! [`crate::words::THE_OTHER_PLACES`], and the reason is not only that a
+//! translator has already been handed that string. ADR 0008's question is
+//! *where a question is answered* and its two remaining answers are both
+//! somewhere else; weights somebody already has are answered here, in the place
+//! the person is standing in. Two questions, so two lines, and neither string
+//! can grow into the other.
+//!
+//! **The order is a fact rather than a preference.** The lines go outward from
+//! the machine — what was refused, then this machine, then other machines — and
+//! that ordering is available to be stated and checked, which *this one is
+//! better* would not be. What alo OS still does not do is choose: three
+//! sentences, no default, and no method anywhere in this crate that answers with
+//! a place or with a model.
 
 use alo_strings::{Filling, Said, Strings};
 
@@ -102,13 +121,17 @@ impl NoAgentHere {
 
     /// What a person is shown: why, and what is still open to them.
     ///
-    /// **Two lines, and there is no method that gives you only the first.**
-    /// That is the shape of *never substituted silently*: a screen cannot
-    /// accidentally show somebody that their machine has no agent without also
-    /// showing them the two places that would still answer, because the type
-    /// does not offer that.
+    /// **Three lines, and there is no method that gives you fewer.** That is
+    /// the shape of *never substituted silently*: a screen cannot accidentally
+    /// show somebody that their machine has no agent without also showing them
+    /// every answer they still have, because the type does not offer that.
     ///
-    /// Two strings rather than one long sentence, which is this crate's rule
+    /// In order: why this machine has no model for the agent, then weights they
+    /// already have on this machine, then the two other places ADR 0008 leaves
+    /// open. Outward from the machine, which is this file's header — a fact
+    /// about the three, rather than a ranking of them.
+    ///
+    /// Three strings rather than one long sentence, which is this crate's rule
     /// from [`crate::Tried`]: the separator between two lines is not
     /// punctuation a program can pick, so the panel draws them as lines and a
     /// translator writes each one whole.
@@ -118,9 +141,10 @@ impl NoAgentHere {
     /// [`crate::model_words`] answers with the key, marked, and the machine
     /// still has no model for the agent either way.
     #[must_use]
-    pub fn lines(self, strings: &Strings) -> [Said; 2] {
+    pub fn lines(self, strings: &Strings) -> [Said; 3] {
         [
             strings.say(&self.word().key(), &Filling::nothing()),
+            strings.say(&words::WEIGHTS_YOU_ALREADY_HAVE.key(), &Filling::nothing()),
             strings.say(&words::THE_OTHER_PLACES.key(), &Filling::nothing()),
         ]
     }
@@ -306,7 +330,7 @@ mod tests {
                 measured: 3,
             },
         ] {
-            let [why, elsewhere] = refusal.lines(&strings);
+            let [why, _, elsewhere] = refusal.lines(&strings);
             assert!(!why.text().is_empty(), "{refusal:?}");
             assert!(elsewhere.text().contains("paired with"), "{elsewhere}");
             assert!(elsewhere.text().contains("provider"), "{elsewhere}");
@@ -314,6 +338,70 @@ mod tests {
                 elsewhere.text().contains("will not choose for you"),
                 "{elsewhere}"
             );
+        }
+    }
+
+    /// **Every refusal also names the answer that stays on this machine**, and
+    /// there is no way to show one without it. A person told the catalogue has
+    /// nothing for them has, since [`crate::Weights`], a third answer that needs
+    /// no other machine and no account — and it is the one they are least likely
+    /// to know about, because it is the one alo OS never advertised.
+    #[test]
+    fn every_refusal_says_the_catalogue_is_not_the_only_list() {
+        let strings = in_english();
+        for refusal in [
+            NoAgentHere::NothingToChooseFrom,
+            NoAgentHere::NoneMeasured { to_choose_from: 3 },
+            NoAgentHere::NoneClearsTheBar {
+                to_choose_from: 3,
+                measured: 3,
+            },
+        ] {
+            let [_, brought, _] = refusal.lines(&strings);
+            assert!(
+                brought.text().contains("weights you already have"),
+                "{brought}"
+            );
+            assert!(
+                brought.text().contains("not everything it can run"),
+                "{brought}"
+            );
+        }
+    }
+
+    /// **The three lines go outward from the machine**, and the middle one is
+    /// not a clause of either sentence beside it. Both halves matter: an order
+    /// that buried the answer causing no egress under two that leave would be
+    /// this product recommending against itself, and a machine that folded the
+    /// two alternatives into one line would be answering ADR 0008's question and
+    /// the *which model* question with one sentence.
+    #[test]
+    fn the_answer_on_this_machine_comes_before_the_ones_that_leave_it() {
+        let strings = in_english();
+        let [why, brought, elsewhere] =
+            NoAgentHere::NoneMeasured { to_choose_from: 1 }.lines(&strings);
+        assert!(brought.text().contains("this machine"), "{brought}");
+        assert!(!brought.text().contains("paired"), "{brought}");
+        assert!(!elsewhere.text().contains("weights"), "{elsewhere}");
+        // Three sentences, none of them a substring of another, so a panel that
+        // drew them as one paragraph would still be showing three answers.
+        for (a, b) in [(&why, &brought), (&brought, &elsewhere), (&why, &elsewhere)] {
+            assert_ne!(a.text(), b.text());
+            assert!(!a.text().contains(b.text()), "{a} / {b}");
+        }
+    }
+
+    /// **The line about somebody's own weights says nothing about their
+    /// licence.** `weights.rs` says whose terms they are at the moment they are
+    /// added, where it is true; saying it here would be warning a person about a
+    /// model they have not chosen yet, which is how a promise about hardware
+    /// somebody owns turns into a disclaimer they read twice.
+    #[test]
+    fn the_third_answer_does_not_borrow_the_licence_line() {
+        let strings = in_english();
+        let [_, brought, _] = NoAgentHere::NothingToChooseFrom.lines(&strings);
+        for word in ["licence", "license", "terms"] {
+            assert!(!brought.text().contains(word), "{word}: {brought}");
         }
     }
 
@@ -345,9 +433,11 @@ mod tests {
             words::NONE_MEASURED,
             "kein Modell auf diesem Rechner wurde gemessen",
         )]);
-        let [why, elsewhere] = NoAgentHere::NoneMeasured { to_choose_from: 2 }.lines(&strings);
+        let [why, brought, elsewhere] =
+            NoAgentHere::NoneMeasured { to_choose_from: 2 }.lines(&strings);
         assert!(why.is_translated());
         assert!(why.text().contains("gemessen"), "{why}");
+        assert!(!brought.is_translated());
         assert!(!elsewhere.is_translated());
     }
 

@@ -6163,3 +6163,100 @@ already have code* and now says three.
 - **A settings file now holds a `Driving`**, so the grade's spelling is a stored
   format rather than only a catalogue one. `driving.rs` has the round-trip test;
   changing a name there breaks somebody's own measurement on their own machine.
+
+---
+
+## Iteration — item 25a: the answer that stays on this machine
+
+**Item 25a, built and gated on both hosts.** A machine whose catalogue has no
+model good enough to be given the agent said so and named two ways out — a
+machine on the network somebody paired with, or a provider they add — and both
+of those are somewhere other than where the person is sitting. Item 25 made a
+third answer true and deliberately did not say it: weights they already have.
+That answer is now on the screen, and it is the one that needs no other machine,
+no account and no network.
+
+One new word in `crates/alo-models/src/words.rs` — `WEIGHTS_YOU_ALREADY_HAVE`,
+under the refusals rather than beside the other weights strings, because that is
+where it is read — and `NoAgentHere::lines` answering `[Said; 3]`.
+
+### The item's first question was whether the two belong in one list
+
+They do not, and that turned out to be a stronger reason for a new key than the
+one the item gave. `THE_OTHER_PLACES` answers ADR 0008's question — *where a
+question is answered* — and the two places it names are both elsewhere. Weights
+somebody already has are answered here, which is the *which model* question in
+the place the person is already standing in. Two questions, so two lines, and
+the sentence could not have grown a clause even if a key were free to change
+what it says. The item 21g rule that made it unfree — a translator has been
+handed that string, and rewriting it under the same key leaves every translation
+saying the old thing with nothing anywhere noticing — is the second reason and
+not the only one.
+
+### The order is outward from the machine, and that is checkable
+
+The note on `THE_OTHER_PLACES` says *do not reorder them into a recommendation*,
+and a third line raises the same question one level up. Any order can be read as
+a ranking, so the answer is an ordering rule that is a fact about the three
+rather than an opinion of them: what was refused, then this machine, then other
+machines. It has the property law 1 would want — the answer causing no egress is
+not buried under the two that leave — and unlike *this one is better* it can be
+written into the note, asserted in a test, and argued with.
+
+What alo OS still does not do is choose. Three sentences, no default, no
+setting, and no method anywhere in this crate that answers with a place or with
+a model.
+
+### The decision the item did not contain: no licence line here
+
+`LICENCE_IS_YOURS` is said by `Weights::lines` at the moment somebody actually
+adds weights, where it is true. Putting it in this line too would warn a person
+about a model they have not chosen yet, and would turn *what you bring is yours*
+from a promise about hardware they own into a disclaimer they read twice before
+they have done anything. `the_third_answer_does_not_borrow_the_licence_line` is
+the test, and it looks for the words rather than trusting the next person to
+remember.
+
+### The gate
+
+`cargo fmt --all --check` clean on both hosts.
+`cargo clippy --workspace --all-targets -- -D warnings` clean with zero warnings
+on Windows and on Linux. `cargo doc -p alo-models -p alo-driving --no-deps`
+clean on both. **1502 tests and 44 doctests on Windows** (was 1497 and 44),
+**1676 and 44 on Linux** (was 1671 and 44). 140 unit tests in `alo-models` (was
+137), 10 integration tests (was 8).
+
+Built and unit tested. **Nothing here has been drawn on a screen**: which of the
+three answers a person then takes is the setup panel's, and that is item 17a's
+and 21h's.
+
+### `ROADMAP.md` moved
+
+Two lines, both already ticked in their code half, and both were saying
+something now false. The v0.01 line *the catalogue says whether a model can
+drive the verbs* said `NoAgentHere` hands back **two** lines; it hands back
+three, and the machine half's *the refusal and its two alternatives* is three
+alternatives now. The v0.5 line *run a model we never catalogued* gained the
+sentence that closes the circle between the two items: the refusal is now what
+tells somebody the second list exists. **No box was ticked or unticked** —
+both code halves were already ticked by items 23 and 25, and neither machine
+half moved, because neither has been on a machine.
+
+**What the next iteration must know:**
+
+- **The ready list is now 26 and 27, and nothing else.** 16b, 19b, 21h, 21i and
+  21j are unchanged and all still blocked on a decision that is not the loop's
+  or on Linux work it does not have. 25a is done.
+- **26 is the one to take, and its first step is a measurement rather than
+  code**: whether the WSL2 kernel has `CONFIG_BPF_LSM=y` and `bpf` in
+  `CONFIG_LSM`. If it does not, that is the finding — say what the certified
+  machine will need and stop, rather than working around it.
+- **26 rents `aya`**, so it owes a line in `EVERYTHING_WE_RENT` in the same
+  change, per item 24.
+- **A shipped string cannot change what it says, and now there are two worked
+  examples of what to do instead.** Item 9g put the sentence a person approves
+  into the vocabulary and 21g made a machine load translations of it; 25a is the
+  first time a shipped sentence needed to say more and the answer was a new key
+  beside it. Whoever hits this next should look at `THE_OTHER_PLACES` — its
+  sentence is unchanged, and its *note* now says so, because a note is
+  guidance to a translator rather than a string anybody reads.

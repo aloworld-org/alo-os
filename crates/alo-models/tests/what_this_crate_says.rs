@@ -18,8 +18,8 @@
 )]
 
 use alo_models::{
-    InferenceSource, NotTried, Provider, ProviderError, Region, RuntimeError, Secret, SecretError,
-    SourcePolicy, Weights, declare_into, model_words, words,
+    InferenceSource, NoAgentHere, NotTried, Provider, ProviderError, Region, RuntimeError, Secret,
+    SecretError, SourcePolicy, Weights, declare_into, model_words, words,
 };
 use alo_strings::{Key, Language, Strings, Translation, Vocabulary};
 
@@ -200,6 +200,79 @@ fn weights_somebody_brought_are_costed_and_the_licence_stays_theirs() {
 
     // And nothing anywhere in this refused it: the weights are what they were.
     assert_eq!(theirs.bytes_on_disk, 40_000_000_000);
+}
+
+/// **A machine whose catalogue has nothing for the agent names all three
+/// answers, in the reader's language, and picks none of them.**
+///
+/// The unit tests ask whether each sentence is right. This one asks the thing
+/// the crate exists to get right from outside: a German reader who has just been
+/// told that no model here can be given the agent is shown *why*, then that the
+/// catalogue is not the only list, then the two places ADR 0008 leaves open —
+/// three lines, in that order, with nothing choosing between them.
+#[test]
+fn a_machine_with_no_model_for_the_agent_names_every_answer_and_takes_none() {
+    let strings = speaking_german(&[
+        (
+            words::NONE_MEASURED,
+            "kein Modell, das auf diesem Rechner läuft, wurde daraufhin gemessen, ob es die Verben \
+             bedienen kann",
+        ),
+        (
+            words::WEIGHTS_YOU_ALREADY_HAVE,
+            "Sie können alo OS auf Gewichte richten, die Sie bereits auf diesem Rechner haben, und \
+             es führt sie aus",
+        ),
+        (
+            words::THE_OTHER_PLACES,
+            "Sie können ein Modell auf einem gekoppelten Rechner in Ihrem Netz verwenden oder \
+             einen Anbieter, den Sie hinzufügen",
+        ),
+    ]);
+
+    let refused = NoAgentHere::NoneMeasured { to_choose_from: 2 };
+    let [why, brought, elsewhere] = refused.lines(&strings);
+    for line in [&why, &brought, &elsewhere] {
+        assert!(line.is_translated(), "{line}");
+    }
+    assert!(why.text().contains("gemessen"), "{why}");
+    assert!(brought.text().contains("bereits"), "{brought}");
+    assert!(elsewhere.text().contains("Anbieter"), "{elsewhere}");
+
+    // The order is outward from the machine, and it survives translation: what
+    // stays here is above what leaves, because that is decided by the code and
+    // not by whichever language is loaded.
+    assert!(brought.text().contains("diesem Rechner"), "{brought}");
+    assert!(elsewhere.text().contains("Netz"), "{elsewhere}");
+
+    // Neither line counts anything out loud. How many models there were to
+    // choose from is a number beside them, in the reader's own way of writing
+    // one.
+    for line in [&why, &brought, &elsewhere] {
+        assert!(!line.text().chars().any(|c| c.is_ascii_digit()), "{line}");
+    }
+    assert_eq!(refused.to_choose_from(), 2);
+    assert_eq!(refused.measured(), 0);
+}
+
+/// **A refusal is never shown with only some of its answers, even when only some
+/// of them are translated.** A machine part-way through a language would
+/// otherwise show a German refusal above two English alternatives with nothing
+/// saying which was which, and *shown English because nobody translated it* is
+/// exactly what `alo-strings` exists to keep visible.
+#[test]
+fn a_half_translated_refusal_still_carries_all_three_lines_and_marks_them() {
+    let strings = speaking_german(&[(
+        words::WEIGHTS_YOU_ALREADY_HAVE,
+        "Sie können alo OS auf Gewichte richten, die Sie bereits haben",
+    )]);
+
+    let [why, brought, elsewhere] = NoAgentHere::NothingToChooseFrom.lines(&strings);
+    assert!(!why.is_translated());
+    assert!(brought.is_translated());
+    assert!(!elsewhere.is_translated());
+    assert!(!why.text().is_empty());
+    assert!(!elsewhere.text().is_empty());
 }
 
 /// **What nobody has translated is English, and says so.** Half a vocabulary is

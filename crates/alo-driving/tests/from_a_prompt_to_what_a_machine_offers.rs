@@ -157,8 +157,9 @@ fn a_model_that_drives_the_verbs_is_the_one_a_laptop_is_given() {
 }
 
 /// **And a model that answers in prose is measured, graded, catalogued and
-/// refused** — with a sentence naming the two places ADR 0008 leaves open,
-/// rather than a machine quietly asking one of them.
+/// refused** — with sentences naming the weights the person may already have
+/// and the two places ADR 0008 leaves open, rather than a machine quietly
+/// asking one of them.
 #[test]
 fn a_model_that_only_writes_sentences_is_refused_and_the_person_is_told_where_else() {
     let exercises = Exercises::over(&the_verbs()).unwrap();
@@ -185,8 +186,12 @@ fn a_model_that_only_writes_sentences_is_refused_and_the_person_is_told_where_el
     );
 
     let strings = Strings::of(model_words().unwrap());
-    let [why, elsewhere] = refused.lines(&strings);
+    let [why, brought, elsewhere] = refused.lines(&strings);
     assert!(why.text().contains("often enough"), "{why}");
+    assert!(
+        brought.text().contains("weights you already have"),
+        "{brought}"
+    );
     assert!(elsewhere.text().contains("paired with"), "{elsewhere}");
     assert!(elsewhere.text().contains("provider"), "{elsewhere}");
     // It still runs here. The machine lost the agent, not the model.
@@ -203,7 +208,7 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
     assert_eq!(refused, NoAgentHere::NoneMeasured { to_choose_from: 1 });
 
     let strings = Strings::of(model_words().unwrap());
-    let [why, _] = refused.lines(&strings);
+    let [why, _, _] = refused.lines(&strings);
     assert!(why.text().contains("has been measured"), "{why}");
 
     // And the catalogue this repository ships is exactly that everywhere.

@@ -12,6 +12,22 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **When your machine has no model for the agent, it now tells you about the
+  weights you may already have.** That screen used to name two ways out — a
+  machine on your network you have paired with, or a provider you add — and both
+  of them are somewhere other than where you are sitting. Since weights you
+  bring yourself became a thing alo OS runs, there is a third answer that needs
+  no other machine, no account and no network, and it was the one answer the
+  refusal did not mention.
+
+  There are now three lines, in one order and never fewer: why this machine has
+  nothing for the agent, then that this catalogue is what alo OS offers rather
+  than everything it can run, then the two places elsewhere. The order is
+  outward from your machine — what stays here above what leaves — and it is not
+  a recommendation: alo OS names all three and still chooses none of them,
+  because quietly picking one is what it exists not to do. Nothing anywhere says
+  which you should prefer, and there is no setting that would.
+
 - **You can run a model we never catalogued.** Point alo OS at weights that are
   already on your machine and it keeps them beside the ones we offer, rather
   than only offering ours. The catalogue is a recommendation — it states

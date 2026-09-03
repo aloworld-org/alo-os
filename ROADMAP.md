@@ -165,14 +165,18 @@ compositor is not required for, which is why it runs unbroken.
         and is read: `Driving` as a stated property every entry must answer —
         `NotMeasured` is an answer and is `Region::Unknown` one file over —
         `Catalogue::agent_for_cpu`, and `NoAgentHere`, whose only road to a
-        sentence hands back **two** lines so a machine cannot show somebody
-        the refusal without the two places that would still answer
+        sentence hands back **three** lines so a machine cannot show somebody
+        the refusal without every answer they still have. Since item 25a the
+        middle one is weights they already have — the answer that needs no
+        other machine and no account, added as a line of its own because
+        ADR 0008's question is *where* and this one is *which model*, and
+        ordered outward from the machine rather than by which is better
   - [ ] **On the machine.**
         **it has never been run against a real model**, on any machine, so
         every entry in the catalogue says `not-measured` and no machine
         offers a local model the agent yet — which is the honest state and
         not a failing one, and a grade is a data change rather than a
-        release. Plus the setup screen that shows the refusal and its two
+        release. Plus the setup screen that shows the refusal and its three
         alternatives without choosing between them
 
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
@@ -623,7 +627,11 @@ sorted the same way v0.01 now is.
         measurement — the one thing still held back, because it is whether
         an agent turn works rather than what somebody is allowed to run.
         The cost cannot be shown without the line saying whose licence
-        these are: `Weights::lines` is the only road to either
+        these are: `Weights::lines` is the only road to either. Since item
+        25a the refusal on the line above **says this list exists**: a
+        machine whose catalogue offers nothing for the agent names weights
+        somebody already has, first among the answers, because it is the one
+        that needs no other machine and the one alo OS never advertised
   - [ ] **On the machine.**
         the Settings panel that lists what the runtime already holds and
         lets somebody take one of them, and the choice between a catalogued

@@ -29,6 +29,13 @@
 //! politeness. Their notes say so, and `weights.rs` is where the code makes it
 //! structurally true.
 //!
+//! [`WEIGHTS_YOU_ALREADY_HAVE`] is a fourth, read one moment earlier: it is
+//! shown to somebody whose catalogue offers them nothing, and it says that the
+//! catalogue is not the only list. It is under the refusals below rather than
+//! here because that is where it is shown, and its note carries the one rule
+//! that is easy to break — it must not repeat [`LICENCE_IS_YOURS`], which
+//! belongs at the moment the weights are actually added.
+//!
 //! The rest say what to do. That was true of this crate's English before it
 //! moved here — `provider.rs`'s *give the provider a name — it is what you will
 //! see when it answers* is the queue's own reference for the rule — and the
@@ -161,10 +168,18 @@ pub const NOT_ON_THIS_MACHINE: Word = Word::saying(
 //
 // Read at setup, by somebody who has just been told the thing they came for is
 // not available on the machine in front of them. Each says which of the three
-// reasons it is, and each is shown with [`THE_OTHER_PLACES`] under it — there
-// is no road to one of these sentences that does not carry that one with it,
-// because a refusal that named no alternative is how a silent substitution
-// starts looking reasonable (ADR 0008).
+// reasons it is, and each is shown with [`WEIGHTS_YOU_ALREADY_HAVE`] and
+// [`THE_OTHER_PLACES`] under it — there is no road to one of these sentences
+// that does not carry both of those with it, because a refusal that named no
+// alternative is how a silent substitution starts looking reasonable
+// (ADR 0008).
+//
+// The two alternatives are two lines rather than one because they answer
+// different questions. [`THE_OTHER_PLACES`] is ADR 0008's — *where* a question
+// may be answered, and the two places it names are somewhere else.
+// [`WEIGHTS_YOU_ALREADY_HAVE`] is about *which model*, in the place the person
+// is already standing in, so it is not a third entry in that list and could not
+// have been one even if the string were free to change.
 // ---------------------------------------------------------------------------
 
 /// Nothing in the catalogue is a candidate on this machine at all.
@@ -206,6 +221,21 @@ pub const NONE_CLEARS_THE_BAR: Word = Word::saying(
      numbers shown beside this line rather than inside it.",
 );
 
+/// A model on this machine that this catalogue never listed.
+pub const WEIGHTS_YOU_ALREADY_HAVE: Word = Word::saying(
+    "models.agent.weights-you-already-have",
+    "you can point alo OS at weights you already have on this machine, and it will run them — this \
+     catalogue is what alo OS offers, not everything it can run",
+)
+.noting(
+    "A line of its own, shown under whichever of the three refusals was made and never on its own. \
+     It is the one answer that stays on this machine, and it is shown above the line naming the \
+     two other places: the order is where the model would be, nearest first, and is not a \
+     recommendation — neither line is. Say nothing here about the licence of those weights. That is \
+     said at the moment somebody adds them, where it is true, and saying it here would warn a \
+     person about a model they have not chosen yet.",
+);
+
 /// The two places that are still open, named and not chosen between.
 pub const THE_OTHER_PLACES: Word = Word::saying(
     "models.agent.elsewhere",
@@ -213,10 +243,11 @@ pub const THE_OTHER_PLACES: Word = Word::saying(
      add — whichever you prefer, and alo OS will not choose for you",
 )
 .noting(
-    "A second line, shown under whichever of the three refusals was made and never on its own. It \
-     names both alternatives and picks neither, on purpose: quietly substituting one is exactly \
-     what ADR 0008 forbids. Do not drop either half, and do not reorder them into a \
-     recommendation.",
+    "The last of three lines, shown under whichever of the three refusals was made and never on \
+     its own. It names both alternatives and picks neither, on purpose: quietly substituting one \
+     is exactly what ADR 0008 forbids. Do not drop either half, and do not reorder them into a \
+     recommendation. The sentence itself has not changed since it was first written, and it will \
+     not: a line above it now names a third answer rather than a clause being added here.",
 );
 
 // ---------------------------------------------------------------------------
@@ -555,7 +586,7 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 39] = [
+pub const EVERY_WORD: [Word; 40] = [
     ON_THIS_MACHINE,
     ON_A_PAIRED_MACHINE,
     BY_A_PROVIDER,
@@ -566,6 +597,7 @@ pub const EVERY_WORD: [Word; 39] = [
     NOTHING_TO_CHOOSE_FROM,
     NONE_MEASURED,
     NONE_CLEARS_THE_BAR,
+    WEIGHTS_YOU_ALREADY_HAVE,
     THE_OTHER_PLACES,
     PROVIDER_UNNAMED,
     NOT_AN_ADDRESS,

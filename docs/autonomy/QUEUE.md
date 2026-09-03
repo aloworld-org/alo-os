@@ -2593,25 +2593,46 @@ out.
   the two lists this machine actually uses is item 21h's, and is blocked on
   where a person's choice is stored.
 
-- [ ] **25a. The third thing a machine with no agent can still do.** Found by
-  item 25, which made it true and deliberately did not say it.
-  `NoAgentHere::lines` hands back a refusal and `THE_OTHER_PLACES` under it —
-  *a machine you have paired with, or a provider you add* — and since 25 there
-  is a third answer for somebody whose catalogue offers them nothing: weights
-  they already have. The sentence is the most valuable one this subject could
-  add, because it is read at exactly the moment a person is told they cannot
-  have the thing they came for.
+- [x] **25a. The third thing a machine with no agent can still do.** Found by
+  item 25, which made it true and deliberately did not say it, and built by
+  iteration 36. One new word in `crates/alo-models/src/words.rs`
+  (`WEIGHTS_YOU_ALREADY_HAVE`, 40 now where there were 39) and
+  `NoAgentHere::lines` answering `[Said; 3]` in `choosing.rs`. 3 new unit tests
+  and 2 new integration tests; **1502 tests and 44 doctests on Windows** (was
+  1497 and 44), **1676 and 44 on Linux** (was 1671 and 44), clippy clean on both
+  hosts and `cargo doc` clean for both crates that moved.
 
-  **Blocked on nothing, and it is a decision about a shipped string rather than
-  a fix.** `THE_OTHER_PLACES` cannot gain a clause: a translator has been handed
-  that string, and changing what a key says under the same key leaves every
-  translation of it saying the old thing with nothing anywhere noticing (item
-  21g). So it is a **new** key and `lines` answers `[Said; 3]`, which moves a
-  public surface — and it wants deciding rather than typing, because the note on
-  `THE_OTHER_PLACES` says *do not reorder them into a recommendation* and a
-  third line raises the same question about the order it goes in. ADR 0008 is
-  about **where** a question is answered and this is about **which model**, so
-  whether the two belong in one list at all is the first thing the item asks.
+  **The first question the item asked was whether the two belong in one list,
+  and the answer is no — which is a stronger reason for a new key than the
+  translation one.** `THE_OTHER_PLACES` answers ADR 0008's question, *where a
+  question is answered*, and both places it names are somewhere other than here.
+  Weights somebody already has are answered on this machine: a different
+  question, *which model*, in the place the person is already standing in. So it
+  could not have been a third clause in that sentence even if the string had
+  been free to change, and the rule from item 21g — a key means one string, and
+  changing what it says leaves every translation saying the old thing — is the
+  second reason rather than the only one.
+
+  **The order is outward from the machine, and that is a fact rather than a
+  preference.** What was refused, then this machine, then other machines. The
+  note on `THE_OTHER_PLACES` forbids reordering *its two* into a recommendation,
+  and the same worry applies to a third line — so the ordering rule is one that
+  can be stated and checked, which *this one is better* could not be. It also
+  puts the answer that causes no egress above the two that leave, which is the
+  only arrangement law 1 could look at without flinching. alo OS still chooses
+  nothing: three sentences, no default, and no method in the crate that answers
+  with a place or a model.
+
+  **The decision the item did not contain: the new line says nothing about a
+  licence.** `LICENCE_IS_YOURS` is said by `Weights::lines` at the moment
+  somebody adds weights, where it is true. Repeating it here would warn a person
+  about a model they have not chosen yet and turn a promise about hardware they
+  own into a disclaimer they read twice, so the test that holds it looks for the
+  word and asserts it is absent.
+
+  Built and unit tested. **Nothing here has been drawn on a screen**: which of
+  the three a person then takes is the setup panel's, and is item 17a's and
+  21h's.
 
 - [ ] **26. One hook, one grant — the kernel refuses.** The whole of ADR 0015,
   proven or disproven in the smallest thing that can carry it. A BPF LSM program
