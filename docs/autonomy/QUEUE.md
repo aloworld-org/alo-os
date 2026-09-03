@@ -1892,6 +1892,26 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   names a turn* true. **Blocked — linux**: a Unix socket and its credentials
   have no portable spelling, and there is no compositor to invoke a turn from.
 
+
+  **The Linux question is answered, and it is not the one the blocker assumed.**
+  This item said peer credentials "have no portable spelling", which is true —
+  but the machine now has Ubuntu in WSL2 on kernel 6.6, and `SO_PEERCRED` was
+  measured working there: a `getsockopt` on the accepted socket returns the
+  caller's real pid, uid and gid **from the kernel**, not anything the caller
+  said about itself. That is the whole property this item needs.
+
+  **What the measurement also found, and what it costs.** `UnixStream::peer_cred`
+  is *unstable* in std — feature `peer_credentials_unix_socket`, rust-lang issue
+  #42839 — so on stable Rust this cannot come from the standard library. The
+  options are a direct `getsockopt` behind our own boundary, or a rented crate
+  (`rustix` or `nix`). **Either is a decision, not a detail**: `CLAUDE.md` says a
+  rented dependency is configured and named in one file, so whichever is chosen,
+  exactly one file spells `SO_PEERCRED` and everything else asks that file who
+  the caller is.
+
+  Do not reach for nightly. A daemon that only builds on an unstable compiler is
+  a daemon nobody else can build.
+
 - [x] **22. Running out is not a fault** — implements ADR 0009's *since it was
   accepted* section and `docs/features.md`'s v0.01 *running out of credit is its
   own answer, not an error*. `alo-answering`: `WentWrong::RanOut` (the eighth,
