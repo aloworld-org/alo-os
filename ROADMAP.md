@@ -468,6 +468,12 @@ sorted the same way v0.01 now is.
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
+- [ ] **The plain way to do what the agent does** (ADR 0009) — searching your own
+      files by name, kind, date and contents; a window showing what is running
+      and what it is using; what is filling the disk. Each is the non-agent
+      answer to a ★ line elsewhere in this file, and all three were missing until
+      the rule was applied to `docs/features.md`. **No surface is left out
+      because an agent can do it instead**
 - [ ] **Capture**: screenshots, annotation, screen recording with audio, screen
       sharing — and an indicator whenever screen, camera or microphone is in use
 - [ ] ★ **Divide the screen**: halves and quarters by drag or keyboard, splits

@@ -96,6 +96,9 @@ Nothing here is a differentiator. All of it is required.
 - [v0.5] File associations — what opens what, changeable by a person
 - [v0.5] A text editor and an image viewer, so a fresh machine is not helpless
 - [v0.5] **A terminal.** Law 2 forbids the *agent* running arbitrary commands; it says nothing about a person, and an operating system that does not trust its owner with a shell is a toy
+- [v0.5] **Search your own files, without asking anything** — by name, kind, date and contents, in the file manager, indexed on the machine. The agent's *“where is that file?”* is a nicer way to reach this; **it is not the only way**, and a machine whose only search is a conversation is a machine somebody locked out of their own documents
+- [v0.5] **What is running, and what it is using** — processes, memory, disk and network in a window. The plain answer to *“why is it slow?”*, for the person who cannot or will not ask
+- [v0.5] **What is filling the disk** — shown as sizes you can open up and click through, not a number in Settings
 
 **Software, and what applications expect (ADR 0005)**
 

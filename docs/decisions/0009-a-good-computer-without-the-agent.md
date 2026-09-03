@@ -135,3 +135,33 @@ nothing else about your machine has changed, and here is what still does.*
 - **Whoever proposes a verb answers the question again**: what does a person do
   when there is no agent to run it? The honest answer must be a way to do it, not
   a reason it does not matter.
+
+### The rule constrains what gets built, not only what verbs may do
+
+Read as a rule about verbs it is too weak, because the way this promise is
+actually broken is not by a verb doing too much. **It is by a surface never being
+built, on the grounds that the agent covers it.** A settings panel with no search
+because you can just ask. A mail client with no filters because the assistant
+sorts it. Each omission is defensible alone and together they produce a machine
+that cannot be operated by hand.
+
+So: **no surface may be left out because an agent can do it instead.** Every ★
+agent capability names the plain way to do the same thing, and if it cannot name
+one, the plain way is missing work rather than an acceptable gap.
+
+Applying that test to `docs/features.md` found three, immediately:
+
+- **Searching files.** The agent could answer *"where is that file?"* at v0.5 and
+  **nothing anywhere promised an ordinary search** — while a v1 line spoke of
+  applications contributing to "one place to look", presupposing a search nobody
+  had specified. As written, a person who could not use the agent could not find
+  their own documents.
+- **Why is it slow.** The agent could answer it; no window showed what was
+  running.
+- **What is filling my disk.** The agent could answer it; nothing showed sizes.
+
+Three others passed: *I can't open this file* has archives and file
+associations, *undo what the agent did* has the recovery screen, and *printers,
+solved* has printers in Settings. The test is worth running on every ★ line that
+is added from here, because two thirds passing is exactly the ratio that makes a
+gap invisible.
