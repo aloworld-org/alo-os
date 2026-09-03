@@ -6386,10 +6386,13 @@ kernel config before they need anything else about this line.
   true in one place and false in another, where the check everybody runs is the
   one that cannot tell.
 
-LOOP COMPLETE
+- `LOOP COMPLETE` — written by that iteration and **discharged 2026-09-04**: the
+  one line it named as the unblocker was set, so items 26 and 27 have a kernel to
+  build on and the queue has ready work again. Kept behind a bullet as a record
+  rather than a signal, which is how this journal treats its own markers.
 
-Every item in `docs/autonomy/QUEUE.md` is done or blocked. The blocked ones, and
-what each waits on:
+Every item in `docs/autonomy/QUEUE.md` was done or blocked. The blocked ones, and
+what each waited on:
 
 - **16b** — finding machines on the local network. No discovery code exists here
   and none of it is portable; deciding now would be deciding in the abstract.
@@ -6410,3 +6413,46 @@ Everything else needs the compositor, the image or the certified machine, and is
 listed under *Blocked — linux* and *Blocked — hardware*. The loop has finished
 the part of v0.01 that is portable logic, which is what the queue said at the
 start it could do and no more than that.
+
+---
+
+## The kernel was booted wrongly, not built wrongly — 26 and 27 are ready
+
+Not an iteration. Written by hand after the machine's owner made the one
+decision the previous entry said was theirs.
+
+**What changed.** `kernelCommandLine = lsm=capability,landlock,yama,safesetid,selinux,bpf`
+in `.wslconfig`, then `wsl --shutdown`. The same kernel — nothing rebuilt,
+nothing patched — now answers
+`capability,landlock,yama,safesetid,selinux,bpf`, and it survives a cold boot.
+`securityfs` went into `/etc/fstab`, because it is not mounted at boot and
+`systemd=true` does not mount it, and without it the answer reads as a missing
+file. `docs/quirks.md` and `docs/hardware.md` carry the measurement and the two
+traps beside it.
+
+**Checked beyond the list, because being named is not being usable.**
+`/sys/kernel/btf/vmlinux` is present, and `bpf_lsm_file_open` — the exact hook
+item 26 attaches to — is a real symbol in `/proc/kallsyms`. So there is a hook
+and the BTF to name it with.
+
+**The toolchain is installed**: nightly `1.100.0` with `rust-src`, and
+`bpf-linker 0.11.0` built against LLVM 21. `LOOP.md` has the route, because none
+of the five failures on the way named its own cause — the variable is
+bpf-linker's `LLVM_PREFIX` and not llvm-sys's `LLVM_SYS_<version>_PREFIX`, the
+binary has to be called exactly `llvm-config` and be on `PATH`, and a plain
+`cargo install bpf-linker` cannot work on Ubuntu 26.04 because its default
+feature wants an LLVM the distribution does not ship. `clang` and `bpftool` are
+deliberately still absent.
+
+**One correction to an earlier entry, made in place** rather than edited away:
+the entry that recorded the interrupted 21d work as having **zero tests** was
+measuring Windows, where every module of `alo-agentd` is
+`#[cfg(target_os = "linux")]` and the crate compiles to nothing, runs nothing and
+**exits 0**. On Linux the same code reports **170 passing**. `LOOP.md` now makes
+the WSL run the gate for that crate and asks for the test count, because a green
+that cannot tell success from absence is not a green. It is the same shape as the
+kernel finding above, which is why both are worth keeping.
+
+**What the next iteration takes.** Item **26**. Items 16b, 19b, 21h, 21i and 21j
+are still blocked on what the list above says, and none of those changed.
+
