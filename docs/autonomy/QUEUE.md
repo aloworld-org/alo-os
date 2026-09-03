@@ -38,8 +38,16 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
 `crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings`,
-`crates/alo-driving` and `crates/alo-agentd` were built by
-the loop and are described in the items below. **`alo-agentd` is the only one
+`crates/alo-driving`, `crates/alo-saying` and `crates/alo-agentd` were built by
+the loop and are described in the items below. **`alo-saying` is the only one
+that reaches every crate that says anything** — all fourteen of them, since item
+21g — and it is the only one whose dependency list is an argument rather than a
+consequence: a translation is checked against the vocabulary it is loaded into,
+so a vocabulary assembled per process would read a translator's correct line for
+another part of the system as a mistake. It is also **the only crate that
+deliberately has no `words` module**, because it is what runs when the
+vocabulary has not loaded and a sentence of its own would reach somebody as a
+key. **`alo-agentd` is the only one
 that is not portable**: since item 21c it is a Unix socket and the credentials a
 kernel keeps for one, so on any other host it compiles to nothing at all rather
 than to a version of itself that pretends. It is also the only one that rents
@@ -2163,21 +2171,92 @@ out.
   record `alo-keeping` opens at the path the description named, and which model
   or provider answers a question under which policy.
 
-  **Blocked on nothing, and it is a decision about a vocabulary first.** A
-  `Machine` is made with `&Strings`, and nothing in this repository has ever
-  built one outside a test: every crate declares its own words, and *where the
-  machine's vocabulary comes from* — which crates are collected, whether a
-  translation is loaded from a disk and from where, and what a service does when
-  it cannot be — is a question no item has asked. That is the first half of this
-  item and it wants writing down before it is written; a `Strings` assembled by
-  accident in a `main` is the one place *hardcoded English is a bug* would come
-  back with nobody noticing.
+  **Blocked on nothing, and the vocabulary half is answered.** This item said
+  its first half was *where the machine's vocabulary comes from* — which crates
+  are collected, whether a translation is loaded from a disk and from where, and
+  what a service does when it cannot be — and that it wanted writing down before
+  it was written. It is **item 21g**, below, and what is left here is three
+  lines of `main`: `everything_this_machine_can_say()`, `alo_agentd::declare_into`
+  on top of it because the daemon says three strings the rest of the machine
+  does not, and `Loaded::at(vocabulary, the_translations())` with the damage
+  written into the service log.
+
+  What the process still owes the vocabulary is **which language**:
+  `Strings::prefers` is called by whoever knows whose machine this is, and where
+  a person's language is stored is not decided anywhere. It is not the machine
+  description — ADR 0004 gives that file to the organisation and a language is
+  the person's — so it is `alo-appearance`-shaped and it is not this item's to
+  invent. Until it is decided, a service that prefers nothing shows English and
+  says it is English, which is what a machine with no translations does anyway.
 
   It unblocks the last of *agents point at the local model*: `doing.rs` refuses
   a question in words today because nothing tells the service what was chosen,
   and the sentence stops being the only answer the moment something does. It
   does not unblock the application verbs, which are Wayland and D-Bus and stay
   below.
+
+- [x] **21g. The machine's vocabulary, and where a translation comes from** —
+  cut from 21f, which said this half wanted writing down before it was written.
+  Implements `CLAUDE.md`'s *user-facing strings are externalized from day one*
+  and `docs/features.md`'s "Language and access" (ADR-free), and it is what
+  `alo-strings` said it deliberately was not: *it does not read a file — where
+  the translations live and who loads them is the shell's*. `crates/alo-saying`,
+  a **new crate**: `collecting.rs` (every crate's list, in one vocabulary),
+  `place.rs` (where a machine keeps them, and what counts as one), `arriving.rs`
+  (one translation as it is written), `loading.rs` (the directory, put onto the
+  vocabulary), `damage.rs` (everything that was meant to load and did not),
+  `failing.rs` (a file that gave nothing, and a line left out of one that gave
+  something). 39 unit tests, 4 integration tests against the vocabulary alo OS
+  really has, 1 doctest; **1629 tests on Linux and 1464 on Windows**, clippy
+  clean on both and `cargo doc` clean. A new contract,
+  `docs/contracts/translations.md`.
+
+  **The decision the item asked for: one vocabulary for the machine, not one
+  per process** — and it is what gives the crate its otherwise indefensible
+  shape, a dependency on all fourteen crates that have a word in them. A
+  translation is *checked against the vocabulary it is loaded into*, and
+  `Amiss::NotSaidHere` is what a key nothing declares gets. So a process holding
+  only its own strings would read a translator's correct line for another part
+  of the system as a mistake — the shell reading the daemon's refusals as wrong,
+  the daemon reading the shortcuts panel's rows as wrong — and there would be no
+  answer to *how much of Maltese is done*, because there would be as many
+  answers as there are processes.
+
+  **The second decision was not in the item, and it is what makes the first one
+  survivable.** `Vocabulary::check` refuses a whole file when anything in it
+  would come out wrong, which is right when somebody contributes one and wrong
+  when a machine loads one: a string renamed in a release would turn a person's
+  language off entirely, in the release that renamed it, on every machine at
+  once. So the same check is asked at the second moment and acted on
+  differently — the lines that would come out wrong are left out, the rest of
+  the language is shown, and what was left out is reported. That is also what
+  lets a process say less than the machine does: `alo-agentd` is Linux, so it is
+  not collected, its three strings are declared by the daemon, and a shell
+  loading the same German file leaves those three lines out rather than
+  refusing German. Both halves have a test.
+
+  Three decisions the next items inherit. **Nothing about a translation stops a
+  machine**: `Loaded::at` has no error at all — six things can go wrong and
+  every one travels in `Damage` — because a machine that refused to start could
+  not say why, the sentence explaining it being in the file that did not load.
+  The one refusal in the crate is `everything_this_machine_can_say`, which fails
+  only when alo OS's own words contradict each other, and that fails in CI.
+  **This is the one crate with no `words` module and there will never be one**:
+  it runs when the vocabulary has not loaded, so a sentence of its own would be
+  a key on somebody's screen — `CLAUDE.md`'s rule is about what a person *using*
+  the machine reads, and nobody using a machine reads this. **Who may write a
+  translation is answered by the image, not by a mode check**: since 9g the
+  sentence a person approves is a string in the vocabulary, so whoever can write
+  these files can change what somebody is agreeing to — and what answers it is
+  ADR 0011, `/usr` being part of a signed image and not writable on a running
+  machine. A check there would be theatre that taught whoever packages a machine
+  that files may be dropped in. **A translation a person adds to their own
+  machine is a different directory and has no answer yet**, and nothing reads
+  one.
+
+  What it did not touch: **which language a person reads**, which is 21f's
+  paragraph above, and the translations themselves — there are still none, and
+  now there is a file for the first one to arrive in.
 
 - [x] **22. Running out is not a fault** — implements ADR 0009's *since it was
   accepted* section and `docs/features.md`'s v0.01 *running out of credit is its

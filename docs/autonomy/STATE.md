@@ -5640,3 +5640,161 @@ service really wakes is `21f` and the certified machine.
   disk should say so instead.
 - **The Linux half of the gate is still not optional for `alo-agentd`**, and it
   has gone up again: 149 of its tests do not exist on Windows.
+
+## Iteration — item 21g: the machine's vocabulary, and where a translation comes from
+
+`docs/autonomy/QUEUE.md` item 21f named its own first half and said it wanted
+writing down before it was written: *where the machine's vocabulary comes from —
+which crates are collected, whether a translation is loaded from a disk and from
+where, and what a service does when it cannot be.* That is one whole thing, so
+it was cut out and built as **21g**, and what is left of 21f is a `main`.
+
+Two items ahead of it in the file were passed over, both correctly. **16b** says
+of itself that it is *blocked on nothing here, and not ready either* — there is
+no discovery code in this repository, so the decision would be made in the
+abstract. **19b** is blocked on the acting half, which is Wayland.
+
+### The decision: one vocabulary for the machine, not one per process
+
+This is the whole argument, and it is what gives `alo-saying` a shape nothing
+else in the workspace has — a dependency on all fourteen crates that declare a
+word.
+
+A translation is **checked against the vocabulary it is loaded into**, and
+`Amiss::NotSaidHere` is what a key nothing declares gets. So a process holding
+only the strings it says would look at a translator's correct line for another
+part of the system and call it a mistake: the shell reading the daemon's
+refusals as wrong, the daemon reading the shortcuts panel's rows as wrong, each
+of them able to show its own half of one file as though it were the whole. There
+would be no answer to *how much of Maltese is done*, because there would be as
+many answers as there are processes.
+
+The price is a crate that inherits fourteen dependency trees, `alo-asking`'s TLS
+stack among them, so a compositor linking it links a little more than it uses.
+That is the cheaper of the two mistakes and it is written down in the crate
+rather than left to be discovered.
+
+### The second decision was not in the item, and it is what makes the first survivable
+
+`Vocabulary::check` refuses a **whole file** when anything in it would come out
+wrong. That is right at the moment somebody contributes a translation and wrong
+at the moment a machine loads one: a single string renamed in a release would
+turn a person's language off entirely, on every machine at once, in the release
+that renamed it.
+
+So the same check is asked at the second moment and acted on differently. What
+would come out wrong is left out, the rest of the language is shown, and what
+was left out is reported. It is asked twice — once of the file, once of what is
+left when everything it refused has been taken out — and the second cannot find
+anything, because checking fewer strings cannot find more wrong with them.
+
+That is also what lets a process say less than the machine does, which is how
+`alo-agentd` stays out of the collection. It is Linux; a vocabulary that held
+three fewer strings on a host with no daemon would refuse on one host a file it
+accepted on another. So the daemon declares its own three on top, and a shell
+loading the same German file leaves those three lines out rather than refusing
+German. Both halves have a test, and the second is in the integration test
+against the real vocabulary rather than against a fixture.
+
+### Nothing about a translation stops a machine
+
+`Loaded::at` has no error in it at all. Six things can go wrong and every one of
+them travels in `Damage`, because of what the alternative would be: **a machine
+that refused to start over a translation could not tell anybody why, since the
+sentence explaining it is in the file that did not load.**
+
+The one refusal in the crate is `everything_this_machine_can_say`, which fails
+only when alo OS's own words contradict each other — our bug, not a machine's,
+and `collecting.rs`'s test is where it fails.
+
+That also settled where this crate's English goes. It is the one crate that
+**cannot ask for words**, so `NotSpoken` and `LeftOut` keep their English and
+their `Display`, and there is no `words` module and never will be. `CLAUDE.md`'s
+rule is about what a person *using* a machine reads; nobody using a machine
+reads a service log about a translation that did not load.
+
+### Who may write a translation, and why there is no check
+
+Since 9g the sentence a person approves is a string in the vocabulary — `delete
+{path}` is a line in a file — so whoever can write the translations can change
+what somebody is agreeing to, on a machine behaving exactly as it was built to.
+That is a real security property and it wanted an answer.
+
+The answer is **the image, not a mode check**. ADR 0011: the operating system
+*is* the image, `/usr` is part of it and is not writable on a running machine,
+and a translation arrives the way the daemon does. A permission check on a path
+under `/usr` would be theatre, and worse than nothing, because it would teach
+whoever packages a machine that this is a directory files may be dropped into. A
+translation a person adds to their **own** machine is a different question with
+a different answer — `docs/features.md` puts community translation at v1 — and
+nothing here reads such a directory.
+
+### Two things measured rather than assumed
+
+**`Path::is_absolute` answers about the host.** The first test of `place.rs`
+asserted the translations path was absolute and failed on Windows, where a path
+with no drive letter is relative. It had found nothing wrong with anything. The
+test is written against the text now and `docs/quirks.md` records it, along with
+the warning for `join`, `parent` and `components` on any path this repository
+writes down for a machine it does not run its tests on.
+
+**Two crates already have a `declare_into`.** `alo-files` and `alo-applications`
+declare verbs as well as words, and a crate root holds one name. Adding the
+words' export broke both crates' compile, which is the right answer: theirs is
+the verbs' and it is what their callers use. The collector names
+`alo_files::words::declare_into` through the module instead, rather than moving
+somebody else's public surface out from under them.
+
+### The gate
+
+`cargo fmt` clean, `cargo clippy --workspace --all-targets -D warnings` clean on
+Windows and on Linux, `cargo doc -p alo-saying` clean. **1464 tests on Windows
+and 1629 on Linux**, the difference being `alo-agentd`, which does not exist on
+a host that is not Linux; 44 doctests. The crate is fully portable, so the Linux
+run was for the workspace rather than for it.
+
+**A note on the counting, because the last entry's number and this one's do not
+line up.** These were measured with `cargo test --workspace --lib --tests`, per
+host, summing every `test result` line. On that method this iteration added 43
+and nothing else changed. Whatever produced item 20's *1464 across the
+workspace* was not this method, so the next iteration should compare against the
+two numbers above rather than against that one.
+
+### `ROADMAP.md` moved, and a new contract with it
+
+The **Language** line's *code* half — already ticked, and where every 9-series
+item wrote — gained what 21g added: one vocabulary for the machine rather than
+one per program, the file a translation arrives in, and the two rules that keep
+a machine speaking. Its *On the machine* half still says there are no
+translations, because there are none; what changed is that there is now a file
+for the first one to arrive in. **No half was ticked that was not whole, and no
+machine half was touched.**
+
+`docs/contracts/translations.md` is new and is the fourth contract file: the
+directory, the shape, what happens when something is wrong, and who may write
+one. It is the second of the four a person types, and the only one a person
+outside the organisation that owns the machine types.
+
+**What this does not claim.** No translation of alo OS exists, so nothing here
+has been read by somebody who reads the language it was written in. Every test
+is written against German fragments this iteration wrote, which proves the
+loading and proves nothing about the words. The first real translation is the
+test that matters and it is not this loop's to write.
+
+**What the next iteration must know:**
+
+- **21f is the next ready item**, and its vocabulary half is done: what is left
+  is `everything_this_machine_can_say()`, `alo_agentd::declare_into` on top of
+  it, and `Loaded::at(vocabulary, the_translations())` with `damage().lines()`
+  written into the service log.
+- **A process that says something the rest of the machine does not must declare
+  it before loading translations.** `Loaded::at` takes the vocabulary by value,
+  which is as structural as that rule gets; forgetting it costs a translator's
+  correct lines, reported rather than fatal.
+- **Where a person's language is stored is decided nowhere.** It is not the
+  machine description (ADR 0004 gives that file to the organisation, and a
+  language is the person's), so it is `alo-appearance`-shaped and it is an item
+  somebody has to write.
+- **`alo-saying` is where item 24 becomes possible.** *No rented name reaches a
+  person* wants a test that walks every string every crate registers, and
+  `everything_this_machine_can_say()` is that walk.

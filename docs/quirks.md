@@ -115,6 +115,24 @@ A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
+### `Path::is_absolute` answers about the host, not about the path
+**Version:** Rust 1.97 `std`, seen 2026-09-03 in `alo-saying` on Windows 11
+26200 and Ubuntu under WSL2
+**Behaviour:** `Path::new("/usr/share/alo/translations").is_absolute()` is
+`true` on Linux and **`false` on Windows**, because a Windows absolute path
+needs a drive or a UNC prefix and this one has neither. It is documented
+behaviour and it is right — the question `std` answers is *would this resolve
+without a working directory on the machine you are running on* — but it is not
+the question a test about a path alo OS ships asks.
+**Our response:** where a constant is a path on the machine alo OS runs on
+rather than a path on the host the tests run on, the test is written against the
+text (`starts_with("/usr/")`) and says so. Reaching for `is_absolute` gives a
+test that passes on the loop's Linux half and fails on its Windows half, having
+found nothing wrong with anything. The same caution applies to `Path::join`,
+`parent` and `components` on any path this repository writes down for a machine
+it does not run the tests on.
+**Date:** 2026-09-03
+
 ### A zip has nowhere to say which clock its timestamps came from
 **Version:** the zip format as every reader implements it; seen 2026-09-02 in
 `alo-files`, against Windows 11 26200's own reader

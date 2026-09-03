@@ -670,9 +670,24 @@ sorted the same way v0.01 now is.
         line says it is half translated wherever the half is. What stayed
         data stayed data: a path, a hostname, a window's identifier, a
         colour somebody typed and the fifty-three keys that print a mark are
-        nobody's to translate and never count a line as unfinished
+        nobody's to translate and never count a line as unfinished.
+        Since **21g** there is somewhere for another language to come
+        from: `alo-saying` collects every crate's words into **one
+        vocabulary for the machine** — not one per program, because a
+        translation is checked against the vocabulary it is loaded into
+        and a program that declared only its own strings would read a
+        translator's correct line for another part of the system as a
+        mistake — and loads the translations an image ships with, in
+        `docs/contracts/translations.md`. Nothing about a translation can
+        stop a machine: one that is missing, half written or from a later
+        alo OS leaves it speaking English with what went wrong in the
+        service log, because a machine that would not start could not say
+        why. And a line that would come out wrong is left out rather than
+        costing the language, so a string renamed in a release cannot turn
+        somebody's language off in the release that renamed it
   - [ ] **On the machine.**
-        a shell to translate, and every translation — there are none yet
+        a shell to translate, and every translation — there are still
+        none, and now there is a file for the first one to arrive in
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

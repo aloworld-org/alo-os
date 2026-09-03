@@ -16,6 +16,7 @@ members = [
   "crates/alo-models",
   "crates/alo-protocol",
   "crates/alo-record",
+  "crates/alo-saying",
   "crates/alo-shortcuts",
   "crates/alo-strings",
   "crates/alo-turn",

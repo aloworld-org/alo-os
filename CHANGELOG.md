@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **alo OS can now be translated, and a translation is a file rather than a
+  rebuild.** Every sentence the system says has been named and written down for
+  a while; what was missing was anywhere for the other language to come from.
+  A translation is one file per language in `/usr/share/alo/translations`, it
+  ships in the image, and it covers the whole machine rather than one program —
+  so *how much of Maltese is done* has one answer instead of one per window.
+  `docs/contracts/translations.md` is the file, for whoever writes one.
+
+  **A machine never stops over a translation.** One that is missing, half
+  written, or written for a later alo OS leaves your machine speaking English
+  and writes what was wrong into the service log — because a machine that
+  refused to start could not tell you why, the sentence explaining it being in
+  the file that did not load.
+
+  **And a mistake in one line costs that line.** A sentence that would come out
+  with a hole where your file's name should be is left out and the rest of your
+  language is shown; what is not translated is shown in English and says it is
+  English. Without that, a single string renamed in a release would turn your
+  language off entirely, on every machine at once, in the release that renamed
+  it.
+
 - **A machine you have set a retention rule on now actually keeps it.** If your
   machine is told to keep the record of what your agent did for ninety days, it
   removes what is older than that once an hour while it is running — starting

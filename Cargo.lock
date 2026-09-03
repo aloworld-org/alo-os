@@ -188,6 +188,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-saying"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-appearance",
+ "alo-applications",
+ "alo-asking",
+ "alo-capability",
+ "alo-context",
+ "alo-dock",
+ "alo-egress",
+ "alo-files",
+ "alo-keeping",
+ "alo-models",
+ "alo-protocol",
+ "alo-shortcuts",
+ "alo-strings",
+ "alo-turn",
+ "serde",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "alo-shortcuts"
 version = "0.0.1"
 dependencies = [

@@ -1,0 +1,49 @@
+[package]
+name = "alo-saying"
+version = "0.0.1"
+description = "Everything this machine can say, and the translations it says it in."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The machinery. Every type here is one of this crate's: a vocabulary to fill,
+# a translation to check against it, and the lookup that comes out.
+alo-strings = { path = "../alo-strings" }
+
+# Every crate that declares a word. This crate is reached by whatever assembles
+# a process, and it reaches all of them — which is the price of one vocabulary
+# for the whole machine rather than one per process, and `lib.rs` is why that
+# price is worth paying. It inherits their dependencies with them, `alo-asking`'s
+# TLS stack included; nothing here uses any of it.
+alo-answering = { path = "../alo-answering" }
+alo-appearance = { path = "../alo-appearance" }
+alo-applications = { path = "../alo-applications" }
+alo-asking = { path = "../alo-asking" }
+alo-capability = { path = "../alo-capability" }
+alo-context = { path = "../alo-context" }
+alo-dock = { path = "../alo-dock" }
+alo-egress = { path = "../alo-egress" }
+alo-files = { path = "../alo-files" }
+alo-keeping = { path = "../alo-keeping" }
+alo-models = { path = "../alo-models" }
+alo-protocol = { path = "../alo-protocol" }
+alo-shortcuts = { path = "../alo-shortcuts" }
+alo-turn = { path = "../alo-turn" }
+
+# `alo-agentd` is deliberately not here: it is Linux, and a vocabulary that was
+# three strings shorter on one host would be a translation refused on that host
+# and accepted on another. It declares its own three on top of this one, which
+# is the rule `docs/contracts/translations.md` states for anything that
+# assembles a vocabulary.
+
+serde = { workspace = true }
+# A translation is typed by a translator, so it is TOML for the reason
+# `docs/contracts/machine-description.md` is: a comment is how the person after
+# them finds out why a sentence is worded the way it is.
+toml = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
