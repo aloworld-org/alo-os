@@ -699,7 +699,16 @@ sorted the same way v0.01 now is.
         service log, because a machine that would not start could not say
         why. And a line that would come out wrong is left out rather than
         costing the language, so a string renamed in a release cannot turn
-        somebody's language off in the release that renamed it
+        somebody's language off in the release that renamed it.
+        Since **24** holding the whole list is what makes one more promise
+        checkable rather than a habit: **no name of anything alo OS rents
+        reaches a person.** Ollama, Flatpak, Wayland, systemd, Podman and
+        nine more are none of them things the person who bought the machine
+        chose, and a test walks every sentence, every note a translator
+        works from and every key against that list. It finds nothing today,
+        which is the point — it costs nothing now and catches the first one
+        later, on the day somebody mid-refusal writes what the log in front
+        of them said
   - [ ] **On the machine.**
         a shell to translate, and every translation — there are still
         none, and now there is a file for the first one to arrive in

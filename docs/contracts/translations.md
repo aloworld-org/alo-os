@@ -97,6 +97,22 @@ rules alo OS has not read.
 arrives a few hundred strings at a time, and what is not translated is shown in
 English and is marked as English wherever it appears.
 
+**No sentence names anything alo OS runs on and did not write.** Ollama,
+Flatpak, Wayland, Smithay, systemd, Docker, Podman, bootc, taffy, Mesa — none of
+those is something the person who bought the machine chose, and *the Flatpak
+could not be installed* asks them to go and learn what a Flatpak is before they
+can understand why their application is not there. The English is checked
+against that list in CI, and the notes with it, because a note is what a
+translator writes from. **A translation is held to the same rule and nothing
+here can check it**, so it is written down: if the English does not name one,
+yours should not either.
+
+What that rule is *not* about: a format or a protocol that describes the
+person's own thing. `.zip` is the ending their archive has to have, `https` is
+what their provider's address starts with, and the Windows logo is what is
+printed on their keyboard. Those name the reader's world rather than a component
+alo OS picked, and they are translated — or left alone — like any other word.
+
 ## What happens when something is wrong
 
 **Nothing here stops a machine.** A translation that is missing, unreadable,

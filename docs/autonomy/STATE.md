@@ -5933,3 +5933,119 @@ that was not whole, and no machine half was touched.**
 - **`Loaded::at` takes the vocabulary by value**, so a process saying something
   the rest of the machine does not must declare it before loading translations.
   `starting::what_this_machine_says` is where that order lives.
+
+---
+
+## Iteration — item 24: no rented name reaches a person
+
+**Item 24, built and gated on both hosts.** The first item in this queue whose
+whole value is a thing that already passes: a sweep of every string alo OS
+declares found no leaks, and the point of the item is to keep it that way on the
+day somebody is mid-refusal and writes what the log in front of them said.
+
+One new file, `crates/alo-saying/src/rented.rs`. `Rented` and
+`EVERYTHING_WE_RENT` are the fifteen names with a line each saying what alo OS
+rents the thing for; `Where` says which part of a declaration a name was in;
+`Overheard` is one leak and the sentence it explains itself with; and
+`what_a_person_would_have_to_learn` walks a vocabulary and answers with all of
+them at once — `alo_strings::Vocabulary::check`'s rule, because somebody fixing
+a list wants to see the work rather than be told about the next one each time
+they try again.
+
+### The decision the item did not contain: a function, not only a test
+
+The item asked for *a test that walks every string every crate registers*, and
+`alo-saying` is the only crate that can — it holds all fourteen lists. But its
+own header says why `alo-agentd` is deliberately **not** one of them: the daemon
+is Linux, and a vocabulary assembled in `collecting.rs` would be three strings
+shorter on a host with no daemon, so one host would refuse a translation the
+other accepted.
+
+A test written inside `alo-saying` would therefore have exempted exactly the
+list whose strings are written closest to a service log — which is where a name
+copied out of a log is likeliest to land. So the walk is a public function over
+a `Vocabulary`, `alo-saying` asks it of the machine's whole vocabulary in
+`rented.rs`, and `alo-agentd` asks it of its own three in `words.rs`. Anything
+that assembles a vocabulary later inherits the question instead of having to
+remember the rule.
+
+### The second decision: three roads, and the third is not obvious
+
+- **The sentence.** What a person meets. The case the item is about.
+- **The note.** Nobody using the machine reads a note — a translator does, and
+  what they write from it is read in every language alo OS is translated into.
+  Those sentences are files rather than code, so a name that gets into a note is
+  a name in twenty-four sentences that no test in this repository can ever walk.
+  It is the one road where catching it late is not possible at all.
+- **The key.** `alo_strings::CameFrom::NoPhrase` is, in that crate's own words,
+  *the one case where a person is shown a key*: the code asked for something
+  nothing declares and there is no honest sentence to show. A key naming a
+  rented thing reaches somebody by exactly that road.
+
+### Where the boundary of the list is, and why it is not wider
+
+**On it: anything alo OS runs on that the person did not choose.** Ollama,
+Flatpak, Wayland, Smithay, systemd, Docker, Podman, bootc, taffy, Mesa, rustix,
+signal-hook, ureq, rustls, serde.
+
+**Off it: a format or a protocol that describes the person's own thing.**
+`.zip` is the ending their archive has to have and `https` is what their
+provider's address starts with; both are in strings today and both stay. That is
+also why TOML is absent although the crate that reads it is present — a check on
+the name cannot tell the format from the library, and the format is the
+person's.
+
+**Off it: a name printed on the person's own hardware.** The note on
+`shortcuts.modifier.super` tells a translator that most keyboards print a
+Windows logo on that key. Naming somebody's own keyboard is not asking them to
+learn anything, and there is a test asserting that note is still there and still
+passes.
+
+**Off it until it is real:** `aya` and `libbpf` belong to items 26 and 27 and go
+on the list in the change that rents them. A name there before the thing exists
+is a rule nobody can check.
+
+### Matching, and the one place it is deliberately loose
+
+Case-insensitive, whole word. `bootcamp` is not `bootc` — a check that fired on
+it would be one somebody learns to work around, and then the real one goes past
+them too. A trailing `s` is allowed through, because *the Flatpaks could not be
+installed* is the same sentence with the same problem in it.
+
+### The gate
+
+`cargo fmt --all --check` clean on both hosts.
+`cargo clippy --workspace --all-targets -- -D warnings` clean with zero warnings
+on Windows and on Linux. `cargo doc -p alo-saying -p alo-agentd --no-deps`
+clean. **1650 tests and 44 doctests on Linux** (was 1637 and 44), **1476 and 44
+on Windows** (was 1464 and 44). 51 unit tests in `alo-saying` (was 39), 158 in
+`alo-agentd` (was 157).
+
+`clippy::panic` is denied workspace-wide including in tests, so the
+`let [only] = … else { panic!() }` shape this iteration reached for first is not
+available; `assert_eq!(len, 1)` and `first().unwrap()` is what the house style
+already uses.
+
+### `ROADMAP.md` moved
+
+The **Language** line's *code* half gained item 24: the whole vocabulary being
+in one place is what turns *no rented name reaches a person* from a habit into a
+test, and the line says it finds nothing today and why that is the point. **No
+half was ticked that was not already ticked, and no machine half was touched** —
+the code half of that line has been ticked since 21g and this is written into
+it.
+
+**What the next iteration must know:**
+
+- **The ready list is now 25, 26 and 27.** 16b, 19b, 21h, 21i and 21j are
+  unchanged and all still blocked on a decision or on Linux work this loop does
+  not have.
+- **26 is the one worth taking next**, and its first step is a measurement
+  rather than code: whether the WSL2 kernel has `CONFIG_BPF_LSM=y` and `bpf` in
+  `CONFIG_LSM`. If it does not, the item says so itself — that is the finding,
+  and it is written down rather than worked around.
+- **Adding a rented thing now means adding its name to `EVERYTHING_WE_RENT` in
+  the same change.** Item 26 rents `aya`, so it owes that line.
+- **A new crate that says words owes two lists now**, not one: `collecting.rs`
+  and its `EVERY_LIST`, as before, and nothing else — the rented check reads
+  whatever the vocabulary holds, so it needs no registration.

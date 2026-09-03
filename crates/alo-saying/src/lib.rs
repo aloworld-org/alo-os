@@ -17,6 +17,7 @@
 //! | [`Damage`] | Everything that was meant to load and did not |
 //! | [`NotSpoken`], [`LeftOut`] | A file that gave nothing, and a line left out of one that gave something |
 //! | [`THE_TRANSLATIONS`] | Where a machine keeps them |
+//! | [`what_a_person_would_have_to_learn`] | Every rented name in what a vocabulary says |
 //!
 //! ```
 //! use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
@@ -104,6 +105,20 @@
 //! nothing here needs a grant, for the reason `alo-strings` gives: a person
 //! reading their own machine in their own language is not an agent doing
 //! something.
+//!
+//! # No rented name reaches a person
+//!
+//! Holding the whole list is what makes one rule checkable that was previously
+//! only a habit: alo OS runs on things it did not write, and none of them is
+//! something the person who bought the machine chose. *The Flatpak could not be
+//! installed* asks somebody to learn what a Flatpak is before they can
+//! understand why their application is not there.
+//!
+//! [`what_a_person_would_have_to_learn`] walks a vocabulary against
+//! [`EVERYTHING_WE_RENT`] and answers with every place a rented name is said.
+//! It answers with nothing today, which is the point: it costs nothing now and
+//! catches the first one later. [`rented`] is what is on the list, what is
+//! deliberately not, and why a note and a key are read as well as a sentence.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -113,6 +128,7 @@ pub mod damage;
 pub mod failing;
 pub mod loading;
 pub mod place;
+pub mod rented;
 
 #[cfg(test)]
 mod testing;
@@ -123,3 +139,4 @@ pub use damage::Damage;
 pub use failing::{LeftOut, NotSpoken};
 pub use loading::Loaded;
 pub use place::{THE_TRANSLATIONS, is_a_translation, the_translations};
+pub use rented::{EVERYTHING_WE_RENT, Overheard, Rented, Where, what_a_person_would_have_to_learn};

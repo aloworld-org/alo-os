@@ -178,4 +178,24 @@ mod tests {
     fn this_crate_can_declare_its_own_words() {
         assert_eq!(agentd_words().unwrap().how_many(), EVERY_WORD.len());
     }
+
+    /// **None of the three names anything alo OS rents.** `alo-saying` asks
+    /// this of the machine's whole vocabulary, and this crate is the one list
+    /// that is not in it: it is Linux, so it declares its own three on top.
+    /// Asking here is what stops that exemption from being a hole — and this
+    /// crate is where it would show first, because these are the strings
+    /// written closest to a service log.
+    #[test]
+    fn nothing_this_crate_says_names_anything_we_rent() {
+        let overheard = alo_saying::what_a_person_would_have_to_learn(&agentd_words().unwrap());
+        assert!(
+            overheard.is_empty(),
+            "{}",
+            overheard
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+    }
 }

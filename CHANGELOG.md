@@ -12,6 +12,21 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **alo OS will not put the name of something it rents in front of you.**
+  Your machine runs on parts we chose and you did not — the thing that runs a
+  model on it, the thing that packages an application, the thing that starts
+  the service — and *the Flatpak could not be installed* asks you to go and
+  find out what a Flatpak is before you can work out why your application is
+  not there. That was already the practice; it is now a test that runs on
+  every change, over every sentence alo OS says, every note a translator works
+  from, and every key. It finds nothing today, which is the whole point of
+  having it.
+
+  Names that stay: `.zip`, because that is the ending your archive has to have;
+  `https`, because that is what your provider's address starts with; and the
+  Windows logo on the key between Ctrl and Alt, because that is what is printed
+  on your own keyboard. Those describe your things, not ours.
+
 - **The agent service is now something a machine can start.** Everything it is
   made of has been here for a while; what was missing was the process that puts
   it in order. `alo-agentd` now starts, reads what this machine is, loads every

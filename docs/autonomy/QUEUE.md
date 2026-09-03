@@ -2472,25 +2472,57 @@ out.
   which is owed with the rest of the hardware verification and is item 23a
   below.
 
-- [ ] **24. No rented name reaches a person.** Every word somebody reads is
-  declared in `alo-strings`, which makes this checkable rather than a habit: a
-  test that walks every string every crate registers and fails on the name of
-  anything we rent — Ollama, Flatpak, Wayland, Smithay, systemd, Docker, Podman,
-  bootc, `taffy`, and whatever the list grows to.
+- [x] **24. No rented name reaches a person.** Implements `CLAUDE.md`'s
+  *engines are configured, never patched* from the reader's side, and it is the
+  first item whose whole value is a thing that already passes. One new file,
+  `crates/alo-saying/src/rented.rs`: `Rented` and `EVERYTHING_WE_RENT` (the
+  fifteen, each with a line saying what alo OS rents it for), `Where` (which
+  part of a declaration a name was in), `Overheard` (one leak, and the sentence
+  it explains itself with), and `what_a_person_would_have_to_learn`. 12 new
+  unit tests in `alo-saying` and 1 in `alo-agentd`; **1650 tests and 44
+  doctests on Linux** (was 1637 and 44), **1476 and 44 on Windows** (was 1464),
+  clippy clean on both and `cargo doc` clean.
 
-  **It passes today, and that is exactly why it is worth writing.** A sweep found
-  zero leaks in the current strings, so this costs nothing now and catches the
-  first one later — which is when somebody, mid-refusal, writes *the Flatpak
-  could not be installed* because that is what the log said.
+  **It is a function over a vocabulary rather than only a test, and that is the
+  decision.** The item said *a test that walks every string every crate
+  registers*, and the crate that can do that is `alo-saying` — but its own
+  header says why `alo-agentd` is deliberately not in the collection: it is
+  Linux, so a vocabulary assembled there would be three strings shorter on a
+  host with no daemon. A test written inside `alo-saying` would therefore have
+  exempted the one list whose strings are written closest to a service log,
+  which is where a name copied out of a log is likeliest to land. So the walk
+  is `what_a_person_would_have_to_learn(&Vocabulary)`, `alo-saying` asks it of
+  the machine's whole vocabulary, and `alo-agentd` asks it of its own three —
+  and anything that assembles a vocabulary later inherits the question rather
+  than having to remember the rule.
 
-  The list of names lives beside the test with a line saying why each is on it,
-  so adding a rented engine means adding its name here in the same change. And
-  the test explains itself when it fails: not *forbidden word*, but **a person
-  reading this would have to learn what a Flatpak is**.
+  **The second decision was not in the item: a name can arrive by three roads,
+  not one.** The sentence is the case the rule is about. A **note** is the
+  second, and it is the one that cannot be caught later: a note is what a
+  translator writes from, so a rented name there becomes a rented name in
+  twenty-four sentences that live in files rather than in code, where no test
+  in this repository can ever see it. A **key** is the third, because
+  `alo_strings::CameFrom::NoPhrase` is *the one case where a person is shown a
+  key* — the code asked for something nothing declares, and there is no honest
+  sentence to show.
 
-  *Documentation is exempt and must be.* `docs/` names these things constantly
-  and should — the rule is about sentences a person meets, not about engineers
-  being unable to say what they built on.
+  Three decisions the next items inherit. **A format the person's own file is
+  in is not a rented name**: `.zip`, `https` and the Windows logo on the Super
+  key are in strings today and stay, because they name the reader's world
+  rather than a component alo OS chose — which is also why TOML is off the list
+  although the crate that reads it is on it, since a check on the name could
+  not tell the format from the library. **The list holds what is rented today
+  and nothing else**: `aya` and `libbpf` belong to items 26 and 27 and go on it
+  in the change that rents them, because a name there before the thing exists
+  is a rule nobody can check. **A match is a whole word and an English plural
+  is one**: `bootcamp` is not `bootc`, and *the Flatpaks could not be
+  installed* is the same leak with an `s` on it — a check that fired on
+  `bootcamp` would be one somebody learns to work around, and then the real one
+  goes past them too.
+
+  Built and unit tested, on both hosts. **Nothing about a translation is
+  checked**, and it cannot be: a translation is a file, so the rule is written
+  into `docs/contracts/translations.md` for whoever writes one.
 
 - [ ] **25. Weights somebody brought themselves.** `alo-models` can only offer
   what `data/catalogue.toml` lists, so today the curated list is the only way a
