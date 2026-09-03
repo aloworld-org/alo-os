@@ -375,7 +375,11 @@ which made a completely consistent rule look like work being taken out of turn.
 
 - [ ] The workspace client runs as an application on the shell
 
-- [ ] **Image**: OCI-built, boots on the certified machine, firmware to sign-in
+- [ ] **Image**: a **bootable container** (`bootc`) on a rented Fedora-derived
+      base (ADR 0011), booting on the certified machine, firmware to sign-in.
+      The base is rented deliberately: everything that makes alo OS *alo* is in
+      layers we already own, and building our own base would buy no capability
+      that is not already free
 
 **Exit gate.** On the certified machine, from a cold boot: sign in, press the
 key, ask an agent to do something to a file in a granted folder, approve the
@@ -490,7 +494,10 @@ sorted the same way v0.01 now is.
 - [ ] **System verbs** through the privileged broker
 - [ ] **Guided fine-tune**, with the dataset never leaving the machine
 - [ ] Full-disk encryption
-- [ ] **Atomic updates with rollback**
+- [ ] **Atomic updates with rollback** — largely **inherited** rather than
+      built, since a bootc image rolls back with one command (ADR 0011). What
+      is ours is the policy around it, and *undo what the agent did*, which is
+      the one agent capability the base rather than our code provides
 - [ ] Installer
 - [ ] Accessibility: EN 301 549 conformance on the shell
 - [ ] ★ **"Where is that file?"** — local retrieval over granted paths, nothing uploaded

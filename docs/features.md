@@ -240,8 +240,8 @@ told so at first sign-in. There is no silent enrollment.
 ## The system and the image
 
 - [v0.01] Boots on one certified machine, firmware to sign-in
-- [v0.01] Image built as an OCI container image; no third language enters the repository to build it
-- [v0.5] ★ Atomic updates with rollback — the previous deployment stays bootable
+- [v0.01] Image built as an OCI container image — a **bootable container** (`bootc`) on a rented, unmodified Linux base (ADR 0011), so the operating system *is* the image rather than being installed by one. No third language enters the repository to build it
+- [v0.5] ★ Atomic updates with rollback — the previous deployment stays bootable, which a bootc image gives us rather than us building it (ADR 0011)
 - [v0.5] Printing. Unglamorous, and it decides public-sector deals
 - [v0.5] The documents people are actually sent open: `.docx`, `.xlsx`, `.pptx`
 - [v0.5] A web browser for the open web — a pinned upstream one, since our own engine is not scheduled
