@@ -4247,3 +4247,110 @@ No half was ticked that was not whole, and no machine half was touched.
   `docs/quirks.md` gained one entry — two addresses that really are this machine
   and are deliberately treated as somewhere else — which says the same thing
   about what has not been checked.
+
+## 2026-09-03 — iteration 37: the order the other crates happen in
+
+**Item 19 — a turn, end to end, headless.** `crates/alo-turn`, a new crate:
+`machine.rs` (what every turn on this machine happens against, and what it can
+carry out), `turning.rs` (the turn and its five doors), `carrying.rs` (from
+*this may run* to *this is what happened*), `kept.rs` (where a turn writes what
+happened down), `refusing.rs` (the seven things that can come back instead),
+`words.rs` (one phrase), `testing.rs`. 31 unit tests, 9 integration tests — 5
+against the real vocabulary in Finnish, 4 through a real filesystem with the
+record written to a real file and read back by `alo-keeping` — and 1
+`compile_fail` doctest checked by unmarking it (E0382, not a typo). **1223 tests
+and 41 doctests across the workspace** (was 1183 and 40), `cargo fmt` clean,
+`cargo clippy --workspace --all-targets` clean with zero warnings.
+
+### The item said *a decision*, and the answer is that it is not ours
+
+The chain the item named has one step this repository does not own. A model's
+answer becoming a verb and some arguments is the **agent's** work, and an agent
+is a client of `alo-agentd` rather than a part of it — item 21's protocol takes
+enumerated verbs with typed arguments, so this crate is what sits behind that
+protocol rather than what composes requests to it.
+
+That turned out to make law 2 stronger rather than smaller. A turn takes a name
+and a value per argument and makes the call **itself**, against the closed list
+the machine offers; there is no door anywhere in the crate that accepts a
+`Call`. So *what an agent can ask for is what the registry holds* stops being a
+rule about what a model may send and becomes the absence of a second way in.
+
+### The guarantee it exists for, and the window it cannot close
+
+`CLAUDE.md`'s gate asks that *every execution and every refusal leaves a
+record*, and until now that was a sentence somebody had to remember at each of
+five call sites. It is the shape of the code now: a `Turning` cannot be made
+without somewhere to keep its record — `Machine` takes a `Kept` and there is no
+constructor that does not — and every door writes its entry before it answers.
+
+What that cannot close is real and is written down rather than papered over: a
+change has already happened on the disk before there is anything to write about
+it, so a record that fails after that is a thing that happened with no evidence
+of it. The answer is that **a turn that could not write something down does
+nothing else** — every door afterwards answers `NotDone::TurnClosed`, and a
+daemon meeting it has a machine to halt rather than a call to retry.
+
+### Three things the item did not contain
+
+- **A machine offers exactly the verbs it can carry out.** `Machine` builds the
+  registry rather than receiving one, so the offered list and the executable
+  list are one list. A registry handed in could hold an application verb — those
+  are declared, portable, and unreachable until Wayland and D-Bus exist — and an
+  agent asking for one would be told *the machine could not*, which is a
+  sentence about a full disk rather than about a capability this machine does
+  not have. It is also why the constructor is named
+  `carrying_out_file_verbs`: the day there is a second executor the name is
+  wrong until somebody fixes it.
+- **A question put to a person is not a thing that happened.** Proposing writes
+  nothing; what the record keeps is the answer. A change nobody answered goes
+  away with the turn and leaves no entry, because *the person did not answer*
+  would be the record starting to keep the person rather than the agent — item
+  17's refusal about turning an agent off, met from the other side. A person who
+  says **no** has acted, and that is `Entry::declined`.
+- **`Kept` is a trait with two implementations and one of them is real.** A turn
+  holding an `alo_keeping::Writing` directly would make the promise true and the
+  crate untestable without a disk; one holding an `alo_record::Record` would make
+  every test pass and every real machine lose its evidence at shutdown. It is
+  `alo_files::Resolving`'s shape for the same reason.
+
+### What the tests found that the design did not say
+
+A path that is not there comes back as a **refusal**, not as *the machine could
+not*: `alo-files` asks the grants about a path as written before resolving it
+(item 6), so once they have said yes, *there is nothing there* is answered by
+the resolver and arrives as `Refused::worded_elsewhere`. The first version of
+one test assumed otherwise. There are two tests now, named for the difference,
+because they read alike and are different facts about a machine.
+
+`docs/quirks.md` gained one entry: on Windows a record file whose folder has
+been removed **goes on accepting writes** through the open handle, so there is
+no portable way to make a real disk refuse one. The closing is therefore tested
+against a `Kept` that refuses everything, and the integration test asserts the
+half a real disk can answer — that every entry is on the disk before the door
+that made it answers.
+
+### `ROADMAP.md` moved, and two lines were written into
+
+- **`alo-agentd`: grants, file verbs, application verbs, context on
+  invocation** — the code half now names `alo-turn` and what it makes true: the
+  four crates joined into one order that cannot be taken out of sequence.
+- **Every execution recorded with its origin, approval and grant** — its code
+  half now records that *recorded* is structural rather than remembered.
+
+No half was ticked that was not whole, and no machine half was touched.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 19a**, the question a turn puts to a model —
+  cut from this one on the line law 1 draws, since everything in 19 happens on
+  this machine. It has two decisions in it and neither is wiring: whose the
+  `Indicator` is, and what a turn does with an `alo_answering::Failed` — an
+  offer only a person can take, arriving in the middle of a turn holding a
+  grant. **19b** is the application half and is blocked on Linux.
+- **`alo-turn` has no doctest that runs**, only a `compile_fail` and its named
+  twin among the unit tests. A worked example needs a temporary folder, and a
+  doctest that writes to one would be the first in this workspace to do so.
+- **Nothing here has been run on a certified machine**, and **no disk has yet
+  refused a write to a record** — the one refusal path in this crate that only
+  real hardware can produce.

@@ -36,9 +36,14 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
-`crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking` and
-`crates/alo-strings` were built by the loop and are described in the items
-below. **`alo-asking` is the only one of them that does anything to the world
+`crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
+`crates/alo-turn` and `crates/alo-strings` were built by the loop and are
+described in the items below. **`alo-turn` is the only one that reaches
+another crate in order to hold it to an order** rather than to ask it
+something: since item 19 it is where an invocation, a call, an approval, an
+execution and the record are joined, and it is the first crate whose value is
+that none of five steps can be skipped rather than that one of them is decided
+correctly. Nothing reaches it, and it says one sentence. **`alo-asking` is the only one of them that does anything to the world
 outside this machine**, and it is the only one that reaches five others: it
 holds no decision of its own, and every step it takes is one of theirs, in the
 order they have to happen in. Since item 18b it has **three doors that divide on
@@ -1418,8 +1423,9 @@ and brings back the answer, the departure and the failure. **Item 18a answered
 it for a model on this machine**: the same crate, a second door, and nothing on
 the indicator because nothing goes anywhere. What is left of the sentence is the
 third place, a machine on this network, which neither door reaches and both
-refuse in words. Fourteen crates decide correctly, one of them acts, and there
-is no daemon holding any of them.
+refuse in words. **Item 19 joined the rest of them**: fifteen crates decide
+correctly, two of them act, one holds the order the others happen in, and there
+is still no daemon holding that.
 
 **All of it is portable.** No compositor, no certified machine, no GPU. A turn
 is a function call, and its result is a value to assert on. The acting halves
@@ -1592,15 +1598,78 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   vLLM, llama.cpp server or LM Studio on any machine**, which is owed with the
   rest of the hardware verification.
 
-- [ ] **19. A turn, end to end, headless.** The item that makes the other twelve
-  crates one system: invocation → `alo-context` for what was offered →
-  item 18 for the question → a decision → `alo-capability` for the sentence a
-  person approves → `alo-files` or `alo-applications` to execute → `alo-record`
-  and `alo-keeping` for what happened. **No screen anywhere in it**: a turn is
-  driven by a call and asserted on as a value, which is exactly why it can be
-  built here. Law 3 applies to the whole chain including every refusal path — a
-  turn that is declined, a grant that expired mid-turn, a model that could not
-  answer (`alo-answering` already has that one).
+- [x] **19. A turn, end to end, headless.** The item that makes the other
+  thirteen crates one system, cut on the line law 1 draws: **this one is the
+  turn that touches this machine**, and the question it puts to a model is 19a
+  below. `crates/alo-turn`, a **new crate**: `machine.rs` (what every turn on
+  this machine happens against, and what it can carry out), `turning.rs` (the
+  turn and its five doors), `carrying.rs` (from *this may run* to *this is what
+  happened*), `kept.rs` (where a turn writes what happened down), `refusing.rs`
+  (the seven things that can come back instead), `words.rs` (one phrase),
+  `testing.rs`. 31 unit tests, 9 integration tests — 5 against the real
+  vocabulary in Finnish, 4 through a real filesystem and a real record file —
+  and 1 `compile_fail` doctest. **1223 tests and 41 doctests across the
+  workspace** (was 1183 and 40), clippy clean.
+
+  **The item's own word *decision* turned out not to be this repository's**, and
+  answering that is what shaped the crate. A model's answer becoming a verb and
+  some arguments is the **agent's** work, and an agent is a client of
+  `alo-agentd` rather than a part of it — item 21's protocol takes enumerated
+  verbs with typed arguments, and this crate is what is behind that protocol. So
+  a turn takes a name and a value per argument and makes the call **itself**,
+  against the closed list; there is no door that takes a `Call` somebody else
+  validated. Law 2 stops being a rule about what a model may send and becomes
+  the absence of a second way in.
+
+  **The guarantee the crate exists for is `CLAUDE.md`'s, made structural:
+  nothing is handed back that has not been written down.** A `Turning` cannot be
+  made without somewhere to keep its record, and every door writes its entry
+  before it answers. What that cannot close is the window a change leaves open —
+  a file has moved before there is anything to write about it — so a turn that
+  could not write **stops**, every door afterwards refuses, and a daemon meeting
+  it has a machine to halt rather than a call to retry. `docs/quirks.md` records
+  why that closing is tested against a record that refuses everything rather
+  than against a real disk.
+
+  Three decisions the next items inherit. **A machine offers exactly the verbs
+  it can carry out** — the registry is built by `Machine`, not handed to it, so
+  a verb an agent can name is a verb something here can do and *the machine
+  could not* is never about a capability that was advertised and does not exist.
+  **A question put to a person is not a thing that happened**: what the record
+  keeps is its answer, so a change nobody answered goes away with the turn and
+  leaves no entry — an entry about somebody staying quiet would be a record of
+  the person rather than of the agent, which is item 17's refusal met again.
+  **This crate says one sentence.** Every refusal it hands back was worded by
+  whoever made it, and the only string with nowhere else to come from is *this
+  turn has stopped* — `alo-asking`'s two-string list, one crate further on.
+
+  Built and unit tested, and walked end to end on a real filesystem with the
+  record read back by `alo-keeping`. **Nothing here has been run on a certified
+  machine**, and no disk has yet refused a write to it.
+
+- [ ] **19a. The question a turn puts to a model.** Cut from item 19, on the
+  line that divides `alo-asking`'s own doors: everything in 19 happens on this
+  machine, and this is where a turn reaches off it. `alo-asking` has all three
+  doors already, so this is the joining rather than the sending — but it is a
+  real item and not wiring, because a turn that asks needs an
+  `alo_egress::Indicator`, an `alo_models::SourcePolicy` and the list of places
+  the person set up, and the departure comes back to be spent rather than being
+  written down by the crate that caused it. Two questions the item has to
+  answer. **Whose the indicator is**: one machine has one, and a `Machine` that
+  held it would put an egress-showing surface in the type every turn borrows,
+  which may be right and is a decision. **And what a turn does with an
+  `alo_answering::Failed`** — an offer only a person can take, arriving in the
+  middle of a turn that is holding a grant.
+
+- [ ] **19b. What a turn does with an application verb.** The other half of
+  `Machine::carrying_out_file_verbs`' name. `alo-applications` decides all four
+  verbs and stops at `Reaching`, which is exactly what a compositor would be
+  handed — so a turn could carry an application call that far and no further,
+  and the question is whether a door that answers with *this may reach an
+  application* is a capability or a stub wearing one. **Blocked on the acting
+  half**, which is Wayland and D-Bus under *blocked — linux*: until something
+  can move a window, a machine that offered these verbs would be a machine an
+  agent can be refused by in a new way rather than one that can do more.
 
 - [ ] **20. Where the record is written, and what prunes it.** Formerly 4b, and
   blocked all this time on the daemon not existing. The path a record is written

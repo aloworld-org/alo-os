@@ -463,6 +463,37 @@ half-English line as finished.
 | **Adapters** | An installed application's own verbs | See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
 
+## A turn, and the order the steps happen in
+
+The rules above are about one verb. A **turn** is what they happen inside:
+`alo-turn` holds the order, and everything an agent does to this machine goes
+through it. An adapter and a client can rely on four things about it.
+
+**There is no door that takes a call.** A turn is asked for a verb by name with
+a value per argument, and it makes the call itself against the closed list the
+machine offers. Nothing accepts a call somebody else validated, so law 2 is
+carried by there being nowhere else to come in.
+
+**The list an agent may ask from is the list the machine can carry out.** A
+machine offers the verbs it has an executor for and no others, so *the machine
+could not* is always about the machine and never about a capability that was
+advertised and cannot happen. Adding an executor and adding to the offered list
+are one edit.
+
+**Nothing is handed back that has not been written down.** A turn cannot be made
+without somewhere to keep its record, and every door writes its entry before it
+answers. A turn that could not write one **stops**: nothing further happens
+under it, which is the honest answer to a machine that has stopped keeping
+evidence. What that cannot close is the window a change leaves open — a file has
+moved before there is anything to write about it — so a client meeting it has a
+machine to stop rather than a call to retry.
+
+**A question put to a person is not a thing that happened.** What the record
+keeps is the answer: it ran, the person declined it, or the grants refused it.
+A change nobody answered goes away with the turn and leaves no entry, because an
+entry about somebody not answering would be a record of the person rather than
+of the agent.
+
 ## The privileged broker
 
 System verbs do not execute in `alo-agentd`. They cross into a separate broker

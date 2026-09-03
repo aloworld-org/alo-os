@@ -224,6 +224,28 @@ is to close the handle before renaming and not to copy over the old file in
 place: nothing is removed until the replacement is whole on the disk.
 **Date:** 2026-09-03
 
+### A record whose folder has been removed goes on accepting writes
+**Version:** Rust 1.97 `std::fs`, Windows 11 26200; seen 2026-09-03 in
+`alo-turn`
+**Behaviour:** a turn that cannot write down what it did stops doing anything
+else, and the integration test for that wanted a real disk to refuse a real
+write. Removing the folder the record lives in does not do it: on Windows
+`remove_dir_all` **succeeds** with the record file open — `std` opens files
+with `FILE_SHARE_DELETE` — and the open handle then goes on accepting writes
+and syncing them, into a file no longer reachable by any name. The write does
+not fail, so the turn never learns anything is wrong. There is no portable way
+to make a filesystem refuse a write to a handle it has already given out.
+**Our response:** the closing is tested against a `Kept` that refuses
+everything (`alo-turn`'s
+`a_turn_that_could_not_write_something_down_does_nothing_else`), and the
+integration test asserts the half a real disk *can* answer: that every entry is
+on the disk before the door that made it answers. The rest of it —
+`NotKept::NotAddedTo` really arriving from a full or failing disk — is owed
+with the hardware verification. It is the same share-flag behaviour as *a
+record is replaced while it is open for appending* above, met from the other
+side.
+**Date:** 2026-09-03
+
 ## Languages and counting
 
 A sentence with a number in it is the one string that cannot be translated

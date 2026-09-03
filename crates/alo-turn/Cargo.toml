@@ -1,0 +1,31 @@
+[package]
+name = "alo-turn"
+version = "0.0.1"
+description = "One turn, from the key being pressed to what the record says happened."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The verb, the sentence, the approval and the authorisation — every step
+# between a name arriving and something being allowed to run.
+alo-capability = { path = "../alo-capability" }
+# What the invocation offered, and the one grant it made for the length of the
+# turn.
+alo-context = { path = "../alo-context" }
+# The only thing in this repository that touches a disk on an agent's behalf.
+alo-files = { path = "../alo-files" }
+# Where a turn writes down what happened, when the machine has somewhere
+# durable to write it.
+alo-keeping = { path = "../alo-keeping" }
+# The entry itself. A turn makes one for every execution and every refusal, and
+# hands nothing back until it is written.
+alo-record = { path = "../alo-record" }
+# The one sentence this crate says of its own, and the vocabulary every refusal
+# it carries is worded with.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

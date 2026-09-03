@@ -12,6 +12,29 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A whole turn now happens in one place, and what your agent did is on the
+  disk before it is told anything.** Until now every step of a turn was built
+  and correct on its own and nothing joined them: what your invocation offered,
+  what your agent asked for, the sentence you approve, the file that moves and
+  the record of it were five pieces with no order between them. There is an
+  order now, and none of it can be skipped.
+
+  What that gives you is one promise that used to be a sentence in a document.
+  **Nothing is handed back to your agent that has not been written down first** —
+  every read, every change and every refusal, whether the answer was yes or no.
+  A turn that could not write something down **stops**: nothing more happens
+  under it, because a machine that has quietly stopped keeping evidence of what
+  its agent does is worse than one that says so.
+
+  Three other things follow. Your agent asks for a verb by name and values, and
+  the machine makes the call — there is no way to hand it something already
+  decided, which is what *no verb runs an arbitrary command* means when a real
+  turn is running. Your machine offers exactly the things it can actually do,
+  so you are never told *the machine could not* about something it was never
+  able to do. And a change you were asked about and did not answer leaves no
+  trace at all: what is written down is what you *said*, never that you stayed
+  quiet.
+
 - **An address that only looked like your own machine is no longer trusted as
   one.** alo OS decided whether an address was on your machine by checking how
   it *started*, so `http://localhost.attacker.example`,

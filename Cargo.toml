@@ -15,6 +15,7 @@ members = [
   "crates/alo-record",
   "crates/alo-shortcuts",
   "crates/alo-strings",
+  "crates/alo-turn",
 ]
 
 [workspace.package]

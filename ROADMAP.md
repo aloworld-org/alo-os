@@ -291,7 +291,13 @@ compositor is not required for, which is why it runs unbroken.
         the document making a grant — over that file, for that turn,
         revocable and visible in the same list as a folder somebody picked —
         so being told what is on a screen is finally distinct from being
-        allowed to touch it
+        allowed to touch it. Since item 19 there is `alo-turn`, which is the
+        four of them joined into one order that cannot be taken out of
+        sequence: an invocation makes the turn, a name and typed values are
+        made into a call **here** rather than accepted from a caller, a read
+        answers inside the turn and a change waits for one approval, the
+        grants are asked again at the moment it runs, and the machine offers
+        exactly the verbs it can carry out
   - [ ] **On the machine.**
         the daemon itself, the acting half of the application verbs — which
         is Wayland and D-Bus, and is the whole of what makes any of these
@@ -311,7 +317,11 @@ compositor is not required for, which is why it runs unbroken.
         record that says so permanently in the first line so an absence is
         never read as an innocence. Since 16a it also holds the one thing on
         the machine that no execution, approval or grant is behind — what
-        alo OS did on its own — and holds it without naming anybody for it
+        alo OS did on its own — and holds it without naming anybody for it.
+        Since item 19 *recorded* is structural rather than remembered:
+        `alo-turn` cannot be made without somewhere to keep its record, every
+        door writes its entry before it answers anybody, and a turn that could
+        not write one stops doing anything at all
   - [ ] **On the machine.**
         queue 4b — the path it is written to and the timer that shortens it,
         both `alo-agentd`'s, and the daemon does not exist
