@@ -12,6 +12,23 @@ than no roadmap, because somebody plans around it.
 Every item here appears in `docs/features.md` with a tier. If it is not there,
 it is not built.
 
+## And every promise there appears here
+
+That rule only runs one way, and the missing direction cost something. **Only
+`docs/features.md` is a list of what was promised.** This file and the queue are
+lists of what somebody already knew was hard, which is not the same thing — the
+build loop found **six v0.01 promises with no item and no line**, one at a time,
+over seven iterations, and twice believed it had found the last of them.
+
+So the rule runs both ways now: **every promise in `docs/features.md` at a given
+release has a line here, or is named on the line that carries it.** A promise
+with nowhere to be is a promise nobody is going to keep, and the ★ ones — the
+things no other system offers — turned out to be the likeliest to go missing,
+because they read as description rather than as work.
+
+When an iteration cannot find the line a promise belongs to, that is the finding.
+It goes in `STATE.md` and the line gets written, before the work does.
+
 ## Three states, because two are not enough
 
 Almost every item below is one capability spanning two halves: a crate that
@@ -59,6 +76,33 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       gate, `ModelRuntime`, and the Ollama adapter. 22 tests, nine of them
       against a real socket. **Not yet run against a real Ollama or a GPU** —
       law 3's "on real hardware" is owed on the certified machine.
+- [ ] ★ **It runs on the machine you already own** — no graphics card required.
+      The catalogue carries models that work on a CPU, and says honestly which
+      ones are comfortable there and which are merely possible
+      · Built: `alo-models`' catalogue — `OnCpu` as a stated property of each
+      model rather than a footnote, `runnable_on_cpu(ram_gb)` and
+      `runnable_with_vram`, so the answer to *what can this machine actually
+      run* is asked of the machine rather than assumed · Owed: the setup screen
+      that asks it on somebody's behalf, and a real measurement — *comfortable*
+      is a judgement in a table until a model has run on a machine without a GPU
+- [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
+      machine, from a machine on your network, or from a provider you named, and
+      the choice is the person's
+      · Built: `alo-models`' `InferenceSource` — this machine, a paired machine,
+      a hosted provider with its region — and `SourcePolicy`, which can hold an
+      answer in the building, on the machine, or inside a named region, and
+      refuses in the policy's own words rather than silently routing elsewhere
+      · Owed: `alo-agentd`, which is the thing that would actually put a question
+      to any of the three
+- [ ] ★ **Where the answer came from is said where the answer appears** — "on
+      this machine", "on the studio workstation", "by a provider you added" —
+      beside the answer, not buried in a setting
+      · Built: `alo-models` — every source can say itself (`shown`, `said`) in
+      the language the reader reads, so provenance is a translated sentence
+      rather than English a shell would have to reword · Owed: the surface that
+      shows it beside an answer, which is the overlay, and therefore the
+      compositor. **This is the one on this list most easily lost**: it is a
+      sentence that must appear every single time, and nothing yet forces it to
 - [ ] **Agents point at the local model by default**, configured rather than coded
       — and, since the default is only a sovereignty guarantee if it does not
       quietly un-point itself, **★ never a silent fallback** (ADR 0008) is
