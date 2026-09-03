@@ -1,0 +1,22 @@
+[package]
+name = "alo-context"
+version = "0.0.1"
+description = "What reaches an agent at the moment it is invoked, and for that turn only."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# There is deliberately no serde here, and it is a guarantee rather than an
+# omission: nothing in this crate can be read back off a disk, so a context
+# cannot exist without an invocation having made one. See `lib.rs`.
+[dependencies]
+alo-capability = { path = "../alo-capability" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+alo-record = { path = "../alo-record" }

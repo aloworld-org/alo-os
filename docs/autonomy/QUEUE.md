@@ -34,9 +34,13 @@ and stops when there are none left.
 `crates/alo-models` — read it before starting item 1, because it sets the house
 style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
-`crates/alo-files`, `crates/alo-applications`, `crates/alo-keeping`,
-`crates/alo-shortcuts`, `crates/alo-appearance` and `crates/alo-strings` were
-built by the loop and are described in the items below. `alo-applications` sits
+`crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
+`crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance` and
+`crates/alo-strings` were
+built by the loop and are described in the items below. `alo-context` sits where
+`alo-files` and `alo-applications` do — it reaches `alo-capability` and
+`alo-strings`, nothing reaches it — and it is the only one of the three that
+**makes** a grant rather than only being checked against them. `alo-applications` sits
 exactly where `alo-files` does — it reaches `alo-capability` and `alo-strings`,
 nothing reaches it, and it is the other half of what an agent may do to this
 machine. The first four depend on each other in one
@@ -66,7 +70,8 @@ exceptions left in it rather than a rule with a list. **`alo-keeping` is the
 first crate that never had to cross**: it was written after the 9-series, so it
 has never held an English sentence and no type in it has ever had a `Display`.
 That is what the rule looks like once it is finished being applied, and
-`alo-applications` is the second crate it is true of.
+`alo-applications` and `alo-context` are the second and third crates it is true
+of.
 
 Since **item 9g** the edge is load-bearing rather than incidental: a verb is
 *declared* from `alo_strings::Word`s, so `alo-capability` cannot express a
@@ -947,6 +952,86 @@ deny list.** Two patterns later items must follow:
   Built and unit tested. **Nothing here has moved a window**: the acting half is
   Wayland and stays under *blocked — linux*.
 
+- [x] **12. Context on invocation, the portable half** — implements **ADR 0001
+  §4** and `docs/features.md`'s v0.01 *★ context on invocation: focused window,
+  selection, open document — offered, never watched*. It closes one of the six
+  capability guarantees `CLAUDE.md` names in the gate, which until this
+  iteration had no code to be a test of. `crates/alo-context`, a **new crate**:
+  `context.rs` (what one invocation offered, and the moment), `focused.rs` (the
+  window in front — told, never granted), `selection.rs` (the person's own text,
+  bounded and saying so), `document.rs` (the only part that grants anything),
+  `turn.rs` (the one turn it is good for, and the single grant it makes),
+  `refusing.rs` (why a part could not be offered), `words.rs` (11 phrases and
+  one countable string), `testing.rs`. 47 unit tests, 12 integration tests — 7
+  against the real vocabulary in German, Polish and Greek, 5 through the whole
+  capability journey into `alo-record` — and 3 doctests, two of them
+  `compile_fail`. **912 tests and 24 doctests across the workspace**, clippy
+  clean.
+
+  **The item was not on any list**, which is item 11's finding a second time and
+  worse: a ★ v0.01 promise, named in ADR 0001 as one of the eight numbered parts
+  of the capability model, with no queue item anywhere and no crate. It was not
+  even in *blocked — linux* under another name — the compositor line covers
+  reading a screen, and nothing covered what a context **is**.
+
+  **The decision the whole crate turns on: only the document grants anything.**
+  ADR 0001 §3 names two deliberate acts that make a grant, and a context carries
+  one of them. A window somebody was looking at is not a decision to hand
+  anything over, and neither is text they had highlighted — so the focused
+  window is *told, not granted*, and an agent that knows Blender is in front of
+  the person still cannot touch Blender. Reading it the other way round is the
+  quiet mistake: a capability model decided by where somebody's mouse was.
+
+  **The decision the item did not contain: a grant a context makes is a grant
+  like any other.** It goes into the machine's own `Grants` rather than into a
+  list of this crate's, because ADR 0001 §3 says grants are enumerated, visible,
+  revocable and expiring, and authority kept somewhere else would satisfy none
+  of those four while still deciding what an agent may touch. It ends twice
+  over: it **expires** at the turn's end, so a daemon that forgets a turn still
+  has an agent that reaches nothing, and `Turn::ending` **revokes** it, so a turn
+  that finishes early does not leave the document reachable for the rest of its
+  allotted time.
+
+  Three decisions the next items inherit. **This crate has no serde dependency
+  at all**, and that is the guarantee rather than an omission — a context that
+  could be read back off a disk would be one existing without an invocation, so
+  *offered, never watched* is the absence of a dependency rather than the
+  absence of a constructor somebody remembered not to write. **Nothing here
+  reaches `alo-record`**: an entry per invocation saying what was on somebody's
+  screen would build the watched-context log ADR 0001 §4 forbids, one entry at a
+  time, so what the record keeps is what the agent then *did* and the grant it
+  did it under. **What is offered is shown to the person** — one row per part,
+  and a row saying nothing was offered — because a rule nobody can check is a
+  promise, and somebody who cannot see what they are offering cannot tell this
+  system from one that watches all day.
+
+  Built and unit tested. **Nothing here has read a screen**: what is in front of
+  somebody, what they have selected and what they have open are Wayland's and
+  AT-SPI's to answer, and that half is under *blocked — linux* below.
+
+- [ ] **13. The dock, and the edge a person puts it on** — implements
+  `docs/features.md`'s v0.01 *★ the dock, and the person decides where it goes*.
+  **Found by iteration 26's reading step and not built by it**, one item per
+  iteration. It is the second v0.01 promise found with no item at all, and
+  `ROADMAP.md` has been saying so in plain words since the line was added:
+  *· Built: nothing — the commit that added this line added no code*.
+
+  The portable half is a layout model and is `alo-appearance`'s shape: which
+  edge (bottom, left, right, top), the orientation that follows from it, the
+  status area that reflows rather than being a horizontal bar someone turned
+  sideways, and the rule that labels give way to icons where the short edge
+  demands it. `alo-shortcuts`' *only the difference is stored* applies, and so
+  does its reason: a better default has to be able to reach every machine that
+  never changed it.
+
+  What it must decide before it writes anything is what *the short edge demands
+  it* means, because that is a threshold and a threshold picked by feel is one
+  nobody can test. Two things constrain it and both are already in this
+  repository: `alo-appearance`'s text scaling reaches 300%, so the room a label
+  needs is not a constant, and EN 301 549 is what the answer is measured
+  against rather than a designer's eye. **Per display and hiding when a window
+  needs the room are v0.5** and are not this item.
+
 ---
 
 ## Blocked — linux
@@ -957,6 +1042,14 @@ rather than only of what is convenient.
 - **Compositor** — Wayland via Smithay, one display, keyboard and pointer.
 - **Sign-in and the local account**, the agent overlay, the launcher and window
   management, copy and paste, window switching — all draw on the compositor.
+- **Context on invocation, the reading half** — what is in front of the person,
+  what they have selected and what they have open, answered by Wayland and
+  AT-SPI at the moment the key is pressed, and the daemon that holds the turn
+  the answers become. Item 12 above is the model those answers arrive into. The
+  guarantee this half owes is the one `CLAUDE.md` names and no portable test can
+  make: **with no invocation, `alo-agentd` makes no context calls at all** —
+  which is a test against a running daemon and a compositor that counts what was
+  asked of it, and there is neither here.
 - **Application verbs, the acting half** — AT-SPI, D-Bus, the portal backend
   (ADR 0005): starting an application, bringing one to the front, and asking one
   to close, given a `Reaching`. The *file* half of this was listed here and was

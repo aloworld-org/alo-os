@@ -33,6 +33,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-context"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-record",
+ "alo-strings",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-egress"
 version = "0.0.1"
 dependencies = [

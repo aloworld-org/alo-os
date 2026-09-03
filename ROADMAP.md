@@ -90,10 +90,16 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       argument that offers a choice offers a name a model sends beside a word a
       person reads, so an option cannot reach an approval sentence as
       untranslated English, and a sentence holding a word nobody has translated
-      says the line is not translated · Owed: the daemon itself, the acting half
+      says the line is not translated. Since item 12 `alo-context` is what an
+      agent is given when it is invoked: the window in front, the selection and
+      the open document, with only the document making a grant — over that file,
+      for that turn, revocable and visible in the same list as a folder somebody
+      picked — so being told what is on a screen is finally distinct from being
+      allowed to touch it · Owed: the daemon itself, the acting half
       of the application verbs — which is Wayland and D-Bus, and is the whole of
-      what makes any of these move a window — and the context an agent is given
-      when invoked
+      what makes any of these move a window — and the half of the context that
+      **reads** a screen, which is Wayland and AT-SPI and is where *with no
+      invocation, no context calls at all* becomes something anybody can test
 - [ ] Every execution recorded with its origin, approval and grant
       · Built: `alo-record` — the record, including refusals, which are written
       down in the same words the person was shown rather than in a second

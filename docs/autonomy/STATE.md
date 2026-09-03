@@ -2622,3 +2622,137 @@ own that nothing in `docs/features.md` asks for.
   only the daemon, the acting half and the context an agent is given; the
   *Language* line gains the rule about a sentence and the words put into it.
   Both stay unticked, because there is no daemon and no shell.
+
+## 2026-09-03 — iteration 26: what an agent is given when it is invoked
+
+**Built: item 12, which was not in the queue when this iteration started.** The
+reading step is again the first half of this entry, because iteration 25 left
+the standing instruction — *read each blocker once before writing `LOOP
+COMPLETE` rather than trusting the label* — and following it found, for the
+second iteration running, not a mislabelled item but a missing one.
+
+Every *ready* item was ticked. `docs/features.md` promises at v0.01 **★ context
+on invocation: focused window, selection, open document — offered, never
+watched**; ADR 0001 numbers it §4; `CLAUDE.md` puts it in the gate as one of the
+six capability guarantees that must be a test in CI. There was no queue item for
+it, no crate, and — unlike item 11, which was at least half-covered by a line
+about application verbs — **nothing in the blocked lists covered it under
+another name either.** The compositor line is about reading a screen. Nothing
+anywhere said what a context *is*.
+
+That is now three iterations in four finding v0.01 work with no item (6a, 11,
+12). Iteration 24's sentence holds and can be sharpened: **a blocker is a claim
+about code, and an item that was never written is not even a wrong claim.** The
+reading step that finds these is reading `docs/features.md` against the queue,
+promise by promise, rather than reading the queue.
+
+`crates/alo-context`, a **new crate**.
+
+| | |
+|---|---|
+| `context.rs` | What one invocation offered, the moment it was offered at, and the rows a person reads |
+| `focused.rs` | The window in front — told, never granted — and a title that is data rather than a string |
+| `selection.rs` | The person's own text: what is taken out of it silently, what is not, and the bound that says it was reached |
+| `document.rs` | The only part that grants anything, and the file it grants |
+| `turn.rs` | The one turn the offer is good for, and the single grant it makes |
+| `refusing.rs` | Why a part of a screen could not be offered |
+| `words.rs` | 11 phrases and one countable string, the English beside each key, and the notes a translator needs |
+| `testing.rs` | The invocation, the moment and the vocabularies the other files' tests are written against |
+
+**Gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. 47 unit tests, 12 integration tests — 7 against
+the real vocabulary in German, Polish and Greek, 5 through the whole capability
+journey and into `alo-record` — and 3 doctests, two of them `compile_fail`. The
+workspace is **912 tests and 24 doctests** (was 853 and 21), all green.
+`CHANGELOG.md`, `docs/contracts/agent-verbs.md`, `QUEUE.md` and `ROADMAP.md` in
+the same change.
+
+**The decision the whole crate turns on, and the one a reader is most likely to
+expect the other way round: only the document grants anything.** ADR 0001 §3
+names two deliberate acts that make a grant — a folder chosen in a picker, and
+the document offered at invocation — and a context carries exactly one of them.
+So the focused window is *told, not granted*: an agent handed *Blender is in
+front of you* still cannot open, focus, arrange or close Blender until somebody
+grants it, and a selection is text whatever it says, including when it says
+`/etc/shadow`.
+
+The other reading is the obvious one and it is the quiet kind of mistake — a
+capability model decided by where somebody's mouse happened to be when they
+pressed a key. `turn.rs` has the test that offers all three parts at once and
+asserts the grant list holds one thing, and the integration test walks it
+through a proposal, an approval and into the record.
+
+**The decision the item did not contain: a grant a context makes is a grant like
+any other.** The first shape this design took kept the turn's grant in a
+`Grants` of the crate's own, which reads as tidy and is wrong. ADR 0001 §3 says
+grants are enumerated, visible where the person can find them, revocable in one
+action and expiring; a list nobody but the turn can see satisfies none of those
+four while still deciding what an agent may touch. So `Turn::beginning` takes
+the machine's own list and puts the grant in it, and a person sees it beside the
+folder they picked on Monday.
+
+That brought a second thing with it. Revoking by a handle alone would let a turn
+begun on one list take a grant off another — handles are unique to one list, not
+across them — so `Turn::ending` checks that the list still holds *that grant* at
+that handle before it removes anything, and a turn ended against somebody else's
+list removes nothing. There is a test that gives two lists the same handle and
+asserts it.
+
+**Three smaller ones worth keeping.**
+
+- **The crate has no serde dependency at all**, and that is the guarantee rather
+  than an omission. A context that could be read back off a disk would be a
+  context existing without an invocation, so *offered, never watched* is the
+  absence of a dependency rather than the absence of a constructor somebody
+  remembered not to write. `Context` is not `Clone` either, and
+  `Turn::beginning` takes it by value: one invocation is one turn, asserted by a
+  `compile_fail` doctest that was checked by unmarking it — both it and its twin
+  on `Turn::ending` fail with **E0382, use of moved value**, so neither is a test
+  of a typo.
+- **Nothing here reaches `alo-record`**, and that is the point rather than an
+  omission. An entry per invocation saying what was on somebody's screen would
+  build the watched-context log §4 exists to forbid, one honest entry at a time.
+  What the record keeps is what the agent then *did*, against the grant it did
+  it under — which is the turn's grant like any other — and
+  `tests/from_an_invocation_to_a_change.rs` asserts the selected text and the
+  window title appear nowhere in it.
+- **Two things are done to a selection and only one is announced.** Characters
+  nobody can see come out silently, because a character that cannot be seen is
+  not part of what somebody selected; text they *can* see is never removed
+  quietly, so a selection over 200,000 characters says how many characters were
+  left out — `alo-files`' *every bound says it was reached*, met where the thing
+  cut short is a person's own document. The bidirectional marks are deliberately
+  **kept**: they can reorder a line, and they are also how Arabic and Hebrew are
+  written, so removing them would corrupt the text of exactly the readers
+  *right-to-left ready* is a promise to, in order to defend a line this crate
+  never draws.
+
+**What the next iteration must know:**
+
+- **The queue has a ready item again: 13, the dock.** Found by this iteration's
+  reading step and deliberately not built — one item per iteration. It is the
+  second v0.01 promise found with no item, and `ROADMAP.md` has been saying so
+  in plain words the whole time: *· Built: nothing — the commit that added this
+  line added no code*. Its portable half is a layout model in `alo-appearance`'s
+  shape, and the thing it has to decide before writing anything is what *labels
+  give way to icons where the short edge demands it* means as a threshold, since
+  text scaling reaches 300% and the measure is EN 301 549 rather than an eye.
+- **Read `docs/features.md` against the queue, not the queue against itself.**
+  Three of the last four iterations found v0.01 work with no item. The blocked
+  lists are a record of what somebody once thought was hard; the feature list is
+  the promise.
+- **`alo-context` is the third crate that never had to cross onto
+  `alo-strings`**, after `alo-keeping` and `alo-applications`, and the first
+  crate in the workspace that *makes* a grant rather than only being checked
+  against them. Anything later that wants to create authority should read
+  `turn.rs` first — the two ends and the handle check are the shape.
+- **Nothing here has read a screen, and nothing has been read by anybody.**
+  There is no compositor and no accessibility tree, and there are still zero
+  translations in this repository; the German, Polish and Greek in the tests are
+  the tests'. The guarantee `CLAUDE.md` names — *with no invocation,
+  `alo-agentd` makes no context calls at all* — is a test against a running
+  daemon and cannot be written here; it is now stated as what the reading half
+  owes, under *blocked — linux*. `ROADMAP.md`'s `alo-agentd` line gains
+  `alo-context` to its *Built* and names that half in its *Owed*; it stays
+  unticked, because there is no daemon and no shell.

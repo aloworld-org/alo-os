@@ -12,6 +12,38 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **What is on your screen when you ask an agent something now reaches it at
+  that moment, for that question, and never afterwards.** The window in front of
+  you, the text you had selected and the document you had open go with the
+  question you asked and nothing else does — there is no verb an agent can use
+  to look at your screen, and there is no way for alo OS to build one of these
+  without you having pressed the key. When the question is answered, what it was
+  given is gone.
+
+  **Only the document you had open lets an agent do anything.** Having a file
+  open when you ask is you saying *this one*, so an agent may act on that file —
+  that file, not the folder it is in and not the invoices beside it. The window
+  you happened to be looking at is different: an agent is *told* it is there and
+  can still do nothing to it until you grant it, so asking a question with
+  Blender in front of you has never given anything permission to close Blender.
+  And text you had selected is text, even when it reads like a filename.
+
+  **You can see what you offered, and take it back.** Each part is shown as its
+  own line — and *nothing from your screen was offered* is a line too, rather
+  than a blank space you have to interpret. The permission your open document
+  creates appears in the same list as a folder you picked yourself, expires when
+  the question is finished, and can be revoked in one action like any other.
+
+  **What you were looking at is never written down.** The record keeps what an
+  agent *did* and which permission it did it under. It does not keep what was on
+  your screen, because a system that wrote that down at every question would
+  have built, line by line, exactly the log of your day that this rule exists to
+  prevent.
+
+  If you select more than 200,000 characters, only the first part goes with the
+  question and alo OS tells you how much was left out — in your own language,
+  counted the way your language counts.
+
 - **An agent can now be allowed to move a window to the left half, the right
   half or the whole of the screen — and what you approve reads as a sentence in
   your own language.** *Put org.blender.Blender on the left half of the screen*

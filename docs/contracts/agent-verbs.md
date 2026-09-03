@@ -219,6 +219,56 @@ destination already holds anything — a file, a folder, or a link — is refuse
 and says the name is taken. This is a rule about the sentence, not about
 filesystems: what was approved is what happens, and nothing else is.
 
+## Context on invocation
+
+An agent is handed three things at the moment it is invoked, and only then: the
+**focused window**, the **selection**, and the **open document** (ADR 0001 §4).
+There is no verb that asks for any of them, and there will not be one — a verb
+that could ask is a background reader with an approval dialogue in front of it.
+
+**Only the document grants anything.** ADR 0001 §3 names two deliberate acts
+that make a grant, and the document offered at invocation is one of them; a
+window somebody happened to be looking at and text they happened to have
+highlighted are not. So:
+
+- the document becomes a grant over **that file** — not the folder it sits in,
+  and not the files beside it;
+- the focused window is **told, not granted**. An agent that knows Blender is in
+  front of the person still cannot open, focus, arrange or close it until
+  somebody grants it;
+- the selection is text, whatever it says. A selection reading `/etc/shadow`
+  reaches nothing.
+
+**The grant a context makes is a grant like any other.** It goes into the same
+list, where a person sees it beside the folder they picked on Monday and revokes
+it in one action. It runs from the moment of the invocation and expires when the
+turn is over, and whatever holds the turn revokes it when the turn ends — so a
+turn that finishes early does not leave the document reachable for the rest of
+its allotted time. A grant kept in a list of its own would satisfy none of the
+five words above while still deciding what an agent may touch.
+
+**A context is made, never read back.** It has no serialised form: something
+that could be read off a disk would be a context existing without an invocation,
+which is the whole of what §4 forbids. For the same reason **nothing about a
+context is recorded** — what the record keeps is what the agent then *did*, and
+the grant it did it under. An entry per invocation saying what was on somebody's
+screen would build the watched-context log this rule exists to prevent, one
+entry at a time.
+
+**What is offered is shown to the person**, one row per part, and one row saying
+nothing was offered when there was nothing. A rule nobody can check is a
+promise: somebody who cannot see what they are offering has no way to tell a
+system that reads three things at invocation from one that watches everything
+all day.
+
+**A selection is bounded and says when it was cut.** What is offered is at most
+200,000 characters, and a selection longer than that comes with a sentence
+saying how many characters were left out — because a bounded answer that does
+not say it was bounded reads exactly like a complete one. Characters that cannot
+be seen are removed silently, since nothing a person selected is lost with them;
+the marks a right-to-left language needs are **not**, because removing those
+would corrupt the text of the readers alo OS says it serves.
+
 ## The file verbs
 
 The six `docs/features.md` promises at v0.01, over granted paths only. Every one
