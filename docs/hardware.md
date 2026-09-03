@@ -96,10 +96,26 @@ running, and `bpf` is either in it or the grant cannot be enforced by the kernel
 on this machine.
 
 **A worked counterexample, measured rather than supposed.** The WSL2 kernel this
-repository can reach — `6.6.87.2-microsoft-standard-WSL2`, 2026-09-03 — has
-`CONFIG_BPF_LSM=y` and answers `capability,landlock,yama,safesetid,selinux`. It
-is a kernel that passes the first check, fails the second, and is therefore no
-use for proving ADR 0015. `docs/quirks.md` has the entry.
+repository can reach — `6.6.87.2-microsoft-standard-WSL2`, 2026-09-03 — had
+`CONFIG_BPF_LSM=y` and answered `capability,landlock,yama,safesetid,selinux`: a
+kernel that passes the first check, fails the second, and is no use for proving
+ADR 0015. `docs/quirks.md` has the entry.
+
+**And then the remedy, on the same kernel, 2026-09-04.** The machine's owner set
+a boot parameter and the same kernel now answers
+`capability,landlock,yama,safesetid,selinux,bpf`. Nothing was rebuilt and nothing
+was patched, which is the point: *a kernel that fails the second check is a
+kernel that was booted wrongly, not a kernel that cannot do it.* Ask a machine
+that fails what it was booted with before concluding anything about what it can
+run.
+
+One trap belongs next to the fix, because it turns a protection into a
+regression. **`lsm=` replaces the built-in list; it does not add to it.** Writing
+`lsm=bpf` starts the BPF LSM and silently stops every module that was enforcing
+before it. The parameter has to name the modules the kernel already ran *and*
+`bpf` — which is why the line above has six names in it and not one. Read
+`/sys/kernel/security/lsm` before and after, and compare the two, rather than
+checking only that `bpf` appears in the second.
 
 **This is a configuration expectation, not a patch.** `CLAUDE.md`'s *engines are
 configured, never patched* holds: what a certified machine needs is a kernel

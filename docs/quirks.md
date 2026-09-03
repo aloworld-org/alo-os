@@ -56,7 +56,30 @@ only `CONFIG_BPF_LSM` is how this kernel passes. WSL2 can be given
 deliberately did not: that is a change to somebody's own machine, made outside
 this repository, that restarts every distribution running on it, and it is the
 machine owner's to make rather than a loop's.
-**Date:** 2026-09-03
+
+**Resolved on this machine, 2026-09-04, by the owner making that change.**
+`kernelCommandLine = lsm=capability,landlock,yama,safesetid,selinux,bpf` in
+`.wslconfig`, then `wsl --shutdown`. The kernel now answers
+`capability,landlock,yama,safesetid,selinux,bpf`, and that survives a cold boot.
+Three things came out of doing it that the first measurement could not show:
+
+- **`lsm=` replaces the built-in list, it does not add to it.** `CONFIG_LSM`
+  still reads `"landlock,lockdown,yama,loadpin,safesetid,integrity,selinux,apparmor,tomoyo"`
+  and is simply not what this kernel used. Every module that must keep enforcing
+  has to be named again on that line: `lsm=bpf` alone would have started the BPF
+  LSM and silently stopped the five that were already running. A boot parameter
+  that turns a protection on can turn four others off in the same breath.
+- **`securityfs` is not mounted at boot, and `systemd=true` does not mount it.**
+  This distribution has systemd enabled and the mount was still absent, so it
+  went into `/etc/fstab`, which WSL does process. Without that step the fix looks
+  like it failed, because the file that would report success is the one missing.
+- **The remedy `docs/hardware.md` predicted is now measured rather than
+  supposed** — a boot parameter, on the same kernel, with no kernel of our own.
+
+The certified machine inherits the requirement and not this workaround: what it
+needs is a kernel that boots with `bpf` in its active list, however its image
+arranges that.
+**Date:** 2026-09-03; resolved 2026-09-04
 
 <!--
 ### <Machine or component> — <one-line summary>

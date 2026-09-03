@@ -2658,11 +2658,26 @@ out.
   - `CONFIG_LSM` is `"landlock,lockdown,yama,loadpin,safesetid,integrity,selinux,apparmor,tomoyo"` — **no `bpf` in it**, and `/proc/cmdline` has no `lsm=` to replace it.
   - `/sys/kernel/security/lsm`, which is what actually started, is `capability,landlock,yama,safesetid,selinux` — **no `bpf`.**
 
-  So the item is **blocked on a kernel that starts the BPF LSM**, and the loop
-  did not work around it. The escape route exists and is deliberately not taken:
-  WSL2 accepts `lsm=…,bpf` through `kernelCommandLine` in a `.wslconfig`, which
-  is a change to the machine's owner's own machine, made outside this
-  repository, that restarts every distribution on it. That is theirs to make.
+  So the item was **blocked on a kernel that starts the BPF LSM**, and the loop
+  did not work around it. The escape route existed and was deliberately not
+  taken: WSL2 accepts `lsm=…,bpf` through `kernelCommandLine` in a `.wslconfig`,
+  which is a change to the machine's owner's own machine, made outside this
+  repository, that restarts every distribution on it. That was theirs to make.
+
+  **They made it, 2026-09-04, and the item is unblocked.** The same kernel now
+  answers `capability,landlock,yama,safesetid,selinux,bpf`, across a cold boot,
+  with `securityfs` mounted from `/etc/fstab` so the answer can be read at all.
+  What was checked beyond the list, because being named is necessary and not
+  sufficient: `/sys/kernel/btf/vmlinux` is present, and `bpf_lsm_file_open` — the
+  exact hook this item attaches to — is a real symbol in `/proc/kallsyms`. So
+  there is a hook to attach to and the BTF to name it with.
+
+  `bpftool` and `clang` are **not** installed and are not needed: `aya` builds
+  the program from Rust with `bpf-linker`, which is why the item says `aya` in
+  the first place. Installing a C toolchain to do this would be the moment
+  `CLAUDE.md`'s *a third language is a bug* gets quietly broken, and it is not
+  necessary. The remaining setup is a Rust one — nightly plus `bpf-linker` — and
+  belongs to whoever starts the week.
 
   **What the finding is worth beyond a stop.** ADR 0015 names two requirements
   and it is the second that machines fail, because the first is the one people
@@ -2681,8 +2696,7 @@ out.
   Blocked on nothing but the turn existing (21d) when it was written; the turn
   exists, and this is what stopped it instead. It is still deliberately tiny —
   it either works in a week or it does not, which is the right shape for the
-  first piece of a hard idea — and the week has to start on a kernel that has
-  `bpf` in that list.
+  first piece of a hard idea — and the week now has a kernel to start on.
 
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
@@ -2696,14 +2710,14 @@ out.
   When it fails it must say what it caught: not *assertion failed*, but **a
   syscall outside an agent turn left a trace, and nothing outside a turn may**.
 
-  **Blocked on item 26, by its own words.** *Written with item 26 rather than
-  after it* is not a scheduling preference — this test runs ordinary programs
-  **under the loaded LSM**, so there is nothing to run it under until one loads,
-  and the kernel this repository can reach does not start the BPF LSM at all
-  (item 26's finding, `docs/quirks.md`). Nothing here can be written early
-  either: a test that asserted an empty record with no LSM loaded would pass on
-  any machine in the world and prove nothing, which is the exact failure mode
-  the item exists to prevent a year from now.
+  **Waits on item 26, by its own words — and no longer on the machine.** *Written
+  with item 26 rather than after it* is not a scheduling preference: this test
+  runs ordinary programs **under the loaded LSM**, so there is nothing to run it
+  under until one loads. Nothing here can be written early either — a test that
+  asserted an empty record with no LSM loaded would pass on any machine in the
+  world and prove nothing, which is the exact failure mode the item exists to
+  prevent a year from now. The kernel obstacle is gone (item 26, 2026-09-04);
+  what remains is the ordinary dependency of a test on the thing it tests.
 
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
