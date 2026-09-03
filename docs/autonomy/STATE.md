@@ -4478,3 +4478,127 @@ again.
 - **Nothing here has been run against a provider anybody pays for, or against a
   real model runtime.** Every question in these tests went to a stub on a real
   socket or to a stub of the runtime trait.
+
+## 2026-09-03 — iteration 39: what a client may ask the daemon
+
+**Item 21a — the request half of item 21, cut from it and built.**
+`crates/alo-protocol`, a **new crate**: `frame.rs` (one message — one line, a
+length, a format number), `asked.rs` (the closed list of everything that can
+arrive), `agent.rs` (`FromAnAgent`), `person.rs` (`FromAPerson`),
+`argument.rs` (one argument exactly as it arrived), `refusing.rs`
+(`NotUnderstood` — the seven ways a message is not a request), `words.rs` (7
+phrases), `testing.rs`. 45 unit tests, 14 integration tests and 1 doctest.
+**1307 tests and 43 doctests across the workspace** (was 1248 and 42),
+`cargo fmt` clean, `cargo clippy --workspace --all-targets` clean with zero
+warnings. `docs/contracts/daemon-protocol.md` is new.
+
+### Why item 21 became three items
+
+Items 16b, 19b and 20 were read first and skipped, each for a reason written in
+the queue: 16b says outright that it is *blocked on nothing here, and not ready
+either* — there is no discovery code to decide about; 19b waits on the acting
+half of the application verbs, which is Wayland; and 20 needs a long-lived
+process with a timer in it. So item 21 was the first ready one.
+
+It is three items now, and the line the first cut falls on is **what a caller
+can say**. Every sentence item 21 wrote for itself is about the request —
+*enumerated verbs with typed arguments*, *no request that carries a command*, *a
+malformed request refused in the reader's own language* — because that is where
+law 2 meets code somebody else wrote. What comes back carries no such property
+and needs a decision this item did not contain (**21b**, and the first thing it
+decides is whether `alo_files::Answer` should serialise at all, since it holds
+paths and a path is not always text). The process, the socket and peer
+credentials need a Linux host (**21c**, under *blocked — linux*).
+
+That is not a smaller item. A crate whose responsibility is *reading the
+untrusted side of a socket* is one responsibility, which is law 4 rather than a
+convenience, and it is the half that decides whether the other two are safe.
+
+### The decision the item did not contain
+
+**An agent must not be able to approve its own change**, and one `Request` enum
+with five variants — which is the obvious shape, and the shape the item's own
+wording suggests — is a hole. A socket that both a shell and an agent speak over
+would let the side that proposed a change also answer it, and ADR 0001 §5 would
+be true of `alo-capability` and false of the door in front of it.
+
+So the closed list is one `pub(crate)` type and there are two public doors cut
+out of it: `FromAnAgent` takes the three an agent asks during a turn,
+`FromAPerson` the two a person answers with, and neither can produce the other's
+requests. A sixth request has to be given to one door or the other before the
+crate compiles, which is what makes it a division rather than two lists that
+drift.
+
+What it deliberately does **not** claim: which side a connection is really on is
+peer credentials on a Unix socket, and that is 21c's. What is settled here is
+that once the daemon knows, no message can cross.
+
+### Four things are not on the wire, and each is an absence rather than a check
+
+- **No moment.** Every door in `alo-turn` takes `now` from the machine. A
+  request that named one could revive a grant that expired an hour ago.
+- **No context.** ADR 0001 §4 — the compositor answers what the invocation
+  offered, at the moment the key was pressed. A request carrying a document
+  would be an agent handing itself the grant it wanted.
+- **No place a question is answered.** ADR 0008 puts that with the person.
+- **No turn.** The connection answers that. A number for it would be a number an
+  agent could change.
+
+Nothing begins a turn and nothing ends one either, for the same reason: both are
+somebody else's act.
+
+### Three smaller decisions the next items inherit
+
+- **Arguments are a list and not an object.** A JSON object has no duplicates,
+  so `{"file": …, "file": …}` would arrive as one `file` with the reader having
+  silently chosen which — in the one place a person's approval sentence is built
+  from. As a list both arrive, and `CallError::SameArgumentTwice` stays
+  reachable. The wire shape exists to keep an existing refusal reachable.
+- **The format is read before the message**, out of a shape that tolerates
+  fields this version has never heard of, so a client from a newer alo OS is
+  told to update the machine rather than told its message was gibberish.
+  `docs/contracts/daemon-protocol.md` says a new request is additive and does
+  not raise the number, which is `record-file.md`'s argument about a new kind of
+  entry made again.
+- **No refusal quotes the message back**, and the shape that keeps it true is
+  that not one of the seven sentences has a gap in it — a gap is the only road
+  text off a socket could take into a sentence a person reads. It is
+  `alo-record`'s *the arguments of a call that never validated are never kept*,
+  one step before there is a call. The two numbers a reader might want are
+  fields on the refusal.
+
+### What the tests found that the design did not say
+
+The integration test carries a JSON line through a real `Turning` onto a real
+filesystem, and it is what stops this crate being a description of a protocol
+rather than the protocol: a verb name arrives as `/bin/sh` and is turned away by
+the closed list rather than by anything here, an argument named twice reaches
+`Verbs::call` and is refused there, and an approval arriving on the agent's door
+leaves the file exactly where it was with nothing written down — because a
+message that was never a request has not done anything to the machine.
+
+`docs/quirks.md` gained nothing. The one thing worth knowing is already in it:
+a resolved path on Windows carries a prefix, so the fixture grants over the
+resolved folder and the test writes the path into JSON escaped.
+
+### `ROADMAP.md` moved, and one code half was written into
+
+**`alo-agentd`: grants, file verbs, application verbs, context on invocation** —
+the code half now names `alo-protocol` and what it makes true, and its machine
+half now names 21b and 21c rather than *the daemon itself*. The record line's
+machine half said *queue 4b*, which was renumbered to 20 eight iterations ago;
+it says 20 now. No half was ticked that was not whole, and no machine half was
+touched.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 22**, *running out is not a fault* — a
+  provider answering *payment required* has no variant in `alo-answering`, so it
+  arrives as a key problem or as a number. **21b** is the answering half and is
+  ready; it is listed after 22 because it is a decision about serialising
+  `alo_files::Answer` and 22 is not blocked behind it. **21c** and **20** are
+  blocked on Linux and on a long-lived process.
+- **`alo-protocol` opened no socket**, listened on nothing, and holds no
+  transport. Everything in it is a `&str` in and a value out.
+- **Nothing here has been run on a certified machine**, and no client that is
+  not a test has ever spoken to this format.

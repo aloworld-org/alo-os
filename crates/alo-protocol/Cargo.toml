@@ -1,0 +1,33 @@
+[package]
+name = "alo-protocol"
+version = "0.0.1"
+description = "What a client may ask alo-agentd, and what it may not."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# What an argument can be when it arrives off a socket. `Given` is the one type
+# in this workspace whose whole job is being the untrusted side of a boundary,
+# and this crate is that boundary. Nothing else is needed from it: a `Call` is
+# made by `Verbs::call` inside a turn, and never here.
+alo-capability = { path = "../alo-capability" }
+# Every refusal in this crate is read by somebody, so none of them is English.
+alo-strings = { path = "../alo-strings" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+# The whole point of a request is what a turn does with it, so the test that
+# says these are requests is one that carries them through a real turn onto a
+# real disk. None of this is compiled into the crate.
+[dev-dependencies]
+alo-context = { path = "../alo-context" }
+alo-egress = { path = "../alo-egress" }
+alo-files = { path = "../alo-files" }
+alo-record = { path = "../alo-record" }
+alo-turn = { path = "../alo-turn" }

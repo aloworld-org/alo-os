@@ -308,13 +308,22 @@ compositor is not required for, which is why it runs unbroken.
         made into a call **here** rather than accepted from a caller, a read
         answers inside the turn and a change waits for one approval, the
         grants are asked again at the moment it runs, and the machine offers
-        exactly the verbs it can carry out
+        exactly the verbs it can carry out. Since item 21a there is
+        `alo-protocol`, which is what somebody else's code is allowed to say
+        to all of that: five requests and no sixth, none of them able to
+        carry a command, and two doors rather than one — so the side that
+        proposes a change cannot be the side that approves it. What is not on
+        the wire is as much of it as what is: no moment, no context, no turn
+        and no place a question goes, because each of those would be a caller
+        helping itself to something the machine is supposed to know
   - [ ] **On the machine.**
-        the daemon itself, the acting half of the application verbs — which
-        is Wayland and D-Bus, and is the whole of what makes any of these
-        move a window — and the half of the context that **reads** a screen,
-        which is Wayland and AT-SPI and is where *with no invocation, no
-        context calls at all* becomes something anybody can test
+        the daemon itself — the socket, its peer credentials and a
+        long-lived process (queue 21c), plus what it answers with (21b) — the
+        acting half of the application verbs, which is Wayland and D-Bus and
+        is the whole of what makes any of these move a window, and the half
+        of the context that **reads** a screen, which is Wayland and AT-SPI
+        and is where *with no invocation, no context calls at all* becomes
+        something anybody can test
 
 - [ ] Every execution recorded with its origin, approval and grant
   - [x] **The code.**
@@ -334,7 +343,7 @@ compositor is not required for, which is why it runs unbroken.
         door writes its entry before it answers anybody, and a turn that could
         not write one stops doing anything at all
   - [ ] **On the machine.**
-        queue 4b — the path it is written to and the timer that shortens it,
+        queue 20 — the path it is written to and the timer that shortens it,
         both `alo-agentd`'s, and the daemon does not exist
 
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,

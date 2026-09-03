@@ -12,6 +12,36 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Your agent and your screen now speak to alo OS over two separate doors, and
+  an agent cannot approve its own change.** Everything a client can say to the
+  service that runs verbs is now a closed, written-down list of five requests:
+  three an agent makes during a turn — read something it was granted, propose a
+  change, ask a model something — and two your screen sends, which are *yes*
+  and *no* to one change, by its number.
+
+  They are two lists rather than one, and that is the whole point. A door that
+  took both would be a door where the side that proposed a change could also
+  answer it, and *one approval, one execution, given by a person* would be true
+  of the machinery and false of the socket in front of it. An approval arriving
+  from an agent is refused, in the language you read.
+
+  **Nothing a client sends can carry a command.** Not because something checks
+  for one, but because there is no field for one to arrive in: a request names a
+  verb from the list your machine offers, and gives text or whole numbers. There
+  is also no way to say *who* is asking, *when* it is, *which turn* this is, or
+  *where* a question should be answered — all four are the machine's to know,
+  and a request that named any of them would be a way to help itself to
+  something.
+
+  A message this machine cannot read is refused **in the language you read, and
+  never in silence**, with a different sentence for each of the seven ways it
+  can go wrong — including *this comes from a newer alo OS than yours*, which
+  sends you to an update rather than to a bug report. None of those refusals
+  quotes the message back at you, because what arrived is text nobody checked.
+
+  What comes back from the service, the socket itself, and the long-lived
+  process are still to come; this is what goes in.
+
 - **Your agent can now put a question to a model inside a turn, and what left
   your machine is on the disk before the answer reaches it.** The three ways
   alo OS can have a question answered — a provider you added, the model alo OS

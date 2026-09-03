@@ -12,6 +12,7 @@ members = [
   "crates/alo-files",
   "crates/alo-keeping",
   "crates/alo-models",
+  "crates/alo-protocol",
   "crates/alo-record",
   "crates/alo-shortcuts",
   "crates/alo-strings",

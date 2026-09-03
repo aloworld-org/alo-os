@@ -37,8 +37,15 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
-`crates/alo-turn` and `crates/alo-strings` were built by the loop and are
-described in the items below. **`alo-turn` is the only one that reaches
+`crates/alo-turn`, `crates/alo-protocol` and `crates/alo-strings` were built by
+the loop and are described in the items below. **`alo-protocol` is the only one
+that is a boundary rather than a decision**: since item 21a it is where bytes
+somebody else wrote become a request or are refused, it reaches `alo-capability`
+for the one type in this workspace whose job is being read off a socket, and
+nothing reaches it. It is also the only crate whose value is partly a set of
+fields that do not exist — no moment, no context, no turn, no place a question
+goes — because each of those on the wire would be a way for a caller to help
+itself to something. **`alo-turn` is the only one that reaches
 another crate in order to hold it to an order** rather than to ask it
 something: since item 19 it is where an invocation, a call, an approval, an
 execution and the record are joined, and it is the first crate whose value is
@@ -1740,13 +1747,89 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   blocked all this time on the daemon not existing. The path a record is written
   to, the retention the organisation sets (ADR 0004), and the timer that
   shortens it. `alo-keeping` holds the shape; this gives it somewhere to live.
+  **Blocked on 21c**, which is where a long-lived process with a timer in it
+  lives.
 
-- [ ] **21. The daemon itself.** A long-lived process, a socket, and a typed
-  request/response protocol — one file may name the transport, as `ollama.rs`
-  names the runtime. **Law 2 is the whole design**: the protocol accepts
-  enumerated verbs with typed arguments and there is no request that carries a
-  command, a path to an executable, or anything a caller could shape into one.
-  A malformed request is refused in the reader's own language, not dropped.
+- [x] **21a. What a client may ask the daemon** — the half of item 21 that is
+  law 2 rather than a socket, cut from it and built. `crates/alo-protocol`, a
+  **new crate**: `frame.rs` (one message — one line, a length, a format number),
+  `asked.rs` (the closed list of everything that can arrive, and why it is one
+  list behind two doors), `agent.rs` (`FromAnAgent` — the three an agent asks
+  during a turn), `person.rs` (`FromAPerson` — the two a person answers),
+  `argument.rs` (one argument, exactly as it arrived), `refusing.rs`
+  (`NotUnderstood` — the seven ways a message is not a request), `words.rs` (7
+  phrases), `testing.rs`. 45 unit tests, 14 integration tests — 6 against the
+  real vocabulary and 8 carrying a line off the wire through a real `Turning`
+  onto a real disk — and 1 doctest. **1307 tests and 43 doctests across the
+  workspace** (was 1248 and 42), clippy clean.
+  `docs/contracts/daemon-protocol.md` is the public surface it fixed.
+
+  **Item 21 was one item and is three, and the line the first cut falls on is
+  what a caller can *say*.** The item's own sentences are all about the request
+  — *enumerated verbs with typed arguments*, *no request that carries a
+  command*, *refused in the reader's own language* — because that is where law 2
+  meets somebody else's code. What comes back carries no such property and needs
+  a decision this item did not contain (21b), and the process and the transport
+  need a Linux host (21c). A crate whose responsibility is *reading the
+  untrusted side of a socket* is one responsibility, which is law 4 rather than
+  a convenience.
+
+  **The decision the item did not contain, and it is the reason the crate has
+  two public types: an agent must not be able to approve its own change.** One
+  `Request` enum with five variants is the obvious shape, and on a socket that
+  both a shell and an agent speak over it is a hole — the side that proposed a
+  change could answer it, and ADR 0001 §5 would be true of `alo-capability` and
+  false of the door in front of it. So the closed list lives in one
+  `pub(crate)` place and there are two public doors cut out of it, neither able
+  to produce the other's requests. Which side a connection is really on is peer
+  credentials and is the daemon's; what is settled here is that once it knows,
+  no message can cross.
+
+  Three decisions the next items inherit. **Four things are not on the wire, and
+  each is an absence rather than a check**: no moment (a request that named one
+  could revive an expired grant), no context (ADR 0001 §4 — it would be an agent
+  handing itself the grant it wanted), no place for a question to be answered
+  (ADR 0008 puts that with the person), and no turn (the connection answers
+  that, and a number for it would be a number an agent could change). Nothing
+  begins or ends a turn either, for the same reason. **Arguments are a list and
+  not an object**, so an argument named twice arrives twice and
+  `CallError::SameArgumentTwice` stays reachable — a JSON object would have
+  deduplicated it before anything could refuse it, in the one place a person's
+  approval sentence is built from. **The format is read before the message**,
+  out of a shape that tolerates fields this version has never heard of, so a
+  client from a newer alo OS is told to update the machine rather than told its
+  message was gibberish.
+
+  **No refusal quotes the message back**, and the shape that keeps it true is
+  that not one of the seven sentences has a gap in it: a gap is the only road
+  text off a socket could take into a sentence a person reads. It is
+  `alo-record`'s *the arguments of a call that never validated are never kept*,
+  one step before there is a call.
+
+  Built and unit tested, and walked end to end from a JSON line through
+  `alo-turn` onto a real filesystem. **No socket has been opened**: nothing here
+  has listened on anything, and there is still no daemon.
+
+- [ ] **21b. What the daemon answers with.** The other half of the protocol, and
+  it is a decision rather than a mirror. A read answers with an
+  `alo_files::Answer` — a listing, a file's contents, a search — a proposal with
+  a number and the sentence the person is being asked, a question with a model's
+  answer, and every refusal in the workspace with a `Said`. **`Answer` has no
+  `Serialize` and the first thing this item decides is whether it should**: it
+  carries `PathBuf`s, and a path is not always text, so a format that assumed it
+  was would lose a filename on somebody's machine rather than refuse it. It also
+  owes the person's side one request this repository has not written —
+  *what is waiting* — which is a read of the turn rather than an answer to it,
+  and belongs with the answers it is shaped like.
+
+- [ ] **21c. The daemon itself.** What is left of item 21 once 21a and 21b are
+  out of it: a long-lived process, a socket, and one file naming the transport
+  as `ollama.rs` names the runtime. **Which side of the socket a caller is on is
+  this item's** — peer credentials, and the permissions on the socket itself —
+  because it is what makes 21a's two doors a division rather than a convention.
+  It holds one turn per connection, which is what makes *nothing on the wire
+  names a turn* true. **Blocked — linux**: a Unix socket and its credentials
+  have no portable spelling, and there is no compositor to invoke a turn from.
 
 - [ ] **22. Running out is not a fault.** `alo-answering`'s `WentWrong` has no
   way to say *the money ran out*, so an exhausted balance arrives as
