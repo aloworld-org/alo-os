@@ -35,6 +35,13 @@
 //! machine today* answers with everything that left. [`Only::OnItsOwn`] is the
 //! half of that nobody caused.
 //!
+//! It has the other half too, over the whole record rather than over the
+//! departures. [`Only::ByAnAgent`] finds everything **with** a name in that
+//! column, which is what somebody who declined the agent entirely
+//! ([`alo_capability::Agent`], ADR 0009) puts to their own record: *is there
+//! anything in here that an agent did?* Naming every agent that might have run
+//! and trusting the list is no way to establish that none did.
+//!
 //! # What left, kept once
 //!
 //! Law 1 asks *what left this machine today* and law 1's answer has to be one

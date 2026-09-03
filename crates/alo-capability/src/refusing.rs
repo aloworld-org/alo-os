@@ -22,12 +22,21 @@
 //! of them cannot be English while the other is German, because neither is a
 //! language until it is asked for.
 //!
-//! # The two halves say different things on purpose
+//! # The three say different things on purpose
 //!
 //! *It expired* and *you never granted it* need different things from the
 //! person reading them. The first is fixed by granting again; the second is
 //! not, and a message that covered both would tell somebody to check something
 //! they already know.
+//!
+//! The third is [`NotGranted::NoAgent`], and it is the one that would have been
+//! easiest to leave out. A machine where the person declined the agent
+//! (ADR 0009, [`crate::Agent`]) has no grants and can have none, so the obvious
+//! answer is *nothing has ever been granted* — which is true and is the wrong
+//! sentence. It sends somebody to a grants panel that is deliberately **absent**
+//! on their machine rather than greyed out, to fix something that is not broken.
+//! A refusal that tells a person to do an impossible thing is how they learn to
+//! stop reading refusals.
 
 use alo_strings::{Filling, Said, Strings};
 
@@ -57,6 +66,20 @@ pub enum NotGranted {
         /// What was asked for.
         wanted: Ask,
     },
+    /// There is no agent on this machine at all (ADR 0009).
+    ///
+    /// Not a narrower [`NotGranted::Never`]: this is a machine where the person
+    /// declined, so there is no list a grant could be missing from and no panel
+    /// to go and make one in. See [`crate::Agent`].
+    NoAgent {
+        /// The agent that asked — which, on a machine with no agent, is
+        /// something that should not have been asking. It is kept because a
+        /// refusal is written down, and *what tried* is the whole of what is
+        /// worth knowing about this one.
+        agent: String,
+        /// What was asked for.
+        wanted: Ask,
+    },
 }
 
 impl NotGranted {
@@ -66,6 +89,7 @@ impl NotGranted {
         match self {
             Self::Lapsed { .. } => words::HAS_EXPIRED,
             Self::Never { .. } => words::NEVER_GRANTED,
+            Self::NoAgent { .. } => words::NO_AGENT,
         }
     }
 
@@ -73,7 +97,9 @@ impl NotGranted {
     #[must_use]
     pub fn wanted(&self) -> &Ask {
         match self {
-            Self::Lapsed { wanted, .. } | Self::Never { wanted, .. } => wanted,
+            Self::Lapsed { wanted, .. }
+            | Self::Never { wanted, .. }
+            | Self::NoAgent { wanted, .. } => wanted,
         }
     }
 
@@ -81,7 +107,9 @@ impl NotGranted {
     #[must_use]
     pub fn agent(&self) -> &str {
         match self {
-            Self::Lapsed { agent, .. } | Self::Never { agent, .. } => agent,
+            Self::Lapsed { agent, .. }
+            | Self::Never { agent, .. }
+            | Self::NoAgent { agent, .. } => agent,
         }
     }
 
@@ -107,7 +135,7 @@ impl NotGranted {
         );
         let filling = match self {
             Self::Lapsed { reach, .. } => filling.and_said("reach", &reach.said(strings)),
-            Self::Never { .. } => filling,
+            Self::Never { .. } | Self::NoAgent { .. } => filling,
         };
         strings.say(&self.word().key(), &filling)
     }
@@ -132,6 +160,58 @@ mod tests {
             reach: Reach::Folder(PathBuf::from("/home/anna/Invoices")),
             wanted: Ask::path("/home/anna/Invoices/march.pdf"),
         }
+    }
+
+    fn no_agent() -> NotGranted {
+        NotGranted::NoAgent {
+            agent: "@files".to_owned(),
+            wanted: Ask::path("/home/anna/Invoices/march.pdf"),
+        }
+    }
+
+    /// **A machine with no agent does not tell somebody to go and grant a
+    /// folder.** ADR 0009 makes the grants panel *absent* rather than greyed
+    /// out on a machine where the person declined, so the one refusal that
+    /// could still reach them must not point at it.
+    #[test]
+    fn a_machine_with_no_agent_says_so_rather_than_naming_a_grant_nobody_made() {
+        let strings = in_english();
+        let said = no_agent().said(&strings);
+        assert!(said.text().contains("has no agent"), "{said}");
+        assert!(said.text().contains("@files"), "{said}");
+        assert!(
+            said.text().contains("/home/anna/Invoices/march.pdf"),
+            "{said}"
+        );
+
+        // And it is a different sentence from the one that *does* send somebody
+        // to the panel, rather than a reworded version of it.
+        assert_ne!(said.text(), never().said(&strings).text());
+        assert!(!said.text().contains("picking a folder"), "{said}");
+    }
+
+    /// The third refusal is a refusal like the other two: decided without
+    /// words, worded afterwards, and marked when nobody declared them.
+    #[test]
+    fn a_machine_with_no_agent_refuses_without_a_vocabulary_too() {
+        let said = no_agent().said(&Strings::of(alo_strings::Vocabulary::empty()));
+        assert!(said.is_a_bug());
+        assert!(
+            said.text().contains("capability.refused.no-agent"),
+            "{said}"
+        );
+
+        let translated = translated(&[(
+            words::NO_AGENT,
+            "{agent} kann {wanted} nicht erreichen — dieser Rechner hat keinen Agenten",
+        )]);
+        let said = no_agent().said(&translated);
+        assert!(said.is_translated(), "{said}");
+        assert!(said.text().contains("keinen Agenten"), "{said}");
+        assert!(
+            said.text().contains("/home/anna/Invoices/march.pdf"),
+            "{said}"
+        );
     }
 
     /// The refusal says which of the two it was, names the agent, and names

@@ -3469,3 +3469,141 @@ understand an entry is also the version that will not remove it.
   a closed list with no member for measuring anything, an indicator that cannot
   be bypassed, and a record entry that names nobody because there is nobody to
   name.
+
+---
+
+## 2026-09-03 — iteration 32: the machine somebody chose not to have an agent on
+
+**Built: item 17**, which was the first ready item on the queue and had been
+written there by iteration 30 while it was checking a claim rather than making
+one. `ROADMAP.md`'s line for ADR 0009 had said *Built: the decision (ADR 0009),
+not code · Owed: all of it* since it was written, and nothing had ever turned
+that into work.
+
+A **public surface change** in `alo-capability`, additive in `alo-record`.
+
+| | |
+|---|---|
+| `agent.rs` | `Agent` — a new file: the fourth choice as a value, `present`/`declined`, `declining`/`accepting`, `grants`/`grants_mut`, `permitting`/`permits`, and the line Settings shows |
+| `refusing.rs` | `NotGranted::NoAgent` — the third refusal, and the one that must not send somebody to a panel their machine does not have |
+| `words.rs` | Three new phrases: the refusal, and the two lines that say what turning the agent off or on would **do** |
+| `alo-record/explain.rs` | `Only::ByAnAgent` — *is there anything in here that an agent did at all?* |
+| `docs/contracts/agent-verbs.md` | A machine may have no agent, and then there is no list |
+
+**The gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. **1094 tests and 34 doctests across the
+workspace** (was 1076 and 32), all green. `CHANGELOG.md`, `QUEUE.md` and
+`ROADMAP.md` in the same change.
+
+**The decision the item existed to make, and it offered two answers that were
+both incomplete.** *A state something asks about* is a flag every caller must
+remember to check, which is the shape this repository refuses everywhere else —
+and worse than that here, because a flag beside `Grants` can **disagree** with
+it: *the agent is off* and *there are four grants* would both be true of one
+machine and nothing could say which was the truth. *The absence of any grant and
+any grantee* is stronger and cannot survive a restart on its own, which the item
+said and was right about.
+
+The answer is both, made one value: the list went **inside** the choice.
+`Agent::Present(Grants)` or `Agent::Declined`, so a declined machine holds no
+`Grants` at all rather than an empty one. There is nothing to remember to check
+because there is nothing to check — the only road to the machine's grants runs
+through the choice, and on a declined machine it stops. It is a state, because
+it serialises and a machine reads it back; it is the absence of any grant,
+because the state is what would have held them. They cannot disagree because
+they are one thing.
+
+That is `alo-egress`' item 16 answer met from the other direction. There, the
+honest shape was *a field that does not exist rather than one that is always
+empty*. Here it is *a list that does not exist rather than one that is always
+empty*, and it buys the same thing: a guarantee carried by the shape of a value
+instead of by whoever writes the next caller.
+
+**Three decisions the next items inherit.**
+
+- **`Agent` has no `Default`, and the absence is asserted.** A default would be
+  alo OS answering setup's fourth question on the person's behalf, in the type
+  that exists because that question is theirs — and whichever of the two it
+  picked would be the answer nobody ever gave. The `compile_fail` doctest was
+  checked by compiling `Agent::present()` beside `Default::default()` and
+  watching only the second fail, with E0277 on the missing trait rather than on
+  a typo.
+- **Turning it on again brings back an agent and not the folders.** ADR 0009
+  says grants *end*; a suspension that restored itself in June would be a weaker
+  promise wearing the same sentence. `accepting` makes
+  `Present(Grants::default())`, and a machine that already has an agent keeps
+  what it has rather than being quietly cleared — a second door to `declining`
+  with an innocent name is the mistake that test exists to catch. The grant an
+  invocation's document makes (item 12) ends with everything else, and
+  `alo-context` has the test, because that is the grant nobody remembers making.
+- **A refusal on a machine with no agent is a third `NotGranted`, not a narrower
+  `Never`.** On that machine the grants panel is **absent** rather than greyed
+  out, so *grants are made by picking a folder, never by asking for one* — true,
+  and this repository's best sentence — would send somebody to something their
+  machine does not have. Reusing the variant would have been free and would have
+  been the quiet kind of wrong: nothing would fail, and one person in
+  twenty-four languages would go looking for a panel.
+
+**The half the item did not contain, and the one that took the longest to get
+right: whether a refusal is still recorded.** *Nothing further is recorded as
+agent activity* reads like a licence to stop writing, and taking it that way
+would have broken a guarantee `CLAUDE.md` names in the gate — every execution
+**and every refusal** leaves a record. The two rules do not actually conflict:
+the ADR is describing a machine with no agent doing nothing, not asking for
+silence when something asks anyway. And if something does ask, that is precisely
+the entry the person who declined would want, which is the same argument the ADR
+itself makes for keeping the record and the indicator at all.
+
+So the promise is checked as the shape it really has, in
+`crates/alo-record/tests/a_machine_with_no_agent.rs`: an ordinary day on a
+declined machine has nothing in the record with an agent's name on it, and a
+call that arrives anyway is refused **and** written down. `Only::ByAnAgent` is
+what makes the first of those a question rather than a list of names somebody
+trusted — it is `Asking::by` seen from the other side, and naming every agent
+that might have run is no way to establish that none did.
+
+**No `Happened` variant was added, and the absence is the decision.** An entry
+saying *the person turned the agent off at one o'clock* was tempting, reads
+well, and is the wrong crate: `alo-record` holds what an agent caused and what
+the machine did on its own, and a person's own act on their own machine is
+neither. Nothing else a person does is in there — making a grant is not,
+revoking one is not — and a record that started keeping settings changes would
+become a log of the person rather than of the agent, which is ADR 0001 §4's
+watched context arriving through the back door. If a security team wants *when
+was the agent turned off*, that is a separate question with a separate answer,
+and it is not this file.
+
+**What the next iteration must know:**
+
+- **The queue's remaining unticked items are 16b and 17a, and neither is
+  ready.** **16b** is discovery, and nothing about it has been built since
+  iteration 30 wrote it down, so deciding whether multicast is an errand or a
+  documented exception would still be deciding in the abstract. **17a** is new,
+  written by this iteration into *blocked — linux*: the rest of ADR 0009 is the
+  hotkey doing nothing, the overlay not existing, Grants and Models and
+  providers being absent from Settings, and setup's fourth choice as a screen.
+  All of it is compositor and settings-panel work. **So the next iteration
+  should expect to write `LOOP COMPLETE` unless its reading step finds an item,
+  and the reading step is the whole of what it should do.**
+- **The reading step found no unlisted v0.01 promise this time**, and as in
+  iteration 31 this entry is not claiming none is left. What was read was
+  `docs/features.md`'s AI-stack section against the queue, which is where item
+  17's own line lives. The standing advice holds and is not discharged: **only
+  `docs/features.md` is a list of what was promised**, and a `ROADMAP.md` line
+  whose *Built* clause cannot name a crate is the strongest available signal
+  that the queue is missing an item. Item 17's line was exactly that, and it had
+  said so in plain words for two iterations before anybody acted on it.
+- **`alo-capability` now holds one thing that is not about what an agent may
+  do.** `Agent` is whether there *is* an agent, and `Grants` lives inside it. No
+  crate and no edge moved; the grants are where they always were, one type
+  further in. It is here rather than in a crate of its own because a machine
+  with no agent is the limiting case of what an agent may reach rather than a
+  subject beside it — which is the opposite of the call `alo-keeping` and
+  `alo-answering` got, and for the opposite reason: those two exist because
+  something had to be able to do a thing the crate beside it promises never to
+  do, and there is no such promise here to protect.
+- **Nothing here has hidden a panel.** The whole visible half of ADR 0009 is
+  item 17a and needs a shell. What exists is the model those screens will read:
+  one question for whether the surfaces are there at all, one line for the place
+  Settings still offers, and one act that ends every grant on the machine.

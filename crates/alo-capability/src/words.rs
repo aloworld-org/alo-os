@@ -25,6 +25,14 @@
 //! Both readings come from one rendering of one string, which is what
 //! [`crate::Refused`] carrying a refusal rather than a sentence is for.
 //!
+//! **Two of them are not refusals**, and they are the two at the end:
+//! [`HAS_AN_AGENT`] and [`HAS_NO_AGENT`] are what the one place in Settings
+//! that offers ADR 0009's fourth choice says about this machine. They are here
+//! rather than in a shell because the consequence each of them describes is
+//! this crate's — turning the agent off ends every grant on the machine — and
+//! a sentence about that written anywhere else would be a second account of
+//! what [`crate::Agent::declining`] actually does.
+//!
 //! # What is not here, and why that is not an oversight
 //!
 //! [`crate::VerbError`], [`crate::VerbsError`] and [`crate::SentenceError`]
@@ -186,6 +194,19 @@ pub const NEVER_GRANTED: Word = Word::saying(
     "The second half is the whole capability model in one clause: a person grants by choosing \
      something, and no amount of asking widens what an agent may reach. {agent} is never \
      translated; {wanted} arrives already in the reader's language.",
+);
+
+/// A machine where the person declined the agent (ADR 0009).
+pub const NO_AGENT: Word = Word::saying(
+    "capability.refused.no-agent",
+    "{agent} cannot reach {wanted} — this machine has no agent, so there is nothing granted and \
+     nothing to grant to",
+)
+.noting(
+    "This is not a refusal a person fixes by granting a folder, and a translation must not make \
+     it read like one: they chose to run alo OS without an agent, and there is no grants panel \
+     for them to go to. {agent} is never translated; {wanted} arrives already in the reader's \
+     language.",
 );
 
 /// A change offered where only a read may go.
@@ -384,11 +405,44 @@ pub const LAPSED: Word = Word::saying(
      with this same vocabulary.",
 );
 
+// ---------------------------------------------------------------------------
+// Which of the two kinds of machine this is — [`crate::Agent`], ADR 0009.
+//
+// The only two strings in this file that are not somebody being told no. They
+// are the one place in Settings that offers the fourth choice, and each says
+// what the act would **do** rather than naming a state, because the person
+// reading one is deciding whether to perform it.
+// ---------------------------------------------------------------------------
+
+/// A machine with an agent.
+pub const HAS_AN_AGENT: Word = Word::saying(
+    "capability.agent.on",
+    "this machine has an agent — turn it off whenever you like, and everything it has been \
+     granted ends at once",
+)
+.noting(
+    "Read by somebody deciding whether to turn the agent off, so the second half is a \
+     consequence rather than a reassurance: the grants really do end, and turning the agent on \
+     again does not bring them back.",
+);
+
+/// A machine where the person declined one.
+pub const HAS_NO_AGENT: Word = Word::saying(
+    "capability.agent.off",
+    "this machine has no agent — turn one on whenever you like, and nothing is reinstalled",
+)
+.noting(
+    "ADR 0009: declining the agent is a setting rather than a different edition of alo OS, and \
+     the second half is what somebody who declined at setup needs to know. It is a statement of \
+     fact and not an invitation; a translation that made it enthusiastic would be advertising to \
+     somebody who has already said no once.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 32] = [
+pub const EVERY_WORD: [Word; 35] = [
     ANONYMOUS,
     NOTHING_NAMED,
     THE_WHOLE_MACHINE,
@@ -401,6 +455,7 @@ pub const EVERY_WORD: [Word; 32] = [
     AN_APPLICATION,
     HAS_EXPIRED,
     NEVER_GRANTED,
+    NO_AGENT,
     CHANGE_WAITS,
     WANTED_NUMBER,
     WANTED_TEXT,
@@ -421,6 +476,8 @@ pub const EVERY_WORD: [Word; 32] = [
     PROPOSAL_NO_END,
     NOTHING_WAITING,
     LAPSED,
+    HAS_AN_AGENT,
+    HAS_NO_AGENT,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -553,11 +610,14 @@ mod tests {
             AN_APPLICATION,
             HAS_EXPIRED,
             NEVER_GRANTED,
+            NO_AGENT,
             CHANGE_WAITS,
             NOT_ON_THE_LIST,
             NO_SUCH_VERB,
             ARGUMENT_MISSING,
             LAPSED,
+            HAS_AN_AGENT,
+            HAS_NO_AGENT,
         ] {
             assert!(word.note().is_some(), "{}", word.named());
         }

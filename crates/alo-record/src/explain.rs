@@ -10,6 +10,7 @@
 //! - what did that one approval cause?
 //! - what left this machine today?
 //! - what did the machine do with nobody having asked it to?
+//! - is there anything in here that an agent did at all?
 //!
 //! — are asked here in the record's own terms, and answered from the fields the
 //! entries carry. None of them is a search for text. A record answered by
@@ -62,6 +63,21 @@ pub enum Only {
     /// left the machine. What an agent caused is the rest, and is asked for by
     /// naming the agent.
     OnItsOwn,
+    /// Anything with an agent's name in the column that answers *whose
+    /// authority was this under* — whichever agent, and whatever it did.
+    ///
+    /// The question somebody who declined the agent entirely puts to their own
+    /// record (ADR 0009, [`alo_capability::Agent`]): *is there anything in here
+    /// that an agent did?* Until it existed the only way to ask was to name
+    /// every agent that might have run and trust the list, which is the mistake
+    /// [`Asking::by`] warns about seen from the other side — and it is exactly
+    /// the wrong shape for a machine whose claim is that **no** agent ran on it.
+    ///
+    /// It is the complement of [`Only::OnItsOwn`] over the whole record rather
+    /// than over the departures: an errand is the only kind of entry with
+    /// nobody's name on it, so every other entry there has ever been is one of
+    /// these.
+    ByAnAgent,
 }
 
 /// A question put to the record.
@@ -175,6 +191,7 @@ fn is_only(entry: &Entry, only: Only) -> bool {
         Only::Refusals => entry.happened().was_stopped(),
         Only::Egress => entry.happened().caused_egress(),
         Only::OnItsOwn => entry.happened().on_its_own(),
+        Only::ByAnAgent => entry.agent().is_some(),
     }
 }
 
@@ -415,6 +432,37 @@ mod tests {
             how_many(&agents_only, &Asking::anything().only(Only::Egress)),
             1
         );
+    }
+
+    /// **Is there anything in here that an agent did?** — the question ADR 0009
+    /// leaves a person who declined the agent, and the one they could not ask
+    /// before: naming every agent that might have run and trusting the list is
+    /// no way to establish that none did.
+    #[test]
+    fn whether_any_agent_did_anything_is_a_question_the_record_answers() {
+        let afternoon = afternoon();
+        let by_an_agent = Asking::anything().only(Only::ByAnAgent);
+        let on_its_own = Asking::anything().only(Only::OnItsOwn);
+
+        // Every entry is one or the other, and none is both: an errand is the
+        // only kind with nobody's name on it.
+        assert_eq!(
+            how_many(&afternoon.record, &by_an_agent) + how_many(&afternoon.record, &on_its_own),
+            afternoon.record.len()
+        );
+        assert!(
+            afternoon
+                .record
+                .answering(&by_an_agent)
+                .all(|entry| !entry.happened().on_its_own())
+        );
+
+        // And a machine that has done nothing but its own errands answers with
+        // nothing, which is the whole of what somebody who declined is asking.
+        let mut declined = Record::default();
+        declined.keep(Entry::left_on_its_own(&fetching_a_model(noon())));
+        assert_eq!(how_many(&declined, &by_an_agent), 0);
+        assert_eq!(how_many(&declined, &on_its_own), 1);
     }
 
     /// **An errand belongs to no agent's day.** This is the decision item 16a

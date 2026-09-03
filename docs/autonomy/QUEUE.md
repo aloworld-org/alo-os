@@ -85,6 +85,13 @@ That is what the rule looks like once it is finished being applied, and
 `alo-applications` and `alo-context` are the second and third crates it is true
 of.
 
+Since **item 17** `alo-capability` holds one thing that is not about what an
+agent may do: `Agent` is whether there is an agent on this machine at all
+(ADR 0009), and `Grants` lives **inside** it. No crate and no edge moved — the
+grants are where they always were, one type further in — and the reason it is
+here rather than in a crate of its own is that a machine with no agent is the
+limiting case of what an agent may reach rather than a subject beside it.
+
 Since **item 9g** the edge is load-bearing rather than incidental: a verb is
 *declared* from `alo_strings::Word`s, so `alo-capability` cannot express a
 capability whose words are not translatable, and `alo-record` renders the
@@ -1323,40 +1330,66 @@ deny list.** Two patterns later items must follow:
   hole in the list is a known hole rather than a discovered one, which is what
   the last four iterations kept finding was the difference.
 
-- [ ] **17. A machine with no agent at all** — implements **ADR 0009** and
+- [x] **17. A machine with no agent at all** — implements **ADR 0009** and
   `docs/features.md`'s v0.01 *★ Or not at all. Setup's fourth choice, with the
   same weight as the other three: no model, no provider, no agent.* Found by
-  iteration 30 while checking a claim that every v0.01 promise finally had an
-  item — it did not, and this was the second one that day. `ROADMAP.md`'s line
-  has said *Built: the decision (ADR 0009), not code · Owed: all of it* since it
-  was written, and nothing ever turned that into work.
+  iteration 30, built by iteration 32. One new file in `crates/alo-capability`,
+  `agent.rs` (`Agent` — the choice, the two acts, and everything it may reach);
+  `NotGranted::NoAgent` in `refusing.rs` and three new words. `alo-record`:
+  `Only::ByAnAgent` in `explain.rs`. 20 new unit tests, 2 new doctests (one of
+  them `compile_fail`), 2 new integration tests through `alo-capability`,
+  `alo-egress` and `alo-record` at once, and 1 more in `alo-context`.
+  **1094 tests and 34 doctests across the workspace** (was 1076 and 32), clippy
+  clean.
 
-  **Most of the ADR is the shell's and is not this item.** The hotkey doing
+  **Most of the ADR is the shell's and was not this item.** The hotkey doing
   nothing, the overlay not existing, and Grants, Models and providers being
-  *absent* from Settings rather than greyed out are all compositor and
-  settings-panel work, and they belong under *blocked — linux* when somebody
-  writes them down. What is portable is the part the ADR is sharpest about and
-  the part that would be quietly got wrong: **turning the agent off removes its
-  reach at once.** *Grants end* is `alo_capability::Grants` — the same
-  immediacy item 3 built for a revoked grant, applied to every grant on the
-  machine at once and to the ones a `Turn` makes (item 12). *Nothing further is
-  recorded as agent activity* is `alo-record`, and it is not the same as
-  recording nothing: the ADR keeps the record and the egress indicator on a
-  machine with no agent, on the grounds that somebody who declined an agent may
-  want **more** than average to know what left their machine — which is item
-  16's errands, and is why this item is worth doing after that one rather than
-  before it.
+  *absent* from Settings rather than greyed out are compositor and
+  settings-panel work, and they are written into *blocked — linux* below.
 
-  **The decision it has to make first**, and the reason it is not a five-minute
-  change: whether *the agent is off* is a state something asks about, or whether
-  it is the absence of any grant and any grantee. The first is a flag every
-  caller must remember to check, which is the shape this repository refuses
-  everywhere else; the second is stronger and may not be expressible, because a
-  machine with the agent off must be able to be turned back on without a
-  reinstall, and something has to remember that it is off across a restart.
+  **The decision the item existed to make had a third answer, and it is both of
+  the two it offered.** A flag beside `Grants` is the shape this repository
+  refuses; the absence of any grant is stronger and cannot on its own survive a
+  restart. So the list went **inside** the choice: `Agent::Present(Grants)` or
+  `Agent::Declined`, and a declined machine holds no `Grants` at all rather than
+  an empty one. There is nothing to remember to check because there is nothing
+  to check — the only road to the machine's grants is through the choice, and on
+  a declined machine it stops. That is the state (it serialises, so *turning it
+  on later is a setting, not a reinstall* is true) and the absence (nothing can
+  be granted, because `grants_mut` has nothing to lend), and the two cannot
+  disagree because they are one value.
 
-  **Ready**: it names its ADR, its feature line and the two crates it touches,
-  and neither of them needs a compositor.
+  Three decisions the next items inherit. **`Agent` has no `Default`**, asserted
+  by a `compile_fail` doctest checked to fail on E0277 rather than on a typo: a
+  default would be alo OS answering setup's fourth question on the person's
+  behalf, in the type that exists because the question is theirs. **Turning it
+  on again brings back an agent and not the folders** — ADR 0009 says grants
+  *end*, and a suspension that restored itself would be a weaker promise wearing
+  the same sentence; the grant an invocation's document made (item 12) ends with
+  everything else, and `alo-context` has the test. **A refusal on a machine with
+  no agent is a third `NotGranted` rather than a narrower `Never`**, because the
+  grants panel is absent on that machine and *grants are made by picking a
+  folder* would send somebody somewhere their machine does not have.
+
+  **What the item did not contain: whether a refusal is still recorded.**
+  *Nothing further is recorded as agent activity* reads like a licence to stop
+  writing, and it is not — it is a statement about a machine with no agent doing
+  nothing. If something does ask, that is exactly the entry somebody who
+  declined would want, and `CLAUDE.md`'s gate says every refusal leaves one. So
+  the promise is checked as the shape it really has: an ordinary day on a
+  declined machine has no entry with an agent's name on it, and a call that
+  arrives anyway is refused *and* written down. `Only::ByAnAgent` is what makes
+  the first of those a question rather than a list of names somebody trusted.
+
+  **No `Happened` variant was added, and the absence is the decision.** An entry
+  saying *the person turned the agent off* was tempting and is the wrong crate:
+  the record holds what an agent caused and what the machine did on its own, and
+  a person's own act on their own machine is neither. A record that started
+  keeping settings changes would become a log of the person rather than of the
+  agent, which is ADR 0001 §4's watched context arriving through the back door.
+
+  Built and unit tested. **Nothing here has hidden a panel**: the surfaces ADR
+  0009 makes absent are the shell's, and are listed below.
 
 ---
 
@@ -1374,6 +1407,15 @@ rather than only of what is convenient.
   make this repository say something untrue in twenty-four languages.
 - **Sign-in and the local account**, the agent overlay, the launcher and window
   management, copy and paste, window switching — all draw on the compositor.
+- **17a. The surfaces a machine with no agent does not have.** What item 17
+  could not close, and the rest of ADR 0009: the hotkey doing nothing, the agent
+  overlay not existing at all, and Grants, Models and providers being **absent**
+  from Settings rather than present and disabled — *a greyed-out feature is an
+  advertisement*. Plus setup's fourth choice as a screen, with the same weight
+  as the other three and no persuasion attached. The model is built and is not
+  a mode to check for: `alo_capability::Agent::has_an_agent` is the one question
+  a shell asks, and `Agent::said` is the one line Settings still shows. All of
+  it is compositor and settings-panel work and none of it compiles here.
 - **Context on invocation, the reading half** — what is in front of the person,
   what they have selected and what they have open, answered by Wayland and
   AT-SPI at the moment the key is pressed, and the daemon that holds the turn

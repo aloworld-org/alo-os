@@ -12,6 +12,32 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can have alo OS with no agent at all, and turning it off takes the
+  agent's reach with it that second.** Setup's question about where your AI
+  should run has a fourth answer — *not at all* — and it is a setting rather
+  than a different edition: you can change your mind either way, whenever you
+  like, and nothing is reinstalled.
+
+  Turning the agent off ends **every** grant on the machine in one act. Not
+  suspends: ends. The folder you picked in March and the document an invocation
+  handed over five minutes ago both stop being reachable on the next question
+  asked, and if you turn the agent back on in June what comes back is an agent
+  with nothing granted — not June's agent holding March's folders. While it is
+  off, nothing can be granted at all, because there is no list for a grant to go
+  onto.
+
+  **The record and the "something is leaving this machine" indicator stay.**
+  They are not AI features, and somebody who declined an agent may want more
+  than average to know what their machine did. So a machine with no agent still
+  writes down every errand it ran on its own — signing you in, fetching a model,
+  checking for an update — and you can now ask your record the one question that
+  claim rests on: *is there anything in here that an agent did at all?*
+
+  And if something does ask on a machine with no agent, it is refused and
+  written down, in a sentence that says this machine has no agent rather than
+  telling you to go and grant a folder in a panel your machine deliberately does
+  not have.
+
 - **What your machine did on its own is now in the record too — and it is the
   one entry with nobody's name on it.** The indicator already showed alo OS
   reaching the network for the three things it does with nobody having asked:

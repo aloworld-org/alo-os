@@ -19,8 +19,8 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use alo_capability::{
-    AnswerError, Approvals, Arg, ArgError, Ask, Authorised, Call, CallError, Effect, Given, Grant,
-    GrantError, Grantee, Grants, NotGranted, Proposal, Reach, Requires, Takes, Verb,
+    Agent, AnswerError, Approvals, Arg, ArgError, Ask, Authorised, Call, CallError, Effect, Given,
+    Grant, GrantError, Grantee, Grants, NotGranted, Proposal, Reach, Requires, Takes, Verb,
     capability_words, declare_into, words,
 };
 use alo_strings::{Key, Language, Strings, Translation, Vocabulary, Word};
@@ -430,4 +430,72 @@ fn what_an_argument_is_for_is_read_in_the_readers_own_language() {
         "move a file into a folder"
     );
     assert!(!move_file().purpose(&strings).is_translated());
+}
+
+/// **A machine with no agent reads as one, in the reader's own language** —
+/// ADR 0009's fourth choice, from outside the crate.
+///
+/// Three strings, and the third is the one that would have been got wrong. A
+/// person who declined the agent has no grants panel — it is *absent* rather
+/// than greyed out — so a refusal that told them to go and pick a folder would
+/// be sending them somewhere their machine does not have, in their own
+/// language, which is the one way of being unhelpful nobody would ever notice.
+#[test]
+fn a_machine_with_no_agent_says_so_in_the_language_the_person_reads() {
+    let strings = speaking_german(&[
+        (
+            words::HAS_NO_AGENT,
+            "dieser Rechner hat keinen Agenten — schalten Sie jederzeit einen ein, es wird nichts \
+             neu installiert",
+        ),
+        (
+            words::HAS_AN_AGENT,
+            "dieser Rechner hat einen Agenten — schalten Sie ihn jederzeit aus, und alles, was ihm \
+             gewährt wurde, endet sofort",
+        ),
+        (
+            words::NO_AGENT,
+            "{agent} kann {wanted} nicht erreichen — dieser Rechner hat keinen Agenten, es ist \
+             also nichts gewährt und es gibt niemanden, dem etwas gewährt werden könnte",
+        ),
+        (
+            words::NEVER_GRANTED,
+            "{agent} wurde {wanted} nicht gewährt — Berechtigungen entstehen dadurch, dass jemand \
+             einen Ordner auswählt, niemals dadurch, dass danach gefragt wird",
+        ),
+    ]);
+
+    // The one line Settings still shows, and its twin on a machine that kept
+    // its agent. Each says what the act would do.
+    let declined = Agent::declined();
+    let said = declined.said(&strings);
+    assert!(said.is_translated());
+    assert!(said.text().contains("keinen Agenten"), "{said}");
+    assert!(said.text().contains("neu installiert"), "{said}");
+    assert!(
+        Agent::present()
+            .said(&strings)
+            .text()
+            .contains("endet sofort")
+    );
+
+    // And the refusal, which is a different sentence from the one that sends
+    // somebody to the panel rather than a reworded version of it.
+    let why = declined
+        .permitting(
+            &Grantee::named("@files"),
+            &Ask::path("/home/anna/Invoices/march.pdf"),
+            noon(),
+        )
+        .unwrap_err();
+    let said = why.said(&strings);
+    assert!(said.is_translated());
+    assert!(said.text().contains("keinen Agenten"), "{said}");
+    assert!(!said.text().contains("Ordner auswählt"), "{said}");
+    // The agent's name and the path are the machine's, not the language's.
+    assert!(said.text().contains("@files"), "{said}");
+    assert!(
+        said.text().contains("/home/anna/Invoices/march.pdf"),
+        "{said}"
+    );
 }

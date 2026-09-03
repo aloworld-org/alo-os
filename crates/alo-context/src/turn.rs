@@ -366,6 +366,39 @@ mod tests {
         assert_eq!(somebody_elses.len(), 1);
     }
 
+    /// **A turn cannot begin on a machine with no agent** (ADR 0009), and the
+    /// shape of `alo_capability::Agent` is what says so rather than a check
+    /// written here: [`Turn::beginning`] needs the machine's own list, and a
+    /// machine where the person declined has none to lend.
+    ///
+    /// The other half matters more, because a grant this crate makes is the one
+    /// most easily forgotten when the agent is turned off — it was never in a
+    /// file chooser and nobody remembers making it. It goes into the machine's
+    /// list (see the notes at the top of this file), so *grants end* covers it
+    /// with everything else, in one act.
+    #[test]
+    fn a_turn_cannot_begin_on_a_machine_with_no_agent_and_ends_with_one() {
+        let mut declined = alo_capability::Agent::declined();
+        assert!(declined.grants_mut().is_none());
+
+        let mut machine = alo_capability::Agent::present();
+        let turn = Turn::beginning(
+            everything_offered(),
+            "@files",
+            hour(),
+            machine.grants_mut().unwrap(),
+        )
+        .unwrap();
+        let agent = turn.grantee().clone();
+        assert!(machine.permits(&agent, &Ask::path(march()), noon()));
+
+        // Turning the agent off ends the grant the invocation made, at once and
+        // without the turn having to be ended first.
+        assert_eq!(machine.declining(noon()), 1);
+        assert!(!machine.permits(&agent, &Ask::path(march()), noon()));
+        assert!(machine.grants().is_none());
+    }
+
     /// A turn belonging to nobody, or lasting no time, is not a turn — and it
     /// is refused whether or not there was a document to grant, so that a turn
     /// is the same thing either way.

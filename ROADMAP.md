@@ -162,7 +162,26 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       the *gave way* sentence promises is still there
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
-      · Built: the decision (ADR 0009), not code · Owed: all of it
+      · Built: `alo-capability`'s `Agent` — the fourth answer as a value, and
+      the half of ADR 0009 that would have been quietly got wrong. It is not a
+      flag beside the grants; it is what holds them, so a machine where the
+      person declined has no list at all rather than an empty one, nothing can
+      be granted on it because there is no list to grant onto, and turning the
+      agent off ends every grant on the machine — the folder picked in March and
+      the document an invocation handed over five minutes ago alike — with the
+      immediacy a single revoke has always had. Turning it on again brings back
+      an agent and not the folders, which is the difference between *grants end*
+      and *grants are suspended*, and the choice is written down so changing
+      your mind is a setting rather than a reinstall. The record and the egress
+      indicator are untouched, because neither is an AI feature: a machine with
+      no agent still writes down its own errands, and `alo-record`'s
+      `Only::ByAnAgent` is how somebody asks whether anything in their record
+      has an agent's name on it at all · Owed: everything about it that is a
+      screen — setup's fourth choice as a question with the same weight as the
+      other three, the hotkey doing nothing, the overlay not existing, and
+      Grants, Models and providers being absent from Settings rather than greyed
+      out. All of that is the compositor's and the settings panel's, and neither
+      exists
 - [ ] Copy, cut and paste across applications; switching between windows
 - [ ] Keyboard shortcuts a person can change
       · Built: `alo-shortcuts` — the shortcuts, rebindable, nothing quietly

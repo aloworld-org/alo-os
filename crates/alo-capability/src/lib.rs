@@ -36,6 +36,22 @@
 //! There is no grant to `/`, and [`GrantError::TheWholeMachine`] is what
 //! happens to code that tries.
 //!
+//! # A machine with no agent
+//!
+//! [ADR 0009](../../../docs/decisions/0009-a-good-computer-without-the-agent.md)
+//! gives setup a fourth answer — **not at all** — and [`Agent`] is that answer
+//! as a value. It is not a flag beside [`Grants`]; it is what *holds* them, so
+//! a machine where the person declined has no list rather than an empty one,
+//! nothing can be granted on it because there is no `&mut Grants` to be had,
+//! and [`Agent::declining`] ends every grant in one act with the immediacy
+//! [`Grants::revoke`] already had. Turning it on again brings back an agent and
+//! not the folders, which is what *grants end* means as against *grants are
+//! suspended*.
+//!
+//! What it does **not** touch is the record or the egress indicator. Neither is
+//! an AI feature, and somebody who declined an agent may want more than average
+//! to know what left their machine.
+//!
 //! # Verbs
 //!
 //! A grant is what may be touched; a [`Verb`] is what may be done. [`Verbs`] is
@@ -126,6 +142,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod agent;
 pub mod approval;
 pub mod approvals;
 pub mod arg;
@@ -148,6 +165,7 @@ mod test_calls;
 #[cfg(test)]
 mod testing;
 
+pub use agent::Agent;
 pub use approval::Approved;
 pub use approvals::{AnswerError, Approvals, ProposalId, Waiting};
 pub use arg::{Arg, ArgError, Given, Takes, Value};

@@ -160,6 +160,29 @@ may be done to.
 
 There is no grant to `/`.
 
+### A machine may have no agent at all, and then there is no list
+
+ADR 0009 gives setup a fourth answer — *not at all* — and it is not a mode an
+adapter has to check for. The grants **live inside** that answer
+(`alo_capability::Agent`), so a machine where the person declined holds no
+`Grants` at all rather than an empty one: there is no `&mut Grants` to add a
+grant to, and `Agent::permitting` refuses with `NotGranted::NoAgent`.
+
+Two things an adapter can rely on. **Turning the agent off ends every grant on
+the machine at once**, including the one an invocation's document made, with the
+immediacy a single revoke has always had — and turning it on again brings back
+an agent with nothing granted, never the folders that ended. **The record and
+the egress indicator are unaffected**, because neither is an AI feature: a
+machine with no agent still writes down what it did on its own, and
+`alo_record::Only::ByAnAgent` is how somebody asks whether anything in their
+record has an agent's name on it at all.
+
+`NotGranted::NoAgent` is a new variant rather than a narrower
+`NotGranted::Never`, and the reason is what each sentence tells a person to do:
+on a machine that declined, the grants panel is **absent** rather than greyed
+out, so *grants are made by picking a folder* would send somebody somewhere
+their machine does not have.
+
 ### A grant is over a place, so the path is resolved before reach is decided
 
 A grant is compared against a path **lexically** — component by component,
