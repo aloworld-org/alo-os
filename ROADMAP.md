@@ -462,6 +462,12 @@ sorted the same way v0.01 now is.
 - [ ] Recovery and rollback screen
 - [ ] **Settings, as one place**: network, display, sound, printers, storage,
       keyboard, accounts, privacy, updates
+- [ ] **alo's own hosted model, and a subscription to it** (ADR 0014) — built
+      as a provider like any other, with a test that proves it: our address is
+      not privileged in `alo-egress`, and a policy refusing hosted inference
+      refuses ours. The account and the billing live outside this repository;
+      what the machine knows is an address, a key in the keyring, a region,
+      and whether the last request was accepted
 - [ ] **Making it yours**: background from a file, folder or colour and per
       display; lock-screen image; light and dark; an accent from the five
       designed hues, terracotta reserved (ADR 0010); text scaling; wallpapers
