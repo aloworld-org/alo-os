@@ -1,0 +1,38 @@
+[package]
+name = "alo-driving"
+version = "0.0.1"
+description = "Whether a model can drive alo OS's verbs, measured rather than claimed."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The closed list of verbs and the validation a call is put through. This crate
+# scores against the real registry rather than against a description of it: a
+# measurement checked by anything but `Verbs::call` would be a measurement of a
+# second implementation of law 2.
+alo-capability = { path = "../alo-capability" }
+# The daemon's own door. A model's answer is read by `FromAnAgent::read` and by
+# nothing else, so what is being measured is the message alo OS actually takes
+# — see `attempt.rs` for why a lighter shape invented here would be a second
+# parser and a score about a format nothing uses.
+alo-protocol = { path = "../alo-protocol" }
+# Where the grade goes. `Driving` is a catalogue property, so it lives with the
+# catalogue; this crate produces one and nothing here reads one back.
+alo-models = { path = "../alo-models" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
+
+# The verbs a real machine offers. They are dev-dependencies rather than
+# dependencies because this crate names verbs and does not declare them: the
+# registry arrives from whoever is running the measurement, and these two are
+# what alo OS itself puts on it.
+[dev-dependencies]
+alo-applications = { path = "../alo-applications" }
+alo-files = { path = "../alo-files" }
+# One `Word`, for the verb an adapter might add. Nothing in the crate itself
+# declares a string.
+alo-strings = { path = "../alo-strings" }

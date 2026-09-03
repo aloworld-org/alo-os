@@ -8,6 +8,7 @@ members = [
   "crates/alo-capability",
   "crates/alo-context",
   "crates/alo-dock",
+  "crates/alo-driving",
   "crates/alo-egress",
   "crates/alo-files",
   "crates/alo-keeping",

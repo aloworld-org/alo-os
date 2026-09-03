@@ -22,6 +22,8 @@
 
 mod address;
 pub mod catalogue;
+pub mod choosing;
+pub mod driving;
 pub mod ollama;
 pub mod provider;
 pub mod refusing;
@@ -35,7 +37,9 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
-pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model};
+pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model, OnCpu};
+pub use choosing::NoAgentHere;
+pub use driving::Driving;
 pub use ollama::Ollama;
 pub use provider::{Provider, ProviderError, Providers, SecretRef};
 pub use refusing::NotAllowed;

@@ -413,7 +413,41 @@ wrong language. Where a model in the catalogue misbehaves in a way that affects
 the agents, record it here with the exact model and quantisation — "it was fine
 for me" is usually a different quantisation.
 
-_(no entries yet)_
+### What `drives_verbs` measures, and the two things it does not say
+**Version:** `alo-driving` as of 2026-09-03. **Not run against any real model
+on any machine** — the fixed set, the scoring and the grade are built and unit
+tested, and every entry in `data/catalogue.toml` says `not-measured` because of
+it. Running it is owed alongside the rest of the hardware verification.
+**Behaviour:** the measurement puts ten requests to a model and scores each
+answer through `alo_protocol::FromAnAgent` and `alo_capability::Verbs::call` —
+the daemon's own door and the same validation a real turn does. Two consequences
+that a grade does not carry on its face.
+
+**It is asked in English.** The prompt is not a string a person reads, so it is
+not an `alo_strings::Word` and this crate declares no vocabulary; what follows
+is that a grade says how a model drives the verbs *when it is asked in English*.
+A model asked in Latvian may do worse, and nothing here would know. Measuring in
+twenty-four languages is a real question, it is a different one, and pretending
+the current grade answers it would be the kind of claim `Driving::NotMeasured`
+exists to prevent.
+
+**The envelope is part of what is measured.** A model has to produce the whole
+message — `{"format":1,"asks":{"read":{…}}}` — rather than a bare verb and
+arguments. That is deliberate: a lighter shape invented for the measurement
+would be a second parser for one syntax, which is the failure item 9g removed
+one level down. But a real agent composes the envelope around whatever its model
+emitted, so **a model wrapped by such an agent may drive the verbs better than
+its grade says**.
+
+**Our response:** both errors fall the same way — toward not giving a model the
+agent — which is the direction every other decision about this property takes,
+and a machine that refuses says so in words naming the two places ADR 0008
+leaves open rather than substituting one. Neither is worked around. Whoever
+raises the measurement's coverage changes the fixed set, and a changed set means
+every grade in the catalogue is stale: `alo_driving::THE_SET` is where that
+version lives, and it is a `&'static` array in the source so it cannot drift
+quietly.
+**Date:** 2026-09-03, iteration 42.
 
 ## Providers and their APIs
 

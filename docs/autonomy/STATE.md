@@ -4844,3 +4844,153 @@ inference failure into it would make the line report something it is not about.
   can produce one on demand without letting a real balance empty, so this is
   owed with the rest of the hardware verification and `docs/quirks.md` says so
   in the entry itself rather than in a note beside it.
+
+## 2026-09-03 — iteration 42: whether a model can drive the verbs, measured
+
+**Item 23 — the catalogue's last property, and the one that decides whether a
+machine hands somebody's files to a model.** `crates/alo-driving`, a **new
+crate**: `exercise.rs` (one request, the verb a correct answer calls, and the
+prompt built from the verbs' own declared words), `exercises.rs` (the fixed ten
+and the registry they are bound to), `attempt.rs` (what a model produced, and
+what became of it), `measured.rs` (a whole run, and the grade). `alo-models`:
+`driving.rs` (`Driving`), `choosing.rs` (`Catalogue::agent_for_cpu` and
+`NoAgentHere`), the required `drives_verbs` field, 4 new words, and
+`data/catalogue.toml` stating the grade on all twelve entries.
+`alo-capability`'s `Arg::purpose_as_written` became public, additively, so a
+prompt can be built from the declarations rather than from a second description.
+43 new tests — 25 unit in `alo-driving`, 4 integration through `alo-models`, 14
+in `alo-models`. **1417 tests and 43 doctests across the workspace** (was 1374
+and 43), `cargo fmt` clean, `cargo clippy --workspace --all-targets -- -D
+warnings` clean with zero warnings.
+
+Items 16b, 19b, 20 and 21c were read first and skipped for the reasons the queue
+gives. 23 was the last ready item in the file.
+
+### The hole in the item's own scoring rule, and closing it is the decision
+
+The item says to score *whether the call names a real verb and whether every
+argument survives `alo-capability`'s validation*. Both halves are right and
+together they are not enough: a model that answers `list_folder` with a valid
+path to all ten requests names a real verb every time and validates every time,
+and would grade as driving the verbs perfectly while being incapable of anything
+but listing a folder. So an exercise names **the** verb a correct answer calls,
+and `always_answering_with_one_valid_call_scores_nothing` is the test.
+
+Two more followed from reading it that way. **The door is part of the bar**: a
+change offered through the read door is a change that would run with nobody
+approving it, and `Authorised::read` refuses it, so a model that cannot tell
+ADR 0001 §5's two sides apart has not driven the verbs however well-formed its
+call is. And **the six outcomes are kept apart rather than summed**, because *it
+wrote prose*, *it invented a verb*, *it chose the wrong one*, *it used the wrong
+door* and *it sent an argument the machine will not take* are five problems with
+five different answers, and a percentage would tell whoever ran the measurement
+only that something was wrong.
+
+What the structural gate is *not* is weak. `Takes::Path` wants a full path with
+no `..` and no control characters, `Takes::Name` wants one name and not a
+journey, `Takes::Count` wants a number inside the verb's own range and
+`Takes::Choice` wants one of the options the verb wrote down — so a model
+answering `folder: "the invoices folder"` fails without anybody having written
+down a right answer. Argument *values* are deliberately not scored: that would
+measure how closely a model copied a sentence.
+
+### Scored through the daemon's own door, and what that costs
+
+An answer goes through `alo_protocol::FromAnAgent::read` and
+`alo_capability::Verbs::call`, which is exactly what happens to a real client's
+bytes inside a real turn, and this crate parses nothing. The alternative is what
+makes the decision: a lighter shape invented here — a verb name and a map — is a
+**second parser for one syntax**, which is the failure item 9g found and removed
+one level down, and the one nobody uses in production is the one the score would
+be about.
+
+The cost is written into `docs/quirks.md` rather than hidden. The envelope is
+part of what is measured, so a model wrapped by an agent that composes the
+envelope for it may drive the verbs better than its grade says. And the prompt
+is English, so a grade says how a model does *when it is asked in English* and
+nothing about Latvian. Both errors fall toward not giving a model the agent,
+which is the direction every other decision about this property takes.
+
+### The half the item did not contain: the catalogue we ship now offers no agent
+
+`Driving` had to have a fourth value, because this loop has no model to measure
+against and writing `reliably` beside twelve entries would have been the claim
+the whole item exists to prevent. `NotMeasured` is `Region::Unknown` one file
+over — *not a synonym for "probably fine"* — and it is a **required** field with
+no serde default, so an entry that says nothing fails to load and an entry that
+says *not measured* has stated something.
+
+What follows is real and is not a bug: **every entry says `not-measured`, so
+`Catalogue::agent_for_cpu` refuses on every machine.** The old `default_for_cpu`
+answered `Some(phi-3-mini)` on a 16 GB laptop and that answer was never earned.
+The refusal is `NoAgentHere::NoneMeasured`, which says nobody has measured rather
+than that the models failed — three variants, because *there was nothing to
+choose from*, *nobody measured what there was* and *what was measured is not good
+enough* send a person to three different places, and one sentence for all three
+would claim a measurement in the case where none was run. **23a** is in the queue
+under *blocked — hardware*, and a grade is a data change rather than a release.
+
+### Three decisions the next items inherit
+
+- **`default_for_cpu` is gone.** ADR 0007's own correction is that *default* was
+  the wrong word and that the wrong word did damage; the method that carried it
+  is `agent_for_cpu` and answers a `Result`, and *what this machine can run* is
+  `to_choose_from_on_cpu` beside it. Running a model and giving it the agent are
+  two questions, and that file conflating them is what the ADR names as the
+  error.
+- **A refusal that names an alternative hands back both lines or neither.**
+  `NoAgentHere::lines` answers `[Said; 2]` and there is no method that gives you
+  only the reason, so a screen cannot show somebody that their machine has no
+  agent without the two places that would still answer. It is `alo-egress`'
+  *permitted but not shown is not a state that exists*, applied to a refusal:
+  the guarantee is the shape of the return value rather than whoever draws the
+  panel remembering.
+- **A crate whose only reader is us declares no words**, and `alo-driving` is
+  the first. Nothing in it has a `Display` except two `thiserror` refusals of
+  our own fixed set and our own run, whose reader is whoever ran the
+  measurement — `CatalogueError`'s reader, and that crate's rule. The sentence a
+  person reads about any of this is `alo-models`', made where the refusal is
+  made.
+
+### What was considered and deliberately not done
+
+**The grade did not get words.** `CommercialUse` and `OnCpu` have none either,
+for the reason iteration 20 wrote down: they are enums a catalogue panel would
+label, nothing in this repository draws that panel, and inventing the English
+here would be inventing it in the wrong place. What *did* get words is the
+refusal, because a refusal is worded by whoever makes it (item 9e).
+
+**`alo-driving` asks nothing.** No client, no socket, not even behind a feature:
+it hands out a prompt and scores what comes back, and whoever runs it puts the
+prompt to a model through `alo-asking`. That is `alo-answering`'s argument one
+crate on — a promise about the absence of code is worth what the code around it
+is small enough to prove.
+
+### `ROADMAP.md` moved, and a missing line was written
+
+The v0.01 ★ promise *the catalogue says whether a model can drive the verbs* had
+**no line in `ROADMAP.md` at all** — another promise found with nowhere to be,
+and the rule at the top of that file says the finding goes here before the work
+does. It has a line now, with both boxes: the code half ticked and naming
+`alo-driving` and `alo-models`, the machine half saying outright that the
+measurement has never been run against a real model. *It runs on the machine you
+already own* had its code half written into as well, because `default_for_cpu`
+was that line's answer to *the system picks one* and it moved. No half was ticked
+that was not whole, and no machine half was touched.
+
+**What the next iteration must know:**
+
+- **There are no ready items left.** 23 was the last one. **16b** is not ready
+  by its own account, **19b** waits on Wayland, **20** and **21c** on a
+  long-lived process and a Unix socket, and **23a** is new and blocked on a
+  machine with a model on it. The next iteration writes `LOOP COMPLETE` with
+  that list unless somebody has added work.
+- **The shipped catalogue offers no machine a local agent**, and that is the
+  honest state rather than a regression to fix in code. Anything that reads
+  `agent_for_cpu` and finds it refusing has found the truth; the fix is 23a and
+  it is not this loop's.
+- **A changed `THE_SET` makes every grade in the catalogue stale.** The ten
+  exercises are what make two grades comparable, so raising the measurement's
+  coverage means re-measuring everything that was measured. `docs/quirks.md`
+  says so, and the set is a `&'static` array in the source so it cannot drift
+  quietly.

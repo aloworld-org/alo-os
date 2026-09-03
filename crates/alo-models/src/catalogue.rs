@@ -13,10 +13,19 @@
 //! explicit licence and an explicit commercial-use answer cannot be
 //! represented — [`Model`] has no default for either, and a catalogue missing
 //! one fails to load rather than loading with a blank.
+//!
+//! [`Driving`] is held to exactly that rule, one field further on, and for the
+//! reason ADR 0007's *since it was accepted* section gives: everything else
+//! here is about whether a model will **run**, and an entry that said nothing
+//! about whether it can **work** would be recommending a model that produces
+//! sentences and loses structure. Which model a machine actually gives the
+//! agent is [`crate::choosing`]; this file is the shape the entry has to have.
 
 use std::collections::BTreeSet;
 
 use serde::Deserialize;
+
+use crate::driving::Driving;
 
 /// The catalogue shipped with the system.
 ///
@@ -134,6 +143,11 @@ pub struct Model {
     pub min_ram_gb: f32,
     /// How it behaves with no graphics card.
     pub on_cpu: OnCpu,
+    /// **Whether it can drive the verbs**, measured rather than claimed
+    /// (ADR 0007). No serde default: an entry that does not state it fails to
+    /// load, and [`Driving::NotMeasured`] is how an entry states that nobody
+    /// has run the measurement yet.
+    pub drives_verbs: Driving,
     /// The licence, which every entry must state.
     pub licence: Licence,
     /// Where the weights come from. We never redistribute them
@@ -151,6 +165,17 @@ impl Model {
     #[must_use]
     pub fn safe_default_for_business(&self) -> bool {
         self.licence.commercial_use == CommercialUse::Permitted
+    }
+
+    /// Whether this model may be given the agent at all.
+    ///
+    /// Only a model measured driving the verbs dependably
+    /// ([`Driving::clears_the_bar`]). Whether it also *runs* on a particular
+    /// machine, and whether its licence lets an organisation rely on it, are
+    /// the other two questions — [`Catalogue::agent_for_cpu`] asks all three.
+    #[must_use]
+    pub fn can_be_the_agent(&self) -> bool {
+        self.drives_verbs.clears_the_bar()
     }
 }
 
@@ -263,24 +288,20 @@ impl Catalogue {
             .collect()
     }
 
-    /// What to run on a machine with no graphics card: the largest model that
-    /// still answers without making a person wait, that they may use
-    /// commercially, and that fits in the memory they have.
+    /// The models this machine could give the agent, before the bar is applied:
+    /// they run here, and they may be used without reading a licence first.
     ///
-    /// Comfortable before workable, then larger before smaller. A model that
-    /// answers slowly is not a better default for being cleverer: an agent turn
-    /// makes several calls, and the waiting multiplies.
+    /// The public answer to *which one* is
+    /// [`agent_for_cpu`](Catalogue::agent_for_cpu), in [`crate::choosing`],
+    /// which is where the third question — has it been measured driving the
+    /// verbs — is asked and where a refusal that names the alternatives is
+    /// made.
     #[must_use]
-    pub fn default_for_cpu(&self, ram_gb: f32) -> Option<&Model> {
+    pub fn to_choose_from_on_cpu(&self, ram_gb: f32) -> Vec<&Model> {
         self.runnable_on_cpu(ram_gb)
             .into_iter()
             .filter(|m| m.safe_default_for_business())
-            .max_by(|a, b| {
-                let rank = |m: &Model| u8::from(m.on_cpu == OnCpu::Comfortable);
-                rank(a)
-                    .cmp(&rank(b))
-                    .then(a.parameters_b.total_cmp(&b.parameters_b))
-            })
+            .collect()
     }
 }
 
@@ -339,6 +360,7 @@ download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
+drives_verbs = "reliably"
 upstream = "https://example.test/one"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -352,6 +374,7 @@ download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
+drives_verbs = "reliably"
 upstream = "https://example.test/two"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -377,6 +400,7 @@ download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
+drives_verbs = "reliably"
 upstream = "https://example.test/vague"
 licence = { name = "Custom Community Licence", commercial_use = "with-conditions" }
 "#;
@@ -399,6 +423,7 @@ download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
+drives_verbs = "reliably"
 upstream = "   "
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -408,22 +433,27 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
         ));
     }
 
-    /// ADR 0007: the CPU is the default, so the catalogue must be able to
-    /// answer "what runs on this laptop" and not only "what runs on a card".
+    /// ADR 0007: a machine with no graphics card is a machine this catalogue
+    /// has to be able to answer for, so there is something for it to **run**.
+    ///
+    /// Whether any of it may be given the **agent** is a second question, and
+    /// it is `crate::choosing`'s — a model that runs and cannot produce a verb
+    /// call is exactly what this catalogue used to recommend.
     #[test]
-    fn a_machine_with_no_graphics_card_is_offered_something() {
+    fn a_machine_with_no_graphics_card_has_something_it_can_run() {
         let c = Catalogue::built_in().unwrap();
         // 16 GB is an ordinary business laptop, which is the machine this
         // product exists to reach.
-        let chosen = c.default_for_cpu(16.0);
+        let runs = c.runnable_on_cpu(16.0);
+        assert!(!runs.is_empty(), "a laptop with no card must have a model");
+        for m in &runs {
+            assert!(m.min_ram_gb <= 16.0, "{}", m.id);
+            assert_ne!(m.on_cpu, OnCpu::Slow, "{}", m.id);
+        }
         assert!(
-            chosen.is_some(),
-            "a laptop with no card must have a default to run"
+            !c.to_choose_from_on_cpu(16.0).is_empty(),
+            "and one of them must be usable without reading a licence first"
         );
-        let chosen = chosen.unwrap();
-        assert_eq!(chosen.on_cpu, OnCpu::Comfortable, "{}", chosen.id);
-        assert!(chosen.safe_default_for_business(), "{}", chosen.id);
-        assert!(chosen.min_ram_gb <= 16.0, "{}", chosen.id);
     }
 
     /// A model nobody should wait on is not offered as a CPU default, however
@@ -436,34 +466,90 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
         }
     }
 
-    /// A small machine gets a smaller model rather than nothing, and never one
-    /// that will not fit in its memory.
+    /// A small machine has something smaller to run rather than nothing, and
+    /// never one that will not fit in its memory.
     #[test]
-    fn a_smaller_machine_is_offered_a_smaller_model() {
+    fn a_smaller_machine_has_a_smaller_model() {
         let c = Catalogue::built_in().unwrap();
-        let small = c.default_for_cpu(4.0);
-        let large = c.default_for_cpu(32.0);
-        assert!(small.is_some(), "even 4 GB must be offered something");
+        assert!(
+            !c.to_choose_from_on_cpu(4.0).is_empty(),
+            "even 4 GB must have something"
+        );
         for m in c.runnable_on_cpu(4.0) {
             assert!(m.min_ram_gb <= 4.0, "{} does not fit in 4 GB", m.id);
         }
-        // More memory should not produce a *smaller* default.
-        if let (Some(s), Some(l)) = (small, large) {
-            assert!(l.parameters_b >= s.parameters_b, "{} vs {}", l.id, s.id);
-        }
+        // More memory never removes a choice a smaller machine had.
+        assert!(c.to_choose_from_on_cpu(32.0).len() >= c.to_choose_from_on_cpu(4.0).len());
     }
 
-    /// The commercial gate applies to the CPU default too: a machine with no
-    /// card must not be quietly handed the one model an organisation may not
-    /// use.
+    /// The commercial gate applies before the agent question is even asked: a
+    /// machine with no card must not be quietly handed the one model an
+    /// organisation may not use.
     #[test]
-    fn the_cpu_default_is_still_licence_gated() {
+    fn what_there_is_to_choose_from_is_licence_gated() {
         let c = Catalogue::built_in().unwrap();
-        if let Some(m) = c.default_for_cpu(16.0) {
+        for m in c.to_choose_from_on_cpu(16.0) {
             assert_eq!(
                 m.licence.commercial_use,
                 CommercialUse::Permitted,
                 "{}",
+                m.id
+            );
+        }
+    }
+
+    /// **Every entry states whether it can drive the verbs, and an entry that
+    /// does not fails to load.** ADR 0007's *measured rather than claimed*, as
+    /// a refusal rather than as a convention — the shape `licence` has had
+    /// since this file was written.
+    #[test]
+    fn an_entry_that_does_not_say_whether_it_drives_the_verbs_is_refused() {
+        let silent = r#"
+[[model]]
+id = "silent"
+name = "Silent"
+publisher = "p"
+parameters_b = 7.0
+quantisation = "Q4_K_M"
+download_bytes = 1
+min_vram_gb = 8.0
+min_ram_gb = 10.0
+on_cpu = "workable"
+upstream = "https://example.test/silent"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+"#;
+        assert!(matches!(
+            Catalogue::parse(silent),
+            Err(CatalogueError::Malformed(_))
+        ));
+        assert!(
+            Catalogue::parse(&silent.replace(
+                "on_cpu = \"workable\"",
+                "on_cpu = \"workable\"\ndrives_verbs = \"invented\""
+            ))
+            .is_err(),
+            "a grade nobody defined is not a grade"
+        );
+        assert!(
+            Catalogue::built_in()
+                .unwrap()
+                .models
+                .iter()
+                .all(|m| !m.can_be_the_agent() || m.drives_verbs.has_been_measured())
+        );
+    }
+
+    /// **Nothing in the catalogue we ship claims a measurement nobody ran.**
+    /// This loop has no model to measure against, so every entry states
+    /// `not-measured` — and the moment one of them claims otherwise, whoever
+    /// changed it has to have run `alo-driving` and to change this test.
+    #[test]
+    fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
+        for m in Catalogue::built_in().unwrap().models {
+            assert_eq!(
+                m.drives_verbs,
+                Driving::NotMeasured,
+                "{} claims a grade; was it measured?",
                 m.id
             );
         }

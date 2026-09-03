@@ -48,6 +48,15 @@
 //! catalogue as data, and translating a licence's name would be inventing one.
 //! They are held to the rule a filename is held to in `alo-files`: shown as
 //! they were written, never reworded.
+//!
+//! [`crate::CommercialUse`], [`crate::catalogue::OnCpu`] and
+//! [`crate::Driving`] have no words here either, and that is the same
+//! decision rather than three oversights. They are enums a catalogue panel
+//! would label; nothing in this repository draws that panel yet, so there is no
+//! English to move, and whoever builds it declares those words rather than
+//! having them invented here. What *is* here is the sentence a person is shown
+//! when a machine has no model to give the agent — because that is a refusal
+//! this crate makes, and a refusal is worded by whoever makes it (item 9e).
 
 use alo_strings::Vocabulary;
 
@@ -136,6 +145,69 @@ pub const NOT_ON_THIS_MACHINE: Word = Word::saying(
     "this machine is set to answer only on itself, and {source} is somewhere else",
 )
 .noting("{source} arrives already in the reader's language.");
+
+// ---------------------------------------------------------------------------
+// No model on this machine can be given the agent — [`crate::NoAgentHere`].
+//
+// Read at setup, by somebody who has just been told the thing they came for is
+// not available on the machine in front of them. Each says which of the three
+// reasons it is, and each is shown with [`THE_OTHER_PLACES`] under it — there
+// is no road to one of these sentences that does not carry that one with it,
+// because a refusal that named no alternative is how a silent substitution
+// starts looking reasonable (ADR 0008).
+// ---------------------------------------------------------------------------
+
+/// Nothing in the catalogue is a candidate on this machine at all.
+pub const NOTHING_TO_CHOOSE_FROM: Word = Word::saying(
+    "models.agent.nothing-to-choose-from",
+    "no model in this catalogue both runs on this machine and can be used without reading a \
+     licence first",
+)
+.noting(
+    "Two conditions in one sentence because both are true at once and the next step is the same \
+     either way: either nothing fits this machine's memory, or everything that fits carries \
+     licence conditions somebody has to read before an organisation relies on it. \"Runs on this \
+     machine\" means with no graphics card, in the memory it has.",
+);
+
+/// Models run here, and the measurement has not been made on any of them.
+pub const NONE_MEASURED: Word = Word::saying(
+    "models.agent.none-measured",
+    "no model that runs on this machine has been measured driving the verbs, so alo OS will not \
+     give one the agent",
+)
+.noting(
+    "This is not a verdict on those models — nobody has run the measurement on them, and saying \
+     so plainly is the point of the line. \"Driving the verbs\" is a model producing the typed \
+     instruction an agent turn asks it for, several times over; a model that cannot do that is \
+     safe and useless. Do not soften it into \"might not work\".",
+);
+
+/// Models run here, they have been measured, and none is dependable enough.
+pub const NONE_CLEARS_THE_BAR: Word = Word::saying(
+    "models.agent.none-clears-the-bar",
+    "the models that run on this machine do not produce a workable instruction often enough to be \
+     given the agent",
+)
+.noting(
+    "Said after a measurement, where the previous line is said when there has not been one, and a \
+     translation that made the two sound alike would hide which of them happened. \"Instruction\" \
+     is the typed call an agent turn asks a model for. How many run and how many were measured are \
+     numbers shown beside this line rather than inside it.",
+);
+
+/// The two places that are still open, named and not chosen between.
+pub const THE_OTHER_PLACES: Word = Word::saying(
+    "models.agent.elsewhere",
+    "you can use a model on a machine you have paired with on your network, or a provider you \
+     add — whichever you prefer, and alo OS will not choose for you",
+)
+.noting(
+    "A second line, shown under whichever of the three refusals was made and never on its own. It \
+     names both alternatives and picks neither, on purpose: quietly substituting one is exactly \
+     what ADR 0008 forbids. Do not drop either half, and do not reorder them into a \
+     recommendation.",
+);
 
 // ---------------------------------------------------------------------------
 // A provider somebody was adding — [`crate::ProviderError`].
@@ -405,7 +477,7 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 30] = [
+pub const EVERY_WORD: [Word; 34] = [
     ON_THIS_MACHINE,
     ON_A_PAIRED_MACHINE,
     BY_A_PROVIDER,
@@ -413,6 +485,10 @@ pub const EVERY_WORD: [Word; 30] = [
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
     NOT_ON_THIS_MACHINE,
+    NOTHING_TO_CHOOSE_FROM,
+    NONE_MEASURED,
+    NONE_CLEARS_THE_BAR,
+    THE_OTHER_PLACES,
     PROVIDER_UNNAMED,
     NOT_AN_ADDRESS,
     INSECURE_ENDPOINT,

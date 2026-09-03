@@ -82,6 +82,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-driving"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+ "alo-capability",
+ "alo-files",
+ "alo-models",
+ "alo-protocol",
+ "alo-strings",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-egress"
 version = "0.0.1"
 dependencies = [

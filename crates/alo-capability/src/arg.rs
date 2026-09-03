@@ -424,9 +424,16 @@ impl Arg {
         self.purpose.key()
     }
 
-    /// The purpose as the verb declared it, for the checks made where a verb is
-    /// declared.
-    pub(crate) fn purpose_as_written(&self) -> &'static str {
+    /// What it is for, in the language the code is written in.
+    ///
+    /// The source, in the sense `alo-strings` means it: the sentence somebody
+    /// translates. [`Verb::purpose_as_written`](crate::Verb::purpose_as_written)
+    /// is its twin one level up, and the two exist for the same two readers —
+    /// the checks made where a verb is declared, and anything describing the
+    /// verbs to something that is not a person. A shell shows
+    /// [`Arg::purpose`], which says whether anybody has translated it.
+    #[must_use]
+    pub fn purpose_as_written(&self) -> &'static str {
         self.purpose.says()
     }
 

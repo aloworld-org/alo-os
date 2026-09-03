@@ -140,11 +140,40 @@ compositor is not required for, which is why it runs unbroken.
         `alo-models`' catalogue — `OnCpu` as a stated property of each model
         rather than a footnote, `runnable_on_cpu(ram_gb)` and
         `runnable_with_vram`, so the answer to *what can this machine
-        actually run* is asked of the machine rather than assumed
+        actually run* is asked of the machine rather than assumed. Since
+        item 23 *what runs here* and *what gets the agent* are two methods
+        rather than one: `default_for_cpu` is gone, because ADR 0007's own
+        correction is that **"default" was the wrong word**, and the
+        recommendation lives on the line below
   - [ ] **On the machine.**
         the setup screen that asks it on somebody's behalf, and a real
         measurement — *comfortable* is a judgement in a table until a model
         has run on a machine without a GPU
+
+- [ ] ★ **The catalogue says whether a model can drive the verbs**, not only
+      whether it will run — measured by us, never claimed by the publisher
+      (ADR 0007, as corrected). And a machine is only offered agent work it can
+      actually do: where nothing clears the bar, the honest answers are the ones
+      ADR 0008 already provides, offered as a choice and never substituted
+  - [x] **The code.**
+        `alo-driving`, a new crate — the fixed set of ten requests, one per
+        verb alo OS ships, each scored through `alo_protocol::FromAnAgent`
+        and `alo_capability::Verbs::call`, which is the daemon's own door and
+        the same validation a real turn does rather than a second reader
+        written for a test. A run that skipped an exercise is refused, and the
+        bar is nine attempts in ten. And `alo-models`, where the grade lives
+        and is read: `Driving` as a stated property every entry must answer —
+        `NotMeasured` is an answer and is `Region::Unknown` one file over —
+        `Catalogue::agent_for_cpu`, and `NoAgentHere`, whose only road to a
+        sentence hands back **two** lines so a machine cannot show somebody
+        the refusal without the two places that would still answer
+  - [ ] **On the machine.**
+        **it has never been run against a real model**, on any machine, so
+        every entry in the catalogue says `not-measured` and no machine
+        offers a local model the agent yet — which is the honest state and
+        not a failing one, and a grade is a data change rather than a
+        release. Plus the setup screen that shows the refusal and its two
+        alternatives without choosing between them
 
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
       machine, from a machine on your network, or from a provider you named, and

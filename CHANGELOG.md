@@ -12,6 +12,36 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The catalogue now says whether a model can actually work as your agent, not
+  only whether it will run — and it stops recommending ones nobody has
+  checked.** Every entry used to answer *how big is it*, *how much memory does
+  it need*, *how does it behave without a graphics card* and *what may I legally
+  do with it*: everything about running, and nothing about working. But an agent
+  turn asks a model for a precise, typed instruction several times over, and
+  that is the thing small models are worst at. Sentences they manage; structure
+  they lose. A model that answers beautifully on your laptop and cannot produce
+  one workable instruction is useless as an agent, and until now your machine
+  would have handed it your files.
+
+  So an entry states that too, and **it is a measurement rather than an
+  opinion.** Ten fixed requests are put to the model — one for each thing an
+  agent on alo OS can do — and each answer goes through exactly the door and the
+  checks a real request from a real agent goes through. Nine in ten, and the
+  model may be your agent. Fewer, and it may not.
+
+  **Which means your machine currently offers you no local agent, and says so
+  plainly.** Nobody has run the measurement against a real model yet, so every
+  model in the catalogue says *not measured* — and *not measured* is not treated
+  as *probably fine*. Rather than recommending one and hoping, your machine
+  tells you no model on it has been measured, that this is not a verdict on
+  those models, and that you can use a machine you have paired with on your
+  network or a provider you add. It names both and chooses neither: there is no
+  path in which it quietly starts sending your questions somewhere else.
+
+  Nothing is taken away. Every model in the catalogue still runs, still
+  downloads, still answers questions. What changed is that your machine no
+  longer *recommends* one for a job it has never been checked at.
+
 - **Running out of credit now says so, instead of telling you your key is
   wrong.** A provider that answers *payment required*, or that has stopped
   serving an account with nothing left in it, used to reach you as one of two

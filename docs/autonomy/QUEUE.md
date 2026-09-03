@@ -37,8 +37,16 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
-`crates/alo-turn`, `crates/alo-protocol` and `crates/alo-strings` were built by
-the loop and are described in the items below. **`alo-protocol` is the only one
+`crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings` and
+`crates/alo-driving` were built by
+the loop and are described in the items below. **`alo-driving` is the only one
+nothing on a machine ever reads**: it measures whether a model can produce a
+verb call, it is run by whoever adds a catalogue entry, and what ships is the
+grade they wrote down. It is also the only crate that reaches `alo-protocol` —
+a model's answer is scored through the daemon's own door rather than through a
+reader written for a test — and the only one that says nothing to anybody, since
+the sentence a person reads about it is `alo-models`' `NoAgentHere` and is made
+where the refusal is made. **`alo-protocol` is the only one
 that is a boundary rather than a decision**: since item 21a it is where bytes
 somebody else wrote become a request or are refused, it reaches `alo-capability`
 for the one type in this workspace whose job is being read off a socket, and
@@ -1946,24 +1954,57 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   letting a real balance empty — which is owed with the rest of the hardware
   verification and is written into `docs/quirks.md` as such.
 
-- [ ] **23. A catalogue entry says whether the model can drive the verbs.** The
-  catalogue records `parameters_b`, `min_ram_gb`, `on_cpu` and `licence` — all of
-  it about whether a model will *run*, none of it about whether it can *work*. An
-  agent turn asks for a typed verb call with valid arguments several times over,
-  and that is what small models fail at: they manage sentences and lose
-  structure. **A model that runs beautifully on a laptop and cannot emit a valid
-  call is useless as an agent, and this catalogue would recommend it.**
+- [x] **23. A catalogue entry says whether the model can drive the verbs** —
+  implements **ADR 0007**'s *since it was accepted* section and
+  `docs/features.md`'s three v0.01 lines about it. `crates/alo-driving`, a
+  **new crate**: `exercise.rs` (one request, the verb a correct answer calls,
+  and the prompt), `exercises.rs` (the fixed ten and the registry they are bound
+  to), `attempt.rs` (what a model produced, and what became of it),
+  `measured.rs` (a whole run and the grade it earns). `crates/alo-models`:
+  `driving.rs` (`Driving` — the grade every entry must state) and `choosing.rs`
+  (`Catalogue::agent_for_cpu` and `NoAgentHere`), plus 4 new words and the field
+  itself. `alo-capability`'s `Arg::purpose_as_written` became public, additively,
+  to match `Verb`'s. 43 new tests — 25 in `alo-driving`, 4 in its integration
+  test through `alo-models`, 14 in `alo-models`. **1417 tests and 43 doctests
+  across the workspace** (was 1374 and 43), clippy clean.
 
-  Add the property, and make it **measured rather than claimed** — the honesty
-  `OnCpu` already applies to speed. The measurement is a fixed set of verb calls
-  a model is asked to produce, scored on whether the call names a real verb and
-  whether every argument survives `alo-capability`'s validation, which is the
-  same gate a real turn puts it through.
+  **The item's own scoring rule had a hole, and closing it is the decision.**
+  *Whether the call names a real verb and whether every argument survives
+  validation* is cleared by a model that answers `list_folder` to all ten
+  requests, so an exercise names **the** verb a correct answer calls and there
+  is a test that a model repeating one valid call scores one in ten. Two more
+  followed from the same reading: the **door** is part of the bar, because a
+  change offered as a read is a change nobody would approve and a turn refuses
+  it; and the six outcomes are kept apart rather than summed, because *it wrote
+  prose*, *it invented a verb*, *it chose the wrong one*, *it used the wrong
+  door* and *it sent an unusable argument* are five problems with five answers.
 
-  ADR 0007's *since it was accepted* section is what this implements. Tests: an
-  entry cannot be built without stating it; a model below the bar is not offered
-  for agent work on a machine, and the refusal names the alternatives ADR 0008
-  already provides rather than substituting one.
+  **An answer is scored through the daemon's own door**, `FromAnAgent::read`
+  and `Verbs::call`, and this crate parses nothing. A lighter shape invented for
+  the measurement would be a second parser for one syntax — item 9g's failure
+  one level down — and the cost of the real one is written into `docs/quirks.md`
+  rather than hidden: the envelope is part of what is measured, so a model whose
+  agent composes the envelope for it may do better than its grade says. The
+  prompt is in English, which is the same kind of limit and is recorded beside
+  it. Both errors fall toward not giving a model the agent.
+
+  Three decisions the next items inherit. **`Driving::NotMeasured` is
+  `Region::Unknown` one file over** — a required field with no serde default, so
+  an entry that says nothing fails to load, and *nobody measured this* is never
+  read as *probably fine*. **`default_for_cpu` is gone**, renamed
+  `agent_for_cpu` and returning a refusal: ADR 0007's own correction is that
+  *default* was the wrong word, and *what runs here* is now
+  `to_choose_from_on_cpu` beside it. **A refusal that names an alternative hands
+  back both lines or neither** — `NoAgentHere::lines` is the only road to the
+  sentence, so no screen can show somebody that their machine has no agent
+  without the two places ADR 0008 leaves open, and nothing in `alo-models`
+  answers with an `InferenceSource` at all.
+
+  Built and unit tested. **The measurement has never been run against a real
+  model**, on any machine, so every entry in `data/catalogue.toml` says
+  `not-measured` and the shipped catalogue offers no machine a local agent —
+  which is owed with the rest of the hardware verification and is item 23a
+  below.
 
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
@@ -2041,6 +2082,17 @@ rather than only of what is convenient.
 - **The workspace client running as an application on the shell.**
 
 ## Blocked — hardware
+
+- **23a. The measurement, run against real models.** What item 23 could not
+  close: `alo-driving` puts ten fixed requests to a model and scores what comes
+  back, and nothing has ever put one to a model that exists. Until somebody
+  does, every entry in `data/catalogue.toml` says `not-measured` and no machine
+  offers a local model the agent — the honest state, and a bad product until it
+  is answered. It needs a machine with a model on it, which is the same
+  blocker the entry below has; a CPU-only run would close most of it. What it
+  produces is a data change rather than a release: a grade per entry, and the
+  test `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` updated by
+  whoever ran it.
 
 - **The model stack against a real Ollama.** Ticked in `ROADMAP.md` as built and
   tested, with this verification owed. A CPU-only run would close most of it and
