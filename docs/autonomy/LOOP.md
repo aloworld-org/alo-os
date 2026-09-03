@@ -96,6 +96,36 @@ more than one that invents a way past a problem nobody has looked at.
 - **Never touch another repository.** Items that belong to `alo-workplace` are
   marked as such and are not this loop's to do.
 
+## Linux is reachable, and some items need it
+
+This loop runs on Windows, and a few v0.01 items cannot be built there — a Unix
+socket's peer credentials being the one that stopped it. **That is no longer a
+blocker: the machine has Ubuntu in WSL2, and it can build this very checkout.**
+
+```
+wsl -d Ubuntu -u root -- bash -c '
+  export PATH=/root/.cargo/bin:$PATH
+  cd /mnt/c/dev/alo-os
+  CARGO_TARGET_DIR=/root/alo-os-target cargo test -p <crate>
+'
+```
+
+Three things about it, all measured rather than assumed:
+
+- **It is the same working tree.** `/mnt/c/dev/alo-os` is this checkout, so an
+  edit made on Windows is compiled by Linux with no copying and nothing to keep
+  in step.
+- **`CARGO_TARGET_DIR` is separate on purpose.** Linux and Windows artefacts in
+  one `target/` invalidate each other constantly; two directories cost disk and
+  save the whole build every time you switch.
+- **It is fast enough** — a single crate checks in about seven seconds across
+  the filesystem boundary.
+
+**Use it for the Linux half and nothing else.** An item that builds on Windows
+is built and gated on Windows; reaching for WSL by habit would mean the ordinary
+path stops being tested. And an item that needs Linux says so in the queue, with
+the reason, so nobody has to guess which is which.
+
 ## Where things are
 
 | | |

@@ -5060,4 +5060,4 @@ an iteration that built nothing is an iteration that says so.
   would make it ready is a decision rather than a machine — but the decision
   wants the discovery code in front of it, and that code is Linux.
 
-LOOP COMPLETE
+- `LOOP COMPLETE` — written by that iteration and **discharged**: item 21c's Linux blocker was measured and answered (WSL2, kernel 6.6, `SO_PEERCRED` confirmed working), so the queue has buildable work again. Kept behind a bullet as a record rather than a signal.
