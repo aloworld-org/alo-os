@@ -1,0 +1,27 @@
+[package]
+name = "alo-answering"
+version = "0.0.1"
+description = "What happens when the place a question was to be answered cannot answer — and why alo OS never asks somewhere else on its own."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Two things are missing here on purpose, and both are guarantees rather than
+# omissions. There is **no serde**, so an approval to ask somewhere else cannot
+# be read back off a disk — it is given by a person at the moment, or it does
+# not exist. And there is **nothing that can reach anywhere**: no HTTP client,
+# no socket, no runtime. The crate that decides where a failed question may go
+# next cannot itself go there. See `lib.rs`.
+[dependencies]
+alo-models = { path = "../alo-models" }
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+alo-capability = { path = "../alo-capability" }
+alo-egress = { path = "../alo-egress" }
+alo-record = { path = "../alo-record" }
+
+[lints]
+workspace = true

@@ -2904,3 +2904,162 @@ this repository say something untrue in twenty-four languages.
   German and the Greek in the tests are the tests'. `ROADMAP.md`'s dock line
   gains a *Built* clause naming `alo-dock` and stays unticked, because a layout
   model is not a dock until something draws it.
+
+## 2026-09-03 — iteration 28: what happens when the model does not answer
+
+**Built: item 14, *never a silent fallback*** — the second iteration running
+whose work was already a ready item in the queue, because iteration 27 put it
+there and deliberately did not build it. The reading step was therefore short
+and went to ADR 0008 rather than to the queue: the item named one decision to
+make before writing anything, and the ADR answers it in a paragraph headed
+*Alternatives rejected*.
+
+`crates/alo-answering`, a **new crate**.
+
+| | |
+|---|---|
+| `answering.rs` | The only type meaning *this question may be answered here*, and the two doors into it |
+| `wrong.rs` | What can go wrong where a question was put, and what cannot go wrong there |
+| `failed.rs` | It did not answer: what a person reads, and the one door out |
+| `elsewhere.rs` | Where else this machine may ask, and the doors a rule has closed |
+| `offer.rs` | One place that could be asked instead, and the sentence a person approves |
+| `refusing.rs` | An offer that was not this failure's, carrying the failure back |
+| `words.rs` | 12 phrases, the English beside each key, and a note on every one |
+| `testing.rs` | The places, the failures and the vocabularies the other files' tests are written against |
+
+**The gate:** `cargo fmt --all --check` clean, `cargo clippy --workspace
+--all-targets -- -D warnings` zero warnings and zero errors, `cargo doc
+--workspace --no-deps` clean. 40 unit tests, 10 integration tests — 6 against
+the real vocabulary in Greek and Estonian, 4 through `alo-egress` and into
+`alo-record` — and 3 doctests, two of them `compile_fail`. The workspace is
+**1055 tests and 28 doctests** (was 976 and 25), all green. `CHANGELOG.md`,
+`QUEUE.md` and `ROADMAP.md` in the same change.
+
+**The decision the item asked for, and it is not a close call once ADR 0008 is
+read properly.** *Asking somewhere else* could have been a setting a person
+turns on in advance — *when the local model fails, use my provider* — or a
+thing they are asked at the moment. It is the second, and the reason is that
+the first **is** the thing ADR 0008 rejects, with a checkbox in front of it.
+
+The objection in that ADR was never that alo OS would choose badly. It is that
+*the person is not there*: their records leave the building at the moment of a
+failure they never saw. A box ticked in March cannot make somebody present in
+June, so a setting would satisfy the letter of *the person decided* while
+losing every part of it that matters. What is built instead is ADR 0001 §5's
+shape — one sentence, one approval, one attempt, and an approval is never a
+session — carried to a place §5 does not itself reach, since §5 binds an agent
+changing this machine and a person's question is not that.
+
+**And the shape is borrowed without the machinery, which is written down rather
+than left to look like an oversight.** An offer is not an
+`alo_capability::Proposal`. Making one would mean declaring a verb whose
+argument is somebody's own question — putting the thing ADR 0001 §4 keeps *out*
+of the capability model inside it, in order to reuse an approval list. There is
+no verb here, no grant and no path, and `offer.rs` says so at the top.
+
+**Why a crate of its own rather than four more files in `alo-models`.** The
+promise is about the **absence** of code: nothing ever asks a second place on
+its own. A promise like that is worth exactly what the code around it is small
+enough to prove, and `alo-models` carries `ureq` and a TLS stack — a fallback
+in it would be one line in one function, and a reviewer would have to read the
+whole crate to know there wasn't one. `alo-answering` has **no HTTP client, no
+socket, and no serde**, so *the crate that decides where a failed question may
+go next cannot itself go there* is checkable from `Cargo.toml`. That is
+`alo-keeping`'s argument about `alo-record`, made about a second attempt rather
+than about deleting evidence, and it is the third time this repository has
+reached for it.
+
+**What the item did not contain, and is the reason the words took as long as
+the types.** Three offer sentences rather than one. *Nothing leaves*, *it
+leaves this machine and stays on your network* and *it leaves the building* are
+three different facts about somebody's records, and the offer is the one
+sentence in the crate a person acts on — so where the question would go is
+inside the sentence being approved rather than a label beside it. That is
+`alo-egress`' item 9h decision (one whole sentence per reason, the preposition
+inside it where a translator can move it) met from a fourth side, and `words.rs`
+has the test that walks all three.
+
+The other half of the words is a line that is always shown: **nothing was sent
+anywhere, and nothing will be unless you say so**. It is shown whether or not
+there is anywhere else to ask, because a person who has just watched a question
+fail has no way of knowing their records did not go somewhere to be answered —
+and a promise nobody is told about is not a feature. `Failed::nothing_was_sent`
+is the whole of ADR 0008 in one sentence, and the note tells a translator that
+shortening it to *nothing was sent* drops the half that is about the future.
+
+**A hole found on the way, closed where it had to be and written down where it
+did not.** Every sentence in this crate has a `{source}` in it, and
+`InferenceSource::shown` answered a `String` — so filling that gap with
+`Filling::of` would have made a German offer with an English clause in it
+answer `Said::is_translated` with `true`. That is item 11a's whole failure mode,
+arriving through a gap. So `InferenceSource::said` is new in `alo-models`
+(additive; `shown` is now `said(…).into_text()`, one rendering rather than
+two), `NotAllowed::said` was fixed with it and has a test of its own, and
+everything here fills the gap with `Filling::and_said`. **The rest of the
+workspace has the same hole in eight places** — `alo-capability`,
+`alo-context`, `alo-egress`, `alo-shortcuts` — and that is **item 15**, written
+into the queue with the list and with which two to do first. Fixing them here
+would have been a second item in one iteration.
+
+**Three smaller ones worth keeping.**
+
+- **`Failed` is not `Clone`**, which `alo_capability::Approved` settled and this
+  crate nearly got wrong: the first draft derived it, and a clone is a second
+  way to take an offer from one failure — so *one failure, at most one attempt
+  elsewhere* would have held only for callers who did not think of it. Both
+  `compile_fail` doctests were checked by unmarking them and reading the error;
+  both fail with **E0382, use of moved value**, so neither is a test of a typo.
+- **This crate holds no text anybody outside this repository wrote.** Not the
+  question, not a model's name, not what a provider said about itself. The
+  tempting variant is *what the provider said*, which would make the most
+  useful-looking failure line in the product and would be somebody else's
+  service composing a sentence that arrives wearing alo OS's voice. `WentWrong`
+  carries one `u16` and nothing else, so every sentence here is one alo OS
+  wrote. It is also why `NoModelThere` does not name the model: a name that
+  could not be shown would have had to be refused, and a genuine failure that
+  became an error would leave the person with nothing at all.
+- **A reason has to be possible where it is said to have happened.**
+  `WentWrong::KeyNotAccepted` is refused on this machine and on a paired one,
+  because neither is ever given a key — and *the key for this provider was not
+  accepted* about somebody's own machine would send them looking for a key that
+  does not exist, which is precisely the confusion `alo-models`' *needs a key*
+  and *key not accepted* pair was written to prevent. It is refused where the
+  failure is **reported** rather than corrected where it is shown, and
+  `NotWhatFailed` keeps its English and its `Display` because its reader is
+  whoever wrote the adapter.
+
+**What the next iteration must know:**
+
+- **The queue has a ready item again: 15, the sweep onto `Filling::and_said`.**
+  Found by this iteration and deliberately not finished — one item per
+  iteration — with the eight sites listed. It is a public surface change in
+  every crate it touches and additive in all of them; `alo-models`' `source.rs`
+  and `alo-answering`'s `offer.rs` are the worked example, and the two egress
+  ones come first because that line is what law 1 shows a person while
+  something is leaving.
+- **★ *No telemetry* still has no item anywhere**, and this is the second
+  iteration to say so. It is the fifth v0.01 promise this journal has watched go
+  unlisted. Whoever reads next should decide whether its portable half is a rule
+  in `alo-egress` or whether all of it is the daemon's, and **write the answer
+  down either way** — a queue entry saying *it is the daemon's* is worth as much
+  as the crate would be.
+- **The roadmap had no line for this promise**, which is the queue's own gap
+  arriving one file further out. Rather than adding an unticked line — the move
+  iteration 26 warned about — the *Built/Owed* clause went onto **Agents point
+  at the local model by default**, and that line now says outright that it
+  carries a ★ promise with none of its own. A default is only a sovereignty
+  guarantee if it cannot quietly un-point itself, so the two belong together;
+  the reason it went there rather than onto a line of its own is written here so
+  nobody has to guess.
+- **Nothing in this repository can ask a model anything.**
+  `alo_models::ModelRuntime` fetches, lists, loads, unloads and removes, and has
+  no method that puts a question. That is not this crate's gap — it is why this
+  crate exists now rather than later: the decision about what happens when the
+  answer does not come had to be settled *before* something was written that
+  asks, because a fallback is not designed, it is written into the asking by
+  accident on a Thursday.
+- **Nothing here has failed for real**, and none of it has been read by anybody.
+  There is no daemon, no runtime answering, no screen and still zero
+  translations in this repository; the Greek and the Estonian in the tests are
+  the tests'. `ROADMAP.md`'s line stays unticked, because a machine that will
+  not fall back is not a machine until something asks.

@@ -85,9 +85,15 @@ impl NotAllowed {
     /// key, marked, and `Said::is_a_bug`. **What is refused never depends on
     /// the string table** — the refusal was decided before this was called, and
     /// calling it cannot change the answer.
+    ///
+    /// The place goes in through
+    /// [`and_said`](alo_strings::Filling::and_said) rather than as text, so a
+    /// refusal somebody translated with an English clause still inside it is
+    /// not reported as translated. That is item 11a's rule, and this sentence
+    /// was written before there was a door for it.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        let filling = Filling::of("source", self.source().shown(strings));
+        let filling = Filling::nothing().and_said("source", &self.source().said(strings));
         let filling = match self {
             Self::OutsideTheRegion { region, .. } => filling.and("region", region.clone()),
             Self::OutsideTheBuilding { .. } | Self::NotThisMachine { .. } => filling,
@@ -151,6 +157,31 @@ mod tests {
         assert!(!said.text().contains("has not said"), "{said}");
         // The provider's name is the person's, not the language's.
         assert!(said.text().contains("someone"), "{said}");
+    }
+
+    /// **A sentence is only as translated as the clause inside it.** A refusal
+    /// somebody translated, naming a place nobody has, is a German line with an
+    /// English middle — and reporting it as translated would hide the one thing
+    /// `alo-strings` exists to make visible.
+    #[test]
+    fn a_refusal_with_an_untranslated_place_in_it_does_not_claim_to_be_translated() {
+        let strings = translated(&[(
+            words::NOT_ON_THIS_MACHINE,
+            "dieser Rechner ist so eingestellt, dass er nur selbst antwortet, und {source} ist \
+             anderswo",
+        )]);
+        let said = SourcePolicy::ThisMachineOnly
+            .refusal(&somewhere())
+            .unwrap()
+            .said(&strings);
+        // The sentence itself is German, and the clause naming the provider is
+        // not — so the line as a whole is not translated.
+        assert!(
+            matches!(said.came_from(), alo_strings::CameFrom::Translation(_)),
+            "{said}"
+        );
+        assert!(!said.is_translated(), "{said}");
+        assert!(said.text().contains("has not said where it runs"), "{said}");
     }
 
     /// **A refusal never depends on a string table.** With no words at all the

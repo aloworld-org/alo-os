@@ -60,10 +60,19 @@ GPU, and it is useful to `alo-workplace` the day it lands.
       against a real socket. **Not yet run against a real Ollama or a GPU** —
       law 3's "on real hardware" is owed on the certified machine.
 - [ ] **Agents point at the local model by default**, configured rather than coded
+      — and, since the default is only a sovereignty guarantee if it does not
+      quietly un-point itself, **★ never a silent fallback** (ADR 0008) is
+      carried on this line too, having none of its own
       · Built: `alo-models` — where an answer may come from, and the policy that
       keeps it in the building, on the machine, or in a region, both now said in
-      the language the person reads rather than in English · Owed: something
-      that points, which is `alo-agentd`
+      the language the person reads rather than in English — and
+      `alo-answering`, which is what happens when the place a person chose
+      cannot answer: the failure named with the place it happened, the line
+      saying nothing was sent and nothing will be, and asking somewhere else as
+      one sentence a person approves for exactly one question rather than a
+      setting anybody can leave on · Owed: something that points and something
+      that asks, both `alo-agentd`; there is still no method anywhere in this
+      repository that puts a question to a model
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
       · Built: `alo-models` — the provider, the key held as a keyring handle and

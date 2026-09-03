@@ -3,6 +3,18 @@
 version = 4
 
 [[package]]
+name = "alo-answering"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-egress",
+ "alo-models",
+ "alo-record",
+ "alo-strings",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-appearance"
 version = "0.0.1"
 dependencies = [

@@ -36,8 +36,14 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-capability`, `crates/alo-record`, `crates/alo-egress`,
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
-`crates/alo-dock` and `crates/alo-strings` were
-built by the loop and are described in the items below. `alo-context` sits where
+`crates/alo-dock`, `crates/alo-answering` and `crates/alo-strings` were
+built by the loop and are described in the items below. **`alo-answering` is
+the second crate to reach `alo-models`**, after `alo-egress`, and the two reach
+it for halves of one thing: `alo-egress` decides about a question that is
+already leaving, and `alo-answering` about one that was answered nowhere. It is
+also the only crate in the workspace whose whole value is a thing it *cannot*
+do — it decides where a failed question may go next, and has no client, no
+socket and no serde with which to go there. `alo-context` sits where
 `alo-files` and `alo-applications` do — it reaches `alo-capability` and
 `alo-strings`, nothing reaches it — and it is the only one of the three that
 **makes** a grant rather than only being checked against them. `alo-applications` sits
@@ -1073,38 +1079,100 @@ deny list.** Two patterns later items must follow:
   linux* below. Per display and hiding when a window needs the room are v0.5 and
   are deliberately not built.
 
-- [ ] **14. Never a silent fallback** — implements **ADR 0008** and
+- [x] **14. Never a silent fallback** — implements **ADR 0008** and
   `docs/features.md`'s v0.01 *★ Never a silent fallback: a local model that
-  fails does not quietly become an API call*. **Found by iteration 27's reading
-  step and not built by it**, one item per iteration. It is the third v0.01
-  promise found with no item at all, after the application verbs' portable half
-  (item 11) and the dock (item 13), and the pattern is the same one the journal
-  has been warning about: the blocked lists record what somebody once thought
-  was hard, and the feature list is the promise.
+  fails does not quietly become an API call*. Found by iteration 27's reading
+  step, built by iteration 28. `crates/alo-answering`, a **new crate**:
+  `answering.rs` (the only type meaning *this question may be answered here*,
+  and the two doors into it), `wrong.rs` (what can go wrong where a question was
+  put, and what cannot go wrong there), `failed.rs` (it did not answer: what a
+  person reads, and the one door out), `elsewhere.rs` (where else this machine
+  may ask, and the doors a rule has closed), `offer.rs` (one place that could be
+  asked instead, and the sentence a person approves), `refusing.rs` (an offer
+  that was not this failure's, carrying the failure back), `words.rs` (12
+  phrases, every one of them with a note), `testing.rs`. 40 unit tests, 10
+  integration tests — 6 against the real vocabulary in Greek and Estonian, 4
+  through `alo-egress` and into `alo-record` — and 3 doctests, two of them
+  `compile_fail`. **1055 tests and 28 doctests across the workspace**, clippy
+  clean.
 
-  Nothing in `crates/` mentions a fallback — not `alo-models`, whose
-  `source.rs` says where an answer *would* come from, and not `alo-egress`,
-  which decides about a departure that is already happening. What is missing is
-  the thing between them: **what happens when the source a person chose cannot
-  answer.** `docs/features.md` states the reason in one sentence — *failing to
-  answer is recoverable, a person's records leaving the building because a
-  download was corrupt is not* — so the answer is a refusal that says which
-  source failed and what would have to be approved to ask elsewhere, never a
-  second attempt somewhere else.
+  **The decision the item asked for, answered from ADR 0008: it is a change,
+  not a setting.** A switch turned on in advance — *when the local model fails,
+  use my provider* — **is** the fallback that ADR rejects, with a checkbox in
+  front of it. The objection was never that alo OS decides badly; it is that
+  the person is not there, and their records leave the building at the moment
+  of a failure they never saw. A box ticked in March does not make somebody
+  present in June. So the shape is ADR 0001 §5's — one sentence, one approval,
+  one attempt, and an approval is never a session — carried to a place §5 does
+  not itself reach, because §5 binds an agent changing this machine and a
+  person's question is not that. `offer.rs` says why it is deliberately not an
+  `alo_capability::Proposal`: building one would mean a verb whose argument is
+  somebody's own question, which puts the thing ADR 0001 §4 keeps *out* of the
+  capability model inside it.
 
-  It is buildable here: `alo-models` already has `NotAllowed` for a question the
-  policy refused and `RuntimeError` for a runtime that could not, and the
-  failing half of `Trying` is the shape. What it must decide before writing
-  anything is whether *asking somewhere else* is a change in the sense of ADR
-  0001 §5 — one sentence, one approval, one attempt — or a setting a person
-  turned on in advance, and ADR 0008 is where that is read rather than guessed.
+  **Why a crate of its own rather than more of `alo-models`.** The promise here
+  is about the **absence** of code — nothing ever asks a second place on its
+  own — and a promise like that is worth what the code around it is small
+  enough to prove. `alo-models` carries `ureq` and a TLS stack; a fallback
+  hidden in it would be a line in a function. This crate has **no HTTP client,
+  no socket and no serde**, so *the crate that decides where a failed question
+  may go next cannot itself go there* is checkable from `Cargo.toml`. It is
+  `alo-keeping`'s argument about `alo-record`, made about a second attempt
+  rather than about deleting evidence.
 
-  What is **not** covered anywhere and is not this item: *★ No telemetry* (v0.01,
-  the egress section). `alo-egress` decides about egress an **agent** causes; a
-  promise that alo OS itself sends nothing is about egress with no agent behind
-  it, and there is neither a crate nor a blocked entry for it. Whoever reads
-  next should decide whether its portable half is a rule in `alo-egress` or
-  whether all of it is the daemon's.
+  Three decisions the next items inherit. **A sentence is only as translated as
+  the clause inside it**, so `InferenceSource::said` is new in `alo-models` and
+  every sentence here fills `{source}` with `Filling::and_said` — item 11a's
+  rule reaching the crates that were written before there was a door for it;
+  `NotAllowed::said` was fixed in passing and the rest is item 15 below.
+  **This crate holds no text anybody else wrote** — not the question, not a
+  model's name, not what a provider said about itself — so `WentWrong` carries
+  a status number and nothing else, and every sentence it produces is one alo OS
+  wrote rather than one it passed on. **`Failed` is not `Clone`**, which is
+  `alo_capability::Approved`'s rule: a clone would be a second way to take an
+  offer from one failure, and *one failure, at most one attempt elsewhere*
+  would hold only for callers who did not think of it.
+
+  Built and unit tested. **Nothing here has asked a model anything**: there is
+  no method that puts a question to one, because `ModelRuntime` has none — the
+  asking arrives with the daemon, and this is the decision that had to be
+  settled before then so that a fallback cannot be written into it by accident.
+
+- [ ] **15. A gap that holds a sentence** — cut from item 14, which needed one
+  case of it and found the rest. `alo_strings::Filling::and_said` arrived in
+  item 11a with the rule that **a sentence is only as translated as its least
+  translated piece**; the crates written before it still fill gaps that hold a
+  *worded clause* with `Filling::of` and a `String`, which reports a
+  half-English line as translated. Item 14 closed
+  `alo_models::NotAllowed::said` because it could not build its own sentences
+  correctly otherwise, and left the sweep.
+
+  What is left is **eight sites in five crates**, found by grepping the
+  production code for a gap filled from a `shown(strings)`:
+  `alo-capability`'s `refusing.rs` (2 — `wanted`, and `Lapsed`'s `reach`),
+  `alo-context`'s `context.rs` (1 — `window`), `alo-egress`'s `leaving.rs` and
+  `refusing.rs` (2 — the destination, on the indicator line itself and in the
+  policy's refusal) and `alo-shortcuts`' `clash.rs` and `refusing.rs` (3 — a
+  chord and a key, whose sixteen worded labels are exactly the translatable
+  part). The egress two are the ones to do first: that line is what law 1 shows
+  a person while something is leaving. Each needs the same shape — a
+  `said(&Strings) -> Said` beside the `shown(&Strings) -> String`, with `shown`
+  becoming `said(…).into_text()` so there is one rendering rather than two —
+  and each needs the test item 14 wrote: a sentence translated, its clause not,
+  and `is_translated()` answering **false**.
+
+  It is a **public surface change** in two crates and additive in both. Read
+  `alo-models`' `source.rs` and `alo-answering`'s `offer.rs` first: between them
+  they are the worked example, and the second is the case where getting it
+  wrong would put an English clause inside a sentence somebody approves.
+
+  What is **not** covered anywhere and is not this item: *★ No telemetry*
+  (v0.01, the egress section). `alo-egress` decides about egress an **agent**
+  causes; a promise that alo OS itself sends nothing is about egress with no
+  agent behind it, and there is neither a crate nor a blocked entry for it.
+  Whoever reads next should decide whether its portable half is a rule in
+  `alo-egress` or whether all of it is the daemon's — it is the fifth promise
+  the journal has watched go unlisted.
 
 ---
 

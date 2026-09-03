@@ -17,7 +17,7 @@
 //! [`InferenceSource::shown`] and [`SourcePolicy::refusal`], both of which need
 //! the strings the reader in front of the machine actually reads.
 
-use alo_strings::{Filling, Strings};
+use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
 use crate::refusing::NotAllowed;
@@ -141,13 +141,30 @@ impl InferenceSource {
     /// where it is going before they paste it, and they are entitled to read it
     /// in their own language.
     ///
-    /// A `String` rather than a [`Said`](alo_strings::Said), because this is a
-    /// clause: it is shown on its own beside an answer *and* it goes inside
-    /// every refusal [`SourcePolicy`] makes, so a refusal and the place named
-    /// in it are one language. That is `alo-capability`'s `Reach::shown` in
-    /// this crate.
+    /// A `String` rather than a [`Said`], because this is a clause: it is shown
+    /// on its own beside an answer *and* it goes inside every refusal
+    /// [`SourcePolicy`] makes, so a refusal and the place named in it are one
+    /// language. That is `alo-capability`'s `Reach::shown` in this crate.
+    ///
+    /// **A sentence that puts this clause inside itself wants [`said`](Self::said)
+    /// instead**, so that whether *it* was translated is part of whether the
+    /// whole line was. A `String` cannot carry that, and a German refusal with
+    /// an English clause in the middle of it would answer
+    /// `Said::is_translated` with `true`.
     #[must_use]
     pub fn shown(&self, strings: &Strings) -> String {
+        self.said(strings).into_text()
+    }
+
+    /// The same clause, carrying where its words came from.
+    ///
+    /// One rendering, not two: [`shown`](Self::shown) is this with the
+    /// provenance dropped, for a caller putting the clause on a line of its
+    /// own. Anything filling a gap in another sentence uses this one and
+    /// `alo_strings::Filling::and_said`, because a sentence is only as
+    /// translated as its least translated piece (item 11a).
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
             Self::ThisMachine => Filling::nothing(),
             Self::PairedMachine { machine } => Filling::of("machine", machine.clone()),
@@ -159,7 +176,7 @@ impl InferenceSource {
                 }
             }
         };
-        strings.say(&self.word().key(), &filling).into_text()
+        strings.say(&self.word().key(), &filling)
     }
 }
 

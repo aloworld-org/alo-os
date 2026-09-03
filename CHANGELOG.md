@@ -12,6 +12,29 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **When the model you chose cannot answer, alo OS stops and tells you —
+  it never quietly asks somebody else instead.** A local model that fails does
+  not become an API call. You are told what went wrong and *where* it went
+  wrong — "nothing answered on this machine", "nothing was answered by alo, in
+  the EU" — and, in the same breath, that nothing was sent anywhere and nothing
+  will be unless you say so.
+
+  **Asking somewhere else is something you approve, once.** If your machine has
+  another place set up and your organisation permits it, you are offered it in
+  a sentence that says where the question would go and what leaving means
+  there: it would not leave this machine, or it would leave this machine and
+  stay on your network, or it would leave this machine and the building. Saying
+  yes is worth exactly one question — never a setting, and never a session. A
+  setting you ticked in March cannot be present at a failure in June, which is
+  the whole reason there isn't one.
+
+  **And if there is nowhere to offer, you are told which of the two it is.**
+  Nobody has set up a second place, or your organisation's rule closed the ones
+  you have — and if it is the rule, you read that rule in its own words rather
+  than finding an empty dialogue. All of it in your own language, and a line
+  that is only half translated says so rather than passing for the language it
+  is half in.
+
 - **You choose which edge of the screen your dock sits on — bottom, left, right
   or top — and it is a dock built for that edge rather than the bottom one
   turned sideways.** A dock down the side of the screen puts each application's
