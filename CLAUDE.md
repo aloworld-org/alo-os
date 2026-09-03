@@ -142,9 +142,18 @@ cannot demonstrate.
   commit trailers. Commit subjects follow conventional style —
   `type(scope): descriptive subject`.
 - **One agent per working tree.** Concurrent editors on one checkout
-  are forbidden; every agent commits with a distinct author so
-  authorship is never ambiguous. The canonical checkout lives outside
-  any file-sync folder — git and the remote are the only sync.
+  are forbidden. The canonical checkout lives outside any file-sync
+  folder — git and the remote are the only sync.
+- **The author of every commit is the repository's owner**, from the
+  checkout's own `user.name` and `user.email`. **No agent sets an
+  author of its own** — not with `--author`, not with `-c user.name`,
+  not through `GIT_AUTHOR_*`. This rule previously said the opposite,
+  and the loop obeyed it: a run of commits landed authored by "alo
+  build loop", which is not a person and is not who owns this work.
+  An agent is named where a contributor belongs, in the
+  `Co-Authored-By` trailer, and what it did is in the commit body.
+  Ambiguity between agents is solved by the trailer and by one agent
+  per tree, never by inventing an author.
 
 ## Map
 

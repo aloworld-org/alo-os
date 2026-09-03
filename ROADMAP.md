@@ -43,19 +43,36 @@ moved it only by **adding** unticked lines. Read literally, it reported that
 nothing had happened. That is a reporting failure, not a dishonest tick, but
 somebody planning from it is misled either way.
 
-So a line is written in one of three states, and there is no fourth:
+So a part-done line **carries two boxes of its own**, and the parent line keeps
+its empty one:
 
-- `- [ ]` **Not started.** Nothing exists.
-- `- [ ]` **· Built: … · Owed: …** — part done. The clause names the crate that
-  exists *and* the thing still missing. It stays an empty box: half a capability
-  is not a capability, and a person planning around this file must never read
-  the annotation as delivery.
-- `- [x]` **Done** — law 3 on real hardware, or the line states in its own words
-  what remains owed on the certified machine.
+```
+- [ ] Egress indicator, and no telemetry
+  - [x] The code.        alo-egress — what counts as leaving, and …
+  - [ ] On the machine.  the indicator itself, which is a compositor surface …
+```
 
-**The Built/Owed clause is a claim about code, so it names the crate.** A clause
-that cannot name one is decoration, and decoration here is how a roadmap starts
-lying slowly.
+- The parent `- [ ]` stays empty until **both** halves are done. Half a
+  capability is not a capability, and nobody planning around this file may read
+  a ticked half as delivery.
+- **The code** is ticked when that half is whole and gated — built, tested, no
+  stubs. It is the half this repository can finish today, and every crate below
+  was finished on an ordinary laptop.
+- **On the machine** is ticked only under law 3: the certified machine, the
+  compositor, a real GPU. Nothing in this repository can tick it, and no loop
+  may.
+
+**Why this shape rather than one box.** The rule "a tick means done on real
+hardware" is right and is not being weakened — but with one box per line it made
+this file report **one done item out of eighty** while thirteen crates and
+1,128 passing tests sat underneath it. That is not honesty; it is a different
+inaccuracy, and somebody reading it would conclude nothing had been built. Two
+boxes tell the truth twice: what is finished, and what is still owed to a
+machine nobody has yet plugged in.
+
+**A code box is a claim, so its clause names the crate.** A clause that cannot
+name one is decoration, and decoration here is how a roadmap starts lying
+slowly.
 
 ---
 
@@ -79,158 +96,192 @@ GPU, and it is useful to `alo-workplace` the day it lands.
 - [ ] ★ **It runs on the machine you already own** — no graphics card required.
       The catalogue carries models that work on a CPU, and says honestly which
       ones are comfortable there and which are merely possible
-      · Built: `alo-models`' catalogue — `OnCpu` as a stated property of each
-      model rather than a footnote, `runnable_on_cpu(ram_gb)` and
-      `runnable_with_vram`, so the answer to *what can this machine actually
-      run* is asked of the machine rather than assumed · Owed: the setup screen
-      that asks it on somebody's behalf, and a real measurement — *comfortable*
-      is a judgement in a table until a model has run on a machine without a GPU
+  - [x] **The code.**
+        `alo-models`' catalogue — `OnCpu` as a stated property of each model
+        rather than a footnote, `runnable_on_cpu(ram_gb)` and
+        `runnable_with_vram`, so the answer to *what can this machine
+        actually run* is asked of the machine rather than assumed
+  - [ ] **On the machine.**
+        the setup screen that asks it on somebody's behalf, and a real
+        measurement — *comfortable* is a judgement in a table until a model
+        has run on a machine without a GPU
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
       machine, from a machine on your network, or from a provider you named, and
       the choice is the person's
-      · Built: `alo-models`' `InferenceSource` — this machine, a paired machine,
-      a hosted provider with its region — and `SourcePolicy`, which can hold an
-      answer in the building, on the machine, or inside a named region, and
-      refuses in the policy's own words rather than silently routing elsewhere
-      · Owed: `alo-agentd`, which is the thing that would actually put a question
-      to any of the three
+  - [x] **The code.**
+        `alo-models`' `InferenceSource` — this machine, a paired machine, a
+        hosted provider with its region — and `SourcePolicy`, which can hold
+        an answer in the building, on the machine, or inside a named region,
+        and refuses in the policy's own words rather than silently routing
+        elsewhere
+  - [ ] **On the machine.**
+        `alo-agentd`, which is the thing that would actually put a question
+        to any of the three
 - [ ] ★ **Where the answer came from is said where the answer appears** — "on
       this machine", "on the studio workstation", "by a provider you added" —
       beside the answer, not buried in a setting
-      · Built: `alo-models` — every source can say itself (`shown`, `said`) in
-      the language the reader reads, so provenance is a translated sentence
-      rather than English a shell would have to reword · Owed: the surface that
-      shows it beside an answer, which is the overlay, and therefore the
-      compositor. **This is the one on this list most easily lost**: it is a
-      sentence that must appear every single time, and nothing yet forces it to
+  - [x] **The code.**
+        `alo-models` — every source can say itself (`shown`, `said`) in the
+        language the reader reads, so provenance is a translated sentence
+        rather than English a shell would have to reword
+  - [ ] **On the machine.**
+        the surface that shows it beside an answer, which is the overlay,
+        and therefore the compositor. **This is the one on this list most
+        easily lost**: it is a sentence that must appear every single time,
+        and nothing yet forces it to
 - [ ] **Agents point at the local model by default**, configured rather than coded
       — and, since the default is only a sovereignty guarantee if it does not
       quietly un-point itself, **★ never a silent fallback** (ADR 0008) is
       carried on this line too, having none of its own
-      · Built: `alo-models` — where an answer may come from, and the policy that
-      keeps it in the building, on the machine, or in a region, both now said in
-      the language the person reads rather than in English — and
-      `alo-answering`, which is what happens when the place a person chose
-      cannot answer: the failure named with the place it happened, the line
-      saying nothing was sent and nothing will be, and asking somewhere else as
-      one sentence a person approves for exactly one question rather than a
-      setting anybody can leave on · Owed: something that points and something
-      that asks, both `alo-agentd`; there is still no method anywhere in this
-      repository that puts a question to a model
+  - [x] **The code.**
+        `alo-models` — where an answer may come from, and the policy that
+        keeps it in the building, on the machine, or in a region, both now
+        said in the language the person reads rather than in English — and
+        `alo-answering`, which is what happens when the place a person chose
+        cannot answer: the failure named with the place it happened, the
+        line saying nothing was sent and nothing will be, and asking
+        somewhere else as one sentence a person approves for exactly one
+        question rather than a setting anybody can leave on
+  - [ ] **On the machine.**
+        something that points and something that asks, both `alo-agentd`;
+        there is still no method anywhere in this repository that puts a
+        question to a model
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
-      · Built: `alo-models` — the provider, the key held as a keyring handle and
-      never in the record, testing it before it is saved, and every refusal about
-      any of the three readable in the reader's own language · Owed: the Settings
-      panel to type it into
+  - [x] **The code.**
+        `alo-models` — the provider, the key held as a keyring handle and
+        never in the record, testing it before it is saved, and every
+        refusal about any of the three readable in the reader's own language
+  - [ ] **On the machine.**
+        the Settings panel to type it into
 - [ ] **The GPU works on first boot** on the certified machine — drivers and runtime pinned together
 - [ ] **Egress indicator**, and no telemetry
-      · Built: `alo-egress` — what counts as leaving, and the line said about it
-      while it happens, now in the language the person reads rather than in
-      English; the policy still decides before a socket opens and without
-      needing a vocabulary to do it. Since item 16 the second half of this line
-      has code too: egress with **no agent behind it** is a closed list of three
-      reasons alo OS reaches the network — signing somebody in, fetching a
-      model, checking for an update — with no member for measuring anything and
-      no way to add one that is not an edit to a public enum. They go on the
-      **same** indicator as an agent's egress, so *nothing has left this
-      machine* stays one thing to look at, and the promise beside the list is a
-      sentence a person reads in their own language rather than one this
-      repository publishes. Since item 16a law 1's *and afterwards in a record*
-      covers that second half as well: `alo-record` writes an errand down as
-      `Happened::LeftOnItsOwn`, made only from the `Underway` the indicator
-      showed, and it is the one entry in the record with **no agent field** —
-      because nobody granted this machine permission to sign somebody in, and a
-      name in that column would be an authority the record invented. *What left
-      this machine* and *what did it do on its own* are two queries over one
-      list, and `docs/contracts/record-file.md` now says what a new kind of
-      entry means for a reader that predates it · Owed: the indicator itself,
-      which is a compositor surface; the daemon code that actually signs
-      somebody in, fetches a model or checks for an update, none of which exists
-      yet; and the enforcement at the network boundary, without which all of
-      this describes only the code that asked
+  - [x] **The code.**
+        `alo-egress` — what counts as leaving, and the line said about it
+        while it happens, now in the language the person reads rather than
+        in English; the policy still decides before a socket opens and
+        without needing a vocabulary to do it. Since item 16 the second half
+        of this line has code too: egress with **no agent behind it** is a
+        closed list of three reasons alo OS reaches the network — signing
+        somebody in, fetching a model, checking for an update — with no
+        member for measuring anything and no way to add one that is not an
+        edit to a public enum. They go on the **same** indicator as an
+        agent's egress, so *nothing has left this machine* stays one thing
+        to look at, and the promise beside the list is a sentence a person
+        reads in their own language rather than one this repository
+        publishes. Since item 16a law 1's *and afterwards in a record*
+        covers that second half as well: `alo-record` writes an errand down
+        as `Happened::LeftOnItsOwn`, made only from the `Underway` the
+        indicator showed, and it is the one entry in the record with **no
+        agent field** — because nobody granted this machine permission to
+        sign somebody in, and a name in that column would be an authority
+        the record invented. *What left this machine* and *what did it do on
+        its own* are two queries over one list, and
+        `docs/contracts/record-file.md` now says what a new kind of entry
+        means for a reader that predates it
+  - [ ] **On the machine.**
+        the indicator itself, which is a compositor surface; the daemon code
+        that actually signs somebody in, fetches a model or checks for an
+        update, none of which exists yet; and the enforcement at the network
+        boundary, without which all of this describes only the code that
+        asked
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
-      · Built: `alo-capability` (the verbs, the grants, the approvals, every
-      refusal of theirs said in the language the person reads, and — since 9g —
-      the sentence a person approves, carried as what names it and the values
-      that fill it rather than as words in whichever language the verb was
-      declared in), `alo-files` (the six file verbs, declared from the words
-      a translator is handed) and `alo-applications` (all four application
-      verbs — open, focus, ask-to-close and arrange — the list of what is
-      installed they are checked against, and the rule that an ungranted
-      application refuses identically whether or not it is here). Since 11a an
-      argument that offers a choice offers a name a model sends beside a word a
-      person reads, so an option cannot reach an approval sentence as
-      untranslated English, and a sentence holding a word nobody has translated
-      says the line is not translated. Since item 12 `alo-context` is what an
-      agent is given when it is invoked: the window in front, the selection and
-      the open document, with only the document making a grant — over that file,
-      for that turn, revocable and visible in the same list as a folder somebody
-      picked — so being told what is on a screen is finally distinct from being
-      allowed to touch it · Owed: the daemon itself, the acting half
-      of the application verbs — which is Wayland and D-Bus, and is the whole of
-      what makes any of these move a window — and the half of the context that
-      **reads** a screen, which is Wayland and AT-SPI and is where *with no
-      invocation, no context calls at all* becomes something anybody can test
+  - [x] **The code.**
+        `alo-capability` (the verbs, the grants, the approvals, every
+        refusal of theirs said in the language the person reads, and — since
+        9g — the sentence a person approves, carried as what names it and
+        the values that fill it rather than as words in whichever language
+        the verb was declared in), `alo-files` (the six file verbs, declared
+        from the words a translator is handed) and `alo-applications` (all
+        four application verbs — open, focus, ask-to-close and arrange — the
+        list of what is installed they are checked against, and the rule
+        that an ungranted application refuses identically whether or not it
+        is here). Since 11a an argument that offers a choice offers a name a
+        model sends beside a word a person reads, so an option cannot reach
+        an approval sentence as untranslated English, and a sentence holding
+        a word nobody has translated says the line is not translated. Since
+        item 12 `alo-context` is what an agent is given when it is invoked:
+        the window in front, the selection and the open document, with only
+        the document making a grant — over that file, for that turn,
+        revocable and visible in the same list as a folder somebody picked —
+        so being told what is on a screen is finally distinct from being
+        allowed to touch it
+  - [ ] **On the machine.**
+        the daemon itself, the acting half of the application verbs — which
+        is Wayland and D-Bus, and is the whole of what makes any of these
+        move a window — and the half of the context that **reads** a screen,
+        which is Wayland and AT-SPI and is where *with no invocation, no
+        context calls at all* becomes something anybody can test
 - [ ] Every execution recorded with its origin, approval and grant
-      · Built: `alo-record` — the record, including refusals, which are written
-      down in the same words the person was shown rather than in a second
-      rendering of their own; since 9g that covers what *ran* as well as what
-      did not, so the sentence in the record is the sentence somebody approved
-      — and `alo-keeping`, which puts it on a disk so it outlives the session:
-      one line per thing that happened, synced as it happens, a retention rule
-      that cannot be set to keep nothing, and a shortened record that says so
-      permanently in the first line so an absence is never read as an innocence.
-      Since 16a it also holds the one thing on the machine that no execution,
-      approval or grant is behind — what alo OS did on its own — and holds it
-      without naming anybody for it · Owed: queue 4b — the path it is written to
-      and the timer that shortens it, both `alo-agentd`'s, and the daemon does
-      not exist
+  - [x] **The code.**
+        `alo-record` — the record, including refusals, which are written
+        down in the same words the person was shown rather than in a second
+        rendering of their own; since 9g that covers what *ran* as well as
+        what did not, so the sentence in the record is the sentence somebody
+        approved — and `alo-keeping`, which puts it on a disk so it outlives
+        the session: one line per thing that happened, synced as it happens,
+        a retention rule that cannot be set to keep nothing, and a shortened
+        record that says so permanently in the first line so an absence is
+        never read as an innocence. Since 16a it also holds the one thing on
+        the machine that no execution, approval or grant is behind — what
+        alo OS did on its own — and holds it without naming anybody for it
+  - [ ] **On the machine.**
+        queue 4b — the path it is written to and the timer that shortens it,
+        both `alo-agentd`'s, and the daemon does not exist
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 - [ ] **The agent overlay**: one key, from anywhere
 - [ ] Launcher and window management: move, resize, snap, tile
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated
-      · Built: `alo-dock` — the layout model, and the two orientations as two
-      layouts rather than one turned sideways: names sit under an icon across
-      the screen and beside it down the screen, the thickness comes off the side
-      the dock actually sits on, and the status area is a column at the bottom
-      of a vertical dock while the far end of a horizontal one follows which way
-      the person reads. *Labels give way to icons where the short edge demands
-      it* is arithmetic now rather than a designer's eye, and the threshold is
-      held to EN 301 549's 200% on the smallest screen alo OS lays out for, on
-      all four edges · Owed: the compositor that draws it, and with it everything
-      about the dock that is a picture rather than a measurement — the icons,
-      what is in the status area (v0.5), and the hover and screen-reader name
-      the *gave way* sentence promises is still there
+  - [x] **The code.**
+        `alo-dock` — the layout model, and the two orientations as two
+        layouts rather than one turned sideways: names sit under an icon
+        across the screen and beside it down the screen, the thickness comes
+        off the side the dock actually sits on, and the status area is a
+        column at the bottom of a vertical dock while the far end of a
+        horizontal one follows which way the person reads. *Labels give way
+        to icons where the short edge demands it* is arithmetic now rather
+        than a designer's eye, and the threshold is held to EN 301 549's
+        200% on the smallest screen alo OS lays out for, on all four edges
+  - [ ] **On the machine.**
+        the compositor that draws it, and with it everything about the dock
+        that is a picture rather than a measurement — the icons, what is in
+        the status area (v0.5), and the hover and screen-reader name the
+        *gave way* sentence promises is still there
 - [ ] **AI can be declined entirely** — setup's fourth choice, and a system that
       is complete without it (ADR 0009)
-      · Built: `alo-capability`'s `Agent` — the fourth answer as a value, and
-      the half of ADR 0009 that would have been quietly got wrong. It is not a
-      flag beside the grants; it is what holds them, so a machine where the
-      person declined has no list at all rather than an empty one, nothing can
-      be granted on it because there is no list to grant onto, and turning the
-      agent off ends every grant on the machine — the folder picked in March and
-      the document an invocation handed over five minutes ago alike — with the
-      immediacy a single revoke has always had. Turning it on again brings back
-      an agent and not the folders, which is the difference between *grants end*
-      and *grants are suspended*, and the choice is written down so changing
-      your mind is a setting rather than a reinstall. The record and the egress
-      indicator are untouched, because neither is an AI feature: a machine with
-      no agent still writes down its own errands, and `alo-record`'s
-      `Only::ByAnAgent` is how somebody asks whether anything in their record
-      has an agent's name on it at all · Owed: everything about it that is a
-      screen — setup's fourth choice as a question with the same weight as the
-      other three, the hotkey doing nothing, the overlay not existing, and
-      Grants, Models and providers being absent from Settings rather than greyed
-      out. All of that is the compositor's and the settings panel's, and neither
-      exists
+  - [x] **The code.**
+        `alo-capability`'s `Agent` — the fourth answer as a value, and the
+        half of ADR 0009 that would have been quietly got wrong. It is not a
+        flag beside the grants; it is what holds them, so a machine where
+        the person declined has no list at all rather than an empty one,
+        nothing can be granted on it because there is no list to grant onto,
+        and turning the agent off ends every grant on the machine — the
+        folder picked in March and the document an invocation handed over
+        five minutes ago alike — with the immediacy a single revoke has
+        always had. Turning it on again brings back an agent and not the
+        folders, which is the difference between *grants end* and *grants
+        are suspended*, and the choice is written down so changing your mind
+        is a setting rather than a reinstall. The record and the egress
+        indicator are untouched, because neither is an AI feature: a machine
+        with no agent still writes down its own errands, and `alo-record`'s
+        `Only::ByAnAgent` is how somebody asks whether anything in their
+        record has an agent's name on it at all
+  - [ ] **On the machine.**
+        everything about it that is a screen — setup's fourth choice as a
+        question with the same weight as the other three, the hotkey doing
+        nothing, the overlay not existing, and Grants, Models and providers
+        being absent from Settings rather than greyed out. All of that is
+        the compositor's and the settings panel's, and neither exists
 - [ ] Copy, cut and paste across applications; switching between windows
 - [ ] Keyboard shortcuts a person can change
-      · Built: `alo-shortcuts` — the shortcuts, rebindable, nothing quietly
-      taking one away, and every row and key of the panel said in the language
-      the person reads · Owed: a shell to press them in
+  - [x] **The code.**
+        `alo-shortcuts` — the shortcuts, rebindable, nothing quietly taking
+        one away, and every row and key of the panel said in the language
+        the person reads
+  - [ ] **On the machine.**
+        a shell to press them in
 - [ ] The workspace client runs as an application on the shell
 - [ ] **Image**: OCI-built, boots on the certified machine, firmware to sign-in
 
@@ -254,13 +305,15 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
       display; lock-screen image; light and dark; an accent from the five
       designed hues, terracotta reserved (ADR 0010); text scaling; wallpapers
       shipped in the image
-      · Built: `alo-appearance` — background per display, light and dark, text
-      scaling, and the accent set as working code: five hues, each value
-      measured against the ground it is drawn on, terracotta unreachable rather
-      than refused; and every word of it readable in the reader's own language
-      rather than in English · Owed: the Settings panel, the wallpapers
-      themselves, and the mark and word that must appear wherever the agent's
-      colour does
+  - [x] **The code.**
+        `alo-appearance` — background per display, light and dark, text
+        scaling, and the accent set as working code: five hues, each value
+        measured against the ground it is drawn on, terracotta unreachable
+        rather than refused; and every word of it readable in the reader's
+        own language rather than in English
+  - [ ] **On the machine.**
+        the Settings panel, the wallpapers themselves, and the mark and word
+        that must appear wherever the agent's colour does
 - [ ] **The ordinary desktop**: notifications, status area, file manager, trash,
       archives, USB storage, file associations, a text editor, an image viewer,
       a terminal
@@ -279,48 +332,52 @@ Everything that turns a demonstration into a machine somebody uses on a Tuesday.
 - [ ] **Language**: the shell in all 24 official EU languages, with regional
       formats, timezones and a keyboard layout offered alongside each; RTL-ready
       even though no official EU language needs it yet
-      · Built: `alo-strings` — every sentence named, translation checked against
-      what the system says, the 24 languages listed each in its own language,
-      English unable to hide, and a sentence that counts something counted with
-      its reader's own plural rules, read from CLDR rather than recalled; and
-      six crates whose own English has moved onto it — `alo-files` (every file
-      refusal, the six verbs, and the sentence a person approves before a file
-      is renamed, moved or archived), `alo-shortcuts` (every row of the
-      shortcuts panel, and every key named the way the reader's own keyboard
-      prints it rather than the way an English one does), `alo-appearance`
-      (the eleven colour names a person picks from, each with the note a
-      translator needs where the word does not travel, and every refusal about a
-      value they chose), `alo-capability` (every way the capability model
-      says no — the grant that could not be made, the argument that did not
-      survive the boundary, the change nobody was asked about, and the grants
-      themselves, which now refuse with a value that is worded in the reader's
-      language wherever it is shown or written down), `alo-models` (where an
-      answer is about to come from, which is read before somebody decides
-      whether to send a document at all; the rule an organisation set and why it
-      refused; and every refusal about a provider, a key or the runtime) and
-      `alo-egress` (the line a person reads while something is leaving their
-      machine — the visible half of law 1 — the place it names, and every
-      refusal the egress policy makes)
-      — and, since 9g, **the sentence a person approves is one string rather
-      than two renderings of it**: a verb is declared from the words a
-      translator is handed, a call carries what names its sentence and the
-      values that fill it, and the screen, the approval and the record all ask
-      the reader's own vocabulary for the words. Since 11a that holds for what
-      goes *into* the sentence as well: an option a verb offers is a word
-      somebody translates rather than the identifier a model sent, and **a
-      sentence is only as translated as its least translated piece**, so a
-      finished sentence with an unfinished word in it cannot pass for a
-      translated line. Since **15** that rule is true of every sentence this
-      system composes rather than only of the one a person approves: the place
-      inside the line law 1 shows while something is leaving, the grant inside a
-      refusal, the key inside a shortcut, the colour inside a settings refusal,
-      and another crate's whole refusal inside `alo-files`' — each of them
-      answers for itself, at any depth, so a half-translated line says it is
-      half translated wherever the half is. What stayed data stayed data: a
-      path, a hostname, a window's identifier, a colour somebody typed and the
-      fifty-three keys that print a mark are nobody's to translate and never
-      count a line as unfinished
-      · Owed: a shell to translate, and every translation — there are none yet
+  - [x] **The code.**
+        `alo-strings` — every sentence named, translation checked against
+        what the system says, the 24 languages listed each in its own
+        language, English unable to hide, and a sentence that counts
+        something counted with its reader's own plural rules, read from CLDR
+        rather than recalled; and six crates whose own English has moved
+        onto it — `alo-files` (every file refusal, the six verbs, and the
+        sentence a person approves before a file is renamed, moved or
+        archived), `alo-shortcuts` (every row of the shortcuts panel, and
+        every key named the way the reader's own keyboard prints it rather
+        than the way an English one does), `alo-appearance` (the eleven
+        colour names a person picks from, each with the note a translator
+        needs where the word does not travel, and every refusal about a
+        value they chose), `alo-capability` (every way the capability model
+        says no — the grant that could not be made, the argument that did
+        not survive the boundary, the change nobody was asked about, and the
+        grants themselves, which now refuse with a value that is worded in
+        the reader's language wherever it is shown or written down),
+        `alo-models` (where an answer is about to come from, which is read
+        before somebody decides whether to send a document at all; the rule
+        an organisation set and why it refused; and every refusal about a
+        provider, a key or the runtime) and `alo-egress` (the line a person
+        reads while something is leaving their machine — the visible half of
+        law 1 — the place it names, and every refusal the egress policy
+        makes) — and, since 9g, **the sentence a person approves is one
+        string rather than two renderings of it**: a verb is declared from
+        the words a translator is handed, a call carries what names its
+        sentence and the values that fill it, and the screen, the approval
+        and the record all ask the reader's own vocabulary for the words.
+        Since 11a that holds for what goes *into* the sentence as well: an
+        option a verb offers is a word somebody translates rather than the
+        identifier a model sent, and **a sentence is only as translated as
+        its least translated piece**, so a finished sentence with an
+        unfinished word in it cannot pass for a translated line. Since
+        **15** that rule is true of every sentence this system composes
+        rather than only of the one a person approves: the place inside the
+        line law 1 shows while something is leaving, the grant inside a
+        refusal, the key inside a shortcut, the colour inside a settings
+        refusal, and another crate's whole refusal inside `alo-files`' —
+        each of them answers for itself, at any depth, so a half-translated
+        line says it is half translated wherever the half is. What stayed
+        data stayed data: a path, a hostname, a window's identifier, a
+        colour somebody typed and the fifty-three keys that print a mark are
+        nobody's to translate and never count a line as unfinished
+  - [ ] **On the machine.**
+        a shell to translate, and every translation — there are none yet
 - [ ] ★ The agent answers in the language it was asked in
 - [ ] **Access**: screen reader, magnifier, high contrast, keyboard-only
       operation of everything

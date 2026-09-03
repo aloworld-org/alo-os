@@ -43,10 +43,15 @@ somebody expected. It is written down now, so it is answered.
    anything the next iteration should know.
 
    **Then open `ROADMAP.md` and move the line this item served** — in the same
-   commit. Almost never a tick: a queue item builds a crate, a roadmap line is a
-   whole capability, and the screen or daemon that finishes it is usually still
-   missing. What you write is the `· Built: … · Owed: …` clause described at the
-   top of that file, naming the crate that now exists and the thing still owed.
+   commit. A part-done capability there carries two boxes of its own, described
+   at the top of that file: **The code**, which this repository can finish, and
+   **On the machine**, which it cannot. Write into the code half, naming the
+   crate; add the line's two boxes if it has none yet.
+
+   **You may tick the code half** when it is whole and gated — that is what it
+   is for, and leaving it empty while the crate is finished is how this file
+   came to report one done item out of eighty. You may never tick **On the
+   machine**, and never the parent.
 
    If the item served no roadmap line, **say so in `STATE.md` and say why** —
    the way iteration 10 did when it found *test a provider* lived only inside
@@ -54,9 +59,10 @@ somebody expected. It is written down now, so it is answered.
    is what happened: eight consecutive iterations left `ROADMAP.md` untouched
    while eight crates landed, so the file reported that nothing had been built.
 
-   **Never resolve this by ticking.** A roadmap tick means law 3 on real
-   hardware, this loop has no hardware, and a loop that learns to tick to
-   discharge an obligation is worse than one that never updated the file.
+   **Never resolve this by ticking a capability or a machine half.** Both mean
+   law 3 on real hardware, this loop has none, and a loop that learns to tick in
+   order to discharge an obligation is worse than one that never updated the
+   file. The code half is the honest place to record what was finished.
 7. **Stop.** One item per iteration. Two is how a bad decision gets made twice
    before anybody reads the first one.
 
