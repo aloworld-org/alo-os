@@ -82,3 +82,56 @@ to reinstall. It is a setting, not an edition.
 Rejected: a greyed-out panel is an advertisement wearing a disabled state.
 Somebody who declined has been asked once already; Settings can offer it in one
 place without following them around.
+
+## Since it was accepted — the rule is wider than "off"
+
+This ADR's standing rule was written as *anything an agent verb can do, a person
+must also be able to do by hand*, and it was scoped to a machine where somebody
+**chose** to have no agent. That scope is too narrow, and the case it misses is
+the one ordinary people will actually meet.
+
+**An agent is unavailable for many reasons, and only one of them is a choice:**
+
+- it was declined at setup, which is what this ADR was written about;
+- **the money ran out** — a subscription lapsed, a prepaid balance emptied, a
+  provider returned *payment required* or *quota exceeded*;
+- no model has been downloaded yet, or the download was corrupt;
+- the machine is offline and the chosen source is not on it;
+- the provider is down, or the key expired;
+- the policy refuses this source and the person has not approved another.
+
+**The rule holds in every one of them.** The agent is never the only path to any
+capability. If a verb is the only way to do something, that thing is not
+finished — it has a feature that disappears when somebody's card is declined.
+
+### Why the money case matters most
+
+It is the one that decides who alo OS is for. If the agent is the only way to
+reach some part of the machine, then **the person who cannot pay is a
+second-class user of a computer they own** — and this product is explicitly for
+individuals as well as companies. A student, a pensioner, somebody between jobs,
+somebody in a country where a card is not a given: none of them should meet a
+machine that works less well because of it.
+
+It is also the case most likely to be got wrong quietly, because it looks like a
+technical failure and is not. `alo-answering`'s vocabulary today would report an
+exhausted balance as `KeyNotAccepted` or `HavingTrouble(402)` — sending somebody
+to check a key that is perfectly correct, or to read a number. Neither is true,
+and neither tells them the one useful thing: *this will not work until you pay,
+nothing else about your machine has changed, and here is what still does.*
+
+### What follows
+
+- **`alo-answering` needs a failure of its own for this.** Running out is not a
+  fault, not a misconfiguration and not a transient error, and the three existing
+  answers all send a person somewhere unhelpful. It also must never become a
+  reason to ask somewhere else automatically — ADR 0008's *never a silent
+  fallback* runs in both directions, and "we spent your money elsewhere because
+  the first place was empty" would be the worst possible version of it.
+- **No nagging.** A machine that cannot reach a model says so once, where it
+  happened, and continues. It does not follow somebody around asking them to buy
+  credit; that is the greyed-out panel this ADR already rejected, wearing a
+  different disguise.
+- **Whoever proposes a verb answers the question again**: what does a person do
+  when there is no agent to run it? The honest answer must be a way to do it, not
+  a reason it does not matter.

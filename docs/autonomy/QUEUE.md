@@ -1614,6 +1614,30 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   command, a path to an executable, or anything a caller could shape into one.
   A malformed request is refused in the reader's own language, not dropped.
 
+- [ ] **22. Running out is not a fault.** `alo-answering`'s `WentWrong` has no
+  way to say *the money ran out*, so an exhausted balance arrives as
+  `KeyNotAccepted` or `HavingTrouble(402)` — the first sends somebody to check a
+  key that is perfectly correct, the second hands them a number. Neither says the
+  one useful thing.
+
+  A provider answering *payment required* or *quota exceeded* gets a variant of
+  its own, said in the reader's own language: **this will not work until you pay,
+  nothing else about your machine has changed, and here is what still does.**
+
+  **Three rules it must not break.** It never becomes a reason to ask somewhere
+  else on its own — ADR 0008's *never a silent fallback* in both directions, and
+  spending somebody's money elsewhere because the first place was empty would be
+  the worst possible version of it. It is said **once, where it happened**, and
+  never again as a reminder: ADR 0009 already refused the greyed-out panel, and a
+  buy-credit nag is that panel in a different coat. And it is **not an error** —
+  running out is an ordinary state of an ordinary account, not a fault in the
+  machine or in the person.
+
+  ADR 0009's *since it was accepted* section is what this implements. Tests: the
+  three provider replies that mean this in practice, each mapping to the new
+  variant rather than to a key problem; and a test that nothing in the crate can
+  turn it into an attempt somewhere else.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
