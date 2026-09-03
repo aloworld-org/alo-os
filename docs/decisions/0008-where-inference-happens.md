@@ -50,9 +50,25 @@ reported as unknown rather than assumed to be nearby.
 
 ## The rules
 
-**Never a silent fallback.** A local model that fails does not quietly become an
-API call. Failing to answer is recoverable; a person's records leaving the
-building because a download was corrupt is not.
+**Never a silent fallback — and it runs both ways.** A local model that fails
+does not quietly become an API call: failing to answer is recoverable, a
+person's records leaving the building because a download was corrupt is not.
+**And a provider that fails does not quietly become a local model.** That half
+was missing from this ADR until somebody pointed out that it read as though only
+one direction mattered.
+
+The reverse is a smaller harm and still a broken promise. Somebody who chose a
+provider chose a particular model, of a particular quality, at a particular
+price, and answering them from a two-billion-parameter model on their laptop
+without saying so gives them a worse answer wearing the same face. It also
+teaches the machine to make a choice the person already made.
+
+**Neither is the other's fallback, because neither is a degraded version of the
+other.** Both are ordinary, complete ways to run alo OS, and which one is
+selected is a person's decision — never a substitution the system performs when
+the first one disappoints. A failure is reported, and asking somewhere else is a
+sentence somebody approves for one question (`alo-answering`), not a setting
+that quietly stays on.
 
 **The source is named where the answer appears**, not in a settings page.
 Somebody about to paste a contract into a question is entitled to know where it
