@@ -121,3 +121,55 @@ commercial instinct will argue for.
 **Give our own service a quieter indicator.** Rejected outright. The indicator's
 worth is that it has no exceptions. One exception, and it measures our
 convenience rather than the person's exposure.
+
+## How it actually starts: Mistral, resold, and said so
+
+The service does not begin with inference of our own. **It begins as Mistral's
+API with an alo account in front of it**, because that requires no hardware, no
+capacity planning and no capital — and because Mistral is French, which keeps the
+sovereign claim true from the first day rather than from the day we can afford
+GPUs. Running our own inference comes later, if the volume ever justifies it.
+
+That is an ordinary way to start a service. It has one obligation attached, and
+it is not optional.
+
+### The chain is disclosed, always
+
+**A person asking alo's model is really asking Mistral, and has to be told.**
+The provenance line therefore names both: *"answered by alo, using Mistral, in
+France"* — not *"answered by alo"*, which would hide the hop that actually
+matters, since Mistral is the party that sees the question.
+
+An intermediary that does not name who it forwards to is precisely the thing
+this product exists to be an alternative to. **We do not get to be opaque
+because we are the ones being opaque.** If the upstream provider changes, the
+sentence changes with it, and it changes on the machine before the question
+goes anywhere.
+
+The same applies to the record and to the egress indicator: what is written down
+is where the question actually went, not the brand it was billed under.
+
+### The property this quietly buys, which nobody else has
+
+**Mistral's weights are open, so the model alo hosts and the model on the laptop
+can be the same model.** Somebody who starts on a subscription because their
+machine is slow, and later buys a machine that can run it, moves to local
+inference and gets *the same model, with the same behaviour* — not a downgrade,
+not a different family, not a smaller sibling that answers differently.
+
+No other vendor can offer that. OpenAI's and Anthropic's hosted models have no
+local equivalent at all, so leaving their service always means accepting a
+different model. Ours is the same one, in a different place, and **where it runs
+becomes a decision about hardware and money rather than about quality.** That is
+the strongest argument for open weights we have, and it is a consequence of
+ADR 0006 and ADR 0008 rather than a new idea.
+
+### Two commercial facts that are not this repository's to settle
+
+- **Reselling API access is a commercial arrangement with Mistral**, and their
+  terms decide whether it is permitted and on what basis. That is a contract to
+  read before a price is published, not an engineering assumption.
+- **Not all Mistral weights carry the same licence.** Some are Apache-2.0 and
+  some are research-only, and the difference decides what may be shipped in the
+  catalogue for local use. That gate already exists in `alo-models`, and it is
+  the reason it exists.
