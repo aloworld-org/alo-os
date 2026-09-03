@@ -1391,6 +1391,57 @@ deny list.** Two patterns later items must follow:
   Built and unit tested. **Nothing here has hidden a panel**: the surfaces ADR
   0009 makes absent are the shell's, and are listed below.
 
+## Ready — `alo-agentd`, the daemon nothing else can proceed without
+
+**Five roadmap halves are all waiting on this one thing**, and it has never been
+started: *or use an API instead*, *agents point at the local model*, *every
+execution recorded*, `alo-agentd` itself, and the model stack's own last mile.
+The roadmap says the same sentence three separate times — **there is still no
+method anywhere in this repository that puts a question to a model.** Thirteen
+crates decide correctly and nothing joins them up.
+
+**All of it is portable.** No compositor, no certified machine, no GPU. A turn
+is a function call, and its result is a value to assert on. The acting halves
+that genuinely need Wayland and D-Bus are marked below and stay out.
+
+- [ ] **18. Putting a question to a model.** The gap named three times in
+  `ROADMAP.md`. `alo-models` already knows *where* an answer may come from
+  (`InferenceSource`), what policy permits (`SourcePolicy`), and how to say
+  where it came from — but nothing sends anything. This is the method that
+  does: through `ModelRuntime` for a model on this machine, through the provider
+  path for a hosted one, with **`alo-egress` consulted before a socket opens and
+  the source recorded with the answer** so provenance is carried rather than
+  reconstructed. A refusal from the policy is an answer, not an error to unwrap.
+  Tests drive a stub on a real socket, as `ollama.rs` already does, plus a
+  refusal path per `SourcePolicy` variant.
+
+- [ ] **19. A turn, end to end, headless.** The item that makes the other twelve
+  crates one system: invocation → `alo-context` for what was offered →
+  item 18 for the question → a decision → `alo-capability` for the sentence a
+  person approves → `alo-files` or `alo-applications` to execute → `alo-record`
+  and `alo-keeping` for what happened. **No screen anywhere in it**: a turn is
+  driven by a call and asserted on as a value, which is exactly why it can be
+  built here. Law 3 applies to the whole chain including every refusal path — a
+  turn that is declined, a grant that expired mid-turn, a model that could not
+  answer (`alo-answering` already has that one).
+
+- [ ] **20. Where the record is written, and what prunes it.** Formerly 4b, and
+  blocked all this time on the daemon not existing. The path a record is written
+  to, the retention the organisation sets (ADR 0004), and the timer that
+  shortens it. `alo-keeping` holds the shape; this gives it somewhere to live.
+
+- [ ] **21. The daemon itself.** A long-lived process, a socket, and a typed
+  request/response protocol — one file may name the transport, as `ollama.rs`
+  names the runtime. **Law 2 is the whole design**: the protocol accepts
+  enumerated verbs with typed arguments and there is no request that carries a
+  command, a path to an executable, or anything a caller could shape into one.
+  A malformed request is refused in the reader's own language, not dropped.
+
+**Deliberately not here, and not this loop's:** the *acting* half of the
+application verbs (Wayland and D-Bus — it is what actually moves a window), the
+*reading* half of context (Wayland and AT-SPI), and everything that draws. Those
+are listed under **Blocked — linux** and stay there until a compositor exists.
+
 ---
 
 ## Blocked — linux
