@@ -585,3 +585,35 @@ cost of guessing the other way is a question leaving with the indicator quiet.
 Handling short-form IPv4 would mean writing an address parser more permissive
 than the standard library's, in the one file where being wrong is law 1 failing.
 **Date:** 2026-09-03
+
+### The kernel has a name for *that was a symbolic link* and the standard library does not
+**Version:** rustc as pinned by `rust-version = "1.97"`, checked by compiling.
+**Behaviour:** `alo-agentd` opens its machine description with `O_NOFOLLOW` so
+that the file it checks and the file it reads cannot be two different files. The
+kernel answers `ELOOP` when the last part of the path is a symbolic link, and
+`std::io::ErrorKind` still has no stable spelling for it: `ErrorKind::FilesystemLoop`
+is behind the unstable `io_error_more` feature (rust-lang issue #86442), and
+using it is a compile error rather than a warning.
+**Our response:** the comparison is made against `rustix::io::Errno::LOOP` in
+`crates/alo-agentd/src/unix.rs`, which is the file that already holds every
+other question this crate asks the kernel, and it hands back a two-variant
+`NotOpened` so that nothing outside that file compares a raw number. When the
+variant stabilises, the change is one line in one file. Nothing else in the
+workspace is affected — this is the only place alo OS asks the kernel to refuse
+to follow a link.
+**Date:** 2026-09-03
+
+### A function that reads an environment variable cannot be tested
+**Version:** edition 2024, as the workspace sets.
+**Behaviour:** `std::env::set_var` and `remove_var` are `unsafe` in edition
+2024, because another thread reading the environment while one is written is
+undefined behaviour. `CLAUDE.md` forbids `unsafe` workspace-wide, so a test
+cannot set `$XDG_RUNTIME_DIR` — and a function that goes and reads it is one
+whose refusals cannot be exercised at all.
+**Our response:** the decision is separated from the lookup.
+`alo_agentd::session::where_it_runs` takes what the variable said, and
+`from_the_environment` is a single line that goes and looks. Every rule — not
+set, set to nothing, set to a relative path — is a test over the first, and the
+second has nothing in it to be wrong. The same shape is worth reaching for
+anywhere else this workspace ends up reading the environment.
+**Date:** 2026-09-03

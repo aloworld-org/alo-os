@@ -274,8 +274,11 @@ compositor is not required for, which is why it runs unbroken.
         a real question, which needs Ollama installed. Since item 21d the
         daemon exists and holds a turn, and a question put to it is refused
         in words — *nothing on this machine has been chosen to answer
-        questions* — because nothing yet reads what the person chose; that
-        reading is queue 21e
+        questions* — because nothing yet reads what the person chose. Since
+        item 21e a machine describes itself — two logins, two lengths of time
+        and where the record goes — and which model or provider answers is not
+        yet among the things it says. That, and the process that would do
+        anything with it, is queue 21f
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
@@ -384,12 +387,24 @@ compositor is not required for, which is why it runs unbroken.
         is not a request is answered and the caller stays; a line this machine
         will not read is answered and then closed; and a machine that could
         not write down what it did stops serving rather than going on without
-        evidence
+        evidence. Since item 21e it reads what the machine is rather than
+        being handed it: one file, whose shape and path are a contract because
+        whoever installs or manages a machine writes it, holding the two
+        logins, the agent's name as its grants know it, the two lengths of
+        time and where the record goes and for how long. Nothing in it has a
+        default, so a key left out is a machine that does not start rather
+        than one running under a number nobody chose; a length of time longer
+        than a day is refused rather than shortened, because an approval is
+        never a session; and the file is checked before it is parsed — not a
+        link, owned by root or by the person, writable by nobody else, and all
+        of it asked of the open file rather than of the name, because the file
+        that names which login is the agent is the file somebody would rewrite
+        to become one
   - [ ] **On the machine.**
-        the `main` that says what this machine is (queue 21e) — which
-        directory, which two users, which model answers a question, and the
-        refusal to run as root at all — without which the service above is
-        code with nothing to configure it; the acting half of the application
+        the `main` that starts all of the above (queue 21f) — the signal
+        handler, the refusal to run as root at all, the vocabulary the words a
+        person reads come out of, and which model answers a question — without
+        which the service above is code nothing runs; the acting half of the application
         verbs, which is Wayland and D-Bus and is the whole of what makes any
         of these move a window; and the half of the context that **reads** a
         screen, which is Wayland and AT-SPI and is where *with no invocation,
@@ -413,11 +428,12 @@ compositor is not required for, which is why it runs unbroken.
         door writes its entry before it answers anybody, and a turn that could
         not write one stops doing anything at all
   - [ ] **On the machine.**
-        queue 20 — the path it is written to and the timer that shortens it,
-        both `alo-agentd`'s. Since item 21d there is a service to hold a timer
-        and a loop for it to fire in; what is missing is the thing that says
-        *which* path and *how long*, which is a machine describing itself and
-        is queue 21e
+        queue 20 — the timer that shortens it, which is `alo-agentd`'s. Since
+        item 21d there is a service to hold one and a loop for it to fire in,
+        and since 21e there is a machine describing itself: the path and the
+        retention are read off `/etc/alo/agentd.toml`, and an integration test
+        starts a real record at the path a real description named. What is
+        missing is *when* a shortening runs
 
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated

@@ -12,6 +12,36 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A machine can now be told what it is, in one file, and it refuses to
+  believe a file anybody could have written.** Which login is yours and which is
+  the agent's, what your agent is called where its grants name it, how long a
+  turn lasts and how long a change waits for your answer, where the record of
+  what happened is kept and for how long: all of it in
+  `/etc/alo/agentd.toml`, all of it written by you or by whoever manages the
+  machine, and none of it decided on your behalf. A key left out is a machine
+  that does not start rather than a machine running under a number nobody
+  chose.
+
+  **The file names which login is the agent, so whoever can write it can name
+  themselves your agent.** That is why alo OS checks the file before it reads
+  a word of it: it may not be a symbolic link, it has to belong to you or to
+  root, and nobody else may write it. Both checks are made on the file that is
+  actually opened rather than on the name, so the description that was checked
+  and the description that was read cannot be two different files.
+
+  Two things are refused outright rather than accepted quietly. **A turn or an
+  approval longer than a day** — what you approve is a sentence, not a session,
+  and a proposal standing for a week would be Monday's yes running on Friday's
+  machine; it is refused rather than silently shortened, because a machine
+  running under a description nobody wrote is worse than one that says why it
+  will not start. And **a description written for a newer alo OS**, which is
+  refused as such rather than half-understood.
+
+  If your session has not said where its runtime files go, alo OS does **not**
+  guess: no `/tmp`, no directory worked out from your user number. A socket
+  your approvals travel over does not go somewhere anybody could have got there
+  first.
+
 - **There is something behind the door now: your agent can ask for a change, and
   you can approve it from where you are, while it waits.** This is the first
   time in alo OS that the whole of a turn happens on a running machine rather

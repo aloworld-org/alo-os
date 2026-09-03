@@ -63,7 +63,7 @@
 //!
 //! [`Serving`] is the answer, and it is one thread with no locks in it: nothing
 //! inside a turn blocks, so the only thing to wait for is *somebody saying
-//! something*, and that is one [`unix::ready`] over the socket, both
+//! something*, and that is one `unix::ready` over the socket, both
 //! connections and the end a stop arrives on. The machine is a local variable
 //! that one loop owns. [`serving`] is the whole argument.
 //!
@@ -72,14 +72,30 @@
 //! the wire begins or ends a turn, which is `alo-protocol`'s decision kept as
 //! the shape of the code rather than as a rule to remember.
 //!
+//! # What a machine says about itself
+//!
+//! [`Described`] is everything this service is handed rather than decides: the
+//! two logins, the agent's name as the grants know it, how long a turn lasts and
+//! a change waits for an answer, and where the record goes and how long it is
+//! kept. It is read from one file, whose path and shape are
+//! `docs/contracts/machine-description.md` because whoever installs or manages a
+//! machine writes it.
+//!
+//! The file is **checked before it is parsed** — [`trusting`] — for the reason
+//! [`place`] checks a directory: the description names which login is the agent,
+//! so whoever can rewrite it can name themselves this machine's agent and be
+//! served correctly. Where the socket goes is not in it: that is the session's,
+//! and [`session`] is why nothing is guessed when the session does not say.
+//!
 //! # What this crate deliberately does not do
 //!
-//! **It is not the process.** There is no `main` here, no signal handler, and
-//! no reading of the environment: which directory the socket goes in, which two
-//! users this machine has, which model answers a question, and the refusal to
-//! run as root at all (ADR 0001 §2) are what a machine says about itself, and
-//! that is queue item 21e. [`unix::us`] is what it will check itself with and
-//! [`stopping::Stop`] is the shape its handler is owed.
+//! **It is not the process.** There is no `main` here and no signal handler:
+//! reading the description at [`THE_DESCRIPTION`], refusing to run as root at
+//! all (ADR 0001 §2), assembling the machine a turn happens against, and which
+//! model or provider answers a question under which policy are what the process
+//! does with all of the above, and that is the rest of queue item 21e.
+//! [`unix::us`] is what it will check itself with and [`stopping::Stop`] is the
+//! shape its handler is owed.
 //!
 //! **It decides nothing an agent asks for.** Every verb is
 //! `alo_capability::Verbs`', every grant question is `alo_capability::Grants`',
@@ -116,9 +132,15 @@ pub mod answering;
 #[cfg(target_os = "linux")]
 pub mod caller;
 #[cfg(target_os = "linux")]
+pub mod described;
+#[cfg(target_os = "linux")]
+pub mod describing;
+#[cfg(target_os = "linux")]
 pub mod doing;
 #[cfg(target_os = "linux")]
 pub mod knocking;
+#[cfg(target_os = "linux")]
+pub mod lasting;
 #[cfg(target_os = "linux")]
 pub mod lines;
 #[cfg(target_os = "linux")]
@@ -130,9 +152,13 @@ pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]
+pub mod session;
+#[cfg(target_os = "linux")]
 pub mod side;
 #[cfg(target_os = "linux")]
 pub mod stopping;
+#[cfg(target_os = "linux")]
+pub mod trusting;
 #[cfg(target_os = "linux")]
 pub mod unix;
 #[cfg(target_os = "linux")]
@@ -146,9 +172,15 @@ pub use answering::what_a_person_said;
 #[cfg(target_os = "linux")]
 pub use caller::{Caller, Gid, Uid};
 #[cfg(target_os = "linux")]
+pub use described::{Described, THE_DESCRIPTION};
+#[cfg(target_os = "linux")]
+pub use describing::THE_FORMAT;
+#[cfg(target_os = "linux")]
 pub use doing::what_an_agent_said;
 #[cfg(target_os = "linux")]
 pub use knocking::Knocking;
+#[cfg(target_os = "linux")]
+pub use lasting::Lasting;
 #[cfg(target_os = "linux")]
 pub use lines::Line;
 #[cfg(target_os = "linux")]
@@ -156,9 +188,13 @@ pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
 pub use place::Place;
 #[cfg(target_os = "linux")]
-pub use refusing::{NotACaller, NotAUser, NotBound, NotHeard, NotServed, NotTwoSides};
+pub use refusing::{
+    NoSession, NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotTwoSides,
+};
 #[cfg(target_os = "linux")]
 pub use serving::{Served, Serving};
+#[cfg(target_os = "linux")]
+pub use session::where_it_runs;
 #[cfg(target_os = "linux")]
 pub use side::{Side, Sides};
 #[cfg(target_os = "linux")]

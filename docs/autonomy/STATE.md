@@ -5363,3 +5363,172 @@ shape. Nothing about the mapping is faked.
   It exists now. Its first step is checking whether the WSL2 kernel has
   `CONFIG_BPF_LSM=y` and `bpf` in `CONFIG_LSM` at all, and the ADR is explicit
   that a no is a finding rather than something to work around.
+
+---
+
+## 2026-09-03 — iteration 46: a machine can say what it is
+
+**Item 21e, cut in two, and the first half built.** `crates/alo-agentd` reads
+what machine it is running on: five new files, one new contract, two new
+dependencies that were already in this workspace, and the decision the item did
+not contain taken before any of it was written. 132 unit tests (was 87) and 8
+new integration tests; **1611 tests and doctests on Linux** (was 1555), **1460
+on Windows** (unchanged), `cargo fmt` clean and
+`cargo clippy --workspace --all-targets -- -D warnings` clean with zero warnings
+on both.
+
+The Linux half was built and gated through WSL2 as `LOOP.md` describes. Windows
+is unchanged at 1460, which is what says the crate compiling to nothing off
+Linux is still nothing rather than something that broke quietly.
+
+### The item was one and is two, and the seam was found by looking for a `Strings`
+
+21e as written is the `main` **and** everything the service is handed. Reading
+the crates first turned up something the item did not contain and no item in
+this queue has ever asked: `alo_turn::Machine` is made with a `&Strings`, and
+**nothing in this repository has ever built one outside a test.** Every crate
+declares its own words; which of them a running service collects, whether a
+translation is loaded from a disk and from where, and what a service does when
+it cannot be, is a decision — and a `Strings` assembled by accident inside a
+`main` is the one place *hardcoded English is a bug* would come back with
+nobody noticing.
+
+That is the seam. The **description** — the file, its rules, its refusals — is
+read by whoever is standing the machine up, in English, like every other refusal
+in this crate, and needs no vocabulary at all. The **process** needs one. So the
+description is 21e and is built; the `main`, the signal handler, the root
+refusal, the vocabulary and which model answers a question are **21f**, written
+into the queue with the vocabulary question named as its first half rather than
+left to be discovered inside it.
+
+Scope was cut, depth was not: every refusal the description makes is tested,
+including the ones that exist only because of how the file is read.
+
+### The decision the item did not contain: who may write the file
+
+The description names **which login is the agent**. So whoever can rewrite it
+can name themselves this machine's agent — and from then on every read the
+person's grants permit is theirs, on a service behaving exactly as it was told
+to. It is `place.rs`'s argument about a directory, arriving at a file, and
+sharper: a directory can only be swapped for a socket, while this file *is* the
+authority.
+
+Three rules, in `trusting.rs`: not a symbolic link; owned by root or by the
+person this process runs as; writable by nobody else. What is deliberately not
+checked is whether anybody can *read* it — there are two login numbers, two
+lengths of time and two paths in it, and a check that pretended otherwise would
+teach whoever writes the file that secrets may go there.
+
+**And the check is made on the open file rather than on the path.** The
+description is opened with `O_NOFOLLOW`, and the owner and the mode are read
+through that handle. A check on a name followed by a read of the name is two
+answers about whatever was there at two different moments, which would make all
+three rules decorative. That is `alo-files`' rule since item 6a arriving in the
+daemon.
+
+### Two things the gate found that reading would not have
+
+**`std::io::ErrorKind` has no stable name for `ELOOP`.** `FilesystemLoop` is
+still behind unstable `io_error_more`, and reaching for it is a compile error
+rather than a warning. The comparison is made against `rustix::io::Errno::LOOP`
+in `unix.rs`, which already holds every other question this crate asks the
+kernel, and it hands back a two-variant `NotOpened` so that nothing outside that
+file compares a raw number. `docs/quirks.md` records it.
+
+**A function that reads an environment variable cannot be tested.**
+`std::env::set_var` is `unsafe` in edition 2024 and `CLAUDE.md` forbids
+`unsafe`, so no test can set `$XDG_RUNTIME_DIR`. `session::where_it_runs` takes
+what the variable said and `from_the_environment` is the one line that goes and
+looks — so every rule is a test over a value, and the lookup has nothing in it
+to be wrong. That is worth reaching for anywhere else this workspace reads the
+environment, and it is in `docs/quirks.md` as such.
+
+### Three decisions this iteration made that were not in the item
+
+- **Nothing in the description has a default.** Item 23's
+  `Driving::NotMeasured` applied to the file that says what a machine is.
+  `alo_keeping::Keeping` has a `Default` and it is deliberately not reached for:
+  *forever unless somebody says otherwise* is the right answer for a person who
+  never opened a settings panel and the wrong one for an administrator who left
+  a line out.
+- **A length of time too long is refused, never clamped**, and the ceiling —
+  one day — is alo OS's rather than an organisation's. `Keeping` ships no number
+  of days because retention has a legal answer in some places and a cultural one
+  in others; this one is `CLAUDE.md`'s *an approval is never a session*, which is
+  a promise the capability model makes and not a policy anybody gets to loosen.
+  Both are written down beside each other so the difference is readable.
+- **Nothing about the session is guessed.** `$XDG_RUNTIME_DIR` unset is a
+  refusal that says to start the service as a user service. `/tmp` is a
+  directory anybody can create first, and `/run/user/<uid>` is the session
+  manager's to make — a service that made it because it wanted the name would be
+  standing in for a session that has not started.
+
+### TOML, where the rest of the workspace is JSON
+
+The record and the protocol are JSON because a program writes them and a program
+reads them. This one is typed by a person, and `toml` was already a workspace
+dependency — `alo-models` uses it — so nothing new is rented. A comment is how
+the person after this one finds out why a number is what it is.
+
+### `ROADMAP.md` moved, and a contract was added
+
+The `alo-agentd` line's **code** half now says the crate reads what the machine
+is, and what the file's own rules are; its **On the machine** half was rewritten
+from "the `main` that says what this machine is (21e)" to "the `main` that
+starts all of the above (21f)", naming the vocabulary. *Every execution
+recorded*'s machine half no longer waits on a machine describing itself — it
+waits on *when* a shortening runs — and *or use an API instead* now says which
+part of 21e it was really waiting for. **No half was ticked that was not whole,
+and no machine half was touched.**
+
+`docs/contracts/machine-description.md` is new, and it is the third contract a
+person or another program meets: the protocol is what a client says, the record
+file is what the service writes, and this is the one somebody types.
+
+### What this does not claim
+
+**Nothing has been started by systemd**, and there is still no `main`, no signal
+handler and no process that refuses to run as root. What was built is read off a
+real disk by real code: the two logins in a real file open a real socket, and
+the path in it is where `alo-keeping` starts a real record.
+
+**No description belonging to a third user has been read.** Making one takes a
+privilege the tests do not have on every machine they run on, so that rule is
+asked of the decision — `may_be_believed`, over an owner and a mode — rather
+than of a disk, and the integration test says so in its own header. It is the
+same limit the rest of this crate has: telling two logins apart takes two
+logins, and a test process has one.
+
+**What the next iteration must know:**
+
+- **Item 20 is no longer blocked at all.** `Described::record` and
+  `Described::keeping` are read off a disk, and an integration test starts a
+  real record at the path a real description named. What is left of it is one
+  question: *when* a shortening runs inside `Serving`'s round.
+- **21f is ready and is a vocabulary decision before it is a `main`.** Read the
+  item; its first half is where a running machine's `Strings` comes from, and it
+  wants writing down before it is written.
+- **`alo-agentd` reaches six crates now**, `alo-keeping` being the sixth, and it
+  is the first reached for something the machine is *told* rather than something
+  a turn does.
+- **The Linux half of the gate is not optional for this crate**, and it has gone
+  up again: 132 of its tests do not exist on Windows, so an iteration that
+  touches `alo-agentd` and runs only the Windows gate has tested nothing it
+  changed.
+
+### One thing fixed that was not this item's, and two that were left
+
+`cargo doc` for `alo-agentd` was failing before this iteration touched it: four
+doc links pointed at private items (`unix::ready`, `serving::this_moment`),
+which rustdoc reports as a broken link. Two links this item wrote would have
+been a fifth and sixth. All six are gone — the two new ones written as plain
+code spans from the start, and the four older ones changed the same way, because
+writing a journal entry saying the gate is clean beside a crate whose
+documentation will not build would have been the dishonest half of a true
+sentence.
+
+**What was left alone, deliberately:** the same thing is true of `alo-asking`
+(three links) and `alo-protocol` (five). They are other crates and other items,
+this iteration built neither, and sweeping the workspace on the way past is how
+one item becomes three. They are written down here so the next iteration that
+opens either crate can close them.

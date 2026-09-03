@@ -20,6 +20,14 @@ repository.workspace = true
 rustix = { workspace = true }
 thiserror = { workspace = true }
 
+# What a machine says about itself, and the one format it says it in. TOML
+# rather than the JSON the record and the protocol use, because those two are
+# written by programs and read by programs and this one is typed by whoever
+# stands a machine up — a trailing comma is a machine that will not start, and a
+# comment is how the person after them finds out why a number is what it is.
+serde = { workspace = true }
+toml = { workspace = true }
+
 # What crosses the socket, and what is behind it. Since item 21d this crate
 # holds a turn, so it reaches both: `alo-protocol` for the two doors' requests
 # and answers, and `alo-turn` for the order the steps happen in. It decides
@@ -33,6 +41,13 @@ alo-protocol = { path = "../alo-protocol" }
 alo-strings = { path = "../alo-strings" }
 alo-turn = { path = "../alo-turn" }
 
+# The sixth, and the first that is reached for something a machine is *told*
+# rather than something a turn does: `Keeping` is how long the record is kept,
+# which ADR 0004 gives to the organisation that manages the machine, and a
+# description that named a number of days of its own would be a second answer
+# beside the one `alo-keeping` already writes into the record's first line.
+alo-keeping = { path = "../alo-keeping" }
+
 # What a machine is arranged out of, for the tests only. The service is handed a
 # `Machine` rather than building one, so which resolver, which indicator and
 # where the record goes stay one decision made in one place — and that place is
@@ -40,7 +55,6 @@ alo-turn = { path = "../alo-turn" }
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-egress = { path = "../alo-egress" }
 alo-files = { path = "../alo-files" }
-alo-keeping = { path = "../alo-keeping" }
 alo-record = { path = "../alo-record" }
 
 [lints]

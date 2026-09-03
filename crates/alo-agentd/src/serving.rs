@@ -22,7 +22,7 @@
 //! a number and a sentence, an approval runs and answers. What blocks is
 //! **waiting for somebody to say something**, and that is one call — `poll` —
 //! over the socket, the connections and the end a stop arrives on
-//! ([`crate::unix::ready`]).
+//! (`crate::unix::ready`).
 //!
 //! So there are no threads here, no channels, no lock around the machine, and
 //! nothing shared between two things that run at once. The machine is a local
@@ -58,7 +58,7 @@
 //!
 //! Every crate in this workspace takes `now` as an argument so that expiry is
 //! arithmetic rather than a wait. Something has to read a clock, and it is
-//! [`this_moment`] — once per round, so every message in one round is answered
+//! `this_moment` — once per round, so every message in one round is answered
 //! at one moment and no two answers can disagree about whether a grant had
 //! expired between them.
 

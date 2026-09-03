@@ -1,10 +1,12 @@
 //! Everything this crate refuses, and who reads it.
 //!
-//! Six types, divided by what somebody has to do about them. [`NotTwoSides`]
-//! and [`NotAUser`] are a machine described wrongly, [`NotBound`] is a machine
-//! whose socket cannot be put where it belongs, [`NotACaller`] is one
-//! connection that will not be served, [`NotHeard`] is one connection that
-//! cannot go on being read, and [`NotServed`] is the service itself stopping.
+//! Eight types, divided by what somebody has to do about them. [`NotDescribed`]
+//! is the file a machine is described by, [`NoSession`] is the directory the
+//! socket would have gone in, [`NotTwoSides`] and [`NotAUser`] are a machine
+//! described wrongly, [`NotBound`] is a machine whose socket cannot be put where
+//! it belongs, [`NotACaller`] is one connection that will not be served,
+//! [`NotHeard`] is one connection that cannot go on being read, and
+//! [`NotServed`] is the service itself stopping.
 //!
 //! # The line between one connection and the service
 //!
@@ -52,6 +54,145 @@ pub enum NotAUser {
         "-1 is what a Unix call answers with when there is no group at all; name the group the agent is in"
     )]
     NoSuchGroup,
+}
+
+/// Why this machine's description was not believed.
+///
+/// Every one of these ends with nothing running: a service that started under a
+/// description it could not read would be a service running under whatever the
+/// last one said, which is the failure this type exists to prevent rather than a
+/// degraded mode.
+///
+/// The first four are about the **file** rather than about what is in it, and
+/// they are here for the reason [`NotBound::SomebodyElses`] is: whoever can
+/// write the file that names the agent's login can name themselves the agent.
+#[derive(Debug, Error)]
+pub enum NotDescribed {
+    /// The description is a symbolic link.
+    #[error(
+        "{at} is a symbolic link, so what alo-agentd would really read is decided by whoever can change the link; make it a file"
+    )]
+    ALink {
+        /// The link.
+        at: PathBuf,
+    },
+    /// Something is at that path and it is not an ordinary file.
+    #[error("{at} is not an ordinary file; alo-agentd is described by one file and reads no other")]
+    NotAFile {
+        /// What is in the way.
+        at: PathBuf,
+    },
+    /// The description belongs to somebody who is neither this process nor root.
+    #[error(
+        "{at} belongs to user {owner}, who is neither the person alo-agentd runs as nor root, and could name themselves this machine's agent; give the file to root or to the person"
+    )]
+    SomebodyElses {
+        /// The description.
+        at: PathBuf,
+        /// Who owns it.
+        owner: u32,
+    },
+    /// The description can be written by somebody who does not own it.
+    #[error(
+        "{at} is mode {mode:04o}, so somebody who does not own it can rewrite what this machine says about itself; take the write bits off the group and off everybody else"
+    )]
+    Loose {
+        /// The description.
+        at: PathBuf,
+        /// The permission bits it really has.
+        mode: u32,
+    },
+    /// The description could not be read.
+    #[error("could not read {at}: {why}")]
+    Unreadable {
+        /// The description.
+        at: PathBuf,
+        /// What the machine said.
+        why: std::io::Error,
+    },
+    /// The description is not what this alo OS reads.
+    #[error(
+        "{at} says format {format}, and this alo-agentd reads format {reads}; a description written for a newer alo OS is not guessed at"
+    )]
+    AnotherFormat {
+        /// The description.
+        at: PathBuf,
+        /// What it says it is.
+        format: u32,
+        /// What this service reads.
+        reads: u32,
+    },
+    /// The description is not the shape a description is.
+    #[error("{at} is not a machine description: {why}")]
+    NotUnderstood {
+        /// The description.
+        at: PathBuf,
+        /// What the reader said, naming the line and the key.
+        why: Box<toml::de::Error>,
+    },
+    /// The two logins are not two.
+    #[error("{0}")]
+    NotTwoSides(#[from] NotTwoSides),
+    /// A number in the description is not a user or a group.
+    #[error("{0}")]
+    NotAUser(#[from] NotAUser),
+    /// The agent has no name for the grants to be about.
+    #[error(
+        "agent.name is empty, so no grant could name this machine's agent; give the agent the name its grants are made to"
+    )]
+    Anonymous,
+    /// A length of time that is no time at all.
+    #[error(
+        "{what} is 0, and a turn or a proposal that lasts no time at all is refused at the moment it begins rather than served; give it a length in whole seconds"
+    )]
+    NoTimeAtAll {
+        /// The key in the description.
+        what: &'static str,
+    },
+    /// A length of time longer than a turn or a proposal may be.
+    #[error(
+        "{what} is {seconds} seconds, and the longest either may be is {at_most}; an approval is never a session (CLAUDE.md)"
+    )]
+    TooLong {
+        /// The key in the description.
+        what: &'static str,
+        /// What it said.
+        seconds: u64,
+        /// The longest it may be.
+        at_most: u64,
+    },
+    /// A path that is not absolute.
+    #[error(
+        "{what} is {at}, which is relative to whatever directory alo-agentd happened to be started in; give it a path beginning with /"
+    )]
+    NotAbsolute {
+        /// The key in the description.
+        what: &'static str,
+        /// What it said.
+        at: PathBuf,
+    },
+}
+
+/// Why there is nowhere for this session's socket to go.
+///
+/// Separate from [`NotDescribed`] because it is a different thing to go and
+/// change: nothing in the description is wrong, and what is missing is the
+/// session `alo-agentd` was started outside of.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum NoSession {
+    /// The variable is unset, or set to nothing at all.
+    #[error(
+        "$XDG_RUNTIME_DIR is not set, and alo-agentd will not guess at a directory for a socket the person's approvals travel over; start it as a user service of the signed-in person"
+    )]
+    NotSet,
+    /// The variable is set to something that is not an absolute path.
+    #[error(
+        "$XDG_RUNTIME_DIR is {at}, which is not an absolute path; it names the directory this session's runtime files go in and has to begin with /"
+    )]
+    NotAbsolute {
+        /// What it was set to.
+        at: PathBuf,
+    },
 }
 
 /// Why this machine cannot be described as having two sides.
@@ -326,6 +467,62 @@ mod tests {
 
         let said = NotACaller::Stranger { uid: 65534 }.to_string();
         assert!(said.contains("65534"));
+    }
+
+    /// **And so does every refusal about the description**, which is read by
+    /// the same person at the same hour: the file, the number, and the key.
+    #[test]
+    fn every_refusal_about_a_description_names_what_to_go_and_change() {
+        let said = NotDescribed::SomebodyElses {
+            at: PathBuf::from("/etc/alo/agentd.toml"),
+            owner: 1001,
+        }
+        .to_string();
+        assert!(said.contains("/etc/alo/agentd.toml"), "{said}");
+        assert!(said.contains("1001"), "{said}");
+
+        let said = NotDescribed::Loose {
+            at: PathBuf::from("/etc/alo/agentd.toml"),
+            mode: 0o666,
+        }
+        .to_string();
+        assert!(said.contains("0666"), "{said}");
+
+        let said = NotDescribed::NotAbsolute {
+            what: "record.path",
+            at: PathBuf::from("record"),
+        }
+        .to_string();
+        assert!(said.contains("record.path"), "{said}");
+    }
+
+    /// **A description and a session are two things to go and change**, so they
+    /// are two types: one is a line in a file somebody wrote, and the other is
+    /// the session the service was started outside of.
+    #[test]
+    fn a_missing_session_is_not_a_wrong_description() {
+        let said = NoSession::NotSet.to_string();
+        assert!(said.contains("XDG_RUNTIME_DIR"), "{said}");
+        assert!(said.contains("user service"), "{said}");
+        assert_ne!(
+            said,
+            NoSession::NotAbsolute {
+                at: PathBuf::from("run/user/1000")
+            }
+            .to_string()
+        );
+    }
+
+    /// The two logins and the two numbers that are not users travel into a
+    /// description's refusal as themselves, so what a reader is told about the
+    /// file is what `crate::side` and `crate::caller` already said.
+    #[test]
+    fn what_the_logins_refused_is_carried_into_the_description() {
+        let refused = NotDescribed::from(NotTwoSides::OneUser { uid: 1000 });
+        assert!(refused.to_string().contains("1000"), "{refused}");
+
+        let refused = NotDescribed::from(NotAUser::NoSuchGroup);
+        assert!(refused.to_string().contains("group"), "{refused}");
     }
 
     /// A number that is not a user arrives at a connection as a refusal of that

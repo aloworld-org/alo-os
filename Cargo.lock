@@ -16,7 +16,9 @@ dependencies = [
  "alo-strings",
  "alo-turn",
  "rustix",
+ "serde",
  "thiserror",
+ "toml",
 ]
 
 [[package]]

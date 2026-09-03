@@ -47,10 +47,14 @@ something the standard library will not do — `SO_PEERCRED` and `poll`, in one
 file, because `peer_cred` is unstable, waiting on several descriptors at once
 has no spelling in std at all, and `unsafe` is forbidden. Since **item 21d** it
 is the crate that reaches the most of this workspace and is reached by none of
-it: five crates, and the second half of that sentence is what a service is —
-everything decides, one thing runs. It is also **the only one that reads a
-clock**, once a round, which is where item 1's *nothing reads the clock* was
-always going to have to end.  **`alo-driving` is the only one
+it: six crates since **item 21e**, and the second half of that sentence is what
+a service is — everything decides, one thing runs. The sixth is `alo-keeping`,
+and it is the first reached for something the machine is *told* rather than
+something a turn does. It is also **the only one that reads a clock**, once a
+round, which is where item 1's *nothing reads the clock* was always going to
+have to end — and since 21e **the only one that reads a file nobody in alo OS
+wrote**: `docs/contracts/machine-description.md` is typed by whoever stands the
+machine up, and every rule about who may have written it is in `trusting.rs`.  **`alo-driving` is the only one
 nothing on a machine ever reads**: it measures whether a model can produce a
 verb call, it is run by whoever adds a catalogue entry, and what ships is the
 grade they wrote down. It is also the only crate that reaches `alo-protocol` —
@@ -1780,10 +1784,12 @@ out.
   blocked all this time on the daemon not existing. The path a record is written
   to, the retention the organisation sets (ADR 0004), and the timer that
   shortens it. `alo-keeping` holds the shape; this gives it somewhere to live.
-  **Blocked on 21e.** 21d built the loop a timer would fire in, so what is left
-  is not a process but the thing that says *which* path and *how long* — a
-  retention an organisation sets is a machine describing itself, and nothing
-  reads that yet.
+  **No longer blocked.** 21d built the loop a timer would fire in and 21e built
+  the thing that says *which* path and *how long*: `Described::record` and
+  `Described::keeping` are read off a real disk, and there is an integration
+  test starting a real record at the path a real description named. What is left
+  is the timer — when a shortening runs inside `Serving`'s round — which is the
+  one question neither of those two answered.
 
 - [x] **21a. What a client may ask the daemon** — the half of item 21 that is
   law 2 rather than a socket, cut from it and built. `crates/alo-protocol`, a
@@ -2038,27 +2044,92 @@ out.
   run as a service**: there is no `main`, no signal handler installed, and
   nothing has been started by systemd. That is 21e.
 
-- [ ] **21e. What a machine says about itself.** The `main`, and everything the
-  service is handed rather than decides: `$XDG_RUNTIME_DIR` and what to do when
-  it is not set, the two users, which model or provider answers a question and
-  under which policy, how long a turn and a proposal last, and where the record
-  is written. It installs the `SIGTERM` handler `stopping.rs` was shaped for —
-  one call long, because a handler may write a byte to an open descriptor and
-  may not allocate or take a lock — and it refuses to run as root at all (ADR
-  0001 §2, which 21c left to whatever has a `main` and 21d did not become).
+- [x] **21e. What a machine says about itself — the description.** Cut from the
+  item below, and the half that was a file format before it was code. Five new
+  files in `crates/alo-agentd`: `lasting.rs` (a length of time this machine was
+  told, and the two ends it is refused at), `trusting.rs` (what has to be true
+  of the file before anything in it is believed), `describing.rs` (the shape
+  somebody typed, and the format number that decides whether it is read),
+  `described.rs` (the checked value, and everything a service is handed),
+  `session.rs` (`$XDG_RUNTIME_DIR`, and the two guesses that are not made).
+  `refusing.rs` gained `NotDescribed` and `NoSession`; `unix.rs` gained the
+  third question the standard library will not answer. 132 unit tests (was 87)
+  and 8 new integration tests; **1611 tests on Linux** (was 1555), **1460 on
+  Windows** (unchanged), clippy clean on both.
+  `docs/contracts/machine-description.md` is the public surface it fixed.
 
-  **Blocked on nothing**, and it is a decision about a file format before it is
-  a decision about code: what a machine is described by is a public surface the
-  moment anything else reads or writes it, so it belongs in `docs/contracts/`
-  beside the protocol. Item 20 waits on this rather than on 21d — a timer needs
-  a loop, which now exists, but *how long* is a retention an organisation sets
-  (ADR 0004) and nothing reads one yet.
+  **The item was one and is two, and the line the cut falls on is the
+  vocabulary.** Everything the description refuses is read by whoever is
+  standing the machine up, in English, like every other refusal in this crate —
+  so this half needs no `Strings` at all. The process needs one: a `Machine` is
+  made with the words the person in front of it reads, and *where a machine's
+  vocabulary comes from* is a question no item in this queue has asked and the
+  item did not contain. It is 21f, below.
 
-  Two things it unblocks and one it does not. It unblocks **item 20** and the
-  last of *agents point at the local model*: `doing.rs` refuses a question in
-  words today because nothing tells the service what was chosen, and the
-  sentence stops being the only answer the moment something does. It does not
-  unblock the application verbs, which are Wayland and D-Bus and stay below.
+  **The decision the item did not contain: who may write the file.** The
+  description names **which login is the agent**, so whoever can rewrite it can
+  name themselves this machine's agent — and every read the person's grants
+  permit is then theirs, on a service behaving exactly as it was told to. So the
+  file is checked before it is parsed, which is `place.rs`'s argument about a
+  directory arriving at a file and sharper: not a link, owned by root or by the
+  person this process runs as, and writable by nobody else. What is deliberately
+  **not** checked is whether anybody can read it — nothing secret is in it, and
+  a check that pretended otherwise would teach whoever writes it that secrets
+  may go there.
+
+  **And the check is made on the open file rather than on the path.** The
+  description is opened with `O_NOFOLLOW` and the owner and the mode are read
+  through that handle, so the file that was checked and the file that was read
+  cannot be two different files. That is `alo-files`' rule since item 6a — a
+  read asks the open handle rather than asking the name again — arriving in the
+  daemon, and it is what makes the three rules above worth anything.
+
+  Three decisions the next items inherit. **Nothing has a default**, which is
+  item 23's `Driving::NotMeasured` applied to the file that says what a machine
+  is: `alo_keeping::Keeping` has a `Default` and it is deliberately not reached
+  for, because *forever unless somebody says otherwise* is right for a person
+  who never opened a settings panel and wrong for an administrator who left a
+  line out. **A length of time too long is refused rather than clamped**, and
+  the ceiling — one day — is alo OS's rather than an organisation's, because
+  *an approval is never a session* is a promise the capability model makes and
+  not a policy anybody gets to loosen; `Keeping` ships no number for the
+  opposite reason and both are written down. **Nothing about the session is
+  guessed**: `$XDG_RUNTIME_DIR` unset is a refusal, because `/tmp` is a
+  directory anybody can create first and `/run/user/<uid>` is the session
+  manager's to make.
+
+  Built and unit tested on Linux, and read off a real disk by a real socket and
+  a real record: the two logins in the file open the socket, and the path in it
+  is where `alo-keeping` starts the record. **Nothing has been started by
+  systemd**, and no description belonging to a third user has been read — making
+  one takes a privilege the tests do not have on every machine they run on, so
+  that rule is asked of the decision rather than of a disk.
+
+- [ ] **21f. The process.** What is left of 21e: the `main`, and everything it
+  does with a `Described`. It installs the `SIGTERM` handler `stopping.rs` was
+  shaped for — one call long, because a handler may write a byte to an open
+  descriptor and may not allocate or take a lock — it refuses to run as root at
+  all (ADR 0001 §2, which 21c left to whatever has a `main`, 21d did not become
+  and 21e deliberately left to the thing that is really running), and it
+  assembles the machine a turn happens against: the resolver, the indicator, the
+  record `alo-keeping` opens at the path the description named, and which model
+  or provider answers a question under which policy.
+
+  **Blocked on nothing, and it is a decision about a vocabulary first.** A
+  `Machine` is made with `&Strings`, and nothing in this repository has ever
+  built one outside a test: every crate declares its own words, and *where the
+  machine's vocabulary comes from* — which crates are collected, whether a
+  translation is loaded from a disk and from where, and what a service does when
+  it cannot be — is a question no item has asked. That is the first half of this
+  item and it wants writing down before it is written; a `Strings` assembled by
+  accident in a `main` is the one place *hardcoded English is a bug* would come
+  back with nobody noticing.
+
+  It unblocks the last of *agents point at the local model*: `doing.rs` refuses
+  a question in words today because nothing tells the service what was chosen,
+  and the sentence stops being the only answer the moment something does. It
+  does not unblock the application verbs, which are Wayland and D-Bus and stay
+  below.
 
 - [x] **22. Running out is not a fault** — implements ADR 0009's *since it was
   accepted* section and `docs/features.md`'s v0.01 *running out of credit is its

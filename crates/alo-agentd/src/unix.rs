@@ -34,7 +34,7 @@
 //!
 //! # And the second question: which of these has something on it
 //!
-//! [`ready`] is `poll`, and it is here for the same reason [`who`] is: the
+//! `ready` is `poll`, and it is here for the same reason [`who`] is: the
 //! standard library has no way to wait on more than one thing at once, and
 //! [`crate::Serving`] must wait on the socket, on both connections and on the
 //! end a stop arrives on **at the same time**. Waiting on them one after
@@ -45,6 +45,14 @@
 //! It waits with no timeout, so a quiet machine costs nothing at all: the
 //! process sleeps in one call until somebody says something, and there is no
 //! interval on which it wakes up to discover that nobody has.
+//!
+//! # And the third: open this, and not whatever it points at
+//!
+//! `open_not_a_link` is here for the same reason again. `File::open` follows a
+//! symbolic link, and a service that looked at a path and then opened it would
+//! be answering about two different files whenever somebody could replace the
+//! one in between. `O_NOFOLLOW` is how a kernel is asked for both answers at
+//! once, and the standard library has no spelling for it either.
 
 use std::os::fd::BorrowedFd;
 use std::os::unix::net::UnixStream;
@@ -126,6 +134,47 @@ pub fn who(connection: &UnixStream) -> Result<Caller, NotACaller> {
 pub(crate) fn give_to_group(path: &Path, group: Gid) -> Result<(), std::io::Error> {
     rustix::fs::chown(path, None, Some(rustix::fs::Gid::from_raw(group.raw())))
         .map_err(std::io::Error::from)
+}
+
+/// Open this path, and refuse it if the last part of it is a symbolic link.
+///
+/// The third thing the standard library will not do here: `File::open` follows
+/// a link, and looking first and opening afterwards is two answers about a path
+/// that could have been replaced in between. `O_NOFOLLOW` makes the kernel
+/// answer both questions at once — what is opened is what was looked at, or
+/// nothing is opened at all.
+///
+/// It refuses **the last part of the path only**, which is the same limit
+/// [`crate::place`] has: a link somewhere along the way is still followed, and
+/// what protects against that is who owns the directories, not this call.
+///
+/// # Errors
+///
+/// [`NotOpened::ALink`] when the kernel said it was a link, and
+/// [`NotOpened::Machine`] for everything else. The two are told apart **here**
+/// rather than by the caller, because what the kernel answers with is `ELOOP`
+/// and `std::io::ErrorKind` has no stable spelling for it — so a caller would be
+/// left comparing a raw number, which is exactly the kind of knowledge this file
+/// exists to keep in one place.
+pub(crate) fn open_not_a_link(path: &Path) -> Result<std::fs::File, NotOpened> {
+    match rustix::fs::open(
+        path,
+        rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NOFOLLOW,
+        rustix::fs::Mode::empty(),
+    ) {
+        Ok(opened) => Ok(std::fs::File::from(opened)),
+        Err(rustix::io::Errno::LOOP) => Err(NotOpened::ALink),
+        Err(why) => Err(NotOpened::Machine(std::io::Error::from(why))),
+    }
+}
+
+/// Why [`open_not_a_link`] opened nothing.
+#[derive(Debug)]
+pub(crate) enum NotOpened {
+    /// The last part of the path is a symbolic link.
+    ALink,
+    /// The machine would not open it, for any other reason.
+    Machine(std::io::Error),
 }
 
 /// Sleep until one of these has something on it, and say which ones do.
