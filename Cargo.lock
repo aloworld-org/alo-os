@@ -162,10 +162,14 @@ dependencies = [
 name = "alo-turn"
 version = "0.0.1"
 dependencies = [
+ "alo-answering",
+ "alo-asking",
  "alo-capability",
  "alo-context",
+ "alo-egress",
  "alo-files",
  "alo-keeping",
+ "alo-models",
  "alo-record",
  "alo-strings",
  "thiserror",

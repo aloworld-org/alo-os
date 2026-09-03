@@ -12,6 +12,33 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Your agent can now put a question to a model inside a turn, and what left
+  your machine is on the disk before the answer reaches it.** The three ways
+  alo OS can have a question answered — a provider you added, the model alo OS
+  runs for you, or an OpenAI-compatible service you started yourself — were all
+  built and none of them was joined to a turn. They are now, at one door.
+
+  What that gives you is law 1 in the place it is hardest to keep. A question
+  that goes to a provider is on the indicator while it goes and in the record
+  afterwards — **including one that never came back**, because a machine that
+  wrote down only the questions that were answered would report a quieter day
+  than it had. A question your organisation's rule will not let leave is
+  refused in that rule's own words and written down as a refusal, not as
+  something that left. And a question answered on your own machine puts nothing
+  on the indicator at all, because there is nothing to put there: it is the
+  absence of a departure rather than a counter that reads zero.
+
+  **A failure still asks you before it asks anywhere else.** When the place you
+  chose does not answer, alo OS shows you what happened and what else it could
+  ask — and asks none of it. Taking one of those offers is something you do,
+  and the second attempt is shown and written down exactly like the first. The
+  offer outlives the turn, so you can think about it for as long as you like
+  without anything of yours staying reachable in the meantime.
+
+  What you asked and what came back are still nowhere: the record keeps that a
+  question was asked, by which agent and where it went, and never a word of the
+  question or the answer.
+
 - **A whole turn now happens in one place, and what your agent did is on the
   disk before it is told anything.** Until now every step of a turn was built
   and correct on its own and nothing joined them: what your invocation offered,

@@ -15,6 +15,12 @@
 //! | [`Turning::declining`] | §5, and *no* is a whole answer | nothing, and an entry saying the person said no |
 //! | [`Turning::ending`] | §3, a grant that expires *and* is revoked | whether a grant was taken back |
 //!
+//! There is a sixth, [`Turning::asking`], and it is in [`crate::asking`] rather
+//! than in this file because it is the one that may reach off this machine: it
+//! puts a question to a model, shows what leaves while it leaves, and asks the
+//! grants nothing at all. `alo-agentd`'s protocol reaches it beside the five
+//! here, and law 1 rather than ADR 0001 §5 is what shapes it.
+//!
 //! **There is no door that takes a call.** Both of the two that start something
 //! take a verb's name and what was given for each argument, and put them
 //! through [`alo_capability::Verbs::call`] against the closed list this machine
@@ -246,6 +252,7 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// ```compile_fail
     /// use alo_capability::Grants;
     /// use alo_context::Context;
+    /// use alo_egress::Indicator;
     /// use alo_files::OnThisMachine;
     /// use alo_record::Record;
     /// use alo_strings::{Strings, Vocabulary};
@@ -254,9 +261,15 @@ impl<'a, 'm> Turning<'a, 'm> {
     ///
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let strings = Strings::of(Vocabulary::empty());
+    /// let mut indicator = Indicator::default();
     /// let mut record = Record::default();
-    /// let mut machine =
-    ///     Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+    /// let mut machine = Machine::carrying_out_file_verbs(
+    ///     &strings,
+    ///     &OnThisMachine,
+    ///     &mut indicator,
+    ///     &mut record,
+    /// )
+    /// .unwrap();
     /// let mut grants = Grants::default();
     /// let turning = Turning::beginning(
     ///     Context::at_invocation(now),
@@ -311,6 +324,17 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// to answer with and the sentence the person is being asked about.
     pub fn waiting_at(&self, now: SystemTime) -> impl Iterator<Item = &Waiting> {
         self.approvals.waiting_at(now)
+    }
+
+    /// What is leaving this machine right now.
+    ///
+    /// The machine's indicator, lent out while a turn holds the machine — a
+    /// shell that could not draw law 1's surface during a turn would be a shell
+    /// that cannot draw it at the one moment it matters. Only
+    /// [`Turning::asking`] and alo OS's own errands put anything on it.
+    #[must_use]
+    pub fn showing(&self) -> &alo_egress::Indicator {
+        self.machine.showing()
     }
 
     /// Whether this turn has stopped because something could not be written
@@ -372,13 +396,34 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// coming through here would be a door the gate's *every execution and every
     /// refusal leaves a record* is not true of.
     fn writing_down(&mut self, entry: Entry) -> Result<(), NotDone> {
+        self.keeping(entry).map_err(NotDone::NotRecorded)
+    }
+
+    /// The same, answering with what the record said rather than with a turn's
+    /// refusal.
+    ///
+    /// `pub(crate)` and the only thing in this crate that touches the record.
+    /// [`crate::asking`] needs the failure itself, because a question has one
+    /// more thing to say about it than a verb does — whether it had already
+    /// left the machine when the record broke — and that is not a distinction
+    /// [`NotDone`] has anywhere to put.
+    pub(crate) fn keeping(&mut self, entry: Entry) -> Result<(), alo_keeping::NotKept> {
         match self.machine.kept().keep(entry) {
             Ok(()) => Ok(()),
             Err(why) => {
                 self.closed = true;
-                Err(NotDone::NotRecorded(why))
+                Err(why)
             }
         }
+    }
+
+    /// The verbs, the words, the resolver, the indicator and the record.
+    ///
+    /// `pub(crate)`, for [`crate::asking`]: a question reaches the indicator
+    /// and the record, and both of those are the machine's rather than the
+    /// turn's.
+    pub(crate) fn machine(&mut self) -> &mut Machine<'m> {
+        self.machine
     }
 
     /// Whether anything more may happen under this turn.
@@ -402,6 +447,7 @@ mod tests {
         a_folder_of_our_own, as_given, files, granting, hour, in_english, noon, offering,
     };
     use alo_capability::{Agent, Ask, CallError, ProposalError};
+    use alo_egress::Indicator;
     use alo_files::OnThisMachine;
     use alo_keeping::NotKept;
     use alo_record::{Asking, Only, Record};
@@ -452,7 +498,10 @@ mod tests {
     ) -> T {
         let strings = in_english();
         let (folder, invoice) = a_folder_with_an_invoice(what);
-        let mut machine = Machine::carrying_out_file_verbs(&strings, &OnThisMachine, kept).unwrap();
+        let mut indicator = Indicator::default();
+        let mut machine =
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, kept)
+                .unwrap();
         let mut grants = granting(&[&folder]);
         let mut turning = Turning::beginning(
             offering(&invoice),
@@ -832,8 +881,10 @@ mod tests {
         let strings = in_english();
         let mut record = Record::default();
         let (folder, invoice) = a_folder_with_an_invoice("offered");
+        let mut indicator = Indicator::default();
         let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
         let mut grants = Grants::default();
         let turning = {
             let mut turning = Turning::beginning(
@@ -886,8 +937,10 @@ mod tests {
         let strings = in_english();
         let mut record = Record::default();
         let (_folder, invoice) = a_folder_with_an_invoice("declined-agent");
+        let mut indicator = Indicator::default();
         let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
         let mut present = Agent::present();
         let turning = Turning::beginning(
             offering(&invoice),
@@ -911,8 +964,10 @@ mod tests {
         let strings = in_english();
         let mut record = Record::default();
         let (_folder, invoice) = a_folder_with_an_invoice("anonymous");
+        let mut indicator = Indicator::default();
         let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
         let mut grants = Grants::default();
         let refused =
             Turning::beginning(offering(&invoice), "  ", hour(), &mut grants, &mut machine)
@@ -1023,8 +1078,10 @@ mod tests {
         let strings = Strings::of(Vocabulary::empty());
         let folder = a_folder_of_our_own("no-words");
         let somewhere_else = a_folder_of_our_own("no-words-elsewhere");
+        let mut indicator = Indicator::default();
         let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
         let mut grants = granting(&[&folder]);
         {
             let mut turning = Turning::beginning(

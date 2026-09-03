@@ -4,8 +4,10 @@
 //! Thirteen crates in this workspace each decide one thing correctly and none
 //! of them is joined to the next. This is the joining: the order the steps
 //! happen in, and the guarantee that none of them can be skipped. It reaches
-//! [`alo_context`], [`alo_capability`], [`alo_files`], [`alo_record`] and
-//! [`alo_keeping`], and nothing reaches it.
+//! [`alo_context`], [`alo_capability`], [`alo_files`], [`alo_record`],
+//! [`alo_keeping`] and — since a turn learned to put a question to a model —
+//! [`alo_asking`], [`alo_answering`], [`alo_egress`] and [`alo_models`]. Nothing
+//! reaches it.
 //!
 //! # The order, and why each step is where it is
 //!
@@ -37,6 +39,10 @@
 //! 6. **The turn ends and the grant goes with it**, whether or not anything was
 //!    done under it.
 //!
+//! [`Turning::asking`] runs beside those rather than inside them: a question
+//! put to a model is not a verb, asks the grants nothing, and is shaped by law
+//! 1 instead — the next section but one is about it.
+//!
 //! # Nothing is handed back that has not been written down
 //!
 //! `CLAUDE.md`'s gate asks that *every execution and every refusal leaves a
@@ -56,6 +62,25 @@
 //! that happened and one reason its machine is no longer keeping evidence.
 //! `docs/quirks.md` records the window and what closes it.
 //!
+//! # And a question is the same rule, drawn by law 1 instead
+//!
+//! [`Turning::asking`] puts a question where the person's machine is set to put
+//! it, and everything that **leaves** or is **stopped from leaving** is written
+//! down before the caller hears about it: a departure on both roads out of a
+//! provider, a held-back entry when the rule in force refuses, and *answered
+//! here* when the answer came from this machine. [`NoAnswer`] has the table and
+//! the four cases that deliberately leave nothing, each of which is a case where
+//! nothing left the machine and nothing on the machine answered.
+//!
+//! Two things it does not do, and both are decisions rather than gaps.
+//! **It chooses no place.** The permission and the thing that answers arrive
+//! together, out of one setting the person made, and there is no method here
+//! that could pick a different one. **It does nothing with a failure.** A place
+//! that did not answer comes back whole, and taking one of its offers is the
+//! person's act — which is also what lets them think about it for longer than
+//! the turn lasts, since a failure holds no grant, no context and nothing of
+//! this machine.
+//!
 //! # This crate says almost nothing
 //!
 //! One string, and [`crate::words`] is the argument for why. Every refusal a
@@ -74,10 +99,10 @@
 //! protocol. Whatever composes a call composes it out of a name and values, and
 //! walks in through step 2 above like everything else.
 //!
-//! **It puts no question to a model.** `alo-asking` has all three doors for
-//! that and needs an indicator, a policy and a departure that reaches the
-//! record by a road of its own; joining it to a turn is the next item and is
-//! deliberately not here.
+//! **It opens no socket and speaks to no runtime.** `alo-asking` has all three
+//! doors for that, and this crate reaches them holding the indicator that
+//! shows what leaves and the record that keeps what left. What is added is the
+//! order and the evidence, never a second road to the wire.
 //!
 //! **It reaches no window.** `alo-applications` decides what an agent may do to
 //! an application and stops at its `Reaching`, because what actually moves a
@@ -87,18 +112,25 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answers;
+pub mod asking;
 mod carrying;
 pub mod kept;
 pub mod machine;
+pub mod places;
 pub mod refusing;
 pub mod turning;
+pub mod unanswered;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
+pub use answers::Answers;
 pub use kept::Kept;
 pub use machine::Machine;
+pub use places::Places;
 pub use refusing::NotDone;
 pub use turning::Turning;
+pub use unanswered::NoAnswer;
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, turn_words};

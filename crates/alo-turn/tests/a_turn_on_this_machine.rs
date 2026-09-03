@@ -27,6 +27,7 @@ use std::time::{Duration, SystemTime};
 
 use alo_capability::{Given, Grant, Grantee, Grants, Reach};
 use alo_context::{Context, Document, Focused, Selection};
+use alo_egress::Indicator;
 use alo_files::{OnThisMachine, Resolving, file_words};
 use alo_keeping::{Reading, Writing};
 use alo_record::{Asking, Only, Record};
@@ -112,8 +113,14 @@ fn one_turn_moves_a_file_and_the_record_on_the_disk_says_what_happened() {
     let approval;
     {
         let mut writing = Writing::opening(&kept_at).unwrap();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut writing).unwrap();
+        let mut indicator = Indicator::default();
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut indicator,
+            &mut writing,
+        )
+        .unwrap();
 
         let context = Context::at_invocation(noon())
             .and_document(Document::open(&march).unwrap())
@@ -253,8 +260,10 @@ fn nothing_is_handed_back_before_it_is_on_the_disk() {
 
     let mut grants = granting(&[&invoices]);
     let mut writing = Writing::opening(&kept_at).unwrap();
+    let mut indicator = Indicator::default();
     let mut machine =
-        Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut writing).unwrap();
+        Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut writing)
+            .unwrap();
     let mut turning = Turning::beginning(
         Context::at_invocation(noon()),
         "@files",
@@ -329,7 +338,10 @@ fn what_a_turn_writes_does_not_depend_on_where_it_is_written() {
         &mut on_a_disk as &mut dyn alo_turn::Kept,
     ] {
         let mut grants = granting(&[&invoices]);
-        let mut machine = Machine::carrying_out_file_verbs(&strings, &OnThisMachine, kept).unwrap();
+        let mut indicator = Indicator::default();
+        let mut machine =
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, kept)
+                .unwrap();
         let mut turning = Turning::beginning(
             Context::at_invocation(noon()),
             "@files",

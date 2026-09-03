@@ -1,9 +1,10 @@
 //! What every turn on this machine happens against, and what it can carry out.
 //!
-//! Four things a turn needs that are not the turn's own: the verbs an agent may
+//! Five things a turn needs that are not the turn's own: the verbs an agent may
 //! ask for, the words the person in front of the machine reads, how a path is
-//! resolved, and where what happened is written down. They are made once, when
-//! the daemon starts, and every turn borrows them.
+//! resolved, what is leaving right now, and where what happened is written
+//! down. They are made once, when the daemon starts, and every turn borrows
+//! them.
 //!
 //! # The list an agent may ask from is the list this machine can carry out
 //!
@@ -21,6 +22,29 @@
 //! second one the name is wrong until somebody fixes it — which is what it is
 //! for.
 //!
+//! Asking a model something is **not** one of those verbs, and the name of the
+//! constructor stays right because of it: a question an agent puts to a model
+//! is what an agent *is* rather than something it is granted, so it is a door
+//! on [`crate::Turning`] and not a row in the registry. `alo-asking` never asks
+//! the grants anything.
+//!
+//! # The indicator is the machine's, and the rule in force is not
+//!
+//! [`Indicator`] is held here for the reason the record is: **one machine has
+//! one of each, and a second would be a second place to look.** Item 16 settled
+//! that on the indicator itself — what alo OS does on its own goes on the same
+//! list as what an agent causes, because the failure law 1 exists to prevent is
+//! not *the policy was wrong* but *nobody could see it* — and a turn handed an
+//! indicator of its own would put two turns on one machine on two lists. A
+//! machine that could run a turn without one would make law 1's surface
+//! optional equipment.
+//!
+//! What is **not** held here is `alo_models::SourcePolicy`. That is a rule an
+//! organisation sets and can tighten while a turn is open, so it is passed to
+//! the door at the moment a question is asked — exactly as the grants are, and
+//! for item 3's reason: the rule that counts is the one in force now, not the
+//! one that was in force when somebody pressed a key.
+//!
 //! # It holds no grants and no clock
 //!
 //! The grants are the machine's, and they are passed to each door rather than
@@ -30,17 +54,18 @@
 //! clock either, as everywhere else in this workspace.
 
 use alo_capability::Verbs;
+use alo_egress::Indicator;
 use alo_files::{Declaring, Resolving, file_verbs};
 use alo_strings::Strings;
 
 use crate::kept::Kept;
 
-/// The verbs, the words, the resolver and the record: one machine's, shared by
-/// every turn on it.
+/// The verbs, the words, the resolver, the indicator and the record: one
+/// machine's, shared by every turn on it.
 ///
-/// Not `Clone`, and it holds the record by exclusive borrow: two of these would
-/// be two turns writing into one record with no order between them, and the
-/// record is a file whose lines are read as a sequence.
+/// Not `Clone`, and it holds the indicator and the record by exclusive borrow:
+/// two of these would be two turns writing into one record with no order
+/// between them, and the record is a file whose lines are read as a sequence.
 pub struct Machine<'a> {
     /// What an agent may ask for, which is what this machine can carry out.
     verbs: Verbs,
@@ -48,6 +73,8 @@ pub struct Machine<'a> {
     strings: &'a Strings,
     /// Where a path really leads.
     resolving: &'a dyn Resolving,
+    /// What is leaving this machine right now.
+    indicator: &'a mut Indicator,
     /// Where what happened is written down.
     kept: &'a mut dyn Kept,
 }
@@ -60,6 +87,11 @@ impl<'a> Machine<'a> {
     /// privilege — `alo_files::OnThisMachine` is the one that ships, and
     /// `alo_files::Resolving` says why there is only one.
     ///
+    /// The indicator is taken for a different reason: it is the surface a
+    /// person watches, so there is exactly one of it and the shell that draws
+    /// it is the thing that owns it. A machine borrows it, and
+    /// [`Machine::showing`] is how the shell reads it back.
+    ///
     /// # Errors
     /// [`Declaring`], which the six as they are written cannot cause. It is a
     /// `Result` rather than an unwrap for the reason `alo-files` gives: a
@@ -67,12 +99,14 @@ impl<'a> Machine<'a> {
     pub fn carrying_out_file_verbs(
         strings: &'a Strings,
         resolving: &'a dyn Resolving,
+        indicator: &'a mut Indicator,
         kept: &'a mut dyn Kept,
     ) -> Result<Self, Declaring> {
         Ok(Self {
             verbs: file_verbs()?,
             strings,
             resolving,
+            indicator,
             kept,
         })
     }
@@ -88,14 +122,38 @@ impl<'a> Machine<'a> {
     }
 
     /// The words the person in front of this machine reads.
+    ///
+    /// Answers for as long as the words themselves live rather than for as
+    /// long as this borrow does, so a caller can hold the words and then ask
+    /// the machine for something else — which is what a turn does between
+    /// wording a refusal and writing it down.
     #[must_use]
-    pub fn strings(&self) -> &Strings {
+    pub fn strings(&self) -> &'a Strings {
         self.strings
+    }
+
+    /// What is leaving this machine right now.
+    ///
+    /// What a shell draws law 1's indicator from. Borrowed rather than lent
+    /// mutably: only a turn, and alo OS on its own errands, put anything on it.
+    #[must_use]
+    pub fn showing(&self) -> &Indicator {
+        self.indicator
     }
 
     /// Where a path really leads.
     pub(crate) fn resolving(&self) -> &dyn Resolving {
         self.resolving
+    }
+
+    /// What is leaving, to be shown something else.
+    ///
+    /// `pub(crate)`: the only callers are the doors that put a question
+    /// somewhere, and they hand it straight to `alo_egress::Indicator::beginning`
+    /// by way of `alo-asking`. A public one would be a way to take a line off
+    /// the indicator without the connection it belongs to having ended.
+    pub(crate) fn indicator(&mut self) -> &mut Indicator {
+        self.indicator
     }
 
     /// Where what happened is written down.
@@ -135,9 +193,11 @@ mod tests {
     #[test]
     fn a_machine_offers_exactly_what_it_can_carry_out() {
         let strings = in_english();
+        let mut indicator = Indicator::default();
         let mut record = Record::default();
         let machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
 
         let names: Vec<_> = machine.verbs().all().map(Verb::name).collect();
         assert_eq!(
@@ -162,9 +222,26 @@ mod tests {
     #[test]
     fn what_a_machine_prints_is_what_it_offers() {
         let strings = in_english();
+        let mut indicator = Indicator::default();
         let mut record = Record::default();
         let machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut record).unwrap();
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
         assert_eq!(format!("{machine:?}"), "Machine { verbs: 6, .. }");
+    }
+
+    /// **A machine that has done nothing is showing nothing**, and the shell
+    /// reads that off the machine rather than keeping a second copy of law 1's
+    /// surface beside it.
+    #[test]
+    fn a_machine_that_has_caused_nothing_to_leave_is_quiet() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let machine =
+            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
+                .unwrap();
+        assert!(machine.showing().is_quiet());
+        assert!(machine.showing().showing().is_empty());
     }
 }

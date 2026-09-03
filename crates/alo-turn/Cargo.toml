@@ -8,9 +8,18 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# Where a question that was not answered may go next, and the offer only a
+# person can take. A turn hands one of these back and does nothing with it.
+alo-answering = { path = "../alo-answering" }
+# The three doors a question goes through. This crate reaches them and adds the
+# order, the indicator and the record around them; it opens no socket of its own.
+alo-asking = { path = "../alo-asking" }
 # The verb, the sentence, the approval and the authorisation — every step
 # between a name arriving and something being allowed to run.
 alo-capability = { path = "../alo-capability" }
+# Law 1's surface. A machine has one indicator and every turn on it shows what
+# it causes to leave on that one.
+alo-egress = { path = "../alo-egress" }
 # What the invocation offered, and the one grant it made for the length of the
 # turn.
 alo-context = { path = "../alo-context" }
@@ -19,6 +28,9 @@ alo-files = { path = "../alo-files" }
 # Where a turn writes down what happened, when the machine has somewhere
 # durable to write it.
 alo-keeping = { path = "../alo-keeping" }
+# Where a question may be answered, the rule this machine is under, and the
+# runtime alo OS ships.
+alo-models = { path = "../alo-models" }
 # The entry itself. A turn makes one for every execution and every refusal, and
 # hands nothing back until it is written.
 alo-record = { path = "../alo-record" }

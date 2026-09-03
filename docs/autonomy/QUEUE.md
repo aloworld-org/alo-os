@@ -1647,19 +1647,84 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   record read back by `alo-keeping`. **Nothing here has been run on a certified
   machine**, and no disk has yet refused a write to it.
 
-- [ ] **19a. The question a turn puts to a model.** Cut from item 19, on the
+- [x] **19a. The question a turn puts to a model.** Cut from item 19, on the
   line that divides `alo-asking`'s own doors: everything in 19 happens on this
-  machine, and this is where a turn reaches off it. `alo-asking` has all three
-  doors already, so this is the joining rather than the sending — but it is a
-  real item and not wiring, because a turn that asks needs an
-  `alo_egress::Indicator`, an `alo_models::SourcePolicy` and the list of places
-  the person set up, and the departure comes back to be spent rather than being
-  written down by the crate that caused it. Two questions the item has to
-  answer. **Whose the indicator is**: one machine has one, and a `Machine` that
-  held it would put an egress-showing surface in the type every turn borrows,
-  which may be right and is a decision. **And what a turn does with an
-  `alo_answering::Failed`** — an offer only a person can take, arriving in the
-  middle of a turn that is holding a grant.
+  machine, and this is where a turn reaches off it. Four new files in
+  `crates/alo-turn`: `answers.rs` (the three things that can answer, and the
+  door each is behind), `places.rs` (the rule in force now, and everywhere else
+  the person set up), `asking.rs` (the door, and what is written down on each
+  of its roads), `unanswered.rs` (`NoAnswer` — the seven things that can come
+  back instead, and the four that deliberately leave no entry). `Machine` gains
+  the indicator; `Turning` gains `asking`, `showing` and one road to the record
+  that answers with `alo_keeping::NotKept` rather than with a turn's refusal.
+  25 new unit tests, 2 new integration tests against a real socket and a real
+  record file, 1 new `compile_fail` doctest. **1248 tests and 42 doctests
+  across the workspace** (was 1223 and 41), clippy clean.
+
+  **The first of the item's two questions, answered as it asked: the indicator
+  is the machine's.** One machine has one of them, and item 16 already settled
+  what that is for — what alo OS does on its own goes on the same list as what
+  an agent causes, because the failure law 1 exists to prevent is not *the
+  policy was wrong* but *nobody could see it*. A turn handed an indicator of
+  its own would put two turns on one machine on two lists, which is the second
+  place to forget that item refused to build. So it sits beside the record, for
+  the record's reason. What is **not** on the machine is the
+  `alo_models::SourcePolicy`: an organisation can tighten a rule while a turn
+  is open, so it arrives at the door at the moment a question is asked, exactly
+  as the grants do.
+
+  **The second question turned out to have a shorter answer than it looked:
+  a turn does nothing at all with a failure.** Holding it under a number, the
+  way a proposal is held, was the tempting shape and is wrong twice over. A
+  person reading *nothing answered — shall I ask the provider instead?* may
+  take longer than the turn lasts, and a turn that held the offer would either
+  expire it or extend itself, which is a grant outliving the invocation that
+  made it. And `alo-answering` already makes the guarantee structurally:
+  `Failed::take` needs an offer from that failure and spends the failure doing
+  it, so nothing else can take one. So the failure comes back whole, belongs to
+  nobody, holds no grant and nothing of this machine — and the `Answering` a
+  person's *yes* produces walks in at **the same door**, shown and written down
+  exactly as the first attempt was. A second attempt needs no second method.
+
+  **The decision neither question contained: the permission comes in rather
+  than being made here.** A turn that built its own `Answering` would ask
+  `SourcePolicy` about the place before the egress rule ever saw it, and the
+  two refusals are not interchangeable — only the second makes an
+  `alo_egress::NotPermitted`, and `Entry::held_back` is made from one of those
+  and from nothing else (item 5a). A machine whose rule was tightened between
+  the person choosing and the agent asking would then have refused the question
+  with no record of having refused it. So the rule is asked where its refusal
+  can be written down. It is not law 2's *no door takes a call* weakened: that
+  rule is about what an **agent** may ask for, and an agent does not choose
+  where its question is answered — ADR 0008 says the person does, and their
+  decision arrives the way the grants arrive.
+
+  Three decisions the next items inherit. **What is written down is what left
+  or was stopped from leaving**, and the four absences are argued one at a time
+  in `unanswered.rs`: a question that never formed, a provider whose name
+  cannot be drawn, a permission and a place that disagree, and a question this
+  machine could not answer. The last is `alo-answering`'s own decision followed
+  rather than made again — an entry per failure would build a log of somebody's
+  questions failing, one honest entry at a time, and `Happened::AnsweredHere`
+  would be a lie about a question nothing answered. **The line comes off the
+  indicator whatever happens**, including when the record cannot be written:
+  the indicator is a statement about *now*, so leaving a line up to signal that
+  the record is broken would make law 1's surface wrong on purpose. What breaks
+  instead is the turn. **A refusal that closes a turn says whether anything had
+  already left** — `NoAnswer::NotRecorded` carries it — because *the record
+  broke* and *somebody's question went to a provider and there is no evidence
+  of it* are two different mornings for whoever reads the machine.
+
+  **This crate still says one sentence.** `NoAnswer::said` hands every other
+  refusal to whoever made it, and answers `None` for exactly one thing —
+  `alo_asking::Miswired`, which keeps its English because its reader is
+  whoever wired a question to somewhere. A test walks the list and holds it to
+  that.
+
+  Built and unit tested, and walked end to end against a real socket with the
+  record written to a real file and read back by `alo-keeping`. **Nothing here
+  has been run against a provider anybody pays for, or against a real runtime**,
+  which is owed with the rest of the hardware verification.
 
 - [ ] **19b. What a turn does with an application verb.** The other half of
   `Machine::carrying_out_file_verbs`' name. `alo-applications` decides all four

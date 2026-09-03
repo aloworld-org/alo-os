@@ -4354,3 +4354,127 @@ No half was ticked that was not whole, and no machine half was touched.
 - **Nothing here has been run on a certified machine**, and **no disk has yet
   refused a write to a record** — the one refusal path in this crate that only
   real hardware can produce.
+
+## 2026-09-03 — iteration 38: the question a turn puts to a model
+
+**Item 19a — the question a turn puts to a model.** Four new files in
+`crates/alo-turn`: `answers.rs` (the three things that can answer, and the door
+each is behind), `places.rs` (the rule in force now, and everywhere else the
+person set up), `asking.rs` (the door, and what is written down on each of its
+roads), `unanswered.rs` (`NoAnswer` — the seven things that can come back
+instead). `Machine` gained the indicator and a way to read it; `Turning` gained
+`asking`, `showing`, and one road to the record that answers with
+`alo_keeping::NotKept` rather than with a turn's refusal. 25 new unit tests, 2
+new integration tests against a real socket with a real record file, 1 new
+`compile_fail` doctest checked by unmarking it (E0382, not a typo). **1248 tests
+and 42 doctests across the workspace** (was 1223 and 41), `cargo fmt` clean,
+`cargo clippy --workspace --all-targets` clean with zero warnings.
+
+### The item's first question, answered as it asked it
+
+**The indicator is the machine's**, beside the record, and for the record's
+reason: one machine has one of each and a second would be a second place to
+look. Item 16 settled what that surface is for — what alo OS does on its own
+goes on the same list as what an agent causes, because the failure law 1 exists
+to prevent is not *the policy was wrong* but *nobody could see it* — and a turn
+handed an indicator of its own would put two turns on one machine on two lists.
+`Machine::showing` lends it back, so a shell can draw law 1's surface at the one
+moment it matters, which is during a turn.
+
+What is deliberately **not** on the machine is `alo_models::SourcePolicy`. An
+organisation can tighten a rule while a turn is open, so it arrives at the door
+at the moment a question is asked — item 3's rule about the grants, met at
+egress.
+
+### The second question had a shorter answer than it looked
+
+**A turn does nothing at all with an `alo_answering::Failed`.** Holding it under
+a number, the way a proposal is held, is the obvious shape and is wrong twice.
+A person reading *nothing answered — shall I ask the provider instead?* may take
+longer than the turn lasts, so a turn that held the offer would either expire it
+or extend itself, and the second is a grant outliving the invocation that made
+it. And the guarantee is already structural one crate down: `Failed::take` needs
+an offer from that failure and spends the failure doing it.
+
+So the failure comes back whole and belongs to nobody — it holds no grant, no
+context and nothing of this machine — and the `Answering` a person's *yes*
+produces walks in at **the same door**, shown and written down exactly as the
+first attempt was. A second attempt needed no second method, and the test that
+says so is the ADR 0008 one: the place that failed was asked once, the place
+that was offered was asked nothing at all.
+
+### The decision neither question contained
+
+**The permission comes in rather than being made here**, and the reason is the
+record. A turn that built its own `Answering` would ask `SourcePolicy` about the
+place before the egress rule ever saw it, and the two refusals are not
+interchangeable: only the second makes an `alo_egress::NotPermitted`, and
+`Entry::held_back` is made from one of those and from nothing else (item 5a). A
+machine whose rule was tightened between the person choosing and the agent
+asking would then have refused the question **with no record of having refused
+it**. So the rule is asked where its refusal can be written down.
+
+That is not law 2's *no door takes a call* being weakened. That rule is about
+what an **agent** may ask for; an agent does not choose where its question is
+answered, ADR 0008 says the person does, and their decision arrives here the way
+the grants arrive at every other door.
+
+### Three things the item did not contain
+
+- **The four absences are argued one at a time.** What is written down is what
+  left, or what a rule stopped from leaving. Nothing is written for a question
+  that never formed, a provider whose name cannot be drawn, a permission and a
+  place that disagree, or a question this machine could not answer — and the
+  last of those is `alo-answering`'s own decision followed rather than made
+  again: an entry per failure would build a log of somebody's questions failing
+  one honest entry at a time, and `Happened::AnsweredHere` would be a lie about
+  a question nothing answered.
+- **The line comes off the indicator whatever happens**, including when the
+  record cannot be written. The indicator is a statement about *now*, so leaving
+  a line up in order to signal that the record is broken would make law 1's
+  surface wrong on purpose. What breaks is the turn.
+- **A refusal that closes a turn says whether anything had already left.**
+  `NoAnswer::NotRecorded` carries it, because *the record broke* and *somebody's
+  question went to a provider and there is now no evidence of it* are two
+  different mornings for whoever reads the machine, and only one of them is
+  about evidence that is missing of something.
+
+`ROADMAP.md` moved, and two code halves were written into — **★ Or use an API
+instead**, which now records that a turn is what reaches those three doors, and
+**Agents point at the local model by default / ★ never a silent fallback**,
+which now records that the same is true one level up, where a fallback would
+actually have been written. No half was ticked that was not whole, and no
+machine half was touched.
+
+### The checkout was reset under this iteration, twice
+
+`git reflog` shows three `reset: moving to origin/main` during this iteration,
+which discarded every edit to a tracked file while leaving new files alone; the
+work was reapplied from scratch each time. Three documentation commits arrived
+on `origin/main` in the same window (ADR 0014 and the ADR 0007 correction),
+authored by the repository's owner, so something else was working in this tree
+or pushing into it.
+
+`CLAUDE.md` forbids exactly this — **one agent per working tree** — and it is
+not something an iteration can work around: a reset landing between the gate and
+the commit would have thrown away a finished item silently. This one did not,
+because the commit went in immediately after the gate. **The supervisor has to
+stop resetting a tree an iteration is working in**, or give each iteration a
+tree of its own. It is written here rather than as a `LOOP HALT` because the
+item was finished and committed; the next iteration should halt if it happens
+again.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 20**, where the record is written and what
+  prunes it — the path, the retention the organisation sets, and the timer.
+  **19b** is the application half and is blocked on Linux. Item 23 arrived on
+  `origin/main` during this iteration and has not been read against the ready
+  list.
+- **`Machine::carrying_out_file_verbs` takes four things now**, the indicator
+  among them, and every caller in and out of the crate was updated. The name is
+  still right: asking a model something is not a verb and asks the grants
+  nothing, so it is a door on `Turning` rather than a row in the registry.
+- **Nothing here has been run against a provider anybody pays for, or against a
+  real model runtime.** Every question in these tests went to a stub on a real
+  socket or to a stub of the runtime trait.

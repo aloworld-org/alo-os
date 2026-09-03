@@ -169,8 +169,13 @@ compositor is not required for, which is why it runs unbroken.
         takes a value that exists only for an address `alo-models` calls this
         machine. Three doors that divide on law 1 rather than on what speaks
         at the far end, and each refuses a permission another one is behind.
-        73 tests, most of them against a stub on a real socket or a stub of
-        the runtime trait
+        Since item 19a **a turn is what reaches those doors**: `alo-turn`
+        takes the place a person chose and the thing that answers there,
+        routes to whichever of the three it is, holds the machine's one
+        indicator while it happens, and writes what left — or what a rule
+        stopped from leaving — before the answer reaches anybody. 73 tests
+        in `alo-asking` and 25 more around it, most of them against a stub on
+        a real socket or a stub of the runtime trait
   - [ ] **On the machine.**
         a provider somebody pays for, answering a real question with a real
         key, and a real model runtime answering one on this machine — neither
@@ -214,7 +219,13 @@ compositor is not required for, which is why it runs unbroken.
         the ADR**: the local door is where *a local model that fails becomes
         an API call* would have been written as a convenience, and what it
         does instead is hand back the same failure, whose only way onward is
-        an offer somebody answered
+        an offer somebody answered. Since item 19a the same is true one
+        level up, where a fallback would actually have been written: a turn
+        that meets a failure **hands it back and stops**, and the only road
+        from one to a second attempt is an offer a person took, which comes
+        in at the same door and is shown and recorded like any other
+        question. A test asks it as the thing it is — the place that failed
+        was asked once, the place that was offered was asked nothing at all
   - [ ] **On the machine.**
         something that points, which is `alo-agentd`. *Something that asks*
         is no longer owed here at all: `alo-asking` puts a question to a
