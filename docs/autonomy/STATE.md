@@ -3762,3 +3762,51 @@ rented and the image is a bootable container. It changes nothing here; it is
 recorded so the next iteration reads it before proposing an alternative.
 
 The loop may proceed from item 18.
+
+---
+
+## The queue was refilled — the `LOOP COMPLETE` above is spent
+
+That entry is right about the moment it was written: every ready item was done,
+the only remainder was blocked, and it stopped for the correct reason. It is no
+longer a description of this queue.
+
+**Items 18 to 21 were added afterwards — `alo-agentd`.** They are what five
+roadmap halves have been waiting on the whole time, and the gap is a sentence
+`ROADMAP.md` already said three times without anybody turning it into work:
+*there is no method anywhere in this repository that puts a question to a model.*
+Thirteen crates decide correctly and nothing joins them up.
+
+**All four are portable.** No compositor, no certified machine, no GPU. A turn is
+a function call and its result is a value to assert on. What genuinely needs
+Wayland and D-Bus — the acting half of the application verbs, the reading half of
+context — stays under **Blocked — linux**, untouched.
+
+**Start with 18, and build the hosted provider path before the local one.** That
+inversion is deliberate and is written into the item: ADR 0008 makes a hosted API
+a first-class choice rather than a fallback, and it is the path that can actually
+be exercised, since `ThisMachine` needs a runtime installed and a model
+downloaded before it can say anything. **No key is required to pass the item** —
+the tests drive a stub on a real socket, as `ollama.rs` already does. A real
+provider is the machine half.
+
+### Two decisions landed while the loop was stopped
+
+- **ADR 0011 — the base is rented, and the image is a bootable container.**
+  Read it before proposing an alternative base. It changes nothing in the crates.
+- **ADR 0008 gained its missing half.** *Never a silent fallback* was written in
+  one direction only; a provider that fails must not quietly become a local model
+  either. **Neither is the other's fallback**, because neither is a degraded
+  version of the other — both are complete ways to run alo OS and the choice is
+  the person's. Item 18 must not contain a substitution of any kind.
+
+### And the workspace now builds on Linux
+
+Everything here had only ever been compiled on Windows. It has now been cloned
+into a real Linux environment and gated there: **1,132 tests across 52 suites,
+zero failures, `fmt` clean and `clippy` silent** on `x86_64-unknown-linux-gnu`.
+Four tests exist there that Windows never ran. That is not hardware verification
+and nothing may be ticked for it — but a crate that has never been compiled for
+its target platform is a different kind of unknown, and that one is now closed.
+
+The loop may proceed from item 18.
