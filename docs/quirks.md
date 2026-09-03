@@ -617,3 +617,23 @@ set, set to nothing, set to a relative path — is a test over the first, and th
 second has nothing in it to be wrong. The same shape is worth reaching for
 anywhere else this workspace ends up reading the environment.
 **Date:** 2026-09-03
+
+### A `poll` resumed after a signal cannot say how much of its timeout is left
+**Version:** `rustix` 1.1, Linux, checked by reading `poll(2)` and the crate's
+signature.
+**Behaviour:** `poll` takes a length of time rather than a deadline, and a
+signal ends it early with `EINTR`. There is no way to ask how much of the
+timeout was left: `poll(2)` says outright that the remaining time is not
+reported, and the portable answer is to read a clock before and after and work
+it out. `alo-agentd` resumes the wait rather than reporting it, because on this
+machine a signal *is* how a stop arrives, so a resumed wait starts the whole
+timeout again.
+**Our response:** left as it is, deliberately, and written down here rather than
+worked around. The only thing a timeout decides in this service is when a record
+is shortened; the interval is an hour (`alo_agentd::ageing::EVERY`) and the rule
+it serves is counted in whole days, so an extra hour at the far end of a signal
+is inside the granularity of the promise either way. The signal that causes it
+is the one that ends the service. Working it out exactly would mean a second
+clock read in `crates/alo-agentd/src/unix.rs`, which is the file whose whole
+value is that it asks the kernel and decides nothing.
+**Date:** 2026-09-03

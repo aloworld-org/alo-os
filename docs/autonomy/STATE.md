@@ -5532,3 +5532,111 @@ sentence.
 this iteration built neither, and sweeping the workspace on the way past is how
 one item becomes three. They are written down here so the next iteration that
 opens either crate can close them.
+
+## Iteration — item 20: the timer that shortens the record
+
+`docs/autonomy/QUEUE.md` item 20, the last thing carried out of item 4 and the
+oldest open item in the file. Everything it named except one question had been
+answered by 21d and 21e; what was left was **when** a shortening runs.
+
+### The decision: the rule makes the timer
+
+The honest version of the problem is that a retention rule is a promise about a
+file, and a file goes on ageing whether or not anybody is talking to their
+agent. A service that only measured time when a message arrived could not keep
+such a promise — so it needed a timeout on a wait that `unix.rs` had documented,
+correctly, as never having one: *a quiet machine costs nothing at all*.
+
+Both halves are now true, and which one a machine gets is decided by the machine
+itself. `Keeping::Forever` is what one ships with; under it `Ageing::before`
+answers `None`, `ready` is handed no timeout, and the process sleeps in one call
+exactly as it did before this iteration. Under `ForDays(n)` the wait has an hour
+on it and the machine wakes to shorten. **An organisation that sets a retention
+rule buys a machine that wakes up to keep it; a person who keeps everything has
+a service that sleeps until it is spoken to.**
+
+The interval is alo OS's rather than a key in `machine-description.md`, and the
+division is ADR 0004's: *how long* is the organisation's to name, *how often the
+machine tidies up* is a mechanism. Neither direction can make a machine keep
+less than its rule.
+
+### The second decision was made by the borrow checker
+
+A shortening runs in the rounds where no agent is connected, and nothing had to
+be arranged for that: while a turn is under way the `Turning` holds the
+`Machine`, so `one_round` has nothing to ask. It is also the answer that would
+have been right anyway — a shortening replaces the file the record is being
+written into, and one that ran mid-turn and was refused would end an agent's
+turn with *nothing is written down* because the machine was tidying up.
+
+### Two traits, and why `Kept` did not grow a method
+
+The obvious change was `Kept::shorten`. It is wrong, and the reason is the one
+`alo-keeping` exists as a separate crate for: `alo-record` promises that nothing
+takes an entry out, and `Record` implements `Kept`. A `Kept` that could remove
+would put a way to remove onto the type whose whole value is not having one.
+
+So `Shortening: Kept` — the direction that is true, since everything that can be
+shortened can be written to and not the reverse. `Machine` holds the larger
+trait and `Machine::kept` hands a turn the smaller one, which is a stronger
+version of the sentence `kept.rs` used to carry: a turn is not *trusted* not to
+shorten, it is handed a type that cannot.
+
+### What the numbers in `Served` are, and the failure that is not one
+
+`entries_removed` and `shortenings_refused`. The second is the interesting one
+and it is deliberately **not** a reason to stop: nothing is removed in a refused
+shortening (`alo-keeping` will not rewrite a record it cannot read all of), so
+it is a machine keeping *more* than its rule. That is the opposite failure from
+`NothingIsWrittenDown`, where what is missing is evidence, and the two get
+opposite answers on purpose — with a test each, side by side.
+
+### One thing measured rather than assumed
+
+The first test of the shortening asserted six entries removed and got seven. The
+fixture wrote each day's entry at `this_moment() - day * days_ago`, reading the
+clock once per entry, so the seven-day-old entry landed a few microseconds
+before the boundary the service would draw. Entries now sit at the **middle** of
+their day, which puts twelve hours between the nearest entry and any boundary a
+rule counted in whole days can draw. A test whose answer depends on how long the
+fixture took is a test that will fail on somebody else's machine at midnight.
+
+### The gate
+
+`cargo fmt` clean, `cargo clippy --workspace --all-targets -D warnings` clean on
+Windows and `-p alo-agentd` clean on Linux, 1464 tests across the workspace (was
+1441), `cargo doc` clean for `alo-turn` and for `alo-agentd` on Linux. The two
+private-link warnings this iteration wrote were fixed before the gate was
+claimed, for the reason the last one gave.
+
+### `ROADMAP.md` moved, and two contracts with it
+
+*Every execution recorded*'s **code** half now says the timer is there and what
+it does; its **On the machine** half no longer says *what is missing is when a
+shortening runs* — it says what is really left, which is that nothing has been
+started by systemd and no certified machine has seen a record survive a restart.
+The `alo-agentd` line's code half gained the same sentence from the service's
+side. **No half was ticked that was not whole, and no machine half was touched.**
+
+`docs/contracts/record-file.md`'s *Where it lives, and when it is shortened* said
+"not here, and not in `alo-keeping`: the path and the timer are `alo-agentd`'s,
+which does not exist yet". Both are answered now and the section says so.
+`docs/quirks.md` gained the `EINTR` one: `poll` cannot say how much of its
+timeout was left, and this service resumes rather than works it out.
+
+**What this does not claim.** Nothing has fired on a timer nobody was watching:
+every shortening in these tests happened inside a test's own second or two, with
+a moment passed in everywhere below `Serving`. That an hour really elapses and a
+service really wakes is `21f` and the certified machine.
+
+**What the next iteration must know:**
+
+- **21f is the next ready item**, and it is the last of the 21 series. Read it
+  before starting: its first half is a vocabulary decision rather than a `main`.
+- **`Serving::of` takes six arguments now**, the sixth being `Keeping`. Every one
+  of them is `Described`'s, and 21f is where that stops being a coincidence.
+- **A test double for `Kept` now needs `Shortening` too.** There are four in the
+  workspace and each answers `NotOnADisk`; a new one that is about a record on a
+  disk should say so instead.
+- **The Linux half of the gate is still not optional for `alo-agentd`**, and it
+  has gone up again: 149 of its tests do not exist on Windows.

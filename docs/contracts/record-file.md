@@ -130,6 +130,19 @@ would tidy away the one thing somebody needs to look at.
 
 ## Where it lives, and when it is shortened
 
-Not here, and not in `alo-keeping`: the path and the timer are `alo-agentd`'s,
-which does not exist yet. What this contract fixes is the file, so that whatever
-writes it and whatever reads it later cannot disagree about what it is.
+Both are `alo-agentd`'s rather than this contract's. **Where** is
+`record.path` in `docs/contracts/machine-description.md`, typed by whoever
+stands the machine up. **When** is once an hour, in the service's own loop,
+between turns and never inside one — and only on a machine whose description
+sets `record.keeping` to a number of days, because a machine that keeps
+everything has nothing for a timer to do.
+
+Two things follow that a reader of one of these files should know. The first
+shortening on a machine happens **before it serves anything**, so a machine that
+was switched off for longer than its rule catches up before its agent does
+anything. And a shortening that could not be made removes nothing at all: a
+record whose first line still says it is whole is a record nothing has been
+taken out of, whatever else went wrong.
+
+What this contract fixes is the file itself, so that whatever writes it and
+whatever reads it later cannot disagree about what it is.

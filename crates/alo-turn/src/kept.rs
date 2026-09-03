@@ -68,8 +68,9 @@ impl Kept for Record {
 /// The record on a disk, which is what a daemon writes to.
 ///
 /// One line of JSON appended per entry, in the format
-/// `docs/contracts/record-file.md` states. Nothing here shortens a record;
-/// that is `alo_keeping::Writing::prune` and a turn cannot reach it.
+/// `docs/contracts/record-file.md` states. Nothing here shortens a record; that
+/// is `alo_keeping::Writing::prune`, reached through [`crate::Shortening`],
+/// which is the larger trait a machine holds and the one a turn is never handed.
 impl Kept for Writing {
     fn keep(&mut self, entry: Entry) -> Result<(), NotKept> {
         Writing::keep(self, &entry)

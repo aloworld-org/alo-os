@@ -399,7 +399,14 @@ compositor is not required for, which is why it runs unbroken.
         link, owned by root or by the person, writable by nobody else, and all
         of it asked of the open file rather than of the name, because the file
         that names which login is the agent is the file somebody would rewrite
-        to become one
+        to become one. Since item 20 it is also the thing that removes what
+        the machine no longer keeps: a machine an organisation set a retention
+        rule on wakes once an hour to shorten its record, and a machine that
+        keeps everything — which is what one ships with — sleeps in a single
+        call until somebody says something, exactly as it did before there was
+        a timer. It happens between turns and never inside one, which is not a
+        rule anybody has to remember: while a turn is under way it holds the
+        machine, so there is nothing there to ask
   - [ ] **On the machine.**
         the `main` that starts all of the above (queue 21f) — the signal
         handler, the refusal to run as root at all, the vocabulary the words a
@@ -426,14 +433,20 @@ compositor is not required for, which is why it runs unbroken.
         Since item 19 *recorded* is structural rather than remembered:
         `alo-turn` cannot be made without somewhere to keep its record, every
         door writes its entry before it answers anybody, and a turn that could
-        not write one stops doing anything at all
+        not write one stops doing anything at all. Since item 20 the timer is
+        there too: `alo-agentd` shortens the record between turns, once an
+        hour, and only on a machine somebody set a retention rule on — the
+        first one at start-up, because a machine switched off for six months
+        comes back with six months of a rule to catch up on. A shortening the
+        machine refuses is counted and survived rather than stopping the
+        service, because nothing is removed in one: that is a machine keeping
+        **more** than its rule, which is the opposite failure from one that
+        cannot write
   - [ ] **On the machine.**
-        queue 20 — the timer that shortens it, which is `alo-agentd`'s. Since
-        item 21d there is a service to hold one and a loop for it to fire in,
-        and since 21e there is a machine describing itself: the path and the
-        retention are read off `/etc/alo/agentd.toml`, and an integration test
-        starts a real record at the path a real description named. What is
-        missing is *when* a shortening runs
+        the process that starts the service and keeps it running (queue 21f),
+        and a certified machine showing a record surviving a restart and a
+        shortening. The path, the retention and the timer are all code now —
+        what is left is that nothing has yet been started by systemd
 
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated

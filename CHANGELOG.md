@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A machine you have set a retention rule on now actually keeps it.** If your
+  machine is told to keep the record of what your agent did for ninety days, it
+  removes what is older than that once an hour while it is running — starting
+  the moment the service comes up, so a machine that was switched off for six
+  months catches up before its agent does anything. Nothing changes on a machine
+  that keeps everything, which is what one ships with: it still sleeps until
+  somebody says something rather than waking on a timer for work it does not
+  have. A tidy-up your machine could not make is counted and does not stop it
+  serving, because nothing is removed in one — that leaves you with more
+  evidence than your rule asks for, not less.
+
 - **A machine can now be told what it is, in one file, and it refuses to
   believe a file anybody could have written.** Which login is yours and which is
   the agent's, what your agent is called where its grants name it, how long a

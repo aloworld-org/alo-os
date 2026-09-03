@@ -115,13 +115,13 @@ mod tests {
         speaking.write_all(b"something").unwrap();
 
         assert_eq!(
-            ready(&[Some(waking.waiting_on()), Some(spoken.as_fd())]).unwrap(),
+            ready(&[Some(waking.waiting_on()), Some(spoken.as_fd())], None).unwrap(),
             [false, true]
         );
 
         assert!(stop.stop());
         assert_eq!(
-            ready(&[Some(waking.waiting_on()), Some(spoken.as_fd())]).unwrap(),
+            ready(&[Some(waking.waiting_on()), Some(spoken.as_fd())], None).unwrap(),
             [true, true]
         );
     }
@@ -136,9 +136,9 @@ mod tests {
 
         assert!(stop.stop());
         assert!(second.stop());
-        assert_eq!(ready(&[Some(waking.waiting_on())]).unwrap(), [true]);
+        assert_eq!(ready(&[Some(waking.waiting_on())], None).unwrap(), [true]);
         assert_eq!(
-            ready(&[Some(waking.waiting_on())]).unwrap(),
+            ready(&[Some(waking.waiting_on())], None).unwrap(),
             [true],
             "the byte was read, so a service could go back to sleep after being stopped"
         );

@@ -334,8 +334,8 @@ fn what_a_turn_writes_does_not_depend_on_where_it_is_written() {
     let mut in_memory = Record::default();
     let mut on_a_disk = Writing::opening(&kept_at).unwrap();
     for kept in [
-        &mut in_memory as &mut dyn alo_turn::Kept,
-        &mut on_a_disk as &mut dyn alo_turn::Kept,
+        &mut in_memory as &mut dyn alo_turn::Shortening,
+        &mut on_a_disk as &mut dyn alo_turn::Shortening,
     ] {
         let mut grants = granting(&[&invoices]);
         let mut indicator = Indicator::default();

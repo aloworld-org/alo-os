@@ -477,6 +477,19 @@ mod tests {
         }
     }
 
+    /// A disk with no space on it is still a disk, and nothing here is asked to
+    /// shorten anything: these tests are about what a turn does when it cannot
+    /// write.
+    impl crate::Shortening for ANoSpaceLeftDisk {
+        fn shorten(
+            &mut self,
+            _keeping: alo_keeping::Keeping,
+            _now: std::time::SystemTime,
+        ) -> Result<crate::Shortened, NotKept> {
+            Ok(crate::Shortened::NotOnADisk)
+        }
+    }
+
     /// A folder with one file in it, and the file's path.
     fn a_folder_with_an_invoice(what: &str) -> (PathBuf, PathBuf) {
         let folder = a_folder_of_our_own(what);
@@ -493,7 +506,7 @@ mod tests {
     /// borrows the record — so all three have to live in the caller's frame.
     fn on_a_machine<T>(
         what: &str,
-        kept: &mut dyn Kept,
+        kept: &mut dyn crate::Shortening,
         doing: impl FnOnce(&mut Turning<'_, '_>, &mut Grants, &Path, &Path) -> T,
     ) -> T {
         let strings = in_english();

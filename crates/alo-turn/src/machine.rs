@@ -59,6 +59,7 @@ use alo_files::{Declaring, Resolving, file_verbs};
 use alo_strings::Strings;
 
 use crate::kept::Kept;
+use crate::shortening::{Shortened, Shortening};
 
 /// The verbs, the words, the resolver, the indicator and the record: one
 /// machine's, shared by every turn on it.
@@ -75,8 +76,13 @@ pub struct Machine<'a> {
     resolving: &'a dyn Resolving,
     /// What is leaving this machine right now.
     indicator: &'a mut Indicator,
-    /// Where what happened is written down.
-    kept: &'a mut dyn Kept,
+    /// Where what happened is written down, and the one thing that can shorten
+    /// it.
+    ///
+    /// The larger of the two traits, because a machine has a record and a turn
+    /// only writes to one: [`Machine::kept`] hands a turn the smaller one, and
+    /// [`Machine::shorten`] is the door the other half goes through.
+    kept: &'a mut dyn Shortening,
 }
 
 impl<'a> Machine<'a> {
@@ -100,7 +106,7 @@ impl<'a> Machine<'a> {
         strings: &'a Strings,
         resolving: &'a dyn Resolving,
         indicator: &'a mut Indicator,
-        kept: &'a mut dyn Kept,
+        kept: &'a mut dyn Shortening,
     ) -> Result<Self, Declaring> {
         Ok(Self {
             verbs: file_verbs()?,
@@ -157,8 +163,32 @@ impl<'a> Machine<'a> {
     }
 
     /// Where what happened is written down.
+    ///
+    /// `pub(crate)`, and the smaller of the two traits on purpose: what a turn
+    /// is handed can write an entry and has no way to remove one.
     pub(crate) fn kept(&mut self) -> &mut dyn Kept {
         self.kept
+    }
+
+    /// Shorten this machine's record under the rule it is kept by.
+    ///
+    /// Public, because the caller is the service that holds the machine and
+    /// reads the clock (`alo-agentd`, queue item 20) rather than anything
+    /// inside a turn. It is a door onto the machine and not onto a turn: a
+    /// [`crate::Turning`] hands nobody a `&mut Machine`, so nothing an agent can
+    /// ask for arrives here, and what is removed is decided by a rule and a
+    /// moment either way.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`], in every one of which nothing has been
+    /// removed — see [`crate::Shortening::shorten`].
+    pub fn shorten(
+        &mut self,
+        keeping: alo_keeping::Keeping,
+        now: std::time::SystemTime,
+    ) -> Result<Shortened, alo_keeping::NotKept> {
+        self.kept.shorten(keeping, now)
     }
 }
 

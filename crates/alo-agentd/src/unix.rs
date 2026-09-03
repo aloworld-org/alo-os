@@ -42,9 +42,13 @@
 //! take in a hurry — an agent waiting to be told what happened, and the message
 //! that would tell it arriving on a connection nobody is reading.
 //!
-//! It waits with no timeout, so a quiet machine costs nothing at all: the
-//! process sleeps in one call until somebody says something, and there is no
-//! interval on which it wakes up to discover that nobody has.
+//! It waits with **no timeout unless the caller names one**, so a quiet machine
+//! costs nothing at all: the process sleeps in one call until somebody says
+//! something, and there is no interval on which it wakes up to discover that
+//! nobody has. A machine an organisation has set a retention rule on names one,
+//! because a rule counted in days is a promise about a file that goes on ageing
+//! whether or not anybody is talking to their agent; [`crate::ageing`] is that
+//! decision, and the timeout is the only thing this file knows about it.
 //!
 //! # And the third: open this, and not whatever it points at
 //!
@@ -57,8 +61,9 @@
 use std::os::fd::BorrowedFd;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
+use std::time::Duration;
 
-use rustix::event::{PollFd, PollFlags};
+use rustix::event::{PollFd, PollFlags, Timespec};
 
 use crate::caller::{Caller, Gid, Uid};
 use crate::refusing::{NotACaller, NotAUser};
@@ -184,6 +189,11 @@ pub(crate) enum NotOpened {
 /// index to a meaning. A `None` is something this service is not holding at the
 /// moment — no connection on that door — and is never ready.
 ///
+/// **`for_at_most` is how long the sleep may last**, and `None` is for ever. A
+/// wait that ended because the time ran out answers that nothing is ready,
+/// which is the same answer as a wait nothing arrived on — the caller has
+/// something of its own to do and asks again.
+///
 /// **A connection that has been closed is ready**, not quiet. The read that
 /// follows answers with nothing, which is how the end of a connection is
 /// noticed at all; a `poll` that hid a hangup would leave a service asleep
@@ -196,13 +206,24 @@ pub(crate) enum NotOpened {
 /// broke. The byte the handler wrote is still on the socket, and the wait that
 /// resumes finds it.
 ///
+/// A resumed wait starts its timeout again rather than carrying on with what
+/// was left of it, which the standard `ppoll` dance would need a clock read here
+/// to avoid. It is worth nothing to be exact about: the only thing a timeout
+/// decides is when a record is shortened, the interval is an hour
+/// ([`crate::ageing::EVERY`]), and the signal that causes this is the one that
+/// ends the service anyway.
+///
 /// # Errors
 ///
 /// Whatever the machine said, as a `std::io::Error`. `InvalidInput` when there
 /// is nothing at all to wait on: a wait nothing can end is a hang, and a
 /// service asking for one is a bug in the service rather than a quiet machine.
+/// `InvalidInput` again for a length of time no `timespec` can hold, which is
+/// centuries and is a caller that has worked one out wrongly rather than a
+/// machine that meant it.
 pub(crate) fn ready<const N: usize>(
     waiting_on: &[Option<BorrowedFd<'_>>; N],
+    for_at_most: Option<Duration>,
 ) -> Result<[bool; N], std::io::Error> {
     let asking: Vec<usize> = waiting_on
         .iter()
@@ -217,9 +238,13 @@ pub(crate) fn ready<const N: usize>(
     if polling.is_empty() {
         return Err(std::io::Error::from(std::io::ErrorKind::InvalidInput));
     }
+    let timeout = for_at_most
+        .map(Timespec::try_from)
+        .transpose()
+        .map_err(|_| std::io::Error::from(std::io::ErrorKind::InvalidInput))?;
 
     loop {
-        match rustix::event::poll(&mut polling, None) {
+        match rustix::event::poll(&mut polling, timeout.as_ref()) {
             Ok(_) => break,
             Err(rustix::io::Errno::INTR) => {
                 for polled in &mut polling {
@@ -283,7 +308,7 @@ mod tests {
         speaking.write_all(b"something").unwrap();
 
         assert_eq!(
-            ready(&[Some(quiet.as_fd()), Some(spoken.as_fd())]).unwrap(),
+            ready(&[Some(quiet.as_fd()), Some(spoken.as_fd())], None).unwrap(),
             [false, true]
         );
     }
@@ -298,7 +323,7 @@ mod tests {
         speaking.write_all(b"something").unwrap();
 
         assert_eq!(
-            ready(&[None, Some(spoken.as_fd()), None]).unwrap(),
+            ready(&[None, Some(spoken.as_fd()), None], None).unwrap(),
             [false, true, false]
         );
     }
@@ -312,7 +337,50 @@ mod tests {
         let (ours, theirs) = UnixStream::pair().unwrap();
         drop(theirs);
 
-        assert_eq!(ready(&[Some(ours.as_fd())]).unwrap(), [true]);
+        assert_eq!(ready(&[Some(ours.as_fd())], None).unwrap(), [true]);
+    }
+
+    /// **A wait that ran out of time answers that nothing is ready**, which is
+    /// what lets a caller wake up to do something of its own — shortening a
+    /// record, which is the only thing this service does on an interval.
+    #[test]
+    fn a_wait_that_runs_out_of_time_says_nothing_is_ready() {
+        let (quiet, _quiet_other_end) = UnixStream::pair().unwrap();
+
+        assert_eq!(
+            ready(
+                &[Some(quiet.as_fd())],
+                Some(std::time::Duration::from_millis(10))
+            )
+            .unwrap(),
+            [false]
+        );
+    }
+
+    /// And a timeout does not delay something that is already there: the wait
+    /// answers as soon as anything arrives, whatever it was told it could sleep
+    /// for.
+    #[test]
+    fn a_timeout_does_not_hold_back_something_that_has_arrived() {
+        let (spoken, mut speaking) = UnixStream::pair().unwrap();
+        speaking.write_all(b"something").unwrap();
+
+        assert_eq!(
+            ready(&[Some(spoken.as_fd())], Some(Duration::from_secs(3600))).unwrap(),
+            [true]
+        );
+    }
+
+    /// **A length of time no `timespec` can hold is refused rather than
+    /// silently waited out.** Nothing in this service asks for one — the
+    /// interval is an hour — so a caller that got here has worked something out
+    /// wrongly, and a wait that quietly became forever would hide it.
+    #[test]
+    fn a_wait_longer_than_a_clock_can_say_is_refused() {
+        let (quiet, _quiet_other_end) = UnixStream::pair().unwrap();
+
+        let refused = ready(&[Some(quiet.as_fd())], Some(Duration::MAX)).unwrap_err();
+        assert_eq!(refused.kind(), std::io::ErrorKind::InvalidInput);
     }
 
     /// **A wait with nothing to wait on is refused rather than slept in.**
@@ -321,7 +389,7 @@ mod tests {
     /// succeeds quietly.
     #[test]
     fn waiting_on_nothing_at_all_is_refused() {
-        let refused = ready(&[None::<BorrowedFd<'_>>; 3]).unwrap_err();
+        let refused = ready(&[None::<BorrowedFd<'_>>; 3], None).unwrap_err();
         assert_eq!(refused.kind(), std::io::ErrorKind::InvalidInput);
     }
 

@@ -61,15 +61,33 @@
 //! `this_moment` — once per round, so every message in one round is answered
 //! at one moment and no two answers can disagree about whether a grant had
 //! expired between them.
+//!
+//! # A shortening runs between turns, and never inside one
+//!
+//! The other thing this service does with a clock is remove what the machine no
+//! longer keeps ([`crate::ageing`] is *when*, `alo_turn::Machine::shorten` is
+//! the door, `alo-keeping` is *what*). It happens in the rounds where no agent
+//! is connected, and that is not a rule anybody has to remember: while a turn is
+//! under way the [`Turning`] holds the machine, so there is nothing here to ask.
+//!
+//! It is the right place as well as the only one. A shortening replaces the file
+//! the record is being written to, and one that ran mid-turn and was refused
+//! would end an agent's turn with *nothing is written down* because the machine
+//! was tidying up — a refusal about the wrong thing, told to the wrong caller.
+//! Between turns there is nobody to tell and nothing to interrupt: a shortening
+//! that fails leaves the record exactly as long as it was, is counted, and the
+//! service goes on.
 
 use std::time::{Duration, SystemTime};
 
 use alo_capability::Grants;
 use alo_context::Context;
+use alo_keeping::Keeping;
 use alo_protocol::{NotUnderstood, ToAPerson, ToAnAgent};
 use alo_strings::{Filling, Strings};
-use alo_turn::{Machine, Turning};
+use alo_turn::{Machine, Shortened, Turning};
 
+use crate::ageing::Ageing;
 use crate::answering::what_a_person_said;
 use crate::doing::what_an_agent_said;
 use crate::knocking::Knocking;
@@ -99,6 +117,22 @@ pub struct Served {
     /// say there is an alo OS daemon here — and being told nothing is not the
     /// same as nothing being noticed.
     strangers: u64,
+    /// How many entries were removed from the record because the machine no
+    /// longer keeps them.
+    ///
+    /// The only number here about evidence going away, and it is here for the
+    /// reason `alo-keeping` writes a mark into a record's first line: a
+    /// shortening that left nothing behind would be a shortening nobody could
+    /// have noticed.
+    removed: u64,
+    /// How many shortenings the machine refused to make.
+    ///
+    /// Nothing was removed in any of them — a refusal by `alo-keeping` leaves
+    /// the record exactly as it was — so this is a machine keeping **more** than
+    /// its rule rather than less. It is still what somebody wants to see: a
+    /// record with a line nobody can read is refused every time it is asked, and
+    /// a number that stays at zero is how anybody would know it never happened.
+    not_shortened: u64,
 }
 
 impl Served {
@@ -119,6 +153,19 @@ impl Served {
     pub const fn strangers_turned_away(&self) -> u64 {
         self.strangers
     }
+
+    /// How many entries the machine removed because it no longer keeps them.
+    #[must_use]
+    pub const fn entries_removed(&self) -> u64 {
+        self.removed
+    }
+
+    /// How many shortenings the machine refused to make, in none of which
+    /// anything was removed.
+    #[must_use]
+    pub const fn shortenings_refused(&self) -> u64 {
+        self.not_shortened
+    }
 }
 
 /// The agent service, running.
@@ -138,6 +185,8 @@ pub struct Serving<'a> {
     lasting: Duration,
     /// How long a change waits for an answer.
     standing: Duration,
+    /// How long what happened on this machine is kept.
+    keeping: Keeping,
 }
 
 /// What a round of work found, once everything ready has been dealt with.
@@ -163,6 +212,12 @@ struct Held {
 
 impl<'a> Serving<'a> {
     /// The service, told what this machine is.
+    ///
+    /// Every one of these is `crate::Described`'s, read off the file whoever
+    /// stands the machine up wrote. The rule the record is kept under is here
+    /// rather than inside the machine because *when* a shortening runs is this
+    /// service's — it is the thing that is really running while time passes —
+    /// and *what* one removes is `alo-keeping`'s.
     #[must_use]
     pub const fn of(
         knocking: &'a dyn Knocking,
@@ -170,6 +225,7 @@ impl<'a> Serving<'a> {
         for_agent: &'a str,
         lasting: Duration,
         standing: Duration,
+        keeping: Keeping,
     ) -> Self {
         Self {
             knocking,
@@ -177,6 +233,7 @@ impl<'a> Serving<'a> {
             for_agent,
             lasting,
             standing,
+            keeping,
         }
     }
 
@@ -203,10 +260,28 @@ impl<'a> Serving<'a> {
         let strings = machine.strings();
         let mut held = Held::default();
         let mut served = Served::default();
+        let mut ageing = Ageing::under(self.keeping);
 
         loop {
             while held.agent.is_none() {
-                if self.one_round(&mut held, None, grants, strings, &mut served)? == Next::Stopped {
+                // Before the wait rather than after it, so that the first
+                // shortening happens before this machine serves anything: it is
+                // the one catching up on however long the machine was switched
+                // off for. The moment is read here and again inside the round,
+                // because a wait sits between them.
+                let now = this_moment();
+                if ageing.due(now) {
+                    shortening(machine, &mut ageing, &mut served, now);
+                }
+                if self.one_round(
+                    &mut held,
+                    None,
+                    grants,
+                    strings,
+                    &mut served,
+                    ageing.before(now),
+                )? == Next::Stopped
+                {
                     return Ok(served);
                 }
             }
@@ -228,7 +303,17 @@ impl<'a> Serving<'a> {
             // whose turn is over.
             let mut over = Ok(false);
             while held.agent.is_some() {
-                match self.one_round(&mut held, Some(&mut turning), grants, strings, &mut served) {
+                // No timeout: a turn is not interrupted by the clock, and there
+                // is nothing this service could do with the wake-up while the
+                // machine is held by the turn.
+                match self.one_round(
+                    &mut held,
+                    Some(&mut turning),
+                    grants,
+                    strings,
+                    &mut served,
+                    None,
+                ) {
                     Ok(Next::GoOn) => {}
                     Ok(Next::Stopped) => {
                         over = Ok(true);
@@ -270,6 +355,11 @@ impl<'a> Serving<'a> {
     /// it: `poll` reports what is *there* rather than what has changed, so
     /// whoever is knocking is still knocking when the next round asks, and they
     /// get a turn of their own instead of the remains of somebody else's.
+    ///
+    /// **`for_at_most` is how long this round may sleep**, and `None` is until
+    /// somebody says something. A round that slept the whole of it finds nothing
+    /// ready, does nothing, and answers [`Next::GoOn`] — which is what brings
+    /// the caller back round to a shortening that has come due.
     fn one_round(
         &self,
         held: &mut Held,
@@ -277,6 +367,7 @@ impl<'a> Serving<'a> {
         grants: &Grants,
         strings: &Strings,
         served: &mut Served,
+        for_at_most: Option<Duration>,
     ) -> Result<Next, NotServed> {
         let (stopped, person, agent, knocked) = {
             let waiting_on = [
@@ -286,7 +377,7 @@ impl<'a> Serving<'a> {
                 Some(self.knocking.waiting_on()),
             ];
             let [stopped, person, agent, knocked] =
-                ready(&waiting_on).map_err(|why| NotServed::NotWaiting { why })?;
+                ready(&waiting_on, for_at_most).map_err(|why| NotServed::NotWaiting { why })?;
             (stopped, person, agent, knocked)
         };
 
@@ -416,7 +507,38 @@ impl std::fmt::Debug for Serving<'_> {
             .field("for_agent", &self.for_agent)
             .field("lasting", &self.lasting)
             .field("standing", &self.standing)
+            .field("keeping", &self.keeping)
             .finish_non_exhaustive()
+    }
+}
+
+/// Remove what this machine no longer keeps, and count what that came to.
+///
+/// A free function rather than a method, because it touches nothing on
+/// [`Serving`] — the rule travels in the [`Ageing`], the moment is passed in,
+/// and what is removed is decided by `alo-keeping` from those two alone. There
+/// is deliberately no way to say *remove this*.
+///
+/// **The attempt is recorded before the answer is looked at**, so a machine
+/// whose record cannot be read tries again at the next interval rather than on
+/// every round for as long as it is switched on. And a refusal is counted and
+/// survived: nothing was removed in it, so the machine is keeping more than its
+/// rule rather than less, and stopping the service over it would take away the
+/// only thing that still writes evidence down.
+fn shortening(
+    machine: &mut Machine<'_>,
+    ageing: &mut Ageing,
+    served: &mut Served,
+    now: SystemTime,
+) {
+    ageing.ran(now);
+    match machine.shorten(ageing.keeping(), now) {
+        Ok(Shortened::Ran(pruned)) => {
+            let removed = u64::try_from(pruned.removed()).unwrap_or(u64::MAX);
+            served.removed = served.removed.saturating_add(removed);
+        }
+        Ok(Shortened::NotOnADisk) => ageing.nothing_to_shorten(),
+        Err(_) => served.not_shortened = served.not_shortened.saturating_add(1),
     }
 }
 
@@ -513,6 +635,52 @@ mod tests {
             Err(alo_keeping::NotKept::NotAddedTo {
                 path: "/var/lib/alo/record.jsonl".to_owned(),
                 why: "no space left on device".to_owned(),
+            })
+        }
+    }
+
+    /// Nothing here is shortened: these tests are about a turn that cannot
+    /// write, and a machine with no room on it has nothing to remove either.
+    impl alo_turn::Shortening for ANoSpaceLeftDisk {
+        fn shorten(
+            &mut self,
+            _keeping: Keeping,
+            _now: SystemTime,
+        ) -> Result<Shortened, alo_keeping::NotKept> {
+            Ok(Shortened::NotOnADisk)
+        }
+    }
+
+    /// A record on a disk that refuses every shortening, which is what a line
+    /// nobody can read looks like from inside the service.
+    ///
+    /// It keeps what it is handed, because a machine that will not shorten its
+    /// record is still a machine that writes one — that is the whole difference
+    /// between a refusal to remove and a failure to keep.
+    #[derive(Default)]
+    struct ARecordNothingWillShorten {
+        /// What it was handed.
+        kept: Record,
+        /// How many shortenings it refused.
+        refused: usize,
+    }
+
+    impl alo_turn::Kept for ARecordNothingWillShorten {
+        fn keep(&mut self, entry: alo_record::Entry) -> Result<(), alo_keeping::NotKept> {
+            self.kept.keep(entry);
+            Ok(())
+        }
+    }
+
+    impl alo_turn::Shortening for ARecordNothingWillShorten {
+        fn shorten(
+            &mut self,
+            _keeping: Keeping,
+            _now: SystemTime,
+        ) -> Result<Shortened, alo_keeping::NotKept> {
+            self.refused += 1;
+            Err(alo_keeping::NotKept::Damaged {
+                path: "/var/lib/alo/record.jsonl".to_owned(),
             })
         }
     }
@@ -615,10 +783,25 @@ mod tests {
     fn while_it_runs_keeping(
         what: &str,
         sides: &[Option<Side>],
-        kept: &mut dyn alo_turn::Kept,
+        kept: &mut dyn alo_turn::Shortening,
         talking: impl FnOnce(Told) + Send + 'static,
     ) -> Result<(Served, PathBuf), NotServed> {
-        while_it_runs_for("@files", what, sides, kept, talking)
+        while_it_runs_for("@files", Keeping::Forever, what, sides, kept, talking)
+    }
+
+    /// The same, on a machine an organisation has set a retention rule on.
+    ///
+    /// Which is what makes the shortening happen at all: a machine that keeps
+    /// everything has nothing to wake up for, and these are the tests about the
+    /// machine that has.
+    fn while_it_runs_under(
+        keeping: Keeping,
+        what: &str,
+        sides: &[Option<Side>],
+        kept: &mut dyn alo_turn::Shortening,
+        talking: impl FnOnce(Told) + Send + 'static,
+    ) -> Result<(Served, PathBuf), NotServed> {
+        while_it_runs_for("@files", keeping, what, sides, kept, talking)
     }
 
     /// The same again, for a machine that says its agent is something else.
@@ -628,9 +811,10 @@ mod tests {
     /// a name these tests have to be able to give.
     fn while_it_runs_for(
         agent: &str,
+        keeping: Keeping,
         what: &str,
         sides: &[Option<Side>],
-        kept: &mut dyn alo_turn::Kept,
+        kept: &mut dyn alo_turn::Shortening,
         talking: impl FnOnce(Told) + Send + 'static,
     ) -> Result<(Served, PathBuf), NotServed> {
         let strings = in_english();
@@ -650,7 +834,7 @@ mod tests {
         let mut grants = granting(&folder, this_moment());
 
         let client = std::thread::spawn(move || talking(told));
-        let served = Serving::of(&knocking, &waking, agent, hour(), hour())
+        let served = Serving::of(&knocking, &waking, agent, hour(), hour(), keeping)
             .until_stopped(&mut machine, &mut grants);
         client.join().unwrap();
         served.map(|served| (served, invoice))
@@ -929,8 +1113,13 @@ mod tests {
     #[test]
     fn a_machine_that_named_no_agent_stops_rather_than_holding_a_nameless_turn() {
         let mut record = Record::default();
-        let stopped =
-            while_it_runs_for("", "no-agent", &[Some(Side::Agent)], &mut record, |told| {
+        let stopped = while_it_runs_for(
+            "",
+            Keeping::Forever,
+            "no-agent",
+            &[Some(Side::Agent)],
+            &mut record,
+            |told| {
                 let mut agent = Talking::to(&told.at);
                 // Nothing comes back: the service stops as the connection is taken.
                 let mut back = String::new();
@@ -941,8 +1130,9 @@ mod tests {
                     "a nameless turn answered something: {back}"
                 );
                 drop(told.stop);
-            })
-            .unwrap_err();
+            },
+        )
+        .unwrap_err();
 
         assert!(
             matches!(
@@ -965,6 +1155,159 @@ mod tests {
         });
 
         assert_eq!(served, Served::default());
+    }
+
+    /// A record on a disk with a fortnight of afternoons in it, one entry a
+    /// day, and where it is.
+    ///
+    /// Written through `alo-keeping` rather than by hand, so what these tests
+    /// shorten is a real record in the format `docs/contracts/record-file.md`
+    /// fixes rather than a file that looks like one.
+    /// Each entry is put at the **middle** of its day rather than at the start
+    /// of it, so no entry sits on the boundary a rule counted in whole days
+    /// draws: the service prunes at a real moment a few instructions after this
+    /// runs, and an entry exactly seven days old would fall on one side of that
+    /// or the other depending on how long the fixture took.
+    fn a_fortnight_on_a_disk(what: &str) -> (alo_keeping::Writing, PathBuf) {
+        let path = crate::testing::a_directory_of_our_own(what).join("record.jsonl");
+        let mut writing = alo_keeping::Writing::opening(&path).unwrap();
+        let day = Duration::from_secs(24 * 60 * 60);
+        let now = this_moment();
+        for days_ago in (0..14_u32).rev() {
+            alo_turn::Kept::keep(
+                &mut writing,
+                alo_record::Entry::answered_here(
+                    &alo_capability::Grantee::named("@files"),
+                    now - day * days_ago - day / 2,
+                ),
+            )
+            .unwrap();
+        }
+        (writing, path)
+    }
+
+    /// **A machine an organisation set a retention rule on shortens its record,
+    /// and it does it before it serves anything.** The one that matters most is
+    /// the first: a machine switched off for six months comes back with six
+    /// months of a rule to catch up on, and nothing has run yet.
+    #[test]
+    fn a_machine_under_a_rule_removes_what_it_no_longer_keeps() {
+        let (mut writing, path) = a_fortnight_on_a_disk("shortened-while-serving");
+        let (served, _invoice) = while_it_runs_under(
+            Keeping::for_days(7).unwrap(),
+            "shortening",
+            &[Some(Side::Person)],
+            &mut writing,
+            |told| {
+                let mut person = Talking::to(&told.at);
+                assert!(person.asking(r#"{"waiting":{}}"#).contains("waiting"));
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            served.entries_removed(),
+            7,
+            "the week before last week is what a seven-day rule removes"
+        );
+        assert_eq!(served.shortenings_refused(), 0);
+
+        let reading = alo_keeping::Reading::at(&path).unwrap();
+        assert_eq!(reading.record().len(), 7, "the record on the disk");
+        assert!(
+            !reading.head().is_whole(),
+            "a shortened record does not say where it now starts"
+        );
+    }
+
+    /// **A machine that keeps everything is not shortened at all**, which is
+    /// what one ships with and is the reason the wait still has no timeout on
+    /// it. Nothing is removed and nothing is refused.
+    #[test]
+    fn a_machine_that_keeps_everything_removes_nothing() {
+        let (mut writing, path) = a_fortnight_on_a_disk("kept-while-serving");
+        let (served, _invoice) = while_it_runs_keeping(
+            "keeping-everything",
+            &[Some(Side::Person)],
+            &mut writing,
+            |told| {
+                let mut person = Talking::to(&told.at);
+                assert!(person.asking(r#"{"waiting":{}}"#).contains("waiting"));
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+
+        assert_eq!(served.entries_removed(), 0);
+        assert_eq!(served.shortenings_refused(), 0);
+
+        let reading = alo_keeping::Reading::at(&path).unwrap();
+        assert_eq!(reading.record().len(), 14);
+        assert!(reading.head().is_whole(), "a record nobody shortened");
+    }
+
+    /// **A shortening the machine refuses is counted, and the service goes
+    /// on.** Nothing was removed in it — `alo-keeping` will not rewrite a record
+    /// it cannot read all of — so the machine is keeping more than its rule
+    /// rather than less, and stopping over it would take away the one thing
+    /// still writing evidence down.
+    ///
+    /// This is deliberately the opposite answer to a machine that cannot
+    /// *write*, which stops: what is missing there is evidence, and what is
+    /// missing here is a tidy-up.
+    #[test]
+    fn a_shortening_the_machine_refuses_is_counted_and_the_service_goes_on() {
+        let mut record = ARecordNothingWillShorten::default();
+        let (served, invoice) = while_it_runs_under(
+            Keeping::for_days(7).unwrap(),
+            "refused-shortening",
+            &[Some(Side::Agent)],
+            &mut record,
+            |told| {
+                let mut agent = Talking::to(&told.at);
+                let read = agent.asking(&format!(
+                    r#"{{"read":{{"verb":"read_file","given":[{{"named":"file","is":"{}"}}]}}}}"#,
+                    told.invoice.display()
+                ));
+                assert!(
+                    read.contains("4180.00"),
+                    "the service stopped over a shortening it refused: {read}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+
+        assert_eq!(served.entries_removed(), 0);
+        assert!(served.shortenings_refused() >= 1);
+        assert_eq!(served.messages(), 1, "the read was served");
+        assert!(invoice.is_file());
+        assert_eq!(record.kept.len(), 1, "and it was written down");
+    }
+
+    /// **A record that is not on a disk stops being asked**, rather than
+    /// leaving a machine under a rule waking up every hour to be told the same
+    /// thing. It is the answer a record held only in memory gives, and it costs
+    /// exactly one asking.
+    #[test]
+    fn a_record_that_is_not_on_a_disk_is_asked_once_and_left_alone() {
+        let mut record = Record::default();
+        let (served, _invoice) = while_it_runs_under(
+            Keeping::for_days(7).unwrap(),
+            "not-on-a-disk",
+            &[Some(Side::Person)],
+            &mut record,
+            |told| {
+                let mut person = Talking::to(&told.at);
+                assert!(person.asking(r#"{"waiting":{}}"#).contains("waiting"));
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+
+        assert_eq!(served.entries_removed(), 0);
+        assert_eq!(served.shortenings_refused(), 0);
     }
 
     /// **Nothing a verb can answer with is too long to put on the wire**, which

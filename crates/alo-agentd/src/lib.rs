@@ -87,6 +87,22 @@
 //! served correctly. Where the socket goes is not in it: that is the session's,
 //! and [`session`] is why nothing is guessed when the session does not say.
 //!
+//! # The one thing it does on an interval, and only when it is told to
+//!
+//! A record kept for a number of days is a promise about a file that goes on
+//! ageing whether or not anybody is talking to their agent, so a machine under
+//! such a rule wakes up once an hour to remove what it no longer keeps
+//! ([`ageing`]). A machine that keeps everything — which is what one ships with
+//! — sleeps in one call until somebody says something, exactly as it did before
+//! there was a timer at all. The rule makes the timer; nothing else does.
+//!
+//! What is removed is `alo-keeping`'s and is decided by a rule and a moment,
+//! with no way to name an entry. What this crate adds is *when*, and where: in
+//! the rounds between turns, because a [`Turning`] holds the machine while one
+//! is under way and there is nothing here to ask.
+//!
+//! [`Turning`]: alo_turn::Turning
+//!
 //! # What this crate deliberately does not do
 //!
 //! **It is not the process.** There is no `main` here and no signal handler:
@@ -128,6 +144,8 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(target_os = "linux")]
+pub mod ageing;
+#[cfg(target_os = "linux")]
 pub mod answering;
 #[cfg(target_os = "linux")]
 pub mod caller;
@@ -167,6 +185,8 @@ pub mod words;
 #[cfg(all(test, target_os = "linux"))]
 mod testing;
 
+#[cfg(target_os = "linux")]
+pub use ageing::{Ageing, EVERY};
 #[cfg(target_os = "linux")]
 pub use answering::what_a_person_said;
 #[cfg(target_os = "linux")]

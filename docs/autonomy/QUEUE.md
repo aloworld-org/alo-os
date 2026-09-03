@@ -50,9 +50,11 @@ is the crate that reaches the most of this workspace and is reached by none of
 it: six crates since **item 21e**, and the second half of that sentence is what
 a service is — everything decides, one thing runs. The sixth is `alo-keeping`,
 and it is the first reached for something the machine is *told* rather than
-something a turn does. It is also **the only one that reads a clock**, once a
-round, which is where item 1's *nothing reads the clock* was always going to
-have to end — and since 21e **the only one that reads a file nobody in alo OS
+something a turn does. It is also **the only one that reads a clock**, which is
+where item 1's *nothing reads the clock* was always going to have to end — once
+a round for the messages in it, and since item 20 once more before the wait in a
+round with no turn, because whether a shortening is due has to be asked before
+the service goes to sleep and not after — and since 21e **the only one that reads a file nobody in alo OS
 wrote**: `docs/contracts/machine-description.md` is typed by whoever stands the
 machine up, and every rule about who may have written it is in `trusting.rs`.  **`alo-driving` is the only one
 nothing on a machine ever reads**: it measures whether a model can produce a
@@ -1780,16 +1782,62 @@ out.
   can move a window, a machine that offered these verbs would be a machine an
   agent can be refused by in a new way rather than one that can do more.
 
-- [ ] **20. Where the record is written, and what prunes it.** Formerly 4b, and
-  blocked all this time on the daemon not existing. The path a record is written
-  to, the retention the organisation sets (ADR 0004), and the timer that
-  shortens it. `alo-keeping` holds the shape; this gives it somewhere to live.
-  **No longer blocked.** 21d built the loop a timer would fire in and 21e built
-  the thing that says *which* path and *how long*: `Described::record` and
-  `Described::keeping` are read off a real disk, and there is an integration
-  test starting a real record at the path a real description named. What is left
-  is the timer — when a shortening runs inside `Serving`'s round — which is the
-  one question neither of those two answered.
+- [x] **20. Where the record is written, and what prunes it.** Formerly 4b,
+  carried since item 4, and finished once 21d had a loop and 21e had a machine
+  saying which path and how long. What this item was left holding was one
+  question — *when* a shortening runs — and the answer is two new files.
+  `crates/alo-turn`: `shortening.rs` (`Shortening`, what a machine's record is,
+  and `Shortened`, what one shortening did), plus `Machine::shorten` as its one
+  public door. `crates/alo-agentd`: `ageing.rs` (the rule, the interval, and
+  whether a shortening is due), `unix::ready` grown a timeout, and `Serving`
+  grown the rule and two numbers. 8 new unit tests in `alo-turn` and 10 in
+  `alo-agentd`, 149 tests in that crate on Linux (was 139); **1464 tests across
+  the workspace** (was 1441), clippy clean on both hosts and `cargo doc` clean
+  for both crates.
+
+  **The decision the item asked for, and the shape it came out in: the rule
+  makes the timer.** A record kept for a number of days is a promise about a
+  file that goes on ageing whether or not anybody is talking to their agent, so
+  a service that only measured time when a message arrived could not keep it —
+  which is what argued for a timeout on a wait that had deliberately never had
+  one. But `Keeping::Forever` is what a machine ships with, and on such a machine
+  there is nothing for a timer to do. So `Ageing::before` answers `None` under
+  `Forever` and `ready` waits exactly as it did before: **an organisation that
+  sets a retention rule buys a machine that wakes up to keep it, and a person who
+  keeps everything has a service that sleeps until it is spoken to.** The
+  interval is an hour, and it is alo OS's rather than a key in the description:
+  how long evidence is kept is the organisation's to name (ADR 0004), how often
+  the machine tidies up is a mechanism, and neither can make a machine keep less
+  than its rule.
+
+  **The second decision was where, and the borrow checker made it.** A shortening
+  runs in the rounds where no agent is connected, and that is not a rule to
+  remember: while a turn is under way the `Turning` holds the machine, so there
+  is nothing there to ask. It is also the right place — a shortening replaces the
+  file the record is written to, and one that ran mid-turn and was refused would
+  end an agent's turn with *nothing is written down* because the machine was
+  tidying up.
+
+  Three decisions the next items inherit. **`Kept` did not gain a method**, and
+  that is the whole of why there are two traits: `Kept` is *somewhere one thing
+  that happened can be written down*, and a `Kept` that could remove would put a
+  way to take entries out onto `alo_record::Record`, whose promise is that
+  nothing does. `Shortening: Kept` is the direction that is true — everything
+  that can be shortened can be written to, and not the reverse — so a machine
+  holds the larger one and a turn is handed the smaller. **A refusal to shorten
+  is survived, and a failure to write is not**: nothing is removed in a refused
+  shortening, so it is a machine keeping *more* than its rule, counted in
+  `Served` and gone on from, which is deliberately the opposite answer to
+  `NothingIsWrittenDown`. **A record that is not on a disk stops the timer** —
+  `Shortened::NotOnADisk` is an answer rather than *nothing was old enough*, and
+  without the difference a machine would wake every hour for the rest of the day
+  to be told the same thing.
+
+  Built and unit tested, and shortened on a real disk: a test in `serving.rs`
+  runs the whole service against a real `alo_keeping::Writing` holding a
+  fortnight of entries and reads the shortened record back off the filesystem.
+  **Nothing has been started by systemd**, so no timer has yet fired on a machine
+  nobody was watching; that is 21f and the certified machine.
 
 - [x] **21a. What a client may ask the daemon** — the half of item 21 that is
   law 2 rather than a socket, cut from it and built. `crates/alo-protocol`, a

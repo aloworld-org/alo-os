@@ -321,6 +321,18 @@ mod tests {
         }
     }
 
+    /// Nothing here is shortened: these tests are about what a question leaves
+    /// behind when the record cannot be written to.
+    impl crate::Shortening for ANoSpaceLeftDisk {
+        fn shorten(
+            &mut self,
+            _keeping: alo_keeping::Keeping,
+            _now: std::time::SystemTime,
+        ) -> Result<crate::Shortened, NotKept> {
+            Ok(crate::Shortened::NotOnADisk)
+        }
+    }
+
     /// One turn on a machine with this record and this indicator, ending when
     /// the closure is done.
     ///
@@ -328,7 +340,7 @@ mod tests {
     /// `Machine` and the machine borrows the indicator and the record, so all
     /// of them have to live in one frame.
     fn on_a_machine<T>(
-        kept: &mut dyn Kept,
+        kept: &mut dyn crate::Shortening,
         indicator: &mut Indicator,
         doing: impl FnOnce(&mut Turning<'_, '_>) -> T,
     ) -> T {
