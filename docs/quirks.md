@@ -422,6 +422,37 @@ address nobody here chose. Where the convention every provider claims to follow
 turns out to be followed differently, record it here — with what the evidence
 actually is, because a provider's documentation is not a run against it.
 
+### There is no status that means "the account has run out", so there is a list
+**Version:** the OpenAI-compatible convention and its largest publishers' error
+documentation as of 2026-09-03. **Not observed against any live provider**;
+`alo-asking`'s tests drive a stub on a real socket, and an account that has
+really run out is owed alongside the rest of the hardware verification — it is
+also the one condition in this file nobody can produce on demand without letting
+a real balance empty.
+**Behaviour:** HTTP has had `402 Payment Required` since 1997 and the large
+providers do not send it; the services that do are gateways and resellers. What
+the publishers document instead is an ordinary status carrying a
+machine-readable name: `429` with `insufficient_quota`, `403` with a billing
+name for an account they have stopped serving. So the two statuses a person
+most needs told apart mean two things each — `403` is *your key was refused* or
+*your account is empty*, `429` is *slow down* or *your account is empty* — and
+the status alone cannot say which. Worse, the names collide across publishers in
+the wrong direction: Google's `RESOURCE_EXHAUSTED` and everybody's
+`rate_limit_exceeded` sound like running out and mean asking too fast.
+**Our response:** `alo-asking`'s `ran_out.rs` holds a closed list of the
+identifiers that mean an account has nothing left **and mean nothing else**, and
+`openai.rs` reads the body of a `403` or a `429` — and of no other reply — to
+compare against it. `402` is answered on the status alone. Three rules keep it
+honest. The identifier is compared and dropped, so nothing a provider wrote
+travels into a sentence a person reads. Spelling is not tracked: the letters are
+matched, so `insufficient_quota` and `InsufficientQuota` are one entry. And
+**when in doubt it has not run out** — a name that is not on the list leaves the
+refusal exactly as it was, because a wrong *the account has run out* sends
+somebody to pay for something that was never the problem, which is worse than
+the number they would otherwise have been shown. `RESOURCE_EXHAUSTED` is
+deliberately absent, and there is a test that says so.
+**Date:** 2026-09-03
+
 ### What a provider's status code means when a *question* fails
 **Version:** the OpenAI-compatible convention as documented by its publishers as
 of 2026-09-03. **Not observed against any live provider**; `alo-asking`'s tests
@@ -445,6 +476,10 @@ deliberately **not** done is guessing between "the model is gone" and "the
 address is wrong" — both send a person to look at something, and only one of
 them is worth their afternoon, so the sentence names what was needed rather than
 what to fix.
+**What this entry no longer covers:** two of those statuses have a second
+meaning, and it is the entry above. `403` and `429` are read one step further —
+the name inside the refusal, against a closed list — because *the account has
+run out* is a third sentence and neither status carries it.
 **Date:** 2026-09-03
 
 ### An OpenAI-compatible address is documented both with and without `/v1`

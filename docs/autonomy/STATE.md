@@ -4732,3 +4732,115 @@ machine half was touched.
 - **Nothing has opened a socket.** Both halves of the protocol are a `&str` in
   and a value out, and no client that is not a test has ever read one of these
   answers.
+
+## 2026-09-03 — iteration 41: running out is not a fault
+
+**Item 22 — the failure `alo-answering` had no way to say, and the reason it was
+not a rename.** `crates/alo-answering`: `WentWrong::RanOut` (the eighth),
+`NotWhatFailed::NoAccountThere`, `needs_a_key_or_an_account` in `wrong.rs`, and
+`RAN_OUT` in `words.rs`. `crates/alo-asking`: `ran_out.rs`, a **new file**, and
+the two statuses in `openai.rs` that now consult it; `locally.rs` and `served.rs`
+gained the reasoning about which of them can produce it. 16 new tests — 7 in
+`ran_out.rs`, 3 in `openai.rs` against a real socket, 6 across `alo-answering`.
+**1374 tests and 43 doctests across the workspace** (was 1358 and 43), `cargo
+fmt` clean, `cargo clippy --workspace --all-targets -- -D warnings` clean with
+zero warnings.
+
+Items 16b, 19b, 20 and 21c were read first and skipped for the reasons the queue
+gives — 16b is *blocked on nothing here, and not ready either*, 19b waits on
+Wayland, 20 and 21c on a long-lived process and a Unix socket. 22 was the first
+item that is neither done nor blocked, which is the loop's rule.
+
+### The decision the item did not contain: there is no status that means this
+
+The item asked for a variant for *a provider answering payment required or quota
+exceeded*, and most providers answer neither. `402 Payment Required` has been in
+HTTP since 1997; the services that send it are gateways and resellers. What the
+large publishers document instead is an ordinary status carrying a
+machine-readable name — `429` with `insufficient_quota`, `403` with a billing
+name for an account they have stopped serving. So the two statuses a person most
+needs told apart mean two things each, and neither of them carries this one.
+
+That makes `openai.rs` read the body of a refusal, which nothing in this
+workspace had done before: every other decision here is made from a status, a
+type or a value one of our own crates produced. Three rules keep it from being
+the road somebody else's words arrive by. **The identifier is compared and
+dropped** — what leaves `ran_out.rs` is a `bool`, so `WentWrong` still holds no
+text anybody outside alo OS wrote, which is the rule that file was written under
+in the first place. **Spelling is not tracked**: the letters are matched, so
+`insufficient_quota`, `INSUFFICIENT_QUOTA` and `InsufficientQuota` are one entry
+rather than three, and which one a provider chose is not a thing this repository
+has an opinion about. **Only two statuses are read at all**, and a `401` — which
+has no second meaning — is still answered on the status, with a test that says
+so.
+
+### And the direction the doubt falls in is the design
+
+`RESOURCE_EXHAUSTED` is Google's, `rate_limit_exceeded` is everybody's, and both
+sound exactly like running out and mean *asking too fast*. Neither is on the
+list, and there is a test that says neither is. The argument is about which
+mistake is worse: an unmatched reply keeps the sentence it already had — a
+number, or *your key was refused* — and a wrong match sends somebody to a
+billing page to pay for something that was never the problem. The second is a
+new harm the first does not do, so the list holds only names that mean an
+account has nothing left **and mean nothing else**.
+
+`docs/quirks.md` gained an entry for the whole of it, and the existing entry on
+what a status means when a question fails gained a *what this entry no longer
+covers* note pointing at it — the shape the loopback entry already uses.
+
+### Three decisions the next items inherit
+
+- **The two reasons that are about an arrangement rather than about the answer
+  are refused together.** A key somebody pasted and an account somebody pays for;
+  `needs_a_key_or_an_account` walks the closed list rather than wildcarding, so a
+  reason added later has to answer the question instead of inheriting an answer.
+  A machine on this network has neither — nothing here reaches one, and one in
+  the next room bills nobody — and a gateway on *this* machine can have both,
+  which is item 18b's precedent followed rather than argued again.
+- **Running out opens no door that being switched off would not.** The test
+  builds one failure of each over the same places and asserts the two
+  `Elsewhere` are equal. ADR 0008's *never a silent fallback* runs hardest in the
+  direction where somebody's money is at the far end, and a variant that quietly
+  widened the offers would be the fallback with a receipt on it.
+- **A nag needs a sentence, and there is exactly one.** The test walks every
+  other string in `alo-answering` and refuses any mention of paying, credit,
+  billing or buying — so ADR 0009's greyed-out panel cannot return as a
+  buy-credit reminder for want of anything to say it with. It is the first test
+  in this repository that guarantees something by the absence of a *string*
+  rather than of a type or a dependency.
+
+### What was considered and deliberately not done
+
+`alo_models::NotTried` — testing a provider before it is saved — did not gain a
+variant. That call lists what a provider offers, and a provider with no credit
+still answers it, so the sentence would be one nothing can produce. The one
+place an exhausted account is actually met is a question, and that is where it
+now is.
+
+### `ROADMAP.md` moved, and one code half was written into
+
+**★ Or use an API instead (ADR 0008)** — the code half now says that a provider
+whose account has run out says that and not something else, names the closed
+list, and says it opens no door another failure would not. Its test count moved
+from 73 to 88. No half was ticked that was not whole, and no machine half was
+touched. The line for **AI can be declined entirely** was read and left alone:
+ADR 0009's *since it was accepted* section is what this implements, but that
+roadmap line is about setup's fourth choice as a screen, and writing an
+inference failure into it would make the line report something it is not about.
+
+**What the next iteration must know:**
+
+- **The queue's next ready item is 23**, *a catalogue entry says whether the
+  model can drive the verbs*, and it is the last ready item in the file. **21c**,
+  **20** and **19b** are blocked on Linux and on a long-lived process, and
+  **16b** is not ready by its own account. When 23 is done, the loop has no
+  ready item left and the next iteration writes `LOOP COMPLETE` with that list.
+- **`alo-asking` now reads a refusal body**, which is new for this workspace.
+  Anything that adds a status to `openai.rs`'s match should decide whether it is
+  ambiguous before adding it to the `matches!` above the match — a status added
+  there costs a body read, and one added only to the match costs nothing.
+- **Nothing has been run against an account that has really run out.** Nobody
+  can produce one on demand without letting a real balance empty, so this is
+  owed with the rest of the hardware verification and `docs/quirks.md` says so
+  in the entry itself rather than in a note beside it.

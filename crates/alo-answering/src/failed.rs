@@ -110,7 +110,8 @@ impl Failed {
             | WentWrong::NothingUsable
             | WentWrong::NoModelThere
             | WentWrong::KeyNotAccepted
-            | WentWrong::SentSomewhereElse => filling,
+            | WentWrong::SentSomewhereElse
+            | WentWrong::RanOut => filling,
         };
         strings.say(&self.why.word().key(), &filling)
     }
@@ -305,6 +306,41 @@ mod tests {
         let said = failing(hosted(), WentWrong::NothingAnswered, &[]).said(&strings);
         assert!(!said.is_translated(), "{said}");
         assert!(said.text().ends_with("hat nicht geantwortet"), "{said}");
+    }
+
+    /// **Running out reads as what it is**, and the sentence carries all three
+    /// of the things ADR 0009 says a person needs: what happened, what it takes
+    /// to fix, and that nothing else about their machine has changed.
+    #[test]
+    fn running_out_of_money_is_reported_as_a_state_of_an_account() {
+        assert_eq!(
+            failing(hosted(), WentWrong::RanOut, &[])
+                .said(&in_english())
+                .text(),
+            "nothing was answered by alo, in the EU — the account there has run out, so nothing \
+             will be answered until it is paid for, and nothing else about this machine has changed"
+        );
+    }
+
+    /// **Running out is not a reason to spend somebody's money somewhere else.**
+    /// ADR 0008's *never a silent fallback* runs in both directions, and this is
+    /// the direction it would be worst in — so what a failed question may do
+    /// next is identical whether the place ran out of money or was simply not
+    /// running, and the only door onwards is still an offer a person answered.
+    #[test]
+    fn an_account_that_ran_out_opens_no_door_that_a_broken_one_would_not() {
+        let places = [hosted(), somewhere()];
+        let ran_out = failing(here(), WentWrong::RanOut, &places);
+        let nothing_answered = failing(here(), WentWrong::NothingAnswered, &places);
+
+        assert_eq!(ran_out.elsewhere(), nothing_answered.elsewhere());
+        assert_eq!(
+            ran_out.nothing_was_sent(&in_english()).text(),
+            nothing_answered.nothing_was_sent(&in_english()).text()
+        );
+        // And holding it permits nothing: the two offers are things to ask
+        // somebody, and no `Answering` exists anywhere in this program yet.
+        assert_eq!(ran_out.elsewhere().offers().len(), 2);
     }
 
     /// A refusal the machine could not have made is refused where it is

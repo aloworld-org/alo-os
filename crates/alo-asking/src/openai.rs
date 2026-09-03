@@ -52,6 +52,16 @@
 //! longer than [`MOST_OF_AN_ANSWER`] is one this machine will not show, and it
 //! is reported as unusable rather than truncated into something the model did
 //! not say.
+//!
+//! # And one refusal is read, for one question
+//!
+//! Two statuses in this convention mean two things each, and the second thing is
+//! *the account has run out*: a `403` is a refused key or an account a provider
+//! has stopped serving, and a `429` is *slow down* or an account with nothing
+//! left. Those are three different sentences to read at a bad moment, and the
+//! status alone cannot tell them apart — so those two replies, and no others,
+//! have their body read as far as [`MOST_OF_A_REFUSAL`]. What is taken out of it
+//! is a `bool`; [`ran_out`] is where that is done and why nothing else is.
 
 use std::time::Duration;
 
@@ -60,6 +70,7 @@ use alo_models::Secret;
 use serde::{Deserialize, Serialize};
 
 use crate::question::Question;
+use crate::ran_out;
 
 /// The most of an answer that is read.
 ///
@@ -67,6 +78,13 @@ use crate::question::Question;
 /// and an answer past it is not truncated, because half of what a model said is
 /// not what it said.
 const MOST_OF_AN_ANSWER: u64 = 1_000_000;
+
+/// The most of a refusal that is read.
+///
+/// Read only to find out whether a `403` or a `429` is an account that has run
+/// out, and a service that needs more than this to say so has not said it in a
+/// way [`ran_out`] could match anyway.
+const MOST_OF_A_REFUSAL: u64 = 64_000;
 
 /// One question, in the shape every OpenAI-compatible service speaks.
 #[derive(Serialize)]
@@ -159,10 +177,29 @@ pub(crate) fn put(
         stream: false,
     };
     let mut response = request.send_json(&sent).map_err(what_went_wrong)?;
-    match response.status().as_u16() {
+    let status = response.status().as_u16();
+    // Two statuses in this convention are ambiguous, and the name inside the
+    // refusal is the only thing that resolves them: a `403` is a refused key
+    // unless it is an account with nothing left, and a `429` is a service
+    // asking this machine to slow down unless it is the same. Nothing else
+    // here reads an error body at all, and `ran_out.rs` keeps nothing out of
+    // the one it does read.
+    let ran_out = matches!(status, 403 | 429)
+        && response
+            .body_mut()
+            .with_config()
+            .limit(MOST_OF_A_REFUSAL)
+            .read_to_string()
+            .is_ok_and(|refusal| ran_out::said_in(&refusal));
+    match status {
         200 => {}
         300..=399 => return Err(WentWrong::SentSomewhereElse),
-        401 | 403 => return Err(WentWrong::KeyNotAccepted),
+        // The one status in the standard that means exactly this, and no body
+        // has to be read to know it.
+        402 => return Err(WentWrong::RanOut),
+        401 => return Err(WentWrong::KeyNotAccepted),
+        403 if ran_out => return Err(WentWrong::RanOut),
+        403 => return Err(WentWrong::KeyNotAccepted),
         // The convention answers 404 for a model it does not offer, and 405 for
         // an address that is not the API at all. Both reach a person as "what
         // was to answer this was not there", which is what both of them mean to
@@ -172,6 +209,7 @@ pub(crate) fn put(
         // is not the service having a bad day, so it is neither sentence:
         // something answered, and not with an answer.
         400 | 422 => return Err(WentWrong::NothingUsable),
+        429 if ran_out => return Err(WentWrong::RanOut),
         other => return Err(WentWrong::HavingTrouble(other)),
     }
 
@@ -328,6 +366,74 @@ mod tests {
         let went_wrong = put(&url, Some(&key), &question(), A_MOMENT).unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::SentSomewhereElse);
+    }
+
+    /// **The three replies that mean an account has run out**, each of which
+    /// reached a person as something else until this: `402` was a number,
+    /// `429` was *the service is having trouble* and `403` was *your key was
+    /// refused* — and the last of those sends somebody to check a key that is
+    /// perfectly correct, which is the mistake ADR 0009 named.
+    #[test]
+    fn the_three_ways_a_service_says_the_money_is_gone_all_reach_a_person_as_that() {
+        for (body, status) in [
+            // A gateway sending the status the standard has for it.
+            (
+                r#"{"error":{"message":"insufficient credit","code":402}}"#,
+                402,
+            ),
+            // OpenAI, saying it on a rate-limit status.
+            (
+                r#"{"error":{"message":"You exceeded your current quota","type":"insufficient_quota","code":"insufficient_quota"}}"#,
+                429,
+            ),
+            // A provider that has stopped serving an unpaid account.
+            (r#"{"error":{"type":"billing_hard_limit_reached"}}"#, 403),
+        ] {
+            let (url, server) = serving(body, status);
+            let key = Secret::typed("sk-live-0123456789").unwrap();
+            let went_wrong = put(&url, Some(&key), &question(), A_MOMENT).unwrap_err();
+            server.join().unwrap();
+            assert_eq!(went_wrong, WentWrong::RanOut, "{status}: {body}");
+        }
+    }
+
+    /// **And neither of the two things those statuses otherwise mean has
+    /// moved.** A `429` that is a rate limit is still the service having a bad
+    /// day, and a `403` that is a refused key is still a refused key — the
+    /// refusal path for the variant above, because a wrong *pay us* sends
+    /// somebody to buy something that was never the problem.
+    #[test]
+    fn a_rate_limit_and_a_refused_key_are_not_turned_into_a_bill() {
+        for (body, status, expected) in [
+            (
+                r#"{"error":{"type":"rate_limit_exceeded","message":"slow down"}}"#,
+                429,
+                WentWrong::HavingTrouble(429),
+            ),
+            (
+                r#"{"error":{"code":"invalid_api_key","message":"Incorrect API key provided"}}"#,
+                403,
+                WentWrong::KeyNotAccepted,
+            ),
+            // Nothing to read at all: the status says what it says.
+            ("", 403, WentWrong::KeyNotAccepted),
+            ("<html>403 Forbidden</html>", 403, WentWrong::KeyNotAccepted),
+        ] {
+            let (url, server) = serving(body, status);
+            let went_wrong = put(&url, None, &question(), A_MOMENT).unwrap_err();
+            server.join().unwrap();
+            assert_eq!(went_wrong, expected, "{status}: {body:?}");
+        }
+    }
+
+    /// A `401` is read on the status and its body is never touched, because
+    /// *not authenticated* has no second meaning to tell apart from.
+    #[test]
+    fn a_refusal_this_file_does_not_have_to_read_is_not_read() {
+        let (url, server) = serving(r#"{"error":{"code":"insufficient_quota"}}"#, 401);
+        let went_wrong = put(&url, None, &question(), A_MOMENT).unwrap_err();
+        server.join().unwrap();
+        assert_eq!(went_wrong, WentWrong::KeyNotAccepted);
     }
 
     /// The statuses that mean something in particular, and the one that means

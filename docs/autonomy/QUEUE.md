@@ -1884,29 +1884,67 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   names a turn* true. **Blocked — linux**: a Unix socket and its credentials
   have no portable spelling, and there is no compositor to invoke a turn from.
 
-- [ ] **22. Running out is not a fault.** `alo-answering`'s `WentWrong` has no
-  way to say *the money ran out*, so an exhausted balance arrives as
-  `KeyNotAccepted` or `HavingTrouble(402)` — the first sends somebody to check a
-  key that is perfectly correct, the second hands them a number. Neither says the
-  one useful thing.
+- [x] **22. Running out is not a fault** — implements ADR 0009's *since it was
+  accepted* section and `docs/features.md`'s v0.01 *running out of credit is its
+  own answer, not an error*. `alo-answering`: `WentWrong::RanOut` (the eighth,
+  and the only one here that is not a fault), `NotWhatFailed::NoAccountThere`,
+  and the sentence in `words.rs`. `alo-asking`: `ran_out.rs`, a **new file** —
+  the identifiers a service says it with, and the ones that only look like it —
+  and the two statuses in `openai.rs` that now consult it. 16 new tests;
+  **1374 tests and 43 doctests across the workspace** (was 1358 and 43), clippy
+  clean.
 
-  A provider answering *payment required* or *quota exceeded* gets a variant of
-  its own, said in the reader's own language: **this will not work until you pay,
-  nothing else about your machine has changed, and here is what still does.**
+  **The decision the item did not contain, and it is the whole of the work:
+  there is no status that means this.** `402 Payment Required` has been in HTTP
+  since 1997 and the large providers do not send it; what they document instead
+  is an ordinary status carrying a machine-readable name — `429` with
+  `insufficient_quota`, `403` with a billing name. So the two statuses a person
+  most needs told apart mean two things each, and the item's own sentence (*a
+  provider answering payment required or quota exceeded*) describes a reply that
+  mostly does not exist. Reading the name inside the refusal is the only way to
+  it, which makes this the first place in the workspace that reads a body
+  somebody else wrote in order to decide something. `ran_out.rs` is a file of its
+  own for that reason (law 4): `openai.rs` knows a protocol, and this knows a
+  list of other people's identifiers, which changes when they do rather than when
+  the wire does.
 
-  **Three rules it must not break.** It never becomes a reason to ask somewhere
-  else on its own — ADR 0008's *never a silent fallback* in both directions, and
-  spending somebody's money elsewhere because the first place was empty would be
-  the worst possible version of it. It is said **once, where it happened**, and
-  never again as a reminder: ADR 0009 already refused the greyed-out panel, and a
-  buy-credit nag is that panel in a different coat. And it is **not an error** —
-  running out is an ordinary state of an ordinary account, not a fault in the
-  machine or in the person.
+  **What keeps that safe is three rules and one direction.** The identifier is
+  compared against a closed list and **dropped** — what leaves the file is a
+  `bool`, so `WentWrong` still holds no text anybody outside alo OS wrote.
+  Spelling is not tracked: the letters are matched, so `insufficient_quota` and
+  `InsufficientQuota` are one entry rather than an inventory. And **when in doubt
+  it has not run out** — Google's `RESOURCE_EXHAUSTED` and everybody's
+  `rate_limit_exceeded` are deliberately absent, because both also mean *asking
+  too fast*, and a wrong *the account has run out* sends somebody to pay for
+  something that was never the problem. That is worse than the number they would
+  otherwise have been shown, which is what an unmatched reply still gets.
+  `docs/quirks.md` records all of it.
 
-  ADR 0009's *since it was accepted* section is what this implements. Tests: the
-  three provider replies that mean this in practice, each mapping to the new
-  variant rather than to a key problem; and a test that nothing in the crate can
-  turn it into an attempt somewhere else.
+  Three decisions the next items inherit. **The two reasons that are about an
+  arrangement rather than about the answer are refused together**: a key
+  somebody pasted and an account somebody pays for, both impossible on a machine
+  on this network, and `needs_a_key_or_an_account` walks the list so a reason
+  added later has to answer the question rather than inherit an answer. A gateway
+  on *this* machine can say both, which is item 18b's precedent followed rather
+  than argued again. **Running out opens no door that being switched off would
+  not** — the test builds one failure of each over the same places and asserts
+  the `Elsewhere` are equal, because ADR 0008's *never a silent fallback* runs
+  hardest in the direction where somebody's money is at the other end, and a
+  variant that quietly widened the offers would be the fallback with a receipt.
+  **A nag needs a sentence, and after this item there is exactly one**: the test
+  walks every other string in the crate and refuses any mention of paying, so
+  ADR 0009's greyed-out panel cannot come back as a buy-credit reminder for want
+  of anything to say.
+
+  What it deliberately did **not** touch is `alo_models::NotTried`, which is
+  testing a provider before it is saved: that call lists what a provider offers,
+  and a provider with no credit still answers it, so a variant there would be a
+  sentence nothing can produce.
+
+  Built and unit tested against a stub on a real socket. **Not run against an
+  account that has really run out** — nobody can produce one on demand without
+  letting a real balance empty — which is owed with the rest of the hardware
+  verification and is written into `docs/quirks.md` as such.
 
 - [ ] **23. A catalogue entry says whether the model can drive the verbs.** The
   catalogue records `parameters_b`, `min_ram_gb`, `on_cpu` and `licence` — all of

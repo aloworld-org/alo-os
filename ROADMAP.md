@@ -173,9 +173,17 @@ compositor is not required for, which is why it runs unbroken.
         takes the place a person chose and the thing that answers there,
         routes to whichever of the three it is, holds the machine's one
         indicator while it happens, and writes what left — or what a rule
-        stopped from leaving — before the answer reaches anybody. 73 tests
-        in `alo-asking` and 25 more around it, most of them against a stub on
-        a real socket or a stub of the runtime trait
+        stopped from leaving — before the answer reaches anybody. Since item
+        22 **a provider whose account has run out says that and not
+        something else**: `alo-answering`'s `RanOut` is the one failure here
+        that is not a fault, and `alo-asking` reads the name inside a `403`
+        or a `429` against a closed list to tell it apart from a refused key
+        and from being asked to slow down — while opening no door a failure
+        for any other reason would not, because *never a silent fallback*
+        runs hardest in the direction where somebody's money is at the other
+        end. 86 tests in `alo-asking`, most of them against a stub on a real
+        socket or a stub of the runtime trait, and 57 in `alo-answering`
+        behind them
   - [ ] **On the machine.**
         a provider somebody pays for, answering a real question with a real
         key, and a real model runtime answering one on this machine — neither

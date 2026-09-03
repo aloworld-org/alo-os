@@ -12,6 +12,34 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Running out of credit now says so, instead of telling you your key is
+  wrong.** A provider that answers *payment required*, or that has stopped
+  serving an account with nothing left in it, used to reach you as one of two
+  unhelpful sentences: *the key for this provider was not accepted*, which sends
+  you to check a key that is perfectly correct, or a bare status number. It now
+  reads as what it is — the account has run out, nothing will be answered until
+  it is paid for, **and nothing else about your machine has changed**.
+
+  It is not treated as an error, because it is not one: an account with nothing
+  left in it is an ordinary state of an ordinary account, and the model on your
+  own machine goes on answering exactly as before. Your machine says it once,
+  where it happened, and then carries on — there is no reminder, no badge and no
+  prompt to buy anything, which would be the greyed-out panel alo OS already
+  refused wearing a different coat.
+
+  **And it never spends your money somewhere else instead.** A question that
+  failed because the money ran out opens exactly the same doors as one that
+  failed because nothing was running: a place you approve, once, or nothing. The
+  worst reading of *never a silent fallback* would be a machine that quietly
+  asked a provider you still had credit with, and there is no code path here
+  that could.
+
+  Two things your machine deliberately does not guess. A provider asking you to
+  slow down is still a provider asking you to slow down — telling you to pay for
+  that would be a bill for nothing — and a key that really was refused still
+  reads as a refused key. When the reply does not clearly say the money is gone,
+  nothing about it changes.
+
 - **What the service says back is now written down too, and every sentence in it
   says whether anybody translated it.** A read answers with what your machine
   found — what is in a folder, what is in a file, what a search turned up — as a

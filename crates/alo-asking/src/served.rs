@@ -54,6 +54,13 @@
 //! still never given a key, and what keeps that true is
 //! [`crate::locally`]'s mapping, which has no arm that can produce that reason.
 //!
+//! Not the same, and for the same reason: **an account can run out here too.**
+//! A gateway somebody runs on their own machine can have a budget on it, and
+//! `alo_answering::WentWrong::RanOut` is permitted on
+//! `InferenceSource::ThisMachine` because of this file and no other. The model
+//! alo OS ships bills nobody, and [`crate::locally`]'s mapping is again what
+//! keeps that half true.
+//!
 //! Not the same either: **this machine is not asked to identify itself.** An
 //! answer from a service here says *on this machine* and not the name a person
 //! gave it, because that is what item 18a decided `InferenceSource::ThisMachine`

@@ -132,6 +132,23 @@ pub const HAVING_TROUBLE: Word = Word::saying(
      the person typed wrongly, and there is nothing for them to fix.",
 );
 
+/// The account it would have been answered on has nothing left in it.
+pub const RAN_OUT: Word = Word::saying(
+    "answering.wrong.ran-out",
+    "nothing was answered {source} — the account there has run out, so nothing will be answered \
+     until it is paid for, and nothing else about this machine has changed",
+)
+.noting(
+    "The one sentence in this list that is not about something being broken: an account somebody \
+     pays for has nothing left in it, which is an ordinary state of an ordinary account. Three \
+     things have to survive translation. It is not a fault — nothing is misconfigured and there is \
+     nothing to retry. It is not a rejected key, which is the mistake this sentence exists to stop: \
+     the key is perfectly correct. And the last clause is not padding — it is what tells somebody \
+     that the rest of their computer is exactly as it was. Do not turn it into an offer to buy \
+     anything: alo OS says this once, where it happened, and never again. {source} is where the \
+     question was to be answered and arrives already in the reader's language.",
+);
+
 // ---------------------------------------------------------------------------
 // The line that is always shown — [`crate::Failed::nothing_was_sent`].
 //
@@ -236,7 +253,7 @@ pub const NOT_ON_OFFER: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 14] = [
     NOTHING_ANSWERED,
     TOOK_TOO_LONG,
     NOTHING_USABLE,
@@ -244,6 +261,7 @@ pub const EVERY_WORD: [Word; 13] = [
     KEY_NOT_ACCEPTED,
     SENT_SOMEWHERE_ELSE,
     HAVING_TROUBLE,
+    RAN_OUT,
     NOTHING_WAS_SENT,
     ASK_HERE_INSTEAD,
     ASK_IN_THE_BUILDING_INSTEAD,
@@ -419,6 +437,7 @@ mod tests {
             KEY_NOT_ACCEPTED,
             SENT_SOMEWHERE_ELSE,
             HAVING_TROUBLE,
+            RAN_OUT,
         ] {
             for suggesting in ["instead", "try ", "another"] {
                 assert!(
@@ -427,6 +446,44 @@ mod tests {
                     word.named()
                 );
             }
+        }
+    }
+
+    /// **Running out is said once, and there is nowhere else it could be said.**
+    /// ADR 0009 refused the greyed-out panel and then refused the buy-credit nag
+    /// as the same panel in a different coat — so the check is that no other
+    /// string in this crate could be used as one. A reminder needs a sentence,
+    /// and after this test there is exactly one, attached to the moment it
+    /// happened.
+    #[test]
+    fn only_the_one_sentence_about_money_mentions_money_at_all() {
+        for word in EVERY_WORD {
+            if word.named() == RAN_OUT.named() {
+                continue;
+            }
+            for asking in [
+                "pay", "paid", "credit", "billing", "buy", "upgrade", "top up",
+            ] {
+                assert!(!word.says().contains(asking), "{}: {asking}", word.named());
+            }
+        }
+    }
+
+    /// **And what it says is a state of an account, not a mistake somebody
+    /// made.** The sentence it replaced sent people to check a key that was
+    /// perfectly correct, so it must not name one — and it must keep the clause
+    /// that says the rest of the machine is unchanged, which is the half a
+    /// shortened translation would drop.
+    #[test]
+    fn running_out_says_it_is_not_a_fault_and_never_mentions_a_key() {
+        assert!(
+            RAN_OUT
+                .says()
+                .contains("nothing else about this machine has changed")
+        );
+        assert!(RAN_OUT.says().contains("until it is paid for"));
+        for wrong in ["key", "wrong", "error", "failed"] {
+            assert!(!RAN_OUT.says().contains(wrong), "{wrong}");
         }
     }
 }

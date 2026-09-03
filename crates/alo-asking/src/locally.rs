@@ -171,6 +171,13 @@ impl Asking<'_> {
 /// item 18b gave a person a way to run a service here that has a key of its own
 /// — so the guarantee moved to the one place it is still total. It is a test
 /// below rather than this sentence.
+///
+/// **No arm can produce `WentWrong::RanOut` either**, for the same shape of
+/// reason one step along: the runtime alo OS ships bills nobody, so a person
+/// whose own model failed must never be told to pay for anything. A service
+/// somebody put a budget on *is* on this machine and can say it, which is why
+/// `alo-answering` permits the reason here at all — but it arrives through
+/// `served.rs` and the wire, not through this mapping.
 fn what_went_wrong(why: RuntimeError) -> WentWrong {
     match why {
         RuntimeError::Unreachable => WentWrong::NothingAnswered,
@@ -454,8 +461,14 @@ mod tests {
     ///
     /// A person told *the key for this provider was not accepted* about the
     /// model alo OS ships would go looking for a key that does not exist.
+    ///
+    /// **The same is now true of running out**, and it matters more: the model
+    /// on this machine is the one thing that keeps working when somebody's card
+    /// is declined, and ADR 0009 is about exactly that person. Telling them to
+    /// pay for it would be this repository charging for the free half of the
+    /// product.
     #[test]
-    fn nothing_the_runtime_can_say_becomes_a_refused_key() {
+    fn nothing_the_runtime_can_say_becomes_a_refused_key_or_a_bill() {
         for why in [
             RuntimeError::Unreachable,
             RuntimeError::TookTooLong,
@@ -473,6 +486,7 @@ mod tests {
                 WentWrong::KeyNotAccepted,
                 "{why:?}"
             );
+            assert_ne!(what_went_wrong(why.clone()), WentWrong::RanOut, "{why:?}");
         }
     }
 

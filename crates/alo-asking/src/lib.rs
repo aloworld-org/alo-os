@@ -126,6 +126,11 @@ pub mod locally;
 // about. `openai.rs` has the reasoning.
 mod openai;
 pub mod question;
+// The one thing the convention never agreed on: how a service says an account
+// has run out. Private for `openai.rs`'s reason and one file of its own for law
+// 4's — it is a list of somebody else's identifiers, and it changes when they
+// do rather than when the wire does.
+mod ran_out;
 pub mod refusing;
 pub mod served;
 pub mod unanswered;
