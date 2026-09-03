@@ -5061,3 +5061,113 @@ an iteration that built nothing is an iteration that says so.
   wants the discovery code in front of it, and that code is Linux.
 
 - `LOOP COMPLETE` — written by that iteration and **discharged**: item 21c's Linux blocker was measured and answered (WSL2, kernel 6.6, `SO_PEERCRED` confirmed working), so the queue has buildable work again. Kept behind a bullet as a record rather than a signal.
+
+## 2026-09-03 — iteration 44: the socket exists, and the kernel says who is on it
+
+**Item 21c, re-scoped and built.** `crates/alo-agentd` is a new crate and the
+first thing in this repository that is Linux rather than portable: a Unix
+socket, the permissions around it, and the one question that decides which of
+`alo-protocol`'s two doors a connection gets. 36 unit tests and 4 integration
+tests; **1464 tests and doctests on Linux, 1460 on Windows**, `cargo fmt` clean
+and `cargo clippy --workspace --all-targets -- -D warnings` clean with zero
+warnings on both.
+
+The Linux half was built and gated through WSL2 exactly as `LOOP.md` describes —
+same working tree, separate `CARGO_TARGET_DIR`, about twelve seconds for a
+workspace clippy. The Windows gate was run as well and is unchanged at 1460,
+which is what says the new crate compiling to nothing off Linux really is
+nothing rather than something that broke quietly.
+
+### The item was three things, and it is now two
+
+21c asked for a long-lived process, a socket, and peer credentials. What was
+built is the socket and the credentials; the process is a new item, **21d**.
+
+That is a scope cut and it was made for a reason rather than for time. A turn
+belongs to an agent's connection and an approval arrives on the person's, so a
+daemon has to hold two connections at once against one `alo_turn::Turning` that
+borrows the machine mutably — serving one connection to completion would
+deadlock on the first proposal, because the approval that releases it can only
+come in on a connection nobody is reading. That is a design decision with
+`alo-protocol`'s two doors and `alo-turn`'s borrow both in front of it, and
+taking it in the same iteration as the socket would have meant taking it in a
+hurry. It is written into 21d in those words.
+
+### The decision the item named and did not settle
+
+**rustix, and it is named in one file.** `UnixStream::peer_cred` is unstable in
+std (rust-lang #42839) and `CLAUDE.md` forbids `unsafe` workspace-wide, so
+`SO_PEERCRED` on a stable compiler is a rented crate. `unix.rs` is the only file
+that spells it, as `ollama.rs` is the only file that knows Ollama exists.
+
+**The measurement found something the queue item did not know.** rustix holds
+the peer's process id in a *non-zero* integer, and `SO_PEERCRED` asked of a
+socket with no peer answers `0` — so asking the wrong socket is undefined
+behaviour inside the one crate that holds this workspace's `unsafe`. The answer
+is a type rather than a comment: `who` takes a `&UnixStream`, and there is no
+door in the crate that could hand it a listener. `docs/quirks.md` records both
+halves.
+
+### Three decisions this iteration made that were not in the item
+
+- **The two sides are two Unix users, and a machine that names one login twice
+  gets no socket at all.** `Sides::of` refuses it. On such a machine every
+  connection would satisfy both tests, whichever was asked first would win, and
+  *the side that proposes cannot approve* would be a sentence in a contract with
+  nothing under it. Refusing to start is the only honest answer.
+- **The directory is the first lock and the socket's mode is the second.** The
+  crate makes its own directory `0750`, with that mode from the call that
+  creates it, and hands it to the agent's group — which is what makes the moment
+  between binding a socket and setting its mode harmless, because reaching the
+  socket means traversing a directory that was shut before the socket existed. A
+  directory that is a symbolic link, is not a directory, or belongs to somebody
+  else is refused, and nothing in the crate will chmod, chown or empty one that
+  is not the person's.
+- **A stranger is closed on without a word.** It is the one place the protocol
+  contract's *refused in words and never dropped* does not reach, and the
+  contract now says so: that rule is about messages from the two clients this
+  machine has doors for, and answering a stranger would tell whoever is knocking
+  that there is an alo OS daemon here and what version it is.
+
+### Two things this crate does not claim
+
+**A connection from a second user has never been made.** Telling the two doors
+apart takes two logins and a test process has one, so the mapping is tested
+exhaustively as a value — including that the group opens no door and the process
+id decides nothing — and the real connection that was tested end to end is the
+person's. A real agent connecting as its own user is owed with the rest of the
+verification that needs a machine set up as a machine.
+
+**Nothing has run as a service.** The socket is bound and answered by tests,
+never by systemd, and there is still no process that stays running.
+
+### `ROADMAP.md` moved, and the contract gained a section
+
+The `alo-agentd` line's **code** half now names the crate and what it decides;
+its **On the machine** half was rewritten to say what is actually left — the
+long-lived service (21d) rather than "the daemon itself", which is no longer the
+whole truth. *Every execution recorded* had its machine half corrected the same
+way: queue 20 waits on a timer, and a timer waits on 21d rather than on a crate
+that now exists. **No half was ticked that was not whole, and no machine half
+was touched.**
+
+`docs/contracts/daemon-protocol.md` said the transport was "not here". It is
+here now, and it is a public surface: the socket's path, the two modes, and the
+rule that which door a connection is on is answered by the kernel and by nothing
+on the wire.
+
+**What the next iteration must know:**
+
+- **21d is ready and is a design decision first.** It is not blocked on
+  anything — the crate exists and the Linux host is reachable — but the shape of
+  *one machine, two connections, one turn* wants writing down before it is
+  written. It also inherits the one refusal 21c could not word: what a person is
+  told when somebody who is neither of them knocks.
+- **This workspace now rents `rustix`, and item 6b was about to rent something
+  for the same kind of call.** `openat` and `renameat_with` are in the crate that
+  is already here, so 6b's first decision is narrower than it was: a second
+  wrapper would be two rented spellings of one kernel.
+- **The Linux half of the gate is not optional for this crate.** On Windows
+  `alo-agentd` compiles to nothing and its 40 tests do not exist, so an
+  iteration that touches it and runs only the Windows gate has tested nothing it
+  changed.

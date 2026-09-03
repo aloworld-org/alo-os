@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+  "crates/alo-agentd",
   "crates/alo-answering",
   "crates/alo-appearance",
   "crates/alo-asking",
@@ -32,6 +33,11 @@ toml = "0.9"
 thiserror = "2"
 ureq = { version = "3", default-features = false, features = ["rustls", "json"] }
 serde_json = "1"
+# The kernel, for the one question the standard library will not answer on a
+# stable compiler: who is at the other end of a Unix socket. Reached only by
+# `alo-agentd`, and only from `unix.rs`; see that file for why it is a crate
+# rather than five lines of `unsafe`.
+rustix = { version = "1.1", features = ["net", "process", "fs"] }
 
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is

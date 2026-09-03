@@ -362,14 +362,25 @@ compositor is not required for, which is why it runs unbroken.
         is the one thing text alone would have lost at the last boundary
         before a person reads it. The answers divide by side as the requests
         do, so a daemon cannot put the person's own list onto an agent's
-        connection
+        connection. Since item 21c there is `alo-agentd`, which is the door
+        those two lists arrive at: a Unix socket at a path this project's
+        contract fixes, in a directory only the person and the agent's group
+        can enter, and a side chosen from what the kernel says about the
+        caller rather than from anything a caller says about itself. A
+        machine on which the person and the agent are one login gets no
+        socket at all, because on that machine both doors would be one —
+        which is what turns 21a's division from a promise the code makes
+        into one the operating system makes. It is the first crate here that
+        is Linux rather than portable, and it holds no turn: what it hands
+        back is a connection and who is on it
   - [ ] **On the machine.**
-        the daemon itself — the socket, its peer credentials and a
-        long-lived process (queue 21c) — the acting half of the application
-        verbs, which is Wayland and D-Bus and is the whole of what makes any
-        of these move a window, and the half of the context that **reads** a
-        screen, which is Wayland and AT-SPI and is where *with no invocation,
-        no context calls at all* becomes something anybody can test
+        the long-lived service that holds a turn per connection (queue 21d),
+        without which the socket above is a door with nobody behind it; the
+        acting half of the application verbs, which is Wayland and D-Bus and
+        is the whole of what makes any of these move a window; and the half
+        of the context that **reads** a screen, which is Wayland and AT-SPI
+        and is where *with no invocation, no context calls at all* becomes
+        something anybody can test
 
 - [ ] Every execution recorded with its origin, approval and grant
   - [x] **The code.**
@@ -390,7 +401,8 @@ compositor is not required for, which is why it runs unbroken.
         not write one stops doing anything at all
   - [ ] **On the machine.**
         queue 20 — the path it is written to and the timer that shortens it,
-        both `alo-agentd`'s, and the daemon does not exist
+        both `alo-agentd`'s. The crate exists since item 21c, and what it has
+        is a socket; a timer needs the long-lived process, which is queue 21d
 
 - [ ] **The dock on any edge** — bottom, left, right or top, the person's choice,
       built for both orientations rather than one rotated

@@ -299,10 +299,63 @@ checked, and repeating it would put it in front of a person — `alo-record`'s
 The numbers a reader might want (how long the message was, what format it
 claimed) are carried beside the sentence rather than inside it.
 
-## The transport, and the process
+## The transport
 
+A **Unix domain socket**, one per signed-in person, at
 
-Not here. A Unix socket, its permissions, peer credentials, and a long-lived
-service that holds a turn per connection are `alo-agentd`'s, and they need a
-Linux host. What this contract fixes is the message, so that whatever writes one
-and whatever reads it cannot disagree about what it is.
+```
+$XDG_RUNTIME_DIR/alo/agentd.sock
+```
+
+Both names are part of this contract: `alo` for the directory and `agentd.sock`
+for the socket. A client finds this machine's daemon by that path and by nothing
+else — there is no port, no announcement on the network, and nothing to
+discover. `crates/alo-agentd`'s `place.rs` is this paragraph as working code.
+
+**The directory is `0750` and the socket is `0660`**, both owned by the person
+and both handed to the group the agent is in. Nobody else on the machine can
+reach the socket at all — not to connect, not to see whether it is there. The
+daemon makes the directory itself, with that mode from the moment it exists, and
+refuses to start rather than use one that is a symbolic link, is not a
+directory, or belongs to somebody else: whoever owns the directory a socket
+lives in can replace the socket, and every client on the machine would then be
+talking to them.
+
+**A message is a line.** One request or one answer per line, terminated by a
+newline, with no newline inside it — which is free, because a JSON string
+escapes control characters.
+
+### Which door a connection is on
+
+The two sides above are **two Unix users**, and which one a connection is on is
+answered by `SO_PEERCRED` on the accepted socket: the process, user and group
+the kernel recorded when the connection was made. Nothing a client sends takes
+part in that decision, and there is nothing it could send — the credentials are
+the kernel's account of the caller, not the caller's account of itself.
+
+- the **agent's** user gets the agent's door;
+- the **person's** user gets the person's;
+- anybody else is a stranger, and the connection is **closed with nothing
+  written on it**. That is the one place this document's *never dropped* does
+  not apply, and the reason is that it is about messages from the two clients
+  this machine has doors for. A stranger has sent no message, and an answer
+  would tell whoever is knocking that there is an alo OS daemon here and what
+  version it is.
+
+A machine on which the person and the agent are **one** login has no socket at
+all: the daemon refuses to start, because on such a machine both doors would be
+one and the side that proposed a change could approve it. The agent may not be
+root, for ADR 0001 §2's reason.
+
+The process id the kernel reports **decides nothing**. It is there for whoever
+is reading a service log; a process id is reused, so a door that turned on one
+would turn on whatever started next.
+
+## The process
+
+Not here yet. A long-lived service that holds one turn per connection, and what
+happens when a person's shell answers a change an agent's connection proposed,
+are still owed — `crates/alo-agentd` today opens the door and says who is
+through it. What this contract fixes is the message and the transport, so that
+whatever writes one and whatever reads it cannot disagree about what it is or
+where it goes.

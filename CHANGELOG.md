@@ -12,6 +12,37 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Your agent and you now reach the machine through the same door, and it can
+  tell the two of you apart — because the operating system does, not because
+  either of you says so.** alo OS has always had two lists: what an agent may
+  ask for, and what only you may answer. Reads, proposals and questions are the
+  agent's; approvals, declines and *what am I being asked* are yours. Until now
+  that division was a promise made by the code on this side of the socket, and
+  the thing in front of it — the socket itself — did not exist.
+
+  It does now, and the division is the kernel's. Your agent runs as a login of
+  its own, you sign in as yours, and when either connects the daemon asks the
+  operating system who is really at the other end. There is no field in a
+  message that says *I am the agent*, no token that could be copied, and nothing
+  a program could put on the wire to be taken for you. **A program that asks to
+  approve a change on the agent's connection is refused, and so is one asking to
+  read your files on yours.**
+
+  Three things follow, and each of them is a refusal rather than a setting.
+  **A machine where you and the agent are the same login does not start the
+  service at all** — on such a machine the side proposing a change could approve
+  it, and starting anyway with both doors quietly become one is the failure the
+  whole design exists to prevent. **Nobody else on the machine can reach the
+  socket**: it lives in a directory only you and the agent's group can enter,
+  and anybody else who does get to it is closed on without a word. **And the
+  daemon will not delete something that is in its way** — a file where its
+  socket belongs is left exactly where it is, and it says what to move rather
+  than moving it.
+
+  What is still owed is the service that stays running: today this is the door
+  and who is through it, not yet the thing holding a conversation on the other
+  side.
+
 - **The catalogue now says whether a model can actually work as your agent, not
   only whether it will run — and it stops recommending ones nobody has
   checked.** Every entry used to answer *how big is it*, *how much memory does

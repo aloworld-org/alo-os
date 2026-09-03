@@ -37,9 +37,17 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-files`, `crates/alo-applications`, `crates/alo-context`,
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
-`crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings` and
-`crates/alo-driving` were built by
-the loop and are described in the items below. **`alo-driving` is the only one
+`crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings`,
+`crates/alo-driving` and `crates/alo-agentd` were built by
+the loop and are described in the items below. **`alo-agentd` is the only one
+that is not portable**: since item 21c it is a Unix socket and the credentials a
+kernel keeps for one, so on any other host it compiles to nothing at all rather
+than to a version of itself that pretends. It is also the only one that rents
+something the standard library will not do — `SO_PEERCRED`, in one file, because
+`peer_cred` is unstable and `unsafe` is forbidden — and the only one that
+reaches nothing in this workspace *and* is reached by nothing: a door that knew
+what was being carried through it would be `alo-protocol`'s work done a second
+time, so the two meet only in a test. **`alo-driving` is the only one
 nothing on a machine ever reads**: it measures whether a model can produce a
 verb call, it is run by whoever adds a catalogue entry, and what ships is the
 grade they wrote down. It is also the only crate that reaches `alo-protocol` —
@@ -1449,11 +1457,16 @@ refuse in words. **Item 19 joined the rest of them**: fifteen crates decide
 correctly, two of them act, one holds the order the others happen in, and there
 is still no daemon holding that. **Items 21a and 21b are both halves of what
 that daemon would say and be told**, so what is left of item 21 is the process,
-the socket and peer credentials — which is 21c, and is Linux's.
+the socket and peer credentials — which is 21c, and is Linux's. **Item 21c built
+the socket and the two doors**, on a Linux host this loop can reach; what is
+left of it is the process that stays running, and that is 21d.
 
-**All of it is portable.** No compositor, no certified machine, no GPU. A turn
-is a function call, and its result is a value to assert on. The acting halves
-that genuinely need Wayland and D-Bus are marked below and stay out.
+**All of it is portable, except the socket.** No compositor, no certified
+machine, no GPU. A turn is a function call, and its result is a value to assert
+on. Since 21c one crate is Linux and says so — a Unix socket has no portable
+spelling — and it is built and gated on a Linux host rather than exempted. The
+acting halves that genuinely need Wayland and D-Bus are marked below and stay
+out.
 
 - [x] **18. Putting a question to a model — the hosted provider first.** The gap
   named three times in `ROADMAP.md`, and the first thing in this repository that
@@ -1764,8 +1777,8 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   blocked all this time on the daemon not existing. The path a record is written
   to, the retention the organisation sets (ADR 0004), and the timer that
   shortens it. `alo-keeping` holds the shape; this gives it somewhere to live.
-  **Blocked on 21c**, which is where a long-lived process with a timer in it
-  lives.
+  **Blocked on 21d**, which is where a long-lived process with a timer in it
+  lives — 21c put the socket on the machine, and a socket has no timer.
 
 - [x] **21a. What a client may ask the daemon** — the half of item 21 that is
   law 2 rather than a socket, cut from it and built. `crates/alo-protocol`, a
@@ -1883,34 +1896,92 @@ that genuinely need Wayland and D-Bus are marked below and stay out.
   back. **No socket has been opened**, and no client that is not a test has ever
   read one of these answers.
 
-- [ ] **21c. The daemon itself.** What is left of item 21 once 21a and 21b are
-  out of it: a long-lived process, a socket, and one file naming the transport
-  as `ollama.rs` names the runtime. **Which side of the socket a caller is on is
-  this item's** — peer credentials, and the permissions on the socket itself —
-  because it is what makes 21a's two doors a division rather than a convention.
-  It holds one turn per connection, which is what makes *nothing on the wire
-  names a turn* true. **Blocked — linux**: a Unix socket and its credentials
-  have no portable spelling, and there is no compositor to invoke a turn from.
+- [x] **21c. The socket, and who is at the other end of it** — what item 21c
+  turned out to be once the process was cut out of it, and the first thing in
+  this repository that is Linux rather than portable.
+  `crates/alo-agentd`, a **new crate**: `caller.rs` (who is calling, and what
+  they are allowed to decide), `side.rs` (the two users and the one question),
+  `place.rs` (where the socket goes and what has to be true of the directory),
+  `unix.rs` (the only file that asks the kernel anything), `listening.rs` (the
+  socket, and the door), `refusing.rs` (everything it refuses and who reads it),
+  `testing.rs`. 36 unit tests and 4 integration tests through `alo-protocol`'s
+  two readers on a real socket. **1464 tests and doctests on Linux, 1460 on
+  Windows where this crate compiles to nothing**, clippy clean on both.
+  `docs/contracts/daemon-protocol.md` gained *The transport*, which is a public
+  surface: the socket's path, its permissions, and how a door is chosen.
 
+  **The item was three things and is now two, and the line the cut falls on is
+  what the kernel can answer.** Peer credentials, the socket's permissions and
+  the two doors are one question — *who is calling* — and it is settled here,
+  whole. A long-lived process is a different one, and 21d below is it. The cut
+  was not tidiness: a turn belongs to an agent's connection, and a person
+  approving a change belongs to *theirs*, so a daemon has to hold two
+  connections at once against one `alo_turn::Turning` that borrows the machine
+  mutably. That is a design decision, and making it in the same iteration as the
+  socket would have made it in a hurry.
 
-  **The Linux question is answered, and it is not the one the blocker assumed.**
-  This item said peer credentials "have no portable spelling", which is true —
-  but the machine now has Ubuntu in WSL2 on kernel 6.6, and `SO_PEERCRED` was
-  measured working there: a `getsockopt` on the accepted socket returns the
-  caller's real pid, uid and gid **from the kernel**, not anything the caller
-  said about itself. That is the whole property this item needs.
+  **The decision the item named and did not settle: rustix rather than
+  `unsafe`.** `UnixStream::peer_cred` is unstable in std (rust-lang #42839) and
+  `CLAUDE.md` forbids `unsafe` workspace-wide, so `SO_PEERCRED` on a stable
+  compiler is a rented crate. It is named in `unix.rs` and nowhere else, as
+  `ollama.rs` is the only file that knows Ollama exists. `docs/quirks.md`
+  records what the measurement found on top of that: rustix holds the peer's
+  process id in a **non-zero** integer while `SO_PEERCRED` answers `0` for a
+  socket with no peer, so `who` takes a `&UnixStream` and there is no door in
+  the crate that could hand it a listener.
 
-  **What the measurement also found, and what it costs.** `UnixStream::peer_cred`
-  is *unstable* in std — feature `peer_credentials_unix_socket`, rust-lang issue
-  #42839 — so on stable Rust this cannot come from the standard library. The
-  options are a direct `getsockopt` behind our own boundary, or a rented crate
-  (`rustix` or `nix`). **Either is a decision, not a detail**: `CLAUDE.md` says a
-  rented dependency is configured and named in one file, so whichever is chosen,
-  exactly one file spells `SO_PEERCRED` and everything else asks that file who
-  the caller is.
+  Three decisions the next items inherit. **The two sides are two Unix users,
+  and a machine that names one login twice gets no socket at all** — refusing to
+  start is the only honest answer, because a daemon that started anyway would
+  have both of 21a's doors quietly become one and the side proposing a change
+  could approve it. **The directory is the first lock and the socket's own mode
+  is the second**: `0750` on a directory this crate creates with that mode
+  *before* the socket exists is what makes the moment between binding and
+  chmod harmless, and a directory that is a link, is not a directory, or belongs
+  to somebody else is refused rather than taken over. **A stranger is closed on
+  without a word**, which is the one place the protocol's *never dropped* does
+  not reach — it is about messages from the two clients this machine has doors
+  for, and answering would tell whoever is knocking that there is an alo OS
+  daemon here.
 
-  Do not reach for nightly. A daemon that only builds on an unstable compiler is
-  a daemon nobody else can build.
+  **This crate says nothing in anybody's language, and that is the decision
+  rather than an omission.** Its refusals are a machine described wrongly and a
+  socket that cannot be put where it belongs — read out of a service log by
+  whoever is standing the machine up, which is `alo-shortcuts`' `DefaultsError`'s
+  reader and `alo-driving`'s rule. The one that will be somebody's, a stranger
+  turned away, reaches nobody today: there is no shell to show it on and no turn
+  to write it against, and inventing its English here would be inventing it in
+  the wrong place. It gets a `Word` when there is somebody to read it, and 21d
+  is where that is decided.
+
+  Built, unit tested and integration tested on Linux (WSL2, kernel 6.6).
+  **Two things have not been done and are not claimed.** A connection from a
+  *second* user has never been made: telling the doors apart takes two logins
+  and a test process has one, so the mapping is tested exhaustively as a value
+  and the real connection tested is the person's. And nothing has run as a
+  service on a machine that boots — the socket is bound and answered by tests,
+  never by systemd.
+
+- [ ] **21d. The process that holds a turn.** What is left of 21c: a
+  long-lived service, the accept loop, and the turn. It reads
+  `$XDG_RUNTIME_DIR` and the two users from wherever a machine says them,
+  refuses to run as root at all (ADR 0001 §2, which 21c deliberately left to
+  whatever has a `main`), and stops cleanly.
+
+  **The decision it exists to make, and it should not be made anywhere else: a
+  turn is an agent's connection, and the person's approval arrives on a
+  different one.** `alo_turn::Turning` borrows the machine mutably and there is
+  one machine, so a person's shell cannot hold a second `Turning` — and serving
+  one connection at a time would deadlock on the first proposal, because the
+  approval that would release it can only arrive on a connection nobody is
+  reading. Whatever shape answers that (one thread owning the machine with the
+  connections handing it messages, or something better) is this item, and it
+  wants writing down before it is written.
+
+  It also inherits the refusal 21c could not word: what a person is told when
+  somebody who is neither of them knocks. **Blocked on nothing** — `alo-agentd`
+  exists and the Linux host is reachable — but it is a design decision first and
+  should be taken with the whole of `alo-protocol`'s two doors in front of it.
 
 - [x] **22. Running out is not a fault** — implements ADR 0009's *since it was
   accepted* section and `docs/features.md`'s v0.01 *running out of credit is its
@@ -2126,7 +2197,12 @@ rather than only of what is convenient.
   test. Not a rewrite: the decisions, the refusals and the tests are settled,
   and this replaces the syscalls underneath them. The workspace forbids
   `unsafe`, so it needs either a pinned dependency wrapping the calls or an ADR,
-  and choosing between those is the first thing the item does.
+  and choosing between those is the first thing the item does. **Item 21c has
+  since made that choice once**, for `SO_PEERCRED`: `rustix`, named in one file,
+  no `unsafe` of ours and no nightly compiler. `rustix::fs` has `openat` and
+  `renameat_with`, so the same answer is available here — and the point of
+  saying so is that a second wrapper crate for the same kind of call would be
+  two rented spellings of the kernel where one will do.
 - **4b. Where the record file lives, and when it is shortened.** What item 4a
   could not close, and the whole of what is left of it: a path under `/var/lib`
   that the package decides, the setting the retention rule is read from and
