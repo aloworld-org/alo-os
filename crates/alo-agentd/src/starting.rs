@@ -23,10 +23,16 @@
 //!    with; see [`NotStarted::NoRecord`].
 //! 4. **The record**, which is the one thing a service refuses to run without.
 //! 5. **The stop, and the handler that causes one.** `crate::signalling`.
-//! 6. **The session, and the socket** — last, because it is the only thing
+//! 6. **The boundary** — the programme loaded into the kernel and this
+//!    service's own control group subtree, `crate::bounding`. Before the socket,
+//!    because ADR 0015 says a turn that cannot be bounded does not run and a
+//!    service that cannot bound one has nothing to offer anybody; and after the
+//!    record, because a machine with no boundary is a machine that will not
+//!    serve rather than one that cannot write down why.
+//! 7. **The session, and the socket** — last, because it is the only thing
 //!    anybody else on the machine can see. Nothing knocks on a service that is
 //!    still deciding whether it can run.
-//! 7. **The machine, and the serving.** [`until_stopped`].
+//! 8. **The machine, and the serving.** [`until_stopped`].
 //!
 //! # What is not read from anywhere, and is not a stub
 //!
@@ -49,7 +55,7 @@ use alo_egress::Indicator;
 use alo_files::OnThisMachine;
 use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
 use alo_strings::Strings;
-use alo_turn::{Machine, Shortening};
+use alo_turn::{Bounding, Machine, Shortening};
 
 use crate::caller::Uid;
 use crate::described::Described;
@@ -107,16 +113,20 @@ pub fn what_this_machine_says() -> Result<Loaded, NotStarted> {
 
 /// Assemble the machine every turn happens against, and serve until stopped.
 ///
-/// The four things `alo_turn::Machine` is made of are made here and nowhere
+/// The five things `alo_turn::Machine` is made of are made here and nowhere
 /// else, which is what `crate::serving` means by *the service is handed a
 /// machine rather than building one*: the verbs are the six this machine can
 /// carry out, the resolver is the real one, the indicator is the single one law
 /// 1's surface is drawn from, and the record is whatever the caller opened at
 /// the path the description named.
 ///
-/// The record is taken rather than opened here so that the order in
-/// `src/main.rs` stays the order in this file's header — and so that a test can
-/// hand this the same machine with somewhere else to write.
+/// The record and the boundary are taken rather than made here, and for one
+/// reason each. The record, so that the order in `src/main.rs` stays the order
+/// in this file's header — and so that a test can hand this the same machine
+/// with somewhere else to write. The boundary, because making one changes the
+/// machine outside this process: it loads a programme into the kernel and moves
+/// this service into a control group of its own, so what owns it is what has to
+/// give it back, and that is `src/main.rs`.
 ///
 /// # Errors
 ///
@@ -129,11 +139,12 @@ pub fn until_stopped(
     knocking: &dyn Knocking,
     waking: &Waking,
     strings: &Strings,
+    bounding: &mut dyn Bounding,
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
     let mut indicator = Indicator::default();
     let mut machine =
-        Machine::carrying_out_file_verbs(strings, &OnThisMachine, &mut indicator, kept)?;
+        Machine::carrying_out_file_verbs(strings, &OnThisMachine, bounding, &mut indicator, kept)?;
     // Nothing has been granted on this machine, and nothing on this socket can
     // grant anything; the header says what that means and why it is a state
     // rather than a hole.
@@ -276,7 +287,15 @@ mod tests {
             back
         });
 
-        let served = until_stopped(&described, &knocking, &waking, &strings, &mut record).unwrap();
+        let served = until_stopped(
+            &described,
+            &knocking,
+            &waking,
+            &strings,
+            &mut crate::testing::NothingIsBounded,
+            &mut record,
+        )
+        .unwrap();
         let back = client.join().unwrap();
 
         assert!(back.contains("refused"), "{back}");

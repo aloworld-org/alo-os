@@ -52,6 +52,15 @@
 //! closes the turn: [`Turning::is_closed`] is true from then on and every door
 //! answers [`NotDone::TurnClosed`]. See [`crate`] for what that does and does
 //! not close.
+//!
+//! # Two doors run something, and both run it inside a boundary
+//!
+//! [`Turning::reading`] and [`Turning::approving`] are the two, and neither
+//! knows anything about how a boundary is imposed: `carrying.rs` has the order
+//! and [`crate::Bounding`] is what the machine was made with. What is here is
+//! the two things a turn is left holding when there was none —
+//! [`NotDone::NotBounded`], which nothing writes down because nothing happened,
+//! and [`Turning::a_thread_is_lost`], which is the one a service stops over.
 
 use std::time::{Duration, SystemTime};
 
@@ -86,6 +95,14 @@ pub struct Turning<'a, 'm> {
     approvals: Approvals,
     /// Whether something that happened could not be written down.
     closed: bool,
+    /// Whether a thread of this service went into a boundary and stayed there.
+    ///
+    /// Separate from `closed`, because they are two different things wrong with
+    /// two different parts of the machine and a caller does two different
+    /// things about them: a closed turn is a machine that has stopped keeping
+    /// evidence, and this is a service that has lost a thread to a grant that
+    /// is over. Neither can be told from the other by reading a sentence.
+    lost_a_thread: bool,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -117,6 +134,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             machine,
             approvals: Approvals::default(),
             closed: false,
+            lost_a_thread: false,
         })
     }
 
@@ -146,7 +164,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             Ok(authorised) => authorised,
             Err(refused) => return self.stopped_at_the_moment(refused, now),
         };
-        let (entry, outcome) = carrying_out(self.machine, authorised, grants);
+        let (entry, outcome) = self.inside_a_boundary(authorised, grants)?;
         self.writing_down(entry)?;
         outcome
     }
@@ -213,7 +231,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             Ok(authorised) => authorised,
             Err(refused) => return self.stopped_at_the_moment(refused, now),
         };
-        let (entry, outcome) = carrying_out(self.machine, authorised, grants);
+        let (entry, outcome) = self.inside_a_boundary(authorised, grants)?;
         self.writing_down(entry)?;
         outcome
     }
@@ -256,16 +274,32 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// use alo_files::OnThisMachine;
     /// use alo_record::Record;
     /// use alo_strings::{Strings, Vocabulary};
-    /// use alo_turn::{Machine, Turning};
+    /// use alo_turn::{Bounding, Doing, Done, Machine, NoBoundary, Turning};
     /// use std::time::{Duration, SystemTime};
+    ///
+    /// // A machine with nothing in front of a turn, which is not a machine alo
+    /// // OS ships: `alo_turn::bounding` says why there is no such thing in any
+    /// // library here, and why what a test needs is these four lines.
+    /// struct NothingIsBounded;
+    /// impl Bounding for NothingIsBounded {
+    ///     fn carrying_out(
+    ///         &mut self,
+    ///         _reaching: &alo_files::Reaching,
+    ///         doing: Doing<'_>,
+    ///     ) -> Result<Done, NoBoundary> {
+    ///         Ok(doing.done())
+    ///     }
+    /// }
     ///
     /// let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000);
     /// let strings = Strings::of(Vocabulary::empty());
     /// let mut indicator = Indicator::default();
     /// let mut record = Record::default();
+    /// let mut bounding = NothingIsBounded;
     /// let mut machine = Machine::carrying_out_file_verbs(
     ///     &strings,
     ///     &OnThisMachine,
+    ///     &mut bounding,
     ///     &mut indicator,
     ///     &mut record,
     /// )
@@ -348,6 +382,18 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.closed
     }
 
+    /// Whether a thread of this service went into a boundary and stayed there.
+    ///
+    /// A daemon reads this for the reason it reads [`Turning::is_closed`], and
+    /// it does the same thing about it: there is a thread in this process that
+    /// is refused everything outside a grant that has ended, so the service is
+    /// over. It is asked first of the two, because a service that has lost a
+    /// thread has not stopped keeping evidence and must not report that it has.
+    #[must_use]
+    pub fn a_thread_is_lost(&self) -> bool {
+        self.lost_a_thread
+    }
+
     /// A name and some values, made into a call against the closed list — or
     /// turned away, and written down as having been.
     ///
@@ -369,6 +415,31 @@ impl<'a, 'm> Turning<'a, 'm> {
                 let entry = Entry::turned_away(verb, &said, self.turn.grantee(), now);
                 self.writing_down(entry)?;
                 Err(NotDone::TurnedAway(why))
+            }
+        }
+    }
+
+    /// Carry the call out inside the boundary this machine imposes, or say
+    /// there was none.
+    ///
+    /// Both doors that run something come through here, and it is the whole of
+    /// what a boundary changes about them: everything else on either side of it
+    /// is what it always was. Nothing is written down on the refusing road —
+    /// `carrying.rs` says why there is nothing true to write — and a
+    /// thread left inside is remembered on the turn, because the service that
+    /// holds it has to be able to ask.
+    fn inside_a_boundary(
+        &mut self,
+        authorised: Authorised,
+        grants: &Grants,
+    ) -> Result<(Entry, Result<Answer, NotDone>), NotDone> {
+        match carrying_out(self.machine, authorised, grants) {
+            Ok(both) => Ok(both),
+            Err(no_boundary) => {
+                if no_boundary.a_thread_is_still_inside() {
+                    self.lost_a_thread = true;
+                }
+                Err(NotDone::NotBounded(no_boundary))
             }
         }
     }
@@ -444,7 +515,8 @@ mod tests {
     use super::*;
     use crate::kept::Kept;
     use crate::testing::{
-        a_folder_of_our_own, as_given, files, granting, hour, in_english, noon, offering,
+        NoBoundaryAtAll, NothingIsBounded, a_folder_of_our_own, as_given, files, granting, hour,
+        in_english, noon, offering,
     };
     use alo_capability::{Agent, Ask, CallError, ProposalError};
     use alo_egress::Indicator;
@@ -509,12 +581,31 @@ mod tests {
         kept: &mut dyn crate::Shortening,
         doing: impl FnOnce(&mut Turning<'_, '_>, &mut Grants, &Path, &Path) -> T,
     ) -> T {
+        on_a_machine_bounded_by(what, kept, &mut NothingIsBounded, doing)
+    }
+
+    /// The same, on a machine whose boundary is the one this test is about.
+    ///
+    /// Separate from [`on_a_machine`] rather than a parameter on it, because
+    /// what a boundary does is what three tests here are for and what every
+    /// other test in this file takes for granted.
+    fn on_a_machine_bounded_by<T>(
+        what: &str,
+        kept: &mut dyn crate::Shortening,
+        bounding: &mut dyn crate::Bounding,
+        doing: impl FnOnce(&mut Turning<'_, '_>, &mut Grants, &Path, &Path) -> T,
+    ) -> T {
         let strings = in_english();
         let (folder, invoice) = a_folder_with_an_invoice(what);
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, kept)
-                .unwrap();
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            bounding,
+            &mut indicator,
+            kept,
+        )
+        .unwrap();
         let mut grants = granting(&[&folder]);
         let mut turning = Turning::beginning(
             offering(&invoice),
@@ -887,6 +978,116 @@ mod tests {
         );
     }
 
+    /// **A turn that could not be bounded does nothing at all**, and that is
+    /// ADR 0015's rule met at the door: the file is still where it was, the
+    /// person is told in their own language, and it is not a refusal — nothing
+    /// was refused, because nothing was asked.
+    #[test]
+    fn a_turn_that_could_not_be_bounded_does_nothing_and_says_so() {
+        let mut record = Record::default();
+        let still_there = on_a_machine_bounded_by(
+            "no-boundary",
+            &mut record,
+            &mut NoBoundaryAtAll::kernel_would_not_take_it(),
+            |turning, grants, _, invoice| {
+                let id = turning
+                    .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
+                    .unwrap();
+                let not_bounded = turning.approving(id, grants, noon()).unwrap_err();
+
+                assert!(
+                    matches!(not_bounded, NotDone::NotBounded(_)),
+                    "{not_bounded:?}"
+                );
+                assert!(
+                    !not_bounded.was_refused(),
+                    "a machine that could not bound a turn was reported as the grants refusing it"
+                );
+                assert!(!not_bounded.is_the_end_of_the_turn());
+                assert!(!turning.a_thread_is_lost());
+
+                let said = not_bounded.said(&in_english()).into_text();
+                assert!(said.contains("nothing was done"), "{said}");
+                invoice.is_file()
+            },
+        );
+
+        assert!(still_there, "a change ran with no boundary around it");
+        assert!(
+            record.is_empty(),
+            "a turn that never ran wrote something down about having run"
+        );
+    }
+
+    /// **A read is bounded too**, which is the half somebody would be tempted to
+    /// leave out: a read touches a disk, so a verb with a bug in it reads
+    /// whatever it names, and ADR 0013 is about exactly that.
+    #[test]
+    fn a_read_that_could_not_be_bounded_answers_nothing() {
+        let mut record = Record::default();
+        on_a_machine_bounded_by(
+            "no-boundary-read",
+            &mut record,
+            &mut NoBoundaryAtAll::kernel_would_not_take_it(),
+            |turning, grants, folder, _| {
+                let not_bounded = turning
+                    .reading(
+                        "list_folder",
+                        &[("folder", as_given(folder))],
+                        grants,
+                        noon(),
+                    )
+                    .unwrap_err();
+                assert!(
+                    matches!(not_bounded, NotDone::NotBounded(_)),
+                    "{not_bounded:?}"
+                );
+            },
+        );
+
+        assert!(record.is_empty(), "a read that never ran left an entry");
+    }
+
+    /// **A thread that could not be brought back is a service that stops**, and
+    /// the turn is what a daemon asks: a thread of this process is inside a
+    /// boundary belonging to a turn that is over, refused everything outside a
+    /// grant that no longer exists.
+    ///
+    /// It is deliberately *not* a closed turn. Nothing has gone wrong with the
+    /// record, and a service that reported this as *nothing is written down*
+    /// would send whoever reads it to look at a disk that is fine.
+    #[test]
+    fn a_thread_left_inside_a_boundary_is_a_service_that_stops() {
+        let mut record = Record::default();
+        on_a_machine_bounded_by(
+            "thread-lost",
+            &mut record,
+            &mut NoBoundaryAtAll::a_thread_is_still_inside(),
+            |turning, grants, folder, _| {
+                let not_bounded = turning
+                    .reading(
+                        "list_folder",
+                        &[("folder", as_given(folder))],
+                        grants,
+                        noon(),
+                    )
+                    .unwrap_err();
+
+                assert!(
+                    matches!(not_bounded, NotDone::NotBounded(_)),
+                    "{not_bounded:?}"
+                );
+                assert!(turning.a_thread_is_lost());
+                assert!(
+                    !turning.is_closed(),
+                    "a lost thread was reported as a machine that has stopped keeping evidence"
+                );
+            },
+        );
+
+        assert!(record.is_empty());
+    }
+
     /// **The document the invocation offered is reachable and the folder around
     /// it is not**, and when the turn ends the grant goes with it.
     #[test]
@@ -895,9 +1096,15 @@ mod tests {
         let mut record = Record::default();
         let (folder, invoice) = a_folder_with_an_invoice("offered");
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         let mut grants = Grants::default();
         let turning = {
             let mut turning = Turning::beginning(
@@ -951,9 +1158,15 @@ mod tests {
         let mut record = Record::default();
         let (_folder, invoice) = a_folder_with_an_invoice("declined-agent");
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         let mut present = Agent::present();
         let turning = Turning::beginning(
             offering(&invoice),
@@ -978,9 +1191,15 @@ mod tests {
         let mut record = Record::default();
         let (_folder, invoice) = a_folder_with_an_invoice("anonymous");
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         let mut grants = Grants::default();
         let refused =
             Turning::beginning(offering(&invoice), "  ", hour(), &mut grants, &mut machine)
@@ -1092,9 +1311,15 @@ mod tests {
         let folder = a_folder_of_our_own("no-words");
         let somewhere_else = a_folder_of_our_own("no-words-elsewhere");
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         let mut grants = granting(&[&folder]);
         {
             let mut turning = Turning::beginning(

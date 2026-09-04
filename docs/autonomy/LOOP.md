@@ -235,13 +235,15 @@ a reason that is not about the code. **Read the rustdoc gate on Linux**, and on
 Windows check only that the count is the thirty-four the platform explains: a
 thirty-fifth is somebody's new broken link hiding in the noise.
 
-**The number moves for honest reasons, and it has moved twice.** It was
+**The number moves for honest reasons, and it has moved three times.** It was
 twenty-eight until item 26a gave `alo-bounding` four more Linux-only things for
-its own crate header to link, and thirty-two until item 26b gave it two more.
+its own crate header to link, thirty-two until item 26b gave it two more, and
+thirty-four until item 26d gave it four more again — the crate header now names
+the doors the daemon reaches it by. It is **thirty-eight** as of 2026-09-04.
 Do not read the total: `cargo doc --workspace --no-deps 2>&1 | grep generated`
 names the two crates and their counts in two lines — twenty-four for
-`alo-agentd`, ten for `alo-bounding` — and a count appearing against a *third*
-crate is the thing to look at.
+`alo-agentd`, fourteen for `alo-bounding` — and a count appearing against a
+*third* crate is the thing to look at.
 
 ## Where things are
 

@@ -172,9 +172,11 @@ fn a_question_that_leaves_is_on_the_disk_before_the_answer_is_handed_back() {
         let mut writing = Writing::opening(&kept_at).unwrap();
         let mut indicator = Indicator::default();
         let mut grants = Grants::default();
+        let mut bounding = NothingIsBounded;
         let mut machine = Machine::carrying_out_file_verbs(
             &strings,
             &OnThisMachine,
+            &mut bounding,
             &mut indicator,
             &mut writing,
         )
@@ -278,9 +280,11 @@ fn a_question_the_rule_refuses_is_on_the_disk_as_a_refusal_and_not_as_egress() {
         let mut writing = Writing::opening(&kept_at).unwrap();
         let mut indicator = Indicator::default();
         let mut grants = Grants::default();
+        let mut bounding = NothingIsBounded;
         let mut machine = Machine::carrying_out_file_verbs(
             &strings,
             &OnThisMachine,
+            &mut bounding,
             &mut indicator,
             &mut writing,
         )
@@ -339,4 +343,23 @@ fn a_question_the_rule_refuses_is_on_the_disk_as_a_refusal_and_not_as_egress() {
         "{:?}",
         entry.happened()
     );
+}
+
+/// A machine with nothing in front of a turn, which is not a machine alo OS
+/// ships.
+///
+/// `alo_turn::bounding` says why there is no such implementation in any library
+/// here — it would be ADR 0015's guarantee turned off by default on every host —
+/// and why what a test needs is these four lines, written where whoever reads
+/// the test can see them.
+struct NothingIsBounded;
+
+impl alo_turn::Bounding for NothingIsBounded {
+    fn carrying_out(
+        &mut self,
+        _reaching: &alo_files::Reaching,
+        doing: alo_turn::Doing<'_>,
+    ) -> Result<alo_turn::Done, alo_turn::NoBoundary> {
+        Ok(doing.done())
+    }
 }

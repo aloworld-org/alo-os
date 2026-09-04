@@ -1,10 +1,19 @@
 //! What every turn on this machine happens against, and what it can carry out.
 //!
-//! Five things a turn needs that are not the turn's own: the verbs an agent may
+//! Six things a turn needs that are not the turn's own: the verbs an agent may
 //! ask for, the words the person in front of the machine reads, how a path is
-//! resolved, what is leaving right now, and where what happened is written
-//! down. They are made once, when the daemon starts, and every turn borrows
-//! them.
+//! resolved, what a verb's work runs inside, what is leaving right now, and
+//! where what happened is written down. They are made once, when the daemon
+//! starts, and every turn borrows them.
+//!
+//! # A machine cannot be made without a boundary
+//!
+//! [`Bounding`] is held here for the reason [`crate::Kept`] is: the promise is
+//! only structural if a machine cannot exist without one. ADR 0015 says a turn
+//! whose boundary cannot be applied does not run, so there is no honest
+//! fallback — a machine that could carry a verb out with nothing around it
+//! would be the guarantee turned off wherever somebody forgot, which is exactly
+//! what ADR 0013 says is wrong with promising it in our own code.
 //!
 //! # The list an agent may ask from is the list this machine can carry out
 //!
@@ -58,15 +67,17 @@ use alo_egress::Indicator;
 use alo_files::{Declaring, Resolving, file_verbs};
 use alo_strings::Strings;
 
+use crate::bounding::Bounding;
 use crate::kept::Kept;
 use crate::shortening::{Shortened, Shortening};
 
-/// The verbs, the words, the resolver, the indicator and the record: one
-/// machine's, shared by every turn on it.
+/// The verbs, the words, the resolver, the boundary, the indicator and the
+/// record: one machine's, shared by every turn on it.
 ///
-/// Not `Clone`, and it holds the indicator and the record by exclusive borrow:
-/// two of these would be two turns writing into one record with no order
-/// between them, and the record is a file whose lines are read as a sequence.
+/// Not `Clone`, and it holds the boundary, the indicator and the record by
+/// exclusive borrow: two of these would be two turns writing into one record
+/// with no order between them, and the record is a file whose lines are read as
+/// a sequence.
 pub struct Machine<'a> {
     /// What an agent may ask for, which is what this machine can carry out.
     verbs: Verbs,
@@ -74,6 +85,13 @@ pub struct Machine<'a> {
     strings: &'a Strings,
     /// Where a path really leads.
     resolving: &'a dyn Resolving,
+    /// What a verb's work runs inside.
+    ///
+    /// Exclusive, because imposing one is a thing that happens to a kernel: an
+    /// entry is written into a map, a thread goes into a control group and
+    /// comes back out of it, and two turns doing that at once through one
+    /// boundary would be two threads in one turn's cgroup.
+    bounding: &'a mut dyn Bounding,
     /// What is leaving this machine right now.
     indicator: &'a mut Indicator,
     /// Where what happened is written down, and the one thing that can shorten
@@ -93,7 +111,12 @@ impl<'a> Machine<'a> {
     /// privilege — `alo_files::OnThisMachine` is the one that ships, and
     /// `alo_files::Resolving` says why there is only one.
     ///
-    /// The indicator is taken for a different reason: it is the surface a
+    /// The boundary is taken for the reason the record is, and it is the
+    /// stronger half of the same argument: what imposes one is a kernel, this
+    /// crate is portable, and a machine that could be made without one would be
+    /// a machine able to run a verb with nothing around it.
+    ///
+    /// The indicator is taken for a different reason again: it is the surface a
     /// person watches, so there is exactly one of it and the shell that draws
     /// it is the thing that owns it. A machine borrows it, and
     /// [`Machine::showing`] is how the shell reads it back.
@@ -105,6 +128,7 @@ impl<'a> Machine<'a> {
     pub fn carrying_out_file_verbs(
         strings: &'a Strings,
         resolving: &'a dyn Resolving,
+        bounding: &'a mut dyn Bounding,
         indicator: &'a mut Indicator,
         kept: &'a mut dyn Shortening,
     ) -> Result<Self, Declaring> {
@@ -112,6 +136,7 @@ impl<'a> Machine<'a> {
             verbs: file_verbs()?,
             strings,
             resolving,
+            bounding,
             indicator,
             kept,
         })
@@ -148,8 +173,23 @@ impl<'a> Machine<'a> {
     }
 
     /// Where a path really leads.
-    pub(crate) fn resolving(&self) -> &dyn Resolving {
+    ///
+    /// Answers for as long as the resolver lives rather than for as long as
+    /// this borrow does, as [`Machine::strings`] does: a turn resolves a call's
+    /// paths and then asks the machine for the boundary to run it inside, and
+    /// those are two things it holds at once.
+    pub(crate) fn resolving(&self) -> &'a dyn Resolving {
         self.resolving
+    }
+
+    /// What a verb's work runs inside.
+    ///
+    /// `pub(crate)`, and the only caller is `carrying.rs`: a boundary is
+    /// put around an execution and around nothing else, and a public door onto
+    /// it would be a way to run something in a turn's cgroup that no
+    /// authorisation reached.
+    pub(crate) fn bounding(&mut self) -> &mut dyn Bounding {
+        self.bounding
     }
 
     /// What is leaving, to be shown something else.
@@ -211,7 +251,7 @@ impl std::fmt::Debug for Machine<'_> {
 )]
 mod tests {
     use super::*;
-    use crate::testing::in_english;
+    use crate::testing::{NothingIsBounded, in_english};
     use alo_capability::Verb;
     use alo_files::OnThisMachine;
     use alo_record::Record;
@@ -225,9 +265,15 @@ mod tests {
         let strings = in_english();
         let mut indicator = Indicator::default();
         let mut record = Record::default();
-        let machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
 
         let names: Vec<_> = machine.verbs().all().map(Verb::name).collect();
         assert_eq!(
@@ -254,9 +300,15 @@ mod tests {
         let strings = in_english();
         let mut indicator = Indicator::default();
         let mut record = Record::default();
-        let machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         assert_eq!(format!("{machine:?}"), "Machine { verbs: 6, .. }");
     }
 
@@ -268,9 +320,15 @@ mod tests {
         let strings = in_english();
         let mut indicator = Indicator::default();
         let mut record = Record::default();
-        let machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         assert!(machine.showing().is_quiet());
         assert!(machine.showing().showing().is_empty());
     }

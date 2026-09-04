@@ -34,9 +34,16 @@
 //!    approval is spent, [`alo_files::Touching`] asks about where each path
 //!    really leads, and [`alo_files::Did`] asks about anything the call would
 //!    create. A grant revoked between the approval and the execution stops it.
-//! 5. **What happened is written down before anybody is told about it.** That
+//! 5. **The verb's work runs inside a boundary the kernel imposes, and nothing
+//!    else does.** [`Bounding`] is what a [`Machine`] is made with and cannot be
+//!    made without; [`alo_files::Reaching`] is what it is told to allow. The
+//!    resolving happens outside it and the record is written outside it —
+//!    `carrying.rs` is the order and the argument, and ADR 0015's *a turn whose
+//!    boundary cannot be applied does not run* is what happens when there is
+//!    none.
+//! 6. **What happened is written down before anybody is told about it.** That
 //!    is this crate's own rule and the next section is about it.
-//! 6. **The turn ends and the grant goes with it**, whether or not anything was
+//! 7. **The turn ends and the grant goes with it**, whether or not anything was
 //!    done under it.
 //!
 //! [`Turning::asking`] runs beside those rather than inside them: a question
@@ -83,12 +90,13 @@
 //!
 //! # This crate says almost nothing
 //!
-//! One string, and [`crate::words`] is the argument for why. Every refusal a
+//! Two strings, and [`crate::words`] is the argument for why. Every refusal a
 //! turn can hand back was already worded by whoever made it — the call that did
 //! not form, the change that was never put to anybody, the grants at the last
 //! moment, the disk — and a second rendering of any of them would be a machine
-//! able to describe one moment two ways. What is left is the one thing none of
-//! them knows: that this turn has stopped.
+//! able to describe one moment two ways. What is left is the two things none of
+//! them knows: that this turn has stopped, and that there was no boundary to
+//! run its work inside.
 //!
 //! # What a turn does not do
 //!
@@ -114,6 +122,7 @@
 
 pub mod answers;
 pub mod asking;
+pub mod bounding;
 mod carrying;
 pub mod kept;
 pub mod machine;
@@ -122,12 +131,14 @@ pub mod refusing;
 pub mod shortening;
 pub mod turning;
 pub mod unanswered;
+pub mod unbounded;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
 pub use answers::Answers;
+pub use bounding::{Bounding, Doing, Done};
 pub use kept::Kept;
 pub use machine::Machine;
 pub use places::Places;
@@ -135,4 +146,5 @@ pub use refusing::NotDone;
 pub use shortening::{Shortened, Shortening};
 pub use turning::Turning;
 pub use unanswered::NoAnswer;
+pub use unbounded::NoBoundary;
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, turn_words};

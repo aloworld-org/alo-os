@@ -30,8 +30,8 @@ mod running {
     use std::process::ExitCode;
 
     use alo_agentd::{
-        Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking, signalling,
-        starting, unix,
+        ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking,
+        signalling, starting, unix,
     };
     use alo_keeping::Writing;
 
@@ -64,12 +64,26 @@ mod running {
 
     /// Everything, in the order `alo_agentd::starting` argues for.
     ///
-    /// The two orderings worth reading twice are both in that argument. The
+    /// The three orderings worth reading twice are all in that argument. The
     /// vocabulary is loaded **before** the record, so a record that will not
     /// open is refused in the words `alo-keeping` already wrote rather than in
-    /// a second sentence about a disk. The socket is bound **last**, so nothing
-    /// on this machine can knock on a service that is still deciding whether it
-    /// can run.
+    /// a second sentence about a disk. The boundary is imposed **before the
+    /// socket and after the record**, because a service that cannot bound a
+    /// turn has nothing to offer anybody (ADR 0015) and a machine with no
+    /// boundary is one that will not serve rather than one that cannot say why.
+    /// The socket is bound **last**, so nothing on this machine can knock on a
+    /// service that is still deciding whether it can run.
+    ///
+    /// # The boundary is given back here, and this is the only place it can be
+    ///
+    /// Making one moves this process into a control group of its own, and
+    /// `alo_bounding::Turns::given_back` is deliberately not a `Drop`: moving a
+    /// process between control groups can fail, and a machine filling with the
+    /// remains of daemons with nothing saying so is what a swallowed failure
+    /// looks like a month later. So it is given back on both roads out — the
+    /// service that stopped and the service that failed — and what it said is
+    /// a line in the log rather than a different exit code, because a service
+    /// that ran and then could not tidy up did run.
     fn served() -> Result<Served, NotStarted> {
         let us = unix::us()?;
         starting::not_as_root(us)?;
@@ -90,12 +104,32 @@ mod running {
         let (waking, stop) = Waking::made().map_err(|why| NotStarted::NoStop { why })?;
         signalling::on_sigterm(stop)?;
 
-        let listening = Listening::at(
+        let mut bounding = ByTheKernel::imposed().map_err(|why| NotStarted::NoBoundary {
+            why: why.to_string(),
+        })?;
+
+        // Not `?`, because from here there is a subtree on the machine and a
+        // programme in the kernel that belong to this process: every road out
+        // goes through the giving back below, including the one where the
+        // socket could not be bound.
+        let served = match Listening::at(
             Place::for_person(described.sides().person()),
             described.sides(),
-        )?;
-
-        starting::until_stopped(&described, &listening, &waking, &strings, &mut writing)
+        ) {
+            Ok(listening) => starting::until_stopped(
+                &described,
+                &listening,
+                &waking,
+                &strings,
+                &mut bounding,
+                &mut writing,
+            ),
+            Err(why) => Err(NotStarted::from(why)),
+        };
+        if let Err(why) = bounding.given_back() {
+            eprintln!("alo-agentd: the boundary could not be given back: {why}");
+        }
+        served
     }
 }
 

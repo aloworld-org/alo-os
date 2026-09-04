@@ -114,9 +114,11 @@ fn one_turn_moves_a_file_and_the_record_on_the_disk_says_what_happened() {
     {
         let mut writing = Writing::opening(&kept_at).unwrap();
         let mut indicator = Indicator::default();
+        let mut bounding = NothingIsBounded;
         let mut machine = Machine::carrying_out_file_verbs(
             &strings,
             &OnThisMachine,
+            &mut bounding,
             &mut indicator,
             &mut writing,
         )
@@ -261,9 +263,15 @@ fn nothing_is_handed_back_before_it_is_on_the_disk() {
     let mut grants = granting(&[&invoices]);
     let mut writing = Writing::opening(&kept_at).unwrap();
     let mut indicator = Indicator::default();
-    let mut machine =
-        Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut writing)
-            .unwrap();
+    let mut bounding = NothingIsBounded;
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        &mut writing,
+    )
+    .unwrap();
     let mut turning = Turning::beginning(
         Context::at_invocation(noon()),
         "@files",
@@ -339,9 +347,15 @@ fn what_a_turn_writes_does_not_depend_on_where_it_is_written() {
     ] {
         let mut grants = granting(&[&invoices]);
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, kept)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            kept,
+        )
+        .unwrap();
         let mut turning = Turning::beginning(
             Context::at_invocation(noon()),
             "@files",
@@ -384,4 +398,23 @@ fn a_machine_where_somebody_declined_an_agent_has_no_turn_to_begin() {
         &alo_capability::Ask::path("/home/anna/Invoices"),
         noon()
     ));
+}
+
+/// A machine with nothing in front of a turn, which is not a machine alo OS
+/// ships.
+///
+/// `alo_turn::bounding` says why there is no such implementation in any library
+/// here — it would be ADR 0015's guarantee turned off by default on every host —
+/// and why what a test needs is these four lines, written where whoever reads
+/// the test can see them.
+struct NothingIsBounded;
+
+impl alo_turn::Bounding for NothingIsBounded {
+    fn carrying_out(
+        &mut self,
+        _reaching: &alo_files::Reaching,
+        doing: alo_turn::Doing<'_>,
+    ) -> Result<alo_turn::Done, alo_turn::NoBoundary> {
+        Ok(doing.done())
+    }
 }

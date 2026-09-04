@@ -1,6 +1,6 @@
 //! What this crate says, against the vocabulary the code actually uses.
 //!
-//! There is one sentence, so this file is mostly about the other side of the
+//! There are two sentences, so this file is mostly about the other side of the
 //! bargain: that everything *else* a turn hands a person is somebody else's
 //! string, read out of the one vocabulary a shell has.
 //!
@@ -15,19 +15,31 @@
 )]
 
 use alo_strings::{Key, Language, Strings, Translation};
-use alo_turn::{EVERY_WORD, NotDone, declare_into, turn_words};
+use alo_turn::{EVERY_WORD, NoBoundary, NotDone, declare_into, turn_words};
 
-/// Finnish, and this crate's one string in it.
+/// The turn that could not be bounded, as a caller meets it.
+fn not_bounded() -> NotDone {
+    NotDone::NotBounded(NoBoundary::because(
+        "the kernel would not attach the boundary to file_open".to_owned(),
+    ))
+}
+
+/// Finnish, and this crate's two strings in it.
 fn in_finnish() -> Strings {
     let vocabulary = turn_words().expect("this crate's own words");
     let finnish = Language::written("fi").expect("a language");
-    let translation = Translation::into_language(finnish.clone()).says(
-        Key::named("turn.closed").expect("a key"),
-        "tämä vuoro pysäytettiin, koska sen tapahtumia ei voitu kirjata muistiin",
-    );
+    let translation = Translation::into_language(finnish.clone())
+        .says(
+            Key::named("turn.closed").expect("a key"),
+            "tämä vuoro pysäytettiin, koska sen tapahtumia ei voitu kirjata muistiin",
+        )
+        .says(
+            Key::named("turn.not-bounded").expect("a key"),
+            "mitään ei tehty: tämä kone ei voi rajata agenttia siihen, minkä olet sille antanut",
+        );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of one sentence with no gaps in it");
+        .expect("a translation of two sentences with no gaps in them");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[finnish]);
@@ -52,6 +64,31 @@ fn the_sentence_is_read_in_the_language_the_person_reads() {
     assert!(said.text().starts_with("tämä vuoro"), "{said}");
 }
 
+/// **A turn nothing could be bounded to says so in the person's own language**,
+/// which is the whole reason that sentence moved here: it lived in a Linux-only
+/// crate whose words nothing put into a machine's vocabulary, so a person on a
+/// machine that could not bound anything would have been handed a key.
+///
+/// The reason itself is not in it. It is a fact about a kernel, in English, and
+/// it travels beside the sentence rather than inside it.
+#[test]
+fn a_turn_that_could_not_be_bounded_says_so_in_the_persons_own_language() {
+    let strings = in_finnish();
+    let not_bounded = not_bounded();
+    let said = not_bounded.said(&strings);
+    assert!(said.is_translated(), "{said}");
+    assert!(said.text().starts_with("mitään ei tehty"), "{said}");
+    assert!(
+        !said.text().contains("file_open"),
+        "the administrator's sentence reached the person: {said}"
+    );
+    assert_ne!(
+        NotDone::TurnClosed.said(&strings).text(),
+        said.text(),
+        "a turn that stopped and a turn that was never bounded say the same thing"
+    );
+}
+
 /// **Everything this crate says is something it declares.** A refusal worded
 /// with a key nothing declares reaches a person as the key itself, which no
 /// check at declaration time can catch — so it is put through the lookup here,
@@ -60,6 +97,7 @@ fn the_sentence_is_read_in_the_language_the_person_reads() {
 fn everything_this_crate_says_is_something_this_crate_declares() {
     let strings = Strings::of(turn_words().expect("this crate's own words"));
     assert!(!NotDone::TurnClosed.said(&strings).is_a_bug());
+    assert!(!not_bounded().said(&strings).is_a_bug());
 
     // And a translator handed this crate is handed exactly this one — no key
     // that nothing declares, and none left out of the list.

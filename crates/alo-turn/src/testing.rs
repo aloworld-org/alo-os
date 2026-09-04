@@ -50,8 +50,68 @@ use alo_models::{
 };
 use alo_strings::{Language, Strings, Translation, Word};
 
+use crate::bounding::{Bounding, Doing, Done};
 use crate::refusing::NotDone;
 use crate::unanswered::NoAnswer;
+use crate::unbounded::NoBoundary;
+
+/// A machine with nothing in front of a turn, which is not a machine alo OS
+/// ships.
+///
+/// `crate::bounding` says why there is no such implementation in any library
+/// here: it would be ADR 0015's guarantee turned off by default on every host.
+/// What a test needs is these four lines, and every test that needs them writes
+/// them where a reader of that test can see them — this one is `cfg(test)` and
+/// reaches no further than this crate's own.
+#[derive(Debug)]
+pub(crate) struct NothingIsBounded;
+
+impl Bounding for NothingIsBounded {
+    fn carrying_out(
+        &mut self,
+        _reaching: &alo_files::Reaching,
+        doing: Doing<'_>,
+    ) -> Result<Done, NoBoundary> {
+        Ok(doing.done())
+    }
+}
+
+/// A machine that cannot put a boundary around anything at all.
+///
+/// The refusal path, which is the one that matters: a turn on this machine does
+/// nothing, touches nothing, and writes nothing down.
+#[derive(Debug)]
+pub(crate) struct NoBoundaryAtAll {
+    /// Whether the thread that went in is still in there.
+    lost: bool,
+}
+
+impl NoBoundaryAtAll {
+    /// A machine where nothing was ever attempted.
+    pub(crate) fn kernel_would_not_take_it() -> Self {
+        Self { lost: false }
+    }
+
+    /// A machine that has lost a thread to a turn that is over.
+    pub(crate) fn a_thread_is_still_inside() -> Self {
+        Self { lost: true }
+    }
+}
+
+impl Bounding for NoBoundaryAtAll {
+    fn carrying_out(
+        &mut self,
+        _reaching: &alo_files::Reaching,
+        _doing: Doing<'_>,
+    ) -> Result<Done, NoBoundary> {
+        let why = "the kernel would not take an entry for the boundary".to_owned();
+        Err(if self.lost {
+            NoBoundary::with_a_thread_still_inside(why)
+        } else {
+            NoBoundary::because(why)
+        })
+    }
+}
 
 /// A fixed moment, so that expiry is arithmetic rather than a wait.
 pub(crate) fn noon() -> SystemTime {
@@ -458,6 +518,9 @@ pub(crate) fn everything_that_can_come_back() -> Vec<NotDone> {
             path: "/var/lib/alo/record.jsonl".to_owned(),
             why: "no space left on device".to_owned(),
         }),
+        NotDone::NotBounded(NoBoundary::because(
+            "the kernel would not load the boundary".to_owned(),
+        )),
         NotDone::TurnClosed,
     ]
 }

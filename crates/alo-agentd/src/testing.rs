@@ -210,10 +210,16 @@ pub(crate) fn on_a_machine<T>(
     let strings = in_english();
     let (folder, invoice) = a_folder_with_an_invoice(what);
     let mut indicator = Indicator::default();
+    let mut bounding = NothingIsBounded;
     let mut record = Record::default();
-    let mut machine =
-        Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-            .unwrap();
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        &mut record,
+    )
+    .unwrap();
     let mut grants = granting(&folder, noon());
     let mut turning = Turning::beginning(
         Context::at_invocation(noon()),
@@ -284,5 +290,29 @@ impl Knocking for Pretending {
             // answer the real socket gives a stranger, for the same reason.
             Some(None) | None => Err(NotACaller::Stranger { uid: 65534 }),
         }
+    }
+}
+
+/// A machine with nothing in front of a turn, which is not a machine this
+/// service ever really is.
+///
+/// `crate::bounding` is the real one and it needs a kernel that started the BPF
+/// security module, root, and a control group subtree — and making one moves
+/// **this whole process** into a control group of its own, which two tests
+/// running at once would fight over. So the tests in this crate, which are about
+/// sockets, doors, messages and turns, are run with this; what the real one does
+/// is asserted in `alo-bounding`'s own tests against a real kernel, and through
+/// this service in `tests/a_turn_is_bounded_by_the_kernel.rs`, which is one test
+/// in a binary of its own for exactly that reason.
+#[derive(Debug)]
+pub(crate) struct NothingIsBounded;
+
+impl alo_turn::Bounding for NothingIsBounded {
+    fn carrying_out(
+        &mut self,
+        _reaching: &alo_files::Reaching,
+        doing: alo_turn::Doing<'_>,
+    ) -> Result<alo_turn::Done, alo_turn::NoBoundary> {
+        Ok(doing.done())
     }
 }

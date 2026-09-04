@@ -324,6 +324,15 @@ impl<'a> Serving<'a> {
                         break;
                     }
                 }
+                // Asked before the record, because a service that has lost a
+                // thread has not stopped keeping evidence and must not report
+                // that it has: the two are different things wrong with the
+                // machine and send whoever reads the log to two different
+                // places.
+                if turning.a_thread_is_lost() {
+                    over = Err(NotServed::AThreadIsInsideATurn);
+                    break;
+                }
                 if turning.is_closed() {
                     over = Err(NotServed::NothingIsWrittenDown);
                     break;
@@ -842,9 +851,15 @@ mod tests {
         };
 
         let mut indicator = Indicator::default();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, kept)
-                .unwrap();
+        let mut bounding = crate::testing::NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            kept,
+        )
+        .unwrap();
         let mut grants = granting(&folder, this_moment());
 
         let client = std::thread::spawn(move || talking(told));

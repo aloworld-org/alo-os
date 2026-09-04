@@ -12,6 +12,33 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **What an agent does to your files now happens inside the kernel's boundary,
+  and not because our own code was polite about it.** Everything before this was
+  the mechanism on a bench: a boundary that worked, a way to say which places one
+  piece of work may reach, and nothing joining them. They are joined now. When
+  your agent reads a file or moves one, alo OS works out the places that
+  particular request has to open, tells the kernel, puts the work inside, and
+  takes the authority away again the moment it is finished.
+
+  **What is deliberately left outside the boundary is the record.** The note of
+  what your agent did is written after the work comes back out, because a piece
+  of work that was bounded across its own evidence would be refused the right to
+  write it — and a machine that acts without writing down what it did is the one
+  thing alo OS will not be.
+
+  **A machine that cannot do this will not run an agent at all.** If the kernel
+  will not take the boundary, the agent service does not start; if a single
+  request cannot be bounded, nothing is attempted, nothing is refused, and you
+  are told plainly that the machine — not your agent, and not what you asked for
+  — is what needs looking at. There is no setting that turns this off, and there
+  is no quiet path where the work happens anyway.
+
+  The sentence you read when that happens is now translated like every other
+  sentence in alo OS. It used to live in a part of the system that only exists on
+  the machine's own kernel, where nothing could look it up, so a person on a
+  machine with a broken boundary could have been shown an internal name instead
+  of a sentence.
+
 - **Renaming, moving and archiving a file can now be done inside the kernel's
   boundary at all.** Each of those makes a *new* name somewhere, and a name
   cannot be made in a folder nothing is allowed to open — so alo OS now works

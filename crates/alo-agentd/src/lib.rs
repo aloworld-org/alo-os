@@ -176,6 +176,8 @@ pub mod ageing;
 #[cfg(target_os = "linux")]
 pub mod answering;
 #[cfg(target_os = "linux")]
+pub mod bounding;
+#[cfg(target_os = "linux")]
 pub mod caller;
 #[cfg(target_os = "linux")]
 pub mod described;
@@ -219,6 +221,8 @@ mod testing;
 pub use ageing::{Ageing, EVERY};
 #[cfg(target_os = "linux")]
 pub use answering::what_a_person_said;
+#[cfg(target_os = "linux")]
+pub use bounding::ByTheKernel;
 #[cfg(target_os = "linux")]
 pub use caller::{Caller, Gid, Uid};
 #[cfg(target_os = "linux")]

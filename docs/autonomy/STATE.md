@@ -7547,3 +7547,105 @@ turn yet, which is the honest state and is what that half has said since item 26
   needed a kernel.** It is arithmetic about paths, and it is the same answer on a
   machine with no boundary at all. What still ends on the certified machine is
   ADR 0015 itself.
+
+## Iteration — item 26d: the boundary in front of a turn
+
+**Built.** The wiring item 26c cut, whole, across three crates.
+
+`crates/alo-turn` gained `bounding.rs` (`Bounding`, the trait a machine is made
+with; `Doing`, one execution and the only thing that can be done with it; `Done`)
+and `unbounded.rs` (`NoBoundary` — why there was none, in a form a portable crate
+can hold). `carrying.rs` was rewritten around the order; `Machine::
+carrying_out_file_verbs` takes a boundary as its third argument; `NotDone` gained
+`NotBounded`, `Turning` gained `a_thread_is_lost`, and `words.rs` gained its
+second string. `crates/alo-bounding` gained `Turns::of_this_service` and
+`NotBounded::a_thread_is_still_inside` and **lost `words.rs`** and its
+`alo-strings` dependency. `crates/alo-agentd` gained `bounding.rs` (`ByTheKernel`
+— the one real implementation there is), `NotStarted::NoBoundary`,
+`NotServed::AThreadIsInsideATurn`, a boundary parameter on `until_stopped`, the
+imposing and the giving back in `main.rs`, and
+`tests/a_turn_is_bounded_by_the_kernel.rs`.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1806 tests and 46 doctests on Linux** (was 1796 and 46), **1595 and 46
+on Windows** (was 1584 and 46). The kernel half's own gate — `cargo fmt --all
+--check` and `cargo clippy --release --target bpfel-unknown-none -Z build-std=core`
+— clean. `cargo doc --workspace --no-deps` exits 0 with zero warnings on Linux;
+on Windows the count is **thirty-eight**, not thirty-four, and the four new ones
+are `alo-bounding`'s crate header naming the doors the daemon now reaches it by.
+`LOOP.md` has been updated: twenty-four for `alo-agentd`, fourteen for
+`alo-bounding`, nothing against a third crate.
+
+**The seam is a trait shaped like `Kept`, and the sharpest question was where the
+*fake* one lives.** There is no implementation of `Bounding` in any library in
+this workspace except the daemon's real one. A portable no-op would be ADR 0015's
+guarantee turned off by default on the host this loop runs on, which is what the
+item forbade — and the tempting way to satisfy the letter of that (a shipped
+fixture behind a feature) would have satisfied nothing. What a test needs is four
+lines, and each of the six test files that needs them writes them itself. The
+cost is six copies; what is bought is that no library here ships a way to run a
+verb unbounded.
+
+**The record is written outside the boundary, and it is the reason this item was
+not small.** `carrying.rs` is now resolve, reach, bound, do, come out, write. The
+first and last are outside for two different reasons: a reach is made of resolved
+paths, so a thread inside a boundary would have to look up what it may not yet
+open; and the record is a file nobody granted, so a thread bounded across it
+would be refused its own evidence.
+
+**The decision the item did not contain: a turn that could not be bounded writes
+nothing down.** *It ran* is false — no cgroup made, no syscall issued, no grant
+consulted — and every way this workspace has of saying *it was stopped* says the
+capability model stopped it, which would tell a security review that the grants
+refused something they were never asked about. So it is the second refusal with
+no entry behind it, beside a question nobody answered, and `refusing.rs` argues it
+at the same length. The person is told in their own language, the reason is
+English and goes to the service log, and a thread that could not be brought back
+is a thing the service stops over rather than logs.
+
+**A sentence moved crates, and finding out why is worth the next reader's time.**
+`alo-bounding` had one word — one sentence for all fifteen reasons in
+`NotBounded` — and **nothing could look it up**: the crate is Linux, so its list
+is not in the vocabulary `alo-saying` collects, and the sentence would have
+reached a person only on a machine whose process had been told to declare it. It
+is `alo-turn`'s now, as `turn.not-bounded`. That crate is portable, is collected,
+and is the one that tells a person anything at all; `alo-bounding` now says
+nothing to anybody and has no `alo-strings`, which is what a mechanism should be.
+`alo-agentd` is the only crate left declaring its own words on top.
+
+**What the item asked rather than answered, and it is now item 26e.**
+`alo-agentd` runs as the signed-in person and never as root (ADR 0001 §2), and
+loading a BPF LSM programme needs `CAP_BPF` and `CAP_SYS_ADMIN`. As of this
+iteration the daemon refuses to start when it cannot impose a boundary — which is
+ADR 0015 implemented faithfully, and is also a service that will not start on an
+ordinary user session. Nothing regressed by it: nothing has ever booted this
+daemon. But **who is allowed to impose the boundary** is a decision this loop
+should not make quietly — the capability given to a service that still runs as
+the person, or a privileged thing at boot with a pinned map — and it wants an
+ADR, because it decides what a certified machine's unit file contains and whether
+alo OS has one privileged component or none.
+
+**What the next iteration should know.**
+
+- **The next ready item in queue order is 27**, the LSM decides and forgets: run
+  ordinary programs under the loaded programme and assert the record is empty.
+  Everything it waits on now exists. After that, **item 28** — the image — is
+  still the one that would move any of the eighteen machine halves, and it now
+  has a dependency it did not have this morning: the unit file it ships cannot be
+  written until 26e is decided.
+- **16b is not ready by its own words**, 19b is blocked on Wayland, 21i on the
+  shell, 21k on an ADR nobody has written, 21l on a place a question can leave
+  for, and **26e is blocked on a decision that is not the loop's**.
+- **`Machine::carrying_out_file_verbs` is a five-argument constructor now**, and
+  the boundary is the third. Every test that builds a machine needs one; the
+  four-line implementation is in each test file that needs it, and copying it is
+  the intended cost rather than an oversight.
+- **`alo-agentd`'s own tests are run with a boundary that bounds nothing**, and
+  that is deliberate: making a real one moves the *whole process* into a control
+  group, and a test binary runs its tests in parallel threads. The real one is
+  asserted in `tests/a_turn_is_bounded_by_the_kernel.rs`, which is one test in a
+  binary of its own for exactly that reason, and in `alo-bounding`'s own tests.
+- **Nothing here was verified on a certified machine.** It is
+  `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
+  certified one is still the exit gate.

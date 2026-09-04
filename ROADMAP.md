@@ -852,10 +852,29 @@ sorted the same way v0.01 now is.
         The one case where the boundary is wider than the grant — a rename under
         a grant over a single file needs the folder that file sits in — is
         written down rather than designed away, and the grants stay the deciding
-        answer. **What is left of this half is 26d** —
-        putting `Turns::doing` in front of `alo-turn` inside `alo-agentd`, which
-        needs that crate's doors separated so a boundary is around the verb and
-        not around the record written afterwards, and is not written
+        answer. **Item 26d is ticked, and it is the one that put the mechanism in
+        front of a turn**: `alo-turn` now takes a boundary the way it takes a
+        record — one interface, no constructor without one, and no
+        implementation in any library here except the daemon's real one — and
+        `alo-agentd` holds it, imposes it before it binds its socket, and gives
+        it back when it stops. The order a turn keeps is resolve, reach, bound,
+        do, come out, write: the resolving is outside the boundary because a
+        thread cannot look up what it may not yet open, and **the record is
+        outside it** because a thread bounded across its own evidence would be
+        refused the writing of it. A turn that cannot be bounded does not run,
+        nothing is written down about it because nothing happened, and the person
+        is told in their own language; a thread that cannot be brought back out
+        is a service that stops. Measured through the daemon on
+        `6.18.33.2-microsoft-standard-WSL2`: a real turn reads a file and writes
+        an archive inside a boundary a real kernel is holding.
+        **What is left of this half is the second sentence of this line** — *the
+        record becomes what the kernel watched rather than what the daemon
+        reported* — which is item 27 and beyond, and until then the record is
+        still the daemon's account of itself with a kernel underneath it. **And
+        one question 26d asked rather than answered is item 26e**: `alo-agentd`
+        is never root and loading the programme needs `CAP_BPF`, so who imposes
+        the boundary on a real machine is a decision that wants an ADR and
+        decides what the image's unit file says
   - [ ] On the machine. The certified machine, and a kernel requirement that is
         a **configuration** and not a patch — now **four** checks rather than
         one, each invisible to the one before it: `CONFIG_BPF_LSM=y`, `bpf`

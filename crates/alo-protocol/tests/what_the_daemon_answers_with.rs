@@ -82,9 +82,15 @@ fn on_a_machine<T>(
     let (folder, invoice) = a_folder_with_invoices(what);
     let mut indicator = Indicator::default();
     let mut record = Record::default();
-    let mut machine =
-        Machine::carrying_out_file_verbs(strings, &OnThisMachine, &mut indicator, &mut record)
-            .unwrap();
+    let mut bounding = NothingIsBounded;
+    let mut machine = Machine::carrying_out_file_verbs(
+        strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        &mut record,
+    )
+    .unwrap();
     let mut grants = Grants::default();
     grants.grant(Grant::checked("@files", Reach::Folder(folder.clone()), noon(), hour()).unwrap());
     let mut turning = Turning::beginning(
@@ -418,4 +424,23 @@ fn an_archive_crosses_with_its_path_and_its_counts() {
     assert_eq!(left_out, 0);
     assert!(bytes > 0);
     assert!(!back.done().unwrap().left_something_out());
+}
+
+/// A machine with nothing in front of a turn, which is not a machine alo OS
+/// ships.
+///
+/// `alo_turn::bounding` says why there is no such implementation in any library
+/// here — it would be ADR 0015's guarantee turned off by default on every host —
+/// and why what a test needs is these four lines, written where whoever reads
+/// the test can see them.
+struct NothingIsBounded;
+
+impl alo_turn::Bounding for NothingIsBounded {
+    fn carrying_out(
+        &mut self,
+        _reaching: &alo_files::Reaching,
+        doing: alo_turn::Doing<'_>,
+    ) -> Result<alo_turn::Done, alo_turn::NoBoundary> {
+        Ok(doing.done())
+    }
 }

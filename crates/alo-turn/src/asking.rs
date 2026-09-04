@@ -99,8 +99,22 @@ impl Turning<'_, '_> {
     /// use alo_models::{InferenceSource, ModelRuntime, SourcePolicy};
     /// use alo_record::Record;
     /// use alo_strings::{Strings, Vocabulary};
-    /// use alo_turn::{Answers, Machine, Places, Turning};
+    /// use alo_turn::{Answers, Bounding, Doing, Done, Machine, NoBoundary, Places, Turning};
     /// use std::time::{Duration, SystemTime};
+    ///
+    /// // A machine with nothing in front of a turn, which is not a machine alo
+    /// // OS ships: `alo_turn::bounding` says why there is no such thing in any
+    /// // library here, and why what a test needs is these four lines.
+    /// struct NothingIsBounded;
+    /// impl Bounding for NothingIsBounded {
+    ///     fn carrying_out(
+    ///         &mut self,
+    ///         _reaching: &alo_files::Reaching,
+    ///         doing: Doing<'_>,
+    ///     ) -> Result<Done, NoBoundary> {
+    ///         Ok(doing.done())
+    ///     }
+    /// }
     ///
     /// # fn main() {
     /// fn ask_twice(runtime: &dyn ModelRuntime) {
@@ -108,9 +122,11 @@ impl Turning<'_, '_> {
     ///     let strings = Strings::of(Vocabulary::empty());
     ///     let mut indicator = Indicator::default();
     ///     let mut record = Record::default();
+    ///     let mut bounding = NothingIsBounded;
     ///     let mut machine = Machine::carrying_out_file_verbs(
     ///         &strings,
     ///         &OnThisMachine,
+    ///         &mut bounding,
     ///         &mut indicator,
     ///         &mut record,
     ///     )
@@ -288,8 +304,8 @@ mod tests {
     use crate::kept::Kept;
     use crate::machine::Machine;
     use crate::testing::{
-        AN_ANSWER, Stub, a_provider, a_service, far_away, files, hour, in_english, mistral_source,
-        noon, permitting, serving,
+        AN_ANSWER, NothingIsBounded, Stub, a_provider, a_service, far_away, files, hour,
+        in_english, mistral_source, noon, permitting, serving,
     };
     use alo_asking::{Hosted, Served};
     use alo_capability::Grants;
@@ -345,8 +361,15 @@ mod tests {
         doing: impl FnOnce(&mut Turning<'_, '_>) -> T,
     ) -> T {
         let strings = in_english();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, indicator, kept).unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            indicator,
+            kept,
+        )
+        .unwrap();
         let mut grants = Grants::default();
         let mut turning = Turning::beginning(
             Context::at_invocation(noon()),
@@ -813,9 +836,15 @@ mod tests {
         let mut record = Record::default();
 
         let strings = in_english();
-        let mut machine =
-            Machine::carrying_out_file_verbs(&strings, &OnThisMachine, &mut indicator, &mut record)
-                .unwrap();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
         let mut grants = Grants::default();
         let mut turning = Turning::beginning(
             Context::at_invocation(noon()),

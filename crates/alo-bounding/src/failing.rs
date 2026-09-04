@@ -18,25 +18,31 @@
 //! refused a program, that a call named more places than an entry holds. Nobody
 //! signs in to a machine and reads them.
 //!
-//! # And there is one sentence that a person does read
+//! # The sentence a person reads is not this crate's, and item 26d moved it
 //!
-//! What the previous version of this paragraph said would happen has happened,
-//! and in the shape the item asked for rather than the shape it guessed at.
-//! [`NotBounded::said`] is the crossing onto `alo-strings`, and **every variant
-//! renders the same sentence**: thirteen reasons, one thing to tell somebody.
+//! There was a [`Display`](std::fmt::Display)-free half here — one word, in a
+//! `words.rs` of this crate's own, rendering one sentence for all fifteen
+//! reasons. It is now `alo_turn::words::NOT_BOUNDED`, and the move is the
+//! 9-series' own rule rather than a tidying:
 //!
-//! The reasons are not translated and are not put inside it. A person is told
-//! that nothing was done, that nothing was refused either, and who has to look
-//! at the machine; the reason travels beside that, in English, to the service
-//! log the administrator is already reading. [`crate::words`] is the argument
-//! for why those are two audiences and not one.
+//! - **Nothing could look it up.** This crate is Linux, so its list is not in
+//!   the vocabulary `alo-saying` collects, and the sentence would have reached a
+//!   person only on a machine whose process had been told to declare it. A
+//!   string that arrives as a key on a forgetful machine is not a string.
+//! - **This crate says nothing to anybody.** It is a mechanism: a programme, a
+//!   control group and a map. What tells a person their agent did nothing is the
+//!   crate holding the turn, and that crate is portable, so its refusal is
+//!   sayable on every host it compiles for.
+//!
+//! What is left here is the administrator's half, whole: [`Display`] on every
+//! variant, in English, for the service log. `alo_turn::NoBoundary` carries it
+//! there as text and never shows it.
+//!
+//! [`Display`]: std::fmt::Display
 
 use std::io;
 
 use alo_bounding_map::Field;
-use alo_strings::{Filling, Said, Strings};
-
-use crate::words::NOTHING_CAN_BE_BOUNDED;
 
 /// Why this turn cannot be given a boundary.
 #[derive(Debug, thiserror::Error)]
@@ -220,19 +226,17 @@ pub enum NotBounded {
 }
 
 impl NotBounded {
-    /// What a person is told when their agent could not be bounded.
+    /// Whether a thread went into a boundary and is still in there.
     ///
-    /// One sentence for all thirteen reasons, in the language they read. This is
-    /// not a refusal of anything they asked for — nothing was attempted — and
-    /// the note on [`crate::words::NOTHING_CAN_BE_BOUNDED`] says so to whoever
-    /// translates it.
-    ///
-    /// The reason is deliberately not in here. It is English, it is about the
-    /// kernel, and [`std::fmt::Display`] is where whoever runs the machine reads
-    /// it.
+    /// The one question a caller has to be able to ask without reading English:
+    /// every other reason means nothing was attempted, and this one means a
+    /// thread of the service is inside a turn that is over, refused everything
+    /// outside a grant that no longer exists. What `alo-agentd` does about it is
+    /// stop, the way it stops when nothing can be written down, and a service
+    /// cannot decide that from a sentence.
     #[must_use]
-    pub fn said(&self, strings: &Strings) -> Said {
-        strings.say(&NOTHING_CAN_BE_BOUNDED.key(), &Filling::nothing())
+    pub const fn a_thread_is_still_inside(&self) -> bool {
+        matches!(self, Self::NotBroughtBack { .. })
     }
 
     /// A field this kernel does not have.

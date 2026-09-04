@@ -141,6 +141,23 @@ impl Turns {
         })
     }
 
+    /// The same, in the control group this service was started in.
+    ///
+    /// What a daemon uses, and the reason [`Turns::under`] takes a path at all
+    /// is the reason this does not: where a service is put is whoever started
+    /// it's decision — `systemd` puts it in a slice, a test puts it wherever the
+    /// test made — so the kernel is asked rather than a place assumed, and a
+    /// test that wants a subtree of its own says so by naming one.
+    ///
+    /// # Errors
+    /// [`NotBounded::NotAPlace`] or [`NotBounded::NotInAHierarchy`] if the
+    /// kernel will not say where this process is, and everything
+    /// [`Turns::under`] answers with. ADR 0015's rule applies to all of them: a
+    /// service that cannot make this cannot bound a turn.
+    pub fn of_this_service() -> Result<Self, NotBounded> {
+        Self::under(&where_this_process_is()?)
+    }
+
     /// A control group for one turn's work, made beside `home`.
     ///
     /// Threaded, because what goes into it is a thread. The name is one

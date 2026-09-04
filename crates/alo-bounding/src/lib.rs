@@ -71,26 +71,28 @@
 //! gate rather than a supplement to one, and the number of tests it ran is
 //! reported rather than the colour.
 //!
-//! # What this crate is not, yet
+//! # This crate is a mechanism, and it says nothing to anybody
 //!
-//! It is not wired into a turn. `alo-turn` joins an invocation, a call, an
-//! approval, an execution and the record, and `alo-agentd` is what holds one; a
-//! boundary around the execution and *not* around the entry written afterwards
-//! needs those two doors separated, and that is queue item 26d.
+//! It is wired into a turn as of item 26d, and the wiring is somewhere else on
+//! purpose: `alo-agentd`'s `bounding.rs` implements `alo_turn::Bounding` out of
+//! [`Turns`], [`Boundary`] and [`places_of`], because the daemon is the one
+//! thing that holds both a turn and a kernel. Nothing here reaches `alo-turn`
+//! and nothing here knows what a verb is.
 //!
-//! What is here is the whole of the mechanism a turn stands on: the kernel
-//! refusing (item 26), the thread that goes into the boundary and comes back out
-//! of it (item 26a), the sentence a person reads when it could not be imposed,
-//! and **which** places a turn is bound to (item 26b) — the ones this execution
-//! named, which [`places_of`] makes and says why.
+//! It also holds **no words**. It had one — a single sentence for all fifteen
+//! reasons in [`NotBounded`] — and item 26d moved it to `alo-turn`, where the
+//! crate that tells a person lives and where a machine's vocabulary can actually
+//! find it; `failing.rs` has the argument. What is left of that division is the
+//! administrator's half: every reason keeps its English and its
+//! [`Display`](std::fmt::Display), for the service log.
 //!
-//! What is not here is the caller that names them. **Which** paths a real call
-//! names is answered — `alo_files::Reaching` is the resolved paths plus the
-//! folder above anything the call would create (item 26c) — and nothing on this
-//! machine hands them to [`places_of`] yet, because the crate that would is
-//! `alo-turn` and its doors do the disk work and write the record together; a
-//! thread bounded across both would be refused the record. Separating them, and
-//! `alo-agentd` making its subtree when it starts, is item 26d.
+//! So what is here is the whole of the mechanism and none of the policy: the
+//! kernel refusing (item 26), the thread that goes into the boundary and comes
+//! back out of it (item 26a), **which** places a turn is bound to (item 26b) —
+//! the ones this execution named, which [`places_of`] makes and says why — and
+//! the door a service makes its subtree through ([`Turns::of_this_service`]).
+//! Which paths a real call names is `alo_files::Reaching`'s (item 26c), and the
+//! order they are asked in is `alo-turn`'s `carrying.rs`.
 //!
 //! # The dangerous property, said out loud
 //!
@@ -113,7 +115,6 @@ mod inside;
 mod place;
 mod places;
 mod turns;
-pub mod words;
 
 #[cfg(test)]
 mod testing;
@@ -126,6 +127,5 @@ pub use fields::Offsets;
 pub use place::{as_the_kernel_keeps_it, place_of};
 pub use places::places_of;
 pub use turns::Turns;
-pub use words::{EVERY_WORD, Word, WordsError, bounding_words, declare_into};
 
 pub use alo_bounding_map::{Bounds, DEPTH, Field, PLACES, Place, WORDS};

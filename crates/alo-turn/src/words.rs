@@ -1,9 +1,9 @@
 //! Every string this crate can say, and the English beside it.
 //!
 //! `CLAUDE.md` says hardcoded English is a bug. This is the list that stops it
-//! being one here, and it holds one string.
+//! being one here, and it holds two strings.
 //!
-//! # One, in the crate that joins five others together
+//! # Two, in the crate that joins five others together
 //!
 //! Everything a person reads during a turn was already somebody's to say, and
 //! this crate deliberately does not say any of it a second time:
@@ -18,8 +18,20 @@
 //!
 //! A second rendering of any of those would be a machine able to describe one
 //! moment two ways, which is the failure the 9-series spent seven items
-//! removing. What is left is the one thing none of them knows about, because it
-//! is a fact about the turn rather than about what was asked of it.
+//! removing. What is left is the two things none of them knows about, because
+//! both are facts about the turn rather than about what was asked of it: that
+//! it stopped, and that there was no boundary to run its work inside.
+//!
+//! # The second one was `alo-bounding`'s, and moving it is the same rule
+//!
+//! [`NOT_BOUNDED`] said what it says today in `alo-bounding`'s own list, where
+//! nothing could look it up: that crate is Linux, so its words are not in the
+//! vocabulary `alo-saying` collects, and a machine would have had to be told to
+//! declare them on top. A sentence that reaches a person only if whoever
+//! assembled the process remembered is a sentence that reaches somebody as a
+//! key. It lives here because **this is the crate that tells the person** — a
+//! boundary is a mechanism and says nothing to anybody — and because a portable
+//! crate's refusal has to be sayable on every host this crate compiles for.
 //!
 //! # Nothing here counts, and nothing here has a gap
 //!
@@ -48,11 +60,31 @@ pub const TURN_CLOSED: Word = Word::saying(
      the record could not be written is said separately, in the record's own words.",
 );
 
+/// There was no boundary to run this turn's work inside, so nothing was done.
+///
+/// One sentence for every reason there is. What a person can act on is what is
+/// true of all of them — nothing happened, nothing was refused either, and the
+/// machine rather than their agent is what has to be looked at — and the reason
+/// itself is a fact about a kernel, kept in English for whoever administers the
+/// machine and deliberately not worked into this.
+pub const NOT_BOUNDED: Word = Word::saying(
+    "turn.not-bounded",
+    "nothing was done: this machine cannot hold an agent inside what you granted it, so it will \
+     not let one act at all — ask whoever set this machine up to look at it",
+)
+.noting(
+    "Shown to a person whose agent did nothing because alo OS could not put the boundary around \
+     it that keeps it inside the folders and files they granted. Nothing was attempted and \
+     nothing was refused: this is a fault in the machine rather than an answer to anything the \
+     person or the agent asked for. The reason is a separate, technical sentence kept in English \
+     for whoever administers the machine, and must not be worked into this one.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 1] = [TURN_CLOSED];
+pub const EVERY_WORD: [Word; 2] = [TURN_CLOSED, NOT_BOUNDED];
 
 /// Why this crate's own list could not be declared.
 ///

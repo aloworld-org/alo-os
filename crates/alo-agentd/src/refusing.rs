@@ -432,6 +432,19 @@ pub enum NotServed {
         "something happened on this machine and could not be written down, so nothing further will be done; make room on the disk holding the record and start alo-agentd again"
     )]
     NothingIsWrittenDown,
+    /// A thread went into a turn's boundary and could not be brought back out.
+    ///
+    /// The second refusal here that is a promise rather than a fault, and it is
+    /// the worse of the two. There is a thread in this process inside a control
+    /// group belonging to a turn that has ended, so the kernel refuses it
+    /// everything outside a grant that no longer exists — which fails closed,
+    /// and is why `alo-bounding` leaves it in there rather than taking the
+    /// kernel's entry away underneath it. A service that carried on would be a
+    /// service leaking a thread per turn into a boundary nobody can lift.
+    #[error(
+        "a thread of this service went into a turn's boundary and could not be brought back out, so nothing further will be done; the reason is above, and alo-agentd has to be started again"
+    )]
+    AThreadIsInsideATurn,
 }
 
 /// Why there is no service on this machine.
@@ -493,6 +506,25 @@ pub enum NotStarted {
     /// The verbs this machine offers could not be declared.
     #[error("the verbs this machine can carry out could not be declared: {0}")]
     NoVerbs(#[from] alo_files::Declaring),
+    /// There is no boundary to run a turn's work inside.
+    ///
+    /// ADR 0015's *a turn whose boundary cannot be applied does not run*, asked
+    /// of the service rather than of one turn: everything a machine could not
+    /// do about it is the same on the next turn as on this one, so a daemon that
+    /// started anyway would be a daemon refusing everything an agent asked for
+    /// while looking perfectly healthy. What is wrong is underneath the daemon —
+    /// a kernel that publishes no type information, one whose security modules
+    /// do not include `bpf`, or a service with no control group subtree of its
+    /// own — and `docs/hardware.md` has the three checks in the order they fail
+    /// in.
+    #[error(
+        "a turn's work cannot be bounded on this machine: {why}; alo-agentd will not run without a boundary, because a turn that cannot be bounded does not run (ADR 0015)"
+    )]
+    NoBoundary {
+        /// What `alo-bounding` said, in English, for whoever is standing this
+        /// machine up.
+        why: String,
+    },
     /// There is no way to ask this service to stop.
     #[error(
         "could not make the pair a stop arrives on: {why}; alo-agentd is not started without one, because a service that cannot be asked to stop can only be killed"

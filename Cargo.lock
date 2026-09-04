@@ -6,6 +6,7 @@ version = 4
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
+ "alo-bounding",
  "alo-capability",
  "alo-context",
  "alo-egress",
@@ -76,8 +77,6 @@ name = "alo-bounding"
 version = "0.0.1"
 dependencies = [
  "alo-bounding-map",
- "alo-saying",
- "alo-strings",
  "aya",
  "thiserror",
 ]

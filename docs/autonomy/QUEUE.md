@@ -43,10 +43,14 @@ style the rest should match, and two of its decisions constrain later items.
 the loop and are described in the items below. **`alo-saying` is the only one
 that reaches every portable crate that says anything** — fourteen of them since
 item 21g and fifteen since 21h, and *portable* is doing work in that sentence:
-`alo-agentd` and, since item 26a, `alo-bounding` declare their own words on top
-of the machine's vocabulary rather than into it, because both are Linux and a
-vocabulary shorter on one host would be a translation refused there and accepted
-elsewhere. It is the only one whose dependency list is an argument rather than a
+`alo-agentd` declares its own words on top of the machine's vocabulary rather
+than into it, because it is Linux and a vocabulary shorter on one host would be a
+translation refused there and accepted elsewhere. **It is the only one left, and
+item 26d is why**: `alo-bounding` had a list of its own from 26a until 26d, and
+that item found the flaw in the arrangement rather than in the crate — a word
+nothing declares is a word nobody can look up, so the sentence moved to
+`alo-turn`, which is portable, is collected, and is the crate that tells a person
+anything at all. It is the only one whose dependency list is an argument rather than a
 consequence: a translation is checked against the vocabulary it is loaded into,
 so a vocabulary assembled per process would read a translator's correct line for
 another part of the system as a mistake. It is also **the only crate that
@@ -3149,42 +3153,100 @@ out.
   Portable, and gated on both hosts. **Nothing here has been in front of a
   turn**: this item imposes no boundary, and item 26d is where one is imposed.
 
-- [ ] **26d. The boundary in front of a turn.** What 26c cut: the wiring, and it
-  is the largest of what is left of item 26.
+- [x] **26d. The boundary in front of a turn.** What 26c cut: the wiring, and it
+  is the largest of what was left of item 26.
 
-  **Why it is not small.** A boundary must be around the verb and **not** around
-  the entry written afterwards: `alo-turn`'s doors do the disk work and write the
-  record in one call — `carrying.rs` is where the two meet — and a thread bounded
-  across both would be refused the record. So this needs those separated, which
-  is a change to a crate 1500 tests hang off. And `alo-agentd` must make its
-  subtree at start-up: `Turns::under` takes the cgroup the service is already in,
-  so `starting.rs` has to find it and `stopping.rs` has to give it back, and a
-  service that cannot is a service that does not serve (ADR 0015).
+  What is built. **`alo-turn`**: `bounding.rs` (`Bounding` — what puts a boundary
+  around a turn's work; `Doing`, which is one execution and the only thing that
+  can be done with it; `Done`), `unbounded.rs` (`NoBoundary` — why there was
+  none, in a form a portable crate can hold), `carrying.rs` rewritten around the
+  order, `Machine::carrying_out_file_verbs` taking a boundary as its third
+  argument, `NotDone::NotBounded`, `Turning::a_thread_is_lost`, and a second
+  word. **`alo-bounding`**: `Turns::of_this_service`,
+  `NotBounded::a_thread_is_still_inside`, and `words.rs` **gone**.
+  **`alo-agentd`**: `bounding.rs` (`ByTheKernel` — the one real implementation
+  there is), `until_stopped` taking one, `main.rs` imposing it before the socket
+  and giving it back on every road out, `NotStarted::NoBoundary`,
+  `NotServed::AThreadIsInsideATurn`, and
+  `tests/a_turn_is_bounded_by_the_kernel.rs`. **1806 tests and 46 doctests on
+  Linux** (was 1796 and 46), **1595 and 46 on Windows** (was 1584 and 46); `cargo
+  fmt`, `cargo clippy -D warnings` and the BPF target's own gate clean on both
+  hosts, `cargo doc` silent on Linux.
 
-  **What to bound to is answered and is not this item's.**
-  `alo_files::Reaching::of` takes a `Touching` and says everywhere that execution
-  has to reach; `alo_bounding::places_of` turns those paths into the places the
-  kernel knows them by. What is left is the order, and the order is the security
-  property: resolve, ask for the reach, bound, run the verb inside, come out, and
-  only then write the entry. **The resolving happens outside the boundary** —
-  the reach is made of resolved paths, so a thread cannot look up what it is not
-  yet allowed to open.
+  **The seam is a trait shaped like `Kept`, and the sharpest question was where
+  the *fake* one lives.** There is no implementation of `Bounding` in any library
+  in this workspace except `alo-agentd`'s real one — a portable no-op would be
+  ADR 0015's guarantee turned off by default on every host, which is what the
+  item forbade. What a test needs is four lines, and each of the six test files
+  that needs them writes them itself, where whoever reads that test can see them.
+  That is `alo-files`' rule about fixtures, and it is stronger than a shared
+  fixture would have been: there is no *shipped* way to run a verb unbounded.
 
-  **The seam `alo-turn` needs is the harder half.** That crate is portable and
-  `alo-bounding` is Linux, so a boundary cannot be an ordinary dependency of it:
-  what goes in is a trait shaped like `Kept` — one implementation that is real,
-  held by the machine, and no constructor without one. **An implementation that
-  bounds nothing must not be reachable from outside a test**, or the guarantee is
-  off by default on the host the loop runs on; ADR 0015 says a turn that cannot
-  be bounded does not run, so there is no honest fallback to write.
+  **The record is written outside the boundary, and that is the whole reason the
+  item was not small.** `carrying.rs` is now resolve, reach, bound, do, come out,
+  write — and the first and last are outside for two different reasons. Resolving
+  is outside because a reach is made of resolved paths, so a thread inside a
+  boundary would have to look up what it may not yet open. The entry is outside
+  because the record is a file nobody granted.
 
-  **What the daemon does with a refusal is part of this item.** `NotBounded::said`
-  exists and nothing says it yet. A turn that cannot be bounded does not run and
-  the person is told; a thread that could not be brought *back* is worse than
-  that and the service stops, the way it already stops when nothing can be
-  written down.
+  **The decision the item did not contain: a turn that could not be bounded
+  writes nothing down.** *It ran* is false — no cgroup was made, no syscall
+  issued, no grant consulted — and every way this workspace has of saying *it was
+  stopped* says the capability model stopped it, which would tell a security
+  review that the grants refused something they were never asked about. So it is
+  the second refusal with no entry behind it, beside a question nobody answered,
+  and `refusing.rs` argues it at the same length. Nothing is lost: the person is
+  told in their own language, the reason is English and goes to the service log,
+  and a thread that could not be brought back is a thing the service stops over.
 
-  Linux, on the WSL host, like 26a to 26c. Blocked on nothing.
+  **The second decision: the sentence moved crates.** `alo-bounding` had one word
+  and no way for anybody to look it up — the crate is Linux, so its list is not in
+  the vocabulary `alo-saying` collects, and the sentence would have reached a
+  person only on a machine whose process had been told to declare it. It is
+  `alo-turn`'s now (`turn.not-bounded`), because the crate that tells a person is
+  the crate holding the turn and that crate is portable. `alo-bounding` has no
+  `words.rs`, no `alo-strings` and says nothing to anybody, which is what a
+  mechanism should be.
+
+  Three decisions the next items inherit. **A boundary is `&mut` and the machine
+  holds it**, like the record and the indicator: imposing one writes into a
+  kernel map and moves a thread, and two turns doing that at once through one
+  boundary would be two threads in one turn's cgroup. **A turn's cgroup is named
+  after a count this service keeps** — never after the agent, the person or the
+  verb, because that would put something a model can reach into a path on the
+  filesystem. **A thread left inside is a question, not a reason**: it is
+  `NoBoundary::a_thread_is_still_inside` rather than one more English string, so
+  a service can decide to stop on it without matching on a sentence.
+
+  Proved on a development machine, not a certified one. The wiring runs on a real
+  kernel — `tests/a_turn_is_bounded_by_the_kernel.rs` reads a file and writes an
+  archive through a real `ByTheKernel` on `6.18.33.2` — and it deliberately does
+  not assert the refusal: proving the kernel says no needs a probe inside a turn,
+  which is a thing this service must not be able to do, and `alo-bounding`'s
+  `a_turn_is_this_thread.rs` proves it one layer down in the same suite.
+
+- [ ] **26e. Who is allowed to impose the boundary.** Found by 26d, which
+  wired the daemon to ADR 0015's rule and thereby asked a question nobody has
+  answered: **`alo-agentd` runs as the signed-in person and never as root
+  (ADR 0001 §2), and loading a BPF LSM programme needs `CAP_BPF` and
+  `CAP_SYS_ADMIN`.** So as of 26d the daemon refuses to start on any machine
+  where it cannot get them, which is the ADR implemented faithfully and is not
+  yet a machine anybody can boot.
+
+  There are two answers and they are different products. **The service is given
+  the capability** — `systemd`'s `AmbientCapabilities=` plus `Delegate=yes` for
+  the control group subtree, still running as the person, never as uid 0 — which
+  is authority to *constrain an agent* rather than authority over the person's
+  files, and is arguably exactly what ADR 0001 §2 is about. Or **something
+  privileged imposes it once at boot** and the per-person daemon writes into a
+  pinned map, which is ADR 0015's own *loaded at boot* read literally and needs a
+  second service and an interface between them.
+
+  **Blocked on a decision that is not the loop's**, and it wants an ADR rather
+  than a commit: it decides what a certified machine's unit file contains, what
+  the image ships, and whether alo OS has one privileged component or none.
+  Item 28 cannot finish without the answer, because the image is where the unit
+  file lives.
 
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same

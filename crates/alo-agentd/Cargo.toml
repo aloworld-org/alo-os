@@ -58,6 +58,14 @@ alo-egress = { path = "../alo-egress" }
 alo-files = { path = "../alo-files" }
 alo-saying = { path = "../alo-saying" }
 
+# The boundary a turn's work runs inside, and the reason this crate is the one
+# that holds it: `alo-turn` says what a boundary has to do and is portable,
+# `alo-bounding` is a kernel and knows nothing about turns, and the daemon is
+# the process where both are true at once. `src/bounding.rs` is the only file
+# that names it, as `unix.rs` is the only one that names the kernel's answer
+# about who is on a socket.
+alo-bounding = { path = "../alo-bounding" }
+
 # The sixth, and the first that is reached for something a machine is *told*
 # rather than something a turn does: `Keeping` is how long the record is kept,
 # which ADR 0004 gives to the organisation that manages the machine, and a

@@ -26,20 +26,5 @@ thiserror = { workspace = true }
 # embeds.
 alo-bounding-map = { path = "../alo-bounding-map" }
 
-# The one sentence a person reads when a turn could not be bounded. Every other
-# reason in `failing.rs` keeps its English for whoever stands the machine up;
-# this is the crossing the 9-series makes every crate that says anything take.
-# It is not in `alo-saying`'s list, for the reason `alo-agentd` is not: this
-# crate is Linux, and a vocabulary one string shorter on one host would be a
-# translation refused on that host and accepted on another.
-alo-strings = { path = "../alo-strings" }
-
-# Only so this crate's one sentence can be held to the rule every other list is
-# held to: that nothing alo OS says names something alo OS rents. `alo-saying`
-# asks it of the machine's whole vocabulary and this list is not in that
-# vocabulary, so asking here is what stops the exemption being a hole.
-[target.'cfg(target_os = "linux")'.dev-dependencies]
-alo-saying = { path = "../alo-saying" }
-
 [lints]
 workspace = true

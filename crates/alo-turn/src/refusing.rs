@@ -1,8 +1,8 @@
 //! What comes back instead, when a turn did not do what it was asked.
 //!
-//! Seven things, and they are seven rather than one because a caller has a
+//! Eight things, and they are eight rather than one because a caller has a
 //! different thing to do about each. Two of them mean the capability model
-//! stopped something, two mean the machine could not, one means a question was
+//! stopped something, three mean the machine could not, one means a question was
 //! answered by nobody, and two mean this machine is no longer keeping evidence.
 //!
 //! | What came back | What happened | What is written down |
@@ -12,6 +12,7 @@
 //! | [`NotDone::NotAnswered`] | A number that is not waiting, or a question that stood too long | nothing: see below |
 //! | [`NotDone::Refused`] | The grants said no at the moment it would have run | `stopped`, at the moment |
 //! | [`NotDone::MachineCouldNot`] | Everything said yes and the disk did not | `ran` — it was attempted |
+//! | [`NotDone::NotBounded`] | There was no boundary to run the work inside, so nothing ran | nothing: see below |
 //! | [`NotDone::NotRecorded`] | What happened could not be written down | nothing, which is the problem |
 //! | [`NotDone::TurnClosed`] | Something earlier in this turn could not be written down | nothing |
 //!
@@ -21,14 +22,17 @@
 //! [`NotDone::said`] asks *that* for a sentence. A turn is the last crate in a
 //! chain of five and the one with the least right to describe what the others
 //! decided: the call that did not form is `alo-capability`'s to explain, the
-//! disk is `alo-files`', the record is `alo-keeping`'. The one sentence with
-//! nowhere else to come from is [`NotDone::TurnClosed`], and it is this crate's
-//! only string.
+//! disk is `alo-files`', the record is `alo-keeping`'. The two sentences with
+//! nowhere else to come from are [`NotDone::TurnClosed`] and
+//! [`NotDone::NotBounded`], and they are this crate's only strings — the second
+//! because a boundary is a mechanism that says nothing to anybody, and
+//! [`crate::words`] is the argument for it.
 //!
 //! # Why a question nobody answered is not written down
 //!
-//! [`NotDone::NotAnswered`] is the one refusal here with no entry behind it,
-//! and the absence is deliberate. A proposal is not a thing that happened — it
+//! [`NotDone::NotAnswered`] is the first of two refusals here with no entry
+//! behind it, and the absence is deliberate. A proposal is not a thing that
+//! happened — it
 //! is a thing that was put to somebody — and what the record keeps is its
 //! outcome: it ran, or the person declined it, or the grants refused it at the
 //! moment. A person who answers *no* has answered, and that is
@@ -37,12 +41,30 @@
 //! rather than what the agent did, which is ADR 0001 §4's watched context
 //! arriving through the back door (item 17 refused the same thing about turning
 //! an agent off).
+//!
+//! # And why a turn that could not be bounded is not written down either
+//!
+//! [`NotDone::NotBounded`] is the second, and it is the same argument about the
+//! other end of the journey. A boundary that could not be imposed means nothing
+//! was attempted: no control group was made, no entry reached the kernel, no
+//! syscall was issued and no grant was consulted. There is nothing for the
+//! record to say that would be true — *it ran* is false, and every way this
+//! crate has of saying *it was stopped* says the capability model stopped it,
+//! which would tell a security review that the grants refused something they
+//! were never asked about. That is `alo-files`' rule about a full disk, met at
+//! the one place where even the disk was never reached.
+//!
+//! What is not lost is the knowing. The person is told, in their own language;
+//! the reason is English and goes to whoever administers the machine
+//! ([`crate::NoBoundary::why`]); and a thread that could not be brought back out
+//! is a thing the service stops over rather than logs.
 
 use alo_capability::{AnswerError, CallError, ProposalError, Refused};
 use alo_files::Failed;
 use alo_keeping::NotKept;
 use alo_strings::{Filling, Said, Strings};
 
+use crate::unbounded::NoBoundary;
 use crate::words;
 
 /// Why a turn did not do what it was asked.
@@ -72,6 +94,14 @@ pub enum NotDone {
     /// called a full disk a refusal would tell a security review the grants
     /// stopped something they did not.
     MachineCouldNot(Failed),
+    /// There was no boundary to run the work inside, so nothing ran.
+    ///
+    /// Not a refusal and not the disk: ADR 0015's *a turn whose boundary cannot
+    /// be applied does not run*, which is the machine being unable to keep its
+    /// own guarantee rather than the capability model keeping it. Nothing is
+    /// written down — see this module's documentation — and a
+    /// [`NoBoundary::a_thread_is_still_inside`] is a service that stops.
+    NotBounded(NoBoundary),
     /// What happened could not be written down.
     ///
     /// The turn is closed by this, so nothing else will be done under it. For a
@@ -88,9 +118,11 @@ pub enum NotDone {
 impl NotDone {
     /// What this says, in the language the person reads.
     ///
-    /// Six of the seven hand the question straight to whoever made the refusal,
+    /// Six of the eight hand the question straight to whoever made the refusal,
     /// so what a person is told about a call that did not form is the same
-    /// sentence wherever in alo OS the call was made.
+    /// sentence wherever in alo OS the call was made. The seventh is worded by
+    /// [`NoBoundary`], which is this crate's own type carrying this crate's own
+    /// word.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
@@ -99,6 +131,7 @@ impl NotDone {
             Self::NotAnswered(why) => why.said(strings),
             Self::Refused(refused) => refused.said(strings),
             Self::MachineCouldNot(failed) => failed.said(strings),
+            Self::NotBounded(why) => why.said(strings),
             Self::NotRecorded(why) => why.said(strings),
             Self::TurnClosed => strings.say(&words::TURN_CLOSED.key(), &Filling::nothing()),
         }
@@ -180,11 +213,15 @@ mod tests {
         }
     }
 
-    /// **Six of the seven are somebody else's words**, and this is the test
-    /// that says so: with only this crate's own vocabulary loaded, the one
-    /// sentence that is ours reads and the rest are keys nothing declares.
+    /// **Six of the eight are somebody else's words**, and this is the test
+    /// that says so: with only this crate's own vocabulary loaded, the two
+    /// sentences that are ours read and the rest are keys nothing declares.
+    ///
+    /// The second of the two is the turn that could not be bounded, and it is
+    /// ours because a boundary is a mechanism and says nothing to anybody —
+    /// [`crate::words`] is the argument.
     #[test]
-    fn the_only_sentence_this_crate_says_of_its_own_is_the_closed_turn() {
+    fn the_only_sentences_this_crate_says_of_its_own_are_its_own_two() {
         let ours = Strings::of(words::turn_words().unwrap());
         let mut said_by_us = 0;
         for not_done in everything_that_can_come_back() {
@@ -193,10 +230,15 @@ mod tests {
             }
         }
         assert_eq!(
-            said_by_us, 1,
+            said_by_us, 2,
             "this crate has started saying something somebody else already says"
         );
         assert!(!NotDone::TurnClosed.said(&ours).is_a_bug());
+        assert!(
+            !NotDone::NotBounded(crate::NoBoundary::because("no kernel".to_owned()))
+                .said(&ours)
+                .is_a_bug()
+        );
     }
 
     /// The capability model saying no and the machine not managing it are
@@ -216,7 +258,7 @@ mod tests {
                     assert!(refused);
                 }
                 NotDone::NotRecorded(_) | NotDone::TurnClosed => assert!(over),
-                NotDone::NotAnswered(_) | NotDone::MachineCouldNot(_) => {
+                NotDone::NotAnswered(_) | NotDone::MachineCouldNot(_) | NotDone::NotBounded(_) => {
                     assert!(!refused && !over);
                 }
             }
