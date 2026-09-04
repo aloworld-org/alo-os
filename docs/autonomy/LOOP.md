@@ -80,6 +80,40 @@ Write one of these as a line of its own in `STATE.md`:
 **Halting is not failure.** An iteration that halts with a clear reason is worth
 more than one that invents a way past a problem nobody has looked at.
 
+## The marker only counts at the start of a line
+
+`LOOP COMPLETE` and `LOOP HALT` are read by the supervisor with
+
+```
+(?m)^#{0,6} *\*{0,2}LOOP (COMPLETE|HALT)
+```
+
+— **anchored to the start of a line**, on purpose, because this journal quotes
+its own markers constantly and an unanchored match once stopped a loop on the
+prose *"halts on a broken environment"* with four items still open.
+
+The cost of that anchor is that a marker written any other way is invisible.
+Backticks make it invisible. A bullet makes it invisible. A sentence saying the
+queue's last word *is* `LOOP COMPLETE` is invisible, and is not the same thing as
+writing it.
+
+**This is not hypothetical.** After the queue emptied on 2026-09-04 the journal
+said `LOOP COMPLETE` in prose and in a ledger, and never once at the start of a
+line. The supervisor saw no marker and started another iteration; that iteration
+found the same empty queue, wrote another line about it, and exited. **Thirty-
+eight times, across seven hours.** Both halves behaved exactly as written, and
+neither could see the other.
+
+So when an iteration stops the loop, the last thing it writes is the marker,
+alone, at the start of a line. Then it checks:
+
+```
+grep -c '^LOOP COMPLETE' docs/autonomy/STATE.md
+```
+
+**A run that ends without that returning at least 1 has not stopped the loop.**
+It has only described stopping it, which is what thirty-eight of them did.
+
 ## An empty queue is answered once, not once per iteration
 
 `LOOP COMPLETE` describes the **state of the queue**, not an event that happened.

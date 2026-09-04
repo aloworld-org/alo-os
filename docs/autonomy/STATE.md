@@ -9315,3 +9315,12 @@ above this line instead.
 | Blocked items | 16b, 19b, 21i, 21k, 21l, 23b, 26f, 29 |
 | Last iteration that built something | item 30, `f8f1ee2` — the agent service can make the two places it is not given |
 | Gate last run in full | four times against this tree: 1954 test results on Linux, 1723 on Windows, zero failures |
+
+**The marker itself, where the supervisor can see it.** Everything above says
+`LOOP COMPLETE` inside backticks, in prose, which the supervisor cannot read: its
+check is `(?m)^#{0,6} *\*{0,2}LOOP COMPLETE`, anchored to the start of a line.
+That is why thirty-eight iterations ran after the queue emptied — the loop
+believed it had signalled and the supervisor never saw a signal. The line below
+is the signal.
+
+LOOP COMPLETE
