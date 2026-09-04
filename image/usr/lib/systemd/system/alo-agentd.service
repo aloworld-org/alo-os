@@ -1,0 +1,50 @@
+[Unit]
+# The door an agent knocks on, and the turn it holds. It is the largest thing
+# alo OS runs and the one thing on the machine that talks to the outside world,
+# which is why the unit below gives it nothing.
+Description=alo OS agent service: the door an agent knocks on
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/contracts/daemon-protocol.md
+
+# A machine with no boundary is a machine this service refuses to run on
+# (ADR 0015), so it is not started on one. Requires= rather than Wants=, because
+# starting anyway and failing at the first turn would tell somebody that their
+# agent is broken when what is broken is the boot.
+Requires=alo-boundaryd.service
+After=alo-boundaryd.service
+
+# The folder the record goes in is the image's and not the daemon's — the
+# machine description says so, and alo-agentd refuses to start rather than make
+# one, because a typo in that key would otherwise become a second record nobody
+# is reading. systemd-tmpfiles makes it; this is the ordering that means it is
+# there first.
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/alo-agentd
+
+# The signed-in person, and the agent's group beside it so this process can hand
+# the socket to the agent. ADR 0001 §2: never with authority the person does not
+# have themselves, which on this machine means these three lines and no fourth.
+User=alo
+Group=alo
+SupplementaryGroups=alo-agent
+
+# Empty on purpose, and both of them. ADR 0018 moved the one privileged act out
+# of this service; these two lines are that decision written where a machine can
+# be held to it, rather than an absence somebody has to notice. Writing a grant
+# into the kernel needs permission on a file here, which a person's own service
+# can have, and not a capability, which this service may never hold.
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# Nothing this service starts may gain more than it has.
+NoNewPrivileges=yes
+
+# Deliberately not restarted. Every road out of this service's start-up is a
+# machine that is wrong in a way that will not fix itself — no description, no
+# record, no boundary — and a supervisor trying again five times would turn the
+# one sentence saying which into five copies of it in a log.
+
+[Install]
+WantedBy=multi-user.target

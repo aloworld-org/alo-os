@@ -1,0 +1,23 @@
+[package]
+name = "alo-image"
+version = "0.0.1"
+description = "What the image owes the two daemons, and whether the files it ships agree with each other."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+
+# The retention rule, as the crate that owns it says it. ADR 0004 gives how
+# long a record is kept to the organisation that manages the machine, so the one
+# thing an image may write is `forever` — and asking `alo_keeping::Keeping`
+# whether that is what it says is one answer rather than a second spelling of
+# the same question in this crate.
+alo-keeping = { path = "../alo-keeping" }
+
+[lints]
+workspace = true

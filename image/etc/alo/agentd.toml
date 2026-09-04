@@ -1,0 +1,45 @@
+# What this machine says about itself.
+#
+# docs/contracts/machine-description.md is the shape, and it says this file is
+# written by whoever installs a machine. On this image that is the image: it is
+# the smallest thing that boots and starts alo-agentd, so it stands a machine up
+# and this is what it says about the one it stood up.
+#
+# Everything here is either a number the image itself decided — the three logins
+# are `usr/lib/sysusers.d/alo.conf`, and nothing else may disagree with them —
+# or a value alo OS is allowed to have an opinion about. `record.keeping` is the
+# one that needed thought: ADR 0004 gives retention to the organisation that
+# manages the machine and alo OS ships no number of days of its own, so the only
+# honest thing an image can write is "forever". An organisation that has a
+# retention rule replaces this file with theirs.
+
+format = 1
+
+[logins]
+# The signed-in person, whom alo-agentd runs as.
+person = 1000
+# The agent, which is a login of its own (ADR 0001 §5). The number is out of the
+# range a base allocates from, and `usr/lib/sysusers.d/alo.conf` says why in
+# full: on the pinned base, the 989 every example in this repository uses is
+# systemd-resolve's group.
+agent = 60989
+# The group both are in, which is how the agent reaches the socket.
+group = 60989
+
+[agent]
+# What this machine's agent is called, exactly as its grants name it. Matched
+# exactly everywhere in alo OS, so this is not a label.
+name = "alo"
+# A quarter of an hour for a turn, five minutes for a change to be answered in.
+# Both are alo OS's opening suggestion rather than a measurement: nothing has
+# ever run a turn on a booted machine, and whoever certifies the first one is
+# better placed to say what these should be than this file is.
+turn-seconds = 900
+proposal-seconds = 300
+
+[record]
+# In the folder `usr/lib/tmpfiles.d/alo.conf` makes. The file itself is made on
+# the first start, with its first line already written.
+path = "/var/lib/alo/record.jsonl"
+# See the note at the top of this file: not a default, a refusal to pick one.
+keeping = "forever"

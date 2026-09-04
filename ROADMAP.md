@@ -600,17 +600,27 @@ which made a completely consistent rule look like work being taken out of turn.
       The base is rented deliberately: everything that makes alo OS *alo* is in
       layers we already own, and building our own base would buy no capability
       that is not already free
-  - [ ] **The code.** Nothing yet — no Containerfile, no unit, no `tmpfiles.d`
-        anywhere in this repository. `docs/autonomy/QUEUE.md` item 28 is the
-        first cut of it and is deliberately the smallest one that means
-        anything: a `bootc` image that boots and starts `alo-agentd`, with
-        ADR 0017's `/run/alo` entry, and no compositor in it. **This line is the
-        one that has been holding the other seventeen**, because every capability
-        below has a machine half and none of them has a machine
+  - [x] **The code.** `image/` — a `bootc` image on the Fedora-derived base,
+        pinned by digest and unpatched. It compiles `alo-agentd` and
+        `alo-boundaryd` in a builder stage and installs them; it ships the two
+        `systemd` units in the order ADR 0018 requires, ADR 0017's `/run/alo`
+        entry and the folder the record goes in, the two logins the machine has,
+        and a machine description. `crates/alo-image` is the gate on it —
+        fourteen promises from ADRs 0001, 0004, 0015, 0017 and 0018 read back out
+        of those files, each with a twin that breaks one line and is caught,
+        because a build cannot see a description naming a login the image never
+        creates. **This line was the one holding the other seventeen**, and
+        building it measured two things nobody had: the base's kernel really does
+        start the BPF LSM (`docs/hardware.md`), and the login number every
+        example in this repository used belongs to `systemd-resolve` there
+        (`docs/quirks.md`)
   - [ ] **On the machine.** That it boots, and that the daemon is running when it
         comes up — a virtual machine answers most of it and the certified machine
         answers the rest. **An image that builds is not an image that boots**, so
-        a green build never ticks this
+        a green build never ticks this, and the build that produced this image
+        did not. Two of `docs/hardware.md`'s five kernel checks are still
+        unanswered for the same reason: they are questions about a kernel that is
+        running
 
 **Exit gate.** On the certified machine, from a cold boot: sign in, press the
 key, ask an agent to do something to a file in a granted folder, approve the

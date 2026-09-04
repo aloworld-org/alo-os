@@ -282,6 +282,42 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### systemd-sysusers does not fail on a number somebody else has — it takes a different one, or their group
+**Version:** `systemd` 257 on `quay.io/fedora/fedora-bootc:42`, found 2026-09-04
+by building `image/Containerfile` for the first time and reading the log.
+**Behaviour:** every example in this repository — the machine description
+contract, `alo-agentd`'s own tests, ADR 0001's prose — uses **989** as the
+agent's login and group. On the pinned base, gid 989 is **systemd-resolve's**.
+`systemd-sysusers` did not refuse the file. It said this, and carried on:
+
+```
+Suggested group ID 989 for alo-agent already used.
+Creating group 'alo-agent' with GID 977.
+Suggested user ID 989 for alo-agent already used.
+Creating user 'alo-agent' (alo OS agent) with UID 976 and GID 989.
+```
+
+Read carefully, that is alo OS's agent **put into the resolver's group** — and
+the machine description would still have said `group = 989`, so the daemon and
+the machine would have agreed on a number that meant somebody else. Nothing
+would have failed. `alo-agentd` would have handed its socket to a group the
+resolver is in.
+
+Two things follow, and the second matters more than the first. **A `u` or `g`
+line is a request, not a declaration**: sysusers falls back, and it falls back
+by taking the *existing* group when the number it was asked for is one. And
+**every number in the system range is somebody's eventually** — Fedora allocates
+system logins downward from 999, so a number that is free on the base today is
+one a base update can take.
+
+**What we do about it.** The agent's login and group are **60989**, in the range
+systemd's own uid documentation leaves allocated by nothing (60578–61183), so a
+base update cannot move it. And `image/Containerfile` runs `systemd-sysusers` at
+build time and then asserts the three numbers with `test`, so a fallback is a
+build that fails with the number in front of somebody rather than an image that
+ships. The person stays at 1000, which is the first ordinary user on any Linux
+and the one number no system package will ever ask for.
+
 ### bpf-linker 0.11.0 — the LLVM it was built against must be the one rustc emits
 **Version:** `bpf-linker` 0.11.0, `rustc` nightly, Ubuntu 26.04, found
 2026-09-04 by building `crates/alo-bounding-kernel`.

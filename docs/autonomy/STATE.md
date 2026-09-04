@@ -7991,3 +7991,104 @@ map's directory is the loader's, not the image's `tmpfiles.d`, so what the image
 owes there is the `bpffs` mount and the ordering. **Still blocked, unchanged:**
 16b, 19b (Wayland), 21i (the shell), and 21k — which wants an ADR nobody has
 written. 21l waits on 21k. 26f is new and is not ready.
+
+---
+
+## Iteration — item 28: the smallest image that boots and runs the daemon
+
+**Built, and it builds.** `image/`, a new directory laid out as the machine's own
+root — `Containerfile`, `Containerfile.dockerignore`, two `systemd` units, a
+`tmpfiles.d` file, a `sysusers.d` file and a machine description — and
+`crates/alo-image`, a new crate that reads those five declarations and asks
+whether they can all be true at once: `unit.rs`, `service.rs`, `making.rs`,
+`logins.rs`, `description.rs`, `image.rs`, `checking.rs`, `wrong.rs`,
+`refusing.rs`, `testing.rs`.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts, `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both. **1900 tests and 46
+doctests on Linux** (was 1826 and 46), **1669 and 46 on Windows** (was 1595 and
+46) — the same +74 on each host, correctly, because everything added is portable.
+The kernel half's own gate clean, `cargo doc --workspace --no-deps` zero warnings
+on Linux, forty-nine unresolved-link warnings on Windows in the same three
+Linux-only crates and no more, `ls /sys/fs/bpf` empty after the run. And the
+thing no `cargo` command says: `docker build -f image/Containerfile .` produces
+an image, `bootc container lint` passes its thirteen checks, and both binaries
+run inside it and refuse for the right reasons.
+
+**The builder is Ubuntu and the image is Fedora, and that was measured rather
+than preferred.** `alo-boundaryd` reaches `alo-bounding`, which builds a BPF
+programme, which needs `bpf-linker` built against the LLVM the pinned nightly
+emits — 22. Fedora 42 has no LLVM 22 at all, so a builder stage on the base would
+carry a second copy of the hardest configuration in this repository, on the one
+machine nobody can log into to debug it. The cost of two distributions is two
+glibcs, and the answer is to need neither: `x86_64-unknown-linux-musl`, static,
+so what is installed depends on nothing in the image. Both stages are pinned by
+digest.
+
+**The first finding was a document that had never been checked.** ADR 0015 says
+*the Fedora-derived base ships both*, `docs/hardware.md` said whoever certifies
+the first machine would find out, and the base's own kernel config was one
+`grep` away the moment there was an image. `6.19.14-101.fc42.x86_64` answers
+`CONFIG_BPF_LSM=y`, `CONFIG_LSM="lockdown,yama,integrity,selinux,bpf,landlock,ipe"`
+and `CONFIG_DEBUG_INFO_BTF=y`. **`bpf` is in the built-in list**, which is the
+check that usually fails and the one the development box needed a boot parameter
+for — so alo OS's image does not have to walk into the `lsm=` trap that file
+warns about. Three of the five checks answered, a row in the table, and ADR 0015's
+sentence is measured now.
+
+**The second finding is the one worth carrying forward, and it is a login
+number.** 989 is the agent everywhere in this repository — the contract's
+example, `alo-agentd`'s tests, `alo-boundaryd`'s. On the pinned base gid 989 is
+**systemd-resolve's**, and `systemd-sysusers` does not refuse a number somebody
+has: it said *Suggested group ID 989 for alo-agent already used* and put alo OS's
+agent into the resolver's group. Nothing failed. The description would still have
+said `group = 989`, the daemon would have believed it, and the socket would have
+been handed to a group the resolver is in. The agent is **60989** now, in the
+range systemd's own uid document leaves allocated by nothing, because Fedora
+allocates system logins downward from 999 and *every* number there is one a base
+update can take. And the Containerfile runs `systemd-sysusers` at build time and
+asserts all three numbers, so the next collision is a build that fails with the
+number in front of somebody. `docs/quirks.md` has the log.
+
+**What `alo-image` is for, since a crate that reads our own files needs saying.**
+A build cannot catch any of it. `docker build` will happily make an image whose
+description names a login the image never creates, whose loader is in root's
+group so the map of turns is pinned where no daemon can write it, or whose
+`alo-agentd.service` has had a capability added to make something work — which is
+ADR 0018 undone in one line, in the file nobody reviews. So fourteen sentences
+from ADRs 0001, 0004, 0015, 0017 and 0018 are read back out of the files, and
+**each one has a twin that breaks a copy of the image and is caught**, which is
+item 27's rule about checks that have never caught anything. It is the second
+crate nothing on a machine reads, after `alo-driving`, and it reaches only
+`alo-keeping`.
+
+**Three decisions worth inheriting.** *The image is what installs this machine* —
+so it may write a description, and what it may write is only what it really
+decided; `record.keeping` is `"forever"` because ADR 0004 gives retention to the
+organisation, and `docs/contracts/machine-description.md` now says so. *An empty
+capability line is a stronger claim than a missing one* — `alo-image` refuses a
+unit that merely stops mentioning capabilities, because a service that holds
+nothing by accident is one directive away from not. *A `sysusers.d` line is a
+request rather than a declaration*, which is the general form of the 989 finding
+and is why the numbers are asserted after they are asked for.
+
+**The machine half is untouched, and this is the item where that mattered most.**
+Nothing has booted. What was read of the image's kernel is the configuration file
+shipped beside it; two of the five checks are questions about a kernel that is
+running; no `systemd` has started either unit, so the ordering, the capability
+bounding set and the `RemainAfterExit` are what the units *say* rather than what
+a machine did. `ROADMAP.md`'s image line has its two boxes now, the code half is
+ticked and the machine half is empty — *an image that builds is not an image that
+boots* is the sentence the whole item was written around, and it is the sentence
+this entry ends on.
+
+**What the next iteration takes.** There is no ready item left. Everything
+unchecked in `QUEUE.md` is blocked or not ready, and the reasons are unchanged
+except that 28 is gone from the list: **16b** (no discovery code exists and none
+of it is portable), **19b** (Wayland and D-Bus), **21i** (the shell, because a
+grant is made by a person picking a folder in a surface that does not exist),
+**21k** (wants an ADR nobody has written — where a runtime on this machine is),
+**21l** (waits on 21k), **26f** (not ready: the lifetime of a turn's entry in the
+map is a decision about the programme in the kernel, not a patch). The next
+iteration should read that list and write `LOOP COMPLETE` unless one of them has
+changed.

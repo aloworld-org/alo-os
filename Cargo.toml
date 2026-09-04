@@ -16,6 +16,7 @@ members = [
   "crates/alo-driving",
   "crates/alo-egress",
   "crates/alo-files",
+  "crates/alo-image",
   "crates/alo-keeping",
   "crates/alo-models",
   "crates/alo-protocol",

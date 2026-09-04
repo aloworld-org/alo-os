@@ -194,6 +194,35 @@ The five checks are in the order the failures happen in, and each one is
 invisible to the one before it: built in, started, attachable, self-describing,
 and somewhere to keep it.
 
+### The image's own kernel, asked three of the five
+
+**ADR 0015's *the Fedora-derived base ships both* was read and not measured
+until 2026-09-04.** The paragraph below it said whoever certifies the first
+machine would find out. Queue item 28 built the image, so it can be asked now —
+of a kernel alo OS chose rather than one it borrowed.
+
+| Kernel | Built in | Started | Self-describing | Measured |
+|---|---|---|---|---|
+| `6.19.14-101.fc42.x86_64`, from `quay.io/fedora/fedora-bootc:42` | `CONFIG_BPF_LSM=y` | `bpf` is in `CONFIG_LSM` | `CONFIG_DEBUG_INFO_BTF=y` | 2026-09-04, from `/usr/lib/modules/<version>/config` in the built image |
+
+```
+CONFIG_BPF_LSM=y
+CONFIG_LSM="lockdown,yama,integrity,selinux,bpf,landlock,ipe"
+CONFIG_DEBUG_INFO_BTF=y
+```
+
+**The second column is the one that was in doubt**, and it is the one that
+usually fails: a kernel can have the BPF LSM compiled in and never start it. This
+one starts it in its built-in list, with **no boot parameter of ours** — so the
+`lsm=` trap two paragraphs above is a trap alo OS's image does not have to walk
+into, and ADR 0015's sentence is measured rather than hopeful.
+
+**Two of the five are still unanswered and cannot be answered here.** Whether
+grace periods complete and whether `bpffs` is mounted are questions about a
+kernel that is *running*, and nothing has booted this image: what was read is the
+configuration file the image ships beside its kernel. They are the machine half,
+and `ROADMAP.md`'s image line keeps that box empty.
+
 **Who loads it now has an answer, and whoever certifies a machine should know
 it.** Not the agent's daemon: ADR 0018 gives the `CAP_BPF` and `CAP_SYS_ADMIN` a
 BPF LSM programme needs to one small service that runs at boot, takes no

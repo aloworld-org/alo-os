@@ -39,8 +39,15 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
 `crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings`,
 `crates/alo-driving`, `crates/alo-saying`, `crates/alo-choosing`,
-`crates/alo-agentd` and `crates/alo-boundaryd` were built by
-the loop and are described in the items below. **`alo-boundaryd` is the only one
+`crates/alo-agentd`, `crates/alo-boundaryd` and `crates/alo-image` were built by
+the loop and are described in the items below. **`alo-image` is the second crate
+nothing on a machine ever reads**, after `alo-driving`, and the two are the same
+shape: one is run by whoever adds a catalogue entry and what ships is the grade
+they wrote down, the other by whoever changes `image/` and what ships is the
+image. It is also the only crate whose subject is not Rust — the units, the
+`tmpfiles.d` and `sysusers.d` lines and the machine description that `image/`
+puts on a machine — which is `CLAUDE.md`'s *a promise in `docs/` is a test*
+reaching the one part of alo OS that is configuration. **`alo-boundaryd` is the only one
 that is privileged**, and since item 26e it is the only privileged component alo
 OS has at all: it runs at boot as root, holds `CAP_BPF` and `CAP_SYS_ADMIN` long
 enough to load one programme and pin it, and takes no argument that selects what
@@ -3370,11 +3377,67 @@ out.
   answers `docs/hardware.md` asks for, plus a fourth that is this file's own —
   a kernel that is recording.
 
-- [ ] **28. The smallest image that boots and runs the daemon.** Promoted out of
+- [x] **28. The smallest image that boots and runs the daemon.** Promoted out of
   *Blocked — linux*, where it sat as one line and was never taken, because the
   classification was wrong: **the Containerfile and the build need no compositor
   and no certified machine.** Only booting it needs a machine, and a virtual one
   answers most of the question.
+
+  **Built, and the image builds.** `image/`, a **new directory** laid out as the
+  machine's own root: `Containerfile` (a builder stage and the base, both pinned
+  by digest), `usr/lib/systemd/system/alo-boundaryd.service` and
+  `alo-agentd.service`, `usr/lib/tmpfiles.d/alo.conf`,
+  `usr/lib/sysusers.d/alo.conf` and `etc/alo/agentd.toml`. `crates/alo-image`, a
+  **new crate**: `unit.rs` (a systemd unit as text), `service.rs` (the seven
+  settings alo OS asks about), `making.rs` (`tmpfiles.d`), `logins.rs`
+  (`sysusers.d`), `description.rs` (what the image says the machine is),
+  `image.rs` (the five files, read off a directory), `checking.rs` (every promise,
+  checked), `wrong.rs`, `refusing.rs`, `testing.rs`. 63 unit tests, 11 integration
+  tests against the shipped image; **1900 tests and 46 doctests on Linux**
+  (was 1826 and 46), 1669 and 46 on Windows, clippy clean on both hosts and for
+  the BPF target, `cargo doc` clean on Linux.
+
+  **The builder is Ubuntu and the image is Fedora, and that is a measurement.**
+  `alo-boundaryd` reaches `alo-bounding`, which builds a BPF programme on the way,
+  which needs `bpf-linker` built against the LLVM the pinned nightly emits —
+  LLVM 22. Fedora 42 has no LLVM 22 at all, so a builder stage on the base would
+  have to carry a second copy of the hardest configuration in this repository.
+  What that costs is the two glibcs not matching, and the answer is to need
+  neither: the binaries are linked against musl, statically, so what is installed
+  into the image depends on nothing in it.
+
+  **Two things were measured that nobody had measured, and both were in
+  documents.** ADR 0015's *the Fedora-derived base ships both* had been read and
+  never checked; the image's own kernel answers three of `docs/hardware.md`'s five
+  checks — `CONFIG_BPF_LSM=y`, `bpf` in the built-in `CONFIG_LSM`, and
+  `CONFIG_DEBUG_INFO_BTF=y` — with no boot parameter of ours, and that table now
+  has a row in it. And **989, the agent's number in every example in this
+  repository, is `systemd-resolve`'s group on that base**: `systemd-sysusers` does
+  not refuse a number somebody has, it takes their group, so the first build of
+  this image put alo OS's agent into the resolver's. The agent is 60989 now — in
+  the range systemd's own documentation leaves allocated by nothing — and the
+  Containerfile runs `systemd-sysusers` at build time and asserts all three
+  numbers, so a base update that takes one fails the build. `docs/quirks.md` has
+  the log.
+
+  Three decisions the next items inherit. **The image is what installs this
+  machine, and what it may write is only what it really decided** — the two login
+  numbers are the accounts it creates, and `record.keeping` is `"forever"` because
+  ADR 0004 gives retention to the organisation and alo OS ships no number of days
+  of its own; `docs/contracts/machine-description.md` says so now. **A capability
+  line is a claim, and an empty one is a stronger claim than a missing one**:
+  `alo-agentd.service` carries `CapabilityBoundingSet=` and `AmbientCapabilities=`
+  with nothing after them, and `alo-image` refuses a unit that merely stops
+  mentioning them — a service that holds nothing by accident is one directive away
+  from not. **`alo-image` is the second crate nothing on a machine reads**, after
+  `alo-driving`: it is run by whoever changes the image, what ships is the image,
+  and it reaches only `alo-keeping`, for the one rule about retention it must not
+  spell out a second time.
+
+  **The machine half is untouched and is not this loop's.** Nothing has booted:
+  what was read of the image's kernel is the configuration file beside it, two of
+  the five checks are questions about a kernel that is running, and no `systemd`
+  has ever started either unit. `ROADMAP.md`'s image line keeps that box empty.
 
   **Why this and not another crate.** The count that decides it: **seventeen of
   eighteen code halves are done and none of the eighteen machine halves is**, and
@@ -3448,8 +3511,9 @@ out.
   of anything, so building it early would buy a box and a tick-shaped thing to
   look at rather than the item.
 
-  `ROADMAP.md`'s image line at *Image: a bootable container* has no two boxes yet
-  and gets them when this is built.
+  `ROADMAP.md`'s image line at *Image: a bootable container* has its two boxes
+  now, and the code half is ticked. The machine half is not, and the sentence
+  above it in that file is the reason.
 
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the

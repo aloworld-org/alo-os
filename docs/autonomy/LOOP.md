@@ -273,6 +273,38 @@ and a count appearing against a crate that is **not** one of those three is the
 thing to look at. A number in this paragraph is worth less than the command above
 it.
 
+## The image builds here too, and that is newer than it sounds
+
+Item 28 added `image/`, and **the machine this loop runs on can build it**:
+Docker Desktop is installed, its engine is `linux/amd64`, and one command from
+the root of the repository produces the whole operating system as an image.
+
+```
+docker build -f image/Containerfile -t alo-os:dev .
+```
+
+It takes a few minutes cold and seconds warm, because everything before
+`COPY . /alo-os` is a cached layer — the builder stage installs a rust toolchain,
+LLVM 22 and `bpf-linker`, which is the same configuration the WSL box has and for
+the same reason. `image/Containerfile` says why the builder is Ubuntu while the
+image is Fedora, and why the binaries are static musl.
+
+Three things about it, all worth knowing before changing anything in `image/`:
+
+- **`crates/alo-image` is the gate, not the build.** A `docker build` that
+  succeeds proves the binaries compiled and the files are where the `COPY` lines
+  put them. It cannot see a machine description naming a login the image never
+  creates, or a capability added to `alo-agentd.service`. `cargo test -p
+  alo-image` is what sees those, and it runs on both hosts because that crate is
+  portable.
+- **The build asserts the login numbers**, and it is the reason it can:
+  `systemd-sysusers` does not fail on a number somebody else has, it takes their
+  group. `docs/quirks.md` has what that cost.
+- **A build is never a boot.** Nothing in this repository has ever started
+  `systemd`. The units' ordering, their capability lines and `RemainAfterExit`
+  are what the files say; `ROADMAP.md`'s image line keeps its machine half empty
+  until somebody watches a machine come up, and this loop may not tick it.
+
 ## Where things are
 
 | | |

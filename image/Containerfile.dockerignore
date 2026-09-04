@@ -1,0 +1,5 @@
+# What a build of this image must not carry into the builder. `target` is
+# gigabytes of another platform's artefacts and `.git` is the history; neither
+# is compiled, and both would be copied on every build.
+target
+.git

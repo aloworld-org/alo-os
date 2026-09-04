@@ -12,6 +12,34 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **There is now an alo OS you can build into a machine.** Until this change
+  this repository was twenty-four pieces of an operating system and nothing that
+  was one: no image, nothing that starts anything, nothing that had ever been
+  asked to come up on its own. From this change one command produces the whole
+  thing as a single bootable image — the agent service, the small component that
+  puts the boundary into your kernel, the accounts your machine has and the
+  places they write.
+
+  It is deliberately the smallest machine that means anything. There is no
+  desktop in it, no windows and nothing to sign in at, because those are the
+  parts that are not finished; what is in it is the part that is. The two
+  services start in the order that matters: **your machine's boundary is in
+  place before anything your agent can reach exists**, and it stays in place
+  after the thing that put it there has finished and gone.
+
+  **The image builds; nobody has booted it yet.** That is a separate promise and
+  it is not being made here — an image that builds is not an image that boots,
+  and the roadmap says so beside this line rather than quietly counting one as
+  the other.
+
+  Two things fell out of building it that are worth saying plainly. The
+  operating system underneath alo OS turns out to already be able to enforce a
+  grant in the kernel — something this repository had read in a document and
+  never checked. And a login number used as the example everywhere in this
+  project turned out to belong to something else on that system, so alo OS's
+  agent would quietly have been put in the wrong group; the numbers moved, and
+  the build now refuses to produce an image where that could happen again.
+
 - **The part of alo OS that constrains your agent is no longer part of your
   agent.** Putting a boundary into your machine's kernel takes a kind of
   authority no ordinary program has — and until this change the service that

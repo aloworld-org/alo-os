@@ -1,0 +1,144 @@
+# alo OS, as a machine boots it.
+#
+# ADR 0011: the operating system *is* an OCI image — a bootable container
+# (`bootc`) on a rented, unmodified Fedora-derived base. Nothing below patches
+# that base. What this file adds is two binaries, two units, two directories and
+# one description, which is queue item 28's whole scope: the smallest image that
+# boots and starts the agent service. There is no compositor in it, no desktop,
+# no wallpaper and nothing to sign in at.
+#
+# Build it from the root of the repository:
+#
+#     docker build -f image/Containerfile -t alo-os:dev .
+#
+# **An image that builds is not an image that boots.** A green build says the
+# binaries compiled and the files are where the units say they are; whether the
+# machine comes up with alo-agentd running is a question for a virtual machine
+# and then for a certified one, and `ROADMAP.md` keeps that half of the line
+# empty until somebody has watched it happen.
+
+# The versions, in one place, because every one of them is pinned on purpose.
+ARG THE_BASE=quay.io/fedora/fedora-bootc:42@sha256:077182b6ba853b3348d0bede602ac30b9e6568c6422bcf0654de5af96f19b9c3
+ARG THE_BUILDER=docker.io/library/ubuntu:26.04@sha256:2260313b31c8c011cd2eebe728008efac1b3982be73eb71348ea2648d2c0e09b
+ARG THE_STABLE=1.97.0
+ARG THE_NIGHTLY=nightly-2026-06-01
+ARG THE_LLVM=22
+ARG THE_LINKER=0.11.0
+ARG THE_TARGET=x86_64-unknown-linux-musl
+
+# ---------------------------------------------------------------------------
+# What compiles alo OS, which is not what runs it
+# ---------------------------------------------------------------------------
+#
+# The builder is Ubuntu and the image is Fedora, and that is a measurement
+# rather than a preference. `alo-boundaryd` reaches `alo-bounding`, which builds
+# a BPF programme on the way, which needs `bpf-linker` built against **the same
+# LLVM the compiler emits** — LLVM 22 for the nightly this repository pins, and
+# a mismatch is not a refusal but a segmentation fault inside an optimisation
+# pass (`docs/quirks.md`). Fedora 42 ships LLVM 20 and no 22 at all, so a
+# builder stage on the base would have to bring an LLVM of its own, which is a
+# second copy of the hardest configuration in this repository.
+#
+# What that costs is the two glibcs not matching, and the answer is to need
+# neither: the binaries are linked against musl, statically, so what is copied
+# into the image below depends on nothing in it. `docs/autonomy/LOOP.md` has the
+# same toolchain written down for the machine the build loop runs on.
+FROM ${THE_BUILDER} AS built
+
+ARG THE_STABLE
+ARG THE_NIGHTLY
+ARG THE_LLVM
+ARG THE_LINKER
+ARG THE_TARGET
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends \
+      ca-certificates curl \
+      gcc libc6-dev musl-tools \
+      llvm-${THE_LLVM} llvm-${THE_LLVM}-dev libpolly-${THE_LLVM}-dev \
+      zlib1g-dev libzstd-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# `LLVM_PREFIX` is bpf-linker's own variable, and it is not `llvm-sys`'s
+# `LLVM_SYS_<version>_PREFIX` — setting that one correctly changes nothing. The
+# path is on `PATH` because the binary has to be called exactly `llvm-config`,
+# and the one Ubuntu puts in /usr/bin is called `llvm-config-22`.
+ENV LLVM_PREFIX=/usr/lib/llvm-${THE_LLVM}
+ENV PATH=/root/.cargo/bin:/usr/lib/llvm-${THE_LLVM}/bin:${PATH}
+ENV RUSTUP_HOME=/root/.rustup
+ENV CARGO_HOME=/root/.cargo
+
+# Two toolchains, and the second is not a preference either. There is no
+# prebuilt `core` for `bpfel-unknown-none`, so it is compiled from source with
+# `-Z build-std=core`, which is nightly-only; `crates/alo-bounding-kernel` pins
+# which nightly, and `crates/alo-bounding/build.rs` starts the nested build
+# inside that directory so the pin is what decides.
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail https://sh.rustup.rs \
+      | sh -s -- -y --profile minimal --default-toolchain ${THE_STABLE} \
+ && rustup target add ${THE_TARGET} \
+ && rustup toolchain install ${THE_NIGHTLY} --profile minimal --component rust-src
+
+RUN cargo install bpf-linker --version ${THE_LINKER} --locked \
+      --no-default-features --features llvm-${THE_LLVM}
+
+COPY . /alo-os
+WORKDIR /alo-os
+
+# The two processes this repository has, and nothing else: the rest of the
+# workspace is libraries they reach, and a `--workspace` build here would
+# compile every test target into an image that runs none of them.
+RUN cargo build --release --target ${THE_TARGET} \
+      --package alo-agentd --package alo-boundaryd
+
+# ---------------------------------------------------------------------------
+# The machine
+# ---------------------------------------------------------------------------
+FROM ${THE_BASE}
+
+ARG THE_TARGET
+
+# The loader is in libexec because nobody runs it by hand: it is started once by
+# systemd, before anybody signs in, and a person who found it on their PATH
+# would have found the one privileged component alo OS has.
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-boundaryd /usr/libexec/alo-boundaryd
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-agentd
+
+COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
+COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
+COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
+COPY image/etc/alo/ /etc/alo/
+
+# The modes are set rather than inherited. A `COPY` carries whatever the machine
+# the build ran on had, and this repository is checked out on Windows as often
+# as not — where a file's group and world bits are an invention of the driver.
+# The description in particular is checked by `alo-agentd` before it is parsed:
+# a group-writable one is a description the group writes this machine with, and
+# the service refuses to start rather than believe it.
+RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/bin/alo-agentd \
+ && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
+               /usr/lib/systemd/system/alo-agentd.service \
+               /usr/lib/sysusers.d/alo.conf \
+               /usr/lib/tmpfiles.d/alo.conf \
+               /etc/alo/agentd.toml \
+ && chown root:root /etc/alo/agentd.toml \
+ && systemctl enable alo-boundaryd.service alo-agentd.service \
+ && bootc container lint
+
+# The logins, made here rather than only at boot — and then checked, which is
+# the point of doing it here at all.
+#
+# `systemd-sysusers` does not fail on a number somebody else has. It says so in
+# one line of a build log and creates the login with a different number, or puts
+# it in the group that already holds the one it was asked for: on this very base
+# the 989 every example in this repository uses is systemd-resolve's group, and
+# the first build of this image quietly put alo OS's agent in it.
+#
+# So the numbers are asserted. A base update that takes one of them fails the
+# build with the number in front of somebody, instead of shipping a machine
+# whose description names a login that is not there.
+RUN systemd-sysusers \
+ && test "$(id -u alo)" = 1000 \
+ && test "$(id -u alo-agent)" = 60989 \
+ && test "$(getent group alo-agent | cut -d: -f3)" = 60989 \
+ && id -nG alo | tr ' ' '\n' | grep -qx alo-agent

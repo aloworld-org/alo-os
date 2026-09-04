@@ -13,6 +13,14 @@ changes on somebody's behalf.
 `docs/contracts/record-file.md` is what the service writes down. This is the
 third of the three and it is the only one a person types.
 
+**alo OS's own image ships one**, at `image/etc/alo/agentd.toml`, and that is not
+an exception to the sentence above: the image is what installs that machine. What
+it may write is only what it really decided — the two login numbers are the
+accounts it creates, and `record.keeping` is `"forever"` because `ADR 0004` gives
+retention to the organisation and alo OS ships no number of days of its own. An
+organisation with a retention rule replaces the file with theirs.
+`crates/alo-image` is what holds the shipped one to the accounts beside it.
+
 ## Where it is
 
 ```

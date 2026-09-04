@@ -1,0 +1,45 @@
+[Unit]
+# The one privileged thing alo OS does, and it does it once, before anybody
+# signs in. ADR 0018: loading a BPF LSM programme needs CAP_BPF and
+# CAP_SYS_ADMIN, alo-agentd runs as the signed-in person and ADR 0001 §2 says
+# never with authority the person does not have — so the loading is this, and
+# not the agent's service with a capability quietly added to its unit.
+Description=alo OS boundary: the programme this machine enforces a grant with
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md
+
+# Pinning is a bpffs operation and there is nowhere to pin without one. This is
+# the fifth of the kernel checks in docs/hardware.md, asked by the boot rather
+# than by somebody afterwards: systemd mounts /sys/fs/bpf on any ordinary
+# machine, and a machine where it did not is one this unit waits for rather than
+# one the loader fails on.
+RequiresMountsFor=/sys/fs/bpf
+
+# The whole reason there are two units and not one.
+Before=alo-agentd.service
+
+[Service]
+# It loads, it pins, and it stops — and the boundary stays, because the pin
+# holds it and not the process. RemainAfterExit is what makes that legible to
+# anybody reading `systemctl status`: the unit is active because the machine has
+# a boundary, not because something is running.
+Type=oneshot
+RemainAfterExit=yes
+
+# Root, because there is no other user that can load a BPF LSM programme, and
+# the agent's group, because the map of turns is given away to whatever group
+# this process is in. A Group= line naming root would pin a map only root could
+# write — a machine whose boundary is loaded and whose daemon can never bound a
+# turn — and the loader refuses to start rather than make one.
+User=root
+Group=alo-agent
+
+# Exactly the two ADR 0018 names, and nothing else. A root process keeps every
+# capability there is unless a unit says otherwise, so this line is where the
+# claim "it holds CAP_BPF and CAP_SYS_ADMIN long enough to load one programme"
+# either is true or is prose.
+CapabilityBoundingSet=CAP_BPF CAP_SYS_ADMIN
+
+ExecStart=/usr/libexec/alo-boundaryd
+
+[Install]
+WantedBy=multi-user.target
