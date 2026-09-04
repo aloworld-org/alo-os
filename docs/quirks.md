@@ -785,6 +785,78 @@ also the strongest case yet for the caveat below, that an agent composing the
 envelope around what its model emits may do better than the grade says.
 **Date:** 2026-09-04, iteration 44.
 
+### Four small models, four ways of failing, and the grade cannot tell them apart
+**Version:** `llama3.2:3b-instruct-q4_K_M`, `qwen2.5:3b-instruct-q4_K_M`,
+`gemma2:2b-instruct-q4_K_M` and `smollm2:1.7b-instruct-q4_K_M` — the four
+entries in `data/catalogue.toml` small enough for a 6 GB box, at the
+quantisations it states — served by Ollama 0.33.3 on four CPU cores,
+2026-09-04. Two rounds of `alo_driving::THE_SET` each, eighty attempts.
+**Behaviour:** all four graded `rarely`, and **three of the eighty produced a
+call this machine would have acted on**: one from Qwen2.5 3B, two from Gemma 2
+2B, none from the other two. The grade is the same word four times and the
+failures are four different problems.
+
+```
+llama    {"format":1,"asks":{"read":{"verb":"list_folder","given":[{"named":"folder","is":"/home/anna/Invoices"}]}}
+qwen     {"format":1,"asks":{"move_file":{"file":"/home/anna/Invoices/march.pdf","into":"/home/anna/Archive"}}}
+gemma    ```json {"format":1,"asks":{"read":{"verb":"focus_application",…}}} ```
+smollm2  {"format":1,"asks":{"read":{"verb":"NAME","given":[{"named":"ARGUMENT","is":["folder","/home/anna/Invoices"]}]}}}
+```
+
+**Llama 3.2 3B loses the punctuation and nothing else.** Twenty of twenty
+unreadable, and the argument shape — a list of `{"named":…,"is":…}` pairs,
+which is the part Phi-3 never once got right — is correct in most of them. What
+is wrong is a brace short, a brace over, a `"` where a `}` belongs. It is the
+closest any measured model has come to the shape while scoring zero.
+
+**Qwen2.5 3B puts the door and the verb name where they belong** and then
+collapses `given` into a bare object of name to value, dropping the wrapper
+entirely. Nineteen of twenty unreadable, one drove.
+
+**Gemma 2 2B is the only entry whose answers get past the daemon's door.** Its
+twenty divide across four of the six outcomes rather than piling into one: two
+drove, five were more than one message (three of those inside a ```` ```json
+```` fence), two asked a *change* through the read door, and two invented a verb
+called `CLOSE` and were refused by the verb registry. It is the first evidence
+that the six outcomes divide a real model at all — Phi-3's twenty were all
+`NotAMessage`, and iteration 44 could not tell from one model whether that was
+a fact about small models or about the scoring.
+
+**SmolLM2 1.7B copies the prompt instead of answering it.** `"verb":"NAME"`,
+`"named":"ARGUMENT"`, `"is":VALUE` — the placeholders the prompt uses to
+describe the shape, written back verbatim with the real path sometimes stuffed
+in beside them. That is not the same failure as losing the argument list; it is
+a model that has read the schema as the answer.
+**Our response:** the grades are what the entries say, and nothing in the
+prompt or the scoring was changed to help any of them. The finding worth
+carrying is that **`drives_verbs` is deliberately blind to all of this**: a
+machine deciding whether to hand somebody's files to a model does not care
+which way the model was wrong, so one word is the right public property and
+this file is where the rest goes. It also means a report that counted only
+outcomes would describe these four as one thing.
+**Date:** 2026-09-04, iteration 45.
+
+### A model that answers in seconds can still run past the five-minute wait
+**Version:** `smollm2:1.7b-instruct-q4_K_M` under Ollama 0.33.3, four CPU
+cores, 2026-09-04.
+**Behaviour:** the first run of `against_a_model_on_this_machine` stopped on the
+seventh exercise with `RuntimeError::TookTooLong` — `WHILE_A_MODEL_THINKS`, five
+minutes — from the smallest model in the catalogue, on a run whose other
+answers took seconds each. The second run of the same model, the same set and
+the same machine finished in 134 seconds with every exercise answered. Nothing
+was changed in between. The likeliest cause is the model running away on one
+generation rather than the machine being slow, and no measurement can tell those
+apart from outside.
+**Our response:** the run was made again and the grade is the second run's,
+which is what the harness is built for — *a runtime that fails stops the
+measurement rather than scoring a failure*, because a model blamed for a machine
+is the one way a grade is worse than no grade. Saying so here is the price of
+that rule: a re-run kept and a stopped run discarded looks like picking the
+better of two results, so the stopped run is recorded rather than left out. What
+would make it wrong is re-running until a *grade* improves, and the two runs
+here did not produce different grades — the first produced none.
+**Date:** 2026-09-04, iteration 45.
+
 ### `Ollama::load` cannot load a model on a machine with no graphics card
 **Version:** `alo-models`' `ollama.rs` as of 2026-09-04, against Ollama 0.33.3.
 **Behaviour:** loading is an empty generate with a non-zero keep-alive, and it
@@ -807,10 +879,11 @@ model with a throwaway *question* instead, which goes through
 
 ### What `drives_verbs` measures, and the two things it does not say
 **Version:** `alo-driving` as of 2026-09-04, run for the first time against a
-real model on 2026-09-04 — `phi-3-mini-instruct`, graded `rarely`, in the entry
-above. Every other entry in `data/catalogue.toml` still says `not-measured`,
-because a measurement needs those weights on a disk and nobody has put them
-there.
+real model on 2026-09-04 — `phi-3-mini-instruct`, graded `rarely` — and against
+the four smaller entries the same day, all `rarely` too, in the entries above.
+The remaining seven in `data/catalogue.toml` still say `not-measured`: every one
+of them wants ten gigabytes of system memory or more and the measuring box has
+six, so what is missing is a machine with room rather than a method.
 **Behaviour:** the measurement puts ten requests to a model and scores each
 answer through `alo_protocol::FromAnAgent` and `alo_capability::Verbs::call` —
 the daemon's own door and the same validation a real turn does. Two consequences
@@ -849,7 +922,7 @@ decide is how long it took, which is why the entry it produced left `min_ram_gb`
 and `on_cpu` alone: those are what a machine loses to a model, and one slow WSL
 box is not the certified one.
 **Date:** 2026-09-03, iteration 42; run for the first time and extended
-2026-09-04, iteration 44.
+2026-09-04, iteration 44; four more models 2026-09-04, iteration 45.
 
 ## Providers and their APIs
 

@@ -177,20 +177,24 @@ compositor is not required for, which is why it runs unbroken.
         first so the exercise that loads the weights is not graded for the
         disk, and stops rather than scoring when a runtime fails — a model
         blamed for a machine is the one way a grade is worse than no grade.
-        **One entry has a measured grade because of it**: `phi-3-mini-
-        instruct`, twenty attempts, none of which a machine would have acted
-        on, `rarely`
+        **Five entries have a measured grade because of it**, and they are
+        every entry a machine with no graphics card can run: `phi-3-mini-
+        instruct` since item 23a, and `llama-3.2-3b-instruct`,
+        `qwen2.5-3b-instruct`, `gemma-2-2b-instruct` and
+        `smollm2-1.7b-instruct` since 23c. A hundred attempts between them,
+        three of which a machine would have acted on, `rarely` five times
   - [ ] **On the machine.**
-        **Eleven of the twelve entries have still never been run against**,
-        because a measurement needs those weights on a disk and the biggest
-        wants forty-eight gigabytes; every one of them says `not-measured`,
-        and a grade is a data change rather than a release. The one that has
-        been measured was measured on a development box, which is the right
-        machine for the question it answers and the wrong one for the rest
-        of the entry — `min_ram_gb` and `on_cpu` are what a model costs on
-        the machine it runs on, and the certified one is where those are
-        found. Plus the setup screen that shows the refusal and its three
-        alternatives without choosing between them
+        **Seven of the twelve entries have still never been run against**,
+        because a measurement needs those weights on a disk and every one of
+        the seven wants ten gigabytes of memory or more against the six the
+        measuring box has; they say `not-measured`, and a grade is a data
+        change rather than a release. The five that have been measured were
+        measured on a development box, which is the right machine for the
+        question they answer and the wrong one for the rest of the entry —
+        `min_ram_gb` and `on_cpu` are what a model costs on the machine it
+        runs on, and the certified one is where those are found. Plus the
+        setup screen that shows the refusal and its three alternatives
+        without choosing between them
 
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
       machine, from a machine on your network, or from a provider you named, and

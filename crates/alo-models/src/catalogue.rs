@@ -542,20 +542,33 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     /// **Nothing in the catalogue we ship claims a measurement nobody ran.**
     ///
     /// It was every entry until 2026-09-04, when `phi-3-mini-instruct` was put
-    /// through `alo-driving` against a real runtime and graded `rarely`. So the
-    /// test is a list rather than a blanket, and the list is the thing to
+    /// through `alo-driving` against a real runtime and graded `rarely`, and
+    /// the four entries small enough for the same box followed it that day. So
+    /// the test is a list rather than a blanket, and the list is the thing to
     /// maintain: adding a name to it means having run the measurement, and
     /// `crates/alo-driving/tests/against_a_model_on_this_machine.rs` is how.
     ///
     /// Written this way round on purpose. A test that only checked *some* entry
-    /// is measured would pass while nine unmeasured ones quietly grew grades
+    /// is measured would pass while seven unmeasured ones quietly grew grades
     /// somebody guessed from a parameter count, which is the one thing
     /// `drives_verbs` exists to stop.
+    ///
+    /// It caught exactly that once: four grades arrived in `catalogue.toml`
+    /// with nothing but a comment in the same file to support them, and this
+    /// test held them out of a release until the run was made again and the
+    /// grades were the loop's own. A name here is a measurement somebody ran,
+    /// not a measurement somebody read about.
     #[test]
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it
         /// earned.
-        const MEASURED: [(&str, Driving); 1] = [("phi-3-mini-instruct", Driving::Rarely)];
+        const MEASURED: [(&str, Driving); 5] = [
+            ("phi-3-mini-instruct", Driving::Rarely),
+            ("llama-3.2-3b-instruct", Driving::Rarely),
+            ("qwen2.5-3b-instruct", Driving::Rarely),
+            ("gemma-2-2b-instruct", Driving::Rarely),
+            ("smollm2-1.7b-instruct", Driving::Rarely),
+        ];
         for m in Catalogue::built_in().unwrap().models {
             let ran = MEASURED.iter().find(|(id, _)| *id == m.id);
             assert_eq!(

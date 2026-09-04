@@ -3582,20 +3582,68 @@ out.
   travels, while what a model costs in memory is a property of the machine, and
   the numbers this box would have produced are the ones the item below refuses.
 
-- [ ] **23b. The other eleven entries.** What 23a cut rather than shortened: one
-  model has been measured and the catalogue has eleven more. Each one is the same
-  work — pull the weights at the quantisation the entry states, run
+- [x] **23c. The four entries this box can hold.** Cut out of 23b, which had the
+  block wrong: *blocked on the weights* was true of the seven big entries and was
+  never true of the four smallest, all of which fit a 6 GB box. Nothing was built
+  — the change is four grades, four names and what a grade cannot carry.
+  `data/catalogue.toml`: `llama-3.2-3b-instruct`, `qwen2.5-3b-instruct`,
+  `gemma-2-2b-instruct` and `smollm2-1.7b-instruct` are `rarely`.
+  `catalogue.rs`: `MEASURED` is five entries, was one. `alo-driving`'s
+  `from_a_prompt_to_what_a_machine_offers`: the count in the shipped catalogue's
+  refusal moved. `docs/quirks.md`: two new entries. **140 unit tests in
+  `alo-models`**, all passing, where the tree this iteration inherited had 139
+  passing and 1 failing; **1901 tests and 46 doctests on Linux**, 1670 and 46 on
+  Windows, clippy clean on both hosts and `cargo doc` silent on Linux.
+
+  **The measurement was made twice, and the second time is the one that counts.**
+  The grades arrived in the working tree from outside the loop, with a comment in
+  the file being graded as their only support, and iteration 44 halted rather
+  than write four names into the test that exists so nobody has to take a grade on
+  trust. That was right. What this item did is the thing that answers it: put the
+  fixed set to all four again, on this machine, and write down what *this* run
+  produced. Three of the four agree with what was there. The fourth does not,
+  and it is the one worth reading — the earlier note said one attempt in eighty
+  drove and that it was Qwen's; this run had three, one Qwen's and two Gemma's.
+  Same grade, different fact, and the difference is why a grade is only ever a
+  grade somebody ran.
+
+  **What the item did not contain, and a test found: four grades moved the
+  machine's own sentence by one.** `Catalogue::agent_for_cpu` counts what it was
+  going to *choose* between, and that list is `to_choose_from_on_cpu` — what runs
+  here **and** may be used without reading a licence first. Three of the four are
+  models whose commercial use carries conditions, so they were never in it and
+  their grades do not change it; only `smollm2-1.7b-instruct` is Apache-2.0 and
+  is. So the shipped refusal went from *one of five measured* to *two of five*,
+  and the reason is a licence rather than a measurement. It is written into that
+  test's own rustdoc, because the arithmetic reads as broken until somebody knows
+  which list is being counted.
+
+  Three decisions the next items inherit. **A failing test held a claim out of a
+  release, and that is written into its own rustdoc** rather than into this file
+  alone, because the next person to add a grade meets the test and not the queue.
+  **The four failed in four different ways and the grade says one word**, which
+  is the property working as designed: `docs/quirks.md` has Llama's punctuation,
+  Qwen's collapsed `given`, Gemma's fence and invented `CLOSE`, and SmolLM2
+  answering with the prompt's own placeholders. **Gemma 2 2B is the first model
+  whose answers get past the daemon's door** — four of the six outcomes divide
+  its twenty — so iteration 44's open question, whether Phi-3's undivided
+  `NotAMessage` was a fact about small models or about the scoring, is answered:
+  the scoring divides a model that gets that far.
+
+- [ ] **23b. The other seven entries.** What 23a cut and 23c narrowed: five of
+  the twelve entries are measured and seven are not. Each one is the same work —
+  pull the weights at the quantisation the entry states, run
   `against_a_model_on_this_machine`, write the grade down — and it is a data
   change per model rather than a release.
 
-  **Blocked on the weights, and on nothing else.** Mixtral wants 48 GB of system
-  memory and the development box has six; the two 9-billion entries are marked
-  `slow` on a CPU and would take an afternoon each at the rate measured here.
-  What this needs is a machine with room, which is the certified one, or somebody
-  willing to leave a laptop running. It is **not** blocked on code: the harness
-  exists, it works, and adding a name to
-  `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` is what writing a
-  grade down costs.
+  **Blocked on the weights, and on nothing else.** All seven want ten gigabytes
+  of system memory or more and the development box has six; Mixtral wants 48, and
+  the two 9-billion entries are marked `slow` on a CPU and would take an afternoon
+  each at the rate measured here. What this needs is a machine with room, which is
+  the certified one, or somebody willing to leave a laptop running. It is **not**
+  blocked on code: the harness exists, it has now been run five times, and adding
+  a name to `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` is what
+  writing a grade down costs.
 
 - [ ] **29. A model cannot be loaded, because loading is not a quick call.**
   Found by 23a and recorded in `docs/quirks.md`. `alo_models::Ollama::load` sends

@@ -8443,3 +8443,97 @@ does not need a virtual machine to diagnose. The boundary it opens is pinned at
 empty — so the question is what it does between opening the map and binding the
 socket.
 
+
+
+---
+
+## Iteration — item 23c: the four grades are the repository's now, because they were measured again
+
+**The item the previous iteration halted on, answered the only way it could
+be.** That halt found four grades in the working tree with a comment in the
+file being graded as their only support, and refused to write four names into
+`the_catalogue_we_ship_claims_no_measurement_it_did_not_make` on that basis.
+It was right. The two things it asked for have both arrived: the owner ran
+`wsl --shutdown`, so Ubuntu, Ollama 0.33.3 and the six pulled models are back,
+and with them the one thing that settles a grade — the ability to run the
+measurement again.
+
+So this iteration ran it. `against_a_model_on_this_machine`, two rounds of the
+fixed ten, against each of the four in turn, on the box the earlier run used:
+
+```
+llama3.2:3b-instruct-q4_K_M     0 of 20   rarely
+qwen2.5:3b-instruct-q4_K_M      1 of 20   rarely
+gemma2:2b-instruct-q4_K_M       2 of 20   rarely
+smollm2:1.7b-instruct-q4_K_M    0 of 20   rarely
+```
+
+**All four grades are confirmed and one of the sentences beside them is not.**
+The earlier note said one attempt in eighty drove and that it was Qwen's; this
+run had three, one Qwen's and two Gemma's. Same grade, different fact — which
+is the argument for the test that held it up, made concretely rather than in
+principle. What is written down now is this run.
+
+**Gemma 2 2B answered iteration 44's open question.** That entry could not tell
+whether Phi-3's twenty identical `NotAMessage` outcomes were a fact about small
+models or about the scoring. Gemma's twenty divide across four of the six: two
+drove, five were more than one message, two asked a change through the read
+door, and two invented a verb called `CLOSE` and were refused by the registry.
+The scoring divides a model that gets that far, and Gemma is the first that
+does. `docs/quirks.md` has all four models' failures side by side, because a
+grade is one word and these are four different problems.
+
+**SmolLM2 needed two runs, and the first one is in `docs/quirks.md` rather than
+left out.** The first stopped on the seventh exercise with `TookTooLong` — five
+minutes, from the smallest model in the catalogue, on a run whose other answers
+took seconds. The second finished in 134 seconds with everything answered and
+nothing changed in between. The harness stopping rather than scoring is what it
+is built to do, and a re-run kept while a stopped run goes unmentioned would
+look like picking the better of two results, so both are recorded. The two runs
+did not produce different grades; the first produced none.
+
+**A test found something the item did not contain.** Adding four grades moved
+the shipped catalogue's own refusal from *one of five measured* to *two of
+five*, not to five of five, and `alo-driving`'s
+`the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it` is what
+noticed. `agent_for_cpu` counts `to_choose_from_on_cpu`, which is what runs here
+**and** may be used without reading a licence first; three of the four new
+measurements carry licence conditions and were never in that list. The
+arithmetic reads as broken until somebody knows which list is being counted, so
+the explanation is in that test's rustdoc.
+
+**The gate.** `cargo fmt` clean and `cargo clippy --workspace --all-targets -D
+warnings` clean on both hosts. **1901 tests and 46 doctests on Linux, 1670 and
+46 on Windows**, all green — including `alo-models`' 140 unit tests, where the
+tree this iteration inherited had 139 passing and 1 failing. `cargo doc
+--workspace --no-deps` emits **zero** warning lines on Linux, which is where
+`LOOP.md` says to read it. `bpffs` was mounted by hand as that file describes,
+and `ls /sys/fs/bpf` after the run is empty — nothing left pinned.
+
+**`ROADMAP.md` moved, in the code half of *the catalogue says whether a model
+can drive the verbs*.** Five entries have a measured grade where one did, and
+they are every entry a machine with no graphics card can run; the machine half
+gained the true count of what is left — seven, all of them wanting ten
+gigabytes or more against the measuring box's six. Neither the machine half nor
+the parent was ticked, and the code half was already ticked before this item.
+
+**The queue moved by being cut rather than by being finished.** 23b said
+*blocked on the weights, and on nothing else*, which was true of the seven big
+entries and never of the four smallest. It is now *the other seven entries*
+with the block stated correctly, and what was done is item **23c** beside it.
+
+**What the next iteration should know.**
+
+- **The queue has no ready item left again**, and this one only appeared
+  because the previous halt's blocker was cleared by hand. 16b, 19b, 21i, 21k,
+  21l, 26f and 29 are not ready or blocked exactly as they stand; 23b needs a
+  machine with ten gigabytes free.
+- **`alo-agentd` starts and dies in thirty milliseconds on the image**, which
+  the entry above this one recorded and no queue item covers yet. It is a bug in
+  our code, the evidence is in that entry, and diagnosing it needs the source
+  rather than a virtual machine. That is the most valuable unlisted work in this
+  repository right now, and whoever picks it up should write it into `QUEUE.md`
+  first.
+- **The measurement box is fine but small.** Four models took about
+  twenty-five minutes of wall clock, most of it weights coming off a disk. Do
+  not run a virtual machine beside it.

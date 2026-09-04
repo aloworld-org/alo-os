@@ -12,6 +12,35 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Four more of the models alo OS offers have been tried, and none of them
+  passed either.** Every model small enough to run on a machine with no
+  graphics card has now been put through the same test as Phi-3 Mini: eighty
+  attempts at ten ordinary requests — list this folder, rename this file, put
+  this window on the left half of the screen. **Three of the eighty were
+  instructions your machine would have acted on.** So Llama 3.2 3B, Qwen2.5 3B,
+  Gemma 2 2B and SmolLM2 1.7B all now say `rarely` where they used to say "not
+  measured".
+
+  That is a worse-sounding catalogue and a more useful one. Five of the twelve
+  models are now a measured answer rather than a shrug, and the five are exactly
+  the ones you can run without a graphics card — so somebody with an ordinary
+  laptop can find out in a moment what used to cost them an hour of downloading.
+  The remaining seven need more memory than the machine doing the measuring has;
+  they still say "not measured", and that is now the whole of what is left
+  unsaid rather than most of it.
+
+  **What your machine offers you has not changed**, and the reason it gives is
+  the same sentence with a different number beside it: of the five models it
+  would pick between without asking you to read a licence first, two have now
+  been measured rather than one, and neither is good enough. The other three of
+  the four are models whose commercial use carries conditions, so they were
+  never in that shorter list — their grades are on the page where you pick a
+  model yourself, which is where they matter. The other answers — a model you
+  brought yourself, or somewhere else you have chosen to send the question — are
+  still offered rather than substituted for you, and the models are still
+  offered for what they are. Losing the agent is not the same as losing the
+  model.
+
 - **One of the models alo OS offers has now actually been tried, and it did not
   pass.** The catalogue has always carried a line about whether a model can
   *drive* alo OS — not merely whether it will run on your machine, but whether

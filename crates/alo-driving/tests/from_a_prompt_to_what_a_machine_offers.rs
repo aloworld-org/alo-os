@@ -216,14 +216,24 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 ///
 /// It said *nobody has measured any of these* until 2026-09-04, on every
 /// machine, because nothing here had ever been put to a model. `phi-3-mini-
-/// instruct` has now been, and did not clear the bar — so a machine with 16 GB
-/// and no graphics card still has no agent, and the sentence it shows for that
-/// has changed to the one that is true: five models it could have chosen
-/// between, one of them measured, and that one not good enough.
+/// instruct` was put to one that day and did not clear the bar — so a machine
+/// with 16 GB and no graphics card still has no agent, and the sentence it
+/// shows for that changed to the one that is true: five models it could have
+/// chosen between, one of them measured, and that one not good enough.
+///
+/// **Item 23c measured four more and this count moved by one**, which is worth
+/// understanding before somebody reads it as arithmetic gone wrong. The choice
+/// this machine offers is [`Catalogue::to_choose_from_on_cpu`], which is not
+/// *what runs here* — it is what runs here **and may be used without reading a
+/// licence first**. Three of the four new measurements are models whose
+/// commercial use carries conditions, so they were never in this five and their
+/// grades do not change it; `smollm2-1.7b-instruct` is Apache-2.0 and is. The
+/// grades are still read on the page where a person picks a model, and this
+/// particular sentence is about the shorter list.
 ///
 /// The two counts are asserted rather than matched loosely, because they are
 /// what a person is shown beside the sentence and a refusal that quietly
-/// stopped counting the unmeasured nine would be a different claim.
+/// stopped counting the unmeasured three would be a different claim.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -232,7 +242,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
         refused,
         NoAgentHere::NoneClearsTheBar {
             to_choose_from: 5,
-            measured: 1,
+            measured: 2,
         }
     );
 
@@ -240,21 +250,32 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let [why, _, _] = refused.lines(&strings);
     assert!(why.text().contains("often enough"), "{why}");
 
-    // The model that was measured still runs here. What it lost is the agent,
-    // and only because somebody looked.
+    // Every model that was measured still runs here. What they lost is the
+    // agent, and only because somebody looked.
     let measured: Vec<&str> = shipped
         .models
         .iter()
         .filter(|m| m.drives_verbs.has_been_measured())
         .map(|m| m.id.as_str())
         .collect();
-    assert_eq!(measured, vec!["phi-3-mini-instruct"]);
-    assert!(
-        shipped
-            .runnable_on_cpu(16.0)
-            .iter()
-            .any(|m| m.id == "phi-3-mini-instruct")
+    assert_eq!(
+        measured,
+        vec![
+            "phi-3-mini-instruct",
+            "llama-3.2-3b-instruct",
+            "qwen2.5-3b-instruct",
+            "gemma-2-2b-instruct",
+            "smollm2-1.7b-instruct",
+        ]
     );
+    let here: Vec<&str> = shipped
+        .runnable_on_cpu(16.0)
+        .iter()
+        .map(|m| m.id.as_str())
+        .collect();
+    for id in &measured {
+        assert!(here.contains(id), "{id}");
+    }
 }
 
 /// The prompt a model is given describes the verbs the machine really has, in
