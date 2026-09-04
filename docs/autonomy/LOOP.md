@@ -349,6 +349,39 @@ Three things about it, all worth knowing before changing anything in `image/`:
   are what the files say; `ROADMAP.md`'s image line keeps its machine half empty
   until somebody watches a machine come up, and this loop may not tick it.
 
+**`Docker Desktop is unable to start` is usually the engine's VM having died
+under a running interface, and a restart is the whole fix.** It cost two
+iterations — one of them issued a start and read the same sentence back — so the
+diagnosis is written down rather than repeated. The message comes from the
+client and says nothing; what says something is which half is up:
+
+```
+wsl -l -v                       # is the docker-desktop distro Stopped?
+wsl -d docker-desktop -- ps aux # does it boot to a bare init, with no dockerd?
+tail "$LOCALAPPDATA/Docker/log/vm/init.log"
+```
+
+On this machine the interface's processes were running while `docker-desktop`
+was stopped, the distro started on demand into an init with nothing under it,
+and the VM log ended hours earlier at `UtilConnectVsock … connect port 50000
+failed 110` — a vsock timeout, after which the backend answered every request
+with an empty *engine error* once a minute. **Kill the interface, terminate the
+distro, start it again**, and the engine comes back in about ten seconds:
+
+```
+taskkill //F //IM "Docker Desktop.exe"; taskkill //F //IM "com.docker.backend.exe"
+wsl --terminate docker-desktop
+"/c/Program Files/Docker/Docker/Docker Desktop.exe"
+```
+
+**Use `wsl --terminate docker-desktop`, never `wsl --shutdown`** — the second
+takes the Ubuntu box down with it, which unmounts `bpffs` and ends anything the
+iteration had installed under `systemd`. And two things about reaching into the
+image afterwards from Git Bash: `docker run` needs `MSYS_NO_PATHCONV=1` or an
+absolute path inside the container is rewritten to a Windows one before the
+runtime sees it, and the image has no `/bin/sh` on its `PATH` for
+`--entrypoint`, so name the binary — `--entrypoint /usr/bin/grep`.
+
 ## Where things are
 
 | | |

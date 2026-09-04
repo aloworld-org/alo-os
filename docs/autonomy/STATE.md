@@ -8857,3 +8857,117 @@ person outside this repository can read.
   units and `/etc/alo/agentd.toml` installed, the units stopped and not enabled,
   nothing pinned in `/sys/fs/bpf`. Ollama 0.33.3 is installed but not running —
   starting it is `ollama serve &` as root.
+
+---
+
+## Iteration — the third empty queue, and the debt that was owed to Docker
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, and this is the third consecutive entry to say so.
+
+**This iteration did not read the eight either**, for the reason the entry above
+gives: two entries ago read all of them in full, the tree is clean against both
+commits since, and a third reading would be the burning of somebody's money that
+step 1 names. What it did instead is what that entry said was worth doing — ask
+the world rather than the queue — and this time the world answered differently.
+
+### The debt is discharged, and it took fixing Docker to do it
+
+The entry above left one thing owed: **`image/` had not been through a
+`docker build` since item 30 changed it**, because Docker was down when that fix
+was made and still down when the last iteration asked. It has now been built.
+
+**Docker was fixed rather than waited out, and the diagnosis is the useful part.**
+`docker version` answers *Docker Desktop is unable to start*, which is the client
+repeating a status and is why two iterations read it as a wall. The two halves
+disagree, and that is visible in one command each: the interface's processes were
+running while `wsl -l -v` reported the **`docker-desktop` distro Stopped**, the
+distro started on demand into a bare init with **no `dockerd` under it**, and the
+VM's own `init.log` ended at 14:25 on `UtilConnectVsock:610: connect port 50000
+failed 110` — a vsock timeout — after which the backend logged an empty *engine
+error* once a minute until 16:34. So the engine's VM had died hours earlier under
+an interface that never noticed. Killing the interface, terminating the distro
+and starting it again brought the engine up in **ten seconds**. `LOOP.md` gained
+the whole sequence, including the two traps: `wsl --shutdown` would have taken
+the Ubuntu box and its `bpffs` down with it, and `docker run` from Git Bash needs
+`MSYS_NO_PATHCONV=1`.
+
+**Nothing was reconfigured to get there.** The settings store had been reset to
+220 bytes at some point today and is on defaults; it was read and left alone. A
+restart of a tool whose engine is already dead takes nothing away, which is the
+difference between this and the memory ceiling the last iteration refused to
+raise.
+
+### What the build said, and the narrow thing it added
+
+`docker build -f image/Containerfile -t alo-os:dev .` exits 0. `bootc container
+lint` passes 13 checks and skips 1; `systemd-sysusers` creates `alo` at 1000 and
+`alo-agent` at 60989:60989 and the four assertions after it hold, including
+`alo` being in `alo-agent`.
+
+**And item 30's fix is in the image**, which is exactly what a build can say and
+`crates/alo-image` cannot: the `COPY` lines still put the changed files where the
+image expects them. Read back out of the built image rather than off the disk —
+
+```
+Delegate=yes
+RuntimeDirectory=alo/1000
+RuntimeDirectoryMode=0750
+d /run/alo 0755 root root -
+```
+
+— which is the three lines of `alo-agentd.service` and the one of `alo.conf`
+that `f8f1ee2` moved, arriving intact. **It is still not a boot**, and
+`ROADMAP.md`'s machine halves stay empty.
+
+### The other two blocks, asked again because they live outside the tree
+
+- **`docs/decisions/` still ends at 0018.** 21k and 21l — where a runtime on
+  this machine is — and 26f — what a bound's lifetime is — are waiting on
+  precisely what they were waiting on.
+- **23b's number has not moved**, and the entry above settled it on the host's
+  ceiling rather than the VM's allocation: 15.5 GB, against seven entries wanting
+  12, 10, 10, 48, 10, 10 and 12. Nothing was re-measured, because a host does not
+  grow memory between two commits.
+
+### The gate, run in full on a tree whose only change is documentation
+
+Every number is this run's.
+
+- `cargo fmt --all --check` clean on both hosts.
+- `cargo clippy --workspace --all-targets -- -D warnings` exits 0 on both, with
+  **zero** lines beginning `warning` or `error`.
+- **1954 test results on Linux and 1723 on Windows, zero failures either side** —
+  both unchanged from item 30 and from the two entries above, which is what a
+  tree with no code in the change should say.
+- `crates/alo-bounding-kernel`: `cargo fmt --all --check` clean, and
+  `cargo clippy --release --target bpfel-unknown-none -Z build-std=core` clean.
+- `bpffs` mounted as `LOOP.md` describes; **`ls /sys/fs/bpf` empty after the
+  run**, so nothing was left pinned.
+- `cargo doc --workspace --no-deps` exits 0 on Linux with **zero** warning lines.
+  On Windows it emits **52 — 49 unresolved links and three per-crate summaries,
+  split 24 `alo-agentd`, 21 `alo-bounding` and 4 `alo-boundaryd`** — measured from
+  one clean run after removing `target/doc`, because three consecutive `cargo doc`
+  invocations answer from cache and give three different counts. That is the
+  number, the split and the three crates the platform explains, so no new broken
+  link is hiding in the noise.
+
+**`ROADMAP.md` untouched and nothing ticked. No `CHANGELOG.md` line** — no code
+changed, and a person outside this repository cannot read a fixed development
+box.
+
+### What the next iteration should know
+
+- **The image debt is paid.** There is nothing owed to Docker now, and the engine
+  is up. The next change to `image/` can build immediately, and if the engine is
+  down again `LOOP.md`'s new section is the ten-second fix rather than a wall.
+- **Three consecutive `LOOP COMPLETE`s, and the queue has not moved on its own.**
+  Every block now needs something from outside: two ADRs, a compositor, and a
+  machine with room. A fourth iteration has no world left to ask — the three
+  questions this one asked are answered, and the useful thing it could do is
+  nothing until somebody writes one of the two ADRs.
+- **The WSL box is as item 30 left it**: both binaries, both units,
+  `/etc/alo/agentd.toml` and the logins installed, units stopped and not enabled,
+  nothing pinned. Ollama 0.33.3 installed and not running.
+- **`alo-os:dev` now exists as a local image**, if anybody wants to look inside
+  one without building it again.
