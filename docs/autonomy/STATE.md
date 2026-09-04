@@ -8285,3 +8285,93 @@ run *inside* the booted image rather than read from its config file, and a look
 at whether `alo-agentd` actually opened the pinned map the loader left it. This
 boot proved the units start; it did not prove the boundary is enforcing.
 
+---
+
+## Iteration — a grade nobody here can check, and the Linux box will not start
+
+LOOP HALT
+
+**Nothing was built, and two things are wrong that this iteration must not work
+around.** Neither of them was caused by it: the tree was already red when it read
+`QUEUE.md`, and the machine that could have settled why was already down.
+
+**The tree is red, and the failing test is the one doing its job.** `git status`
+found `crates/alo-models/data/catalogue.toml` modified and uncommitted, written
+at 15:00 against a last commit at 14:39. It grades four entries `rarely` —
+`llama-3.2-3b-instruct`, `qwen2.5-3b-instruct`, `gemma-2-2b-instruct`,
+`smollm2-1.7b-instruct` — and rewrites the file's header to say five entries have
+been measured and seven have not. `cargo test -p alo-models`: **139 passed, 1
+failed**, and the failure is
+`the_catalogue_we_ship_claims_no_measurement_it_did_not_make` saying *llama-3.2-3b-instruct
+claims a grade; was it measured?*, because `MEASURED` still holds one name.
+
+**The change is almost certainly a real measurement, and that is not the same as
+one this loop may write down.** Everything checkable about it checks out. It is in
+the house voice, it names a method — Ollama 0.33.3, four cores, twenty attempts
+over two rounds, the same box and method as 23a — and it carries findings nobody
+gets from a parameter count: `gemma-2-2b-instruct` wrote well-formed calls and put
+a markdown fence round them, so the door read two messages where one was meant;
+`llama-3.2-3b-instruct` was a brace short or one over; `qwen2.5-3b-instruct` mostly
+put the verb where the door belongs and is the only one of the twelve that has ever
+driven a verb at all; `smollm2-1.7b-instruct` loses the argument list the way
+`phi-3-mini-instruct` does. The arithmetic holds too — `measured.rs` grades
+anything under half as `Rarely`, so 1 of 20 and 0 of 20 are both `rarely`.
+
+**What the loop cannot do is confirm it, and that test exists precisely so nobody
+has to take a grade on trust.** Adding four names to `MEASURED` on the strength of
+a comment written in the file being graded would be the loop learning to satisfy a
+guard by asserting the thing the guard guards — which is the one move `LOOP.md`
+says would erode here first. `drives_verbs` is a claim made in public about
+somebody else's model, and 23a is why it carries weight: it is what decides
+whether a machine hands somebody's files to a model.
+
+**And the machine that could confirm it is down.** The runtime and the weights are
+in WSL's Ubuntu — there is no Ollama on the Windows side, `where ollama` finds
+nothing and `~/.ollama/models` does not exist. `wsl -l -v` reports Ubuntu
+`Running`; every command into it fails. `Wsl/Service/0x8007274c` first — the same
+code the boot entry above records against a long `/mnt/c` read — then
+`Wsl/Service/CreateInstance/0x800705b4` on four attempts spread over ten minutes
+after `wsl --terminate Ubuntu`. **`wsl --shutdown` was deliberately not run**:
+`docker-desktop` is `Running` beside it and would go too, and taking somebody's
+container engine down to unstick a build host is a decision for whoever owns the
+machine.
+
+That box is not a convenience. `LOOP.md` makes it **the** gate for `alo-agentd`,
+`alo-boundaryd` and `alo-bounding`, and the only host where `cargo doc` can be
+read honestly. So even a change this iteration could have justified could not have
+been gated today, and a green Windows run would have been the failure that file
+already describes — the same colour as success, worth nothing.
+
+**The queue has no ready item either**, which on its own would have been
+`LOOP COMPLETE`. 16b, 19b, 21i, 21k, 21l, 26f and 29 are blocked or not-ready
+exactly as the previous entry left them.
+
+**23b is the one that moved, and it moved without the loop.** Its block reads
+*blocked on the weights, and on nothing else*, and names Mixtral's 48 GB and the
+two nine-billion entries — which was true of three of the eleven and was never
+true of the four smallest, all of which fit a 6 GB box. Somebody found that and
+measured them. **The item is left exactly as it stands**, because whether those
+grades are the repository's is the question this halt is asking, and rewriting the
+block first would answer it.
+
+**`ROADMAP.md` was not touched, and nothing was built for it to move.** Saying so
+is step 6's rule rather than an omission.
+
+**What was committed is this entry and nothing else.** The working tree is left as
+found: `catalogue.toml` is neither staged nor reverted. Discarding somebody's
+measurement to make a suite green would be worse than either thing this entry
+reports.
+
+**What the next iteration needs is two answers, and both are a person's.**
+
+- **Are those four grades yours to keep?** If they are, it is a small and
+  entirely portable commit: four names into `MEASURED`, the part a grade cannot
+  carry into `docs/quirks.md` — four models, four different ways of failing, one
+  word — a `CHANGELOG.md` line, 23b cut down to the seven entries that really are
+  blocked on weights, and `ROADMAP.md`'s *the catalogue says whether a model can
+  drive the verbs* gaining four in its code half. If they are not, the file wants
+  reverting by whoever wrote it.
+- **Why will Ubuntu not start?** Until it does there is no Linux gate, no
+  `cargo doc` that means anything, and no way to re-run a measurement on this
+  machine at all.
+
