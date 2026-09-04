@@ -140,11 +140,18 @@ window is seconds, not the tens of minutes an earlier reading of the ring buffer
 suggested.
 
 The WSL2 kernel above is the worked counterexample for this one too: measured
-2026-09-04, it starts the BPF LSM and cannot be attached to, because a grace
-period stalls about twenty seconds after boot and never finishes. **It was
-rebooted and measured again, and it reproduces exactly** — same grace period
-number, same timing — so this is a property of the kernel rather than a bad run.
-`docs/quirks.md` has the entry, with the kernel's own log line in it.
+2026-09-04, `6.6.87.2` starts the BPF LSM and cannot be attached to, because a
+grace period stalls about twenty seconds after boot and never finishes. It was
+rebooted and measured again and reproduced exactly — same grace period number,
+same timing — so it is a property of that kernel rather than a bad run.
+
+**And it is a property of that kernel, not of the platform.** The same machine
+upgraded to `6.18.33.2` the same day passes all three checks: zero stalls past
+the blind window, and an attach that returns in 0.08 seconds where it had hung
+twice. The lesson is worth more than the fix — *a kernel that fails one of these
+is a kernel to upgrade before it is a machine to replace*, and the first
+question to ask of any machine that fails the third check is what it is running.
+`docs/quirks.md` has both measurements.
 
 The three checks are in the order the failures happen in, and each one is
 invisible to the one before it: built in, started, and attachable.

@@ -6662,7 +6662,10 @@ distinction is the whole product. The machine half gained the third requirement.
   mechanism no kernel has been seen to enforce, is how a guarantee becomes a
   claim.
 
-LOOP HALT
+- `LOOP HALT` — written by that iteration and **discharged 2026-09-04**: the halt
+  was right and its reason is gone. The kernel it could not attach to was
+  upgraded, the stall is zero and the attach returns. Kept behind a bullet as a
+  record rather than a signal.
 
 ---
 
@@ -6709,4 +6712,56 @@ reason to trust. It is a thirty-second wait.
   complete — a VM with a distribution kernel, or the certified machine when it
   exists. The three checks in `docs/hardware.md` are how it gets confirmed
   before any code is run on it, and they cost thirty seconds.
+
+
+---
+
+## The kernel was upgraded, the hang is gone, and the next failure is ours
+
+Not an iteration. Written by hand, immediately after the entry above, which it
+partly overturns.
+
+**`wsl --update`, and the machine changed underneath the finding.** WSL 2.6.1.0
+to 2.7.12.0, kernel `6.6.87.2` to `6.18.33.2` — twelve releases. All three
+checks in `docs/hardware.md` now pass on the same physical machine:
+
+```
+built in     CONFIG_BPF_LSM=y
+started      capability,landlock,yama,safesetid,selinux,bpf,ima
+attachable   stall count 0 at 79s uptime
+```
+
+The `.wslconfig` `lsm=` line and the `/etc/fstab` `securityfs` entry both
+survived the upgrade, and the new kernel starts `ima` alongside the six that
+were asked for.
+
+**The attach that hung twice now returns in 0.08 seconds.** The RCU-tasks stall
+was the whole of the third blocker and it is gone.
+
+**The entry above was too broad by one word, and it is corrected in place.** It
+said *WSL2 cannot host a BPF LSM*. It was measured twice, carefully, and it was
+still wrong: it was true of `6.6.87.2` and false of WSL2. Naming the platform
+when the evidence is about the build is how a temporary fact becomes a permanent
+belief — and this one would have sent somebody to buy a machine. The requirement
+in `docs/hardware.md` never changed and is the thing to quote; that kernel is
+now the worked example of failing it, and **a kernel that fails the third check
+is a kernel to upgrade before it is a machine to replace.**
+
+**What the next iteration takes: item 26, and the failure is now ours.** The
+programme loads, attaches and runs; all four tests fail with the crate's own
+message — *this kernel has no `file.f_path`, so the boundary has nowhere to
+look*. That message is wrong about the kernel. Asked directly, this kernel's BTF
+is 6,677,359 bytes and contains `f_path`, `f_inode`, `f_mode`, `dentry`,
+`d_name` and `mnt_root`; `bpf_lsm_file_open` is in `kallsyms`. So the field is
+there and the crate's detection of it is what fails — a CO-RE relocation or a
+lookup written against the old kernel, in `crates/alo-bounding-kernel/src/deciding.rs`
+around the `f_path` comments at lines 61 and 92.
+
+That is a good place to be. The machine now answers in a tenth of a second
+instead of hanging, so this is ordinary debugging with a fast test, and item 26
+can be proved or disproved on the evidence rather than waited out.
+
+**Still true, and unchanged by any of this:** items 16b, 19b, 21h, 21i and 21j
+are blocked on what they were blocked on before. 21h and 21j need a decision and
+an ADR each, and neither needs a kernel or a compositor.
 

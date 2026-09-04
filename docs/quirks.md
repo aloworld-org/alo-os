@@ -132,8 +132,23 @@ luck**: same grace period number (13), first stall message at **31 seconds** of
 uptime with the period already 2507 jiffies (10 seconds at `CONFIG_HZ=250`) old,
 so it stalls about **21 seconds after boot**, before anything of ours can run.
 The attach was attempted again under a deadline and hung again, leaving the same
-unkillable remnant. Two boots, same result: **WSL2 cannot host a BPF LSM**, and
-no further kernel work should be attempted on it.
+unkillable remnant. Two boots, same result on that kernel version.
+
+**Fixed by a kernel upgrade the same day, and the scope of the finding was
+wrong.** `wsl --update` took WSL from 2.6.1.0 to 2.7.12.0 and the kernel from
+`6.6.87.2` to `6.18.33.2`. On the new kernel the stall count is **zero** past the
+blind window, and the attach that had hung twice now returns in **0.08 seconds**.
+So the sentence this entry originally carried — *WSL2 cannot host a BPF LSM* —
+was **too broad by one word**: it was true of that kernel and false of WSL2. A
+finding measured twice on one version is still a finding about that version, and
+naming the platform instead of the build is how a temporary fact becomes a
+permanent belief. The requirement in `docs/hardware.md` is unchanged and is what
+should be quoted; this entry is the worked example of a kernel that failed it.
+
+The `.wslconfig` `lsm=` line and the `securityfs` entry in `/etc/fstab` both
+survived the upgrade, and the new kernel starts `bpf` — with `ima` alongside it,
+which the old one did not.
+**Superseded:** 6.18.33.2 passes all three checks.
 
 One correction worth keeping, because it nearly became a rule. The entry above
 reads as though the first stall message arrives about forty minutes in, which
