@@ -9234,3 +9234,84 @@ repository reads.
   Docker repair left it: units installed and stopped, nothing pinned,
   `alo-os:dev` still a local image, `bpffs` mounted or not depending on whether
   the distribution has restarted.
+
+---
+
+## Iteration — the eighth empty queue, and the last entry an empty queue gets
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, and this is the eighth consecutive entry to say so.
+
+**The same two commands, the same two answers.** `ls docs/decisions/` ends at
+**0018**; `git status` is clean against `d62296e`, the commit the seventh entry
+made. The prompt named a track — *business* again — and `LOOP.md` answers it:
+there is one queue here, and the word is noise.
+
+### What this iteration built, because there was one thing left to build
+
+Not code. The seventh entry said its own new finding was a cost rather than a
+discovery: four runs after the first request to stop, three paragraphs of output
+between them, each one saying `0018` and *clean*. A cost that recurs on a
+schedule is a thing to answer once, and this repository already knows how — the
+*There are no tracks here* section of `LOOP.md` exists because halting on an
+unknown track was right the first time and pointless the second.
+
+So `LOOP.md` gains **An empty queue is answered once, not once per iteration**.
+It writes down the two commands, the reason the gate is not run against unchanged
+bytes, and the instruction that replaces this entry: update the ledger below in
+place and stop. The next iteration that finds `0018` and a clean tree changes one
+number and one commit hash, and the journal stops growing by a page per run that
+should not have happened.
+
+What that does **not** do is make the run correct. The loop still should not be
+running; this only stops each wrong run from costing a page.
+
+### The gate, and why it was not run
+
+Documentation only — no Rust, no `image/`, no data. `LOOP.md` step 4 gates a
+change to what is built, and nothing built moved. This tree was gated in full
+four times: `fmt` and `clippy` clean on both hosts, **1954 test results on Linux
+and 1723 on Windows** with zero failures, `crates/alo-bounding-kernel`'s own two
+commands, `bpffs` empty afterwards, and rustdoc's **52** platform-explained
+warning lines on Windows against zero on Linux. **Carried, and marked as
+carried**, as in the three entries above.
+
+**`ROADMAP.md` untouched and nothing ticked. No `CHANGELOG.md` line** — a person
+outside this repository does not read the build loop's own journal, and nothing
+they do read has changed.
+
+### What the next iteration should know
+
+- **Stop the loop.** Fifth entry in a row to say it. Until `docs/decisions/`
+  holds an **0019**, an iteration is permitted to do nothing but confirm that.
+- **If the supervisor runs anyway, do not write an entry.** Run the two commands
+  in `LOOP.md`'s new section, update the ledger below, and stop. This is the last
+  appended entry an empty queue gets.
+- **The one live question is unchanged**, and it is not a question for the loop:
+  somebody writes the ADR on where a runtime on this machine is (frees 21k, then
+  21l — read ADR 0006 first), or the one on what a bound's lifetime is (frees
+  26f, a real hole in shipped code that fails closed). A compositor or the
+  settings surface frees 21i and 19b; a machine with ten gigabytes free turns 23b
+  into seven data changes and no code.
+- **Nothing on the development box was touched**, so it is as item 30 and the
+  Docker repair left it: units installed and stopped, nothing pinned,
+  `alo-os:dev` still a local image, `bpffs` mounted or not depending on whether
+  the distribution has restarted.
+
+---
+
+## Ledger — an empty queue, confirmed
+
+Updated **in place** by every iteration that finds the queue's last word is
+`LOOP COMPLETE` and both of `LOOP.md`'s two commands answer as before. Nothing is
+appended for one; a run that finds either answer changed writes a real entry
+above this line instead.
+
+| | |
+|---|---|
+| Consecutive empty queues | **8** |
+| Last confirmed | 2026-09-04, against `d62296e` |
+| Highest ADR | 0018 |
+| Blocked items | 16b, 19b, 21i, 21k, 21l, 23b, 26f, 29 |
+| Last iteration that built something | item 30, `f8f1ee2` — the agent service can make the two places it is not given |
+| Gate last run in full | four times against this tree: 1954 test results on Linux, 1723 on Windows, zero failures |

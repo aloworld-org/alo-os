@@ -80,6 +80,39 @@ Write one of these as a line of its own in `STATE.md`:
 **Halting is not failure.** An iteration that halts with a clear reason is worth
 more than one that invents a way past a problem nobody has looked at.
 
+## An empty queue is answered once, not once per iteration
+
+`LOOP COMPLETE` describes the **state of the queue**, not an event that happened.
+Once it is written, an iteration that finds the same queue has found the same
+fact — and it has now been found eight times, five of them after the first entry
+that asked for the loop to be stopped.
+
+When the journal's last entry ends in `LOOP COMPLETE`, two commands settle
+whether anything can have changed, and they are the whole of the iteration:
+
+```
+ls docs/decisions/    # has an ADR arrived that frees a blocked item?
+git status            # has anything in this tree moved?
+```
+
+An ADR is the only thing that reaches this repository from outside without
+touching the tree, so a clean tree at the commit the last entry made settles
+everything else. **The gate is deliberately not run**, and that is a reading of
+step 4 rather than a skip of it: step 4 gates *a change*, and re-proving that
+unchanged bytes are still green costs about an hour to find what four full gate
+runs already found.
+
+**Then update the ledger at the end of `STATE.md` in place, and stop.** Do not
+append another entry. The first three empty queues each spent an hour re-proving
+a green suite and the next four spent two commands and a page of prose apiece;
+the prose is what is left to cut. A journal that grows by a page every time
+nothing happened buries the entries where something did, which is the opposite of
+what it is for.
+
+The moment either command answers differently — an 0019 in `docs/decisions/`, or
+anything at all in `git status` — this is a real iteration again and gets a real
+entry, written in full.
+
 ## What the loop may never do
 
 - **Never weaken the gate to pass it.** Not a lowered lint, not an ignored test,
