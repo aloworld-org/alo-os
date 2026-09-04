@@ -12,6 +12,24 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The agent service now stays running on a machine that has booted.** On the
+  first alo OS image ever booted it started and was gone thirty milliseconds
+  later, leaving no door for an agent to knock on and one line in the system log
+  saying why. Both reasons were the same mistake: the service holds no special
+  authority at all — deliberately, it is the part of the system your agent talks
+  to — so the two things it needs made for it have to be made by the system that
+  starts it, and neither was. It now is: the place a turn's work is fenced into,
+  and the folder your agent's door goes in.
+
+  It was fixed by standing the same configuration up under a real init and
+  watching it fail the same way, then watching it work: the agent asks to list a
+  folder and is told, in the words you would read on screen, that nobody granted
+  it; your own side of the socket answers; anybody else on the machine is turned
+  away at the door; the refusal is written into the record; and stopping the
+  service takes the door away with it. **This is not yet a machine that has been
+  watched booting into all of that** — that needs hardware — and the file that
+  tracks what has been proved on one still says so.
+
 - **Four more of the models alo OS offers have been tried, and none of them
   passed either.** Every model small enough to run on a machine with no
   graphics card has now been put through the same test as Phi-3 Mini: eighty

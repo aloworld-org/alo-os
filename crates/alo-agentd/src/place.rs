@@ -52,10 +52,35 @@
 //!   it is told, and it names the directory and who makes it. Creating it here
 //!   would mean a service deciding the mode of a directory every person's door
 //!   goes in.
-//! - **`/run/alo/<uid>` is this crate's**, made when a session starts and taken
-//!   away by `Place::taken_away` when it ends. That is allowed where making
-//!   `/run/user/<uid>` was not: reacting to a session that already exists is
-//!   not standing in for `logind` and inventing one.
+//! - **`/run/alo/<uid>` is this crate's to own**, and on a machine where
+//!   something else has already made it, to check. It is taken away by
+//!   `Place::taken_away` when the session ends. Making it is allowed where
+//!   making `/run/user/<uid>` was not: reacting to a session that already
+//!   exists is not standing in for `logind` and inventing one.
+//!
+//! # Who really makes it, which a boot answered and this file had wrong
+//!
+//! *`/run/alo/<uid>` is made by this crate* was written here and in ADR 0017,
+//! and on a booted machine it is impossible: `/run/alo` is `0755 root:root` by
+//! the line above, and this service runs as the person. The first image to boot
+//! stopped on exactly that — *could not make the directory /run/alo/1000 for the
+//! socket: Permission denied* — because *nobody but root may put a name in it*
+//! includes the person's own daemon, and the two rules were written a paragraph
+//! apart without meeting.
+//!
+//! So on alo OS the per-person directory is made by whoever starts the daemon,
+//! which is root: `RuntimeDirectory=alo/<uid>` in `alo-agentd.service`, before
+//! the process exists. **Nothing in this file changes for that**, and that is
+//! the point of [`Place::prepared`] being three questions rather than a
+//! `mkdir`: a directory that is already there is the ordinary case
+//! ([`std::io::ErrorKind::AlreadyExists`] is not an error here), and it is still
+//! refused unless it is the person's, still handed to the agent's group, and
+//! still shut to `0750` — *it was right yesterday is not an argument about
+//! today* covers *somebody else made it* too.
+//!
+//! The `mkdir` stays, and it is not dead code: it is what runs when the daemon
+//! is started by hand on a machine where root has made `/run/alo` writable to
+//! the person, which is how this crate's own tests and item 21f's run reach it.
 //!
 //! # Where the root itself comes from is not decided here
 //!

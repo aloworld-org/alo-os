@@ -188,6 +188,45 @@ pub enum Wrong {
         /// How many days it ships.
         days: u32,
     },
+    /// The agent's service could not make the control group a turn runs in.
+    #[error(
+        "{agent} does not delegate its control group — a turn is a cgroup made under the \
+         service's own (ADR 0015), a service running as a person can only make one where systemd \
+         has handed the subtree over, and without `Delegate=` this machine boots to a daemon that \
+         stops on the boundary it cannot make"
+    )]
+    TheAgentCannotMakeATurnsControlGroup {
+        /// The agent's unit.
+        agent: String,
+    },
+    /// Nothing makes the person's own door, which the daemon cannot make itself.
+    #[error(
+        "{agent} does not make {expected} — ADR 0017 puts every person's door in a directory that \
+         is 0755 root:root, so the service cannot make its own name there, and this is the \
+         directory the socket for person {person} goes in (it names {declared:?})"
+    )]
+    ThePersonsDoorIsNotMade {
+        /// The agent's unit.
+        agent: String,
+        /// The runtime directory it should name, relative to `/run`.
+        expected: String,
+        /// The number the description says the person is.
+        person: u32,
+        /// What the unit names instead.
+        declared: Vec<String>,
+    },
+    /// The person's door would be made where anybody can look in.
+    #[error(
+        "{agent} makes the person's door {mode} — ADR 0017 says 0750, the person and the agent's \
+         group and nobody else, and a unit that leaves it to systemd's default gets 0755 rather \
+         than a decision"
+    )]
+    ThePersonsDoorIsNotShut {
+        /// The agent's unit.
+        agent: String,
+        /// The mode the unit names, or `-` where it names none.
+        mode: String,
+    },
     /// A unit nothing pulls in at boot.
     #[error("nothing pulls {unit} in at boot — it has no [Install] section that wants it")]
     NothingPullsItIn {

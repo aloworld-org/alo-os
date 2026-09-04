@@ -282,6 +282,39 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### A service that runs as a person cannot make a control group of its own, and `%U` in a system unit is 0
+**Version:** `systemd` 259 on Ubuntu 26.04, kernel `6.18.33.2`, measured
+2026-09-04 by starting `alo-agentd.service` under a real systemd. The same two
+failures had stopped the first booted image, on `systemd` 257 on Fedora 42.
+**Behaviour:** two separate things, both of which end in `EACCES` and neither of
+which is documented as a refusal anywhere a person building an image would look.
+
+- **The unit's own control group belongs to root.** `alo-agentd` makes a cgroup
+  subtree under its own (ADR 0015: a turn is a control group), and a service
+  with `User=` still gets a cgroup directory owned by root — so `mkdir` inside
+  it is refused. `Delegate=` is what changes it: systemd then chowns the unit's
+  cgroup directory and its `cgroup.procs`, `cgroup.threads` and
+  `cgroup.subtree_control` to the service's user. Measured: with it, the daemon
+  makes `home`, makes it threaded *while its own process is still in the parent*,
+  and moves in; `cgroup.subtree_control` stays empty, so no domain controller is
+  enabled above a threaded subtree and nothing conflicts.
+- **`%U` is not the user the service runs as.** `RuntimeDirectory=alo/%U` in a
+  unit with `User=alo` expands to **`alo/0`** — `systemctl show` says so — because
+  the specifier is resolved when the unit is loaded and `User=` is resolved when
+  the process is forked. It makes a directory for root, silently, and the
+  service stops on a directory it cannot make.
+
+**Our response:** `image/usr/lib/systemd/system/alo-agentd.service` says
+`Delegate=yes` and `RuntimeDirectory=alo/1000` with the number written out, and
+`crates/alo-image` holds that number to the one `/etc/alo/agentd.toml` names —
+because two files agreeing is a test here and a specifier that reads as the
+person is not. `Delegate=yes` rather than a controller list: what is needed is
+the hierarchy, and naming a controller would enable one where a threaded subtree
+is about to be made.
+**Upstream:** not reported; both are documented behaviour read the wrong way
+round by us.
+**Date:** 2026-09-04
+
 ### systemd-sysusers does not fail on a number somebody else has — it takes a different one, or their group
 **Version:** `systemd` 257 on `quay.io/fedora/fedora-bootc:42`, found 2026-09-04
 by building `image/Containerfile` for the first time and reading the log.

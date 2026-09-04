@@ -36,6 +36,15 @@ pub const THE_DOOR: &str = "/run/alo";
 /// root may put a name in it.
 const THE_DOORS_MODE: u32 = 0o755;
 
+/// Where systemd's `RuntimeDirectory=` is relative to, and the only reason this
+/// crate knows the string: [`THE_DOOR`] is absolute and that setting is not.
+const THE_RUN: &str = "/run";
+
+/// The mode the person's own door is made with, as a unit spells it: the
+/// person, the agent's group, and nobody else (ADR 0017, and
+/// `alo-agentd`'s `place.rs`, which sets the same mode again at every start).
+const THE_PERSONS_DOORS_MODE: &str = "0750";
+
 /// The two capabilities ADR 0018 gives the loader, and the whole of what makes
 /// one privileged component acceptable.
 const WHAT_THE_LOADER_MAY_HOLD: [&str; 2] = ["CAP_BPF", "CAP_SYS_ADMIN"];
@@ -55,6 +64,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_agent_holds_nothing(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
+    the_agent_can_make_what_it_is_not_given(image, &mut wrong);
     nobody_chose_a_retention(image, &mut wrong);
     both_units_are_pulled_in(image, &mut wrong);
     wrong
@@ -211,6 +221,61 @@ fn the_directories_are_made(image: &Image, wrong: &mut Vec<Wrong>) {
             }
         }
     }
+}
+
+/// The two places the daemon needs and cannot make, because it runs as a
+/// person: a control group under its own, and the person's door.
+///
+/// Both are the same shape and both were found by booting the image rather than
+/// by reading a file. `alo-agentd` holds no capability (ADR 0018) and is not
+/// root (ADR 0001 §2), so everything it needs a privilege for is something
+/// whoever starts it must have arranged — and a unit missing either line is a
+/// machine that boots to a daemon that stops in milliseconds.
+fn the_agent_can_make_what_it_is_not_given(image: &Image, wrong: &mut Vec<Wrong>) {
+    let agent = image.agent().called().to_owned();
+
+    if !image.agent().delegates_control_groups() {
+        wrong.push(Wrong::TheAgentCannotMakeATurnsControlGroup {
+            agent: agent.clone(),
+        });
+    }
+
+    let person = image.description().person();
+    let expected = the_persons_door(person);
+    if !image
+        .agent()
+        .runtime_directories()
+        .contains(&expected.as_str())
+    {
+        wrong.push(Wrong::ThePersonsDoorIsNotMade {
+            agent: agent.clone(),
+            expected,
+            person,
+            declared: image
+                .agent()
+                .runtime_directories()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        });
+    }
+
+    let mode = image.agent().runtime_directory_mode().unwrap_or(NOTHING);
+    if mode != THE_PERSONS_DOORS_MODE {
+        wrong.push(Wrong::ThePersonsDoorIsNotShut {
+            agent,
+            mode: mode.to_owned(),
+        });
+    }
+}
+
+/// Where this person's door goes, as `RuntimeDirectory=` spells it: relative to
+/// `/run`, and named by the number the machine description gives the person.
+fn the_persons_door(person: u32) -> String {
+    format!(
+        "{}/{person}",
+        THE_DOOR.trim_start_matches(THE_RUN).trim_matches('/')
+    )
 }
 
 /// ADR 0004: how long a record is kept is the organisation's to name, so the
@@ -484,6 +549,85 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::TheDoorIsNotWhatWasDecided { mode: 0o777, .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An agent service that cannot make a turn's control group is caught.**
+    /// This is half of what the first booted image failed on: without
+    /// `Delegate=` the unit's cgroup belongs to root, the daemon's `mkdir`
+    /// answers `EACCES`, and ADR 0015 stops the service rather than serving a
+    /// turn nothing bounds.
+    #[test]
+    fn an_agent_that_cannot_make_a_control_group_is_caught() {
+        let root = a_copy_of_the_image("no-delegation");
+        edited(&root, THE_AGENTS_UNIT, "Delegate=yes", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheAgentCannotMakeATurnsControlGroup { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And an agent service whose person has no door is caught**, which is
+    /// the other half: `/run/alo` is 0755 root:root on purpose, so the service
+    /// cannot make its own name in it and something that is root must.
+    #[test]
+    fn an_agent_whose_person_has_no_door_is_caught() {
+        let root = a_copy_of_the_image("no-persons-door");
+        edited(&root, THE_AGENTS_UNIT, "RuntimeDirectory=alo/1000", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonsDoorIsNotMade { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A door made for a different person is caught too**, and it is the
+    /// mistake that looks right: a unit naming a number, and a description
+    /// naming another one, with nothing between them but this.
+    #[test]
+    fn a_door_made_for_somebody_else_is_caught() {
+        let root = a_copy_of_the_image("someone-elses-door");
+        edited(
+            &root,
+            THE_AGENTS_UNIT,
+            "RuntimeDirectory=alo/1000",
+            "RuntimeDirectory=alo/1001",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonsDoorIsNotMade { person: 1000, .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A door left at systemd's default is caught.** 0755 is what a unit that
+    /// says nothing gets, and the difference between that and 0750 is whether
+    /// everybody on the machine can see whose agent is listening.
+    #[test]
+    fn a_persons_door_left_open_is_caught() {
+        let root = a_copy_of_the_image("open-persons-door");
+        edited(&root, THE_AGENTS_UNIT, "RuntimeDirectoryMode=0750", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::ThePersonsDoorIsNotShut { .. })),
             "{wrong:?}"
         );
     }

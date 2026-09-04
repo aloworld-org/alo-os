@@ -139,9 +139,33 @@ fn the_door_every_person_goes_through_is_the_images() {
     assert_eq!(door.group(), ROOT);
     assert!(
         image.directory_at(Path::new("/run/alo/1000")).is_none(),
-        "the per-person directory is the daemon's, made when a session starts and taken away \
-         when it ends"
+        "the per-person directory is made for one session and taken away with it, so `tmpfiles.d` \
+         is the wrong maker of it: that file runs at boot, and a daemon that stopped once would \
+         never get its door back"
     );
+}
+
+/// **The agent service can make the two things it is not given.** It holds no
+/// capability (ADR 0018) and is not root (ADR 0001 §2), so a turn's control
+/// group and the person's own door both depend on whoever starts it having
+/// arranged them — and the first image to boot proved that by stopping thirty
+/// milliseconds in, on the first of the two.
+#[test]
+fn the_agent_service_can_make_a_turn_and_a_door() {
+    let image = the_image();
+
+    assert!(
+        image.agent().delegates_control_groups(),
+        "a turn is a control group under the service's own, and a service running as a person \
+         can only make one where systemd has handed the subtree over"
+    );
+    assert_eq!(
+        image.agent().runtime_directories(),
+        vec![format!("alo/{}", image.description().person())],
+        "every person's door goes in a directory that is 0755 root:root, so the person's own \
+         daemon cannot make its name there and something that is root must"
+    );
+    assert_eq!(image.agent().runtime_directory_mode(), Some("0750"));
 }
 
 /// **The folder the record goes in is made, and it is the person's.** The

@@ -460,9 +460,16 @@ compositor is not required for, which is why it runs unbroken.
         directory inside `logind`'s `0700` session directory is a locked room
         inside a locked building, so ADR 0017 moved the socket to
         `/run/alo/<uid>/agentd.sock` — a root the image makes and the daemon
-        refuses to invent, a per-person directory the daemon makes when a session
-        starts and takes away with the socket when it ends, and every check
-        `place.rs` already made carried over unchanged
+        refuses to invent, a per-person directory made for one session and taken
+        away with the socket when it ends, and every check `place.rs` already
+        made carried over unchanged. Since item 30 the daemon has been started
+        by a real `systemd` from the image's own unit, which is what found that
+        the per-person directory could not be the daemon's after all: `/run/alo`
+        is root's, so the thing that starts the service makes the door and the
+        service checks it. It runs there — the agent's login refused a folder
+        nobody granted, in the grants' own words; the person's door answered;
+        anybody else turned away; the refusal in the record; `SIGTERM` and the
+        summary line — on a development box under systemd, which is not a boot
   - [ ] **On the machine.**
         the door being reached — the path moved in code and no connection from a
         second login has been made since, and it cannot be until an image exists
@@ -630,7 +637,13 @@ which made a completely consistent rule look like work being taken out of turn.
         building it measured two things nobody had: the base's kernel really does
         start the BPF LSM (`docs/hardware.md`), and the login number every
         example in this repository used belongs to `systemd-resolve` there
-        (`docs/quirks.md`)
+        (`docs/quirks.md`). Booting it measured a third, which is item 30: the
+        agent service could not make either of the two places it needs — a
+        control group for a turn, and the person's own door — because it holds
+        no authority at all and nothing had been asked to make them for it. Its
+        unit now says `Delegate=` and `RuntimeDirectory=`, three more promises
+        are read back out of these files, and the daemon has been run from them
+        under a real `systemd`
   - [ ] **On the machine.** That it boots, and that the daemon is running when it
         comes up — a virtual machine answers most of it and the certified machine
         answers the rest. **An image that builds is not an image that boots**, so

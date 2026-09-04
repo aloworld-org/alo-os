@@ -30,6 +30,33 @@ User=alo
 Group=alo
 SupplementaryGroups=alo-agent
 
+# A turn is a control group this service makes under its own (ADR 0015), and a
+# service running as a person may only make one where systemd has handed the
+# subtree over. Without this line the unit's cgroup is root's, `mkdir` answers
+# EACCES, and the service stops on the boundary it cannot make — which is what
+# the first booted image did, thirty milliseconds after starting.
+#
+# It delegates the hierarchy and no resource policy: nothing is written into
+# `cgroup.subtree_control` here, because a turn is a boundary rather than a
+# budget, and a domain controller enabled above a threaded subtree is what the
+# kernel refuses.
+Delegate=yes
+
+# The person's own door, which ADR 0017 gives to whoever starts the daemon. The
+# directory above it is `/run/alo`, 0755 root:root — deliberately, since every
+# person's door goes in it — so the service cannot make its own name there and
+# never could. systemd is root and makes this one before the process starts;
+# `crates/alo-agentd`'s `place.rs` then checks it is the person's, hands it to
+# the agent's group and shuts it, exactly as it does when it made it itself.
+#
+# The number is the person's, and it is the same number `/etc/alo/agentd.toml`
+# names — `crates/alo-image` is what holds the two files to one answer. A `%U`
+# here would read as that number and is not: in a system unit systemd expands it
+# to 0, before User= is resolved, which makes a directory for root and a service
+# that stops (docs/quirks.md).
+RuntimeDirectory=alo/1000
+RuntimeDirectoryMode=0750
+
 # Empty on purpose, and both of them. ADR 0018 moved the one privileged act out
 # of this service; these two lines are that decision written where a machine can
 # be held to it, rather than an absence somebody has to notice. Writing a grant

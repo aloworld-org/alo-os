@@ -36,9 +36,12 @@ could not be reached at all.
 
 ```
 /run/alo/                 0755  root:root      the image makes it, at boot
-/run/alo/<uid>/           0750  person:agent   the daemon makes it, per session
+/run/alo/<uid>/           0750  person:agent   made per session — see below
 /run/alo/<uid>/agentd.sock 0660 person:agent   the socket
 ```
+
+The middle row said *the daemon makes it* until a machine booted; what it says
+now is in **What a boot found**, below.
 
 - **The parent is the image's**, through `tmpfiles.d`. It is one directory, it
   has no per-person knowledge in it, and it exists before anybody signs in.
@@ -50,6 +53,32 @@ could not be reached at all.
   rather than use a directory that is a symbolic link, is not a directory, or
   belongs to somebody else. Whoever owns the directory a socket lives in can
   replace the socket, and every client would then be talking to them.
+
+## What a boot found: we may make it, and on alo OS we cannot
+
+**Added 2026-09-04**, after the first image booted and `alo-agentd` stopped
+thirty milliseconds later with *could not make the directory `/run/alo/1000` for
+the socket: Permission denied*. The two rows of the table above cannot both be
+true on a machine: `/run/alo` is `0755 root:root` because **nobody but root may
+put a name in it**, and the daemon runs as the person. *The daemon makes it* was
+written a paragraph after the rule that forbids it, and nothing between the two
+noticed.
+
+The decision this ADR exists for does not move — the socket is still
+`/run/alo/<uid>/agentd.sock`, and every rule `place.rs` enforces about that
+directory still holds. What changes is **who makes it**: whoever starts the
+daemon, which is root. On alo OS that is systemd, through
+`RuntimeDirectory=alo/<uid>` in `alo-agentd.service`, and the directory is
+therefore made fresh for each start and taken away with the service — which is
+the per-session lifetime this ADR asked for, arriving from the one place on the
+machine that knows when a session begins.
+
+`place.rs` needed no change, and that is worth saying rather than assuming: it
+already treats an existing directory as the ordinary case, and it still refuses
+one that is a link, is not a directory, or is somebody else's, still hands it to
+the agent's group and still shuts it to `0750`. *It was right yesterday is not
+an argument about today* turns out to cover *somebody else made it this morning*
+as well.
 
 ## Why we may make this directory when we would not make `/run/user/<uid>`
 

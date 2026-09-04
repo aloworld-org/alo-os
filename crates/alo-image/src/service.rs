@@ -137,6 +137,40 @@ impl Service {
             && self.given().is_empty()
     }
 
+    /// Whether systemd hands this service's own control group over to it.
+    ///
+    /// A turn is a control group made under the service's own (ADR 0015), and a
+    /// service that runs as a person can only make one where systemd has
+    /// delegated the subtree — otherwise the unit's cgroup is root's and
+    /// `mkdir` answers `EACCES`. `Delegate=` takes a boolean *or* a list of
+    /// controller names, so anything but the four words for no is delegation.
+    #[must_use]
+    pub fn delegates_control_groups(&self) -> bool {
+        match self.unit.one(SERVICE, "Delegate") {
+            None | Some("" | "no" | "false" | "off" | "0") => false,
+            Some(_) => true,
+        }
+    }
+
+    /// The directories under `/run` systemd makes for this service, in order.
+    ///
+    /// Relative to `/run`, which is how the setting is written: `alo/1000` is
+    /// `/run/alo/1000`.
+    #[must_use]
+    pub fn runtime_directories(&self) -> Vec<&str> {
+        self.unit.listed(SERVICE, "RuntimeDirectory")
+    }
+
+    /// The mode it makes them with, as the unit spells it.
+    ///
+    /// Text rather than a number, because what a check is about is the line
+    /// somebody wrote: a unit that says nothing gets systemd's `0755`, and the
+    /// difference between that and a chosen mode is the whole question.
+    #[must_use]
+    pub fn runtime_directory_mode(&self) -> Option<&str> {
+        self.unit.one(SERVICE, "RuntimeDirectoryMode")
+    }
+
     /// The units this one will not start without.
     #[must_use]
     pub fn needs(&self) -> Vec<&str> {
@@ -285,6 +319,44 @@ WantedBy=multi-user.target
         );
         assert!(!service.holds_nothing());
         assert_eq!(service.given(), vec!["CAP_NET_ADMIN"]);
+    }
+
+    /// **Delegation is read as systemd reads it**: a boolean or a list of
+    /// controllers, and only the words for no mean no. A unit that never says
+    /// it is a unit whose service cannot make a control group of its own.
+    #[test]
+    fn delegating_control_groups_is_said_or_it_is_not_true() {
+        let plain = read(
+            "yes.service",
+            "[Service]\nExecStart=/usr/bin/x\nDelegate=yes\n",
+        );
+        let listed = read(
+            "listed.service",
+            "[Service]\nExecStart=/usr/bin/x\nDelegate=pids memory\n",
+        );
+        let refused = read(
+            "no.service",
+            "[Service]\nExecStart=/usr/bin/x\nDelegate=no\n",
+        );
+        let silent = read("silent.service", "[Service]\nExecStart=/usr/bin/x\n");
+
+        assert!(plain.delegates_control_groups());
+        assert!(listed.delegates_control_groups());
+        assert!(!refused.delegates_control_groups());
+        assert!(!silent.delegates_control_groups());
+    }
+
+    /// A runtime directory is read relative to `/run`, the way the setting is
+    /// written, and the mode comes back as the line rather than as a number.
+    #[test]
+    fn a_runtime_directory_is_what_the_unit_names() {
+        let service = read(
+            "door.service",
+            "[Service]\nExecStart=/usr/bin/x\nRuntimeDirectory=alo/1000\nRuntimeDirectoryMode=0750\n",
+        );
+
+        assert_eq!(service.runtime_directories(), vec!["alo/1000"]);
+        assert_eq!(service.runtime_directory_mode(), Some("0750"));
     }
 
     /// A service that stays after exiting says so in one of the four words

@@ -273,6 +273,50 @@ and a count appearing against a crate that is **not** one of those three is the
 thing to look at. A number in this paragraph is worth less than the command above
 it.
 
+## The units can be started here, and that is how item 30 was found
+
+**The WSL box runs `systemd` as pid 1** — `ps -p 1 -o comm=` says so — which
+means the image's *configuration* can be run on it, not only compiled. Item 30
+is what that is for: `alo-agentd` started and died in thirty milliseconds on the
+booted image, and the same failure was reproduced here in about a minute,
+twice over, with the daemon's own sentence in `journalctl` rather than an audit
+number.
+
+```
+cd /mnt/c/dev/alo-os
+install -m 0755 /root/alo-os-target/release/alo-agentd    /usr/bin/alo-agentd
+install -m 0755 /root/alo-os-target/release/alo-boundaryd /usr/libexec/alo-boundaryd
+install -m 0644 image/etc/alo/agentd.toml                 /etc/alo/agentd.toml
+install -m 0644 image/usr/lib/tmpfiles.d/alo.conf         /usr/lib/tmpfiles.d/alo.conf
+install -m 0644 image/usr/lib/systemd/system/*.service    /etc/systemd/system/
+systemd-tmpfiles --create /usr/lib/tmpfiles.d/alo.conf
+systemctl daemon-reload && systemctl start alo-agentd.service
+journalctl -u alo-agentd.service -n 20 --no-pager
+```
+
+Four things about it, and the last is the important one:
+
+- **The logins have to be the description's**, or nothing means anything. The
+  box has them as of item 30: `alo` is uid 1000, `alo-agent` is 60989:60989, and
+  `alo` is in `alo-agent`. `id alo` is how you check before blaming the code.
+- **`/etc/alo/agentd.toml` must be `root:root` and not group-writable**, which
+  `install -m 0644` as root gives it. `trusting.rs` refuses it otherwise, and the
+  refusal is about the file rather than about the machine.
+- **`alo-boundaryd` pins into `/sys/fs/bpf/alo` and nothing takes it away.**
+  Unlike the test fixtures, a loader is meant to leave the boundary behind — so
+  `systemctl stop alo-boundaryd.service && rm -rf /sys/fs/bpf/alo` is part of
+  tidying up after a run of this kind, and `ls /sys/fs/bpf` is how you check.
+- **A service that starts is not a service that ran.** `Type=exec` reports
+  success when the *exec* succeeded; `systemctl is-active` a second later, and
+  the summary line the daemon writes on `SIGTERM`, are what say it served
+  anybody. The image's first boot was read the other way and reported as two
+  services starting.
+
+**This is a development box under systemd, and it is not a boot.** It says the
+units and the daemon agree; it cannot say anything about `bootc install`, GRUB,
+ostree or a certified machine, and `ROADMAP.md`'s machine halves stay empty
+however green it goes.
+
 ## The image builds here too, and that is newer than it sounds
 
 Item 28 added `image/`, and **the machine this loop runs on can build it**:

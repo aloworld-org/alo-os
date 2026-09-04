@@ -3645,6 +3645,63 @@ out.
   a name to `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` is what
   writing a grade down costs.
 
+- [x] **30. The daemon starts and dies on the image, and the reason is two lines
+  nobody had written.** Found by the first boot of item 28's image, recorded in
+  `docs/autonomy/STATE.md` — `alo-agentd` started and was gone in thirty
+  milliseconds, `/run/alo` empty and no socket — and written into this queue by
+  the iteration that fixed it, which is what that entry asked for.
+  `image/usr/lib/systemd/system/alo-agentd.service`: `Delegate=yes`,
+  `RuntimeDirectory=alo/1000`, `RuntimeDirectoryMode=0750`.
+  `image/usr/lib/tmpfiles.d/alo.conf` and `crates/alo-agentd/src/place.rs`: the
+  sentence each of them had wrong. `crates/alo-image`: three questions of a unit
+  (`delegates_control_groups`, `runtime_directories`, `runtime_directory_mode`),
+  three new `Wrong`s and the checks behind them. ADR 0017 gains what the boot
+  found; `docs/quirks.md` gains the two systemd behaviours it cost.
+  **69 unit tests and 12 integration tests in `alo-image`** (was 62 and 11);
+  1908 tests and 46 doctests on Linux, 1677 and 46 on Windows, clippy clean on
+  both hosts.
+
+  **It was reproduced under a real systemd rather than reasoned about**, and
+  that is the item's method as much as its result: the WSL box runs `systemd` as
+  pid 1, so the image's own units, `tmpfiles.d`, description and both binaries
+  were installed on it and started. The daemon failed there in the same
+  millisecond shape, with the sentence the image could not be asked for —
+  *cannot make a control group at
+  `/sys/fs/cgroup/system.slice/alo-agentd.service/home`: Permission denied* —
+  and then, one line later, *could not make the directory `/run/alo/1000` for
+  the socket*. `LOOP.md` has how to stand it up.
+
+  **Two failures, one shape.** ADR 0018 left this service holding no capability
+  and ADR 0001 §2 keeps it out of root, so **everything it needs a privilege for
+  is something whoever starts it must have arranged** — and both of these are
+  places it makes rather than files it opens. A cgroup under its own needs
+  `Delegate=`; the person's door needs somebody who is root, because
+  `/run/alo` is `0755 root:root` on purpose and *nobody but root may put a name
+  in it* includes the person's own daemon. That second one is a rule this
+  repository wrote twice, a paragraph apart in ADR 0017, without noticing they
+  contradicted each other.
+
+  Three decisions the next items inherit. **`place.rs` did not change, and that
+  is the design working**: `Place::prepared` was three questions rather than a
+  `mkdir`, so a directory somebody else made this morning is the ordinary case
+  and is still refused unless it is the person's, still handed to the agent's
+  group and still shut to `0750`. **A `%U` that reads as the person is 0**:
+  systemd expands the specifier when the unit is loaded and resolves `User=`
+  when the process forks, so the number is written out and `alo-image` holds it
+  to the description's — a specifier cannot be checked against another file and a
+  number can. **`Delegate=yes` and not a controller list**, because what a turn
+  needs is the hierarchy: naming a controller enables one, and a domain
+  controller above a threaded subtree is what the kernel refuses.
+
+  **What this does not claim is a boot.** The service was started by systemd on a
+  development box, not on the image and not on a certified machine, and
+  `ROADMAP.md`'s machine half stays empty. What it does claim is measured: the
+  daemon runs, the agent's login is refused a folder nobody granted in the
+  grants' own words, the person's door answers, root is turned away, the refusal
+  is in the record, `SIGTERM` ends it with its summary line, and the door and the
+  subtree are given back. It survives being restarted, which the arrangement it
+  replaces could not have done twice.
+
 - [ ] **29. A model cannot be loaded, because loading is not a quick call.**
   Found by 23a and recorded in `docs/quirks.md`. `alo_models::Ollama::load` sends
   its empty generate with `QUICK_TIMEOUT`, ten seconds, and a model coming off a

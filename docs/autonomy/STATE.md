@@ -8537,3 +8537,119 @@ with the block stated correctly, and what was done is item **23c** beside it.
 - **The measurement box is fine but small.** Four models took about
   twenty-five minutes of wall clock, most of it weights coming off a disk. Do
   not run a virtual machine beside it.
+
+
+---
+
+## Iteration — item 30: the daemon that started and died, run under a real systemd
+
+**The queue had no ready item and this iteration built one anyway**, which is
+what the entry above it asked for in as many words: *`alo-agentd` starts and
+dies in thirty milliseconds on the image, no queue item covers it yet, whoever
+picks it up should write it into `QUEUE.md` first.* That is item **30**, it is
+written into the queue with what it found, and it is ticked.
+
+### It was reproduced rather than reasoned about, and that is the method
+
+The WSL box runs `systemd` as pid 1. That was not known here — `LOOP.md`
+described it as a compiler and a kernel — and it changes what this loop can
+answer: the image's own units, `tmpfiles.d`, machine description and both
+binaries were installed on it, the logins were made to the numbers
+`/etc/alo/agentd.toml` names, and `systemctl start alo-agentd.service` failed in
+the same millisecond shape the booted image did, with the daemon's own sentence
+in `journalctl` instead of an audit record number:
+
+```
+alo-agentd did not run: a turn's work cannot be bounded on this machine:
+cannot make a control group at /sys/fs/cgroup/system.slice/alo-agentd.service/home:
+Permission denied (os error 13)
+```
+
+and behind it, once that was fixed:
+
+```
+alo-agentd did not run: could not make the directory /run/alo/1000 for the socket:
+Permission denied (os error 13)
+```
+
+`LOOP.md` gained the section that stands it up, because the next daemon-shaped
+failure should cost a minute rather than a virtual machine.
+
+### Two failures, one shape, and the shape is the design working
+
+ADR 0018 left this service holding no capability and ADR 0001 §2 keeps it out of
+root — so **everything it needs a privilege for is something whoever starts it
+must have arranged**. Both of these are places it *makes*: a control group for a
+turn, which needs `Delegate=`, and the person's door, which needs somebody who
+is root because `/run/alo` is `0755 root:root` on purpose.
+
+The second is the one worth remembering. ADR 0017 wrote *nobody but root may put
+a name in it* and, one paragraph later, *the per-person directory is the
+daemon's, made when a session starts* — two rules that contradict each other,
+written the same afternoon, and true-sounding apart. The boot is what put them
+in the same sentence. The ADR now carries what the boot found, `place.rs` no
+longer says the thing it cannot do, and neither of them changed a line of code:
+`Place::prepared` was three questions rather than a `mkdir`, so a directory
+somebody else made this morning is the ordinary case and is still refused unless
+it is the person's, still handed to the agent's group, still shut to `0750`.
+
+### What runs now, and every clause of it is a command that was run
+
+With the repository's own unit file and no drop-in:
+
+- the service is `active (running)`, and stays;
+- the agent's login (60989) asks to list `/home/alo` and is refused — *alo has
+  not been granted /home/alo — grants are made by picking a folder, never by
+  asking for one*, which is the capability model, in words, over a real socket;
+- the person's login (1000) is answered on the same socket: `{"waiting":{"changes":[]}}`;
+- root knocks and the connection is closed — *1 strangers turned away*;
+- the refusal is in `/var/lib/alo/record.jsonl`;
+- `systemctl stop` ends it with *1 turns, 2 messages, 1 strangers turned away*,
+  and takes the door and the control-group subtree away with it;
+- it survives `systemctl restart`, repeatedly, which the arrangement it replaces
+  could not have done twice: the old shape removed the directory on the way out
+  and could never make it again.
+
+**What is not claimed: a boot.** This is a development box under systemd, not
+`bootc install`, not GRUB, not ostree and not a certified machine.
+`ROADMAP.md`'s machine halves were not touched and were not ticked. What was
+also not exercised is a turn that the kernel really bounds — nothing on this
+machine can grant anything (item 21i), so no call is ever permitted, and the BPF
+boundary was opened and never asked a question. That is honest rather than
+missing: `alo-bounding`'s own tests are where the kernel refuses.
+
+### The gate
+
+`cargo fmt` clean and `cargo clippy --workspace --all-targets -D warnings` clean
+on both hosts. **1908 tests and 46 doctests on Linux** (was 1901 and 46), **1677
+and 46 on Windows** (was 1670 and 46) — the seven are `alo-image`'s.
+`cargo doc --workspace --no-deps` exits 0 with **zero** warning lines on Linux,
+which caught one of this iteration's own: a module header linking
+`Place::taken_away`, which is `pub(crate)`, is the denied lint doing exactly
+what item 21m added it for. `crates/alo-bounding-kernel` fmt and clippy clean
+for the BPF target. `bpffs` mounted as `LOOP.md` describes, and
+`ls /sys/fs/bpf` empty afterwards.
+
+**The image was not rebuilt, and that is a machine fact rather than a decision.**
+`docker build` answers *Docker Desktop is unable to start*, twice, half an hour
+apart. `LOOP.md` says `crates/alo-image` is the gate on `image/` rather than the
+build — and what happened here is stronger than either: a real `systemd` parsed
+these files and started the service from them.
+
+### What the next iteration should know
+
+- **The queue has no ready item again.** 16b, 19b, 21i, 21k, 21l, 26f and 29 are
+  blocked or not-ready exactly as they stand; 23b wants a machine with ten
+  gigabytes free.
+- **The box has the image's logins on it now**: `alo` is uid 1000 (renamed from
+  `alo-person`), `alo-agent` is 60989:60989, `alo` is in `alo-agent`, and the
+  old 1001 `alo-agent` fixture was removed. `/etc/alo/agentd.toml`, the two
+  units and both binaries are installed and the units are **stopped and not
+  enabled**. Nothing is pinned in `/sys/fs/bpf`.
+- **`Delegate=yes` and `RuntimeDirectory=` were measured on systemd 259 and the
+  image ships systemd 257.** Both are ordinary settings and neither is new, but
+  the threaded-cgroup interaction — making `home` threaded while the service's
+  own process is still in the parent — is the part worth watching on the next
+  boot. It worked here, with `cgroup.subtree_control` empty.
+- **Docker Desktop is down on this machine.** Nothing in this iteration needed
+  it; the next change to `image/` will.
