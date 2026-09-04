@@ -232,18 +232,23 @@ platform's file*, and both are the same fact wearing opposite colours.
 which fires identically on both hosts — and leaves `broken_intra_doc_links` at a
 warning, because denying it would fail the gate on the host the loop runs on for
 a reason that is not about the code. **Read the rustdoc gate on Linux**, and on
-Windows check only that the count is the thirty-four the platform explains: a
-thirty-fifth is somebody's new broken link hiding in the noise.
+Windows check only that the count is the one the platform explains: one more
+than that is somebody's new broken link hiding in the noise.
 
-**The number moves for honest reasons, and it has moved three times.** It was
+**The number moves for honest reasons, and it has moved four times.** It was
 twenty-eight until item 26a gave `alo-bounding` four more Linux-only things for
-its own crate header to link, thirty-two until item 26b gave it two more, and
+its own crate header to link, thirty-two until item 26b gave it two more,
 thirty-four until item 26d gave it four more again — the crate header now names
-the doors the daemon reaches it by. It is **thirty-eight** as of 2026-09-04.
-Do not read the total: `cargo doc --workspace --no-deps 2>&1 | grep generated`
-names the two crates and their counts in two lines — twenty-four for
-`alo-agentd`, fourteen for `alo-bounding` — and a count appearing against a
-*third* crate is the thing to look at.
+the doors the daemon reaches it by — and **forty-one** since item 27 added the
+three read-backs its test counts through. **Do not read the total, and do not
+trust the last number written down either.** 27's own journal entry reports
+thirty-eight, because it was read before the crate header was finished, and the
+iteration that closed the queue found the real figure by measuring rather than
+by carrying the sentence forward. `cargo doc --workspace --no-deps 2>&1 | grep
+generated` names the two crates and their counts in two lines — twenty-four for
+`alo-agentd`, seventeen for `alo-bounding` — and a count appearing against a
+*third* crate is the thing to look at. A number in this paragraph is worth less
+than the command above it.
 
 ## Where things are
 

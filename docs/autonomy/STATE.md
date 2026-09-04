@@ -7725,3 +7725,114 @@ watched rather than what the daemon reported* — which nothing has done yet.
 - **Nothing here was verified on a certified machine.** It is
   `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
   certified one is still the exit gate.
+
+## Iteration — the queue has no ready item left
+
+**Nothing was built, and that is the finding.** This iteration read
+`QUEUE.md` for the first item that is not done and is not blocked, and there is
+not one. Seven items remain unchecked; every one of them is waiting on something
+this loop cannot supply.
+
+LOOP COMPLETE
+
+**The blocked list, and what each is waiting on.**
+
+- **16b — finding machines on the local network.** Not ready by its own words,
+  and it is right about itself: there is no discovery code in this repository and
+  none of it is portable, so deciding whether a multicast announcement is an
+  `Errand` or a documented exception would be deciding in the abstract about a
+  shape nobody has built.
+- **19b — what a turn does with an application verb.** Blocked on the acting
+  half, which is Wayland and D-Bus. Until something can move a window, a machine
+  offering these verbs would be a machine an agent can be refused by in a new way
+  rather than one that can do more.
+- **21i — where a machine's grants are kept.** Blocked on the shell. A grant is
+  made by a person picking a folder in a surface that does not exist, and item 17
+  put `Grants` inside `Agent`, so reading a list without a way to make one would
+  be building the half that cannot be checked.
+- **21k — from a choice to an answer.** Wants an ADR: whether where a runtime on
+  this machine lives is a key in the organisation's description or a fact the
+  daemon works out. ADR 0016 has just finished saying that putting the wrong one
+  of those in `/etc/alo/agentd.toml` is how an organisation makes a person's
+  choice for them.
+- **21l — a refusal that names who set the rule.** Blocked on a place a question
+  can leave for, which is 21k's missing list. Unreachable rather than unwritten:
+  both lists a choice can name today are this machine, and no `SourcePolicy`
+  refuses that.
+- **26e — who is allowed to impose the boundary.** Blocked on a decision that is
+  not the loop's, and it wants an ADR rather than a commit. It decides what a
+  certified machine's unit file contains, what the image ships, and whether alo OS
+  has one privileged component or none.
+- **28 — the smallest image that boots and runs the daemon.** Blocked on 26e.
+
+**28 is why this entry exists rather than an eighteenth crate**, and its queue
+text was wrong until this iteration. It ended *blocked on nothing*, which was true
+when it was written and which item 26d made false a few commits later:
+`ByTheKernel::imposed` loads a BPF LSM programme, that needs `CAP_BPF` and
+`CAP_SYS_ADMIN`, and `alo-agentd` runs as the signed-in person — so the daemon now
+refuses to start on a machine that cannot give it those. An image whose whole
+scope is *boots and starts `alo-agentd`* cannot be written without the unit file
+that says who grants them, and that unit file is the thing 26e is for. The item
+now says so. **The previous entry knew this and left the item's own text
+saying the opposite**, which is how a queue comes to disagree with its journal;
+the queue is the file the next iteration reads first.
+
+**The rest of item 28 was checked for whether it could be cut down to fit, and
+deliberately was not.** The base image, the `tmpfiles.d` entry for `/run/alo` and
+the build need no decision from 26e. But an image that boots to no daemon moves
+none of the eighteen machine halves and cannot ask `docs/hardware.md`'s four
+kernel questions of anything, so building it now would produce a box, a green
+build and nothing the item exists to prove. *Cut scope, never depth* is not a
+licence to cut the part that was the point.
+
+**The gate, run on a tree with no code change in it, because a `LOOP COMPLETE`
+that hid a broken suite would be worth less than no entry at all.**
+`cargo fmt --all --check` clean on both hosts. `cargo clippy --workspace
+--all-targets -- -D warnings` clean on both, zero warnings and zero errors.
+**1810 tests and 46 doctests on Linux, 1595 and 46 on Windows** — 1856 and 1641
+summed the other way, both unchanged from item 27 and both green. The kernel
+half's own gate — `cargo fmt --all --check` and `cargo clippy --release --target
+bpfel-unknown-none -Z build-std=core` — clean. `cargo doc --workspace --no-deps`
+exits 0 with **zero** warnings on Linux.
+
+**One thing was measured and found wrong: the Windows rustdoc count is forty-one,
+not thirty-eight.** `LOOP.md` has said thirty-eight since item 26d, and 27's entry
+above repeats it as *twenty-four for `alo-agentd` and fourteen for
+`alo-bounding`*. The real split today is twenty-four and **seventeen**, and the
+three extra are item 27's own: `Boundary::every_map_the_kernel_holds`,
+`every_turn_the_kernel_is_holding` and `every_field_the_kernel_was_given`, linked
+from a crate header on a host where the module holding them is `cfg`'d out. So
+they are the platform artefact the paragraph describes and not a new broken link —
+Linux is silent on all of them — but the number written down was three short, and
+a check whose baseline is stale would have waved through the next three real ones.
+`LOOP.md` is corrected, and now says that the command is worth more than the
+number beside it.
+
+**`ROADMAP.md` was not moved, and that is step 6's other answer.** No item was
+built, so there is no line to move; ticking anything to show that an iteration
+happened is the failure mode step 6 spends four paragraphs warning about. The
+file is a true picture as it stands — seventeen of eighteen code halves done,
+none of the eighteen machine halves — and item 28 is still the only thing that
+would change the second number.
+
+**No `CHANGELOG.md` line either.** Nothing changed that a person outside this
+repository can read: a corrected queue entry and a corrected count in the loop's
+own instructions are notes to whoever runs the loop next, and a changelog that
+collected them would stop being the file the gate asks for.
+
+**What has to happen before this loop is worth starting again.** Two ADRs, and
+they are not the loop's:
+
+- **Who imposes the boundary** (26e). `AmbientCapabilities=` plus `Delegate=yes`
+  on a unit still running as the person, or a privileged service at boot with the
+  per-person daemon writing into a pinned map. It decides whether alo OS has one
+  privileged component or none, and it unblocks 28 and with it the first of the
+  machine halves.
+- **Where a runtime on this machine is** (21k). A key in the machine description
+  or a fact the daemon works out. It unblocks 21k and then 21l, and whoever writes
+  it should read ADR 0006 first: the adapter is the only file that knows Ollama
+  exists, and an address key naming a runtime would be that rule leaking into a
+  contract.
+
+Everything else on the list needs a compositor, a shell, or a certified machine,
+and no ADR changes that.

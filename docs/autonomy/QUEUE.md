@@ -3350,8 +3350,25 @@ out.
   socket outliving the session* can actually go wrong — and it turns
   `docs/hardware.md` from a list of questions into a table with answers in it.
 
-  Blocked on nothing. `ROADMAP.md`'s image line at *Image: a bootable container*
-  has no two boxes yet and gets them.
+  **Blocked on 26e, and this line said *blocked on nothing* until the iteration
+  that closed the queue read it against the code.** It was true when it was
+  written and item 26d made it false in the same week: the daemon now refuses to
+  start on a machine where it cannot load its LSM programme, so *the init the
+  base already ships* has to be handed a unit file that says who is allowed to
+  impose the boundary — which is exactly the decision 26e is waiting on, and
+  26e's own text has said since it was written that this item cannot finish
+  without it. An image that installs `alo-agentd` and starts it under a unit
+  written by guessing would boot to a daemon that exits, and cutting the daemon
+  out of the image would leave the one thing the item exists to prove.
+
+  What is *not* blocked is the rest of the list — the base, the `tmpfiles.d`
+  entry, the build — and it is deliberately not being built on its own. An image
+  that boots to no daemon moves none of the eighteen machine halves and cannot
+  ask the four kernel questions of anything, so building it early would buy a
+  box and a tick-shaped thing to look at rather than the item.
+
+  `ROADMAP.md`'s image line at *Image: a bootable container* has no two boxes yet
+  and gets them when this is built.
 
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
