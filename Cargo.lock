@@ -95,6 +95,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-choosing"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-models",
+ "alo-saying",
+ "alo-strings",
+ "serde",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "alo-context"
 version = "0.0.1"
 dependencies = [
@@ -211,6 +224,7 @@ dependencies = [
  "alo-applications",
  "alo-asking",
  "alo-capability",
+ "alo-choosing",
  "alo-context",
  "alo-dock",
  "alo-egress",

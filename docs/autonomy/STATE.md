@@ -6924,3 +6924,114 @@ fresh.
 Its shape looks right against ADR 0016 — a `bound`, a `chosen`, a `refusing`,
 and a `settings` — but *looks right* is not a gate.
 
+
+---
+
+## Iteration — item 21h: the person's settings, and the crate that was already on disk
+
+**Built.** `crates/alo-choosing` — what a person chose about their own machine,
+and the bound an organisation set around it. Nine files: `chosen.rs` (the model
+and which of this machine's two lists it came from), `bound.rs` (the one place
+the rule and the choice meet), `place.rs` (where the file is, from what a
+session says), `written.rs` (the settings as somebody typed them, and the number
+that decides whether they are read at all), `settings.rs` (the checked value and
+the only door onto a disk), `refusing.rs` (the five ways a file that **is** there
+is not settings), `words.rs`, `testing.rs`, `lib.rs`. New contract,
+`docs/contracts/person-settings.md`. `alo-saying` collects a fifteenth list.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both hosts, zero warnings and
+zero errors. **1563 tests and 45 doctests on Windows** (was 1513 and 45), **1757
+and 45 on Linux** (was 1707 and 45) — 50 new, all of them this crate's: 41 unit,
+5 integration against a real filesystem, 4 against the machine's whole
+vocabulary. `alo-agentd` ran **170 tests on Linux** and 0 on Windows, which is
+this file's standing warning rather than news. `cargo doc -p alo-choosing -p
+alo-saying --no-deps` clean.
+
+**The crate the killed iteration left was kept, and it did not compile.** The
+entry above said to read it and trust none of it, and that was the right advice
+in both halves. What was wrong with it:
+
+- `lib.rs` exported `bound::OutsideTheBound`, a type `bound.rs` does not
+  contain — so the crate did not build at all. The interrupted iteration had
+  clearly written that type and then argued itself out of it, and only some of
+  the files knew.
+- `tests/what_this_crate_says.rs` was written against the type that no longer
+  existed and used `EVERY_WORD[0]` as a sentence with a `{rule}` gap in it. The
+  word at that index has a `{path}` gap and says something else entirely. It
+  would have failed at a filling rather than at a compile, which is the kind of
+  wrong that reads as a real finding.
+- `testing.rs`'s header described *six* sentences and loaded `alo-models`' list
+  for a sentence that was not there.
+- It was not a workspace member and nothing built it, which is how all of the
+  above survived being written.
+
+**The argument in `bound.rs` was kept, and it is the interesting decision.**
+ADR 0016 says a choice outside the bound is refused *in words naming who set
+it*, and the file argues that the naming clause must not be written yet:
+**no rule an organisation can set refuses anything a person can currently
+choose**, because both lists `Which` offers are this machine and no
+`SourcePolicy` forbids a machine answering on itself. A string for a refusal
+that cannot happen is a string a translator is handed for nothing. That is
+sound and it is law 3's *no stubs* rather than a gap, so what shipped is
+`alo_models::NotAllowed` carried whole with a test walking all four policies
+against both lists — and **item 21l** is new, holding the sentence for the day a
+choice can name somewhere a question would leave for.
+
+**The item was cut, and the cut is item 21k.** 21h asked for the setting *and*
+the wiring. The setting is whole; the wiring is not one iteration's work and is
+not blocked on effort — `Turning::asking` wants an `Answers`, and making one out
+of a `Chosen` needs two facts nothing on a machine states: where a runtime on
+this machine is (no key in `docs/contracts/machine-description.md` says), and
+where weights somebody brought are (`alo_models::Brought` is a list this machine
+keeps nowhere). It also wants *whose* settings, which is the session question
+item 21j is standing in front of. `doing.rs` still refuses a question with
+`agentd.nothing-answers-questions`, and that stays the true sentence.
+
+**Two things found while writing, both small and both real.** `Path::has_root`
+rather than `is_absolute` for the XDG rule — `docs/quirks.md` has it under
+`alo-saying` and this is the second crate held to it, which is what makes it a
+quirk rather than an anecdote. And `AsWritten`'s `format` field is declared and
+never read, because `read` answers the format through `WhichFormat` *before*
+parsing the shape that denies unknown keys; it is named `_format` rather than
+checked a second time, since the second statement of a rule is the one no test
+can reach.
+
+**`ROADMAP.md` moved**, per step 6. The line is *Agents point at the local model
+by default, configured rather than coded* — its code half, already ticked, gained
+what `alo-choosing` finished, and its machine half's trailing sentence now names
+21k instead of 21h. *Or use an API instead* gained ADR 0016 on its parent line,
+because `docs/features.md` gained a v0.01 ★ promise this iteration and every
+promise there needs a line here or a naming on one. **Nothing was ticked**: both
+machine halves are still owed, and no capability or machine box was touched.
+
+While in the file: the header's *thirteen crates and 1,128 passing tests …
+fourteen crates and 1,183 now* was stale by four hundred tests and seven crates
+and now reads twenty-one and 1,563. That drift was not this item's and is
+recorded here rather than passed over, because it is the same reporting failure
+the paragraph around it is about.
+
+**What the next iteration should know.**
+
+- **The next ready item is 21j**, where the socket goes so the agent can reach
+  it — ADR 0017 is written, what is left is the work, and it is a Linux item
+  built and gated on the WSL host. 16b is not ready by its own words, 19b is
+  blocked on Wayland, 21i on the shell, 21l on a place a question can leave for,
+  and **21k is not ready either**: where a runtime on this machine is wants an
+  ADR before it wants code, which is the same shape 21h sat still in. After 21j
+  the next ready one is 26a.
+- **Nothing here has put a question to a model.** The crate reads a choice and
+  checks it against a rule. No runtime was started, no provider was paid, and
+  the daemon does not read the file yet.
+- **`alo-saying`'s two lists must move together.** Adding a crate to
+  `EVERY_LIST` without adding it to `ONE_STRING_EACH` — or to either without the
+  `how_many` sum — makes a count that proves nothing, and the three tests that
+  catch it are the reason the fifteenth list was cheap.
+- **This was rebased onto the entry above it**, which landed while the gate was
+  running: there is an Ollama on the WSL box now, answering on
+  `127.0.0.1:11434` with `phi3:mini`. It does not unblock 21k — that item's
+  question is *where a machine says an address is*, not *whether an address
+  exists* — but it means the thing at the far end of 21k is now real and can be
+  spoken to the moment the decision is written. It also means the two entries
+  under *blocked — hardware* that the commit above unfiled are startable, and
+  they are at the bottom of the queue rather than in its order.

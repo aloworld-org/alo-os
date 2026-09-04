@@ -82,7 +82,7 @@ pub const fn not_as_root(us: Uid) -> Result<(), NotStarted> {
 
 /// Everything this machine can say, with whatever translations it has.
 ///
-/// Three things in order, and the order is `alo-saying`'s: the fourteen crates
+/// Three things in order, and the order is `alo-saying`'s: the fifteen crates
 /// that have words in them, then this crate's own three on top — `alo-agentd` is
 /// Linux, so it is not on the collected list and the process that runs it is
 /// what declares it — and then every translation in

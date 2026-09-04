@@ -1,0 +1,48 @@
+[package]
+name = "alo-choosing"
+version = "0.0.1"
+description = "What the person chose about their own machine, and the bound an organisation set around it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The only type meaning *this question may be answered here*. This crate makes
+# one out of a person's choice and an organisation's rule, and can make one no
+# other way — which is what stops a settings file from being a second road to a
+# question leaving the machine.
+alo-answering = { path = "../alo-answering" }
+
+# Where a question may be answered, and the rule an organisation may bound that
+# with. Both are `alo-models`' words, asked rather than repeated: a settings
+# crate that held its own idea of a place would be a second answer to ADR 0008.
+alo-models = { path = "../alo-models" }
+
+# Everything this crate says, and the language the person reads — which is the
+# other half of what their file holds (ADR 0016).
+alo-strings = { path = "../alo-strings" }
+
+# The file is typed by a person, or written by a settings panel on their behalf,
+# so it is TOML for `alo-agentd`'s reason: a trailing comma is a machine that
+# does not answer questions, and a comment is how somebody remembers why they
+# picked what they picked.
+serde = { workspace = true }
+toml = { workspace = true }
+
+# One type only: `WordsError`, which is alo OS's own list contradicting itself
+# and keeps its English for whoever is fixing the list. Nothing a person reads
+# has a `Display` in this crate.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, which is what a process really holds. This
+# crate's own tests are written against its own list; the integration test asks
+# the question that list cannot — whether what this crate says survives being
+# put beside everybody else's. It is a dev-dependency and not a dependency
+# because the direction is the one every crate here takes: a crate that says
+# something is collected by `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

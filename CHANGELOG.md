@@ -12,6 +12,36 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A person can now say which model answers their questions, in a file of their
+  own.** alo OS reads `~/.config/alo/settings.toml` — the model that answers, and
+  the languages they read, and nothing else. It is per-person, because a machine
+  may have several people on it and one person's model is not another's, and it
+  is deliberately not in `/etc`, where an administrator reading it would be
+  reading somebody's preferences on their own computer.
+  `docs/contracts/person-settings.md` is the file's shape, and a settings panel
+  or a text editor are both ordinary ways to write it.
+
+  **A machine nobody has configured is not an error and gets no default.** No
+  file means nothing has been chosen, and a question put to a model is answered
+  with exactly that rather than with a guess. A model alo OS picked would be
+  alo OS answering a question that is the person's, and it would be the wrong
+  answer on the day somebody wondered where their words went.
+
+  **Where an organisation has set a rule, the rule bounds the choice and does
+  not replace it.** A machine told to keep questions inside the building refuses
+  a choice that would leave it, in words naming what refused and where it would
+  have gone — it never quietly answers from somewhere permitted instead. That
+  substitution is the comfortable failure: nothing looks broken, and the person
+  believes they know where their question went while being wrong about it.
+
+  **A settings file that is there and wrong gives up nothing at all.** A typo in
+  the language line does not leave the model setting standing; the file is
+  refused whole, in the language the machine is already showing, naming the path
+  to open. Half a settings file honoured is the machine choosing the other half.
+
+  What this does not yet do is answer the question: the choice is read and
+  checked, and wiring it to a running model is the next piece of work.
+
 - **The kernel refused it.** The promise the entry below could not make is now a
   test that runs: an agent turn granted one folder opened a file inside it, and
   the same turn reaching for a private key beside it was stopped by the Linux

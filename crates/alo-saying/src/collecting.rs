@@ -76,12 +76,13 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 14] = [
+pub const EVERY_LIST: [&str; 15] = [
     "alo-answering",
     "alo-appearance",
     "alo-applications",
     "alo-asking",
     "alo-capability",
+    "alo-choosing",
     "alo-context",
     "alo-dock",
     "alo-egress",
@@ -131,6 +132,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-capability",
         alo_capability::declare_into,
     )?;
+    declare(&mut vocabulary, "alo-choosing", alo_choosing::declare_into)?;
     declare(&mut vocabulary, "alo-context", alo_context::declare_into)?;
     declare(&mut vocabulary, "alo-dock", alo_dock::declare_into)?;
     declare(&mut vocabulary, "alo-egress", alo_egress::declare_into)?;
@@ -176,12 +178,13 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 14] = [
+    const ONE_STRING_EACH: [(&str, &str); 15] = [
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
         ("alo-applications", "applications.not-installed"),
         ("alo-asking", "asking.question.nothing"),
         ("alo-capability", "capability.grant.anonymous"),
+        ("alo-choosing", "choosing.settings.not-understood"),
         ("alo-context", "context.the-document"),
         ("alo-dock", "dock.edge.bottom"),
         ("alo-egress", "egress.destination.paired-machine"),
@@ -238,6 +241,7 @@ mod tests {
             alo_applications::application_words().unwrap().how_many(),
             alo_asking::asking_words().unwrap().how_many(),
             alo_capability::capability_words().unwrap().how_many(),
+            alo_choosing::choosing_words().unwrap().how_many(),
             alo_context::context_words().unwrap().how_many(),
             alo_dock::dock_words().unwrap().how_many(),
             alo_egress::egress_words().unwrap().how_many(),

@@ -22,6 +22,7 @@ alo-appearance = { path = "../alo-appearance" }
 alo-applications = { path = "../alo-applications" }
 alo-asking = { path = "../alo-asking" }
 alo-capability = { path = "../alo-capability" }
+alo-choosing = { path = "../alo-choosing" }
 alo-context = { path = "../alo-context" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }

@@ -168,7 +168,7 @@ pub(crate) fn granting(folder: &Path, at: SystemTime) -> Grants {
 /// The words this machine reads, with nothing translated.
 ///
 /// The machine's own vocabulary, assembled the way the process assembles it —
-/// `alo-saying`'s fourteen lists and this crate's three on top. See this file's
+/// `alo-saying`'s fifteen lists and this crate's three on top. See this file's
 /// header for why it is no longer a list written out here.
 pub(crate) fn in_english() -> Strings {
     Strings::of(everything_this_machine_says())

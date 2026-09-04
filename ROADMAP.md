@@ -66,7 +66,7 @@ its empty one:
 **Why this shape rather than one box.** The rule "a tick means done on real
 hardware" is right and is not being weakened — but with one box per line it made
 this file report **one done item out of eighty** while thirteen crates and
-1,128 passing tests sat underneath it — fourteen crates and 1,183 now. That is not honesty; it is a different
+1,128 passing tests sat underneath it — twenty-one crates and 1,563 now. That is not honesty; it is a different
 inaccuracy, and somebody reading it would conclude nothing had been built. Two
 boxes tell the truth twice: what is finished, and what is still owed to a
 machine nobody has yet plugged in.
@@ -181,7 +181,9 @@ compositor is not required for, which is why it runs unbroken.
 
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
       machine, from a machine on your network, or from a provider you named, and
-      the choice is the person's
+      the choice is the person's. **An organisation bounds that choice and never
+      makes it** (ADR 0016): two settings, two owners, two files, and a choice
+      outside the bound refused in words rather than quietly replaced
   - [x] **The code.**
         `alo-models`' `InferenceSource` — this machine, a paired machine, a
         hosted provider with its region — and `SourcePolicy`, which can hold
@@ -266,7 +268,17 @@ compositor is not required for, which is why it runs unbroken.
         from one to a second attempt is an offer a person took, which comes
         in at the same door and is shown and recorded like any other
         question. A test asks it as the thing it is — the place that failed
-        was asked once, the place that was offered was asked nothing at all
+        was asked once, the place that was offered was asked nothing at all.
+        Since item 21h **there is a place the pointing is configured from**:
+        `alo-choosing` holds what a person chose — which model, and which of
+        this machine's two lists it came from — in a file of their own under
+        their home directory, and `Chosen::asking` is the one place that
+        choice meets the rule an organisation set. *Configured rather than
+        coded* is true of the setting now: there is no default and no
+        `Default`, a machine nobody has configured has chosen nothing and
+        says so, and a choice the organisation's bound forbids is refused in
+        the rule's own words rather than swapped for a permitted one. 50
+        tests, five of them against a real file on a real disk
   - [ ] **On the machine.**
         something that points, which is `alo-agentd`. *Something that asks*
         is no longer owed here at all: `alo-asking` puts a question to a
@@ -284,8 +296,13 @@ compositor is not required for, which is why it runs unbroken.
         yet among the things it says. Since item 21f the process exists and runs
         all of that, so what is left is only the setting: `alo-asking`,
         `alo-models` and `alo-answering` are loaded into the machine's
-        vocabulary and unused, and where the person's own choice of model lives
-        is not decided anywhere. That is queue 21h
+        vocabulary and unused. Since item 21h **the setting exists and the
+        daemon does not read it yet**: a person's choice has a file, a shape
+        and five refusals, and what is missing between it and an answer is a
+        runtime to speak to — no file on a machine says where one is, and
+        weights somebody brought are on a list this machine keeps nowhere.
+        That is queue 21k, and until it lands *nothing on this machine has
+        been chosen to answer questions* is what a question is answered with
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine

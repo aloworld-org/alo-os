@@ -38,10 +38,11 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
 `crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings`,
-`crates/alo-driving`, `crates/alo-saying` and `crates/alo-agentd` were built by
+`crates/alo-driving`, `crates/alo-saying`, `crates/alo-choosing` and
+`crates/alo-agentd` were built by
 the loop and are described in the items below. **`alo-saying` is the only one
-that reaches every crate that says anything** — all fourteen of them, since item
-21g — and it is the only one whose dependency list is an argument rather than a
+that reaches every crate that says anything** — fourteen of them since item 21g
+and fifteen since 21h — and it is the only one whose dependency list is an argument rather than a
 consequence: a translation is checked against the vocabulary it is loaded into,
 so a vocabulary assembled per process would read a translator's correct line for
 another part of the system as a mistake. It is also **the only crate that
@@ -115,7 +116,16 @@ it for halves of one thing: `alo-egress` decides about a question that is
 already leaving, and `alo-answering` about one that was answered nowhere. It is
 also the only crate in the workspace whose whole value is a thing it *cannot*
 do — it decides where a failed question may go next, and has no client, no
-socket and no serde with which to go there. `alo-context` sits where
+socket and no serde with which to go there. **`alo-choosing` is the only one
+that is a person rather than an agent or a machine**: since item 21h it holds
+what somebody chose about their own computer, it reaches `alo-answering` and
+`alo-models` for the one place their rule and that choice meet, and nothing
+reaches it. It is as far from `alo-capability` as `alo-appearance` and
+`alo-shortcuts` are, and for the same reason — a person picking their own model
+is not an agent doing anything — and it is the third crate to reach
+`alo-models`, after `alo-egress` and `alo-answering`, which between them are now
+one crate per half of ADR 0008: what is leaving, what was answered nowhere, and
+what somebody picked. `alo-context` sits where
 `alo-files` and `alo-applications` do — it reaches `alo-capability` and
 `alo-strings`, nothing reaches it — and it is the only one of the three that
 **makes** a grant rather than only being checked against them. `alo-applications` sits
@@ -2237,46 +2247,113 @@ out.
   invent. Until it is decided, a service that prefers nothing shows English and
   says it is English, which is what a machine with no translations does anyway.
 
-- [ ] **21h. Which model or provider answers, and under which policy.** Cut from
-  21f, which claimed it in one clause and would have had to invent three things
-  to keep the claim. `alo_turn::Turning::asking` exists and works;
-  `crates/alo-agentd/src/doing.rs` refuses a question in words because nothing
-  tells the service what was chosen, and `agentd.nothing-answers-questions` is
-  the true sentence about a machine where nobody has chosen either.
+- [x] **21h. Which model answers, and under which bound** — implements
+  **ADR 0016**, and the person's half of ADR 0008. `crates/alo-choosing`, a
+  **new crate**: `chosen.rs` (what somebody picked, and which of the two lists
+  they picked it from), `bound.rs` (the one place an organisation's rule and a
+  person's choice meet), `place.rs` (where the file is, worked out from what a
+  session says), `written.rs` (the settings as somebody typed them, and the
+  number that decides whether they are read at all), `settings.rs` (the checked
+  value, and the only door onto a disk), `refusing.rs` (the five ways a file
+  that **is** there is not settings), `words.rs` (five phrases, the English
+  beside each and a note on every one), `testing.rs` (the fixture the other
+  files' tests are written against). 41 unit tests, 5 integration tests against
+  a real filesystem, 4 against the machine's whole vocabulary; **1563 tests and
+  45 doctests on Windows** (was 1513 and 45), **1757 and 45 on Linux** (was 1707
+  and 45), clippy clean on both hosts and `cargo doc` clean.
+  `docs/contracts/person-settings.md` is new, and `docs/features.md` gained the
+  line ADR 0016 asks it for.
 
-  **The decision was blocking it, and it is taken: [ADR 0016](../decisions/0016-the-organisation-bounds-and-the-person-chooses.md).**
-  ADR 0008 puts *where a question may be answered* with the person and ADR 0004
-  gives `/etc/alo/agentd.toml` to the organisation, and the two looked like they
-  wanted the same key in the same file. They do not. An organisation sets a
-  **bound** — which sources are permitted at all — and a person makes a
-  **choice** inside it; an organisation setting the choice would be acting as
-  the person, which ADR 0004 already forbids where it forbids making their agent
-  act in their name.
+  **This is the setting. The wiring is 21k below**, cut rather than half-built:
+  `Turning::asking` wants an `Answers` — a runtime or a provider that can be
+  spoken to — and making one out of a `Chosen` needs an address for a runtime on
+  this machine and a place for weights somebody brought, neither of which any
+  file on a machine says yet. `doing.rs` still refuses a question in
+  `agentd.nothing-answers-questions`, which is the true sentence about a machine
+  nobody has configured and stays the true one until 21k lands.
 
-  So this item now has somewhere to write to, and no decision left in it:
+  **The refusal ADR 0016 asks for is a refusal, and is deliberately not a
+  sentence.** *A choice outside the bound is refused in words naming who set it*
+  came out as `alo_models::NotAllowed` carried whole — the rule's own words,
+  which is item 9e's decision met again — with no clause of this crate's around
+  it, because **no rule an organisation can set refuses anything a person can
+  currently choose**: both lists a choice can name are this machine, and no
+  `SourcePolicy` forbids a machine answering on itself. There is a test that
+  walks all four policies against both lists and says so. A string for a refusal
+  that cannot happen is a string a translator is handed for nothing, and the
+  item that makes it reachable — a provider, or a machine in the next room — is
+  the item that writes it.
 
-  - the bound stays in `/etc/alo/agentd.toml` as the `SourcePolicy`;
-  - the choice goes in a per-person `$XDG_CONFIG_HOME/alo/` file, which also
-    holds *which language they read* — same owner, same lifetime, and the ADR
-    says why one store rather than two;
-  - a choice outside the bound is **refused in words naming who set it**, never
-    silently replaced by a permitted one;
-  - the choice records **which list** it names, which is item 25's ambiguity;
-  - no policy file at all means unbounded, and no choice means nothing answers
-    and the machine says so — `agentd.nothing-answers-questions` stays the true
-    sentence about a machine nobody has configured.
+  Three decisions the next items inherit. **A missing settings file is a person
+  who has not chosen, and is not an error** — deliberately the opposite of
+  `alo_keeping::Reading`, where a missing record is refused: a record is evidence
+  alo OS itself wrote and its absence is something to answer for, while a
+  settings file is one somebody may simply never have made. **A file that is
+  there and wrong is refused whole**, in words naming the path, and nothing in
+  it is honoured — `alo-saying` makes the opposite decision about a *translation*
+  and the difference is who is harmed, which is written into `written.rs`.
+  **Nothing here can invent a choice**: there is no `Default`, and
+  `Catalogue::agent_for_cpu` is the other crate's *what would this machine give
+  an agent* rather than this one's — a settings store that could produce a choice
+  would be ADR 0016's rejected *the organisation sets a default* in different
+  clothes.
 
-  What it is worth when it lands: `alo-asking`, `alo-models` and
-  `alo-answering` are already loaded into the machine's vocabulary (21f), so
-  what is missing is the setting and the wiring rather than anything either
-  crate can say.
+  **Where the file is has to be asked as `Path::has_root`**, not
+  `is_absolute`: the rule being stated is the XDG specification's and is
+  Linux's, and `is_absolute` answers about the host, so `/home/ada` is
+  *relative* on the Windows half of this loop. `docs/quirks.md` recorded it when
+  `alo-saying` found it; this is the second crate held to it.
 
-  **Item 25 made the question one size larger and did not answer it.** There
-  are now two lists of models on a machine — the catalogue and
-  `alo_models::Brought` — and whoever holds both at once is what decides which
-  one answers. Neither list knows about the other on purpose, so choosing
-  between a catalogued model and weights somebody brought is this item's, in
-  the same place as choosing between a model and a provider.
+  Built and unit tested, and read off a real filesystem by the crate's own
+  integration test. **Nothing here has put a question to a model.**
+
+- [ ] **21k. From a choice to an answer.** Cut from 21h, which built the setting
+  and stopped where the setting stops. `alo_choosing::Chosen` says *this model,
+  from this list* and `Chosen::asking` says *and the bound permits it here*;
+  `alo_turn::Turning::asking` wants an `alo_turn::Answers` — a `ModelRuntime` or
+  a provider — and there is no road between the two.
+
+  What is missing is not code so much as two facts nothing on a machine states:
+
+  - **where a runtime on this machine is.** `alo_models::Ollama` is the one
+    adapter and it is given an address; nothing in
+    `docs/contracts/machine-description.md` names one, and whether that is the
+    organisation's key or a fact about the machine is the decision this item
+    starts with.
+  - **where weights somebody brought are.** `Which::Brought` names an entry in
+    `alo_models::Brought` (item 25), which is a list this machine keeps nowhere
+    — so a choice from that list resolves into nothing until something holds it.
+
+  It also wants **whose settings**: the daemon serves a login, and reading
+  `$XDG_CONFIG_HOME` out of its own environment is only right while the process
+  and the person are one. `alo_choosing::where_it_is` takes both variables as
+  arguments for exactly this reason, so the question is answered by whoever
+  knows what a session is — which is where item 21j is also standing.
+
+  **Not ready: the first of those wants writing down before it is written.**
+  Where a runtime on this machine is, is either a key in the organisation's
+  description or a fact the daemon works out, and ADR 0016 has just finished
+  saying that putting the wrong one of those in `/etc/alo/agentd.toml` is how an
+  organisation ends up making a person's choice for them. That is an ADR, and it
+  is the same shape as the one 21h sat still for. Whoever writes it should read
+  ADR 0006 first — the adapter is the only file that knows Ollama exists, and an
+  address key naming a runtime would be that rule leaking into a contract.
+
+  Until it lands, `agentd.nothing-answers-questions` is what a machine says, and
+  it is true rather than a placeholder.
+
+- [ ] **21l. A refusal that names who set the rule.** The half of ADR 0016 that
+  21h could not reach: *the bound wins, and the person is told who set it*. It
+  is unreachable today because both lists a choice can name are this machine and
+  no `SourcePolicy` refuses that, so `crates/alo-choosing/src/bound.rs` carries
+  `alo_models::NotAllowed` whole and adds nothing.
+
+  **Blocked on a place a question can leave for**, which is a provider or a
+  paired machine in `alo_choosing::Which` — the same missing lists as 21k. The
+  day a choice can name one, this crate gains one sentence with the rule inside
+  it, `alo-choosing`'s test fixture gains `alo-models`' words for the same
+  reason `alo-egress`' does, and the test that walks every policy against every
+  list stops passing for the reason it passes now.
 
 - [ ] **21i. Where a machine's grants are kept.** The storage item 1 left —
   *storage is serde, as with `Providers`; where the list is written and when is
