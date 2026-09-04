@@ -8755,3 +8755,105 @@ In the order they unblock the most:
   wait there, and so do the eighteen machine halves in `ROADMAP.md`.
 - **A machine with ten gigabytes free**, for seven catalogue grades that are a
   data change each and no code at all.
+
+
+---
+
+## Iteration — the same eight, and the three blocks that could have moved on their own
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, exactly as the entry above lists them, and this is the second
+  consecutive entry to say so.
+
+**This iteration deliberately did not read the eight again.** The one above read
+all of them in full a single commit ago, and the working tree is clean against
+that commit — same queue, same crates, same ADRs — so reading them a second time
+would be the re-reading of impossible work that `LOOP.md` calls a loop burning
+somebody's money. What a clean tree does **not** cover is the part of a block
+that lives outside the repository, and three of these do: two of them wait on a
+document nobody here has written, one waits on a number about a machine.
+Those were asked rather than assumed.
+
+### The three, asked rather than carried forward
+
+- **The two ADRs still do not exist.** `docs/decisions/` ends at 0018, so 21k
+  and 21l — where a runtime on this machine is — and 26f — what a bound's
+  lifetime is — are waiting on precisely what they were waiting on.
+- **23b's block is a number, and the number had been measured on the wrong
+  machine.** The entry above took 5.8 GiB from the WSL box, which is an
+  *allocation* rather than a ceiling: `.wslconfig` can raise it, so that figure
+  could not have settled the question by itself. The ceiling was asked for this
+  time — **the host has 15.5 GB of memory and 21 GB free on `C:`** — and the
+  seven `not-measured` catalogue entries want 12, 10, 10, 48, 10, 10 and 12 GB
+  (EuroLLM 9B, Teuken 7B, Mistral 7B, Mixtral 8x7B, Qwen2.5 7B, Llama 3.1 8B,
+  Gemma 2 9B). A VM handed everything the host owns would still run the two
+  12 GB entries on a machine that is also running Windows, and Mixtral is out by
+  a factor of three. *A machine with room* is still the certified one, and the
+  label was right for a better reason than the one written under it.
+
+  **Nothing on the machine was changed to find that out.** Raising the VM's
+  memory to make an item look ready would be the gate weakened by moving the
+  thing it is measured against.
+- **Docker Desktop is still down, and this time it was asked to start rather
+  than only asked a question.** Three `Docker Desktop` processes and two
+  `com.docker.backend` are running, a start of its own was issued, and the
+  engine answers *Docker Desktop is unable to start* before and after. That
+  blocks no queue item. It does leave one thing owed.
+
+### What is owed, and why it is not a queue item
+
+**`image/` has not been through a `docker build` since item 30 changed it.** The
+fix in `f8f1ee2` moved three lines of `alo-agentd.service` and one of
+`alo.conf`, and the iteration that made it could not build the image because
+Docker was already down — the entry above says so and says the next change to
+`image/` would need it, which is exactly the change that had just been made.
+
+It is not a gate failure. `LOOP.md` is explicit that `crates/alo-image` is the
+gate on those files rather than the build, and that crate's 69 unit tests and 12
+integration tests are green in both suites below — they are what reads a unit for
+`Delegate=`, a runtime directory and its mode, and they are the reason the
+missing lines were found at all. A real `systemd` also started the service from
+these exact files, which is a stronger statement than a build. What a build
+would add is narrow and worth having anyway: that the `COPY` lines still put
+them where the image expects. **The next iteration that finds Docker up should
+run `docker build -f image/Containerfile -t alo-os:dev .` once**, whether or not
+it is changing anything in `image/`.
+
+### The gate, run in full on a tree with no change in it
+
+Every number here is this run's, measured rather than copied from the entry
+above — which is the point of running it at all on an unchanged tree.
+
+- `cargo fmt --all --check` clean on both hosts.
+- `cargo clippy --workspace --all-targets -- -D warnings` exits 0 on both, with
+  zero lines beginning `warning` or `error`.
+- **1954 test results on Linux and 1723 on Windows, zero failures either side** —
+  1908 tests plus 46 doctests, and 1677 plus 46. Both pairs are item 30's,
+  unchanged, which is what a tree nobody touched should say.
+- `crates/alo-bounding-kernel`: `cargo fmt --all --check` clean, and
+  `cargo clippy --release --target bpfel-unknown-none -Z build-std=core` clean.
+- `bpffs` mounted as `LOOP.md` describes; `ls /sys/fs/bpf` empty after the run,
+  so nothing was left pinned.
+- `cargo doc --workspace --no-deps` exits 0 on Linux with **zero** warning lines.
+  On Windows it emits **52 warning lines — 49 unresolved links and three
+  per-crate summaries — split 24 `alo-agentd`, 21 `alo-bounding` and 4
+  `alo-boundaryd`**, which is the count, the split and the three crates the
+  platform explains, so no new broken link is hiding in the noise.
+
+**`ROADMAP.md` untouched and nothing ticked, and no `CHANGELOG.md` line.**
+Nothing was built, so there is no line to carry, and nothing changed that a
+person outside this repository can read.
+
+### What the next iteration should know
+
+- **Two consecutive `LOOP COMPLETE`s is the queue's answer, not a coincidence.**
+  A third that reads the same eight items would add nothing. What is worth doing
+  on a run like this is what this one did — ask the world rather than the queue:
+  `ls docs/decisions/`, `docker version`, and the host's own memory. Each of
+  those is one command and each is a block that can move without anybody
+  committing anything.
+- **The image build is owed**, above, whenever Docker starts.
+- **The WSL box is as item 30 left it**: the image's logins, both binaries, both
+  units and `/etc/alo/agentd.toml` installed, the units stopped and not enabled,
+  nothing pinned in `/sys/fs/bpf`. Ollama 0.33.3 is installed but not running —
+  starting it is `ollama serve &` as root.
