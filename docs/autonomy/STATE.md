@@ -8653,3 +8653,105 @@ these files and started the service from them.
   boot. It worked here, with `cgroup.subtree_control` empty.
 - **Docker Desktop is down on this machine.** Nothing in this iteration needed
   it; the next change to `image/` will.
+
+
+---
+
+## Iteration — every remaining item is blocked, and each blocker was read rather than trusted
+
+- `LOOP COMPLETE` — the queue holds eight unfinished items and not one of them
+  is buildable here. The list and the reason for each are below.
+
+**Nothing was built, and that is the honest outcome rather than a quiet one.**
+Item 30 closed the last piece of unlisted work this journal was carrying — the
+daemon that started and died on the image — and the entry above it names nothing
+else of that kind. The two iterations before this one each found real work where
+the queue said there was none, so *no ready item* was checked before it was
+believed: every one of the eight was read in full, and the one whose block is a
+number was measured.
+
+### The eight, and what each is waiting on
+
+- **16b — machines on the local network.** Not ready. There is no discovery code
+  in this repository and none of it is portable, so whether announcing on a wire
+  is an `Errand` or a documented exception would be decided about a shape nobody
+  has built.
+- **19b — a turn carrying an application verb.** Blocked on the acting half,
+  which is Wayland and D-Bus under *blocked — linux*. A door answering *this may
+  reach an application* with nothing behind it is a refusal wearing a
+  capability's clothes.
+- **21i — where a machine's grants are kept.** Blocked on the shell. A grant is
+  made by a person picking a folder (ADR 0001 §3) in a surface that does not
+  exist, and item 17 put `Grants` inside `alo_capability::Agent`, so reading a
+  choice nothing can make would be building the half that cannot be checked.
+- **21k — from a choice to an answer.** Not ready, and it wants an ADR: whether
+  where a runtime lives is a key in the organisation's description or a fact the
+  daemon works out. ADR 0016 has just finished saying that putting the wrong one
+  of those in `/etc/alo/agentd.toml` is how an organisation makes a person's
+  choice for them.
+- **21l — a refusal that names who set the rule.** Blocked on a place a question
+  can leave for, which is the same missing list as 21k.
+- **23b — the other seven catalogue entries.** Blocked on the weights, and this
+  is the block that was measured rather than read: the WSL box reports **5.8 GiB
+  of memory** with 5.3 available and 4 GiB of swap, on four cores. The seven
+  unmeasured entries state `min_ram_gb` of 10, 10, 10, 10, 12, 12 and — Mixtral —
+  48. Not one of them fits, so the label is still true today.
+- **26f — a bound left behind by a killed daemon.** Not ready. A daemon cannot
+  clear the map at start-up without taking another person's turn away mid-verb,
+  and what it holds is identifiers rather than paths. Tying an entry's lifetime
+  to the cgroup's is a question about the programme in the kernel, which is a
+  decision and not a patch.
+- **29 — a model cannot be loaded.** Not ready. A third timeout constant would
+  leave somebody watching nothing for four minutes, and `RuntimeError` has no
+  variant meaning *it is loading* — that is a sentence a person reads, so it is
+  an `alo-strings` word and a decision about what a shell shows. Nothing calls
+  `load` today; 21k is where something first would.
+
+**Four of the eight reduce to two ADRs, three to a compositor, and one to a
+machine with room.** None of those is this loop's to decide or to buy.
+
+### The gate, run on a tree with no code change in it
+
+A `LOOP COMPLETE` that hid a broken suite would be worth less than no entry at
+all, so the whole gate was run and every number is this run's.
+
+- `cargo fmt --all --check` clean on both hosts.
+- `cargo clippy --workspace --all-targets -- -D warnings` clean on both, zero
+  warnings and zero errors.
+- **1908 tests and 46 doctests on Linux, 1677 and 46 on Windows**, zero failures
+  either side — both unchanged from item 30, which is what a tree nobody touched
+  should say.
+- `crates/alo-bounding-kernel`: `cargo fmt --all --check` clean and
+  `cargo clippy --release --target bpfel-unknown-none -Z build-std=core` clean.
+- `bpffs` mounted as `LOOP.md` describes; `ls /sys/fs/bpf` empty after the run,
+  so nothing was left pinned.
+- `cargo doc --workspace --no-deps` exits 0 with **zero** warning lines on Linux.
+  On Windows it emits **49 unresolved links, in exactly three crates** — 24 in
+  `alo-agentd`, 21 in `alo-bounding`, 4 in `alo-boundaryd` — which is the count
+  and the split `LOOP.md` says the platform explains, so there is no new broken
+  link hiding in the noise. (`grep -c '^warning'` answers 52; three of those are
+  the per-crate summary lines rather than links, which is worth knowing before
+  the next reader thinks the number has moved.)
+
+**`ROADMAP.md` was not moved and nothing was ticked**, which is step 6's other
+answer: no item was built, so there is no line to carry, and ticking something to
+show that an iteration happened is the failure that step spends four paragraphs
+warning about. **No `CHANGELOG.md` line either** — nothing changed that a person
+outside this repository can read.
+
+### What would make this queue ready again
+
+In the order they unblock the most:
+
+- **An ADR on where a runtime on this machine is.** It frees 21k, then 21l, and
+  it is the last thing between a person's chosen model and an answer. Whoever
+  writes it should read ADR 0006 first: the adapter is the only file that knows
+  Ollama exists, so an address key naming a runtime would be that rule leaking
+  into a public contract.
+- **An ADR on what a bound's lifetime is** (26f). It is a real hole in shipped
+  code — it fails closed, which is why it is an item and not a halt — and the
+  answer is probably in the kernel programme rather than in the daemon.
+- **A compositor, or the settings surface a grant is made in.** 21i and 19b both
+  wait there, and so do the eighteen machine halves in `ROADMAP.md`.
+- **A machine with ten gigabytes free**, for seven catalogue grades that are a
+  data change each and no code at all.
