@@ -25,6 +25,48 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ## Hardware and firmware
 
+### `struct file`'s `f_path` is inside an anonymous union, and a search over named members does not find it
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, measured 2026-09-04 by reading
+`/sys/kernel/btf/vmlinux` on the machine the boundary would not load on.
+**Behaviour:** the kernel's type information describes `struct file` with
+nineteen members, and three of them **have no name**. `f_path` is not one of the
+nineteen — it is a member of the unnamed union that is, sixty-four bytes in,
+sharing its bytes with a second member called `__f_path`:
+
+```
+struct file  vlen 19  size 184
+  ...
+  f_cred     at 48
+  f_owner    at 56
+  <unnamed>  at 64   union { struct path f_path; ... __f_path; }
+  <unnamed>  at 80   union { struct mutex f_pos_lock; u64 f_pipe; }
+  f_pos      at 112
+```
+
+This is ordinary C — an anonymous struct or union's members belong to the
+structure around it — and the format keeps the source's shape rather than
+flattening it. What makes it a trap is the failure: `alo-bounding`'s reader
+searched the named members only, found nothing, and refused to impose the
+boundary with *this kernel has no `file.f_path`, so the boundary has nowhere to
+look*. **That sentence is a true statement about the search and a false one about
+the kernel**, and it points whoever reads it at their machine rather than at our
+code. Asked directly, the same BTF is 6,677,359 bytes and contains `f_path`,
+`f_inode`, `dentry`, `d_name` and `mnt_root`; `bpf_lsm_file_open` is in
+`kallsyms`. Everything the message doubted was there.
+
+Kernel 6.6 kept `f_path` as a plain member, so this appeared as a kernel upgrade
+breaking a boundary that had never run.
+**Our response:** `crates/alo-bounding/src/btf.rs` implements the rule rather
+than the case — a member with no name is walked into, and what is found inside
+it comes back at the outer member's offset plus its own. The descent is bounded
+by the same `PATIENCE` the width lookup uses, because this file is read from
+`/sys` rather than written by us, and it is never itself an answer: asking for
+`""` finds nothing. The fixture in `testing.rs` now keeps `f_path` where 6.18
+keeps it, so every test of the reader is a test of the walk into it, and a fourth
+fixture whose anonymous member leads back to the structure it is in asserts the
+bound. Nothing was special-cased for `file` or for a version.
+**Date:** 2026-09-04
+
 ### The BPF LSM is compiled into the WSL2 kernel and does not start
 **Version:** `6.6.87.2-microsoft-standard-WSL2`, Ubuntu under WSL2 on Windows 11,
 measured 2026-09-03 by reading the kernel's own config and its own list of

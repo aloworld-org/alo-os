@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The kernel refused it.** The promise the entry below could not make is now a
+  test that runs: an agent turn granted one folder opened a file inside it, and
+  the same turn reaching for a private key beside it was stopped by the Linux
+  kernel with the ordinary *permission denied*. Nothing in alo OS made that
+  decision — no verb was validated, no policy was asked, no sentence was written;
+  a process opened a file and the machine said no. When the turn ended, the same
+  key opened, because the authority was gone rather than revoked. A process that
+  is not a turn was never affected at any point.
+
+  What stood in the way was ours rather than the machine's, and it is worth
+  saying because of the shape of it. The boundary asks the running kernel where
+  it keeps its own fields, so that alo OS is never compiled against one kernel
+  version and quietly wrong on the next. On Linux 6.18 one of those fields moved
+  inside an unnamed group — perfectly ordinary C, and something the kernel had
+  always been allowed to do — and the question was being asked in a way that
+  could not see into one. The answer that came back was *this kernel does not
+  have it*, which was a true statement about the search and a false one about the
+  machine, and it would have sent whoever read it to look at their computer. The
+  question is now asked the way the language actually works, so it holds for
+  fields that move rather than for the one that moved.
+
 - **The kernel-enforced grant is written, and it is not yet proved.** alo OS now
   builds the thing ADR 0015 describes: a small programme that runs *inside* the
   Linux kernel, on the hook every file open goes through, holding one entry per

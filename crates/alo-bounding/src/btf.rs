@@ -37,6 +37,21 @@
 //! ```
 //!
 //! Type ids start at 1; id 0 is `void` and is not written down.
+//!
+//! # A member with no name is not a member, it is more members
+//!
+//! C lets a structure hold an unnamed structure or union, and the things inside
+//! it are members of the outer one — `file.f_path` where `f_path` is a member of
+//! an anonymous union inside `struct file`. The type information keeps that
+//! shape exactly as the source has it: the outer structure has a member with no
+//! name, and the name being looked for is one level further in, at the outer
+//! member's offset plus its own.
+//!
+//! This is not a corner. Linux 6.18 is the kernel that taught it to this
+//! repository: `f_path` moved into an anonymous union there, a search over named
+//! members alone answered *this kernel has no `file.f_path`*, and the boundary
+//! refused to load on a machine whose `struct file` was perfectly ordinary.
+//! `docs/quirks.md` records it.
 
 use std::fs;
 
@@ -213,15 +228,25 @@ impl Types {
     /// that the program cannot be told where to look.
     pub fn member(&self, structure: &str, member: &str) -> Option<Member> {
         let found = self.structure_called(structure)?;
+        self.member_of(found, member, PATIENCE)
+    }
+
+    /// The same question asked of one already-found structure or union, with the
+    /// answer measured from the start of *that* one.
+    ///
+    /// A member with no name is an anonymous structure or union, and what it
+    /// holds belongs to this one — so the search goes into it and comes back
+    /// with the two offsets added together.
+    fn member_of(&self, found: usize, member: &str, patience: usize) -> Option<Member> {
+        if patience == 0 {
+            return None;
+        }
         let info = u32(&self.file, found + 4)?;
         let bitfields = info >> 31 == 1;
         let members = (info & 0xffff) as usize;
         for which in 0..members {
             let record = found + RECORD + which * 12;
             let name = u32(&self.file, record)?;
-            if self.string_at(name)? != member {
-                continue;
-            }
             let of_type = u32(&self.file, record + 4)?;
             let offset = u32(&self.file, record + 8)?;
             // With bitfields in the structure the high byte of the offset is
@@ -233,10 +258,28 @@ impl Types {
             } else {
                 offset
             };
-            return Some(Member {
-                offset: bits / 8,
-                width: self.width_of(of_type, PATIENCE)?,
-            });
+            let name = self.string_at(name)?;
+            // A member with no name is never an answer, whatever was asked
+            // for: it is an anonymous structure or union, and what belongs to
+            // this structure is what is inside it.
+            if name.is_empty() {
+                let Some(inside) = self.composite(of_type, PATIENCE) else {
+                    continue;
+                };
+                if let Some(deeper) = self.member_of(inside, member, patience - 1) {
+                    return Some(Member {
+                        offset: bits / 8 + deeper.offset,
+                        width: deeper.width,
+                    });
+                }
+                continue;
+            }
+            if name == member {
+                return Some(Member {
+                    offset: bits / 8,
+                    width: self.width_of(of_type, PATIENCE)?,
+                });
+            }
         }
         None
     }
@@ -258,6 +301,28 @@ impl Types {
                 .and_then(|at| self.string_at(at))
                 .is_some_and(|found| found == name)
         })
+    }
+
+    /// The record of the structure or union a type finally names, following the
+    /// names and qualifiers put in front of it.
+    ///
+    /// [`None`] for anything else, which is what makes an anonymous member that
+    /// is not a composite — which the format does not have, and a file read from
+    /// `/sys` could still hold — a member the search steps over rather than one
+    /// it walks into.
+    fn composite(&self, of_type: u32, patience: usize) -> Option<usize> {
+        if patience == 0 || of_type == 0 {
+            return None;
+        }
+        let record = *self.at.get((of_type as usize).checked_sub(1)?)?;
+        let info = u32(&self.file, record + 4)?;
+        match (info >> 24) & 0x1f {
+            kind::STRUCT | kind::UNION => Some(record),
+            kind::TYPEDEF | kind::VOLATILE | kind::CONST | kind::RESTRICT | kind::TYPE_TAG => {
+                self.composite(u32(&self.file, record + 8)?, patience - 1)
+            }
+            _ => None,
+        }
     }
 
     /// How many bytes a type occupies, following the names and qualifiers put
@@ -386,6 +451,51 @@ mod tests {
             Some(4)
         );
         assert_eq!(types.member("inode", "i_ino").map(|m| m.width), Some(8));
+    }
+
+    /// The one Linux 6.18 taught: `f_path` is a member of an unnamed union
+    /// inside `struct file`, so it is at the union's offset plus its own, and a
+    /// search over named members alone answers that this kernel does not have
+    /// it.
+    ///
+    /// The sibling over the same bytes is asserted too, because the answer has
+    /// to be the member that was asked for rather than the first thing in the
+    /// union.
+    #[test]
+    fn a_member_of_an_unnamed_union_belongs_to_the_structure_around_it() {
+        let types = Types::read(testing::some_type_information()).expect("the fixture reads");
+        assert_eq!(
+            types.member("file", "f_path"),
+            Some(Member {
+                offset: 16,
+                width: 16
+            })
+        );
+        assert_eq!(
+            types.member("file", "__f_path"),
+            Some(Member {
+                offset: 16,
+                width: 8
+            })
+        );
+        // The union itself has no name, so there is nothing to find it by, and
+        // a member of it that does not exist is still not invented.
+        assert_eq!(types.member("file", ""), None);
+        assert_eq!(types.member("file", "f_pipe"), None);
+    }
+
+    /// This file is read from `/sys` rather than written by us, so an anonymous
+    /// member leading back to the structure it is in is a shape that has to end
+    /// in an answer rather than in a daemon that never starts.
+    #[test]
+    fn type_information_that_leads_back_into_itself_is_not_followed_forever() {
+        let types = Types::read(testing::type_information_that_points_into_itself())
+            .expect("the fixture reads");
+        assert_eq!(types.member("file", "f_path"), None);
+        assert_eq!(
+            types.member("dentry", "d_parent").map(|m| m.offset),
+            Some(24)
+        );
     }
 
     /// A structure this kernel does not have, and a member the structure does

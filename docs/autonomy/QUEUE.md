@@ -2661,7 +2661,7 @@ out.
   the three a person then takes is the setup panel's, and is item 17a's and
   21h's.
 
-- [ ] **26. One hook, one grant — the kernel refuses.** The whole of ADR 0015,
+- [x] **26. One hook, one grant — the kernel refuses.** The whole of ADR 0015,
   proven or disproven in the smallest thing that can carry it. A BPF LSM program
   on `file_open`, a BPF map keyed by cgroup id holding one grant, and two tests:
   a turn granted a folder opens a file inside it and succeeds; the same turn
@@ -2758,6 +2758,46 @@ out.
   simply not stall, in which case the answer is one `cargo test -p alo-bounding`
   away.
 
+  **Proved, 2026-09-04, and ticked.** On `6.18.33.2-microsoft-standard-WSL2` all
+  four tests in `crates/alo-bounding/tests/the_kernel_refuses.rs` run and pass in
+  0.19 seconds: a turn granted a folder opens a file inside it; the same turn
+  reaching for `id_ed25519` beside it gets **`EACCES` from the kernel**; the turn
+  ends and the same key opens; and a process that is not a turn is untouched
+  throughout. **1707 tests and 45 doctests on Linux** (was 1700 and four
+  failures), 1513 and 45 on Windows, `cargo fmt` and `cargo clippy -D warnings`
+  clean on both hosts and for the BPF target.
+
+  **What was actually wrong was one question asked the way C does not work.**
+  The kernel obstacle was gone after the upgrade; the boundary still refused to
+  load, saying *this kernel has no `file.f_path`*. It has one. In 6.18 `f_path`
+  is a member of an **anonymous union** inside `struct file` — ordinary C, where
+  an unnamed struct or union's members belong to the structure around it — and
+  `btf.rs` searched named members only. So the message was a true statement about
+  the search and a false one about the machine, and it pointed whoever read it at
+  their kernel. The fix is the rule rather than the case: a member with no name is
+  walked into, what is found comes back at the outer offset plus its own, the
+  descent is bounded by the same `PATIENCE` the width lookup uses, and asking for
+  `""` finds nothing. Nothing was special-cased for `file` or for a version.
+  `docs/quirks.md` has the measurement.
+
+  Three decisions the next items inherit. **The fixture is where a real kernel is
+  inconvenient** — `testing.rs` now keeps `f_path` inside an unnamed union with a
+  sibling over the same bytes, so every test of the reader is a test of the walk
+  into it, and a fourth fixture whose anonymous member leads back to the
+  structure it is in asserts the bound rather than describing it. **A refusal
+  that names the machine has to be right about the machine**: `FieldIsMissing`
+  reads *this kernel has no `X.Y`*, it was read by a person and believed, and
+  what makes a sentence like that safe is that the search behind it implements
+  the format's own rules rather than the common case. **A fourth kernel
+  requirement is in `docs/hardware.md`** — `CONFIG_DEBUG_INFO_BTF=y`, checked
+  with `test -s /sys/kernel/btf/vmlinux` — because a kernel that will not
+  describe itself is the fourth way this boundary declines to be imposed, and it
+  was the only one not written down.
+
+  **On a development machine, not a certified one.** What is settled is the
+  mechanism; ADR 0015 on the certified machine is still the exit gate, and no
+  claim here is about hardware.
+
 - [ ] **26a. The boundary in front of a turn.** Cut from 26, which built the
   mechanism and deliberately stopped there. `alo-turn` joins an invocation, a
   call, an approval, an execution and the record; making the cgroup, resolving
@@ -2779,6 +2819,12 @@ out.
   Blocked on item 26 being proved rather than written. Wiring a boundary into
   the path every turn takes, on the strength of a mechanism no kernel has yet
   been seen to enforce, is how a guarantee becomes a claim.
+
+  **Unblocked 2026-09-04**: item 26 is proved, a kernel has been seen to enforce
+  it, and this is ready. It is a Linux item — the boundary is a Unix thing and
+  `alo-bounding` says so — so it is built and gated on the WSL host, and the
+  three questions above are still the three it has to answer before any of it is
+  written.
 
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
@@ -2808,6 +2854,12 @@ out.
   missing: nothing has been loaded and attached on a kernel yet, so there is no
   LSM to run ordinary programs under. When item 26's two tests run, this one can
   be written in the same sitting.
+
+  **Unblocked 2026-09-04**, and by exactly that sentence: item 26's tests run,
+  the programme loads and attaches on `6.18.33.2`, and there is now an LSM to run
+  ordinary programs under. `a_process_that_is_not_a_turn_reaches_what_it_always
+  _could` is the allow half already; this item is the half that asserts nothing
+  was written down about it. Linux, on the WSL host, like item 26.
 
 - [ ] **28. The smallest image that boots and runs the daemon.** Promoted out of
   *Blocked — linux*, where it sat as one line and was never taken, because the

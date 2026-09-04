@@ -188,15 +188,15 @@ cargo clippy --release --target bpfel-unknown-none -Z build-std=core -- -D warni
 target for a crate that cannot link one, and the failure is
 `can't find crate for test` rather than anything about the code.
 
-**The BPF LSM cannot be attached on this machine, and the reason is not ours.**
-Every attach hangs, unkillably, because the kernel's RCU-tasks grace periods
-stalled a minute after boot. `docs/quirks.md` has the measurement and
-`docs/hardware.md` now carries it as a third requirement. What that means for
-an iteration: `cargo test -p alo-bounding` **hangs at the integration test**
-until the machine is restarted, so run `--lib` for that crate and
-`--workspace --exclude alo-bounding` for the rest, and say in `STATE.md` that
-this is what was run. Do not mark the test `#[ignore]` to make the suite green;
-that is the gate being weakened to pass it.
+**The BPF LSM attaches on this machine, and `cargo test --workspace` is the
+whole gate again.** It was not always: on kernel `6.6.87.2` every attach hung
+unkillably, because the kernel's RCU-tasks grace periods stalled a minute after
+boot, and two iterations ran `--lib` for `alo-bounding` and excluded it from the
+rest. `wsl --update` to `6.18.33.2` ended that. **Run the whole workspace**, and
+if an attach ever hangs again the machine has failed one of the checks in
+`docs/hardware.md` — ask it those four questions rather than narrowing what is
+run. Do not mark the test `#[ignore]` to make the suite green; that is the gate
+being weakened to pass it.
 
 Do **not** install `clang` or `bpftool` to get around any of this. `aya` builds
 the programme from Rust and neither is needed; reaching for them is how C would

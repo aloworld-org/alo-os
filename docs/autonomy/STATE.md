@@ -6765,3 +6765,111 @@ can be proved or disproved on the evidence rather than waited out.
 are blocked on what they were blocked on before. 21h and 21j need a decision and
 an ADR each, and neither needs a kernel or a compositor.
 
+
+---
+
+## Iteration — item 26: the kernel refused it
+
+**Built:** nothing new. What this iteration did was make the thing that was
+already written work, and the fix is nine lines in one file.
+
+`crates/alo-bounding/src/btf.rs` — `Types::member` now walks into anonymous
+members. A member with no name in this format is an unnamed struct or union, and
+what is inside it belongs to the structure around it, so the search descends and
+comes back at the outer member's offset plus its own. `member_of` is the recursion,
+`composite` resolves a member's type through typedefs and qualifiers to the
+struct or union record it finally names, and both are bounded by the same
+`PATIENCE` the width lookup already used. A member with no name is never itself
+an answer — asking for `""` finds nothing.
+
+`crates/alo-bounding/src/testing.rs` — the ordinary fixture now keeps `f_path`
+inside an unnamed union with a sibling over the same bytes, which is where Linux
+6.18 keeps it, so every test of the reader is a test of the walk into it. A
+fourth fixture, `type_information_that_points_into_itself`, has an anonymous
+member whose type is the structure it is in: no compiler emits that, and this
+file is read from `/sys` rather than written by us.
+
+**Why it was broken, which is the part worth keeping.** After the kernel upgrade
+the programme loaded and attached in 0.08 seconds, and all four tests still
+failed with the crate's own sentence: *this kernel has no `file.f_path`, so the
+boundary has nowhere to look.* That sentence was **a true statement about the
+search and a false one about the kernel**. This kernel's BTF is 6,677,359 bytes
+and `struct file` has nineteen members, three of them unnamed; `f_path` is inside
+the unnamed union at byte 64, beside a `__f_path` over the same bytes. 6.6 kept
+it as a plain member, so it read as a kernel upgrade breaking us.
+
+The measurement is in `docs/quirks.md` with the layout printed out. The general
+lesson is in the entry: **a refusal that names the machine has to be right about
+the machine.** That message was read by a person and believed, and it sent the
+previous entry looking at the kernel. What makes a sentence like it safe is the
+search behind it implementing the format's rules rather than the common case.
+
+**What was proved.** `crates/alo-bounding/tests/the_kernel_refuses.rs`, four
+tests, 0.19 seconds, on `6.18.33.2-microsoft-standard-WSL2`:
+
+- a turn granted a folder opens a file inside it;
+- **the same turn reaching for `id_ed25519` beside it is refused `EACCES` by the
+  kernel** — no verb validated, no policy asked, no sentence written;
+- the turn ends, the entry is removed, and the same key opens;
+- a process that is not a turn is untouched throughout.
+
+**A flaky test was found and fixed, and it was not this item's.**
+`alo-agentd`'s `serving::tests::a_second_shell_is_told_something_else_is_already
+_answering` failed about **once in eight** full-suite runs with a broken pipe, and
+`a_second_agent_is_refused_in_words_and_the_first_turn_goes_on` had the same
+shape. Both used `asking()` — write a request, read the answer — against a
+connection the service **refuses on accept and closes without ever reading**. The
+write was racing the close. `Talking::what_it_said()` reads without saying
+anything, which is what the daemon's own contract is, so the tests are now truer
+as well as green: twenty consecutive runs of that suite passed. This was not
+caused by item 26 and it was not worked around; a race in a test is a defect in
+the test, and the gate cannot be green intermittently.
+
+**The gate.** `cargo fmt --all --check` and `cargo clippy --workspace
+--all-targets -- -D warnings` clean on Windows and on Linux; `cargo fmt` and
+`cargo clippy --release --target bpfel-unknown-none -Z build-std=core` clean in
+`crates/alo-bounding-kernel`. **1707 tests and 45 doctests on Linux** (was 1700
+and four failures), **1513 and 45 on Windows** — unchanged there, because
+`alo-bounding` is Linux only. `cargo test --workspace` was run whole on both
+hosts; nothing was excluded and nothing was `#[ignore]`d.
+
+**`ROADMAP.md` moved and was deliberately not ticked.** *The grant enforced by
+the kernel* has its code half rewritten from *written and not proved* to *proved,
+and not yet in front of a turn* — and the box stays empty, because the code half
+of that line includes item 26a, which is the boundary in front of a turn and is
+not written. Ticking it now would claim the wiring exists. The machine half gained
+the fourth check.
+
+**`docs/hardware.md` gained a fourth kernel requirement**, and it is ours rather
+than the machine's fault that it was missing: `CONFIG_DEBUG_INFO_BTF=y`, asked
+with `test -s /sys/kernel/btf/vmlinux`. The boundary refuses to load on a kernel
+that will not describe itself — that has always been true and was the only one of
+the four ways it declines that was not written down.
+
+**`docs/autonomy/LOOP.md` was corrected.** It told every iteration to run
+`--lib` for `alo-bounding` and exclude it from the workspace, because the attach
+hung. It does not hang. Running the whole workspace is the gate again, and if an
+attach ever hangs the answer is the four questions in `docs/hardware.md` rather
+than narrowing what is run.
+
+**What the next iteration takes:**
+
+- **Items 26a and 27 are both unblocked**, and both are marked in the queue.
+  27 is the smaller and the more urgent of the two: *the LSM decides and forgets*
+  is a rule with no test, and item 27's own words are that it should be written
+  *with* item 26 rather than after it. There is now an LSM to run ordinary
+  programs under. 26a is the larger — it has three decisions in it, one of them
+  with law 2 in it, and it should not be rushed behind 27.
+- **Both are Linux items**, built and gated on the WSL host with the command in
+  `LOOP.md`. The BPF toolchain notes there are current.
+- **The queue moved underneath this iteration while it ran**, and the rebase is
+  where that was noticed. **21h and 21j are no longer blocked** — ADR 0016 and
+  ADR 0017 were written and both queue entries now say what was settled — and
+  **item 28 is new**, the smallest image that boots and runs the daemon,
+  promoted out of *blocked — linux* because only *booting* it needed a machine.
+  So the next item in queue order is 21h rather than 26a, and this entry's
+  recommendation below is about what is *ready*, not about what is next.
+  16b, 19b and 21i are where they were.
+- **The machine is a development one.** Everything proved here is about the
+  mechanism. ADR 0015 on the certified machine is still the exit gate, and
+  nothing in this repository may tick it.

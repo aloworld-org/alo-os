@@ -8,8 +8,14 @@
 //! So this builds a small one — seven structures with the seven members the
 //! program looks for, in a layout chosen to be *wrong* in the ways a real
 //! kernel is inconvenient: a device number reached through two names before it
-//! is an integer, a member that is a structure rather than a pointer to one,
-//! and a structure that points at itself.
+//! is an integer, a member that is a structure rather than a pointer to one, a
+//! structure that points at itself, and `f_path` inside an anonymous union
+//! rather than beside its neighbours.
+//!
+//! That last one is measured rather than invented. It is where Linux 6.18 keeps
+//! it, and it is the shape that stopped this crate loading on a kernel whose
+//! `struct file` was perfectly ordinary — so the ordinary fixture has it, and
+//! every test that reads this file is a test of the walk into it.
 
 /// A small piece of type information, in the format the kernel publishes.
 ///
@@ -32,7 +38,17 @@ pub fn type_information_with_a_narrow_inode_number() -> Vec<u8> {
     written(Kernel::WithANarrowInodeNumber)
 }
 
-/// Which of the three fixtures is being written.
+/// A kernel whose `struct file` holds an anonymous member of its own type.
+///
+/// No compiler would emit it, which is exactly why it is here: this file is
+/// read from `/sys` rather than written by us, and a search that followed
+/// anonymous members without counting them would not misread this kernel, it
+/// would never come back from it.
+pub fn type_information_that_points_into_itself() -> Vec<u8> {
+    written(Kernel::ThatPointsIntoItself)
+}
+
+/// Which of the four fixtures is being written.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kernel {
     /// One this boundary can be imposed on.
@@ -43,6 +59,9 @@ enum Kernel {
 
     /// One where `i_ino` is not the width the program reads.
     WithANarrowInodeNumber,
+
+    /// One whose anonymous member leads back to where it started.
+    ThatPointsIntoItself,
 }
 
 /// The fixture, in whichever of its three shapes.
@@ -64,6 +83,7 @@ fn written(kernel: Kernel) -> Vec<u8> {
     let super_pointer = writing.pointer_to(super_block);
     let path = writing.reserve();
     let file = writing.reserve();
+    let where_the_path_is = writing.reserve();
 
     writing.structure(
         dentry,
@@ -108,11 +128,24 @@ fn written(kernel: Kernel) -> Vec<u8> {
     } else {
         "file"
     };
+    // Where Linux 6.18 keeps `f_path`: an unnamed union, with a second member
+    // over the same bytes, sixteen into the file.
+    writing.union(
+        where_the_path_is,
+        "",
+        16,
+        &[("f_path", path, 0), ("__f_path", unsigned_long, 0)],
+    );
+    let unnamed = if kernel == Kernel::ThatPointsIntoItself {
+        file
+    } else {
+        where_the_path_is
+    };
     writing.structure(
         file,
         called,
         400,
-        &[("f_mode", unsigned_int, 0), ("f_path", path, 16)],
+        &[("f_mode", unsigned_int, 0), ("", unnamed, 16)],
     );
 
     writing.finished()
@@ -141,7 +174,14 @@ impl Writing {
     }
 
     /// A name, at the offset it ends up at.
+    ///
+    /// The empty one is already at zero and is not written again, which is the
+    /// format's own convention for *this thing has no name* and is how a real
+    /// kernel writes an anonymous member.
     fn named(&mut self, name: &str) -> u32 {
+        if name.is_empty() {
+            return 0;
+        }
         let at = self.strings.len() as u32;
         self.strings.extend_from_slice(name.as_bytes());
         self.strings.push(0);
@@ -181,8 +221,25 @@ impl Writing {
     /// offsets are given in bytes here and written in bits, as the format
     /// keeps them.
     fn structure(&mut self, id: u32, name: &str, size: u32, members: &[(&str, u32, u32)]) {
+        self.composite(id, 4, name, size, members);
+    }
+
+    /// A union, which is a structure whose members all begin at the same place.
+    fn union(&mut self, id: u32, name: &str, size: u32, members: &[(&str, u32, u32)]) {
+        self.composite(id, 5, name, size, members);
+    }
+
+    /// Either of the two, which differ in the format by one number.
+    fn composite(
+        &mut self,
+        id: u32,
+        kind: u32,
+        name: &str,
+        size: u32,
+        members: &[(&str, u32, u32)],
+    ) {
         let at = self.named(name);
-        let mut record = record(at, 4, members.len() as u32, size);
+        let mut record = record(at, kind, members.len() as u32, size);
         let named: Vec<u32> = members
             .iter()
             .map(|(name, _, _)| self.named(name))

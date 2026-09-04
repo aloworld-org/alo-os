@@ -791,26 +791,30 @@ sorted the same way v0.01 now is.
       patched. **Ordered behind `alo-agentd` and the turn** — there is nothing
       to enforce until a turn exists, and this is written down now so the turn
       is built with a boundary rather than retrofitted into one
-  - [ ] The code. **Written and not proved, which is why this stays empty.**
-        Three crates as of 2026-09-04: `alo-bounding-kernel` is the BPF LSM
-        programme on `file_open`, written in Rust through `aya` with one place
-        per cgroup; `alo-bounding` loads it, reads the running kernel's own type
-        information to find out where that kernel keeps its fields, and holds
-        the map; `alo-bounding-map` is the sixteen bytes both halves read the
-        same way. Gated on both hosts and for the BPF target. **The two tests
-        that would show a kernel refusing a file have never run** — the only
-        Linux host this repository can reach cannot attach a BPF programme at
-        all, for a reason in the kernel that predates the work, so *built and
-        unit tested* is what this is. `docs/quirks.md` has the measurement;
-        `docs/autonomy/QUEUE.md` item 26 stays open, and 26a is the wiring
-        behind it
+  - [ ] The code. **Proved, and not yet in front of a turn — which is why this
+        stays empty.** Three crates as of 2026-09-04: `alo-bounding-kernel` is
+        the BPF LSM programme on `file_open`, written in Rust through `aya` with
+        one place per cgroup; `alo-bounding` loads it, reads the running kernel's
+        own type information to find out where that kernel keeps its fields, and
+        holds the map; `alo-bounding-map` is the sixteen bytes both halves read
+        the same way. Gated on both hosts and for the BPF target. **The tests
+        that show a kernel refusing a file now run and pass**, on
+        `6.18.33.2-microsoft-standard-WSL2`: a turn granted a folder opens a file
+        inside it, the same turn reaching for a private key beside it is refused
+        `EACCES` by the kernel, the turn ends and the key opens, and a process
+        that is not a turn is untouched throughout. `docs/autonomy/QUEUE.md` item
+        26 is ticked. **What is left of this half is 26a** — making the cgroup,
+        resolving a grant to a place and running a turn's work inside it, which
+        is the step in front of `alo-turn` and is not written
   - [ ] On the machine. The certified machine, and a kernel requirement that is
-        a **configuration** and not a patch — now **three** checks rather than
+        a **configuration** and not a patch — now **four** checks rather than
         one, each invisible to the one before it: `CONFIG_BPF_LSM=y`, `bpf`
-        among the security modules that actually start, and a kernel whose
-        RCU-tasks grace periods complete so a programme can be attached at all.
-        `docs/hardware.md` says how to ask all three; the second and third are
-        the ones machines fail
+        among the security modules that actually start, a kernel whose
+        RCU-tasks grace periods complete so a programme can be attached at all,
+        and `CONFIG_DEBUG_INFO_BTF=y` so the kernel will say where its own
+        fields are. `docs/hardware.md` says how to ask all four; the middle two
+        are the ones machines fail. The machine that proved the mechanism is a
+        development one, and this half is about the certified machine
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing

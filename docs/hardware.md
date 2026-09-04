@@ -73,8 +73,9 @@ else works.
 
 A certified machine's kernel has to be able to enforce a grant, which is a
 requirement about how the kernel was **configured** and not about the silicon.
-ADR 0015 names two things, they are not the same thing, and a third was found by
-trying to use a machine that satisfied both:
+ADR 0015 names two things, they are not the same thing, a third was found by
+trying to use a machine that satisfied both, and a fourth is what the boundary
+reads rather than what it attaches:
 
 - **`CONFIG_BPF_LSM=y`** — the BPF LSM is compiled into the kernel.
 - **`bpf` present in the list of security modules that actually start**, which
@@ -153,8 +154,33 @@ is a kernel to upgrade before it is a machine to replace*, and the first
 question to ask of any machine that fails the third check is what it is running.
 `docs/quirks.md` has both measurements.
 
-The three checks are in the order the failures happen in, and each one is
-invisible to the one before it: built in, started, and attachable.
+**There is a fourth, and it is about what the kernel says rather than what it
+does.** alo OS attaches no module compiled against a kernel version (ADR 0015),
+so the boundary asks the running kernel where its own structures are and refuses
+to load on one that will not say. That answer is published only by a kernel built
+with `CONFIG_DEBUG_INFO_BTF=y`:
+
+- **The kernel publishes its own type information.**
+
+```
+test -s /sys/kernel/btf/vmlinux                           # must exist, and not be empty
+```
+
+A machine that fails this fails at start-up with a sentence naming the file,
+which is what somebody needs in order to work out that a config option is off.
+Every distribution kernel worth certifying has it on, and it is here because a
+missing answer is one of the four ways this boundary declines to be imposed.
+
+The four checks are in the order the failures happen in, and each one is
+invisible to the one before it: built in, started, attachable, and self-describing.
+
+**All four were run and the boundary was proved on 2026-09-04**, on
+`6.18.33.2-microsoft-standard-WSL2`: a process in a turn's control group, granted
+one folder, opened a file inside it and was refused `EACCES` by the kernel when
+it reached for a private key beside it —
+`crates/alo-bounding/tests/the_kernel_refuses.rs`. That is a development machine
+rather than a certified one, and it settles the mechanism rather than the
+hardware.
 
 **This is a configuration expectation, not a patch.** `CLAUDE.md`'s *engines are
 configured, never patched* holds: what a certified machine needs is a kernel

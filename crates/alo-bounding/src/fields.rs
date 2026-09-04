@@ -107,6 +107,22 @@ mod tests {
         ));
     }
 
+    /// A kernel whose type information leads back into itself: the walk stops
+    /// and the field is one this kernel cannot be said to have, which is the
+    /// same refusal as a kernel that never had it.
+    #[test]
+    fn a_kernel_whose_types_lead_back_into_themselves_is_refused_by_name() {
+        let types = Types::read(testing::type_information_that_points_into_itself())
+            .expect("the fixture reads");
+        assert!(matches!(
+            Offsets::found(&types),
+            Err(NotBounded::FieldIsMissing {
+                structure: "file",
+                member: "f_path"
+            })
+        ));
+    }
+
     /// The refusal this file exists for: the field is there, at a width that
     /// would have the program read a number and part of its neighbour.
     #[test]

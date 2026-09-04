@@ -741,6 +741,20 @@ mod tests {
                 .collect()
         }
 
+        /// Read what the service said without saying anything first.
+        ///
+        /// A connection the service will not serve is answered the moment it is
+        /// accepted and then closed, so there is nothing to ask it. A test that
+        /// sent a request anyway would be writing to a socket the service has
+        /// already finished with, and would fail with a broken pipe whenever the
+        /// close won the race — which is what it did, about once in eight runs,
+        /// until this method existed.
+        fn what_it_said(&mut self) -> String {
+            let mut back = String::new();
+            self.reading.read_line(&mut back).unwrap();
+            back
+        }
+
         /// Put one line on the socket exactly as written, and read the answer.
         fn saying(&mut self, line: &str) -> String {
             self.writing
@@ -988,7 +1002,7 @@ mod tests {
                 assert!(first.asking(&renaming(&told.invoice)).contains("proposed"));
 
                 let mut second = Talking::to(&told.at);
-                let refused = second.asking(r#"{"waiting":{}}"#);
+                let refused = second.what_it_said();
                 assert!(
                     refused.contains("already in a turn"),
                     "a second agent was served: {refused}"
@@ -1022,7 +1036,7 @@ mod tests {
                 assert!(first.asking(r#"{"waiting":{}}"#).contains("waiting"));
 
                 let mut second = Talking::to(&told.at);
-                let refused = second.asking(r#"{"waiting":{}}"#);
+                let refused = second.what_it_said();
                 assert!(
                     refused.contains("already answering"),
                     "a second shell was served: {refused}"
