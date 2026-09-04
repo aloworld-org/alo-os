@@ -4,3 +4,6 @@
 # Editor and OS noise.
 .DS_Store
 Thumbs.db
+
+# The kernel half is its own workspace, so its build output is its own directory.
+/crates/alo-bounding-kernel/target

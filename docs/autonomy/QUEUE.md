@@ -2698,6 +2698,61 @@ out.
   it either works in a week or it does not, which is the right shape for the
   first piece of a hard idea — and the week now has a kernel to start on.
 
+  **Built, 2026-09-04, and deliberately not ticked.** Three crates exist and
+  are gated: `crates/alo-bounding-map` (the sixteen bytes both halves read the
+  same way, and the containment rule, 11 tests), `crates/alo-bounding-kernel`
+  (the BPF LSM programme, its own workspace, its own pinned nightly) and
+  `crates/alo-bounding` (reading the kernel's own type information, the seven
+  field offsets and their widths, the cgroup, the map, 13 tests). `cargo fmt`
+  and `cargo clippy -D warnings` clean on both hosts and for the BPF target.
+  **1513 tests and 45 doctests on Windows, 1700 and 45 on Linux.**
+
+  **What has not happened is the item's own sentence.** The two tests are
+  written — `crates/alo-bounding/tests/the_kernel_refuses.rs` — and **they have
+  never run**, because on this machine attaching a BPF LSM programme hangs
+  forever in uninterruptible sleep. That is not this work: the kernel logs
+  `tasks_rcu_exit_srcu_stall` for a grace period that stalled about a minute
+  after boot, over an hour before any of this ran, and building the trampoline
+  an attach needs waits on exactly that. `docs/quirks.md` has the measurement
+  and `docs/hardware.md` now carries it as a **third** kernel requirement beside
+  the two ADR 0015 names — built in, started, *attachable* — each invisible to
+  the one before it.
+
+  So: the code is whole and the proof is missing, and *built and unit tested* is
+  what it says. The item stays open until somebody runs those two tests on a
+  kernel that can attach.
+
+  **Three practical things the next attempt needs.** The hang is unkillable and
+  wedges the trampoline mutex for the whole machine, so the WSL box needs
+  `wsl --shutdown` before anything BPF is tried on it again — the machine
+  owner's, as the `.wslconfig` change was. `dmesg | grep -c
+  tasks_rcu_exit_srcu_stall` says in one line whether a machine is in this state,
+  and it should be run before the tests rather than after. And a fresh boot may
+  simply not stall, in which case the answer is one `cargo test -p alo-bounding`
+  away.
+
+- [ ] **26a. The boundary in front of a turn.** Cut from 26, which built the
+  mechanism and deliberately stopped there. `alo-turn` joins an invocation, a
+  call, an approval, an execution and the record; making the cgroup, resolving
+  the grant to a place, imposing the boundary and running the work *inside* it
+  is a step in front of all five, and ADR 0015 calls it the daemon's floor.
+
+  Three things it owes that item 26 does not have. **The sentence a person
+  reads** when a turn cannot be bounded — ADR 0013 and ADR 0015 both say such a
+  turn does not run, and `alo-bounding`'s refusals are deliberately English for
+  whoever stands the machine up rather than for whoever uses it, so this is
+  where the crate gains a `words.rs` and crosses onto `alo-strings`. **Which
+  grant becomes the bound**, given that a call can name several paths and
+  `alo-capability` holds a list rather than one folder — the map holds one place
+  per turn, and either that becomes several or the turn is narrower than the
+  grant. **What runs in the cgroup**, which is the part with law 2 in it: a turn
+  does its work in a process, and what puts a process there without becoming an
+  arbitrary command is the question to answer before any of the rest.
+
+  Blocked on item 26 being proved rather than written. Wiring a boundary into
+  the path every turn takes, on the strength of a mechanism no kernel has yet
+  been seen to enforce, is how a guarantee becomes a claim.
+
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
   mechanism that enforces a grant could record a person's whole day.
@@ -2718,6 +2773,14 @@ out.
   world and prove nothing, which is the exact failure mode the item exists to
   prevent a year from now. The kernel obstacle is gone (item 26, 2026-09-04);
   what remains is the ordinary dependency of a test on the thing it tests.
+
+  **Still waiting, for a smaller reason than before.** Item 26's programme is
+  written and its *absence* of any writing is real — `crates/alo-bounding-kernel`
+  has no ring buffer, no counter, no `bpf_printk` and nothing to write into, and
+  its own documentation says so. What is missing is the same thing item 26 is
+  missing: nothing has been loaded and attached on a kernel yet, so there is no
+  LSM to run ordinary programs under. When item 26's two tests run, this one can
+  be written in the same sitting.
 
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the

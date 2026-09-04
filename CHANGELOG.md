@@ -12,6 +12,31 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The kernel-enforced grant is written, and it is not yet proved.** alo OS now
+  builds the thing ADR 0015 describes: a small programme that runs *inside* the
+  Linux kernel, on the hook every file open goes through, holding one entry per
+  agent turn — the folder that turn may reach. While a turn is running, a file
+  outside that folder is not declined by our code with a polite sentence; the
+  open fails, at the kernel, the way a permission failure has always looked. When
+  the turn ends the entry is removed and the authority is gone rather than
+  revoked.
+
+  It is written in Rust on both sides, with no C anywhere and no kernel patched,
+  and it reads the running kernel's own description of itself to find out where
+  that kernel keeps its fields — so it is not compiled against a kernel version
+  and a machine that takes a kernel update does not quietly start enforcing the
+  wrong thing. If the kernel will not say, or says something the programme does
+  not expect, the boundary refuses to load at all rather than loading and being
+  wrong.
+
+  **What has not happened is the part that matters, and it is not ticked.** The
+  two tests that would show a real kernel refusing a real file have never run:
+  the machine this was built on cannot attach a BPF programme at all, for a
+  reason in the kernel that predates any of this work, and the attach hangs
+  instead of failing. That is now a third requirement in `docs/hardware.md`,
+  beside the two that were already there, with the one-line check for it. Nothing
+  in this release claims a kernel refused anything.
+
 - **alo OS now says in public what its kernel has to be able to do before it can
   enforce a grant — and how to check, in a way that does not flatter the
   answer.** The promise is that a verb reaching outside what you granted it

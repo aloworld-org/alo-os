@@ -6456,3 +6456,210 @@ kernel finding above, which is why both are worth keeping.
 **What the next iteration takes.** Item **26**. Items 16b, 19b, 21h, 21i and 21j
 are still blocked on what the list above says, and none of those changed.
 
+---
+
+## Iteration — item 26: the boundary is written, and no kernel has been seen to enforce it
+
+Took item 26, *one hook, one grant — the kernel refuses*. The whole of ADR 0015,
+in the smallest thing that can carry it. The code is finished and gated. The two
+tests the item is *for* have never run, the item is not ticked, and this
+iteration ends in `LOOP HALT`.
+
+### What was built
+
+Three crates, because the idea has three parts that compile for different
+machines.
+
+**`crates/alo-bounding-map`** — the sixteen bytes both halves must read the same
+way. `Place` is a filesystem and an inode, with `words`/`of_words` as the only
+spelling of the map's value; `reaches` is the containment rule; `Field` is which
+of the kernel's own fields the programme has to find. `no_std`, no dependencies,
+11 tests, and it runs on Windows — which is the point of it being a crate rather
+than a struct written out twice.
+
+**The decision lives there rather than in the kernel half, and the reason is not
+sharing.** On the BPF target there are no tests: a programme compiled for the
+kernel cannot be run by `cargo test`, so logic that lives only there is logic
+nobody can hold to a case. `reaches` is ordinary Rust with ordinary tests — a
+sibling folder is not inside a grant, a walk that cannot be taken refuses,
+deeper than the walk goes refuses — and the kernel half shrinks to fetching the
+numbers it asks for.
+
+**`crates/alo-bounding-kernel`** — the BPF LSM programme on `file_open`. Its own
+workspace, its own pinned nightly, `bpfel-unknown-none`, `-Z build-std=core`.
+Three files: the crate and its panic handler, `kernel.rs` (the only file with
+`unsafe` in it — the exported symbol, the hook's argument, a read of kernel
+memory, a map lookup), and `deciding.rs` (the walk, in safe Rust). It holds no
+ring buffer, no counter and no `bpf_printk`: an open outside a turn is one hash
+lookup that misses, and nothing is different afterwards.
+
+**`crates/alo-bounding`** — loading it, and the map. `btf.rs` reads
+`/sys/kernel/btf/vmlinux` and answers one question: where, in *this* kernel,
+does this member of this structure sit, and how wide is it. `fields.rs` asks it
+seven times and refuses a kernel whose answer is the wrong width. `cgroup.rs`
+makes the control group a turn runs in. `place.rs` turns a folder into the two
+numbers the kernel knows it by. `bounding.rs` is the only file that names `aya`.
+13 tests.
+
+### Three decisions the item did not contain
+
+**The programme holds no offsets, and the kernel is asked where its fields are.**
+The usual answer is to generate a header from one kernel and compile against it,
+which is the thing ADR 0015 rules out in its second sentence. A baked-in offset
+does not fail when a machine takes a kernel update — it reads the wrong eight
+bytes and refuses the wrong files, silently. So the loader reads the kernel's own
+type information at start-up and puts the seven offsets in a map. Writing a BTF
+reader was the largest single piece of this item, and it is the part that makes
+*no module compiled against a kernel version* true rather than aspirational.
+
+**The width is checked, not only the offset**, and that is the refusal worth
+having. A kernel where `i_ino` had become four bytes would still have an
+`i_ino`, at an offset, and the programme would read it plus four bytes of its
+neighbour and compare that against a granted inode — refusing every file, or on
+a different arrangement of the same accident allowing one. A width that does not
+match is now a refusal at start-up with both numbers in the sentence.
+
+**The bound is a place, not a path.** Inside `file_open` there is no path; there
+is a `struct file` and a chain of directory entries. Walking that chain upwards
+and comparing (device, inode) is simpler than reconstructing a name *and*
+stronger: a symbolic link out of a granted folder cannot widen the bound,
+because the kernel walks the entries the open actually went through rather than
+a name somebody assembled. `alo-capability`'s `path.rs` note about resolving
+links first is answered by the mechanism instead of by whoever writes the verb.
+
+### There is `unsafe` in this repository now, and it is said out loud
+
+`CLAUDE.md` forbids it and the workspace enforces `unsafe_code = "forbid"`. A
+package outside that workspace does not inherit the lint, and being quiet about
+that would be the loop working around a rule rather than meeting it.
+
+So: `alo-bounding-kernel` **denies** `unsafe_code` at its root and lifts it in
+exactly one module, which is the shape `alo-agentd`'s `unix.rs` and
+`signalling.rs` already have. Four things need it and they are all in that file.
+Unlike `SO_PEERCRED` and `sigaction`, this is not a choice between a safe
+spelling and an unsafe one — reading a `struct file` handed over as a raw
+pointer *is* the programme, and there is no crate to rent that makes it safe,
+because the safety comes from the kernel's verifier refusing to load a programme
+that would read out of bounds. ADR 0015 chose `aya` and *Rust on both sides*;
+this is what that decision costs, and it is now written into the ADR as a
+consequence rather than left in a file nobody opens. The half that runs on this
+machine has none.
+
+### The toolchain finding, which cost the most and pointed everywhere else
+
+`bpf-linker` died of a segmentation fault on the first build, in a message
+naming LLVM's bug tracker, an optimisation pass, and our own function:
+
+```
+error: linking with `bpf-linker` failed: signal: 11 (SIGSEGV)
+  1. Running pass "sroa<modify-cfg>" on function "file_open"
+```
+
+Every part of that points at the code. The cause is two version numbers that are
+never printed together: `bpf-linker` reads the bitcode `rustc` emits and runs
+LLVM's passes over it, so **the LLVM it was built against has to be the LLVM the
+compiler emits**. The machine had `bpf-linker` on LLVM 21 — pinned there by the
+previous iteration, because Ubuntu ships no newer `llvm-dev` — and a nightly
+`rustc` emitting LLVM 23. A programme with no map in it links perfectly, which is
+what sends you looking at the code first.
+
+Bisected down to *any* use of a map, then fixed by matching rather than by
+guessing: `llvm-22-dev` from Ubuntu's own archive, `bpf-linker` rebuilt with
+`--features llvm-22`, and **the nightly pinned in the repository** at
+`crates/alo-bounding-kernel/rust-toolchain.toml` to one whose LLVM is 22.
+`build.rs` starts the nested build *inside* that directory so the file is what
+decides; naming a channel on the command line would silently overrule it.
+`docs/quirks.md` and `LOOP.md` have it.
+
+### The finding: a third kernel requirement, and it is a hang rather than an answer
+
+The boundary loads, and then the attach never returns.
+
+The thread goes into uninterruptible sleep in `bpf_trampoline_get` and stays
+there. It cannot be killed; `SIGKILL` leaves a zombie with that thread still in
+the kernel, and every later BPF attach on the machine queues behind the same
+mutex. There is no error, because there is no return.
+
+The kernel says why, every ten seconds, in its own log:
+
+```
+tasks_rcu_exit_srcu_stall: rcu_tasks grace period number 13 (since boot)
+  gp_state: RTGS_POST_SCAN_TASKLIST is 634853 jiffies old.
+```
+
+Attaching a BPF LSM programme builds a trampoline, and that waits on an
+RCU-tasks grace period. On this machine grace period 13 has never completed. The
+timing settles whether this work caused it: at the **first** stall message the
+grace period was already 634853 jiffies old, which at `CONFIG_HZ=250` is
+forty-two minutes, on a machine that had been up for forty-three — so it stalled
+about a minute after boot and more than an hour before any of this repository's
+code ran.
+
+**This is a third requirement neither ADR 0015 nor `docs/hardware.md` had**, and
+it is the same shape as the two before it, only worse: `CONFIG_BPF_LSM=y` is
+true and useless on a kernel that never started the module; a started module is
+true and useless on a kernel that cannot be attached to. Built in, started,
+attachable — three checks, each invisible to the one before it.
+`docs/hardware.md` now carries all three with the one-line check for the new one
+(`dmesg | grep -c tasks_rcu_exit_srcu_stall`, which must be zero), and
+`docs/quirks.md` has the measurement.
+
+**What was deliberately not done.** No `#[ignore]` on the two tests to make the
+suite green — that is the gate being weakened to pass it, and it would leave a
+repository claiming a boundary nobody has seen work. No second attempt at
+measuring whether the verifier at least *accepts* the programme: the first hang
+wedged the trampoline mutex, so every later load blocks too, and there is nothing
+further this machine can be asked. And no `wsl --shutdown`, which would probably
+clear it: that restarts every distribution on the owner's machine, with their
+containers running, and the last iteration set the precedent that this class of
+change is theirs. It is named in the queue instead.
+
+### The gate
+
+`cargo fmt --all --check` clean on both hosts, and separately for
+`crates/alo-bounding-kernel`, which is its own workspace and is not in `--all`.
+
+`cargo clippy --workspace --all-targets -- -D warnings` clean, zero warnings and
+zero errors, on Windows and on Linux. `cargo clippy --release --target
+bpfel-unknown-none -Z build-std=core -- -D warnings` clean for the kernel half.
+(`--all-targets` is deliberately absent from that last line: it forces a test
+target a BPF crate cannot link, and the failure is `can't find crate for test`
+rather than anything about the code. `LOOP.md` has it.)
+
+**1513 tests and 45 doctests on Windows** (was 1502 and 44). **1700 tests and 45
+doctests on Linux** (was 1676 and 44), which is `--workspace --exclude
+alo-bounding` at 1687 plus `alo-bounding --lib` at 13. `alo-agentd` alone ran
+**170** on Linux, unchanged.
+
+**The exclusion is the honest part of that paragraph.** `cargo test -p
+alo-bounding` in full hangs at the first attach and never returns, so the number
+above is what was actually run and the integration test is not in it. No claim
+that a kernel refused anything is made in this repository, anywhere.
+
+### `ROADMAP.md` moved
+
+v0.5's *★ The grant enforced by the kernel* (ADR 0013). The code half now names
+the three crates and says plainly that the two tests have never run, and it is
+**not ticked** — written is not done, and this is exactly the line where that
+distinction is the whole product. The machine half gained the third requirement.
+
+**What the next iteration must know:**
+
+- **Item 26 is not ticked, and item 27 is still blocked on it.** The mechanism is
+  written; the proof is missing.
+- **The WSL box needs restarting before anything BPF is tried on it again.** The
+  wedged trampoline mutex is this iteration's doing, even though the stall that
+  caused it is not, and only a restart clears it. That is the owner's to make.
+- **After a restart, run `dmesg | grep -c tasks_rcu_exit_srcu_stall` first.** If
+  it is zero, item 26 is one `cargo test -p alo-bounding` from being answered
+  either way. If it is not, the machine has stalled again and the finding is that
+  this kernel cannot host a BPF LSM at all — worth writing down as firmly as the
+  good outcome.
+- **Item 26a is new**, and it is the wiring: the boundary in front of a turn, the
+  sentence a person reads when one cannot be bounded, and what runs in the
+  cgroup. It is blocked on 26 being *proved* rather than written, deliberately —
+  wiring a boundary into the path every turn takes, on the strength of a
+  mechanism no kernel has been seen to enforce, is how a guarantee becomes a
+  claim.
+
+LOOP HALT

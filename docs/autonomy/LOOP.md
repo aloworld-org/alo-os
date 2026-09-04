@@ -104,11 +104,18 @@ blocker: the machine has Ubuntu in WSL2, and it can build this very checkout.**
 
 ```
 wsl -d Ubuntu -u root -- bash -c '
-  export PATH=/root/.cargo/bin:$PATH
+  export PATH="/root/.cargo/bin:/usr/lib/llvm-22/bin:$PATH"
+  export LLVM_PREFIX=/usr/lib/llvm-22
   cd /mnt/c/dev/alo-os
   CARGO_TARGET_DIR=/root/alo-os-target cargo test -p <crate>
 '
 ```
+
+The two LLVM lines are only needed for `alo-bounding`, which builds a BPF
+programme on the way; they are harmless everywhere else and are in the snippet
+so nobody has to remember which crate is which. **Quote the `PATH` assignment** —
+without the quotes the Windows `PATH` WSL passes through arrives with spaces in
+it and `export` fails a dozen times before the command runs.
 
 Three things about it, all measured rather than assumed:
 
@@ -131,10 +138,10 @@ and 27 build a BPF programme with `aya`, which needs nightly with `rust-src` and
 `bpf-linker`. Both are on the WSL box as of 2026-09-04:
 
 ```
-rustc 1.100.0-nightly, component rust-src
-bpf-linker 0.11.0, built against LLVM 21
-export LLVM_PREFIX=/usr/lib/llvm-21
-export PATH=/usr/lib/llvm-21/bin:$PATH    # both are in /root/.bashrc
+nightly-2026-06-01, with rust-src, rustfmt and clippy   # pinned by the repository
+bpf-linker 0.11.0, built against LLVM 22
+export LLVM_PREFIX=/usr/lib/llvm-22
+export PATH=/root/.cargo/bin:/usr/lib/llvm-22/bin:$PATH
 ```
 
 Three things cost five attempts, and every one of them pointed at the wrong
@@ -144,13 +151,52 @@ cause:
   `LLVM_SYS_<version>_PREFIX`, which is the one every search result names.
   Setting the `llvm-sys` variable correctly changes nothing.
 - **The binary must be called exactly `llvm-config` and be on `PATH`.** Ubuntu
-  installs `/usr/bin/llvm-config-21`, which does not match, and a plain
-  `llvm-config` only under `/usr/lib/llvm-21/bin`, which is not on `PATH`. The
+  installs `/usr/bin/llvm-config-22`, which does not match, and a plain
+  `llvm-config` only under `/usr/lib/llvm-22/bin`, which is not on `PATH`. The
   error says *could not find llvm-config in … `PATH`*, so it reads as a missing
   package — and installing more packages never fixes it.
-- **A plain `cargo install bpf-linker` cannot work on Ubuntu 26.04.** Its
-  default feature is `llvm-23`; the distribution ships `llvm-dev` only to 22. The
-  feature has to be pinned: `--no-default-features --features llvm-21`.
+- **`cargo install bpf-linker` with default features wants an LLVM the
+  distribution may not ship.** The feature has to be pinned to the one that is
+  installed: `--no-default-features --features llvm-22`.
+
+**And a fourth, which cost more than the other three together: the LLVM must
+match the compiler.** `bpf-linker` reads the bitcode `rustc` emits and runs
+LLVM's passes over it, so a `bpf-linker` built against an older LLVM than the
+compiler's does not refuse the input — it segmentation-faults, in a message
+naming LLVM's bug tracker and one of our own functions, on any programme with a
+map in it. A programme without a map links perfectly, which is what sends you
+looking at the code.
+
+So **the nightly is pinned in the repository**, at
+`crates/alo-bounding-kernel/rust-toolchain.toml`, and
+`crates/alo-bounding/build.rs` starts the nested build inside that directory so
+the file is what decides. Moving the pin means rebuilding `bpf-linker` against
+the new compiler's LLVM: `rustc +<channel> -vV` says which one that is.
+
+**`clang` and `bpftool` are still not installed and are still not needed.**
+
+The two halves have their own gate, because neither is in the main workspace's
+`--all-targets` sweep:
+
+```
+cd crates/alo-bounding-kernel
+cargo fmt --all --check
+cargo clippy --release --target bpfel-unknown-none -Z build-std=core -- -D warnings
+```
+
+`--all-targets` is deliberately absent from that clippy line: it forces a test
+target for a crate that cannot link one, and the failure is
+`can't find crate for test` rather than anything about the code.
+
+**The BPF LSM cannot be attached on this machine, and the reason is not ours.**
+Every attach hangs, unkillably, because the kernel's RCU-tasks grace periods
+stalled a minute after boot. `docs/quirks.md` has the measurement and
+`docs/hardware.md` now carries it as a third requirement. What that means for
+an iteration: `cargo test -p alo-bounding` **hangs at the integration test**
+until the machine is restarted, so run `--lib` for that crate and
+`--workspace --exclude alo-bounding` for the rest, and say in `STATE.md` that
+this is what was run. Do not mark the test `#[ignore]` to make the suite green;
+that is the gate being weakened to pass it.
 
 Do **not** install `clang` or `bpftool` to get around any of this. `aya` builds
 the programme from Rust and neither is needed; reaching for them is how C would

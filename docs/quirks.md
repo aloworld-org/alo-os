@@ -81,6 +81,52 @@ needs is a kernel that boots with `bpf` in its active list, however its image
 arranges that.
 **Date:** 2026-09-03; resolved 2026-09-04
 
+### The kernel starts the BPF LSM and still cannot attach a program to it
+**Version:** `6.6.87.2-microsoft-standard-WSL2`, Ubuntu under WSL2 on Windows 11,
+measured 2026-09-04 by attaching the programme in `crates/alo-bounding-kernel`
+and then reading `dmesg`.
+**Behaviour:** the two checks in `docs/hardware.md` both pass — `CONFIG_BPF_LSM=y`
+and `bpf` in `/sys/kernel/security/lsm` — and the attach never returns. The
+thread goes into **uninterruptible sleep in `bpf_trampoline_get` and stays
+there**: it cannot be killed, `SIGKILL` leaves the process a zombie with that
+thread still in the kernel, and every later BPF attach on the machine blocks
+behind the same mutex. Nothing in userspace reports anything; there is no error
+because there is no return.
+
+The kernel says why, in its own log, every ten seconds:
+
+```
+tasks_rcu_exit_srcu_stall: rcu_tasks grace period number 13 (since boot)
+  gp_state: RTGS_POST_SCAN_TASKLIST is 634853 jiffies old.
+Please check any exiting tasks stuck between calls to
+  exit_tasks_rcu_start() and exit_tasks_rcu_finish()
+```
+
+Attaching a BPF LSM programme builds a trampoline, and that waits on an
+RCU-tasks grace period. On this machine grace period 13 has never completed: at
+the first stall message it was already 634853 jiffies old, which at
+`CONFIG_HZ=250` is about forty-two minutes, on a machine that had been up for
+forty-three. **The grace period stalled about a minute after boot and more than
+an hour before any of this repository's code ran**, so the boundary did not
+cause it and cannot avoid it — a `synchronize_rcu_tasks()` that will never
+return is a `synchronize_rcu_tasks()` that will never return.
+**Our response:** the measurement is the finding, and it is a **third**
+requirement that neither ADR 0015 nor `docs/hardware.md` had: a kernel whose
+RCU-tasks grace periods complete. It is the same shape as the two before it —
+`CONFIG_BPF_LSM=y` is true and useless on a kernel that does not start the
+module; a started module is true and useless on a kernel that cannot attach to
+it — and it is worse than both, because the failure is a hang rather than an
+answer. The check is one line and belongs before any attach:
+`dmesg | grep -c tasks_rcu_exit_srcu_stall`, where anything but zero means no
+BPF LSM, fentry or fexit programme will attach on that machine until it is
+rebooted.
+
+`crates/alo-bounding/tests/the_kernel_refuses.rs` was written, is correct, and
+**has never run**: on this machine it hangs at the first attach, and no claim
+about the kernel refusing anything is made anywhere in this repository. Queue
+item 26 is not ticked.
+**Date:** 2026-09-04
+
 <!--
 ### <Machine or component> — <one-line summary>
 **Version:** firmware / kernel / driver version the behaviour was seen on
@@ -113,6 +159,38 @@ the accommodation lives in our configuration and the reason lives here.
 
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
+
+### bpf-linker 0.11.0 — the LLVM it was built against must be the one rustc emits
+**Version:** `bpf-linker` 0.11.0, `rustc` nightly, Ubuntu 26.04, found
+2026-09-04 by building `crates/alo-bounding-kernel`.
+**Behaviour:** `bpf-linker` does not link objects the way a linker does — it
+reads the LLVM bitcode `rustc` produces and runs LLVM's own passes over it. So
+the LLVM it was built against has to be the LLVM the compiler emits, and when it
+is not, **nothing says so**. A programme with a single BPF map in it makes the
+linker die of a segmentation fault:
+
+```
+error: linking with `bpf-linker` failed: signal: 11 (SIGSEGV)
+  PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/
+  1. Running pass "sroa<modify-cfg>" on function "file_open"
+```
+
+Every part of that message points somewhere else. It names LLVM's bug tracker,
+so it reads as an LLVM bug; it names our own function, so it reads as our code;
+and it names an optimisation pass, so it reads as an optimiser problem. The
+actual cause is two version numbers that are never printed together. A
+programme with no map in it links perfectly, which is what makes the first hour
+of this go into the code rather than into the toolchain.
+**Our response:** the version is pinned in the repository rather than left to
+whichever nightly a machine has.
+`crates/alo-bounding-kernel/rust-toolchain.toml` names the compiler, and
+`crates/alo-bounding/build.rs` starts the nested build **in that directory** so
+the file is what decides — naming a channel on the command line would silently
+overrule it. Whoever builds alo OS needs a `bpf-linker` built against the LLVM
+that compiler emits: `rustc +<channel> -vV` says which, and
+`cargo install bpf-linker --no-default-features --features llvm-<n>` is how it is
+built against it. `docs/autonomy/LOOP.md` has what that took on this machine.
+**Date:** 2026-09-04
 
 ### ureq 3.4.0 — `send_json` puts a pretty-printed body on the wire
 **Behaviour:** the request body is `serde_json::to_writer_pretty`-shaped —
@@ -168,6 +246,31 @@ because a runtime alo OS ships is not an address anybody typed.
 A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
+
+### The device number `stat` reports is not the one the kernel keeps
+**Version:** Linux, any; found 2026-09-04 while writing `crates/alo-bounding`.
+**Behaviour:** `stat` reports a file's device in `st_dev`, and the kernel holds
+the same device in `super_block->s_dev`. **They are different packings of the
+same two numbers**, and nothing anywhere says so:
+
+```
+stat reports    minor & 0xff | major << 8 | (minor & ~0xff) << 12
+the kernel has  major << 20 | minor
+```
+
+For an ordinary partition at major 8, minor 2, one is `0x802` and the other is
+`0x800002`. A comparison between them does not fail loudly — it simply never
+matches, so a boundary keyed on a device number would find every file to be
+outside every grant while looking perfectly healthy, and the code doing it reads
+like the obviously correct code.
+**Our response:** the conversion is in one function,
+`alo_bounding::as_the_kernel_keeps_it`, with the two packings written above it,
+and it is the only place a device number crosses between the two. The test that
+would catch a mistake in it is not its own unit test — it is
+`a_turn_granted_a_folder_opens_a_file_inside_it`, because a wrong conversion
+refuses the granted file rather than allowing an ungranted one, which is a
+failure in the safe direction and therefore the failure nobody notices.
+**Date:** 2026-09-04
 
 ### `Path::is_absolute` answers about the host, not about the path
 **Version:** Rust 1.97 `std`, seen 2026-09-03 in `alo-saying` on Windows 11

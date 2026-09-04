@@ -1,0 +1,16 @@
+[package]
+name = "alo-bounding-map"
+version = "0.0.1"
+description = "The few bytes the daemon and the kernel must read the same way: where a turn may reach, and where the kernel keeps its own fields."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Nothing. This crate is compiled twice — once for this machine, once for the
+# BPF virtual machine inside the kernel — and the second of those has no
+# allocator, no operating system and no standard library. A dependency here
+# would have to survive both, and there is no dependency worth that.
+
+[lints]
+workspace = true

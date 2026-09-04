@@ -1,0 +1,46 @@
+[package]
+name = "alo-bounding-kernel"
+version = "0.0.1"
+description = "The half of the boundary that runs inside the kernel: one BPF LSM program on file_open."
+edition = "2024"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/aloworld-org/alo-os"
+publish = false
+
+# Its own workspace, and not by preference. A member of the workspace above is
+# compiled for this machine by the stable compiler with that workspace's lints;
+# this package is compiled for the BPF virtual machine, by nightly, with
+# `-Z build-std=core`, and it cannot run a test at all. Sharing a lockfile and a
+# lint table with the rest would mean the rest inheriting a nightly channel it
+# does not need.
+[workspace]
+
+[dependencies]
+# The one rented thing on this side, and `kernel.rs` is the only file that names
+# it. ADR 0015 chose it by name: it compiles Rust to BPF bytecode, so the
+# program in the kernel and the daemon that loads it are one language.
+# `libbpf` would put C in this repository, which `CLAUDE.md` calls a bug.
+aya-ebpf = "0.2.1"
+
+# The map, as both halves read it.
+alo-bounding-map = { path = "../alo-bounding-map" }
+
+[[bin]]
+name = "alo-bounding-kernel"
+path = "src/main.rs"
+test = false
+doc = false
+
+# A BPF program is verified before the kernel will run it, and the verifier
+# rejects what it cannot prove. `panic = "abort"` because there is nothing to
+# unwind into; `lto` and one codegen unit because the verifier's instruction
+# budget is spent on real work rather than on calls between our own functions;
+# `overflow-checks` off because a check compiles to a branch into a panic, and a
+# panic here is a program the kernel refuses to load.
+[profile.release]
+lto = true
+panic = "abort"
+codegen-units = 1
+opt-level = 3
+debug = false
+overflow-checks = false

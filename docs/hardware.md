@@ -73,7 +73,8 @@ else works.
 
 A certified machine's kernel has to be able to enforce a grant, which is a
 requirement about how the kernel was **configured** and not about the silicon.
-ADR 0015 names two things, and they are not the same thing:
+ADR 0015 names two things, they are not the same thing, and a third was found by
+trying to use a machine that satisfied both:
 
 - **`CONFIG_BPF_LSM=y`** — the BPF LSM is compiled into the kernel.
 - **`bpf` present in the list of security modules that actually start**, which
@@ -116,6 +117,29 @@ before it. The parameter has to name the modules the kernel already ran *and*
 `bpf` — which is why the line above has six names in it and not one. Read
 `/sys/kernel/security/lsm` before and after, and compare the two, rather than
 checking only that `bpf` appears in the second.
+
+**There is a third requirement, and it was found by a machine that passed both
+of the above.** A BPF LSM programme is attached through a *trampoline*, and
+building one waits for an RCU-tasks grace period to complete. On a kernel where
+that machinery has stalled the attach never returns, in uninterruptible sleep,
+and cannot be killed — no error, no timeout, and every later BPF attach on the
+machine queues behind it until a reboot. So:
+
+- **The kernel's RCU-tasks grace periods must complete.**
+
+```
+dmesg | grep -c tasks_rcu_exit_srcu_stall                 # must be 0
+```
+
+Anything but zero means no BPF LSM, `fentry` or `fexit` programme will attach on
+that machine, however the first two checks answer. The WSL2 kernel above is the
+worked counterexample for this one too: measured 2026-09-04, it starts the BPF
+LSM and cannot be attached to, because a grace period stalled about a minute
+after boot and never finished. `docs/quirks.md` has the entry, with the kernel's
+own log line in it.
+
+The three checks are in the order the failures happen in, and each one is
+invisible to the one before it: built in, started, and attachable.
 
 **This is a configuration expectation, not a patch.** `CLAUDE.md`'s *engines are
 configured, never patched* holds: what a certified machine needs is a kernel

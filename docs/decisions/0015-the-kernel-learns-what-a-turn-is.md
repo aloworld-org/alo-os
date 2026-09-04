@@ -118,6 +118,29 @@ It also keeps ADR 0001 §4 true at the depth where it would be easiest to break:
   `CONFIG_LSM`. The Fedora-derived base of ADR 0011 ships both — this is a kernel
   **config** expectation, not a patch, and it belongs in `docs/hardware.md` as
   something a certified machine must have.
+
+  **Two more of these were found by building it, and both are written into
+  `docs/hardware.md` rather than left here.** The list above is *how the kernel
+  was built*; what decides is *what it started* — a kernel can have
+  `CONFIG_BPF_LSM=y` and never register the module — and beyond that, *whether a
+  programme can be attached at all*, because attaching one waits on an RCU-tasks
+  grace period and a kernel whose grace periods have stalled hangs the attach
+  forever in uninterruptible sleep. Three checks, in the order they fail in, and
+  each invisible to the one before it.
+
+- **There is `unsafe` in the half that runs in the kernel, and this ADR is where
+  that was decided.** *Rust on both sides* means writing a programme whose input
+  is a raw pointer the kernel hands over and whose only way to dereference
+  anything is a helper call; there is no safe spelling of that and no crate to
+  rent one from, because the safety comes from the kernel's verifier refusing to
+  load a programme that would read out of bounds — a check stricter than the
+  compiler's and made after it. So `crates/alo-bounding-kernel` denies
+  `unsafe_code` at its root and lifts it in exactly one file, `kernel.rs`, which
+  is the shape `alo-agentd`'s `unix.rs` and `signalling.rs` already have. Four
+  things need it: the exported symbol, the hook's argument, a read of kernel
+  memory, and a map lookup. The half that runs on this machine,
+  `crates/alo-bounding`, has none and is a member of the workspace that forbids
+  it.
 - **`aya` is a rented dependency** and is named in one file, as ADR 0006 does
   with the model runtime and item 21c did with `SO_PEERCRED`.
 - **v0.01's owed line is answered.** *Enforcement at the network boundary,

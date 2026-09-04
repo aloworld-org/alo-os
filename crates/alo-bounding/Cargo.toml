@@ -1,0 +1,30 @@
+[package]
+name = "alo-bounding"
+version = "0.0.1"
+description = "The boundary a turn runs inside: the BPF LSM loaded, the cgroup made, and the one grant the kernel is told about."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+build = "build.rs"
+
+# Everything in this crate is a BPF program, a cgroup and a map the kernel
+# holds. On any other host it compiles to nothing at all rather than to a
+# version of itself that pretends, which is `alo-agentd`'s argument and the same
+# one: a boundary that could be constructed on a machine that cannot impose it
+# would be a type whose existence means nothing.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The one rented thing on this side, and `bounding.rs` is the only file that
+# names it. ADR 0015 chose it: Rust on both sides, no `libbpf`, no third
+# language. What is used of it is loading an object, filling two maps and
+# attaching one program.
+aya = "0.14"
+thiserror = { workspace = true }
+
+# The map, as both halves read it. The other half is
+# `crates/alo-bounding-kernel`, which this crate's `build.rs` compiles and
+# embeds.
+alo-bounding-map = { path = "../alo-bounding-map" }
+
+[lints]
+workspace = true

@@ -780,20 +780,26 @@ sorted the same way v0.01 now is.
       patched. **Ordered behind `alo-agentd` and the turn** — there is nothing
       to enforce until a turn exists, and this is written down now so the turn
       is built with a boundary rather than retrofitted into one
-  - [ ] The code. **No crate yet, but the obstacle that stopped it is gone.**
-        ADR 0015 is the mechanism — a BPF LSM on `file_open`, written in Rust
-        through `aya`, with one grant per cgroup — and a BPF LSM cannot be
-        written against a kernel that does not run one. The only Linux host this
-        repository can reach had the BPF LSM **compiled in and not started**, so
-        the first line of code had nowhere to be tested; a boot parameter fixed
-        that on 2026-09-04 and the hook, the BTF and the active list are now all
-        present. `docs/quirks.md` has both measurements and
-        `docs/autonomy/QUEUE.md` items 26 and 27 are the work
+  - [ ] The code. **Written and not proved, which is why this stays empty.**
+        Three crates as of 2026-09-04: `alo-bounding-kernel` is the BPF LSM
+        programme on `file_open`, written in Rust through `aya` with one place
+        per cgroup; `alo-bounding` loads it, reads the running kernel's own type
+        information to find out where that kernel keeps its fields, and holds
+        the map; `alo-bounding-map` is the sixteen bytes both halves read the
+        same way. Gated on both hosts and for the BPF target. **The two tests
+        that would show a kernel refusing a file have never run** — the only
+        Linux host this repository can reach cannot attach a BPF programme at
+        all, for a reason in the kernel that predates the work, so *built and
+        unit tested* is what this is. `docs/quirks.md` has the measurement;
+        `docs/autonomy/QUEUE.md` item 26 stays open, and 26a is the wiring
+        behind it
   - [ ] On the machine. The certified machine, and a kernel requirement that is
-        a **configuration** and not a patch: `CONFIG_BPF_LSM=y` **and** `bpf`
-        among the security modules that actually start. Those are two checks
-        rather than one, and `docs/hardware.md` says how to ask both — the
-        second is the one machines fail
+        a **configuration** and not a patch — now **three** checks rather than
+        one, each invisible to the one before it: `CONFIG_BPF_LSM=y`, `bpf`
+        among the security modules that actually start, and a kernel whose
+        RCU-tasks grace periods complete so a programme can be attached at all.
+        `docs/hardware.md` says how to ask all three; the second and third are
+        the ones machines fail
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing

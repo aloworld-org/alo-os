@@ -1,0 +1,22 @@
+# The compiler this half is built with, pinned, and the pin is load-bearing.
+#
+# `bpf-linker` does not link objects — it reads the LLVM bitcode `rustc` emits
+# and runs LLVM's own passes over it, so **the LLVM it was built against has to
+# be the LLVM this compiler emits**. That is not advice. With `rustc` on LLVM 23
+# and `bpf-linker` on LLVM 21, a program with a single map in it makes the
+# linker die of a segmentation fault inside an optimisation pass, and the
+# message names LLVM, a crash backtrace and our function — none of which is the
+# cause. `docs/quirks.md` has the finding.
+#
+# So the version is written down rather than left to whichever nightly a machine
+# happens to have. Moving it means rebuilding `bpf-linker` against the matching
+# LLVM on every machine that builds alo OS, and `docs/autonomy/LOOP.md` has what
+# that takes.
+#
+# Nightly at all, rather than stable, for one reason: there is no prebuilt
+# `core` for `bpfel-unknown-none`, so it is compiled from source with
+# `-Z build-std=core`, and that is a nightly option. Nothing else here needs
+# nightly, and no other crate in this repository is built with it.
+[toolchain]
+channel = "nightly-2026-06-01"
+components = ["rust-src"]
