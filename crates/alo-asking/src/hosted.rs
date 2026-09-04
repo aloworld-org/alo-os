@@ -8,7 +8,7 @@
 //!
 //! # Nothing here opens anything on its own
 //!
-//! [`Hosted::ask`] is `pub(crate)` and its one caller is
+//! `Hosted::ask` is `pub(crate)` and its one caller is
 //! [`crate::Asking::to_a_provider`], which has already obtained an
 //! `alo_egress::Departing` — so there is no public function reaching a provider
 //! without law 1's indicator having shown it first. The guarantee is

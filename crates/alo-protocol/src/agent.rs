@@ -97,7 +97,7 @@ impl FromAnAgent {
     ///
     /// # Errors
     /// A `serde_json::Error`, which a request cannot cause. See
-    /// [`crate::frame`] for why it is handed back rather than swallowed.
+    /// `frame.rs` for why it is handed back rather than swallowed.
     pub fn written(&self) -> Result<String, serde_json::Error> {
         frame::line(self.clone().into())
     }
@@ -118,8 +118,8 @@ impl FromAnAgent {
     ///
     /// Duplicates and all: an argument named twice arrives twice, so that
     /// `alo_capability::CallError::SameArgumentTwice` is reachable rather than
-    /// having been decided by a JSON reader. [`crate::argument`] is where that
-    /// is argued.
+    /// having been decided by a JSON reader. `argument.rs` is where that is
+    /// argued.
     #[must_use]
     pub fn given(&self) -> Vec<(&str, Given)> {
         match self {

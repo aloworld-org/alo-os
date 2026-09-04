@@ -91,7 +91,7 @@ impl FromAPerson {
     ///
     /// # Errors
     /// A `serde_json::Error`, which an answer cannot cause. See
-    /// [`crate::frame`] for why it is handed back rather than swallowed.
+    /// `frame.rs` for why it is handed back rather than swallowed.
     pub fn written(&self) -> Result<String, serde_json::Error> {
         frame::line((*self).into())
     }

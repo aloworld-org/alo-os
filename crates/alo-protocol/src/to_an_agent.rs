@@ -69,8 +69,8 @@ impl ToAnAgent {
     /// A change is waiting under this number, with the sentence it waits on.
     ///
     /// Takes the change rather than the number, so an answer cannot be composed
-    /// without the sentence the person will be asked — [`crate::standing`] is
-    /// where that is argued.
+    /// without the sentence the person will be asked — `standing.rs` is where
+    /// that is argued, and [`Standing`] is the shape it makes.
     #[must_use]
     pub fn proposed(
         waiting: &alo_capability::Waiting,
@@ -134,9 +134,9 @@ impl ToAnAgent {
     /// This answer as the line that carries it.
     ///
     /// # Errors
-    /// A `serde_json::Error`. See [`crate::frame`] for why it is handed back
-    /// rather than swallowed, and for the bound a client holds this to when it
-    /// reads one.
+    /// A `serde_json::Error`. See `frame.rs` for why it is handed back rather
+    /// than swallowed, and for the bound a client holds this to when it reads
+    /// one.
     pub fn written(&self) -> Result<String, serde_json::Error> {
         frame::spoken(self.clone().into())
     }

@@ -218,6 +218,23 @@ test count silently drops to zero is the failure this rule exists to catch —
 check the count, not just the colour. Any crate that acquires a
 `[target.'cfg(target_os = "linux")']` block joins this rule the day it does.
 
+**`cargo doc` is the same rule read backwards, and it fails the other way.**
+The gate includes rustdoc on public items, and on Windows
+`cargo doc --workspace --no-deps` emits **twenty-eight** *unresolved link*
+warnings — twenty-four in `alo-agentd` and four in `alo-bounding` — because a
+crate header linking `[`starting`]` or `[`Boundary`]` links to a module that is
+`cfg`'d out on this host. Every one of them is about code that is correct, and
+on Linux the same command is silent. So where tests on Windows say *green* and
+mean *nothing ran*, rustdoc on Windows says *warning* and means *not this
+platform's file*, and both are the same fact wearing opposite colours.
+
+`Cargo.toml` therefore denies `rustdoc::private_intra_doc_links` — the real one,
+which fires identically on both hosts — and leaves `broken_intra_doc_links` at a
+warning, because denying it would fail the gate on the host the loop runs on for
+a reason that is not about the code. **Read the rustdoc gate on Linux**, and on
+Windows check only that the count is the twenty-eight the platform explains: a
+twenty-ninth is somebody's new broken link hiding in the noise.
+
 ## Where things are
 
 | | |

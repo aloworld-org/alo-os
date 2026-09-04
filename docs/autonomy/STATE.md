@@ -7117,3 +7117,93 @@ what that now waits on: an image with `/run/alo` in its `tmpfiles.d` (queue 28).
   `Place::beneath(&folder, us()?)` is what the two integration tests use; a
   future rule about the root that is only true on a real machine would be a rule
   with no test, which is what `/run` being unwritable already costs.
+
+---
+
+## Iteration — item 21m: thirteen sentences that had quietly stopped pointing anywhere
+
+**Built.** No code changed. `cargo doc --workspace --no-deps` said *public
+documentation links to private item* thirteen times — ten in `alo-protocol`, three
+in `alo-asking` — and every one of them is now a code span. `Cargo.toml` gained
+`[workspace.lints.rustdoc] private_intra_doc_links = "deny"`, so the fourteenth
+fails the build rather than joining the list.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1756 tests and 45 doctests on Linux, 1563 and 45 on Windows** — both
+identical to the entry above, which is the result this item wanted: a change to
+prose that moved a test count would have been a change that was not to prose.
+`alo-agentd` ran 157 unit tests on Linux and 0 on Windows, as it always does.
+`cargo doc --workspace --no-deps` exits 0 with **zero** warning lines on Linux.
+The kernel half's own gate — `cargo fmt --all --check` and `cargo clippy
+--release --target bpfel-unknown-none -Z build-std=core` — clean.
+
+**The decision the item left open: a code span every time, and two different
+reasons for it.** The item said *sometimes the right sentence and sometimes a
+sign the link should point somewhere public*, so each was read on its own.
+
+In `alo-protocol` ten links named a private **module** — `crate::frame` four
+times, `crate::argument`, `crate::naming` twice, `crate::standing`, `asked`,
+`told` — always in a sentence of the form *see this for why*. The tempting fix is
+to make the modules `pub`, and it is wrong twice over: the wire format is a
+public surface (`docs/contracts/daemon-protocol.md`), so publishing `frame::line`
+and the whole of `asked` to keep one sentence clickable would be a contract
+change made for a documentation link. What replaced it is the filename in plain
+text — `` `frame.rs` `` — which is not a new idiom: `alo-asking`'s own
+`hosted.rs` already wrote *the wire itself is `openai.rs`*, so this is the house
+style being applied rather than invented. One link gained something instead of
+losing it: `ToAnAgent::proposed` now names the public [`Standing`] beside
+`standing.rs`, because there the type is reachable and the argument is not.
+
+In `alo-asking` all three were sentences whose **subject** is the privacy —
+*`Answer::new` is `pub(crate)`*, *`Hosted::ask` is `pub(crate)`*,
+*`Question::text` is `pub(crate)`*. Linking a private item inside a clause
+asserting that it is private is the documentation disagreeing with itself in the
+same breath, so a code span there is the correct rendering and not a fallback.
+
+**What was worth more than the thirteen: the lint.** Fixing them by hand fixes
+today. `Cargo.toml`'s existing comment says a rule only a reviewer enforces
+survives until the reviewer is busy, and that is exactly how thirteen of these
+accumulated across two crates with nobody noticing — because the failure mode is
+silent by construction. rustdoc drops the link and leaves the prose, so the
+reader sees a well-formed sentence that has stopped offering the thing it names.
+Nothing on screen is wrong. `private_intra_doc_links = "deny"` is now beside the
+clippy denials.
+
+**`broken_intra_doc_links` is deliberately left at a warning, and `LOOP.md`
+gained the paragraph saying why.** On Windows `cargo doc` emits **twenty-eight**
+*unresolved link* warnings — 24 in `alo-agentd`, 4 in `alo-bounding` — because
+their modules are `cfg(target_os = "linux")` and a crate header linking
+`[`starting`]` or `[`Boundary`]` links to nothing on this host. On Linux the same
+command is silent. Denying it would fail the gate on the machine the loop runs on
+for a fact about the platform, so it stays a warning with a rule beside it: read
+the rustdoc gate on Linux, and on Windows check the count is the twenty-eight the
+platform explains, because a twenty-ninth is somebody's real broken link hiding
+in the noise. That is *`alo-agentd` is never gated on Windows* read backwards —
+tests there go green and mean nothing ran; rustdoc there warns and means not this
+platform's file — and both halves now live in the same section of `LOOP.md`.
+
+**`ROADMAP.md` was not moved, and this is the case step 6 asks to be said out
+loud rather than passed over.** This item served no roadmap line. It is not a
+capability: it moved no crate's behaviour, added no verb, closed no promise in
+`docs/features.md`, and the two crates it touched — `alo-protocol` and
+`alo-asking` — kept their clauses exactly as the lines already state them. The
+header's counts did not move either, because no test did. Ticking anything for it
+would have been the loop learning to tick in order to discharge an obligation,
+which `LOOP.md` names as worse than never updating the file.
+
+**What the next iteration should know.**
+
+- **The next ready item in queue order is 26a**, the boundary in front of a turn.
+  16b is not ready by its own words, 19b is blocked on Wayland, 21i on the shell,
+  21k on an ADR nobody has written, and 21l on a place a question can leave for.
+  Item 28 — the image — is blocked on nothing and is still the one that would
+  move any of the eighteen machine halves.
+- **The rustdoc gate now has two halves and they are not symmetrical.** Run
+  `cargo doc --workspace --no-deps` on **Linux** for the real answer; a run on
+  Windows is only useful for confirming the count is twenty-eight. A private link
+  now fails the build on both.
+- **Twenty-eight is a number to watch, not a number to trust.** It is 24 plus 4
+  today. If a Linux-only module is added to either crate, or one is added to a
+  third crate, the number moves for an honest reason — so check what the new ones
+  name before writing a larger number down.

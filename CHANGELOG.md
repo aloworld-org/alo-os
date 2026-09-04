@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Thirteen sentences in the developer documentation had lost their links, and
+  now the compiler will not let that happen again.** Somebody reading
+  `alo-protocol` or `alo-asking`'s published documentation would find sentences
+  saying *see this for why* with nothing to follow: the link pointed at a file
+  that is internal to the crate, so rustdoc quietly dropped it and left ordinary
+  prose behind. Nothing was ever wrong on screen, which is exactly why nobody
+  noticed. Each one now names the file in plain text, so a reader is told where
+  the reasoning lives instead of being offered a door that is not there — and
+  three of them were sentences whose whole point was that the thing is internal,
+  where a link was the documentation contradicting itself. The build now refuses
+  the next one rather than warning about it.
+
 - **The agent's door moved to somewhere the agent can actually reach.** The
   daemon's socket was inside the person's session directory, which the login
   manager creates so that only the person may enter it — and alo OS's agent is a

@@ -46,7 +46,7 @@ pub enum Done {
     /// What is in a file, as text.
     ///
     /// Contents rather than a name, so nothing is filtered out of it: see
-    /// [`crate::naming`] for why those are different questions.
+    /// `naming.rs` for why those are different questions.
     Read {
         /// The file's contents.
         text: String,

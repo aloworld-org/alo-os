@@ -64,11 +64,11 @@
 //! They are two types because they arrive from two sides of one machine, and a
 //! door that took both would be a door where the side that proposed a change
 //! could approve it. ADR 0001 §5 would then be true of the capability model and
-//! false of the socket in front of it. [`asked`] is where the whole of that
+//! false of the socket in front of it. `asked.rs` is where the whole of that
 //! argument lives, together with what it does **not** claim: which side a caller
 //! is really on is peer credentials on a Unix socket, and that is `alo-agentd`'s.
 //!
-//! **The answers divide the same way**, and [`told`] is where that is argued:
+//! **The answers divide the same way**, and `told.rs` is where that is argued:
 //! [`ToAnAgent`] has no shape for what the person is being asked, so a daemon
 //! cannot put one side's answer on the other side's connection even by mistake.
 //!
@@ -111,7 +111,7 @@
 //! **What goes back was its own decision, and the decision was that
 //! `alo_files::Answer` does not gain a `Serialize`.** A path is not always text,
 //! so a derived one would fail on somebody's filename rather than on nobody's;
-//! [`naming`] has the whole argument and the rule that replaced it, which is
+//! `naming.rs` has the whole argument and the rule that replaced it, which is
 //! `alo-files`' own — a name that cannot be shown is **counted**, never dropped
 //! silently and never made into an error.
 //!

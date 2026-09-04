@@ -102,9 +102,9 @@ impl ToAPerson {
     /// This answer as the line that carries it.
     ///
     /// # Errors
-    /// A `serde_json::Error`. See [`crate::frame`] for why it is handed back
-    /// rather than swallowed, and for the bound a client holds this to when it
-    /// reads one.
+    /// A `serde_json::Error`. See `frame.rs` for why it is handed back rather
+    /// than swallowed, and for the bound a client holds this to when it reads
+    /// one.
     pub fn written(&self) -> Result<String, serde_json::Error> {
         frame::spoken(self.clone().into())
     }

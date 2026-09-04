@@ -18,7 +18,7 @@
 //!   `Debug` would put somebody's question in every log line, panic message and
 //!   error report that ever formats a structure holding one. The model is shown
 //!   there, because that is a name and not a question.
-//! - **No accessor outside this crate.** [`Question::text`] is `pub(crate)`, and
+//! - **No accessor outside this crate.** `Question::text` is `pub(crate)`, and
 //!   its only caller is the one file that builds the request body.
 //!
 //! **What this does not claim**, as `alo_models::Secret` says of a key: the

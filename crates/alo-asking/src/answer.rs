@@ -9,7 +9,7 @@
 //! because it is a sentence that must appear every single time and nothing was
 //! forcing it to.
 //!
-//! This is what forces it. [`Answer::new`] is `pub(crate)` and takes the source,
+//! This is what forces it. `Answer::new` is `pub(crate)` and takes the source,
 //! there is no constructor that does not, and [`Answer::came_from`] renders it
 //! in the reader's own language. So a shell holding an answer is holding the
 //! sentence about where it came from, and showing one without the other is a

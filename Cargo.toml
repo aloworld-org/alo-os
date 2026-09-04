@@ -76,6 +76,22 @@ unimplemented = "deny"
 indexing_slicing = "deny"
 missing_docs_in_private_items = "warn"
 
+# The gate says rustdoc on public items and it says zero warnings, and for
+# thirteen of these it said both while neither was true: a `[`crate::frame`]`
+# from a public method to a private module drops the link rather than saying
+# something false, so a reader sees an ordinary sentence and nobody is told.
+# Denying it is what stops the next one, and the fix is never a wider `pub` —
+# it is a code span naming the file, which is where the argument is anyway.
+#
+# `broken_intra_doc_links` is deliberately left at its default warning. Every
+# module in `alo-agentd` and `alo-bounding` is `cfg(target_os = "linux")`, so on
+# Windows their own header links resolve to nothing and `cargo doc` says so
+# twenty-eight times about code that is correct; denying it would fail the gate
+# on the host for a fact about the platform. `docs/autonomy/LOOP.md` records
+# that beside the rule it belongs to.
+[workspace.lints.rustdoc]
+private_intra_doc_links = "deny"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

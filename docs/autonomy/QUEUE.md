@@ -2347,7 +2347,7 @@ out.
   Until it lands, `agentd.nothing-answers-questions` is what a machine says, and
   it is true rather than a placeholder.
 
-- [ ] **21m. Thirteen rustdoc warnings in two crates.** Found while gating item
+- [x] **21m. Thirteen rustdoc warnings in two crates.** Found while gating item
   21j, which had three of its own and fixed them: `cargo doc --workspace
   --no-deps` says *public documentation links to private item* ten times in
   `alo-protocol` and three times in `alo-asking`. Every one is a `[`…`]` link
@@ -2361,7 +2361,38 @@ out.
   named in public documentation is sometimes the right sentence and sometimes a
   sign the link should point somewhere public.
 
-  Ready: no decision in it, and no host it needs.
+  **All thirteen became a code span, and the two crates divided for two
+  different reasons.** In `alo-protocol` ten links named a private *module* —
+  `crate::frame`, `crate::argument`, `crate::naming`, `crate::standing`,
+  `asked`, `told` — in sentences of the form *see this for why*, and the answer
+  is the filename in plain text: `` `frame.rs` ``, which is the idiom
+  `alo-asking`'s own `hosted.rs` already used for `openai.rs`. Making the modules
+  `pub` was rejected and is the reason this item did not grow — it is a public
+  surface change (`docs/contracts/daemon-protocol.md`) to fix a documentation
+  link, and it would publish `frame::line` and the whole of `asked` to keep one
+  sentence clickable. The one link that gained something is
+  `ToAnAgent::proposed`, where the public [`Standing`] exists beside the private
+  argument, so the sentence now names both.
+
+  In `alo-asking` all three were sentences whose *subject* is the privacy —
+  *`Answer::new` is `pub(crate)`*, *`Hosted::ask` is `pub(crate)`*,
+  *`Question::text` is `pub(crate)`*. A link there is the documentation
+  contradicting itself in the same clause, so a code span is not a fallback but
+  the correct rendering.
+
+  **What keeps it fixed is a lint, not this iteration's care.**
+  `[workspace.lints.rustdoc] private_intra_doc_links = "deny"` is new in
+  `Cargo.toml`, beside the clippy denials and for the reason written above them:
+  a rule only a reviewer enforces survives until the reviewer is busy.
+  `broken_intra_doc_links` is deliberately **not** denied, and `LOOP.md` gained
+  the paragraph saying why — on Windows it fires twenty-eight times on
+  `alo-agentd` and `alo-bounding` because their modules are `cfg`'d out, which is
+  the *never gated on Windows* rule read backwards: tests there go green and mean
+  nothing ran, rustdoc there warns and means not this platform's file.
+
+  `cargo doc --workspace --no-deps` exits 0 with **zero** warning lines on Linux.
+  No code changed, no test moved: 1756 tests and 45 doctests on Linux, 1563 and
+  45 on Windows, both unchanged and both green.
 
 - [ ] **21l. A refusal that names who set the rule.** The half of ADR 0016 that
   21h could not reach: *the bound wins, and the person is told who set it*. It
