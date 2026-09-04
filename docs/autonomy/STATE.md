@@ -9117,3 +9117,61 @@ repository reads.
 - **Nothing on the development box changed**, and nothing was touched to find
   that out. The WSL box is as item 30 left it, `alo-os:dev` is still a local
   image, and Docker's debt stays paid.
+
+---
+
+## Iteration — the sixth empty queue, run against the previous entry's own advice
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, and this is the sixth consecutive entry to say so.
+
+**Two commands, both from the template the entry above left.**
+`ls docs/decisions/` ends at **0018**, so the two ADRs that free 21k, 21l and 26f
+still do not exist. `git status` is clean against `f8167c3`, the commit that
+entry made, so the queue, the eight blocks, the crates and `image/` are the same
+bytes that were read then. Nothing else was asked, and nothing else could have
+answered differently: an ADR is the only thing that arrives from outside without
+touching this tree, and a clean tree at a known commit settles everything that
+does.
+
+The prompt this iteration was given names a track, as every one of them has.
+`LOOP.md` answers it: there is one queue here, and the word is noise.
+
+### The gate was not run, for the reason the fifth entry gave
+
+`LOOP.md` step 4 gates **a change**, and nothing was built. This tree was gated
+in full four times — `fmt` and `clippy` clean on both hosts, **1954 test results
+on Linux and 1723 on Windows** with zero failures, the kernel crate's own two
+commands, `bpffs` empty afterwards, and rustdoc's **52** platform-explained
+warning lines on Windows against zero on Linux. Those numbers are **carried, and
+marked as carried**, exactly as they were one entry ago. A fifth and sixth
+identical run would measure the same unchanged bytes at about an hour each.
+
+### What is new, and it is only that the advice was tested
+
+The fifth entry predicted that a sixth iteration would find one `ls` and one
+`git status` and nothing else. That prediction is now measured rather than
+reasoned: it held. Which means the cheap-entry template is not a one-off
+convenience but the correct shape for every iteration until an 0019 lands — and
+the honest cost of a sixth is two commands and this paragraph, against the hour
+the first three of these entries each spent re-proving a green suite.
+
+**`ROADMAP.md` untouched and nothing ticked. No `CHANGELOG.md` line** — nothing
+was built, and a sixth empty queue is not something a person outside this
+repository reads.
+
+### What the next iteration should know
+
+- **Stop the loop.** Third entry in a row to say it, and the cheapest run yet
+  behind it. Until `docs/decisions/` holds an **0019**, an iteration is
+  permitted to do nothing but confirm that.
+- **The one live question is unchanged**, and it is not a question for the loop:
+  somebody writes the ADR on where a runtime on this machine is (frees 21k, then
+  21l — read ADR 0006 first), or the one on what a bound's lifetime is (frees
+  26f, a real hole in shipped code that fails closed). A compositor or the
+  settings surface frees 21i and 19b; a machine with ten gigabytes free turns
+  23b into seven data changes.
+- **Nothing on the development box was touched**, so it is as item 30 and the
+  Docker repair left it: units installed and stopped, nothing pinned,
+  `alo-os:dev` still a local image, `bpffs` mounted or not depending on whether
+  the distribution has restarted.
