@@ -8289,7 +8289,12 @@ boot proved the units start; it did not prove the boundary is enforcing.
 
 ## Iteration — a grade nobody here can check, and the Linux box will not start
 
-LOOP HALT
+- `LOOP HALT` — written by that iteration and **discharged 2026-09-04**: it
+  halted on a grade it could not confirm because the machine holding the models
+  would not answer. `wsl --shutdown` was the fix and the iteration correctly left
+  it alone, since docker-desktop would have gone with it. The owner ran it. WSL is
+  back, Ollama is answering on `127.0.0.1:11434`, and the six pulled models are
+  still there. Kept behind a bullet as a record rather than a signal.
 
 **Nothing was built, and two things are wrong that this iteration must not work
 around.** Neither of them was caused by it: the tree was already red when it read
@@ -8374,4 +8379,67 @@ reports.
 - **Why will Ubuntu not start?** Until it does there is no Linux gate, no
   `cargo doc` that means anything, and no way to re-run a measurement on this
   machine at all.
+
+
+---
+
+## The Linux box is back, and what the image boot found
+
+Not an iteration. Written by hand.
+
+**`wsl --shutdown` was run, which is the call the halting iteration left to the
+owner and was right to leave.** WSL had wedged — `Wsl/Service/0x8007274c`, then
+`CreateInstance/0x800705b4` — under memory pressure rather than any fault of the
+loop's. It is back, Ollama answers on `127.0.0.1:11434`, and the six models that
+iteration pulled are still there, so item 23a can be confirmed rather than
+guessed. Its refusal to write four names into `MEASURED` on the strength of a
+comment in the file being graded was the right call and stands.
+
+**Why the box ran out of memory is worth recording**: a QEMU virtual machine was
+booting the image at the same time, with 2 GB, on a host already running the
+loop, Docker, two editors and a browser. No single process was at fault — the
+working sets summed to 10.2 GB of 15.5. **VM work and the loop should not share
+this machine**, and the next boot gets 1 GB rather than 2.
+
+### What the image boot proved, and what it did not
+
+The image from item 28 was installed to a disk with `bootc install to-disk` and
+booted in QEMU. In order: UEFI → GRUB 2.12 → the ostree deployment →
+`6.19.14-101.fc42.x86_64`. Then, read from inside the running machine:
+
+```
+active LSMs: lockdown,capability,yama,selinux,bpf,landlock,ipe,ima,evm
+tasks_rcu_exit_srcu_stall: 0
+btf: 6,831,825 bytes
+bpffs mounted
+pinned: /sys/fs/bpf/alo/fields  /sys/fs/bpf/alo/bounds  /sys/fs/bpf/alo/file_open
+alo-boundaryd: active / success, exited 0/SUCCESS
+```
+
+**The boundary is imposed for real.** `alo-boundaryd` ran privileged at boot,
+attached the programme to `file_open` — the hook ADR 0015 names — and left the
+maps pinned. ADR 0018 is a thing that has happened.
+
+**`alo-agentd` starts and dies in thirty milliseconds.** The audit trail is
+`type=1130` at 39.783 and `type=1131` at 39.813. `/run/alo` exists and is empty:
+no socket. Its own reason is in the journal, which the first probe did not ask
+for, and the second probe run — which would have — was lost to the memory
+pressure above.
+
+**A correction that belongs here rather than only in a chat.** The first boot
+was reported as both services starting, on the strength of
+`[ OK ] Started alo-agentd.service` in the console. For `Type=exec` that line
+means the *exec* succeeded and nothing more. It is a moment, not an outcome, and
+the service had already failed by the time anything looked again. This is the
+same false-green shape as `cargo test` reporting zero tests on Windows, made by
+the same person on the same day, and the lesson is identical: **a green line
+that cannot distinguish "started" from "still running" is not evidence of
+either.**
+
+**What the next iteration takes.** `alo-agentd` refusing to stay up on the image
+is a bug in our code, findable from the source plus the evidence above, and it
+does not need a virtual machine to diagnose. The boundary it opens is pinned at
+`/sys/fs/bpf/alo/`, owned as ADR 0018 specifies, and `/run/alo` is created but
+empty — so the question is what it does between opening the map and binding the
+socket.
 
