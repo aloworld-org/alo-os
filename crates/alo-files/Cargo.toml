@@ -12,5 +12,14 @@ alo-capability = { path = "../alo-capability" }
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
+# Only for a test, and only for one number. The width of a turn's boundary is
+# argued in `alo-bounding-map` and is an argument about *these six verbs*, which
+# that crate cannot see — so the claim is checked from the side that has the
+# list. It is not a dependency of the crate itself: what a file verb reaches is
+# a fact about the call, and it would be the same on a machine with no kernel to
+# tell about it.
+[dev-dependencies]
+alo-bounding-map = { path = "../alo-bounding-map" }
+
 [lints]
 workspace = true

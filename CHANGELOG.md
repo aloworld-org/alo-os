@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Renaming, moving and archiving a file can now be done inside the kernel's
+  boundary at all.** Each of those makes a *new* name somewhere, and a name
+  cannot be made in a folder nothing is allowed to open — so alo OS now works
+  out, for each of the six things an agent may do to files, exactly which places
+  the work has to reach: the ones the request named, plus the folder any new
+  name goes in. Nothing more. The archive a request would write is never itself
+  part of the boundary, because it does not exist yet and there would be nothing
+  to point the kernel at.
+
+  **Where somebody has granted a single file rather than a folder, renaming it
+  reaches the folder that file sits in, so the kernel's boundary is wider than
+  the grant in that one case.** That is written down rather than glossed over.
+  The grant is still what decides: alo OS refuses to make a name nobody granted,
+  before anything on the disk is touched. The kernel's boundary is the floor
+  under a mistake in our own code, not a second copy of the rule.
+
+  And the six are now held to the boundary's size by a test rather than by an
+  argument in a file that cannot see them: a boundary holds four places, the
+  widest of the six needs two, and a seventh that needed five would fail the
+  build instead of failing on somebody's machine.
+
 - **The kernel's boundary is now drawn around exactly what the agent was asked
   to touch, and no more.** Some of the things an agent can be asked to do name
   two places at once — moving a file names the file *and* the folder it is going

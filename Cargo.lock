@@ -159,6 +159,7 @@ dependencies = [
 name = "alo-files"
 version = "0.0.1"
 dependencies = [
+ "alo-bounding-map",
  "alo-capability",
  "alo-strings",
  "thiserror",

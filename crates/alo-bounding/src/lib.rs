@@ -76,7 +76,7 @@
 //! It is not wired into a turn. `alo-turn` joins an invocation, a call, an
 //! approval, an execution and the record, and `alo-agentd` is what holds one; a
 //! boundary around the execution and *not* around the entry written afterwards
-//! needs those two doors separated, and that is queue item 26c.
+//! needs those two doors separated, and that is queue item 26d.
 //!
 //! What is here is the whole of the mechanism a turn stands on: the kernel
 //! refusing (item 26), the thread that goes into the boundary and comes back out
@@ -84,11 +84,13 @@
 //! and **which** places a turn is bound to (item 26b) — the ones this execution
 //! named, which [`places_of`] makes and says why.
 //!
-//! What is not here is the caller that names them. Nothing on this machine calls
-//! [`places_of`] with a real call's paths yet, because the crate that would is
+//! What is not here is the caller that names them. **Which** paths a real call
+//! names is answered — `alo_files::Reaching` is the resolved paths plus the
+//! folder above anything the call would create (item 26c) — and nothing on this
+//! machine hands them to [`places_of`] yet, because the crate that would is
 //! `alo-turn` and its doors do the disk work and write the record together; a
 //! thread bounded across both would be refused the record. Separating them, and
-//! `alo-agentd` making its subtree when it starts, is item 26c.
+//! `alo-agentd` making its subtree when it starts, is item 26d.
 //!
 //! # The dangerous property, said out loud
 //!

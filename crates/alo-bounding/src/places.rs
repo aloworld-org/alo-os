@@ -33,9 +33,10 @@
 //! it takes paths that exist, and one that does not is
 //! [`NotBounded::NotAPlace`] rather than a place made up.
 //!
-//! Which paths those are for each of the six verbs is the wiring's, and the
-//! wiring is queue item 26c. What is settled here is that the bound is made of
-//! them and of nothing else.
+//! Which paths those are for each of the six verbs is `alo-files`' —
+//! `alo_files::Reaching` is the resolved paths plus the folder above anything
+//! the call would create, and that crate's `reaching.rs` argues it (item 26c).
+//! What is settled here is that the bound is made of them and of nothing else.
 //!
 //! # Too many is refused, and refusing is the only safe direction
 //!

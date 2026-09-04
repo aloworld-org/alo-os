@@ -842,7 +842,17 @@ sorted the same way v0.01 now is.
         asks all of them at each step, and it is measured — a turn bounded to two
         folders opens a file in each while the private key beside them is still
         refused, and a folder the execution did not name is outside the bound
-        even when the turn was granted it. **What is left of this half is 26c** —
+        even when the turn was granted it. **Item 26c is ticked, and it answered
+        which places one execution reaches**: the paths a call named, resolved,
+        plus the folder above anything it would create — so a rename, a move and
+        an archive can be bounded at all, and the archive that does not exist yet
+        is never itself a place. The widest of the six needs two of the four an
+        entry holds, and the six are now held to that by a test in the crate that
+        has the list rather than by an argument in a crate that cannot see them.
+        The one case where the boundary is wider than the grant — a rename under
+        a grant over a single file needs the folder that file sits in — is
+        written down rather than designed away, and the grants stay the deciding
+        answer. **What is left of this half is 26d** —
         putting `Turns::doing` in front of `alo-turn` inside `alo-agentd`, which
         needs that crate's doors separated so a boundary is around the verb and
         not around the record written afterwards, and is not written

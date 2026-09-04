@@ -49,6 +49,16 @@
 //! not been asked about at all. A grant covers where a file goes, not only
 //! where it comes from.
 //!
+//! # And what a machine that can impose a boundary asks before any of it
+//!
+//! [`Reaching`] is the one question this crate answers for somebody else's
+//! benefit: **which places does this execution have to be able to open?** On a
+//! Linux machine that is what a turn is bounded to by the kernel (ADR 0013,
+//! ADR 0015), and it is the paths the call named plus the folder above anything
+//! it would create — narrower than the grants, and made of the call rather than
+//! of them. [`reaching`] argues why, including the one case where it is wider
+//! than a grant and why the grants are still the deciding answer.
+//!
 //! # What a person reads
 //!
 //! Nothing in this crate composes an English sentence for a screen. Every
@@ -95,6 +105,7 @@ pub mod answer;
 pub mod doing;
 pub mod failed;
 pub mod named;
+pub mod reaching;
 pub mod real;
 pub mod resolving;
 pub mod touching;
@@ -116,6 +127,7 @@ pub use doing::Did;
 pub use failed::Failed;
 pub use looking::MOST_READ;
 pub use named::{Kind, Named, can_be_shown};
+pub use reaching::Reaching;
 pub use real::{Real, RealError};
 pub use resolving::{OnThisMachine, Resolving};
 pub use touching::Touching;

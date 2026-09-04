@@ -7441,3 +7441,109 @@ since item 26.
 - **Nothing here was verified on a certified machine.** It is
   `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
   certified one is still the exit gate.
+
+## Iteration — item 26c: everywhere one execution has to reach
+
+**Built.** `crates/alo-files` gained `reaching.rs` (`Reaching` — everywhere one
+execution has to be able to open, made from a `Touching`, with `places`, `len`,
+`is_empty` and `holds`), `Todo` in `doing.rs` became `pub(crate)` along with its
+`of` and `creating`, and the crate gained a dev-dependency on `alo-bounding-map`
+for one number. New integration test
+`tests/what_one_execution_reaches.rs`. `crates/alo-bounding`'s `lib.rs` and
+`places.rs` had the sentences that said *the wiring will decide which paths*
+replaced with what now decides them.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1796 tests and 46 doctests on Linux** (was 1784 and 46), **1584 and 46
+on Windows** (was 1572 and 46). The twelve new ones are the same twelve on both
+hosts — 7 unit and 5 integration — because everything in this item is portable.
+`alo-files` ran 85 unit tests and 11 + 4 + 5 + 5 integration tests on Linux, and
+82 with 11 + 3 + 5 + 5 on Windows; the differences are the unix-only symbolic
+link tests that were there before this item. The
+kernel half's own gate — `cargo fmt --all --check` and `cargo clippy --release
+--target bpfel-unknown-none -Z build-std=core` — clean. `cargo doc --workspace
+--no-deps` exits 0 with zero warnings on Linux, and on Windows the count is
+still the thirty-four the platform explains: twenty-four for `alo-agentd`, ten
+for `alo-bounding`, nothing against a third crate.
+
+**The item was cut while it was being built, and this is the third time in a
+row.** 26c as written was two things — which paths go into the bound, and the
+wiring — and the wiring is now item 26d. The seam is the item's own: the wiring
+cannot begin until there is an answer to *bounded to what*, and it is a change
+to `alo-turn`, which 1500 tests hang off, plus `alo-agentd` making a cgroup
+subtree at start-up. Doing both would have been half of each, and the half that
+is a boundary is not one to do halfway.
+
+**The answer is the resolved paths plus the folder above anything the call would
+create.** Three of the six create something and none of the three names it, so
+none can be looked up before it exists; what has to be opened to make one is the
+folder, which is there. The same place named twice is one place, which is what
+keeps a move at two rather than three — it names the folder it is going into
+*and* creates a name inside it.
+
+**The decision the item did not contain: the boundary is wider than the grant in
+exactly one case, and it is written down rather than designed away.** A grant can
+be over a single file (ADR 0001 §4 — the document offered at invocation), and a
+rename under one has to reach the folder that file sits in, because there is no
+way to make a name in a folder nothing may open. The tempting answer is to bound
+it to the file alone; that is a turn that is refused halfway through doing what
+it was asked, which ADR 0015 says is the thing not to build. So the grants stay
+the narrower and the deciding answer — `Did::of` refuses a created name nobody
+granted, before anything is touched — and the kernel's boundary is a floor under
+a verb with a bug in it rather than the capability model said twice. That
+argument is in `reaching.rs`'s header, where somebody reading the mechanism will
+meet it.
+
+**One mapping, asked twice, rather than two that agree today.** `Todo` in
+`doing.rs` is the only thing in alo OS that knows which of a file verb's
+arguments are paths and what a call of it would create, and `reaching.rs` asks it
+rather than reading the six again. Asking one deterministic function twice about
+one immutable value cannot produce two answers; two functions can, and the day
+somebody adds a seventh verb only one of them would be updated. The cost is a
+few map lookups and a `join` per execution.
+
+**And the test item 26b said it was owed is here.** `bounds.rs` argues for four
+places from *the widest call names two paths, and a change creates a name in the
+folder each of them sits in* — an argument about six verbs, made in a crate that
+cannot see them. It is now asserted from the side that has the list, and from the
+declarations rather than from calls somebody happened to write: a verb reaches at
+most one place per path argument plus one folder if it creates anything, and *at
+most one* is the type's, because what a file verb creates is an `Option` rather
+than a list. A seventh verb needing five places fails the build instead of
+failing as `TooManyPlaces` on somebody's machine. It runs on both hosts, because
+`alo-files` and `alo-bounding-map` are both portable.
+
+**`ROADMAP.md` moved**, per step 6. The *grant enforced by the kernel* line's
+code half now says what 26c answered and names 26d as what is left of it.
+**Nothing was ticked.** The half stays empty because nothing is in front of a
+turn yet, which is the honest state and is what that half has said since item 26.
+
+**What the next iteration should know.**
+
+- **The next ready item in queue order is 26d**, the wiring, and it is the same
+  work the old 26c described minus the question this item answered: `alo-turn`'s
+  doors separated so a boundary is around the verb and not around the entry
+  (`carrying.rs` is where the two meet), `alo-agentd` making its subtree in
+  `starting.rs` and giving it back in `stopping.rs`, and what the daemon does
+  with `NotBounded`. After it, 27 — the LSM decides and forgets. 16b is not ready
+  by its own words, 19b is blocked on Wayland, 21i on the shell, 21k on an ADR
+  nobody has written, 21l on a place a question can leave for. Item 28 — the
+  image — is blocked on nothing and is still the one that would move any of the
+  eighteen machine halves.
+- **The order 26d has to keep is resolve, reach, bound, run, leave, record.**
+  Resolving happens *outside* the boundary and it is not a preference: a reach is
+  made of resolved paths, so a thread inside a boundary cannot look up what it is
+  not yet allowed to open. Writing the entry is outside for the reason
+  `alo-bounding` already gives — a thread bounded across both would be refused
+  the record.
+- **`alo-turn` cannot depend on `alo-bounding`.** That crate is Linux and
+  `alo-turn` is portable, so what goes in is a trait shaped like `Kept`: one
+  implementation that is real, held by the machine, no constructor without one.
+  An implementation that bounds nothing must not be reachable from outside a
+  test — ADR 0015 leaves no honest fallback, and a default no-op would turn the
+  guarantee off on the host this loop runs on.
+- **Nothing in this item was verified on a certified machine, and nothing in it
+  needed a kernel.** It is arithmetic about paths, and it is the same answer on a
+  machine with no boundary at all. What still ends on the certified machine is
+  ADR 0015 itself.

@@ -27,6 +27,15 @@
 //! not. A record that flattened the two would tell a security review that the
 //! grants stopped a full disk. The authorisation comes back either way, because
 //! either way something is written down.
+//!
+//! # What each of the six comes down to is written here once
+//!
+//! The private `Todo` below is the only place in alo OS that knows which of a
+//! file verb's arguments are paths and what a call of it would create.
+//! [`crate::reaching`] asks it the same question before the work starts —
+//! everywhere this execution has to be able to open — rather than reading the
+//! six a second time, so a seventh verb cannot be understood by one of them and
+//! not the other.
 
 use std::path::{Path, PathBuf};
 
@@ -121,8 +130,15 @@ impl Did {
 /// Made once, before anything is touched, so that what a call *would create* is
 /// known before the grants are asked about it and before a single byte is
 /// written. Every verb's arguments are read here and nowhere else.
+///
+/// `pub(crate)` for [`crate::reaching`], which needs the same answer before the
+/// work starts rather than as part of doing it: everywhere this execution has
+/// to reach is the paths it named plus the folder above whatever it would
+/// create, and both of those are known here. It asks this rather than reading
+/// the six again, because two functions that both know what `move_file` comes
+/// down to are two answers waiting to disagree.
 #[derive(Debug)]
-enum Todo<'a> {
+pub(crate) enum Todo<'a> {
     /// List what is in a folder.
     List {
         /// The folder.
@@ -171,7 +187,7 @@ enum Todo<'a> {
 
 impl<'a> Todo<'a> {
     /// What this call comes down to.
-    fn of(touching: &'a Touching) -> Result<Self, Failed> {
+    pub(crate) fn of(touching: &'a Touching) -> Result<Self, Failed> {
         let verb = touching.verb();
         match verb {
             "list_folder" => Ok(Self::List {
@@ -234,7 +250,7 @@ impl<'a> Todo<'a> {
     /// A read creates nothing, and answering `None` for one is the whole
     /// difference: the grants are asked about what a change would leave behind,
     /// and a question about what a read would leave behind has no answer.
-    fn creating(&self) -> Option<&Path> {
+    pub(crate) fn creating(&self) -> Option<&Path> {
         match self {
             Self::List { .. } | Self::Read { .. } | Self::Find { .. } => None,
             Self::Rename { to, .. } | Self::Move { to, .. } | Self::Archive { to, .. } => Some(to),
