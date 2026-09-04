@@ -8971,3 +8971,81 @@ box.
   nothing pinned. Ollama 0.33.3 installed and not running.
 - **`alo-os:dev` now exists as a local image**, if anybody wants to look inside
   one without building it again.
+
+---
+
+## Iteration — the fourth empty queue, and the loop asking to be stopped
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, and this is the fourth consecutive entry to say so.
+
+**Three of the eight were read again anyway, and the other five were not.** The
+entry above is right that re-reading impossible work burns money, so this
+iteration read only the three whose block is phrased as *an ADR is needed* —
+21k, 21l and 26f — because those are the ones a person could have unblocked
+between two commits without touching the queue. They are unchanged, and so is
+the thing they wait on: `docs/decisions/` ends at **0018**. The other five were
+taken from the entry that read all eight in full, against a working tree that is
+clean at every commit since.
+
+**The loop may not write those ADRs, and that is recorded rather than inferred.**
+The hand-written entry above item 26e opens *written by hand after the loop
+stopped on two ADRs it was right not to write itself*. So the option that would
+make this queue move — deciding where a runtime on this machine is, and what a
+bound's lifetime is — is the one thing an iteration is forbidden to reach for,
+and reaching for it would be step 6's *ticking to discharge an obligation* moved
+one file over into `docs/decisions/`.
+
+### What the world was asked, and why there was almost nothing left to ask
+
+The entry above answered all three of its own questions and said a fourth
+iteration would have none. That was accurate. `docs/decisions/` is the only one
+worth asking twice — an ADR is a file somebody adds, and adding one is exactly
+what would end this run of entries — and it has not moved. 23b's memory ceiling
+is a fact about the host, not something that changes between commits. Docker's
+debt was discharged and `image/` has not been touched since.
+
+### The gate, run in full a fourth time on an unchanged tree
+
+Every number is this run's, measured rather than copied.
+
+- `cargo fmt --all --check` clean on both hosts.
+- `cargo clippy --workspace --all-targets -- -D warnings` exits 0 on both, with
+  **zero** lines beginning `warning` or `error`.
+- **1954 test results on Linux and 1723 on Windows, zero failures either side** —
+  unchanged from item 30 and from the three entries above.
+- `crates/alo-bounding-kernel`: `cargo fmt --all --check` clean, and
+  `cargo clippy --release --target bpfel-unknown-none -Z build-std=core` clean
+  with zero warning lines.
+- `bpffs` was not mounted at the start of this run and was mounted as `LOOP.md`
+  describes; **`ls -A /sys/fs/bpf` empty afterwards**, so nothing was left
+  pinned.
+- `cargo doc --workspace --no-deps` exits 0 on Linux with **zero** warning lines.
+  On Windows, measured after removing `target/doc`: **52 warning lines — 49
+  unresolved links and three per-crate summaries — split 24 `alo-agentd`, 21
+  `alo-bounding`, 4 `alo-boundaryd`**, counted off the `-->` lines rather than
+  trusted. That is the count, the split and the three crates the platform
+  explains.
+
+**`ROADMAP.md` untouched and nothing ticked. No `CHANGELOG.md` line** — nothing
+was built, and a person outside this repository cannot read a fourth clean run
+of a suite that was clean three times already.
+
+### What the next iteration should know
+
+- **A fifth iteration should not be run.** This is the useful thing this entry
+  has to say. Four consecutive `LOOP COMPLETE`s have now cost four full gate
+  runs to establish that a tree nobody has touched is still green, and the one
+  question with any chance of a different answer — has an ADR landed — is a
+  single `ls docs/decisions/`. Until that directory holds an 0019, an iteration
+  can do nothing except spend an hour of compute confirming the previous hour.
+- **What ends this, in one sentence each.** An ADR on where a runtime on this
+  machine is frees 21k and then 21l, and is the last thing between a person's
+  chosen model and an answer — whoever writes it reads ADR 0006 first, because
+  the adapter is the only file that knows Ollama exists. An ADR on what a
+  bound's lifetime is frees 26f, which is a real hole in shipped code that fails
+  closed. A compositor or the settings surface frees 21i and 19b. A machine with
+  ten gigabytes free turns 23b into seven data changes and no code.
+- **Nothing on the development box changed.** The WSL box is as item 30 left it,
+  `bpffs` is mounted again and does not survive a restart of the distribution,
+  and `alo-os:dev` is still a local image.
