@@ -143,16 +143,16 @@ legal answer in some places and a cultural one in others.
 
 ## What is **not** in it
 
-**Where the socket goes.** That is `$XDG_RUNTIME_DIR`, which the person's
-session sets when they sign in and empties when they sign out, so it is a fact
-about the session rather than a decision anybody wrote down. The socket is
-`alo/agentd.sock` beneath it, and `docs/contracts/daemon-protocol.md` says so.
+**Where the socket goes.** It is `/run/alo/<uid>/agentd.sock` for the person
+this file already names, and `docs/contracts/daemon-protocol.md` says so. A key
+for it would be a second answer to a question the two logins above settle — and
+a key naming a directory is a key somebody can point at one they own.
 
-When the variable is not set, `alo-agentd` **refuses to start** rather than
-guessing. `/tmp` is writable by everybody, so a directory there is one anybody
-can create first; `/run/user/<uid>` worked out from the login is the session
-manager's to make, and a service that made it because it wanted the name would
-be standing in for a session that has not started.
+The parent, `/run/alo`, is the image's: it is made at boot through `tmpfiles.d`,
+and `alo-agentd` **refuses to start** rather than create it (ADR 0017). Until
+2026-09-04 the socket was `$XDG_RUNTIME_DIR/alo/agentd.sock`, which was
+unreachable by the agent on any real machine; the ADR is why it moved and what
+was rejected on the way.
 
 **Anything secret.** There are two login numbers, two lengths of time and two
 paths in this file and nothing else. A provider's key lives in the keyring and

@@ -861,12 +861,15 @@ to follow a link.
 undefined behaviour. `CLAUDE.md` forbids `unsafe` workspace-wide, so a test
 cannot set `$XDG_RUNTIME_DIR` — and a function that goes and reads it is one
 whose refusals cannot be exercised at all.
-**Our response:** the decision is separated from the lookup.
-`alo_agentd::session::where_it_runs` takes what the variable said, and
-`from_the_environment` is a single line that goes and looks. Every rule — not
-set, set to nothing, set to a relative path — is a test over the first, and the
-second has nothing in it to be wrong. The same shape is worth reaching for
-anywhere else this workspace ends up reading the environment.
+**Our response:** the decision is separated from the lookup. It was
+`alo_agentd::session::where_it_runs` taking what the variable said, with
+`from_the_environment` as the single line that went and looked; that file is
+gone with ADR 0017, which took the socket out of the session, and
+`alo_choosing::where_it_is` is the same shape still running — it takes
+`$XDG_CONFIG_HOME` and `$HOME` as arguments and reads neither itself.
+Every rule is a test over the first, the second has nothing in it to be wrong,
+and the shape is worth reaching for anywhere else this workspace ends up reading
+the environment.
 **Date:** 2026-09-03
 
 ### A `poll` resumed after a signal cannot say how much of its timeout is left
@@ -901,13 +904,21 @@ directory. Every connection from the agent's login is `EACCES` before the two
 locks this repository designed are consulted at all. The person's own door works,
 which is why item 21c's tests never saw it: telling the two doors apart takes two
 logins and a test process has one.
-**Our response:** written down and left, in this iteration. It is not a bug in
-`place.rs` — the directory and the socket are exactly the modes they should be —
-it is the socket being in the wrong place, and where it goes instead is a
-decision with security in it: a directory outside the session has to be made by
-something privileged, has to be per-person on a machine that may have more than
-one, and has to disappear when they sign out, which is the whole reason
-`$XDG_RUNTIME_DIR` was chosen. `docs/autonomy/QUEUE.md` item 21j is that
-decision. Until it is taken, the agent's door is reachable by tests and by
-nothing on a real machine, and no claim to the contrary is made anywhere.
-**Date:** 2026-09-03
+**Our response:** written down and left when it was found, then moved. It was
+never a bug in `place.rs` — the directory and the socket are exactly the modes
+they should be — it was the socket being in the wrong place, and where it goes
+instead was a decision with security in it: a directory outside the session has
+to be made by something privileged, has to be per-person on a machine that may
+have more than one, and has to disappear when they sign out, which is the whole
+reason `$XDG_RUNTIME_DIR` was chosen. ADR 0017 took that decision and the socket
+is now `/run/alo/<uid>/agentd.sock`: the parent is the image's through
+`tmpfiles.d`, the person's directory is the daemon's and goes when the daemon
+does. The three requirements are met by three different owners rather than by
+one directory that met all of them and could not be entered.
+
+**What has still not been done is the measurement that found this**: a
+connection from a second real login. The code is built and unit tested, the
+image entry does not exist yet (`docs/autonomy/QUEUE.md` item 28), and no claim
+that the agent's door works on a real machine is made anywhere until somebody
+runs the two users again.
+**Date:** 2026-09-03, and the move on 2026-09-04

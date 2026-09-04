@@ -12,6 +12,35 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The agent's door moved to somewhere the agent can actually reach.** The
+  daemon's socket was inside the person's session directory, which the login
+  manager creates so that only the person may enter it — and alo OS's agent is a
+  separate login on purpose, so every connection it made was refused by that
+  directory before any of alo OS's own permissions were consulted. The person's
+  side worked; the agent's could not have worked on any real machine. It is now
+  `/run/alo/<uid>/agentd.sock`, one directory per person, and every rule the old
+  path had is unchanged: the person owns it, the agent's group may enter it,
+  nobody else can see that it exists.
+
+  **Who makes what is now three answers instead of one.** The image makes
+  `/run/alo` at boot and the daemon refuses to create it — a machine missing it
+  is told which directory is missing and who makes it, rather than having one
+  invented at a mode a service chose. The person's own directory is made when
+  their session starts, and it goes with the socket when the daemon stops, so a
+  machine nobody is signed in to has no door standing open. Anything else in
+  that directory is left where it is.
+
+  This is a **change to a published path**, taken now on purpose: nothing outside
+  this repository speaks to `alo-agentd` yet, and after the first release the
+  same move would need a version and a migration. `docs/decisions/0017-…` is the
+  decision and what was rejected on the way, including running the agent as the
+  person — which would have made the problem disappear along with the boundary
+  the whole design rests on.
+
+  What this does not yet claim: the door has not been knocked on by a second
+  login since it moved, because that needs an image with `/run/alo` in it and
+  there is no image yet.
+
 - **A person can now say which model answers their questions, in a file of their
   own.** alo OS reads `~/.config/alo/settings.toml` — the model that answers, and
   the languages they read, and nothing else. It is per-person, because a machine

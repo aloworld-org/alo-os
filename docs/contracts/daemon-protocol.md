@@ -304,22 +304,44 @@ claimed) are carried beside the sentence rather than inside it.
 A **Unix domain socket**, one per signed-in person, at
 
 ```
-$XDG_RUNTIME_DIR/alo/agentd.sock
+/run/alo/<uid>/agentd.sock
 ```
 
-Both names are part of this contract: `alo` for the directory and `agentd.sock`
-for the socket. A client finds this machine's daemon by that path and by nothing
-else — there is no port, no announcement on the network, and nothing to
-discover. `crates/alo-agentd`'s `place.rs` is this paragraph as working code.
+where `<uid>` is the person's login number. Both names are part of this
+contract: `alo` for the directory and `agentd.sock` for the socket. A client
+finds this machine's daemon by that path and by nothing else — there is no port,
+no announcement on the network, and nothing to discover.
+`crates/alo-agentd`'s `place.rs` is this paragraph as working code.
+
+**This moved, and it is the only break this document has taken.** It was
+`$XDG_RUNTIME_DIR/alo/agentd.sock` until 2026-09-04, and that path cannot work:
+`logind` makes `/run/user/<uid>` `0700` and owned by the person, so the agent —
+a login of its own, ADR 0001 §5 — was refused by the *parent* directory before
+either of the two modes below was consulted. [ADR 0017] is the decision and the
+reasoning; the move is taken now, before v0.01, because nothing outside this
+repository speaks this protocol yet and after v0.01 the same change costs a
+version and a migration.
+
+[ADR 0017]: ../decisions/0017-the-agents-door-is-ours-and-not-in-the-session.md
+
+**Three things own three parts of that path.**
+
+- `/run/alo` is the **image's**, made at boot through `tmpfiles.d`, `0755` and
+  owned by root. The daemon never creates it: a machine without it is told which
+  directory is missing and who makes it, and starts nothing.
+- `/run/alo/<uid>` is the **daemon's**, made when that person's session starts
+  and taken away — the socket, then the directory — when it ends. A directory
+  with anything else in it is left where it is.
+- The socket is the daemon's, and goes with the directory.
 
 **The directory is `0750` and the socket is `0660`**, both owned by the person
 and both handed to the group the agent is in. Nobody else on the machine can
 reach the socket at all — not to connect, not to see whether it is there. The
-daemon makes the directory itself, with that mode from the moment it exists, and
-refuses to start rather than use one that is a symbolic link, is not a
-directory, or belongs to somebody else: whoever owns the directory a socket
-lives in can replace the socket, and every client on the machine would then be
-talking to them.
+daemon makes the directory with that mode from the moment it exists, and refuses
+to start rather than use one that is a symbolic link, is not a directory, or
+belongs to somebody else: whoever owns the directory a socket lives in can
+replace the socket, and every client on the machine would then be talking to
+them.
 
 **A message is a line.** One request or one answer per line, terminated by a
 newline, with no newline inside it — which is free, because a JSON string

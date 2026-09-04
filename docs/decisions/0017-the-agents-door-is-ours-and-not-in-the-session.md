@@ -100,7 +100,9 @@ migration.
 ## Consequences
 
 - `place.rs` keeps its checks and changes where it points; `session.rs` stops
-  reading `$XDG_RUNTIME_DIR` for this purpose.
+  reading `$XDG_RUNTIME_DIR` for this purpose. **Built on 2026-09-04**, queue
+  item 21j, and `session.rs` turned out to have no other purpose: it is deleted
+  rather than left reading a variable nothing asks about.
 - The image gains a `tmpfiles.d` entry, which is the first thing this repository
   asks of the image for the daemon rather than for the desktop.
 - The daemon gains a session lifetime it did not have: something must remove

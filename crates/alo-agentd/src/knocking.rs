@@ -69,16 +69,14 @@ impl Knocking for Listening {
 )]
 mod tests {
     use super::*;
-    use crate::place::Place;
-    use crate::testing::{a_directory_of_our_own, ourselves};
+    use crate::testing::{a_place_of_our_own, ourselves};
 
     /// **The socket is a `Knocking`, and what it says is what the kernel
     /// said.** The service is written against the trait, so this is the test
     /// that the thing it is really handed on a machine is the same shape.
     #[test]
     fn the_real_socket_answers_with_the_door_the_kernel_chose() {
-        let folder = a_directory_of_our_own("knocking");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("knocking");
         let listening = Listening::at(place.clone(), ourselves()).unwrap();
 
         let client = UnixStream::connect(place.socket()).unwrap();

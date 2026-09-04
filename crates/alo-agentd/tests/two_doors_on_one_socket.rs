@@ -83,7 +83,7 @@ fn an_approval() -> String {
 #[test]
 fn what_arrives_is_read_with_the_reader_the_door_chose() {
     let folder = a_directory_of_our_own("read-by-the-door");
-    let place = Place::under(&folder);
+    let place = Place::beneath(&folder, us().unwrap());
     let listening = Listening::at(place.clone(), this_machine()).unwrap();
 
     let mut client = UnixStream::connect(place.socket()).unwrap();
@@ -108,7 +108,7 @@ fn what_arrives_is_read_with_the_reader_the_door_chose() {
 #[test]
 fn a_request_for_the_other_door_is_refused_on_this_one() {
     let folder = a_directory_of_our_own("wrong-door");
-    let place = Place::under(&folder);
+    let place = Place::beneath(&folder, us().unwrap());
     let listening = Listening::at(place.clone(), this_machine()).unwrap();
 
     let mut client = UnixStream::connect(place.socket()).unwrap();
@@ -143,7 +143,7 @@ fn a_machine_with_one_login_gets_no_socket() {
 #[test]
 fn two_connections_are_two_callers() {
     let folder = a_directory_of_our_own("two-at-once");
-    let place = Place::under(&folder);
+    let place = Place::beneath(&folder, us().unwrap());
     let listening = Listening::at(place.clone(), this_machine()).unwrap();
 
     let first = UnixStream::connect(place.socket()).unwrap();

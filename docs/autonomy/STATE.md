@@ -7035,3 +7035,85 @@ the paragraph around it is about.
   spoken to the moment the decision is written. It also means the two entries
   under *blocked — hardware* that the commit above unfiled are startable, and
   they are at the bottom of the queue rather than in its order.
+
+---
+
+## Iteration — item 21j: the agent's door moves out of the person's session
+
+**Built.** ADR 0017 as working code. `crates/alo-agentd/src/place.rs` is now
+`/run/alo/<uid>/agentd.sock`: `Place::for_person` for a real machine,
+`Place::beneath` for a root a test may write in, `THE_ROOT`,
+`NotBound::NoParent`, and `Place::taken_away`. `listening.rs` takes the door away
+with the daemon rather than the socket alone. `session.rs`, `NoSession` and
+`NotStarted::NoSession` are **deleted** — nothing reads `$XDG_RUNTIME_DIR` any
+more, and a module kept for a purpose it no longer has is the next reader's wrong
+turning. `docs/contracts/daemon-protocol.md`'s *The transport* and
+`docs/contracts/machine-description.md`'s *What is not in it* moved with it, both
+saying when and why rather than reading as though it had always been so.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1756 tests and 45 doctests on Linux** (was 1757 and 45): seven removed
+— six in `session.rs` and one refusal test about a variable nothing reads — and
+six added. **1563 and 45 on Windows, unchanged, and that is the warning rather
+than a result**: every module in `alo-agentd` is `cfg(target_os = "linux")`, the
+crate ran **157 unit tests on Linux and 0 on Windows**, and the Windows number
+did not move because none of this compiles there. `cargo doc -p alo-agentd
+--no-deps` clean.
+
+**The decision the ADR left to the code: what a missing `/run/alo` is.** A
+`mkdir` of `/run/alo/<uid>` on a machine without the parent answers `ENOENT`, and
+the two ways to take that are `create_dir_all` and a refusal. `create_dir_all`
+is wrong and not by a little — it would make the directory *every* person's door
+goes in, at a mode this service chose, on a machine where it is missing because
+something is wrong with the boot, and `place.rs`'s whole argument is that whoever
+owns the directory a socket lives in can replace the socket. So
+`NotBound::NoParent` names the directory, names `tmpfiles.d`, and creates
+nothing. It is the third owner in a path that now has three: the image's root,
+the daemon's per-person directory, the daemon's socket.
+
+**What the session used to do is now owed.** `logind` empties
+`/run/user/<uid>`; nothing empties `/run/alo/<uid>`. So `Place::taken_away`
+removes the socket and then the directory — `remove_dir`, never
+`remove_dir_all`, so a directory with anything else in it is left where it is,
+which is the refusal `prepared` already makes one step earlier. *The socket
+outliving the session* is three tests now: the door goes with the daemon, the
+root does not, and a directory holding somebody else's file keeps it.
+
+**The `tmpfiles.d` entry was left to item 28 on purpose.** 21j's bullet list
+asked for it and item 28 — written later — claims it beside the Containerfile and
+the unit. A `tmpfiles.d` file alone in a repository with no image is a file
+nothing reads and no test can gate: writing it here would have been half of 28
+rather than the whole of 21j. Item 28 already names it.
+
+**Found while gating, not fixed, and now item 21m:** `cargo doc --workspace
+--no-deps` emits **thirteen** *public documentation links to private item*
+warnings — ten in `alo-protocol`, three in `alo-asking`. This iteration's own
+three (from linking `Place::taken_away`, which is `pub(crate)`) are fixed; the
+other thirteen are older and are somebody's next small item rather than something
+to fold in quietly.
+
+**`ROADMAP.md` moved**, per step 6. The `alo-agentd` line's code half — already
+ticked — gained what 21j finished, and its machine half's first clause changed
+from *a socket the agent can actually reach* to *the door being reached*, naming
+what that now waits on: an image with `/run/alo` in its `tmpfiles.d` (queue 28).
+**Nothing was ticked.** No capability box and no machine box was touched.
+
+**What the next iteration should know.**
+
+- **The next ready item in queue order is 21m** — the thirteen rustdoc warnings,
+  which is small and was written down this iteration rather than folded in — and
+  after it **26a**, the boundary in front of a turn. 16b is not ready by its own
+  words, 19b is blocked on Wayland, 21i on the shell, 21k on an ADR nobody has
+  written, and 21l on a place a question can leave for. Item 28 — the image — is
+  blocked on nothing and is the one that would move any of the eighteen machine
+  halves.
+- **Nothing here was verified on a real machine, and the item says so.** Item
+  21c's *a connection from a second user has never been made* is still true. The
+  path an agent would use is no longer one it is locked out of by construction,
+  which is a different and smaller claim.
+- **`Place::beneath` is the seam every test in this crate now hangs off.**
+  `crate::testing::a_place_of_our_own` is what the unit tests use and
+  `Place::beneath(&folder, us()?)` is what the two integration tests use; a
+  future rule about the root that is only true on a real machine would be a rule
+  with no test, which is what `/run` being unwritable already costs.

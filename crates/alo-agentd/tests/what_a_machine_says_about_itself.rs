@@ -127,7 +127,7 @@ fn the_two_logins_in_the_file_open_the_real_socket() {
     let at = described("socket-file", &describing_this_machine(&record), 0o600);
     let machine = Described::at(&at, us().unwrap()).unwrap();
 
-    let place = Place::under(&folder);
+    let place = Place::beneath(&folder, us().unwrap());
     let listening = Listening::at(place.clone(), machine.sides()).unwrap();
 
     let client = std::os::unix::net::UnixStream::connect(place.socket()).unwrap();

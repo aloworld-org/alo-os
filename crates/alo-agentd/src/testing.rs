@@ -64,6 +64,7 @@ use alo_turn::{Machine, Turning};
 
 use crate::caller::{Caller, Uid};
 use crate::knocking::Knocking;
+use crate::place::Place;
 use crate::refusing::NotACaller;
 use crate::side::{Side, Sides};
 use crate::unix::{our_group, us};
@@ -109,6 +110,16 @@ pub(crate) fn a_directory_of_our_own(what: &str) -> PathBuf {
     drop(std::fs::remove_dir_all(&folder));
     std::fs::create_dir_all(&folder).unwrap();
     folder
+}
+
+/// A door of this test's own, in a root of this test's own.
+///
+/// `/run/alo` is the image's and a test may not write in it (ADR 0017), so the
+/// root is a directory on the disk the tests are running on and the person is
+/// whoever is running them. What is being tested is every rule beneath the
+/// root — which is where all of them are.
+pub(crate) fn a_place_of_our_own(what: &str) -> Place {
+    Place::beneath(&a_directory_of_our_own(what), ourselves().person())
 }
 
 /// A fixed moment, for the tests that do not run a service.

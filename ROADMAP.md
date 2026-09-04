@@ -438,12 +438,19 @@ compositor is not required for, which is why it runs unbroken.
         way anything else does — one byte on a descriptor, from a handler that
         allocates nothing. It has been started, talked to and stopped as a real
         process with two real logins, which is what nothing above this sentence
-        could previously claim
+        could previously claim. Since item 21j the agent's door is somewhere the
+        agent could reach: running it as two real logins found that a `0750`
+        directory inside `logind`'s `0700` session directory is a locked room
+        inside a locked building, so ADR 0017 moved the socket to
+        `/run/alo/<uid>/agentd.sock` — a root the image makes and the daemon
+        refuses to invent, a per-person directory the daemon makes when a session
+        starts and takes away with the socket when it ends, and every check
+        `place.rs` already made carried over unchanged
   - [ ] **On the machine.**
-        a socket the agent can actually reach — running the process found that
-        `$XDG_RUNTIME_DIR` is `0700` and the agent is a different user, so its
-        door is refused by the directory above the socket on any real machine
-        (queue 21j, `docs/quirks.md`); which model or provider answers a
+        the door being reached — the path moved in code and no connection from a
+        second login has been made since, and it cannot be until an image exists
+        with `/run/alo` in its `tmpfiles.d` (queue 28, ADR 0017,
+        `docs/quirks.md`); which model or provider answers a
         question, which needs somewhere for a person's own choice to live
         (queue 21h); the acting half of the application
         verbs, which is Wayland and D-Bus and is the whole of what makes any

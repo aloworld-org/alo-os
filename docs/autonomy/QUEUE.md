@@ -60,7 +60,12 @@ anywhere. All three are the same argument — `unsafe` is forbidden, so what the
 kernel will only be asked through `unsafe` is asked through somebody else's
 crate, in the one file that names it. It is also **the only crate in this
 workspace that is a process**: `main.rs` is the order the decisions in
-`starting.rs` are made in, and nothing else here has a `main` at all. Since **item 21d** it
+`starting.rs` are made in, and nothing else here has a `main` at all. Since
+**item 21j** it is also the only one that **owns a place on the machine outside
+anybody's session** — `/run/alo/<uid>`, made when the daemon starts for a person
+and taken away when it stops — which is what a door two different logins can both
+reach costs: `logind` empties the session directory and nothing empties this one,
+so the removing is ours. Since **item 21d** it
 is the crate that reaches the most of this workspace and is reached by none of
 it: six crates since **item 21e**, and the second half of that sentence is what
 a service is — everything decides, one thing runs. The sixth is `alo-keeping`,
@@ -2342,6 +2347,22 @@ out.
   Until it lands, `agentd.nothing-answers-questions` is what a machine says, and
   it is true rather than a placeholder.
 
+- [ ] **21m. Thirteen rustdoc warnings in two crates.** Found while gating item
+  21j, which had three of its own and fixed them: `cargo doc --workspace
+  --no-deps` says *public documentation links to private item* ten times in
+  `alo-protocol` and three times in `alo-asking`. Every one is a `[`…`]` link
+  from a public item to a `pub(crate)` one — `crate::naming`, `Answer::new`,
+  `crate::frame` — so the sentence a reader is shown loses its link rather than
+  saying something false, which is why nothing has caught it.
+
+  It is small and it is real: `CLAUDE.md` says **zero** warnings, not warnings we
+  live with, and `cargo doc` is in the gate as *rustdoc on public items*. The fix
+  is a link or a code span in each place, decided one at a time — a private item
+  named in public documentation is sometimes the right sentence and sometimes a
+  sign the link should point somewhere public.
+
+  Ready: no decision in it, and no host it needs.
+
 - [ ] **21l. A refusal that names who set the rule.** The half of ADR 0016 that
   21h could not reach: *the bound wins, and the person is told who set it*. It
   is unreachable today because both lists a choice can name are this machine and
@@ -2371,41 +2392,62 @@ out.
   the same ones: a description is the organisation's and grants are the
   person's.
 
-- [ ] **21j. Where the socket goes, so the agent can reach it.** Found by
-  running the process rather than by reading anything, and `docs/quirks.md` has
-  the measurement: `logind` creates `$XDG_RUNTIME_DIR` as `0700` owned by the
-  person, so an agent that is a login of its own is refused by the *parent*
-  directory before either of the two locks `place.rs` sets is consulted. The
-  person's door works; the agent's cannot be reached on a real machine at all.
+- [x] **21j. Where the socket goes, so the agent can reach it** — implements
+  [ADR 0017](../decisions/0017-the-agents-door-is-ours-and-not-in-the-session.md)
+  and moves *The transport* in `docs/contracts/daemon-protocol.md`, a public
+  surface. Found by running the process rather than by reading anything, and
+  `docs/quirks.md` has the measurement: `logind` creates `$XDG_RUNTIME_DIR` as
+  `0700` owned by the person, so an agent that is a login of its own was refused
+  by the *parent* directory before either of the two locks `place.rs` sets was
+  consulted. The person's door worked; the agent's could not be reached on a
+  real machine at all.
 
-  **It wanted writing down before it was written, and it is written:
-  [ADR 0017](../decisions/0017-the-agents-door-is-ours-and-not-in-the-session.md).**
-  `place.rs` is right — the directory is `0750` and handed to the agent's group,
-  the socket is `0660` — and it is unreachable anyway, because `logind` makes
-  `/run/user/<uid>` `0700`: a correct `0750` directory inside a `0700` one is a
-  locked room inside a locked building.
+  `crates/alo-agentd`: `place.rs` rewritten around `/run/alo/<uid>` —
+  `Place::for_person` for a real machine, `Place::beneath` for a root a test may
+  write in, `THE_ROOT`, `NotBound::NoParent`, and `Place::taken_away`.
+  `listening.rs` drops the door rather than the socket; `session.rs`, `NoSession`
+  and `NotStarted::NoSession` are **gone**, because nothing reads
+  `$XDG_RUNTIME_DIR` any more and a module kept for a purpose it no longer has is
+  the next reader's wrong turning. **157 unit tests in the crate** (was 158: six
+  session tests and one refusal test removed, six added), 4 + 8 integration;
+  **1756 tests and 45 doctests on Linux** (was 1757 and 45), 1563 and 45 on
+  Windows, unchanged because this crate runs **zero** tests there — `LOOP.md`'s
+  standing warning rather than news. `cargo doc -p alo-agentd` clean.
 
-  The socket moves to **`/run/alo/<uid>/agentd.sock`**. The image creates
-  `/run/alo` through `tmpfiles.d`; the daemon creates the per-person directory
-  when a session starts and removes it when it ends. That is allowed where
-  creating `/run/user/<uid>` was not, and the ADR keeps the distinction: making
-  our own directory in response to a session that already exists is reacting to
-  one, not standing in for `logind` and inventing one.
+  **The one decision the ADR left to the code: what a missing `/run/alo` is.**
+  `mkdir` of `/run/alo/<uid>` on a machine without the parent answers
+  `ENOENT`, and the two ways to take that are `create_dir_all` and a refusal.
+  `create_dir_all` is the wrong one and not by a little: it would make the
+  directory every person's door goes in, at whatever mode this service chose,
+  on a machine where it is missing because something is wrong with the boot —
+  and `place.rs`'s whole argument is that whoever owns the directory a socket
+  lives in can replace the socket. So `NotBound::NoParent` names the directory,
+  names `tmpfiles.d`, and creates nothing.
 
-  What is left here is the work rather than the decision:
+  Three decisions the next items inherit. **The door is named by the person's
+  uid, not by their session**, so where the socket goes is answered by the two
+  logins the description already holds — item 21k's *whose settings* cannot be
+  answered this way and still needs a session. **The daemon owes what the
+  session used to do**: `logind` empties `/run/user/<uid>` and nothing empties
+  `/run/alo/<uid>`, so `Place::taken_away` removes the socket and then the
+  directory, `remove_dir` and never `remove_dir_all` — a directory with anything
+  else in it is left where it is, which is the same refusal `prepared` makes one
+  step earlier. **A public path may be broken exactly once more than never**:
+  this is taken before v0.01 with nothing outside this repository speaking the
+  protocol, and both the contract and `docs/contracts/machine-description.md` say
+  when it moved and why rather than reading as though it had always been so.
 
-  - `place.rs` keeps every check it has and changes where it points; `session.rs`
-    stops reading `$XDG_RUNTIME_DIR` for this;
-  - `docs/contracts/daemon-protocol.md`'s *The transport* section changes — a
-    public surface, broken deliberately now because nothing has shipped and
-    after v0.01 the same move costs a version and a migration;
-  - the image gains its first `tmpfiles.d` entry asked for by the daemon;
-  - **the socket outliving the session is now a thing that can go wrong**, so it
-    is a thing to test.
+  **The `tmpfiles.d` entry is item 28's and was left there deliberately.** This
+  item's bullet asked for it, and item 28 — written later — claims it as an image
+  responsibility beside the Containerfile and the unit. A `tmpfiles.d` file alone
+  in a repository with no image in it is a file nothing reads and no test can
+  gate, which is half of item 28 rather than the whole of this one.
 
-  **No claim is made that an agent can connect** until this lands and somebody
-  makes one: item 21c said a connection from a second user had never been made,
-  and the paragraph above is why rather than a claim that it now works.
+  **No claim is made that an agent can connect.** Item 21c said a connection
+  from a second user had never been made; it still has not, because making one
+  needs a machine with `/run/alo` on it and there is no image yet. What is true
+  is that the path an agent would use is no longer one it is locked out of by
+  construction.
 
 - [x] **21g. The machine's vocabulary, and where a translation comes from** —
   cut from 21f, which said this half wanted writing down before it was written.

@@ -18,12 +18,17 @@
 //!   where it is. Deleting a file because it was in the way is what a daemon
 //!   that has taken a machine over from its owner does.
 //!
-//! # And the socket goes when the daemon does
+//! # And the door goes when the daemon does
 //!
-//! [`Listening`] removes the socket when it is dropped, so an ordinary stop
-//! leaves no name behind for the next start to reason about. The stale case
-//! above is still needed and always will be: a process that was killed outright
-//! runs no destructor.
+//! [`Listening`] takes the socket **and the directory it is in** away when it is
+//! dropped (`Place::taken_away`), so an ordinary stop leaves no name behind
+//! for the next start to reason about. The directory is there because ADR 0017
+//! moved the door out of the person's session into `/run/alo/<uid>`, which
+//! `logind` does not empty for us: what the session used to take away, this
+//! crate now owes.
+//!
+//! The stale case above is still needed and always will be: a process that was
+//! killed outright runs no destructor.
 //!
 //! # One question per connection, asked of the kernel
 //!
@@ -195,14 +200,13 @@ impl Listening {
 }
 
 impl Drop for Listening {
-    /// Take the socket away with the daemon.
+    /// Take the door away with the daemon.
     ///
-    /// Whether the file went is not reported, because there is nobody to report
-    /// it to: this runs while the process is stopping. What it costs when it
-    /// fails is one stale socket, which is exactly the case
-    /// [`Listening::at`] already deals with.
+    /// The socket and the person's directory, which is `Place::taken_away`'s
+    /// and is documented there: nothing is reported, nothing is emptied, and
+    /// `/run/alo` is left where the image put it.
     fn drop(&mut self) {
-        drop(std::fs::remove_file(self.place.socket()));
+        self.place.taken_away();
     }
 }
 
@@ -247,7 +251,7 @@ fn clear_the_way(place: &Place) -> Result<(), NotBound> {
 mod tests {
     use super::*;
     use crate::caller::{Gid, Uid};
-    use crate::testing::{a_directory_of_our_own, calling_as_the_person, ourselves};
+    use crate::testing::{a_place_of_our_own, calling_as_the_person, ourselves};
     use std::path::Path;
 
     /// What is really at a path, without following a link.
@@ -259,8 +263,7 @@ mod tests {
     /// real filesystem, on the machine the tests are running on.
     #[test]
     fn the_socket_is_put_where_it_belongs() {
-        let folder = a_directory_of_our_own("bound");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("bound");
 
         let listening = Listening::at(place.clone(), ourselves()).unwrap();
 
@@ -273,8 +276,7 @@ mod tests {
     /// first daemon is still there afterwards.
     #[test]
     fn a_second_daemon_is_refused_and_the_first_keeps_the_socket() {
-        let folder = a_directory_of_our_own("two-daemons");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("two-daemons");
         let first = Listening::at(place.clone(), ourselves()).unwrap();
 
         let second = Listening::at(place.clone(), ourselves()).unwrap_err();
@@ -289,8 +291,7 @@ mod tests {
     /// in to delete a file.
     #[test]
     fn a_stale_socket_is_taken_over() {
-        let folder = a_directory_of_our_own("stale");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("stale");
         place.prepared(&ourselves()).unwrap();
         // A socket that outlived whatever was listening on it, made the way a
         // killed daemon leaves one: bound, then gone with no destructor run.
@@ -307,8 +308,7 @@ mod tests {
     /// taking the machine from its owner over a name.
     #[test]
     fn a_file_in_the_way_is_refused_and_left_there() {
-        let folder = a_directory_of_our_own("in-the-way");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("in-the-way");
         place.prepared(&ourselves()).unwrap();
         std::fs::write(place.socket(), b"not a socket").unwrap();
 
@@ -323,8 +323,7 @@ mod tests {
     /// to do with.
     #[test]
     fn it_will_not_open_the_door_of_a_person_it_is_not() {
-        let folder = a_directory_of_our_own("not-the-person");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("not-the-person");
         let somebody_else = Sides::of(
             Uid::of(4_242_424).unwrap(),
             Uid::of(989).unwrap(),
@@ -343,18 +342,39 @@ mod tests {
         assert!(!place.socket().exists(), "and nothing was bound");
     }
 
-    /// **The socket goes when the daemon does**, so an ordinary stop leaves no
-    /// name for the next start to have to reason about.
+    /// **The door goes when the daemon does**, so an ordinary stop leaves no
+    /// name for the next start to have to reason about — the socket *and* the
+    /// person's directory, which is what ADR 0017 made this crate's when it took
+    /// the door out of a session `logind` empties.
     #[test]
-    fn stopping_takes_the_socket_with_it() {
-        let folder = a_directory_of_our_own("stopping");
-        let place = Place::under(&folder);
+    fn stopping_takes_the_door_with_it() {
+        let place = a_place_of_our_own("stopping");
 
         let listening = Listening::at(place.clone(), ourselves()).unwrap();
         assert!(place.socket().exists());
         drop(listening);
 
         assert!(!place.socket().exists());
+        assert!(
+            !place.directory().exists(),
+            "the session's door outlived it"
+        );
+        assert!(place.root().is_dir(), "and the root is still the image's");
+    }
+
+    /// **A daemon that stopped can be started again**, which is the other half
+    /// of taking the directory away: the next start makes it, and neither the
+    /// mode nor the ownership is inherited from a session that ended.
+    #[test]
+    fn a_machine_whose_daemon_stopped_opens_the_door_again() {
+        let place = a_place_of_our_own("started-again");
+        drop(Listening::at(place.clone(), ourselves()).unwrap());
+        assert!(!place.directory().exists());
+
+        let again = Listening::at(place.clone(), ourselves()).unwrap();
+
+        assert!(what_is_at(place.socket()).file_type().is_socket());
+        drop(again);
     }
 
     /// **A connection is answered with which door it is on**, and with the
@@ -363,8 +383,7 @@ mod tests {
     /// one the operating system knows it by.
     #[test]
     fn a_connection_is_answered_with_the_side_it_is_on() {
-        let folder = a_directory_of_our_own("who-is-there");
-        let place = Place::under(&folder);
+        let place = a_place_of_our_own("who-is-there");
         let listening = Listening::at(place.clone(), ourselves()).unwrap();
 
         let client = UnixStream::connect(place.socket()).unwrap();

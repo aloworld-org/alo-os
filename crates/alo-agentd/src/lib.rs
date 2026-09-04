@@ -37,10 +37,17 @@
 //! # The permissions are the second lock, not the first
 //!
 //! A socket anybody can connect to is a privileged service anybody can make
-//! work, so [`Listening::at`] puts the socket in a directory of its own with
-//! mode `0750` and hands that directory to the group the agent is in. Nobody
-//! outside the person and that group can reach the path at all, and the socket
-//! itself is `0660` on top of that.
+//! work, so [`Listening::at`] puts the socket in a directory of the person's
+//! own — `/run/alo/<uid>`, ADR 0017 — with mode `0750`, and hands that
+//! directory to the group the agent is in. Nobody outside the person and that
+//! group can reach the path at all, and the socket itself is `0660` on top of
+//! that.
+//!
+//! **It is `/run/alo` and not the person's session directory**, and that is the
+//! one thing here found by running the service rather than by reading anything:
+//! `logind` makes `$XDG_RUNTIME_DIR` `0700` and the agent is a login of its own,
+//! so the door the agent is meant to use was unreachable on every real machine
+//! while being exactly the right mode. [`place`] has the whole argument.
 //!
 //! The directory is what closes the window between binding a socket and setting
 //! its mode: for those few instructions the socket carries whatever the
@@ -84,8 +91,9 @@
 //! The file is **checked before it is parsed** — [`trusting`] — for the reason
 //! [`place`] checks a directory: the description names which login is the agent,
 //! so whoever can rewrite it can name themselves this machine's agent and be
-//! served correctly. Where the socket goes is not in it: that is the session's,
-//! and [`session`] is why nothing is guessed when the session does not say.
+//! served correctly. Where the socket goes is not in it and no longer needs to
+//! be: it is `/run/alo/<uid>` for the person the description already names, so a
+//! key for it would be a second answer to a question the two logins settle.
 //!
 //! # The one thing it does on an interval, and only when it is told to
 //!
@@ -190,8 +198,6 @@ pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]
-pub mod session;
-#[cfg(target_os = "linux")]
 pub mod side;
 #[cfg(target_os = "linux")]
 pub mod signalling;
@@ -230,16 +236,13 @@ pub use lines::Line;
 #[cfg(target_os = "linux")]
 pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
-pub use place::Place;
+pub use place::{Place, THE_ROOT};
 #[cfg(target_os = "linux")]
 pub use refusing::{
-    NoSession, NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotStarted,
-    NotTwoSides,
+    NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotStarted, NotTwoSides,
 };
 #[cfg(target_os = "linux")]
 pub use serving::{Served, Serving};
-#[cfg(target_os = "linux")]
-pub use session::where_it_runs;
 #[cfg(target_os = "linux")]
 pub use side::{Side, Sides};
 #[cfg(target_os = "linux")]

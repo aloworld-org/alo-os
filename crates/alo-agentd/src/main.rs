@@ -3,8 +3,8 @@
 //! `alo_agentd` is every decision this service is made of; this is the process
 //! that makes them in order. It is deliberately thin, because what a process is
 //! — the order, and what an exit code means — is the only thing here that a test
-//! cannot reach: it reads `/etc/alo/agentd.toml`, takes its directory from the
-//! session it was started inside, and opens a record on a real disk.
+//! cannot reach: it reads `/etc/alo/agentd.toml`, opens the person's door in
+//! `/run/alo`, and opens a record on a real disk.
 //! `alo_agentd::starting` is the same sequence with each step a value, and is
 //! where the arguments and the tests live.
 //!
@@ -30,8 +30,8 @@ mod running {
     use std::process::ExitCode;
 
     use alo_agentd::{
-        Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking, session,
-        signalling, starting, unix,
+        Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking, signalling,
+        starting, unix,
     };
     use alo_keeping::Writing;
 
@@ -91,7 +91,7 @@ mod running {
         signalling::on_sigterm(stop)?;
 
         let listening = Listening::at(
-            Place::under(&session::from_the_environment()?),
+            Place::for_person(described.sides().person()),
             described.sides(),
         )?;
 

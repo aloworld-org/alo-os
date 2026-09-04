@@ -1,10 +1,9 @@
 //! Everything this crate refuses, and who reads it.
 //!
-//! Nine types, divided by what somebody has to do about them. [`NotDescribed`]
-//! is the file a machine is described by, [`NoSession`] is the directory the
-//! socket would have gone in, [`NotTwoSides`] and [`NotAUser`] are a machine
-//! described wrongly, [`NotBound`] is a machine whose socket cannot be put where
-//! it belongs, [`NotACaller`] is one connection that will not be served,
+//! Eight types, divided by what somebody has to do about them. [`NotDescribed`]
+//! is the file a machine is described by, [`NotTwoSides`] and [`NotAUser`] are
+//! a machine described wrongly, [`NotBound`] is a machine whose socket cannot be
+//! put where it belongs, [`NotACaller`] is one connection that will not be served,
 //! [`NotHeard`] is one connection that cannot go on being read, [`NotServed`]
 //! is the service itself stopping, and [`NotStarted`] is the process: the one
 //! that gathers the rest, because a process ends in exactly one of them.
@@ -174,28 +173,6 @@ pub enum NotDescribed {
     },
 }
 
-/// Why there is nowhere for this session's socket to go.
-///
-/// Separate from [`NotDescribed`] because it is a different thing to go and
-/// change: nothing in the description is wrong, and what is missing is the
-/// session `alo-agentd` was started outside of.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum NoSession {
-    /// The variable is unset, or set to nothing at all.
-    #[error(
-        "$XDG_RUNTIME_DIR is not set, and alo-agentd will not guess at a directory for a socket the person's approvals travel over; start it as a user service of the signed-in person"
-    )]
-    NotSet,
-    /// The variable is set to something that is not an absolute path.
-    #[error(
-        "$XDG_RUNTIME_DIR is {at}, which is not an absolute path; it names the directory this session's runtime files go in and has to begin with /"
-    )]
-    NotAbsolute {
-        /// What it was set to.
-        at: PathBuf,
-    },
-}
-
 /// Why this machine cannot be described as having two sides.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum NotTwoSides {
@@ -232,6 +209,18 @@ pub enum NotBound {
         us: u32,
         /// The user it was told the person is.
         told: u32,
+    },
+    /// The directory every person's door goes in is not on this machine.
+    ///
+    /// ADR 0017 gives it to the image, so this is a machine that booted without
+    /// it rather than one nobody has set up: the daemon says which directory and
+    /// who makes it, and makes nothing.
+    #[error(
+        "{at} is not there, and alo-agentd does not create it; the image makes it at boot through tmpfiles.d, 0755 and owned by root, and every person's socket goes in a directory of their own beneath it (ADR 0017)"
+    )]
+    NoParent {
+        /// The directory the image makes.
+        at: PathBuf,
     },
     /// The directory the socket goes in could not be made.
     #[error("could not make the directory {at} for the socket: {why}")]
@@ -498,9 +487,6 @@ pub enum NotStarted {
         /// What `alo-keeping` said, in the language this machine loaded.
         said: String,
     },
-    /// There is nowhere for this session's socket to go.
-    #[error("{0}")]
-    NoSession(#[from] NoSession),
     /// The socket could not be put where it belongs.
     #[error("{0}")]
     NotBound(#[from] NotBound),
@@ -539,11 +525,11 @@ mod tests {
     #[test]
     fn every_refusal_names_what_to_go_and_change() {
         let said = NotBound::SomebodyElses {
-            at: PathBuf::from("/run/user/1000/alo"),
+            at: PathBuf::from("/run/alo/1000"),
             owner: 1001,
         }
         .to_string();
-        assert!(said.contains("/run/user/1000/alo"));
+        assert!(said.contains("/run/alo/1000"));
         assert!(said.contains("1001"));
 
         let said = NotTwoSides::OneUser { uid: 1000 }.to_string();
@@ -580,20 +566,26 @@ mod tests {
         assert!(said.contains("record.path"), "{said}");
     }
 
-    /// **A description and a session are two things to go and change**, so they
-    /// are two types: one is a line in a file somebody wrote, and the other is
-    /// the session the service was started outside of.
+    /// **A missing `/run/alo` says who makes it**, because whoever reads it is
+    /// looking at a machine that booted without something the image was meant to
+    /// put there — and *no such file or directory* would send them to the daemon
+    /// instead (ADR 0017).
     #[test]
-    fn a_missing_session_is_not_a_wrong_description() {
-        let said = NoSession::NotSet.to_string();
-        assert!(said.contains("XDG_RUNTIME_DIR"), "{said}");
-        assert!(said.contains("user service"), "{said}");
+    fn a_missing_root_names_the_directory_and_who_makes_it() {
+        let said = NotBound::NoParent {
+            at: PathBuf::from("/run/alo"),
+        }
+        .to_string();
+        assert!(said.contains("/run/alo"), "{said}");
+        assert!(said.contains("tmpfiles.d"), "{said}");
         assert_ne!(
             said,
-            NoSession::NotAbsolute {
-                at: PathBuf::from("run/user/1000")
+            NotBound::NoDirectory {
+                at: PathBuf::from("/run/alo/1000"),
+                why: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
             }
-            .to_string()
+            .to_string(),
+            "the image's directory and the person's are two things to go and change"
         );
     }
 
@@ -712,10 +704,15 @@ mod tests {
             inside
         );
 
-        let session = NoSession::NotSet;
+        let missing = NotBound::NoParent {
+            at: PathBuf::from("/run/alo"),
+        };
         assert_eq!(
-            NotStarted::NoSession(NoSession::NotSet).to_string(),
-            session.to_string()
+            NotStarted::NotBound(NotBound::NoParent {
+                at: PathBuf::from("/run/alo")
+            })
+            .to_string(),
+            missing.to_string()
         );
     }
 }
