@@ -9323,4 +9323,53 @@ That is why thirty-eight iterations ran after the queue emptied — the loop
 believed it had signalled and the supervisor never saw a signal. The line below
 is the signal.
 
-LOOP COMPLETE
+- `LOOP COMPLETE` — written 2026-09-05 and **discharged the same day**:
+  ADR 0019 arrived, which is exactly the thing `LOOP.md` says to check for
+  (`ls docs/decisions/`). Items 21k, 21l and 26f are freed. Kept behind a
+  bullet as a record rather than a signal.
+
+---
+
+## ADR 0019, and the queue has work again
+
+Not an iteration. Written by hand.
+
+**[ADR 0019](../decisions/0019-a-runtime-is-found-not-configured.md): a runtime
+is found by its adapter, never named in a contract; brought weights live with the
+person; and the daemon reads its own environment because it *is* the person.**
+
+Item 21k's own suspicion was right on both counts, and it was right to stop. An
+address key in `docs/contracts/machine-description.md` would have put an Ollama
+endpoint in a public contract — breaking ADR 0006's *a reviewer should be able to
+find every mention of Ollama in one file* — and it would have let an organisation
+choose a runtime from `/etc/alo/agentd.toml`, which is ADR 0016's bound-versus-choice
+line one indirection away. Either reason alone decides it.
+
+**The part worth keeping is what was refused.** No override key, no environment
+variable, no *advanced* address field. An operator who could point the agent at a
+machine of their choosing would leave the egress indicator (ADR 0003) telling the
+truth about a destination nobody picked — which is the indicator working
+perfectly and meaning nothing. A genuinely remote runtime is a **provider**,
+already modelled, already shown, already bounded.
+
+**One thing is recorded as a condition rather than an assumption.** The daemon
+reads `$XDG_CONFIG_HOME` from its own environment, which is correct only while
+one daemon serves one login. The day something serves two people from one
+process, that becomes *one person reading another's choices*, and it becomes so
+silently. `where_it_is` keeps taking both variables as arguments so the fix stays
+a caller's change; the ADR says why that shape must not be tidied away.
+
+**Also fixed today: the loop's stop signal.** The queue emptied on 09-04 and the
+loop ran **thirty-eight more iterations over seven hours**, each finding the same
+empty queue and writing a line about it. Neither half misbehaved. The supervisor
+reads the marker anchored to the start of a line — deliberately, since an
+unanchored match once halted a loop on this journal's own prose — and the journal
+wrote `LOOP COMPLETE` in backticks, in a ledger, and in a sentence about what the
+queue's last word was. Never once at a line start. **Describing the signal is not
+sending it.** `LOOP.md` now carries the rule and the `grep -c '^LOOP COMPLETE'`
+that confirms it.
+
+**What the next iteration takes.** Item **21k** is wiring now: `Chosen` →
+`Answers`, through the adapter's discovery for a catalogued model and the
+person's list for a brought one. **21l** and **26f** are freed with it.
+

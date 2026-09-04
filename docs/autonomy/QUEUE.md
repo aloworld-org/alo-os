@@ -2357,17 +2357,34 @@ out.
   arguments for exactly this reason, so the question is answered by whoever
   knows what a session is — which is where item 21j is also standing.
 
-  **Not ready: the first of those wants writing down before it is written.**
-  Where a runtime on this machine is, is either a key in the organisation's
-  description or a fact the daemon works out, and ADR 0016 has just finished
-  saying that putting the wrong one of those in `/etc/alo/agentd.toml` is how an
-  organisation ends up making a person's choice for them. That is an ADR, and it
-  is the same shape as the one 21h sat still for. Whoever writes it should read
-  ADR 0006 first — the adapter is the only file that knows Ollama exists, and an
-  address key naming a runtime would be that rule leaking into a contract.
+  **It wanted writing down before it was written, and it is written:
+  [ADR 0019](../decisions/0019-a-runtime-is-found-not-configured.md).** The
+  suspicion in this item was right on both counts — an address key would have put
+  an Ollama endpoint in a public contract, breaking ADR 0006's *every mention of
+  Ollama in one file*, and it would have let the organisation choose a runtime
+  from `/etc/alo/agentd.toml`, which is ADR 0016's line one indirection away.
 
-  Until it lands, `agentd.nothing-answers-questions` is what a machine says, and
-  it is true rather than a placeholder.
+  All three facts are decided, and what is left here is wiring:
+
+  - **where a runtime is** — the adapter finds it, at an address the adapter
+    alone knows. `docs/contracts/machine-description.md` gains **nothing**, and
+    the ADR says so positively so nobody later adds the key thinking it was
+    forgotten. There is deliberately no override: an operator who could point
+    the agent elsewhere would make the egress indicator honest about a
+    destination nobody chose. A genuinely remote runtime is a **provider**,
+    which is already modelled, shown and bounded;
+  - **where brought weights are** — in the person's settings beside the model
+    they chose, because the weights are the person's and ADR 0016 already put
+    *which model answers* there. The organisation's bound still applies
+    unchanged: a brought model is a local source;
+  - **whose settings** — the daemon's own environment, because it runs as the
+    person and systemd starts one per login. The ADR records this as a
+    **condition rather than an assumption**: it holds only while one daemon
+    serves one login, and `where_it_is` keeps taking both variables as
+    arguments so the day that changes it is a caller's fix, not a rewrite.
+
+  `agentd.nothing-answers-questions` stays exactly as it is for a machine with
+  no runtime found. Discovery that finds nothing is an answer, not a failure.
 
 - [x] **21m. Thirteen rustdoc warnings in two crates.** Found while gating item
   21j, which had three of its own and fixed them: `cargo doc --workspace
