@@ -23,13 +23,28 @@
 //! number of the directory in `/sys/fs/cgroup`. So there is no syscall to ask —
 //! the number is what `stat` already says.
 //!
+//! # A cgroup holds processes, and it can be told to hold threads instead
+//!
+//! [`Cgroup::admit`] writes into `cgroup.procs` and moves a whole process,
+//! threads and all. [`Cgroup::holding_threads`] is the other shape: a cgroup
+//! told to hold threads takes one task at a time through `cgroup.threads`, and
+//! the cgroup above it becomes the resource domain for the subtree.
+//!
+//! Both exist because a turn is not a process. What a turn's work really is on
+//! this machine is one thread of `alo-agentd` carrying out one enumerated verb,
+//! so the boundary has to be something a thread steps into — see
+//! [`crate::Turns`], which is where that order lives.
+//!
 //! That is a fact about kernfs rather than a documented promise, so it is not
 //! taken on trust anywhere it matters: if it were wrong, the map would be keyed
 //! by a number no open ever presents, every lookup would miss, and every open
 //! would be allowed. `tests/the_kernel_refuses.rs` is what would notice, and it
 //! is written so that the refusal is the assertion rather than the allow.
 
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use crate::failing::NotBounded;
 
@@ -37,7 +52,21 @@ use crate::failing::NotBounded;
 const WHERE_CGROUPS_ARE: &str = "/sys/fs/cgroup";
 
 /// The file a process's number is written into to put it in a cgroup.
-const THE_PROCESSES: &str = "cgroup.procs";
+pub(crate) const THE_PROCESSES: &str = "cgroup.procs";
+
+/// The file a *thread's* number is written into to put it in a cgroup.
+///
+/// The other half of `cgroup.procs`, and the difference is the whole of
+/// [`crate::Turns`]: writing here moves one task, so a service can put the
+/// thread carrying out a verb inside a turn's boundary and leave the rest of
+/// itself outside it.
+pub(crate) const THE_THREADS: &str = "cgroup.threads";
+
+/// The file that says whether a cgroup holds processes or threads.
+const THE_TYPE: &str = "cgroup.type";
+
+/// What is written into it to make a cgroup hold threads.
+const HOLDS_THREADS: &str = "threaded";
 
 /// One control group: a turn, as the kernel is able to recognise it.
 #[derive(Debug)]
@@ -54,18 +83,60 @@ impl Cgroup {
     /// too, because two turns sharing one cgroup would share one boundary, and
     /// the second turn to end would take away the first turn's.
     pub fn made(name: &str) -> Result<Self, NotBounded> {
+        Self::made_under(Path::new(WHERE_CGROUPS_ARE), name)
+    }
+
+    /// The same, somewhere other than the top of the hierarchy.
+    ///
+    /// A service under `systemd` is put in a control group of its own, and the
+    /// turns it holds belong inside that rather than beside it — a subtree at
+    /// the top of `/sys/fs/cgroup` would be a daemon arranging the machine
+    /// around itself. [`crate::Turns`] is what uses this; the name is held to
+    /// the same one component, for the same reason.
+    pub fn made_under(parent: &Path, name: &str) -> Result<Self, NotBounded> {
         if !is_a_name(name) {
             return Err(NotBounded::NotAName {
                 name: name.to_owned(),
             });
         }
-        let at = PathBuf::from(WHERE_CGROUPS_ARE).join(name);
+        let at = parent.join(name);
         fs::create_dir(&at).map_err(|why| NotBounded::Cgroup {
             what: "cannot make a control group at",
             path: at.display().to_string(),
             why,
         })?;
         Ok(Self { at })
+    }
+
+    /// Makes this cgroup one that holds threads rather than processes.
+    ///
+    /// A cgroup holds whole processes until it is told otherwise, and *told
+    /// otherwise* is one word written into `cgroup.type`. It also changes the
+    /// cgroup **above** this one, which is the part worth knowing: the parent
+    /// becomes the resource domain for a threaded subtree, so every threaded
+    /// cgroup made under it is a place one task of a process can be while its
+    /// siblings are elsewhere in the same subtree.
+    ///
+    /// That is what makes a boundary the daemon's own thread can step into and
+    /// out of, and it is why the parent is made first and emptied of processes
+    /// — [`crate::Turns::under`] is the order.
+    pub fn holding_threads(&self) -> Result<(), NotBounded> {
+        let file = self.at.join(THE_TYPE);
+        fs::write(&file, HOLDS_THREADS).map_err(|why| NotBounded::Cgroup {
+            what: "cannot make a control group hold threads at",
+            path: file.display().to_string(),
+            why,
+        })
+    }
+
+    /// The file one thread is put into this cgroup by.
+    ///
+    /// Handed out as a path rather than written to here, because the *order* a
+    /// thread goes in and comes back out in is [`crate::Turns`]'s and is the
+    /// security property: the way out is a descriptor opened before the way in
+    /// was taken.
+    pub(crate) fn threads(&self) -> PathBuf {
+        self.at.join(THE_THREADS)
     }
 
     /// What `bpf_get_current_cgroup_id` will answer for anything inside it.

@@ -14,18 +14,27 @@
 //!
 //! Every one of these says something about the *kernel underneath the daemon* —
 //! that it publishes no type information, that a structure has moved, that the
-//! verifier refused a program. Nobody signs in to a machine and reads them. The
-//! sentence a person reads is *this turn cannot run*, it is said by whatever
-//! holds the turn, and it is the wiring item's to write with the rest of that
-//! sentence's context around it.
+//! verifier refused a program. Nobody signs in to a machine and reads them.
 //!
-//! If that ever stops being true — if one of these reaches a screen — it moves
-//! onto `alo-strings` the way `alo-files`' `Failed` did, and the crate gains a
-//! `words.rs`.
+//! # And there is one sentence that a person does read
+//!
+//! What the previous version of this paragraph said would happen has happened,
+//! and in the shape the item asked for rather than the shape it guessed at.
+//! [`NotBounded::said`] is the crossing onto `alo-strings`, and **every variant
+//! renders the same sentence**: eleven reasons, one thing to tell somebody.
+//!
+//! The reasons are not translated and are not put inside it. A person is told
+//! that nothing was done, that nothing was refused either, and who has to look
+//! at the machine; the reason travels beside that, in English, to the service
+//! log the administrator is already reading. [`crate::words`] is the argument
+//! for why those are two audiences and not one.
 
 use std::io;
 
 use alo_bounding_map::Field;
+use alo_strings::{Filling, Said, Strings};
+
+use crate::words::NOTHING_CAN_BE_BOUNDED;
 
 /// Why this turn cannot be given a boundary.
 #[derive(Debug, thiserror::Error)]
@@ -145,6 +154,30 @@ pub enum NotBounded {
         why: io::Error,
     },
 
+    /// This machine has no unified control group hierarchy to make a turn in.
+    ///
+    /// Which means `/proc/self/cgroup` said something this cannot read, on a
+    /// machine still running cgroup v1 or with the hierarchy unmounted. There is
+    /// nowhere to put a turn, so there is no turn.
+    #[error("{what}")]
+    NotInAHierarchy {
+        /// Which way it stopped making sense.
+        what: &'static str,
+    },
+
+    /// A thread went into a turn and could not be brought back out.
+    ///
+    /// The worst thing in this enum, and the one the service stops over. The
+    /// thread is still inside the boundary, so it is refused everything outside
+    /// a grant that is over — which fails closed, and is why the entry is left
+    /// in the kernel rather than taken away underneath it.
+    #[error("a thread went into a turn and could not be brought back out: {why}")]
+    NotBroughtBack {
+        /// What the machine said.
+        #[source]
+        why: io::Error,
+    },
+
     /// The cgroup filesystem would not do what was asked.
     #[error("{what} {path}: {why}")]
     Cgroup {
@@ -161,6 +194,21 @@ pub enum NotBounded {
 }
 
 impl NotBounded {
+    /// What a person is told when their agent could not be bounded.
+    ///
+    /// One sentence for all eleven reasons, in the language they read. This is
+    /// not a refusal of anything they asked for — nothing was attempted — and
+    /// the note on [`crate::words::NOTHING_CAN_BE_BOUNDED`] says so to whoever
+    /// translates it.
+    ///
+    /// The reason is deliberately not in here. It is English, it is about the
+    /// kernel, and [`std::fmt::Display`] is where whoever runs the machine reads
+    /// it.
+    #[must_use]
+    pub fn said(&self, strings: &Strings) -> Said {
+        strings.say(&NOTHING_CAN_BE_BOUNDED.key(), &Filling::nothing())
+    }
+
     /// A field this kernel does not have.
     #[must_use]
     pub fn missing(field: Field) -> Self {

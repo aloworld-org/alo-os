@@ -41,8 +41,12 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-driving`, `crates/alo-saying`, `crates/alo-choosing` and
 `crates/alo-agentd` were built by
 the loop and are described in the items below. **`alo-saying` is the only one
-that reaches every crate that says anything** — fourteen of them since item 21g
-and fifteen since 21h — and it is the only one whose dependency list is an argument rather than a
+that reaches every portable crate that says anything** — fourteen of them since
+item 21g and fifteen since 21h, and *portable* is doing work in that sentence:
+`alo-agentd` and, since item 26a, `alo-bounding` declare their own words on top
+of the machine's vocabulary rather than into it, because both are Linux and a
+vocabulary shorter on one host would be a translation refused there and accepted
+elsewhere. It is the only one whose dependency list is an argument rather than a
 consequence: a translation is checked against the vocabulary it is loaded into,
 so a vocabulary assembled per process would read a translator's correct line for
 another part of the system as a mistake. It is also **the only crate that
@@ -2948,33 +2952,101 @@ out.
   mechanism; ADR 0015 on the certified machine is still the exit gate, and no
   claim here is about hardware.
 
-- [ ] **26a. The boundary in front of a turn.** Cut from 26, which built the
-  mechanism and deliberately stopped there. `alo-turn` joins an invocation, a
-  call, an approval, an execution and the record; making the cgroup, resolving
-  the grant to a place, imposing the boundary and running the work *inside* it
-  is a step in front of all five, and ADR 0015 calls it the daemon's floor.
+- [x] **26a. What runs in the cgroup, and the sentence when nothing can.** Cut
+  from 26, which built the mechanism and deliberately stopped there, and **cut
+  again while it was being built** — the item as written owed three answers and
+  two of them are here. The third, *which grant becomes the bound*, is item 26b
+  below with the wiring, because it is a change to the map both halves of
+  `alo-bounding` read and the wiring is what decides how wide it has to be.
 
-  Three things it owes that item 26 does not have. **The sentence a person
-  reads** when a turn cannot be bounded — ADR 0013 and ADR 0015 both say such a
-  turn does not run, and `alo-bounding`'s refusals are deliberately English for
-  whoever stands the machine up rather than for whoever uses it, so this is
-  where the crate gains a `words.rs` and crosses onto `alo-strings`. **Which
-  grant becomes the bound**, given that a call can name several paths and
-  `alo-capability` holds a list rather than one folder — the map holds one place
-  per turn, and either that becomes several or the turn is narrower than the
-  grant. **What runs in the cgroup**, which is the part with law 2 in it: a turn
-  does its work in a process, and what puts a process there without becoming an
-  arbitrary command is the question to answer before any of the rest.
+  What is built. `crates/alo-bounding`: `turns.rs` (`Turns` — the threaded
+  subtree a service makes inside its own control group, and the descriptor a
+  thread leaves a turn through), `inside.rs` (`Turns::doing` — the one door: make
+  the turn's cgroup, tell the kernel, put this thread in, do the work, bring it
+  out, take the entry away, remove the cgroup), `words.rs` (one phrase, and the
+  crossing onto `alo-strings`), `NotBounded::said`, two new variants, and
+  `Cgroup::made_under` and `Cgroup::holding_threads` beside them. 7 new unit
+  tests and 4 new integration tests **that run against the real kernel**; 1767
+  tests and 45 doctests on Linux (was 1756 and 45), 1563 and 45 on Windows,
+  unchanged because all of this is Linux. `cargo fmt`, `cargo clippy -D warnings`
+  and the BPF target's own gate clean on both hosts.
 
-  Blocked on item 26 being proved rather than written. Wiring a boundary into
-  the path every turn takes, on the strength of a mechanism no kernel has yet
-  been seen to enforce, is how a guarantee becomes a claim.
+  **The answer to *what runs in the cgroup* is that nothing is started, and law
+  2 is the whole of why.** ADR 0015 says *runs the verb's work inside that
+  cgroup*, and taken literally that says start something — which is what item 26's
+  own test does, and it is right for a test and wrong for a daemon. Every
+  spawning shape needs a program to name, and a program alo OS starts on an
+  agent's behalf is one review away from a program an agent named. What a turn's
+  work already is on this machine is one thread of `alo-agentd` calling
+  `alo-files`, one of six verbs on a closed list; **that thread** is what goes
+  into the cgroup, by writing one byte into `cgroup.threads`. There is no `fork`,
+  no `exec` and no `Command` in the crate, and a test reads the crate's own
+  source and says so rather than leaving it to somebody's memory.
 
-  **Unblocked 2026-09-04**: item 26 is proved, a kernel has been seen to enforce
-  it, and this is ready. It is a Linux item — the boundary is a Unix thing and
-  `alo-bounding` says so — so it is built and gated on the WSL host, and the
-  three questions above are still the three it has to answer before any of it is
-  written.
+  It is also the narrower answer. A whole process in the cgroup would put the
+  record, the socket and the person's own door inside the agent's grant; one
+  thread puts the verb inside it and leaves the service outside — measured, not
+  argued: while the working thread is refused a private key, a sibling thread of
+  the same process opens it at the same moment.
+
+  Three decisions the next items inherit. **The way out is a descriptor opened
+  before the way in was taken** — leaving a cgroup means writing into another
+  one's `cgroup.threads`, and *opening* that file from inside is an open the
+  boundary correctly refuses, so a turn that could be entered and not left would
+  be a service that stops working the first time it worked. `Turns::under` opens
+  it before this process is ever in a turn. **Both orderings fail open, so both
+  are stated**: bound before entered, because a thread in a cgroup the kernel
+  holds no entry for is a thread the kernel allows everything; left before
+  released, which is the same window backwards. **A thread that could not leave
+  keeps its boundary** — the entry is deliberately not taken away and the cgroup
+  deliberately not removed, because *bounded to a turn that is over* fails closed
+  and *bounded to nothing* is an agent's thread with the run of the machine.
+
+  **Eleven reasons, one sentence.** `NotBounded` keeps its English for whoever
+  stands the machine up and every variant renders the same string for the person:
+  nothing was done, nothing was refused either, and the machine is what has to be
+  looked at. The reason is not put inside it — an untranslated English clause in
+  the middle of a translated sentence is the failure the 9-series spent seven
+  items removing. The list is **not** in `alo-saying`, for the reason
+  `alo-agentd`'s is not: this crate is Linux, and a vocabulary one string shorter
+  on one host would be a translation refused there and accepted elsewhere.
+
+  **Proved on a development machine, not a certified one**, on
+  `6.18.33.2-microsoft-standard-WSL2`. What is settled is the mechanism; ADR 0015
+  on the certified machine is still the exit gate.
+
+- [ ] **26b. The boundary in front of a turn.** What 26a cut, and it is two
+  things that turned out to be one: **which grant becomes the bound**, and the
+  wiring that cannot be written until that is answered.
+
+  **The question 26a left.** `Turns::doing` is handed one `Place` and the
+  kernel's map holds one per turn. A call can name two paths — `move_file` and
+  `archive_folder` both do — and a turn's grants can cover several folders, so
+  either the map's value becomes several places and the programme loops over
+  them, or the bound is made narrower than the grant and is the places *this
+  execution* named. The second is least privilege and is probably right; it is
+  also the one that needs a path that does not exist yet to be answered for
+  (a rename invents a name, an archive creates a file), and the answer there is
+  the folder it will be created in. Whichever is chosen it is a change to
+  `alo-bounding-map`, to `crates/alo-bounding-kernel/src/deciding.rs` and to
+  `Boundary`'s map type, and all three are gated together.
+
+  **The wiring, and why it is not small.** A boundary must be around the verb and
+  **not** around the entry written afterwards: `alo-turn`'s doors do the disk
+  work and write the record in one call, and a thread bounded across both would
+  be refused the record. So this needs those separated, which is a change to a
+  crate 1500 tests hang off. And `alo-agentd` must make its subtree at start-up —
+  `Turns::under` takes the cgroup the service is already in, so `starting.rs` has
+  to find it and `stopping.rs` has to give it back, and a service that cannot
+  is a service that does not serve (ADR 0015).
+
+  **What the daemon does with a refusal is part of this item.** `NotBounded::said`
+  exists and nothing says it yet. A turn that cannot be bounded does not run and
+  the person is told; a thread that could not be brought *back* is worse than
+  that and the service stops, the way it already stops when nothing can be
+  written down.
+
+  Linux, on the WSL host, like 26a. Blocked on nothing.
 
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same

@@ -76,6 +76,8 @@ name = "alo-bounding"
 version = "0.0.1"
 dependencies = [
  "alo-bounding-map",
+ "alo-saying",
+ "alo-strings",
  "aya",
  "thiserror",
 ]

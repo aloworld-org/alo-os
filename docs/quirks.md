@@ -203,6 +203,52 @@ in `docs/hardware.md` is sound, with one qualification: *ask it on a machine tha
 has been up for more than a minute.*
 **Date:** 2026-09-04, reboot-tested the same day
 
+### `bpf_get_current_cgroup_id` answers with a *threaded* cgroup, and nothing says it will
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, measured 2026-09-04 by
+`crates/alo-bounding/tests/a_turn_is_this_thread.rs`.
+**Behaviour:** the helper's documentation says it returns "the cgroup id of the
+current task", and the whole of the boundary in `crates/alo-bounding` rests on
+which cgroup that is when a process's threads are in different ones. cgroup v2
+allows that inside a *threaded subtree*: `cgroup.procs` moves a whole process,
+`cgroup.threads` moves one task, and a process can have one thread in
+`…/turn-1` while its siblings are in `…/home`.
+
+The helper reads the task's own default cgroup, so for a thread in a threaded
+cgroup it answers with **that thread's** cgroup rather than with the resource
+domain above it or with the thread group leader's. That is what makes a turn a
+thread rather than a process, and it is the difference between a boundary that
+covers one enumerated verb and one that also covers the record being written
+about it.
+
+It is a fact about the implementation and not a documented promise, in exactly
+the way `bpf_get_current_cgroup_id` answering with the directory's inode number
+already was (`cgroup.rs`).
+**Our response:** measured rather than assumed, and the measurement is a test
+that fails loudly if it stops being true — `the_other_threads_of_this_service_
+are_not_in_the_turn` asserts both halves at once, that the working thread is
+refused a file and that a sibling thread of the same process opens it at the same
+moment. If a kernel ever answered with the resource domain instead, the sibling
+would be refused too and that test is what would say so. Nothing is
+special-cased for a version.
+**Date:** 2026-09-04
+
+### Writing `0` into `cgroup.procs` or `cgroup.threads` means *whoever is asking*
+**Version:** cgroup v2, any Linux; used by `crates/alo-bounding/src/turns.rs` and
+`inside.rs`.
+**Behaviour:** the documented way to move a task into a control group is to write
+its number into one of those files, and every example does exactly that. A zero
+also works and means the calling task — for `cgroup.procs` the calling process,
+for `cgroup.threads` the calling **thread**, not its group leader. The kernel's
+own admin guide does not mention it.
+**Our response:** used deliberately, because the alternative is worse than
+verbose. A thread's own identifier is `gettid`, which the standard library does
+not expose, so writing the number would mean renting a crate to ask the kernel
+who this thread is in order to tell the kernel to move this thread. And a number
+written by hand is a number that can be somebody else's: a bug that moved another
+task into an agent's boundary would be silent, and a zero cannot name the wrong
+task.
+**Date:** 2026-09-04
+
 <!--
 ### <Machine or component> — <one-line summary>
 **Version:** firmware / kernel / driver version the behaviour was seen on

@@ -16,6 +16,7 @@
 //! |---|---|
 //! | [`Boundary`] | The program in the kernel, and the entry that tells it what a turn may reach |
 //! | [`Cgroup`] | The control group a turn runs in, which is how the kernel tells one turn from another |
+//! | [`Turns`] | Where this service's turns are made, and the one door into and out of a boundary |
 //! | [`place_of`] | A folder, as the two numbers the kernel knows it by |
 //! | [`NotBounded`] | Why a boundary could not be imposed, which is always a refusal |
 //!
@@ -32,6 +33,26 @@
 //!
 //! turn ends     the entry is removed, and the authority is gone
 //! ```
+//!
+//! # What runs in the cgroup, and why nothing is started
+//!
+//! *Runs the verb's work inside that cgroup* is ADR 0015's line, and taken
+//! literally it says **start something**. Law 2 is why it does not: every shape
+//! that spawns needs a program to spawn, and a program alo OS starts on an
+//! agent's behalf is one review away from a program an agent named.
+//!
+//! So nothing is started. What a turn's work already is on this machine is one
+//! thread of `alo-agentd` calling `alo-files`, which is one of six verbs on a
+//! closed list — and **that thread is what goes into the cgroup**, by writing one
+//! byte into `cgroup.threads`. There is no `fork`, no `exec` and no `Command` in
+//! this crate, and `tests/a_turn_is_this_thread.rs` reads the crate's own source
+//! and says so.
+//!
+//! It is the narrower answer as well as the lawful one. A whole process in the
+//! cgroup would put the record, the socket and the person's own door inside the
+//! agent's boundary; one thread puts the verb inside it and leaves the service
+//! outside. [`Turns`] is the arrangement that makes it possible and
+//! [`Turns::doing`] is the only door.
 //!
 //! # This crate is Linux, and on any other host it is nothing
 //!
@@ -51,11 +72,18 @@
 //! # What this crate is not, yet
 //!
 //! It is not wired into a turn. `alo-turn` joins an invocation, a call, an
-//! approval, an execution and the record; making a cgroup, imposing the
-//! boundary and running the work inside it is a step in front of all of that,
-//! and it is a queue item of its own. What is here is the mechanism and the
-//! proof that a kernel really refuses — which is what ADR 0015 asked for first,
-//! because everything else in it depends on the answer being yes.
+//! approval, an execution and the record, and `alo-agentd` is what holds one; a
+//! boundary around the execution and *not* around the entry written afterwards
+//! needs those two doors separated, and that is queue item 26b.
+//!
+//! What is here is the whole of the mechanism a turn will stand on: the kernel
+//! refusing (item 26), the thread that goes into the boundary and comes back out
+//! of it, and the sentence a person reads when it could not be imposed. What is
+//! not here is **which** place a turn is bound to — [`Turns::doing`] is handed
+//! one, and the kernel's map holds one per turn. A call can name two paths and a
+//! turn's grants can cover several folders, so that number has to become several
+//! or the bound has to become narrower than the grant; that is item 26b's first
+//! decision, and it is a change to the map both halves of this crate read.
 //!
 //! # The dangerous property, said out loud
 //!
@@ -74,7 +102,10 @@ mod btf;
 mod cgroup;
 mod failing;
 mod fields;
+mod inside;
 mod place;
+mod turns;
+pub mod words;
 
 #[cfg(test)]
 mod testing;
@@ -85,5 +116,7 @@ pub use cgroup::Cgroup;
 pub use failing::NotBounded;
 pub use fields::Offsets;
 pub use place::{as_the_kernel_keeps_it, place_of};
+pub use turns::Turns;
+pub use words::{EVERY_WORD, Word, WordsError, bounding_words, declare_into};
 
 pub use alo_bounding_map::{DEPTH, Field, Place};

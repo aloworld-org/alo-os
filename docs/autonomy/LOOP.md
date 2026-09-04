@@ -220,8 +220,8 @@ check the count, not just the colour. Any crate that acquires a
 
 **`cargo doc` is the same rule read backwards, and it fails the other way.**
 The gate includes rustdoc on public items, and on Windows
-`cargo doc --workspace --no-deps` emits **twenty-eight** *unresolved link*
-warnings — twenty-four in `alo-agentd` and four in `alo-bounding` — because a
+`cargo doc --workspace --no-deps` emits **thirty-two** *unresolved link*
+warnings — twenty-four in `alo-agentd` and eight in `alo-bounding` — because a
 crate header linking `[`starting`]` or `[`Boundary`]` links to a module that is
 `cfg`'d out on this host. Every one of them is about code that is correct, and
 on Linux the same command is silent. So where tests on Windows say *green* and
@@ -232,8 +232,14 @@ platform's file*, and both are the same fact wearing opposite colours.
 which fires identically on both hosts — and leaves `broken_intra_doc_links` at a
 warning, because denying it would fail the gate on the host the loop runs on for
 a reason that is not about the code. **Read the rustdoc gate on Linux**, and on
-Windows check only that the count is the twenty-eight the platform explains: a
-twenty-ninth is somebody's new broken link hiding in the noise.
+Windows check only that the count is the thirty-two the platform explains: a
+thirty-third is somebody's new broken link hiding in the noise.
+
+**The number moves for honest reasons, and it has moved once.** It was
+twenty-eight until item 26a gave `alo-bounding` four more Linux-only things for
+its own crate header to link. Do not read the total: `cargo doc --workspace
+--no-deps 2>&1 | grep generated` names the two crates and their counts in two
+lines, and a count appearing against a *third* crate is the thing to look at.
 
 ## Where things are
 

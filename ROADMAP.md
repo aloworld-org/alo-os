@@ -827,9 +827,16 @@ sorted the same way v0.01 now is.
         inside it, the same turn reaching for a private key beside it is refused
         `EACCES` by the kernel, the turn ends and the key opens, and a process
         that is not a turn is untouched throughout. `docs/autonomy/QUEUE.md` item
-        26 is ticked. **What is left of this half is 26a** — making the cgroup,
-        resolving a grant to a place and running a turn's work inside it, which
-        is the step in front of `alo-turn` and is not written
+        26 is ticked. **Item 26a is ticked too, and it answered the question with
+        law 2 in it**: nothing is started to fill the cgroup, because a system
+        that starts a program to do an agent's work is a system with a program to
+        choose. One thread of the service goes in, by writing a byte into
+        `cgroup.threads`, and comes back out through a descriptor opened before
+        it went in — measured on the same kernel, with a sibling thread of the
+        same process opening the file the working thread is being refused.
+        **What is left of this half is 26b** — which grant becomes the bound, and
+        putting `Turns::doing` in front of `alo-turn` inside `alo-agentd`, which
+        is not written
   - [ ] On the machine. The certified machine, and a kernel requirement that is
         a **configuration** and not a patch — now **four** checks rather than
         one, each invisible to the one before it: `CONFIG_BPF_LSM=y`, `bpf`

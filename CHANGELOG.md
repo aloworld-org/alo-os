@@ -12,6 +12,36 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **An agent's work can now be put inside the kernel's boundary without alo OS
+  starting anything at all.** The boundary that makes a grant real — the kernel
+  refusing a file the agent was never granted, rather than alo OS politely
+  declining to open it — was proved a fortnight's worth of work ago against a
+  test that ran the agent's work as a *separate program*. That is not how alo OS
+  is built, and it must not be: a system that starts a program to do an agent's
+  work is a system with a program to choose, and the whole of alo OS's second law
+  is that there is no such choice anywhere in it.
+
+  So nothing is started. The work an agent asks for is already running inside the
+  agent service — it is one of six file operations on a closed list — and it is
+  **that** which now steps into the kernel's boundary and back out again. One
+  thread of the service is inside; the rest of the service, including the part
+  that writes down what happened and the part that answers the person, stays
+  outside. A boundary around the whole service would have put the record of the
+  agent's work inside the agent's own grant.
+
+  Measured on a real kernel rather than reasoned about: while the working thread
+  is refused a private key it was not granted, another thread of the same service
+  opens the same file at the same moment.
+
+- **A person whose agent cannot be bounded is now told so, in their own
+  language.** alo OS will not let an agent act on a machine where it cannot hold
+  it to what was granted — that was already true, and until now the person got
+  silence. There are eleven ways the machine can be in that state and they are
+  all facts about the kernel; the person reads one sentence saying that nothing
+  was done, that nothing was refused either, and that whoever set the machine up
+  is who has to look at it. The technical reason still goes, in English, to the
+  service log where an administrator will find it.
+
 - **Thirteen sentences in the developer documentation had lost their links, and
   now the compiler will not let that happen again.** Somebody reading
   `alo-protocol` or `alo-asking`'s published documentation would find sentences

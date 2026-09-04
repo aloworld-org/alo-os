@@ -7207,3 +7207,120 @@ which `LOOP.md` names as worse than never updating the file.
   today. If a Linux-only module is added to either crate, or one is added to a
   third crate, the number moves for an honest reason — so check what the new ones
   name before writing a larger number down.
+
+---
+
+## Iteration — item 26a: a turn is one thread of the service, and nothing is started
+
+**Built.** `crates/alo-bounding` gained `turns.rs`, `inside.rs` and `words.rs`;
+`cgroup.rs` gained `made_under` and `holding_threads`; `failing.rs` gained
+`NotBounded::said`, `NotInAHierarchy` and `NotBroughtBack`; `Cargo.toml` gained
+`alo-strings` and a dev-dependency on `alo-saying`. `Turns::doing` is the one
+door: make the turn's control group, tell the kernel what it may reach, put
+**this thread** in, do the work, bring the thread out, take the entry away,
+remove the control group.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1767 tests and 45 doctests on Linux** (was 1756 and 45), **1563 and 45
+on Windows** (unchanged, and that is the correct result — every line of this is
+Linux). `alo-bounding` ran 23 unit tests and 8 integration tests on Linux, 0 on
+Windows. The kernel half's own gate — `cargo fmt --all --check` and `cargo
+clippy --release --target bpfel-unknown-none -Z build-std=core` — clean.
+`cargo doc --workspace --no-deps` exits 0 with zero warnings on Linux.
+
+**The item was cut while it was being built, and the cut is written down.** It
+owed three answers; two are here and the third is item 26b with the wiring.
+*Which grant becomes the bound* is a change to `alo-bounding-map`, to the kernel
+programme and to `Boundary`'s map type, and how wide the bound has to be is
+decided by what the wiring turns out to need — so answering it now would have
+been answering it in the abstract, which is the thing `LOOP.md` says to cut
+rather than half-build. 26a is now *what runs in the cgroup, and the sentence
+when nothing can*, and that is whole.
+
+**The decision the item existed to make: nothing is started.** ADR 0015 says
+*runs the verb's work inside that cgroup*, and read literally that says start
+something — which is exactly what item 26's own test does, correctly, because
+proving a *kernel* refuses is different work from building a *daemon*. Every
+spawning shape needs a program to name, and a program alo OS starts on an
+agent's behalf is one review away from a program an agent named, which is law 2
+gone. What a turn's work already is on this machine is one thread of
+`alo-agentd` calling `alo-files`, one of six verbs on a closed list, so **that
+thread** is what goes into the cgroup: one byte written into `cgroup.threads`,
+no `fork`, no `exec`, no `Command`. A test reads the crate's own source and
+holds it to that, skipping comment lines, because these files explain at length
+that they start nothing and a test that could not tell a promise from a call
+would fail on the sentence making the promise.
+
+It is the narrower answer as well as the lawful one, and that half is measured
+rather than argued. A whole process in the cgroup would put the record, the
+socket and the person's own door inside the agent's grant;
+`the_other_threads_of_this_service_are_not_in_the_turn` starts a second thread
+*before* the turn (a thread inherits the cgroup of whichever thread made it),
+and asserts both halves at one moment: the working thread is refused the private
+key with `EACCES`, and the sibling opens it.
+
+**What the design rested on and had never been measured.**
+`bpf_get_current_cgroup_id` documents "the cgroup id of the current task", and
+nothing says which cgroup that is when a process's threads are in different
+ones. It answers with the *threaded* cgroup — the thread's own, not the resource
+domain above it and not the group leader's — which is what makes a turn a thread
+at all. It was tried before anything was designed around it and it is in
+`docs/quirks.md` beside the second undocumented thing this needed: writing `0`
+into `cgroup.threads` means *the task asking*, so nothing has to rent a crate to
+learn its own thread id in order to move itself, and a number written by hand
+cannot be somebody else's by mistake.
+
+**Three orderings, and every one of them fails open if it is wrong.** *The way
+out is a descriptor opened before the way in was taken* — leaving a cgroup means
+writing into another one's `cgroup.threads`, and **opening** that file from
+inside is an open the boundary correctly refuses, so a turn that could be entered
+and not left would be a service that stops working the first time it worked.
+*Bound before entered*, because a thread in a cgroup the kernel holds no entry
+for is a thread the kernel allows everything — the miss is the fast path for
+every ordinary program on the machine and cannot tell an agent's thread from a
+text editor's. *Left before released*, which is that window backwards. And a
+thread that could **not** leave keeps its boundary: the entry is deliberately not
+removed, because *bounded to a turn that is over* fails closed and *bounded to
+nothing* is an agent's thread with the run of the machine.
+
+**Eleven reasons, one sentence, and the crate crossed onto `alo-strings`.**
+`NotBounded` keeps its English for whoever stands the machine up — every variant
+is a fact about the kernel underneath the daemon — and every variant renders the
+same string for the person: nothing was done, nothing was refused either, and the
+machine is what has to be looked at. The reason is deliberately not inside it; an
+untranslated English clause in the middle of a translated sentence is the failure
+the 9-series spent seven items removing. The list is **not** in `alo-saying`, for
+the reason `alo-agentd`'s is not, and `QUEUE.md`'s sentence about `alo-saying`
+reaching every crate that says anything was corrected to say *every portable
+crate*.
+
+**`ROADMAP.md` moved**, per step 6. The *grant enforced by the kernel* line's
+code half now says what 26a answered and names 26b as what is left of it.
+**Nothing was ticked.** The half stays empty because nothing is in front of a
+turn yet, which is the honest state and is what that half's own sentence has said
+since item 26.
+
+**What the next iteration should know.**
+
+- **The next ready item in queue order is 26b**, which is 26a's cut plus the
+  wiring, and it is the largest of the three remaining: it needs `alo-turn`'s
+  doors separated so a boundary can be around the verb and not around the entry
+  written afterwards, and 1500 tests hang off that crate. After it, 27 — the LSM
+  decides and forgets. 16b is not ready by its own words, 19b is blocked on
+  Wayland, 21i on the shell, 21k on an ADR nobody has written, 21l on a place a
+  question can leave for. Item 28 — the image — is blocked on nothing and is
+  still the one that would move any of the eighteen machine halves.
+- **The rustdoc count on Windows is thirty-two now, not twenty-eight**, and the
+  four new ones are `alo-bounding`'s crate header linking things that are
+  `cfg`'d out on that host. `LOOP.md` says to read the two `generated` lines
+  rather than the total, because a count against a *third* crate is the one that
+  means something.
+- **A test that enters a turn must assert nothing while it is inside.** A failing
+  assertion panics, a panic prints a backtrace, and a backtrace opens
+  `/proc/self/maps` — which is an open outside the grant, refused, in the middle
+  of reporting why something else went wrong. Every test here gathers outcomes,
+  comes back out, and asserts afterwards.
+- **Nothing here was verified on a certified machine.** It is
+  `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
+  certified one is still the exit gate.
