@@ -217,11 +217,49 @@ one starts it in its built-in list, with **no boot parameter of ours** — so th
 `lsm=` trap two paragraphs above is a trap alo OS's image does not have to walk
 into, and ADR 0015's sentence is measured rather than hopeful.
 
-**Two of the five are still unanswered and cannot be answered here.** Whether
+**Two of the five were unanswered because nothing had booted the image.** Whether
 grace periods complete and whether `bpffs` is mounted are questions about a
-kernel that is *running*, and nothing has booted this image: what was read is the
-configuration file the image ships beside its kernel. They are the machine half,
-and `ROADMAP.md`'s image line keeps that box empty.
+kernel that is *running*, and what the table above reads is the configuration
+file the image ships beside its kernel.
+
+### The image booted, and the other two answered themselves
+
+**2026-09-04, in QEMU with KVM**, from a disk `bootc install to-disk` wrote:
+UEFI → GRUB 2.12 → the ostree deployment → the kernel. What the console said:
+
+```
+LSM support for eBPF active
+landlock: Up and running
+bpf-restrict-fs: LSM BPF program attached
+tasks_rcu_exit_srcu_stall — 0 occurrences
+
+[  OK  ] Finished alo-boundaryd.service
+[  OK  ] Started  alo-agentd.service
+```
+
+- **Grace periods complete.** Zero RCU-tasks stalls. This is the requirement
+  that cost a morning and made the WSL2 kernel useless for any BPF work: there,
+  a grace period stalled twenty seconds after boot on every boot and no
+  programme could ever attach. On this kernel it does not happen.
+- **The LSM machinery is live, and not only ours.** `systemd` attached its own
+  `bpf-restrict-fs` programme during boot, which is independent corroboration:
+  the mechanism works here rather than merely being compiled in.
+- **Both units came up, in order.** `alo-boundaryd` finished — it is
+  `Type=oneshot`, so *finished* is success — and `alo-agentd` then started,
+  which it could not have done if the boundary had failed, because its unit says
+  `Requires=`. [ADR 0018](decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)
+  is now a thing that has happened rather than a thing that was decided.
+- One unit did fail: `systemd-ssh-generator`, on `Failed to query local AF_VSOCK
+  CID`. That is systemd looking for a QEMU guest channel the machine was
+  deliberately not given. Nothing of ours.
+
+**`ROADMAP.md`'s image line keeps its machine box empty, and this is why.** A
+virtual machine is not the certified machine law 3 asks for: no firmware of a
+model somebody bought, no suspend, no external display, no printer. What this
+boot settles is that the image is *bootable* and the units are *correct* —
+which is what the five kernel questions were for. It does not settle that alo OS
+runs on hardware, and ticking the box on a VM would be exactly the optimistic
+tick `ROADMAP.md`'s own preamble forbids.
 
 **Who loads it now has an answer, and whoever certifies a machine should know
 it.** Not the agent's daemon: ADR 0018 gives the `CAP_BPF` and `CAP_SYS_ADMIN` a

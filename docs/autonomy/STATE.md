@@ -8229,3 +8229,59 @@ variant meaning *it is loading*, and what a person sees while a model loads for
 four minutes is a decision about the shell. Nothing calls `load` today, which is
 why nobody had seen it. **Still blocked, unchanged:** 16b, 19b, 21i, 21k, 21l,
 26f.
+
+---
+
+## The image booted
+
+Not an iteration. Written by hand after doing the half the loop cannot do.
+
+**alo OS booted, in QEMU with KVM, from a disk it installed itself onto.**
+`bootc install to-disk` off `alo-os:dev`, then UEFI → GRUB 2.12 → the ostree
+deployment → `6.19.14-101.fc42.x86_64`, and:
+
+```
+[  OK  ] Finished alo-boundaryd.service
+[  OK  ] Started  alo-agentd.service
+```
+
+**ADR 0018 has happened rather than been decided.** The loader ran as root at
+boot, finished — it is `Type=oneshot` — and the agent then started as `alo` with
+`AmbientCapabilities=` empty. The agent could not have started had the loader
+failed, because its unit says `Requires=` and not `Wants=`, which is the line in
+that unit doing the actual work.
+
+**The two kernel questions this repository could not answer are answered.**
+`docs/hardware.md` said whether grace periods complete and whether the LSM
+machinery is live were questions about a *running* kernel and nothing had booted
+the image. Now: **zero RCU-tasks stalls**, and `systemd` attached its own
+`bpf-restrict-fs` programme during boot — independent corroboration, since that
+is not our code. The stall that made the WSL2 kernel useless all morning simply
+does not occur here.
+
+**Two things about how it was reached, because both cost time.**
+
+The first boot produced seven lines of console and looked like a hang. It was
+not: GRUB writes to the EFI console and the kernel only writes to serial when
+`console=ttyS0` is on its command line, so everything after the handoff went to
+a screen nobody was watching. The image was correct and the invocation was
+wrong. Reinstalled with `--karg console=ttyS0,115200` and the same disk produced
+1,058 lines.
+
+And `podman load` reading a 1 GB tar straight off `/mnt/c` held the WSL
+connection open long enough to kill it — `Wsl/Service/0x8007274c` — twice. The
+same file copied off the 9p mount in 27 seconds and loaded fine. The rule that
+falls out of it: **copy off 9p, then work.** It is the same seam that makes the
+Windows-side build slow.
+
+**The machine box stays empty**, and it should. A virtual machine is not the
+certified machine law 3 asks for — no firmware of a model somebody bought, no
+suspend, no external display, no printer. What this settles is that the image is
+bootable and the units are correct. Ticking the box on a VM would be the
+optimistic tick `ROADMAP.md`'s preamble forbids.
+
+**What is now worth an item:** the four checks `docs/hardware.md` prescribes,
+run *inside* the booted image rather than read from its config file, and a look
+at whether `alo-agentd` actually opened the pinned map the loader left it. This
+boot proved the units start; it did not prove the boundary is enforcing.
+
