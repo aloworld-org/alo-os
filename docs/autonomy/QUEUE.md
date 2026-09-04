@@ -2244,14 +2244,27 @@ out.
   tells the service what was chosen, and `agentd.nothing-answers-questions` is
   the true sentence about a machine where nobody has chosen either.
 
-  **Blocked on a decision that is not the description's.** ADR 0008 puts *where
-  a question may be answered* with the person, and ADR 0004 gives
-  `/etc/alo/agentd.toml` to the organisation — so the model a person picked
-  cannot simply become a key in that file, and the `SourcePolicy` an
-  organisation sets probably can. Two halves of one question, stored in two
-  places, and the person's half has the same owner as *which language they
-  read*: neither is decided anywhere, and both are `alo-appearance`-shaped.
-  Whoever takes this takes that first.
+  **The decision was blocking it, and it is taken: [ADR 0016](../decisions/0016-the-organisation-bounds-and-the-person-chooses.md).**
+  ADR 0008 puts *where a question may be answered* with the person and ADR 0004
+  gives `/etc/alo/agentd.toml` to the organisation, and the two looked like they
+  wanted the same key in the same file. They do not. An organisation sets a
+  **bound** — which sources are permitted at all — and a person makes a
+  **choice** inside it; an organisation setting the choice would be acting as
+  the person, which ADR 0004 already forbids where it forbids making their agent
+  act in their name.
+
+  So this item now has somewhere to write to, and no decision left in it:
+
+  - the bound stays in `/etc/alo/agentd.toml` as the `SourcePolicy`;
+  - the choice goes in a per-person `$XDG_CONFIG_HOME/alo/` file, which also
+    holds *which language they read* — same owner, same lifetime, and the ADR
+    says why one store rather than two;
+  - a choice outside the bound is **refused in words naming who set it**, never
+    silently replaced by a permitted one;
+  - the choice records **which list** it names, which is item 25's ambiguity;
+  - no policy file at all means unbounded, and no choice means nothing answers
+    and the machine says so — `agentd.nothing-answers-questions` stays the true
+    sentence about a machine nobody has configured.
 
   What it is worth when it lands: `alo-asking`, `alo-models` and
   `alo-answering` are already loaded into the machine's vocabulary (21f), so
@@ -2288,20 +2301,34 @@ out.
   directory before either of the two locks `place.rs` sets is consulted. The
   person's door works; the agent's cannot be reached on a real machine at all.
 
-  **Blocked on nothing here, and it is a decision rather than a fix.**
+  **It wanted writing down before it was written, and it is written:
+  [ADR 0017](../decisions/0017-the-agents-door-is-ours-and-not-in-the-session.md).**
   `place.rs` is right — the directory is `0750` and handed to the agent's group,
-  the socket is `0660` — and `session.rs` chose `$XDG_RUNTIME_DIR` for reasons
-  that are all still true: `/tmp` is anybody's, and a service that made
-  `/run/user/<uid>` itself would be standing in for a session that has not
-  started. A directory outside the session has to be created by something
-  privileged (`tmpfiles.d`, which is the image's), has to be per-person on a
-  machine that may have more than one, and has to go when they sign out. That is
-  the shape of the answer and it wants writing down before it is written; it
-  moves `docs/contracts/daemon-protocol.md`, which is a public surface.
+  the socket is `0660` — and it is unreachable anyway, because `logind` makes
+  `/run/user/<uid>` `0700`: a correct `0750` directory inside a `0700` one is a
+  locked room inside a locked building.
 
-  Until it is taken, **no claim is made that an agent can connect**: item 21c
-  said a connection from a second user had never been made, and this is what was
-  behind that sentence.
+  The socket moves to **`/run/alo/<uid>/agentd.sock`**. The image creates
+  `/run/alo` through `tmpfiles.d`; the daemon creates the per-person directory
+  when a session starts and removes it when it ends. That is allowed where
+  creating `/run/user/<uid>` was not, and the ADR keeps the distinction: making
+  our own directory in response to a session that already exists is reacting to
+  one, not standing in for `logind` and inventing one.
+
+  What is left here is the work rather than the decision:
+
+  - `place.rs` keeps every check it has and changes where it points; `session.rs`
+    stops reading `$XDG_RUNTIME_DIR` for this;
+  - `docs/contracts/daemon-protocol.md`'s *The transport* section changes — a
+    public surface, broken deliberately now because nothing has shipped and
+    after v0.01 the same move costs a version and a migration;
+  - the image gains its first `tmpfiles.d` entry asked for by the daemon;
+  - **the socket outliving the session is now a thing that can go wrong**, so it
+    is a thing to test.
+
+  **No claim is made that an agent can connect** until this lands and somebody
+  makes one: item 21c said a connection from a second user had never been made,
+  and the paragraph above is why rather than a claim that it now works.
 
 - [x] **21g. The machine's vocabulary, and where a translation comes from** —
   cut from 21f, which said this half wanted writing down before it was written.
