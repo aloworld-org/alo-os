@@ -9175,3 +9175,62 @@ repository reads.
   Docker repair left it: units installed and stopped, nothing pinned,
   `alo-os:dev` still a local image, `bpffs` mounted or not depending on whether
   the distribution has restarted.
+
+---
+
+## Iteration — the seventh empty queue, and what a repeated entry is now costing
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, and this is the seventh consecutive entry to say so.
+
+**The same two commands, the same two answers.** `ls docs/decisions/` ends at
+**0018**; `git status` is clean against `5483082`, the commit the sixth entry
+made. So the queue, the eight blocks, the crates and `image/` are byte-identical
+to what the entry above read, and the two ADRs that free 21k, 21l and 26f still
+do not exist. Nothing else was asked, for the reason the fifth entry gave and the
+sixth measured: an ADR is the only thing that arrives from outside without
+touching this tree, and a clean tree at a known commit settles everything else.
+
+The prompt named a track again — *business* this time. `LOOP.md` answers it:
+there is one queue here, and the word is noise.
+
+### The gate was not run, and the numbers below are carried
+
+`LOOP.md` step 4 gates **a change**, and nothing was built. This tree was gated
+in full four times: `fmt` and `clippy` clean on both hosts, **1954 test results
+on Linux and 1723 on Windows** with zero failures, `crates/alo-bounding-kernel`'s
+own two commands, `bpffs` empty afterwards, and rustdoc's **52**
+platform-explained warning lines on Windows against zero on Linux. Those are
+**carried, and marked as carried**, as they were in the two entries above.
+
+### What is new, and it is a cost rather than a finding
+
+The sixth entry tested the fifth's prediction and it held. This one tests
+nothing: the prediction has been confirmed twice, and a third confirmation of an
+unchanging fact is not evidence, it is repetition. So the honest new thing here
+is the ledger. **Three iterations have now run after the first one that asked to
+be stopped**, and their combined output is three paragraphs saying `0018` and
+*clean*. The first three empty queues each spent about an hour re-proving a green
+suite; these three spent two commands each. That is the cheapest a wrong run can
+be made, and it is still a wrong run — the saving is in the cost of the mistake,
+not in the mistake going away.
+
+**`ROADMAP.md` untouched and nothing ticked. No `CHANGELOG.md` line** — nothing
+was built, and a seventh empty queue is not something a person outside this
+repository reads.
+
+### What the next iteration should know
+
+- **Stop the loop.** Fourth entry in a row to say it. Until `docs/decisions/`
+  holds an **0019**, an iteration is permitted to do nothing but confirm that,
+  and confirming it has now been done four times over.
+- **The one live question is unchanged**, and it is not a question for the loop:
+  somebody writes the ADR on where a runtime on this machine is (frees 21k, then
+  21l — read ADR 0006 first), or the one on what a bound's lifetime is (frees
+  26f, a real hole in shipped code that fails closed). A compositor or the
+  settings surface frees 21i and 19b; a machine with ten gigabytes free turns 23b
+  into seven data changes and no code.
+- **Nothing on the development box was touched**, so it is as item 30 and the
+  Docker repair left it: units installed and stopped, nothing pinned,
+  `alo-os:dev` still a local image, `bpffs` mounted or not depending on whether
+  the distribution has restarted.
