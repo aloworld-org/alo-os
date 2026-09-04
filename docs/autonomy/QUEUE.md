@@ -3242,11 +3242,36 @@ out.
   pinned map, which is ADR 0015's own *loaded at boot* read literally and needs a
   second service and an interface between them.
 
-  **Blocked on a decision that is not the loop's**, and it wants an ADR rather
-  than a commit: it decides what a certified machine's unit file contains, what
-  the image ships, and whether alo OS has one privileged component or none.
-  Item 28 cannot finish without the answer, because the image is where the unit
-  file lives.
+  **It wanted an ADR rather than a commit, and it has one:
+  [ADR 0018](../decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md).**
+  The second answer, and the first one turned out not to be available.
+
+  ADR 0001 §2 does not only say *never as root*; its second clause says **never
+  with capabilities the person does not have**, which is what
+  `AmbientCapabilities=` would give. The security argument is the stronger one:
+  `CAP_BPF` is not the power to load *our* programme, it is the power to load
+  *any* programme, and handing that to the most network-exposed process in the
+  system is not a boundary. Item 27's test proves our programme records nothing;
+  it says nothing about a second programme loaded by a compromised daemon.
+
+  So what is left here is the work:
+
+  - a new crate **`alo-boundaryd`** — runs at boot as root, holds `CAP_BPF` and
+    `CAP_SYS_ADMIN`, loads the one programme built from `alo-bounding-kernel`,
+    pins its maps, sets their ownership, and then holds nothing. **It takes no
+    argument that selects what to load**, which is a stronger version of
+    ADR 0001 §2's *fixed verb list*: there is no verb at all;
+  - `alo-agentd` gains **no capabilities** and stops loading anything. Its
+    `Boundary` becomes an open of the pinned map by path, and its refusal to
+    start changes from *cannot load* to *the boundary is not present on this
+    machine*, which is the more accurate sentence for a person to read;
+  - the interface between them is **the pinned map, not an API** — owned by the
+    agent's group, mode `0660`, the same shape as the socket in ADR 0017.
+    Writing a grant needs permission, not capability.
+
+  **alo OS now has one privileged component where it had none**, and the ADR
+  says so rather than burying it. What makes it acceptable is that it takes no
+  input, makes no decision, and can do exactly one thing.
 
 - [x] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
@@ -3350,22 +3375,31 @@ out.
   socket outliving the session* can actually go wrong — and it turns
   `docs/hardware.md` from a list of questions into a table with answers in it.
 
-  **Blocked on 26e, and this line said *blocked on nothing* until the iteration
-  that closed the queue read it against the code.** It was true when it was
-  written and item 26d made it false in the same week: the daemon now refuses to
-  start on a machine where it cannot load its LSM programme, so *the init the
-  base already ships* has to be handed a unit file that says who is allowed to
-  impose the boundary — which is exactly the decision 26e is waiting on, and
-  26e's own text has said since it was written that this item cannot finish
-  without it. An image that installs `alo-agentd` and starts it under a unit
-  written by guessing would boot to a daemon that exits, and cutting the daemon
-  out of the image would leave the one thing the item exists to prove.
+  **It was blocked on 26e, and 26e is answered:
+  [ADR 0018](../decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md).**
+  This line said *blocked on nothing* until the iteration that closed the queue
+  read it against the code — true when written, made false by 26d in the same
+  week, because the daemon now refuses to start where it cannot impose the
+  boundary. An image that started `alo-agentd` under a unit written by guessing
+  would boot to a daemon that exits.
 
-  What is *not* blocked is the rest of the list — the base, the `tmpfiles.d`
-  entry, the build — and it is deliberately not being built on its own. An image
-  that boots to no daemon moves none of the eighteen machine halves and cannot
-  ask the four kernel questions of anything, so building it early would buy a
-  box and a tick-shaped thing to look at rather than the item.
+  **The scope grows by one unit file, and the item is otherwise unchanged.** The
+  image ships **two** services, not one:
+
+  - `alo-boundaryd` — at boot, as root, with `CAP_BPF` and `CAP_SYS_ADMIN`,
+    loading the one programme and pinning its maps. Ordered before the agent.
+  - `alo-agentd` — as the signed-in person, **no capabilities**, opening the
+    pinned map by path.
+
+  The pinned map's directory belongs with ADR 0017's `tmpfiles.d` entry: both
+  are the image creating a place with an owner and a mode before anything needs
+  it, and they should be written together rather than discovered separately.
+
+  Still deliberately not built on its own: the base, the `tmpfiles.d` entry and
+  the build without a working daemon. An image that boots to no daemon moves
+  none of the eighteen machine halves and cannot ask the four kernel questions
+  of anything, so building it early would buy a box and a tick-shaped thing to
+  look at rather than the item.
 
   `ROADMAP.md`'s image line at *Image: a bootable container* has no two boxes yet
   and gets them when this is built.

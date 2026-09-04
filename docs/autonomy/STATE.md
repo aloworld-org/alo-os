@@ -7733,7 +7733,10 @@ watched rather than what the daemon reported* — which nothing has done yet.
 not one. Seven items remain unchecked; every one of them is waiting on something
 this loop cannot supply.
 
-LOOP COMPLETE
+- `LOOP COMPLETE` — written by that iteration and **discharged 2026-09-04**: it
+  named two ADRs as what it was waiting on, and one of them is written. ADR 0018
+  answers 26e, which unblocks 26e itself and item 28 behind it. Kept behind a
+  bullet as a record rather than a signal.
 
 **The blocked list, and what each is waiting on.**
 
@@ -7836,3 +7839,61 @@ they are not the loop's:
 
 Everything else on the list needs a compositor, a shell, or a certified machine,
 and no ADR changes that.
+
+---
+
+## 26e is answered, and the answer was already in ADR 0001
+
+Not an iteration. Written by hand after the loop stopped on two ADRs it was
+right not to write itself.
+
+**[ADR 0018](../decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md):
+a small privileged loader imposes the boundary at boot; `alo-agentd` gains no
+capabilities and writes grants into a pinned map.**
+
+**The first option was not available, and that took reading ADR 0001 §2 to the
+end of the sentence.** It is quoted everywhere as *runs as the signed-in person,
+never as root*. Its second clause is **never with capabilities the person does
+not have**, which is exactly what `AmbientCapabilities=CAP_BPF CAP_SYS_ADMIN`
+would grant. The option the queue called *arguably exactly what ADR 0001 §2 is
+about* is the thing that clause exists to forbid.
+
+**The security argument is the one that would have decided it anyway.**
+`CAP_BPF` is not the power to load our programme; it is the power to load any
+programme, on every syscall on the machine. Item 27 wrote a test proving *our*
+programme records nothing, and that test says nothing whatever about a second
+programme loaded by a compromised daemon. `alo-agentd` is the largest and most
+network-exposed thing in the system, so the first option amounted to giving
+kernel-wide observation to the component most likely to be got at. A boundary
+that needs the bounded thing to hold kernel-wide power is not a boundary.
+
+**And the second answer needed no new idea.** ADR 0001 §2 does not leave
+privileged work unaddressed — the sentence after the prohibition prescribes *a
+separate broker with its own fixed verb list, small enough to audit in an
+afternoon*. Loading the boundary is a genuinely privileged operation and gets the
+treatment already written for genuinely privileged operations. `alo-boundaryd`
+is a stronger version of it: it has no verbs at all, because it takes no argument
+that selects what to load.
+
+**What it costs, and the journal should carry it as plainly as the ADR does:**
+alo OS now has one privileged component where it had none. That is a real loss.
+What makes it acceptable is that the alternative was a *large* privileged
+component — the whole agent daemon — which is the same loss with none of the
+containment.
+
+**What the next iteration takes.** Item **26e** is now work rather than a
+question: the `alo-boundaryd` crate, `alo-agentd` losing its loader and opening
+a pinned map instead, and the map's ownership. Item **28** follows it and gains
+one unit file — the image ships two services, ordered, and the pinned map's
+directory belongs with ADR 0017's `tmpfiles.d` entry rather than being
+discovered separately later.
+
+**Still blocked, unchanged:** 16b, 19b (Wayland), 21i (the shell), and 21k —
+which is the second ADR the loop asked for and which is not written yet. 21l
+waits on 21k.
+
+**One thing the closing iteration found that is still owed:** `LOOP.md` records
+38 rustdoc items on Windows and the real count is 41 — 24 for `alo-agentd` and
+17 for `alo-bounding`, the three extra being item 27's own read-backs. A record
+that disagrees with the thing it records is worth a minute to fix.
+
