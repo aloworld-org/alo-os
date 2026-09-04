@@ -6663,3 +6663,50 @@ distinction is the whole product. The machine half gained the third requirement.
   claim.
 
 LOOP HALT
+
+---
+
+## The reboot was tried, and the stall is a property of the kernel
+
+Not an iteration. Written by hand after doing the thing the halt left to the
+machine's owner.
+
+**The restart was made, and it did not help.** `wsl --shutdown`, then the attach
+attempted again under a deadline. It hung again and left the same unkillable
+remnant. The measurement that settles it is the timing: same grace period number
+(13), first stall message at **31 seconds** of uptime with the period already
+2507 jiffies — ten seconds at `CONFIG_HZ=250` — old. So it stalls about **21
+seconds after boot**, on every boot, before anything of ours exists. Two boots,
+same result.
+
+**So the finding is the firm one the halt asked for.** WSL2 cannot host a BPF
+LSM. Item 26 cannot be answered on this machine and no further kernel work
+should be attempted here; what it needs is a different kernel, not another try.
+
+**A correction that nearly became a rule.** The previous entry reads as though
+the first stall message arrives about forty minutes in, which would give the
+`dmesg` check a forty-minute blind window and make a zero worthless on a fresh
+machine — and that is how it was described out loud before it was measured. It
+is wrong. The messages repeat every ten seconds from the stall onward, and the
+forty-three-minute figure was the **oldest message still in the ring buffer**
+when it was read, not the first one emitted. The blind window is about thirty
+seconds. `docs/hardware.md`'s one-line check is sound, with the qualification
+that it must be asked of a machine that has been up more than a minute.
+
+That correction matters more than it looks. A forty-minute blind window would
+have meant the third requirement could not be checked cheaply at all, and
+whoever certifies a machine would have had to wait out a timer they had no
+reason to trust. It is a thirty-second wait.
+
+**What the next iteration must know:**
+
+- **Item 26 stays open and unticked**, and 27 and 26a stay blocked behind it. The
+  mechanism is written and gated; the proof needs a kernel that can be attached
+  to.
+- **Do not attempt any BPF work on the WSL box.** It is measured twice and the
+  answer will not change. The trampoline mutex is wedged again.
+- **What is actually needed** is one Linux machine whose RCU-tasks grace periods
+  complete — a VM with a distribution kernel, or the certified machine when it
+  exists. The three checks in `docs/hardware.md` are how it gets confirmed
+  before any code is run on it, and they cost thirty seconds.
+

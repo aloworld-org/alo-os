@@ -132,11 +132,19 @@ dmesg | grep -c tasks_rcu_exit_srcu_stall                 # must be 0
 ```
 
 Anything but zero means no BPF LSM, `fentry` or `fexit` programme will attach on
-that machine, however the first two checks answer. The WSL2 kernel above is the
-worked counterexample for this one too: measured 2026-09-04, it starts the BPF
-LSM and cannot be attached to, because a grace period stalled about a minute
-after boot and never finished. `docs/quirks.md` has the entry, with the kernel's
-own log line in it.
+that machine, however the first two checks answer. **Ask it on a machine that has
+been up for more than a minute**: the stall is reported about ten seconds after
+it begins, so a zero read at the login prompt is a question asked too early
+rather than an answer. That is the only qualification this check needs — the
+window is seconds, not the tens of minutes an earlier reading of the ring buffer
+suggested.
+
+The WSL2 kernel above is the worked counterexample for this one too: measured
+2026-09-04, it starts the BPF LSM and cannot be attached to, because a grace
+period stalls about twenty seconds after boot and never finishes. **It was
+rebooted and measured again, and it reproduces exactly** — same grace period
+number, same timing — so this is a property of the kernel rather than a bad run.
+`docs/quirks.md` has the entry, with the kernel's own log line in it.
 
 The three checks are in the order the failures happen in, and each one is
 invisible to the one before it: built in, started, and attachable.

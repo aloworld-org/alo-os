@@ -125,7 +125,26 @@ rebooted.
 **has never run**: on this machine it hangs at the first attach, and no claim
 about the kernel refusing anything is made anywhere in this repository. Queue
 item 26 is not ticked.
-**Date:** 2026-09-04
+
+**Reboot tested, and it reproduces — this kernel is out.** The machine was
+restarted and measured again the same day. The stall is **deterministic, not bad
+luck**: same grace period number (13), first stall message at **31 seconds** of
+uptime with the period already 2507 jiffies (10 seconds at `CONFIG_HZ=250`) old,
+so it stalls about **21 seconds after boot**, before anything of ours can run.
+The attach was attempted again under a deadline and hung again, leaving the same
+unkillable remnant. Two boots, same result: **WSL2 cannot host a BPF LSM**, and
+no further kernel work should be attempted on it.
+
+One correction worth keeping, because it nearly became a rule. The entry above
+reads as though the first stall message arrives about forty minutes in, which
+would give the `dmesg` check a forty-minute blind window and make a zero
+meaningless on a fresh machine. That is wrong: messages repeat every ten seconds
+from the moment of the stall, and the forty-three-minute figure was simply the
+**oldest message still in the ring buffer** when it was read, not the first one
+emitted. The real blind window is about **thirty seconds**. So the one-line check
+in `docs/hardware.md` is sound, with one qualification: *ask it on a machine that
+has been up for more than a minute.*
+**Date:** 2026-09-04, reboot-tested the same day
 
 <!--
 ### <Machine or component> — <one-line summary>
