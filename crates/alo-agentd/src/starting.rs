@@ -23,12 +23,14 @@
 //!    with; see [`NotStarted::NoRecord`].
 //! 4. **The record**, which is the one thing a service refuses to run without.
 //! 5. **The stop, and the handler that causes one.** `crate::signalling`.
-//! 6. **The boundary** — the programme loaded into the kernel and this
-//!    service's own control group subtree, `crate::bounding`. Before the socket,
-//!    because ADR 0015 says a turn that cannot be bounded does not run and a
-//!    service that cannot bound one has nothing to offer anybody; and after the
-//!    record, because a machine with no boundary is a machine that will not
-//!    serve rather than one that cannot write down why.
+//! 6. **The boundary** — the map `alo-boundaryd` pinned at boot, opened by
+//!    path, and this service's own control group subtree, `crate::bounding`.
+//!    Before the socket, because ADR 0015 says a turn that cannot be bounded
+//!    does not run and a service that cannot bound one has nothing to offer
+//!    anybody; and after the record, because a machine with no boundary is a
+//!    machine that will not serve rather than one that cannot write down why.
+//!    Nothing here is privileged: ADR 0018 moved the loading out of this
+//!    process, so what this step needs is permission on a file.
 //! 7. **The session, and the socket** — last, because it is the only thing
 //!    anybody else on the machine can see. Nothing knocks on a service that is
 //!    still deciding whether it can run.

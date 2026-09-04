@@ -2,7 +2,11 @@
 
 **Status:** accepted — the mechanism behind
 [ADR 0013](0013-the-grant-is-enforced-by-the-kernel.md), and the answer to
-*how do we make the kernel AI-native*
+*how do we make the kernel AI-native*. **Who loads the programmes was left open
+here and is answered by
+[ADR 0018](0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)**: *loaded
+at boot* read literally, by a small privileged loader, never by the agent's own
+daemon
 **Date:** 2026-09-03
 **Context:** [ADR 0001](0001-the-capability-model.md) (the capability model),
 [ADR 0011](0011-the-base-is-rented-and-the-image-is-a-container.md) (the base),

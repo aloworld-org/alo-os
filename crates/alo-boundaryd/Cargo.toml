@@ -1,0 +1,38 @@
+[package]
+name = "alo-boundaryd"
+version = "0.0.1"
+description = "The loader: it imposes alo OS's boundary on the kernel once at boot, pins it where the agent's daemon can write one map of it, and holds nothing."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Everything in this crate is a BPF programme in a kernel and two numbers a
+# Unix kernel keeps for a process. On any other host it compiles to nothing at
+# all rather than to a version of itself that pretends, which is `alo-agentd`'s
+# argument and `alo-bounding`'s, and this crate is the third to make it.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The whole of what this loads, and it is the only thing this crate decides
+# anything with: `alo_bounding::Imposed` is the programme, `Pinned` is where it
+# goes and who may reach it there. This crate adds the order and the refusals a
+# *process* can make, and nothing else.
+alo-bounding = { path = "../alo-bounding" }
+
+# Who this process is, which the standard library will not say. `src/unix.rs` is
+# the only file that names it, as `unix.rs` is in `alo-agentd`: asking the kernel
+# for a process's own user and group is `geteuid` and `getegid`, `CLAUDE.md`
+# forbids unsafe, and a loader nobody else can build on a stable compiler is not
+# a loader we ship.
+rustix = { workspace = true }
+thiserror = { workspace = true }
+
+# The loader, as a machine really runs it: once, at boot, before `alo-agentd`.
+# `src/lib.rs` is every decision and this is the process that makes them in
+# order — thin on purpose, because what a process does is one sequence and one
+# exit code.
+[[bin]]
+name = "alo-boundaryd"
+path = "src/main.rs"
+
+[lints]
+workspace = true

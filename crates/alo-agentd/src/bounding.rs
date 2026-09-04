@@ -8,6 +8,15 @@
 //! this crate is: **the daemon is the process**, and everything else in this
 //! workspace is a decision it makes in order.
 //!
+//! # This service loads nothing, and ADR 0018 is why
+//!
+//! It used to load the programme itself, which meant it needed `CAP_BPF` and
+//! `CAP_SYS_ADMIN` — capabilities the signed-in person does not have, and which
+//! ADR 0001 §2 forbids this daemon. So the loading is `alo-boundaryd`'s, once at
+//! boot, and what is left here is an open of the one map that loader made
+//! group-writable. **Writing a grant needs permission, not capability**, and
+//! that sentence is the whole of the interface between the two.
+//!
 //! # What one turn's execution costs
 //!
 //! A control group made beside `home`, one entry written into the kernel's map,
@@ -36,22 +45,22 @@
 //! an answerable question rather than as an English sentence somebody would have
 //! had to match on.
 
-use alo_bounding::{Boundary, NotBounded, Turns, places_of};
+use alo_bounding::{Boundary, NotBounded, Pinned, Turns, places_of};
 use alo_files::Reaching;
 use alo_turn::{Bounding, Doing, Done, NoBoundary};
 
-/// The boundary this machine's kernel imposes, for as long as this is held.
+/// The boundary this machine's kernel imposes, as this service can reach it.
 ///
-/// Made once, when the service starts, and given back when it stops: making it
-/// moves this process into a control group of its own, and the programme it
-/// loads is attached to `file_open` for every process on the machine until it
-/// is dropped.
+/// Made once, when the service starts, and given back when it stops. What it
+/// holds is a control group subtree of this process's own and a descriptor on
+/// one map — **not** the programme, which was loaded at boot by `alo-boundaryd`
+/// and stays on `file_open` whatever this service does.
 #[derive(Debug)]
 pub struct ByTheKernel {
     /// Where this service's turns are made, and the way back out of one.
     turns: Turns,
 
-    /// The programme in the kernel, and the map it decides from.
+    /// The map the kernel decides a turn's opens from.
     boundary: Boundary,
 
     /// How many turns have been carried out, which is where the next name
@@ -60,19 +69,41 @@ pub struct ByTheKernel {
 }
 
 impl ByTheKernel {
-    /// Load the programme, attach it, and make this service's subtree.
+    /// Open the map this machine's boundary decides from, and make this
+    /// service's subtree.
     ///
-    /// In that order, and the order is `alo-bounding`'s: a subtree with nothing
-    /// attached is a service whose turns would be bounded by nobody, and it is
-    /// the cheaper of the two to give back if the other fails.
+    /// In that order, and the order is what ADR 0018 left of `alo-bounding`'s: a
+    /// subtree on a machine with no boundary is a service whose turns would be
+    /// bounded by nobody, and it is the cheaper of the two to give back if the
+    /// other fails.
+    ///
+    /// **Nothing here is privileged.** Since ADR 0018 the daemon holds no
+    /// capability at all: what this needs is permission on a file the agent's
+    /// group was given at boot, which is the whole point of that decision.
     ///
     /// # Errors
     /// [`NotBounded`], and ADR 0015's rule is that this is the end of it: a
-    /// service that cannot impose a boundary cannot bound a turn, and a turn
+    /// service that cannot reach a boundary cannot bound a turn, and a turn
     /// that cannot be bounded does not run — so what a caller does with one of
-    /// these is not start.
-    pub fn imposed() -> Result<Self, NotBounded> {
-        let boundary = Boundary::imposed()?;
+    /// these is not start. [`NotBounded::NoBoundaryHere`] is the one a machine
+    /// really fails on, and it names the service that was supposed to run first.
+    pub fn found() -> Result<Self, NotBounded> {
+        Self::beneath(&Pinned::on_this_machine())
+    }
+
+    /// The same, against a boundary pinned somewhere a caller names.
+    ///
+    /// The reason [`ByTheKernel::found`] takes nothing and this takes a place is
+    /// `crate::place`'s: a rule about a machine is only a rule with a test if a
+    /// test can be run against something it may write in, and `/sys/fs/bpf/alo`
+    /// is not one — a test that used it would take over the boundary of whoever
+    /// ran it. What is decided here is the shape; where it really is, is
+    /// ADR 0018's and is `alo_bounding::THE_ROOT`.
+    ///
+    /// # Errors
+    /// Everything [`ByTheKernel::found`] answers with.
+    pub fn beneath(pinned: &Pinned) -> Result<Self, NotBounded> {
+        let boundary = Boundary::opened(pinned)?;
         let turns = Turns::of_this_service()?;
         Ok(Self {
             turns,
@@ -86,9 +117,14 @@ impl ByTheKernel {
     /// Separate from dropping the value for `alo_bounding::Turns::given_back`'s
     /// reason: moving a process between control groups can fail, and a `Drop`
     /// that swallowed it would leave a machine filling with the remains of
-    /// daemons with nothing saying so. Dropping the programme *is* the right
-    /// shape — a service that has stopped stops enforcing — so that half is a
-    /// `Drop` and this half is not.
+    /// daemons with nothing saying so.
+    ///
+    /// **What this no longer gives back is the boundary itself**, and that is
+    /// ADR 0018 rather than an omission. It used to: a `Boundary` owned the
+    /// loaded programme, so a service that stopped detached the machine's
+    /// enforcement. Now the programme is the loader's and this drops a
+    /// descriptor — so stopping a service that runs as the person can no longer
+    /// take a machine's boundary off it.
     ///
     /// # Errors
     /// [`NotBounded`] if this process could not be put back or the subtree could

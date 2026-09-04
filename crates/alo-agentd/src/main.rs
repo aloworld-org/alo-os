@@ -67,23 +67,28 @@ mod running {
     /// The three orderings worth reading twice are all in that argument. The
     /// vocabulary is loaded **before** the record, so a record that will not
     /// open is refused in the words `alo-keeping` already wrote rather than in
-    /// a second sentence about a disk. The boundary is imposed **before the
+    /// a second sentence about a disk. The boundary is found **before the
     /// socket and after the record**, because a service that cannot bound a
     /// turn has nothing to offer anybody (ADR 0015) and a machine with no
     /// boundary is one that will not serve rather than one that cannot say why.
     /// The socket is bound **last**, so nothing on this machine can knock on a
     /// service that is still deciding whether it can run.
     ///
-    /// # The boundary is given back here, and this is the only place it can be
+    /// # The subtree is given back here, and this is the only place it can be
     ///
-    /// Making one moves this process into a control group of its own, and
-    /// `alo_bounding::Turns::given_back` is deliberately not a `Drop`: moving a
-    /// process between control groups can fail, and a machine filling with the
-    /// remains of daemons with nothing saying so is what a swallowed failure
-    /// looks like a month later. So it is given back on both roads out — the
-    /// service that stopped and the service that failed — and what it said is
-    /// a line in the log rather than a different exit code, because a service
+    /// Finding the boundary moves this process into a control group of its own,
+    /// and `alo_bounding::Turns::given_back` is deliberately not a `Drop`:
+    /// moving a process between control groups can fail, and a machine filling
+    /// with the remains of daemons with nothing saying so is what a swallowed
+    /// failure looks like a month later. So it is given back on both roads out —
+    /// the service that stopped and the service that failed — and what it said
+    /// is a line in the log rather than a different exit code, because a service
     /// that ran and then could not tidy up did run.
+    ///
+    /// **What is not given back is the boundary**, since ADR 0018. This process
+    /// did not load it — `alo-boundaryd` did, at boot — so a service stopping
+    /// leaves the machine enforcing, which is the right way round for a service
+    /// that runs as the person whose agent is being bounded.
     fn served() -> Result<Served, NotStarted> {
         let us = unix::us()?;
         starting::not_as_root(us)?;
@@ -104,7 +109,7 @@ mod running {
         let (waking, stop) = Waking::made().map_err(|why| NotStarted::NoStop { why })?;
         signalling::on_sigterm(stop)?;
 
-        let mut bounding = ByTheKernel::imposed().map_err(|why| NotStarted::NoBoundary {
+        let mut bounding = ByTheKernel::found().map_err(|why| NotStarted::NoBoundary {
             why: why.to_string(),
         })?;
 

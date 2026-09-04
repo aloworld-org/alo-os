@@ -73,6 +73,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-boundaryd"
+version = "0.0.1"
+dependencies = [
+ "alo-bounding",
+ "rustix",
+ "thiserror",
+]
+
+[[package]]
 name = "alo-bounding"
 version = "0.0.1"
 dependencies = [

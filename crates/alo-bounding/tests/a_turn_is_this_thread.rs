@@ -22,11 +22,14 @@
 //!   descriptor opened before the thread went in, because *opening* the way out
 //!   while inside is an open the boundary correctly refuses.
 //!
-//! # It needs root, and a kernel that started the BPF security module
+//! # It needs root, a BPF filesystem, and a kernel that started the BPF LSM
 //!
-//! The same three checks `the_kernel_refuses.rs` names, and it fails loudly on a
+//! The same checks `the_kernel_refuses.rs` names, and it fails loudly on a
 //! machine without them for the same reason: a test that quietly skipped itself
 //! would report green on every machine where the boundary does nothing at all.
+//! Where the boundary comes from is `on_this_kernel/mod.rs`, shared with the
+//! other two files here — since ADR 0018 imposing one is a loader's job and
+//! opening it is a daemon's, so a test that wants a machine needs both halves.
 //!
 //! # Nothing is asserted from inside a turn
 //!
@@ -46,30 +49,14 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::{Mutex, MutexGuard, OnceLock, mpsc},
+    sync::mpsc,
 };
 
 use alo_bounding::{Boundary, Bounds, Cgroup, Turns, place_of};
 
-/// The boundary, loaded once for the whole run.
-///
-/// One program on `file_open` rather than one per test, and the lock is what
-/// makes these tests one at a time — which they have to be, because
-/// [`Turns::under`] moves this whole process into a control group of its own.
-fn the_boundary() -> &'static Mutex<Boundary> {
-    static LOADED: OnceLock<Mutex<Boundary>> = OnceLock::new();
-    LOADED.get_or_init(|| {
-        Mutex::new(Boundary::imposed().unwrap_or_else(|why| {
-            panic!(
-                "the boundary could not be imposed on this kernel, so nothing below is being \
-                 tested: {why}\n\
-                 This needs root, `CONFIG_BPF_LSM=y`, and `bpf` in the list of security modules \
-                 the kernel *started* — `cat /sys/kernel/security/lsm`, which is not the same \
-                 question as how the kernel was built. `docs/hardware.md` has the three commands."
-            )
-        }))
-    })
-}
+mod on_this_kernel;
+
+use on_this_kernel::AsAMachineHasIt;
 
 /// What each test is handed: a folder that is granted, a file in it, a second
 /// folder somewhere else, and a private key beside both that is not granted.
@@ -122,18 +109,16 @@ fn a_machine_with_something_worth_protecting(what: &str) -> AMachine {
 /// The subtree is given back and the control group removed before this returns,
 /// whatever the test found — a run that left this process inside a cgroup it had
 /// removed would break every test after it rather than the one that failed.
-fn as_a_service<T>(
-    what: &str,
-    doing: impl FnOnce(&Turns, &mut MutexGuard<'_, Boundary>, &AMachine) -> T,
-) -> T {
+fn as_a_service<T>(what: &str, doing: impl FnOnce(&Turns, &mut Boundary, &AMachine) -> T) -> T {
     let machine = a_machine_with_something_worth_protecting(what);
-    let mut boundary = the_boundary().lock().expect("nothing panicked holding it");
+    let _order = on_this_kernel::one_at_a_time();
+    let mut kernel = AsAMachineHasIt::on_this_kernel(what);
 
     let ours = Cgroup::made(&format!("alo-{what}-{}", std::process::id()))
         .expect("a control group can be made");
     let turns = Turns::under(ours.at()).expect("a service can make a subtree of its own");
 
-    let found = doing(&turns, &mut boundary, &machine);
+    let found = doing(&turns, &mut kernel.boundary, &machine);
 
     turns
         .given_back()

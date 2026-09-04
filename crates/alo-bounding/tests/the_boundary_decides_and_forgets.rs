@@ -24,11 +24,12 @@
 //!   program says something without a map at all, and what it says goes into the
 //!   buffer `/sys/kernel/tracing/trace` reports the size of.
 //!
-//! # It needs root, and a kernel that started the BPF security module
+//! # It needs root, a BPF filesystem, and a kernel that started the BPF LSM
 //!
-//! The same three checks the other two files here name, and it fails loudly on a
+//! The same checks the other two files here name, and it fails loudly on a
 //! machine without them for the same reason: a test that quietly skipped itself
 //! would report green on every machine where the boundary does nothing at all.
+//! Where the boundary comes from is `on_this_kernel/mod.rs`, shared with them.
 //!
 //! It needs one thing they do not — a kernel that is **recording**. A trace
 //! buffer switched off would take every line this file exists to catch and drop
@@ -53,10 +54,13 @@ use std::{
     env, fs,
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::{Mutex, OnceLock},
 };
 
-use alo_bounding::{Boundary, Bounds, Cgroup, Turns, place_of};
+use alo_bounding::{Bounds, Cgroup, Turns, place_of};
+
+mod on_this_kernel;
+
+use on_this_kernel::AsAMachineHasIt;
 
 /// What the kernel reports the size of its trace buffer in.
 ///
@@ -90,27 +94,6 @@ const ROUNDS: usize = 20;
 /// How many other threads of this program go about their own business.
 const THREADS: usize = 3;
 
-/// The boundary, loaded once for the whole run.
-///
-/// One program on `file_open` rather than one per test, and the lock is what
-/// makes these tests one at a time — which they have to be, because one of them
-/// moves this whole process into a control group and because two of them measure
-/// a counter the whole machine shares.
-fn the_boundary() -> &'static Mutex<Boundary> {
-    static LOADED: OnceLock<Mutex<Boundary>> = OnceLock::new();
-    LOADED.get_or_init(|| {
-        Mutex::new(Boundary::imposed().unwrap_or_else(|why| {
-            panic!(
-                "the boundary could not be imposed on this kernel, so nothing below is being \
-                 tested: {why}\n\
-                 This needs root, `CONFIG_BPF_LSM=y`, and `bpf` in the list of security modules \
-                 the kernel *started* — `cat /sys/kernel/security/lsm`, which is not the same \
-                 question as how the kernel was built. `docs/hardware.md` has the three commands."
-            )
-        }))
-    })
-}
-
 /// Everything on this machine that could be holding what the program saw.
 ///
 /// Read out of the kernel each time rather than remembered, so what is compared
@@ -132,21 +115,30 @@ struct Held {
 
 impl Held {
     /// What the kernel is holding at this moment.
-    fn of(boundary: &Boundary) -> Self {
-        let mut maps: Vec<String> = boundary
+    ///
+    /// Through both halves of ADR 0018, because that is where the three
+    /// measurements live: the maps and the offsets are read by the loader, which
+    /// is the only thing that can open them, and the turns are read through the
+    /// map the daemon writes. What the daemon can reach is deliberately the
+    /// smallest of the three.
+    fn of(kernel: &AsAMachineHasIt) -> Self {
+        let mut maps: Vec<String> = kernel
+            .imposed
             .every_map_the_kernel_holds()
             .into_iter()
             .map(str::to_owned)
             .collect();
         maps.sort_unstable();
-        let mut turns = boundary
+        let mut turns = kernel
+            .boundary
             .every_turn_the_kernel_is_holding()
             .expect("the map of turns can be read");
         turns.sort_unstable();
         Self {
             maps,
             turns,
-            fields: boundary
+            fields: kernel
+                .imposed
                 .every_field_the_kernel_was_given()
                 .expect("the map of fields can be read"),
             traced: what_this_kernel_has_traced(),
@@ -352,8 +344,9 @@ fn opening(what: &Path) -> Outcome {
 /// have somewhere, and this is the list of everywhere it has.
 #[test]
 fn the_program_has_nowhere_to_write_what_it_sees() {
-    let boundary = the_boundary().lock().expect("nothing panicked holding it");
-    let held = Held::of(&boundary);
+    let _order = on_this_kernel::one_at_a_time();
+    let kernel = AsAMachineHasIt::on_this_kernel("nowhere-to-write");
+    let held = Held::of(&kernel);
     assert_eq!(
         held.maps,
         ["BOUNDS", "FIELDS"],
@@ -375,10 +368,11 @@ fn the_program_has_nowhere_to_write_what_it_sees() {
 /// real machine takes.
 #[test]
 fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
-    let boundary = the_boundary().lock().expect("nothing panicked holding it");
+    let _order = on_this_kernel::one_at_a_time();
+    let kernel = AsAMachineHasIt::on_this_kernel("an-ordinary-day");
     let folder = an_ordinary_folder("day");
 
-    let before = Held::of(&boundary);
+    let before = Held::of(&kernel);
     assert!(
         before.turns.is_empty(),
         "the kernel is holding {} turns, so what follows is not happening outside one and this \
@@ -395,7 +389,7 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
          program that wrote one line in a hundred would not have been caught"
     );
 
-    let after = Held::of(&boundary);
+    let after = Held::of(&kernel);
     nothing_was_written_down(
         &before,
         &after,
@@ -422,7 +416,8 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
 /// different halves on purpose.
 #[test]
 fn a_turn_the_kernel_refused_is_not_written_down_either() {
-    let mut boundary = the_boundary().lock().expect("nothing panicked holding it");
+    let _order = on_this_kernel::one_at_a_time();
+    let mut kernel = AsAMachineHasIt::on_this_kernel("a-refused-turn");
     let folder = an_ordinary_folder("turn");
     let granted = folder.join("granted");
     fs::create_dir_all(&granted).expect("a temporary directory can be made");
@@ -430,14 +425,14 @@ fn a_turn_the_kernel_refused_is_not_written_down_either() {
     fs::write(&invoice, b"an invoice").expect("a file can be written");
     let outside = folder.join("ordinary-0");
 
-    let before = Held::of(&boundary);
+    let before = Held::of(&kernel);
 
     let ours = Cgroup::made(&format!("alo-forgetting-{}", std::process::id()))
         .expect("a control group can be made");
     let turns = Turns::under(ours.at()).expect("a service can make a subtree of its own");
     let found = turns
         .doing(
-            &mut boundary,
+            &mut kernel.boundary,
             "turn-forgetting",
             Bounds::of_one(place_of(&granted).expect("the granted folder is there")),
             || (opening(&invoice), opening(&outside)),
@@ -461,7 +456,7 @@ fn a_turn_the_kernel_refused_is_not_written_down_either() {
          about and what follows would be measuring nothing"
     );
 
-    let after = Held::of(&boundary);
+    let after = Held::of(&kernel);
     nothing_was_written_down(
         &before,
         &after,
@@ -485,7 +480,9 @@ fn a_turn_the_kernel_refused_is_not_written_down_either() {
 /// thing being looked for.
 #[test]
 fn the_checks_would_notice_something_being_written() {
-    let mut boundary = the_boundary().lock().expect("nothing panicked holding it");
+    let _order = on_this_kernel::one_at_a_time();
+    let mut kernel = AsAMachineHasIt::on_this_kernel("would-notice");
+    let boundary = &mut kernel.boundary;
 
     let traced = what_this_kernel_has_traced();
     fs::write(THE_MARKER, b"alo: proving this kernel counts a line\n")
@@ -522,7 +519,8 @@ fn the_checks_would_notice_something_being_written() {
         "the entry was taken out of the map of turns and reading the map back still finds it"
     );
 
-    let fields = boundary
+    let fields = kernel
+        .imposed
         .every_field_the_kernel_was_given()
         .expect("the map of fields can be read");
     assert!(

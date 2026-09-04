@@ -12,6 +12,29 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The part of alo OS that constrains your agent is no longer part of your
+  agent.** Putting a boundary into your machine's kernel takes a kind of
+  authority no ordinary program has — and until this change the service that
+  talks to your agent was the thing that had it. That was the wrong shape. That
+  service is the largest piece of alo OS and the one thing on your machine that
+  talks to the outside world, so it is the piece most worth breaking into, and it
+  was holding the power to watch every file opened on the machine.
+
+  From this change a separate, very small component does that job. It runs once
+  while the machine is starting, before anybody has signed in; it takes no
+  settings, no file to read and no choice about what to load, because there is
+  exactly one thing it can load and it is built into it. Then it finishes. **The
+  agent service now holds no special authority at all** — what it can do is write
+  one line into one file it has ordinary permission on, which is how it tells the
+  kernel what a single piece of your agent's work may reach.
+
+  Two things change that you might notice. **Stopping the agent service no longer
+  takes the boundary off the machine**, which is right: your agent's constraints
+  should not end because a service running as you was stopped. And **a machine
+  whose boundary was never put in place now says so plainly** — the agent service
+  refuses to start and names the thing that should have run first, instead of
+  reporting that it could not do something privileged.
+
 - **The part of alo OS that watches your agent is now measured for whether it
   watches you.** The boundary an agent's work runs inside is a small programme
   loaded into your machine's kernel, and there is an uncomfortable fact about

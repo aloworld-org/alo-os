@@ -38,9 +38,16 @@ style the rest should match, and two of its decisions constrain later items.
 `crates/alo-keeping`, `crates/alo-shortcuts`, `crates/alo-appearance`,
 `crates/alo-dock`, `crates/alo-answering`, `crates/alo-asking`,
 `crates/alo-turn`, `crates/alo-protocol`, `crates/alo-strings`,
-`crates/alo-driving`, `crates/alo-saying`, `crates/alo-choosing` and
-`crates/alo-agentd` were built by
-the loop and are described in the items below. **`alo-saying` is the only one
+`crates/alo-driving`, `crates/alo-saying`, `crates/alo-choosing`,
+`crates/alo-agentd` and `crates/alo-boundaryd` were built by
+the loop and are described in the items below. **`alo-boundaryd` is the only one
+that is privileged**, and since item 26e it is the only privileged component alo
+OS has at all: it runs at boot as root, holds `CAP_BPF` and `CAP_SYS_ADMIN` long
+enough to load one programme and pin it, and takes no argument that selects what
+to load — there is no verb in it, which is ADR 0001 §2's *fixed verb list* in its
+stronger form. It is also the only crate that reaches `alo-bounding` besides
+`alo-agentd`, and the two reach it for the halves ADR 0018 divides it into: what
+is loaded, and what is written. **`alo-saying` is the only one
 that reaches every portable crate that says anything** — fourteen of them since
 item 21g and fifteen since 21h, and *portable* is doing work in that sentence:
 `alo-agentd` declares its own words on top of the machine's vocabulary rather
@@ -3225,53 +3232,87 @@ out.
   which is a thing this service must not be able to do, and `alo-bounding`'s
   `a_turn_is_this_thread.rs` proves it one layer down in the same suite.
 
-- [ ] **26e. Who is allowed to impose the boundary.** Found by 26d, which
-  wired the daemon to ADR 0015's rule and thereby asked a question nobody has
-  answered: **`alo-agentd` runs as the signed-in person and never as root
-  (ADR 0001 §2), and loading a BPF LSM programme needs `CAP_BPF` and
-  `CAP_SYS_ADMIN`.** So as of 26d the daemon refuses to start on any machine
-  where it cannot get them, which is the ADR implemented faithfully and is not
-  yet a machine anybody can boot.
+- [x] **26e. Who is allowed to impose the boundary.** Implements
+  **[ADR 0018](../decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)**,
+  which answers the question 26d asked by wiring the daemon to ADR 0015:
+  `alo-agentd` runs as the signed-in person and never with capabilities that
+  person does not have (ADR 0001 §2), and loading a BPF LSM programme needs
+  `CAP_BPF` and `CAP_SYS_ADMIN`. `crates/alo-boundaryd`, a **new crate** and the
+  second process in this workspace: `loading.rs` (the order, and the five
+  refusals), `refusing.rs` (`NotLoaded` — why a machine has no boundary),
+  `unix.rs` (who the unit file started this process as), `main.rs`.
+  `crates/alo-bounding` split in two: `pinned.rs` (**new** — where the boundary is
+  kept and who may reach it there), `imposing.rs` (**new** — `Imposed`, the load,
+  the attach and the pins, which is everything that needs a capability) and
+  `bounding.rs` rewritten around `Boundary::opened`, which is an open of one map
+  by path. `crates/alo-agentd`: `ByTheKernel::imposed` is `found`, with `beneath`
+  beside it for a test. 6 new unit tests in `alo-boundaryd`, 3 new integration
+  tests, 6 new in `alo-bounding`; **1826 tests and 46 doctests on Linux** (was
+  1810 and 46), 1595 and 46 on Windows, clippy clean on both hosts and for the
+  BPF target.
 
-  There are two answers and they are different products. **The service is given
-  the capability** — `systemd`'s `AmbientCapabilities=` plus `Delegate=yes` for
-  the control group subtree, still running as the person, never as uid 0 — which
-  is authority to *constrain an agent* rather than authority over the person's
-  files, and is arguably exactly what ADR 0001 §2 is about. Or **something
-  privileged imposes it once at boot** and the per-person daemon writes into a
-  pinned map, which is ADR 0015's own *loaded at boot* read literally and needs a
-  second service and an interface between them.
+  **The first option was gone before any code was written, and it took reading
+  ADR 0001 §2 to the end of its sentence.** *Runs as the signed-in person* is the
+  half everybody quotes; the clause after it is **never with capabilities the
+  person does not have**, which is exactly what `AmbientCapabilities=CAP_BPF
+  CAP_SYS_ADMIN` would give. The security argument decides it the same way
+  independently: `CAP_BPF` is not the power to load *our* programme, it is the
+  power to load *any* programme on every syscall on the machine, and item 27's
+  test proves what our programme records rather than what a second one loaded by
+  a compromised daemon would.
 
-  **It wanted an ADR rather than a commit, and it has one:
-  [ADR 0018](../decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md).**
-  The second answer, and the first one turned out not to be available.
+  **The interface between the two is a file, and that is the whole of it.** No
+  socket, no protocol, no privileged call: the loader pins three things under
+  `/sys/fs/bpf/alo` and the daemon opens one of them. Writing a grant needs
+  **permission**, which a person's own service can have, rather than a
+  **capability**, which ADR 0001 §2 forbids it.
 
-  ADR 0001 §2 does not only say *never as root*; its second clause says **never
-  with capabilities the person does not have**, which is what
-  `AmbientCapabilities=` would give. The security argument is the stronger one:
-  `CAP_BPF` is not the power to load *our* programme, it is the power to load
-  *any* programme, and handing that to the most network-exposed process in the
-  system is not a boundary. Item 27's test proves our programme records nothing;
-  it says nothing about a second programme loaded by a compromised daemon.
+  Three decisions the next items inherit. **The two maps are not given away on
+  the same terms**, and the item did not contain that: the map of turns is
+  `0660` and the agent's group's, and the map of field offsets is `0600` and the
+  loader's alone, because a daemon that could write the offsets could make the
+  kernel read the front of a `struct file` as a directory entry — `fields.rs`'
+  width check arriving as a permission rather than as a check. **The loader
+  refuses three machines before it loads anything**: one that is not root, one
+  whose own group is root's — which would pin a map no daemon could ever write —
+  and one that already has a boundary, because two programmes on `file_open` are
+  two boundaries and which grant a turn is running under would stop having one
+  answer. **Dropping a `Boundary` no longer takes the boundary away.** It used
+  to, and the reversal is the point: a service that runs as the person could end
+  the machine's enforcement by being stopped. Now the pin holds it, and
+  `tests/the_boundary_outlives_the_loader.rs` is the loader letting go of every
+  descriptor it had and the kernel still answering `EACCES`.
 
-  So what is left here is the work:
+  **What the loader makes and the image does not**: `/sys/fs/bpf/alo` itself,
+  because it is the only thing that may pin into it and a machine with no BPF
+  filesystem has to be refused rather than given a directory somewhere a pin can
+  never go. `docs/hardware.md` gained the question as its fifth kernel check, and
+  `LOOP.md` gained the one line the development box needs.
 
-  - a new crate **`alo-boundaryd`** — runs at boot as root, holds `CAP_BPF` and
-    `CAP_SYS_ADMIN`, loads the one programme built from `alo-bounding-kernel`,
-    pins its maps, sets their ownership, and then holds nothing. **It takes no
-    argument that selects what to load**, which is a stronger version of
-    ADR 0001 §2's *fixed verb list*: there is no verb at all;
-  - `alo-agentd` gains **no capabilities** and stops loading anything. Its
-    `Boundary` becomes an open of the pinned map by path, and its refusal to
-    start changes from *cannot load* to *the boundary is not present on this
-    machine*, which is the more accurate sentence for a person to read;
-  - the interface between them is **the pinned map, not an API** — owned by the
-    agent's group, mode `0660`, the same shape as the socket in ADR 0017.
-    Writing a grant needs permission, not capability.
+  Proved on a development machine, not a certified one:
+  `6.18.33.2-microsoft-standard-WSL2`, needing root, a mounted `bpffs`, and the
+  same four kernel answers `docs/hardware.md` asks for.
 
-  **alo OS now has one privileged component where it had none**, and the ADR
-  says so rather than burying it. What makes it acceptable is that it takes no
-  input, makes no decision, and can do exactly one thing.
+- [ ] **26f. A bound left behind by a daemon that was killed.** Found by 26e,
+  and it is the price of the thing 26e is for: the boundary now outlives the
+  daemon, so the map of turns outlives it too. In the ordinary case that costs
+  nothing — `alo_bounding::Turns::doing` takes the entry out on both roads out of
+  a turn — but a daemon that is `SIGKILL`ed mid-turn leaves one, and a cgroup
+  identifier is an inode number that the kernel will hand out again.
+
+  So a turn's stale bound could, in principle, land on an unrelated control group
+  made later and bind it to a grant nobody made. It fails **closed** rather than
+  open — the unrelated cgroup is refused everything outside somebody's old
+  grant — which is why this is an item rather than a halt, and it is still wrong.
+
+  **Not ready, because the answer is not obvious and is not one line.** A daemon
+  cannot clear the map at start-up: a machine may have more than one person on
+  it, one map serves all of them, and emptying it would take another person's
+  turn away mid-verb. Nor can it easily ask *which of these cgroups still
+  exists*, because what it holds is identifiers and not paths. What it probably
+  wants is for the entry's lifetime to be the cgroup's rather than the daemon's,
+  which is a question about the programme in the kernel as much as about the
+  daemon — and that is a decision, not a patch.
 
 - [x] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
@@ -3391,9 +3432,15 @@ out.
   - `alo-agentd` — as the signed-in person, **no capabilities**, opening the
     pinned map by path.
 
-  The pinned map's directory belongs with ADR 0017's `tmpfiles.d` entry: both
-  are the image creating a place with an owner and a mode before anything needs
-  it, and they should be written together rather than discovered separately.
+  **The pinned map's directory turned out not to be the image's**, and 26e is
+  where that was decided: `alo-boundaryd` makes `/sys/fs/bpf/alo` itself, `0750`
+  from the moment it exists, because it is the only thing that may pin into it
+  and because a machine with no BPF filesystem has to be refused rather than have
+  a directory made for it somewhere a pin can never go. So what the image owes
+  here is **the mount and the ordering**, not a `tmpfiles.d` line: `bpffs` at
+  `/sys/fs/bpf`, which `systemd` mounts anyway and which `docs/hardware.md` now
+  asks as its fifth kernel question, and `alo-boundaryd.service` before
+  `alo-agentd.service`. ADR 0017's `/run/alo` entry stands alone.
 
   Still deliberately not built on its own: the base, the `tmpfiles.d` entry and
   the build without a working daemon. An image that boots to no daemon moves

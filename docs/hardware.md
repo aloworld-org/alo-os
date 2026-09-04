@@ -171,8 +171,36 @@ which is what somebody needs in order to work out that a config option is off.
 Every distribution kernel worth certifying has it on, and it is here because a
 missing answer is one of the four ways this boundary declines to be imposed.
 
-The four checks are in the order the failures happen in, and each one is
-invisible to the one before it: built in, started, attachable, and self-describing.
+**And there is a fifth, which is about where the boundary is kept rather than
+about the kernel that runs it.** Since
+[ADR 0018](decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)
+the programme is loaded once at boot by `alo-boundaryd` and **pinned**, so that
+`alo-agentd` — which runs as the signed-in person and holds no capability — can
+open one of its maps by path. Pinning is a `bpffs` operation and there is nowhere
+to pin without one:
+
+- **A BPF filesystem is mounted at `/sys/fs/bpf`.**
+
+```
+mount | grep '/sys/fs/bpf'                                # type bpf, not sysfs
+```
+
+`systemd` mounts it on any ordinary machine, which is why this is last: it is the
+check that is almost never the answer, and it is here because a machine without
+it fails at start-up naming a directory rather than a kernel. A machine that
+fails it is told so by `alo-boundaryd` before anything is loaded.
+
+The five checks are in the order the failures happen in, and each one is
+invisible to the one before it: built in, started, attachable, self-describing,
+and somewhere to keep it.
+
+**Who loads it now has an answer, and whoever certifies a machine should know
+it.** Not the agent's daemon: ADR 0018 gives the `CAP_BPF` and `CAP_SYS_ADMIN` a
+BPF LSM programme needs to one small service that runs at boot, takes no
+argument, and exits. On a certified machine `alo-boundaryd.service` runs before
+`alo-agentd.service` and the boundary is on the kernel before any person signs
+in — so *is the boundary in force* is a question about the boot, answered by
+`ls /sys/fs/bpf/alo`, rather than a question about whichever session is open.
 
 **All four were run and the boundary was proved on 2026-09-04**, on
 `6.18.33.2-microsoft-standard-WSL2`: a process in a turn's control group, granted

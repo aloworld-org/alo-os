@@ -8,6 +8,7 @@ members = [
   "crates/alo-applications",
   "crates/alo-bounding",
   "crates/alo-bounding-map",
+  "crates/alo-boundaryd",
   "crates/alo-capability",
   "crates/alo-choosing",
   "crates/alo-context",

@@ -1,132 +1,76 @@
-//! The boundary itself: the program loaded into the kernel, and the one entry
-//! that tells it what a turn may reach.
+//! The one map the daemon writes, opened by path, and the entry that tells the
+//! kernel what a turn may reach.
 //!
-//! This is the only file that names `aya`, which is ADR 0015's own condition —
-//! *a rented dependency, named in one file*, the way `alo-models`' `ollama.rs`
-//! names the runtime and `alo-agentd`'s `unix.rs` names the kernel's answer
-//! about who is on a socket.
+//! # This file used to load the programme, and
+//! [ADR 0018](../../../docs/decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)
+//! took that away
 //!
-//! # The order things happen in is the security property
+//! Loading a BPF LSM programme needs `CAP_BPF` and `CAP_SYS_ADMIN`, and
+//! `alo-agentd` runs as the signed-in person — *never with capabilities the
+//! person does not have* (ADR 0001 §2). So the loading is `alo-boundaryd`'s and
+//! lives in `imposing.rs`; what is left here is the half a person's own daemon
+//! may do, which is **write one entry into one map it has permission on**.
 //!
-//! 1. Ask the kernel where its fields are, and refuse if it will not say.
-//! 2. Load the program, which the kernel's verifier either accepts or does not.
-//! 3. Fill the map of offsets.
-//! 4. **Then** attach.
+//! That is the whole of the interface between the two halves. There is no
+//! socket, no protocol and no privileged call: a turn is bounded by an ordinary
+//! write to a file that root made group-writable at boot, and everything about
+//! who may do it is a mode on a pin (`pinned.rs`).
 //!
-//! Attaching last is what makes step 3 safe to do at all. A program attached
-//! before its offsets were filled would run against a map of zeroes for however
-//! many microseconds the filling took — and zero is a real offset, so it would
-//! not fail, it would read the front of a `struct file` as a directory entry
-//! and refuse whatever a turn was doing at that moment. There is no turn that
-//! early, so nothing would be visibly wrong; it would simply be a boundary with
-//! a window in it, which is the kind of thing that is discovered in a security
-//! review years later.
+//! # Two of the methods here read and nothing else
 //!
-//! # Three of the methods here read and nothing else
+//! [`Boundary::where_bound`] and [`Boundary::every_turn_the_kernel_is_holding`]
+//! ask the kernel what it has rather than repeating what this file asked it for.
+//! The second is how ADR 0015's *the LSM decides and forgets* stops being a
+//! sentence: the programme has nowhere to write, and *nowhere* is a thing that
+//! can be counted from outside it — a map the daemon fills that gains no entry
+//! while the machine goes about its day.
+//! `tests/the_boundary_decides_and_forgets.rs` is what holds it there, and
+//! `CLAUDE.md` is why that is a test rather than a paragraph.
 //!
-//! [`Boundary::where_bound`], [`Boundary::every_turn_the_kernel_is_holding`],
-//! [`Boundary::every_field_the_kernel_was_given`] and
-//! [`Boundary::every_map_the_kernel_holds`] ask the kernel what it has rather
-//! than repeating what this file asked it for. The last three are how ADR 0015's
-//! *the LSM decides and forgets* stops being a sentence: the program has nowhere
-//! to write, and *nowhere* is a thing that can be counted from outside it —
-//! two maps, both filled by the daemon, neither gaining an entry while the
-//! machine goes about its day. `tests/the_boundary_decides_and_forgets.rs` is
-//! what holds it there, and `CLAUDE.md` is why that is a test rather than a
-//! paragraph.
+//! # Dropping this takes nothing away
 //!
-//! # Dropping this takes the boundary away
-//!
-//! [`Boundary`] owns the loaded program and the link that attached it, so
-//! letting it go detaches from `file_open` and the kernel stops asking. That is
-//! the right shape for a daemon — a service that is stopped stops enforcing —
-//! and it is the wrong shape for a machine that must not run turns without one,
-//! which is why ADR 0015's *a turn whose boundary cannot be applied does not
-//! run* is a rule about starting turns rather than about this type.
+//! It did, until ADR 0018: a `Boundary` owned the loaded programme and the link,
+//! so a daemon that stopped detached the machine's boundary. Now it owns a
+//! descriptor on a map, and the programme is attached for as long as the pin
+//! made at boot is there. **A service that stops no longer stops the machine
+//! enforcing**, which is the right way round — the alternative was a person
+//! being able to end their machine's boundary by stopping a service that runs as
+//! them.
 
-use aya::{
-    Btf, Ebpf, EbpfLoader,
-    maps::{Array, HashMap},
-    programs::Lsm,
-};
+use aya::maps::{HashMap, Map, MapData};
 
 use alo_bounding_map::{Bounds, WORDS};
 
-use crate::{btf::Types, failing::NotBounded, fields::Offsets};
+use crate::{failing::NotBounded, imposing::THE_BOUNDS, pinned::Pinned};
 
-/// The half that runs inside the kernel, compiled by `build.rs` and carried
-/// inside this one.
-///
-/// Built into the binary rather than read from a path, because a daemon that
-/// loaded its own enforcement program off a disk at start-up would be a daemon
-/// whose boundary is whatever is at that path — and the whole of ADR 0013 is
-/// that the boundary should not depend on anybody being honest.
-fn the_kernel_half() -> &'static [u8] {
-    aya::include_bytes_aligned!(concat!(env!("OUT_DIR"), "/alo-bounding-kernel"))
-}
-
-/// What the program is called inside the compiled object.
-const THE_PROGRAM: &str = "file_open";
-
-/// The hook it is attached to.
-const THE_HOOK: &str = "file_open";
-
-/// The map of turns to the places each may reach.
-const THE_BOUNDS: &str = "BOUNDS";
-
-/// The map of where this kernel keeps its fields.
-const THE_FIELDS: &str = "FIELDS";
-
-/// The kernel enforcing alo OS's grants, for as long as this value is held.
+/// The kernel enforcing alo OS's grants, as the daemon can reach it.
 #[derive(Debug)]
 pub struct Boundary {
-    /// The loaded program, its maps, and the link attaching it.
-    loaded: Ebpf,
+    /// The map of turns, opened from the pin `alo-boundaryd` made at boot.
+    bounds: Map,
 }
 
 impl Boundary {
-    /// Loads the program into this kernel and attaches it to `file_open`.
+    /// Open the map of turns that this machine's boundary decides from.
     ///
-    /// Everything that can be wrong with the machine is found here rather than
-    /// at the first turn: a kernel that publishes no type information, one
-    /// whose structures have moved, one whose verifier refuses the program, and
-    /// one that has `CONFIG_BPF_LSM=y` and never started the BPF security
-    /// module. The last of those is the one machines actually fail, and it
-    /// fails at [`NotBounded::WillNotAttach`].
-    pub fn imposed() -> Result<Self, NotBounded> {
-        let offsets = Offsets::found(&Types::of_this_kernel()?)?;
-
-        let mut loaded = EbpfLoader::new()
-            .load(the_kernel_half())
-            .map_err(NotBounded::WillNotLoad)?;
-
-        {
-            let map = loaded
-                .map_mut(THE_FIELDS)
-                .ok_or(NotBounded::NothingCalled { what: THE_FIELDS })?;
-            let mut fields: Array<_, u32> =
-                Array::try_from(map).map_err(NotBounded::WillNotHold)?;
-            for (slot, offset) in offsets.each() {
-                fields
-                    .set(slot, offset, 0)
-                    .map_err(NotBounded::WillNotHold)?;
-            }
+    /// Nothing is loaded and nothing is attached: what this needs is permission
+    /// on a file, which the agent's group has and `CAP_BPF` is not.
+    ///
+    /// # Errors
+    /// [`NotBounded::NoBoundaryHere`] on a machine where nothing has been
+    /// pinned, which is the sentence a person reads when `alo-boundaryd` did not
+    /// run — and ADR 0015's rule is the end of it either way: a service that
+    /// cannot bound a turn does not serve. [`NotBounded::WillNotHold`] if the
+    /// pin is there and is not a map this can write.
+    pub fn opened(pinned: &Pinned) -> Result<Self, NotBounded> {
+        if !pinned.bounds().exists() {
+            return Err(NotBounded::NoBoundaryHere {
+                path: pinned.bounds().display().to_string(),
+            });
         }
-
-        let hooks = Btf::from_sys_fs().map_err(|_| NotBounded::TypesAreNotReadable {
-            what: "the kernel will not say which function the hook stands in front of",
-        })?;
-        let program: &mut Lsm = loaded
-            .program_mut(THE_PROGRAM)
-            .ok_or(NotBounded::NothingCalled { what: THE_PROGRAM })?
-            .try_into()
-            .map_err(NotBounded::WillNotAttach)?;
-        program
-            .load(THE_HOOK, &hooks)
-            .map_err(NotBounded::WillNotAttach)?;
-        program.attach().map_err(NotBounded::WillNotAttach)?;
-
-        Ok(Self { loaded })
+        let opened = MapData::from_pin(pinned.bounds()).map_err(NotBounded::WillNotHold)?;
+        let bounds = Map::from_map_data(opened).map_err(NotBounded::WillNotHold)?;
+        Ok(Self { bounds })
     }
 
     /// Tells the kernel that a turn is running in `cgroup` and may reach
@@ -142,10 +86,9 @@ impl Boundary {
     ///
     /// # Errors
     /// [`NotBounded::WillNotHold`] if the kernel would not take the entry, and
-    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
-    /// from different sources.
+    /// [`NotBounded::NothingCalled`] if the pin is not the map this expects.
     pub fn bound(&mut self, cgroup: u64, granted: Bounds) -> Result<(), NotBounded> {
-        self.bounds()?
+        self.writing()?
             .insert(cgroup, granted.words(), 0)
             .map_err(NotBounded::WillNotHold)
     }
@@ -158,10 +101,9 @@ impl Boundary {
     ///
     /// # Errors
     /// [`NotBounded::WillNotHold`] if the kernel would not take the entry back,
-    /// and [`NotBounded::NothingCalled`] if the two halves of this crate were
-    /// built from different sources.
+    /// and [`NotBounded::NothingCalled`] if the pin is not the map this expects.
     pub fn released(&mut self, cgroup: u64) -> Result<(), NotBounded> {
-        self.bounds()?
+        self.writing()?
             .remove(&cgroup)
             .map_err(NotBounded::WillNotHold)
     }
@@ -175,15 +117,9 @@ impl Boundary {
     ///
     /// # Errors
     /// [`NotBounded::WillNotHold`] if the map would not be read, and
-    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
-    /// from different sources.
+    /// [`NotBounded::NothingCalled`] if the pin is not the map this expects.
     pub fn where_bound(&self, cgroup: u64) -> Result<Option<Bounds>, NotBounded> {
-        let map = self
-            .loaded
-            .map(THE_BOUNDS)
-            .ok_or(NotBounded::NothingCalled { what: THE_BOUNDS })?;
-        let bounds: HashMap<_, u64, [u64; WORDS]> =
-            HashMap::try_from(map).map_err(NotBounded::WillNotHold)?;
+        let bounds = self.reading()?;
         match bounds.get(&cgroup, 0) {
             Ok(words) => Ok(Some(Bounds::of_words(words))),
             Err(aya::maps::MapError::KeyNotFound) => Ok(None),
@@ -196,73 +132,36 @@ impl Boundary {
     /// [`Boundary::where_bound`] asks about one turn and answers what it may
     /// reach; this asks how many there are at all. The difference is what *the
     /// LSM decides and forgets* needs: an entry nobody put there is either
-    /// something the program wrote down or a turn nobody ended, and both are
+    /// something the programme wrote down or a turn nobody ended, and both are
     /// worth stopping over.
     ///
     /// # Errors
     /// [`NotBounded::WillNotHold`] if the map would not be read, and
-    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
-    /// from different sources.
+    /// [`NotBounded::NothingCalled`] if the pin is not the map this expects.
     pub fn every_turn_the_kernel_is_holding(&self) -> Result<Vec<u64>, NotBounded> {
-        let map = self
-            .loaded
-            .map(THE_BOUNDS)
-            .ok_or(NotBounded::NothingCalled { what: THE_BOUNDS })?;
-        let bounds: HashMap<_, u64, [u64; WORDS]> =
-            HashMap::try_from(map).map_err(NotBounded::WillNotHold)?;
-        bounds
+        self.reading()?
             .keys()
             .collect::<Result<Vec<_>, _>>()
             .map_err(NotBounded::WillNotHold)
     }
 
-    /// The fields the daemon gave this kernel, as the kernel now has them.
-    ///
-    /// Every slot the map has rather than the seven that were filled, because
-    /// the spare ones are exactly where a counter would sit: a program that
-    /// began keeping a tally of what it had seen would need somewhere to keep
-    /// it, and an array it can already reach is the nearest somewhere there is.
-    ///
-    /// # Errors
-    /// [`NotBounded::WillNotHold`] if the map would not be read, and
-    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
-    /// from different sources.
-    pub fn every_field_the_kernel_was_given(&self) -> Result<Vec<u32>, NotBounded> {
-        let map = self
-            .loaded
-            .map(THE_FIELDS)
-            .ok_or(NotBounded::NothingCalled { what: THE_FIELDS })?;
-        let fields: Array<_, u32> = Array::try_from(map).map_err(NotBounded::WillNotHold)?;
-        fields
-            .iter()
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(NotBounded::WillNotHold)
-    }
-
-    /// Every map this program has, by name.
-    ///
-    /// A BPF program on the security hooks sees every open on the machine, and
-    /// the only thing standing between that and a record of somebody's day is
-    /// that it has nowhere to put what it saw. A map is that somewhere — a ring
-    /// buffer, a counter, a table of who opened what — so *there are two, and
-    /// they are the two the daemon fills* is the promise, and this is the form
-    /// it can be held to from outside.
-    ///
-    /// Read out of the loaded program rather than off this file's own
-    /// constants, so what it answers is what the kernel really has.
-    #[must_use]
-    pub fn every_map_the_kernel_holds(&self) -> Vec<&str> {
-        self.loaded.maps().map(|(named, _)| named).collect()
-    }
-
     /// The map of turns, open to be written to.
-    fn bounds(
-        &mut self,
-    ) -> Result<HashMap<&mut aya::maps::MapData, u64, [u64; WORDS]>, NotBounded> {
-        let map = self
-            .loaded
-            .map_mut(THE_BOUNDS)
-            .ok_or(NotBounded::NothingCalled { what: THE_BOUNDS })?;
-        HashMap::try_from(map).map_err(NotBounded::WillNotHold)
+    fn writing(&mut self) -> Result<HashMap<&mut MapData, u64, [u64; WORDS]>, NotBounded> {
+        HashMap::try_from(&mut self.bounds).map_err(|why| match why {
+            aya::maps::MapError::InvalidMapType { .. } => {
+                NotBounded::NothingCalled { what: THE_BOUNDS }
+            }
+            why => NotBounded::WillNotHold(why),
+        })
+    }
+
+    /// The map of turns, open to be read.
+    fn reading(&self) -> Result<HashMap<&MapData, u64, [u64; WORDS]>, NotBounded> {
+        HashMap::try_from(&self.bounds).map_err(|why| match why {
+            aya::maps::MapError::InvalidMapType { .. } => {
+                NotBounded::NothingCalled { what: THE_BOUNDS }
+            }
+            why => NotBounded::WillNotHold(why),
+        })
     }
 }

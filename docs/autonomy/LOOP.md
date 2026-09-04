@@ -175,6 +175,27 @@ the new compiler's LLVM: `rustc +<channel> -vV` says which one that is.
 
 **`clang` and `bpftool` are still not installed and are still not needed.**
 
+**A BPF filesystem has to be mounted, and on this box it is not by default.**
+Since item 26e the boundary is *pinned* rather than held by whoever loaded it
+(ADR 0018), and pinning needs `bpffs`. WSL's Ubuntu has `/sys/fs/bpf` as an
+ordinary read-only sysfs directory, so every test that imposes a boundary fails
+naming a directory. One line, and it does not survive a restart of the
+distribution:
+
+```
+mount -t bpf bpffs /sys/fs/bpf
+```
+
+On a real machine `systemd` has already done it, which is why this is a fact
+about the development box rather than a quirk of the product —
+`docs/hardware.md` asks the question as the fifth of its kernel checks.
+
+**Nothing is left pinned after a test run**, and that is deliberate rather than
+lucky: a pinned programme outlives the process, so a fixture that leaked one
+would leave a boundary attached to `file_open` on whoever ran the tests until
+they rebooted. Every test that imposes one pins under a name of its own and takes
+it away, and `ls /sys/fs/bpf` after a run is how you check that stayed true.
+
 The two halves have their own gate, because neither is in the main workspace's
 `--all-targets` sweep:
 
@@ -203,7 +224,8 @@ the programme from Rust and neither is needed; reaching for them is how C would
 enter the toolchain unnoticed. LLVM here is a build tool on the machine, in the
 same category as the linker cargo already uses — it puts no C in the repository.
 
-**`alo-agentd` is never gated on Windows.** Every module in it is
+**`alo-agentd` and `alo-boundaryd` are never gated on Windows.** Every module in
+them is
 `#[cfg(target_os = "linux")]`, so on Windows the crate compiles to almost
 nothing, runs **no tests, and exits 0** — which is the same exit code, and the
 same green, as a full pass. This is not a slow path or a partial one; it is a
@@ -212,7 +234,7 @@ already produced one wrong entry in `STATE.md`, where *zero tests* was written
 down as a fact about the code when it was a fact about the platform, and the
 correction sits under that entry.
 
-So for that crate the WSL command above is **the** gate, not a supplement to
+So for those crates the WSL command above is **the** gate, not a supplement to
 one, and the number of tests it ran is part of what gets reported. A crate whose
 test count silently drops to zero is the failure this rule exists to catch —
 check the count, not just the colour. Any crate that acquires a
@@ -220,10 +242,9 @@ check the count, not just the colour. Any crate that acquires a
 
 **`cargo doc` is the same rule read backwards, and it fails the other way.**
 The gate includes rustdoc on public items, and on Windows
-`cargo doc --workspace --no-deps` emits **thirty-four** *unresolved link*
-warnings — twenty-four in `alo-agentd` and ten in `alo-bounding` — because a
-crate header linking `[`starting`]` or `[`Boundary`]` links to a module that is
-`cfg`'d out on this host. Every one of them is about code that is correct, and
+`cargo doc --workspace --no-deps` emits *unresolved link* warnings in every one
+of the Linux-only crates, because a crate header linking `[`starting`]` or
+`[`Boundary`]` links to a module that is `cfg`'d out on this host. Every one of them is about code that is correct, and
 on Linux the same command is silent. So where tests on Windows say *green* and
 mean *nothing ran*, rustdoc on Windows says *warning* and means *not this
 platform's file*, and both are the same fact wearing opposite colours.
@@ -235,20 +256,22 @@ a reason that is not about the code. **Read the rustdoc gate on Linux**, and on
 Windows check only that the count is the one the platform explains: one more
 than that is somebody's new broken link hiding in the noise.
 
-**The number moves for honest reasons, and it has moved four times.** It was
+**The number moves for honest reasons, and it has moved five times.** It was
 twenty-eight until item 26a gave `alo-bounding` four more Linux-only things for
 its own crate header to link, thirty-two until item 26b gave it two more,
 thirty-four until item 26d gave it four more again — the crate header now names
-the doors the daemon reaches it by — and **forty-one** since item 27 added the
-three read-backs its test counts through. **Do not read the total, and do not
-trust the last number written down either.** 27's own journal entry reports
+the doors the daemon reaches it by — forty-one once item 27 added the three
+read-backs its test counts through, and **forty-nine** since item 26e split the
+crate in two and added a third Linux-only crate. **Do not read the total, and do
+not trust the last number written down either.** 27's own journal entry reports
 thirty-eight, because it was read before the crate header was finished, and the
 iteration that closed the queue found the real figure by measuring rather than
 by carrying the sentence forward. `cargo doc --workspace --no-deps 2>&1 | grep
-generated` names the two crates and their counts in two lines — twenty-four for
-`alo-agentd`, seventeen for `alo-bounding` — and a count appearing against a
-*third* crate is the thing to look at. A number in this paragraph is worth less
-than the command above it.
+generated` names the crates and their counts one line each — today twenty-four
+for `alo-agentd`, twenty-one for `alo-bounding` and four for `alo-boundaryd` —
+and a count appearing against a crate that is **not** one of those three is the
+thing to look at. A number in this paragraph is worth less than the command above
+it.
 
 ## Where things are
 

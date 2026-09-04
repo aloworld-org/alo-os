@@ -11,12 +11,15 @@
 //! syscall. So the shape is unusual, and each unusual part is here for a
 //! reason.
 //!
-//! # It needs root, and a kernel that started the BPF security module
+//! # It needs root, a BPF filesystem, and a kernel that started the BPF LSM
 //!
-//! Loading a BPF LSM program and making a control group are both root's, and
-//! `bpf` has to be in the list of security modules the kernel actually
-//! *started* — which is not the same question as whether it was compiled in,
-//! and is the distinction `docs/hardware.md` exists to make.
+//! Loading a BPF LSM program and making a control group are both root's, `bpf`
+//! has to be in the list of security modules the kernel actually *started* —
+//! which is not the same question as whether it was compiled in, and is the
+//! distinction `docs/hardware.md` exists to make — and since ADR 0018 the
+//! programme is **pinned**, which needs a `bpf` filesystem mounted at
+//! `/sys/fs/bpf`. Where the boundary comes from is `on_this_kernel/mod.rs`,
+//! shared with the other two files here.
 //!
 //! On a machine without those this fails, loudly, naming what is missing. That
 //! is deliberate and it is ADR 0015's own rule: *a turn whose boundary cannot
@@ -57,10 +60,13 @@ use std::{
     io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::{Mutex, OnceLock},
 };
 
-use alo_bounding::{Boundary, Cgroup, places_of};
+use alo_bounding::{Cgroup, places_of};
+
+mod on_this_kernel;
+
+use on_this_kernel::AsAMachineHasIt;
 
 /// Where the child is told its turn's control group is.
 const THE_CGROUP: &str = "ALO_BOUNDING_TEST_CGROUP";
@@ -76,27 +82,6 @@ const OPENED: &str = "alo:opened";
 
 /// What the child says when the open was refused, followed by the number.
 const REFUSED: &str = "alo:refused ";
-
-/// The boundary, loaded once for the whole run.
-///
-/// One program on `file_open` rather than one per test: attaching four would
-/// work — each would allow what it knows nothing about — but it would be four
-/// programs on every open on the machine for the length of the test run, which
-/// is not what this is measuring.
-fn the_boundary() -> &'static Mutex<Boundary> {
-    static LOADED: OnceLock<Mutex<Boundary>> = OnceLock::new();
-    LOADED.get_or_init(|| {
-        Mutex::new(Boundary::imposed().unwrap_or_else(|why| {
-            panic!(
-                "the boundary could not be imposed on this kernel, so nothing below is being \
-                 tested: {why}\n\
-                 This needs root, `CONFIG_BPF_LSM=y`, and `bpf` in the list of security modules \
-                 the kernel *started* — `cat /sys/kernel/security/lsm`, which is not the same \
-                 question as how the kernel was built. `docs/hardware.md` has the three commands."
-            )
-        }))
-    })
-}
 
 /// Whether the turn is still bound when the child opens its file.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -120,7 +105,9 @@ enum Outcome {
 
 /// Runs one turn: a cgroup, a grant, a child process inside it, and one open.
 fn a_turn(named: &str, granted: &[&Path], opening: &Path, still: Still) -> Outcome {
-    let mut boundary = the_boundary().lock().expect("nothing panicked holding it");
+    let _order = on_this_kernel::one_at_a_time();
+    let mut kernel = AsAMachineHasIt::on_this_kernel(named);
+    let boundary = &mut kernel.boundary;
     let cgroup = Cgroup::made(named).expect("a control group can be made");
     let turn = cgroup.id().expect("a control group has an identifier");
 

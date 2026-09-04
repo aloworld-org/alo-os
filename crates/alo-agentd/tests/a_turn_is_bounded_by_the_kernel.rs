@@ -23,11 +23,20 @@
 //! against the same kernel in the same suite, holding the same [`ByTheKernel`]
 //! pieces one layer down. The two halves are the claim.
 //!
-//! # It needs root, and a kernel that started the BPF security module
+//! # It needs root, a BPF filesystem, and a kernel that started the BPF LSM
 //!
-//! The same three checks `alo-bounding`'s tests name, and it fails loudly on a
-//! machine without them for the same reason: a test that quietly skipped itself
-//! would report green on every machine where nothing is bounded at all.
+//! The same checks `alo-bounding`'s tests name, and it fails loudly on a machine
+//! without them for the same reason: a test that quietly skipped itself would
+//! report green on every machine where nothing is bounded at all.
+//!
+//! **This file loads the programme itself, which the service it is testing no
+//! longer does.** Since
+//! [ADR 0018](../../../docs/decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)
+//! `alo-boundaryd` imposes the boundary at boot and `alo-agentd` opens the map
+//! it pinned, so a test of the daemon has to stand in for the loader before it
+//! can be a test of the daemon at all. It pins somewhere of its own and takes it
+//! away again — a test that used `/sys/fs/bpf/alo` would take over the boundary
+//! of whoever ran it.
 //!
 //! # It is one test, and that is not laziness
 //!
@@ -54,6 +63,7 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
 use alo_agentd::{ByTheKernel, starting};
+use alo_bounding::{Imposed, Pinned};
 use alo_capability::{Given, Grant, Grants, Reach};
 use alo_context::Context;
 use alo_egress::Indicator;
@@ -84,7 +94,7 @@ fn where_this_process_is() -> String {
 ///
 /// Four things in one test, because they are one sequence on one machine:
 ///
-/// 1. **The service makes its subtree**, which is what `ByTheKernel::imposed`
+/// 1. **The service makes its subtree**, which is what `ByTheKernel::beneath`
 ///    does to the process it is called in — the kernel's own answer about where
 ///    this process is changes, and that is asserted rather than assumed.
 /// 2. **A read answers under the boundary.** The one place that call names is
@@ -119,8 +129,17 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
     let mut writing = Writing::opening(&record).expect("a record can be opened");
     let mut indicator = Indicator::default();
 
-    let before = where_this_process_is();
-    let mut bounding = ByTheKernel::imposed().unwrap_or_else(|why| {
+    // Standing in for `alo-boundaryd`, which is what a real machine has done
+    // before this service ever starts. Somewhere of this test's own, taken away
+    // at the end, and never `/sys/fs/bpf/alo`.
+    let pinned = Pinned::beneath(
+        &PathBuf::from("/sys/fs/bpf").join(format!("alo-agentd-test-{}", std::process::id())),
+    );
+    pinned.taken_away();
+    pinned
+        .made()
+        .expect("this machine has a BPF filesystem at /sys/fs/bpf");
+    let loaded = Imposed::once(&pinned).unwrap_or_else(|why| {
         panic!(
             "no boundary could be imposed on this kernel, so nothing below is being tested: \
              {why}\n\
@@ -129,6 +148,10 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
              as how the kernel was built. `docs/hardware.md` has the three commands."
         );
     });
+
+    let before = where_this_process_is();
+    let mut bounding =
+        ByTheKernel::beneath(&pinned).expect("a service can open the map a loader pinned for it");
     let inside = where_this_process_is();
 
     let (read, archived) = {
@@ -197,6 +220,11 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
         .expect("a service can be put back where it was");
     let after = where_this_process_is();
     drop(writing);
+    // The pins are what hold the programme on the hook, so this is what takes
+    // the boundary off this machine again; dropping the loader's own handles
+    // afterwards closes descriptors and changes nothing.
+    pinned.taken_away();
+    drop(loaded);
 
     // Everything is asserted out here, because a failing assertion inside a
     // boundary would panic inside one, and a panic prints a backtrace, and

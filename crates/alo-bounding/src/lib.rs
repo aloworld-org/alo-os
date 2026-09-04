@@ -14,16 +14,32 @@
 //!
 //! | | |
 //! |---|---|
-//! | [`Boundary`] | The program in the kernel, and the entry that tells it what a turn may reach |
+//! | [`Imposed`] | The programme loaded into the kernel and pinned, which is `alo-boundaryd`'s and needs `CAP_BPF` |
+//! | [`Pinned`] | Where it is pinned, and the modes that decide who may reach it there |
+//! | [`Boundary`] | The one map a person's own daemon writes, and the entry that tells the kernel what a turn may reach |
 //! | [`Cgroup`] | The control group a turn runs in, which is how the kernel tells one turn from another |
 //! | [`Turns`] | Where this service's turns are made, and the one door into and out of a boundary |
 //! | [`place_of`] | A folder, as the two numbers the kernel knows it by |
 //! | [`places_of`] | The paths one execution named, as the bound it runs inside |
 //! | [`NotBounded`] | Why a boundary could not be imposed, which is always a refusal |
 //!
+//! # The crate is in two halves, and they run as two different users
+//!
+//! [ADR 0018](../../../docs/decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)
+//! divided it. Loading a BPF LSM programme needs `CAP_BPF` and `CAP_SYS_ADMIN`,
+//! and `alo-agentd` runs as the signed-in person — *never with capabilities the
+//! person does not have* (ADR 0001 §2). So [`Imposed`] is `alo-boundaryd`'s, it
+//! runs once at boot as root, and it pins what it loaded; [`Boundary`] is the
+//! per-person daemon's, it opens one of those pins by path, and it holds no
+//! capability at all. **The interface between them is a file with a group and a
+//! mode on it**, not an API, and `pinned.rs` is where that is decided.
+//!
 //! # What actually happens
 //!
 //! ```text
+//! at boot       alo-boundaryd loads the programme, attaches it to file_open,
+//!               and pins the link and both maps under /sys/fs/bpf/alo
+//!
 //! turn begins   a cgroup is made, and the work runs in it
 //!               each path this execution named is resolved to a filesystem
 //!               and an inode
@@ -106,11 +122,14 @@
 //! ordinary programs spend a day opening files under the loaded program, and
 //! afterwards the program still has two maps, the map of turns is empty, the
 //! spare slots of the other are still zero, and this kernel's trace buffer has
-//! not been written a line. [`Boundary::every_map_the_kernel_holds`],
+//! not been written a line. [`Imposed::every_map_the_kernel_holds`],
 //! [`Boundary::every_turn_the_kernel_is_holding`] and
-//! [`Boundary::every_field_the_kernel_was_given`] are what that is counted
+//! [`Imposed::every_field_the_kernel_was_given`] are what that is counted
 //! through, and each of them is read out of the kernel rather than remembered
-//! here.
+//! here. Two of the three are the loader's since ADR 0018 and one is the
+//! daemon's, which is the division rather than an accident: what a person's own
+//! service can reach is the map it writes, and the map of fields is one it
+//! cannot open at all.
 
 #![cfg(target_os = "linux")]
 
@@ -119,7 +138,9 @@ mod btf;
 mod cgroup;
 mod failing;
 mod fields;
+mod imposing;
 mod inside;
+mod pinned;
 mod place;
 mod places;
 mod turns;
@@ -132,6 +153,8 @@ pub use btf::{Member, Types};
 pub use cgroup::Cgroup;
 pub use failing::NotBounded;
 pub use fields::Offsets;
+pub use imposing::Imposed;
+pub use pinned::{Pinned, THE_ROOT};
 pub use place::{as_the_kernel_keeps_it, place_of};
 pub use places::places_of;
 pub use turns::Turns;

@@ -7897,3 +7897,97 @@ waits on 21k.
 17 for `alo-bounding`, the three extra being item 27's own read-backs. A record
 that disagrees with the thing it records is worth a minute to fix.
 
+
+---
+
+## Iteration — item 26e: the boundary is loaded by a loader, not by the agent
+
+**Built.** `crates/alo-boundaryd`, a new crate and the second process this
+workspace has: `loading.rs`, `refusing.rs`, `unix.rs`, `main.rs`.
+`crates/alo-bounding` split along ADR 0018's line — `pinned.rs` and `imposing.rs`
+are new, `bounding.rs` is rewritten around an open of one pinned map, and
+`failing.rs` gained six reasons. `crates/alo-agentd`: `ByTheKernel::imposed`
+became `found`, with `beneath` beside it for a test, and the process, the
+starting order and `main.rs` all say what they no longer do.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both. **1826 tests and 46
+doctests on Linux** (was 1810 and 46), **1595 and 46 on Windows** (unchanged,
+correctly: everything added is in a Linux-only crate). The kernel half's own
+gate — `cargo fmt --all --check` and `cargo clippy --release --target
+bpfel-unknown-none -Z build-std=core` — clean. `cargo doc --workspace --no-deps`
+exits 0 with **zero** warnings on Linux.
+
+**The three integration tests are the item.** `the_loader_lets_go_and_a_daemon_
+that_holds_nothing_can_still_bound_a_turn` is ADR 0018 in one sequence: the
+loader imposes, every descriptor it held is dropped, a `Boundary` is opened by
+path the way `alo-agentd` opens one, a turn is bound through it, and the kernel
+returns `EACCES` for a file outside the bound. The second reads the modes and
+groups off the filesystem after a real load, because the interface between the
+two components *is* those modes. The third runs the loader twice and finds the
+first machine's boundary still there and still writable.
+
+**What the item did not contain, and is the decision worth carrying forward: the
+two maps are not given away on the same terms.** The map of turns is `0660` and
+the agent's group's — that is the whole of what a per-person daemon needs. The
+map of field offsets is `0600` and the loader's alone, because a process that
+could write it could tell the programme that `f_path` is somewhere else and make
+the kernel read the front of a `struct file` as a directory entry. `fields.rs`
+has checked those widths since item 26; this is the same check arriving as a
+permission. So `every_field_the_kernel_was_given` moved onto `Imposed` and
+`every_turn_the_kernel_is_holding` stayed on `Boundary`, and the split is now
+about who can open what rather than about which type is convenient.
+
+**The second thing found rather than planned: dropping a `Boundary` used to take
+the machine's boundary away.** That was the honest shape while the daemon was the
+loader — a service that stops stops enforcing — and it is the wrong shape now
+that it is written down: a service that runs *as the person* could end the
+enforcement of that person's agent by being stopped. The pin holds it now, and
+`alo-agentd`'s `given_back` gives back a control-group subtree and nothing else.
+
+**And the third, which is owed and is item 26f: the map outlives the daemon too.**
+A turn's entry is removed on both roads out of a turn, so the ordinary case costs
+nothing, but a daemon `SIGKILL`ed mid-turn leaves one — and a cgroup identifier
+is an inode number the kernel will reuse. It fails closed, which is why this is a
+queue item rather than a halt. What it cannot be is *clear the map at start-up*:
+one map serves every person on the machine, so that would take another person's
+turn away mid-verb. It wants the entry's lifetime to be the cgroup's rather than
+the daemon's, which is a decision about the programme in the kernel.
+
+**The development box needed one line, and `LOOP.md` has it.** Pinning is a
+`bpffs` operation and WSL's Ubuntu does not mount one: `mount -t bpf bpffs
+/sys/fs/bpf`. It does not survive a restart of the distribution. On a real
+machine `systemd` has already done it, so it is a fact about this box rather than
+a quirk of the product — `docs/hardware.md` gained it as the fifth of its kernel
+checks, beside the four that were already there.
+
+**Nothing is left pinned after a test run, and that took arranging.** A pinned
+programme outlives the process, so the `OnceLock` the three `alo-bounding` test
+files shared would have left a boundary attached to `file_open` on whoever ran
+the suite until they rebooted. Each test now imposes one under a name of its own
+and takes it away, through `tests/on_this_kernel/mod.rs` — a shared fixture
+rather than three copies, because three copies of a fixture is three different
+machines being tested. `ls /sys/fs/bpf` after a full run is empty, and that was
+checked rather than assumed.
+
+**The Windows rustdoc count moved to forty-nine**, and for the reason the
+paragraph in `LOOP.md` describes: twenty-four for `alo-agentd`, twenty-one for
+`alo-bounding` (four more Linux-only things in its crate header) and **four for
+`alo-boundaryd`**, which is a third crate appearing in that list — the thing the
+paragraph says to look at, explained rather than waved through. On Linux the same
+command is silent.
+
+**`ROADMAP.md` moved.** *The grant enforced by the kernel* → **The code** gained
+item 26e: what it did, what it cost, and the sentence that is still left in that
+line. Neither box is ticked, and that is right — the code half still owes *the
+record becomes what the kernel watched rather than what the daemon reported*, and
+the machine half is a certified machine this loop does not have. The machine half
+gained the fifth kernel check and the two units in the right order.
+
+**What the next iteration takes.** Item **28**, the smallest image that boots and
+runs the daemon, which was blocked on this and is not any more. It ships two
+units now, ordered, and 26e settled one thing it had listed as open: the pinned
+map's directory is the loader's, not the image's `tmpfiles.d`, so what the image
+owes there is the `bpffs` mount and the ordering. **Still blocked, unchanged:**
+16b, 19b (Wayland), 21i (the shell), and 21k — which wants an ADR nobody has
+written. 21l waits on 21k. 26f is new and is not ready.

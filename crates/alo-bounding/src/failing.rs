@@ -135,6 +135,96 @@ pub enum NotBounded {
     #[error("the kernel would not take an entry for the boundary")]
     WillNotHold(#[source] aya::maps::MapError),
 
+    /// There is no boundary pinned on this machine.
+    ///
+    /// The daemon's refusal since ADR 0018, and it replaced *cannot load*: the
+    /// daemon no longer loads anything, so what it can find out is whether
+    /// something else did. On a machine that boots properly this cannot happen —
+    /// `alo-boundaryd` runs before `alo-agentd` — so it names the service rather
+    /// than the syscall, because whoever reads it is looking at a boot order.
+    #[error(
+        "there is no boundary at {path}: alo-boundaryd loads one at boot, and until it has, this \
+         machine cannot bound a turn"
+    )]
+    NoBoundaryHere {
+        /// Where it was looked for.
+        path: String,
+    },
+
+    /// The directory the boundary is pinned in could not be made.
+    ///
+    /// Almost always a machine with no BPF filesystem mounted at
+    /// `/sys/fs/bpf` — pinning is a `bpffs` operation and there is nowhere to
+    /// pin to without one. Nothing here mounts it: a boot has already decided
+    /// what is mounted, and `docs/hardware.md` asks the question.
+    #[error("the boundary has nowhere to be pinned at {path}: {why}")]
+    NoPinDirectory {
+        /// Where it was to be made.
+        path: String,
+
+        /// What the machine said.
+        #[source]
+        why: std::io::Error,
+    },
+
+    /// The kernel would not pin one of the three.
+    #[error("the kernel would not pin {what} at {path}")]
+    WillNotPin {
+        /// Which of the three it was.
+        what: &'static str,
+
+        /// Where it was to go.
+        path: String,
+
+        /// What the kernel said.
+        #[source]
+        why: aya::pin::PinError,
+    },
+
+    /// A boundary is already pinned where this one was to go.
+    ///
+    /// Refused rather than replaced. A second programme on `file_open` is a
+    /// second boundary — both are asked about every open, either can refuse
+    /// one — so which grant a turn is really running under would stop being a
+    /// question with one answer.
+    #[error("a boundary is already pinned at {path}, and a machine has one")]
+    AlreadyThere {
+        /// The pin that is in the way.
+        path: String,
+    },
+
+    /// The agent's group could not be given the map it writes.
+    ///
+    /// Which leaves a machine whose boundary is loaded and whose daemon cannot
+    /// reach it, so it is a refusal at boot rather than a surprise at the first
+    /// turn.
+    #[error("the boundary at {path} could not be given to group {group}: {why}")]
+    NotOurGroup {
+        /// Which pin.
+        path: String,
+
+        /// The group it was to be given to.
+        group: u32,
+
+        /// What the machine said.
+        #[source]
+        why: std::io::Error,
+    },
+
+    /// A pin could not be shut to everybody else.
+    #[error("the boundary at {path} could not be shut to {mode:o}: {why}")]
+    NotShutTo {
+        /// Which pin.
+        path: String,
+
+        /// The mode it was to be set to.
+        mode: u32,
+
+        /// What the machine said.
+        #[source]
+        why: std::io::Error,
+    },
+
     /// The name given for a turn's cgroup is not one this will make.
     ///
     /// A cgroup is made by creating a directory, so a name with a separator or

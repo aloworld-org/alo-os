@@ -883,23 +883,40 @@ sorted the same way v0.01 now is.
         something worth recording. Every measurement was checked against a
         programme that broke it: a third map is caught by name, and a
         `bpf_printk` on the hook by the count.
+        **Item 26e is ticked, and it is the one that made this runnable on a
+        machine anybody can boot.** 26d had left the daemon refusing to start
+        wherever it could not get `CAP_BPF` — ADR 0015 implemented faithfully,
+        and not yet a machine. ADR 0018 answers it the way ADR 0001 §2 already
+        prescribed for privileged work: a fourth crate, `alo-boundaryd`, runs
+        once at boot as root, loads the one programme there is, pins it, and
+        finishes. It takes no path, no name and no argument that selects what to
+        load, so it has no verb to get wrong. `alo-agentd` gains **no
+        capabilities at all** and opens one pinned map by path — writing a grant
+        is now permission on a file rather than authority over a kernel — and the
+        map of field offsets is deliberately not given to it, so a daemon can
+        bind a turn and cannot change how the kernel reads a file. **alo OS now
+        has one privileged component where it had none**, which is a real loss
+        stated rather than buried; what makes it the right trade is that the
+        alternative was giving kernel-wide observation to the largest and most
+        network-exposed process in the system. Measured on
+        `6.18.33.2-microsoft-standard-WSL2`: the loader lets go of every
+        descriptor it held and the kernel still refuses an open outside a bound.
         **What is left of this half is the second sentence of this line** — *the
         record becomes what the kernel watched rather than what the daemon
         reported* — which nothing has yet done, and until then the record is
-        still the daemon's account of itself with a kernel underneath it. **And
-        one question 26d asked rather than answered is item 26e**: `alo-agentd`
-        is never root and loading the programme needs `CAP_BPF`, so who imposes
-        the boundary on a real machine is a decision that wants an ADR and
-        decides what the image's unit file says
+        still the daemon's account of itself with a kernel underneath it
   - [ ] On the machine. The certified machine, and a kernel requirement that is
-        a **configuration** and not a patch — now **four** checks rather than
+        a **configuration** and not a patch — now **five** checks rather than
         one, each invisible to the one before it: `CONFIG_BPF_LSM=y`, `bpf`
         among the security modules that actually start, a kernel whose
         RCU-tasks grace periods complete so a programme can be attached at all,
-        and `CONFIG_DEBUG_INFO_BTF=y` so the kernel will say where its own
-        fields are. `docs/hardware.md` says how to ask all four; the middle two
-        are the ones machines fail. The machine that proved the mechanism is a
-        development one, and this half is about the certified machine
+        `CONFIG_DEBUG_INFO_BTF=y` so the kernel will say where its own fields
+        are, and since ADR 0018 a `bpf` filesystem mounted at `/sys/fs/bpf` for
+        the boundary to be pinned in. `docs/hardware.md` says how to ask all
+        five; the middle two are the ones machines fail. It also needs the two
+        units in the right order — `alo-boundaryd` before `alo-agentd` — which is
+        the image's, and is queue item 28. The machine that proved the mechanism
+        is a development one, and this half is about the certified machine
 - [ ] ★ **Undo what the agent did**
 - [ ] Updates that never interrupt
 - [ ] **Machines find each other** on a local network, with pairing
