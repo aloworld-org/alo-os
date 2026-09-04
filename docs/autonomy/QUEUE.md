@@ -2956,8 +2956,10 @@ out.
   from 26, which built the mechanism and deliberately stopped there, and **cut
   again while it was being built** — the item as written owed three answers and
   two of them are here. The third, *which grant becomes the bound*, is item 26b
-  below with the wiring, because it is a change to the map both halves of
-  `alo-bounding` read and the wiring is what decides how wide it has to be.
+  below, because it is a change to the map both halves of `alo-bounding` read.
+  It expected the wiring to decide how wide the entry has to be, and 26b found
+  otherwise: the width is what *either* answer needs, so it was settled on its
+  own and the wiring is item 26c.
 
   What is built. `crates/alo-bounding`: `turns.rs` (`Turns` — the threaded
   subtree a service makes inside its own control group, and the descriptor a
@@ -3015,30 +3017,99 @@ out.
   `6.18.33.2-microsoft-standard-WSL2`. What is settled is the mechanism; ADR 0015
   on the certified machine is still the exit gate.
 
-- [ ] **26b. The boundary in front of a turn.** What 26a cut, and it is two
-  things that turned out to be one: **which grant becomes the bound**, and the
-  wiring that cannot be written until that is answered.
+- [x] **26b. Which grant becomes the bound.** The question 26a left, answered and
+  built. **Cut while it was being built**, the way 26a was: the item as written
+  was that question *and* the wiring, and the wiring is item 26c below. The cut
+  is on the seam the item itself named — the wiring "cannot be written until that
+  is answered", so answering it whole is a thing worth doing on its own, and the
+  wiring is a change to a crate 1500 tests hang off.
 
-  **The question 26a left.** `Turns::doing` is handed one `Place` and the
-  kernel's map holds one per turn. A call can name two paths — `move_file` and
-  `archive_folder` both do — and a turn's grants can cover several folders, so
-  either the map's value becomes several places and the programme loops over
-  them, or the bound is made narrower than the grant and is the places *this
-  execution* named. The second is least privilege and is probably right; it is
-  also the one that needs a path that does not exist yet to be answered for
-  (a rename invents a name, an archive creates a file), and the answer there is
-  the folder it will be created in. Whichever is chosen it is a change to
-  `alo-bounding-map`, to `crates/alo-bounding-kernel/src/deciding.rs` and to
-  `Boundary`'s map type, and all three are gated together.
+  What is built. `crates/alo-bounding-map`: `bounds.rs` (`Bounds` — everywhere
+  one turn may reach, the count and four slots, and the two doors both halves go
+  through), and `reaching.rs` rewritten around it.
+  `crates/alo-bounding-kernel`: the map's value is `WORDS` words rather than two,
+  and `deciding.rs` walks once for however many places there are.
+  `crates/alo-bounding`: `places.rs` (`places_of` — the paths this execution
+  named, as the bound it runs inside, and the file where the decision is written
+  down), `Boundary::bound` and `where_bound` on `Bounds`, `Turns::doing` on
+  `Bounds`, and two new `NotBounded` variants. 14 new unit tests and 3 new
+  integration tests **that run against the real kernel**; 1784 tests and 46
+  doctests on Linux (was 1767 and 45), 1572 and 46 on Windows (was 1563 and 45,
+  and the nine are `alo-bounding-map`'s, which is the portable half). `cargo
+  fmt`, `cargo clippy -D warnings` and the BPF target's own gate clean on both
+  hosts.
 
-  **The wiring, and why it is not small.** A boundary must be around the verb and
-  **not** around the entry written afterwards: `alo-turn`'s doors do the disk
-  work and write the record in one call, and a thread bounded across both would
-  be refused the record. So this needs those separated, which is a change to a
-  crate 1500 tests hang off. And `alo-agentd` must make its subtree at start-up —
-  `Turns::under` takes the cgroup the service is already in, so `starting.rs` has
-  to find it and `stopping.rs` has to give it back, and a service that cannot
-  is a service that does not serve (ADR 0015).
+  **The two answers in the item were not alternatives, and noticing that is what
+  made the item tractable.** It offered *the map's value becomes several places*
+  **or** *the bound is narrower than the grant and is what this execution named*,
+  and they read as a choice. They are not one: a turn's grants can cover several
+  folders and one call names two paths, so **either answer needs more than one
+  place in the entry**. So the mechanism is what both would have needed, and the
+  decision sits on top of it rather than instead of it.
+
+  **The decision is the narrower one**, and `places.rs` is where it is argued.
+  Least privilege is the principle; the two facts under it are that a person's
+  grants have no width — an entry would have to hold however many folders
+  somebody had granted, which is not a number — and that the places the record
+  says an execution touched are then the same places the kernel let it touch, so
+  the two cannot disagree about what happened.
+
+  **It is measured rather than argued**, which is what the two new kernel tests
+  are for. A turn bounded to two folders opens a file in each *while the private
+  key beside them is still refused* — the refusal is what makes the first half
+  worth anything, because a bound that had quietly become *everything under the
+  root* would also open both. And a folder the turn was granted but the execution
+  did not name is outside the bound, which is the difference between the two
+  candidate answers, on a real kernel.
+
+  Three decisions the next items inherit. **A count that cannot be read is read
+  as fewer places, never as more.** `Bounds::of_words` cannot fail and clamps: a
+  count above the width becomes the width and a count of nothing stays nothing —
+  a turn that opens nothing at all. The alternative, answering `None`, would
+  reach the kernel half as *this cgroup is not a turn*, which is the one answer
+  that allows everything. **Four is a number with an argument**: the widest call
+  names two paths and a change creates a name in the folder each sits in. More is
+  refused rather than cut down to the first four, because a turn that did part of
+  what it was asked and was refused the rest reads as a broken machine. **A path
+  that does not exist yet is the folder it will be made in** — a rename invents a
+  name and an archive creates a file, and what has to be opened to create either
+  is the folder, which is there.
+
+  **And a test caught the loop rather than the other way round.** `nothing_in_
+  this_crate_starts_a_program` reads the crate's own source for `Command`,
+  `fork(`, `exec` and `posix_spawn`, and *execution* is this repository's word
+  for what a turn does — ADR 0001 §5 says *one approval, one execution* — so a
+  function named after one failed a test about `execve`. Skipping the file would
+  have been the gate weakened to pass it. What is there now is the spellings the
+  syscall family really takes, `starts_a_program`, **with its own test beside
+  it**: every way of starting a program in Rust is put in front of it, because a
+  test that reads source for a forbidden word passes on the day it stops looking
+  for it, in exactly the same colour.
+
+  **Proved on a development machine, not a certified one**, on
+  `6.18.33.2-microsoft-standard-WSL2`. ADR 0015 on the certified machine is still
+  the exit gate.
+
+- [ ] **26c. The boundary in front of a turn.** What 26b cut: the wiring, and it
+  is the largest of what is left of item 26.
+
+  **Why it is not small.** A boundary must be around the verb and **not** around
+  the entry written afterwards: `alo-turn`'s doors do the disk work and write the
+  record in one call — `carrying.rs` is where the two meet — and a thread bounded
+  across both would be refused the record. So this needs those separated, which
+  is a change to a crate 1500 tests hang off. And `alo-agentd` must make its
+  subtree at start-up: `Turns::under` takes the cgroup the service is already in,
+  so `starting.rs` has to find it and `stopping.rs` has to give it back, and a
+  service that cannot is a service that does not serve (ADR 0015).
+
+  **Which paths go into the bound is this item's, and 26b decided what shape the
+  answer takes.** `alo_bounding::places_of` takes the paths this execution named
+  and nothing else; what this item has to work out is which those are for each of
+  the six, which is `alo_files::Touching`'s resolved paths plus, for a change, the
+  folder the new name will be made in. **That is a test this item owes**: the six
+  verbs as declared can never need more than `alo_bounding_map::PLACES` places,
+  and the argument for four is written in `bounds.rs` where nothing can hold it
+  to the closed list. Here both crates are in reach and it can be asserted.
 
   **What the daemon does with a refusal is part of this item.** `NotBounded::said`
   exists and nothing says it yet. A turn that cannot be bounded does not run and
@@ -3046,7 +3117,7 @@ out.
   that and the service stops, the way it already stops when nothing can be
   written down.
 
-  Linux, on the WSL host, like 26a. Blocked on nothing.
+  Linux, on the WSL host, like 26a and 26b. Blocked on nothing.
 
 - [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same

@@ -12,16 +12,18 @@
 //! `VerbError`: it is read by whoever is standing a machine up, not by the
 //! person using one.
 //!
-//! Every one of these says something about the *kernel underneath the daemon* —
-//! that it publishes no type information, that a structure has moved, that the
-//! verifier refused a program. Nobody signs in to a machine and reads them.
+//! Every one of these says something about the *kernel underneath the daemon*,
+//! or about a machine this alo OS cannot bound a turn on — that the kernel
+//! publishes no type information, that a structure has moved, that the verifier
+//! refused a program, that a call named more places than an entry holds. Nobody
+//! signs in to a machine and reads them.
 //!
 //! # And there is one sentence that a person does read
 //!
 //! What the previous version of this paragraph said would happen has happened,
 //! and in the shape the item asked for rather than the shape it guessed at.
 //! [`NotBounded::said`] is the crossing onto `alo-strings`, and **every variant
-//! renders the same sentence**: eleven reasons, one thing to tell somebody.
+//! renders the same sentence**: thirteen reasons, one thing to tell somebody.
 //!
 //! The reasons are not translated and are not put inside it. A person is told
 //! that nothing was done, that nothing was refused either, and who has to look
@@ -154,6 +156,30 @@ pub enum NotBounded {
         why: io::Error,
     },
 
+    /// A turn's boundary was to be drawn around no places at all.
+    ///
+    /// Not a narrower grant: a turn bound to nowhere is refused every open it
+    /// makes, including the ones it needs in order to report that it failed. So
+    /// it is refused at the door, where the reason can still be said.
+    #[error("a turn's boundary is drawn around at least one place, and none was named")]
+    NothingToBound,
+
+    /// More places than one entry in the kernel's map holds.
+    ///
+    /// Refused rather than cut down to the first few. A turn bounded to some of
+    /// what it named would do part of what it was asked and be refused the rest
+    /// by the kernel, which reads to whoever is watching as a broken machine —
+    /// and ADR 0015's rule is that a boundary that cannot be applied means the
+    /// turn does not run.
+    #[error("a turn named {asked} places to be bounded to, and one entry holds {most}")]
+    TooManyPlaces {
+        /// How many were named.
+        asked: usize,
+
+        /// How many one entry holds.
+        most: usize,
+    },
+
     /// This machine has no unified control group hierarchy to make a turn in.
     ///
     /// Which means `/proc/self/cgroup` said something this cannot read, on a
@@ -196,7 +222,7 @@ pub enum NotBounded {
 impl NotBounded {
     /// What a person is told when their agent could not be bounded.
     ///
-    /// One sentence for all eleven reasons, in the language they read. This is
+    /// One sentence for all thirteen reasons, in the language they read. This is
     /// not a refusal of anything they asked for — nothing was attempted — and
     /// the note on [`crate::words::NOTHING_CAN_BE_BOUNDED`] says so to whoever
     /// translates it.

@@ -37,7 +37,7 @@ use aya::{
     programs::Lsm,
 };
 
-use alo_bounding_map::Place;
+use alo_bounding_map::{Bounds, WORDS};
 
 use crate::{btf::Types, failing::NotBounded, fields::Offsets};
 
@@ -58,7 +58,7 @@ const THE_PROGRAM: &str = "file_open";
 /// The hook it is attached to.
 const THE_HOOK: &str = "file_open";
 
-/// The map of turns to the place each may reach.
+/// The map of turns to the places each may reach.
 const THE_BOUNDS: &str = "BOUNDS";
 
 /// The map of where this kernel keeps its fields.
@@ -122,7 +122,16 @@ impl Boundary {
     /// From the moment this returns, every open by every process in that
     /// cgroup is decided by the kernel. There is no window between the entry
     /// existing and the boundary applying, because the entry *is* the boundary.
-    pub fn bound(&mut self, cgroup: u64, granted: Place) -> Result<(), NotBounded> {
+    ///
+    /// `granted` is several places rather than one because one execution names
+    /// more than one path; `crate::places_of` is where a turn's paths become
+    /// them, and it is the file that says which paths those are.
+    ///
+    /// # Errors
+    /// [`NotBounded::WillNotHold`] if the kernel would not take the entry, and
+    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
+    /// from different sources.
+    pub fn bound(&mut self, cgroup: u64, granted: Bounds) -> Result<(), NotBounded> {
         self.bounds()?
             .insert(cgroup, granted.words(), 0)
             .map_err(NotBounded::WillNotHold)
@@ -133,6 +142,11 @@ impl Boundary {
     /// ADR 0015's third line: *the entry is removed, and authority is gone —
     /// not revoked later, gone.* After this the cgroup is an ordinary one and
     /// its opens are not looked at.
+    ///
+    /// # Errors
+    /// [`NotBounded::WillNotHold`] if the kernel would not take the entry back,
+    /// and [`NotBounded::NothingCalled`] if the two halves of this crate were
+    /// built from different sources.
     pub fn released(&mut self, cgroup: u64) -> Result<(), NotBounded> {
         self.bounds()?
             .remove(&cgroup)
@@ -143,23 +157,31 @@ impl Boundary {
     ///
     /// Read back out of the kernel rather than remembered here, so what this
     /// answers is what the kernel would enforce rather than what the daemon
-    /// believes it asked for.
-    pub fn where_bound(&self, cgroup: u64) -> Result<Option<Place>, NotBounded> {
+    /// believes it asked for. [`None`] means there is no entry — never that
+    /// there is one this could not read, because reading one cannot fail.
+    ///
+    /// # Errors
+    /// [`NotBounded::WillNotHold`] if the map would not be read, and
+    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
+    /// from different sources.
+    pub fn where_bound(&self, cgroup: u64) -> Result<Option<Bounds>, NotBounded> {
         let map = self
             .loaded
             .map(THE_BOUNDS)
             .ok_or(NotBounded::NothingCalled { what: THE_BOUNDS })?;
-        let bounds: HashMap<_, u64, [u64; 2]> =
+        let bounds: HashMap<_, u64, [u64; WORDS]> =
             HashMap::try_from(map).map_err(NotBounded::WillNotHold)?;
         match bounds.get(&cgroup, 0) {
-            Ok(words) => Ok(Some(Place::of_words(words))),
+            Ok(words) => Ok(Some(Bounds::of_words(words))),
             Err(aya::maps::MapError::KeyNotFound) => Ok(None),
             Err(why) => Err(NotBounded::WillNotHold(why)),
         }
     }
 
     /// The map of turns, open to be written to.
-    fn bounds(&mut self) -> Result<HashMap<&mut aya::maps::MapData, u64, [u64; 2]>, NotBounded> {
+    fn bounds(
+        &mut self,
+    ) -> Result<HashMap<&mut aya::maps::MapData, u64, [u64; WORDS]>, NotBounded> {
         let map = self
             .loaded
             .map_mut(THE_BOUNDS)

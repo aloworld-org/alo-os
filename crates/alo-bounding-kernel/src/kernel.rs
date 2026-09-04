@@ -50,18 +50,22 @@ use aya_ebpf::{
     programs::LsmContext,
 };
 
-use alo_bounding_map::{Field, Place};
+use alo_bounding_map::{Bounds, Field, WORDS};
 
 use crate::deciding;
 
-/// Which turn may reach where: the cgroup a turn runs in, against the one place
-/// it was granted.
+/// Which turn may reach where: the cgroup a turn runs in, against the places it
+/// was granted.
 ///
 /// The daemon writes an entry when a turn begins and takes it out when the turn
 /// ends, and a cgroup with no entry is a program that is not an agent turn —
 /// which is every other process on the machine.
+///
+/// The value is [`WORDS`] words rather than two, because a turn is bound to
+/// several places: one execution names more than one path, and
+/// `alo_bounding_map::Bounds` is where the layout of them is decided.
 #[map(name = "BOUNDS")]
-static BOUNDS: HashMap<u64, [u64; 2]> = HashMap::with_max_entries(1024, 0);
+static BOUNDS: HashMap<u64, [u64; WORDS]> = HashMap::with_max_entries(1024, 0);
 
 /// Where the fields this program reads sit in this kernel's own structures.
 ///
@@ -98,16 +102,21 @@ pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }
 }
 
-/// The place a turn was granted, or [`None`] if this cgroup is not a turn.
+/// The places a turn was granted, or [`None`] if this cgroup is not a turn.
 ///
 /// [`None`] is the answer for every ordinary program on the machine, and it is
 /// the answer that costs nothing: one hash lookup, a miss, and the open goes
 /// ahead as though this program were not loaded.
-pub fn granted(turn: u64) -> Option<Place> {
+///
+/// It is therefore the one answer that must not be reachable from an entry that
+/// *is* there and cannot be read — which is why `Bounds::of_words` cannot fail
+/// and clamps instead. An entry read wrongly bounds a turn to fewer places, and
+/// [`None`] here means only that there was no entry at all.
+pub fn granted(turn: u64) -> Option<Bounds> {
     // Copied out immediately, so the borrow of the map's value does not outlive
     // the lookup — which is the whole of what `get`'s safety note asks for.
     let words = *unsafe { BOUNDS.get(turn) }?;
-    Some(Place::of_words(words))
+    Some(Bounds::of_words(words))
 }
 
 /// Where a field sits in this kernel, as the daemon found it.

@@ -7324,3 +7324,120 @@ since item 26.
 - **Nothing here was verified on a certified machine.** It is
   `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
   certified one is still the exit gate.
+
+---
+
+## Iteration — item 26b: which grant becomes the bound
+
+**Built.** `crates/alo-bounding-map` gained `bounds.rs` (`Bounds` — everywhere
+one turn may reach: a count and four slots, `of`, `of_one`, `holds`, `each`,
+`words` and `of_words`), and `reaching.rs` was rewritten around it.
+`crates/alo-bounding-kernel`'s map value became `WORDS` words rather than two,
+and `deciding.rs` walks once for however many places there are.
+`crates/alo-bounding` gained `places.rs` (`places_of` — the paths this execution
+named, as the bound it runs inside); `Boundary::bound`, `Boundary::where_bound`
+and `Turns::doing` take a `Bounds`; `NotBounded` gained `NothingToBound` and
+`TooManyPlaces`.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1784 tests and 46 doctests on Linux** (was 1767 and 45), **1572 and 46
+on Windows** (was 1563 and 45). `alo-bounding` ran 28 unit tests, 7 integration
+tests in `a_turn_is_this_thread.rs` and 4 in `the_kernel_refuses.rs` on Linux,
+0 on Windows; `alo-bounding-map` ran 20 unit tests and 2 doctests on **both**,
+which is why Windows moved at all — that crate is the portable half. The kernel
+half's own gate — `cargo fmt --all --check` and `cargo clippy --release --target
+bpfel-unknown-none -Z build-std=core` — clean. `cargo doc --workspace --no-deps`
+exits 0 with zero warnings on Linux.
+
+**The item was cut while it was being built, and the cut is written down.** It
+was two things — which grant becomes the bound, and the wiring — and the wiring
+is now item 26c. The seam is the item's own: it said the wiring "cannot be
+written until that is answered", and the wiring is a change to `alo-turn`, which
+1500 tests hang off. Answering the question whole is a thing worth doing on its
+own; doing both would have been half of each.
+
+**The two answers in the item were not alternatives, and that is what made the
+item tractable.** It offered *the map's value becomes several places* **or** *the
+bound is narrower than the grant and is what this execution named*. They read as
+a choice and they are not one: a turn's grants can cover several folders and one
+call names two paths, so **either answer needs more than one place in the
+entry**. So the mechanism is what both would have needed, and the decision sits
+on top of it rather than instead of it — which is why this half is whole without
+the wiring rather than blocked on it.
+
+**The decision is the narrower one, and it is measured rather than argued.**
+Least privilege is the principle. The two facts under it are that a person's
+grants have no width — an entry would have to hold however many folders somebody
+had granted, which is not a number — and that the places the record says an
+execution touched become the same places the kernel let it touch, so the two
+cannot disagree about what happened. Two new tests on the real kernel:
+`a_turn_is_bounded_to_every_place_its_execution_named` opens a file in each of
+two folders **while the private key beside them is still refused**, and
+`a_place_the_execution_did_not_name_is_outside_the_bound` grants one of the two
+and finds the other refused. The first assertion is worth nothing without the
+third: a bound that had quietly become *everything under the root* would open
+both files too.
+
+**A count that cannot be read is read as fewer places, never as more.**
+`Bounds::of_words` cannot fail and clamps — a count above the width becomes the
+width, a count of nothing stays nothing, which is a turn that opens nothing at
+all. The alternative was answering `None`, and `None` reaches the kernel half as
+*this cgroup is not a turn*, which is the one answer that allows everything. The
+slots past the count are cleared at both doors as well, so a turn's bound cannot
+depend on what the previous turn's entry left in that memory, and there is a test
+that says so.
+
+**Four is a number with an argument.** The widest call names two paths, and a
+change creates a name in the folder each of them sits in. More is refused rather
+than cut down to the first four: a turn that did part of what it was asked and
+was refused the rest reads to whoever is watching as a broken machine, and
+ADR 0015 says a boundary that cannot be applied means the turn does not run. The
+argument is in `bounds.rs`, where nothing can hold it to the closed list of
+verbs — **item 26c owes that test**, and the queue says so.
+
+**And a test caught the loop rather than the other way round, which is the thing
+worth reading here a year from now.** `nothing_in_this_crate_starts_a_program`
+reads the crate's own source for `Command`, `fork(`, `exec` and `posix_spawn`,
+and *execution* is this repository's own word for what a turn does — ADR 0001 §5
+says *one approval, one execution* — so a function named after one failed a test
+about `execve`. Skipping the file, or widening the comment filter to swallow the
+name, would have been the gate weakened to pass it. What is there instead is the
+spellings the family really takes (`exec(`, `execv`, `execl`), lifted into
+`starts_a_program` **with its own test beside it**: ten ways of starting a
+program in Rust are put in front of it and three ordinary lines containing
+*execution* are too. A test that reads source for a forbidden word passes on the
+day it stops looking for it, in exactly the same colour as the day it worked.
+
+**`ROADMAP.md` moved**, per step 6. The *grant enforced by the kernel* line's
+code half now says what 26b answered and names 26c as what is left of it.
+**Nothing was ticked.** The half stays empty because nothing is in front of a
+turn yet, which is the honest state and is what that half's own sentence has said
+since item 26.
+
+**What the next iteration should know.**
+
+- **The next ready item in queue order is 26c**, the wiring, and it is the
+  largest of the three left: `alo-turn`'s doors separated so a boundary can be
+  around the verb and not around the entry written afterwards (`carrying.rs` is
+  where the two meet), `alo-agentd` making its subtree in `starting.rs` and
+  giving it back in `stopping.rs`, and what the daemon does with `NotBounded`.
+  It also owes the test that holds four to the closed list. After it, 27 — the
+  LSM decides and forgets. 16b is not ready by its own words, 19b is blocked on
+  Wayland, 21i on the shell, 21k on an ADR nobody has written, 21l on a place a
+  question can leave for. Item 28 — the image — is blocked on nothing and is
+  still the one that would move any of the eighteen machine halves.
+- **The rustdoc count on Windows is thirty-four now, not thirty-two.**
+  `alo-bounding`'s crate header gained two links to `places_of`, which is
+  `cfg`'d out on that host. `LOOP.md` has been updated and still says to read the
+  two `generated` lines rather than the total — twenty-four for `alo-agentd`, ten
+  for `alo-bounding`.
+- **The BPF verifier took the wider walk without complaint.** The inner
+  comparison is `Bounds`' own fixed width inside the same 32-step loop, so the
+  programme loads and attaches on `6.18.33.2` exactly as before. If `PLACES` is
+  ever raised, that is the thing to check first — and it is one edit, because the
+  array literals in `bounds.rs` fail to compile against a different width rather
+  than silently reading fewer slots.
+- **Nothing here was verified on a certified machine.** It is
+  `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
+  certified one is still the exit gate.

@@ -10,7 +10,8 @@
 //! | | |
 //! |---|---|
 //! | [`Place`] | One thing on a disk, named the way the kernel names it |
-//! | [`reaches`] | Whether an opened file is the granted place or lies under it |
+//! | [`Bounds`] | Everywhere one turn may reach, which is the value of one entry |
+//! | [`reaches`] | Whether an opened file is a granted place or lies under one |
 //! | [`Field`] | Where in the kernel's own structures the program has to look |
 //!
 //! # Why a crate rather than a struct copied twice
@@ -25,6 +26,12 @@
 //! It is `alo-strings`' argument about a declaration and its translation, one
 //! layer down: the guarantee holds because there is one thing, not two that
 //! currently agree.
+//!
+//! [`Bounds`] is the same argument about a *width*. A turn is bound to several
+//! places, so the entry has a count and a fixed number of slots in it — and a
+//! half that read one more slot than the other wrote would compare a folder
+//! against whatever the previous turn left in memory. [`PLACES`] is that number,
+//! it is here, and changing it either moves both halves or compiles in neither.
 //!
 //! # Why the containment rule is here too
 //!
@@ -47,9 +54,11 @@
 #![no_std]
 
 mod bound;
+mod bounds;
 mod field;
 mod reaching;
 
 pub use bound::Place;
+pub use bounds::{Bounds, PLACES, WORDS};
 pub use field::Field;
 pub use reaching::{DEPTH, reaches};

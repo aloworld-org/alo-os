@@ -818,10 +818,11 @@ sorted the same way v0.01 now is.
   - [ ] The code. **Proved, and not yet in front of a turn — which is why this
         stays empty.** Three crates as of 2026-09-04: `alo-bounding-kernel` is
         the BPF LSM programme on `file_open`, written in Rust through `aya` with
-        one place per cgroup; `alo-bounding` loads it, reads the running kernel's
-        own type information to find out where that kernel keeps its fields, and
-        holds the map; `alo-bounding-map` is the sixteen bytes both halves read
-        the same way. Gated on both hosts and for the BPF target. **The tests
+        the places one turn may reach per cgroup; `alo-bounding` loads it, reads
+        the running kernel's own type information to find out where that kernel
+        keeps its fields, and holds the map; `alo-bounding-map` is the seventy-two
+        bytes both halves read the same way. Gated on both hosts and for the BPF
+        target. **The tests
         that show a kernel refusing a file now run and pass**, on
         `6.18.33.2-microsoft-standard-WSL2`: a turn granted a folder opens a file
         inside it, the same turn reaching for a private key beside it is refused
@@ -834,9 +835,17 @@ sorted the same way v0.01 now is.
         `cgroup.threads`, and comes back out through a descriptor opened before
         it went in — measured on the same kernel, with a sibling thread of the
         same process opening the file the working thread is being refused.
-        **What is left of this half is 26b** — which grant becomes the bound, and
+        **Item 26b is ticked, and it answered which grant becomes the bound**:
+        the places *this execution* named, not everywhere the turn's grants
+        reach, which is the narrower of the two candidates and is least
+        privilege. An entry now holds up to four places and a count, the walk
+        asks all of them at each step, and it is measured — a turn bounded to two
+        folders opens a file in each while the private key beside them is still
+        refused, and a folder the execution did not name is outside the bound
+        even when the turn was granted it. **What is left of this half is 26c** —
         putting `Turns::doing` in front of `alo-turn` inside `alo-agentd`, which
-        is not written
+        needs that crate's doors separated so a boundary is around the verb and
+        not around the record written afterwards, and is not written
   - [ ] On the machine. The certified machine, and a kernel requirement that is
         a **configuration** and not a patch — now **four** checks rather than
         one, each invisible to the one before it: `CONFIG_BPF_LSM=y`, `bpf`

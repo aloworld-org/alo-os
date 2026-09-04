@@ -14,9 +14,14 @@
 //!
 //! From the `struct file` the hook was handed, down to the directory entry the
 //! open went through, then upwards: this entry, the directory it is in, the
-//! directory that is in, until either the granted place is met or the top of
+//! directory that is in, until either a granted place is met or the top of
 //! the filesystem is. [`alo_bounding_map::reaches`] is the rule; this file is
 //! the fetching.
+//!
+//! There is **one** walk however many places a turn was bound to. Every step is
+//! four reads of kernel memory and every comparison is two numbers, so the
+//! places are asked at each step rather than walked for one at a time —
+//! `alo_bounding_map::reaches` has the argument.
 //!
 //! **Anything unreadable refuses.** A missing offset, a null pointer, a read
 //! the kernel declines — each ends the walk with [`None`], and
@@ -24,7 +29,7 @@
 //! guessed when it could not see would open under exactly the conditions
 //! somebody would arrange on purpose.
 
-use alo_bounding_map::{Field, Place, reaches};
+use alo_bounding_map::{Bounds, Field, Place, reaches};
 
 use crate::kernel;
 
@@ -53,8 +58,8 @@ pub fn decide(file: u64) -> i32 {
     }
 }
 
-/// Whether the file this open is for lies at or under the granted place.
-fn inside(file: u64, granted: Place) -> bool {
+/// Whether the file this open is for lies at or under a granted place.
+fn inside(file: u64, granted: Bounds) -> bool {
     let Some(fields) = Fields::found() else {
         return false;
     };

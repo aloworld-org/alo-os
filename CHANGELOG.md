@@ -12,6 +12,24 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The kernel's boundary is now drawn around exactly what the agent was asked
+  to touch, and no more.** Some of the things an agent can be asked to do name
+  two places at once — moving a file names the file *and* the folder it is going
+  into — and until now the boundary the kernel enforces could only be drawn
+  around one of them, so half of those could never have run.
+
+  It could have been fixed by making the boundary cover everywhere the person had
+  granted, and that is not what was done. The boundary is drawn around the places
+  **this one piece of work** named, which is narrower: a person who has granted
+  their agent four folders and asks it to tidy one of them has a boundary around
+  that one, and the other three are as unreachable to a misbehaving agent as
+  anything else on the machine.
+
+  Measured on a real kernel rather than reasoned about. An agent's work bounded
+  to two folders opens a file in each while a private key beside them is still
+  refused — and a folder the person granted, but this piece of work never named,
+  is refused too.
+
 - **An agent's work can now be put inside the kernel's boundary without alo OS
   starting anything at all.** The boundary that makes a grant real — the kernel
   refusing a file the agent was never granted, rather than alo OS politely
@@ -36,8 +54,8 @@ grant now takes effect immediately instead of at the next sign-in" is.
 - **A person whose agent cannot be bounded is now told so, in their own
   language.** alo OS will not let an agent act on a machine where it cannot hold
   it to what was granted — that was already true, and until now the person got
-  silence. There are eleven ways the machine can be in that state and they are
-  all facts about the kernel; the person reads one sentence saying that nothing
+  silence. There are thirteen ways the machine can be in that state and none of
+  them is about what was asked for; the person reads one sentence saying that nothing
   was done, that nothing was refused either, and that whoever set the machine up
   is who has to look at it. The technical reason still goes, in English, to the
   service log where an administrator will find it.

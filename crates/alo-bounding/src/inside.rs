@@ -1,7 +1,7 @@
 //! One execution, inside the boundary, and the order the steps happen in.
 //!
 //! [`Turns`] is the place; this is the act. [`Turns::doing`] makes a turn's
-//! control group, tells the kernel what that turn may reach, puts **this
+//! control group, tells the kernel everywhere that turn may reach, puts **this
 //! thread** inside it, does the work, brings the thread back out, takes the
 //! kernel's entry away and removes the control group.
 //!
@@ -46,7 +46,7 @@
 
 use std::io::Write;
 
-use alo_bounding_map::Place;
+use alo_bounding_map::Bounds;
 
 use crate::{bounding::Boundary, cgroup::Cgroup, failing::NotBounded, turns::Turns};
 
@@ -90,11 +90,15 @@ impl Drop for Inside<'_> {
 impl Turns {
     /// Does one thing inside a boundary the kernel imposes.
     ///
-    /// `named` is the turn's control group, `granted` is the one place the
-    /// kernel will let it reach, and `work` is what runs in there — on this
-    /// thread, in this process, with nothing started. Every open `work` makes is
-    /// decided by the kernel from the moment this enters until the moment it
-    /// leaves, and the answer for anything outside `granted` is `EACCES`.
+    /// `named` is the turn's control group, `granted` is everywhere the kernel
+    /// will let it reach, and `work` is what runs in there — on this thread, in
+    /// this process, with nothing started. Every open `work` makes is decided by
+    /// the kernel from the moment this enters until the moment it leaves, and the
+    /// answer for anything outside `granted` is `EACCES`.
+    ///
+    /// `granted` is several places rather than one because one execution names
+    /// more than one path; `crate::places_of` makes it out of the paths this
+    /// execution named, and says why those are the right ones.
     ///
     /// **`work` cannot open anything it was not granted, including the things a
     /// program opens without meaning to.** A panic inside it will try to print a
@@ -111,7 +115,7 @@ impl Turns {
         &self,
         boundary: &mut Boundary,
         named: &str,
-        granted: Place,
+        granted: Bounds,
         work: impl FnOnce() -> T,
     ) -> Result<T, NotBounded> {
         let turn = self.beginning(named)?;

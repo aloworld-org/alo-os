@@ -18,18 +18,20 @@
 //! | [`Cgroup`] | The control group a turn runs in, which is how the kernel tells one turn from another |
 //! | [`Turns`] | Where this service's turns are made, and the one door into and out of a boundary |
 //! | [`place_of`] | A folder, as the two numbers the kernel knows it by |
+//! | [`places_of`] | The paths one execution named, as the bound it runs inside |
 //! | [`NotBounded`] | Why a boundary could not be imposed, which is always a refusal |
 //!
 //! # What actually happens
 //!
 //! ```text
 //! turn begins   a cgroup is made, and the work runs in it
-//!               the granted folder is resolved to a filesystem and an inode
-//!               { cgroup id -> place } goes into a map the kernel reads
+//!               each path this execution named is resolved to a filesystem
+//!               and an inode
+//!               { cgroup id -> those places } goes into a map the kernel reads
 //!
 //! every open    a BPF LSM program on file_open looks up the cgroup
 //!               not a turn  -> allowed, and nothing is remembered
-//!               a turn      -> walk up from the file; the granted place, or EACCES
+//!               a turn      -> walk up from the file; a granted place, or EACCES
 //!
 //! turn ends     the entry is removed, and the authority is gone
 //! ```
@@ -74,16 +76,19 @@
 //! It is not wired into a turn. `alo-turn` joins an invocation, a call, an
 //! approval, an execution and the record, and `alo-agentd` is what holds one; a
 //! boundary around the execution and *not* around the entry written afterwards
-//! needs those two doors separated, and that is queue item 26b.
+//! needs those two doors separated, and that is queue item 26c.
 //!
-//! What is here is the whole of the mechanism a turn will stand on: the kernel
+//! What is here is the whole of the mechanism a turn stands on: the kernel
 //! refusing (item 26), the thread that goes into the boundary and comes back out
-//! of it, and the sentence a person reads when it could not be imposed. What is
-//! not here is **which** place a turn is bound to — [`Turns::doing`] is handed
-//! one, and the kernel's map holds one per turn. A call can name two paths and a
-//! turn's grants can cover several folders, so that number has to become several
-//! or the bound has to become narrower than the grant; that is item 26b's first
-//! decision, and it is a change to the map both halves of this crate read.
+//! of it (item 26a), the sentence a person reads when it could not be imposed,
+//! and **which** places a turn is bound to (item 26b) — the ones this execution
+//! named, which [`places_of`] makes and says why.
+//!
+//! What is not here is the caller that names them. Nothing on this machine calls
+//! [`places_of`] with a real call's paths yet, because the crate that would is
+//! `alo-turn` and its doors do the disk work and write the record together; a
+//! thread bounded across both would be refused the record. Separating them, and
+//! `alo-agentd` making its subtree when it starts, is item 26c.
 //!
 //! # The dangerous property, said out loud
 //!
@@ -104,6 +109,7 @@ mod failing;
 mod fields;
 mod inside;
 mod place;
+mod places;
 mod turns;
 pub mod words;
 
@@ -116,7 +122,8 @@ pub use cgroup::Cgroup;
 pub use failing::NotBounded;
 pub use fields::Offsets;
 pub use place::{as_the_kernel_keeps_it, place_of};
+pub use places::places_of;
 pub use turns::Turns;
 pub use words::{EVERY_WORD, Word, WordsError, bounding_words, declare_into};
 
-pub use alo_bounding_map::{DEPTH, Field, Place};
+pub use alo_bounding_map::{Bounds, DEPTH, Field, PLACES, Place, WORDS};

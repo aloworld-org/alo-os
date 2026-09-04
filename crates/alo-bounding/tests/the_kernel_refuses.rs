@@ -60,7 +60,7 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 
-use alo_bounding::{Boundary, Cgroup, place_of};
+use alo_bounding::{Boundary, Cgroup, places_of};
 
 /// Where the child is told its turn's control group is.
 const THE_CGROUP: &str = "ALO_BOUNDING_TEST_CGROUP";
@@ -119,7 +119,7 @@ enum Outcome {
 }
 
 /// Runs one turn: a cgroup, a grant, a child process inside it, and one open.
-fn a_turn(named: &str, granted: &Path, opening: &Path, still: Still) -> Outcome {
+fn a_turn(named: &str, granted: &[&Path], opening: &Path, still: Still) -> Outcome {
     let mut boundary = the_boundary().lock().expect("nothing panicked holding it");
     let cgroup = Cgroup::made(named).expect("a control group can be made");
     let turn = cgroup.id().expect("a control group has an identifier");
@@ -149,7 +149,7 @@ fn a_turn(named: &str, granted: &Path, opening: &Path, still: Still) -> Outcome 
     boundary
         .bound(
             turn,
-            place_of(granted).expect("the granted folder is there"),
+            places_of(granted).expect("the granted folders are there"),
         )
         .expect("the kernel takes the entry");
     assert!(
@@ -231,7 +231,7 @@ fn a_turn_granted_a_folder_opens_a_file_inside_it() {
     let machine = a_machine_with_something_worth_protecting();
     let outcome = a_turn(
         "alo-bounding-inside",
-        &machine.join("Invoices"),
+        &[&machine.join("Invoices")],
         &machine.join("Invoices/march.pdf"),
         Still::Bound,
     );
@@ -249,7 +249,7 @@ fn the_same_turn_reaching_for_a_private_key_is_refused_by_the_kernel() {
     let machine = a_machine_with_something_worth_protecting();
     let outcome = a_turn(
         "alo-bounding-outside",
-        &machine.join("Invoices"),
+        &[&machine.join("Invoices")],
         &machine.join(".ssh/id_ed25519"),
         Still::Bound,
     );
@@ -270,7 +270,7 @@ fn when_the_turn_is_over_the_authority_is_gone() {
     let machine = a_machine_with_something_worth_protecting();
     let outcome = a_turn(
         "alo-bounding-over",
-        &machine.join("Invoices"),
+        &[&machine.join("Invoices")],
         &machine.join(".ssh/id_ed25519"),
         Still::Over,
     );
@@ -289,7 +289,7 @@ fn a_process_that_is_not_a_turn_reaches_what_it_always_could() {
     let key = machine.join(".ssh/id_ed25519");
     let refused = a_turn(
         "alo-bounding-elsewhere",
-        &machine.join("Invoices"),
+        &[&machine.join("Invoices")],
         &key,
         Still::Bound,
     );

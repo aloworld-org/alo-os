@@ -1,6 +1,6 @@
 //! Everything this crate says to a person, and the English beside it.
 //!
-//! [`crate::NotBounded`] has eleven reasons and keeps its English, for the
+//! [`crate::NotBounded`] has thirteen reasons and keeps its English, for the
 //! reason `failing.rs` gives: every one of them is a fact about the *kernel
 //! underneath the daemon*, read by whoever is standing a machine up. None of
 //! them is read by somebody who signed in.
@@ -10,17 +10,17 @@
 //! boundary cannot be applied does not run*, and a person whose agent does
 //! nothing and says nothing is a person with a broken computer.
 //!
-//! # Eleven reasons, one sentence
+//! # Thirteen reasons, one sentence
 //!
 //! That is the decision here, and it is deliberate rather than lazy. A person
 //! reading *this kernel has no `file.f_path`* learns nothing they can act on and
 //! is handed a fact about their machine's internals in a language that is a
 //! second language for most of the people alo OS is for. What they need is what
-//! is true in all eleven: nothing was done, nothing was allowed either, and the
+//! is true in all thirteen: nothing was done, nothing was allowed either, and the
 //! machine — not their agent, and not what they asked for — is what has to be
 //! looked at.
 //!
-//! So the eleven keep their English for the administrator and the person reads
+//! So the thirteen keep their English for the administrator and the person reads
 //! one sentence. [`crate::NotBounded::said`] is the join, and it deliberately
 //! has no gap in it: putting the reason inside would put an untranslated English
 //! clause in the middle of a translated sentence, which is the failure the
@@ -140,7 +140,7 @@ mod tests {
     }
 
     /// **Nothing here has a gap in it**, which is this file's own decision: the
-    /// eleven reasons are English for an administrator, and one of them dropped
+    /// thirteen reasons are English for an administrator, and one of them dropped
     /// into a translated sentence would be half a sentence nobody can read.
     #[test]
     fn nothing_here_can_be_handed_a_reason() {
