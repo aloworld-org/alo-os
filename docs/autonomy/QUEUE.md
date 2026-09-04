@@ -3515,6 +3515,103 @@ out.
   now, and the code half is ticked. The machine half is not, and the sentence
   above it in that file is the reason.
 
+- [x] **23a. The measurement, run against a model that exists.** Promoted out of
+  *blocked — hardware*, where it had been since item 23 and where its own text
+  had already stopped agreeing with the heading: *a model exists now
+  (2026-09-04), so this is startable*. It was the second entry in that section
+  to turn out never to have been blocked on hardware at all — the first was the
+  image — and the shape of the mistake is the same one both times: an item is
+  filed under what it needed on the day it was written, and nobody re-reads the
+  file when the day changes. One new test file,
+  `crates/alo-driving/tests/against_a_model_on_this_machine.rs`, two new
+  dev-dependencies, one changed line of `data/catalogue.toml` and two tests that
+  had to move because of it. **1670 tests and 46 doctests on Windows** (was 1669
+  and 46) plus one ignored, **1901 and 46 on Linux** (was 1900 and 46), clippy
+  clean on both hosts.
+
+  **The measurement is a test rather than a program, and that was the decision.**
+  `alo-driving`'s header says it asks nothing — *no client, no socket, no
+  runtime, not even behind a feature* — and the whole crate is written around
+  that. A binary would have made it false; a crate of its own would have made
+  `alo-agentd is the only crate here that is a process` false as well, and
+  bought a second `main` to run a thing that runs once per catalogue entry. An
+  integration test keeps both sentences: the library still asks nothing, the
+  dev-dependencies are the test's, and the question goes out through
+  `alo-asking`'s local door — the same road a real turn's question takes, which
+  the crate header had already named as the intended one.
+
+  **It is `#[ignore]`d, and that is the one thing in this item worth arguing
+  about.** `LOOP.md` forbids marking a test ignored to make a suite green, and
+  this is not that: a measurement needs gigabytes on a disk, and the test asserts
+  a model was named *before* it does anything, so asking for it on a machine with
+  nothing to measure fails rather than passing quietly. That is the opposite
+  behaviour to `alo-bounding`'s two ignored tests, which are child halves and
+  pass on their own, and the file says so where somebody would otherwise assume
+  the house rule.
+
+  **The result, and it is a real one.** `phi3:3.8b-mini-4k-instruct-q4_K_M` —
+  the weights the `phi-3-mini-instruct` entry names, at the quantisation it
+  states, which is why that tag was pulled rather than the `phi3:mini` already on
+  the box at a different one — twenty attempts over two rounds. **Zero drove the
+  verbs.** `drives_verbs = "rarely"`, and the catalogue says who measured it,
+  when, and on what.
+
+  What it wrote is the part worth inheriting, because ADR 0007's *sentences they
+  manage, structure they lose* turns out to understate how close a small model
+  gets: the format number, the `asks` wrapper, the door and usually the verb name
+  were right nearly every time, and `given` was wrong nearly every time — a list
+  of bare strings, an object where a list belongs, or the argument's value put in
+  the `named` field. Every one of the twenty failed at the daemon's door, so not
+  one reached the verb registry, and the six outcomes this crate keeps apart did
+  not divide it at all. `docs/quirks.md` has the answers themselves.
+
+  Three decisions the next items inherit. **A model is warmed before it is
+  scored**, with one throwaway question whose answer is dropped: the first
+  question to a runtime loads the weights, which took 220 seconds here against 2
+  for the answer, and the exercise that happened to pay for it would have been
+  graded `TookTooLong` — the model blamed for the disk. **A runtime that fails
+  stops the measurement rather than scoring a failure**, for the same reason and
+  in the general form. **The grade is output and never an assertion**: the test
+  asserts that every answer came from this machine, that every exercise was
+  asked and that a grade was earned, and says nothing about which — a test
+  expecting `reliably` would fail on the day somebody improved the model, and one
+  expecting `rarely` would pass on a machine whose runtime was answering nothing.
+
+  What it did not do is measure `min_ram_gb` or `on_cpu`, which is written into
+  the catalogue beside the entry: a grade is a property of the weights and
+  travels, while what a model costs in memory is a property of the machine, and
+  the numbers this box would have produced are the ones the item below refuses.
+
+- [ ] **23b. The other eleven entries.** What 23a cut rather than shortened: one
+  model has been measured and the catalogue has eleven more. Each one is the same
+  work — pull the weights at the quantisation the entry states, run
+  `against_a_model_on_this_machine`, write the grade down — and it is a data
+  change per model rather than a release.
+
+  **Blocked on the weights, and on nothing else.** Mixtral wants 48 GB of system
+  memory and the development box has six; the two 9-billion entries are marked
+  `slow` on a CPU and would take an afternoon each at the rate measured here.
+  What this needs is a machine with room, which is the certified one, or somebody
+  willing to leave a laptop running. It is **not** blocked on code: the harness
+  exists, it works, and adding a name to
+  `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` is what writing a
+  grade down costs.
+
+- [ ] **29. A model cannot be loaded, because loading is not a quick call.**
+  Found by 23a and recorded in `docs/quirks.md`. `alo_models::Ollama::load` sends
+  its empty generate with `QUICK_TIMEOUT`, ten seconds, and a model coming off a
+  disk took **220 seconds** on this box against two to answer once it was there.
+  So `load` answers `RuntimeError::Unreachable` — *nothing was listening* — about
+  a runtime that is listening and working.
+
+  **Not ready, and the timeout is not the whole of it.** A third constant would
+  make the call succeed and leave a person watching nothing happen for four
+  minutes, and `RuntimeError` has no variant meaning *it is loading* — which is a
+  sentence somebody reads, so it is an `alo-strings` word and a decision about
+  what a shell shows, not a number. ADR 0007 makes the CPU the default, so this
+  is the ordinary case rather than the slow one. Nothing calls `load` today,
+  which is why it has never been seen; 21k is where something first would.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
@@ -3607,34 +3704,31 @@ rather than only of what is convenient.
 
 ## Blocked — hardware
 
-- **23a. The measurement, run against real models.** What item 23 could not
-  close: `alo-driving` puts ten fixed requests to a model and scores what comes
-  back, and nothing has ever put one to a model that exists. Until somebody
-  does, every entry in `data/catalogue.toml` says `not-measured` and no machine
-  offers a local model the agent — the honest state, and a bad product until it
-  is answered. It needs a machine with a model on it, which is the same
-  blocker the entry below has; a CPU-only run would close most of it. What it
-  produces is a data change rather than a release: a grade per entry, and the
-  test `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` updated by
-  whoever ran it.
+- **What a model costs on a machine, as opposed to whether it can drive.**
+  What is left of 23a, which was in this section until 2026-09-04 and was **not
+  blocked on hardware** — the measurement ran on the development box and is item
+  23a above, with 23b for the eleven entries nobody has the weights for. What
+  genuinely does need the certified machine is the other half of a catalogue
+  entry: `min_ram_gb` and `on_cpu` are what a model costs *here*, and this box
+  has six gigabytes and four cores.
 
-  **A model exists now (2026-09-04), so this is startable.** `phi3:mini` is
-  pulled and answering, and one hand-run measurement already suggests **the
-  catalogue is wrong about it in both directions**, which is the argument for
-  doing this properly rather than trusting the entries:
+  One hand-run measurement suggests **the catalogue is wrong about Phi-3 Mini in
+  both directions**, which is the argument for somebody doing this properly:
 
   | `Phi-3 Mini Instruct` | catalogue says | measured on the WSL box |
   |---|---|---|
   | `min_ram_gb` | `6.0` | **~3.9 GB resident**, ran with 4.9 GB available |
-  | `on_cpu` | `comfortable` | 6–7 tokens/sec warm, **53 s cold start** |
+  | `on_cpu` | `comfortable` | 6–7 tokens/sec warm, **220 s cold start** |
 
-  **Do not copy those numbers into the catalogue.** They came from `curl` on a
-  4-core WSL VM, not from `alo-driving`'s ten fixed requests, and this item's
-  whole point is that a grade is measured rather than guessed — a hand-timed
-  number written into the table would be the same sin in a different hand. They
-  are here because *the direction of the error* is the useful part: the RAM
-  figure looks too high, the speed claim looks too generous, and the certified
-  machine (16 GB, more cores) will differ from this box in both.
+  **Do not copy those numbers into the catalogue**, which is why item 23a did
+  not: they came from `curl` and `free` on a 4-core WSL VM rather than from
+  anything this repository can run again, and a hand-timed number written into
+  the table would be the guess `drives_verbs` exists to refuse wearing a
+  different hat. They are here because *the direction of the error* is the useful
+  part: the RAM figure looks too high, the speed claim looks too generous, and
+  the certified machine (16 GB, more cores) will differ from this box in both.
+  There is no `alo-driving` for this half, and whether there should be is the
+  first question whoever picks it up has to answer.
 
 - **The model stack against a real Ollama.** Ticked in `ROADMAP.md` as built and
   tested, with this verification owed. A CPU-only run would close most of it and

@@ -20,11 +20,13 @@
 #    decides whether a machine hands somebody's files to a model, and ADR 0007
 #    says it is measured by us and never claimed by the publisher.
 #
-# Every entry below says "not-measured", and that is honest rather than lazy:
-# nothing in this repository has been run against a real model yet. A machine
-# reading this catalogue therefore offers no local model the agent, and says so
-# in words that name the two places ADR 0008 leaves open. The moment somebody
-# runs the measurement, a grade here is a data change and not a release.
+# One entry has been measured and the rest have not, which is honest rather
+# than lazy: a measurement needs those weights on a disk and a runtime serving
+# them, and one model at a time is what somebody with one machine can do. A
+# machine reading this catalogue still offers no local model the agent — but it
+# now says so for the reason that is true of it, which is that what was measured
+# did not clear the bar rather than that nobody has measured anything. Those are
+# different sentences and they send a person to different places.
 #
 # `min_vram_gb` is what the model needs to run at a *useful* speed. The
 # certified machine in docs/hardware.md has 24 GB, so an entry above that is
@@ -109,6 +111,17 @@ drives_verbs = "not-measured"
 upstream = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
+# The one entry anybody has measured, on 2026-09-04. Ollama 0.33.3 serving
+# `phi3:3.8b-mini-4k-instruct-q4_K_M` — the weights this entry's `upstream`
+# names, at the quantisation it states — on four CPU cores, twenty attempts over
+# two rounds of the fixed set. This machine would have acted on none of them:
+# it produces the envelope and loses the argument list. `docs/quirks.md` has
+# what it wrote and why that is ADR 0007's prediction rather than a surprise.
+#
+# `min_ram_gb` and `on_cpu` are untouched, and deliberately: a grade is a
+# property of the weights and travels between machines, while what a model
+# costs in memory and how fast it feels are properties of the machine it was
+# run on. Neither was measured by `alo-driving`, so neither is changed here.
 [[model]]
 id = "phi-3-mini-instruct"
 name = "Phi-3 Mini Instruct"
@@ -119,7 +132,7 @@ download_bytes = 2_400_000_000
 min_vram_gb = 4.0
 min_ram_gb = 6.0
 on_cpu = "comfortable"
-drives_verbs = "not-measured"
+drives_verbs = "rarely"
 upstream = "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct"
 licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
 

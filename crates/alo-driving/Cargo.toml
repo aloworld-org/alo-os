@@ -36,3 +36,11 @@ alo-files = { path = "../alo-files" }
 # One `Word`, for the verb an adapter might add. Nothing in the crate itself
 # declares a string.
 alo-strings = { path = "../alo-strings" }
+# The two crates the measurement itself needs, and they are here rather than
+# above because of what the crate header promises: `alo-driving` asks nothing,
+# and that stays true of the library whatever a test of it does.
+# `tests/against_a_model_on_this_machine.rs` is the one thing in this repository
+# that puts the fixed set to a model, and it goes through the same door a turn's
+# question does — `alo-asking`'s local one, which leaves nothing.
+alo-asking = { path = "../alo-asking" }
+alo-answering = { path = "../alo-answering" }

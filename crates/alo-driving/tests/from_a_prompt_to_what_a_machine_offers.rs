@@ -199,8 +199,7 @@ fn a_model_that_only_writes_sentences_is_refused_and_the_person_is_told_where_el
 }
 
 /// **A model nobody has measured is refused with the reason that is true of
-/// it**, which is not the same reason as having failed. This is the state the
-/// catalogue we ship is in today.
+/// it**, which is not the same reason as having failed.
 #[test]
 fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
     let catalogue = catalogue_of("not-measured");
@@ -210,13 +209,52 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
     let strings = Strings::of(model_words().unwrap());
     let [why, _, _] = refused.lines(&strings);
     assert!(why.text().contains("has been measured"), "{why}");
+}
 
-    // And the catalogue this repository ships is exactly that everywhere.
+/// **And the catalogue this repository ships has stopped being that**, which is
+/// what one real measurement bought.
+///
+/// It said *nobody has measured any of these* until 2026-09-04, on every
+/// machine, because nothing here had ever been put to a model. `phi-3-mini-
+/// instruct` has now been, and did not clear the bar — so a machine with 16 GB
+/// and no graphics card still has no agent, and the sentence it shows for that
+/// has changed to the one that is true: five models it could have chosen
+/// between, one of them measured, and that one not good enough.
+///
+/// The two counts are asserted rather than matched loosely, because they are
+/// what a person is shown beside the sentence and a refusal that quietly
+/// stopped counting the unmeasured nine would be a different claim.
+#[test]
+fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
-    assert!(matches!(
-        shipped.agent_for_cpu(16.0),
-        Err(NoAgentHere::NoneMeasured { .. })
-    ));
+    let refused = shipped.agent_for_cpu(16.0).unwrap_err();
+    assert_eq!(
+        refused,
+        NoAgentHere::NoneClearsTheBar {
+            to_choose_from: 5,
+            measured: 1,
+        }
+    );
+
+    let strings = Strings::of(model_words().unwrap());
+    let [why, _, _] = refused.lines(&strings);
+    assert!(why.text().contains("often enough"), "{why}");
+
+    // The model that was measured still runs here. What it lost is the agent,
+    // and only because somebody looked.
+    let measured: Vec<&str> = shipped
+        .models
+        .iter()
+        .filter(|m| m.drives_verbs.has_been_measured())
+        .map(|m| m.id.as_str())
+        .collect();
+    assert_eq!(measured, vec!["phi-3-mini-instruct"]);
+    assert!(
+        shipped
+            .runnable_on_cpu(16.0)
+            .iter()
+            .any(|m| m.id == "phi-3-mini-instruct")
+    );
 }
 
 /// The prompt a model is given describes the verbs the machine really has, in

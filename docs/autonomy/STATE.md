@@ -8092,3 +8092,140 @@ grant is made by a person picking a folder in a surface that does not exist),
 map is a decision about the programme in the kernel, not a patch). The next
 iteration should read that list and write `LOOP COMPLETE` unless one of them has
 changed.
+
+---
+
+## Iteration — item 23a: a model was measured, and it did not pass
+
+**The first thing this iteration did was disagree with the last one.** Iteration
+43 wrote *there is no ready item left* and listed six blocked items, and it was
+right about all six. What it did not look at was the **Blocked — hardware**
+section, where `23a` had been sitting since item 23 with a paragraph added to it
+on 2026-09-04 saying *a model exists now, so this is startable*. A heading said
+blocked, the entry's own text said startable, and the heading won for a whole
+iteration. That is the second time this file has recorded exactly that failure —
+the image sat under *blocked — linux* for the life of the queue while its own
+content said *blocked on a compositor*, which is true of an image with a desktop
+on it and false of an image — and both times the cost was the same: the thing
+that could move was the thing nobody read.
+
+So the rule this iteration would offer the next one is not *check the ready
+list*, which is already in `LOOP.md`. It is that **a blocked item's own text is
+where its blocker really lives**, and a section heading is a filing decision
+somebody made on a day that has passed.
+
+**Built.** One new file,
+`crates/alo-driving/tests/against_a_model_on_this_machine.rs`, and two new
+dev-dependencies on `alo-asking` and `alo-answering`. One changed value in
+`crates/alo-models/data/catalogue.toml`. Two tests that had to move because of
+it: `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` became a list
+rather than a blanket, and the shipped-catalogue half of
+`an_unmeasured_model_is_refused_without_being_accused_of_anything` became a test
+of its own, because what that catalogue says has changed.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts,
+`cargo clippy --workspace --all-targets -- -D warnings` clean on both. **1901
+tests and 46 doctests on Linux** (was 1900 and 46), **1670 and 46 on Windows**
+(was 1669 and 46) — the same +1 on each, which is the new integration test;
+`alo-agentd` 173 and `alo-boundaryd` 9 on Linux, both green, both counted rather
+than assumed. Three ignored on Linux and one on Windows, where it was two and
+zero: the measurement itself is the difference, and the paragraph below is why.
+The kernel half's own gate clean, `cargo doc --workspace --no-deps` zero
+warnings on Linux and **49** on Windows in the same three Linux-only crates —
+21, 4 and 24, read per crate rather than as a total, because counting lines that
+begin with *warning* counts the three *generated N warnings* summary lines as
+well and says 52. `ls /sys/fs/bpf` empty after the run.
+
+**The measurement is a test, and choosing that took longer than writing it.**
+The obvious shapes were a binary in `alo-driving` and a crate of its own, and
+each would have made a sentence in this repository false: the crate header says
+it asks nothing — *no client, no socket, no runtime, not even behind a feature* —
+and `alo-agentd` is the only crate here that is a process. An integration test
+keeps both. The library still asks nothing; the dev-dependencies belong to the
+test; and the question goes out through `alo_asking::Asking::to_this_machine`,
+which the crate header had already named as the road whoever runs a measurement
+should take. It is also the road a real turn takes, which is the same argument
+`attempt.rs` makes about scoring through the daemon's own door, one level up.
+
+**It is `#[ignore]`d, and that is the one thing here worth arguing about.**
+`LOOP.md` forbids marking a test ignored to make a suite green. This is not that
+and the difference is asserted rather than claimed: the test refuses to run
+without `ALO_DRIVING_MODEL`, so `--include-ignored` on a machine with nothing to
+measure **fails** rather than passing. That is deliberately the opposite of
+`alo-bounding`'s two ignored tests, which are child halves that pass on their
+own, and the file says so in the place somebody would otherwise assume the house
+rule. A measurement that went green because there was no model would be the
+Windows failure `LOOP.md` describes — the colour of success, worth nothing.
+
+**The quantisation was the first real decision.** `phi3:mini` was already on the
+box and is Q4_0; the catalogue entry says Q4_K_M and 2.4 GB. Measuring the one
+that was there and writing the grade onto the entry would have been a claim
+about weights nobody ran, so `phi3:3.8b-mini-4k-instruct-q4_K_M` was pulled —
+2.4 GB, matching the entry's `download_bytes` to the digit, from the `upstream`
+it names. A grade is only about the thing it was put to.
+
+**The second was found by failing.** The first run timed out at 309 seconds on
+the first exercise, and the cause was not the model: loading the weights took
+**220 seconds** on this box against 2 seconds to answer once they were there. The
+exercise that happens to pay for the load would have been graded
+`TookTooLong` — the model blamed for the disk — so the measurement now warms with
+one throwaway question whose answer is dropped, and a runtime that fails stops
+the run rather than scoring a failure. Both are the same rule in two sizes, and
+the general form is written into the file: **a machine failing is not a model
+failing**, and `Driving` carries the authority of having been checked.
+
+**The result. Twenty attempts over two rounds, and none of them drove the
+verbs.** `drives_verbs = "rarely"` for `phi-3-mini-instruct`.
+
+What it wrote is the part worth carrying forward, because ADR 0007's *sentences
+they manage, structure they lose* understates how close a small model gets. The
+format number, the `asks` wrapper, the door and usually the verb name were right
+nearly every time. `given` was wrong nearly every time — a list of bare strings,
+an object where a list belongs, the argument's own value put in the `named`
+field with `"is": true` after it, or the verb dropped and its argument left
+standing where the verb was. **Every one of the twenty failed at the daemon's
+door**, so not one reached the verb registry, and the six outcomes this crate
+keeps apart did not divide this model at all: a report that only counted them
+would have said *it wrote prose*, which is precisely what it did not do. That is
+also the strongest case yet for the caveat `docs/quirks.md` already carried — an
+agent that composes the envelope around what its model emits would do better
+than this grade says, and this model is one field away from the bar.
+
+So the test now prints what came back for any attempt that did not drive,
+bounded to one line. Without it the run says `NotAMessage` ten times and the
+finding above is invisible.
+
+**What a person is told has changed, and that is the visible half of this
+item.** A 16 GB machine with no graphics card still has no local agent. It used
+to say *nobody has measured any of these*; it now says *five to choose from, one
+measured, and that one is not good enough*. Both refuse, and only one of them was
+ever true — which is the whole of why `NoAgentHere` has three variants and why
+`Driving::NotMeasured` is not a synonym for *probably fine*.
+
+**What was deliberately not written down.** `min_ram_gb` and `on_cpu` for that
+entry, which this box has opinions about and no standing to state: a grade is a
+property of the weights and travels between machines, while what a model costs in
+memory and how fast it feels are properties of the machine it ran on, and this
+one has six gigabytes and four cores. The queue's *blocked — hardware* entry now
+holds that half, and holds it honestly for the first time — it is what was left
+after the part that was never blocked was taken out of it.
+
+**`ROADMAP.md` moved.** *The catalogue says whether a model can drive the verbs*
+→ **The code** gained the harness and the one grade it produced. The code half
+was already ticked and stays ticked; **On the machine** is untouched and its text
+was corrected, because it said *it has never been run against a real model, on
+any machine*, and that is no longer true. What that half owes now is eleven
+entries nobody has the weights for, the cost figures a certified machine decides,
+and the setup screen.
+
+**What the next iteration takes.** Two new items, neither ready. **23b** — the
+other eleven entries — is blocked on the weights and on nothing else: Mixtral
+wants forty-eight gigabytes and this box has six, and the two nine-billion
+entries are `slow` on a CPU and would take an afternoon each. **29** is new and
+is `alo_models::Ollama::load` sending its call with a ten-second timeout when a
+load takes minutes, so it answers *nothing was listening* about a runtime that is
+working; not ready, because the fix is not the constant — `RuntimeError` has no
+variant meaning *it is loading*, and what a person sees while a model loads for
+four minutes is a decision about the shell. Nothing calls `load` today, which is
+why nobody had seen it. **Still blocked, unchanged:** 16b, 19b, 21i, 21k, 21l,
+26f.

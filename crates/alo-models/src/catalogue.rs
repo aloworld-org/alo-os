@@ -540,15 +540,27 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     }
 
     /// **Nothing in the catalogue we ship claims a measurement nobody ran.**
-    /// This loop has no model to measure against, so every entry states
-    /// `not-measured` — and the moment one of them claims otherwise, whoever
-    /// changed it has to have run `alo-driving` and to change this test.
+    ///
+    /// It was every entry until 2026-09-04, when `phi-3-mini-instruct` was put
+    /// through `alo-driving` against a real runtime and graded `rarely`. So the
+    /// test is a list rather than a blanket, and the list is the thing to
+    /// maintain: adding a name to it means having run the measurement, and
+    /// `crates/alo-driving/tests/against_a_model_on_this_machine.rs` is how.
+    ///
+    /// Written this way round on purpose. A test that only checked *some* entry
+    /// is measured would pass while nine unmeasured ones quietly grew grades
+    /// somebody guessed from a parameter count, which is the one thing
+    /// `drives_verbs` exists to stop.
     #[test]
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
+        /// Every entry anybody has run `alo-driving` against, and the grade it
+        /// earned.
+        const MEASURED: [(&str, Driving); 1] = [("phi-3-mini-instruct", Driving::Rarely)];
         for m in Catalogue::built_in().unwrap().models {
+            let ran = MEASURED.iter().find(|(id, _)| *id == m.id);
             assert_eq!(
                 m.drives_verbs,
-                Driving::NotMeasured,
+                ran.map_or(Driving::NotMeasured, |(_, grade)| *grade),
                 "{} claims a grade; was it measured?",
                 m.id
             );

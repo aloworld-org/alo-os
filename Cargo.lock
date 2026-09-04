@@ -142,7 +142,9 @@ dependencies = [
 name = "alo-driving"
 version = "0.0.1"
 dependencies = [
+ "alo-answering",
  "alo-applications",
+ "alo-asking",
  "alo-capability",
  "alo-files",
  "alo-models",

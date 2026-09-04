@@ -746,11 +746,71 @@ wrong language. Where a model in the catalogue misbehaves in a way that affects
 the agents, record it here with the exact model and quantisation — "it was fine
 for me" is usually a different quantisation.
 
+### Phi-3 Mini gets the envelope right and loses the argument list
+**Version:** `phi3:3.8b-mini-4k-instruct-q4_K_M` — Microsoft's Phi-3-mini-4k-
+instruct at the quantisation `data/catalogue.toml` states — served by Ollama
+0.33.3 on four CPU cores, 2026-09-04. Two rounds of `alo_driving::THE_SET`,
+twenty attempts.
+**Behaviour:** **none of the twenty produced a call this machine would have
+acted on**, and every one of them failed at the same place: the daemon's door,
+before the verb registry was ever reached. Not one attempt got as far as being a
+real call with a bad argument. What it wrote is the useful part, because it is
+not what *sentences they manage, structure they lose* sounds like it would be —
+the outer structure is nearly always right and the innermost part is nearly
+always wrong:
+
+```
+{"format":1,"asks":{"read":{"verb":"read_file","given":["/home/anna/Invoices/march.pdf"]}}}
+{"format":1,"asks":{"read":{"verb":"list_folder","given":[{"named":"/home/anna/Invoices","is":true}]}}}
+{"format":1,"asks":{"propose":{"verb":"rename_file","given":{"file":"…/scan001.pdf"}}}}
+{"format":1,"asks":{"propose":{"application":"org.alo.Writer"}}}
+```
+
+The format number, the `asks` wrapper, the door and usually the verb name are
+all correct. `given` is then a list of bare strings, or an object instead of a
+list, or the argument's *value* put in the `named` field with `"is": true` after
+it, or the verb dropped and its argument left standing where the verb was. Five
+of the twenty also arrived inside a ```` ```json ```` fence or with a paragraph
+of explanation after them, in spite of a prompt that says *no explanation, no
+code fence, no second line* — so they were more than one message as well as the
+wrong shape.
+**Our response:** the grade is `rarely` and that is what the entry says. Nothing
+in the prompt or the scoring was changed to help it: the shape it cannot produce
+is the shape `alo-protocol` really reads, and a measurement loosened until a
+model passes measures the loosening. The finding to carry forward is that the
+six outcomes did not divide this model at all — every failure was
+`NotAMessage`, so a report that only counted them would have said *it wrote
+prose*, which is exactly what it did not do. A model this close to the shape is
+also the strongest case yet for the caveat below, that an agent composing the
+envelope around what its model emits may do better than the grade says.
+**Date:** 2026-09-04, iteration 44.
+
+### `Ollama::load` cannot load a model on a machine with no graphics card
+**Version:** `alo-models`' `ollama.rs` as of 2026-09-04, against Ollama 0.33.3.
+**Behaviour:** loading is an empty generate with a non-zero keep-alive, and it
+is sent with `QUICK_TIMEOUT` — ten seconds, on the reasoning that listing what
+is installed is a local read and a runtime that has not answered in that long is
+not well. Loading is not that kind of call. Measured on the development box,
+`phi3:3.8b-mini-4k-instruct-q4_K_M` took **220 seconds** to come off the disk
+against **2 seconds** to answer once it was there. So `load` returns
+`RuntimeError::Unreachable` — *nothing was listening* — for a runtime that is
+listening, is working, and is doing exactly what it was asked.
+**Our response:** **not worked around, and not yet fixed.** It is a queue item
+(29) rather than a line changed in passing, because the constant is not the
+whole of it: what a person is shown while a model loads for four minutes is a
+question about the shell as much as about the adapter, and `RuntimeError` has no
+variant meaning *it is loading*. Nothing in alo OS calls `load` today, which is
+why this has never been seen. `alo-driving`'s measurement therefore warms a
+model with a throwaway *question* instead, which goes through
+`WHILE_A_MODEL_THINKS` — five minutes — and works.
+**Date:** 2026-09-04, iteration 44.
+
 ### What `drives_verbs` measures, and the two things it does not say
-**Version:** `alo-driving` as of 2026-09-03. **Not run against any real model
-on any machine** — the fixed set, the scoring and the grade are built and unit
-tested, and every entry in `data/catalogue.toml` says `not-measured` because of
-it. Running it is owed alongside the rest of the hardware verification.
+**Version:** `alo-driving` as of 2026-09-04, run for the first time against a
+real model on 2026-09-04 — `phi-3-mini-instruct`, graded `rarely`, in the entry
+above. Every other entry in `data/catalogue.toml` still says `not-measured`,
+because a measurement needs those weights on a disk and nobody has put them
+there.
 **Behaviour:** the measurement puts ten requests to a model and scores each
 answer through `alo_protocol::FromAnAgent` and `alo_capability::Verbs::call` —
 the daemon's own door and the same validation a real turn does. Two consequences
@@ -780,7 +840,16 @@ raises the measurement's coverage changes the fixed set, and a changed set means
 every grade in the catalogue is stale: `alo_driving::THE_SET` is where that
 version lives, and it is a `&'static` array in the source so it cannot drift
 quietly.
-**Date:** 2026-09-03, iteration 42.
+
+**A third thing it does not say, learned by running it.** A grade is a property
+of the weights, not of the machine — the first measurement was made on four CPU
+cores and would have earned the same grade on a workstation, because what was
+being asked is whether the model can produce a shape. What that machine *did*
+decide is how long it took, which is why the entry it produced left `min_ram_gb`
+and `on_cpu` alone: those are what a machine loses to a model, and one slow WSL
+box is not the certified one.
+**Date:** 2026-09-03, iteration 42; run for the first time and extended
+2026-09-04, iteration 44.
 
 ## Providers and their APIs
 

@@ -12,6 +12,31 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **One of the models alo OS offers has now actually been tried, and it did not
+  pass.** The catalogue has always carried a line about whether a model can
+  *drive* alo OS — not merely whether it will run on your machine, but whether
+  it can reliably produce the kind of precise instruction an agent turn is made
+  of. Until this change that line said "not measured" against every model,
+  because nobody had ever run the test against a real one; a catalogue full of
+  honest shrugs is better than one full of guesses, and it is still not much use
+  to anybody.
+
+  Phi-3 Mini has now been put through it: twenty attempts at ten ordinary
+  requests — list this folder, rename this file, put this window on the left half
+  of the screen. **Your machine would have acted on none of them.** It came
+  strikingly close, getting the outer shape of nearly every answer right and the
+  innermost part — which file, which folder, which name — wrong almost every
+  time. So its entry now says `rarely`, which is a thing somebody can read before
+  they spend an hour downloading it.
+
+  What you see if you have that model is a small change and an honest one. A
+  machine with no graphics card still offers you no local agent, and the reason
+  it gives has changed: it used to say nobody had measured any of these, and it
+  now says one was measured and was not good enough. Those are different
+  sentences, and only one of them was ever true. The model is still offered for
+  what it is — it runs, it answers, and losing the agent is not the same as
+  losing the model.
+
 - **There is now an alo OS you can build into a machine.** Until this change
   this repository was twenty-four pieces of an operating system and nothing that
   was one: no image, nothing that starts anything, nothing that had ever been

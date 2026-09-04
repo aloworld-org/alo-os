@@ -170,13 +170,26 @@ compositor is not required for, which is why it runs unbroken.
         middle one is weights they already have — the answer that needs no
         other machine and no account, added as a line of its own because
         ADR 0008's question is *where* and this one is *which model*, and
-        ordered outward from the machine rather than by which is better
+        ordered outward from the machine rather than by which is better.
+        Since item 23a the method can also be **run**:
+        `alo-driving`'s `against_a_model_on_this_machine` puts the fixed set
+        to a real runtime through `alo-asking`'s local door, warms the model
+        first so the exercise that loads the weights is not graded for the
+        disk, and stops rather than scoring when a runtime fails — a model
+        blamed for a machine is the one way a grade is worse than no grade.
+        **One entry has a measured grade because of it**: `phi-3-mini-
+        instruct`, twenty attempts, none of which a machine would have acted
+        on, `rarely`
   - [ ] **On the machine.**
-        **it has never been run against a real model**, on any machine, so
-        every entry in the catalogue says `not-measured` and no machine
-        offers a local model the agent yet — which is the honest state and
-        not a failing one, and a grade is a data change rather than a
-        release. Plus the setup screen that shows the refusal and its three
+        **Eleven of the twelve entries have still never been run against**,
+        because a measurement needs those weights on a disk and the biggest
+        wants forty-eight gigabytes; every one of them says `not-measured`,
+        and a grade is a data change rather than a release. The one that has
+        been measured was measured on a development box, which is the right
+        machine for the question it answers and the wrong one for the rest
+        of the entry — `min_ram_gb` and `on_cpu` are what a model costs on
+        the machine it runs on, and the certified one is where those are
+        found. Plus the setup screen that shows the refusal and its three
         alternatives without choosing between them
 
 - [ ] ★ **Or use an API instead** (ADR 0008) — an answer may come from this
