@@ -34,6 +34,12 @@
 //! counter or a log line, and there is no `bpf_printk`. That is ADR 0015's
 //! *the LSM decides and forgets*, and the absence is the whole of it: a program
 //! with nowhere to write cannot become a record of somebody's day.
+//!
+//! The two maps below are read here and written only by the daemon, and there
+//! are two. `alo-bounding`'s `tests/the_boundary_decides_and_forgets.rs` counts
+//! them on a running kernel, so a third — however it is named and whatever kind
+//! it is — fails a test rather than passing a review, and so does a
+//! `bpf_printk` added to the hook.
 
 // The one module in this crate the rule is lifted for. Everything the four
 // paragraphs above describe is below; nothing else in the package may.

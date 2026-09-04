@@ -867,9 +867,25 @@ sorted the same way v0.01 now is.
         is a service that stops. Measured through the daemon on
         `6.18.33.2-microsoft-standard-WSL2`: a real turn reads a file and writes
         an archive inside a boundary a real kernel is holding.
+        **Item 27 is ticked, and it is the discipline rather than the
+        mechanism.** ADR 0015's one dangerous property is that a programme on the
+        security hooks is called for every open on the machine by construction,
+        so the same thing that stops an agent reaching a private key could be a
+        record of somebody's whole day, and only the discipline differs. *The LSM
+        decides and forgets* is now counted rather than asserted: ordinary
+        programs — this process, its other threads and a second process, none of
+        them a turn — open five hundred files under the loaded programme, and
+        afterwards it still has two maps and they are the two the daemon fills,
+        the map of turns holds nothing, the spare slots of the other are still
+        zero, and this kernel's trace buffer has not been written a line. The
+        same is asserted at the moment the programme does its whole job and
+        refuses an open inside a turn, which is the instant it would have
+        something worth recording. Every measurement was checked against a
+        programme that broke it: a third map is caught by name, and a
+        `bpf_printk` on the hook by the count.
         **What is left of this half is the second sentence of this line** — *the
         record becomes what the kernel watched rather than what the daemon
-        reported* — which is item 27 and beyond, and until then the record is
+        reported* — which nothing has yet done, and until then the record is
         still the daemon's account of itself with a kernel underneath it. **And
         one question 26d asked rather than answered is item 26e**: `alo-agentd`
         is never root and loading the programme needs `CAP_BPF`, so who imposes

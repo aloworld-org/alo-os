@@ -7649,3 +7649,79 @@ alo OS has one privileged component or none.
 - **Nothing here was verified on a certified machine.** It is
   `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
   certified one is still the exit gate.
+
+## Iteration — item 27: the LSM decides and forgets, and a test proves it
+
+**Built.** `crates/alo-bounding/tests/the_boundary_decides_and_forgets.rs`, a new
+test file, and three read-backs on `Boundary` in `bounding.rs` for it to count
+through: `every_map_the_kernel_holds`, `every_turn_the_kernel_is_holding` and
+`every_field_the_kernel_was_given`. Four tests and one ignored second program.
+The crate headers of `alo-bounding`, `alo-bounding-kernel` and its `kernel.rs`
+now name the test file rather than a queue item.
+
+**The gate.** `cargo fmt --all --check` clean on both hosts. `cargo clippy
+--workspace --all-targets -- -D warnings` clean on both, zero warnings and zero
+errors. **1810 tests and 46 doctests on Linux** (was 1806 and 46), **1595 and 46
+on Windows** (unchanged — the file is `cfg(target_os = "linux")`). The kernel
+half's own gate — `cargo fmt --all --check` and `cargo clippy --release --target
+bpfel-unknown-none -Z build-std=core` — clean. `cargo doc --workspace --no-deps`
+exits 0 with zero warnings on Linux; on Windows the count is still thirty-eight,
+twenty-four for `alo-agentd` and fourteen for `alo-bounding`, nothing against a
+third crate.
+
+**The item said *the record is empty* and the work was deciding which record.**
+A BPF programme cannot reach `alo-record`, cannot open a file and issues no
+syscalls. What it *can* do is write into a map or say something with
+`bpf_printk`, so *empty* became four counts, all read out of the running kernel
+rather than remembered by the test: the names of every map the programme has,
+every key in the map of turns, every slot of the map of fields — including the
+spare one, which is exactly where a counter would sit in an array the programme
+can already reach — and how many lines this kernel's trace buffer has ever been
+written.
+
+**The second test was not in the item and is the one that matters more.** For a
+program that is not a turn the LSM does one hash lookup and returns, so *nothing
+was written down* is nearly free. The moment worth measuring is the one where the
+programme does its whole job — a turn bound, a walk from a directory entry to the
+top of a filesystem, a comparison against a grant, an `EACCES`. That is the
+instant it would have something worth recording. The refusal is asserted first,
+because a kernel that allowed the open would make everything after it a
+measurement of nothing.
+
+**Each of the four measurements was checked against a programme that broke it**,
+by temporary edits to `alo-bounding-kernel` that were reverted before anything
+was committed. A third map is caught by name — the failure reads
+`["BOUNDS", "FIELDS", "SEEN"]` — and a `bpf_printk` on `file_open` is caught by
+the trace count, with the sentence the item asked for: *a syscall outside an
+agent turn left a trace, and nothing outside a turn may*. A green test that has
+never been shown to fail is a test about nothing, and for this item that would
+have been the whole of it.
+
+**`ROADMAP.md` moved**, per step 6. The *grant enforced by the kernel* line's
+code half now says what 27 answered. **Nothing was ticked.** What is left of that
+half is the line's own second sentence — *the record becomes what the kernel
+watched rather than what the daemon reported* — which nothing has done yet.
+
+**What the next iteration should know.**
+
+- **The test count in this journal has been reported two ways, and this entry
+  uses the older one.** `cargo test --workspace` summed over every `ok. N passed`
+  gives **1856** on Linux and **1641** on Windows, because that sweep includes
+  the doctest binaries. The numbers the last several entries report — 1806/1595
+  and 46 — are that total minus the 46 doctests. Both are right; only one is
+  comparable to what is written above it. Subtract the doctests.
+- **The next ready item in queue order is 28**, the image, and it is still the
+  one thing that would move any of the eighteen machine halves. It has the
+  dependency 26d gave it: the unit file it ships cannot be written until 26e is
+  decided, and 26e wants an ADR that is not the loop's to write.
+- **16b is not ready by its own words**, 19b is blocked on Wayland, 21i on the
+  shell, 21k on an ADR nobody has written, 21l on a place a question can leave
+  for, and 26e on a decision that is not the loop's.
+- **A fourth question is now asked of the machine**, beside the three in
+  `docs/hardware.md`: a kernel that is *recording*. `tracing_on` at `0` would
+  drop every line this test exists to catch, so the test refuses on such a
+  machine rather than answering zero. It is a property of the test host rather
+  than of a certified machine, which is why it is not in `docs/hardware.md`.
+- **Nothing here was verified on a certified machine.** It is
+  `6.18.33.2-microsoft-standard-WSL2`, a development machine, and ADR 0015 on the
+  certified one is still the exit gate.

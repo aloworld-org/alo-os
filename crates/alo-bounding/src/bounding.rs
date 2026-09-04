@@ -22,6 +22,19 @@
 //! a window in it, which is the kind of thing that is discovered in a security
 //! review years later.
 //!
+//! # Three of the methods here read and nothing else
+//!
+//! [`Boundary::where_bound`], [`Boundary::every_turn_the_kernel_is_holding`],
+//! [`Boundary::every_field_the_kernel_was_given`] and
+//! [`Boundary::every_map_the_kernel_holds`] ask the kernel what it has rather
+//! than repeating what this file asked it for. The last three are how ADR 0015's
+//! *the LSM decides and forgets* stops being a sentence: the program has nowhere
+//! to write, and *nowhere* is a thing that can be counted from outside it —
+//! two maps, both filled by the daemon, neither gaining an entry while the
+//! machine goes about its day. `tests/the_boundary_decides_and_forgets.rs` is
+//! what holds it there, and `CLAUDE.md` is why that is a test rather than a
+//! paragraph.
+//!
 //! # Dropping this takes the boundary away
 //!
 //! [`Boundary`] owns the loaded program and the link that attached it, so
@@ -176,6 +189,70 @@ impl Boundary {
             Err(aya::maps::MapError::KeyNotFound) => Ok(None),
             Err(why) => Err(NotBounded::WillNotHold(why)),
         }
+    }
+
+    /// Every turn the kernel is holding a bound for.
+    ///
+    /// [`Boundary::where_bound`] asks about one turn and answers what it may
+    /// reach; this asks how many there are at all. The difference is what *the
+    /// LSM decides and forgets* needs: an entry nobody put there is either
+    /// something the program wrote down or a turn nobody ended, and both are
+    /// worth stopping over.
+    ///
+    /// # Errors
+    /// [`NotBounded::WillNotHold`] if the map would not be read, and
+    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
+    /// from different sources.
+    pub fn every_turn_the_kernel_is_holding(&self) -> Result<Vec<u64>, NotBounded> {
+        let map = self
+            .loaded
+            .map(THE_BOUNDS)
+            .ok_or(NotBounded::NothingCalled { what: THE_BOUNDS })?;
+        let bounds: HashMap<_, u64, [u64; WORDS]> =
+            HashMap::try_from(map).map_err(NotBounded::WillNotHold)?;
+        bounds
+            .keys()
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(NotBounded::WillNotHold)
+    }
+
+    /// The fields the daemon gave this kernel, as the kernel now has them.
+    ///
+    /// Every slot the map has rather than the seven that were filled, because
+    /// the spare ones are exactly where a counter would sit: a program that
+    /// began keeping a tally of what it had seen would need somewhere to keep
+    /// it, and an array it can already reach is the nearest somewhere there is.
+    ///
+    /// # Errors
+    /// [`NotBounded::WillNotHold`] if the map would not be read, and
+    /// [`NotBounded::NothingCalled`] if the two halves of this crate were built
+    /// from different sources.
+    pub fn every_field_the_kernel_was_given(&self) -> Result<Vec<u32>, NotBounded> {
+        let map = self
+            .loaded
+            .map(THE_FIELDS)
+            .ok_or(NotBounded::NothingCalled { what: THE_FIELDS })?;
+        let fields: Array<_, u32> = Array::try_from(map).map_err(NotBounded::WillNotHold)?;
+        fields
+            .iter()
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(NotBounded::WillNotHold)
+    }
+
+    /// Every map this program has, by name.
+    ///
+    /// A BPF program on the security hooks sees every open on the machine, and
+    /// the only thing standing between that and a record of somebody's day is
+    /// that it has nowhere to put what it saw. A map is that somewhere — a ring
+    /// buffer, a counter, a table of who opened what — so *there are two, and
+    /// they are the two the daemon fills* is the promise, and this is the form
+    /// it can be held to from outside.
+    ///
+    /// Read out of the loaded program rather than off this file's own
+    /// constants, so what it answers is what the kernel really has.
+    #[must_use]
+    pub fn every_map_the_kernel_holds(&self) -> Vec<&str> {
+        self.loaded.maps().map(|(named, _)| named).collect()
     }
 
     /// The map of turns, open to be written to.

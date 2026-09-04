@@ -3248,40 +3248,61 @@ out.
   Item 28 cannot finish without the answer, because the image is where the unit
   file lives.
 
-- [ ] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
+- [x] **27. The LSM decides and forgets, and a test proves it.** ADR 0015's one
   dangerous property: a BPF LSM sees every syscall by construction, so the same
   mechanism that enforces a grant could record a person's whole day.
+  `crates/alo-bounding/tests/the_boundary_decides_and_forgets.rs`, a **new test
+  file**, plus three read-backs on `Boundary` in `bounding.rs`:
+  `every_map_the_kernel_holds`, `every_turn_the_kernel_is_holding` and
+  `every_field_the_kernel_was_given`. 4 new tests and 1 ignored second program;
+  **1810 tests and 46 doctests on Linux** (was 1806 and 46), 1595 and 46 on
+  Windows, clippy clean on both hosts and for the BPF target.
 
-  The test runs ordinary programs — not agent turns — under the loaded LSM and
-  asserts the record is **empty**. No log line, no counter, no timestamp.
-  Written *with* item 26 rather than after it, because a rule with no test is a
-  rule that erodes in a year, one reasonable-sounding feature at a time.
+  **The item said *the record is empty* and the work was deciding which record.**
+  A BPF program cannot reach `alo-record`, cannot open a file and has no
+  syscalls; what it *can* do is write into a map or say something with
+  `bpf_printk`. So *empty* is three counts taken before and after, and all three
+  are read out of the running kernel rather than remembered by the test: the
+  names of every map the program has, every key in the map of turns, every slot
+  of the map of fields including the spare one a counter would hide in, and how
+  many lines this kernel's trace buffer has ever been written.
 
-  When it fails it must say what it caught: not *assertion failed*, but **a
-  syscall outside an agent turn left a trace, and nothing outside a turn may**.
+  **Ordinary programs are three kinds of program, because the failure worth
+  catching treats one of them specially**: this process, three more threads of
+  it, and a second process that is this binary run again. None is in a turn's
+  cgroup, which is what every other program on a real machine has in common with
+  them. About five hundred opens, and afterwards all four numbers are what they
+  were.
 
-  **Waits on item 26, by its own words — and no longer on the machine.** *Written
-  with item 26 rather than after it* is not a scheduling preference: this test
-  runs ordinary programs **under the loaded LSM**, so there is nothing to run it
-  under until one loads. Nothing here can be written early either — a test that
-  asserted an empty record with no LSM loaded would pass on any machine in the
-  world and prove nothing, which is the exact failure mode the item exists to
-  prevent a year from now. The kernel obstacle is gone (item 26, 2026-09-04);
-  what remains is the ordinary dependency of a test on the thing it tests.
+  **The second test is the one that matters more, and it was not in the item.**
+  For a program that is not a turn the LSM does one hash lookup and returns, so
+  *nothing was written down* is nearly free. The moment worth measuring is the
+  one where the program does its whole job — a turn bound, a walk from a
+  directory entry to the top of a filesystem, a comparison against a grant and an
+  `EACCES`. That is the instant it would have something worth recording, and the
+  refusal is asserted first, because a kernel that allowed the open would make
+  everything after it a measurement of nothing.
 
-  **Still waiting, for a smaller reason than before.** Item 26's programme is
-  written and its *absence* of any writing is real — `crates/alo-bounding-kernel`
-  has no ring buffer, no counter, no `bpf_printk` and nothing to write into, and
-  its own documentation says so. What is missing is the same thing item 26 is
-  missing: nothing has been loaded and attached on a kernel yet, so there is no
-  LSM to run ordinary programs under. When item 26's two tests run, this one can
-  be written in the same sitting.
+  Three decisions the next items inherit. **A measurement that cannot be made is
+  a refusal, not a zero**: the trace count is read only on a kernel whose
+  `tracing_on` is `1`, because a buffer switched off would drop every line this
+  file exists to catch and the test would pass in the colour of a machine that
+  wrote nothing. **The checks have a twin that makes each of them move** — a line
+  written into the trace buffer, an entry put into the map of turns and taken out
+  — because a test that reads a counter passes on the day the counter stops
+  moving. **The list of maps has no twin and cannot have one**: faking a third
+  map means shipping one.
 
-  **Unblocked 2026-09-04**, and by exactly that sentence: item 26's tests run,
-  the programme loads and attaches on `6.18.33.2`, and there is now an LSM to run
-  ordinary programs under. `a_process_that_is_not_a_turn_reaches_what_it_always
-  _could` is the allow half already; this item is the half that asserts nothing
-  was written down about it. Linux, on the WSL host, like item 26.
+  **Each of the four was checked against a program that broke it**, by temporary
+  edits to `alo-bounding-kernel` that were reverted: a third map is caught by
+  name (`["BOUNDS", "FIELDS", "SEEN"]`), and a `bpf_printk` on `file_open` is
+  caught by the count, with the sentence the item asked for — *a syscall outside
+  an agent turn left a trace, and nothing outside a turn may*.
+
+  Proved on a development machine, not a certified one:
+  `6.18.33.2-microsoft-standard-WSL2`, needing root and the same three kernel
+  answers `docs/hardware.md` asks for, plus a fourth that is this file's own —
+  a kernel that is recording.
 
 - [ ] **28. The smallest image that boots and runs the daemon.** Promoted out of
   *Blocked — linux*, where it sat as one line and was never taken, because the

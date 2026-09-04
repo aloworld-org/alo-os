@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The part of alo OS that watches your agent is now measured for whether it
+  watches you.** The boundary an agent's work runs inside is a small programme
+  loaded into your machine's kernel, and there is an uncomfortable fact about
+  where it sits: the kernel calls it for *every* file opened on the machine, by
+  every program, all day. Yours included. The only thing standing between that
+  and a record of your whole day is that the programme has nowhere to write
+  anything down.
+
+  That was a promise in a comment until now. It is a test on a running kernel
+  from this change: ordinary programs — nothing to do with any agent — spend a
+  day opening files while the boundary is loaded, and afterwards every place
+  something could have been written is checked and found exactly as it was. The
+  same check is made at the moment the boundary does its actual job and stops an
+  agent reaching a file, because that is the moment there would be something
+  worth recording.
+
+  It was also checked the other way round, which is the half that matters: a
+  version of the programme that kept a note, and a version that wrote a line to
+  the kernel's log, were both built on purpose and the test caught both. A check
+  that has never caught anything is not a check.
+
 - **What an agent does to your files now happens inside the kernel's boundary,
   and not because our own code was polite about it.** Everything before this was
   the mechanism on a bench: a boundary that worked, a way to say which places one

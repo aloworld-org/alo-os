@@ -102,7 +102,15 @@
 //! decides and forgets**: it has no ring buffer, no counter and no log line,
 //! and an open outside a turn is one hash lookup that misses and changes
 //! nothing. `crates/alo-bounding-kernel/src/kernel.rs` is where that absence
-//! is, and queue item 27 is the test that holds it there.
+//! is, and `tests/the_boundary_decides_and_forgets.rs` is what holds it there —
+//! ordinary programs spend a day opening files under the loaded program, and
+//! afterwards the program still has two maps, the map of turns is empty, the
+//! spare slots of the other are still zero, and this kernel's trace buffer has
+//! not been written a line. [`Boundary::every_map_the_kernel_holds`],
+//! [`Boundary::every_turn_the_kernel_is_holding`] and
+//! [`Boundary::every_field_the_kernel_was_given`] are what that is counted
+//! through, and each of them is read out of the kernel rather than remembered
+//! here.
 
 #![cfg(target_os = "linux")]
 

@@ -47,8 +47,14 @@
 //! everything by construction, and the discipline against it is that **the LSM
 //! decides and forgets**. There is no map of observations here, no counter, no
 //! ring buffer and no `bpf_printk`: an open outside a turn is looked up, missed,
-//! and allowed, and nothing anywhere is different afterwards. Queue item 27 is
-//! the test that holds this to it.
+//! and allowed, and nothing anywhere is different afterwards.
+//!
+//! `alo-bounding`'s `tests/the_boundary_decides_and_forgets.rs` is what holds
+//! this to it, on a running kernel rather than in a paragraph: it counts the
+//! maps this program has, the entries in them, and the lines this kernel's trace
+//! buffer has been written, before and after ordinary programs spend a day
+//! opening files under the loaded program. A third map here is caught by name,
+//! and a `bpf_printk` on `file_open` by the count.
 
 #![no_std]
 #![no_main]
