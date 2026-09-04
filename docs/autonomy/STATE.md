@@ -6873,3 +6873,54 @@ than narrowing what is run.
 - **The machine is a development one.** Everything proved here is about the
   mechanism. ADR 0015 on the certified machine is still the exit gate, and
   nothing in this repository may tick it.
+
+---
+
+## The history was rewritten, and an iteration was cut off to do it
+
+Not an iteration. Written by hand.
+
+**Every commit in this repository is now authored by the owner alone.** Two
+things changed and neither touched a file: the fifteen commits authored by
+"alo build loop" or "alo loop" got the owner's name, and the
+`Co-Authored-By: Claude` trailer was removed from all 119. The checks that were
+run before anything was pushed: the commit count is the same, the final tree
+hash is **byte-identical**, and `git diff` between the old and new history is
+empty. Commit messages are otherwise untouched.
+
+`CLAUDE.md` is updated in the same change, and that is the part that matters
+more than the rewrite. The rule at the bottom of *Standing rules* previously
+told agents to add the trailer, so the next commit would have put one back and
+the rewrite would have undone itself within the hour. **A history rewrite
+without the rule change is a chore that repeats.**
+
+**The pre-rewrite history is on the remote** as branch `before-author-rewrite`
+at `7211bff`, and stays there until somebody decides it is not wanted. Anyone
+holding an older clone cannot fast-forward and needs
+`git fetch && git reset --hard origin/main`.
+
+**An iteration was killed to make this safe**, because a loop pushing to `main`
+during a force-push is how history gets lost. It was partway into **item 21h**
+and had written a new crate, which is **still on disk, untracked**:
+
+```
+crates/alo-choosing/  — Cargo.toml, lib.rs, bound.rs, chosen.rs,
+                        place.rs, refusing.rs, settings.rs, testing.rs
+```
+
+It is not a workspace member — `Cargo.toml` was reset with everything else — so
+nothing builds it and nothing tests it.
+
+**Read it before writing item 21h, and trust none of it.** This is the same
+situation as the interruption recorded earlier in this journal, and the same
+advice applies for the same reasons: it is a design somebody already chose, and
+starting over would both discard real work and risk producing a second design
+for one item. But no test has run against any of it, no clippy pass, no gate —
+and the earlier entry's lesson about measuring on the wrong host applies here
+too. Treat every claim in those files as unproven until something green says
+otherwise, and put whatever is kept through the full gate as if it were written
+fresh.
+
+Its shape looks right against ADR 0016 — a `bound`, a `chosen`, a `refusing`,
+and a `settings` — but *looks right* is not a gate.
+

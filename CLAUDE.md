@@ -150,10 +150,17 @@ cannot demonstrate.
   not through `GIT_AUTHOR_*`. This rule previously said the opposite,
   and the loop obeyed it: a run of commits landed authored by "alo
   build loop", which is not a person and is not who owns this work.
-  An agent is named where a contributor belongs, in the
-  `Co-Authored-By` trailer, and what it did is in the commit body.
-  Ambiguity between agents is solved by the trailer and by one agent
-  per tree, never by inventing an author.
+- **No agent adds a `Co-Authored-By` trailer either.** This rule also
+  said the opposite until 2026-09-04 — an agent was to be named where
+  a contributor belongs — and every commit in this repository carried
+  one. The owner asked for the work to stand as theirs, and the
+  history was rewritten to match: 119 commits, not one byte of any
+  tree changed. **What an agent did belongs in the commit body**,
+  which is where it was always the more use to a reader — a trailer
+  records that an agent was present, a body records what it decided
+  and why, and only one of those is worth reading a year later.
+  Ambiguity between agents is solved by one agent per tree, never by
+  inventing an author and no longer by a trailer.
 
 ## Map
 
