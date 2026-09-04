@@ -3013,10 +3013,42 @@ rather than only of what is convenient.
   test `the_catalogue_we_ship_claims_no_measurement_it_did_not_make` updated by
   whoever ran it.
 
+  **A model exists now (2026-09-04), so this is startable.** `phi3:mini` is
+  pulled and answering, and one hand-run measurement already suggests **the
+  catalogue is wrong about it in both directions**, which is the argument for
+  doing this properly rather than trusting the entries:
+
+  | `Phi-3 Mini Instruct` | catalogue says | measured on the WSL box |
+  |---|---|---|
+  | `min_ram_gb` | `6.0` | **~3.9 GB resident**, ran with 4.9 GB available |
+  | `on_cpu` | `comfortable` | 6–7 tokens/sec warm, **53 s cold start** |
+
+  **Do not copy those numbers into the catalogue.** They came from `curl` on a
+  4-core WSL VM, not from `alo-driving`'s ten fixed requests, and this item's
+  whole point is that a grade is measured rather than guessed — a hand-timed
+  number written into the table would be the same sin in a different hand. They
+  are here because *the direction of the error* is the useful part: the RAM
+  figure looks too high, the speed claim looks too generous, and the certified
+  machine (16 GB, more cores) will differ from this box in both.
+
 - **The model stack against a real Ollama.** Ticked in `ROADMAP.md` as built and
   tested, with this verification owed. A CPU-only run would close most of it and
   needs no GPU — but it needs Ollama installed, which is a person's decision to
   make rather than a loop's.
+
+  **The decision was made on 2026-09-04, and this is no longer blocked on
+  hardware — it never was.** Like the image, it sat under *Blocked — hardware*
+  while its own text said it was waiting on somebody to install something.
+  **Ollama 0.33.3 is now running in the WSL box** on `127.0.0.1:11434`, with
+  `phi3:mini` — the catalogue's *Phi-3 Mini Instruct* — pulled and answering.
+  `alo-models`' 96 tests can be pointed at a real socket, which is the whole of
+  what this entry asked for.
+
+  Starting it is manual, because the installer could not create its service
+  user under WSL: `ollama serve &` as root, then
+  `curl -fsS http://127.0.0.1:11434/api/tags` to confirm. ADR 0006 says the
+  version is pinned in the image; there is no image yet, so **0.33.3 is the
+  first real candidate for what that pin should name** rather than a pin.
 - **"The GPU works on first boot"**, which needs a machine that has one.
 - **The v0.01 exit gate** — one person, one machine, one cold boot.
 
