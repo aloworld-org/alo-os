@@ -9049,3 +9049,71 @@ of a suite that was clean three times already.
 - **Nothing on the development box changed.** The WSL box is as item 30 left it,
   `bpffs` is mounted again and does not survive a restart of the distribution,
   and `alo-os:dev` is still a local image.
+
+---
+
+## Iteration — the fifth empty queue, and the one command it is worth spending
+
+- `LOOP COMPLETE` — no ready item. The eight are 16b, 19b, 21i, 21k, 21l, 23b,
+  26f and 29, and this is the fifth consecutive entry to say so.
+
+**This iteration cost one command, and that is the whole of what it has to
+report.** The entry above said a fifth should not be run, and that if one were
+run the single question with any chance of a different answer is
+`ls docs/decisions/`. It was asked: the directory ends at **0018**. `HEAD` is
+`6646001` — the commit that entry made — and the working tree is clean against
+it, so the queue, the crates, the image files and the eight blocks are the same
+bytes that were read then. Nothing else was asked, because there is nothing else
+that can have moved.
+
+### The gate was deliberately not run, and that is a decision rather than a skip
+
+`LOOP.md` step 4 gates **a change**. Nothing was built here, and the tree this
+entry is written against was gated in full four times — `fmt`, `clippy`, 1954
+test results on Linux and 1723 on Windows, the kernel crate's own two commands,
+`bpffs` clean afterwards, and rustdoc's 52 platform-explained warning lines on
+Windows against zero on Linux. A fifth identical run would measure the same
+unchanged bytes and cost about an hour to do it. The four numbers above are
+therefore **carried, and marked as carried** rather than reported as this run's:
+the previous four entries each measured their own, which is why carrying them
+once is a statement about a clean tree and not a habit forming.
+
+What *is* new in this change is documentation, and the honest thing to say about
+it is that a paragraph of prose has no test to fail.
+
+### Why there is no work left to invent
+
+The block on every one of the eight is a thing this loop may not make:
+
+- **Two ADRs** — where a runtime on this machine is (21k, then 21l), and what a
+  bound's lifetime is (26f). The hand-written entry above item 26e records that
+  the loop stopped on two ADRs *it was right not to write itself*, so writing
+  one to unblock its own queue would be step 6's ticking-to-discharge-an-
+  obligation moved into `docs/decisions/`.
+- **A compositor or the settings surface a grant is made in** — 21i and 19b.
+- **A machine with ten gigabytes free** — 23b, seven catalogue grades that are a
+  data change each. The host's ceiling is 15.5 GB against entries wanting up to
+  48, and the previous iterations refused to raise a VM's allocation to make the
+  item look ready.
+
+Adding a ninth item instead would be scope invented by a loop, which
+`CLAUDE.md` gates on `docs/features.md` and a release, not on an iteration
+having nothing to do.
+
+**`ROADMAP.md` untouched and nothing ticked. No `CHANGELOG.md` line** — nothing
+was built, and a fifth empty queue is not something a person outside this
+repository reads.
+
+### What the next iteration should know
+
+- **Stop the loop.** The entry above asked for it and this one repeats it with a
+  cheaper run behind it: five consecutive `LOOP COMPLETE`s, four full gate runs
+  of a tree nobody has touched, and one `ls` that answers the only live
+  question. Until `docs/decisions/` holds an **0019**, an iteration has nothing
+  it is permitted to do.
+- **If the supervisor runs anyway, this entry is the template**: one `ls`, one
+  `git status`, and either a `LOOP HALT`-free line like this one or — the moment
+  an 0019 exists — a real iteration on 21k, 26f or 21l, gated in full.
+- **Nothing on the development box changed**, and nothing was touched to find
+  that out. The WSL box is as item 30 left it, `alo-os:dev` is still a local
+  image, and Docker's debt stays paid.
