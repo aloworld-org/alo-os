@@ -9309,8 +9309,8 @@ above this line instead.
 
 | | |
 |---|---|
-| Consecutive empty queues | **32** |
-| Last confirmed | 2026-09-05, against `6e5222e` |
+| Consecutive empty queues | **33** |
+| Last confirmed | 2026-09-05, against `2d9363e` |
 | Highest ADR | 0018 |
 | Blocked items | 16b, 19b, 21i, 21k, 21l, 23b, 26f, 29 |
 | Last iteration that built something | item 30, `f8f1ee2` — the agent service can make the two places it is not given |
