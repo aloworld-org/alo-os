@@ -2809,6 +2809,55 @@ out.
   LSM to run ordinary programs under. When item 26's two tests run, this one can
   be written in the same sitting.
 
+- [ ] **28. The smallest image that boots and runs the daemon.** Promoted out of
+  *Blocked — linux*, where it sat as one line and was never taken, because the
+  classification was wrong: **the Containerfile and the build need no compositor
+  and no certified machine.** Only booting it needs a machine, and a virtual one
+  answers most of the question.
+
+  **Why this and not another crate.** The count that decides it: **seventeen of
+  eighteen code halves are done and none of the eighteen machine halves is**, and
+  this repository contains no Containerfile, no `tmpfiles.d`, and nothing that has
+  ever booted. v0.01's exit gate is *one person, one machine, one cold boot* and
+  there is nothing to boot. Every one of the 1,708 tests checks a crate on a
+  laptop; none checks that the crates compose into an operating system. Another
+  crate deepens a pile that has never run.
+
+  **Scope is cut hard, and the cut is the point.** This image **boots and starts
+  `alo-agentd`**. No compositor, no desktop, no shell, no wallpaper — a machine
+  with no screen to speak of, which is exactly the band whose code is finished.
+  Depth is not cut: what is here works end to end on a real boot or the item is
+  not done.
+
+  - `bootc` on a rented Fedora-derived base (ADR 0011), unmodified — *engines are
+    configured, never patched*, and the base is the largest engine here.
+  - `alo-agentd` installed and started by the init the base already ships.
+  - **The `tmpfiles.d` entry for `/run/alo`** — ADR 0017's, which exists only on
+    paper and is an image responsibility. This is the first thing the daemon has
+    ever asked of the image.
+  - The four kernel requirements in `docs/hardware.md` **asked of the image's own
+    kernel and the answers written into that file's table**, which is the first
+    time they will have been asked of a kernel we chose rather than one we
+    borrowed. ADR 0015's *the Fedora-derived base ships both* is still read and
+    not measured; this is where that ends.
+
+  **The two halves, and which is honestly which.** The code half is the
+  Containerfile, the unit, the `tmpfiles.d` entry and a build that produces an
+  image — all of it doable here, and gated the usual way. The machine half is
+  that it **boots and the daemon is running when it comes up**, which needs a
+  virtual machine at least and the certified machine eventually. Do not tick the
+  machine half from a successful build: *an image that builds is not an image
+  that boots*, and that sentence is the whole reason this item exists.
+
+  **What it is worth beyond a box.** It is the first thing that can move any of
+  the eighteen machine halves, it makes ADR 0017 real rather than written, it
+  puts the daemon under a real init and a real session — which is where *the
+  socket outliving the session* can actually go wrong — and it turns
+  `docs/hardware.md` from a list of questions into a table with answers in it.
+
+  Blocked on nothing. `ROADMAP.md`'s image line at *Image: a bootable container*
+  has no two boxes yet and gets them.
+
 **Deliberately not here, and not this loop's:** the *acting* half of the
 application verbs (Wayland and D-Bus — it is what actually moves a window), the
 *reading* half of context (Wayland and AT-SPI), and everything that draws. Those
@@ -2883,10 +2932,20 @@ rather than only of what is convenient.
   is read from is a question about enrollment and not only about a file.
 
 - **Egress enforcement** — item 5's policy, made true at the network boundary.
-- **The image** — OCI-built, bootable, atomic. It owes item 8 one thing: a
-  wallpaper named `alo` (`alo-appearance`'s `shipped::THE_WALLPAPER`), which is
-  what a fresh machine shows behind its windows. An image without it boots to
-  nothing behind the windows rather than to a colour nobody chose.
+- **The image, the desktop one** — OCI-built, bootable, atomic, with something on
+  the screen. It owes item 8 one thing: a wallpaper named `alo`
+  (`alo-appearance`'s `shipped::THE_WALLPAPER`), which is what a fresh machine
+  shows behind its windows. An image without it boots to nothing behind the
+  windows rather than to a colour nobody chose.
+
+  **This entry was the whole image until 2026-09-04, and that was the mistake.**
+  Being listed here said *blocked on a compositor*, which is true of an image
+  with a desktop on it and false of an image at all — so the one artefact that
+  could move a machine half sat in the blocked list for the life of the queue
+  while seventeen code halves were finished. **Item 28 is the part that was never
+  blocked**: a bootc image that boots and runs `alo-agentd`, no screen involved.
+  What stays here is this line's own content — the wallpaper, and everything that
+  needs something to draw it.
 - **The workspace client running as an application on the shell.**
 
 ## Blocked — hardware

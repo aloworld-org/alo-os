@@ -576,6 +576,17 @@ which made a completely consistent rule look like work being taken out of turn.
       The base is rented deliberately: everything that makes alo OS *alo* is in
       layers we already own, and building our own base would buy no capability
       that is not already free
+  - [ ] **The code.** Nothing yet — no Containerfile, no unit, no `tmpfiles.d`
+        anywhere in this repository. `docs/autonomy/QUEUE.md` item 28 is the
+        first cut of it and is deliberately the smallest one that means
+        anything: a `bootc` image that boots and starts `alo-agentd`, with
+        ADR 0017's `/run/alo` entry, and no compositor in it. **This line is the
+        one that has been holding the other seventeen**, because every capability
+        below has a machine half and none of them has a machine
+  - [ ] **On the machine.** That it boots, and that the daemon is running when it
+        comes up — a virtual machine answers most of it and the certified machine
+        answers the rest. **An image that builds is not an image that boots**, so
+        a green build never ticks this
 
 **Exit gate.** On the certified machine, from a cold boot: sign in, press the
 key, ask an agent to do something to a file in a granted folder, approve the
