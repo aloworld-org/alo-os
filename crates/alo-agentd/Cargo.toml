@@ -73,6 +73,20 @@ alo-bounding = { path = "../alo-bounding" }
 # beside the one `alo-keeping` already writes into the record's first line.
 alo-keeping = { path = "../alo-keeping" }
 
+# What the *person* chose, which is a different file from the one above and
+# belongs to somebody else: `agentd.toml` is the organisation's and
+# `settings.toml` is theirs (ADR 0016). `src/settings.rs` is the only file that
+# turns this process's environment into a path, and ADR 0019 §3 is why that is
+# allowed to be the environment at all.
+alo-choosing = { path = "../alo-choosing" }
+
+# The runtime a question is put to, found rather than configured (ADR 0019).
+# `src/questions.rs` is the only file that looks for one, and it is deliberately
+# the only thing in this crate that can name a model runtime: nothing here
+# carries an address, because `alo_models::found_on_this_machine` answers with a
+# type no caller can name and therefore cannot point anywhere.
+alo-models = { path = "../alo-models" }
+
 # Somewhere for a test's machine to write what happened that is not a file on a
 # disk. The process writes to `alo-keeping`'s real one; a test wants to read the
 # entries back and count them, which is what `alo_record::Record` is.

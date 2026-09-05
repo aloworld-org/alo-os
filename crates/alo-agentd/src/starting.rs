@@ -36,6 +36,24 @@
 //!    still deciding whether it can run.
 //! 8. **The machine, and the serving.** [`until_stopped`].
 //!
+//! # What answers a question is not decided here either
+//!
+//! [`until_stopped`] makes one `crate::questions::Questions` and hands it to
+//! the service. Nothing is read while it is made — no settings file is opened
+//! and no runtime is probed — because a machine that reached for a model
+//! before anybody had asked it anything would be doing exactly what ADR 0001
+//! forbids. The first question of the first turn is what opens the file.
+//!
+//! Two of the three things it is made of are settled and one is not. The
+//! catalogue is the one built into this image, and a malformed one stops the
+//! process ([`NotStarted::NoCatalogue`]) rather than becoming a machine that
+//! quietly offers nothing. **The bound is `None`**, because no file on this
+//! machine states what an organisation permits:
+//! `docs/contracts/machine-description.md` has no policy key, whether it gains
+//! one is ADR 0016's subject and a queue item of its own, and today no
+//! `alo_models::SourcePolicy` refuses this machine answering on itself — so
+//! every machine passes the same value and none is affected by it either way.
+//!
 //! # What is not read from anywhere, and is not a stub
 //!
 //! [`until_stopped`] begins with **no grants at all**, and that is the honest
@@ -55,6 +73,7 @@
 use alo_capability::Grants;
 use alo_egress::Indicator;
 use alo_files::OnThisMachine;
+use alo_models::Catalogue;
 use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
 use alo_strings::Strings;
 use alo_turn::{Bounding, Machine, Shortening};
@@ -62,6 +81,7 @@ use alo_turn::{Bounding, Machine, Shortening};
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
+use crate::questions::Questions;
 use crate::refusing::NotStarted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
@@ -151,6 +171,16 @@ pub fn until_stopped(
     // grant anything; the header says what that means and why it is a state
     // rather than a hole.
     let mut grants = Grants::default();
+    // Nothing is read or probed here: the environment is copied, and the first
+    // question of the first turn is what opens the person's file. The bound is
+    // `None` because nothing on this machine states one — the header says why,
+    // and `crate::questions` says what changes the day something does.
+    let mut questions = Questions::of_this_process(
+        Catalogue::built_in().map_err(|why| NotStarted::NoCatalogue {
+            why: why.to_string(),
+        })?,
+        None,
+    );
     Ok(Serving::of(
         knocking,
         waking,
@@ -159,7 +189,7 @@ pub fn until_stopped(
         described.proposal().duration(),
         described.keeping(),
     )
-    .until_stopped(&mut machine, &mut grants)?)
+    .until_stopped(&mut machine, &mut grants, &mut questions)?)
 }
 
 #[cfg(test)]

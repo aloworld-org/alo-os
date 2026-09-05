@@ -9452,3 +9452,116 @@ whichever way it goes.
 started, nothing was pinned, no image was built. The WSL box ran `cargo test`,
 `cargo clippy` and `cargo doc` and nothing else; `bpffs` was mounted for the
 workspace run and everything under `/sys/fs/bpf` was left as the tests left it.
+
+---
+
+## Iteration — item 21n, the daemon puts a question to what the person chose
+
+**What it built.** The last stretch of ADR 0019, and the one that made the
+other two visible from outside: `alo-agentd` now reads the person's settings
+and answers `FromAnAgent::Ask` with what they chose. Two new files —
+`settings.rs` (whose settings, which is this process's own environment and the
+only place in the crate that touches it) and `questions.rs` (`Questions`,
+`WhatAnswers`: what a question goes to, looked for once a turn). `doing.rs`'s
+`Ask` arm is a join instead of a refusal, `starting.rs` builds the one
+`Questions`, `refusing.rs` gained `NotStarted::NoCatalogue`, and `words.rs`
+gained `agentd.nothing-was-asked`.
+
+**What the gate said.** `cargo fmt` clean, `cargo clippy --workspace
+--all-targets` zero warnings and zero errors on both hosts, `cargo doc
+--workspace --no-deps` silent on Linux and forty-nine unresolved links on
+Windows, which is the number `LOOP.md` records and not one more. **1992 tests
+and doctests on Linux, 1744 on Windows** — the Linux figure is 17 up and the
+Windows one has not moved at all, which is `LOOP.md`'s *never gated on Windows*
+rule showing plainly rather than being quoted: every one of the 17 is in a
+crate Windows compiles to nothing. Linux is the gate here, not a second reading
+of one.
+
+**Three of the item's four questions were answered as written; the fourth was
+cut.** *Whose settings* is the environment, with the one-daemon-one-login
+condition in `settings.rs`'s header rather than in a comment somewhere. *When*
+is **once a turn, at the first question of that turn** — neither end of the
+choice the item posed. A turn that asks nothing opens no file and probes no
+runtime, which is the *no invocation, no context calls* guarantee read one
+level in; a person who picks a model in Settings is answered by it on their
+next turn, with no restart; and two questions in one turn go to the same place,
+so the entries the record keeps are about one machine rather than two.
+*`Places`* is `Places::under(bound)` with nothing else, and there is a test that
+the offer beside a refusal is empty rather than invented.
+
+**The bound is item 21o, and the cut is the decision worth reading.** Adding a
+`SourcePolicy` key to `docs/contracts/machine-description.md` is a public
+contract change, it is ADR 0016's subject, and — this is what settles it —
+**nothing would behave differently**. Both lists a choice can name are *this
+machine*, and no `SourcePolicy` refuses this machine answering on itself;
+`alo-choosing`'s `bound.rs` has the test that says so for all four. So the key
+would be one an administrator could write, a reviewer would have to read, and no
+machine would act on. What decides it is a second place a question can go, which
+is providers — the same thing item 21l is waiting for, written into 21o.
+
+**Three refusals rather than one, and that was not in the item.** *Nothing
+chosen* and *chosen, nothing running* collapse to the same sentence if you write
+the obvious code, and they are not the same fact: the second person has done
+what the first is being told to do. So `questions.rs` answers four things rather
+than three, and `doing.rs` renders the runtime one with `alo-models`' own
+sentence — the runtime being up is `alo-models`' fact and it already had the
+words. A settings file that does not hold is `alo-choosing`'s sentence, naming
+the file, rather than *you have chosen nothing*, which would be false.
+
+**One word was added, for something that cannot happen.**
+`alo_turn::NoAnswer::said` answers `Option`, and the `None` is `Miswired` — the
+permission and the destination disagreeing, which is this repository's mistake
+and has no sentence because there is nothing for a person to do about it. It is
+unreachable through `questions.rs`, which makes the permission out of the same
+choice it found the runtime for. It still needs an answer, because
+`docs/contracts/daemon-protocol.md` says every request is refused in words and
+never dropped — so `agentd.nothing-was-asked` says the true and useful thing: it
+went nowhere, and it is ours to fix rather than theirs.
+
+**A clippy warning was a design signal and was taken as one.** `one_round`
+reached eight arguments and `too_many_arguments` fired. Silencing it with an
+`#[expect]` is the gate being weakened to pass it, so the fix is `Underway` —
+the turn and the place its questions go, carried as one thing. They begin
+together and are absent together, so the impossible arm in that match went from
+three patterns to one, which is a better file than the one that would have had
+the attribute on it.
+
+**Also fixed: `docs/contracts/daemon-protocol.md`'s *what is still owed*.** It
+said *there is no `main`* and *nothing reads what a machine says about itself*,
+both untrue since items 21e and 21f, and it promised the old refusal to every
+question. It now says what is really owed — providers, grants, and the
+organisation's bound — and the `ask` section says when the person's file is
+read.
+
+**Nothing on the development box was touched.** No unit was installed or
+started, nothing was pinned, no image was built. The WSL box ran `cargo test`,
+`cargo clippy`, `cargo fmt` and `cargo doc`; `bpffs` was mounted for the
+workspace run and everything under `/sys/fs/bpf` was left as the tests left it.
+**No runtime answered anything**: every test here uses a stub, ADR 0019's
+`found_on_this_machine` answers with a type no caller can name, and a real
+Ollama at the other end of that socket is still the machine half of the roadmap
+line this item served.
+
+**What the next iteration takes, and it is nothing.** Every remaining item was
+read at the end of this one, and not one of them is buildable:
+
+- **16b** finding machines on the network — not ready, and says so: there is no
+  discovery code here and none of it is portable.
+- **19b** what a turn does with an application verb — blocked on Wayland and
+  D-Bus, under *blocked — linux*.
+- **21o** whether the organisation's file states a bound — written by this
+  iteration, blocked on a provider list.
+- **21l** a refusal that names who set the rule — blocked on the same list.
+- **21i** where a machine's grants are kept — blocked on the shell: a grant is
+  made by a person picking a folder in a surface that does not exist.
+- **26f** a bound left behind by a killed daemon — not ready; the entry's
+  lifetime belonging to the cgroup is a decision about the kernel programme.
+- **23b** the other seven measurements — blocked on seventy gigabytes of
+  weights and a machine with room for them.
+- **29** loading is not a quick call — not ready; it wants a `RuntimeError`
+  variant meaning *it is loading*, which is a sentence and a shell decision.
+
+So the next iteration's step 1 finds every item blocked or not ready, and its
+whole job is the marker and this list. It is left to that iteration rather than
+written here because step 1 is where that verdict belongs and this iteration
+built an item; it should cost two commands and nothing else.

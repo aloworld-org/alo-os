@@ -506,6 +506,21 @@ pub enum NotStarted {
     /// The verbs this machine offers could not be declared.
     #[error("the verbs this machine can carry out could not be declared: {0}")]
     NoVerbs(#[from] alo_files::Declaring),
+    /// The catalogue built into this image does not hold.
+    ///
+    /// English rather than a word from the vocabulary, and for the reason
+    /// `alo-models` gives its own `CatalogueError`: the catalogue is a file
+    /// signed with the release, so whoever reads this is fixing that file
+    /// rather than using the machine. A service that started without one would
+    /// be a service that cannot say which models it offers while looking
+    /// perfectly healthy.
+    #[error(
+        "the model catalogue built into this image does not hold: {why}; it is shipped with the release, so this is a build to fix rather than a machine"
+    )]
+    NoCatalogue {
+        /// What `alo-models` said about the file.
+        why: String,
+    },
     /// There is no boundary to run a turn's work inside.
     ///
     /// ADR 0015's *a turn whose boundary cannot be applied does not run*, asked

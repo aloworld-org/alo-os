@@ -101,6 +101,12 @@ The question and nothing else. **Where it is answered is not on the wire**:
 ADR 0008 puts that decision with the person, and a request naming a place would
 be an agent choosing which machine its question goes to.
 
+The daemon reads that decision out of the person's own settings file
+(`docs/contracts/person-settings.md`), once at the first question of each turn
+— so a model chosen in Settings answers the next turn, and two questions in one
+turn go to the same place. A turn that asks nothing opens no file and probes no
+runtime.
+
 ## What a person sends
 
 ```json
@@ -421,9 +427,28 @@ fourth, one thing has, and that is what the stop is about.
 
 ## What is still owed
 
-There is no `main`. Which directory the socket goes in, which two users this
-machine has, which model answers a question, how long a turn and a proposal
-last, and the refusal to run as root at all (ADR 0001 §2) are what a machine
-says about itself, and nothing in this repository reads that yet. Until it does,
-a question put to a model is refused in words: *nothing on this machine has been
-chosen to answer questions*.
+**A question can be answered, and only on this machine.** Since item 21n the
+daemon reads the person's own `settings.toml`
+(`docs/contracts/person-settings.md`) and puts a question to the runtime it
+finds here (ADR 0019). What a machine has no list of is **providers**, so
+`answered` never yet carries a `came_from` naming somewhere else, and neither
+does the egress indicator: a working day on this machine still produces zero
+inference egress because there is nowhere else for a question to go.
+
+Three refusals are what a client will meet until that changes, and each is a
+different thing to fix rather than one sentence wearing three faces: *nothing on
+this machine has been chosen to answer questions* is a person who has picked
+neither a model nor a provider, *the model runtime is not reachable* is a person
+who picked one and has nothing running, and a sentence naming their settings
+file is a file that does not hold.
+
+**Nothing has been granted, so every verb is refused.** A grant is made by a
+person picking a folder (ADR 0001 §3), no message on this socket makes one, and
+where a machine keeps them is a queue item of its own. Until then `read` and
+`propose` are answered by the capability model in its own words, which is the
+capability model running rather than missing.
+
+**No organisation states a bound.** `docs/contracts/machine-description.md` has
+no `SourcePolicy` key, so what an organisation permits is `None` on every
+machine — which changes nothing today, because no policy refuses this machine
+answering on itself. Whether the description gains one is ADR 0016's subject.

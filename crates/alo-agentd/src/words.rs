@@ -6,20 +6,25 @@
 //! service log by whoever is standing the machine up. Those keep their English.
 //!
 //! What is new is that there is now somebody at the other end of a connection.
-//! Three things this service refuses are refusals **of a request**, and a
+//! Four things this service refuses are refusals **of a request**, and a
 //! request comes from an agent that will show its person what it was told, or
 //! from the person's own shell. `docs/contracts/daemon-protocol.md` says a
 //! message that is not acted on is refused in words and never dropped, and
-//! these are the three ways this crate can be the one refusing.
+//! these are the four ways this crate can be the one refusing.
 //!
-//! # There are only three, because a turn words its own answers
+//! # There are only four, because a turn words its own answers
 //!
 //! Everything that happens *inside* a turn — a verb that is not on the list,
 //! the grants at the moment of execution, a full disk, a change nobody
 //! answered — is `alo_turn::NotDone::said`, and this crate carries it rather
 //! than rewording it. That is item 9e's rule at the last boundary before a
-//! person reads the sentence, and it is why holding a turn adds three strings
+//! person reads the sentence, and it is why holding a turn adds four strings
 //! and not thirty.
+//!
+//! The fourth arrived with item 21n and is the odd one: [`NOTHING_WAS_ASKED`]
+//! is about **this repository** disagreeing with itself, and it is here rather
+//! than in `crate::refusing`'s English because somebody at the other end of a
+//! connection is waiting for an answer to a question they asked.
 //!
 //! # None of them quotes anything a client sent
 //!
@@ -69,11 +74,33 @@ pub const NOTHING_ANSWERS_QUESTIONS: Word = Word::saying(
      panel in alo OS and should be translated as that panel's name is.",
 );
 
+/// A question that was put nowhere, because this machine is wired wrongly.
+///
+/// `alo_turn::NoAnswer::Miswired` is the one way a question can fail that says
+/// nothing to a person, deliberately: `alo-asking` refuses a permission and a
+/// destination that are not the same place, and that disagreement is a mistake
+/// in this repository rather than anything the person did. It cannot happen
+/// through `crate::questions`, which makes the permission out of the same
+/// choice it found the runtime for — and *cannot happen* is not *needs no
+/// answer*, because `docs/contracts/daemon-protocol.md` says every request is
+/// refused in words and never dropped.
+pub const NOTHING_WAS_ASKED: Word = Word::saying(
+    "agentd.nothing-was-asked",
+    "something in alo OS is set up wrongly, so your question was not put anywhere and nothing left this machine — this one is ours to fix, not yours",
+)
+.noting(
+    "Said when alo OS finds its own parts disagreeing about where a question should go, and \
+     therefore sends it nowhere. The person did nothing wrong and there is nothing for them to \
+     change; the last clause is telling them so, and should stay a plain statement rather than an \
+     apology.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 3] = [
+pub const EVERY_WORD: [Word; 4] = [
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,
+    NOTHING_WAS_ASKED,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -144,10 +171,10 @@ mod tests {
         assert_eq!(named.len(), EVERY_WORD.len());
     }
 
-    /// **Every one of these carries a note**, because none of the three can be
-    /// translated from its own words: a "turn" is this product's idea, and the
-    /// other two name something in front of the person that a translator has to
-    /// be told about.
+    /// **Every one of these carries a note**, because none of the four can be
+    /// translated from its own words: a "turn" is this product's idea, two name
+    /// something in front of the person that a translator has to be told about,
+    /// and the fourth turns on a tone a literal translation would lose.
     #[test]
     fn every_word_tells_a_translator_what_it_is_about() {
         for word in EVERY_WORD {

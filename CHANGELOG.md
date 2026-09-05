@@ -12,6 +12,32 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Ask your agent a question and the model you chose answers it.** Until now
+  every question met the same sentence — *nothing on this machine has been
+  chosen to answer questions* — whatever you had picked, because nothing in
+  alo OS read your settings. It does now: your agent's question goes to the
+  model named in your own settings file, answered by the runtime on this
+  machine, and what comes back says which model said it.
+
+  **Your file is read once a turn, not once ever and not once a question.** Pick
+  a different model in Settings and the next thing you ask uses it; there is no
+  restart and no waiting for a cache. Within one stretch of work the answer
+  cannot change underneath you, so two questions in one turn go to the same
+  place — and if your agent never asks a model anything, alo OS never opens your
+  settings file at all.
+
+  **You are told which of three things is wrong, not that "something" is.**
+  Having chosen nothing sends you to Settings. Having chosen a model with
+  nothing running to run it says the runtime is not reachable, which is a
+  different thing to go and fix. A settings file that does not hold is quoted
+  back at you with its own path, rather than being read as *you have chosen
+  nothing* — which would be false, and would send you to a panel that already
+  agrees with you.
+
+  **Nothing left this machine to do any of it.** A question answered here is
+  answered here: the indicator stays dark, and the record says the answer was
+  given on this machine.
+
 - **You can now list the models you brought yourself in your own settings, and
   alo OS finds the runtime that answers rather than asking anybody where it
   is.** Two things stood between picking a model and getting an answer, and both

@@ -196,9 +196,13 @@ pub mod listening;
 #[cfg(target_os = "linux")]
 pub mod place;
 #[cfg(target_os = "linux")]
+pub mod questions;
+#[cfg(target_os = "linux")]
 pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod serving;
+#[cfg(target_os = "linux")]
+pub mod settings;
 #[cfg(target_os = "linux")]
 pub mod side;
 #[cfg(target_os = "linux")]
@@ -242,11 +246,15 @@ pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
 pub use place::{Place, THE_ROOT};
 #[cfg(target_os = "linux")]
+pub use questions::{Questions, WhatAnswers};
+#[cfg(target_os = "linux")]
 pub use refusing::{
     NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotStarted, NotTwoSides,
 };
 #[cfg(target_os = "linux")]
 pub use serving::{Served, Serving};
+#[cfg(target_os = "linux")]
+pub use settings::{of_a_session, what_this_person_chose};
 #[cfg(target_os = "linux")]
 pub use side::{Side, Sides};
 #[cfg(target_os = "linux")]

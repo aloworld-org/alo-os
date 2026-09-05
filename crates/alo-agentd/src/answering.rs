@@ -118,7 +118,9 @@ fn nothing_is_waiting(number: u64, strings: &Strings) -> ToAPerson {
 mod tests {
     use super::*;
     use crate::doing::what_an_agent_said;
-    use crate::testing::{a_message, hour, in_english, noon, on_a_machine};
+    use crate::testing::{
+        a_message, hour, in_english, noon, nothing_has_been_chosen, on_a_machine,
+    };
     use std::path::Path;
 
     /// Propose a rename, and answer with the number it is waiting under.
@@ -134,6 +136,7 @@ mod tests {
                 invoice.display()
             )),
             turning,
+            &mut nothing_has_been_chosen(),
             grants,
             strings,
             hour(),

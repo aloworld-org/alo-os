@@ -92,6 +92,7 @@ use crate::answering::what_a_person_said;
 use crate::doing::what_an_agent_said;
 use crate::knocking::Knocking;
 use crate::lines::Line;
+use crate::questions::Questions;
 use crate::refusing::NotServed;
 use crate::side::Side;
 use crate::stopping::Waking;
@@ -210,6 +211,21 @@ struct Held {
     person: Option<Line>,
 }
 
+/// The turn that is under way, and where a question inside it goes.
+///
+/// The two are one thing rather than two arguments, and that is not tidiness.
+/// They begin together — `crate::questions` is looked for once a turn — and
+/// they are absent together, so a round given one and not the other would be a
+/// state nothing can produce. Bundling them makes that impossible arm one arm
+/// instead of three, and keeps [`Serving::one_round`] under the number of
+/// arguments a reader can hold.
+struct Underway<'a, 'm, 't> {
+    /// The turn every request in this round is carried out against.
+    turning: &'a mut Turning<'m, 't>,
+    /// What a question in this turn is put to, found once and held.
+    questions: &'a mut Questions,
+}
+
 impl<'a> Serving<'a> {
     /// The service, told what this machine is.
     ///
@@ -256,6 +272,7 @@ impl<'a> Serving<'a> {
         &self,
         machine: &mut Machine<'_>,
         grants: &mut Grants,
+        questions: &mut Questions,
     ) -> Result<Served, NotServed> {
         let strings = machine.strings();
         let mut held = Held::default();
@@ -286,6 +303,12 @@ impl<'a> Serving<'a> {
                 }
             }
 
+            // A turn is where what answers a question is looked for, so a turn
+            // beginning is where the last one is forgotten. Here rather than at
+            // the end of a turn, because a service that stopped mid-turn would
+            // otherwise leave the runtime it found for the next one.
+            questions.a_new_turn();
+
             let mut turning = Turning::beginning(
                 Context::at_invocation(this_moment()),
                 self.for_agent,
@@ -308,7 +331,10 @@ impl<'a> Serving<'a> {
                 // machine is held by the turn.
                 match self.one_round(
                     &mut held,
-                    Some(&mut turning),
+                    Some(Underway {
+                        turning: &mut turning,
+                        questions,
+                    }),
                     grants,
                     strings,
                     &mut served,
@@ -372,7 +398,7 @@ impl<'a> Serving<'a> {
     fn one_round(
         &self,
         held: &mut Held,
-        mut turning: Option<&mut Turning<'_, '_>>,
+        mut underway: Option<Underway<'_, '_, '_>>,
         grants: &Grants,
         strings: &Strings,
         served: &mut Served,
@@ -400,7 +426,8 @@ impl<'a> Serving<'a> {
                 one_message(
                     line,
                     |said| {
-                        what_a_person_said(said, turning.as_deref_mut(), grants, strings, now)
+                        let turning = underway.as_mut().map(|it| &mut *it.turning);
+                        what_a_person_said(said, turning, grants, strings, now)
                             .written()
                             .ok()
                     },
@@ -416,20 +443,28 @@ impl<'a> Serving<'a> {
         }
 
         if agent {
-            let answered = match (held.agent.as_mut(), turning.as_deref_mut()) {
+            let answered = match (held.agent.as_mut(), underway.as_mut()) {
                 // A connection with no turn behind it cannot be served and
                 // cannot be left waiting either: it would be ready for ever and
                 // read by nobody. It is the end of the connection, which for an
                 // agent is the end of what it came for. Unreachable while the
                 // two loops above are the only callers, and answered here
                 // rather than assumed away.
-                (Some(_) | None, None) | (None, Some(_)) => Message::Ended,
-                (Some(line), Some(turning)) => one_message(
+                (None, _) | (Some(_), None) => Message::Ended,
+                (Some(line), Some(underway)) => one_message(
                     line,
                     |said| {
-                        what_an_agent_said(said, turning, grants, strings, self.standing, now)
-                            .written()
-                            .ok()
+                        what_an_agent_said(
+                            said,
+                            underway.turning,
+                            underway.questions,
+                            grants,
+                            strings,
+                            self.standing,
+                            now,
+                        )
+                        .written()
+                        .ok()
                     },
                     |why| ToAnAgent::refused(&why.said(strings)).written().ok(),
                 ),
@@ -446,7 +481,7 @@ impl<'a> Serving<'a> {
         if knocked {
             match self.knocking.next() {
                 Ok((side, connection)) => {
-                    self.let_in(held, side, connection, turning.is_some(), strings);
+                    self.let_in(held, side, connection, underway.is_some(), strings);
                 }
                 Err(why) if why.is_only_this_connection() => {
                     served.strangers = served.strangers.saturating_add(1);
@@ -625,6 +660,7 @@ mod tests {
     use crate::stopping::Stop;
     use crate::testing::{
         Pretending, a_folder_with_an_invoice, a_message, granting, hour, in_english,
+        nothing_has_been_chosen,
     };
     use alo_egress::Indicator;
     use alo_files::OnThisMachine;
@@ -863,8 +899,12 @@ mod tests {
         let mut grants = granting(&folder, this_moment());
 
         let client = std::thread::spawn(move || talking(told));
-        let served = Serving::of(&knocking, &waking, agent, hour(), hour(), keeping)
-            .until_stopped(&mut machine, &mut grants);
+        let mut questions = nothing_has_been_chosen();
+        let served = Serving::of(&knocking, &waking, agent, hour(), hour(), keeping).until_stopped(
+            &mut machine,
+            &mut grants,
+            &mut questions,
+        );
         client.join().unwrap();
         served.map(|served| (served, invoice))
     }

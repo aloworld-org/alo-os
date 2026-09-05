@@ -304,7 +304,16 @@ compositor is not required for, which is why it runs unbroken.
         this machine's two lists resolves into the entry it names. Settings
         that could say *my questions are answered by weights that are not on
         my list* are refused where they are made. 71 tests, seven of them
-        against a real file on a real disk
+        against a real file on a real disk. Since item 21n **the daemon
+        walks it**: `alo-agentd` reads the person's own settings out of its
+        own environment — it runs as them, one per login, which ADR 0019
+        records as a condition rather than an assumption — finds the runtime
+        once at the first question of each turn, and puts the question to
+        what they chose. A turn that asks nothing opens no file and probes
+        nothing, a model picked in Settings answers the next turn, and the
+        three ways it can go wrong are three sentences rather than one: pick
+        something, the runtime is not reachable, or your settings file says
+        this and here is its path
   - [ ] **On the machine.**
         something that points, which is `alo-agentd`. *Something that asks*
         is no longer owed here at all: `alo-asking` puts a question to a
@@ -328,10 +337,13 @@ compositor is not required for, which is why it runs unbroken.
         something that answers is built and the daemon has not walked it
         yet**: a runtime is found by its adapter, weights somebody brought
         are on the person's own list, and both of the facts that were missing
-        are stated. What is left is one crate reading its own environment and
-        putting a question through the door that already exists — queue 21n —
-        and until that lands *nothing on this machine has been chosen to
-        answer questions* is what a question is answered with
+        are stated. Since item 21n **the daemon reads the setting and puts
+        the question**, so *nothing on this machine has been chosen to answer
+        questions* is now what an unconfigured machine says rather than what
+        every machine says. What is left here is what this loop cannot do: a
+        real runtime with real weights, on a certified machine, answering a
+        real question put through the socket — no test in this repository has
+        ever had Ollama at the other end
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine

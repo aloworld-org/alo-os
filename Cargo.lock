@@ -8,10 +8,12 @@ version = "0.0.1"
 dependencies = [
  "alo-bounding",
  "alo-capability",
+ "alo-choosing",
  "alo-context",
  "alo-egress",
  "alo-files",
  "alo-keeping",
+ "alo-models",
  "alo-protocol",
  "alo-record",
  "alo-saying",

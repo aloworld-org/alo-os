@@ -2438,7 +2438,7 @@ out.
   a list and `NotSet` is about a file, and what a person acts on is the path,
   which a list has none of.
 
-- [ ] **21n. The daemon puts a question to what the person chose.** Cut from
+- [x] **21n. The daemon puts a question to what the person chose.** Cut from
   21k, which built the road and stopped where the road stops. Everything
   between a choice and an answer exists now — `alo_choosing::Settings` reads
   the person's file, `Chosen::asking` makes the permission,
@@ -2474,6 +2474,48 @@ out.
   `cfg(target_os = "linux")`, so `LOOP.md`'s rule applies: the WSL command is
   *the* gate rather than a supplement to one, and the test count is part of
   what gets reported.
+
+  **Built and unit tested.** Two new files in `alo-agentd`: `settings.rs`
+  (whose settings, which is this process's own environment and nothing else)
+  and `questions.rs` (`Questions`, `WhatAnswers` — what a question goes to,
+  looked for once a turn). `doing.rs`'s `Ask` arm is a join rather than a
+  refusal; `serving.rs` gained `Underway`, which is the turn and the place its
+  questions go carried as one thing; `starting.rs` builds the one `Questions`
+  and `refusing.rs` gained `NotStarted::NoCatalogue`. One new word,
+  `agentd.nothing-was-asked`. 17 new unit tests. `cargo fmt` clean and
+  `cargo clippy --workspace --all-targets` zero warnings and zero errors on
+  both hosts; **1992 on Linux** and 1744 on Windows, which is the platform
+  rule showing plainly — every one of the 17 is in a crate Windows compiles to
+  nothing.
+
+  **Three of the four were answered as written and the fourth was cut.**
+  *Whose settings* is `settings.rs`, with the one-daemon-one-login condition in
+  its header. *When* is **once a turn, at the first question of that turn** —
+  neither end of the choice: a turn that asks nothing opens no file, and a
+  person who picks a model in Settings is answered by it on their next turn.
+  *`Places`* is `Places::under(bound)` with nothing else, and there is a test
+  that the offer is empty rather than invented. **The bound is item 21o**, and
+  the reason it is a separate item rather than a paragraph is written there.
+
+- [ ] **21o. Whether the organisation's file states where a question may go.**
+  Cut from 21n, which passes `None` and says so in three places. ADR 0016 gives
+  the bound to the organisation and `Chosen::asking` already takes one, but
+  `docs/contracts/machine-description.md` has no key for it, so every machine —
+  managed or not — passes the same value.
+
+  **It is a public contract change for something that cannot yet refuse
+  anything**, and that is the whole argument for not doing it inside 21n. Both
+  lists a choice can name are *this machine*, and no `alo_models::SourcePolicy`
+  refuses this machine answering on itself — `alo-choosing`'s `bound.rs` has the
+  test that says so for all four. So a key added today would be a key an
+  administrator could write, a reviewer would have to read, and nothing would
+  behave differently for.
+
+  What decides it is a second place a question can go, which is **providers**:
+  a machine with a provider list has a choice a bound can refuse, and *the bound
+  wins and the person is told who set it* becomes reachable in the same moment.
+  That is item 21l's blocker too, and this item and that one are freed by the
+  same thing.
 
 - [x] **21m. Thirteen rustdoc warnings in two crates.** Found while gating item
   21j, which had three of its own and fixed them: `cargo doc --workspace

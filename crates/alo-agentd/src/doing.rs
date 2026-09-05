@@ -21,29 +21,32 @@
 //!
 //! Every failure inside a turn is `alo_turn::NotDone::said`, rendered with the
 //! machine's own vocabulary and handed over as one sentence. This file words
-//! nothing of its own except the one thing no turn can answer, which is a
-//! question put to a model on a machine where nobody has chosen anything to
-//! answer questions.
+//! two things and nothing else, and both are things no turn can say: a machine
+//! where nobody has chosen anything to answer questions, and a question that
+//! was put nowhere because parts of alo OS disagreed about where it should go.
 //!
-//! # Why a question to a model is refused here at all
+//! # A question to a model goes to what the person chose
 //!
-//! `alo_turn::Turning::asking` exists and works, and it needs three things this
-//! service is not yet told: which model or provider answers, what an
-//! organisation permits, and where a question may be answered. Those are
-//! settings, and nothing in this repository reads them yet — queue item 21e is
-//! where a machine says what it is. Until then a machine has chosen nothing,
-//! and *nothing here has been chosen to answer questions* is the true sentence
-//! about it rather than a placeholder: it is what a person who has picked
-//! neither a model nor a provider will be told for as long as alo OS exists.
+//! `crate::questions` is what the person's settings and this machine's runtime
+//! come out of, and it answers one of four things: nothing was chosen, nothing
+//! is running, the settings file does not hold, or here is the choice and here
+//! is what answers it. Only the last reaches a turn, and the other three are
+//! sentences somebody already says — this file writes none of them.
+//!
+//! *Nothing here has been chosen to answer questions* is not a placeholder and
+//! never was: it is what a person who has picked neither a model nor a provider
+//! is told for as long as alo OS exists.
 
 use std::time::{Duration, SystemTime};
 
 use alo_capability::{AnswerError, Grants, ProposalId};
+use alo_models::RuntimeError;
 use alo_protocol::{FromAnAgent, ToAnAgent};
-use alo_strings::{Filling, Strings};
-use alo_turn::Turning;
+use alo_strings::{Filling, Said, Strings};
+use alo_turn::{Answers, NoAnswer, Turning};
 
-use crate::words::NOTHING_ANSWERS_QUESTIONS;
+use crate::questions::{Questions, WhatAnswers};
+use crate::words::{NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED};
 
 /// Read one line as something an agent asked, and do it.
 ///
@@ -54,13 +57,14 @@ use crate::words::NOTHING_ANSWERS_QUESTIONS;
 pub fn what_an_agent_said(
     line: &str,
     turning: &mut Turning<'_, '_>,
+    questions: &mut Questions,
     grants: &Grants,
     strings: &Strings,
     standing: Duration,
     now: SystemTime,
 ) -> ToAnAgent {
     match FromAnAgent::read(line) {
-        Ok(asked) => carried_out(&asked, turning, grants, strings, standing, now),
+        Ok(asked) => carried_out(&asked, turning, questions, grants, strings, standing, now),
         Err(why) => ToAnAgent::refused(&why.said(strings)),
     }
 }
@@ -69,6 +73,7 @@ pub fn what_an_agent_said(
 fn carried_out(
     asked: &FromAnAgent,
     turning: &mut Turning<'_, '_>,
+    questions: &mut Questions,
     grants: &Grants,
     strings: &Strings,
     standing: Duration,
@@ -87,10 +92,69 @@ fn carried_out(
                 Err(why) => ToAnAgent::refused(&why.said(strings)),
             }
         }
-        FromAnAgent::Ask { .. } => {
+        FromAnAgent::Ask { question } => put_to_a_model(question, turning, questions, strings, now),
+    }
+}
+
+/// A question, put to whatever this person chose — or refused in one sentence.
+///
+/// The three refusals are three different things to go and fix, and each is
+/// worded by whoever knows it: *choose something* is this crate's, because
+/// this crate is where a machine that has been asked and has nothing is;
+/// *the runtime is not reachable* is `alo-models`', because a runtime being up
+/// is its fact and it already has the sentence; *your settings file says this*
+/// is `alo-choosing`'s, and names the file and the line.
+fn put_to_a_model(
+    question: &str,
+    turning: &mut Turning<'_, '_>,
+    questions: &mut Questions,
+    strings: &Strings,
+    now: SystemTime,
+) -> ToAnAgent {
+    match questions.what_answers() {
+        WhatAnswers::Nothing => {
             ToAnAgent::refused(&strings.say(&NOTHING_ANSWERS_QUESTIONS.key(), &Filling::nothing()))
         }
+        WhatAnswers::NotRunning => ToAnAgent::refused(&RuntimeError::Unreachable.said(strings)),
+        WhatAnswers::NotSet(why) => ToAnAgent::refused(&why.said(strings)),
+        WhatAnswers::OnThisMachine {
+            chosen,
+            runtime,
+            places,
+        } => match chosen.asking(Some(places.policy())) {
+            // Nothing is composed out of what a model said, here or anywhere:
+            // the text crosses as the model's own words, and the line naming
+            // where it came from is a sentence of ours beside it.
+            Ok(permission) => match turning.asking(
+                question,
+                chosen.model(),
+                permission,
+                &Answers::Runtime(runtime),
+                &places,
+                now,
+            ) {
+                Ok(answer) => {
+                    ToAnAgent::answered(answer.text(), &answer.came_from(strings), answer.model())
+                }
+                Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
+            },
+            // What an organisation permits, refusing what the person chose —
+            // and the sentence names the rule rather than the machine.
+            Err(why) => ToAnAgent::refused(&why.said(strings)),
+        },
     }
+}
+
+/// The sentence for a question that was not answered.
+///
+/// [`alo_turn::NoAnswer`] words all of them but one. The exception is a
+/// miswiring, which is this repository disagreeing with itself and has no
+/// sentence of its own because there is nothing for a person to do about it —
+/// so this crate says the one thing that is true and useful: it went nowhere,
+/// and it is not theirs to fix.
+fn nothing_answered(why: &NoAnswer, strings: &Strings) -> Said {
+    why.said(strings)
+        .unwrap_or_else(|| strings.say(&NOTHING_WAS_ASKED.key(), &Filling::nothing()))
 }
 
 /// The change that is now waiting, with the sentence the person will be asked.
@@ -133,7 +197,12 @@ fn waiting_under(
 )]
 mod tests {
     use super::*;
-    use crate::testing::{a_message, hour, noon, on_a_machine};
+    use crate::testing::{
+        a_directory_of_our_own, a_message, a_runtime_saying, hour, noon, nothing_has_been_chosen,
+        on_a_machine, on_a_machine_that_answers,
+    };
+    use alo_choosing::{Chosen, Which};
+    use alo_record::Record;
 
     /// **A read answers inside the turn**, and what comes back is what the
     /// machine found rather than a promise to find it.
@@ -146,6 +215,7 @@ mod tests {
                     folder.display()
                 )),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 hour(),
@@ -171,6 +241,7 @@ mod tests {
                     invoice.display()
                 )),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 hour(),
@@ -191,6 +262,7 @@ mod tests {
             let said = what_an_agent_said(
                 &a_message(r#"{"read":{"verb":"/bin/sh","given":[]}}"#),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 hour(),
@@ -214,6 +286,7 @@ mod tests {
                     invoice.display()
                 )),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 hour(),
@@ -223,6 +296,7 @@ mod tests {
             let said = what_an_agent_said(
                 &a_message(r#"{"approve":{"number":1}}"#),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 hour(),
@@ -254,7 +328,15 @@ mod tests {
                 r#"{"format":9,"asks":{"read":{"verb":"list_folder","given":[]}}}"#,
                 r#"{"format":1,"asks":{"run":{"command":"rm -rf /"}}}"#,
             ] {
-                let said = what_an_agent_said(line, turning, grants, strings, hour(), noon());
+                let said = what_an_agent_said(
+                    line,
+                    turning,
+                    &mut nothing_has_been_chosen(),
+                    grants,
+                    strings,
+                    hour(),
+                    noon(),
+                );
                 assert!(said.refusal().is_some(), "{line}");
             }
             assert!(!turning.is_closed());
@@ -270,6 +352,7 @@ mod tests {
             let said = what_an_agent_said(
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 hour(),
@@ -297,6 +380,7 @@ mod tests {
                     invoice.display()
                 )),
                 turning,
+                &mut nothing_has_been_chosen(),
                 grants,
                 strings,
                 Duration::from_secs(0),
@@ -306,6 +390,140 @@ mod tests {
             assert!(!said.waits_for_a_person());
             assert!(said.refusal().is_some());
             assert_eq!(turning.waiting_at(noon()).count(), 0);
+        });
+    }
+
+    /// A machine where this person chose these weights and this answers them.
+    fn holding(model: &str, said: Result<String, RuntimeError>) -> Questions {
+        Questions::already_found(
+            Chosen::of(Which::Brought, model).unwrap(),
+            a_runtime_saying(said),
+            None,
+        )
+    }
+
+    /// **A question reaches the model the person chose, and the answer comes
+    /// back in the model's own words** — with the model named beside it, so
+    /// whoever is reading knows what answered.
+    #[test]
+    fn a_question_is_put_to_what_the_person_chose_and_the_answer_comes_back() {
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let said = what_an_agent_said(
+                &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
+                turning,
+                &mut holding("my-finetune", Ok("a sublet clause".to_owned())),
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+
+            assert!(
+                matches!(
+                    &said,
+                    ToAnAgent::Answered { text, model, .. }
+                        if text == "a sublet clause" && model == "my-finetune"
+                ),
+                "{said:?}"
+            );
+        });
+
+        // Law 1's other half: it was answered here, so the entry says so and
+        // nothing on it is about a destination.
+        assert_eq!(record.len(), 1, "a question left no record");
+    }
+
+    /// **A model that does not answer is a refusal in words**, and the sentence
+    /// is `alo-models`' own rather than one written in this file.
+    #[test]
+    fn a_model_that_does_not_answer_is_refused_in_the_runtimes_own_words() {
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let said = what_an_agent_said(
+                &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
+                turning,
+                &mut holding("my-finetune", Err(RuntimeError::Unreachable)),
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+
+            let refusal = said.refusal().unwrap();
+            assert!(!refusal.is_a_bug(), "{refusal:?}");
+            assert!(!refusal.text().contains("Settings"), "{refusal:?}");
+        });
+
+        // Nothing was sent and nothing was answered, so there is nothing an
+        // entry could truthfully say — `alo-turn`'s decision, honoured here.
+        assert_eq!(
+            record.len(),
+            0,
+            "a question that went nowhere left a record"
+        );
+    }
+
+    /// **A settings file that does not hold is refused with its own sentence**,
+    /// naming the file — not with *you have chosen nothing*, which would be
+    /// false and would send the person to a panel that already agrees with them.
+    #[test]
+    fn a_settings_file_that_does_not_hold_names_itself_rather_than_settings() {
+        let config = a_directory_of_our_own("doing-bad-settings");
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            "format = 1\n[answers\n",
+        )
+        .unwrap();
+        let mut questions = Questions::of_a_session(
+            Some(config.clone().into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            None,
+        );
+
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let said = what_an_agent_said(
+                &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
+                turning,
+                &mut questions,
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+
+            let refusal = said.refusal().unwrap();
+            assert!(!refusal.is_a_bug(), "{refusal:?}");
+            assert!(
+                refusal.text().contains(&config.display().to_string()),
+                "{refusal:?}"
+            );
+        });
+    }
+
+    /// **A question is never a change**, whatever answered it: nothing waits
+    /// for the person and the turn is still open for the next thing.
+    #[test]
+    fn a_question_answered_leaves_nothing_waiting_for_a_person() {
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let said = what_an_agent_said(
+                &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
+                turning,
+                &mut holding("my-finetune", Ok("a sublet clause".to_owned())),
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+
+            assert!(!said.waits_for_a_person());
+            assert_eq!(turning.waiting_at(noon()).count(), 0);
+            assert!(!turning.is_closed());
         });
     }
 }

@@ -58,6 +58,7 @@ use alo_capability::{Grant, Grants, Reach};
 use alo_context::Context;
 use alo_egress::Indicator;
 use alo_files::{OnThisMachine, Resolving as _};
+use alo_models::{Catalogue, Installed, Loaded, ModelRuntime, ProgressSink, RuntimeError};
 use alo_record::Record;
 use alo_strings::{Strings, Vocabulary};
 use alo_turn::{Machine, Turning};
@@ -65,6 +66,7 @@ use alo_turn::{Machine, Turning};
 use crate::caller::{Caller, Uid};
 use crate::knocking::Knocking;
 use crate::place::Place;
+use crate::questions::Questions;
 use crate::refusing::NotACaller;
 use crate::side::{Side, Sides};
 use crate::unix::{our_group, us};
@@ -304,6 +306,90 @@ impl Knocking for Pretending {
 /// is asserted in `alo-bounding`'s own tests against a real kernel, and through
 /// this service in `tests/a_turn_is_bounded_by_the_kernel.rs`, which is one test
 /// in a binary of its own for exactly that reason.
+/// A turn on a machine that has granted nothing, writing into this record.
+///
+/// [`on_a_machine`] is the same thing with a folder and a grant in it, and it
+/// keeps the record to itself. This one lends it out, because what a question
+/// to a model leaves behind is the thing being tested — and a machine with no
+/// grant is the honest setting for it: asking a model is not a verb and reaches
+/// no folder.
+pub(crate) fn on_a_machine_that_answers<T>(
+    record: &mut Record,
+    doing: impl FnOnce(&mut Turning<'_, '_>, &Grants, &Strings) -> T,
+) -> T {
+    let strings = in_english();
+    let mut indicator = Indicator::default();
+    let mut bounding = NothingIsBounded;
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        record,
+    )
+    .unwrap();
+    let mut grants = Grants::default();
+    let mut turning = Turning::beginning(
+        Context::at_invocation(noon()),
+        "@files",
+        hour(),
+        &mut grants,
+        &mut machine,
+    )
+    .unwrap();
+    doing(&mut turning, &grants, &strings)
+}
+
+/// A model runtime that says one thing, without one being installed anywhere.
+///
+/// `alo_models::found_on_this_machine` answers with a type no caller can name,
+/// which is ADR 0019 held by the compiler — so a test cannot ask for a runtime
+/// pointed somewhere of its own, and does not want one. What it wants is a
+/// question arriving and an answer coming back, which is the one method below
+/// that does anything.
+#[derive(Debug)]
+pub(crate) struct Saying(Result<String, RuntimeError>);
+
+/// A runtime that answers every question with this.
+pub(crate) fn a_runtime_saying(said: Result<String, RuntimeError>) -> Box<dyn ModelRuntime> {
+    Box::new(Saying(said))
+}
+
+impl ModelRuntime for Saying {
+    fn installed(&self) -> Result<Vec<Installed>, RuntimeError> {
+        Ok(Vec::new())
+    }
+
+    fn loaded(&self) -> Result<Vec<Loaded>, RuntimeError> {
+        Ok(Vec::new())
+    }
+
+    fn fetch(&self, id: &str, _progress: &mut dyn ProgressSink) -> Result<(), RuntimeError> {
+        Err(RuntimeError::NotOffered(id.to_owned()))
+    }
+
+    fn remove(&self, id: &str) -> Result<(), RuntimeError> {
+        Err(RuntimeError::NotInstalled(id.to_owned()))
+    }
+
+    fn load(&self, id: &str) -> Result<(), RuntimeError> {
+        Err(RuntimeError::NotInstalled(id.to_owned()))
+    }
+
+    fn unload(&self, id: &str) -> Result<(), RuntimeError> {
+        Err(RuntimeError::NotInstalled(id.to_owned()))
+    }
+
+    fn answers(&self, _question: &str, _of_model: &str) -> Result<String, RuntimeError> {
+        self.0.clone()
+    }
+}
+
+/// A machine where nobody has chosen anything to answer questions.
+pub(crate) fn nothing_has_been_chosen() -> Questions {
+    Questions::of_a_session(None, None, Catalogue::built_in().unwrap(), None)
+}
+
 #[derive(Debug)]
 pub(crate) struct NothingIsBounded;
 
