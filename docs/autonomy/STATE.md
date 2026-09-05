@@ -9307,14 +9307,19 @@ Updated **in place** by every iteration that finds the queue's last word is
 appended for one; a run that finds either answer changed writes a real entry
 above this line instead.
 
+**The streak ended on 2026-09-05**, when ADR 0019 arrived and item 21k became
+buildable. The table below is what it said at the end and is kept as history;
+the entries after it are iterations again, and the next empty queue starts this
+count from nothing rather than from thirty-eight.
+
 | | |
 |---|---|
-| Consecutive empty queues | **38** |
+| Consecutive empty queues | **38**, ended |
 | Last confirmed | 2026-09-05, against `7b894a1` |
-| Highest ADR | 0018 |
-| Blocked items | 16b, 19b, 21i, 21k, 21l, 23b, 26f, 29 |
+| Highest ADR | 0018 at the time; 0019 is what ended it |
+| Blocked items | 16b, 19b, 21i, 21k, 21l, 23b, 26f, 29 — 21k has since been built |
 | Last iteration that built something | item 30, `f8f1ee2` — the agent service can make the two places it is not given |
-| Gate last run in full | four times against this tree: 1954 test results on Linux, 1723 on Windows, zero failures |
+| Gate last run in full | four times against that tree: 1954 test results on Linux, 1723 on Windows, zero failures |
 
 **The marker itself, where the supervisor can see it.** Everything above says
 `LOOP COMPLETE` inside backticks, in prose, which the supervisor cannot read: its
@@ -9373,3 +9378,77 @@ that confirms it.
 `Answers`, through the adapter's discovery for a catalogued model and the
 person's list for a brought one. **21l** and **26f** are freed with it.
 
+
+---
+
+## Iteration — item 21k, a choice resolves into something that can answer
+
+**What it built.** The two facts ADR 0019 says nothing on a machine stated.
+`alo-models` gained `found_on_this_machine` in `ollama.rs` — the runtime is
+**found**, at an address the only file allowed to know Ollama exists knows, and
+nothing else may carry one. `alo-choosing` gained the person's own weights:
+`[[brought]]` in the settings file, the entry a choice names, three refusals and
+three words for them. `docs/contracts/person-settings.md` gained the section and
+a paragraph saying positively that there is no address key and will not be one.
+
+**What the gate said.** `cargo fmt` clean and `cargo clippy --workspace
+--all-targets` zero warnings and zero errors on both hosts. **1929 tests and 46
+doctests on Linux, 1698 and 46 on Windows**, zero failures — 21 more than the
+tree this iteration started from on each, which is the number this iteration
+wrote. `cargo doc --workspace --no-deps` silent on Linux. Both crates are
+portable, so Windows is the ordinary path here and Linux is the second reading
+rather than the only one.
+
+**The scope cut, and why it is a scope cut.** ADR 0019 decides three things and
+this iteration built two. The third — *whose settings*, which is the daemon
+reading its own environment — is `alo-agentd`, and reaching it means the turn
+loop, the bound the machine description does not yet carry, and `Places`. That
+is an iteration, not a paragraph, so it is **item 21n** in the queue, written out
+with its four open questions. Both halves are whole: this one is a road that
+exists and is tested end to end, and that one is a crate walking it.
+
+**Where the wiring stops was the decision.** `alo_turn::Answers` is one line —
+`Answers::Runtime(&runtime)` — in whoever holds both a choice and a runtime, and
+putting that line in a library would have meant `alo-choosing` reaching
+`alo-turn` or the reverse for something neither has a reason to own. So the join
+stays where every other one in this workspace is: everything decides, one thing
+runs.
+
+**Two things were decided that the ADR did not contain.**
+
+- **Something else listening is not a runtime found.** Discovery asks the
+  runtime its own question and reads the answer, so a web server on that port is
+  nothing found rather than a runtime that fails on somebody's first question.
+  ADR 0019 refuses discovery by scanning for whatever answers; this is the same
+  rule at the one address there is.
+- **A settings value cannot outrun its own list.** `Settings::of` refuses a
+  choice naming the brought list when nothing on that list answers to the name,
+  so both roads in are closed — the file and a settings panel calling it
+  directly — and `Settings::weights` promises an entry rather than an `Option`
+  somebody downstream has to decide about. The file road reports it as
+  `NotSet::NotBrought`, quoting the name back.
+
+**And one thing the signature carries rather than the prose.**
+`found_on_this_machine` answers `Option<impl ModelRuntime>`, not
+`Option<Ollama>`: a caller cannot name the type and therefore cannot construct
+one pointed anywhere. ADR 0019's *no override key, no environment variable, no
+advanced address field* is held by the compiler instead of by nobody having
+added one yet.
+
+**What 21k did not free.** Item **21l** is still blocked, and the reason is
+worth writing down because the ADR's consequences section says 21l and 26f are
+freed *with* 21k. Half of that is right. A brought model is **this machine**, so
+both lists a choice can name are still this machine and no `SourcePolicy`
+refuses one — 21l needs a provider list or a paired-machine list, and neither
+has an item. The queue entry now says so rather than pointing at a done item.
+**26f** was never about this and is unaffected either way.
+
+**What the next iteration takes.** Item **21n**, above. Its first question is
+whether the machine description gains a `SourcePolicy` key — that is ADR 0016's
+subject, and a machine no organisation manages passes `None` and is unaffected
+whichever way it goes.
+
+**Nothing on the development box was touched.** No unit was installed or
+started, nothing was pinned, no image was built. The WSL box ran `cargo test`,
+`cargo clippy` and `cargo doc` and nothing else; `bpffs` was mounted for the
+workspace run and everything under `/sys/fs/bpf` was left as the tests left it.

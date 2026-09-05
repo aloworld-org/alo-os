@@ -33,8 +33,25 @@
 //! state of a machine nobody has configured and is answered by *nothing here
 //! has been chosen to answer questions*. A file with `[answers]` and nothing in
 //! it is a mistake, and it is refused.
+//!
+//! # The weights somebody brought are a shape of their own, and they are
+//! kebab-case
+//!
+//! `alo_models::Weights` has a `Deserialize` already, and it is deliberately
+//! not what reads `[[brought]]`. That derive spells its keys the way its fields
+//! are named; a file a person types spells them the way
+//! `docs/contracts/machine-description.md` does — `turn-seconds`, `for-days`,
+//! and here `bytes-on-disk` and `drives-verbs`. This file is the shape on the
+//! disk, so the spelling is this file's decision and the checked value is
+//! `alo-models`'.
+//!
+//! What is **not** restated is the rule underneath it: `drives-verbs` has no
+//! serde default here for the same reason it has none there, which is that an
+//! entry saying nothing about the measurement would read as *probably fine*.
 
 use serde::Deserialize;
+
+use alo_models::{Brought, Driving, Weights, WeightsError};
 
 use crate::chosen::{Chosen, Which};
 use crate::refusing::NotSet;
@@ -72,8 +89,55 @@ struct AsWritten {
     _format: u32,
     /// What answers this person's questions, where they have chosen.
     answers: Option<TheAnswers>,
+    /// The weights they brought to this machine themselves, where they have
+    /// brought any. An array of tables, so a file that has none simply has no
+    /// `[[brought]]` in it.
+    brought: Option<Vec<WeightsAsWritten>>,
     /// What they read, where they have said.
     reading: Option<TheReading>,
+}
+
+/// One set of weights on the person's own list, exactly as they were written.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+struct WeightsAsWritten {
+    /// What the model runtime on this machine answers to. Matched exactly,
+    /// which is `alo_models::Brought`'s rule and item 1's before it.
+    id: String,
+    /// What the weights take on this machine's disk, as the runtime reported
+    /// it.
+    bytes_on_disk: u64,
+    /// The quantisation the runtime reports, where it says. The one key here
+    /// that may be absent, because a runtime does not always say.
+    #[serde(default)]
+    quantisation: Option<String>,
+    /// What a measurement of these weights earned. No serde default, so an
+    /// entry that says nothing about it fails to read.
+    drives_verbs: Driving,
+}
+
+impl WeightsAsWritten {
+    /// These as weights, or the reason they are not.
+    fn checked(self) -> Result<Weights, WeightsError> {
+        let mut weights = Weights::checked(&self.id, self.bytes_on_disk)?;
+        weights.quantisation = self.quantisation;
+        Ok(weights.measured(self.drives_verbs))
+    }
+}
+
+/// This crate's own reason for a `[[brought]]` entry that is not weights.
+///
+/// `alo_models::WeightsError` is about a **list** and these are about a
+/// **file**, which is why they are not carried across and reworded: what a
+/// person needs in order to act is the path, and the list has no path in it.
+fn not_weights(at: &std::path::Path, why: WeightsError) -> NotSet {
+    match why {
+        WeightsError::Unnamed => NotSet::WeightsUnnamed { at: at.to_owned() },
+        WeightsError::AlreadyBrought(id) => NotSet::WeightsTwice {
+            at: at.to_owned(),
+            id,
+        },
+    }
 }
 
 /// Which list, and which entry in it.
@@ -120,6 +184,14 @@ impl AsWritten {
         .transpose()
         .map_err(|_| NotSet::Nameless { at: at.to_owned() })?;
 
+        // `Brought::add` is what refuses two entries answering to one name, so
+        // the list is built through its door rather than collected into one.
+        let mut brought = Brought::default();
+        for entry in self.brought.unwrap_or_default() {
+            let weights = entry.checked().map_err(|why| not_weights(at, why))?;
+            brought.add(weights).map_err(|why| not_weights(at, why))?;
+        }
+
         let mut languages = Vec::new();
         for tag in self
             .reading
@@ -134,7 +206,12 @@ impl AsWritten {
                 })?;
             languages.push(language);
         }
-        Ok(Settings::of(chosen, languages))
+        // Last, because it is the only question that needs both halves of the
+        // file: a choice from the brought list has to name something on it.
+        Settings::of(chosen, brought, languages).map_err(|why| NotSet::NotBrought {
+            at: at.to_owned(),
+            model: why.named().to_owned(),
+        })
     }
 }
 
@@ -192,6 +269,12 @@ catalogue = "mistral-small"
 
 [reading]
 languages = ["de", "en"]
+
+[[brought]]
+id = "my-finetune"
+bytes-on-disk = 4700000000
+quantisation = "Q4_K_M"
+drives-verbs = "reliably"
 "#
         .to_owned()
     }
@@ -219,10 +302,129 @@ languages = ["de", "en"]
     /// mean the other one.
     #[test]
     fn weights_somebody_brought_are_a_different_choice_from_a_catalogued_model() {
-        let said = as_the_contract_writes_them().replace("catalogue =", "brought =");
+        let said = as_the_contract_writes_them().replace(
+            r#"catalogue = "mistral-small""#,
+            r#"brought = "my-finetune""#,
+        );
         let settings = read(&said, somewhere()).unwrap();
         assert_eq!(settings.chosen().unwrap().which(), Which::Brought);
+        assert_eq!(settings.chosen().unwrap().model(), "my-finetune");
+        // And what it resolves to is the entry, not the name again.
+        assert_eq!(settings.weights().unwrap().bytes_on_disk, 4_700_000_000);
+    }
+
+    /// **The list a person brought is theirs, and every part of an entry
+    /// arrives** — including the grade a measurement of their own weights
+    /// earned, which is the thing nobody would want re-run at every boot.
+    #[test]
+    fn the_weights_in_the_contract_are_weights() {
+        let settings = read(&as_the_contract_writes_them(), somewhere()).unwrap();
+        let weights = settings.brought().get("my-finetune").unwrap();
+        assert_eq!(weights.bytes_on_disk, 4_700_000_000);
+        assert_eq!(weights.quantisation.as_deref(), Some("Q4_K_M"));
+        assert_eq!(weights.drives_verbs, Driving::Reliably);
+        assert!(weights.can_be_the_agent());
+    }
+
+    /// **What a runtime reports it does not always say**, so the quantisation is
+    /// the one key on an entry that may be absent — and its absence is not the
+    /// entry failing to read.
+    #[test]
+    fn weights_whose_quantisation_the_runtime_never_said_are_still_weights() {
+        let said = as_the_contract_writes_them().replace("quantisation = \"Q4_K_M\"\n", "");
+        let settings = read(&said, somewhere()).unwrap();
+        assert_eq!(
+            settings.brought().get("my-finetune").unwrap().quantisation,
+            None
+        );
+    }
+
+    /// **An entry that says nothing about the measurement does not read**,
+    /// which is `alo_models::Weights`' own rule reaching the file it is stored
+    /// in: *not measured* is a thing to state rather than a blank to leave.
+    #[test]
+    fn weights_that_say_nothing_about_the_measurement_refuse_the_file() {
+        let said = as_the_contract_writes_them().replace("drives-verbs = \"reliably\"\n", "");
+        assert!(matches!(
+            read(&said, somewhere()).unwrap_err(),
+            NotSet::NotUnderstood { .. }
+        ));
+    }
+
+    /// **Weights with no name are refused**, because there would be nothing to
+    /// ask the runtime for — and the whole file goes with them.
+    #[test]
+    fn weights_with_no_name_refuse_the_file() {
+        let said = as_the_contract_writes_them().replace(r#"id = "my-finetune""#, r#"id = "  ""#);
+        assert!(matches!(
+            read(&said, somewhere()).unwrap_err(),
+            NotSet::WeightsUnnamed { .. }
+        ));
+    }
+
+    /// **The same weights twice is refused**, because *these answered it* could
+    /// not then say which — `alo_models::Brought::add`'s rule, met at the file
+    /// that holds the list.
+    #[test]
+    fn the_same_weights_listed_twice_refuse_the_file() {
+        let said = as_the_contract_writes_them()
+            + "\n[[brought]]\nid = \"my-finetune\"\nbytes-on-disk = 1\ndrives-verbs = \"rarely\"\n";
+        let refused = read(&said, somewhere()).unwrap_err();
+        assert!(
+            matches!(&refused, NotSet::WeightsTwice { id, .. } if id == "my-finetune"),
+            "{refused:?}"
+        );
+    }
+
+    /// **Two ids differing in case are two models**, which is
+    /// `alo_models::Brought`'s rule and item 1's before it: a runtime matches
+    /// exactly, so a file listing both is listing two things.
+    #[test]
+    fn weights_differing_only_in_case_are_two_entries_rather_than_one() {
+        let said = as_the_contract_writes_them()
+            + "\n[[brought]]\nid = \"My-Finetune\"\nbytes-on-disk = 1\ndrives-verbs = \"rarely\"\n";
+        let settings = read(&said, somewhere()).unwrap();
+        assert_eq!(settings.brought().weights.len(), 2);
+    }
+
+    /// **A choice naming weights the list does not have refuses the file**, and
+    /// the refusal quotes the name back: the two halves of a settings file
+    /// disagree, and taking either one would be the machine deciding which of
+    /// them the person meant.
+    #[test]
+    fn a_choice_naming_weights_that_are_not_listed_refuses_the_file() {
+        let said = as_the_contract_writes_them().replace(
+            r#"catalogue = "mistral-small""#,
+            r#"brought = "my-finetunes""#,
+        );
+        let refused = read(&said, somewhere()).unwrap_err();
+        assert!(
+            matches!(&refused, NotSet::NotBrought { model, .. } if model == "my-finetunes"),
+            "{refused:?}"
+        );
+    }
+
+    /// **A file with no `[[brought]]` in it is a person who brought nothing**,
+    /// which is most machines — and it is not a mistake any more than choosing
+    /// nothing is.
+    #[test]
+    fn a_person_who_brought_nothing_has_an_empty_list_rather_than_a_refusal() {
+        let settings = read("format = 1\n", somewhere()).unwrap();
+        assert!(settings.brought().weights.is_empty());
+        assert!(settings.weights().is_none());
+    }
+
+    /// **A catalogued choice is not checked against anything here.** The
+    /// catalogue ships with the release rather than living in this file, and a
+    /// model already on somebody's disk is theirs to ask — so the one list this
+    /// file can contradict itself about is the one it holds.
+    #[test]
+    fn a_catalogued_choice_is_not_looked_for_in_the_list_the_person_brought() {
+        let settings = read(&as_the_contract_writes_them(), somewhere()).unwrap();
+        assert_eq!(settings.chosen().unwrap().which(), Which::Catalogue);
         assert_eq!(settings.chosen().unwrap().model(), "mistral-small");
+        assert!(settings.brought().get("mistral-small").is_none());
+        assert!(settings.weights().is_none());
     }
 
     /// **A file with nothing chosen in it is not an error**, which is the

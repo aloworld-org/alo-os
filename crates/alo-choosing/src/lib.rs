@@ -10,7 +10,7 @@
 //! | | Owner | Where | What |
 //! |---|---|---|---|
 //! | The bound | the organisation | `/etc/alo/agentd.toml` | `alo_models::SourcePolicy` — which places are permitted at all |
-//! | The choice | the person | [`THE_SETTINGS`], under `$XDG_CONFIG_HOME/alo` | which model answers, and which language they read |
+//! | The choice | the person | [`THE_SETTINGS`], under `$XDG_CONFIG_HOME/alo` | which model answers, which weights they brought themselves, and which language they read |
 //!
 //! **This crate is the person's half**, and it holds the one place the two meet
 //! — [`Chosen::asking`], which is the only door in it that produces an
@@ -49,6 +49,21 @@
 //! was wrong with it, and nothing in it is honoured. Half a settings file is
 //! the machine choosing the other half.
 //!
+//! # A choice cannot outrun the list it names
+//!
+//! Since [ADR 0019](../../../docs/decisions/0019-a-runtime-is-found-not-configured.md)
+//! one of the two lists a choice can name lives **here**: the weights somebody
+//! brought are the person's, and they go beside the choice rather than in a
+//! store of their own. [`Settings::of`] is what that costs — a choice naming
+//! the brought list must name an entry on it, refused where the pair is made
+//! rather than answered with a `None` further on. [`Settings::weights`]
+//! promises the entry because of it.
+//!
+//! The catalogue is deliberately not checked the same way: it ships with the
+//! release rather than living in this file, and a model already on somebody's
+//! disk is theirs to ask. The one list this crate can contradict itself about
+//! is the one it holds.
+//!
 //! # What is not here yet
 //!
 //! **A provider, and a machine in the next room.** Both are places ADR 0008
@@ -57,6 +72,11 @@
 //! paired with (ADR 0003). [`Which`] is the closed list of the two lists that
 //! do exist, so a choice this machine cannot honour is a file that fails to
 //! read rather than a setting that silently does nothing.
+//!
+//! **And an address, which is not coming.** Where a model runtime on this
+//! machine is, is `alo_models`' adapter's own knowledge — ADR 0019 — so there
+//! is no key for one here and no key for one in the organisation's file
+//! either.
 
 mod bound;
 mod chosen;
@@ -71,6 +91,6 @@ mod written;
 pub use chosen::{Chosen, NoModel, Which};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is};
 pub use refusing::NotSet;
-pub use settings::Settings;
+pub use settings::{NoSuchWeights, Settings};
 pub use words::{EVERY_WORD, Word, WordsError, choosing_words, declare_into};
 pub use written::THE_FORMAT;

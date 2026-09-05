@@ -12,6 +12,40 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **You can now list the models you brought yourself in your own settings, and
+  alo OS finds the runtime that answers rather than asking anybody where it
+  is.** Two things stood between picking a model and getting an answer, and both
+  were the same shape: a fact nothing on the machine wrote down anywhere.
+
+  **Where a model runs is not a setting, and it will not become one.** Nothing
+  in alo OS carries the address of the thing that runs a model on your machine —
+  not the file your administrator writes, not the file you write, not any
+  "advanced" field. It is found. The reason is worth the sentence: an address
+  somebody could change is a way for whoever manages your computer to point your
+  agent at a machine of their choosing, and the light that tells you when
+  something leaves would go on saying nothing was leaving because, technically,
+  nothing was. If you genuinely want a model somewhere else, that is a provider
+  — you add it yourself, you see it in the indicator, and your organisation's
+  rule about where questions may go still applies to it.
+
+  **Weights you brought are yours, so they are listed in your file and nowhere
+  else.** Point alo OS at a model you already have and it goes in your settings
+  beside the choice, with what it cost your disk and what your own measurement
+  of it earned — so nothing has to be measured again at every start, and nobody
+  else can add an entry to a list of models your agent might run. alo OS still
+  states no licence for anything on that list and does not pretend to have
+  checked one.
+
+  **And a settings file whose two halves disagree is refused, not guessed at.**
+  If it says your questions are answered by weights called `my-finetune` and
+  lists none of that name — a name typed twice with one letter different, most
+  often — the file is refused whole and the name is quoted back to you. The
+  alternative would be a machine deciding which half of your settings you meant.
+
+  What has not changed yet is what a question gets back: the service still says
+  *nothing on this machine has been chosen to answer questions*, because it does
+  not read your settings yet. The road is built; walking it is the next change.
+
 - **The agent service now stays running on a machine that has booted.** On the
   first alo OS image ever booted it started and was gone thirty milliseconds
   later, leaving no door for an agent to knock on and one line in the system log

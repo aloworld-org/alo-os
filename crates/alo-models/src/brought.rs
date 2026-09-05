@@ -40,7 +40,7 @@ use crate::weights::{Weights, WeightsError};
 /// `Serialize` for the reason [`crate::Providers`] is: this is what a settings
 /// file holds. Where it is written and when is the daemon's, and does not exist
 /// yet.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Brought {
     /// In the order they were brought.
     #[serde(default)]

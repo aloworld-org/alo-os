@@ -73,6 +73,49 @@ fn what_a_person_wrote_is_what_the_machine_reads_back() {
     );
 }
 
+/// **The weights a person brought to this machine are in the person's own
+/// file**, which is ADR 0019 as a file on a real disk: the choice, the list it
+/// names, and the grade their own measurement earned, all read back through the
+/// one door.
+#[test]
+fn the_weights_a_person_brought_are_read_back_from_their_own_file() {
+    let home = a_home_of_our_own("brought");
+    let at = settings_under(
+        &home,
+        "format = 1\n\n[answers]\nbrought = \"my-finetune\"\n\n\
+         [[brought]]\nid = \"my-finetune\"\nbytes-on-disk = 4700000000\n\
+         quantisation = \"Q4_K_M\"\ndrives-verbs = \"reliably\"\n",
+    );
+
+    let settings = Settings::at(&at).unwrap();
+    assert_eq!(settings.chosen().unwrap().which(), Which::Brought);
+    let weights = settings.weights().unwrap();
+    assert_eq!(weights.id, "my-finetune");
+    assert_eq!(weights.bytes_on_disk, 4_700_000_000);
+    assert!(weights.can_be_the_agent());
+}
+
+/// **A file whose two halves disagree is refused whole**, on a real disk as in
+/// the arithmetic: the choice names weights the same file does not list, and
+/// nothing in it is honoured — not the language, which is perfectly good.
+#[test]
+fn a_choice_naming_weights_the_same_file_does_not_list_is_refused() {
+    let home = a_home_of_our_own("disagreeing");
+    let at = settings_under(
+        &home,
+        "format = 1\n\n[answers]\nbrought = \"my-finetunes\"\n\n\
+         [reading]\nlanguages = [\"de\"]\n\n\
+         [[brought]]\nid = \"my-finetune\"\nbytes-on-disk = 1\ndrives-verbs = \"reliably\"\n",
+    );
+
+    let refused = Settings::at(&at).unwrap_err();
+    assert!(
+        matches!(&refused, NotSet::NotBrought { model, .. } if model == "my-finetunes"),
+        "{refused:?}"
+    );
+    assert_eq!(refused.at(), at);
+}
+
 /// **Where the file goes is `$XDG_CONFIG_HOME/alo/settings.toml`**, and this is
 /// the test that the two named constants are the two directories a real path
 /// ends in rather than two strings nobody joined.

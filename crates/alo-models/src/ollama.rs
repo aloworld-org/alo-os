@@ -33,6 +33,17 @@
 //! nowhere else: not into a `RuntimeError`, which has no field for it, and not
 //! into anything this file keeps. ADR 0001 §7 is what that is for, and
 //! `a_question_goes_into_the_body_and_nowhere_else` is the test.
+//!
+//! # Where the runtime is, is also this file's
+//!
+//! [ADR 0019](../../../docs/decisions/0019-a-runtime-is-found-not-configured.md)
+//! settles the one thing ADR 0006's rule was silent about: an *address* is as
+//! much a mention of Ollama as a field name is, so nothing outside this file may
+//! carry one. [`found_on_this_machine`] is the door the rest of alo OS uses, and
+//! what it hands back is deliberately opaque — a caller that could name the type
+//! could point it somewhere, and an operator who could point the agent
+//! elsewhere would leave the egress indicator honest about a destination nobody
+//! chose.
 
 use std::time::Duration;
 
@@ -80,6 +91,54 @@ const MOST_OF_AN_ANSWER: u64 = 1_000_000;
 /// the time they have finished typing; short enough that a forgotten model
 /// eventually gives the card back.
 const DEFAULT_KEEP_ALIVE: &str = "30m";
+
+/// The model runtime on this machine, where this machine has one.
+///
+/// **Found, never configured.**
+/// [ADR 0019](../../../docs/decisions/0019-a-runtime-is-found-not-configured.md):
+/// no contract, machine description or settings file names an address. A key
+/// for one would be an Ollama endpoint sitting in a public surface, which is
+/// ADR 0006's one-file rule broken, and — in the organisation's file — the
+/// organisation choosing which runtime answers, which is ADR 0016's
+/// bound-versus-choice line one indirection away. A local runtime is at a local
+/// address, and that is a fact about the runtime rather than about a
+/// deployment.
+///
+/// **Nothing found is an answer rather than a failure**, which is why this
+/// answers with [`Option`] and not [`Result`]. A machine where nobody has
+/// installed a runtime is an ordinary machine, and what a person is told about
+/// it is the daemon's *nothing on this machine has been chosen to answer
+/// questions*.
+///
+/// **Ask it each time rather than once.** It is one request to a socket on this
+/// machine, refused immediately when nothing is listening, so a runtime started
+/// after the service was is found the next time somebody asks — and one that has
+/// stopped is not still being offered.
+///
+/// The type that comes back is opaque on purpose: a caller who could name it
+/// could construct one pointed elsewhere, and there is deliberately no override
+/// for an operator to reach for. A genuinely remote runtime is a
+/// [`crate::Provider`], which alo OS already models, shows on the indicator and
+/// bounds.
+#[must_use]
+pub fn found_on_this_machine(catalogue: Catalogue) -> Option<impl ModelRuntime> {
+    found_at(DEFAULT_ENDPOINT, catalogue)
+}
+
+/// The same question, asked at an address a test can serve on.
+///
+/// Private, and that privacy is the whole of the difference between this and
+/// [`found_on_this_machine`]: nothing outside this file chooses where a runtime
+/// is looked for.
+fn found_at(endpoint: &str, catalogue: Catalogue) -> Option<Ollama> {
+    let runtime = Ollama::at(endpoint, catalogue);
+    // What is on disk is the runtime's own question, and only a runtime can
+    // answer it. Something else listening at that address answers with
+    // something this cannot read, which is nothing found rather than a runtime
+    // that will fail on the first real question — ADR 0019 refuses discovery by
+    // asking what happens to answer.
+    runtime.installed().ok().map(|_| runtime)
+}
 
 /// Ollama, reached over its HTTP API.
 #[derive(Debug, Clone)]
@@ -448,10 +507,65 @@ impl Ollama {
 )]
 mod tests {
     use super::*;
-    use crate::testing::serving;
+    use crate::testing::{serving, serving_in_turn};
 
     fn catalogue() -> Catalogue {
         Catalogue::built_in().unwrap()
+    }
+
+    /// **A machine with no runtime finds none**, and that is an answer rather
+    /// than a failure: ADR 0019's *discovery that finds nothing is an answer*,
+    /// as the shape of the type rather than as a sentence.
+    #[test]
+    fn a_machine_with_nothing_listening_finds_no_runtime() {
+        assert!(found_at("http://127.0.0.1:1", catalogue()).is_none());
+    }
+
+    /// **A runtime that is there is found, and is the thing that then answers.**
+    /// The whole road ADR 0019 opens, in one test: nobody named an address,
+    /// something was found at the one this file knows, and a question went to
+    /// it.
+    #[test]
+    fn a_runtime_on_this_machine_is_found_and_is_what_answers() {
+        let (url, server) = serving_in_turn(
+            &[
+                r#"{"models":[{"name":"a-model:latest","size":1}]}"#,
+                r#"{"message":{"role":"assistant","content":"No, not without written consent."}}"#,
+            ],
+            200,
+        );
+        let found = found_at(&url, catalogue()).unwrap();
+        let answer = found.answers("may the tenant sublet?", "a-model").unwrap();
+        let asked = server.join().unwrap();
+
+        assert_eq!(answer, "No, not without written consent.");
+        // Finding one is the runtime's own question, and asking it something is
+        // the caller's — two calls, in that order.
+        assert!(asked[0].starts_with("GET /api/tags "), "{}", asked[0]);
+        assert!(asked[1].starts_with("POST /api/chat "), "{}", asked[1]);
+    }
+
+    /// **Something else listening is not a runtime found.** ADR 0019 refuses
+    /// discovery by looking at whatever answers, and this is that rule at the
+    /// one address there is: a reply this cannot read is nothing found, rather
+    /// than a runtime that would fail on somebody's first question.
+    #[test]
+    fn something_that_is_not_a_runtime_answering_is_not_a_runtime_found() {
+        let (url, server) = serving("<!doctype html><title>Welcome</title>", 200);
+        assert!(found_at(&url, catalogue()).is_none());
+        server.join().unwrap();
+    }
+
+    /// **The address a runtime is looked for at is on this machine**, so
+    /// discovery itself can never reach off it — law 1's zero inference egress
+    /// covers the finding as well as the asking, and it is the address rather
+    /// than a caller's care that makes it true.
+    #[test]
+    fn a_runtime_is_only_ever_looked_for_on_this_machine() {
+        assert!(
+            DEFAULT_ENDPOINT.starts_with("http://127.0.0.1:"),
+            "{DEFAULT_ENDPOINT}"
+        );
     }
 
     /// Compare request bodies without depending on how the HTTP client chooses

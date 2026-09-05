@@ -147,7 +147,12 @@ socket and no serde with which to go there. **`alo-choosing` is the only one
 that is a person rather than an agent or a machine**: since item 21h it holds
 what somebody chose about their own computer, it reaches `alo-answering` and
 `alo-models` for the one place their rule and that choice meet, and nothing
-reaches it. It is as far from `alo-capability` as `alo-appearance` and
+reaches it. Since item 21k it holds the weights somebody brought as well as the
+choice, which is ADR 0019 refusing a second store for one owner — and it is the
+only crate that **refuses a value because its two halves disagree** rather than
+because either half is wrong: a choice naming the brought list must name an
+entry on it, and both roads into a `Settings` are closed against a pair that
+cannot. It is as far from `alo-capability` as `alo-appearance` and
 `alo-shortcuts` are, and for the same reason — a person picking their own model
 is not an agent doing anything — and it is the third crate to reach
 `alo-models`, after `alo-egress` and `alo-answering`, which between them are now
@@ -2334,7 +2339,7 @@ out.
   Built and unit tested, and read off a real filesystem by the crate's own
   integration test. **Nothing here has put a question to a model.**
 
-- [ ] **21k. From a choice to an answer.** Cut from 21h, which built the setting
+- [x] **21k. From a choice to an answer.** Cut from 21h, which built the setting
   and stopped where the setting stops. `alo_choosing::Chosen` says *this model,
   from this list* and `Chosen::asking` says *and the bound permits it here*;
   `alo_turn::Turning::asking` wants an `alo_turn::Answers` — a `ModelRuntime` or
@@ -2385,6 +2390,90 @@ out.
 
   `agentd.nothing-answers-questions` stays exactly as it is for a machine with
   no runtime found. Discovery that finds nothing is an answer, not a failure.
+
+  **Built: the two facts, and the road between them. The third — whose settings
+  — is `alo-agentd`'s and is cut to item 21n below.** `alo-models`:
+  `found_on_this_machine` in `ollama.rs`, the only file allowed to know where
+  Ollama listens, answering `Option<impl ModelRuntime>`; `Brought` gained
+  `PartialEq`. `alo-choosing`: `[[brought]]` in `written.rs`, the list and the
+  entry a choice names in `settings.rs`, three refusals in `refusing.rs` and
+  three words for them. `docs/contracts/person-settings.md` gained the section.
+  21 new tests — 1929 and 46 doctests on Linux, 1698 and 46 on Windows, both
+  green, `cargo doc` silent on Linux.
+
+  **Where the wiring stops is the decision this item made.** `Answers` is
+  `alo-turn`'s and building one is `Answers::Runtime(&runtime)`, one line, in
+  whoever holds both — and that is the daemon. Putting the join in a library
+  would have meant `alo-choosing` reaching `alo-turn` or the reverse, for a
+  line neither crate has a reason to own. So this item built the two things
+  that were genuinely missing and left the marriage where every other one in
+  this workspace is: *everything decides, one thing runs*.
+
+  **The type that comes back from discovery is opaque, and that is ADR 0006 in
+  its stronger form.** `found_on_this_machine` answers `Option<impl
+  ModelRuntime>` rather than `Option<Ollama>`, so a caller cannot name the type
+  and therefore cannot construct one pointed anywhere. The ADR's *no override
+  key, no environment variable, no advanced address field* is carried by the
+  signature rather than by nobody having added one yet.
+
+  **Two things were decided that the ADR did not contain.** *Something else
+  listening is not a runtime found* — discovery asks the runtime its own
+  question and reads the answer, so a web server on that port is nothing found
+  rather than a runtime that fails on somebody's first question; ADR 0019
+  refuses discovery by looking at whatever answers, and this is that rule at the
+  one address there is. And **a settings value cannot outrun its own list**:
+  `Settings::of` refuses a choice naming the brought list when nothing on that
+  list answers to the name, so both roads in — the file, and a settings panel
+  calling it — are closed, and `Settings::weights` can promise an entry rather
+  than an `Option` somebody has to decide about.
+
+  Three decisions the next items inherit. **A catalogued choice is checked
+  against nothing**, and the reason is written into a test: the catalogue ships
+  with the release rather than living in the person's file, and
+  `ModelRuntime::answers` has never been gated by it. **The list is not gated on
+  the measurement either** — `Brought::for_the_agent` is what a settings panel
+  offers from, and refusing at the moment of a question would be alo OS
+  overruling the owner of the machine about hardware they own, twice.
+  **`alo_models::WeightsError` is not carried across and reworded**: it is about
+  a list and `NotSet` is about a file, and what a person acts on is the path,
+  which a list has none of.
+
+- [ ] **21n. The daemon puts a question to what the person chose.** Cut from
+  21k, which built the road and stopped where the road stops. Everything
+  between a choice and an answer exists now — `alo_choosing::Settings` reads
+  the person's file, `Chosen::asking` makes the permission,
+  `alo_models::found_on_this_machine` finds the runtime, and
+  `alo_turn::Turning::asking` takes the two — and nothing walks it: `doing.rs`
+  answers every `FromAnAgent::Ask` with *nothing on this machine has been
+  chosen to answer questions*, which is true of every machine because nothing
+  reads a settings file.
+
+  What it needs, and none of it is a decision — ADR 0019 made all three:
+
+  - **whose settings.** The daemon's own environment, because it runs as the
+    person and systemd starts one per login (ADR 0019 §3). `where_it_is` takes
+    both variables as arguments and `crate::place` is where this process
+    already knows what a session is. The ADR records the one-daemon-one-login
+    shape as a **condition rather than an assumption**, so whatever reads the
+    environment says so in the same file.
+  - **when it is read.** Once at start or once a turn is a real choice with a
+    real cost: a person who changes their model mid-session and a service that
+    re-reads a file on every question are the two ends of it. `alo-keeping`'s
+    shortening is the precedent for *once a round*.
+  - **the bound.** `Chosen::asking` takes an `alo_models::SourcePolicy` and
+    `Described` does not carry one — `docs/contracts/machine-description.md`
+    has no policy key. Whether the organisation's file gains one is ADR 0016's
+    subject and this item's first question; a machine no organisation manages
+    passes `None` and is unaffected either way.
+  - **`Places`.** `Turning::asking` wants one, and ADR 0008's *somewhere else
+    to offer* is a provider list this machine still keeps nowhere — so
+    `Places::under(&bound)` with nothing else is the honest value, and the
+    offer a person can take stays empty until providers have a list.
+
+  **Linux, and it is the gate.** Every module in `alo-agentd` is
+  `cfg(target_os = "linux")`, so `LOOP.md`'s rule applies: the WSL command is
+  *the* gate rather than a supplement to one, and the test count is part of
+  what gets reported.
 
 - [x] **21m. Thirteen rustdoc warnings in two crates.** Found while gating item
   21j, which had three of its own and fixed them: `cargo doc --workspace
@@ -2440,11 +2529,15 @@ out.
   `alo_models::NotAllowed` whole and adds nothing.
 
   **Blocked on a place a question can leave for**, which is a provider or a
-  paired machine in `alo_choosing::Which` — the same missing lists as 21k. The
-  day a choice can name one, this crate gains one sentence with the rule inside
-  it, `alo-choosing`'s test fixture gains `alo-models`' words for the same
-  reason `alo-egress`' does, and the test that walks every policy against every
-  list stops passing for the reason it passes now.
+  paired machine in `alo_choosing::Which`. Item 21k did **not** free it, and
+  saying which half it freed is the point: 21k gave the brought list a home, and
+  a brought model is this machine — so both lists a choice can name are still
+  this machine and no `SourcePolicy` refuses that. What is missing is a list of
+  providers somebody added and of machines somebody paired with, and neither has
+  an item yet. The day a choice can name one, this crate gains one sentence with
+  the rule inside it, `alo-choosing`'s test fixture gains `alo-models`' words for
+  the same reason `alo-egress`' does, and the test that walks every policy
+  against every list stops passing for the reason it passes now.
 
 - [ ] **21i. Where a machine's grants are kept.** The storage item 1 left —
   *storage is serde, as with `Providers`; where the list is written and when is

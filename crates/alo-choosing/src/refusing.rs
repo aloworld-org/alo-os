@@ -1,9 +1,19 @@
 //! Why a person's settings were not read, in the words they read.
 //!
-//! Five things can be wrong with the file, and they are five variants rather
-//! than one because they send somebody to five different places: a disk that
+//! Eight things can be wrong with the file, and they are eight variants rather
+//! than one because they send somebody to eight different places: a disk that
 //! would not give it up, text that is not settings, a file written for a newer
-//! alo OS, a model named nothing, and a language nobody could read.
+//! alo OS, a model named nothing, a language nobody could read, and — since the
+//! person's own weights arrived here (ADR 0019) — weights with no name, the
+//! same weights listed twice, and a choice naming weights the list does not
+//! have.
+//!
+//! # The last three are about a list this file now holds
+//!
+//! `alo_models::WeightsError` says the same two things about a list, and is
+//! deliberately not carried across and reworded: it is about a **list**, these
+//! are about a **file**, and what a person needs in order to act is the path. A
+//! list has no path in it.
 //!
 //! # Every one of them names the file
 //!
@@ -84,6 +94,27 @@ pub enum NotSet {
         /// Why that is not a language.
         why: LanguageError,
     },
+    /// Weights on the person's own list with nothing to ask the runtime for.
+    WeightsUnnamed {
+        /// Where it is.
+        at: PathBuf,
+    },
+    /// The same weights on that list twice, so *these answered it* could not
+    /// say which.
+    WeightsTwice {
+        /// Where it is.
+        at: PathBuf,
+        /// What both entries answer to, exactly as it is written.
+        id: String,
+    },
+    /// The choice names the person's own list, and nothing on that list answers
+    /// to the name.
+    NotBrought {
+        /// Where it is.
+        at: PathBuf,
+        /// What the choice named, exactly as it is written.
+        model: String,
+    },
 }
 
 impl NotSet {
@@ -95,7 +126,10 @@ impl NotSet {
             | Self::NotUnderstood { at, .. }
             | Self::AnotherFormat { at, .. }
             | Self::Nameless { at }
-            | Self::NotALanguage { at, .. } => at,
+            | Self::NotALanguage { at, .. }
+            | Self::WeightsUnnamed { at }
+            | Self::WeightsTwice { at, .. }
+            | Self::NotBrought { at, .. } => at,
         }
     }
 
@@ -108,6 +142,9 @@ impl NotSet {
             Self::AnotherFormat { .. } => words::SETTINGS_FROM_A_NEWER_ALO_OS,
             Self::Nameless { .. } => words::SETTINGS_NAME_NO_MODEL,
             Self::NotALanguage { .. } => words::SETTINGS_NAME_NO_LANGUAGE,
+            Self::WeightsUnnamed { .. } => words::SETTINGS_WEIGHTS_UNNAMED,
+            Self::WeightsTwice { .. } => words::SETTINGS_WEIGHTS_TWICE,
+            Self::NotBrought { .. } => words::SETTINGS_NOT_BROUGHT,
         }
     }
 
@@ -129,10 +166,15 @@ impl NotSet {
         let filling = Filling::of("path", self.at().to_string_lossy().into_owned());
         let filling = match self {
             Self::NotALanguage { tag, .. } => filling.and("language", tag.clone()),
+            // Both quote back a name a runtime answers to, which is data and is
+            // never translated — the rule a filename is held to in `alo-files`.
+            Self::WeightsTwice { id, .. } => filling.and("model", id.clone()),
+            Self::NotBrought { model, .. } => filling.and("model", model.clone()),
             Self::NotRead { .. }
             | Self::NotUnderstood { .. }
             | Self::AnotherFormat { .. }
-            | Self::Nameless { .. } => filling,
+            | Self::Nameless { .. }
+            | Self::WeightsUnnamed { .. } => filling,
         };
         strings.say(&self.word().key(), &filling)
     }
@@ -176,6 +218,15 @@ mod tests {
                 tag: "Deutsch".to_owned(),
                 why: alo_strings::Language::written("Deutsch").unwrap_err(),
             },
+            NotSet::WeightsUnnamed { at: somewhere() },
+            NotSet::WeightsTwice {
+                at: somewhere(),
+                id: "my-finetune".to_owned(),
+            },
+            NotSet::NotBrought {
+                at: somewhere(),
+                model: "my-finetune".to_owned(),
+            },
         ]
     }
 
@@ -195,19 +246,42 @@ mod tests {
         }
     }
 
-    /// **Five reasons, five sentences.** A machine that said the same thing
+    /// **Eight reasons, eight sentences.** A machine that said the same thing
     /// about a disk that would not answer and a language nobody could read
     /// would be sending somebody to the wrong place twice.
     #[test]
     fn no_two_reasons_share_a_sentence() {
         let strings = in_english();
-        let mut said: Vec<String> = every_reason()
+        let reasons = every_reason();
+        let mut said: Vec<String> = reasons
             .iter()
             .map(|reason| reason.said(&strings).into_text())
             .collect();
         said.sort();
         said.dedup();
-        assert_eq!(said.len(), 5);
+        assert_eq!(said.len(), reasons.len());
+        assert_eq!(said.len(), 8);
+    }
+
+    /// **A name a runtime answers to is quoted back as it was written**, which
+    /// is what lets somebody find the line — the two refusals about the list a
+    /// person brought are the two that name one.
+    #[test]
+    fn a_name_the_file_gave_weights_is_quoted_back_as_it_was_written() {
+        let strings = in_english();
+        for reason in [
+            NotSet::WeightsTwice {
+                at: somewhere(),
+                id: "my-finetune".to_owned(),
+            },
+            NotSet::NotBrought {
+                at: somewhere(),
+                model: "my-finetune".to_owned(),
+            },
+        ] {
+            let said = reason.said(&strings);
+            assert!(said.text().contains("my-finetune"), "{said}");
+        }
     }
 
     /// **What was written where a language belongs is quoted back**, exactly as

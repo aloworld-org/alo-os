@@ -3,11 +3,11 @@
 **Status:** contract. Additive changes only; a break requires versioning and a
 deprecation period. See `CLAUDE.md`, "Contracts outlive code".
 
-This is the file that says which model answers a person's questions and which
-language they read. It is written by a settings panel, or typed by the person
-whose machine it is, and it is read by whatever puts a question to a model.
-Nothing else in alo OS writes it, and there is no value in it that alo OS
-chooses on somebody's behalf.
+This is the file that says which model answers a person's questions, which
+weights they brought to the machine themselves, and which language they read. It
+is written by a settings panel, or typed by the person whose machine it is, and
+it is read by whatever puts a question to a model. Nothing else in alo OS writes
+it, and there is no value in it that alo OS chooses on somebody's behalf.
 
 `docs/contracts/machine-description.md` is the other settings file on a machine
 and it is the **organisation's**: what alo OS is told about the machine, and
@@ -73,12 +73,26 @@ catalogue = "mistral-small"
 
 [reading]
 languages = ["de", "en"]
+
+[[brought]]
+id = "my-finetune"
+bytes-on-disk = 4700000000
+quantisation = "Q4_K_M"
+drives-verbs = "reliably"
 ```
 
 **Everything except `format` is optional, and nothing has a default.** A file
 with no `[answers]` is a person who has not chosen what answers their
 questions. A file with no `[reading]` is a person who has not said what they
-read. Neither is a mistake, and neither is filled in for them.
+read. A file with no `[[brought]]` is a person who has brought no weights of
+their own. None of the three is a mistake, and none is filled in for them.
+
+**There is no address in this file, and there will not be one.** Where a model
+runtime on this machine is, is the adapter's own knowledge and nothing else's —
+[ADR 0019](../decisions/0019-a-runtime-is-found-not-configured.md) says why, and
+says it positively so a later reader does not add the key believing it was an
+oversight. A runtime somewhere else is a **provider**, which is a different key
+in a different shape and is not here yet.
 
 **A file that is there and wrong is refused whole**, and nothing in it is
 honoured — not the half that parsed. Taking what read and dropping what did not
@@ -133,6 +147,51 @@ The name is kept **exactly as it was written**. A runtime matches the name it
 was given, and trimming or lower-casing it would be alo OS quietly asking for a
 different model than the one somebody picked.
 
+**`brought = "<name>"` must name an entry in `[[brought]]` below**, and a file
+where it does not is refused whole, quoting the name back. The two halves
+disagree, and honouring either would be the machine deciding which of them the
+person meant — most often a name typed twice with one letter different.
+
+**`catalogue = "<name>"` is deliberately not checked against anything.** The
+catalogue ships with the release rather than living in this file, and a model
+already on somebody's own disk is theirs to ask: alo OS gates what it *offers to
+fetch* on a licence, never what somebody may run on hardware they own.
+
+## `[[brought]]` — weights this person put on the machine themselves
+
+An array of tables, one per set of weights, in the order they were brought.
+[ADR 0019](../decisions/0019-a-runtime-is-found-not-configured.md) puts the list
+here rather than in a store of its own: the weights are the person's, they
+fetched them, the licence they accepted is theirs, and this file already holds
+*which model answers*. A second store for one owner is how a settings system
+becomes six.
+
+| Key | Meaning |
+|---|---|
+| `id` | What the model runtime on this machine answers to. Required, matched exactly. |
+| `bytes-on-disk` | What the weights take on this machine's disk, as the runtime reported it. Required. |
+| `quantisation` | The quantisation the runtime reports, where it says. Optional — a runtime does not always say. |
+| `drives-verbs` | What a measurement of these weights earned: `"reliably"`, `"sometimes"`, `"rarely"` or `"not-measured"`. Required. |
+
+- **`drives-verbs` has no default and an entry without it does not read.** *Not
+  measured* is a thing to state, not a blank to leave: an entry that said nothing
+  would read as *probably fine*, and alo OS gives an agent turn only to weights
+  a measurement has cleared.
+- **Two ids differing in case are two entries.** An id is a name a runtime
+  answers to rather than a word a person chose, so it is matched exactly — which
+  is the opposite answer from a provider's name and is the same answer as every
+  other identity in alo OS.
+- **The same id twice is refused**, naming it. alo OS says which model answered a
+  question, and with two entries under one name it could not.
+- **Weights with no name are refused**, because there would be nothing to ask the
+  runtime for.
+
+**alo OS states no licence for anything on this list and does not pretend to
+have checked one.** There is no licence key here and there is nowhere to put
+one: what somebody brings is theirs, including its terms. The catalogue is where
+alo OS states licences, because offering something is what makes a licence ours
+to state.
+
 ## `[reading]` — what this person reads
 
 | Key | Meaning |
@@ -167,10 +226,10 @@ not a file full of permissions — and the person chooses freely.
 
 ## Anything secret
 
-**Nothing.** There is a model name and a list of language tags in this file and
-there is nothing else. A provider's key lives in the keyring and never in a
-settings file (`crates/alo-models/src/provider.rs`), and that is not relaxed
-here.
+**Nothing.** There is a model name, a list of weights on this person's own disk
+and a list of language tags in this file, and there is nothing else. A provider's
+key lives in the keyring and never in a settings file
+(`crates/alo-models/src/provider.rs`), and that is not relaxed here.
 
 ## What changes additively
 
@@ -181,3 +240,9 @@ question can be answered — a provider, a paired machine — is a new key under
 than answering somewhere the person did not pick. Anything else — a key removed,
 a meaning changed, a default introduced — is a new `format`, and settings with a
 number this alo OS does not read are refused.
+
+`[[brought]]` arrived that way and is what the rule looks like in practice: it
+is a new key, `format` stays `1`, and an older alo OS meeting it refuses the
+file. Going backwards costs a person their settings rather than their choice,
+which is the direction this file has always failed in — nothing is honoured
+part-way, and they are told.

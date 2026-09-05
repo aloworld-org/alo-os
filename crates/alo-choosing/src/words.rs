@@ -1,12 +1,18 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Five of them, and all five are about one thing: a file that is there and is
-//! not settings. Nothing here says anything about a **choice**, and that
+//! Eight of them, and all eight are about one thing: a file that is there and
+//! is not settings. Nothing here says anything about a **choice**, and that
 //! absence is deliberate — `crate::bound` has the argument. A person's choice
 //! is honoured or refused by the rule an organisation set, the rule's own words
 //! are `alo-models`', and no rule an organisation can set refuses anything a
 //! person can currently choose. A sentence for a refusal that cannot happen is
 //! a string a translator was handed for nothing.
+//!
+//! The last three arrived with the person's own weights (ADR 0019), and they
+//! are still about the file: two are a `[[brought]]` entry that is not weights,
+//! and the third is a file whose two halves disagree. `alo_models::WeightsError`
+//! says two of those things about a **list** and is not reworded here, because
+//! what a person acts on is the path and a list has no path in it.
 //!
 //! # They all name the file
 //!
@@ -98,13 +104,55 @@ pub const SETTINGS_NAME_NO_LANGUAGE: Word = Word::saying(
      writes one: de, pt-BR, sr-Latn-RS.",
 );
 
+/// Weights on the person's own list with no name.
+pub const SETTINGS_WEIGHTS_UNNAMED: Word = Word::saying(
+    "choosing.settings.weights-unnamed",
+    "your settings at {path} list weights with no name, and there would be nothing to ask for, so \
+     nothing in the file has been used",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. \"Weights\" are a model somebody \
+     put on this machine themselves — the file the model is; alo OS never offered it and does not \
+     state its licence. A name here is what the model runtime answers to rather than a title \
+     somebody picked.",
+);
+
+/// The same weights on that list twice.
+pub const SETTINGS_WEIGHTS_TWICE: Word = Word::saying(
+    "choosing.settings.weights-twice",
+    "your settings at {path} list weights called {model} twice, so nothing said which of them \
+     answered a question, and nothing in the file has been used",
+)
+.noting(
+    "{path} and {model} are both taken from the file exactly as they are written there and are \
+     never translated — {model} is the name the model runtime answers to. \"Weights\" are a model \
+     somebody put on this machine themselves. The middle clause is why this is refused rather \
+     than tidied: alo OS says which model answered, and it could not.",
+);
+
+/// A choice naming weights the person's own list does not have.
+pub const SETTINGS_NOT_BROUGHT: Word = Word::saying(
+    "choosing.settings.not-brought",
+    "your settings at {path} say {model} answers your questions and do not list weights of that \
+     name, so nothing in the file has been used",
+)
+.noting(
+    "{path} and {model} are both taken from the file exactly as they are written there and are \
+     never translated. Said of a file whose two halves disagree: one says which model answers, \
+     the other is the list of models the person brought to this machine, and the first names \
+     nothing on the second. Most often a name typed twice with one letter different.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 5] = [
+pub const EVERY_WORD: [Word; 8] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
     SETTINGS_NAME_NO_MODEL,
     SETTINGS_NAME_NO_LANGUAGE,
+    SETTINGS_WEIGHTS_UNNAMED,
+    SETTINGS_WEIGHTS_TWICE,
+    SETTINGS_NOT_BROUGHT,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -201,10 +249,10 @@ mod tests {
         ));
     }
 
-    /// **Every one of them tells a translator what it is about.** All five have
-    /// a gap that is data rather than language, and a translation that treated
-    /// `{path}` or `{language}` as something to render would be a sentence a
-    /// person cannot act on.
+    /// **Every one of them tells a translator what it is about.** All eight
+    /// have a gap that is data rather than language, and a translation that
+    /// treated `{path}`, `{language}` or `{model}` as something to render would
+    /// be a sentence a person cannot act on.
     #[test]
     fn every_word_tells_a_translator_what_it_is_about() {
         for word in EVERY_WORD {
@@ -220,14 +268,25 @@ mod tests {
     /// told their settings are wrong needs the one thing that lets them fix it.
     #[test]
     fn every_sentence_about_the_file_names_the_file() {
-        for word in [
-            SETTINGS_NOT_READ,
-            SETTINGS_NOT_UNDERSTOOD,
-            SETTINGS_FROM_A_NEWER_ALO_OS,
-            SETTINGS_NAME_NO_MODEL,
-            SETTINGS_NAME_NO_LANGUAGE,
-        ] {
+        for word in EVERY_WORD {
             assert!(word.says().contains("{path}"), "{}", word.named());
+        }
+    }
+
+    /// **Every sentence that quotes a name a runtime answers to says whose it
+    /// is.** `{model}` is what somebody wrote in their own file, and a
+    /// translator who took it for a word to render would produce a sentence
+    /// nobody can search their settings for.
+    #[test]
+    fn every_sentence_that_quotes_a_name_tells_a_translator_it_is_not_a_word() {
+        for word in [SETTINGS_WEIGHTS_TWICE, SETTINGS_NOT_BROUGHT] {
+            assert!(word.says().contains("{model}"), "{}", word.named());
+            assert!(
+                word.note()
+                    .is_some_and(|note| note.contains("never translated")),
+                "{}",
+                word.named()
+            );
         }
     }
 

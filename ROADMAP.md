@@ -294,8 +294,17 @@ compositor is not required for, which is why it runs unbroken.
         coded* is true of the setting now: there is no default and no
         `Default`, a machine nobody has configured has chosen nothing and
         says so, and a choice the organisation's bound forbids is refused in
-        the rule's own words rather than swapped for a permitted one. 50
-        tests, five of them against a real file on a real disk
+        the rule's own words rather than swapped for a permitted one. Since
+        item 21k **a choice resolves into something that can answer**: the two
+        facts nothing on a machine stated are stated. `alo-models` finds the
+        runtime — **found, never configured** (ADR 0019), at an address the
+        adapter alone knows, with no key in any contract and no override for
+        an operator to point elsewhere — and `alo-choosing` holds the weights
+        somebody brought on the person's own list, so a choice from either of
+        this machine's two lists resolves into the entry it names. Settings
+        that could say *my questions are answered by weights that are not on
+        my list* are refused where they are made. 71 tests, seven of them
+        against a real file on a real disk
   - [ ] **On the machine.**
         something that points, which is `alo-agentd`. *Something that asks*
         is no longer owed here at all: `alo-asking` puts a question to a
@@ -315,11 +324,14 @@ compositor is not required for, which is why it runs unbroken.
         `alo-models` and `alo-answering` are loaded into the machine's
         vocabulary and unused. Since item 21h **the setting exists and the
         daemon does not read it yet**: a person's choice has a file, a shape
-        and five refusals, and what is missing between it and an answer is a
-        runtime to speak to — no file on a machine says where one is, and
-        weights somebody brought are on a list this machine keeps nowhere.
-        That is queue 21k, and until it lands *nothing on this machine has
-        been chosen to answer questions* is what a question is answered with
+        and eight refusals. Since item 21k **the road from that choice to
+        something that answers is built and the daemon has not walked it
+        yet**: a runtime is found by its adapter, weights somebody brought
+        are on the person's own list, and both of the facts that were missing
+        are stated. What is left is one crate reading its own environment and
+        putting a question through the door that already exists — queue 21n —
+        and until that lands *nothing on this machine has been chosen to
+        answer questions* is what a question is answered with
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine

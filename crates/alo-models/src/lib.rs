@@ -56,7 +56,7 @@ pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model, On
 pub use choosing::NoAgentHere;
 pub use costing::Cost;
 pub use driving::Driving;
-pub use ollama::Ollama;
+pub use ollama::{Ollama, found_on_this_machine};
 pub use provider::{Provider, ProviderError, Providers, SecretRef};
 pub use refusing::NotAllowed;
 pub use runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};

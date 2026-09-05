@@ -84,38 +84,76 @@ pub(crate) fn serving_with(
     extra_headers: &'static str,
 ) -> (String, thread::JoinHandle<String>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let port = listener.local_addr().unwrap().port();
+    let address = address_of(&listener);
+    let handle =
+        thread::spawn(move || one_exchange(&listener, response_body, status, extra_headers));
+    (address, handle)
+}
+
+/// Several requests in a row, each with the reply that stands beside it.
+///
+/// [`serving`] is one request because nearly every call in this crate is one
+/// call. Finding a runtime is the exception: it asks the runtime a question of
+/// its own and the caller then asks it theirs, so a server that closed after
+/// the first would make *found* untestable against anything but a refused
+/// connection.
+///
+/// Answers with what the client sent, in the order it sent it.
+pub(crate) fn serving_in_turn(
+    replies: &'static [&'static str],
+    status: u16,
+) -> (String, thread::JoinHandle<Vec<String>>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = address_of(&listener);
     let handle = thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        // Read the request head, and the body if one was announced.
-        let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
-        let mut head = String::new();
-        let mut length = 0usize;
-        loop {
-            let mut line = String::new();
-            if reader.read_line(&mut line).unwrap() == 0 {
-                break;
-            }
-            if let Some(v) = line.to_ascii_lowercase().strip_prefix("content-length:") {
-                length = v.trim().parse().unwrap_or(0);
-            }
-            let done = line == "\r\n" || line == "\n";
-            head.push_str(&line);
-            if done {
-                break;
-            }
-        }
-        let mut body = vec![0u8; length];
-        if length > 0 {
-            reader.read_exact(&mut body).unwrap();
-        }
-        let reply = format!(
-            "HTTP/1.1 {status} OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\n{extra_headers}Connection: close\r\n\r\n{response_body}",
-            response_body.len()
-        );
-        stream.write_all(reply.as_bytes()).unwrap();
-        stream.flush().unwrap();
-        head + &String::from_utf8_lossy(&body)
+        replies
+            .iter()
+            .map(|reply| one_exchange(&listener, reply, status, ""))
+            .collect()
     });
-    (format!("http://127.0.0.1:{port}"), handle)
+    (address, handle)
+}
+
+/// Where a listener is, as an adapter is pointed at it.
+fn address_of(listener: &TcpListener) -> String {
+    format!("http://127.0.0.1:{}", listener.local_addr().unwrap().port())
+}
+
+/// Take one connection, read the whole request, answer it, and say what arrived.
+fn one_exchange(
+    listener: &TcpListener,
+    response_body: &str,
+    status: u16,
+    extra_headers: &str,
+) -> String {
+    let (mut stream, _) = listener.accept().unwrap();
+    // Read the request head, and the body if one was announced.
+    let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
+    let mut head = String::new();
+    let mut length = 0usize;
+    loop {
+        let mut line = String::new();
+        if reader.read_line(&mut line).unwrap() == 0 {
+            break;
+        }
+        if let Some(v) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+            length = v.trim().parse().unwrap_or(0);
+        }
+        let done = line == "\r\n" || line == "\n";
+        head.push_str(&line);
+        if done {
+            break;
+        }
+    }
+    let mut body = vec![0u8; length];
+    if length > 0 {
+        reader.read_exact(&mut body).unwrap();
+    }
+    let reply = format!(
+        "HTTP/1.1 {status} OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\n{extra_headers}Connection: close\r\n\r\n{response_body}",
+        response_body.len()
+    );
+    stream.write_all(reply.as_bytes()).unwrap();
+    stream.flush().unwrap();
+    head + &String::from_utf8_lossy(&body)
 }

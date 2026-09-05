@@ -99,6 +99,31 @@ fn a_file_that_is_not_settings_is_refused_in_the_readers_own_language() {
     );
 }
 
+/// **A name the person gave their own weights survives being translated**, and
+/// is quoted back exactly as they wrote it — the rule a path is held to here, a
+/// filename in `alo-files` and an address in `alo-egress`, met by the one gap
+/// this crate gained with the person's own list.
+#[test]
+fn a_name_a_runtime_answers_to_is_not_translated_into_anything() {
+    let strings = machine_reading_german(&[(
+        alo_choosing::EVERY_WORD[7],
+        "in Ihren Einstellungen unter {path} beantwortet {model} Ihre Fragen, und es sind keine \
+         Gewichte dieses Namens aufgeführt",
+    )]);
+    let said = NotSet::NotBrought {
+        at: somewhere(),
+        model: "my-finetune".to_owned(),
+    }
+    .said(&strings);
+
+    assert!(said.is_translated(), "{said}");
+    assert!(said.text().contains("my-finetune"), "{said}");
+    assert!(
+        said.text().contains("/home/ada/.config/alo/settings.toml"),
+        "{said}"
+    );
+}
+
 /// **A sentence nobody has translated is still a sentence**, and it says so.
 /// A machine with the rest of its strings in German and this one not is the
 /// ordinary state of a translation somebody is part way through, and the person
