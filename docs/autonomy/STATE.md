@@ -9565,3 +9565,61 @@ So the next iteration's step 1 finds every item blocked or not ready, and its
 whole job is the marker and this list. It is left to that iteration rather than
 written here because step 1 is where that verdict belongs and this iteration
 built an item; it should cost two commands and nothing else.
+
+---
+
+## Iteration — the queue is blocked again, and this time the marker is a line
+
+Step 1 and nothing else. No code changed, no test ran, no unit was started, no
+image was built, and `ROADMAP.md` was not touched — because nothing was built,
+which is step 6's own answer rather than a silence.
+
+**Every blocker was read at its source, not carried forward from the entry
+above.** The last entry predicted this verdict and listed eight items; the list
+below is the same eight because each one was opened and its blocking sentence
+read, and two of them were checked against the code rather than against their own
+prose.
+
+| Item | Why it cannot be built here |
+|---|---|
+| 16b | Discovery on the wire — **not ready**: no discovery code exists here and none of it is portable, so the decision would be about a shape nobody has built |
+| 19b | An application verb inside a turn — **blocked on the acting half**, Wayland and D-Bus, under *blocked — linux* |
+| 21o | A bound in the organisation's file — **blocked on a second place a question can go**, which is providers |
+| 21l | A refusal naming who set the rule — **the same blocker**, for the same reason |
+| 21i | Where grants are kept — **blocked on the shell**: a grant is a person picking a folder in a surface that does not exist |
+| 26f | A bound left by a killed daemon — **not ready**: the entry's lifetime belonging to the cgroup is a decision about the kernel programme |
+| 23b | The other seven grades — **blocked on the weights**: ten gigabytes and up, against six on this box |
+| 29 | Loading is not a quick call — **not ready**: it wants a `RuntimeError` variant meaning *it is loading*, which is a sentence and a shell decision |
+
+**The one thing worth checking was whether the shared blocker is real, and it
+is.** 21l and 21o are both freed by a place a question can leave for, so the
+question is whether that place is buildable today. `alo_choosing::Which` has two
+arms, `Catalogue` and `Brought`, and both are this machine. `alo_models::Providers`
+exists — so the list is not missing a type. What it is missing is anybody to put
+an entry in it: `provider.rs` holds a *reference* to a secret in a keyring and
+never the secret, and nothing on this machine writes a keyring entry or offers a
+person the field to type one into. So a provider list added now would be a list
+with no way to gain a member, which is 21i's blocker wearing a different name —
+the shell — and not a ninth item hiding in the queue.
+
+**Nothing was run against the box.** No `cargo` invocation, no WSL, no Docker.
+Step 4 gates a change and this iteration made none to the code; the tree at
+`96d673d` is the one four full gate runs already found green.
+
+## Ledger — the queue is blocked, confirmed
+
+Updated **in place** by any iteration that finds the queue's last word is the
+marker below and both of `LOOP.md`'s two commands answer as they did here.
+Nothing is appended for one. The count below starts from nothing, as the previous
+ledger says it should.
+
+| | |
+|---|---|
+| Consecutive blocked queues | **1** |
+| Last confirmed | 2026-09-05, against `96d673d` |
+| Highest ADR | 0019 |
+| Blocked items | 16b, 19b, 21i, 21l, 21o, 23b, 26f, 29 |
+| Last iteration that built something | item 21n, `96d673d` — a question goes to the model the person chose |
+| What would free the most | a surface a person adds a provider in: it frees 21l and 21o together, and is the same shell 21i waits on |
+
+LOOP COMPLETE
