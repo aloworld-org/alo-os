@@ -10270,3 +10270,55 @@ The reporting policy is a contributor agreement, not remote permission
 enforcement. Shared-code conflicts still require review. Claude's already-running
 session must receive the updated handoff before its next task; this maintainer
 did not modify that checkout or send messages to that session.
+
+---
+
+## 2026-09-07 - native popup protocol lifetimes
+
+Single desktop worker; clean checkout at start. Reviewed delivery order, shared
+ownership, current queue, state tail, native-shell feature/roadmap, ADRs 0001/0002
+and application-adapter boundary. Read updates/README and checked the published
+report inventory: `docs/autonomy/updates/descriptive-task-reporting.md` was already
+reconciled in the preceding entry, with its evidence and limitations retained.
+No additional published report required reconciliation. Filesystem security
+remains outside this desktop worker's assignment.
+
+Selected and recorded popup protocol acceptance in QUEUE before coding, after
+checking pinned Smithay's parent-leave limitation. The wrapper discards CursorLeft
+and has no raw event-loop hook. That backend work remains pending; no upstream
+patch or unsafe-code exception was made. The next independent compositor
+component now owns initial popup configure/buffer lifetimes and mapped-parent
+validation. Terminal dismissal prevents buffer/old-ack revival. Acceptance is
+explicitly opt-in so the existing renderer never silently accepts invisible
+popups in ordinary use. Popup snapshots carry parent-relative XDG geometry;
+rendering and input consumption remain next, not a completed popup feature.
+
+Task report integrated in this same change:
+`docs/autonomy/updates/native-popup-protocol-lifetimes.md`.
+It records the exact commands and decisions. Windows/Linux fmt, focused shell
+tests and all-target clippy with warnings denied pass; Linux warnings-denied
+rustdoc and example build pass. Linux: 36 tests (five new real-client popup
+tests), none ignored; Windows: intentionally zero Linux tests. All executed test
+assertions passed. An intermediate compile/lint check caught standalone test
+module placement, unused example helpers and duplicate branches; corrected
+without weakening checks. Diff review includes new files and diff whitespace
+validation. CHANGELOG, ROADMAP, QUEUE and COMPOSITOR updated together.
+
+Extra evidence: five-test real Wayland wire trace exits 0. WSLg popup/GLES
+coexistence fixture exits 0 with 22 submitted client surfaces, configure at
+(7,10,16,16), explicit dismissal and withheld unrendered-popup callback; teardown
+leaves no popup snapshots. Cursor regression exits 0 with 28 submitted surfaces,
+cursor callback/output leave and lifecycle/refusal/disconnect. Local log paths
+are in the task report. WSLg socket and graphics development packages checked;
+no installation needed, no shared kernel changes. Linux target directory stays
+/root/alo-os-target, separate from the other checkout.
+
+The complete useful component is protocol lifetime tracking only. Compositor
+remains unchecked. Popup rendering/hit testing, nested chains, grabs,
+repositioning/output constraints, parent-leave backend and direct display remain;
+actual parent/physical input and certified laptop/GPU workstation acceptance
+remain owed. WSLg is not hardware certification. The supervisor's full
+Windows/Linux/BPF publication gates have not run for this change. No staging,
+commit, push, worker launch, dev-loop edits or other repository changes occurred.
+Reports arriving during publication are reconciled next iteration; no release
+verification is claimed, and all unfinished v0.01 scope remains preserved.

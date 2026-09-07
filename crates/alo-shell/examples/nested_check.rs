@@ -54,6 +54,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     server.render(&mut nested, 0)?;
     let path = server.socket_path().to_owned();
     let cursor_check = std::env::args().any(|arg| arg == "--cursor");
+    let popup_check = std::env::args().any(|arg| arg == "--popups");
+    if popup_check {
+        server.enable_popup_protocol();
+    }
     let client = thread::spawn(move || {
         let fixture = Fixture { path };
         let mut app = application::Application::new(&fixture);
@@ -95,6 +99,29 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "SHM client rendered: 16x16 ARGB; output 320x200; callback {:?}",
             app.events.frames
         );
+        if popup_check {
+            let (surface, xdg, role) = app.popup(true, 1);
+            surface.commit();
+            app.sync();
+            assert_eq!(app.events.popups.geometry, [(7, 10, 16, 16)]);
+            app.ack_popup(&xdg);
+            app.attach_popup(&surface);
+            for _ in 0..5 {
+                app.sync();
+                thread::sleep(Duration::from_millis(5));
+            }
+            assert_eq!(app.events.frames.len(), 2, "unrendered popup callback");
+            app.reposition_popup(&role);
+            app.sync();
+            assert_eq!(app.events.popups.done, 1);
+            role.destroy();
+            xdg.destroy();
+            surface.destroy();
+            app.sync();
+            println!(
+                "Popup handshake and dismissal coexist with GLES; unrendered popup callback withheld"
+            );
+        }
         if cursor_check {
             while app.events.pointer.enters.is_empty() {
                 app.sync();
@@ -174,6 +201,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     client.join().map_err(|_| "client assertion failed")?;
     server.dispatch()?;
     assert_eq!(server.toplevel_count(), 0);
+    assert!(server.popup_surfaces().is_empty());
     assert_eq!(server.render(&mut nested, 10000)?, 0);
     assert!(rendered > 0);
     println!(

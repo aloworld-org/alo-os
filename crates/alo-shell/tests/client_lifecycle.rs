@@ -4,6 +4,7 @@
 mod cursor;
 mod input;
 mod pointer;
+mod popups;
 mod support;
 use support::{Application, Fixture};
 

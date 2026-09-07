@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The native compositor now tracks popup configuration and parent lifetimes.**
+  An opt-in backend interface accepts configured popup buffers under mapped
+  windows, dismisses them on unmap or parent loss, and prevents revival with an
+  old acknowledgement. Five real-client tests cover successful handshakes and
+  refusals. Popup drawing and input are still unfinished; the existing nested
+  renderer continues dismissing popups unless a protocol fixture opts in.
+
 - Development tasks now use descriptive names and separate reports. One
   integration owner maintains shared progress documents, reducing conflicting
   documentation edits while contributors continue tested pushes to main.

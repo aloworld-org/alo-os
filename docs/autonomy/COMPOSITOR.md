@@ -511,3 +511,24 @@ parent cursor visibility/input observation, parent-leave notification support,
 popups, direct display/input and certified-machine records remain owed. Full
 independent Windows/Linux/BPF publication gates belong to the supervisor. No WSLg
 test certifies hardware; delivery steps 3-8 and every remaining v0.01 item remain.
+
+## Native popup protocol lifetimes (2026-09-07)
+
+The opt-in `Server::enable_popup_protocol` handshake exposes configured popup
+buffer snapshots through `popup_surfaces`. Initial placement is relative to the
+parent's XDG window geometry. Unmap, parent loss and unsupported repositioning
+dismiss terminally. The default nested backend retains explicit dismissal until
+popup rendering/input is implemented; no unrendered popup receives a callback.
+
+Five new real-client tests pass, bringing focused Linux coverage to 36 tests.
+Windows/Linux fmt, focused tests and all-target clippy, Linux rustdoc and example
+build pass. The WSLg `nested_check --popups` fixture and `--cursor` regression
+both exit 0. Exact commands, local wire/graphics logs, implementation decisions,
+intermediate compile corrections and remaining evidence are recorded in
+`updates/native-popup-protocol-lifetimes.md`.
+
+Parent-leave notifications remain a backend task: Smithay 0.7 drops CursorLeft
+and provides no raw event-loop hook. No engine patch or unsafe-code exception
+was introduced. Next is popup presentation/hit testing; chains, grabs, output
+constraints/repositioning, direct display, full supervisor gates and physical
+acceptance remain owed. This component does not complete the compositor.

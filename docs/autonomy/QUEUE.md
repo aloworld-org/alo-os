@@ -159,6 +159,29 @@ cross-references, not the primary names used in handoffs or status messages.
   commands/logs in COMPOSITOR.md. Next: unpatched parent-leave notification backend,
   then popups and direct-display integration. Supervisor full gates, actual parent
   mouse/cursor observation and physical acceptance remain owed. Item 33 unchecked.
+  **Selected popup lifecycle component (desktop worker):** configure and track
+  non-grabbing XDG popups under mapped toplevels; validate parents, enforce the
+  configure/acknowledge/buffer handshake, and dismiss on unmap or parent loss.
+  Acceptance: real Unix-socket clients exercise valid placement, premature and
+  stale acknowledgements, invalid parents, isolated refusal and teardown;
+  focused tests, fmt, clippy, rustdoc and WSLg regression. Popup rendering,
+  repositioning, nested popup chains and grabs remain subsequent components.
+  Parent-leave work remains pending: pinned Smithay 0.7 exposes neither leave
+  notifications nor access to its underlying event loop. No engine patch or
+  unsafe-code exception is introduced to bypass that boundary.
+  **Completed popup protocol component 2026-09-07:** opt-in initial configure,
+  buffer snapshots and terminal dismissal under mapped toplevel parents. Five
+  new socket tests pass (36 Linux shell tests total), including missing/stale
+  acknowledgements, absent/unmapped parents, extreme placement, unmap/revival,
+  role destruction, parent loss, disconnect and unsupported repositioning.
+  WSLg popup protocol/GLES coexistence and cursor regression pass; unrendered
+  popup callbacks remain pending. Windows/Linux focused tests/clippy, fmt and
+  Linux rustdoc pass. Exact commands and limits are in
+  `updates/native-popup-protocol-lifetimes.md`. Next useful component: consume
+  these snapshots in popup-aware rendering and hit testing before session opt-in.
+  Nested chains, grabs, output constraints/repositioning, parent-leave backend,
+  direct display and all physical acceptance remain. Item 33 remains unchecked;
+  the supervisor has not yet run this change's full publication gates.
 - [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit

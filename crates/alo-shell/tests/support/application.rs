@@ -8,6 +8,8 @@ use super::Fixture;
 mod keyboard_events;
 #[path = "pointer_events.rs"]
 mod pointer_events;
+#[path = "popup_events.rs"]
+mod popup_events;
 use std::{
     fs::File,
     io::Write,
@@ -25,6 +27,8 @@ use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_ba
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Popup configuration and terminal dismissal wire events.
+    pub popups: popup_events::PopupEvents,
     /// Pointer events observed on the wire.
     pub pointer: pointer_events::PointerEvents,
     /// Keyboard wire events, separate from buffer lifecycle observations.
@@ -174,6 +178,8 @@ delegate_noop!(Events: ignore xdg_toplevel::XdgToplevel);
 
 /// A real XDG application with a CPU-backed 16x16 ARGB buffer.
 pub struct Application {
+    /// XDG role factory retained for popup fixtures.
+    shell: xdg_wm_base::XdgWmBase,
     /// Connection retained for explicit flush and protocol error inspection.
     pub connection: Connection,
     /// Client event queue.
@@ -266,6 +272,7 @@ impl Application {
         pool.destroy();
         queue.roundtrip(&mut events).unwrap();
         Self {
+            shell,
             connection,
             queue,
             events,

@@ -39,6 +39,8 @@ struct Window {
 
 /// Protocol globals and toplevel roots shared by display backends.
 pub(crate) struct Surfaces {
+    /// Opt-in popup handshake and parent lifetime tracking.
+    pub(crate) popups: crate::popups::Popups,
     /// Core surface/subsurface protocol.
     compositor: CompositorState,
     /// CPU-backed application buffers.
@@ -61,6 +63,7 @@ impl Surfaces {
     /// Advertise only protocols this component implements.
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
+            popups: Default::default(),
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
@@ -75,6 +78,8 @@ impl Surfaces {
     /// Remove resources whose client disappeared without orderly destruction.
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
+        let parents: Vec<_> = self.mapped().cloned().collect();
+        self.popups.prune(&parents);
         self.prune_keyboard_focus();
         self.prune_pointer_focus();
     }
@@ -110,6 +115,7 @@ impl CompositorHandler for Surfaces {
 
     fn commit(&mut self, surface: &WlSurface) {
         on_commit_buffer_handler::<Self>(surface);
+        self.popups.commit(surface);
         let Some(window) = self
             .windows
             .iter_mut()
@@ -134,6 +140,8 @@ impl CompositorHandler for Surfaces {
         } else if !window.surface.is_initial_configure_sent() {
             window.surface.send_configure();
         }
+        let parents: Vec<_> = self.mapped().cloned().collect();
+        self.popups.prune(&parents);
     }
 }
 
@@ -172,13 +180,12 @@ impl XdgShellHandler for Surfaces {
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
         self.windows.retain(|w| w.surface != surface);
     }
-    fn new_popup(&mut self, surface: PopupSurface, _positioner: PositionerState) {
-        // Popup placement/input is a subsequent component. Dismiss explicitly;
-        // never leave a client waiting on a configure we cannot fulfil.
-        surface.send_popup_done();
+    fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {
+        let parents: Vec<_> = self.mapped().cloned().collect();
+        self.popups.insert(surface, positioner, &parents);
     }
     fn grab(&mut self, surface: PopupSurface, _seat: WlSeat, _serial: Serial) {
-        surface.send_popup_done();
+        self.popups.dismiss(&surface);
     }
     fn reposition_request(
         &mut self,
@@ -186,7 +193,7 @@ impl XdgShellHandler for Surfaces {
         _positioner: PositionerState,
         _token: u32,
     ) {
-        surface.send_popup_done();
+        self.popups.dismiss(&surface);
     }
 }
 

@@ -721,6 +721,16 @@ which made a completely consistent rule look like work being taken out of turn.
     Parent-leave notifications, popups, direct display, full supervisor gates and
     physical acceptance remain owed. Item 33 and this feature stay unchecked.
 
+  - Popup protocol component (2026-09-07): opt-in popup protocol lifecycle tracking
+    now provides configured-buffer snapshots, mapped-parent validation and terminal
+    dismissal. Five new real-client tests pass (36 Linux shell tests total).
+    WSLg verifies protocol coexistence with GLES and withheld callbacks for an
+    unrendered popup; this is not popup presentation. See
+    `docs/autonomy/updates/native-popup-protocol-lifetimes.md` for exact checks.
+    Next: popup-aware rendering/input; nested chains, grabs, repositioning/output
+    constraints, parent-leave backend support, direct display and physical acceptance
+    remain unfinished. No feature box moves; supervisor full gates remain owed.
+
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
 - [ ] **The agent overlay**: one key, from anywhere
