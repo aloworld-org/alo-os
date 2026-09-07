@@ -42,6 +42,8 @@ fn three_popup_levels_stack_and_submit_atomically() {
         );
         app.sync();
         assert_eq!(app.events.frames, [3, 3, 3]);
+        // First success publishes the global; bind it before expecting enters.
+        app.sync();
         assert_eq!(app.events.membership, (4, 0));
         // Dismissing the middle removes its child, preserving the ancestor.
         app.refuse_popup_position(&middle.2);

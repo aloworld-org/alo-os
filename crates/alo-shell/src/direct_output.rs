@@ -20,6 +20,8 @@ pub struct DirectOutput {
     pub crtc: crtc::Handle,
     /// Exact advertised progressive mode, retaining all kernel timings.
     pub mode: Mode,
+    /// Kernel connector dimensions in millimetres, or unknown; no EDID inference.
+    pub physical_size: Option<(u32, u32)>,
 }
 
 /// Direct-output discovery failed; no display state was changed.
@@ -59,6 +61,8 @@ pub fn discover_output(fd: BorrowedFd<'_>) -> Result<DirectOutput, DirectOutputE
 
 /// Relevant connector state separated from ioctl transport for refusal tests.
 pub(crate) struct Port {
+    /// Connector dimensions supplied by the kernel.
+    pub physical_size: Option<(u32, u32)>,
     /// Kernel connector handle.
     pub handle: connector::Handle,
     /// Explicitly connected; unknown is never treated as connected.
@@ -101,6 +105,7 @@ fn select(inventory: &impl Inventory) -> Result<DirectOutput, DirectOutputError>
                 connector: port.handle,
                 crtc,
                 mode: *mode,
+                physical_size: port.physical_size,
             });
         }
     }
@@ -108,7 +113,7 @@ fn select(inventory: &impl Inventory) -> Result<DirectOutput, DirectOutputError>
 }
 
 /// Initial direct backend uses ordinary progressive two-dimensional timings.
-fn supported(mode: &Mode) -> bool {
+pub(crate) fn supported(mode: &Mode) -> bool {
     let (width, height) = mode.size();
     let (hstart, hend, htotal) = mode.hsync();
     let (vstart, vend, vtotal) = mode.vsync();

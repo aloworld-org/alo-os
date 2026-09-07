@@ -49,6 +49,7 @@ impl Inventory for Fixture {
                 source,
             })?;
         Ok(DirectOutput {
+            physical_size: Some((310, 170)),
             connector: id(1).into(),
             crtc: id(2).into(),
             mode: drm_ffi::drm_mode_modeinfo {

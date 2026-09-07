@@ -180,11 +180,19 @@ fn refusal_output(width: u16) -> alo_shell::AtomicOutput {
     };
     alo_shell::AtomicOutput {
         output: alo_shell::DirectOutput {
+            physical_size: Some((310, 170)),
             connector: NonZeroU32::MIN.into(),
             crtc: NonZeroU32::MIN.saturating_add(1).into(),
             mode: drm_ffi::drm_mode_modeinfo {
+                clock: 240,
                 hdisplay: width,
+                hsync_start: 40,
+                hsync_end: 45,
+                htotal: 80,
                 vdisplay: 32,
+                vsync_start: 35,
+                vsync_end: 40,
+                vtotal: 50,
                 ..Default::default()
             }
             .into(),

@@ -108,6 +108,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             )
         );
         assert_eq!(app.events.modes.last(), Some(&(320, 200)));
+        use wayland_client::protocol::wl_output;
+        assert!(app.events.output_events.iter().any(|event| matches!(event,
+            wl_output::Event::Name { name } if name == "alo-nested")));
+        assert!(app.events.output_events.iter().any(|event| matches!(event,
+            wl_output::Event::Geometry { physical_width: 0, physical_height: 0, make, model, .. }
+            if make == "alo" && model == "nested")));
+        assert!(app.events.output_events.iter().any(|event| matches!(
+            event,
+            wl_output::Event::Mode {
+                width: 320,
+                height: 200,
+                refresh: 0,
+                ..
+            }
+        )));
+        println!("Nested output wire name, unknown physical size and refresh verified");
         app.configure();
         // Input regions must not suppress graphical buffer submission.
         app.empty_input();

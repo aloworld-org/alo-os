@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct displays no longer identify themselves as nested windows.** The
+  compositor advertises backend output names, known physical dimensions and
+  timing-derived refresh rates. Failed frames preserve the advertised mode,
+  membership and callbacks; malformed metadata and identity replacement refuse
+  before submission. Hardware acceptance and direct session integration remain
+  unfinished. The offscreen client completes output binding before checking
+  membership; real rendering and refusal checks pass without relaxed assertions.
+  Evidence: `docs/autonomy/updates/truthful-output-metadata.md`.
+
 - **The compositor now draws its own ordinary pointer.** The arrow follows the
   pointer over empty desktop and returns after a client cursor is destroyed;
   it clips at output edges and switches cleanly to hidden or client cursors.

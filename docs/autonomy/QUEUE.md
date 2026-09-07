@@ -69,6 +69,34 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected truthful output metadata (desktop worker):** give FrameTarget a
+  validated identity/physical-size/refresh snapshot; nested reports an explicitly
+  virtual output, direct reports its connector and timing-derived millihertz plus
+  discovered millimetres. Freeze identity for this single-output lifetime and
+  refuse malformed or changed identity before submission. Publish mode changes
+  only after successful submission. Acceptance: metadata validation and rounding,
+  real Wayland name/geometry/mode and refusal/callback/membership tests, WSLg
+  regression, affected formatting/clippy/tests/rustdoc. EDID identification,
+  hotplug, direct session/input wiring and physical acceptance remain unfinished.
+  **Truthful output metadata, recovered 2026-09-08:** validated FrameTarget metadata,
+  direct connector identity/kernel millimetres/progressive millihertz and explicit
+  nested/legacy virtual descriptions. First successful frame freezes identity;
+  refusal preserves advertised output/mode, membership and callbacks. Reactive
+  popups retain desired-extent negotiation. Three new tests; 174 Linux shell
+  checks, affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples pass.
+  WSLg nested metadata and popup/cursor regression: 115 client surfaces. Report:
+  `updates/truthful-output-metadata.md`. Owner authorized recovery from the
+  repeated-failure halt. The corrected offscreen client completes the new output's
+  bind roundtrip before checking membership; failed stages assert no output or
+  metadata. Normal offscreen passes twice, invalid EGL refuses with exit 1, and
+  nested regression passes again. Original assertions remain intact.
+  Full Windows/Linux workspace, Linux rustdoc and pinned BPF publication gates
+  pass after recovery; all 11 desktop-supervisor tests also pass.
+  Next: explicit output retirement on session pause, leaves/global
+  removal, callback retention and failed-disable refusal; direct renderer/input/
+  session wiring. Safe async transport, GPU context-loss,
+  existing parent-leave/libseat limits and physical records remain owed.
+  Metadata component is ready for publication; compositor and release remain unfinished.
   **Selected compositor-owned default cursor (desktop worker):** add a positioned
   arrow snapshot and shared GLES rendering above windows/popups, with a fixed
   scale-one shape and tip hotspot. Preserve legacy unpositioned Default behavior;

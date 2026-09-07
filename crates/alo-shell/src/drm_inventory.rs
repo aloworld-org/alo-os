@@ -52,6 +52,7 @@ impl crate::direct_output::Inventory for Inventory<'_> {
                 }
             }
             ports.push(Port {
+                physical_size: info.size(),
                 handle: *handle,
                 connected,
                 internal: matches!(

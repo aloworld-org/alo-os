@@ -14,8 +14,8 @@ use std::os::fd::BorrowedFd;
 /// Construct inside `DirectSession::with_device` using fresh discovery from the
 /// same descriptor and an inactive output. Keep the session active until `disable`
 /// completes. No dispatch may interleave rendering and submission. The renderer
-/// must be current on this thread. Default cursors still need a separate native
-/// image; hidden and client cursors use the existing scene painter.
+/// must be current on this thread. Positioned arrows, hidden and client cursors
+/// use the shared scene painter.
 ///
 /// Success permits callbacks, not a physical presentation timestamp. A successful
 /// commit with failed old-resource cleanup still returns its drawn identities,
@@ -51,6 +51,9 @@ impl<'renderer, 'fd> DirectTarget<'renderer, 'fd> {
 }
 
 impl FrameTarget for DirectTarget<'_, '_> {
+    fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
+        self.target.metadata()
+    }
     fn size(&self) -> Size<i32, Physical> {
         self.target.size()
     }
@@ -155,6 +158,9 @@ impl<R, D: ScanoutDevice> Target<R, D> {
 }
 
 impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
+    fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
+        crate::output_metadata::direct_metadata(&self.output.output)
+    }
     fn size(&self) -> Size<i32, Physical> {
         let (w, h) = self.output.output.mode.size();
         (i32::from(w), i32::from(h)).into()

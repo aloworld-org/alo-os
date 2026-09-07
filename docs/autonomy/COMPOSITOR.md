@@ -39,7 +39,8 @@ the offending client. Dead roots are filtered immediately and pruned on dispatch
 Popups are explicitly dismissed with `popup_done` until popup placement/input
 exists. `Server::bind` advertises no seat, selection, context or agent protocol.
 `Server::bind_keyboard` adds the keyboard seat described below. An output
-is advertised when `Server::render` first receives a positive framebuffer size.
+is advertised after `Server::render` first successfully submits a frame with a
+positive framebuffer size and valid output metadata.
 The `SeatHandler` implementation is required by Smithay's XDG dispatch types;
 it creates no seat or input device. Frame callbacks are not completed by this
 core: the rendering backend must complete them after submission, never claim
@@ -147,9 +148,10 @@ surface. It permits deterministic failed-submission tests without requiring
 graphics in the standard test suite. Existing agent/adapter contracts do not
 change, and rendering does not grant context access (ADRs 0001/0002).
 
-The single `alo-nested` output uses actual framebuffer dimensions, scale 1 and
-unknown physical dimensions/refresh. Resize replaces the old mode without
-creating another global. Each configured toplevel tree is imported in existing
+Nested's single `alo-nested` output uses actual framebuffer dimensions, scale 1
+and unknown physical dimensions/refresh. Other targets supply their own validated
+metadata (see Truthful output metadata below). Successful resize replaces the
+old mode without creating another global. Each configured toplevel tree is imported in existing
 creation order at the origin, preserving child offsets and tree stacking.
 Window placement, focus and stacking policy belong to the next delivery steps.
 Only elements intersecting the output enter its membership and callback set.
@@ -1183,3 +1185,28 @@ commands, initial findings and limits:
 direct display/input/session acceptance and scaling beyond the current scale-one
 output model are not established. Truthful output metadata, pause/retirement,
 direct session wiring and hardware records remain; no compositor/release tick.
+
+## Truthful output metadata (2026-09-08)
+
+FrameTarget::metadata describes a scale-one output. Nested supplies alo-nested;
+legacy targets supply alo-virtual with unknown physical size/refresh. DirectTarget
+uses alo-drm-<connector-id>, kernel connector dimensions and rounded millihertz
+from supported progressive timings. Manufacturer/model and subpixel order remain
+unknown; no EDID parser or hardware identity claim. Invalid strings, dimensions,
+refresh, unsupported timings and conversion overflow refuse before submission.
+
+First successful submission creates the global and freezes identity/physical
+properties. Identity replacement requires a new Server lifetime. Successful
+resize replaces the mode on that global; failure preserves advertised metadata,
+callbacks and membership. Reactive popup negotiation still uses a valid desired
+extent even when submit fails; metadata refusal does not accept a new extent.
+
+The owner authorized recovery after the worker's repeated-failure halt. The
+offscreen client now completes the newly advertised output's bind roundtrip
+before asserting all four surface enters; refusal stages additionally assert no
+output global or metadata events. All original callback/pixel assertions remain.
+Normal offscreen checks pass twice; nested metadata/popup/cursor regression passes
+with 115 client surfaces. Invalid EGL still refuses with exit 1. Exact checks,
+publication gate results and limitations: updates/truthful-output-metadata.md.
+Neither these fixtures nor automated tests establish physical scanout or release
+completion. Output retirement/pause and direct session/input wiring remain.

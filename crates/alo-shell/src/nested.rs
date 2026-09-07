@@ -195,6 +195,14 @@ impl Nested {
 }
 
 impl FrameTarget for Nested {
+    fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
+        Ok(crate::OutputMetadata {
+            name: "alo-nested".into(),
+            make: "alo".into(),
+            model: "nested".into(),
+            ..crate::OutputMetadata::virtual_output()
+        })
+    }
     fn size(&self) -> Size<i32, Physical> {
         self.backend.window_size()
     }

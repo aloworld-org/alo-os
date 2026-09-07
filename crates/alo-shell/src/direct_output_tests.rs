@@ -13,6 +13,7 @@ impl Inventory for Fixture {
             .iter()
             .map(|port| Port {
                 handle: port.handle,
+                physical_size: port.physical_size,
                 connected: port.connected,
                 internal: port.internal,
                 display: port.display,
@@ -50,6 +51,7 @@ fn mode(preferred: bool) -> Mode {
 fn port(id: NonZeroU32, internal: bool) -> Port {
     Port {
         handle: id.into(),
+        physical_size: Some((310, 170)),
         connected: true,
         internal,
         display: true,
@@ -70,6 +72,7 @@ fn internal_panel_and_preferred_timings_win_independent_of_enumeration()
     let fixture = Fixture(vec![port(NonZeroU32::MIN, false), panel]);
     let selected = select(&fixture)?;
     assert_eq!(u32::from(selected.connector), 21);
+    assert_eq!(selected.physical_size, Some((310, 170)));
     assert_eq!(u32::from(selected.crtc), 1);
     assert_eq!(selected.mode, preferred);
     let reversed = Fixture(fixture.0.into_iter().rev().collect());

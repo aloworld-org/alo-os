@@ -728,6 +728,19 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Truthful output metadata (2026-09-07): backend identity, kernel connector
+    millimetres and timing-derived millihertz replace shared nested placeholders.
+    Validation and frozen identity refuse before submission; output globals/modes
+    publish after successful frames. Three new tests and expanded direct protocol
+    checks; 174 Linux shell checks, affected fmt/clippy/tests and rustdoc pass.
+    WSLg nested wire-metadata/popup/cursor regression passes (115 client surfaces).
+    Owner-authorized recovery (2026-09-08) fixes the offscreen client's initial
+    output-global bind handshake without relaxing membership/callback assertions;
+    normal offscreen passes twice, invalid EGL refuses as expected.
+    Report: `docs/autonomy/updates/truthful-output-metadata.md`. Only afterwards:
+    output retirement on session pause and direct renderer/input/session wiring.
+    Full Windows/Linux workspace, Linux rustdoc and pinned BPF gates pass after
+    recovery. Physical records remain owed; no compositor tick.
   - Compositor-owned default cursor (2026-09-07): positioned arrow snapshots,
     shared nested/offscreen GLES rendering, tip hotspot, clipping and hidden/
     client fallback. Four new tests; 171 Linux shell checks, affected Windows/

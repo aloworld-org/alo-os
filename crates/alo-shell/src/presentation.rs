@@ -2,7 +2,7 @@
 
 use crate::surfaces::Surfaces;
 use smithay::{
-    output::{Mode, Output, PhysicalProperties, Scale, Subpixel},
+    output::{Mode, Output, Scale},
     reexports::wayland_server::{DisplayHandle, protocol::wl_surface::WlSurface},
     utils::{Physical, Size, Transform},
     wayland::compositor::{SurfaceAttributes, with_states},
@@ -11,6 +11,12 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// The backend supplied malformed output metadata.
+    #[error("invalid output metadata")]
+    InvalidOutputMetadata,
+    /// A live single-output server cannot replace its output identity.
+    #[error("output identity changed; a new output lifetime is required")]
+    OutputIdentityChanged,
     /// Blocking scanout refused; no identities or callbacks are published.
     #[error(transparent)]
     Scanout(#[from] crate::ResourceError),
@@ -44,6 +50,11 @@ pub enum RenderError {
 /// on import, draw or submit failure and must not dispatch client requests.
 /// No returned surface receives a presentation-time guarantee.
 pub trait FrameTarget {
+    /// Output identity, physical size and current refresh; no client dispatch.
+    /// Older custom targets advertise an unknown-size virtual output.
+    fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
+        Ok(crate::OutputMetadata::virtual_output())
+    }
     /// Current framebuffer dimensions, in physical pixels at compositor scale 1.
     fn size(&self) -> Size<i32, Physical>;
     /// Import and draw roots in front-to-back order, then submit the frame.
@@ -85,14 +96,32 @@ pub trait FrameTarget {
 /// Output global and membership retained across frames.
 #[derive(Default)]
 pub(crate) struct Presentation {
-    /// Created once a backend supplies a valid size.
+    /// Created after the first successful frame with valid metadata and size.
     output: Option<Output>,
+    /// Frozen after the first successful submission.
+    metadata: Option<crate::OutputMetadata>,
     /// Surfaces in the previous successfully submitted frame.
     entered: Vec<WlSurface>,
 }
 
 impl Presentation {
-    /// Update mode, submit without dispatching, then release frame callbacks.
+    /// Check before accepting a proposed popup-layout extent or doing backend I/O.
+    pub(crate) fn validate_target(
+        &self,
+        target: &impl FrameTarget,
+    ) -> Result<crate::OutputMetadata, RenderError> {
+        let metadata = target.metadata()?;
+        metadata.validate()?;
+        if self
+            .metadata
+            .as_ref()
+            .is_some_and(|old| !old.same_identity(&metadata))
+        {
+            return Err(RenderError::OutputIdentityChanged);
+        }
+        Ok(metadata)
+    }
+    /// Validate, submit without dispatching, then publish mode and frame callbacks.
     pub(crate) fn render(
         &mut self,
         display: &DisplayHandle,
@@ -105,21 +134,17 @@ impl Presentation {
         if size.w <= 0 || size.h <= 0 {
             return Err(RenderError::EmptySize);
         }
+        let metadata = self.validate_target(target)?;
+        let submitted = target.submit_popups(desktop.0, desktop.1, cursor)?;
         let output = self.output.get_or_insert_with(|| {
-            let output = Output::new(
-                "alo-nested".into(),
-                PhysicalProperties {
-                    size: (0, 0).into(),
-                    subpixel: Subpixel::Unknown,
-                    make: "alo".into(),
-                    model: "nested".into(),
-                },
-            );
+            let output = Output::new(metadata.name.clone(), metadata.properties());
             output.create_global::<Surfaces>(display);
             output
         });
-        // Refresh and physical dimensions are unknown for a nested window.
-        let mode = Mode { size, refresh: 0 };
+        let mode = Mode {
+            size,
+            refresh: metadata.refresh,
+        };
         if output.current_mode() != Some(mode) {
             if let Some(old) = output.current_mode() {
                 output.delete_mode(old);
@@ -132,7 +157,7 @@ impl Presentation {
                 Some((0, 0).into()),
             );
         }
-        let submitted = target.submit_popups(desktop.0, desktop.1, cursor)?;
+        self.metadata = Some(metadata);
         for surface in &self.entered {
             if !submitted.contains(surface) {
                 output.leave(surface);

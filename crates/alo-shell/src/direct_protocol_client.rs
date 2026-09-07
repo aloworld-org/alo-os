@@ -14,6 +14,8 @@ struct Events {
     frames: Vec<u32>,
     /// Received output enter/leave counts.
     membership: (usize, usize),
+    /// Unmodified output wire events from the direct backend metadata path.
+    outputs: Vec<wl_output::Event>,
 }
 impl Dispatch<wl_registry::WlRegistry, ()> for Events {
     fn event(
@@ -73,7 +75,18 @@ impl Dispatch<wl_callback::WlCallback, ()> for Events {
     }
 }
 delegate_noop!(Events: ignore wl_compositor::WlCompositor);
-delegate_noop!(Events: ignore wl_output::WlOutput);
+impl Dispatch<wl_output::WlOutput, ()> for Events {
+    fn event(
+        state: &mut Self,
+        _: &wl_output::WlOutput,
+        event: wl_output::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        state.outputs.push(event);
+    }
+}
 
 /// Drive a real surface and callbacks; scene eligibility is controlled by the server fixture.
 pub(super) fn run(
@@ -111,12 +124,31 @@ fn run_inner(
         send.send((stage, surface.id().protocol_id()))?;
         responses.recv_timeout(Duration::from_secs(5))?;
         queue.roundtrip(&mut events)?;
+        queue.roundtrip(&mut events)?;
         let expected: &[u32] = match stage {
             0 => &[],
             1..=4 => &[71],
             _ => &[71, 75],
         };
         assert_eq!(events.frames, expected);
+        if stage == 0 {
+            assert!(events.outputs.is_empty());
+        } else {
+            assert!(events.outputs.iter().any(|event| matches!(event,
+                wl_output::Event::Name { name } if name == "alo-drm-1")));
+            assert!(events.outputs.iter().any(|event| matches!(event,
+                wl_output::Event::Geometry { physical_width: 310, physical_height: 170, make, model, .. }
+                if make == "unknown" && model == "unknown")));
+            assert!(events.outputs.iter().any(|event| matches!(
+                event,
+                wl_output::Event::Mode {
+                    width: 1280,
+                    height: 720,
+                    refresh: 60_000,
+                    ..
+                }
+            )));
+        }
         assert_eq!(
             events.membership,
             match stage {

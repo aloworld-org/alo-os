@@ -45,6 +45,8 @@ pub struct Events {
     pub frames: Vec<u32>,
     /// Current output modes received from the single advertised output.
     pub modes: Vec<(i32, i32)>,
+    /// Output metadata events retained for protocol assertions.
+    pub output_events: Vec<wl_output::Event>,
     /// Number of output globals bound.
     pub outputs: usize,
     /// Output enter and leave event counts.
@@ -158,6 +160,7 @@ impl Dispatch<wl_output::WlOutput, ()> for Events {
         {
             state.modes.push((width, height));
         }
+        state.output_events.push(event);
     }
 }
 delegate_noop!(Events: ignore wl_shm::WlShm);

@@ -11852,3 +11852,90 @@ records and remaining v0.01 acceptance are owed. Compositor/release unchecked.
 Supervisor full Windows/Linux/BPF gates still pending. No staging, commit, push,
 worker launch, tools/dev-loop edits, other checkout access, shared kernel/BPF/
 cgroup/service changes or physical installation.
+
+---
+
+## 2026-09-07 - Truthful output metadata (halted)
+
+Single desktop/integration worker; clean initial checkout. Read CLAUDE, DELIVERY,
+SHARED_MAIN, updates README, current queue/state, relevant feature/roadmap,
+ADRs 0001/0002, app-adapter contract, GRAPHICS/COMPOSITOR and hardware gates.
+All reports published at iteration start were already referenced in this journal;
+none awaited reconciliation. No Claude work taken; later reports reconcile next
+iteration. Acceptance recorded in QUEUE before implementation. Own report:
+`docs/autonomy/updates/truthful-output-metadata.md`.
+
+Implemented validated FrameTarget metadata, honest nested/virtual/direct identity,
+connector dimensions and progressive timing-derived millihertz. First success
+freezes identity and publishes the output global/mode. Malformed/replaced identity
+refuses before submit; failed frames preserve metadata, membership and callbacks.
+Reactive popup desired-extent negotiation remains independent of submitted modes.
+No ADR change, engine patch, agent contract change or new release scope.
+
+Ubuntu Rust 1.98.0, WSLg socket and graphics pkg-config dependencies verified;
+no installation needed, no /dev/dri. Windows fmt, affected clippy/tests pass
+(Linux tests cfg-excluded). Linux focused metadata tests, fmt, affected all-target
+clippy, 174 shell checks (102 unit + 67 lifecycle + 3 socket + 2 doctests),
+warnings-denied rustdoc and example build pass. Three new tests plus direct
+wire metadata assertions. Initial compile/lint and popup-regression findings were
+corrected without exemptions or relaxed assertions; exact commands in report.
+WSLg nested wire metadata/popup/cursor check passes with 115 client surfaces.
+
+HALTED under owner's repeated-test-failure rule: normal WSLg offscreen check
+failed twice. First, synthetic timings were absent and metadata validation
+refused before expected ENOTTY; corrected fixture timing and reran Linux fmt,
+all-target clippy and example build successfully. Second, actual non-DRM refusal
+was reached but offscreen_client.rs:126 expected membership (4,0), observed (0,0),
+exit 1. Likely initial-global bind-roundtrip issue after success-only publication;
+not corrected or verified. No further implementation retry. Invalid-EGL refusal
+separately exits 1 as expected. First offscreen wrapper exit was misleading; its
+failure log is not a pass. Full tests/rustdoc and Windows checks preceded the final
+fixture-only correction; report preserves that timing.
+
+Updated CHANGELOG, ROADMAP, QUEUE, this journal, COMPOSITOR and own report with
+unfinished status. Diff inspection and git diff --check pass. Owner/supervisor
+must resume after halt; finish offscreen handshake while retaining all assertions,
+rerun integration/affected checks, then consider publication. No STEP DONE or
+release completion claim. Supervisor independent full Windows/Linux workspace/
+BPF gates remain owed. Work remains unstaged; no commit/push, worker launch,
+other checkout access, tools/dev-loop edits, shared kernel changes or physical
+installation. After metadata completion: output retirement/pause and direct
+renderer/input/session wiring. Async transport, GPU context-loss, existing
+parent-leave/libseat limits and all physical hardware acceptance remain open.
+
+---
+
+## 2026-09-08 - Desktop loop recovery: output binding handshake
+
+The owner asked for a Claude prompt and to fix this loop. Audited the stopped
+supervisor: its last state was HALTED, its PID was absent, and the unfinished
+output-metadata implementation was preserved in this checkout. No second editor
+was launched while recovering it. The original halt above remains historical
+evidence, not the current blocker.
+
+Reproduced the offscreen membership failure (exit 1, zero rather than four
+enters). After success-only output publication, the client must finish the bind
+queued by its registry callback before asserting membership. Added that second
+roundtrip in offscreen_client.rs, retaining all four callbacks/enters and golden
+pixel assertions. Refusal stages now also assert no output or metadata events.
+No sleeps, ignored tests, lint exemptions or supervisor changes.
+
+Rebuilt examples; normal WSLg offscreen passed twice. Nested popup/cursor and
+wire-metadata regression passed with 115 client surfaces. Invalid EGL refused
+with exit 1. Windows and Linux workspace fmt/all-target clippy/tests all passed;
+Linux warnings-denied rustdoc and pinned BPF fmt/release clippy passed. Existing
+ignored tests remain ignored. Desktop supervisor fmt/clippy, 11 tests and release
+build also passed. Commands, local logs and preserved original failed evidence:
+`docs/autonomy/updates/truthful-output-metadata.md`.
+
+Claude's next prompt is `docs/autonomy/claude-publication-review.md`: fail-closed
+kernel publication, exact acceptance evidence and production-reachable network
+gap audit within accepted decisions. It was written, not launched; the Claude
+checkout was not edited. Only the desktop/integration checkout is resumed here.
+
+Next desktop component: output retirement on session pause, global removal and
+client leaves, callback retention and failed-disable refusal; then direct input/
+session integration. Metadata is ready for normal publication and the desktop
+supervisor can restart from a clean synchronized tree. All physical acceptance
+remains outstanding. No Windows boot/disk/networking configuration changed;
+WSL tests cannot certify the machine. No compositor or release box moved.

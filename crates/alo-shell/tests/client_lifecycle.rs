@@ -3,6 +3,7 @@
 
 mod cursor;
 mod input;
+mod output_metadata;
 mod pointer;
 mod popups;
 mod support;

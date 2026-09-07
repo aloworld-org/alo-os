@@ -121,7 +121,14 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
         if stage < 3 {
             assert!(app.events.frames.is_empty());
             assert_eq!(app.events.membership, (0, 0));
+            assert_eq!(app.events.outputs, 0);
+            assert!(app.events.output_events.is_empty());
         } else {
+            // The first successful submission advertises the output. The first
+            // roundtrip discovers it and queues a bind; finish that bind before
+            // checking the surface enter events delivered through the output.
+            app.sync();
+            assert_eq!(app.events.outputs, 1);
             assert_eq!(app.events.frames, [77; 4]);
             assert_eq!(app.events.membership, (4, 0));
         }

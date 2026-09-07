@@ -14,6 +14,7 @@ fn output() -> AtomicOutput {
     };
     AtomicOutput {
         output: DirectOutput {
+            physical_size: Some((310, 170)),
             connector: NonZeroU32::MIN.into(),
             crtc: NonZeroU32::MIN.saturating_add(1).into(),
             mode: drm_ffi::drm_mode_modeinfo {

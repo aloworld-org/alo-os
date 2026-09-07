@@ -96,9 +96,10 @@ impl Server {
         time: u32,
     ) -> Result<usize, crate::RenderError> {
         let size = target.size();
+        self.presentation.validate_target(target)?;
         if size.w > 0 && size.h > 0 {
-            // Output mode is published even if submission fails. An empty target
-            // does not replace that last valid mode or move existing popups.
+            // Reactive popup negotiation follows the backend's desired extent,
+            // even on submission refusal. wl_output describes only submitted modes.
             self.surfaces.popups.output_size = Some(size);
         }
         self.surfaces.prune();
