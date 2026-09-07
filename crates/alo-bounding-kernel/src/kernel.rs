@@ -103,6 +103,36 @@ pub fn file_open(ctx: LsmContext) -> i32 {
     deciding::decide(file)
 }
 
+/// Every rename of every file, on this machine, until the program is detached.
+///
+/// The second hook, and the reason there is one: what a turn **opens** has been
+/// watched since the boundary was first loaded and what it **moves** was not.
+/// So a file nobody granted could be renamed into a granted folder, and read
+/// from there, past a boundary that had no complaint about either step. ADR
+/// 0015 named `inode_rename` beside `file_open` in its own mechanism; only one
+/// of the two had been built.
+///
+/// The hook is
+/// `inode_rename(struct inode *old_dir, struct dentry *old_dentry,
+/// struct inode *new_dir, struct dentry *new_dentry)`. The two **inodes** are
+/// handed over and are not read: an inode does not say where it is, and this
+/// program decides by walking up a chain of directory entries. The entries are
+/// what carry that chain, so the entries are what it takes.
+#[lsm(hook = "inode_rename")]
+pub fn inode_rename(ctx: LsmContext) -> i32 {
+    let old_entry: u64 = ctx.arg(1);
+    let new_entry: u64 = ctx.arg(3);
+    // As with `file_open`, the kernel appends what the previous LSM decided
+    // after the hook's own arguments — the fifth here, because there are four.
+    let already: i32 = ctx.arg(4);
+    if already != 0 {
+        // Somebody else has already refused, and turning a refusal into an
+        // allow is not something an additional security module may do.
+        return already;
+    }
+    deciding::decide_rename(old_entry, new_entry)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

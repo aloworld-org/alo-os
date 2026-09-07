@@ -260,6 +260,35 @@ task into an agent's boundary would be silent, and a zero cannot name the wrong
 task.
 **Date:** 2026-09-04
 
+### The `inode_rename` hook has four arguments, and its destination usually names nothing
+**Version:** Linux 6.18.33.2, BPF LSM; found 2026-09-07 building the rename half
+of `crates/alo-bounding-kernel`
+**Behaviour:** two things about this hook are not what reading the kernel's own
+source first suggests.
+
+`security_inode_rename` takes **five** arguments — the two directories, the two
+directory entries, and `flags`. The **hook** takes four: `flags` is not passed
+on to the security modules. A BPF LSM program is called with the hook's
+arguments and then the previous module's decision, so the decision is argument
+*four* here and argument *one* on a one-argument hook like `file_open`. Reading
+it from the wrong slot does not fail loudly; it reads a pointer as an `i32` and
+returns it, which is a boundary that refuses almost everything for reasons
+nobody can see.
+
+And the **destination entry usually has no inode**. A rename to a name nothing
+is at — which is every no-clobber rename, and most ordinary ones — is handed a
+*negative* directory entry: it names a place in a folder rather than a file.
+Asking it which inode it is gives nothing.
+**Our response:** the four arguments are written down where the hook is
+declared, and the walk asks the two entries different questions, which
+`deciding.rs` argues at length: the **source** is asked about the entry itself,
+because the file is what a call named; the **destination** is asked about the
+entry's **parent**, because a negative entry has no place to be asked about and
+the folder is what the call named anyway. Asking the source's parent instead
+would refuse every legitimate move, since the folder a move takes a file out of
+is not a place its call names.
+**Date:** 2026-09-07
+
 <!--
 ### <Machine or component> — <one-line summary>
 **Version:** firmware / kernel / driver version the behaviour was seen on
@@ -622,7 +651,7 @@ measured rather than reasoned about. With a turn bound to one granted folder:
 | `openat` a file **through** that handle | `EACCES` |
 | reopening it through `/proc/self/fd/N` | `EACCES` |
 | `renameat2` between two `O_PATH` handles | works |
-| a plain rename of an ungranted file | **works** |
+| a plain rename of an ungranted file | `EACCES`, since renames were enforced |
 
 **Our response:** `alo-files` takes `O_PATH` handles on the two folders of a
 rename, and nothing else does. The first two rows are what makes that possible;
@@ -635,13 +664,16 @@ the boundary exists to withhold, and **nothing about this widens what a turn may
 reach**. The test asserts every row, so a kernel that changes any of them fails
 loudly rather than downgrading a guarantee in silence.
 
-**The last row is the one to keep in view.** A rename is not on this boundary's
-hook at all: ADR 0015 names `inode_rename` beside `file_open` and only
-`file_open` is built, so moving a file nobody granted is something the kernel
-does not stop today. That is a gap in the *boundary*, not in `alo-files` — the
-capability model refuses such a call long before it reaches a syscall — and it
-is queue item 6d rather than something item 6c quietly relied on.
-**Date:** 2026-09-07
+**The last row was the finding, and it has since been fixed.** When this entry
+was written a rename was on no hook at all — ADR 0015 named `inode_rename`
+beside `file_open` and only `file_open` had been built — so moving a file nobody
+granted was something the kernel did not stop. It is built now, and the row
+above is what this kernel says today.
+
+That changes nothing about the rest of this entry, which is why it is worth
+saying: `alo-files` takes `O_PATH` handles because such a handle confers no
+reading, and that argument never depended on renames being unwatched.
+**Date:** 2026-09-07, last row answered the same day
 
 ### Windows returns a path spelled differently from the one it was given
 **Version:** Windows 11 26200, Rust 1.97 `std::fs::canonicalize`

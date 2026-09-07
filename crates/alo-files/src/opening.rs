@@ -98,11 +98,14 @@
 //! and the test asserts all four parts so that a kernel which changes any of
 //! them fails rather than quietly downgrades.
 //!
-//! There is a plainer reason as well, and it is in that test too: a rename is
-//! not on this boundary's hook at all. ADR 0015 names `inode_rename` beside
-//! `file_open` and only `file_open` is built, so the kernel does not watch
-//! renames yet. This closes a race in our own code above a syscall the boundary
-//! was never checking.
+//! **The argument does not rest on renames being unwatched, and they no longer
+//! are.** When this was written the kernel had no hook on `inode_rename` and a
+//! rename of an ungranted file simply succeeded; the boundary now watches both
+//! ends of one, refusing a source or a destination outside the bound. Nothing
+//! here changed when it did, because what makes an `O_PATH` handle acceptable
+//! is that it confers no reading — not that nobody was looking. The handles
+//! this file takes are on folders the call named, so the moves it makes are the
+//! ones the kernel permits.
 //!
 //! The final component of each name is not followed, which is `renameat2`'s own
 //! behaviour and the right one: a link put where the file was is moved as the

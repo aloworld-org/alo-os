@@ -11,7 +11,8 @@
 //! /sys/fs/bpf/alo            0750 root:<the agent's group>  made by the loader
 //!   ├─ bounds                0660 root:<the agent's group>  the daemon writes it
 //!   ├─ fields                0600 root:root                 nobody else reads it
-//!   └─ file_open             0600 root:root                 what holds the attach
+//!   ├─ file_open             0600 root:root                 holds one attach
+//!   └─ inode_rename          0600 root:root                 holds the other
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -29,8 +30,11 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! `file_open` is the pinned link, and it is what keeps the programme attached
-//! after the loader has exited. Removing it detaches; nothing else does.
+//! `file_open` and `inode_rename` are the pinned links, and they are what keeps
+//! the programme attached after the loader has exited. Removing one detaches
+//! that hook; nothing else does. There are two because the programme sits on
+//! two hooks — what a turn opens, and what it moves — and each attach is its
+//! own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
 //!
@@ -64,8 +68,16 @@ const THE_BOUNDS: &str = "bounds";
 /// ever opens.
 const THE_FIELDS: &str = "fields";
 
-/// The pinned link, which is what holds the programme on the hook.
+/// The pinned link that holds the programme on the hook every open goes
+/// through.
 const THE_HOOK: &str = "file_open";
+
+/// The pinned link that holds it on the hook every rename goes through.
+///
+/// A second file rather than something inside the first, because a link is
+/// pinned one to a path: two hooks are two attaches and two links, and a
+/// machine with one of them is a different machine from one with both.
+const THE_RENAME_HOOK: &str = "inode_rename";
 
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
@@ -79,7 +91,7 @@ const THE_LOADERS_OWN_MODE: u32 = 0o600;
 /// Where this machine's boundary is pinned.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Pinned {
-    /// The directory the three pins go in.
+    /// The directory the pins go in.
     root: PathBuf,
 
     /// The map of turns.
@@ -90,6 +102,9 @@ pub struct Pinned {
 
     /// The link that holds the programme on `file_open`.
     hook: PathBuf,
+
+    /// The link that holds it on `inode_rename`.
+    rename_hook: PathBuf,
 }
 
 impl Pinned {
@@ -101,7 +116,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is four paths joined, and every other
+    /// Nothing is made or looked at: this is five paths joined, and every other
     /// method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -110,10 +125,11 @@ impl Pinned {
             bounds: root.join(THE_BOUNDS),
             fields: root.join(THE_FIELDS),
             hook: root.join(THE_HOOK),
+            rename_hook: root.join(THE_RENAME_HOOK),
         }
     }
 
-    /// The directory the three pins go in.
+    /// The directory the pins go in.
     #[must_use]
     pub fn root(&self) -> &Path {
         &self.root
@@ -131,23 +147,29 @@ impl Pinned {
         &self.fields
     }
 
-    /// The link that holds the programme on the hook.
+    /// The link that holds the programme on the hook every open goes through.
     #[must_use]
     pub fn hook(&self) -> &Path {
         &self.hook
     }
 
+    /// The link that holds it on the hook every rename goes through.
+    #[must_use]
+    pub fn rename_hook(&self) -> &Path {
+        &self.rename_hook
+    }
+
     /// Refuse a machine that already has a boundary pinned here.
     ///
-    /// A second programme on `file_open` is a second boundary: both are asked
-    /// about every open, either can refuse one, and which grant a turn is really
-    /// running under stops being a question with one answer. A loader run twice
-    /// is a machine somebody is fixing, so it says so and changes nothing.
+    /// A second programme on either hook is a second boundary: both are asked,
+    /// either can refuse, and which grant a turn is really running under stops
+    /// being a question with one answer. A loader run twice is a machine
+    /// somebody is fixing, so it says so and changes nothing.
     ///
     /// # Errors
     /// [`NotBounded::AlreadyThere`], naming the pin that is in the way.
     pub fn nothing_is_there(&self) -> Result<(), NotBounded> {
-        for pin in [&self.bounds, &self.fields, &self.hook] {
+        for pin in [&self.bounds, &self.fields, &self.hook, &self.rename_hook] {
             if pin.exists() {
                 return Err(NotBounded::AlreadyThere {
                     path: pin.display().to_string(),
@@ -210,7 +232,8 @@ impl Pinned {
         shut(&self.root, THE_DIRECTORY_MODE)?;
         shut(&self.bounds, THE_BOUNDS_MODE)?;
         shut(&self.fields, THE_LOADERS_OWN_MODE)?;
-        shut(&self.hook, THE_LOADERS_OWN_MODE)
+        shut(&self.hook, THE_LOADERS_OWN_MODE)?;
+        shut(&self.rename_hook, THE_LOADERS_OWN_MODE)
     }
 
     /// Take the boundary off this machine: the three pins, then the directory.
@@ -226,7 +249,7 @@ impl Pinned {
     /// [`Pinned::nothing_is_there`] will refuse over next time, which is the
     /// answer that file argues for anyway.
     pub fn taken_away(&self) {
-        for pin in [&self.hook, &self.bounds, &self.fields] {
+        for pin in [&self.hook, &self.rename_hook, &self.bounds, &self.fields] {
             drop(std::fs::remove_file(pin));
         }
         drop(std::fs::remove_dir(&self.root));
@@ -275,6 +298,10 @@ mod tests {
         assert_eq!(pinned.bounds(), Path::new("/sys/fs/bpf/alo/bounds"));
         assert_eq!(pinned.fields(), Path::new("/sys/fs/bpf/alo/fields"));
         assert_eq!(pinned.hook(), Path::new("/sys/fs/bpf/alo/file_open"));
+        assert_eq!(
+            pinned.rename_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_rename")
+        );
     }
 
     /// The directory is made shut: root owns it, the agent's group may enter
@@ -348,7 +375,12 @@ mod tests {
         let root = a_root_of_our_own("given-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        for pin in [pinned.bounds(), pinned.fields(), pinned.hook()] {
+        for pin in [
+            pinned.bounds(),
+            pinned.fields(),
+            pinned.hook(),
+            pinned.rename_hook(),
+        ] {
             std::fs::write(pin, b"").unwrap();
         }
 
@@ -366,6 +398,7 @@ mod tests {
         );
         assert_eq!(mode_of(pinned.fields()), 0o600, "and never this one");
         assert_eq!(mode_of(pinned.hook()), 0o600);
+        assert_eq!(mode_of(pinned.rename_hook()), 0o600);
         assert_eq!(mode_of(&root), 0o750);
         pinned.taken_away();
     }
@@ -378,7 +411,12 @@ mod tests {
         let root = a_root_of_our_own("taken-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        for pin in [pinned.bounds(), pinned.fields(), pinned.hook()] {
+        for pin in [
+            pinned.bounds(),
+            pinned.fields(),
+            pinned.hook(),
+            pinned.rename_hook(),
+        ] {
             std::fs::write(pin, b"").unwrap();
         }
 

@@ -15,7 +15,7 @@
 //!    not.
 //! 3. Fill the map of offsets.
 //! 4. **Then** attach.
-//! 5. Pin the link, then the two maps.
+//! 5. Pin each hook's link, then the two maps.
 //!
 //! Attaching last of the first four is what makes step 3 safe to do at all. A
 //! programme attached before its offsets were filled would run against a map of
@@ -31,8 +31,9 @@
 //! A BPF link is held by whoever loaded it, so a loader that pinned nothing
 //! would take the machine's boundary away the instant it finished — which is
 //! what `alo-agentd` used to do when it was stopped, and one of the things
-//! ADR 0018 fixes. [`Pinned::hook`] is the pin that holds the attach; removing
-//! it is the only thing on the machine that detaches.
+//! ADR 0018 fixes. [`Pinned::hook`] and [`Pinned::rename_hook`] are the pins
+//! that hold the two attaches; removing one is the only thing on the machine
+//! that detaches that hook.
 //!
 //! # A load that fails leaves nothing behind
 //!
@@ -64,11 +65,19 @@ fn the_kernel_half() -> &'static [u8] {
     aya::include_bytes_aligned!(concat!(env!("OUT_DIR"), "/alo-bounding-kernel"))
 }
 
-/// What the programme is called inside the compiled object.
-const THE_PROGRAM: &str = "file_open";
-
-/// The hook it is attached to.
-const THE_HOOK: &str = "file_open";
+/// The hooks the programme sits on, each called the same inside the compiled
+/// object as the kernel function it stands in front of.
+///
+/// **Two of them, since renames were enforced.** `file_open` is what a turn
+/// *reads* and `inode_rename` is what it *moves*, and a boundary watching only
+/// the first would let a file nobody granted be renamed into a granted folder
+/// and read from there, with neither step anything to complain about. ADR 0015
+/// named both in its own mechanism and only one had been built.
+///
+/// A list rather than two constants, so that loading, attaching and pinning are
+/// one piece of code run twice rather than two that can drift. A third hook is
+/// a line here and a pin in `pinned.rs`.
+const THE_HOOKS: [&str; 2] = ["file_open", "inode_rename"];
 
 /// The map of turns to the places each may reach.
 pub(crate) const THE_BOUNDS: &str = "BOUNDS";
@@ -89,7 +98,7 @@ pub struct Imposed {
 }
 
 impl Imposed {
-    /// Load the programme into this kernel, attach it, and pin all three.
+    /// Load the programme into this kernel, attach both hooks, and pin all four.
     ///
     /// Everything that can be wrong with the machine is found here rather than
     /// at the first turn: a kernel that publishes no type information, one whose
@@ -179,38 +188,52 @@ impl Imposed {
     }
 }
 
-/// Attach the programme to `file_open` and pin the link and both maps.
+/// Attach the programme to both hooks and pin the two links and both maps.
 ///
 /// A function of its own so that [`Imposed::once`] has one place to take the
-/// pins away from when any step of it fails, rather than four.
+/// pins away from when any step of it fails, rather than six.
+///
+/// **Both attaches, or neither boundary.** A machine with `file_open` attached
+/// and `inode_rename` refused would watch what a turn reads and not what it
+/// moves, which is precisely the shape this hook was added to remove — and it
+/// would look like a working boundary. So a failure on the second is a failure
+/// of the whole thing, and [`Imposed::once`] takes the first one's pin away
+/// again on the way out. ADR 0015's rule, applied to a boundary that is now two
+/// pieces: a turn whose boundary cannot be applied does not run.
 fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
     let hooks = Btf::from_sys_fs().map_err(|_| NotBounded::TypesAreNotReadable {
         what: "the kernel will not say which function the hook stands in front of",
     })?;
-    let program: &mut Lsm = loaded
-        .program_mut(THE_PROGRAM)
-        .ok_or(NotBounded::NothingCalled { what: THE_PROGRAM })?
-        .try_into()
-        .map_err(NotBounded::WillNotAttach)?;
-    program
-        .load(THE_HOOK, &hooks)
-        .map_err(NotBounded::WillNotAttach)?;
-    let attached = program.attach().map_err(NotBounded::WillNotAttach)?;
 
-    // Taking the link out of the programme and pinning it is what survives this
-    // process. `PinnedLink` is dropped straight away on purpose: the pin holds
-    // the kernel's reference, and holding a descriptor as well would only mean
-    // the loader had something to lose.
-    let link = program
-        .take_link(attached)
-        .map_err(NotBounded::WillNotAttach)?;
-    FdLink::from(link)
-        .pin(pinned.hook())
-        .map_err(|why| NotBounded::WillNotPin {
-            what: "the link that holds the boundary on file_open",
-            path: pinned.hook().display().to_string(),
-            why,
-        })?;
+    for (hook, at) in THE_HOOKS
+        .into_iter()
+        .zip([pinned.hook(), pinned.rename_hook()])
+    {
+        let program: &mut Lsm = loaded
+            .program_mut(hook)
+            .ok_or(NotBounded::NothingCalled { what: hook })?
+            .try_into()
+            .map_err(NotBounded::WillNotAttach)?;
+        program
+            .load(hook, &hooks)
+            .map_err(NotBounded::WillNotAttach)?;
+        let attached = program.attach().map_err(NotBounded::WillNotAttach)?;
+
+        // Taking the link out of the programme and pinning it is what survives
+        // this process. `PinnedLink` is dropped straight away on purpose: the
+        // pin holds the kernel's reference, and holding a descriptor as well
+        // would only mean the loader had something to lose.
+        let link = program
+            .take_link(attached)
+            .map_err(NotBounded::WillNotAttach)?;
+        FdLink::from(link)
+            .pin(at)
+            .map_err(|why| NotBounded::WillNotPin {
+                what: "the link that holds the boundary on one of its hooks",
+                path: at.display().to_string(),
+                why,
+            })?;
+    }
 
     for (name, at) in [(THE_BOUNDS, pinned.bounds()), (THE_FIELDS, pinned.fields())] {
         loaded

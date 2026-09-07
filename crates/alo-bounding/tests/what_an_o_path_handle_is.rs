@@ -205,7 +205,7 @@ fn answer<'a>(answers: &'a BTreeMap<String, Said>, probe: &str) -> &'a Said {
 /// | `O_PATH` on an ungranted **file** | opens |
 /// | `openat` a file **through** that handle | `EACCES` |
 /// | reopening it through `/proc/self/fd` | `EACCES` |
-/// | `renameat2` between two `O_PATH` handles | works |
+/// | `renameat2` between two `O_PATH` handles, inside the grant | works |
 ///
 /// The first two are the claim item 6c wanted checked, and they are true: an
 /// `O_PATH` open does not reach `security_file_open`. **The next two are why
@@ -264,27 +264,32 @@ fn an_o_path_handle_opens_where_a_read_would_not_and_still_reads_nothing() {
          is the classic way round: {answers:?}"
     );
 
-    // The move this is all for can be made from handles at all.
+    // The move this is all for can be made from handles at all — **and it is a
+    // rename inside the granted folder**, so it is also the check that the
+    // rename hook does not refuse `alo-files` its own legitimate work.
     assert_eq!(
         answer(&answers, "rename-with-path-handles"),
         &Said::Fine,
-        "renameat2 will not take O_PATH handles on this kernel: {answers:?}"
+        "renameat2 with O_PATH handles was refused: either this kernel will not take them, or \
+         the rename hook is refusing a move within one granted folder: {answers:?}"
     );
 
-    // **And the fact that keeps this honest.** A rename is not on this
-    // boundary's hook at all — ADR 0015 names `inode_rename` beside `file_open`
-    // and only `file_open` is built — so moving a file nobody granted is not
-    // something the kernel stops today. Taking O_PATH handles in `alo-files`
-    // therefore widens nothing: it closes a race in our own code, above a
-    // boundary that was never watching this syscall. That is worth a test
-    // rather than a sentence, because the day the hook arrives this changes and
-    // somebody should be told.
+    // **And the fact that changed.** When this file was written a rename was on
+    // no hook at all, and a plain rename of an ungranted file succeeded — ADR
+    // 0015 named `inode_rename` beside `file_open` and only `file_open` had
+    // been built. It is built now, and this is the assertion that was inverted
+    // when it was: the kernel refuses a rename out of a folder nobody granted.
+    //
+    // What it means for the reasoning above is nothing, which is the point of
+    // keeping it here. `alo-files` takes `O_PATH` handles because such a handle
+    // confers no reading, and that argument never depended on renames being
+    // unwatched — it holds unchanged now that they are.
     assert_eq!(
         answer(&answers, "rename-ungranted-file"),
-        &Said::Fine,
-        "a rename outside the grant was refused, so this boundary now watches renames and \
-         docs/quirks.md, ADR 0015's note and alo-files' reasoning are all out of date: \
-         {answers:?}"
+        &Said::No(13),
+        "a rename outside the grant was allowed, so the boundary has stopped watching renames: \
+         see crates/alo-bounding/tests/the_kernel_refuses_a_rename.rs, which is the file that \
+         should have failed first: {answers:?}"
     );
 
     let _ = fs::remove_dir_all(&machine);

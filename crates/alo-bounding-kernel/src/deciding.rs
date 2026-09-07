@@ -58,6 +58,49 @@ pub fn decide(file: u64) -> i32 {
     }
 }
 
+/// Whether this rename may go ahead.
+///
+/// # Two entries, and they are not asked the same question
+///
+/// A rename is the one thing a turn does that names **two** places, and what
+/// has to be true of each is different — which is not this file being clever,
+/// it is `alo_files::Reaching` read back. What a turn is bound to for a move is
+/// *the file, and the folder it is going into*; for a rename it is *the file,
+/// and the folder it sits in*. So:
+///
+/// - the **source** is asked about the entry itself, because the file is what
+///   the call named and what a bound is made of;
+/// - the **destination** is asked about the entry's **parent**, because the
+///   destination usually does not exist yet — a no-clobber rename is a name
+///   nothing is at — and a directory entry with no inode has no place to be
+///   asked about. The folder it would be made in is what the call named, and it
+///   is there.
+///
+/// Asking the source's *parent* instead would refuse every legitimate move: the
+/// folder a `move_file` takes a file out of is not a place its call named, and
+/// widening a bound to include it is the thing this must not do.
+///
+/// Both have to be inside. A rename out of a granted folder into an ungranted
+/// one, or the reverse, is refused — which is the whole of what this hook is
+/// for.
+pub fn decide_rename(old_entry: u64, new_entry: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every rename on the machine.
+        return ALLOWED;
+    };
+    let Some(fields) = Fields::found() else {
+        return REFUSED;
+    };
+    let Some(new_folder) = kernel::word_at(new_entry.wrapping_add(fields.dentry_parent)) else {
+        return REFUSED;
+    };
+    if upwards_from(old_entry, &fields, granted) && upwards_from(new_folder, &fields, granted) {
+        ALLOWED
+    } else {
+        REFUSED
+    }
+}
+
 /// Whether the file this open is for lies at or under a granted place.
 fn inside(file: u64, granted: Bounds) -> bool {
     let Some(fields) = Fields::found() else {
@@ -70,7 +113,17 @@ fn inside(file: u64, granted: Bounds) -> bool {
     let Some(entry) = kernel::word_at(path.wrapping_add(fields.path_dentry)) else {
         return false;
     };
+    upwards_from(entry, &fields, granted)
+}
 
+/// Whether a granted place is met walking up from this directory entry.
+///
+/// The whole of the walk, once, for the two hooks that need it: this entry,
+/// the directory it is in, the directory that is in, until either a granted
+/// place is met or the top of the filesystem is. Two copies of it would be two
+/// answers to *is this inside* waiting to disagree, and one of them would be on
+/// the hook nobody was looking at.
+fn upwards_from(entry: u64, fields: &Fields, granted: Bounds) -> bool {
     let mut at = entry;
     let mut ended = false;
     reaches(granted, || {
