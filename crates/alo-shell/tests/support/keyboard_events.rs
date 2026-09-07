@@ -8,7 +8,7 @@ use wayland_client::{
 /// Event facts retained without interpreting a compositor's internal state.
 #[derive(Default)]
 pub struct KeyboardEvents {
-    /// Seat capabilities; no pointer is promised by this component.
+    /// Advertised seat capabilities.
     pub capabilities: Option<wl_seat::Capability>,
     /// XKB keymap read from the received descriptor.
     pub keymap: String,
@@ -38,6 +38,9 @@ impl Dispatch<wl_seat::WlSeat, ()> for Events {
         } = event
         {
             state.keyboard.capabilities = Some(caps);
+            if caps.contains(wl_seat::Capability::Pointer) {
+                seat.get_pointer(qh, ());
+            }
             if caps.contains(wl_seat::Capability::Keyboard) {
                 seat.get_keyboard(qh, ());
             }

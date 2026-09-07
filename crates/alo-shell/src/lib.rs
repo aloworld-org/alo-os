@@ -1,8 +1,9 @@
 //! Native shell's Wayland server core (ADR 0002).
 //!
 //! Owns a private display socket, XDG toplevel buffer lifetimes and a nested
-//! Wayland/GLES rendering backend with keyboard routing. Pointer input and
-//! session entry remain separate components. This library exposes no agent capability,
+//! Wayland/GLES rendering backend with keyboard routing and an optional pointer
+//! seat core. Nested pointer events, cursors and session entry remain separate
+//! components. This library exposes no agent capability,
 //! context capture, command execution or clipboard protocol.
 
 #![cfg(target_os = "linux")]
@@ -10,6 +11,7 @@
 mod drawing;
 mod keyboard;
 mod nested;
+mod pointer;
 mod presentation;
 mod server;
 mod socket;

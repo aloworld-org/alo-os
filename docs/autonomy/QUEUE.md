@@ -100,9 +100,24 @@ to main, pulling first and integrating any intervening commits before pushing.
   recorded in COMPOSITOR.md. Actual parent focus cycling with held physical keys,
   direct input/display and certified hardware are still owed, as are supervisor
   full publication gates. No pointer, shortcuts or completed compositor claim.
-  **Next component:** pointer seat advertisement and routing in the
-  nested backend, with hit testing, button/motion/axis delivery and client-disconnect
-  tests. Then popup management and direct-display integration. Window management
+  **Selected pointer core (desktop worker, this iteration):** optional pointer
+  capability on the keyboard seat, surface-tree/input-region hit testing,
+  motion/button/axis delivery, implicit drag isolation and cancellation on
+  unmap/disconnect or backend leave. Acceptance: real socket happy/refusal tests
+  for targeting, subsurface coordinates, duplicate/invalid input, drag isolation
+  and cleanup, plus wire trace, fmt, affected clippy and rendering regression.
+  **Completed pointer core 2026-09-07:** optional pointer capability on the
+  keyboard seat; Smithay surface-tree/input-region hits and implicit grabs,
+  finite fixed-point input validation, duplicate suppression and cleanup on
+  leave, root/child unmap, child destruction and disconnect. Four new real-client
+  tests pass (24 Linux tests total); the pointer wire trace passes all four.
+  WSLg still renders root/child buffers with an empty root input region, then
+  completes lifecycle/refusal checks. Windows/Linux focused tests and clippy,
+  workspace fmt, Linux rustdoc and diff checks passed; exact commands are in
+  COMPOSITOR.md. Windows excludes Linux protocol tests. Supervisor full gates
+  and all physical evidence remain owed; item 33 is not complete.
+  Nested pointer event wiring and cursor rendering remain the next component,
+  followed by popup management and direct-display integration. Window management
   and usable session entry remain delivery steps 3 and 4; no physical acceptance
   or completed desktop is claimed by this rendering component.
   Keep item 33 unchecked until its complete delivery requirements are met.

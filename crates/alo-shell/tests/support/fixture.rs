@@ -38,6 +38,8 @@ pub struct Fixture {
 
 /// Serialized backend operations on the same thread as Wayland dispatch.
 enum Request {
+    /// Serialized trusted backend operation for pointer protocol checks.
+    Backend(Box<dyn FnOnce(&mut Server) + Send>),
     /// Retain a real server resource to test stale and foreign focus refusal.
     Root(mpsc::Sender<Option<WlSurface>>),
     /// Explicit target to test the mapped-root trust boundary.
@@ -80,6 +82,19 @@ impl FrameTarget for TestTarget {
 }
 
 impl Fixture {
+    /// Run one backend operation on the display thread and return its result.
+    pub fn backend<T: Send + 'static>(
+        &self,
+        operation: impl FnOnce(&mut Server) -> T + Send + 'static,
+    ) -> T {
+        let (send, receive) = mpsc::channel();
+        self.query
+            .send(Request::Backend(Box::new(move |server| {
+                send.send(operation(server)).unwrap();
+            })))
+            .unwrap();
+        receive.recv_timeout(Duration::from_secs(3)).unwrap()
+    }
     /// Start a real display with no graphics or input devices.
     pub fn new() -> Self {
         Self::start(false)
@@ -115,6 +130,7 @@ impl Fixture {
                 server.dispatch().unwrap();
                 for request in receive.try_iter() {
                     match request {
+                        Request::Backend(operation) => operation(&mut server),
                         Request::Root(reply) => {
                             reply
                                 .send(server.mapped_surfaces().next().cloned())

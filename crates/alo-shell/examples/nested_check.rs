@@ -61,6 +61,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(app.events.keyboard.repeat, Some((25, 600)));
         assert_eq!(app.events.modes.last(), Some(&(320, 200)));
         app.configure();
+        // Input regions must not suppress graphical buffer submission.
+        app.empty_input();
         let (child, child_role) = app.child((24, 32));
         let (hidden, hidden_role) = app.child((1000, 1000));
         app.surface.frame(&app.queue.handle(), ());

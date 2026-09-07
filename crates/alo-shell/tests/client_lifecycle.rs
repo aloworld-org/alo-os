@@ -2,6 +2,7 @@
 #![cfg(target_os = "linux")]
 
 mod input;
+mod pointer;
 mod support;
 use support::{Application, Fixture};
 

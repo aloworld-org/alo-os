@@ -51,6 +51,8 @@ pub(crate) struct Surfaces {
     pub(crate) seats: SeatState<Self>,
     /// Optional keyboard seat and routing state.
     pub(crate) keyboard: Option<crate::keyboard::Keyboard>,
+    /// Optional trusted backend pointer routing state.
+    pub(crate) pointer: Option<crate::pointer::Pointer>,
 }
 
 impl Surfaces {
@@ -63,6 +65,7 @@ impl Surfaces {
             windows: Vec::new(),
             seats: SeatState::new(),
             keyboard: None,
+            pointer: None,
         }
     }
 
@@ -70,6 +73,7 @@ impl Surfaces {
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
         self.prune_keyboard_focus();
+        self.prune_pointer_focus();
     }
 
     /// Roots eligible for rendering; dead handles never escape this iterator.
@@ -143,7 +147,7 @@ impl SeatHandler for Surfaces {
         &mut self.seats
     }
     fn cursor_image(&mut self, _seat: &Seat<Self>, _image: CursorImageStatus) {
-        // Pointer capability is not advertised until its backend is implemented.
+        // Cursor presentation belongs to the subsequent nested input backend.
     }
 }
 impl ShmHandler for Surfaces {

@@ -680,9 +680,16 @@ which made a completely consistent rule look like work being taken out of turn.
     mapped-root focus and nested parent key routing. Real clients verify keymap,
     repeat, modifier/key delivery and isolation, held-key cleanup on focus loss,
     unmap/destruction/disconnect, and stale/foreign focus refusal. Invalid layouts
-    remove the failed display's socket. Pointer routing is next; item 33 remains
+    remove the failed display's socket. Item 33 remains
     incomplete. Exact focused checks and remaining machine evidence are recorded
     in `docs/autonomy/COMPOSITOR.md`.
+  - Pointer core component (2026-09-07): optional pointer capability, mapped
+    surface-tree/input-region hit testing, motion/buttons/scroll and implicit
+    drag isolation. Four additional real-client tests cover child coordinates,
+    refusal and leave/unmap/destruction/disconnect cancellation; 24 Linux tests
+    pass. Wire trace and WSLg rendering regression passed. Nested pointer events,
+    cursor presentation, popups and direct display remain unfinished; focused
+    checks do not replace supervisor full gates or physical acceptance.
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 

@@ -30,12 +30,18 @@ pub enum InputError {
     /// Linux evdev keyboard codes are bounded and zero is reserved.
     #[error("invalid evdev key code")]
     InvalidKey,
+    /// Pointer routing was not enabled on this display's seat.
+    #[error("pointer is not enabled")]
+    PointerUnavailable,
+    /// Nonfinite or out-of-range pointer coordinates, scroll or button code.
+    #[error("invalid pointer input")]
+    InvalidPointer,
 }
 
 /// The seat owns its protocol resources; the cloned handle drives XKB state.
 pub(crate) struct Keyboard {
-    /// Keep the seat available for the subsequent pointer component.
-    pub(crate) _seat: Seat<Surfaces>,
+    /// Shared seat for keyboard and optional pointer capability.
+    pub(crate) seat: Seat<Surfaces>,
     /// Keyboard handle with the person's configured layout.
     handle: KeyboardHandle<Surfaces>,
     /// Last accepted timestamp, reused for releases synthesized on focus loss.
@@ -60,7 +66,7 @@ impl Server {
             .add_keyboard(config, 600, 25)
             .map_err(|error| InputError::Keymap(error.to_string()))?;
         server.surfaces.keyboard = Some(Keyboard {
-            _seat: seat,
+            seat,
             handle,
             time: 0,
         });

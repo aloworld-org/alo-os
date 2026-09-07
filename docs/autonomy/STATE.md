@@ -9994,3 +9994,75 @@ run on Linux.
 **Hardware acceptance remains outstanding.** Nothing here was seen on a
 certified machine, and this item does not move anything in an *On the machine*
 half of `ROADMAP.md`.
+
+---
+
+## 2026-09-07 — item 33, pointer seat core component
+
+Desktop worker selected and recorded this component in QUEUE before implementing.
+The clean checkout contained the completed keyboard component; task 6b remains
+reserved for Claude in its separate checkout. No staging, commit, push, dev-loop
+edits, other checkout changes or shared kernel operations were performed.
+
+Implemented optional pointer capability on the keyboard seat, surface-tree hits
+including input regions and subsurface coordinates, motion/button/scroll delivery,
+implicit drag isolation, duplicate suppression and finite fixed-point validation.
+Backend leave and root/child unmap, child destruction or disconnect cancel held
+buttons and clear focus; new motion is required before another recipient receives
+events. Four real-client tests exercise happy/refusal paths. The graphical fixture
+also renders a root with an empty input region, ensuring hit regions do not hide
+buffers. The pointer core is complete; nested pointer events and cursor rendering
+are explicitly the next component, not claimed as a completed pointer feature.
+
+Reasons: ADR 0002 keeps native Rust shell control. Smithay's desktop feature
+provides the existing hit testing and implicit grab behavior without upstream
+patches, additional dependencies or lockfile changes. Routing matches renderer
+origin/order until delivery step 3 supplies window placement. Clearing pending
+focus before grab cancellation prevents focus restoration to another recipient.
+Only ordinary mouse button codes are accepted; there is no generic injection IPC,
+agent verb or context reader (ADR 0001 and application contracts unchanged).
+
+Actual verification (full exact commands in COMPOSITOR.md's pointer section):
+
+- `cargo fmt --all`, Windows/Linux `cargo fmt --all --check`: passed.
+- Linux `cargo test -p alo-shell --locked`: 24 passing tests, no ignored tests;
+  four new pointer tests, including focused-child destruction on the final run.
+- Windows/Linux `cargo clippy -p alo-shell --all-targets --locked -- -D warnings`:
+  passed. Windows `cargo test -p alo-shell --locked`: passed with zero Linux tests.
+- Linux `RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked`: passed.
+- `WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked --test
+  client_lifecycle pointer:: -- --nocapture`: four passing tests, exit 0; local
+  `.git/alo-pointer-wire.log` captures capability 3, child coordinates, button
+  transitions, finger scroll values/stops and pointer frames.
+- `WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check`:
+  exit 0; `.git/alo-pointer-nested.log` captures empty input region and real
+  root/child rendering, callbacks, unmap/remap, refusal and disconnect. This is
+  rendering regression evidence, not parent pointer injection evidence.
+- Source, new files and documentation diff reviewed; `git diff --check` passed.
+
+Initial compilation caught standalone discovery of a test module; moving it to
+`tests/pointer/mod.rs` fixed it. The example's unused helper warning was resolved
+by adding the empty-input rendering check. All executed test assertions passed;
+no repeated failures, gate weakening or lint suppression. WSLg and native package
+metadata rechecked (xkbcommon 1.13.1, Wayland 1.24.0, EGL 1.5); no missing routine
+dependencies. Linux uses this checkout's `/root/alo-os-target`.
+
+CHANGELOG, ROADMAP, QUEUE and COMPOSITOR updated in the same change. Supervisor
+full Windows/Linux/BPF publication gates have not been run by this worker.
+Next: nested pointer event routing and cursor presentation, then popups and direct
+display. Actual parent input/focus cycles, physical display/input and certified
+hardware records remain owed. Item 33 stays unchecked; delivery steps 3-8 and all
+remaining v0.01 scope remain intact. WSLg cannot certify physical hardware.
+
+### Publication integration recovery
+
+The supervisor passed its original gates, then halted while rebasing this
+pointer component onto Claude's filesystem commit `c0cb1cd`. Only CHANGELOG.md
+and this journal conflicted. The interactive maintainer preserved both entries;
+no source-code conflict resolution or discarded work was needed.
+
+On the combined tree, independently reran Windows and Linux workspace formatting,
+clippy with warnings denied, and all default workspace tests/doctests; all passed.
+Linux rustdoc with warnings denied and the pinned BPF target's formatting/clippy
+also passed. Existing opt-in model measurements remain opt-in; no gate was
+weakened and no new hardware acceptance is claimed. Both gate commands exited 0.

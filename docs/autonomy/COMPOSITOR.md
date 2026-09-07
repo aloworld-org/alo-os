@@ -318,3 +318,68 @@ Pointer routing, popups, production scheduling, shortcuts/window management and
 delivery steps 3-8 remain unfinished. Item 33 stays unchecked. The supervisor
 must independently run all full Windows/Linux/BPF publication gates; this worker
 has not staged, committed or pushed.
+
+## Pointer seat core (2026-09-07)
+
+`Server::enable_pointer` adds optional pointer capability to the existing keyboard
+seat. `pointer_motion` uses Smithay 0.7.0's desktop surface-tree hit testing,
+matching renderer root order and origin at scale one, including subsurface offsets
+and committed input regions. The upstream `desktop` feature adds no dependency
+or lockfile change. `pointer_button` accepts BTN_LEFT through BTN_TASK and
+suppresses duplicate/unmatched transitions. Smithay's implicit grab retains the
+pressed surface across motion; `pointer_axis` forwards scroll frames. Coordinates
+and scroll values must fit finite Wayland fixed-point values. Invalid inputs
+refuse without changing focus; unfocused buttons/scroll are dropped.
+
+`pointer_leave` cancels held buttons and clears focus; dispatch also checks that
+the focused surface and its ancestors remain buffered under a live mapped root.
+Unmap, child destruction and disconnect cannot transfer a held button to another
+application. Cancellation first removes Smithay's pending focus so releasing a
+grab cannot restore another recipient. A subsequent motion establishes new focus.
+These are trusted backend Rust APIs, not agent verbs or context access. The
+accepted ADR 0001/application contracts remain unchanged; ADR 0002's native shell
+uses upstream protocol behavior rather than patching the engine.
+
+This completes the selected core, not pointer integration or item 33. The nested
+backend still enables only keyboard input. Cursor requests are not rendered yet.
+Next: wire parent motion/button/axis/leave and focus loss to these APIs, implement
+cursor presentation and verify them through WSLg. Root placement/window activation,
+popups, direct input/display, production scheduling and delivery steps 3-8 remain.
+Physical mouse/keyboard/display checks on certified machines remain owed; WSLg
+and socket injection cannot certify hardware.
+
+### Checks actually run for the pointer core
+
+Ubuntu WSLg socket and pkg-config prerequisites rechecked: xkbcommon 1.13.1,
+Wayland server 1.24.0, EGL 1.5. No package installation or shared kernel changes.
+This checkout retained its Linux target directory `/root/alo-os-target`.
+
+```powershell
+cargo fmt --all
+cargo fmt --all --check
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo fmt --all --check
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked --test client_lifecycle pointer:: -- --nocapture
+wsl -d Ubuntu -- env WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check
+git diff --check
+```
+
+All final commands passed. Linux: **24 tests**, no ignored tests (one unit,
+20 real-client tests, three socket tests). Windows passes with zero Linux tests,
+not protocol evidence. Initial compilation discovered that the new test file
+was also being discovered as a standalone integration target; moving it under
+`tests/pointer/mod.rs` corrected that. The shared `empty_input` fixture method
+was unused in the graphical example; the example now verifies rendering with
+an empty input region. No test assertion failed and no lint was suppressed.
+
+Additional evidence: `.git/alo-pointer-wire.log` records four passing pointer
+tests with capability mask 3, child-local enter (2,3), button 272 transitions,
+finger source, horizontal -2/vertical 5 scroll, axis stops and frame boundaries.
+`.git/alo-pointer-nested.log` records the empty-region request followed by actual
+GLES root/child callbacks, unmap/remap, refusal and disconnect (exit 0). Its parent
+pointer events belong to WSLg; they do not demonstrate our nested pointer bridge.
+Independent supervisor full Windows/Linux/BPF publication gates remain owed.

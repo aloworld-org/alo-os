@@ -33,6 +33,11 @@ grant now takes effect immediately instead of at the next sign-in" is.
   open on Linux: a file moved out of a folder that was exchanged after you
   approved the move.
 
+- The native shell's pointer core can deliver clicks, movement and scrolling
+  to application surfaces. Drags stay with the original application; leaving,
+  unmapping or disconnecting cancels held buttons. Invalid input is refused.
+  Nested mouse event wiring, cursor drawing and physical acceptance remain open.
+
 - The native shell can now deliver keyboard input to a focused application in
   its nested backend. Focus changes release held keys; unmapped, destroyed and
   foreign windows cannot receive focus. Invalid keyboard layouts refuse startup.

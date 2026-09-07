@@ -6,6 +6,8 @@
 use super::Fixture;
 #[path = "keyboard_events.rs"]
 mod keyboard_events;
+#[path = "pointer_events.rs"]
+mod pointer_events;
 use std::{
     fs::File,
     io::Write,
@@ -23,6 +25,8 @@ use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_ba
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Pointer events observed on the wire.
+    pub pointer: pointer_events::PointerEvents,
     /// Keyboard wire events, separate from buffer lifecycle observations.
     pub keyboard: keyboard_events::KeyboardEvents,
     /// Advertised globals with their names and versions.
@@ -191,6 +195,13 @@ pub struct Application {
 }
 
 impl Application {
+    /// Commit an empty input region so hits fall through to another surface.
+    pub fn empty_input(&self) {
+        let region = self.compositor.create_region(&self.queue.handle(), ());
+        self.surface.set_input_region(Some(&region));
+        region.destroy();
+        self.surface.commit();
+    }
     /// Connect and create a role without committing or acknowledging anything.
     pub fn new(fixture: &Fixture) -> Self {
         let stream = UnixStream::connect(&fixture.path).unwrap();
