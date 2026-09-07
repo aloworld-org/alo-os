@@ -10,6 +10,12 @@ Follow docs/autonomy/SHARED_MAIN.md for task ownership. Another contributor may
 publish to main from a separate checkout. The supervisor pulls before your task
 and integrates/retests concurrent commits before pushing yours. Do not take a
 task the owner assigned to Claude, or modify another contributor's checkout.
+Use descriptive task names and status messages, never code-only queue labels.
+You are the sole integration owner of the four shared progress documents.
+At iteration start, read docs/autonomy/updates/README.md and reconcile published
+task reports not yet referenced in STATE.md, retaining their evidence and limits.
+Reports arriving during publication are reconciled next iteration. Do not declare
+the release verified while any published report remains unreconciled.
 Linux and WSLg are available; verify prerequisites and use them. Missing routine
 build dependencies are implementation work, not a reason to declare the queue done.
 Make routine design choices consistent with accepted ADRs; document their reasons.
@@ -22,7 +28,8 @@ the scope with a demo. No new release scope without the owner's direction.
 
 Implement code and meaningful happy/refusal-path tests. Run focused tests while
 developing, format changed Rust code, run clippy for affected targets and inspect
-the diff before reporting STEP DONE. Update CHANGELOG.md, ROADMAP.md, QUEUE.md and
+the diff before reporting STEP DONE. Write your own descriptively named task
+report under docs/autonomy/updates/. Update CHANGELOG.md, ROADMAP.md, QUEUE.md and
 STATE.md in the same change, identifying exact checks run and machine evidence
 still owed. The supervisor independently runs all Windows and Linux test/lint/
 rustdoc gates before it commits and pushes. Never claim those gates ran before

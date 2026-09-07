@@ -8,6 +8,9 @@ these checkpoints do not reduce release scope or discharge hardware obligations.
 The owner's direct-to-main collaboration policy is in
 `docs/autonomy/SHARED_MAIN.md`: separate checkouts, pull before each task,
 integrate concurrent commits and recheck before pushing.
+New work uses descriptive task names and individual reports. Only the integration
+owner consolidates those reports into this roadmap and the shared progress files;
+historical queue identifiers remain secondary cross-references.
 
 The only order things get built in. Items are checked when they meet the
 definition of done in `CLAUDE.md` law 3 — the full path, on real hardware — and

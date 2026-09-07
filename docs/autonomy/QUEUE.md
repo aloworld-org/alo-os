@@ -11,6 +11,10 @@ order. Linux and WSLg are available; the historical host restrictions below no
 longer exclude Linux tasks. External hardware requirements remain real.
 `SHARED_MAIN.md` governs collaboration: separate checkouts publish tested tasks
 to main, pulling first and integrating any intervening commits before pushing.
+Use descriptive names for new tasks, reports and status updates. Only the
+integration owner edits this queue; parallel contributors propose queue changes
+in their own reports under `updates/`. Existing identifiers remain historical
+cross-references, not the primary names used in handoffs or status messages.
 
 - [x] **31. A repository-owned development loop.** Rust runner in
   `tools/dev-loop`; serialized workers, explicit stop/status, independent

@@ -9,10 +9,10 @@ task. No feature branch or pull request is required by this workflow.
 - The continuous desktop worker owns `C:\dev\alo-os`.
 - Claude Code uses a separate clone, for example `C:\dev\alo-os-claude`.
 - Both local branches can be `main`; they are separate Git repositories.
-- Current division: desktop worker owns graphics/compositor and its integration.
-  Queue item 6b in `crates/alo-files` is reserved for the Claude handoff in
-  `CLAUDE_TASK.md`. The owner starts that session; reservation does not mean it
-  is already running. Keep task ownership explicit before taking another item.
+- Current division: desktop worker owns the native desktop compositor and
+  release-progress integration. Claude owns the filesystem-security workstream;
+  secure file opening and handle-based file moves have been published. Confirm
+  the next assignment with the owner rather than repeating completed work.
 - Use a separate Linux `CARGO_TARGET_DIR` per checkout. Coordinate tests that
   alter the shared WSL kernel, cgroups, BPF pins or system services; separate
   build directories do not isolate those resources.
@@ -20,7 +20,8 @@ task. No feature branch or pull request is required by this workflow.
 ## Task lifecycle
 
 1. Start with a clean working tree and `git pull --ff-only origin main`.
-2. Implement one complete task and update its tests and progress documentation.
+2. Implement one complete task, its tests and a separate descriptive task report
+   under `docs/autonomy/updates/`. Follow the document ownership rules below.
 3. Pass the required Windows/Linux/component checks and make a local commit.
 4. Fetch `origin/main` again. If it advanced, rebase only unpublished task
    commits onto it. Resolve conflicts deliberately and rerun the required
@@ -37,3 +38,41 @@ The worker itself still does not stage, commit or push; the supervisor does.
 Keeping main clean means it contains integrated, tested work from both checkouts.
 Pulling only at task start is insufficient: another task can finish while this
 one is being implemented.
+
+## Descriptive names and document ownership
+
+Use descriptive task titles, filenames, commit subjects and status updates.
+Examples: "Secure file moves", "Filesystem race protection", and "Native desktop
+compositor". Legacy queue codes remain secondary references only; do not rename
+historical ADRs or break existing links. Report filenames use lowercase hyphenated
+words, for example `secure-file-moves.md`, not an internal queue code.
+
+Only the integration owner in `C:\dev\alo-os` edits these shared documents:
+
+- `CHANGELOG.md`
+- `ROADMAP.md`
+- `docs/autonomy/QUEUE.md`
+- `docs/autonomy/STATE.md`
+
+Other contributors include proposed changes to these documents in their own task
+report. They still update code-local rustdoc and relevant contracts in the same
+task; coordinate ownership before editing another shared specification. Tests
+and publication gates are unchanged. This is an agreed contributor workflow,
+not a GitHub permission rule that technically prevents those edits.
+
+Use one uniquely named report per task. Only that task's owner writes it. After
+publication, add a descriptively named follow-up report for corrections rather
+than rewriting another contributor's report. No shared report index is required.
+
+At the start of each iteration, the integration worker reads published reports
+not yet referenced in STATE.md, checks their evidence, and consolidates their
+change descriptions, queue status and remaining acceptance work into the four
+shared documents. Reference the report paths in STATE.md for traceability; do
+not edit the source reports to mark them processed. A report arriving during
+publication is consolidated next iteration. Do not declare the release verified
+while published reports remain unreconciled.
+
+Before starting another task, existing contributor sessions must pull these
+rules and reread them. Saved instructions do not update an already-running
+Claude session automatically. Genuine code conflicts still require review;
+never use an automatic union merge or force-push to hide one.

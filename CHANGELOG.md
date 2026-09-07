@@ -12,6 +12,10 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Development tasks now use descriptive names and separate reports. One
+  integration owner maintains shared progress documents, reducing conflicting
+  documentation edits while contributors continue tested pushes to main.
+
 - **Nested applications can display their own mouse cursors.** Cursor buffers
   render above windows at the requested hotspot, and applications can hide them.
   Stale or unfocused requests cannot replace another client's cursor; losing

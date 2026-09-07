@@ -61,6 +61,13 @@ never becomes whatever was easiest to test on the current development host.
 
 ## Runner
 
+New task names and reports describe the work, not historical queue codes.
+`SHARED_MAIN.md` assigns the four shared progress documents to the integration
+worker alone; other contributors publish separate reports under `updates/`.
+The integration worker reviews and consolidates those reports each iteration.
+This supersedes older per-contributor shared-document instructions without
+weakening implementation, testing or release acceptance requirements.
+
 `tools/dev-loop` is a Rust developer tool, separate from the shipped workspace
 and absent from the system image's runtime. It launches one `codex exec` worker
 at a time, following the installed CLI and official non-interactive interface:

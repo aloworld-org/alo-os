@@ -1,7 +1,8 @@
 # Claude Code task prompt
 
-Copy the following prompt into Claude Code. This handoff reserves item 6b; it
-does not start a Claude session or claim that the task is already underway.
+Copy this workflow update into the existing Claude Code session. Secure file
+opening and handle-based file moves are already published; this is not a new
+assignment to repeat them.
 
 ```text
 Work on alo OS: https://github.com/aloworld-org/alo-os
@@ -10,24 +11,18 @@ Use your own checkout at C:\dev\alo-os-claude, outside OneDrive. Clone it if
 absent; otherwise inspect its remote, branch and working tree first. Never edit
 C:\dev\alo-os or C:\dev\alo-os-loop-update: another worker owns those.
 
-Your assignment is queue item 6b: "Opening from a handle, and renaming without
-replacing" in crates/alo-files. The other worker owns graphics/compositor
-development. Complete this assignment end to end; do not take unrelated tasks.
+Your workstream is filesystem security in crates/alo-files. The other worker
+owns the native desktop compositor and shared release-progress documents.
+Confirm your next assignment with the owner; do not repeat published work.
+Use descriptive task titles, filenames and status messages, not queue codes.
 
 First read CLAUDE.md, any applicable AGENTS.md, docs/features.md, ROADMAP.md,
-docs/autonomy/DELIVERY.md, docs/autonomy/SHARED_MAIN.md, queue item 6b, relevant
+docs/autonomy/DELIVERY.md, docs/autonomy/SHARED_MAIN.md, your assigned task, relevant
 ADRs, contracts and docs/quirks.md.
 
-Implement:
-- Linux directory-handle-relative filesystem operations that close the
-  documented path-check/open race, including intermediate path components.
-- Atomic no-clobber rename/move using the appropriate Linux primitive.
-- Reuse the repository's pinned rustix approach; preserve the unsafe-code ban.
-- Preserve capability checks, approval semantics, records, public contracts and
-  portable behavior. Fail safely when guarantees cannot be provided.
-- Linux integration tests for symlink substitution, attempts to escape grants,
-  destination collisions and preservation of existing data, plus happy paths
-  and error reporting. Use deterministic race tests where feasible.
+Preserve the unsafe-code prohibition, capability checks, approval semantics,
+records, public contracts and portable behavior. Test both success and refusal
+paths. Changes to accepted security decisions require approval before proceeding.
 
 Run formatting, clippy with warnings denied, relevant tests, workspace regression
 tests and documentation checks. Linux-specific code must compile and run on
@@ -36,9 +31,14 @@ directory. Do not alter shared WSL services, kernel/BPF state or stop another
 worker's processes without coordination. Report physical hardware acceptance as
 outstanding unless actually verified.
 
-Update CHANGELOG.md, ROADMAP.md, docs/autonomy/QUEUE.md, docs/autonomy/STATE.md
-and affected contracts/quirks in the same task. Never weaken gates or mark
-unfinished work complete.
+Do not edit CHANGELOG.md, ROADMAP.md, docs/autonomy/QUEUE.md or
+docs/autonomy/STATE.md. Instead, add your own uniquely named task report under
+docs/autonomy/updates/, following its README. Use a descriptive filename such as
+secure-file-moves.md. Include the user-readable change description, exact test
+results, decisions, remaining limitations and proposed shared-document updates.
+The integration worker consolidates the report. Update code-local documentation
+and affected contracts in the same task; coordinate shared specification edits.
+Never weaken gates or mark unfinished work complete.
 
 Publish directly to main:
 1. Before each task, start clean on main and git pull --ff-only origin main.

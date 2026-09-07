@@ -10245,3 +10245,28 @@ display. Actual parent cursor/input observation, physical display/input and
 certified hardware acceptance remain owed; scripted motion and WSLg do not certify
 hardware. Supervisor full Windows/Linux/BPF publication gates have not been run
 by this worker. Delivery steps 3-8 and all remaining v0.01 scope are preserved.
+
+---
+
+## 2026-09-07 — descriptive task reporting and shared-document ownership
+
+Integrated `docs/autonomy/updates/descriptive-task-reporting.md`. The owner chose
+descriptive task titles, filenames and status messages instead of queue codes.
+Historical references remain intact. Separate contributor reports now carry
+change descriptions and proposed progress updates; the integration worker alone
+consolidates the four shared documents. CLAUDE.md and both saved handoffs state
+the rule, including that existing sessions must pull and reread it.
+
+Recovered the pending client cursor-rendering publication by preserving both
+journal entries over the secure file-moves commit `35683e9`. No source conflict
+was resolved by discarding either implementation. Independently reran Windows
+and Linux workspace formatting, clippy with warnings denied and default tests/
+doctests; Linux rustdoc and pinned BPF formatting/clippy also passed. Runner
+formatting, clippy, all 11 tests and the updated-prompt release build passed.
+Both gate groups exited 0. Exact commands and remaining opt-in/hardware limits
+are in the task report. No testing or release requirement was weakened.
+
+The reporting policy is a contributor agreement, not remote permission
+enforcement. Shared-code conflicts still require review. Claude's already-running
+session must receive the updated handoff before its next task; this maintainer
+did not modify that checkout or send messages to that session.

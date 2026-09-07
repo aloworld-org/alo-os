@@ -71,8 +71,9 @@ without them has not been finished, it has been abandoned.
 - Documentation in the same change: rustdoc on public items, the
   contract updated if a public surface moved, `docs/quirks.md` when
   reality disagreed with a specification.
-- A user-readable line in `CHANGELOG.md`, written while the knowledge
-  is fresh rather than reconstructed at release time.
+- A user-readable change description, written while the knowledge is fresh.
+  Parallel contributors include it in their task report; the integration owner
+  consolidates it into `CHANGELOG.md` under `docs/autonomy/SHARED_MAIN.md`.
 
 **And no rushing.** A date never justifies a shortcut. When something
 has to give it is scope — one printer, one certified machine, one
@@ -137,6 +138,16 @@ cannot demonstrate.
   organisation set a rule — which region inference may happen in, which
   providers are permitted — the rule is theirs to name. We ship the
   mechanism, never a default that decides for them.
+- **Describe the work, not its queue code.** New task titles, report filenames,
+  commit subjects and status updates use professional, descriptive names such
+  as "Secure file moves" or "Native desktop compositor". Legacy queue codes may
+  appear only as secondary cross-references; preserve historical links and ADR
+  identifiers. Use lowercase hyphenated report filenames such as
+  `secure-file-moves.md`, never a code-only name.
+- **Progress documents have one writer.** Follow
+  `docs/autonomy/SHARED_MAIN.md`: parallel contributors publish separate task
+  reports; only the integration owner edits shared progress documents. This
+  supersedes older loop instructions requiring every contributor to edit them.
 - **Names are for strangers:** files, commit subjects and branches
   describe the subject matter. Release codes live in `ROADMAP.md` and
   commit trailers. Commit subjects follow conventional style —
