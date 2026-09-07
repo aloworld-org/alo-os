@@ -11,6 +11,7 @@
 
 mod cursor;
 mod direct_output;
+mod direct_session;
 mod drawing;
 mod drm_inventory;
 mod keyboard;
@@ -23,15 +24,18 @@ mod popups;
 mod presentation;
 mod scene;
 mod server;
+mod session_device;
 mod socket;
 mod surfaces;
 
 pub use cursor::Cursor;
 pub use direct_output::{DirectOutput, DirectOutputError, discover_output};
+pub use direct_session::DirectSession;
 pub use keyboard::InputError;
 pub use nested::Nested;
 pub use nested_pointer::NestedPointerEvent;
 pub use popups::Popup;
 pub use presentation::{FrameTarget, RenderError};
 pub use server::Server;
+pub use session_device::SessionError;
 pub use socket::SocketError;

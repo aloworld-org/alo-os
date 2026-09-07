@@ -711,6 +711,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Direct-display session lifetime (2026-09-07): libseat device acquisition,
+    pause retirement, lazy reacquisition and terminal failure handling implemented
+    as a discovery-stage component. Nine new tests pass (86 Linux shell tests),
+    including calloop handoff and actual descriptor EOF checks. Unavailable-seat
+    diagnostic refuses ENOENT; WSLg submits 115 client surfaces. Exact commands:
+    `docs/autonomy/updates/direct-display-session-lifetime.md`. Successful DRM
+    acquisition and physical pause/resume remain unmeasured. Atomic modesetting,
+    renderer lifecycle, scanout/page flips, direct input and production session
+    still owed. Pinned Smithay has internal libseat panic/disable-order limits;
+    see docs/quirks.md. Supervisor full gates remain owed; box unchanged.
   - Direct-display resource discovery (2026-09-07): read-only session-descriptor
     queries choose one usable internal panel or stable external port, a compatible
     CRTC and an exact advertised progressive mode. Seven new tests pass (77 Linux

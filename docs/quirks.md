@@ -23,6 +23,27 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ---
 
+## Smithay libseat notification ordering and failure limits (2026-09-07)
+
+Smithay 0.7.0 `backend/session/libseat.rs` forwards libseat callbacks through a
+calloop channel. The seat fd's dispatch can queue notifications for a subsequent
+readiness pass. `DirectSession` performs two nonblocking passes before lending
+its discovery descriptor; a real calloop forwarding test verifies pause/activate
+ordering and preserved cleanup error. Device access also checks backend activity.
+Kernel revocation during an ioctl still requires ordinary error handling.
+
+Source inspection also shows `disable()` acknowledged before the shell receives
+`PauseSession`, and internal unwraps in initial/ongoing dispatch, disable and
+notifier registration. These failure paths were not induced on a real seat here;
+the ENOENT connection refusal is the only real libseat diagnostic measured.
+Our discovery-stage owner closes descriptors on pause and reports errors the
+backend returns. It cannot promise orderly renderer teardown before upstream's
+disable acknowledgement, or recover from every internal backend panic. Before
+production scanout, integrate an unpatched interface supporting the required
+ordering and fallible handling; an engine source patch requires an ADR. No patch
+or panic-catching workaround is included. Smithay also ignores requested device
+open flags in this backend; libseat owns device-open semantics.
+
 ## Smithay nested pointer leave notifications (2026-09-07)
 
 Smithay 0.7.0's `backend/winit/mod.rs` consumes Winit `CursorEntered` and

@@ -779,3 +779,26 @@ Next is session-mediated device ownership/pause/resume, followed by atomic
 modesetting, page flips and direct input. Parent-leave backend support and
 production entry remain unfinished. Compositor/release boxes remain unchecked;
 full supervisor gates and physical laptop/GPU workstation records are still owed.
+
+## Direct-display session lifetime (2026-09-07)
+
+`DirectSession` now owns a pinned Smithay libseat notifier and one lazily acquired
+device. Poll drains the seat-to-channel handoff; a pause retires the descriptor,
+activation allows fresh acquisition, and open/close/reported dispatch failures
+require a new session. Explicit shutdown reports device-close errors before the
+notifier disappears. The library supplies scoped borrows only; callers must not
+retain descriptors or scanout resources across polls. No raw-open fallback or VT
+switch is provided, and no agent or adapter contract changes.
+
+Nine new tests pass, including real descriptor EOF and calloop forwarding; full
+Linux shell suite passes 86 tests. An explicitly unavailable seatd socket refuses
+with ENOENT/exit 1. WSLg popup/cursor regression submits 115 surfaces, exit 0.
+Windows/Linux fmt and affected clippy/tests, Linux rustdoc and example build pass.
+Commands, local logs and exact evidence: `updates/direct-display-session-lifetime.md`.
+
+This is device discovery lifetime, not running scanout. See `../quirks.md` for
+upstream disable-before-notify and internal panic limitations. Next: atomic DRM
+property/capability discovery and test-only validation, then renderer lifecycle,
+scanout/page flips and direct input. Successful device acquisition/reacquisition,
+real display/input, parent leave, session entry and physical acceptance remain.
+Supervisor full publication gates remain owed; compositor/release boxes unchanged.

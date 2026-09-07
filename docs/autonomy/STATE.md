@@ -10839,3 +10839,65 @@ No hardware or release claim; compositor remains unchecked. Full independent
 supervisor publication gates have not run for this change. No staging, commit,
 push, worker/loop launch, dev-loop edit or unrelated changes. Ready for supervisor
 integration and gating after source/tests/docs diff and whitespace review.
+
+---
+
+## 2026-09-07 - direct-display session lifetime
+
+Single desktop worker, clean initial tree, supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue/state, compositor
+feature/roadmap, ADRs 0001/0002, application-adapter contract and hardware gates.
+Compared published report filenames against STATE: every report already
+referenced, none outstanding at iteration start. No source reports modified;
+reports arriving during publication reconcile next iteration. No Claude task
+taken, delegation, worker/loop launch or other-checkout change.
+
+Own report integrated: `docs/autonomy/updates/direct-display-session-lifetime.md`.
+Acceptance entered in QUEUE before implementation. `session_device.rs` owns lazy
+session acquisition and descriptor retirement; `direct_session.rs` owns libseat
+and calloop. Pause closes once, activation reacquires lazily, acquisition/cleanup
+or reported notifier errors are terminal. Explicit shutdown preserves close errno;
+drop is a cleanup backstop. A two-pass poll drains Smithay's channel handoff before
+synchronous discovery. No direct-open fallback, VT switch, modeset, unsafe code,
+lockfile version change, agent verb or context call. Public Rust API documented;
+external contracts unchanged. Native Rust/unmodified engines follow ADR 0002.
+
+Executed: Windows `cargo fmt --all`, `cargo fmt --all --check`,
+`cargo clippy -p alo-shell --all-targets --locked -- -D warnings`,
+`cargo test -p alo-shell --locked`; Linux focused `cargo test -p alo-shell --lib
+session_device`, final `cargo test -p alo-shell --locked`, affected all-target
+clippy with -D warnings, workspace fmt check, warnings-denied shell rustdoc and
+shell example build. Exact full commands in report. All pass; no test/lint
+failure, ignored tests or gate relaxation. Initial focused suite had eight new
+tests; final suite has nine new tests and 86 total (19 unit, 64 lifecycle, 3 socket).
+Windows intentionally runs no Linux tests. Calloop test covers forwarded
+pause/activate and original close-error delivery; actual Unix peer EOF proves
+descriptor cleanup even on injected close failure. Full supervisor gates have
+not run for this change.
+
+Additional integration: session_device_check through real libseat, explicitly
+pinned to an absent seatd socket, refuses connect ENOENT (2), exit 1 asserted.
+No session activation or device-open fallback. WSLg nested_check --popups --cursor
+passes, submits 115 client surfaces with callbacks/unmap/remap/refusal/disconnect.
+Logs `.git/alo-session-device-refusal.log` and `.git/alo-session-device-wslg.log`.
+No pixel readback, physical input or successful seat/DRM acquisition measured.
+Prerequisites verified: WSLg socket, installed libseat/udev/GBM/EGL/xkbcommon;
+card0 absent. Initial PATH probe quoting corrected by explicit env PATH; existing
+WSL unknown-key warnings left unchanged. Separate /root/alo-os-target used; no
+packages, shared kernel/cgroup/BPF/services or unrelated host settings changed.
+
+Source-inspected Smithay limits recorded in quirks: disable acknowledged before
+shell notification, internal dispatch/disable/registration unwraps, and ignored
+open flags. No real-seat panic reproduced and no production recovery claim.
+This completed discovery-device component is not renderer pause/resume. Next
+executable work is atomic DRM property/capability discovery and test-only
+configuration validation, then renderer teardown/rebuild, scanout/page flips,
+direct input and production entry. Successful libseat acquisition/reacquisition
+needs a DRM-equipped development login or VM. Certified laptop/GPU workstation
+display, input, session switching and suspend/resume records remain owed.
+
+All four shared progress documents, COMPOSITOR and quirks updated; source/tests/
+documentation diff reviewed and whitespace check passed. Remaining v0.01 scope
+preserved; compositor and release remain unchecked. No staging, commit or push,
+dev-loop edits or physical disk installation. Ready for supervisor integration
+and independent publication gates as one reviewable device-lifetime step.

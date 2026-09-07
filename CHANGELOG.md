@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct-display backend now acquires devices through the login seat.**
+  Pausing retires the descriptor; activation requires fresh acquisition. Inactive
+  sessions and failed acquisition or cleanup refuse further device access.
+  Nine new tests, an unavailable-seat diagnostic and the WSLg regression pass.
+  Real DRM acquisition, scanout and physical session switching remain unverified.
+  Evidence: `docs/autonomy/updates/direct-display-session-lifetime.md`.
+
 - **The direct-display backend can identify a usable display before attempting
   scanout.** Discovery chooses one connected port, advertised progressive mode
   and compatible display controller from a session descriptor, and preserves

@@ -56,6 +56,28 @@ no worker, shared kernel test or publication process was launched here.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected session-device lifetime component (desktop worker):** own a libseat
+  notifier and one session-opened display descriptor; dispatch notifications
+  before access, release on pause, reacquire on activation, and refuse inactive
+  sessions or acquisition/close/dispatch failure. Acceptance: injected session
+  happy/refusal and descriptor cleanup tests, real unavailable-seat diagnostic,
+  nested WSLg regression, fmt, affected clippy/tests and rustdoc. No direct open
+  fallback, VT switch, modeset or physical certification. Atomic scanout and
+  direct input remain subsequent components.
+  **Completed session-device component 2026-09-07:** `DirectSession` owns the
+  notifier and lazy session descriptor, drains the seat-to-channel handoff,
+  closes on pause and preserves cleanup errors. Nine new tests pass (86 Linux
+  shell tests total); real unavailable-seat connection refuses ENOENT/exit 1.
+  WSLg regression submits 115 surfaces; Windows/Linux fmt, affected clippy/tests,
+  Linux rustdoc and examples pass. Report: `updates/direct-display-session-lifetime.md`.
+  This is not running-renderer pause/resume: upstream disable acknowledgement
+  precedes notification, and internal dispatch/disable panic paths remain a
+  documented production limitation. Next executable component: atomic DRM
+  capability/property discovery and test-only configuration validation, including
+  malformed/missing properties and kernel ioctl refusals; then scanout/page flips,
+  renderer pause ordering, direct input and production entry. Successful seat/DRM
+  access needs a DRM-equipped development login; physical and full supervisor
+  publication gates remain owed. Compositor remains unfinished.
   **Selected direct-display discovery component (desktop worker):** query DRM
   connector/mode/encoder resources through a caller-owned session descriptor and
   select one connected output with a compatible CRTC. Prefer an internal panel,
