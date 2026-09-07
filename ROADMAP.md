@@ -652,9 +652,17 @@ which made a completely consistent rule look like work being taken out of turn.
     tests cover map/unmap/remap, buffer release, client/server teardown, isolated
     refusal and socket ownership. A captured protocol trace verifies fd-backed
     SHM transfer and fresh configure serials after unmap; see
-    `docs/autonomy/COMPOSITOR.md`. This is a reusable server core, not a rendered
-    desktop. Nested rendering, output, input routing, popups, direct display
-    execution and physical keyboard/pointer/display evidence remain owed.
+    `docs/autonomy/COMPOSITOR.md`.
+  - Nested rendering component (2026-09-07): `Nested` and `Server::render`
+    submit real SHM surface trees through GLES, advertise one resizable output
+    and complete callbacks only after submission succeeds. Fifteen Linux tests
+    pass, including failed-submission callback retention and output lifecycle.
+    The WSLg fixture verifies root/child callbacks, offscreen-child withholding,
+    unmap/remap, isolated refusal and disconnect; invalid EGL and missing display
+    refuse startup. Focused checks and exact evidence are in `COMPOSITOR.md`.
+    This remains backend code, not a usable desktop. Keyboard/pointer routing,
+    popups, direct display and physical keyboard/pointer/display evidence remain
+    owed, along with the supervisor's independent full publication gates.
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 

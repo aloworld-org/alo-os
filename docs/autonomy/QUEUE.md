@@ -63,10 +63,27 @@ to main, pulling first and integrating any intervening commits before pushing.
   `COMPOSITOR.md` records exact commands and the additional Wayland wire trace.
   WSLg graphics probe also submitted a frame; it does not render this server's
   clients. Supervisor full gates and physical evidence are not claimed.
-  **Next component:** nested WSLg rendering of these mapped client surfaces on
-  one advertised output, with frame callbacks after successful presentation
-  submission and explicit graphics initialization/submission refusal. Then
-  keyboard/pointer routing, popup management and direct-display integration.
+  **Selected rendering component (desktop worker, this iteration):** nested WSLg
+  rendering backend, one output updated on resize, SHM surface-tree rendering,
+  output enter/leave and callbacks only after successful submission. Acceptance:
+  real client/output/callback tests, failed submission retains callbacks, failed
+  initialization refuses, WSLg client-buffer submission trace and disconnect while
+  rendering; focused tests, fmt, affected-target clippy and rustdoc. No seat or
+  production session capability is claimed.
+  **Completed rendering component 2026-09-07:** `Nested`, fallible surface-tree
+  import and single-output submission/callback coordination. Fifteen Linux tests
+  pass; real clients verify resize, enter/leave, unmap, disconnect and retention
+  of callbacks after injected submission failure or empty output. The WSLg
+  `nested_check` fixture received two callbacks for a root and onscreen child,
+  withheld the offscreen child's callback, and completed unmap/remap, refusal
+  and disconnect (exit 0). Missing display and invalid EGL vendor each refused
+  startup (exit 1). Focused Linux/Windows clippy/tests, Linux rustdoc and fmt
+  evidence is recorded in `COMPOSITOR.md`; full supervisor gates are still owed.
+  **Next component:** keyboard/pointer seat advertisement and routing in the
+  nested backend, with focus, key/button/motion delivery and client-disconnect
+  tests. Then popup management and direct-display integration. Window management
+  and usable session entry remain delivery steps 3 and 4; no physical acceptance
+  or completed desktop is claimed by this rendering component.
   Keep item 33 unchecked until its complete delivery requirements are met.
 - [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
   into an actionable entry with its existing feature/ADR/contract references.

@@ -5,6 +5,86 @@ mod support;
 use support::{Application, Fixture};
 
 #[test]
+fn synchronized_children_do_not_become_independent_toplevels() {
+    let fixture = Fixture::new();
+    let mut app = Application::new(&fixture);
+    app.configure();
+    let (child, role) = app.child((24, 32));
+    app.attach();
+    app.sync();
+    fixture.wait_for((1, 1));
+    role.destroy();
+    child.destroy();
+    app.surface.commit();
+    app.sync();
+    fixture.wait_for((1, 1));
+}
+
+#[test]
+fn output_resize_and_callbacks_follow_successful_submission() {
+    let fixture = Fixture::new();
+    assert_eq!(fixture.render((320, 200), false, 0).ok(), Some(0));
+    let mut app = Application::new(&fixture);
+    app.sync();
+    assert_eq!(app.events.outputs, 1);
+    assert_eq!(app.events.modes.last(), Some(&(320, 200)));
+    app.configure();
+    app.surface.frame(&app.queue.handle(), ());
+    app.attach();
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    assert!(fixture.render((320, 200), true, 10).is_err());
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    assert_eq!(app.events.membership, (0, 0));
+    assert_eq!(fixture.render((320, 200), false, 20).ok(), Some(1));
+    app.sync();
+    assert_eq!(app.events.frames, [20]);
+    assert_eq!(app.events.membership, (1, 0));
+    assert_eq!(fixture.render((640, 480), false, 30).ok(), Some(1));
+    app.sync();
+    assert_eq!(app.events.outputs, 1);
+    assert_eq!(app.events.modes.last(), Some(&(640, 480)));
+    assert_eq!(app.events.frames, [20]);
+    app.surface.attach(None, 0, 0);
+    app.surface.commit();
+    app.sync();
+    assert_eq!(fixture.render((640, 480), false, 40).ok(), Some(0));
+    app.sync();
+    assert_eq!(app.events.membership, (1, 1));
+    drop(app);
+    fixture.wait_for((0, 0));
+    assert_eq!(fixture.render((640, 480), false, 50).ok(), Some(0));
+}
+
+#[test]
+fn empty_output_and_unmapped_surface_never_complete_a_frame() {
+    let fixture = Fixture::new();
+    assert!(matches!(
+        fixture.render((0, 200), false, 0),
+        Err(alo_shell::RenderError::EmptySize)
+    ));
+    let mut app = Application::new(&fixture);
+    assert_eq!(app.events.outputs, 0);
+    app.surface.frame(&app.queue.handle(), ());
+    app.configure();
+    assert_eq!(fixture.render((320, 200), false, 1).ok(), Some(0));
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    app.attach();
+    app.sync();
+    assert!(matches!(
+        fixture.render((0, 0), false, 2),
+        Err(alo_shell::RenderError::EmptySize)
+    ));
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    assert_eq!(fixture.render((320, 200), false, u32::MAX).ok(), Some(1));
+    app.sync();
+    assert_eq!(app.events.frames, [u32::MAX]);
+}
+
+#[test]
 fn configure_map_unmap_remap_and_orderly_destroy() {
     let fixture = Fixture::new();
     let mut app = Application::new(&fixture);

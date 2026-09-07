@@ -22,6 +22,8 @@ pub struct Server {
     surfaces: Surfaces,
     /// Listener and private directory lifetime.
     socket: Socket,
+    /// One output and its successfully submitted surface membership.
+    presentation: crate::presentation::Presentation,
 }
 
 impl Server {
@@ -34,6 +36,7 @@ impl Server {
             display,
             surfaces,
             socket,
+            presentation: Default::default(),
         })
     }
 
@@ -74,5 +77,22 @@ impl Server {
     /// Number of live toplevel roles, including those not yet mapped.
     pub fn toplevel_count(&self) -> usize {
         self.surfaces.count()
+    }
+
+    /// Draw and submit mapped surface trees, then notify only submitted surfaces.
+    ///
+    /// The target is trusted compositor plumbing, never supplied by an agent.
+    /// Dispatch is not interleaved with submission. Failure preserves all pending
+    /// frame callbacks. `time` is milliseconds on the session's monotonic clock,
+    /// wrapping at 32 bits as required by Wayland. Success means submission to
+    /// the backend, not physical presentation or a presentation-time guarantee.
+    pub fn render(
+        &mut self,
+        target: &mut impl crate::FrameTarget,
+        time: u32,
+    ) -> Result<usize, crate::RenderError> {
+        let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
+        self.presentation
+            .render(&self.display.handle(), target, &roots, time)
     }
 }

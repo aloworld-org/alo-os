@@ -12,7 +12,10 @@ use std::{
 };
 use wayland_client::{
     Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
-    protocol::{wl_buffer, wl_compositor, wl_registry, wl_shm, wl_shm_pool, wl_surface},
+    protocol::{
+        wl_buffer, wl_callback, wl_compositor, wl_output, wl_registry, wl_shm, wl_shm_pool,
+        wl_subcompositor, wl_subsurface, wl_surface,
+    },
 };
 use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 /// Registry and configure events actually received from the compositor.
@@ -24,16 +27,24 @@ pub struct Events {
     pub serial: Option<u32>,
     /// Buffer releases received from the server.
     pub releases: usize,
+    /// Frame callback timestamps received, in completion order.
+    pub frames: Vec<u32>,
+    /// Current output modes received from the single advertised output.
+    pub modes: Vec<(i32, i32)>,
+    /// Number of output globals bound.
+    pub outputs: usize,
+    /// Output enter and leave event counts.
+    pub membership: (usize, usize),
 }
 
 impl Dispatch<wl_registry::WlRegistry, ()> for Events {
     fn event(
         state: &mut Self,
-        _: &wl_registry::WlRegistry,
+        registry: &wl_registry::WlRegistry,
         event: wl_registry::Event,
         _: &(),
         _: &Connection,
-        _: &QueueHandle<Self>,
+        qh: &QueueHandle<Self>,
     ) {
         if let wl_registry::Event::Global {
             name,
@@ -41,6 +52,10 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Events {
             version,
         } = event
         {
+            if interface == "wl_output" {
+                let _: wl_output::WlOutput = registry.bind(name, version.min(4), qh, ());
+                state.outputs += 1;
+            }
             state.globals.push((name, interface, version));
         }
     }
@@ -74,7 +89,59 @@ impl Dispatch<xdg_wm_base::XdgWmBase, ()> for Events {
     }
 }
 delegate_noop!(Events: ignore wl_compositor::WlCompositor);
-delegate_noop!(Events: ignore wl_surface::WlSurface);
+delegate_noop!(Events: ignore wl_subcompositor::WlSubcompositor);
+delegate_noop!(Events: ignore wl_subsurface::WlSubsurface);
+impl Dispatch<wl_surface::WlSurface, ()> for Events {
+    fn event(
+        state: &mut Self,
+        _: &wl_surface::WlSurface,
+        event: wl_surface::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        match event {
+            wl_surface::Event::Enter { .. } => state.membership.0 += 1,
+            wl_surface::Event::Leave { .. } => state.membership.1 += 1,
+            _ => {}
+        }
+    }
+}
+impl Dispatch<wl_callback::WlCallback, ()> for Events {
+    fn event(
+        state: &mut Self,
+        _: &wl_callback::WlCallback,
+        event: wl_callback::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let wl_callback::Event::Done { callback_data } = event {
+            state.frames.push(callback_data);
+        }
+    }
+}
+impl Dispatch<wl_output::WlOutput, ()> for Events {
+    fn event(
+        state: &mut Self,
+        _: &wl_output::WlOutput,
+        event: wl_output::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let wl_output::Event::Mode {
+            flags: wayland_client::WEnum::Value(flags),
+            width,
+            height,
+            ..
+        } = event
+            && flags.contains(wl_output::Mode::Current)
+        {
+            state.modes.push((width, height));
+        }
+    }
+}
 delegate_noop!(Events: ignore wl_shm::WlShm);
 delegate_noop!(Events: ignore wl_shm_pool::WlShmPool);
 impl Dispatch<wl_buffer::WlBuffer, ()> for Events {
@@ -109,6 +176,10 @@ pub struct Application {
     pub toplevel: xdg_toplevel::XdgToplevel,
     /// Backing buffer, created through SCM_RIGHTS fd transfer.
     buffer: wl_buffer::WlBuffer,
+    /// Surface factory retained for synchronized child fixtures.
+    compositor: wl_compositor::WlCompositor,
+    /// Subsurface-role factory.
+    subcompositor: wl_subcompositor::WlSubcompositor,
 }
 
 impl Application {
@@ -134,6 +205,7 @@ impl Application {
         };
         let compositor: wl_compositor::WlCompositor =
             registry.bind(global("wl_compositor"), 4, &qh, ());
+        let subcompositor = registry.bind(global("wl_subcompositor"), 1, &qh, ());
         let shm: wl_shm::WlShm = registry.bind(global("wl_shm"), 1, &qh, ());
         let shell: xdg_wm_base::XdgWmBase = registry.bind(global("xdg_wm_base"), 6, &qh, ());
         let surface = compositor.create_surface(&qh, ());
@@ -153,7 +225,27 @@ impl Application {
             xdg,
             toplevel,
             buffer,
+            compositor,
+            subcompositor,
         }
+    }
+
+    /// Attach a synchronized child and request its frame; parent commit applies it.
+    pub fn child(
+        &self,
+        position: (i32, i32),
+    ) -> (wl_surface::WlSurface, wl_subsurface::WlSubsurface) {
+        let qh = self.queue.handle();
+        let surface = self.compositor.create_surface(&qh, ());
+        let role = self
+            .subcompositor
+            .get_subsurface(&surface, &self.surface, &qh, ());
+        role.set_position(position.0, position.1);
+        surface.attach(Some(&self.buffer), 0, 0);
+        surface.damage_buffer(0, 0, 16, 16);
+        surface.frame(&qh, ());
+        surface.commit();
+        (surface, role)
     }
 
     /// Round trip through the actual server.

@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The native shell can now render application buffers and their child surfaces
+  in a nested Wayland window. Applications see one output and receive frame
+  callbacks after successful submission; failed frames retain their callbacks.
+  WSLg checks cover offscreen children and client teardown. Input, direct-display
+  operation and physical acceptance remain unfinished.
+
 - The native shell now has a Wayland server core that accepts application
   surfaces, requires the configure handshake before mapping buffers, and cleans
   up disconnected clients. Private display sockets refuse existing sessions.

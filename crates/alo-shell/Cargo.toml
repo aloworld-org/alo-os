@@ -7,7 +7,7 @@ license.workspace = true
 publish = false
 
 [target.'cfg(target_os = "linux")'.dependencies]
-smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "use_system_lib"] }
+smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "use_system_lib"] }
 rustix.workspace = true
 thiserror.workspace = true
 

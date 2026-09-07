@@ -9794,3 +9794,70 @@ frame callbacks after successful submission, with graphics failure tests. Input,
 popups, direct-display execution, delivery steps 3–8 and remaining release items
 follow. Physical display/keyboard/pointer and certified-machine evidence remain
 owed. Item 6b remains reserved for Claude in its separate checkout.
+
+---
+
+## 2026-09-07 — item 33, nested client rendering component
+
+Completed the selected rendering component in the desktop worker's checkout:
+`alo-shell::Nested` drives a Wayland-parented GLES window; `Server::render`
+coordinates one output, resize, surface membership and frame callbacks. It
+imports configured toplevel trees with child offsets, submits their buffers,
+and completes only intersecting surfaces' callbacks after successful submission.
+Import/draw/finish/swap failures propagate without draining pending callbacks.
+This is a reusable rendering backend, not completed input, a session executable
+or a finished compositor. Item 33 remains unchecked and release scope is intact.
+
+Reasons follow ADRs 0001/0002: Smithay 0.7.0 stays pinned and unmodified; use its
+fallible per-surface import because the convenience tree helper logs errors and
+continues. A trusted `FrameTarget` boundary permits deterministic failure tests
+without a graphical session in the normal suite. It is internal shell plumbing,
+not a new agent verb, adapter capability or context reader. Output refresh and
+physical dimensions stay unknown rather than inventing hardware facts. Black
+clear is backend scaffolding; the actual shell palette and translated session
+entry remain their existing delivery requirements. No dependency was upgraded.
+
+Checks actually run and passed (exact commands in `COMPOSITOR.md`):
+
+- `cargo fmt --all`; Windows and Linux `cargo fmt --all --check`.
+- Linux `cargo test -p alo-shell --locked`: **15 tests**, one unit, eleven
+  client lifecycle/output tests and three socket tests. New checks include
+  empty-output refusal, failed-submission callback retention, exactly-once
+  completion, output resize/enter/leave and synchronized child lifecycle.
+- Linux and Windows `cargo clippy -p alo-shell --all-targets --locked -- -D
+  warnings`; Windows `cargo test -p alo-shell --locked` (zero Linux tests by
+  target gating). Linux clippy rerun after the final example correction.
+- Linux `RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked`;
+  `cargo build -p alo-shell --example nested_check --locked`.
+- WSLg `WAYLAND_DEBUG=1 timeout 30s .../examples/nested_check`: exit 0.
+  `.git/alo-nested-wire.log` shows real 16x16 ARGB SHM roots/children rendered
+  into a 320x200 GLES target, callbacks [509,509] for root and onscreen child,
+  no callback/enter for an offscreen child, and six submitted surface instances.
+  The same run asserts output leave, buffer release, fresh remap, orderly
+  destruction, premature-buffer refusal and abrupt disconnect with final zero
+  live toplevels. This is submission/wire evidence, not a pixel comparison.
+- The example with `__EGL_VENDOR_LIBRARY_FILENAMES=/nonexistent/alo-egl-vendor.json`
+  refused with `Egl(DisplayNotSupported)` (exit 1); with WAYLAND_DISPLAY removed
+  it refused with `WAYLAND_DISPLAY is missing` (exit 1). Both logs are local.
+- Source, tests, new files and documentation diff reviewed; `git diff --check`
+  passed. No lockfile change, dev-loop modification or gate relaxation.
+
+Initial compile corrections handled a non-exhaustive Wayland callback enum and
+clippy's mode-event condition. A test initially used a negative Smithay Size,
+which is invalid before entering our API; the corrected zero-size test passed.
+The child-graphics fixture initially committed its unmapped parent twice,
+discarding an already-received configure; removing the extra fixture commit
+fixed that handshake. Its failure trace is preserved locally. No production
+protocol check was relaxed and no repeated failing-test loop was continued.
+
+Native packages and the WSLg socket were rechecked; cargo required the explicit
+`/root/.cargo/bin` PATH. No installs, shared kernel changes or unrelated process
+stops were needed. Builds used `/root/alo-os-target`. CHANGELOG, ROADMAP, QUEUE
+and COMPOSITOR documentation updated in the same change. No staging, commit or
+push; no supervisor full publication gates claimed.
+
+Next: keyboard/pointer routing and focus/disconnect tests, then popups and direct
+display. Production event scheduling, delivery steps 3–8, the rest of v0.01,
+actual parent-loss/swap-fault evidence and all physical display/input and
+certified-machine records remain owed. WSLg cannot certify hardware. Item 6b
+remains reserved for Claude in its separate checkout.
