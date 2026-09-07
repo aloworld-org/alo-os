@@ -12,6 +12,11 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The native shell now has a Wayland server core that accepts application
+  surfaces, requires the configure handshake before mapping buffers, and cleans
+  up disconnected clients. Private display sockets refuse existing sessions.
+  Rendering and input are still under construction; this is not yet a desktop.
+
 - Two developers can publish completed tasks to main from separate checkouts:
   the development loop pulls incoming work and checks the combined changes
   again before pushing. Conflicts preserve unfinished work for resolution.

@@ -9741,3 +9741,56 @@ remotes and separate clones: incoming changes, a fetch/push race, bounded
 repeated races, a conflict, a failed combined gate, an unchanged remote and a
 push rejection unrelated to a race. No operating-system crate or gate command
 was changed by this update. Physical acceptance remains owed by the release.
+
+---
+
+## 2026-09-07 — item 33, Wayland server and toplevel lifecycle component
+
+Completed one component of the native compositor: `alo-shell`, a Linux library
+owning a private Wayland socket, Smithay protocol state and mapped XDG toplevel
+roots. This is reusable backend plumbing, not a session executable or a finished
+compositor. Item 33 and every physical acceptance box remain unchecked.
+
+Routine design follows ADRs 0001/0002. Smithay stays pinned at 0.7.0, unmodified;
+Cargo.lock adds only the new workspace crate entry. A fresh mode-0700 socket
+directory prevents accidentally replacing another session. Per-client protocol
+state stays isolated; no agent verb, context capture, clipboard or command
+surface is added. Configure follows the first empty commit; a buffer maps only
+after acknowledgement. Unmap resets public XDG role state because Smithay's
+initial-configure reset alone retains prior acknowledgement state. Popups are
+explicitly dismissed pending placement/input support. No seat is advertised.
+
+Checks actually run and passed:
+
+- `cargo fmt --all` and Windows/Linux `cargo fmt --all --check`.
+- Linux `cargo test -p alo-shell --locked`: eleven integration tests, covering
+  real SHM fd transfer and buffer lifecycle, clean/abrupt client disconnect,
+  server teardown, surviving independent clients, premature/missing/stale
+  acknowledgement refusal, socket ownership, failed-bind cleanup and rebind.
+- Linux and Windows `cargo clippy -p alo-shell --all-targets --locked -- -D
+  warnings` and Windows `cargo test -p alo-shell --locked`: passed. Windows runs
+  zero Linux protocol tests, by target gating; it is not Linux evidence.
+- Linux `RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked`.
+- Additional `WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked
+  --test client_lifecycle configure_map_unmap_remap_and_orderly_destroy --
+  --exact --nocapture`: exit 0. Local `.git/alo-shell-wire.log` shows the 1024-byte
+  SHM pool fd transfer, configure/ack serials 1 then 2, attachment, null unmap,
+  buffer release and role destruction on the real socket.
+- Existing `timeout 30s /root/alo-os-target/debug/alo-graphics-check render`:
+  exit 0, WSLg 320x200 GLES submission. This probe does not render the new
+  server's clients. Existing Mesa diagnostics remain; no GPU claim.
+- Source/docs/lockfile diff reviewed and `git diff --check` passed.
+
+The first test run caught a fixture assumption about tempfile permissions:
+explicit 0700 setup fixed the fixture without relaxing socket policy. Initial
+compile corrections supplied Smithay's required seat trait and converted its
+display initialization error. No repeated-test loop or gate relaxation. Exact
+commands, API boundaries and evidence are in `COMPOSITOR.md`. CHANGELOG, ROADMAP
+and QUEUE updated. No full supervisor gate is claimed, and no staging, commit
+or push was performed. No other checkout, dev-loop or shared kernel state edited.
+
+Next component: nested rendering of mapped clients, one advertised output and
+frame callbacks after successful submission, with graphics failure tests. Input,
+popups, direct-display execution, delivery steps 3–8 and remaining release items
+follow. Physical display/keyboard/pointer and certified-machine evidence remain
+owed. Item 6b remains reserved for Claude in its separate checkout.

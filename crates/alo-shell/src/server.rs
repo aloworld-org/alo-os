@@ -1,0 +1,78 @@
+//! Display ownership and bounded, nonblocking dispatch for graphics backends.
+
+use std::{io, path::Path, sync::Arc};
+
+use smithay::reexports::wayland_server::{Display, protocol::wl_surface::WlSurface};
+
+use crate::{
+    SocketError,
+    socket::Socket,
+    surfaces::{ClientState, Surfaces},
+};
+
+/// A native Wayland display, independent of the nested or direct graphics backend.
+///
+/// The caller supplies a private runtime directory and a fresh session name.
+/// No environment is mutated and no client process is launched. Drop closes
+/// clients and removes the owned socket. Dispatch must be driven by the backend.
+pub struct Server {
+    /// The display is private so every inserted client has our client state.
+    display: Display<Surfaces>,
+    /// Protocol state and mapped toplevels.
+    surfaces: Surfaces,
+    /// Listener and private directory lifetime.
+    socket: Socket,
+}
+
+impl Server {
+    /// Bind `runtime/name/wayland`, refusing existing sessions and unsafe paths.
+    pub fn bind(runtime: &Path, name: &str) -> Result<Self, SocketError> {
+        let display = Display::new().map_err(io::Error::other)?;
+        let surfaces = Surfaces::new(&display.handle());
+        let socket = Socket::bind(runtime, name)?;
+        Ok(Self {
+            display,
+            surfaces,
+            socket,
+        })
+    }
+
+    /// Absolute socket path; pass only to applications belonging to this session.
+    pub fn socket_path(&self) -> &Path {
+        &self.socket.path
+    }
+
+    /// Accept at most 16 clients, dispatch pending requests and flush responses.
+    ///
+    /// Never blocks waiting for a client. Protocol errors disconnect the offending
+    /// client; display I/O failures are returned to the backend. The accept budget
+    /// ensures a connection flood cannot make acceptance itself an endless loop.
+    pub fn dispatch(&mut self) -> io::Result<()> {
+        if let Some(listener) = &self.socket.listener {
+            for _ in 0..16 {
+                let Some(stream) = listener.accept()? else {
+                    break;
+                };
+                self.display
+                    .handle()
+                    .insert_client(stream, Arc::new(ClientState::default()))?;
+            }
+        }
+        self.display.dispatch_clients(&mut self.surfaces)?;
+        self.surfaces.prune();
+        self.display.flush_clients()
+    }
+
+    /// Live, configured toplevel roots with committed buffers, in creation order.
+    ///
+    /// This is an internal renderer input, not an agent context or window API.
+    /// Buffer removal, surface destruction and disconnect remove a root here.
+    pub fn mapped_surfaces(&self) -> impl Iterator<Item = &WlSurface> {
+        self.surfaces.mapped()
+    }
+
+    /// Number of live toplevel roles, including those not yet mapped.
+    pub fn toplevel_count(&self) -> usize {
+        self.surfaces.count()
+    }
+}

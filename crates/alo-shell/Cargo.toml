@@ -1,0 +1,20 @@
+[package]
+name = "alo-shell"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[target.'cfg(target_os = "linux")'.dependencies]
+smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "use_system_lib"] }
+rustix.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+tempfile = "3"
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client"] }
+
+[lints]
+workspace = true

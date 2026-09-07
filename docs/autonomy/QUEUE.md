@@ -43,6 +43,31 @@ to main, pulling first and integrating any intervening commits before pushing.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected component (desktop worker):** reusable Linux Wayland server core
+  in `alo-shell`, using pinned Smithay, with a private explicitly named socket,
+  XDG toplevel configure/acknowledge/buffer lifecycle and disconnect cleanup.
+  Acceptance: real Wayland client integration over Unix sockets for map,
+  unmap/remap, orderly destruction and abrupt disconnect; invalid configure
+  acknowledgement and premature buffer refusal without harming another client;
+  socket collision, unsafe directory and teardown tests; focused fmt/clippy.
+  This component does not complete item 33: nested rendering, keyboard/pointer,
+  popup management, direct display and physical acceptance remain subsequent
+  components. No agent-facing window or context API is introduced.
+  **Completed component 2026-09-07:** `alo-shell` server core and eleven Linux
+  integration tests. Real Unix-socket clients transfer SHM buffers, map only
+  after acknowledgement, unmap/release/remap, disconnect independently and
+  lose their connection on server teardown. Premature buffers, missing/stale
+  acknowledgements, unsafe socket directories, collisions and failed binds are
+  covered. Focused Linux/Windows clippy and tests, Linux rustdoc, workspace fmt
+  and diff checks passed; Windows intentionally runs no Linux protocol tests.
+  `COMPOSITOR.md` records exact commands and the additional Wayland wire trace.
+  WSLg graphics probe also submitted a frame; it does not render this server's
+  clients. Supervisor full gates and physical evidence are not claimed.
+  **Next component:** nested WSLg rendering of these mapped client surfaces on
+  one advertised output, with frame callbacks after successful presentation
+  submission and explicit graphics initialization/submission refusal. Then
+  keyboard/pointer routing, popup management and direct-display integration.
+  Keep item 33 unchecked until its complete delivery requirements are met.
 - [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit

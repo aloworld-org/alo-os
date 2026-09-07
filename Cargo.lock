@@ -287,6 +287,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-shell"
+version = "0.1.0"
+dependencies = [
+ "rustix 1.1.4",
+ "smithay",
+ "tempfile",
+ "thiserror 2.0.20",
+ "wayland-client",
+ "wayland-protocols",
+]
+
+[[package]]
 name = "alo-shortcuts"
 version = "0.0.1"
 dependencies = [

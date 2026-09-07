@@ -106,7 +106,8 @@ No installer, no fleet management, no compatibility list.
 question — *does this need a screen?* — and the answer sorts it perfectly:
 
 - **Twelve capabilities need no screen. All twelve have their code finished.**
-- **Eight need the compositor or the certified machine. None of the eight is started.**
+- **Eight need the compositor or the certified machine. Compositor protocol
+  work has started; none of these capabilities has passed physical acceptance.**
 
 There is no third group and nothing in between. The two bands used to be
 interleaved in this list, so a completely consistent rule read as items being
@@ -602,8 +603,8 @@ compositor is not required for, which is why it runs unbroken.
 
 ### Everything that needs the compositor or the certified machine
 
-Eight capabilities, and **not one of them is started**. That is not eight things
-skipped over — it is the same dividing line read from the other side. The
+Eight capabilities, with **the compositor protocol core now started**. The
+remaining machine work follows `docs/autonomy/DELIVERY.md`. The
 compositor is the one that matters most here, because sign-in, the overlay, the
 launcher, copy and paste and the workspace client all wait on it; the image is
 its own bring-up and waits on the certified machine.
@@ -646,8 +647,14 @@ which made a completely consistent rule look like work being taken out of turn.
     a 320x200 GLES frame through WSLg and refused an unavailable EGL vendor.
     Ubuntu setup and exact verification are in `docs/autonomy/GRAPHICS.md`.
     This is delivery item 32's build fixture, not a compositor implementation.
-    Real clients, input routing, disconnect handling, direct display execution
-    and physical keyboard/pointer/display evidence remain owed by item 33.
+  - Protocol component (2026-09-07): `alo-shell` owns a private Wayland socket
+    and real XDG toplevel configure/buffer lifetimes. Eleven Linux integration
+    tests cover map/unmap/remap, buffer release, client/server teardown, isolated
+    refusal and socket ownership. A captured protocol trace verifies fd-backed
+    SHM transfer and fresh configure serials after unmap; see
+    `docs/autonomy/COMPOSITOR.md`. This is a reusable server core, not a rendered
+    desktop. Nested rendering, output, input routing, popups, direct display
+    execution and physical keyboard/pointer/display evidence remain owed.
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
