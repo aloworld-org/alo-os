@@ -11588,3 +11588,65 @@ owed. Successful scanout needs a DRM-equipped login/VM; physical business laptop
 and >=24 GB GPU workstation display/input, session switching, suspend/resume and
 all hardware checklist records remain owed. Full v0.01 scope retained; compositor
 and release unchecked.
+
+---
+
+## 2026-09-07 - Prepared scene activation
+
+Single desktop worker; initial tree clean, supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, queue/state tail, compositor feature
+and roadmap, ADRs 0001/0002, adapter contract and hardware requirements. Every
+published report was already referenced here at iteration start. No unreconciled
+report, no Claude work taken. Later publications reconcile next iteration.
+
+Own report integrated: `docs/autonomy/updates/prepared-scene-activation.md`.
+Queue acceptance recorded before code. PreparedScanout::activate now validates
+mode extent/schema before I/O, consumes pixels through unbound allocation/upload
+and blocking TEST_ONLY/enable, and retains exact drawn identities with ActiveScene.
+Disable preserves ordered cleanup and quarantines on refusal. No dispatch,
+membership or callback is performed here. Exclusive inactive output ownership,
+fresh same-descriptor discovery and active session are required. Reusing the safe
+blocking transport needs no asynchronous cookie, consistent with ADR 0002; ADR
+0001 and adapter surfaces unchanged. This is initial static scene activation,
+not continuous direct presentation. No unsafe/engine patch or scope change.
+
+Windows executed, final exit 0: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Linux source/tests are cfg-excluded on Windows.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin, CARGO_TARGET_DIR=/root/alo-os-target:
+cargo test -p alo-shell --lib prepared_scene --locked; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked;
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. Final exit 0, 87 unit + 65 client
+lifecycle + 3 socket + 2 doctests = 157 passed; no ignored/failed checks.
+Four new tests: all 1280x720 uploaded pixels plus padding/tail, size refusal before
+I/O, allocation/upload/commit and cleanup failure retention, ordered retirement
+and failed-disable quarantine. Initial allocator visibility compile error and
+clippy test slicing/chunks diagnostics fixed, without exemptions. Final Linux
+command group uses set -e; .git/scene-activation-linux.log retains passing evidence.
+
+Verified Rust 1.98.0, WSLg socket, pkg-config Wayland/EGL/GLES/GBM/libseat/libinput;
+no installation needed. No /dev/dri. With XDG_RUNTIME_DIR=/run/user/0 and
+WAYLAND_DISPLAY=wayland-0, timeout 30s /root/alo-os-target/debug/examples/nested_check
+--offscreen exits 0: real 1,056-pixel SHM scene plus public activation refusal
+against /dev/null (ENOTTY 25) and mode mismatch preserve callbacks. WAYLAND_DEBUG=1
+timeout 30s /root/alo-os-target/debug/examples/nested_check --popups --cursor exits 0,
+134 client surfaces. Invalid __EGL_VENDOR_LIBRARY_FILENAMES=/nonexistent/alo-scene-activation-egl.json
+with the offscreen command exits 1, invalid EGL display. Local logs:
+.git/scene-activation-{gles,nested,refusal}.log. Exact commands in own report.
+
+Updated all four progress documents and COMPOSITOR; source/new-file and document
+diffs reviewed, git diff --check passes. No staging/commit/push, dev-loop changes,
+worker launch, other-checkout access, shared kernel/BPF/cgroup/service changes or
+physical install. Supervisor full Windows/Linux workspace/BPF gates remain owed.
+
+Next executable component: synchronous active-scene replacement, old storage
+retained on refusal and retired only after successful blocking commit, with
+cleanup/quarantine and callback tests. Continuous direct FrameTarget/default
+cursor, safe cookie transport/asynchronous retirement, pause/input/session wiring,
+parent-leave/libseat limits and pinned unmap-panic limitation remain. GPU context-
+loss/draw/readback faults remain untested. Successful scanout needs a DRM-equipped
+login/VM; all physical laptop and >=24 GB GPU workstation acceptance records remain
+owed. Fault-injected success is not hardware certification. Native compositor and
+release stay unchecked; full v0.01 scope retained. Ready for supervisor integration.

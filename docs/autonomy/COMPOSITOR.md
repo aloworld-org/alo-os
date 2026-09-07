@@ -1071,3 +1071,30 @@ fault or successful DRM scanout is claimed. Next: connect preparation to consumi
 upload and blocking scanout ownership with callback/cleanup tests. Direct target,
 cookie transport, retirement, pause/input/session wiring, existing parent-leave/
 libseat limits, supervisor full gates and physical acceptance remain open.
+
+## Prepared scene activation (2026-09-07)
+
+`PreparedScanout::activate` consumes the scene and validates its full physical
+extent against the freshly discovered mode before any DRM allocation. The shared
+allocation/upload/TEST_ONLY/blocking-enable transaction returns `ActiveScene`
+only on success. This owner retains the drawn identities and immutable scanout
+allocation together. `disable` orders detachment before destruction and preserves
+cleanup errors; failed disable quarantines resources until descriptor retirement.
+No client dispatch, output membership or callback completion occurs in this API.
+The caller must own an inactive output exclusively, keep its session active,
+and render/activate without intervening client dispatch. Replacing an already
+active scene is not supported by this component.
+
+This follows ADR 0002 using the existing safe, pinned DRM transport. A blocking
+initial modeset needs no event cookie; it does not bypass the unresolved safe
+cookie-bearing asynchronous transport. ADR 0001 and application-adapter surfaces
+are unchanged. Native session entry must translate diagnostics. The new public
+Rust surface is additive; `ScanoutPixels::size` exposes its validated extent.
+
+Evidence and exact checks: `updates/prepared-scene-activation.md`. Tests use
+fault-injected DRM for successful upload/enable/retirement. The WSLg fixture
+uses actual GLES client scenes and `/dev/null` for kernel ioctl refusal; it is
+not successful DRM scanout. Continuous direct FrameTarget, default cursor,
+replacement/retirement, pause/input/session wiring, actual graphics context-loss
+faults and physical display/input acceptance remain open. The pinned unmap-panic
+limitation still applies. No compositor or release completion is claimed.

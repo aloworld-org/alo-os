@@ -9,6 +9,9 @@ mod scanout_tests;
 #[path = "scanout_frame_tests.rs"]
 mod scanout_frame_tests;
 
+#[path = "scene_scanout_tests.rs"]
+mod scene_scanout_tests;
+
 /// A public-metadata buffer standing in for a kernel dumb allocation.
 struct FakeBuffer {
     /// Advertised dimensions.
@@ -88,6 +91,9 @@ impl ResourceDevice for Device {
         initialize: impl FnOnce(&mut [u8]) -> io::Result<()>,
     ) -> io::Result<()> {
         self.call("map")?;
+        if self.failures.contains(&"upload map") && self.log.borrow().calls.contains(&"blob") {
+            return Err(io::Error::from_raw_os_error(5));
+        }
         let required = buffer.pitch as usize * buffer.size.1 as usize;
         let length = if self.malformed == 7 {
             required - 1

@@ -64,6 +64,25 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     assert_eq!(prepared.surfaces().len(), 4);
                     offscreen_client::verify(prepared.pixels().pixels());
                     prepared.pixels().frame()?;
+                    // Actual prepared scene through the public activation path.
+                    // A non-DRM descriptor must refuse, never complete callbacks.
+                    use std::os::fd::AsFd;
+                    let fd = std::fs::File::open("/dev/null")?;
+                    let error = prepared
+                        .activate(fd.as_fd(), &refusal_output(33))
+                        .err()
+                        .ok_or("non-DRM activation accepted")?;
+                    assert_eq!(error.failure.source.raw_os_error(), Some(25));
+                    assert!(error.cleanup.is_empty());
+                    let prepared =
+                        render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)?;
+                    let error = prepared
+                        .activate(fd.as_fd(), &refusal_output(34))
+                        .err()
+                        .ok_or("mismatched mode accepted")?;
+                    assert_eq!(error.failure.stage, "validate prepared scene");
+                    let prepared =
+                        render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)?;
                     // Repeated preparation must not retain stale output pixels or send callbacks.
                     let blank = render_scanout(
                         renderer,
@@ -118,4 +137,39 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         "Real SHM window/child/popup/cursor pixels, clipping, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );
     Ok(())
+}
+
+/// Synthetic routing only for refusal against /dev/null, never real KMS discovery.
+fn refusal_output(width: u16) -> alo_shell::AtomicOutput {
+    use std::num::NonZeroU32;
+    let properties = |names: &[&'static str], start: u32| {
+        names
+            .iter()
+            .zip(start..)
+            .map(|(name, id)| (*name, NonZeroU32::MIN.saturating_add(id).into()))
+            .collect()
+    };
+    alo_shell::AtomicOutput {
+        output: alo_shell::DirectOutput {
+            connector: NonZeroU32::MIN.into(),
+            crtc: NonZeroU32::MIN.saturating_add(1).into(),
+            mode: drm_ffi::drm_mode_modeinfo {
+                hdisplay: width,
+                vdisplay: 32,
+                ..Default::default()
+            }
+            .into(),
+        },
+        plane: NonZeroU32::MIN.saturating_add(2).into(),
+        formats: vec![drm::buffer::DrmFourcc::Xrgb8888 as u32],
+        connector_properties: properties(&["CRTC_ID"], 10),
+        crtc_properties: properties(&["ACTIVE", "MODE_ID"], 20),
+        plane_properties: properties(
+            &[
+                "CRTC_ID", "FB_ID", "CRTC_X", "CRTC_Y", "CRTC_W", "CRTC_H", "SRC_X", "SRC_Y",
+                "SRC_W", "SRC_H",
+            ],
+            30,
+        ),
+    }
 }

@@ -194,7 +194,7 @@ impl<D: ResourceDevice> Allocation<D> {
     }
 
     /// Validate before and after allocation, unwinding all completed stages.
-    fn allocate(
+    pub(crate) fn allocate(
         device: D,
         mode: &Mode,
         formats: &[u32],

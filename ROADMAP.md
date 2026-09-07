@@ -728,6 +728,15 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Prepared scene activation (2026-09-07): consuming full-mode validation,
+    upload and blocking TEST_ONLY/enable retain identities with active ownership.
+    Four new tests; 157 Linux shell checks, affected Windows/Linux fmt/clippy/tests,
+    Linux rustdoc/examples and WSLg scene/nested checks pass (134 client surfaces).
+    Evidence: `docs/autonomy/updates/prepared-scene-activation.md`. Successful
+    DRM is fault-injected; actual non-DRM ioctl refusal preserves callbacks.
+    Continuous direct FrameTarget, default cursor, replacement/retirement,
+    pause/input/session wiring and physical acceptance remain. Supervisor full
+    publication gates remain owed; compositor and release stay unchecked.
   - Offscreen scene rendering (2026-09-07): shared window/popup/cursor painter
     produces owned XRGB pixels and drawn identities without submission callbacks.
     Extent and real truncated-SHM refusal, all 1,056 scene pixels, clipping,

@@ -70,6 +70,11 @@ fn expected_request(disabling: bool) -> AtomicModeReq {
 
 /// Frozen standard routing for the same mode used by the allocation fixture.
 pub(super) fn plan() -> io::Result<AtomicPlan> {
+    AtomicPlan::new(&output())
+}
+
+/// Independent full-mode routing shared with scene activation tests.
+pub(super) fn output() -> AtomicOutput {
     let properties = |names: &[&'static str], start: u32| {
         names
             .iter()
@@ -77,7 +82,7 @@ pub(super) fn plan() -> io::Result<AtomicPlan> {
             .map(|(name, id)| (*name, NonZeroU32::MIN.saturating_add(id).into()))
             .collect()
     };
-    AtomicPlan::new(&AtomicOutput {
+    AtomicOutput {
         output: DirectOutput {
             connector: NonZeroU32::MIN.into(),
             crtc: NonZeroU32::MIN.saturating_add(1).into(),
@@ -94,7 +99,7 @@ pub(super) fn plan() -> io::Result<AtomicPlan> {
             ],
             30,
         ),
-    })
+    }
 }
 
 #[test]

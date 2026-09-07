@@ -45,6 +45,11 @@ pub struct ScanoutPixels {
 }
 
 impl ScanoutPixels {
+    /// Full physical extent of this immutable scene.
+    pub fn size(&self) -> (u32, u32) {
+        self.size
+    }
+
     /// Borrow the validated source accepted by `DisplayResources::with_frame`.
     pub fn frame(&self) -> std::io::Result<crate::XrgbFrame<'_>> {
         crate::XrgbFrame::new(self.size, self.stride, &self.pixels)

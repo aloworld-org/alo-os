@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Prepared desktop scenes now have an owned initial scanout transaction.**
+  Mode validation, upload and blocking activation keep drawn identities with
+  the active allocation; refusals preserve cleanup errors and client callbacks.
+  Linux tests and WSLg refusal checks pass. Successful kernel scanout, continuous
+  presentation and physical acceptance remain unverified. Evidence:
+  `docs/autonomy/updates/prepared-scene-activation.md`.
+
 - **Real window, popup and cursor scenes can now be prepared for direct-display
   upload without premature frame callbacks.** Shared GLES painting produces
   immutable pixels, preserves clipping/stacking, and refuses malformed extents

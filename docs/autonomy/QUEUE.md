@@ -69,6 +69,26 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected prepared scene activation (desktop worker):** consume a prepared
+  scene through full-mode validation, unbound allocation/upload and blocking
+  TEST_ONLY/enable, retaining drawn identities with the active resource owner.
+  Acceptance: size refusal before I/O, pixel and ordered lifecycle tests,
+  allocation/upload/commit/cleanup refusals, real WSLg scene plus invalid-device
+  refusal without callbacks, affected fmt/clippy/tests/rustdoc. No continuous
+  direct FrameTarget, default cursor or physical scanout claim in this component.
+  **Completed prepared scene activation 2026-09-07:** ActiveScene retains drawn
+  identities and blocking scanout ownership after validated upload/TEST_ONLY/enable.
+  Four new tests; 157 Linux shell checks and affected Windows/Linux fmt/clippy/tests,
+  Linux rustdoc/examples pass. WSLg actual prepared-scene non-DRM ioctl and mode
+  mismatch refusals preserve callbacks; nested regression submits 134 client
+  surfaces. Report: `updates/prepared-scene-activation.md`. Successful enable and
+  retirement use fault-injected DRM, not hardware. Next executable component:
+  synchronous active-scene replacement retaining the old allocation until a
+  successful blocking commit, with failed replacement preserving old ownership,
+  cleanup/quarantine tests and callbacks only after success. Then direct target,
+  default cursor and pause/input/session wiring. Cookie transport/asynchronous
+  retirement, graphics context-loss faults and physical evidence remain open;
+  full supervisor gates remain owed. Compositor and release stay unchecked.
   **Selected offscreen scene rendering (desktop worker):** render the existing
   window, popup and cursor trees into an owned GLES offscreen target, returning
   immutable ScanoutPixels and drawn surface identities without completing frame
