@@ -679,3 +679,23 @@ Repositioning/output constraints, parent-leave notifications, direct display/inp
 and production session remain unfinished. Scripted WSLg is submission/protocol
 evidence, not pixel readback, actual parent input or physical certification.
 Supervisor full Windows/Linux/BPF publication gates remain owed.
+
+
+## Explicit popup repositioning (2026-09-07)
+
+`xdg_popup.reposition` now validates the same bounded positioner operands as
+initial placement. Smithay sends token, popup configure and surface configure;
+its acknowledged state becomes scene geometry only on `wl_surface.commit`.
+Multiple outstanding requests can be acknowledged/committed individually or
+superseded; stale acknowledgement refuses that client. Descendants inherit the
+committed parent origin in the existing shared rendering/hit-testing traversal.
+Unsafe requests still dismiss child-first; dismissed roles cannot reposition.
+No extra configure history, upstream patch or agent-facing authority is added.
+
+Three new Unix-socket tests and WSLg popup/child GLES submission pass; failed
+submission retains callbacks and descendant input uses moved geometry. Exact
+commands, lint corrections and limits are in
+`updates/native-popup-repositioning.md`. Output constraints and automatic reactive
+placement remain unfinished, along with parent leave, direct display/input and
+production session wiring. WSLg evidence is scripted protocol/submission, not
+pixel readback, actual parent mouse observation or physical certification.

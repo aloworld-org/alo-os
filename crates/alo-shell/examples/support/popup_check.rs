@@ -31,6 +31,11 @@ pub fn check(app: &mut Application) {
     app.sync();
     assert_eq!(app.events.popups.geometry.last(), Some(&(7, 10, 16, 16)));
     app.ack_popup(&xdg);
+    app.reposition_popup_to(&role, 40, 93);
+    app.sync();
+    assert_eq!(app.events.popups.repositioned, [93]);
+    assert_eq!(app.events.popups.geometry.last(), Some(&(34, -6, 16, 16)));
+    app.ack_popup(&xdg);
     xdg.set_window_geometry(1, 2, 12, 12);
     let (far_child, far_role) = app.child_on(&surface, (i32::MAX, i32::MAX));
     app.attach_popup(&surface);
@@ -54,7 +59,7 @@ pub fn check(app: &mut Application) {
         assert!(Instant::now() < deadline, "no nested GLES popup callback");
     }
     assert_eq!(app.events.membership, (4, 0));
-    app.reposition_popup(&role);
+    app.refuse_popup_position(&role);
     while app.events.membership.1 < 2 {
         app.sync();
         assert!(Instant::now() < deadline, "no popup leave on dismissal");
@@ -70,6 +75,6 @@ pub fn check(app: &mut Application) {
     surface.destroy();
     app.sync();
     println!(
-        "Popup GLES buffer submitted at (8,11) with parent/popup geometry offsets; nested child at (16,23), both callbacks/output enter and descendant dismissal leave passed; offscreen callback withheld"
+        "Repositioned popup GLES buffer submitted at (35,-5) with parent/popup geometry offsets; nested child at (43,7), both callbacks/output enter and descendant dismissal leave passed; offscreen callback withheld"
     );
 }

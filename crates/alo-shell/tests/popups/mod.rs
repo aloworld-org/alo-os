@@ -5,6 +5,7 @@ mod grabs;
 mod keyboard_grabs;
 mod pointer_release;
 mod presentation;
+mod reposition;
 
 /// Protocol-only fixture explicitly opts in, independently of nested rendering.
 fn fixture() -> Fixture {
@@ -138,7 +139,7 @@ fn popup_parent_loss_role_destruction_and_disconnect_clear_snapshots() {
 }
 
 #[test]
-fn popup_reposition_dismisses_once_and_new_role_can_configure() {
+fn popup_unsafe_reposition_dismisses_once_and_new_role_can_configure() {
     let f = fixture();
     let mut app = mapped(&f);
     let (surface, xdg, role) = app.popup(true, 0);
@@ -147,9 +148,9 @@ fn popup_reposition_dismisses_once_and_new_role_can_configure() {
     app.ack_popup(&xdg);
     app.attach_popup(&surface);
     app.sync();
-    app.reposition_popup(&role);
+    app.refuse_popup_position(&role);
     app.sync();
-    app.reposition_popup(&role);
+    app.refuse_popup_position(&role);
     app.sync();
     assert_eq!(app.events.popups.done, 1);
     assert!(f.backend(|s| s.popup_surfaces().is_empty()));

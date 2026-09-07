@@ -265,10 +265,23 @@ cross-references, not the primary names used in handoffs or status messages.
   press and keyboard-release checks pass; focused Windows/Linux tests/clippy/fmt
   and Linux rustdoc pass. Exact evidence and initial test correction:
   `updates/native-popup-pointer-release-initiation.md`.
-  **Next useful component:** XDG popup repositioning with configure/acknowledge
-  ordering and shared rendering/input placement; output constraints remain
-  required before production popup support is complete.
-  Repositioning/output constraints, parent-leave backend, direct display and physical acceptance
+  **Selected popup repositioning component (desktop worker):** validate explicit
+  positioners, send token/configure sequences and apply acknowledged geometry on
+  commit to shared rendering/input placement. Acceptance: real-client ordering,
+  multiple outstanding configures, stale acknowledgement and extreme-position
+  refusal, descendant movement, terminal dismissal, failed-submit retention and
+  WSLg reposition submission; focused tests/fmt/clippy/rustdoc. Output constraints
+  and automatic reactive placement remain subsequent work.
+  **Completed explicit repositioning 2026-09-07:** ordered token/configure replies
+  and acknowledged-commit placement, shared by rendering and input; descendant
+  movement, stale-ack client isolation and terminal unsafe-placement refusal.
+  Three new socket tests pass (61 Linux shell tests total); WSLg repositioned
+  popup/child submission and popup/cursor regression pass. Focused Windows/Linux
+  tests/clippy/fmt and Linux rustdoc pass. Exact checks and development lint
+  corrections: `updates/native-popup-repositioning.md`. Full supervisor gates,
+  actual parent input and physical laptop/GPU workstation evidence remain owed.
+  **Next useful component:** popup output constraints and automatic reactive
+  placement. Parent-leave backend, direct display/input and physical acceptance
   remain; item 33 is unchecked and supervisor full gates remain owed.
 
 - **Integrated filesystem report: Hard-linked files are not read (2026-09-07).**
@@ -4273,10 +4286,21 @@ rather than only of what is convenient.
   enforcement and agentd approved-move integration pass, full Linux gates and
   pinned BPF checks pass. These kernel checks were not independently rerun in
   this desktop iteration; supervisor gates remain owed. WSL cannot certify hardware.
-  Other mutation hooks (unlink/link/symlink/mkdir/create) remain unhooked; retain
+  Deletion/link hooks are now integrated below; symlink/mkdir/create and
+  attributes remain unhooked; retain
   a filesystem-workstream audit of their reachability under the existing release
   security requirements, without adding verbs or claiming Claude's next assignment.
   Hard-link identity limits and conservative exchange handling remain in the report.
+- [x] **Kernel protection for deletion and links.** Reconciled Claude's
+  `updates/kernel-protection-for-deletion-and-links.md`: unlink validates the
+  removed entry; link validates source and destination parent. Four hooks/six
+  pins, refusal over any leftover pin and teardown coverage. Contributor reports
+  seven real-kernel happy/refusal tests, existing open/rename/approved-agentd
+  integration and full Linux/BPF gates pass; not independently rerun here.
+  Genuine mid-attach failure was not induced. Symlink, directory, file creation,
+  attributes, already-open handles and non-filesystem enforcement remain gaps;
+  pre-existing hard links still need alo-files' multiply-named-file refusal.
+  Physical acceptance remains owed. No new verb or release box is implied.
 - **4b. Where the record file lives, and when it is shortened.** What item 4a
   could not close, and the whole of what is left of it: a path under `/var/lib`
   that the package decides, the setting the retention rule is read from and

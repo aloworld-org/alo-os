@@ -10606,3 +10606,53 @@ laptop/GPU workstation physical records remain owed. Supervisor full independent
 publication gates have not run for this change. No staging, commit/push, worker/
 loop launch, dev-loop edit or unrelated host changes. Reports arriving during
 publication are reconciled next iteration. Compositor and release unverified.
+
+
+---
+
+## 2026-09-07 - native popup repositioning and filesystem report integration
+
+Single desktop worker; clean checkout at start. Read constitution, delivery order,
+shared-main ownership, updates README, current queue/state tail, relevant shell
+feature/roadmap, ADRs 0001/0002 and app-adapter boundary. Recorded repositioning
+acceptance before implementation. No filesystem task taken from Claude.
+
+Reconciled published report:
+`docs/autonomy/updates/kernel-protection-for-deletion-and-links.md`.
+Reviewed hook/loader code: four hooks, six pins; deletion checks removed entry,
+links check source and destination parent. Retained contributor evidence: seven
+loaded-kernel tests, per-hook leftover-pin refusal and teardown, prior open/rename
+and approved-agentd integration, full Linux/BPF gates passing. Not rerun here;
+genuine mid-attach failure not forced. Symlink/directory/create/attribute hooks,
+already-open handles and non-filesystem enforcement remain gaps; pre-existing
+hard links still need alo-files refusal. No hardware box changes. All reports
+published at iteration start are now referenced; later reports wait next iteration.
+
+Integrated own report:
+`docs/autonomy/updates/native-popup-repositioning.md`.
+Validated explicit positioners receive ordered token/configure replies; only
+acknowledged commits update shared rendering/input geometry. Descendants follow
+committed parent placement. Smithay owns serial state; no extra history, engine
+patch or agent authority. Unsafe placement remains terminal and child-first.
+
+Three new socket tests pass; 61 Linux shell tests total, none ignored. Focused
+and wire runs each pass three. Final Windows/Linux fmt, affected all-target
+clippy and tests pass; Windows excludes Linux protocol tests. Warnings-denied
+Linux rustdoc and example build pass. Initial lint failures and an intermediate
+numeric-token edit typo are recorded in the report; no test assertions failed,
+no lint/gate was weakened. Exact commands and local logs are in the report.
+
+WSLg popup and popup/cursor checks submit repositioned SHM popup/child geometry,
+verify callbacks/output membership and dismissal, then unmap/remap/refusal and
+disconnect. Standalone popup run exits 0; combined run submits 84 client surfaces.
+Native graphics prerequisites verified; no dependency or shared-kernel changes.
+Target stays /root/alo-os-target, separate from Claude's checkout. This is
+scripted protocol/submission evidence, not pixel readback or physical input.
+
+All four shared progress documents and COMPOSITOR updated; diff reviewed.
+Next: output constraints/reactive placement, parent leave, direct display/input
+and session, preserving every remaining v0.01 requirement. Actual parent-input
+and physical laptop/GPU workstation evidence remain owed. Supervisor independent
+full publication gates have not run for this change. No staging, commit/push,
+worker/loop launch, dev-loop edit or other-checkout/unrelated host changes.
+Compositor and release remain unverified.

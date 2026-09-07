@@ -12,6 +12,22 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Applications can reposition menus without closing them in the development
+  compositor.** Token/configure replies preserve request order; rendering and
+  pointer targeting move together only after the acknowledged surface commit.
+  Descendants follow their parent. Unsafe positions dismiss the menu tree and
+  stale acknowledgements disconnect only the offending client. Three new socket
+  tests and WSLg submission checks pass. Output constraints, the production
+  desktop and hardware acceptance remain unfinished. Evidence:
+  `docs/autonomy/updates/native-popup-repositioning.md`.
+
+- **The kernel now refuses a bounded turn's deletion or hard-link operation
+  outside its named reach.** Valid in-bound archive cleanup and unrelated person
+  processes still work. Claude reports seven real-kernel tests and Linux/BPF
+  gates passing; mid-attach failure and physical acceptance are not measured.
+  Symlink, directory, creation, attribute and already-open-handle gaps remain.
+  Evidence: `docs/autonomy/updates/kernel-protection-for-deletion-and-links.md`.
+
 - **Menus can now open on mouse-button release in the development compositor.**
   A matched release authorizes one parent menu, including from a subsurface.
   New button events, pointer focus loss and reuse invalidate it; synthetic

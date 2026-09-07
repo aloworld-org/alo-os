@@ -44,7 +44,7 @@ fn three_popup_levels_stack_and_submit_atomically() {
         assert_eq!(app.events.frames, [3, 3, 3]);
         assert_eq!(app.events.membership, (4, 0));
         // Dismissing the middle removes its child, preserving the ancestor.
-        app.reposition_popup(&middle.2);
+        app.refuse_popup_position(&middle.2);
         app.sync();
         assert_eq!(
             app.events.popups.done_order,
@@ -109,7 +109,7 @@ fn nested_popup_coordinates_input_and_ancestor_cleanup() {
                 app.surface.attach(None, 0, 0);
                 app.surface.commit();
             }
-            2 => app.reposition_popup(&parent_role),
+            2 => app.refuse_popup_position(&parent_role),
             3 => parent_role.destroy(),
             _ => {
                 drop(app);
@@ -157,7 +157,7 @@ fn nested_popup_requires_live_mapped_parent_and_dismissal_is_terminal() {
         if dismissed {
             app.attach_popup(&parent);
             app.sync();
-            app.reposition_popup(&role);
+            app.refuse_popup_position(&role);
             app.sync();
         }
         let (child, _, child_role) = app.popup_on(Some(&xdg), 1);

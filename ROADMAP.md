@@ -60,6 +60,17 @@ here. Remaining unhooked mutation operations, hard-link identity and conservativ
 exchange limits are retained; Windows/macOS are unaffected, physical acceptance
 and supervisor gates remain owed. No roadmap capability box changes.
 
+Kernel deletion/link report integrated 2026-09-07:
+`docs/autonomy/updates/kernel-protection-for-deletion-and-links.md`. Four hooks
+and six pins now cover open/rename/unlink/link; source/tests reviewed. Contributor
+reports seven loaded-kernel tests, per-hook leftover-pin refusal, full teardown,
+existing open/rename/agentd integration and full Linux/BPF gates passing. These
+are retained contributor evidence, not rerun in the desktop iteration. Genuine
+mid-attach failure was not induced. Symlink/directory/create/attribute hooks,
+already-open descriptors and non-filesystem enforcement remain unimplemented;
+pre-existing hard links still rely on alo-files refusal. No physical/release box
+changes; supervisor independent gates remain owed.
+
 ## Three states, because two are not enough
 
 Almost every item below is one capability spanning two halves: a crate that
@@ -770,6 +781,15 @@ which made a completely consistent rule look like work being taken out of turn.
     records checks and limits. Explicit grabs, repositioning/output constraints,
     parent leave, direct display and physical acceptance remain unfinished.
     No compositor box changes; supervisor publication gates remain pending.
+
+  - Explicit popup repositioning (2026-09-07): validated positioners receive
+    ordered token/configure responses; acknowledged commits update the shared
+    render/input geometry and descendants. Three new real-client tests pass
+    (61 Linux shell tests total); WSLg repositioned popup/child and cursor
+    submission pass. Exact checks: `docs/autonomy/updates/native-popup-repositioning.md`.
+    Output constraints/reactive placement, parent leave, direct display/input,
+    session and physical acceptance remain. Compositor unchecked; full supervisor
+    publication gates still owed.
 
   - Pointer-release popup initiation (2026-09-07): a matched real release
     authorizes one parent menu, with subsurface ownership and submenu inheritance.

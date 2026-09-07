@@ -8,7 +8,7 @@ use smithay::{
 };
 use wayland_client::{Proxy, protocol::wl_pointer};
 
-fn fixture() -> Fixture {
+pub(super) fn fixture() -> Fixture {
     let f = Fixture::keyboard();
     f.backend(|s| s.enable_popup_protocol());
     assert!(f.backend(|s| s.enable_pointer()).is_ok());
@@ -190,7 +190,7 @@ fn popup_drag_dismissal_parent_loss_and_disconnect_cancel_without_redirecting() 
                 app.surface.commit();
             }
             2 => role.destroy(),
-            3 => app.reposition_popup(&role),
+            3 => app.refuse_popup_position(&role),
             _ => {
                 drop(app);
                 f.wait_for((1, 1));

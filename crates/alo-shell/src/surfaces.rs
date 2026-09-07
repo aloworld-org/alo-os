@@ -198,10 +198,11 @@ impl XdgShellHandler for Surfaces {
     fn reposition_request(
         &mut self,
         surface: PopupSurface,
-        _positioner: PositionerState,
-        _token: u32,
+        positioner: PositionerState,
+        token: u32,
     ) {
-        self.popups.dismiss(&surface);
+        self.prune();
+        self.popups.reposition(&surface, positioner, token);
     }
 }
 

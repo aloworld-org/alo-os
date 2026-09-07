@@ -10,6 +10,10 @@ pub struct PopupEvents {
     pub geometry: Vec<(i32, i32, i32, i32)>,
     /// Popup-only XDG configure serial.
     pub serial: Option<u32>,
+    /// Configure sequence across the popup and XDG surface.
+    pub order: Vec<&'static str>,
+    /// Explicit reposition tokens in wire order.
+    pub repositioned: Vec<u32>,
     /// Terminal dismissal count.
     pub done: usize,
     /// Dismissed role IDs in protocol order.
@@ -27,6 +31,7 @@ impl Dispatch<xdg_surface::XdgSurface, bool> for Events {
     ) {
         if let xdg_surface::Event::Configure { serial } = event {
             state.popups.serial = Some(serial);
+            state.popups.order.push("surface");
         }
     }
 }
@@ -45,7 +50,14 @@ impl Dispatch<xdg_popup::XdgPopup, ()> for Events {
                 y,
                 width,
                 height,
-            } => state.popups.geometry.push((x, y, width, height)),
+            } => {
+                state.popups.geometry.push((x, y, width, height));
+                state.popups.order.push("geometry");
+            }
+            xdg_popup::Event::Repositioned { token } => {
+                state.popups.repositioned.push(token);
+                state.popups.order.push("token");
+            }
             xdg_popup::Event::PopupDone => {
                 state.popups.done += 1;
                 state.popups.done_order.push(popup.id().protocol_id());
@@ -61,12 +73,17 @@ impl Application {
     pub fn grab_popup(&self, popup: &xdg_popup::XdgPopup, serial: u32) {
         popup.grab(self.events.keyboard.seat.as_ref().unwrap(), serial);
     }
-    /// Request unsupported repositioning with a valid positioner.
-    pub fn reposition_popup(&self, popup: &xdg_popup::XdgPopup) {
+    /// Request arithmetic-unsafe placement to exercise terminal dismissal.
+    pub fn refuse_popup_position(&self, popup: &xdg_popup::XdgPopup) {
+        self.reposition_popup_to(popup, i32::MAX, 42);
+    }
+    /// Request explicit placement and track its independent token.
+    pub fn reposition_popup_to(&self, popup: &xdg_popup::XdgPopup, offset: i32, token: u32) {
         let positioner = self.shell.create_positioner(&self.queue.handle(), ());
         positioner.set_size(16, 16);
         positioner.set_anchor_rect(0, 0, 4, 4);
-        popup.reposition(&positioner, 42);
+        positioner.set_offset(offset, 0);
+        popup.reposition(&positioner, token);
         positioner.destroy();
     }
     /// Create a popup role without committing; offset can exercise integer refusal.

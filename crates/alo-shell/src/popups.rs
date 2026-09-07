@@ -4,7 +4,10 @@ use smithay::{
     backend::renderer::utils::with_renderer_surface_state,
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Rectangle},
-    wayland::shell::xdg::{PopupSurface, PositionerState},
+    wayland::{
+        compositor::with_states,
+        shell::xdg::{PopupSurface, PositionerState, XdgPopupSurfaceData},
+    },
 };
 
 /// Configured popup buffer offered to a popup-aware backend.
@@ -17,7 +20,7 @@ pub struct Popup {
     pub surface: WlSurface,
     /// Mapped toplevel or popup parent.
     pub parent: WlSurface,
-    /// Initial position and requested size in parent window coordinates.
+    /// Committed position and requested size in parent window coordinates.
     pub geometry: Rectangle<i32, Logical>,
 }
 
@@ -25,7 +28,7 @@ pub struct Popup {
 struct Entry {
     /// Smithay owns configure serial validation.
     role: PopupSurface,
-    /// Immutable initial placement and parent.
+    /// Committed placement and immutable parent.
     popup: Popup,
     /// A configured buffer has committed.
     buffered: bool,
@@ -46,10 +49,9 @@ impl crate::Server {
     /// Enable popup handshake tracking for a popup-aware backend or protocol fixture.
     ///
     /// `Nested` renders these snapshots and pointer routing consumes them.
-    /// Pointer-triggered grabs are supported; reposition requests still dismiss.
-    /// A root grab needs this seat's active pointer press serial on the parent
-    /// tree. A submenu can inherit its topmost parent's grab serial. Keyboard
-    /// and release-triggered initiation are not yet accepted.
+    /// Pointer and keyboard press/release grabs and explicit repositioning are
+    /// supported. Output constraints and automatic reactive placement remain
+    /// backend work. No application-adapter or agent authority is introduced.
     pub fn enable_popup_protocol(&mut self) {
         self.surfaces.popups.enabled = true;
     }
@@ -99,21 +101,7 @@ impl Popups {
         let parent = role.get_parent_surface().filter(|parent| {
             parents.contains(parent) || self.mapped().any(|p| &p.surface == parent)
         });
-        // Bounding every operand protects Smithay's i32 placement additions and
-        // subtractions without patching it. This is a backend geometry limit,
-        // not a memory allocation based on client-supplied dimensions.
-        let safe = [
-            positioner.rect_size.w,
-            positioner.rect_size.h,
-            positioner.anchor_rect.loc.x,
-            positioner.anchor_rect.loc.y,
-            positioner.anchor_rect.size.w,
-            positioner.anchor_rect.size.h,
-            positioner.offset.x,
-            positioner.offset.y,
-        ]
-        .into_iter()
-        .all(|value| (-1_000_000..=1_000_000).contains(&value));
+        let safe = safe_positioner(&positioner);
         let Some(parent) = parent.filter(|_| self.enabled && safe) else {
             role.send_popup_done();
             return;
@@ -135,6 +123,24 @@ impl Popups {
         });
     }
 
+    /// Confirm a validated explicit request without changing committed placement.
+    pub(crate) fn reposition(
+        &mut self,
+        role: &PopupSurface,
+        positioner: PositionerState,
+        token: u32,
+    ) {
+        if !safe_positioner(&positioner) || !self.live(role.wl_surface()) {
+            self.dismiss(role);
+            return;
+        }
+        role.with_pending_state(|state| {
+            state.geometry = positioner.get_geometry();
+            state.positioner = positioner;
+        });
+        role.send_repositioned(token);
+    }
+
     /// Apply configure-before-buffer and terminal unmap semantics.
     pub(crate) fn commit(&mut self, surface: &WlSurface) {
         let Some(entry) = self
@@ -151,6 +157,19 @@ impl Popups {
             with_renderer_surface_state(surface, |state| state.buffer().is_some()).unwrap_or(false);
         if has_buffer {
             entry.buffered = entry.role.ensure_configured();
+            if entry.buffered {
+                // Smithay applies the acknowledged configure in its commit hook.
+                // Requests and acknowledgements alone must never move the scene.
+                with_states(surface, |states| {
+                    if let Some(data) = states.data_map.get::<XdgPopupSurfaceData>() {
+                        entry.popup.geometry = data
+                            .lock()
+                            .unwrap_or_else(|_| std::process::abort())
+                            .current
+                            .geometry;
+                    }
+                });
+            }
         } else if entry.buffered
             || (!entry.role.is_initial_configure_sent() && entry.role.send_configure().is_err())
         {
@@ -213,4 +232,21 @@ impl Entry {
         self.dismissed = true;
         self.buffered = false;
     }
+}
+
+/// Bound each operand before invoking upstream i32 placement arithmetic.
+/// The existing initial-placement limit applies equally to reposition requests.
+fn safe_positioner(positioner: &PositionerState) -> bool {
+    [
+        positioner.rect_size.w,
+        positioner.rect_size.h,
+        positioner.anchor_rect.loc.x,
+        positioner.anchor_rect.loc.y,
+        positioner.anchor_rect.size.w,
+        positioner.anchor_rect.size.h,
+        positioner.offset.x,
+        positioner.offset.y,
+    ]
+    .into_iter()
+    .all(|value| (-1_000_000..=1_000_000).contains(&value))
 }
