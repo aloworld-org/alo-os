@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+  "tools/graphics-check",
   "crates/alo-agentd",
   "crates/alo-answering",
   "crates/alo-appearance",

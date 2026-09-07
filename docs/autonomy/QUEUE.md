@@ -14,10 +14,29 @@ longer exclude Linux tasks. External hardware requirements remain real.
   `tools/dev-loop`; serialized workers, explicit stop/status, independent
   Windows/Linux gates, owner-authored commits and ordinary pushes. Developer
   infrastructure serving the existing roadmap, not a new shipped feature.
-- [ ] **32. Restore the Linux and graphics development baseline.** Delivery
+- [x] **32. Restore the Linux and graphics development baseline.** Delivery
   step 1; check Ubuntu, pinned BPF toolchain, full Linux tests and rustdoc,
   WSLg and Smithay's native build dependencies. Record the exact environment
   and commands. No hardware certification is implied.
+  **Selected component:** a repository-owned Rust graphics development probe,
+  with Smithay pinned and both nested and direct-display build dependencies
+  enabled. Install Ubuntu native headers, verify WSLg by submitting a rendered
+  frame, and refuse missing/invalid session configuration and failed graphics
+  initialization. Acceptance: focused happy/refusal tests, probe integration,
+  formatting and affected-target clippy, existing Linux workspace tests/clippy/
+  rustdoc and pinned BPF checks. Document reproducible setup and exact evidence;
+  no client compositor or physical display capability is completed by this probe.
+  **Completed 2026-09-07:** `tools/graphics-check`, Smithay 0.7.0 pinned in the
+  workspace lockfile, Ubuntu native packages installed, six Linux happy/refusal
+  tests passing. WSLg submitted a 320x200 GLES frame (exit 0); a nonexistent EGL
+  vendor refused initialization (exit 1). `docs/autonomy/GRAPHICS.md` records
+  setup, package/toolchain versions, Mesa diagnostics and exact commands.
+  Linux workspace fmt, all-targets clippy, tests/doctests and warnings-denied
+  rustdoc passed; pinned BPF fmt/clippy passed. Windows workspace fmt and probe
+  clippy/test passed. The first full Linux test attempt lost bpffs across a WSL
+  restart; the corrected invocation checked/mounted it alongside the tests and
+  left no pins. Full independent Windows/Linux publication gates still belong
+  to the supervisor. Item 33 and all physical acceptance remain unfinished.
 - [ ] **33. Build the native compositor.** Delivery step 2; ADR 0002, the
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,

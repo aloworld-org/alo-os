@@ -638,6 +638,13 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Development prerequisite: `alo-graphics-check` pins Smithay 0.7.0 and
+    compiles nested and direct-display dependencies. On 2026-09-07 it submitted
+    a 320x200 GLES frame through WSLg and refused an unavailable EGL vendor.
+    Ubuntu setup and exact verification are in `docs/autonomy/GRAPHICS.md`.
+    This is delivery item 32's build fixture, not a compositor implementation.
+    Real clients, input routing, disconnect handling, direct display execution
+    and physical keyboard/pointer/display evidence remain owed by item 33.
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 

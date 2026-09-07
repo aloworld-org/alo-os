@@ -9665,3 +9665,57 @@ WSLg exists, but pkg-config cannot yet find Wayland server, EGL or xkbcommon
 development packages. Complete that reproducible setup and continue to item 33.
 
 LOOP ACTIVE
+
+## 2026-09-07 — item 32, Linux graphics development baseline
+
+Completed delivery step 1 as an engineering prerequisite, not a desktop
+feature. Added the workspace developer tool `alo-graphics-check`, pinned to
+unmodified Smithay 0.7.0. It checks native package metadata and an explicit
+Wayland socket, then optionally initializes GLES and submits one frame. Native
+package/session/connection/graphics failures return nonzero diagnostics.
+It is absent from the runtime image and exposes no agent or adapter surface.
+
+Routine choices follow ADRs 0001/0002: compile nested winit and the direct DRM,
+GBM, libinput, udev and libseat dependencies together so nested success cannot
+conceal missing direct-display headers; disable unrelated default features;
+reject an X11 display handle as evidence for Wayland. No upstream patch or
+contract change. Installed ordinary Ubuntu development packages and documented
+the environment and commands in `docs/autonomy/GRAPHICS.md`.
+
+Integration evidence: Ubuntu 26.04/WSL2, kernel 6.18.33.2, stable Rust 1.98.0,
+pinned nightly-2026-06-01 and bpf-linker 0.11.0. The real WSLg socket at
+`/run/user/0/wayland-0` accepted the probe; check and render exited 0, submitting
+a 320x200 GLES framebuffer. Mesa emitted device-selection diagnostics, recorded
+in GRAPHICS.md; GPU acceleration was not measured. A process-local invalid EGL
+vendor path returned exit 1, `Egl(DisplayNotSupported)`, with no success claim.
+
+Checks actually run:
+
+- Linux focused `cargo test -p alo-graphics-check --locked`: six passing tests,
+  including live Unix listener success and missing/stale/regular-file refusal,
+  invalid session configuration, invalid CLI input and missing native metadata.
+- Windows `cargo fmt --all --check`, probe `cargo clippy --all-targets --locked
+  -- -D warnings` and `cargo test --locked`: passed (one CLI refusal test).
+- Linux `cargo fmt --all --check`, `cargo clippy --workspace --all-targets
+  --locked -- -D warnings`, `cargo test --workspace --locked --quiet` and
+  `RUSTDOCFLAGS=-Dwarnings cargo doc --workspace --no-deps --locked`: passed.
+  Affected-target clippy was also rerun after the final test changes.
+- Pinned BPF `cargo fmt --all --check` and `cargo clippy --release --target
+  bpfel-unknown-none -Z build-std=core -- -D warnings`: passed.
+- Inspected the code/docs diff and lockfile; `git diff --check` passed. No
+  existing locked package version removed/upgraded; graphics dependencies added.
+
+Two development corrections are preserved rather than hidden: an initial probe
+test build saw the test source after a dev-dependency edit but the older Cargo
+manifest snapshot; the finalized manifest passed. The first full Linux tests
+stopped at `a_turn_is_bounded_by_the_kernel` with `NoPinDirectory` because WSL
+had restarted after the separate bpffs mount check. The corrected invocation
+mounted/checked bpffs in the same process as the tests, matching the supervisor,
+and the full tests/doctests and rustdoc passed. No pins remained at its end.
+No gate was weakened, ignored test added or unrelated process stopped.
+
+Unfinished: item 33's actual native compositor, client lifecycle and input
+routing, direct-display execution, then delivery steps 3–8 and remaining v0.01
+coverage. No physical keyboard/pointer/display or certified-machine evidence
+was produced. This worker did not run the supervisor's independent publication
+gates, stage, commit or push. CHANGELOG, ROADMAP and QUEUE updated in this change.

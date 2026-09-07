@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Developers can now check the Linux graphics prerequisites and submit a test
+  frame through Wayland with a pinned Smithay build. Missing native packages,
+  unavailable sessions and failed graphics initialization return explicit
+  failures. Ubuntu setup and WSLg evidence are documented; this does not yet
+  provide the desktop compositor or certify a physical display.
+
 - Development can continue through the Linux and desktop work with a local
   Rust supervisor that checks each completed step before committing and pushing
   it. The runner records progress and blockers, and no longer depends on a

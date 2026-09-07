@@ -1,0 +1,22 @@
+[package]
+name = "alo-graphics-check"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Compile the nested fixture and the direct display stack now, so a working
+# WSLg window cannot conceal missing headers for the booted compositor.
+smithay = { version = "=0.7.0", default-features = false, features = [
+  "backend_winit", "backend_drm", "backend_gbm", "backend_libinput",
+  "backend_udev", "backend_session_libseat", "renderer_gl", "desktop",
+  "wayland_frontend", "use_system_lib",
+] }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
