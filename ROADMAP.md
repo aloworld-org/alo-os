@@ -1,5 +1,11 @@
 # alo OS — ROADMAP.md
 
+**Execution resumed 2026-09-07.** The full v0.01 release is now pursued by the
+repository-owned Rust development loop (`tools/dev-loop`).
+`docs/autonomy/DELIVERY.md` orders the Linux, compositor, session, agent and image
+work and the final physical acceptance. Each completed step is gated and pushed;
+these checkpoints do not reduce release scope or discharge hardware obligations.
+
 The only order things get built in. Items are checked when they meet the
 definition of done in `CLAUDE.md` law 3 — the full path, on real hardware — and
 a release is done only when its **exit gate** is fully checked.

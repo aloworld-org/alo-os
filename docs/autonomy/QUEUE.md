@@ -3,7 +3,31 @@
 Worked in order by `LOOP.md`. Every item names what it implements, so an
 iteration can read the reasoning rather than guess at it.
 
-## The honest constraint
+## Current execution scope (2026-09-07)
+
+The owner has authorized continuous work toward the full v0.01 release and a
+GitHub push after each gated step. Follow `DELIVERY.md` for the current execution
+order. Linux and WSLg are available; the historical host restrictions below no
+longer exclude Linux tasks. External hardware requirements remain real.
+
+- [x] **31. A repository-owned development loop.** Rust runner in
+  `tools/dev-loop`; serialized workers, explicit stop/status, independent
+  Windows/Linux gates, owner-authored commits and ordinary pushes. Developer
+  infrastructure serving the existing roadmap, not a new shipped feature.
+- [ ] **32. Restore the Linux and graphics development baseline.** Delivery
+  step 1; check Ubuntu, pinned BPF toolchain, full Linux tests and rustdoc,
+  WSLg and Smithay's native build dependencies. Record the exact environment
+  and commands. No hardware certification is implied.
+- [ ] **33. Build the native compositor.** Delivery step 2; ADR 0002, the
+  v0.01 compositor feature and roadmap line. Break down complete components
+  with tests in this entry before implementing; carry input, real clients,
+  nested development and direct-display integration through to their gates.
+- [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
+  into an actionable entry with its existing feature/ADR/contract references.
+  Cover all remaining v0.01 work, including the old queue and the release exit
+  gate. A dependency in this list does not erase any original requirement.
+
+## The historical constraint (superseded by DELIVERY.md)
 
 **This loop cannot finish v0.01, and no amount of iterations will change that.**
 Roughly half of what v0.01 needs ends on hardware and an operating system this

@@ -12,6 +12,11 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Development can continue through the Linux and desktop work with a local
+  Rust supervisor that checks each completed step before committing and pushing
+  it. The runner records progress and blockers, and no longer depends on a
+  deleted workplace checkout or mistakes an exhausted queue for a finished OS.
+
 - **Ask your agent a question and the model you chose answers it.** Until now
   every question met the same sentence — *nothing on this machine has been
   chosen to answer questions* — whatever you had picked, because nothing in

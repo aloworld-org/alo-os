@@ -1,5 +1,17 @@
 # The alo OS build loop
 
+## Current runner (2026-09-07)
+
+The owner authorized continuous full-v0.01 development with a push after every
+completed step. `DELIVERY.md` and `WORKER.md` now govern execution; the Rust
+supervisor is `tools/dev-loop`. They supersede the old portable-only restriction,
+the deleted external supervisor command, worker-owned publication and the
+historical LOOP COMPLETE signalling described below. Workers update code and
+progress documents; the supervisor independently gates, commits and pushes.
+An exhausted/blocked queue halts visibly and never means the OS is finished.
+
+The rest of this file preserves useful platform recipes and historical context.
+
 One iteration builds **one queue item**, completely, and stops. A supervisor
 runs iterations until the journal says the queue is done or that something is
 wrong.

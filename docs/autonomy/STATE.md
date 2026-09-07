@@ -9623,3 +9623,45 @@ ledger says it should.
 | What would free the most | a surface a person adds a provider in: it frees 21l and 21o together, and is the same shell 21i waits on |
 
 LOOP COMPLETE
+
+---
+
+## 2026-09-07 — item 31, continuous delivery resumes
+
+The owner authorized the complete v0.01 release effort and a push after each
+finished step. The historical marker above describes the old backend queue;
+it does not govern the new runner. DELIVERY.md opens the existing Linux and
+desktop requirements in dependency order, without reducing release scope.
+
+Built `tools/dev-loop`, a standalone Rust development supervisor. It holds an
+OS file lock, starts one authenticated coding worker, records local logs and
+explicit results, checks the working tree and expected remote, independently
+gates each completed change, and commits/pushes with the owner's configured
+identity. Errors, remote divergence, unfinished work and stop requests prevent
+the next iteration. Worker and publication responsibilities are separate.
+The obsolete external supervisor path is superseded by the documented runner.
+
+Verification completed before publishing this setup:
+
+- Runner: formatting, clippy with warnings denied, four passing tests and a
+  release build. Tests cover explicit result parsing, remote allowlisting,
+  exclusion/release of the process lock and failed gate diagnostics.
+- An actual runner invocation refused this dirty setup tree before starting
+  a worker. A read-only Codex smoke invocation authenticated and returned READY.
+- Windows: workspace formatting, all-targets clippy with warnings denied,
+  workspace tests and doctests passed.
+- Ubuntu WSL: full workspace tests and doctests passed, including 177 daemon
+  unit tests and the kernel-boundary integration tests; formatting and
+  all-targets clippy passed, rustdoc passed with warnings denied, and the pinned
+  BPF target's formatting and clippy passed. No BPF pins remained afterwards.
+- Existing opt-in real-model measurements were not run. Two ignored BPF helper
+  entries are child processes called by their parent tests, as their source
+  documents. No ignored test or lint exemption was added.
+
+This is developer infrastructure, serving the roadmap's execution rather than
+finishing a shipped OS capability. No machine box was ticked, no OS installed,
+and no physical hardware certification claimed. The next step is item 32:
+WSLg exists, but pkg-config cannot yet find Wayland server, EGL or xkbcommon
+development packages. Complete that reproducible setup and continue to item 33.
+
+LOOP ACTIVE
