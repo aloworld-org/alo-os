@@ -915,3 +915,39 @@ readback on this host. Next: nonblocking framebuffer submission and page-flip
 matching/retirement; then rendering/session pause ordering, direct input and
 production entry. Parent-leave and all physical acceptance remain outstanding.
 Supervisor full publication gates have not run for this change.
+
+## Cookie-preserving page-flip event reading (2026-09-07)
+
+`read_display_events` reads one bounded batch from an already nonblocking borrowed
+session descriptor. `DisplayEvent::FlipComplete` retains the full 64-bit user_data,
+explicit nonzero CRTC, wrapping vblank sequence and kernel timestamp. The clock
+depends on DRM_CAP_TIMESTAMP_MONOTONIC; the timestamp is not an inter-frame duration.
+Unknown event types stay non-completions. Future flip tails are skipped using the
+header length; short headers/payloads, impossible lengths, invalid microseconds and
+legacy zero CRTC IDs refuse the entire batch. Parsing uses native-endian byte copies
+and no unsafe casts, and accepts unaligned records.
+
+The caller exclusively owns reads and flags. The reader never changes flags,
+closes the descriptor, waits or retries. WouldBlock means readiness loss; EOF is
+UnexpectedEof; kernel errno is preserved. The 4096-byte limit bounds each read;
+unsupported larger events may cause a kernel error. A failed/malformed read cannot
+authorize resource release. Synchronous disable or device quarantine remains the
+retirement path until pending-commit matching is implemented.
+
+This prerequisite follows the kernel's [event ABI and atomic flags](https://www.kernel.org/doc/html/v6.12/gpu/drm-uapi.html).
+Pinned drm 0.14.1 drops page-flip user_data, and drm-ffi 0.9.1's atomic helper
+submits zero user_data. Neither engine is patched: this additive Rust reader
+preserves the ABI data needed by the next submission component. It does not itself
+submit a flip, match stale/foreign events, or retire buffers. The next component
+must preserve a unique commit cookie at submission and match cookie, CRTC and
+session before releasing the old allocation. Sequence alone is insufficient.
+ADRs 0001/0002 and agent/application-adapter contracts are unchanged.
+
+Ten tests include pinned UAPI layout, multi-event/extended/unaligned batches,
+truncation and corrupt metadata, actual descriptor reads, a full 128-event batch,
+WouldBlock/EOF, blocking-fd refusal without consuming data and EBADF with fd survival.
+These are synthetic event bytes through real Linux descriptors, not kernel DRM
+completion evidence. Exact checks and limits: `updates/page-flip-event-reading.md`.
+Nonblocking submission/retirement, rendered frames, session pause ordering, direct
+input, production entry, parent-leave and libseat limits and physical acceptance
+remain outstanding; compositor and release stay unchecked.

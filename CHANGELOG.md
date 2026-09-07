@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display event reads preserve the identity needed to match a frame.**
+  The bounded reader keeps the full commit cookie and display controller ID,
+  refuses malformed batches and never changes descriptor flags or waits on a
+  blocking descriptor. Submission and buffer retirement remain unfinished;
+  successful DRM completion and physical acceptance are unmeasured. Evidence:
+  `docs/autonomy/updates/page-flip-event-reading.md`.
+
+- **The owner approved the scoped provider-request enforcement work.** Claude
+  owns its ADR and implementation, including explicit DNS rules and connections
+  limited to the authorized request lifetime. This records authority, not working
+  enforcement; the production-path gap remains open. Evidence:
+  `docs/autonomy/updates/network-request-boundary-approval.md`.
+
 - **Direct-display resources now have an active scanout owner.** It validates
   the initialized buffer, enables it with a blocking atomic commit and disables
   the output before releasing resources. A failed disable retains kernel handles

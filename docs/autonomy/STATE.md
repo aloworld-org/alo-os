@@ -11245,3 +11245,79 @@ limits persist. DRM success needs a DRM-equipped development login/VM; certified
 business laptop and >=24 GB GPU workstation display/input, session switching,
 suspend/resume and all hardware checklist records remain owed. Full v0.01 scope
 retained; compositor and release remain unchecked.
+
+---
+
+## 2026-09-07 - cookie-preserving page-flip event reading
+
+Single desktop worker; initial git status clean, supervisor owns publication.
+Read constitution, delivery order, shared-main/report rules, current queue and
+state tail, compositor feature/roadmap, ADRs 0001/0002, application-adapter contract
+and hardware acceptance. Selected the event-reading prerequisite in QUEUE before
+implementation after inspecting pinned drm/drm-ffi: atomic helper submits zero
+user_data and the flip event wrapper discards it. No engine patches, dependency
+changes, new release scope or agent/adapter capability changes.
+
+Reconciled the only published report missing from STATE at iteration start:
+`docs/autonomy/updates/network-request-boundary-approval.md`. Owner explicitly
+approved the bounded provider-request lifecycle. Claude owns its scoped ADR and
+implementation, including explicit DNS, registered destinations and request-limited
+connections, preserving provider/region policy, credentials, indicator/record,
+local models and no silent fallback. No broader grants, unrestricted proxy access,
+host-wide changes or physical install; kernel audit remains a separate decision.
+The report has prose/diff-check evidence only, no runtime verification. Updated
+all four shared progress documents, retaining the production provider-request gap
+and retries/redirects/UDP/inherited-socket/proxy acceptance. Did not take Claude's
+workstream. Reports arriving during publication reconcile next iteration.
+
+Own report integrated: `docs/autonomy/updates/page-flip-event-reading.md`.
+Added read_display_events, DisplayEvent and FlipComplete in drm_events.rs, exported
+from alo-shell. Bounded native ABI decoding preserves full cookie, explicit nonzero
+CRTC, wrapping sequence and kernel timestamp; no alignment assumptions/unsafe casts.
+Unknown types remain non-completions; extended flip tails preserve framing.
+Malformed lengths/payload/timestamp/CRTC refuse the entire consumed batch. Borrowed
+fd reads require existing O_NONBLOCK, preserve flags and errno, distinguish
+WouldBlock/EOF, never wait/retry or close the caller fd. This is one complete reader,
+not nonblocking submission, pending-event matching or buffer retirement.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Final checks rerun after fixes, all exit 0;
+Linux shell tests cfg-excluded there. Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin,
+CARGO_TARGET_DIR=/root/alo-os-target: cargo test -p alo-shell --lib drm_events
+--locked (initial eight tests pass); cargo test -p alo-shell --locked;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo fmt --all --check; RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps
+--locked; cargo build -p alo-shell --examples --locked. Initial clippy caught
+indexing/expect use; replaced with checked access/Result propagation, no exemptions.
+Final clippy then full tests/fmt/docs/examples all exit 0: 62 unit + 64 client
+lifecycle + 3 socket + 2 lifetime doctests = 131 checks, zero failures/ignored.
+No repeated test failure or gate weakening. Logs and exact commands in own report.
+
+Ten new tests cover happy/refusal decoding, full-width cookie, unknown/extended/
+unaligned events, every truncated flip length, corrupt metadata and pinned UAPI
+layout. Additional actual Linux descriptor integration covers a 128-event/4096-byte
+batch, readiness loss, EOF, blocking refusal without reading/changing flags,
+malformed consumption without partial completion, EBADF and fd survival. These
+use synthetic DRM bytes, not kernel DRM page-flip delivery. WSLg WAYLAND_DEBUG=1
+timeout 30s nested_check --popups --cursor exits 0 with 133 client-surface submissions,
+popup/cursor callbacks, unmap/remap, isolated refusal and disconnect. Known Mesa
+ZINK diagnostic precedes successful GLES rendering; no pixel readback/physical input.
+
+Prerequisites checked: Rust 1.98.0, WSLg socket, pkg-config wayland-server/EGL/GLES/
+GBM/libseat/libinput available; no package install needed. No /dev/dri. Initial
+root-level queue/state reads and wildcard/quoted searches corrected. Final source,
+tests, tracked and new-file diff inspected; git diff --check passes. No stage,
+commit, push, dev-loop edits, other checkout access, worker launch, shared kernel/
+BPF/cgroup/service mutations or physical install. Supervisor full Windows/Linux/BPF
+publication gates have not run for this change and remain pending.
+
+Next: cookie-bearing nonblocking atomic submission and pending-buffer ownership,
+matching cookie/CRTC/session before release, stale/foreign event and failed-commit/
+teardown tests. Reader remains unconnected to active scanout. Caller owns reads and
+flags exclusively; read failure never authorizes release. Events beyond 4096 bytes
+may fail at the kernel read. Rendering, session pause ordering, direct input,
+production entry and parent-leave/libseat limits remain. Successful DRM requires a
+DRM-equipped development login/VM; certified business laptop and >=24 GB GPU
+workstation display/input, session switching, suspend/resume and all physical
+checklist records remain owed. Full v0.01 scope retained; compositor/release unchecked.

@@ -455,8 +455,12 @@ compositor is not required for, which is why it runs unbroken.
         `docs/autonomy/updates/end-to-end-network-enforcement.md` traces and tests
         that file verbs enter Bounding but provider requests do not. Destination
         enforcement therefore does not cover ordinary provider calls. Claude's
-        boundary/destination-lifetime decision remains pending, including DNS and
-        connection reuse; reported Linux workspace/BPF gates are not rerun here.
+        boundary/destination-lifetime decision was subsequently approved in
+        `docs/autonomy/updates/network-request-boundary-approval.md`, reconciled
+        2026-09-07. Claude owns the scoped ADR and implementation, with explicit
+        DNS and request-limited connections. Approval is not runtime evidence;
+        reported Linux workspace/BPF gates are not rerun here. Enforcement stays
+        unfinished, including retries, redirects, UDP, inherited sockets and proxies.
 
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
   - [x] **The code.**
@@ -724,6 +728,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Cookie-preserving page-flip event reading (2026-09-07): bounded native ABI
+    decoding and nonblocking borrowed-fd reads preserve full user_data and CRTC
+    identity, refuse corrupt batches and retain kernel errno. This prerequisite
+    avoids pinned drm-rs dropping the cookie, without changing upstream engines.
+    Evidence: `docs/autonomy/updates/page-flip-event-reading.md`. Atomic cookie
+    submission, pending-commit matching and buffer retirement remain unfinished;
+    no successful DRM flip or physical acceptance is claimed. Supervisor full
+    publication gates remain owed; compositor stays unchecked.
+    Ten new tests pass (131 Linux shell checks total); affected Windows/Linux
+    fmt/clippy/tests, Linux rustdoc/examples and WSLg regression (133 client-surface
+    submissions) pass. Real descriptor integration uses synthetic DRM event bytes.
   - Blocking scanout ownership (2026-09-07): initialized resources transfer to
     an active owner after TEST_ONLY and synchronous enable. Synchronous disable
     precedes destruction; disable refusal quarantines handles until session-device

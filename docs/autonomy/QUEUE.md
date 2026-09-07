@@ -31,9 +31,12 @@ Published `updates/end-to-end-network-enforcement.md` reconciled this iteration:
 provider requests bypass Bounding and have no registered destination. The report's
 counting test and traced production path were reviewed; contributor Linux workspace/
 BPF gates remain reported evidence, not desktop-worker checks. No enforcement was
-added by that audit. Claude's requested turn-lifecycle/destination-lifetime decision
-is pending; DNS, connection reuse, inherited sockets, UDP and loopback-proxy gaps
-remain release obligations. The desktop worker does not take that workstream.
+added by that audit. The owner's scoped request-boundary approval is now recorded
+in `updates/network-request-boundary-approval.md`: Claude owns the ADR and
+implementation, including explicit DNS and request-limited connection lifetime.
+Approval is not implementation evidence; DNS, connection reuse, inherited sockets,
+UDP and loopback-proxy gaps remain release obligations. The desktop worker does
+not take that workstream.
 
 - [x] **31. A repository-owned development loop.** Rust runner in
   `tools/dev-loop`; serialized workers, explicit stop/status, independent
@@ -66,6 +69,26 @@ remain release obligations. The desktop worker does not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected page-flip event reading component (desktop worker):** prerequisite
+  for matching nonblocking completion: pinned drm-rs discards flip user_data.
+  Decode bounded native DRM event batches without unsafe casts, preserving the
+  full cookie and CRTC; read only explicitly nonblocking borrowed descriptors.
+  Acceptance: multi-event/extended event happy paths, malformed framing/timestamp/
+  CRTC refusal with no partial batch, real descriptor WouldBlock/EOF/error and
+  fd-survival checks, WSLg regression, affected fmt/clippy/tests/rustdoc.
+  Atomic cookie submission, stale/foreign matching and buffer retirement remain
+  the next component; this event reader does not complete frame presentation.
+  **Completed page-flip event reading 2026-09-07:** ten happy/refusal tests pass,
+  including pinned UAPI layout and real nonblocking descriptor integration. Linux
+  shell: 131 checks, no failures/ignored; affected Windows/Linux fmt/clippy/tests,
+  Linux rustdoc/examples and WSLg regression (133 client-surface submissions) pass.
+  `updates/page-flip-event-reading.md` records exact commands and limits. No DRM
+  node exists here; synthetic bytes through Linux descriptors do not demonstrate
+  a kernel page flip. Next: cookie-bearing nonblocking atomic submission and
+  pending-buffer ownership, matching cookie/CRTC/session and refusing stale/foreign
+  events or failed commits without premature release. Then rendered frames,
+  pause ordering, direct input and production entry. Supervisor full gates,
+  parent-leave/libseat limits and all physical acceptance remain owed.
   **Selected blocking scanout ownership component (desktop worker):** consume
   initialized resources, TEST_ONLY before a synchronous atomic enable, retain
   resources until synchronous disable succeeds, and quarantine kernel handles
