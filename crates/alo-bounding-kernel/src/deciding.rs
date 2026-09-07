@@ -29,6 +29,33 @@
 //! guessed when it could not see would open under exactly the conditions
 //! somebody would arrange on purpose.
 
+//! # What is watched, and what is not
+//!
+//! Four hooks: what a turn **opens**, **moves**, **removes**, and gives a
+//! **second name**. That is not the whole of a filesystem and this file does
+//! not pretend it is. Nothing here watches:
+//!
+//! - **symbolic links** (`inode_symlink`) — a turn can make one pointing
+//!   anywhere. It is not a way out on its own: following it to read something
+//!   is a `file_open`, which is watched, and `alo-files` refuses a path with a
+//!   link in it. It is a way to leave a **name** somewhere, which is not a way
+//!   to leave *contents*;
+//! - **directories** (`inode_mkdir`, `inode_rmdir`) — a turn can make and
+//!   remove empty ones. Removing a directory with anything in it needs the
+//!   contents gone first, and that is `inode_unlink`;
+//! - **making a file** (`inode_create`) — a turn can create one. Writing to it
+//!   is an open, which is watched, so what this leaves is an empty file
+//!   somewhere;
+//! - **what is inside a file already open** — a boundary on `file_open`
+//!   decides at the moment of opening and says nothing afterwards;
+//! - **anything that is not a filesystem**: sockets, signals, memory. ADR 0013
+//!   names the network boundary as its own piece of work and it is not built.
+//!
+//! Each of those is a real gap and each is written down rather than left to be
+//! discovered. What they have in common is that none of them moves a byte of
+//! somebody's file to somewhere they did not approve, which is the property the
+//! four hooks that exist were chosen for.
+
 use alo_bounding_map::{Bounds, Field, Place, reaches};
 
 use crate::kernel;
@@ -60,32 +87,54 @@ pub fn decide(file: u64) -> i32 {
 
 /// Whether this rename may go ahead.
 ///
+/// A rename gives a file a different name, so it is [`a_name_being_made`] with
+/// the file as the source: both ends have to be inside, and a rename out of a
+/// granted folder into an ungranted one — or the reverse — is refused.
+pub fn decide_rename(old_entry: u64, new_entry: u64) -> i32 {
+    a_name_being_made(old_entry, new_entry)
+}
+
+/// Whether this hard link may be made.
+///
+/// A link gives a file a **second** name, and it is the same question a rename
+/// asks: this file, into that folder. The difference is only that the first
+/// name stays, which makes it the cheaper of the two ways to put somebody's
+/// document somewhere they did not approve — it costs no bytes and survives
+/// everything the turn does afterwards.
+///
+/// `docs/quirks.md` records the other end of this: a hard link inside a granted
+/// folder is inside every check a path can make, because the granted name
+/// genuinely is a name for that file, and `alo-files` answers that by refusing
+/// to *read* a file the machine knows by more than one name. This is a turn
+/// being unable to **make** one. Neither replaces the other — a link somebody
+/// else made before the turn began is still only answered by the reading rule.
+pub fn decide_link(old_entry: u64, new_entry: u64) -> i32 {
+    a_name_being_made(old_entry, new_entry)
+}
+
+/// Whether this turn may put **this file** under a name in **that folder**.
+///
 /// # Two entries, and they are not asked the same question
 ///
-/// A rename is the one thing a turn does that names **two** places, and what
-/// has to be true of each is different — which is not this file being clever,
-/// it is `alo_files::Reaching` read back. What a turn is bound to for a move is
-/// *the file, and the folder it is going into*; for a rename it is *the file,
-/// and the folder it sits in*. So:
+/// What a turn is bound to for a move is *the file, and the folder it is going
+/// into*; for a rename it is *the file, and the folder it sits in*. That is
+/// `alo_files::Reaching` read back rather than this file being clever, and it
+/// decides the shape:
 ///
 /// - the **source** is asked about the entry itself, because the file is what
 ///   the call named and what a bound is made of;
 /// - the **destination** is asked about the entry's **parent**, because the
-///   destination usually does not exist yet — a no-clobber rename is a name
-///   nothing is at — and a directory entry with no inode has no place to be
-///   asked about. The folder it would be made in is what the call named, and it
-///   is there.
+///   destination usually does not exist yet — a no-clobber rename and every
+///   link are a name nothing is at — and a directory entry with no inode has no
+///   place to be asked about. The folder it would be made in is what the call
+///   named, and it is there.
 ///
 /// Asking the source's *parent* instead would refuse every legitimate move: the
 /// folder a `move_file` takes a file out of is not a place its call named, and
 /// widening a bound to include it is the thing this must not do.
-///
-/// Both have to be inside. A rename out of a granted folder into an ungranted
-/// one, or the reverse, is refused — which is the whole of what this hook is
-/// for.
-pub fn decide_rename(old_entry: u64, new_entry: u64) -> i32 {
+fn a_name_being_made(old_entry: u64, new_entry: u64) -> i32 {
     let Some(granted) = kernel::granted(kernel::turn()) else {
-        // Not a turn, and this is almost every rename on the machine.
+        // Not a turn, and this is almost every rename and link on the machine.
         return ALLOWED;
     };
     let Some(fields) = Fields::found() else {
@@ -95,6 +144,41 @@ pub fn decide_rename(old_entry: u64, new_entry: u64) -> i32 {
         return REFUSED;
     };
     if upwards_from(old_entry, &fields, granted) && upwards_from(new_folder, &fields, granted) {
+        ALLOWED
+    } else {
+        REFUSED
+    }
+}
+
+/// Whether this name may be removed.
+///
+/// One entry rather than two, and it is **the entry being removed** — not the
+/// folder it is in, for the reason the source of a rename is not judged by its
+/// folder either: a grant can be over a single file, and its folder is then not
+/// a place the call named.
+///
+/// # Inside the bound is not the same as authorised, and this is the floor
+///
+/// **None of the six verbs deletes anything.** A turn removing a name is
+/// therefore a verb with a bug in it, and `alo-capability` is what refuses such
+/// a call long before a syscall. What this adds is ADR 0013's floor: a bug like
+/// that cannot reach outside the places the call itself named. Reading it as
+/// *deleting inside a granted folder is allowed* would be reading it as the
+/// capability model, which it is not and does not replace.
+///
+/// One legitimate delete does exist and it is why this is judged by the entry:
+/// when writing an archive fails part of the way through, `alo-files` removes
+/// the half-written file it made, in the folder the archive was going into —
+/// which is a place that call named.
+pub fn decide_delete(entry: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every delete on the machine.
+        return ALLOWED;
+    };
+    let Some(fields) = Fields::found() else {
+        return REFUSED;
+    };
+    if upwards_from(entry, &fields, granted) {
         ALLOWED
     } else {
         REFUSED

@@ -11,8 +11,10 @@
 //! /sys/fs/bpf/alo            0750 root:<the agent's group>  made by the loader
 //!   ├─ bounds                0660 root:<the agent's group>  the daemon writes it
 //!   ├─ fields                0600 root:root                 nobody else reads it
-//!   ├─ file_open             0600 root:root                 holds one attach
-//!   └─ inode_rename          0600 root:root                 holds the other
+//!   ├─ file_open             0600 root:root                 what a turn reads
+//!   ├─ inode_rename          0600 root:root                 what it moves
+//!   ├─ inode_unlink          0600 root:root                 what it removes
+//!   └─ inode_link            0600 root:root                 what it links
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -30,11 +32,11 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! `file_open` and `inode_rename` are the pinned links, and they are what keeps
-//! the programme attached after the loader has exited. Removing one detaches
-//! that hook; nothing else does. There are two because the programme sits on
-//! two hooks — what a turn opens, and what it moves — and each attach is its
-//! own link.
+//! The four named after kernel functions are the pinned links, and they are what
+//! keeps the programme attached after the loader has exited. Removing one
+//! detaches that hook; nothing else does. There are four because the programme
+//! sits on four hooks — what a turn opens, moves, removes and links — and each
+//! attach is its own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
 //!
@@ -74,10 +76,16 @@ const THE_HOOK: &str = "file_open";
 
 /// The pinned link that holds it on the hook every rename goes through.
 ///
-/// A second file rather than something inside the first, because a link is
-/// pinned one to a path: two hooks are two attaches and two links, and a
-/// machine with one of them is a different machine from one with both.
+/// A file of its own rather than something inside the first, because a link is
+/// pinned one to a path: four hooks are four attaches and four links, and a
+/// machine with some of them is a different machine from one with all.
 const THE_RENAME_HOOK: &str = "inode_rename";
+
+/// The pinned link for the hook every removal of a name goes through.
+const THE_DELETE_HOOK: &str = "inode_unlink";
+
+/// The pinned link for the hook every hard link goes through.
+const THE_LINK_HOOK: &str = "inode_link";
 
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
@@ -105,6 +113,12 @@ pub struct Pinned {
 
     /// The link that holds it on `inode_rename`.
     rename_hook: PathBuf,
+
+    /// The link that holds it on `inode_unlink`.
+    delete_hook: PathBuf,
+
+    /// The link that holds it on `inode_link`.
+    link_hook: PathBuf,
 }
 
 impl Pinned {
@@ -116,7 +130,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is five paths joined, and every other
+    /// Nothing is made or looked at: this is seven paths joined, and every other
     /// method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -126,6 +140,8 @@ impl Pinned {
             fields: root.join(THE_FIELDS),
             hook: root.join(THE_HOOK),
             rename_hook: root.join(THE_RENAME_HOOK),
+            delete_hook: root.join(THE_DELETE_HOOK),
+            link_hook: root.join(THE_LINK_HOOK),
         }
     }
 
@@ -159,6 +175,34 @@ impl Pinned {
         &self.rename_hook
     }
 
+    /// The link for the hook every removal of a name goes through.
+    #[must_use]
+    pub fn delete_hook(&self) -> &Path {
+        &self.delete_hook
+    }
+
+    /// The link for the hook every hard link goes through.
+    #[must_use]
+    pub fn link_hook(&self) -> &Path {
+        &self.link_hook
+    }
+
+    /// Every pinned link, in the order the hooks are attached.
+    ///
+    /// One list so that attaching, refusing over leftovers and taking a
+    /// boundary away cannot disagree about how many there are — a hook whose
+    /// pin was left out of one of those three would be a hook that stayed
+    /// attached after the boundary was removed.
+    #[must_use]
+    pub fn every_hook(&self) -> [&Path; 4] {
+        [
+            &self.hook,
+            &self.rename_hook,
+            &self.delete_hook,
+            &self.link_hook,
+        ]
+    }
+
     /// Refuse a machine that already has a boundary pinned here.
     ///
     /// A second programme on either hook is a second boundary: both are asked,
@@ -169,7 +213,10 @@ impl Pinned {
     /// # Errors
     /// [`NotBounded::AlreadyThere`], naming the pin that is in the way.
     pub fn nothing_is_there(&self) -> Result<(), NotBounded> {
-        for pin in [&self.bounds, &self.fields, &self.hook, &self.rename_hook] {
+        for pin in [self.bounds.as_path(), self.fields.as_path()]
+            .into_iter()
+            .chain(self.every_hook())
+        {
             if pin.exists() {
                 return Err(NotBounded::AlreadyThere {
                     path: pin.display().to_string(),
@@ -232,8 +279,10 @@ impl Pinned {
         shut(&self.root, THE_DIRECTORY_MODE)?;
         shut(&self.bounds, THE_BOUNDS_MODE)?;
         shut(&self.fields, THE_LOADERS_OWN_MODE)?;
-        shut(&self.hook, THE_LOADERS_OWN_MODE)?;
-        shut(&self.rename_hook, THE_LOADERS_OWN_MODE)
+        for hook in self.every_hook() {
+            shut(hook, THE_LOADERS_OWN_MODE)?;
+        }
+        Ok(())
     }
 
     /// Take the boundary off this machine: the three pins, then the directory.
@@ -249,7 +298,11 @@ impl Pinned {
     /// [`Pinned::nothing_is_there`] will refuse over next time, which is the
     /// answer that file argues for anyway.
     pub fn taken_away(&self) {
-        for pin in [&self.hook, &self.rename_hook, &self.bounds, &self.fields] {
+        for pin in self
+            .every_hook()
+            .into_iter()
+            .chain([self.bounds.as_path(), self.fields.as_path()])
+        {
             drop(std::fs::remove_file(pin));
         }
         drop(std::fs::remove_dir(&self.root));
@@ -302,6 +355,16 @@ mod tests {
             pinned.rename_hook(),
             Path::new("/sys/fs/bpf/alo/inode_rename")
         );
+        assert_eq!(
+            pinned.delete_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_unlink")
+        );
+        assert_eq!(pinned.link_hook(), Path::new("/sys/fs/bpf/alo/inode_link"));
+        // Every hook has a pin of its own, and the list is what the loader
+        // attaches in the order of: a hook missing from it would be attached
+        // and never pinned, which is a hook detached the moment the loader
+        // exits.
+        assert_eq!(pinned.every_hook().len(), 4);
     }
 
     /// The directory is made shut: root owns it, the agent's group may enter
@@ -375,12 +438,10 @@ mod tests {
         let root = a_root_of_our_own("given-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        for pin in [
-            pinned.bounds(),
-            pinned.fields(),
-            pinned.hook(),
-            pinned.rename_hook(),
-        ] {
+        for pin in [pinned.bounds(), pinned.fields()]
+            .into_iter()
+            .chain(pinned.every_hook())
+        {
             std::fs::write(pin, b"").unwrap();
         }
 
@@ -397,8 +458,9 @@ mod tests {
             "the daemon writes this one"
         );
         assert_eq!(mode_of(pinned.fields()), 0o600, "and never this one");
-        assert_eq!(mode_of(pinned.hook()), 0o600);
-        assert_eq!(mode_of(pinned.rename_hook()), 0o600);
+        for hook in pinned.every_hook() {
+            assert_eq!(mode_of(hook), 0o600, "{}", hook.display());
+        }
         assert_eq!(mode_of(&root), 0o750);
         pinned.taken_away();
     }
@@ -411,12 +473,10 @@ mod tests {
         let root = a_root_of_our_own("taken-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        for pin in [
-            pinned.bounds(),
-            pinned.fields(),
-            pinned.hook(),
-            pinned.rename_hook(),
-        ] {
+        for pin in [pinned.bounds(), pinned.fields()]
+            .into_iter()
+            .chain(pinned.every_hook())
+        {
             std::fs::write(pin, b"").unwrap();
         }
 

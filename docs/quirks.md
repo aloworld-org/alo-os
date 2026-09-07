@@ -287,7 +287,19 @@ entry's **parent**, because a negative entry has no place to be asked about and
 the folder is what the call named anyway. Asking the source's parent instead
 would refuse every legitimate move, since the folder a move takes a file out of
 is not a place its call names.
-**Date:** 2026-09-07
+
+**The same trap, worse, one hook over.** `inode_link` is
+`(struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry)` —
+the directory sits **between** the two entries, where a rename has both entries
+second and fourth. Reading a link's arguments in a rename's order takes the
+destination folder's *inode* for the new *entry*, which is a pointer to the
+wrong kind of structure entirely: the walk then reads whatever is at a
+`dentry`'s offsets inside an `inode`, and refuses everything for reasons that
+look like a broken boundary rather than a transposed argument. `inode_unlink` is
+`(struct inode *dir, struct dentry *dentry)`, so its entry is second and the
+previous module's decision is third. Four hooks, four different answers to
+*which argument is which*, and none of them guessable.
+**Date:** 2026-09-07, extended the same day for `inode_link` and `inode_unlink`
 
 <!--
 ### <Machine or component> — <one-line summary>
@@ -569,6 +581,15 @@ second name inside the granted folder opens and is read**. That is the boundary
 doing exactly what ADR 0015 describes — deciding by where a directory entry sits
 — and this entry sits in a granted folder. So it is not a second answer to this
 question, and the check above is the only one there is.
+
+**The other end of it was closed on 2026-09-07**: the boundary now watches
+`inode_link`, so a **turn cannot make** a hard link with a source or a
+destination outside its bound. That does not replace the counting rule and the
+sentence above still stands as written — a link made by somebody else, before
+the turn began, is one no kernel hook can see the wrongness of, and refusing to
+read a file with more than one name is what covers it. The two answer different
+halves: one stops a turn creating the second name, the other stops a turn
+reading through a second name somebody else created.
 
 **What it costs, stated plainly.** A file cannot say *where* its other names
 are; there is no way from a file to its names short of scanning every filesystem

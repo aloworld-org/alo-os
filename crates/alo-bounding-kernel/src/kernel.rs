@@ -133,6 +133,42 @@ pub fn inode_rename(ctx: LsmContext) -> i32 {
     deciding::decide_rename(old_entry, new_entry)
 }
 
+/// Every removal of every name, on this machine, until the program is detached.
+///
+/// `inode_unlink(struct inode *dir, struct dentry *dentry)` — two arguments, so
+/// the previous module's decision is the third. The directory is handed over
+/// and is not read: what is being destroyed is the entry, and the entry is what
+/// carries the chain this program walks.
+#[lsm(hook = "inode_unlink")]
+pub fn inode_unlink(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(2);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_delete(entry)
+}
+
+/// Every hard link made on this machine, until the program is detached.
+///
+/// `inode_link(struct dentry *old_dentry, struct inode *dir,
+/// struct dentry *new_dentry)` — three arguments, so the previous module's
+/// decision is the fourth, and the **directory sits between the two entries**
+/// rather than beside them. Reading the arguments in a rename's order would
+/// take the destination folder's inode for the new entry, which is a pointer to
+/// the wrong kind of structure and refuses everything for reasons nobody can
+/// see; `docs/quirks.md` has that trap written down.
+#[lsm(hook = "inode_link")]
+pub fn inode_link(ctx: LsmContext) -> i32 {
+    let old_entry: u64 = ctx.arg(0);
+    let new_entry: u64 = ctx.arg(2);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_link(old_entry, new_entry)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

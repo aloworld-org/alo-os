@@ -108,11 +108,17 @@
 //! A **hard** link is a second *real* name for one file. Resolving does not
 //! expose it and no comparison of paths could: the granted name genuinely is a
 //! name for that file. So a hard link inside a granted folder is a way to widen
-//! what an agent may read without widening any grant, and neither layer beneath
-//! this one catches it — the boundary decides an open by where a directory
+//! what an agent may read without widening any grant, and the boundary beneath
+//! this one does not catch it either — it decides an open by where a directory
 //! entry sits, and this entry sits in the granted folder, which
 //! `alo-bounding`'s `a_hard_link_is_inside_every_boundary` measures rather than
 //! assumes.
+//!
+//! **A turn can no longer make one**: the boundary watches `inode_link` and
+//! refuses a link whose source or destination is outside the bound. That closes
+//! the half where the turn is the one creating the second name, and it leaves
+//! this half exactly where it was — a link made by anybody else, before the
+//! turn began, is one no kernel hook can see the wrongness of.
 //!
 //! What a file *will* answer is **how many names it has**, asked of the open
 //! handle. More than one and it is not read, wherever bytes are read: a person

@@ -68,16 +68,17 @@ fn the_kernel_half() -> &'static [u8] {
 /// The hooks the programme sits on, each called the same inside the compiled
 /// object as the kernel function it stands in front of.
 ///
-/// **Two of them, since renames were enforced.** `file_open` is what a turn
-/// *reads* and `inode_rename` is what it *moves*, and a boundary watching only
-/// the first would let a file nobody granted be renamed into a granted folder
-/// and read from there, with neither step anything to complain about. ADR 0015
-/// named both in its own mechanism and only one had been built.
+/// **Four of them**, and each was added because the ones before it were not
+/// enough on their own: `file_open` is what a turn *reads*, `inode_rename` what
+/// it *moves*, `inode_unlink` what it *removes*, and `inode_link` what it gives
+/// a *second name*. A boundary watching only reads lets a file nobody granted
+/// be renamed or linked into a granted folder and read from there, with no step
+/// anything to complain about. ADR 0015 named this shape in its own mechanism.
 ///
-/// A list rather than two constants, so that loading, attaching and pinning are
-/// one piece of code run twice rather than two that can drift. A third hook is
-/// a line here and a pin in `pinned.rs`.
-const THE_HOOKS: [&str; 2] = ["file_open", "inode_rename"];
+/// The order is the order [`Pinned::every_hook`] gives their pins in, and that
+/// is not decoration: they are zipped together below, so a hook added to one
+/// list and not the other does not compile.
+const THE_HOOKS: [&str; 4] = ["file_open", "inode_rename", "inode_unlink", "inode_link"];
 
 /// The map of turns to the places each may reach.
 pub(crate) const THE_BOUNDS: &str = "BOUNDS";
@@ -98,7 +99,7 @@ pub struct Imposed {
 }
 
 impl Imposed {
-    /// Load the programme into this kernel, attach both hooks, and pin all four.
+    /// Load the programme into this kernel, attach every hook, and pin them all.
     ///
     /// Everything that can be wrong with the machine is found here rather than
     /// at the first turn: a kernel that publishes no type information, one whose
@@ -188,27 +189,25 @@ impl Imposed {
     }
 }
 
-/// Attach the programme to both hooks and pin the two links and both maps.
+/// Attach the programme to every hook and pin each link and both maps.
 ///
 /// A function of its own so that [`Imposed::once`] has one place to take the
-/// pins away from when any step of it fails, rather than six.
+/// pins away from when any step of it fails, rather than ten.
 ///
-/// **Both attaches, or neither boundary.** A machine with `file_open` attached
-/// and `inode_rename` refused would watch what a turn reads and not what it
-/// moves, which is precisely the shape this hook was added to remove — and it
-/// would look like a working boundary. So a failure on the second is a failure
-/// of the whole thing, and [`Imposed::once`] takes the first one's pin away
-/// again on the way out. ADR 0015's rule, applied to a boundary that is now two
-/// pieces: a turn whose boundary cannot be applied does not run.
+/// **Every attach, or no boundary at all.** A machine with `file_open` attached
+/// and one of the others refused would watch what a turn reads and not what it
+/// moves, removes or links — precisely the shape each of those hooks was added
+/// to remove — and it would look like a working boundary. So a failure on any
+/// of them is a failure of the whole thing, and [`Imposed::once`] takes the
+/// earlier ones' pins away again on the way out. ADR 0015's rule, applied to a
+/// boundary that is now four pieces: a turn whose boundary cannot be applied
+/// does not run.
 fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
     let hooks = Btf::from_sys_fs().map_err(|_| NotBounded::TypesAreNotReadable {
         what: "the kernel will not say which function the hook stands in front of",
     })?;
 
-    for (hook, at) in THE_HOOKS
-        .into_iter()
-        .zip([pinned.hook(), pinned.rename_hook()])
-    {
+    for (hook, at) in THE_HOOKS.into_iter().zip(pinned.every_hook()) {
         let program: &mut Lsm = loaded
             .program_mut(hook)
             .ok_or(NotBounded::NothingCalled { what: hook })?

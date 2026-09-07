@@ -149,31 +149,76 @@ mod tests {
     }
 
     /// **A machine that already has a boundary is left with the one it has.**
-    /// Two programmes on `file_open` are two boundaries, and which grant a turn
-    /// is running under would stop being a question with one answer — so the
+    /// Two programmes on a hook are two boundaries, and which grant a turn is
+    /// running under would stop being a question with one answer — so the
     /// second loader says so and changes nothing.
     #[test]
     fn a_machine_that_already_has_a_boundary_keeps_it() {
-        let root = a_root_of_our_own("already-here");
+        // **Every hook, one at a time.** A boundary is four attaches, and a
+        // machine can be left holding any one of them on its own — by a loader
+        // that was killed part of the way through, or by an older build with
+        // fewer hooks than this one. Whichever pin is there, a second loader
+        // has to refuse *before* it loads anything and leave that pin exactly
+        // as it found it: every road out of `Imposed::once` takes pins away, so
+        // a loader that got as far as calling it would remove somebody else's.
+        let how_many = Pinned::beneath(Path::new("/tmp")).every_hook().len();
+        for which in 0..how_many {
+            let root = a_root_of_our_own(&format!("already-here-{which}"));
+            let pinned = Pinned::beneath(&root);
+            pinned.made().unwrap();
+            let Some(leftover) = pinned.every_hook().get(which).map(|at| at.to_path_buf()) else {
+                continue;
+            };
+            std::fs::write(&leftover, b"a link that is already here").unwrap();
+
+            let refused = imposed(ROOT, THE_AGENTS_GROUP, &pinned).unwrap_err();
+
+            assert!(
+                matches!(
+                    refused,
+                    NotLoaded::NotImposed(alo_bounding::NotBounded::AlreadyThere { .. })
+                ),
+                "{refused}"
+            );
+            assert_eq!(
+                std::fs::read(&leftover).unwrap(),
+                b"a link that is already here",
+                "{} was taken away by a loader that should never have started",
+                leftover.display()
+            );
+            pinned.taken_away();
+        }
+    }
+
+    /// **And taking a boundary away takes every hook with it.**
+    ///
+    /// The other half of the same worry. A pin left behind is a hook still
+    /// attached on a machine somebody believes has no boundary, and it is also
+    /// what the next loader is refused over — so the list `Pinned::every_hook`
+    /// gives out has to be the one all three of *attach*, *refuse over* and
+    /// *take away* use. Written against the count rather than four names, so a
+    /// fifth hook cannot be added to one of the three and not the others.
+    #[test]
+    fn taking_a_boundary_away_leaves_none_of_its_hooks_attached() {
+        let root = a_root_of_our_own("every-hook-away");
         let pinned = Pinned::beneath(&root);
         pinned.made().unwrap();
-        std::fs::write(pinned.hook(), b"a link that is already here").unwrap();
+        for pin in pinned.every_hook() {
+            std::fs::write(pin, b"a link").unwrap();
+        }
+        std::fs::write(pinned.bounds(), b"a map").unwrap();
+        std::fs::write(pinned.fields(), b"a map").unwrap();
 
-        let refused = imposed(ROOT, THE_AGENTS_GROUP, &pinned).unwrap_err();
-
-        assert!(
-            matches!(
-                refused,
-                NotLoaded::NotImposed(alo_bounding::NotBounded::AlreadyThere { .. })
-            ),
-            "{refused}"
-        );
-        assert_eq!(
-            std::fs::read(pinned.hook()).unwrap(),
-            b"a link that is already here",
-            "and what was there is still there"
-        );
         pinned.taken_away();
+
+        for pin in pinned.every_hook() {
+            assert!(!pin.exists(), "{} was left attached", pin.display());
+        }
+        assert!(!root.exists(), "the directory was left behind");
+        assert!(
+            pinned.nothing_is_there().is_ok(),
+            "something was left for the next loader to refuse over"
+        );
     }
 
     /// **A machine with no BPF filesystem is told where the boundary had
