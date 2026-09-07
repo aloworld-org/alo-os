@@ -232,10 +232,14 @@ impl Application {
     }
     /// Commit an empty input region so hits fall through to another surface.
     pub fn empty_input(&self) {
+        self.empty_input_on(&self.surface);
+    }
+    /// Commit an empty input region on a particular popup or child surface.
+    pub fn empty_input_on(&self, surface: &wl_surface::WlSurface) {
         let region = self.compositor.create_region(&self.queue.handle(), ());
-        self.surface.set_input_region(Some(&region));
+        surface.set_input_region(Some(&region));
         region.destroy();
-        self.surface.commit();
+        surface.commit();
     }
     /// Connect and create a role without committing or acknowledging anything.
     pub fn new(fixture: &Fixture) -> Self {
@@ -290,11 +294,17 @@ impl Application {
         &self,
         position: (i32, i32),
     ) -> (wl_surface::WlSurface, wl_subsurface::WlSubsurface) {
+        self.child_on(&self.surface, position)
+    }
+    /// Create a synchronized tree child under a popup or toplevel buffer.
+    pub fn child_on(
+        &self,
+        parent: &wl_surface::WlSurface,
+        position: (i32, i32),
+    ) -> (wl_surface::WlSurface, wl_subsurface::WlSubsurface) {
         let qh = self.queue.handle();
         let surface = self.compositor.create_surface(&qh, ());
-        let role = self
-            .subcompositor
-            .get_subsurface(&surface, &self.surface, &qh, ());
+        let role = self.subcompositor.get_subsurface(&surface, parent, &qh, ());
         role.set_position(position.0, position.1);
         surface.attach(Some(&self.buffer), 0, 0);
         surface.damage_buffer(0, 0, 16, 16);

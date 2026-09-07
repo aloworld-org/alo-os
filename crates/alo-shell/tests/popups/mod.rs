@@ -1,7 +1,8 @@
 //! Opt-in popup handshake, isolated refusal and terminal parent lifetimes.
 use super::{Application, Fixture};
+mod presentation;
 
-/// Existing nested backend stays unchanged; only this protocol fixture opts in.
+/// Protocol-only fixture explicitly opts in, independently of nested rendering.
 fn fixture() -> Fixture {
     let fixture = Fixture::new();
     fixture.backend(|server| server.enable_popup_protocol());
@@ -35,8 +36,8 @@ fn popup_configure_buffer_unmap_and_old_ack_cannot_revive() {
         f.backend(|s| s.popup_surfaces().first().map(|popup| popup.geometry.loc)),
         Some((7, 10).into())
     );
-    // A protocol snapshot is deliberately not a claim that a renderer drew it.
-    assert_eq!(f.render((320, 200), false, 10).ok(), Some(1));
+    // An older target refuses live popups rather than silently omitting them.
+    assert!(f.render((320, 200), false, 10).is_err());
     app.sync();
     assert!(app.events.frames.is_empty());
     surface.attach(None, 0, 0);

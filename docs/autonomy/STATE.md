@@ -10322,3 +10322,50 @@ Windows/Linux/BPF publication gates have not run for this change. No staging,
 commit, push, worker launch, dev-loop edits or other repository changes occurred.
 Reports arriving during publication are reconciled next iteration; no release
 verification is claimed, and all unfinished v0.01 scope remains preserved.
+
+---
+
+## 2026-09-07 - native popup presentation and pointer routing
+
+Single desktop worker; clean checkout at iteration start. Read delivery order,
+shared-main ownership, current queue and state tail, shell feature/roadmap,
+ADRs 0001/0002 and the application-adapter contract. Read updates/README and
+checked published reports: descriptive-task-reporting.md and
+native-popup-protocol-lifetimes.md were already reconciled. No additional published
+report required integration. Filesystem security remains Claude's assignment.
+
+Recorded acceptance in QUEUE before implementing the next compositor component:
+non-grabbing popup surface-tree presentation and pointer input. Shared scene
+placement accounts for committed/clamped parent and popup XDG geometry and keeps
+each popup above its own parent. Floating-point tree bounds avoid new integer
+overflow on extreme child coordinates. The additive backend method refuses live
+popups on unsupported targets; failed submission retains callbacks and membership.
+Live unmap/dismissal and parent loss cancel drags without redirecting input.
+No agent surface, new scope, dependency, engine patch or ADR exception.
+
+Task report integrated in the same change:
+`docs/autonomy/updates/native-popup-presentation.md`.
+It records exact commands, design reasons, intermediate test/format corrections
+and evidence limits. Final Windows/Linux fmt and focused all-target clippy pass;
+Linux shell tests pass 40 (four new socket tests), none ignored; Windows intentionally
+runs zero Linux tests. Warnings-denied Linux rustdoc and example build pass.
+Popup wire run passes nine tests. Reviewed source/new files and documentation
+diff; whitespace check passes. CHANGELOG, ROADMAP, QUEUE and COMPOSITOR updated.
+
+Additional integration: WSLg popup-only fixture exits 0 with 34 submitted surfaces
+across frames. Final popup/cursor combination exits 0 with 56, actual popup and
+cursor callbacks/output entry, dismissal/unmap leave, offscreen popup/extreme-child
+callback withholding, malformed-client refusal and disconnect cleanup. Local
+logs and the lack of pixel-readback/physical observation are in the report.
+WSLg socket and Wayland/EGL/xkbcommon prerequisites verified; no installation or
+shared-kernel changes. Linux target stays /root/alo-os-target for this checkout.
+
+This completes a useful presentation/input component, not the compositor feature.
+Next: nested popup parent chains with ordered lifetime/render/input cleanup;
+explicit popup grabs, repositioning/output constraints, parent-leave backend,
+direct display/input and production session still remain. Actual parent-input
+observation and certified laptop/GPU workstation acceptance remain owed. WSLg
+does not certify hardware. The supervisor's full independent Windows/Linux/BPF
+publication gates have not run for this change. No staging/commit/push, new worker,
+dev-loop change or other-repository edits. Reports arriving during publication
+are reconciled next iteration. Every unfinished v0.01 requirement is preserved.

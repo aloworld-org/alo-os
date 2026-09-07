@@ -7,7 +7,7 @@ use smithay::{
     wayland::shell::xdg::{PopupSurface, PositionerState},
 };
 
-/// Configured popup buffer offered to a future popup-aware backend.
+/// Configured popup buffer offered to a popup-aware backend.
 ///
 /// Coordinates are relative to the parent's XDG window geometry, not its buffer.
 /// This snapshot is compositor plumbing and exposes no agent context access.
@@ -45,8 +45,7 @@ pub(crate) struct Popups {
 impl crate::Server {
     /// Enable popup handshake tracking for a popup-aware backend or protocol fixture.
     ///
-    /// The current `Nested` renderer does not draw these snapshots. Do not enable
-    /// this in a session until presentation and input consume them. Grabs, nested
+    /// `Nested` renders these snapshots and pointer routing consumes them. Grabs, nested
     /// popup parents and reposition requests are explicitly dismissed for now.
     pub fn enable_popup_protocol(&mut self) {
         self.surfaces.popups.enabled = true;
@@ -54,13 +53,17 @@ impl crate::Server {
 
     /// Snapshot live configured popup buffers; this does not claim presentation.
     pub fn popup_surfaces(&self) -> Vec<Popup> {
-        self.surfaces
-            .popups
-            .entries
+        self.surfaces.popups.mapped().cloned().collect()
+    }
+}
+
+impl Popups {
+    /// Live popup roots shared by rendering and focus lifetime checks.
+    pub(crate) fn mapped(&self) -> impl Iterator<Item = &Popup> {
+        self.entries
             .iter()
             .filter(|entry| entry.buffered && !entry.dismissed && entry.role.alive())
-            .map(|entry| entry.popup.clone())
-            .collect()
+            .map(|entry| &entry.popup)
     }
 }
 

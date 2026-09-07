@@ -731,6 +731,17 @@ which made a completely consistent rule look like work being taken out of turn.
     constraints, parent-leave backend support, direct display and physical acceptance
     remain unfinished. No feature box moves; supervisor full gates remain owed.
 
+  - Popup presentation component (2026-09-07): the opt-in nested backend now draws
+    non-grabbing popup trees and routes pointer input with shared XDG geometry
+    placement and parent-relative stacking. Unsupported targets and failed swaps
+    retain callbacks; dismissal/parent loss cancel implicit drags. Four new socket
+    tests pass (40 Linux shell tests total). WSLg submits popup buffers and checks
+    offscreen clipping, callback/output membership and dismissal. Exact commands
+    and limits: `docs/autonomy/updates/native-popup-presentation.md`.
+    Nested popup chains, grabs, output constraints/repositioning, parent-leave
+    notifications, direct display and physical acceptance remain. The compositor
+    stays unchecked; full independent publication gates belong to the supervisor.
+
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
 - [ ] **The agent overlay**: one key, from anywhere

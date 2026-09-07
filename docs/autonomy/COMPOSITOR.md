@@ -532,3 +532,32 @@ and provides no raw event-loop hook. No engine patch or unsafe-code exception
 was introduced. Next is popup presentation/hit testing; chains, grabs, output
 constraints/repositioning, direct display, full supervisor gates and physical
 acceptance remain owed. This component does not complete the compositor.
+
+## Native popup presentation (2026-09-07)
+
+`Nested` now consumes the opt-in popup snapshots. A shared scene builder places
+each parent's newest popup trees above that parent, below preceding windows and
+below the cursor. `Popup::location` aligns committed XDG window geometry origins,
+clamping geometry to tree bounds. Bounds and offset arithmetic use floating point
+before output clipping, including extreme client child positions. Pointer routing
+uses the same scene and retains implicit drag recipients until release or cleanup.
+
+The additive `FrameTarget::submit_popups` default refuses live popups on older
+targets; output membership and callbacks change only after successful submission.
+This is an internal trusted backend contract, not an agent/adapter capability.
+No change to the application-adapter contract, engine patch or new dependency.
+ADRs 0001/0002 remain the authority for the boundary and native implementation.
+
+Four new real-client tests pass: geometry/stacking/regions/isolation; popup and
+subsurface order and live unmap cleanup; drag cancellation across parent loss,
+dismissal, role destruction and disconnect; failed/unsupported presentation and
+callback/output retention. Linux shell total: 40 tests. WSLg submits popup buffers,
+withholds offscreen callbacks and observes output leave on dismissal. Exact
+commands, local logs and intermediate corrections are retained in
+`updates/native-popup-presentation.md`.
+
+Popup protocol remains explicit opt-in. Nested chains, explicit grabs,
+repositioning/output constraints, parent-leave notification backend, direct
+display/input, production session entry and physical acceptance remain unfinished.
+The supervisor's complete Windows/Linux/BPF publication gates are still owed.
+WSLg checks exercise development graphics, never certified hardware.

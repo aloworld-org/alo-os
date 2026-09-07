@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Nested applications can now display and interact with non-grabbing popups.**
+  Popup buffers align with their window geometry, stay above their own parent,
+  and receive pointer input using the same placement and stacking as rendering.
+  Dismissal cancels held buttons; unsupported or failed rendering keeps callbacks
+  pending. Four new real-client tests and WSLg buffer submission cover this
+  component. Nested popup chains, grabs, repositioning and the production desktop
+  remain unfinished.
+
 - **The native compositor now tracks popup configuration and parent lifetimes.**
   An opt-in backend interface accepts configured popup buffers under mapped
   windows, dismisses them on unmap or parent loss, and prevents revival with an

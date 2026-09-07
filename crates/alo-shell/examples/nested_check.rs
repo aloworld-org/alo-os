@@ -4,6 +4,10 @@
 #[path = "../tests/support/application.rs"]
 mod application;
 
+#[cfg(target_os = "linux")]
+#[path = "support/popup_check.rs"]
+mod popup_check;
+
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]
 pub struct Fixture {
@@ -100,29 +104,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             app.events.frames
         );
         if popup_check {
-            let (surface, xdg, role) = app.popup(true, 1);
-            surface.commit();
-            app.sync();
-            assert_eq!(app.events.popups.geometry, [(7, 10, 16, 16)]);
-            app.ack_popup(&xdg);
-            app.attach_popup(&surface);
-            for _ in 0..5 {
-                app.sync();
-                thread::sleep(Duration::from_millis(5));
-            }
-            assert_eq!(app.events.frames.len(), 2, "unrendered popup callback");
-            app.reposition_popup(&role);
-            app.sync();
-            assert_eq!(app.events.popups.done, 1);
-            role.destroy();
-            xdg.destroy();
-            surface.destroy();
-            app.sync();
-            println!(
-                "Popup handshake and dismissal coexist with GLES; unrendered popup callback withheld"
-            );
+            popup_check::check(&mut app);
         }
         if cursor_check {
+            let prior_popups = usize::from(popup_check);
             while app.events.pointer.enters.is_empty() {
                 app.sync();
                 assert!(Instant::now() < deadline, "no scripted pointer enter");
@@ -132,16 +117,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 app.sync();
                 thread::sleep(Duration::from_millis(5));
             }
-            assert_eq!(app.events.frames.len(), 2, "offscreen cursor callback");
+            assert_eq!(
+                app.events.frames.len(),
+                2 + prior_popups,
+                "offscreen cursor callback"
+            );
             app.set_cursor(app.events.pointer.serial, Some(&cursor), (2, 3));
-            while app.events.frames.len() < 3 {
+            while app.events.frames.len() < 3 + prior_popups {
                 app.sync();
                 assert!(Instant::now() < deadline, "no GLES cursor callback");
             }
-            assert_eq!(app.events.membership, (3, 0));
+            assert_eq!(app.events.membership, (3 + prior_popups, prior_popups));
             cursor.attach(None, 0, 0);
             cursor.commit();
-            while app.events.membership.1 < 1 {
+            while app.events.membership.1 < 1 + prior_popups {
                 app.sync();
                 assert!(Instant::now() < deadline, "cursor unmap not presented");
             }
@@ -153,7 +142,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         app.surface.attach(None, 0, 0);
         app.surface.commit();
-        while app.events.membership.1 < if cursor_check { 3 } else { 2 } {
+        while app.events.membership.1 < 2 + usize::from(cursor_check) + usize::from(popup_check) {
             app.sync();
             assert!(Instant::now() < deadline, "no output leave on unmap");
             thread::sleep(Duration::from_millis(2));

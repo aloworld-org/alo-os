@@ -39,6 +39,23 @@ pub trait FrameTarget {
     fn size(&self) -> Size<i32, Physical>;
     /// Import and draw roots in front-to-back order, then submit the frame.
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError>;
+    /// Submit popup-aware desktop content and cursor in one frame.
+    /// Popups belong immediately above their parent, newest first; use
+    /// `Popup::location` for their buffer origin. Older targets explicitly refuse
+    /// live popups, preserving callbacks instead of silently dropping content.
+    fn submit_popups(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        if !popups.is_empty() {
+            return Err(RenderError::Submission(
+                "target does not support popups".into(),
+            ));
+        }
+        self.submit_scene(roots, cursor)
+    }
     /// Submit windows and cursor atomically, returning visible cursor surfaces too.
     /// Older targets refuse custom cursors instead of silently omitting them.
     fn submit_scene(
@@ -70,7 +87,7 @@ impl Presentation {
         &mut self,
         display: &DisplayHandle,
         target: &mut impl FrameTarget,
-        roots: &[WlSurface],
+        desktop: (&[WlSurface], &[crate::Popup]),
         cursor: &crate::Cursor,
         time: u32,
     ) -> Result<usize, RenderError> {
@@ -105,7 +122,7 @@ impl Presentation {
                 Some((0, 0).into()),
             );
         }
-        let submitted = target.submit_scene(roots, cursor)?;
+        let submitted = target.submit_popups(desktop.0, desktop.1, cursor)?;
         for surface in &self.entered {
             if !submitted.contains(surface) {
                 output.leave(surface);

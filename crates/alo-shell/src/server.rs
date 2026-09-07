@@ -97,7 +97,13 @@ impl Server {
     ) -> Result<usize, crate::RenderError> {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();
-        self.presentation
-            .render(&self.display.handle(), target, &roots, &cursor, time)
+        let popups = self.popup_surfaces();
+        self.presentation.render(
+            &self.display.handle(),
+            target,
+            (&roots, &popups),
+            &cursor,
+            time,
+        )
     }
 }

@@ -46,7 +46,8 @@ impl Server {
 
     /// Hit-test mapped trees in renderer order at logical scale one.
     ///
-    /// Roots currently share origin (0,0), matching the renderer. Input regions,
+    /// Toplevels share origin (0,0); popups align their XDG window geometries
+    /// above their own parent, matching the renderer. Input regions,
     /// buffer dimensions and subsurface stacking/offsets are respected. A held
     /// button retains the original recipient until release, including outside
     /// its bounds. Invalid coordinates leave routing state unchanged.
@@ -56,10 +57,13 @@ impl Server {
         }
         self.surfaces.prune_pointer_focus();
         let location = (x, y).into();
-        let focus = self.mapped_surfaces().find_map(|root| {
-            under_from_surface_tree(root, location, (0, 0), WindowSurfaceType::ALL)
-                .map(|(surface, origin)| (surface, origin.to_f64()))
-        });
+        let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
+        let focus = crate::scene::trees(&roots, &self.popup_surfaces())
+            .into_iter()
+            .find_map(|(root, origin)| {
+                under_from_surface_tree(&root, location - origin, (0, 0), WindowSurfaceType::ALL)
+                    .map(|(surface, offset)| (surface, origin + offset.to_f64()))
+            });
         let pointer = self
             .surfaces
             .pointer
@@ -178,7 +182,10 @@ impl Surfaces {
             }
             match get_parent(&surface) {
                 Some(parent) => surface = parent,
-                None => return self.mapped().any(|root| *root == surface),
+                None => {
+                    return self.mapped().any(|root| *root == surface)
+                        || self.popups.mapped().any(|popup| popup.surface == surface);
+                }
             }
         }
     }

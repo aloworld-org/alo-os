@@ -3,7 +3,7 @@
 //! Owns a private display socket, XDG toplevel buffer lifetimes and a nested
 //! Wayland/GLES rendering backend with keyboard routing and an optional pointer
 //! seat core and client cursor rendering. Popup protocol tracking is opt-in;
-//! popup presentation, parent leave notifications and session entry remain separate
+//! parent leave notifications and session entry remain separate
 //! components. This library exposes no agent capability,
 //! context capture, command execution or clipboard protocol.
 
@@ -17,6 +17,7 @@ mod nested_pointer;
 mod pointer;
 mod popups;
 mod presentation;
+mod scene;
 mod server;
 mod socket;
 mod surfaces;

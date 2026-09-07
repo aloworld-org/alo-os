@@ -20,16 +20,7 @@ pub(crate) struct Drawing {
     pub(crate) surfaces: Vec<WlSurface>,
 }
 
-/// Preserve subsurface offsets and stacking, refusing any failed import.
-pub(crate) fn import(
-    renderer: &mut GlesRenderer,
-    roots: &[WlSurface],
-    bounds: Rectangle<i32, Physical>,
-) -> Result<Drawing, RenderError> {
-    import_at(renderer, roots, bounds, (0.0, 0.0).into())
-}
-
-/// Import a tree at an explicit origin (cursor hotspot positioning).
+/// Import a tree at an explicit origin (popup geometry or cursor hotspot).
 pub(crate) fn import_at(
     renderer: &mut GlesRenderer,
     roots: &[WlSurface],

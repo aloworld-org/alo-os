@@ -179,6 +179,22 @@ cross-references, not the primary names used in handoffs or status messages.
   Linux rustdoc pass. Exact commands and limits are in
   `updates/native-popup-protocol-lifetimes.md`. Next useful component: consume
   these snapshots in popup-aware rendering and hit testing before session opt-in.
+  **Selected popup presentation component (desktop worker):** shared placement
+  and stacking for popup surface-tree rendering and pointer hits; account for
+  parent/popup XDG window geometry, retain callbacks on failed/unsupported targets,
+  and cancel popup drags on dismissal or parent loss. Acceptance: real-client
+  geometry/stacking/input-region/isolation/lifetime tests, output/callback refusal
+  tests, WSLg popup-buffer submission, focused fmt/tests/clippy and rustdoc.
+  **Completed popup presentation component 2026-09-07:** opt-in nested popup
+  surface-tree drawing and pointer routing share placement and stacking, including
+  committed/clamped parent and popup geometry. Floating-point bounds prevent
+  extreme child coordinates from overflowing popup placement. Four new socket
+  tests pass (40 Linux shell tests total); failed/unsupported targets retain
+  callbacks, and live unmap/dismissal cancels drags without redirecting releases.
+  WSLg popup submission and clipping pass; exact focused Windows/Linux checks,
+  wire trace and graphics evidence are in `updates/native-popup-presentation.md`.
+  **Next useful component:** nested popup parent chains and their ordered
+  lifetime/render/input cleanup, before explicit popup grabs and repositioning.
   Nested chains, grabs, output constraints/repositioning, parent-leave backend,
   direct display and all physical acceptance remain. Item 33 remains unchecked;
   the supervisor has not yet run this change's full publication gates.

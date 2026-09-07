@@ -208,6 +208,15 @@ impl FrameTarget for Nested {
         roots: &[WlSurface],
         cursor: &crate::Cursor,
     ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_popups(roots, &[], cursor)
+    }
+
+    fn submit_popups(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+    ) -> Result<Vec<WlSurface>, RenderError> {
         if self.closed {
             return Err(RenderError::Closed);
         }
@@ -218,7 +227,16 @@ impl FrameTarget for Nested {
         let damage = Rectangle::from_size(size);
         let drawing = {
             let (renderer, mut framebuffer) = self.backend.bind().map_err(submission)?;
-            let mut drawing = drawing::import(renderer, roots, damage)?;
+            let mut drawing = drawing::Drawing {
+                elements: Vec::new(),
+                surfaces: Vec::new(),
+            };
+            for (surface, location) in crate::scene::trees(roots, popups) {
+                let mut tree =
+                    drawing::import_at(renderer, &[surface], damage, location.to_physical(1.0))?;
+                drawing.elements.append(&mut tree.elements);
+                drawing.surfaces.append(&mut tree.surfaces);
+            }
             if let crate::Cursor::Surface { surface, location } = cursor {
                 let mut cursor_drawing = drawing::import_at(
                     renderer,
