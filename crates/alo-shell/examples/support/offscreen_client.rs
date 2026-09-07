@@ -126,6 +126,16 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
             assert_eq!(app.events.membership, (4, 0));
         }
     }
+    app.set_cursor(app.events.pointer.serial, None, (0, 0));
+    app.sync();
+    assert!(send.send(6).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    app.set_cursor(app.events.pointer.serial, Some(&cursor), (0, 0));
+    app.sync();
+    cursor.destroy();
+    app.sync();
+    assert!(send.send(7).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     drop(app);
     // A new client's roundtrip ensures the disconnected scene has been pruned.
     let mut fresh = Application::new(&fixture);

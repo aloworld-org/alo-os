@@ -26,6 +26,7 @@ pub(crate) fn paint(
         return Err(RenderError::EmptySize);
     }
     let damage = Rectangle::from_size(size);
+    let arrow = crate::default_cursor::pixels(cursor, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),
@@ -54,6 +55,13 @@ pub(crate) fn paint(
         .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
         .map_err(submission)?;
     draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage]).map_err(submission)?;
+    // Draw last so the owned arrow stays above every client tree. Damage is local
+    // to each solid rectangle; these pixels own no Wayland identity or callbacks.
+    for (pixel, color) in arrow {
+        frame
+            .draw_solid(pixel, &[Rectangle::from_size(pixel.size)], color)
+            .map_err(submission)?;
+    }
     let _sync = frame.finish().map_err(submission)?;
     Ok(drawing)
 }

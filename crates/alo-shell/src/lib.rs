@@ -13,6 +13,7 @@ mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
 mod cursor;
+mod default_cursor;
 mod direct_output;
 mod direct_session;
 mod direct_target;

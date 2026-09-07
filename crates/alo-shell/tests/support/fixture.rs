@@ -79,6 +79,23 @@ impl FrameTarget for TestTarget {
             Ok(roots.to_vec())
         }
     }
+    fn submit_scene(
+        &mut self,
+        roots: &[WlSurface],
+        cursor: &alo_shell::Cursor,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        // This coordinator fixture simulates owned-arrow support, which adds no
+        // client identities. Pixel evidence belongs to the real GLES fixture.
+        if !matches!(
+            cursor,
+            alo_shell::Cursor::Default | alo_shell::Cursor::Arrow { .. }
+        ) {
+            return Err(RenderError::Submission(
+                "fixture does not support client cursors".into(),
+            ));
+        }
+        self.submit(roots)
+    }
 }
 
 impl Fixture {

@@ -1153,3 +1153,33 @@ not successful DRM scanout. Continuous direct FrameTarget, default cursor,
 replacement/retirement, pause/input/session wiring, actual graphics context-loss
 faults and physical display/input acceptance remain open. The pinned unmap-panic
 limitation still applies. No compositor or release completion is claimed.
+
+## Compositor-owned default cursor (2026-09-07)
+
+`Cursor::Arrow { location }` is the positioned scale-one snapshot used whenever
+an enabled pointer has no authorized client cursor, including empty desktop,
+focus loss, destruction and disconnect. `Default` remains the legacy unpositioned
+snapshot for a server without a pointer seat or an explicit caller: nested uses
+its parent arrow, offscreen/direct draws nothing. Cursor-aware targets must
+support Arrow explicitly; the default FrameTarget method refuses it. This
+supersedes the earlier statements that the default cursor is always host-owned.
+
+`default_cursor.rs` owns an original 12x18 black-outline/white-interior shape.
+Its tip hotspot is (0,0), fractional coordinates floor, and each opaque pixel
+clips to the output before integer conversion. NaN/infinity refuse; finite
+offscreen positions are valid but invisible. The shared GLES painter draws the
+arrow after every client tree; it adds no client identities or callbacks. Hidden
+and client-surface requests suppress the arrow. The nested host cursor is hidden
+only after successful submission. Black/white provides neutral contrast without
+requiring the pending shell palette or a theme filesystem dependency.
+
+Four new automated tests and all 171 Linux shell checks pass. The expanded WSLg
+`nested_check --offscreen` compares every pixel to an independent row-span golden
+shape across seven placements, checks layering and switching on real SHM scenes,
+and retains existing callback and non-DRM/import refusal checks. The nested
+popup/cursor regression also passes (115 client surfaces). Exact environment,
+commands, initial findings and limits:
+`updates/compositor-owned-default-cursor.md`. Physical parent-cursor observation,
+direct display/input/session acceptance and scaling beyond the current scale-one
+output model are not established. Truthful output metadata, pause/retirement,
+direct session wiring and hardware records remain; no compositor/release tick.

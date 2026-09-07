@@ -69,6 +69,26 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected compositor-owned default cursor (desktop worker):** add a positioned
+  arrow snapshot and shared GLES rendering above windows/popups, with a fixed
+  scale-one shape and tip hotspot. Preserve legacy unpositioned Default behavior;
+  hide the nested host cursor only after successful positioned submission.
+  Acceptance: shape/coordinate/clipping refusal tests, real protocol default
+  fallback/movement tests, WSLg exact arrow pixels above real client content and
+  hidden/client switching, affected fmt/clippy/tests/rustdoc. Direct session/input,
+  output metadata and physical acceptance remain separate unfinished work.
+  **Completed compositor-owned default cursor 2026-09-07:** positioned Arrow
+  snapshot and shared GLES mask rendering above all clients, tip hotspot,
+  finite-coordinate clipping and non-finite refusal. Hidden/client requests and
+  callback/identity boundaries preserved. Four new tests; 171 Linux shell checks,
+  affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples and WSLg exact
+  pixels/refusal/nested regression (115 client surfaces) pass. Report:
+  `updates/compositor-owned-default-cursor.md`. Next executable component: truthful
+  output identity/mode/physical metadata supplied by each FrameTarget, with real
+  protocol assertions and refusal preserving membership. Then pause/retirement,
+  direct renderer/input/session wiring. Safe async transport, GPU context-loss,
+  parent-leave/libseat limits, supervisor full gates and physical records remain
+  owed. Scale-one cursor component complete; compositor and release unchecked.
   **Selected synchronous direct frame target (desktop worker):** connect GLES
   scene preparation to initial activation and blocking replacement on one frozen
   output. Publish membership/callbacks only for committed identities; preserve

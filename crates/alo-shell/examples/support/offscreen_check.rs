@@ -63,6 +63,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)?;
                     assert_eq!(prepared.surfaces().len(), 4);
                     offscreen_client::verify(prepared.pixels().pixels());
+                    crate::default_cursor_check::run(renderer, &roots, &popups)?;
+                    let restored =
+                        render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)?;
+                    offscreen_client::verify(restored.pixels().pixels());
                     prepared.pixels().frame()?;
                     // Actual prepared scene through the public activation path.
                     // A non-DRM descriptor must refuse, never complete callbacks.
@@ -124,7 +128,11 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     let prepared =
                         render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)?;
                     assert!(prepared.surfaces().is_empty());
-                    assert!(prepared.pixels().pixels().iter().all(|byte| *byte == 0));
+                    assert!(
+                        matches!(cursor, alo_shell::Cursor::Arrow { location } if location == (10.0, 14.0).into())
+                    );
+                    assert!(prepared.pixels().pixels().contains(&255));
+                    crate::default_cursor_check::run(renderer, &roots, &popups)?;
                 }
                 5 => {
                     let error = render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)
@@ -135,6 +143,16 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         "{error}"
                     );
                 }
+                6 => {
+                    assert!(matches!(cursor, alo_shell::Cursor::Hidden));
+                    crate::default_cursor_check::run(renderer, &roots, &popups)?;
+                }
+                7 => {
+                    assert!(
+                        matches!(cursor, alo_shell::Cursor::Arrow { location } if location == (10.0, 14.0).into())
+                    );
+                    crate::default_cursor_check::run(renderer, &roots, &popups)?;
+                }
                 _ => return Err("unknown client stage".into()),
             }
             stages += 1;
@@ -143,9 +161,9 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 5);
+    assert_eq!(stages, 7);
     println!(
-        "Real SHM window/child/popup/cursor pixels, clipping, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
+        "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );
     Ok(())
 }

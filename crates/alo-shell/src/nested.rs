@@ -237,6 +237,8 @@ impl FrameTarget for Nested {
             )?
         };
         self.backend.submit(Some(&[damage])).map_err(submission)?;
+        // Positioned arrows are now in the submitted scene, just like client
+        // cursors. Change host visibility only after that submission succeeds.
         self.backend
             .window()
             .set_cursor_visible(matches!(cursor, crate::Cursor::Default));

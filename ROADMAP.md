@@ -728,6 +728,15 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Compositor-owned default cursor (2026-09-07): positioned arrow snapshots,
+    shared nested/offscreen GLES rendering, tip hotspot, clipping and hidden/
+    client fallback. Four new tests; 171 Linux shell checks, affected Windows/
+    Linux fmt/clippy/tests, Linux rustdoc/examples and WSLg golden pixels/refusal/
+    nested regression (115 client surfaces) pass. Report:
+    `docs/autonomy/updates/compositor-owned-default-cursor.md`. Next: truthful
+    output metadata, then pause/direct input/session wiring. Direct scanout,
+    asynchronous transport, GPU context-loss and physical acceptance remain owed;
+    supervisor full publication gates pending. Compositor/release unchecked.
   - Synchronous direct frame target (2026-09-07): GLES preparation plus initial
     activation/replacement now implement FrameTarget. Committed identities alone
     publish callbacks/membership; cleanup failure halts further rendering and

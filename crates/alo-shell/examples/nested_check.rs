@@ -20,6 +20,10 @@ mod offscreen_check;
 #[path = "support/offscreen_client.rs"]
 mod offscreen_client;
 
+#[cfg(target_os = "linux")]
+#[path = "support/default_cursor_check.rs"]
+mod default_cursor_check;
+
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]
 pub struct Fixture {

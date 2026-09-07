@@ -11790,3 +11790,65 @@ parent-leave/libseat/unmap-panic limits remain. Physical business laptop and >=2
 GPU workstation display/input/session/suspend-resume and all remaining release
 acceptance records are owed. Compositor/release stay unchecked. Ready for supervisor
 integration, not a release verification claim.
+
+---
+
+## 2026-09-07 - Compositor-owned default cursor
+
+Single desktop worker, clean initial checkout; supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue/state tail, compositor
+feature/roadmap, ADRs 0001/0002, app-adapters contract, GRAPHICS and hardware gates.
+All reports published at iteration start were already referenced in STATE; none
+awaited reconciliation. No Claude work taken. Reports arriving during publication
+reconcile next iteration. Acceptance recorded in QUEUE before implementation.
+Own report integrated: `docs/autonomy/updates/compositor-owned-default-cursor.md`.
+
+Cursor::Arrow carries the accepted pointer location through empty desktop, focus
+loss, destruction and disconnect. Shared GLES paints a compositor-owned 12x18
+black/white arrow above client trees with tip hotspot, floored scale-one placement
+and clipping before integer conversion. Non-finite positions refuse; finite far
+offscreen positions draw nothing. Hidden/client states are preserved, legacy
+unpositioned Default remains available, and older FrameTargets explicitly refuse
+positioned arrows. Nested parent cursor visibility changes only after submission.
+Arrow pixels introduce no Wayland identities/callbacks. Native Rust contrast mask
+avoids a theme dependency or second branded palette, consistent with ADR 0002.
+No agent/public adapter contract or release scope change; diagnostics remain data
+for native entry to translate.
+
+Verified Rust 1.98.0, WSLg socket and all graphics pkg-config packages; no install.
+No /dev/dri. Windows cargo fmt --all, fmt --all --check, cargo clippy -p alo-shell
+--all-targets --locked -- -D warnings and cargo test -p alo-shell --locked pass.
+Linux with PATH=/root/.cargo/bin:/usr/bin:/bin and separate
+CARGO_TARGET_DIR=/root/alo-os-target: cargo test -p alo-shell --lib default_cursor
+--locked (3 pass); cargo fmt --all --check; cargo clippy -p alo-shell --all-targets
+--locked -- -D warnings; cargo test -p alo-shell --locked (100 unit + 66 lifecycle
++ 3 socket + 2 doctests = 171 pass); RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell
+--no-deps --locked; cargo build -p alo-shell --examples --locked all exit 0.
+Four new tests total. Windows cfg-excludes Linux shell tests. Initial Linux run
+found nine popup tests using a simulated backend without positioned-arrow support;
+fixture support is now explicit and a separate legacy-target refusal test remains.
+Type-complexity/manual-contains lint findings corrected without exceptions.
+
+WSLg with XDG_RUNTIME_DIR=/run/user/0 WAYLAND_DISPLAY=wayland-0: timeout 30s
+/root/alo-os-target/debug/examples/nested_check --offscreen passes (also after
+final rebuild). Independent golden pixels verify all 1,056 output pixels at seven
+arrow placements above real SHM windows/popups and after disconnect. Hidden/client/
+destroyed transitions, non-finite refusal/recovery, restored client pixels,
+identities and callback preservation pass. Existing actual non-DRM DirectTarget
+and truncated-SHM import refusals remain passing. Same timeout/executable with
+--popups --cursor exits 0 (115 client surfaces). With
+__EGL_VENDOR_LIBRARY_FILENAMES=/nonexistent/alo-default-cursor-egl.json, offscreen
+exits 1 with invalid EGL Display as required. Existing Mesa/WSL diagnostics left
+untouched. No successful DRM scanout or physical cursor visibility claim.
+
+Updated CHANGELOG, ROADMAP, QUEUE, this journal, COMPOSITOR and own report. Reviewed
+tracked diff/new Rust files; git diff --check passes. Next: truthful output
+identity/mode/physical metadata per FrameTarget, real protocol assertions and
+refusal preserving membership, then pause/retirement/direct renderer/input/session
+wiring. Scale-one cursor is a completed component; safe async cookie transport,
+GPU context-loss faults and existing parent-leave/libseat limits remain. Physical
+business laptop and >=24 GB GPU workstation display/input/session/suspend-resume
+records and remaining v0.01 acceptance are owed. Compositor/release unchecked.
+Supervisor full Windows/Linux/BPF gates still pending. No staging, commit, push,
+worker launch, tools/dev-loop edits, other checkout access, shared kernel/BPF/
+cgroup/service changes or physical installation.

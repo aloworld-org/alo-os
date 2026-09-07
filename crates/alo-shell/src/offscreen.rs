@@ -44,7 +44,8 @@ impl PreparedScanout {
 /// Render window, popup and custom cursor trees at scale one into owned pixels.
 ///
 /// Uses the same stacking, clipping, import and drawing path as `Nested`. Default
-/// and hidden cursors add no pixels; direct display still needs a default cursor.
+/// (unpositioned) and hidden cursors add no pixels; positioned arrows are drawn
+/// above all client content with a tip hotspot, also on direct display targets.
 /// The neutral black clear is not the shell's pending visual design. Dimensions
 /// are checked before graphics allocation, including signed GLES export limits.
 /// All import, draw, finish and readback failures return no prepared frame.

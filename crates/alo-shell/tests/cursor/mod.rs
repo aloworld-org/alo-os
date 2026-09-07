@@ -19,6 +19,39 @@ fn setup() -> (Fixture, Application) {
 }
 
 #[test]
+fn default_arrow_tracks_empty_desktop_and_refuses_invalid_motion_and_legacy_target() {
+    let f = Fixture::keyboard();
+    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Default));
+    assert!(f.backend(|s| s.enable_pointer()).is_ok());
+    for location in [(0.0, 0.0), (25.75, 30.5), (-2.0, -4.0)] {
+        assert!(
+            f.backend(move |s| s.pointer_motion(location.0, location.1, 1))
+                .is_ok()
+        );
+        assert!(
+            matches!(f.backend(|s| s.cursor()), Cursor::Arrow { location: actual } if actual == location.into())
+        );
+    }
+    assert!(f.backend(|s| s.pointer_motion(f64::NAN, 1.0, 2)).is_err());
+    assert!(
+        matches!(f.backend(|s| s.cursor()), Cursor::Arrow { location } if location == (-2.0, -4.0).into())
+    );
+    assert!(f.backend(|s| s.render(&mut LegacyTarget, 3)).is_err());
+    assert_eq!(f.backend(|s| s.render(&mut Target(false), 4)).ok(), Some(0));
+}
+
+/// Older backend deliberately implements no cursor-aware submission method.
+struct LegacyTarget;
+impl FrameTarget for LegacyTarget {
+    fn size(&self) -> Size<i32, Physical> {
+        (320, 200).into()
+    }
+    fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError> {
+        Ok(roots.to_vec())
+    }
+}
+
+#[test]
 fn cursor_hotspot_hidden_movement_and_focus_cleanup() {
     let (f, mut app) = setup();
     let cursor = app.cursor((2, 3));
@@ -42,13 +75,13 @@ fn cursor_hotspot_hidden_movement_and_focus_cleanup() {
     assert!(matches!(f.backend(|s| s.cursor()), Cursor::Surface { .. }));
     cursor.destroy();
     app.sync();
-    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Default));
+    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Arrow { .. }));
     let _cursor = app.cursor((0, 0));
     app.sync();
     app.surface.attach(None, 0, 0);
     app.surface.commit();
     app.sync();
-    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Default));
+    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Arrow { .. }));
 }
 
 #[test]
@@ -70,7 +103,7 @@ fn cursor_rejects_unfocused_client_stale_serial_and_conflicting_role() {
     app.set_cursor(app.events.pointer.serial, Some(&app.surface), (0, 0));
     app.refused();
     f.wait_for((1, 1));
-    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Default));
+    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Arrow { .. }));
     other.sync();
     assert!(f.backend(|s| s.pointer_motion(5.0, 6.0, 3)).is_ok());
     other.sync();
@@ -79,7 +112,7 @@ fn cursor_rejects_unfocused_client_stale_serial_and_conflicting_role() {
     assert!(matches!(f.backend(|s| s.cursor()), Cursor::Surface { .. }));
     drop(other);
     f.wait_for((0, 0));
-    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Default));
+    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Arrow { .. }));
 }
 
 /// Controlled submission accepts the cursor only when the simulated swap succeeds.
@@ -122,5 +155,5 @@ fn cursor_callbacks_wait_for_submission_and_backend_support() {
     app.sync();
     assert_eq!(app.events.frames, [3]);
     assert!(f.backend(|s| s.pointer_leave()).is_ok());
-    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Default));
+    assert!(matches!(f.backend(|s| s.cursor()), Cursor::Arrow { .. }));
 }

@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The compositor now draws its own ordinary pointer.** The arrow follows the
+  pointer over empty desktop and returns after a client cursor is destroyed;
+  it clips at output edges and switches cleanly to hidden or client cursors.
+  Four new tests and WSLg exact pixel/refusal checks pass. Direct session/input
+  integration and physical acceptance remain unfinished. Evidence:
+  `docs/autonomy/updates/compositor-owned-default-cursor.md`.
+
 - **Direct-display frames now connect rendering and scanout to client callbacks.**
   The synchronous target publishes only committed scenes, preserves callbacks and
   output membership on refusal, and stops further rendering after cleanup failure.

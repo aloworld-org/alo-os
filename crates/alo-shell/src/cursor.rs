@@ -9,11 +9,18 @@ use smithay::{
 };
 use std::sync::Mutex;
 
-/// Cursor selected by the focused client, for trusted display backends only.
+/// Authorized client cursor or compositor-owned fallback, for trusted backends.
 #[derive(Debug, Clone)]
 pub enum Cursor {
-    /// Use the backend's ordinary arrow (also after focus loss or destruction).
+    /// Unpositioned legacy snapshot (no pointer seat); nested uses its host arrow.
+    /// Offscreen/direct rendering adds no pixels for this variant.
     Default,
+    /// Compositor-owned scale-one arrow, including after focus loss/destruction.
+    Arrow {
+        /// Logical tip position; the arrow's hotspot is (0, 0).
+        /// Rendering floors fractional coordinates and refuses non-finite values.
+        location: Point<f64, Logical>,
+    },
     /// The focused client explicitly requested no cursor.
     Hidden,
     /// Draw this tree above windows at its hotspot-adjusted logical origin.
@@ -31,8 +38,11 @@ impl Server {
         let Some(pointer) = &self.surfaces.pointer else {
             return Cursor::Default;
         };
+        let default = Cursor::Arrow {
+            location: pointer.location,
+        };
         if pointer.handle.current_focus().is_none() {
-            return Cursor::Default;
+            return default;
         }
         match &self.surfaces.cursor {
             CursorImageStatus::Hidden => Cursor::Hidden,
@@ -51,7 +61,7 @@ impl Server {
                     location,
                 }
             }
-            _ => Cursor::Default,
+            _ => default,
         }
     }
 }

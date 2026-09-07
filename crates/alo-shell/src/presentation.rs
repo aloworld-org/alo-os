@@ -67,7 +67,7 @@ pub trait FrameTarget {
         self.submit_scene(roots, cursor)
     }
     /// Submit windows and cursor atomically, returning visible cursor surfaces too.
-    /// Older targets refuse custom cursors instead of silently omitting them.
+    /// Older targets refuse positioned/hidden/client cursors instead of omitting them.
     fn submit_scene(
         &mut self,
         roots: &[WlSurface],
@@ -75,7 +75,7 @@ pub trait FrameTarget {
     ) -> Result<Vec<WlSurface>, RenderError> {
         if !matches!(cursor, crate::Cursor::Default) {
             return Err(RenderError::Submission(
-                "target does not support client cursors".into(),
+                "target does not support cursor presentation".into(),
             ));
         }
         self.submit(roots)
