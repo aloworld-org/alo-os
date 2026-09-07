@@ -592,6 +592,37 @@ deny list.** Two patterns later items must follow:
   archive refuses, and a bounded answer that did not say so would read exactly
   like a complete one.
 
+- [x] **6b. Opening without a name, and renaming without replacing.** The two
+  gaps `docs/quirks.md` recorded against 6a, closed on Linux in one new file —
+  `crates/alo-files/src/opening.rs`, the only file in the crate that names
+  `rustix`, which is the choice item 21c already made for `SO_PEERCRED` rather
+  than a second rented spelling of the same kernel. `looking.rs`, `zip.rs` and
+  `changing.rs` call it; nothing else in the crate changed, and no public
+  surface moved. Six unit tests, ten integration tests, and the portable half is
+  byte for byte what it was.
+
+  **It is `openat2` with `RESOLVE_NO_SYMLINKS`, not the walk this item
+  described.** The walk — open `/`, then each folder relative to the handle
+  before it — was written first, gives the same guarantee, and cannot be used
+  here: every one of those opens is *above* what the call named, so a turn
+  inside its boundary was refused its own granted file with `EACCES`.
+  `alo-agentd`'s `a_turn_is_bounded_by_the_kernel` caught it on a running kernel
+  with the LSM loaded, which is the whole reason that test exists. `openat2`
+  resolves the entire path in the kernel and opens exactly one file, so the
+  boundary sees one `file_open` and it is the file the call named — the stronger
+  guarantee, and the boundary does not widen by a single directory to allow it.
+
+  **Neither call falls back.** An old kernel answers `ENOSYS` and a filesystem
+  without `RENAME_NOREPLACE` answers `EINVAL`, and both refuse the work in the
+  kernel's own words. Nothing asks the machine what it supports, because a
+  question like that is how a guarantee stops holding on exactly the machines
+  nobody tested.
+
+  **What it did not close is item 6c**, and it is a boundary question rather
+  than a syscall one: a rename resolves the folders on the way to both names by
+  name, and closing that needs handles the boundary will not permit. There is a
+  test asserting the gap as it is, so the day it closes, something fails.
+
   What it could not close is **item 6b, below under *blocked — linux***: the two
   gaps between checking a path and acting on it that only Linux calls close.
 
@@ -4024,22 +4055,25 @@ rather than only of what is convenient.
   v0.01 promise had no item until iteration 24 read this line properly. It is
   item 11 above. What is left here is genuinely Linux: nothing in this
   repository can start a program on a machine that has no compositor.
-- **6b. Opening from a handle, and renaming without replacing.**
-  `docs/quirks.md` records the two gaps the portable acting half cannot close: a
-  path checked and then opened *by name* can have a link swapped in between the
-  two, and `fs::rename` has no portable no-clobber form, so a destination is
-  checked for and then renamed onto. Both have Linux answers with no portable
-  spelling — `openat` with `O_NOFOLLOW` from a directory handle, and `renameat2`
-  with `RENAME_NOREPLACE` — and both need a Linux host to compile as well as to
-  test. Not a rewrite: the decisions, the refusals and the tests are settled,
-  and this replaces the syscalls underneath them. The workspace forbids
-  `unsafe`, so it needs either a pinned dependency wrapping the calls or an ADR,
-  and choosing between those is the first thing the item does. **Item 21c has
-  since made that choice once**, for `SO_PEERCRED`: `rustix`, named in one file,
-  no `unsafe` of ours and no nightly compiler. `rustix::fs` has `openat` and
-  `renameat_with`, so the same answer is available here — and the point of
-  saying so is that a second wrapper crate for the same kind of call would be
-  two rented spellings of the kernel where one will do.
+- **6c. How wide a turn's boundary is when it moves a file.** What 6b could not
+  close, and the reason is not a missing syscall. `renameat2` has no
+  `RESOLVE_NO_SYMLINKS`, so the only way to keep a folder **on the way** to
+  either name from being exchanged is handles on the two folders — and getting a
+  handle means opening one, and a turn's boundary (ADR 0013, ADR 0015) permits
+  opening only what its call named. The folder a `move_file` takes a file *out
+  of* is not that. So the question is whether `alo_files::Reaching` should
+  include it, which widens what a bugged verb can reach under a single-file
+  grant — the trade `reaching.rs` already argues for a rename and calls *the
+  only case*. Making it two cases is an ADR, not a commit.
+
+  There may be a third answer worth checking first: an `O_PATH` open is believed
+  not to reach the `file_open` hook at all, which would mean handles on the two
+  folders that the boundary never sees and that grant no read of anything. That
+  is a claim about kernel internals and has **not** been verified on a running
+  kernel, so it is a thing to test rather than a thing to build on.
+
+  `crates/alo-files/tests/nothing_is_swapped_in_between.rs` asserts the gap as
+  it is today, so whoever closes it is told by a failing test.
 - **4b. Where the record file lives, and when it is shortened.** What item 4a
   could not close, and the whole of what is left of it: a path under `/var/lib`
   that the package decides, the setting the retention rule is read from and

@@ -47,6 +47,7 @@ use std::time::{Duration, SystemTime};
 
 use crate::crc::Crc;
 use crate::failed::Failed;
+use crate::opening;
 
 /// How much of a file is read at once on its way into an archive.
 const AT_A_TIME: usize = 64 * 1024;
@@ -176,7 +177,11 @@ impl Archive {
         let header = self.header(LOCAL, &name, 0, 0, when)?;
         self.put(&header)?;
 
-        let mut reading = File::open(from).map_err(|why| Failed::machine(from, "read", &why))?;
+        // Opened without following a link at any point in the path: an archive
+        // is made of what was resolved and approved, not of whatever a name
+        // leads to by the time the archive gets to it.
+        let mut reading =
+            opening::read_only(from).map_err(|why| Failed::machine(from, "read", &why))?;
         let mut buffer = [0_u8; AT_A_TIME];
         let mut crc = Crc::new();
         let mut bytes = 0_u64;

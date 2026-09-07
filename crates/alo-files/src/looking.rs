@@ -19,12 +19,13 @@
 //! resolves anything again or builds a path out of one it was given, because a
 //! second resolution is a second answer to the question reach was decided on.
 
-use std::fs::{self, File};
+use std::fs;
 use std::io::Read;
 
 use crate::answer::{Answer, Listing, Search};
 use crate::failed::Failed;
 use crate::named::{Kind, Named};
+use crate::opening;
 use crate::real::Real;
 use crate::walking::{MOST_WALKED, walk};
 
@@ -100,7 +101,10 @@ pub(crate) fn read(file: &Real) -> Result<Answer, Failed> {
         });
     }
 
-    let opened = File::open(at).map_err(|why| Failed::machine(at, "read", &why))?;
+    // Opened without following a link at any point in the path, so that what is
+    // read is what was resolved and asked about rather than whatever the name
+    // leads to now. [`crate::opening`] says what that costs on other hosts.
+    let opened = opening::read_only(at).map_err(|why| Failed::machine(at, "read", &why))?;
     // How big it is, asked of the file that is open rather than of its name:
     // the name could be pointing at something else by now, and this handle
     // cannot be.

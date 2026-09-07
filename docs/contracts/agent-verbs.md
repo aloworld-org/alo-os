@@ -211,7 +211,17 @@ grant over a link would otherwise be a grant over wherever it points today.
 What this cannot do is close the gap between the check and the open — a link
 swapped in afterwards, or a hard link, which is a second real name for a file
 that also lives elsewhere and which no amount of resolving reveals. Both are in
-`docs/quirks.md`, and closing them belongs to the code that opens the file.
+`docs/quirks.md`, and closing the first belongs to the code that opens the file.
+
+**It is closed there, for reads, on Linux.** A file is opened by a single call
+that refuses a symbolic link at *every* component of its path, so a folder on
+the way cannot be exchanged after the questions above were answered. Moving a
+name is one call that refuses or moves rather than a check followed by an act.
+What remains open is a folder on the way to a name a *rename* uses, and the hard
+link, which no platform closes; `docs/quirks.md` has both, and the machines with
+no such calls keep the behaviour this paragraph describes. None of that changes
+what an adapter author writes or what a caller sees — the same refusals, in the
+same words.
 
 A refusal at question 1 is the grants' own and travels as the value they made.
 A refusal at question 2 or 3 is worded by whatever executes the verb, because
@@ -238,9 +248,16 @@ answered.
 A person approves *move march.pdf into Archive*. They do not approve
 *and overwrite the march.pdf that is already there*, which is what renaming
 over an existing file silently does on most systems. So a change whose
-destination already holds anything — a file, a folder, or a link — is refused
-and says the name is taken. This is a rule about the sentence, not about
-filesystems: what was approved is what happens, and nothing else is.
+destination already holds anything — a file, a folder, or a link, including one
+that leads nowhere — is refused and says the name is taken. This is a rule about
+the sentence, not about filesystems: what was approved is what happens, and
+nothing else is.
+
+On Linux the refusing and the moving are **one call**, so there is no moment
+between them in which a destination could appear; a filesystem that cannot
+promise that refuses the move rather than replacing. Elsewhere it is a check
+followed by a move, and the gap is in `docs/quirks.md`. Either way the answer a
+caller gets is the same one.
 
 ## Context on invocation
 

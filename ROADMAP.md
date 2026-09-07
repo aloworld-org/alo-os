@@ -503,7 +503,20 @@ compositor is not required for, which is why it runs unbroken.
         service checks it. It runs there — the agent's login refused a folder
         nobody granted, in the grants' own words; the person's door answered;
         anybody else turned away; the refusal in the record; `SIGTERM` and the
-        summary line — on a development box under systemd, which is not a boot
+        summary line — on a development box under systemd, which is not a boot.
+        And since item 6b the file verbs no longer open anything **by name** on
+        Linux: a path resolved and checked against the grants is opened in one
+        call that refuses a symbolic link at every component of it, so a folder
+        on the way cannot be exchanged for a link between the check and the
+        open, and a move is one call that refuses or moves rather than a
+        question followed by an act. Neither falls back — a kernel or a
+        filesystem that cannot promise it refuses the work in its own words. The
+        walk this was first written as had to be thrown away, and what threw it
+        away was the boundary above: opening `/` and each folder under it is
+        opening things the call never named, and a bounded turn was refused its
+        own granted file. What is left of it is item 6c, a question about how
+        wide a turn's boundary is when it moves a file, recorded in
+        `docs/quirks.md` with a test that asserts the gap as it is
   - [ ] **On the machine.**
         the door being reached — the path moved in code and no connection from a
         second login has been made since, and it cannot be until an image exists

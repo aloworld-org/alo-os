@@ -89,15 +89,21 @@
 //! answer comes back in — is somewhere a test can reach without a filesystem,
 //! and the deciding is tested that way.
 //!
-//! # What this cannot do
+//! # The gap between the check and the open, and what is left of it
 //!
-//! **It cannot close the gap between the check and the open.** A path resolved
-//! and then opened by name can have a link swapped in underneath it, and a hard
-//! link is a real name for a file that also lives somewhere else — neither is
-//! visible to any path-based check. Both are written down in `docs/quirks.md`,
-//! and what closes the first is opening relative to a directory handle rather
-//! than by name a second time, which is Linux's `openat` and a queue item of
-//! its own.
+//! A path resolved and then opened **by that name** can have a link swapped in
+//! underneath it, at any component and not only the last. On Linux that gap is
+//! closed: `opening.rs` walks every component from the root, opening each one
+//! relative to a handle on the one before it and refusing a link at every step,
+//! so a file is reached rather than named — and it moves a name with one call
+//! that refuses to replace anything, rather than a check followed by a rename.
+//! A filesystem that cannot promise the second refuses the move; it does not
+//! quietly go back to replacing.
+//!
+//! On hosts without those calls it is `std`, which resolves the name a second
+//! time, and `docs/quirks.md` says so. **What no platform closes is the hard
+//! link**: a real name for a file that also lives somewhere else, invisible to
+//! any check made of a path. That one is still written down rather than solved.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -116,6 +122,7 @@ mod archiving;
 mod changing;
 mod crc;
 mod looking;
+mod opening;
 mod walking;
 mod zip;
 

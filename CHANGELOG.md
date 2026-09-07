@@ -12,6 +12,27 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A file your agent was allowed to read cannot be swapped for one it was
+  not.** Until now a path was resolved, checked against your grants, and then
+  opened by that name a second time — and anything able to write to a folder on
+  the way could put a link there in between, so what was read was whatever the
+  link led to. On Linux the whole path is now resolved inside a single call that
+  refuses a link at every step of it, so there is no moment in between to make
+  the swap in. It is not only the file: replacing a *folder* on the way to it is
+  refused too, which is the half a check on the file alone would have missed.
+
+  **Moving a file no longer replaces something that was already there** by a
+  hair's breadth of timing. Asking whether the name is taken and moving onto it
+  were two acts with a gap between them; on Linux they are now one call that
+  either refuses or moves. A folder, a file, or a link that leads nowhere all
+  count as the name being taken, and what was there keeps its own contents.
+
+  A machine that cannot promise either of these says so and does not do the
+  work, rather than quietly doing it the old way. Windows keeps the behaviour it
+  had, and `docs/quirks.md` says what that costs — along with the one case still
+  open on Linux: a file moved out of a folder that was exchanged after you
+  approved the move.
+
 - The native shell can now deliver keyboard input to a focused application in
   its nested backend. Focus changes release held keys; unmapped, destroyed and
   foreign windows cannot receive focus. Invalid keyboard layouts refuse startup.

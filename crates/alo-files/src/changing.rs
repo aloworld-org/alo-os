@@ -15,12 +15,17 @@
 //! link to somewhere else entirely — is refused, and the person is told the
 //! name is taken.
 //!
-//! There is a gap between asking whether something is there and moving
-//! something onto it, and `docs/quirks.md` records both what closes it
-//! (`renameat2` with `RENAME_NOREPLACE` on Linux, from a directory handle) and
-//! why the portable half cannot. What it does not do is pretend: the check is
-//! made, the residual race is written down, and the code that closes it is a
-//! queue item rather than a comment.
+//! Asking whether something is there and then moving onto it are two acts with
+//! a gap between them. On Linux there is now no gap: [`crate::opening`] asks
+//! the kernel to refuse and to move in one call — `renameat2` with
+//! `RENAME_NOREPLACE`, from handles on both folders — so the destination cannot
+//! appear after the question and before the answer. A filesystem that cannot
+//! promise that refuses the move rather than falling back to replacing.
+//!
+//! On hosts with no such call it is still a check and then a move, because
+//! `std` has no better answer there. That gap is in `docs/quirks.md`, and this
+//! file no longer decides which of the two it gets: it asks for a rename that
+//! will not replace, and reports what came back.
 //!
 //! # Half a move is not a smaller move
 //!
@@ -29,10 +34,12 @@
 //! places, or in neither.
 
 use std::fs;
+use std::io;
 use std::path::Path;
 
 use crate::answer::Answer;
 use crate::failed::Failed;
+use crate::opening;
 use crate::real::Real;
 
 /// Give a file a different name, where it already is.
@@ -82,15 +89,18 @@ fn moving(file: &Real, to: &Path, doing: &str) -> Result<(), Failed> {
             path: from.display().to_string(),
         });
     }
-    // Anything at all, including a link: `symlink_metadata` answers about the
-    // name rather than about what it leads to, which is the question being
-    // asked here. A link is something, and moving onto it would replace it.
-    if fs::symlink_metadata(to).is_ok() {
-        return Err(Failed::AlreadyThere {
-            path: to.display().to_string(),
-        });
-    }
-    fs::rename(from, to).map_err(|why| Failed::machine(from, doing, &why))
+    // One call that both refuses and moves, so there is no moment between them
+    // for the destination to appear in. `AlreadyExists` is that refusal — from
+    // `RENAME_NOREPLACE` on Linux, and from a check on hosts with no such call.
+    opening::rename_no_replace(from, to).map_err(|why| {
+        if why.kind() == io::ErrorKind::AlreadyExists {
+            Failed::AlreadyThere {
+                path: to.display().to_string(),
+            }
+        } else {
+            Failed::machine(from, doing, &why)
+        }
+    })
 }
 
 #[cfg(test)]

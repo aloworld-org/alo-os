@@ -9922,3 +9922,75 @@ disconnect checks, then popups and direct-display integration. Actual parent
 activation cycling with held physical keys, direct seat/display and certified
 hardware acceptance remain owed. Delivery steps 3-8 and all remaining v0.01 scope
 are preserved. WSLg does not certify hardware; item 6b remains reserved for Claude.
+
+---
+
+## 2026-09-07 — a file verb no longer opens anything by name (item 6b)
+
+`docs/quirks.md` had recorded two gaps against the acting half of the file
+verbs since 2026-09-02: a path resolved and checked against the grants was then
+opened **by that name a second time**, and `fs::rename` has no portable
+no-clobber form so a destination was checked for and then renamed onto. Both are
+closed on Linux, in one new file — `crates/alo-files/src/opening.rs`, the only
+file in that crate that names `rustix`, which is item 21c's choice rather than a
+second rented spelling of the same kernel. `looking.rs`, `zip.rs` and
+`changing.rs` call it. No public surface moved and no `Failed` variant was
+added; the portable half is byte for byte what it was.
+
+**The design in the queue was wrong and a running kernel is what said so.** Item
+6b described `openat` with `O_NOFOLLOW` from a directory handle, walked
+component by component from `/`. That was written first and it works — and it
+made `alo-agentd`'s `a_turn_is_bounded_by_the_kernel` fail with *a granted file
+was refused to the turn that named it: Permission denied*. A turn's boundary
+(ADR 0013, ADR 0015) permits opening what its call named and what is under it,
+and every step of a walk from the root is *above* that, so a bounded turn could
+not read its own granted file. The answer is `openat2` with
+`RESOLVE_NO_SYMLINKS`: the kernel refuses a link at every component inside one
+syscall, so the boundary sees one `file_open` and it is the file the call named.
+The stronger guarantee, and the boundary does not widen by a single directory.
+
+**What is not closed, and it is not a missing syscall.** `renameat2` has no
+`RESOLVE_NO_SYMLINKS`. It never follows a link in the final position, so a
+destination cannot become a way of writing elsewhere and a rename moves whatever
+link was put where the file was rather than what it points at — but the folders
+*on the way* are still resolved by name. Closing that needs handles on the two
+folders, which needs opening them, and the folder a `move_file` takes a file out
+of is not a place its call named. That is a decision about how wide a turn's
+boundary is: it is **item 6c**, it belongs in an ADR, and
+`crates/alo-files/tests/nothing_is_swapped_in_between.rs` asserts the gap as it
+is today so that whoever closes it is told by a failing test rather than by
+reading this.
+
+Neither call falls back. An old kernel answers `ENOSYS`, a filesystem without
+`RENAME_NOREPLACE` answers `EINVAL`, and both refuse the work in the kernel's
+own words. Nothing asks the machine what it supports, because that question is
+how a guarantee stops holding on exactly the machines nobody tested.
+
+**Tests.** Six new unit tests in `opening.rs` and ten integration tests in
+`nothing_is_swapped_in_between.rs` (Linux only, by `#![cfg]` rather than by
+skipping at runtime): a link put where the file was, a folder exchanged on the
+way to it, the same against the archive verb, a destination that appears after
+the approval, a name held by a folder and by a link that leads nowhere, a link
+that was there all along still refused by the *grants* and not by the kernel,
+the three happy paths, a file that went away, and the measured gap above. The
+substitution tests were checked against the old code by putting `File::open` and
+the check-then-rename back for one run: two failed on the read path and one on
+the move path, so they discriminate. The ones that pass either way say so where
+they stand.
+
+Checks actually run, on Linux (Ubuntu/WSL2, kernel 6.18.33.2, stable Rust
+1.98.0) with a `CARGO_TARGET_DIR` of this checkout's own:
+
+- `cargo fmt --all --check`: clean.
+- `cargo clippy --workspace --all-targets -- -D warnings`: zero warnings.
+- `cargo test --workspace`: 103 test binaries, all ok, no failures — including
+  `a_turn_is_bounded_by_the_kernel`, which loads the real BPF LSM and is what
+  caught the first design.
+- `RUSTDOCFLAGS=-D warnings cargo doc --workspace --no-deps`: clean.
+
+Windows was not used to judge any of this; the Linux-only code was compiled and
+run on Linux.
+
+**Hardware acceptance remains outstanding.** Nothing here was seen on a
+certified machine, and this item does not move anything in an *On the machine*
+half of `ROADMAP.md`.

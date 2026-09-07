@@ -12,6 +12,16 @@ alo-capability = { path = "../alo-capability" }
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
+# Opening relative to a directory handle and renaming without replacing are
+# `openat` and `renameat2`. `std` will not spell either on a stable compiler and
+# `CLAUDE.md` forbids writing them out by hand, so it is a crate. Item 21c chose
+# this one already, for `SO_PEERCRED`; a second wrapper for the same kind of
+# call would be two rented spellings of one kernel. `opening.rs` is the only
+# file here that names it, and on any other host this crate does not depend on
+# it at all — the portable half is `std`, and its gaps are in `docs/quirks.md`.
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { workspace = true }
+
 # Only for a test, and only for one number. The width of a turn's boundary is
 # argued in `alo-bounding-map` and is an argument about *these six verbs*, which
 # that crate cannot see — so the claim is checked from the side that has the

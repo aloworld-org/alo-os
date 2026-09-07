@@ -522,15 +522,48 @@ file is opened by that name. Anything with write access to a folder on the way
 can swap a link in between the two.
 **Our response:** the check is where it can be, and the fix is not another
 check. Whatever opens the file holds on to *what it opened* rather than
-resolving the same name twice. The acting half in `alo-files` does as much of
-that as `std` allows — a file is opened once and its size is asked of the open
-handle rather than of the name, and nothing resolves a path a second time — and
-what `std` does not allow is the rest: opening relative to a directory handle
-(`openat`) and renaming without replacing (`renameat2` with `RENAME_NOREPLACE`)
-are Linux calls with no portable spelling, so a destination is checked and then
-renamed onto, with a gap between the two. Narrowing it is item 6b in
-`docs/autonomy/QUEUE.md`, written down rather than left to be rediscovered.
-**Date:** 2026-09-02, extended 2026-09-02 by the acting half
+resolving the same name twice.
+
+**On Linux this is closed for reads** (item 6b). `crates/alo-files/src/opening.rs`
+opens with `openat2` and `RESOLVE_NO_SYMLINKS`, which is the kernel refusing a
+link at **every** component of the path inside one syscall — not only the last,
+which is all `O_NOFOLLOW` would give. There is no moment between the components
+for a substitution to be made in, because the resolution is one syscall. A
+kernel too old for `openat2` answers `ENOSYS` and the read is refused; nothing
+asks the machine what it supports and quietly does it the old way.
+
+Moving a name is closed **against collisions** by `renameat2` with
+`RENAME_NOREPLACE`: one call that both refuses and moves, so *nothing is
+replaced that was not named* is a property rather than a check with a gap after
+it. A filesystem that does not implement the flag answers `EINVAL` and the move
+is refused rather than done the replacing way.
+
+**What is still open, and why it is not a syscall away.** `renameat2` has no
+`RESOLVE_NO_SYMLINKS`. It never follows a link in the final position — it moves
+the link itself — so a destination cannot become a way of writing somewhere
+else, and a rename moves whatever link was put where the file was rather than
+what it points at. The folders **on the way** to either name are still resolved
+by name, so a `move_file` whose source folder is exchanged after the grants said
+yes takes the file from where the link leads. Closing that needs handles on the
+two folders, which needs opening them — and a turn's kernel boundary (ADR 0013,
+ADR 0015) permits opening only what its call named, which the folder a move
+takes a file *out of* is not. So it is a decision about how wide a turn's
+boundary is, and it belongs in an ADR rather than in a commit.
+
+The same reason is why the first walk written for this — open `/`, then each
+folder relative to the handle before it — could not be used: every one of those
+opens is above what the call named, and a bounded turn was refused its own
+granted file with `EACCES`. `alo-agentd`'s `a_turn_is_bounded_by_the_kernel`
+caught it on a running kernel.
+`crates/alo-files/tests/nothing_is_swapped_in_between.rs` holds all of this
+down, including a test that asserts the remaining gap as it is, so that the day
+it closes something fails and says so.
+
+**Windows and everything else keep what they had:** `File::open` and a check
+before the rename, with the gap this entry is about. `std` has no better answer
+there.
+**Date:** 2026-09-02, extended 2026-09-02 by the acting half, mostly closed on
+Linux 2026-09-07 by item 6b
 
 ### Windows returns a path spelled differently from the one it was given
 **Version:** Windows 11 26200, Rust 1.97 `std::fs::canonicalize`
