@@ -383,3 +383,64 @@ finger source, horizontal -2/vertical 5 scroll, axis stops and frame boundaries.
 GLES root/child callbacks, unmap/remap, refusal and disconnect (exit 0). Its parent
 pointer events belong to WSLg; they do not demonstrate our nested pointer bridge.
 Independent supervisor full Windows/Linux/BPF publication gates remain owed.
+
+## Nested pointer bridge (2026-09-07)
+
+`Nested::pump_seat` now routes keyboard plus parent absolute pointer motion,
+evdev buttons and scroll through `Server::nested_pointer`. The backend router
+accepts input only while active, cancels held buttons on deactivation/close, and
+requires fresh motion after reactivation. The keyboard-only API stays available.
+The WSLg fixture enables both capabilities and uses the combined event pump.
+
+Reasons: physical parent pixels match our physical-sized framebuffer at nested
+logical scale one, so no second host-scale multiplication is applied. Wheel
+v120 units use an initial 15-pixel step per 120 units while retaining the v120
+protocol value; pixel deltas retain their upstream sign and amount. Nonfinite
+or out-of-range deltas refuse before integer conversion. Translation stays
+separate from graphics ownership. ADR 0002's pinned native engine remains
+unpatched; ADR 0001 and daemon/application contracts gain no agent-facing input
+or context API. All new public Rust items have documentation.
+
+Limitation found in pinned source: Smithay 0.7 drops CursorEntered/CursorLeft.
+Focus loss is observable, pointer leave without focus loss is not. See quirks.md.
+The selected bridge is complete; parent-leave notification support and client
+cursor rendering are the next backend component, not a completed compositor.
+Physical parent focus/input cycles, direct display/input, popups, production
+scheduling and certified-machine acceptance are still owed. No WSLg certification.
+
+### Checks actually run
+
+Ubuntu WSLg socket verified; pkg-config reports xkbcommon 1.13.1, Wayland server
+1.24.0, EGL 1.5. No dependency installation or shared kernel changes needed.
+The checkout uses /root/alo-os-target, separate from the Claude checkout.
+
+```powershell
+cargo fmt --all
+cargo fmt --all --check
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo fmt --all --check
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked --test client_lifecycle pointer::nested_bridge -- --nocapture
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo build -p alo-shell --example nested_check --locked
+wsl -d Ubuntu -- env WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check
+git diff --check
+```
+
+Final checks passed: Linux 28 tests (3 unit, 22 client, 3 socket), no ignored
+tests; Windows zero Linux tests, intentionally not protocol evidence. Initial
+compilation found a protocol axis variant spelling; first clippy found missing
+private documentation and two test unwraps. These were corrected without lint
+suppression or changing test assertions; all executed assertions passed.
+
+Additional evidence: local .git/alo-nested-pointer-wire.log records two bridge
+tests passing, capability 3, button 272 press, axis_value120(0,120), synthetic
+release and leave, then fresh enter at (4,5). The test supplies trusted normalized
+backend events over the real client protocol; it does not inject physical input.
+.git/alo-nested-pointer-graphics.log records capability 3, root/child callbacks
+[402,402], six submitted client surfaces and unmap/remap/refusal/disconnect,
+exit 0. This is graphical integration regression, not actual parent pointer
+movement evidence. Full independent Windows/Linux/BPF publication gates belong
+to the supervisor and have not been run by this worker.

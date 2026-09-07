@@ -36,6 +36,157 @@ fn button(f: &Fixture, state: smithay::backend::input::ButtonState, accepted: bo
 }
 
 #[test]
+fn nested_bridge_routes_only_active_input_and_cancels_before_reactivation() {
+    use alo_shell::NestedPointerEvent::{Axis as Scroll, Button, Motion};
+    let f = fixture();
+    let mut app = mapped(&f);
+    let mut other = mapped(&f);
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            false,
+            Some(Motion {
+                x: 2.0,
+                y: 3.0,
+                time: 1
+            })
+        ))
+        .is_ok()
+    );
+    app.sync();
+    assert!(app.events.pointer.enters.is_empty());
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Motion {
+                x: 2.0,
+                y: 3.0,
+                time: 2
+            })
+        ))
+        .is_ok()
+    );
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Button {
+                code: 0x110,
+                state: Pressed,
+                time: 3
+            })
+        ))
+        .is_ok()
+    );
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Scroll(
+                AxisFrame::new(4)
+                    .source(AxisSource::Wheel)
+                    .value(Axis::Vertical, 15.0)
+                    .v120(Axis::Vertical, 120)
+            ))
+        ))
+        .is_ok()
+    );
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Motion {
+                x: f64::NAN,
+                y: 3.0,
+                time: 5
+            })
+        ))
+        .is_err()
+    );
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Button {
+                code: 30,
+                state: Pressed,
+                time: 5
+            })
+        ))
+        .is_err()
+    );
+    assert!(f.backend(|s| s.nested_pointer(false, None)).is_ok());
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            false,
+            Some(Button {
+                code: 0x110,
+                state: Pressed,
+                time: 6
+            })
+        ))
+        .is_ok()
+    );
+    assert!(f.backend(|s| s.nested_pointer(true, None)).is_ok());
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Button {
+                code: 0x110,
+                state: Released,
+                time: 7
+            })
+        ))
+        .is_ok()
+    );
+    app.sync();
+    other.sync();
+    assert_eq!(app.events.pointer.enters.len(), 1);
+    assert_eq!(app.events.pointer.leaves, 1);
+    assert_eq!(
+        app.events.pointer.buttons,
+        [
+            (0x110, wl_pointer::ButtonState::Pressed),
+            (0x110, wl_pointer::ButtonState::Released)
+        ]
+    );
+    assert_eq!(
+        app.events.pointer.axes,
+        [(wl_pointer::Axis::VerticalScroll, 15.0)]
+    );
+    assert!(other.events.pointer.enters.is_empty());
+    assert!(other.events.pointer.buttons.is_empty());
+    assert!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(Motion {
+                x: 4.0,
+                y: 5.0,
+                time: 8
+            })
+        ))
+        .is_ok()
+    );
+    app.sync();
+    assert_eq!(app.events.pointer.enters.len(), 2);
+}
+
+#[test]
+fn nested_bridge_refuses_a_missing_pointer_seat() {
+    let f = Fixture::keyboard();
+    assert!(matches!(
+        f.backend(|s| s.nested_pointer(false, None)),
+        Err(alo_shell::InputError::PointerUnavailable)
+    ));
+    assert!(matches!(
+        f.backend(|s| s.nested_pointer(
+            true,
+            Some(alo_shell::NestedPointerEvent::Motion {
+                x: 1.0,
+                y: 1.0,
+                time: 0
+            })
+        )),
+        Err(alo_shell::InputError::PointerUnavailable)
+    ));
+}
+
+#[test]
 fn pointer_hit_regions_subsurface_coordinates_and_drag_isolation() {
     let f = fixture();
     let mut first = mapped(&f);

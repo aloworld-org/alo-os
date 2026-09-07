@@ -50,6 +50,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             ..Default::default()
         },
     )?;
+    server.enable_pointer()?;
     server.render(&mut nested, 0)?;
     let path = server.socket_path().to_owned();
     let client = thread::spawn(move || {
@@ -59,6 +60,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(app.events.outputs, 1);
         assert!(app.events.keyboard.keymap.starts_with("xkb_keymap"));
         assert_eq!(app.events.keyboard.repeat, Some((25, 600)));
+        assert_eq!(
+            app.events.keyboard.capabilities,
+            Some(
+                wayland_client::protocol::wl_seat::Capability::Keyboard
+                    | wayland_client::protocol::wl_seat::Capability::Pointer
+            )
+        );
         assert_eq!(app.events.modes.last(), Some(&(320, 200)));
         app.configure();
         // Input regions must not suppress graphical buffer submission.
@@ -123,7 +131,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if start.elapsed() > Duration::from_secs(10) {
             return Err("client deadline exceeded".into());
         }
-        nested.pump_keyboard(&mut server)?;
+        nested.pump_seat(&mut server)?;
         server.dispatch()?;
         rendered += server.render(&mut nested, start.elapsed().as_millis() as u32)?;
         thread::sleep(Duration::from_millis(4));

@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Nested client windows can receive mouse motion, clicks and scrolling.**
+  The development backend routes input only while its parent window is active;
+  deactivation releases held buttons before a client can receive input again.
+  Wheel and pixel scroll units are preserved and invalid values refuse. Client
+  cursors and parent-leave notifications remain unfinished; this is not yet a
+  production desktop or physical input certification.
+
 - **A file your agent was allowed to read cannot be swapped for one it was
   not.** Until now a path was resolved, checked against your grants, and then
   opened by that name a second time — and anything able to write to a folder on

@@ -10066,3 +10066,42 @@ clippy with warnings denied, and all default workspace tests/doctests; all passe
 Linux rustdoc with warnings denied and the pinned BPF target's formatting/clippy
 also passed. Existing opt-in model measurements remain opt-in; no gate was
 weakened and no new hardware acceptance is claimed. Both gate commands exited 0.
+
+## 2026-09-07 - item 33, nested pointer event bridge
+
+Desktop worker selected the next component in QUEUE before implementation;
+checkout began clean. Task 6b remains Claude-owned. No staging, commit, push,
+other checkout edits, dev-loop changes or shared-kernel operations performed.
+
+Implemented focus-gated nested motion/button/scroll routing, wheel/pixel unit
+conversion and deactivation/close cancellation. The real WSLg fixture now enables
+both seat capabilities and pumps both inputs. Four new tests exercise scroll
+translation/refusal and real-client active/inactive routing, isolation, invalid
+input, cancellation before reactivation and missing-seat refusal. The useful
+bridge component is complete; item 33 remains unchecked.
+
+Pinned Smithay 0.7 source drops cursor-enter/leave notifications. Recorded the
+limitation in quirks.md; no engine patch or ADR change. Cursor presentation and
+an unpatched backend path exposing parent leave are next, then popups/direct
+display. Motion uses physical parent coordinates matching our scale-one output;
+wheel policy is 15 pixels per step, retaining v120 and upstream sign. No new
+agent verb, IPC or context access; ADRs 0001/0002 and contracts are preserved.
+
+Actual checks (exact commands and logs in COMPOSITOR.md): Windows/Linux fmt,
+focused all-target clippy with warnings denied, focused tests, Linux warnings-
+denied rustdoc, example build and diff check passed. Linux 28 tests, no ignored;
+Windows zero Linux tests. Wire trace: two bridge tests pass, v120 scrolling,
+button release before leave, fresh enter after activation. WSLg fixture exit 0,
+seat capability 3, callbacks [402,402], six submitted client surfaces and
+unmap/remap/refusal/disconnect. Unit translation tests use the backend trait;
+wire tests supply trusted normalized events, not physical input. The graphics
+fixture does not claim actual parent mouse movement. Prerequisites verified:
+Wayland socket, xkbcommon 1.13.1, Wayland 1.24.0, EGL 1.5; no installation needed.
+
+Initial compile/lint issues were a protocol enum spelling, private method docs
+and test unwraps, corrected without suppressions; all executed assertions passed.
+Reviewed source/new files and documentation diff. CHANGELOG, ROADMAP, QUEUE,
+COMPOSITOR and quirks updated together. Supervisor full Windows/Linux/BPF gates
+remain owed, as do actual parent input/focus cycles, parent-leave support,
+physical display/input and certified hardware records. Delivery steps 3-8 and
+all remaining v0.01 scope remain intact. WSLg cannot certify hardware.

@@ -691,6 +691,14 @@ which made a completely consistent rule look like work being taken out of turn.
     cursor presentation, popups and direct display remain unfinished; focused
     checks do not replace supervisor full gates or physical acceptance.
 
+  - Nested pointer bridge (2026-09-07): `pump_seat` routes parent physical motion,
+    evdev buttons and wheel/pixel scroll while active. Deactivation/close cancel
+    drags; reactivation requires fresh motion. Four new tests bring Linux coverage
+    to 28; real-client wire trace and WSLg seat/rendering regression pass.
+    Smithay 0.7 drops parent cursor-leave events: leave notifications and client
+    cursor presentation remain next, followed by popups and direct display.
+    Full supervisor gates and physical input/display acceptance remain owed.
+
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
 - [ ] **The agent overlay**: one key, from anywhere

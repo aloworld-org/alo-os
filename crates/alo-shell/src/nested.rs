@@ -1,9 +1,9 @@
-//! Nested WSLg/Wayland graphics and keyboard backend.
+//! Nested WSLg/Wayland graphics and seat backend.
 
 use crate::{FrameTarget, RenderError, drawing};
 use smithay::{
     backend::{
-        input::{Event, InputEvent, KeyboardKeyEvent},
+        input::{AbsolutePositionEvent, Event, InputEvent, KeyboardKeyEvent, PointerButtonEvent},
         renderer::{Color32F, Frame, Renderer, gles::GlesRenderer, utils::draw_render_elements},
         winit::{self, WinitEvent, WinitEventLoop, WinitGraphicsBackend},
     },
@@ -22,7 +22,8 @@ use smithay::{
 ///
 /// Supply a translated title from the session UI (developer fixtures may use a
 /// diagnostic title). This backend requires WAYLAND_DISPLAY and refuses X11.
-/// Call `pump_keyboard` before each server dispatch/render when input is enabled.
+/// Call `pump_seat` before each server dispatch/render when both inputs are enabled,
+/// or `pump_keyboard` for a keyboard-only seat.
 /// Render-only fixtures may use `pump`. Do not recreate winit's event
 /// loop in the same process after failure; report the error and end the session.
 pub struct Nested {
@@ -97,8 +98,50 @@ impl Nested {
     /// explicit activation. Parent focus loss/close releases keys and clears focus.
     /// A keyboard-enabled server is required; pointer events remain unconnected.
     pub fn pump_keyboard(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
+        self.pump_input(server, false)
+    }
+
+    /// Route keyboard and pointer events after `Server::enable_pointer`.
+    ///
+    /// Parent deactivation and close cancel held input. Smithay 0.7 does not
+    /// forward cursor-leave events; leave-only cancellation and client cursors
+    /// remain backend work. This is not yet a production session backend.
+    pub fn pump_seat(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
+        self.pump_input(server, true)
+    }
+
+    /// Share ordered parent activation handling across keyboard-only and full seats.
+    fn pump_input(&mut self, server: &mut crate::Server, pointer: bool) -> Result<(), RenderError> {
         let mut failure = None;
         let result = self.pump_events(|event, focused| {
+            if pointer {
+                let translated = match &event {
+                    Some(WinitEvent::Input(InputEvent::PointerMotionAbsolute { event })) => {
+                        Ok(Some(crate::NestedPointerEvent::Motion {
+                            x: event.x(),
+                            y: event.y(),
+                            time: event.time_msec(),
+                        }))
+                    }
+                    Some(WinitEvent::Input(InputEvent::PointerButton { event })) => {
+                        Ok(Some(crate::NestedPointerEvent::Button {
+                            code: event.button_code(),
+                            state: event.state(),
+                            time: event.time_msec(),
+                        }))
+                    }
+                    Some(WinitEvent::Input(InputEvent::PointerAxis { event })) => {
+                        crate::nested_pointer::axis(event)
+                            .map(|frame| Some(crate::NestedPointerEvent::Axis(frame)))
+                    }
+                    _ => Ok(None),
+                };
+                if let Err(error) =
+                    translated.and_then(|event| server.nested_pointer(focused, event))
+                {
+                    failure = Some(error);
+                }
+            }
             let focus = if focused {
                 server.mapped_surfaces().next().cloned()
             } else {

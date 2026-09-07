@@ -116,7 +116,24 @@ to main, pulling first and integrating any intervening commits before pushing.
   workspace fmt, Linux rustdoc and diff checks passed; exact commands are in
   COMPOSITOR.md. Windows excludes Linux protocol tests. Supervisor full gates
   and all physical evidence remain owed; item 33 is not complete.
-  Nested pointer event wiring and cursor rendering remain the next component,
+  **Selected nested pointer bridge (desktop worker, this iteration):** route
+  Winit absolute motion, buttons and wheel/pixel scroll through the pointer core;
+  cancel on deactivation and close. Smithay 0.7 drops parent cursor-leave events;
+  leave notification requires a subsequent backend component, without an upstream
+  patch (ADR 0002/constitution). Acceptance: backend translation
+  tests plus real-client delivery/isolation/cancellation tests, WSLg regression,
+  fmt and affected-target clippy. Cursor presentation remains a separate useful
+  component; this step does not complete pointer presentation or item 33.
+  **Completed bridge component 2026-09-07:** `Nested::pump_seat` connects parent
+  motion/buttons/scroll to the focus-gated trusted backend router. Wheel v120
+  and pixel scrolling preserve upstream signs; nonfinite/out-of-range values
+  refuse. Deactivation and close cancel held input before reactivation. Four new
+  tests pass (28 Linux tests total); the wire trace confirms v120 and release
+  before leave. WSLg advertises seat capability 3 and renders root/child buffers,
+  completing unmap/remap/refusal/disconnect (exit 0). Focused Windows/Linux tests,
+  clippy, fmt and Linux rustdoc pass; exact evidence is in COMPOSITOR.md.
+  Full supervisor gates and actual parent/physical input checks remain owed.
+  Cursor rendering and parent-leave notification support remain the next component,
   followed by popup management and direct-display integration. Window management
   and usable session entry remain delivery steps 3 and 4; no physical acceptance
   or completed desktop is claimed by this rendering component.

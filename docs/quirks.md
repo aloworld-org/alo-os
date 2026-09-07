@@ -23,6 +23,17 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ---
 
+## Smithay nested pointer leave notifications (2026-09-07)
+
+Smithay 0.7.0's `backend/winit/mod.rs` consumes Winit `CursorEntered` and
+`CursorLeft` without forwarding them; `WinitEvent` exposes focus, input, resize,
+close and redraw only. The nested shell can cancel input on deactivation/close,
+but cannot observe a pointer leaving an otherwise active parent window. Do not
+mistake focus-loss tests for leave-only acceptance. The next backend component
+must expose that lifetime through an owned event loop or another unpatched
+upstream interface before this backend can claim full pointer support. Current
+development input remains explicitly limited; no pinned engine patch is made.
+
 ## Hardware and firmware
 
 ### `struct file`'s `f_path` is inside an anonymous union, and a search over named members does not find it
