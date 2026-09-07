@@ -15,6 +15,7 @@ mod keyboard;
 mod nested;
 mod nested_pointer;
 mod pointer;
+mod popup_grabs;
 mod popups;
 mod presentation;
 mod scene;

@@ -57,13 +57,7 @@ impl Server {
         }
         self.surfaces.prune_pointer_focus();
         let location = (x, y).into();
-        let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
-        let focus = crate::scene::trees(&roots, &self.popup_surfaces())
-            .into_iter()
-            .find_map(|(root, origin)| {
-                under_from_surface_tree(&root, location - origin, (0, 0), WindowSurfaceType::ALL)
-                    .map(|(surface, offset)| (surface, origin + offset.to_f64()))
-            });
+        let focus = self.pointer_target(location);
         let pointer = self
             .surfaces
             .pointer
@@ -89,6 +83,8 @@ impl Server {
     ///
     /// No focus, duplicate presses and unmatched releases return false. Buttons
     /// pressed outside a client never authorize a later release into a client.
+    /// During a popup grab, outside presses dismiss the chain and return false;
+    /// neither the press nor its later release is redirected to another client.
     pub fn pointer_button(
         &mut self,
         button: u32,
@@ -99,6 +95,24 @@ impl Server {
             return Err(InputError::InvalidPointer);
         }
         self.surfaces.prune_pointer_focus();
+        if state == ButtonState::Pressed
+            && self.surfaces.popup_grab.is_some()
+            && self
+                .surfaces
+                .pointer
+                .as_ref()
+                .is_some_and(|p| !p.buttons.contains(&button))
+            && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)
+        {
+            // Re-hit the scene even without motion: a menu may have mapped
+            // beneath a stationary pointer, or an implicit drag may hide an
+            // outside target while another button remains held.
+            if self.pointer_target(location).is_none() {
+                self.surfaces.dismiss_popup_grab();
+                return Ok(false);
+            }
+            self.pointer_motion(location.x, location.y, time)?;
+        }
         let pointer = self
             .surfaces
             .pointer
@@ -154,7 +168,23 @@ impl Server {
     /// Cancel held buttons and clear focus on parent leave, deactivation or close.
     /// A subsequent motion is required before another client can receive input.
     pub fn pointer_leave(&mut self) -> Result<(), InputError> {
+        self.surfaces.dismiss_popup_grab();
         self.surfaces.clear_pointer()
+    }
+
+    /// Scene hits are shared by motion and explicit-grab outside-click policy.
+    fn pointer_target(
+        &self,
+        location: Point<f64, Logical>,
+    ) -> Option<(WlSurface, Point<f64, Logical>)> {
+        let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
+        crate::scene::trees(&roots, &self.popup_surfaces())
+            .into_iter()
+            .find_map(|(root, origin)| {
+                under_from_surface_tree(&root, location - origin, (0, 0), WindowSurfaceType::ALL)
+                    .map(|(surface, offset)| (surface, origin + offset.to_f64()))
+            })
+            .filter(|(surface, _)| self.surfaces.popup_allows_pointer(surface))
     }
 }
 
@@ -191,7 +221,7 @@ impl Surfaces {
     }
 
     /// Clear the pending grab target before synthesizing button releases.
-    fn clear_pointer(&mut self) -> Result<(), InputError> {
+    pub(crate) fn clear_pointer(&mut self) -> Result<(), InputError> {
         let pointer = self
             .pointer
             .as_mut()

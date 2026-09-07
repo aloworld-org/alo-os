@@ -77,9 +77,17 @@ impl Server {
     ///
     /// Clearing or changing focus releases held keys before leave, so a new
     /// application cannot inherit a key pressed for another application.
+    /// Selecting a grabbed popup's root preserves the topmost popup's focus;
+    /// clearing focus or selecting another root dismisses the grab chain.
     pub fn keyboard_focus(&mut self, surface: Option<&WlSurface>) -> Result<(), InputError> {
         if surface.is_some_and(|surface| !self.mapped_surfaces().any(|root| root == surface)) {
             return Err(InputError::Unmapped);
+        }
+        if let Some(grab) = &self.surfaces.popup_grab {
+            if surface == Some(&grab.root) {
+                return Ok(());
+            }
+            self.surfaces.dismiss_popup_grab();
         }
         self.surfaces.set_keyboard_focus(surface.cloned())
     }
@@ -134,13 +142,19 @@ impl Surfaces {
             .keyboard
             .as_ref()
             .and_then(|keyboard| keyboard.handle.current_focus());
-        if focus.is_some_and(|surface| !self.mapped().any(|root| *root == surface)) {
+        if focus.is_some_and(|surface| {
+            !self.mapped().any(|root| *root == surface)
+                && self.popup_keyboard_focus().as_ref() != Some(&surface)
+        }) {
             let _ = self.set_keyboard_focus(None);
         }
     }
 
     /// Release pressed keys using the same XKB path before switching recipients.
-    fn set_keyboard_focus(&mut self, focus: Option<WlSurface>) -> Result<(), InputError> {
+    pub(crate) fn set_keyboard_focus(
+        &mut self,
+        focus: Option<WlSurface>,
+    ) -> Result<(), InputError> {
         let keyboard = self.keyboard.as_ref().ok_or(InputError::Unavailable)?;
         let handle = keyboard.handle.clone();
         let time = keyboard.time;

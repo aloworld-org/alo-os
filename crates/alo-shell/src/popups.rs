@@ -45,8 +45,11 @@ pub(crate) struct Popups {
 impl crate::Server {
     /// Enable popup handshake tracking for a popup-aware backend or protocol fixture.
     ///
-    /// `Nested` renders these snapshots and pointer routing consumes them. Grabs and
-    /// reposition requests are explicitly dismissed for now.
+    /// `Nested` renders these snapshots and pointer routing consumes them.
+    /// Pointer-triggered grabs are supported; reposition requests still dismiss.
+    /// A root grab needs this seat's active pointer press serial on the parent
+    /// tree. A submenu can inherit its topmost parent's grab serial. Keyboard
+    /// and release-triggered initiation are not yet accepted.
     pub fn enable_popup_protocol(&mut self) {
         self.surfaces.popups.enabled = true;
     }
@@ -59,6 +62,23 @@ impl crate::Server {
 }
 
 impl Popups {
+    /// A grab must precede the first buffer and use a tracked, undismissed role.
+    pub(crate) fn grab_parent(&self, role: &PopupSurface) -> Option<WlSurface> {
+        self.entries
+            .iter()
+            .find(|entry| {
+                &entry.role == role && !entry.buffered && !entry.dismissed && entry.role.alive()
+            })
+            .map(|entry| entry.popup.parent.clone())
+    }
+
+    /// Pending grabs remain alive while waiting for the first configured buffer.
+    pub(crate) fn live(&self, surface: &WlSurface) -> bool {
+        self.entries
+            .iter()
+            .any(|entry| &entry.popup.surface == surface && !entry.dismissed && entry.role.alive())
+    }
+
     /// Live popup roots shared by rendering and focus lifetime checks.
     pub(crate) fn mapped(&self) -> impl Iterator<Item = &Popup> {
         self.entries
@@ -169,7 +189,7 @@ impl Popups {
     }
 
     /// Iterative traversal avoids client-controlled recursion depth.
-    fn dismiss_tree(&mut self, surface: &WlSurface) {
+    pub(crate) fn dismiss_tree(&mut self, surface: &WlSurface) {
         let mut lost = vec![surface.clone()];
         for entry in &self.entries {
             if lost.contains(&entry.popup.parent) {

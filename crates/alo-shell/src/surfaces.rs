@@ -41,6 +41,8 @@ struct Window {
 pub(crate) struct Surfaces {
     /// Opt-in popup handshake and parent lifetime tracking.
     pub(crate) popups: crate::popups::Popups,
+    /// Seat-scoped explicit popup input ownership.
+    pub(crate) popup_grab: Option<crate::popup_grabs::Grab>,
     /// Core surface/subsurface protocol.
     compositor: CompositorState,
     /// CPU-backed application buffers.
@@ -64,6 +66,7 @@ impl Surfaces {
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
             popups: Default::default(),
+            popup_grab: None,
             compositor: CompositorState::new::<Self>(display),
             shm: ShmState::new::<Self>(display, vec![]),
             xdg: XdgShellState::new::<Self>(display),
@@ -80,6 +83,7 @@ impl Surfaces {
         self.windows.retain(|window| window.surface.alive());
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
+        self.prune_popup_grab();
         self.prune_keyboard_focus();
         self.prune_pointer_focus();
     }
@@ -185,8 +189,11 @@ impl XdgShellHandler for Surfaces {
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.insert(surface, positioner, &parents);
     }
-    fn grab(&mut self, surface: PopupSurface, _seat: WlSeat, _serial: Serial) {
-        self.popups.dismiss(&surface);
+    fn grab(&mut self, surface: PopupSurface, seat: WlSeat, serial: Serial) {
+        self.grab_popup(surface, seat, serial);
+    }
+    fn popup_destroyed(&mut self, surface: PopupSurface) {
+        self.popup_grab_destroyed(&surface);
     }
     fn reposition_request(
         &mut self,

@@ -759,6 +759,18 @@ which made a completely consistent rule look like work being taken out of turn.
     parent leave, direct display and physical acceptance remain unfinished.
     No compositor box changes; supervisor publication gates remain pending.
 
+  - Pointer-triggered popup grabs (2026-09-07): active parent press/seat validation,
+    topmost keyboard routing, owner-client pointer isolation, nested focus return
+    and consumed outside clicks. Six new socket tests pass (49 Linux shell tests),
+    including stale/foreign/late requests, serial replay, invalid parent/order,
+    stationary hits and held-button cleanup. WSLg submitted a grabbed popup and
+    verified callbacks, input and dismissal; popup/cursor regression also passed.
+    Exact focused Windows/Linux checks and limits:
+    `docs/autonomy/updates/native-popup-pointer-grabs.md`.
+    Keyboard/release-triggered initiation, repositioning/output constraints, parent
+    leave, direct display/input and physical acceptance remain. No feature box
+    changes; supervisor full publication gates remain owed.
+
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
 - [ ] **The agent overlay**: one key, from anywhere

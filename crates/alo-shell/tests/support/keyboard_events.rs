@@ -1,13 +1,17 @@
 //! Keyboard protocol observations for real socket and graphical fixtures.
 use super::Events;
 use wayland_client::{
-    Connection, Dispatch, QueueHandle, WEnum,
+    Connection, Dispatch, Proxy, QueueHandle, WEnum,
     protocol::{wl_keyboard, wl_seat},
 };
 
 /// Event facts retained without interpreting a compositor's internal state.
 #[derive(Default)]
 pub struct KeyboardEvents {
+    /// Seat resource for explicit popup requests.
+    pub seat: Option<wl_seat::WlSeat>,
+    /// Surface IDs receiving keyboard focus, in wire order.
+    pub surfaces: Vec<u32>,
     /// Advertised seat capabilities.
     pub capabilities: Option<wl_seat::Capability>,
     /// XKB keymap read from the received descriptor.
@@ -38,6 +42,7 @@ impl Dispatch<wl_seat::WlSeat, ()> for Events {
         } = event
         {
             state.keyboard.capabilities = Some(caps);
+            state.keyboard.seat = Some(seat.clone());
             if caps.contains(wl_seat::Capability::Pointer) {
                 state.pointer.proxy = Some(seat.get_pointer(qh, ()));
             }
@@ -71,7 +76,10 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Events {
                 assert!(result.is_ok());
             }
             wl_keyboard::Event::RepeatInfo { rate, delay } => events.repeat = Some((rate, delay)),
-            wl_keyboard::Event::Enter { keys, .. } => events.enters.push(keys),
+            wl_keyboard::Event::Enter { keys, surface, .. } => {
+                events.enters.push(keys);
+                events.surfaces.push(surface.id().protocol_id());
+            }
             wl_keyboard::Event::Leave { .. } => events.leaves += 1,
             wl_keyboard::Event::Key {
                 key,

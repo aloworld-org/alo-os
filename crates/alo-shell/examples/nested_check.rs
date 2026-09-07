@@ -8,6 +8,10 @@ mod application;
 #[path = "support/popup_check.rs"]
 mod popup_check;
 
+#[cfg(target_os = "linux")]
+#[path = "support/grab_check.rs"]
+mod grab_check;
+
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]
 pub struct Fixture {
@@ -36,6 +40,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_shell::{Nested, Server};
+    if std::env::args().any(|arg| arg == "--grabs") {
+        return grab_check::run();
+    }
     use std::{
         fs,
         os::unix::fs::PermissionsExt,

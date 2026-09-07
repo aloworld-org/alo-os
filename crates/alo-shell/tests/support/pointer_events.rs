@@ -12,6 +12,8 @@ pub struct PointerEvents {
     pub proxy: Option<wl_pointer::WlPointer>,
     /// Most recent pointer enter serial.
     pub serial: u32,
+    /// Latest button-event serial, used to request a real explicit popup grab.
+    pub button_serial: u32,
     /// Surface protocol ID and local coordinates on entry.
     pub enters: Vec<(u32, f64, f64)>,
     /// Number of focus leaves.
@@ -57,10 +59,14 @@ impl Dispatch<wl_pointer::WlPointer, ()> for Events {
                 ..
             } => p.motion.push((surface_x, surface_y)),
             wl_pointer::Event::Button {
+                serial,
                 button,
                 state: WEnum::Value(state),
                 ..
-            } => p.buttons.push((button, state)),
+            } => {
+                p.button_serial = serial;
+                p.buttons.push((button, state));
+            }
             wl_pointer::Event::Axis {
                 axis: WEnum::Value(axis),
                 value,

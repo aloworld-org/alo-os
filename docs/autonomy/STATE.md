@@ -10419,3 +10419,53 @@ physical evidence remain owed; WSLg is not certification. The supervisor's full
 independent Windows/Linux/BPF gates have not run for this change. No staging,
 commit/push, worker launch, dev-loop edit or other-repository changes. Reports
 arriving during publication are reconciled next iteration; no release verified claim.
+
+---
+
+## 2026-09-07 - native popup pointer grabs
+
+Single desktop worker; clean checkout at iteration start. Read constitution,
+delivery order, shared-main ownership, updates README, current queue/state tail,
+shell feature/roadmap, ADRs 0001/0002 and application-adapter boundary. All five
+published task reports were already referenced here; no additional reconciliation
+was required. Filesystem security remains Claude's assignment and its recorded
+limits are preserved. Recorded the component and acceptance in QUEUE before code.
+
+Integrated task report: `docs/autonomy/updates/native-popup-pointer-grabs.md`.
+Pointer-triggered grabs now validate the display seat and active parent press,
+keep keyboard focus on the topmost mapped grabbed popup, restrict pointer events
+to the owning client and consume outside clicks. Nested destruction restores
+parent focus; stale/foreign requests dismiss, invalid protocol ordering refuses,
+and lifecycle/backend focus loss cancels input without redirected releases.
+Stationary hits and second-button dismissal during a drag are covered. Policy
+lives separately from popup protocol lifetimes; Smithay remains unpatched and
+there is no agent surface, new dependency, release scope or ADR exception.
+
+Final focused Windows/Linux fmt and all-target clippy pass. Linux shell tests
+pass 49 (six new real-client grab tests), none ignored; Windows intentionally
+runs zero Linux protocol tests. Warnings-denied Linux rustdoc and the final
+nested example build pass. Six-test Wayland wire run passes. All executed test
+assertions passed; intermediate test unwrap, collapsible-condition, example dead
+code and documentation diagnostics were corrected without changing lint rules.
+Exact commands, intermediate corrections and local log paths are in the report.
+
+Additional WSLg integration: `nested_check --grabs` exits 0 with a real grabbing
+SHM popup's GLES callback/output enter, keyboard focus/key/release, outside-click
+dismissal/output leave, parent focus return and disconnect cleanup. Existing
+`--popups --cursor` regression exits 0 with 67 submitted client surfaces across
+frames, clipping, nested callbacks and lifecycle/refusal checks. These are
+scripted backend input and submission/protocol checks, not pixel readback or
+physical input/display observations. WSLg socket/native graphics prerequisites
+verified; no installation or shared-kernel changes. Linux target stays
+/root/alo-os-target, separate from the other checkout.
+
+Reviewed changed/new source and documentation; diff whitespace check passes.
+CHANGELOG, ROADMAP, QUEUE and COMPOSITOR record the component and remaining work.
+Next: keyboard-triggered popup grabs and release-triggered initiation policy.
+Repositioning/output constraints, parent leave, direct display/input, production
+session and every other unfinished v0.01 requirement remain. Physical laptop/GPU
+workstation acceptance and actual parent-input observation remain owed; WSLg
+does not certify hardware. Supervisor full independent Windows/Linux/BPF gates
+have not run for this change. No staging, commit/push, worker launch, dev-loop
+edit or other repository changes. Reports arriving during publication are
+reconciled next iteration. The compositor and release remain unverified.

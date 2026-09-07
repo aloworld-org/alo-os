@@ -57,6 +57,10 @@ impl Dispatch<xdg_popup::XdgPopup, ()> for Events {
 delegate_noop!(Events: ignore xdg_positioner::XdgPositioner);
 
 impl Application {
+    /// Request a grab using this connection's seat and an explicit event serial.
+    pub fn grab_popup(&self, popup: &xdg_popup::XdgPopup, serial: u32) {
+        popup.grab(self.events.keyboard.seat.as_ref().unwrap(), serial);
+    }
     /// Request unsupported repositioning with a valid positioner.
     pub fn reposition_popup(&self, popup: &xdg_popup::XdgPopup) {
         let positioner = self.shell.create_positioner(&self.queue.handle(), ());

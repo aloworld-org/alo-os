@@ -205,9 +205,26 @@ cross-references, not the primary names used in handoffs or status messages.
   failed submission, callbacks/membership, ancestor loss and parent refusal.
   WSLg popup/cursor combination submits 67 client surfaces with nested callbacks
   and ordered cleanup. Exact checks: `updates/native-popup-chains.md`.
-  **Next useful component:** explicit popup grabs with seat/serial validation,
-  keyboard/pointer routing and outside-click dismissal. Repositioning/output
-  constraints, parent-leave backend, direct display and physical acceptance
+  **Selected pointer-triggered popup grabs (desktop worker):** validate the
+  display seat and active pointer press serial before mapping; restrict pointer
+  delivery to the owning client, route keys to the topmost grabbed popup, restore
+  parent focus on child destruction, and consume outside clicks on dismissal.
+  Acceptance: real-client valid/nested grabs, stale/foreign/late requests,
+  focus loss, unmap/destruction/disconnect and no redirected releases; wire trace,
+  WSLg regression, focused tests, fmt, clippy and rustdoc. This is a complete
+  pointer-triggered component; keyboard/release-triggered initiation remains
+  follow-up work alongside repositioning and output constraints.
+  **Completed pointer-triggered grab component 2026-09-07:** seat and active
+  parent-press validation, ordered submenu ownership, topmost keyboard focus,
+  owner-client pointer routing and consumed outside clicks. Six new socket tests
+  pass (49 Linux shell tests): stale/foreign/late requests, serial replay, invalid
+  parent/destruction order, stationary hits, second-button dismissal during a drag,
+  focus loss and lifecycle cleanup. WSLg grabbed-popup callback/output/key/dismissal
+  check and popup/cursor regression pass. Focused Windows/Linux fmt, clippy/tests,
+  Linux rustdoc and wire evidence: `updates/native-popup-pointer-grabs.md`.
+  **Next useful component:** keyboard-triggered popup grabs with recent delivered
+  key serial validation, release-triggered opening policy and nested serial tests.
+  Repositioning/output constraints, parent-leave backend, direct display and physical acceptance
   remain; item 33 is unchecked and supervisor full gates remain owed.
 
 - **Integrated filesystem report: Hard-linked files are not read (2026-09-07).**

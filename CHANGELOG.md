@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Pointer-opened menus can now keep keyboard focus and dismiss on outside
+  clicks in the development compositor.** Grabs require the seat's active press
+  on the parent; nested menus restore focus to their surviving parent. Stale or
+  foreign requests refuse, and dismissal consumes clicks without forwarding them
+  to another application. Six new socket tests and a WSLg grabbed-buffer check
+  pass. Keyboard/release-triggered opening and the production desktop remain owed.
+
 - **Application menus can now open nested submenus in the development compositor.**
   Child popups follow their ancestors' geometry, receive pointer input above their
   parents, and close child-first when an ancestor disappears. Real-client and WSLg

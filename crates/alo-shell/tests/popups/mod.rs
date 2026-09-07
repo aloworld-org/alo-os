@@ -1,6 +1,7 @@
 //! Opt-in popup handshake, isolated refusal and terminal parent lifetimes.
 use super::{Application, Fixture};
 mod chains;
+mod grabs;
 mod presentation;
 
 /// Protocol-only fixture explicitly opts in, independently of nested rendering.

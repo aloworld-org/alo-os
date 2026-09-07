@@ -581,3 +581,28 @@ Next: explicit popup grabs with serial/seat validation and outside-click dismiss
 Repositioning/output constraints, parent leave, direct display/input, production
 session, supervisor full publication gates and physical acceptance remain owed.
 No WSLg result certifies hardware.
+
+## Pointer-triggered popup grabs (2026-09-07)
+
+Opt-in popups accept the display seat's active pointer press on the parent tree.
+The grab ends the initiating implicit drag and consumes its later physical release;
+submenus may inherit the current chain's original serial. Keyboard focus follows
+the topmost mapped grabbing popup and returns to the surviving parent. Pointer
+events remain within the owner's client; outside presses dismiss child-first and
+are consumed. Stationary clicks re-hit the scene, including a second button pressed
+outside while an implicit drag retains its old target. Unmap, destruction,
+disconnect and backend focus loss cancel held input without redirecting releases.
+
+Six new real-client tests pass (49 Linux shell tests). The WSLg fixture now has
+`nested_check --grabs`: a real client requests a grab after scripted trusted seat
+input, submits its SHM popup through GLES, receives keyboard input, and observes
+outside-click dismissal, output leave and parent-focus restoration. Existing
+`--popups --cursor` regression also passes. Exact commands and local logs are in
+`updates/native-popup-pointer-grabs.md`; focused Windows/Linux fmt/clippy/tests
+and warnings-denied Linux rustdoc pass.
+
+This is a pointer-triggered component. Keyboard/release-triggered initiation,
+repositioning/output constraints, parent-leave backend support, direct display/input
+and production session integration remain. The scripted WSLg check is submission
+and protocol evidence, not pixel readback or physical input/display certification.
+Supervisor full Windows/Linux/BPF publication gates and hardware acceptance remain owed.
