@@ -4,6 +4,59 @@ use super::*;
 use crate::{XrgbFrame, scanout::Scanout, scanout_frame::upload};
 
 #[test]
+fn converted_readback_uploads_with_padding_and_scanout_lifetime()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (device, log) = fixture(&[], 0);
+    let (mut owned, fb, blob) = allocate(device)?;
+    // Bottom row first, distinct row/column markers and R/B channels.
+    let rgba: Vec<u8> = (0..720)
+        .flat_map(|row| (0..1280).flat_map(move |column| [row as u8, column as u8, 83, 128]))
+        .collect();
+    let converted = crate::readback::convert((1280, 720), crate::RowOrder::BottomToTop, &rgba)?;
+    owned.write_frame(&converted.frame()?)?;
+    for (row, bytes) in log
+        .borrow()
+        .pixels
+        .get(..5184 * 720)
+        .ok_or("missing rows")?
+        .as_chunks::<5184>()
+        .0
+        .iter()
+        .enumerate()
+    {
+        for (column, pixel) in bytes[..5120].as_chunks::<4>().0.iter().enumerate() {
+            assert_eq!(*pixel, [83, column as u8, (719 - row) as u8, 0]);
+        }
+        assert!(bytes[5120..].iter().all(|byte| *byte == 0));
+    }
+    assert!(
+        log.borrow()
+            .pixels
+            .get(5184 * 720..)
+            .ok_or("missing tail")?
+            .iter()
+            .all(|byte| *byte == 0)
+    );
+    let mut active = Scanout::activate(owned, scanout_tests::plan()?, fb, blob)?;
+    active.retire()?;
+    let calls = &log.borrow().calls;
+    assert_eq!(
+        calls
+            .get(calls.len().checked_sub(6).ok_or("missing calls")?..)
+            .ok_or("missing calls")?,
+        [
+            "test",
+            "enable",
+            "disable",
+            "destroy blob",
+            "destroy framebuffer",
+            "destroy buffer"
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn malformed_source_layouts_refuse_without_io() {
     for (size, stride, length) in [
         ((0, 1), 4, 4),

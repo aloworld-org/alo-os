@@ -69,6 +69,28 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected GLES scanout readback (desktop worker):** read a complete bound
+  framebuffer through pinned Smithay's safe export API and convert its explicit
+  row order and RGBA channels into an owned XrgbFrame source. Validate dimensions,
+  mapping metadata and lengths before conversion, including upstream signed byte
+  count limits. Acceptance: patterned channel/orientation and malformed-input
+  tests, real WSLg GLES offscreen readback, nested client regression, affected
+  fmt/clippy/tests/rustdoc. No screenshot verb, active mapping or page flip added.
+  Direct FrameTarget, transport, retirement and physical evidence remain open.
+  **Completed GLES scanout readback 2026-09-07:** full-target safe GLES export
+  produces immutable XRGB upload sources with checked signed byte-count limits,
+  metadata/length refusal and explicit orientation. Six new tests and all 151
+  Linux shell checks pass; affected Windows/Linux fmt/clippy/tests, Linux rustdoc
+  and examples pass. Real WSLg offscreen fixture verifies six exact pixels in each
+  of two orientations; invalid EGL exits 1. Nested regression: 130 client surfaces.
+  Report: `updates/gles-scanout-readback.md`. CPU conversion/upload/enable/disable
+  lifecycle uses fault-injected DRM, not successful kernel scanout.
+  Next executable component: render window/popup/cursor scene trees into an
+  offscreen target and return ScanoutPixels, testing real client pixels and
+  import/draw/readback refusal without premature callbacks. Direct FrameTarget,
+  safe cookie transport, retirement, pause ordering, direct input, production
+  entry, parent-leave/libseat limits and physical acceptance remain open.
+  Full supervisor gates remain owed; compositor/release stay unchecked.
   **Selected unbound scanout frame upload (desktop worker):** copy validated
   full-size XRGB8888 frames into unbound allocations, honoring independent source
   and destination strides and clearing destination padding/tail. Malformed input

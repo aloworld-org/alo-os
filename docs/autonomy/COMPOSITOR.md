@@ -1009,3 +1009,37 @@ pixel/orientation checks. Safe cookie-bearing atomic transport, pending retireme
 session pause ordering, direct input, production entry and physical acceptance
 remain open. Pinned and inspected upstream drm-ffi atomic helpers leave user_data
 zero; no unsafe exemption, dependency change or upstream patch is introduced.
+
+## GLES scanout readback (2026-09-07)
+
+`readback_xrgb(renderer, target, order)` now reads a complete bound GLES target
+through Smithay ExportMem into owned `ScanoutPixels`. `frame()` borrows an
+XrgbFrame suitable for the existing unbound `DisplayResources::with_frame` upload.
+The caller finishes drawing first and owns the same renderer/context as the target.
+Read-only GL mapping synchronizes before CPU access. No frame submission, callback,
+active-buffer mapping or agent capture surface is added by this API.
+
+The pinned engine computes export and map byte counts in signed i32; dimensions
+are checked before export, with a maximum i32::MAX bytes. Export requests ABGR8888
+(RGBA/UNSIGNED_BYTE); mapping extent, ABGR/XBGR metadata and the pinned GLES
+inversion flag are checked before mapping. Exact packed byte length is required
+before conversion. Graphics errors retain GlesError and allocation is fallible.
+Source alpha is discarded after composition; B,G,R,0 is emitted with no colour
+conversion. A caller explicitly names whether the first GL row is top or bottom:
+Smithay Normal and Flipped180 require opposite orders, despite identical mapping
+inversion metadata. No other rotation is inferred.
+
+The new `readback_check` example verifies six exact pixels in a 3x2 real GLES
+offscreen renderbuffer under WSLg in both orientations. Six new unit/integration
+tests cover conversion, odd-width packing, metadata/length/overflow refusal and
+conversion through padded upload and blocking scanout lifetime. That latter test
+uses fake DRM transport. 151 Linux shell checks, affected Windows/Linux lint/fmt/
+tests, Linux rustdoc/examples, invalid-EGL refusal and a 130-client-surface nested
+regression pass. Exact commands and limits: `updates/gles-scanout-readback.md`.
+
+Next: offscreen window/popup/cursor scene rendering into ScanoutPixels with real
+client pixel checks and import/draw/readback refusal without premature callbacks.
+Direct FrameTarget, cookie-bearing atomic transport, retirement, pause/input and
+production entry remain unfinished. No DRM node exists on this host; successful
+scanout and physical display/input remain unverified. Supervisor full publication
+gates and all physical acceptance are still owed. No compositor/release tick.

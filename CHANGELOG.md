@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Rendered GLES frames can now become validated direct-display upload sources.**
+  Full-frame readback checks layout and size limits, converts colour channels and
+  explicit row orientation, and produces immutable XRGB pixels. Real WSLg pixel
+  checks and malformed-input tests pass. Direct presentation and physical display
+  acceptance remain unfinished. Evidence:
+  `docs/autonomy/updates/gles-scanout-readback.md`.
+
 - **Direct-display candidates can now receive a full CPU-rendered frame.**
   Upload validates pixel dimensions and row strides, clears padding, and releases
   the unbound candidate on failure while retaining cleanup errors. Active buffers

@@ -728,6 +728,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - GLES scanout readback (2026-09-07): full-target safe export, checked signed
+    byte-count bounds, mapping metadata/length refusal, explicit row orientation
+    and RGBA-to-XRGB conversion into immutable upload sources. Six new tests;
+    151 Linux shell checks, affected Windows/Linux fmt/clippy/tests, Linux rustdoc
+    and examples pass. WSLg verifies six exact offscreen pixels in each of two
+    orientations; invalid EGL refuses; nested regression submits 130 client
+    surfaces. Evidence: `docs/autonomy/updates/gles-scanout-readback.md`.
+    Conversion/upload/enable/disable lifetime test uses fake DRM transport.
+    Scene-to-offscreen rendering, direct presentation, safe cookie transport,
+    retirement, pause/input/session integration and physical acceptance remain;
+    compositor unchecked and supervisor full publication gates still owed.
   - Unbound scanout frame upload (2026-09-07): validated full-size XRGB CPU frames,
     independent strides, padding/tail clearing and consuming refusal with all
     cleanup errors retained. Six new tests; 145 Linux shell checks, affected

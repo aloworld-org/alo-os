@@ -11446,3 +11446,73 @@ Successful DRM upload/scanout requires a DRM-equipped development login/VM;
 physical business laptop and >=24 GB GPU workstation display/input, session
 switching, suspend/resume and all hardware checklist records remain owed. Full
 v0.01 scope retained; compositor and release unchecked.
+
+---
+
+## 2026-09-07 - GLES scanout readback
+
+Single desktop worker; initial tree clean; supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue/state tail, relevant
+compositor feature/roadmap, ADRs 0001/0002, adapter contract and hardware requirements.
+Every published task report was already referenced in STATE at iteration start;
+no pending reconciliation. Claude's security workstream untouched. Reports arriving
+during publication reconcile next iteration; release remains unchecked.
+
+Own report integrated: `docs/autonomy/updates/gles-scanout-readback.md`.
+Selected acceptance in QUEUE before implementation. Adds full-bound-target GLES
+readback through unpatched Smithay, explicit row order, checked mapping metadata,
+exact byte length and immutable XRGB CPU output accepted by unbound upload.
+Pinned source inspection identified signed i32 export/map arithmetic; size checks
+refuse before I/O. ABGR/RGBA export avoids optional BGRA support. No agent surface,
+background capture, active mapping, commit, callback or unsafe bypass added.
+
+Six new tests pass: channel/alpha/row conversion, odd width/single row, empty and
+overflow extents, mapping metadata refusal, short/trailing bytes, and patterned
+1280x720 conversion/upload/TEST_ONLY/enable/disable lifetime with padding/tail
+checks. The lifecycle uses fake ResourceDevice/DRM transport, not successful DRM.
+Real WSLg GLES offscreen integration verifies six exact pixels in each of Normal
+and Flipped180 orientations; mapping inversion alone cannot identify output order.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Final exit 0; Linux tests cfg-excluded.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin and
+CARGO_TARGET_DIR=/root/alo-os-target: cargo test -p alo-shell --lib readback --locked;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo fmt --all --check; cargo test -p alo-shell --locked;
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. Final commands exit 0:
+82 unit + 64 client lifecycle + 3 socket + 2 doctests = 151 passed, zero failed/
+ignored. Initial clippy diagnostics for private docs, variable indexing and a
+test unwrap fixed with documentation and checked access/error propagation; no
+exemptions. No test failed. Corrected inspection quoting and patch context.
+
+With XDG_RUNTIME_DIR=/run/user/0 and WAYLAND_DISPLAY=wayland-0:
+timeout 30s /root/alo-os-target/debug/examples/readback_check exits 0 (both patterns).
+WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --popups
+--cursor exits 0 (130 client surfaces, popup/cursor callbacks, unmap/remap,
+refusal and disconnect). __EGL_VENDOR_LIBRARY_FILENAMES=/nonexistent/alo-readback-egl.json
+timeout 30s /root/alo-os-target/debug/examples/readback_check exits 1 with invalid
+EGL display, no pixel success. Known ZINK diagnostics precede successful GLES.
+Logs: .git/readback-{tests,docs,gles,nested,refusal}.log. Exact commands in report.
+
+Verified Rust 1.98.0, WSLg socket and existing wayland-server/EGL/GLES/GBM/libseat/
+libinput pkg-config prerequisites; no install needed. No /dev/dri. Used grep
+after confirming Ubuntu lacks rg. This is offscreen pixel evidence, not GPU
+performance, DRM upload/presentation or physical input. Supervisor full Windows/
+Linux workspace/BPF gates have not run for this change.
+
+Updated four shared progress documents, own report and COMPOSITOR. Source, tests,
+example and documentation diff reviewed; git diff --check passes. No staging,
+commit/push, dev-loop change, worker launch, other-checkout access, shared kernel/
+BPF/cgroup/service mutation or physical install. Ready for independent integration.
+
+Next executable component: offscreen window/popup/cursor scene rendering into
+ScanoutPixels, real client pixel checks and import/draw/readback refusal without
+premature callbacks. Direct FrameTarget, safe cookie-bearing atomic transport,
+pending-buffer retirement, pause ordering, direct input, production entry and
+parent-leave/libseat limits remain open. Pinned unmap panic limits remain.
+Successful scanout needs a DRM-equipped development login/VM; physical business
+laptop and >=24 GB GPU workstation display/input, session switching, suspend/resume
+and all hardware checklist records remain owed. Full v0.01 scope unchanged;
+native compositor and release unchecked.
