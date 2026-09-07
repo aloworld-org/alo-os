@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display frames now connect rendering and scanout to client callbacks.**
+  The synchronous target publishes only committed scenes, preserves callbacks and
+  output membership on refusal, and stops further rendering after cleanup failure.
+  Five new tests and WSLg refusal/regression checks pass; successful DRM scanout
+  and the complete direct desktop remain unverified. Evidence:
+  `docs/autonomy/updates/synchronous-direct-frame-target.md`.
+
 - **Direct-display scenes can now be replaced without releasing the current
   buffer before the replacement succeeds.** Refusals preserve the old scene;
   cleanup errors retain the identity of the scene actually committed and require

@@ -74,6 +74,17 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                         .ok_or("non-DRM activation accepted")?;
                     assert_eq!(error.failure.source.raw_os_error(), Some(25));
                     assert!(error.cleanup.is_empty());
+                    // The public FrameTarget must preserve real client callbacks
+                    // and membership when actual kernel allocation refuses.
+                    let mut direct =
+                        alo_shell::DirectTarget::new(renderer, fd.as_fd(), refusal_output(33));
+                    let result = server.render(&mut direct, 66);
+                    let Err(alo_shell::RenderError::Scanout(error)) = result else {
+                        return Err("non-DRM direct target did not refuse scanout".into());
+                    };
+                    assert_eq!(error.failure.source.raw_os_error(), Some(25));
+                    assert!(direct.retirement_error().is_none());
+                    direct.disable()?;
                     let prepared =
                         render_scanout(renderer, (33, 32).into(), &roots, &popups, &cursor)?;
                     let error = prepared

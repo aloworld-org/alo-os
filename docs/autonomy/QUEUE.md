@@ -69,6 +69,27 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected synchronous direct frame target (desktop worker):** connect GLES
+  scene preparation to initial activation and blocking replacement on one frozen
+  output. Publish membership/callbacks only for committed identities; preserve
+  them on refusal. Cleanup failures halt further rendering and explicit shutdown
+  retains retirement errors. Acceptance: injected transport lifecycle and real
+  Wayland callback/membership tests, WSLg public-target non-DRM refusal, affected
+  fmt/clippy/tests/rustdoc. Default cursor, session/input wiring and successful
+  physical scanout remain separate unfinished components.
+  **Completed synchronous direct frame target 2026-09-07:** GLES preparation,
+  activation and replacement feed committed identities into the existing callback/
+  membership path. Refusal preserves pending state; cleanup failure stops further
+  painting/submission and explicit shutdown retains prior and disable errors.
+  Five new tests, 167 Linux shell checks, affected Windows/Linux fmt/clippy/tests,
+  Linux rustdoc/examples and WSLg public-target ENOTTY/nested regression pass
+  (125 client surfaces). Final repaint/callback assertions pass focused tests.
+  Report: `updates/synchronous-direct-frame-target.md`. Successful DRM is injected;
+  no /dev/dri or physical acceptance. Next executable component: compositor-owned
+  default cursor rendering, shape/hotspot/clipping and hidden/client switching
+  pixel tests. Then truthful output metadata, pause/retirement/direct input/session
+  wiring. Safe async cookie transport, GPU context-loss faults, supervisor full
+  gates and all physical records remain owed. Compositor and release unchecked.
   **Selected synchronous scene replacement (desktop worker):** replace a prepared
   scene on the same frozen output and descriptor, retaining old storage until a
   blocking commit succeeds. Refusal preserves old ownership/identities; successful

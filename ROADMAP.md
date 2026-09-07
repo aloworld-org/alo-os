@@ -728,6 +728,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Synchronous direct frame target (2026-09-07): GLES preparation plus initial
+    activation/replacement now implement FrameTarget. Committed identities alone
+    publish callbacks/membership; cleanup failure halts further rendering and
+    shutdown retains prior and disable errors. Five new tests and 167 Linux shell
+    checks pass; affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples
+    and WSLg public-target refusal/nested regression (125 client surfaces) pass.
+    `docs/autonomy/updates/synchronous-direct-frame-target.md`. Successful DRM is
+    injected. Default cursor, truthful direct-output metadata, pause/direct input/
+    session wiring, asynchronous transport and physical acceptance remain owed.
+    Supervisor full publication gates pending; compositor and release unchecked.
   - Synchronous scene replacement (2026-09-07): frozen-route allocation/upload/
     blocking commit preserves old ownership on refusal, retires it only after
     success and reports post-commit cleanup separately. Five new tests, including

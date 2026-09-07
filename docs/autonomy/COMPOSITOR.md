@@ -1072,6 +1072,36 @@ upload and blocking scanout ownership with callback/cleanup tests. Direct target
 cookie transport, retirement, pause/input/session wiring, existing parent-leave/
 libseat limits, supervisor full gates and physical acceptance remain open.
 
+## Synchronous direct frame target (2026-09-07)
+
+`DirectTarget` connects the shared GLES scene painter to blocking activation and
+replacement, implementing every FrameTarget scene entry point. Construct with a
+current borrowed renderer, borrowed session fd and fresh owned AtomicOutput inside
+`DirectSession::with_device`; exclusively own an inactive output and keep the seat
+active through consuming `disable`. It never dispatches clients. `Server::render`
+publishes the exact committed surface identities through existing membership and
+callback machinery; refusal preserves callbacks and previous membership.
+
+After a successful replacement with retirement failure, the new identities still
+complete callbacks. Inspect `retirement_error()` and stop: all subsequent submits
+are latched off before painting or DRM I/O. `disable` preserves both that stored
+failure and any shutdown error in `DirectShutdownError::errors`. A failed candidate
+with cleanup errors also latches off; retain its returned RenderError::Scanout.
+Disable failure quarantines resources and must be followed by retiring all device
+descriptors. Drop is only an unreportable safety net, never normal session teardown.
+
+This supplies synchronous frame submission, not a scheduling loop or physical
+presentation timestamps. The safe blocking transport follows ADR 0002 without an
+engine patch. Public Rust additions change no agent/application-adapter protocol.
+Default cursor pixels, direct renderer creation, truthful output metadata (the
+shared output still advertises nested placeholders), pause ordering, direct input
+and session entry remain unfinished. Full-frame CPU readback/allocation is not a
+performance claim. Async cookies, GPU context-loss faults and physical scanout
+remain unverified. Five new tests include real callback/output wire assertions;
+the WSLg public-target check verifies actual non-DRM refusal with real GLES scenes.
+Exact commands, 167-check results and limits:
+`updates/synchronous-direct-frame-target.md`. Supervisor full gates remain owed.
+
 ## Synchronous scene replacement (2026-09-07)
 
 `ActiveScene::replace` consumes a prepared scene using the original descriptor,

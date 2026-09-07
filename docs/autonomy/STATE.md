@@ -11717,3 +11717,76 @@ records remain owed, including display/input/session/suspend/resume acceptance.
 Compositor and release remain unchecked. Supervisor full Windows/Linux/BPF gates
 remain pending. No staging/commit/push, dev-loop edits, worker launch, other checkout
 access, shared kernel/BPF/cgroup/service mutation or physical installation.
+
+---
+
+## 2026-09-07 - Synchronous direct frame target
+
+Single desktop worker, initially clean tree; supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue and state tail,
+compositor feature/roadmap, ADRs 0001/0002, application-adapter contract, graphics
+prerequisites and physical hardware requirements. All reports published at iteration
+start were already referenced in STATE; no unreconciled report or Claude work taken.
+Later reports reconcile next iteration. Queue acceptance recorded before code.
+Own report integrated: `docs/autonomy/updates/synchronous-direct-frame-target.md`.
+
+DirectTarget implements FrameTarget using shared GLES preparation and blocking
+activation/replacement on a frozen owned output and borrowed session descriptor.
+Only committed identities reach membership and callback publication. Refusal
+preserves pending state. Post-commit cleanup errors still allow callbacks for the
+new scene but latch off all subsequent painting/submission; explicit disable
+retains those errors alongside shutdown failures. Failed candidate cleanup also
+latches shutdown. Existing no-retry quarantine semantics remain. Safe synchronous
+transport follows ADR 0002 without engine patch/unsafe exception. No agent context,
+adapter contract or release scope change. Native entry must translate diagnostics.
+
+Windows exit 0: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Linux shell/tests cfg-excluded on Windows.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin, CARGO_TARGET_DIR=/root/alo-os-target:
+cargo test -p alo-shell --lib direct_target --locked (5 pass);
+cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked (97 unit + 65 lifecycle + 3 socket + 2 doctests
+= 167 pass, no failures or ignored checks);
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. Final direct set -e group exit 0.
+The earlier PowerShell stderr/log wrapper returned an inconsistent status despite
+all commands reporting success; repeated the full group directly to resolve it.
+Local first-group evidence: .git/direct-target-linux.log. Broad fixture dead-code
+warnings removed with a minimal wire client; private docs/conditional clippy
+findings fixed without exemptions. Final repaint-counter/new-callback-after-halt
+assertions: fmt, Linux all-target clippy and five direct_target tests pass again.
+Tests exercise clean refusal/retry, cleanup latching, no repaint when halted,
+chronological shutdown failures and quarantine, and seven real Wayland protocol
+stages with callback/enter/leave messages. Unit pixels/DRM are injected; scene
+eligibility is explicitly controlled by the protocol fixture.
+
+Verified Rust 1.98.0, WSLg socket, Wayland/EGL/GLES/GBM/libseat/libinput pkg-config
+prerequisites; no install needed. /dev/dri absent. With XDG_RUNTIME_DIR=/run/user/0
+and WAYLAND_DISPLAY=wayland-0, timeout 30s /root/alo-os-target/debug/examples/nested_check
+--offscreen exits 0: existing 1,056-pixel SHM scene plus public DirectTarget through
+Server::render against /dev/null, ENOTTY 25, callbacks/membership preserved and
+clean shutdown. Existing disconnect/truncated-SHM refusal remains passing.
+WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --popups
+--cursor exits 0, 125 client surfaces. With __EGL_VENDOR_LIBRARY_FILENAMES set to
+/nonexistent/alo-direct-target-egl.json the offscreen command exits 1, invalid EGL
+Display. Logs: .git/direct-target-{gles,nested,refusal}.log. Exact commands in report.
+Successful KMS is injected, WSLg is not hardware certification.
+
+Updated all four shared progress documents, COMPOSITOR and own report. Tracked and
+new-file diffs reviewed; git diff --check passes. No staging/commit/push, supervisor
+or gate edits, worker launch, other checkout access, shared kernel/BPF/cgroup/service
+changes or physical installation. Supervisor full Windows/Linux workspace/BPF
+publication gates remain owed.
+
+Next executable component: compositor-owned default cursor rendering, scale-one
+shape/hotspot, clipping and hidden/client-cursor switching with pixel checks. Then
+truthful direct-output metadata, pause/retirement, direct input and session entry.
+Shared output name/model still uses nested placeholders and unknown refresh/size;
+direct renderer creation and successful scanout need a DRM-equipped login/VM.
+Safe async cookie transport, GPU context-loss/draw/readback faults and existing
+parent-leave/libseat/unmap-panic limits remain. Physical business laptop and >=24 GB
+GPU workstation display/input/session/suspend-resume and all remaining release
+acceptance records are owed. Compositor/release stay unchecked. Ready for supervisor
+integration, not a release verification claim.

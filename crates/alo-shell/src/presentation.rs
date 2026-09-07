@@ -11,6 +11,12 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// Blocking scanout refused; no identities or callbacks are published.
+    #[error(transparent)]
+    Scanout(#[from] crate::ResourceError),
+    /// Cleanup failed; explicitly disable and retire the session device.
+    #[error("direct target requires session retirement")]
+    DirectHalted,
     /// Offscreen readback failed; no frame has been submitted.
     #[error(transparent)]
     Readback(#[from] crate::ReadbackError),

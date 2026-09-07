@@ -16,6 +16,9 @@ mod scene_replacement_tests;
 #[path = "scene_scanout_tests.rs"]
 mod scene_scanout_tests;
 
+#[path = "direct_target_tests.rs"]
+mod direct_target_tests;
+
 /// A public-metadata buffer standing in for a kernel dumb allocation.
 struct FakeBuffer {
     /// Advertised dimensions.

@@ -15,6 +15,7 @@ mod atomic_test;
 mod cursor;
 mod direct_output;
 mod direct_session;
+mod direct_target;
 mod display_resources;
 mod drawing;
 mod drm_events;
@@ -47,6 +48,7 @@ pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output}
 pub use cursor::Cursor;
 pub use direct_output::{DirectOutput, DirectOutputError, discover_output};
 pub use direct_session::DirectSession;
+pub use direct_target::{DirectShutdownError, DirectTarget};
 pub use display_resources::{DisplayResources, ResourceError, ResourceFailure};
 pub use drm_events::{DisplayEvent, FlipComplete, read_display_events};
 pub use flip_gate::FlipGate;
