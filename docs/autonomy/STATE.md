@@ -11516,3 +11516,75 @@ Successful scanout needs a DRM-equipped development login/VM; physical business
 laptop and >=24 GB GPU workstation display/input, session switching, suspend/resume
 and all hardware checklist records remain owed. Full v0.01 scope unchanged;
 native compositor and release unchecked.
+
+
+---
+
+## 2026-09-07 - Offscreen scene rendering
+
+Single desktop worker; initial tree clean; supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue/state tail, compositor
+feature/roadmap, ADRs 0001/0002, application-adapter contract and hardware checklist.
+At start every published task report was already referenced here; no pending
+reconciliation. Claude's workstream untouched. Reports arriving during publication
+reconcile next iteration; release remains unchecked.
+
+Own report integrated: `docs/autonomy/updates/offscreen-scene-rendering.md`.
+Acceptance recorded in QUEUE before implementation. `render_scanout` produces owned
+XRGB scene pixels and drawn identities using the shared nested/offscreen painter.
+Dimensions are checked before allocation, imported elements retained through
+submission/readback, and failures return no prepared frame. Preparation never
+sends callbacks; the backend still owes successful upload/submission without
+interleaved dispatch. ADR 0002's native path and ADR 0001's context boundary remain.
+Fresh ABGR offscreen allocation and Normal/TopToBottom conversion choose simple
+complete-frame ownership; no unsafe, engine patch, agent capture or new scope.
+
+Windows executed: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Final exit 0; Linux source cfg-excluded.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin, CARGO_TARGET_DIR=/root/alo-os-target:
+cargo test -p alo-shell --lib offscreen --locked; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked;
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. Final exit 0:
+83 unit + 65 client lifecycle + 3 socket + 2 doctests = 153 passed, no failures/
+ignored. Two new automated tests. Full supervisor workspace/BPF gates not run here.
+Final Linux log: .git/offscreen-linux-verified.log. Corrected PowerShell stderr
+redirection/status reporting, verified the command group's exit 0 inside bash.
+
+With XDG_RUNTIME_DIR=/run/user/0 and WAYLAND_DISPLAY=wayland-0:
+timeout 30s /root/alo-os-target/debug/examples/nested_check --offscreen exits 0;
+WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --popups
+--cursor exits 0 (137 client surfaces). With
+__EGL_VENDOR_LIBRARY_FILENAMES=/nonexistent/alo-offscreen-egl.json the offscreen
+command exits 1, invalid EGL Display, no pixel success. Logs:
+.git/offscreen-{gles,nested,refusal}.log. Verified final refusal directly after
+correcting its wrapper. Known Mesa/ZINK startup diagnostics precede successful GLES.
+
+Real SHM window/child/popup/cursor fixture checks all 1,056 pixels, asymmetric rows,
+clipping, geometry and stacking, offscreen child exclusion, repeated preparation,
+immutable prior output, blank/disconnected scene, no callbacks on preparation or
+injected transport rejection, exactly four after fixture-only successful submission.
+Truncated accepted SHM storage causes actual import refusal and client protocol
+error without callback. No successful kernel scanout or real GPU context-loss/
+draw/readback fault is claimed. Initial coordinate/import compile errors fixed;
+negative Size fixture corrected to bypass upstream constructor assertion; stale
+root pointer-enter fixture corrected to wait for popup enter. Clippy as_chunks_mut
+request fixed; no repeated failure loop, lint exemption or lowered gate.
+
+Verified Rust 1.98.0, WSLg socket and native pkg-config prerequisites; no install
+needed. No /dev/dri. Updated all four progress documents, own report and COMPOSITOR;
+tracked/new-file diff reviewed and git diff --check passes. No staging/commit/push,
+dev-loop edits, worker launch, other checkout access, shared kernel/BPF/cgroup/
+service mutation or physical installation. Ready for independent integration.
+
+Next: connect prepared scene pixels to consuming upload and blocking scanout
+ownership with render/upload/TEST_ONLY/enable/refusal/cleanup evidence and callbacks
+only after successful submission. Direct FrameTarget/default cursor, safe cookie
+transport, retirement, pause/direct input/session wiring, parent-leave/libseat and
+pinned unmap-panic limits remain. Drawing/readback context-loss evidence remains
+owed. Successful scanout needs a DRM-equipped login/VM; physical business laptop
+and >=24 GB GPU workstation display/input, session switching, suspend/resume and
+all hardware checklist records remain owed. Full v0.01 scope retained; compositor
+and release unchecked.

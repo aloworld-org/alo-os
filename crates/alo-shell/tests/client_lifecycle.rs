@@ -231,3 +231,22 @@ fn shutting_down_the_server_disconnects_live_clients_and_removes_the_socket() {
     assert!(!path.exists());
     assert!(app.queue.roundtrip(&mut app.events).is_err());
 }
+
+/// Distinct SHM storage must preserve pending callbacks across rejected submission.
+#[test]
+fn independent_pixel_buffer_keeps_callbacks_until_successful_submission() {
+    let fixture = Fixture::new();
+    let mut app = Application::new(&fixture);
+    app.configure();
+    app.surface.frame(&app.queue.handle(), ());
+    let pixels = [0xff; 1024];
+    let _storage = app.attach_pixels(&app.surface, &pixels);
+    app.sync();
+    fixture.wait_for((1, 1));
+    assert!(fixture.render((32, 32), true, 10).is_err());
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    assert_eq!(fixture.render((32, 32), false, 11).ok(), Some(1));
+    app.sync();
+    assert_eq!(app.events.frames, [11]);
+}

@@ -6,6 +6,8 @@
 use super::Fixture;
 #[path = "keyboard_events.rs"]
 mod keyboard_events;
+#[path = "pixel_buffers.rs"]
+mod pixel_buffers;
 #[path = "pointer_events.rs"]
 mod pointer_events;
 #[path = "popup_events.rs"]
@@ -194,6 +196,8 @@ pub struct Application {
     pub toplevel: xdg_toplevel::XdgToplevel,
     /// Backing buffer, created through SCM_RIGHTS fd transfer.
     buffer: wl_buffer::WlBuffer,
+    /// SHM factory for independent pixel fixtures.
+    shm: wl_shm::WlShm,
     /// Surface factory retained for synchronized child fixtures.
     compositor: wl_compositor::WlCompositor,
     /// Subsurface-role factory.
@@ -284,6 +288,7 @@ impl Application {
             xdg,
             toplevel,
             buffer,
+            shm,
             compositor,
             subcompositor,
         }

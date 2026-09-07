@@ -12,6 +12,14 @@ mod popup_check;
 #[path = "support/grab_check.rs"]
 mod grab_check;
 
+#[cfg(target_os = "linux")]
+#[path = "support/offscreen_check.rs"]
+mod offscreen_check;
+
+#[cfg(target_os = "linux")]
+#[path = "support/offscreen_client.rs"]
+mod offscreen_client;
+
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]
 pub struct Fixture {
@@ -40,6 +48,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_shell::{Nested, Server};
+    if std::env::args().any(|arg| arg == "--offscreen") {
+        return offscreen_check::run();
+    }
     if std::env::args().any(|arg| arg == "--pointer-release-grabs") {
         return grab_check::run(false, true);
     }

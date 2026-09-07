@@ -728,6 +728,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Offscreen scene rendering (2026-09-07): shared window/popup/cursor painter
+    produces owned XRGB pixels and drawn identities without submission callbacks.
+    Extent and real truncated-SHM refusal, all 1,056 scene pixels, clipping,
+    stacking, callback timing and disconnect checked. 153 Linux shell checks,
+    affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples pass; WSLg
+    nested regression submits 137 client surfaces. Evidence:
+    `docs/autonomy/updates/offscreen-scene-rendering.md`. Successful submission
+    is fixture-only; direct FrameTarget/upload/scanout integration, default cursor,
+    cookie transport, retirement, pause/input/session wiring and physical evidence
+    remain. GPU context-loss/draw/readback fault evidence remains owed. Supervisor
+    full publication gates pending; compositor and release remain unchecked.
   - GLES scanout readback (2026-09-07): full-target safe export, checked signed
     byte-count bounds, mapping metadata/length refusal, explicit row orientation
     and RGBA-to-XRGB conversion into immutable upload sources. Six new tests;

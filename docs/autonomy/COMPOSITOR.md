@@ -1043,3 +1043,31 @@ Direct FrameTarget, cookie-bearing atomic transport, retirement, pause/input and
 production entry remain unfinished. No DRM node exists on this host; successful
 scanout and physical display/input remain unverified. Supervisor full publication
 gates and all physical acceptance are still owed. No compositor/release tick.
+
+
+## Offscreen scene preparation (2026-09-07)
+
+`render_scanout` renders current window, popup and cursor trees through the same
+fallible GLES painter used by `Nested`. Positive extent and signed export limits
+are checked before allocating an ABGR offscreen renderbuffer. Normal rendering
+pairs with explicit TopToBottom readback. Imports remain alive through readback;
+the returned `PreparedScanout` owns immutable CPU pixels and drawn identities,
+independent of the temporary framebuffer. It is not a `FrameTarget`: preparing or
+dropping it sends no callback and publishes no output membership. The trusted
+backend must upload/submit successfully before returning those identities, with
+no intervening client dispatch. `RenderError::Readback` preserves export failures.
+This adds no adapter/agent protocol or screenshot/context capability.
+
+Default and hidden cursors draw no pixels; the direct backend still needs a default
+arrow. Full allocation/readback each frame favors simple complete-frame ownership;
+performance optimization and actual direct-display presentation are outstanding.
+Two new tests and explicit `nested_check --offscreen` verify 1,056 exact scene
+pixels, geometry/stacking/clipping, callback preservation on preparation and failed
+transport, fixture-only successful submission, disconnect and truncated-SHM import
+refusal. All 153 Linux shell checks and affected lint/doc/build checks pass; WSLg
+nested regression submits 137 client surfaces. Exact commands and limits:
+`updates/offscreen-scene-rendering.md`. No actual GPU context-loss/draw/readback
+fault or successful DRM scanout is claimed. Next: connect preparation to consuming
+upload and blocking scanout ownership with callback/cleanup tests. Direct target,
+cookie transport, retirement, pause/input/session wiring, existing parent-leave/
+libseat limits, supervisor full gates and physical acceptance remain open.

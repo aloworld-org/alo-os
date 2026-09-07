@@ -69,6 +69,27 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected offscreen scene rendering (desktop worker):** render the existing
+  window, popup and cursor trees into an owned GLES offscreen target, returning
+  immutable ScanoutPixels and drawn surface identities without completing frame
+  callbacks. Share scene painting with the nested backend. Acceptance: extent
+  refusal before allocation, real SHM client pixel/stacking/clipping checks,
+  callback preservation on preparation and failed submission, nested regression,
+  affected Rust fmt/clippy/tests/rustdoc. Graphics failures propagate; no direct
+  FrameTarget, scanout commit or hardware certification is supplied by this step.
+  **Completed offscreen scene rendering 2026-09-07:** shared GLES painter produces
+  immutable scene pixels and drawn identities, preserving callbacks until the
+  backend successfully submits. Two new tests; 153 Linux shell checks and affected
+  Windows/Linux fmt/clippy/tests, Linux rustdoc/examples pass. WSLg verifies all
+  1,056 scene pixels, clipping/stacking, callback timing, blank/disconnected scenes
+  and actual truncated-SHM import refusal. Invalid EGL exits 1; nested regression
+  submits 137 client surfaces. Report: `updates/offscreen-scene-rendering.md`.
+  Next: prepared scene -> consuming unbound upload -> blocking scanout ownership,
+  with render/upload/TEST_ONLY/enable/refusal/cleanup integration and no premature
+  callbacks. Direct FrameTarget/default cursor, cookie transport, retirement,
+  pause/direct-input/session wiring and physical evidence remain open. Actual GPU
+  context-loss/draw/readback failure checks and supervisor full gates remain owed;
+  compositor/release stay unchecked. No successful kernel scanout was exercised.
   **Selected GLES scanout readback (desktop worker):** read a complete bound
   framebuffer through pinned Smithay's safe export API and convert its explicit
   row order and RGBA channels into an owned XrgbFrame source. Validate dimensions,

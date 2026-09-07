@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Real window, popup and cursor scenes can now be prepared for direct-display
+  upload without premature frame callbacks.** Shared GLES painting produces
+  immutable pixels, preserves clipping/stacking, and refuses malformed extents
+  and inaccessible client buffers. WSLg pixel and callback checks pass; direct
+  presentation and physical acceptance remain unfinished. Evidence:
+  `docs/autonomy/updates/offscreen-scene-rendering.md`.
+
 - **Rendered GLES frames can now become validated direct-display upload sources.**
   Full-frame readback checks layout and size limits, converts colour channels and
   explicit row orientation, and produces immutable XRGB pixels. Real WSLg pixel

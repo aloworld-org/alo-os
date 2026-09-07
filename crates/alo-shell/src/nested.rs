@@ -1,10 +1,10 @@
 //! Nested WSLg/Wayland graphics and seat backend.
 
-use crate::{FrameTarget, RenderError, drawing};
+use crate::{FrameTarget, RenderError};
 use smithay::{
     backend::{
         input::{AbsolutePositionEvent, Event, InputEvent, KeyboardKeyEvent, PointerButtonEvent},
-        renderer::{Color32F, Frame, Renderer, gles::GlesRenderer, utils::draw_render_elements},
+        renderer::gles::GlesRenderer,
         winit::{self, WinitEvent, WinitEventLoop, WinitGraphicsBackend},
     },
     reexports::{
@@ -227,38 +227,14 @@ impl FrameTarget for Nested {
         let damage = Rectangle::from_size(size);
         let drawing = {
             let (renderer, mut framebuffer) = self.backend.bind().map_err(submission)?;
-            let mut drawing = drawing::Drawing {
-                elements: Vec::new(),
-                surfaces: Vec::new(),
-            };
-            for (surface, location) in crate::scene::trees(roots, popups) {
-                let mut tree =
-                    drawing::import_at(renderer, &[surface], damage, location.to_physical(1.0))?;
-                drawing.elements.append(&mut tree.elements);
-                drawing.surfaces.append(&mut tree.surfaces);
-            }
-            if let crate::Cursor::Surface { surface, location } = cursor {
-                let mut cursor_drawing = drawing::import_at(
-                    renderer,
-                    std::slice::from_ref(surface),
-                    damage,
-                    location.to_physical(1.0),
-                )?;
-                cursor_drawing.elements.append(&mut drawing.elements);
-                cursor_drawing.surfaces.append(&mut drawing.surfaces);
-                drawing = cursor_drawing;
-            }
-            let mut frame = renderer
-                .render(&mut framebuffer, size, Transform::Flipped180)
-                .map_err(submission)?;
-            // Neutral clear, not the shell's pending token-based visual design.
-            frame
-                .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
-                .map_err(submission)?;
-            draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage])
-                .map_err(submission)?;
-            let _sync = frame.finish().map_err(submission)?;
-            drawing
+            crate::scene_drawing::paint(
+                renderer,
+                &mut framebuffer,
+                roots,
+                popups,
+                cursor,
+                Transform::Flipped180,
+            )?
         };
         self.backend.submit(Some(&[damage])).map_err(submission)?;
         self.backend

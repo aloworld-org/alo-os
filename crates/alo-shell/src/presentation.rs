@@ -11,6 +11,9 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// Offscreen readback failed; no frame has been submitted.
+    #[error(transparent)]
+    Readback(#[from] crate::ReadbackError),
     /// Keyboard backend initialization or routing refused.
     #[error(transparent)]
     Input(#[from] crate::InputError),

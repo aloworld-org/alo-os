@@ -106,7 +106,7 @@ fn validate_mapping(
 }
 
 /// Protect upstream's `width * height * 4` signed i32 arithmetic before I/O.
-fn layout(size: (u32, u32)) -> Result<(usize, usize), ReadbackError> {
+pub(crate) fn layout(size: (u32, u32)) -> Result<(usize, usize), ReadbackError> {
     let bytes = size.0.checked_mul(size.1).and_then(|n| n.checked_mul(4));
     let Some(bytes) = bytes.filter(|n| *n > 0 && *n <= i32::MAX as u32) else {
         return Err(ReadbackError::Layout);
