@@ -47,8 +47,18 @@ archives now refuse multiply named regular files using the open handle. The
 contributor measured that the kernel permits the granted hard-link name while
 refusing the private name; six alo-files tests independently pass here on Ubuntu.
 Contributor full Linux gates and mutation evidence are retained as reported, not
-claimed rerun. Windows exposure, untested macOS/physical acceptance and the separate
-kernel rename gap (6d) remain. No hardware or release box changes.
+claimed rerun. Windows exposure and untested macOS/physical acceptance remain.
+The separate kernel rename gap (6d) is closed in the integrated report below.
+No hardware or release box changes.
+
+Kernel rename report integrated 2026-09-07:
+`docs/autonomy/updates/kernel-enforcement-for-file-renames.md`. The second BPF
+LSM hook validates source and destination and the loader requires both hooks.
+Reviewed source and tests; six real-kernel tests, approved agentd move, read
+regression and full Linux/BPF gates are contributor-reported evidence, not rerun
+here. Remaining unhooked mutation operations, hard-link identity and conservative
+exchange limits are retained; Windows/macOS are unaffected, physical acceptance
+and supervisor gates remain owed. No roadmap capability box changes.
 
 ## Three states, because two are not enough
 
@@ -536,9 +546,11 @@ compositor is not required for, which is why it runs unbroken.
         running kernel with the programme loaded, so nothing a turn may reach
         got wider and no ADR had to move. A granted move now runs inside a real
         boundary in `alo-agentd`'s own test, which is the guard that caught 6b's
-        first design. What the measuring found instead is item 6d: a rename is
-        not on the boundary's hook at all, which ADR 0015 names and nothing has
-        built yet
+        first design. Measuring also found missing rename enforcement (6d), now
+        closed by the second BPF hook checking the source and destination parent.
+        Claude's `docs/autonomy/updates/kernel-enforcement-for-file-renames.md`
+        reports six kernel tests and the approved-move regression passing; those
+        checks are retained as contributor evidence, not rerun by this iteration.
   - [ ] **On the machine.**
         the door being reached — the path moved in code and no connection from a
         second login has been made since, and it cannot be until an image exists
@@ -758,6 +770,15 @@ which made a completely consistent rule look like work being taken out of turn.
     records checks and limits. Explicit grabs, repositioning/output constraints,
     parent leave, direct display and physical acceptance remain unfinished.
     No compositor box changes; supervisor publication gates remain pending.
+
+  - Keyboard-triggered popup grabs (2026-09-07): latest held parent key press
+    authorizes one root grab; submenus inherit the active chain serial. Release,
+    supersession, focus/lifetime loss and consumption prevent stale reuse. Three
+    new socket tests pass (52 Linux shell tests); WSLg keyboard-grab submission
+    and pointer-grab regression pass. Exact focused checks and limits:
+    `docs/autonomy/updates/native-popup-keyboard-grabs.md`. Release-triggered
+    initiation, repositioning/output constraints, parent leave, direct display,
+    session integration and physical acceptance remain. Compositor stays unchecked.
 
   - Pointer-triggered popup grabs (2026-09-07): active parent press/seat validation,
     topmost keyboard routing, owner-client pointer isolation, nested focus return

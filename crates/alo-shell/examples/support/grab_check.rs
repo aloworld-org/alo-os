@@ -2,7 +2,7 @@
 use crate::{Fixture, application};
 
 /// Submit a grabbing popup, route input and verify outside-click dismissal.
-pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(keyboard: bool) -> Result<(), Box<dyn std::error::Error>> {
     use alo_shell::{Nested, Server};
     use smithay::{
         backend::input::{ButtonState, KeyState},
@@ -48,7 +48,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         step(false);
         app.sync();
         let (surface, xdg, role) = app.popup(true, 20);
-        app.grab_popup(&role, app.events.pointer.button_serial);
+        app.grab_popup(
+            &role,
+            if keyboard {
+                app.events.keyboard.key_serial
+            } else {
+                app.events.pointer.button_serial
+            },
+        );
         surface.commit();
         app.sync();
         app.ack_popup(&xdg);
@@ -74,8 +81,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             app.events.keyboard.surfaces.last(),
             Some(&app.surface.id().protocol_id())
         );
-        assert_eq!(app.events.keyboard.keys.len(), 2);
-        assert_eq!(app.events.pointer.buttons.len(), 2, "outside click leaked");
+        assert_eq!(app.events.keyboard.keys.len(), if keyboard { 4 } else { 2 });
+        assert_eq!(
+            app.events.pointer.buttons.len(),
+            if keyboard { 0 } else { 2 },
+            "outside click leaked"
+        );
         println!(
             "Grabbed popup GLES callback/output enter; keyboard focus/key/release; outside click consumed, popup_done/output leave and parent focus restored"
         );
@@ -93,6 +104,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                 server.pointer_motion(300.0, 190.0, 4)?;
                 assert!(!server.pointer_button(0x110, ButtonState::Pressed, 5)?);
                 assert!(!server.pointer_button(0x110, ButtonState::Released, 6)?);
+            } else if keyboard {
+                let root = server.mapped_surfaces().next().cloned();
+                server.keyboard_focus(root.as_ref())?;
+                assert!(server.keyboard_key(28, KeyState::Pressed, 2)?);
             } else {
                 server.pointer_motion(1.0, 1.0, 1)?;
                 assert!(server.pointer_button(0x110, ButtonState::Pressed, 2)?);

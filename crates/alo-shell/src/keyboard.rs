@@ -9,7 +9,7 @@ use smithay::{
         keyboard::{FilterResult, KeyboardHandle, XkbConfig},
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
-    utils::SERIAL_COUNTER,
+    utils::{SERIAL_COUNTER, Serial},
 };
 
 /// Refusal at the compositor's internal input boundary, never an agent verb.
@@ -46,6 +46,8 @@ pub(crate) struct Keyboard {
     handle: KeyboardHandle<Surfaces>,
     /// Last accepted timestamp, reused for releases synthesized on focus loss.
     time: u32,
+    /// Latest real held press; consumed by popup initiation and never synthesized.
+    pub(crate) popup_press: Option<(Serial, WlSurface)>,
 }
 
 impl Server {
@@ -69,6 +71,7 @@ impl Server {
             seat,
             handle,
             time: 0,
+            popup_press: None,
         });
         Ok(server)
     }
@@ -96,6 +99,9 @@ impl Server {
     ///
     /// Returns false for no focus, duplicate presses or unmatched releases.
     /// No keys are remembered while unfocused. Call with monotonic milliseconds.
+    /// The latest delivered press may initiate a popup on its focused parent;
+    /// another accepted key event, a focus change or a successful grab invalidates
+    /// that serial. Releases and synthetic focus-cleanup events cannot initiate.
     pub fn keyboard_key(
         &mut self,
         code: u32,
@@ -120,16 +126,18 @@ impl Server {
         if keyboard.pressed_keys().contains(&code) == (state == KeyState::Pressed) {
             return Ok(false);
         }
-        keyboard.input::<(), _>(
-            &mut self.surfaces,
-            code,
-            state,
-            SERIAL_COUNTER.next_serial(),
-            time,
-            |_, _, _| FilterResult::Forward,
-        );
+        let serial = SERIAL_COUNTER.next_serial();
+        let focus = keyboard.current_focus();
+        keyboard.input::<(), _>(&mut self.surfaces, code, state, serial, time, |_, _, _| {
+            FilterResult::Forward
+        });
         if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
             keyboard.time = time;
+            keyboard.popup_press = if state == KeyState::Pressed {
+                focus.map(|surface| (serial, surface))
+            } else {
+                None
+            };
         }
         Ok(true)
     }
@@ -160,6 +168,9 @@ impl Surfaces {
         let time = keyboard.time;
         if handle.current_focus() == focus {
             return Ok(());
+        }
+        if let Some(keyboard) = self.keyboard.as_mut() {
+            keyboard.popup_press = None;
         }
         for code in handle.pressed_keys() {
             handle.input::<(), _>(

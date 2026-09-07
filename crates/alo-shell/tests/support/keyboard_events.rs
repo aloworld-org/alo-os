@@ -24,6 +24,8 @@ pub struct KeyboardEvents {
     pub leaves: usize,
     /// Evdev code and press/release in wire order.
     pub keys: Vec<(u32, wl_keyboard::KeyState)>,
+    /// Last key event serial, as received over the socket.
+    pub key_serial: u32,
     /// Depressed modifier masks in wire order.
     pub modifiers: Vec<u32>,
 }
@@ -82,10 +84,14 @@ impl Dispatch<wl_keyboard::WlKeyboard, ()> for Events {
             }
             wl_keyboard::Event::Leave { .. } => events.leaves += 1,
             wl_keyboard::Event::Key {
+                serial,
                 key,
                 state: WEnum::Value(state),
                 ..
-            } => events.keys.push((key, state)),
+            } => {
+                events.key_serial = serial;
+                events.keys.push((key, state));
+            }
             wl_keyboard::Event::Modifiers { mods_depressed, .. } => {
                 events.modifiers.push(mods_depressed)
             }

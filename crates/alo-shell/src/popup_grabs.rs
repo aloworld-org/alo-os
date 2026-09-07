@@ -1,4 +1,4 @@
-//! Explicit pointer-triggered popup ownership, separate from protocol lifetimes.
+//! Explicit input-triggered popup ownership, separate from protocol lifetimes.
 
 use smithay::{
     input::Seat,
@@ -24,7 +24,7 @@ pub(crate) struct Grab {
 }
 
 impl Surfaces {
-    /// Accept an active pointer press on the parent, or the current chain's serial.
+    /// Accept a pointer/key press on the parent, or the current chain's serial.
     pub(crate) fn grab_popup(&mut self, role: PopupSurface, seat: WlSeat, serial: Serial) {
         self.prune();
         if self
@@ -57,9 +57,9 @@ impl Surfaces {
         let allowed = parent.as_ref().is_some_and(|parent| {
             if let Some(grab) = &self.popup_grab {
                 grab.chain.last() == Some(parent)
-                    && (serial == grab.serial || self.pointer_press_on(parent, serial))
+                    && (serial == grab.serial || self.press_on(parent, serial))
             } else {
-                self.mapped().any(|root| root == parent) && self.pointer_press_on(parent, serial)
+                self.mapped().any(|root| root == parent) && self.press_on(parent, serial)
             }
         });
         if !own_seat || !allowed {
@@ -68,6 +68,9 @@ impl Surfaces {
             return;
         }
         let Some(parent) = parent else { return };
+        if let Some(keyboard) = self.keyboard.as_mut() {
+            keyboard.popup_press = None;
+        }
         // End the initiating implicit drag before changing recipients. Its later
         // physical release is unmatched and cannot land in the newly opened menu.
         let _ = self.clear_pointer();
@@ -99,6 +102,15 @@ impl Surfaces {
                 "destroyed a popup below an active grabbing child",
             );
         }
+    }
+
+    /// Keyboard initiation is the latest delivered still-held press on this parent.
+    /// Release, focus changes and successful grabs invalidate it. No time heuristic
+    /// or client-provided timestamp can extend this authority.
+    fn press_on(&self, parent: &WlSurface, serial: Serial) -> bool {
+        self.keyboard.as_ref().is_some_and(|keyboard| {
+            keyboard.popup_press.as_ref() == Some(&(serial, parent.clone()))
+        }) || self.pointer_press_on(parent, serial)
     }
 
     /// Require the actual active press serial and a surface in the parent tree.

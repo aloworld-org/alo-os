@@ -606,3 +606,21 @@ repositioning/output constraints, parent-leave backend support, direct display/i
 and production session integration remain. The scripted WSLg check is submission
 and protocol evidence, not pixel readback or physical input/display certification.
 Supervisor full Windows/Linux/BPF publication gates and hardware acceptance remain owed.
+
+## Keyboard-triggered popup grabs (2026-09-07)
+
+A keyboard-only seat can initiate a popup from its latest delivered held key
+press on the parent. Another accepted key event, focus/lifetime loss or successful
+grab invalidates that serial; synthetic releases cannot initiate. Active submenu
+chains retain their original serial. Pending-grab destruction cannot replay it.
+This bounded policy avoids historical serial storage and arbitrary timeout rules.
+Three real-client tests pass (52 Linux shell tests). Focused Windows/Linux fmt,
+clippy/tests, Linux rustdoc and example build pass. WSLg `--keyboard-grabs` submits
+a real popup and verifies callbacks/output membership, keys, dismissal, restored
+focus and disconnect; `--grabs` pointer regression also passes. Exact commands and
+local wire/graphics evidence: `updates/native-popup-keyboard-grabs.md`.
+
+Release-triggered initiation remains the next component. Repositioning/output
+constraints, parent leave, direct display/input, session integration, full
+supervisor gates and physical acceptance remain owed. No adapter/agent contract
+changes; WSLg scripted submission is not physical input/display certification.

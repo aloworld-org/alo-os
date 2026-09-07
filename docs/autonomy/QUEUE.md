@@ -222,8 +222,20 @@ cross-references, not the primary names used in handoffs or status messages.
   focus loss and lifecycle cleanup. WSLg grabbed-popup callback/output/key/dismissal
   check and popup/cursor regression pass. Focused Windows/Linux fmt, clippy/tests,
   Linux rustdoc and wire evidence: `updates/native-popup-pointer-grabs.md`.
-  **Next useful component:** keyboard-triggered popup grabs with recent delivered
-  key serial validation, release-triggered opening policy and nested serial tests.
+  **Selected keyboard popup initiation component (desktop worker):** accept the
+  latest still-held key press delivered to the focused popup parent, consume its
+  serial on grab, and invalidate it on release/new input or focus/lifetime loss.
+  Acceptance: real socket keyboard-only happy path, submenu inheritance, stale,
+  foreign, released, replay and focus-loss refusals; WSLg keyboard-grab submission,
+  focused tests, fmt, clippy and rustdoc. Release-triggered initiation stays owed.
+  **Completed keyboard initiation component 2026-09-07:** latest delivered held
+  press on the parent, one-use root serial and submenu inheritance. Three new
+  real-client tests pass (52 Linux shell tests), including release/supersession,
+  foreign/stale serials, focus loss, unmap/remap and pending-grab replay refusal.
+  WSLg keyboard-grab submission and pointer-grab regression pass; focused checks
+  are recorded in `updates/native-popup-keyboard-grabs.md`.
+  **Next useful component:** release-triggered opening policy with bounded serial
+  lifetime, real-client happy/refusal tests and WSLg submission evidence.
   Repositioning/output constraints, parent-leave backend, direct display and physical acceptance
   remain; item 33 is unchecked and supervisor full gates remain owed.
 
@@ -235,7 +247,7 @@ cross-references, not the primary names used in handoffs or status messages.
   gates and mutation-test evidence; those were not rerun here. The kernel permits
   the granted hard-link name, so the userspace check is necessary. Windows remains
   exposed; macOS and physical acceptance untested. Kernel rename coverage (6d)
-  remains pending under the filesystem workstream; no new ownership claim.
+  is now integrated below from Claude's report; no new ownership claim.
 - [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit
@@ -4221,29 +4233,18 @@ rather than only of what is convenient.
   v0.01 promise had no item until iteration 24 read this line properly. It is
   item 11 above. What is left here is genuinely Linux: nothing in this
   repository can start a program on a machine that has no compositor.
-- **6d. A rename is not on the boundary's hook.** Found by measuring, while item
-  6c was checking something else: with a turn bound to one folder and the real
-  programme loaded, **a plain rename of a file nobody granted succeeds.** ADR
-  0015's own mechanism section names `inode_rename` beside `file_open`, and only
-  `file_open` is built — so the kernel watches what a turn *opens* and not what
-  it *moves*.
-
-  Nothing is currently wrong because of it: `alo-capability` refuses such a call
-  long before a syscall, and since 6c `alo-files` does not resolve a rename's
-  folders by name either. But that is the daemon's honest account of itself
-  again, which is the exact thing ADR 0013 exists to stop being the only thing
-  standing there — a bug in a verb would be caught for a read and not for a
-  move.
-
-  What it needs: the same walk `deciding.rs` already does, on `inode_rename`,
-  against both directory entries the hook is handed. The map, the places and the
-  `reaches` rule are all built and unchanged. The one new question is what a
-  bound should say about a rename **out of** one granted folder and **into**
-  another, which is a real call and must not be refused.
-
-  `crates/alo-bounding/tests/what_an_o_path_handle_is.rs` asserts the gap as it
-  is today — the last row of it — so whoever closes this is told by a failing
-  test rather than by finding this paragraph.
+- [x] **Kernel enforcement for file renames (6d).** Claude's published
+  `updates/kernel-enforcement-for-file-renames.md` closes the measured gap:
+  `inode_rename` checks the source entry and destination parent with the existing
+  bounds walk. Both hooks attach/pin or loader cleanup removes the partial setup.
+  Reviewed code and six kernel tests; contributor reports all six pass, read
+  enforcement and agentd approved-move integration pass, full Linux gates and
+  pinned BPF checks pass. These kernel checks were not independently rerun in
+  this desktop iteration; supervisor gates remain owed. WSL cannot certify hardware.
+  Other mutation hooks (unlink/link/symlink/mkdir/create) remain unhooked; retain
+  a filesystem-workstream audit of their reachability under the existing release
+  security requirements, without adding verbs or claiming Claude's next assignment.
+  Hard-link identity limits and conservative exchange handling remain in the report.
 - **4b. Where the record file lives, and when it is shortened.** What item 4a
   could not close, and the whole of what is left of it: a path under `/var/lib`
   that the package decides, the setting the retention rule is read from and

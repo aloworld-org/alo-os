@@ -12,6 +12,22 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Keyboard-opened menus can now keep focus in the development compositor.**
+  A key press delivered to the focused parent authorizes one popup grab; nested
+  menus retain the active chain. Released, superseded, foreign and reused serials
+  refuse, and focus loss cannot leave authority behind. Three new socket tests
+  and a WSLg submission/input fixture pass. Release-triggered opening, remaining
+  compositor work and physical acceptance are still unfinished. Exact checks:
+  `docs/autonomy/updates/native-popup-keyboard-grabs.md`.
+- **The kernel now refuses agent turns moving ungranted files into a granted
+  folder or granted files outside their bounds.** Integrated Claude's published
+  `docs/autonomy/updates/kernel-enforcement-for-file-renames.md`: both rename
+  endpoints are checked, refused moves preserve data, and the loader requires
+  both read and rename hooks. Six kernel tests, approved-move integration and
+  full Linux/BPF checks are reported by the contributor; this iteration reviewed
+  their code and evidence without rerunning shared-kernel tests. Other mutation
+  hooks and hard-link identity limits remain; physical acceptance is still owed.
+
 - **Pointer-opened menus can now keep keyboard focus and dismiss on outside
   clicks in the development compositor.** Grabs require the seat's active press
   on the parent; nested menus restore focus to their surviving parent. Stale or

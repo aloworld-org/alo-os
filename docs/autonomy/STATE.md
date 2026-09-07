@@ -10469,3 +10469,50 @@ does not certify hardware. Supervisor full independent Windows/Linux/BPF gates
 have not run for this change. No staging, commit/push, worker launch, dev-loop
 edit or other repository changes. Reports arriving during publication are
 reconciled next iteration. The compositor and release remain unverified.
+
+---
+
+## 2026-09-07 - native popup keyboard grabs and kernel rename report integration
+
+Single desktop worker; clean checkout at start. Read constitution, delivery and
+shared-main ownership, updates README, current queue/state, shell feature/roadmap,
+ADRs 0001/0002 and adapter contract; ADR 0015 for filesystem reconciliation.
+Recorded keyboard component acceptance in QUEUE before code. No agent delegation.
+
+Reconciled `docs/autonomy/updates/kernel-enforcement-for-file-renames.md`, the only
+published report missing here at iteration start. Reviewed both-end rename walk,
+two-hook loader and real-kernel tests. Contributor reports six kernel tests, read
+regression, approved agentd move, full Linux gates and pinned BPF checks passing;
+these were not independently rerun here. No shared kernel/cgroup/BPF state changed.
+QUEUE marks kernel rename implementation (6d) complete; ROADMAP keeps hardware
+boxes unchecked. Other mutation hooks, hard-link identity, conservative exchange
+handling and non-Linux/physical limits remain recorded. Claude retains filesystem
+ownership; no next assignment inferred. The source report/code were not edited.
+
+Integrated own report: `docs/autonomy/updates/native-popup-keyboard-grabs.md`.
+Latest delivered real held key press authorizes a popup on the focused parent;
+submenus inherit the active chain serial. Another accepted key event, focus or
+lifetime loss and successful initiation invalidate root authority. Pending popup
+destruction cannot replay it. Synthetic key cleanup never authorizes requests.
+This bounded policy avoids accumulating historical serials and arbitrary timeouts;
+release-triggered initiation remains a separate useful component. No new scope,
+agent/context surface, dependency, engine patch or accepted-ADR exception.
+
+Focused Windows/Linux fmt, all-target clippy and tests pass. Linux shell: 52 tests
+(three new keyboard-grab tests), none ignored; Windows excludes Linux protocol
+tests. Linux warnings-denied rustdoc and example build pass. Three-test wire trace
+passes. WSLg keyboard-grab and pointer-grab regression fixtures exit 0 with GLES
+popup callback/output enter, input, outside-click dismissal/output leave, restored
+parent focus and disconnect cleanup. Exact commands and local logs are in the
+report. All test assertions passed; no gate or lint weakening. Diff reviewed and
+whitespace check passes. Native headers and WSLg socket verified; no install needed.
+Linux target /root/alo-os-target remains specific to this checkout.
+
+Next: release-triggered initiation, then repositioning/output constraints,
+parent-leave backend and direct display/input. Production session and every other
+unfinished v0.01 requirement remain. Physical laptop/GPU workstation acceptance
+and actual parent input remain owed; scripted WSLg is not hardware certification.
+Supervisor full independent Windows/Linux/BPF publication gates have not run for
+this change. No staging, commit/push, worker/loop launch, dev-loop edit or changes
+to another repository. Reports arriving during publication wait for reconciliation
+next iteration; compositor and release remain unverified.
