@@ -273,7 +273,36 @@ with the honest justification that `.rodata` is frozen read-only — the constan
 were written so that none is emitted. The guard was not relaxed, not even
 defensibly.
 
-### 4. Documenting the filesystem mutations that remain unwatched
+### 4. End-to-end network enforcement integration
+
+**Status:** **blocked, awaiting a decision.** **Depends on:** 3 — done.
+
+The mechanism task 3 built decides by control group, and **a provider request is
+made from a thread in no control group**, so nothing on the production path
+reaches it. Measured, not reasoned:
+`crates/alo-turn/tests/whether_a_question_runs_inside_the_boundary.rs` counts
+executions carried out inside a boundary during one turn that does a file verb
+and asks a question. The count is one, and it was the file verb.
+
+**So the v0.01 network requirement is not met**, and task 3's report should not
+be read as meeting it. The audit, the traced request path and the coverage
+assessment — DNS, UDP `sendto`, pooling, inherited sockets, loopback proxies,
+each for production reachability — are in
+`docs/autonomy/updates/end-to-end-network-enforcement.md`.
+
+**The decision this needs:** may a question be carried out inside a turn's
+boundary, with its destination registered for the length of the request? It
+changes the turn lifecycle — `Bounding` takes file places and would need to bound
+a network request — and it changes how every provider request is made, because
+`ureq` resolves and connects in one call and a registration needs a moment
+between those. Two release-relevant gaps ride on the same decision: **DNS**,
+which is UDP and is not the destination anybody was shown, and **connection
+pooling**, where a reused connection makes no `connect` at all.
+
+Nothing of it is started. No grant, capability, policy or ADR was touched by the
+audit.
+
+### 5. Documenting the filesystem mutations that remain unwatched
 
 **Status:** ready, independent. **Depends on:** nothing.
 
@@ -285,7 +314,7 @@ This is documentation of a known limit, not new enforcement.
   where somebody auditing the boundary will find it.
 - **Evidence:** the text, and `cargo doc` clean.
 
-### 5. Descriptors opened before a turn began
+### 6. Descriptors opened before a turn began
 
 **Status:** ready, independent. **Depends on:** nothing.
 
