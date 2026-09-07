@@ -802,3 +802,20 @@ property/capability discovery and test-only validation, then renderer lifecycle,
 scanout/page flips and direct input. Successful device acquisition/reacquisition,
 real display/input, parent leave, session entry and physical acceptance remain.
 Supervisor full publication gates remain owed; compositor/release boxes unchanged.
+
+## Atomic display property discovery (2026-09-07)
+
+`discover_atomic_output` is the next borrowed-seat-descriptor discovery layer:
+atomic/universal-plane negotiation, primary-plane selection and validation of
+standard connector/CRTC/plane property schemas. It returns handles and advertised
+formats without allocating buffers or changing scanout. Use within
+`DirectSession::with_device`; capabilities persist on the open file description,
+and snapshots must be discarded on pause/hotplug. Kernel TEST_ONLY remains next.
+
+Eight new tests pass (94 Linux shell tests total); Windows/Linux affected clippy,
+tests and fmt plus Linux rustdoc/examples pass. Real `/dev/null` capability ioctl
+refuses ENOTTY; WSL card is absent (ENOENT). WSLg popup/cursor regression submits
+115 client surfaces. Exact commands, logs, decisions, raw-parser limits and owed
+successful DRM/hardware evidence: `updates/atomic-display-property-discovery.md`.
+Full supervisor publication gates remain pending. No production compositor or
+hardware checkbox is completed by this component.

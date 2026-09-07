@@ -12,6 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display discovery now checks the atomic modesetting interface.**
+  It negotiates device capabilities, selects a compatible primary plane and
+  refuses missing, ambiguous or unusable standard properties before configuration.
+  This is schema discovery; kernel test commits, scanout and hardware acceptance
+  remain unfinished. Evidence: `docs/autonomy/updates/atomic-display-property-discovery.md`.
+
+- **Bound agent turns can be restricted to individual network destinations.**
+  Claude's published kernel component checks new non-loopback IPv4/IPv6 connects
+  against turn-owned address/port entries and applies withdrawal on the next
+  connect. Contributor Linux/BPF checks passed. Production destination wiring,
+  UDP sendto, inherited/established sockets, loopback proxies and physical
+  acceptance remain open; this is not complete egress enforcement. Evidence:
+  `docs/autonomy/updates/network-egress-enforcement.md`.
+
 - **The direct-display backend now acquires devices through the login seat.**
   Pausing retires the descriptor; activation requires fresh acquisition. Inactive
   sessions and failed acquisition or cleanup refuse further device access.

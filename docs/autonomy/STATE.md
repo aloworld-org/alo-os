@@ -10901,3 +10901,78 @@ documentation diff reviewed and whitespace check passed. Remaining v0.01 scope
 preserved; compositor and release remain unchecked. No staging, commit or push,
 dev-loop edits or physical disk installation. Ready for supervisor integration
 and independent publication gates as one reviewable device-lifetime step.
+
+---
+
+## 2026-09-07 - atomic display property discovery
+
+Single desktop worker; initial git status clean, supervisor owns publication.
+Read CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue/state,
+compositor feature/roadmap, ADRs 0001/0002, adapter contract and hardware gates.
+Selected a complete atomic property discovery component in QUEUE before code;
+framebuffer/blob ownership and TEST_ONLY are explicitly the next component.
+
+Reconciled published reports absent from STATE at iteration start:
+
+- `docs/autonomy/updates/network-egress-enforcement.md`: Claude's socket_connect
+  hook adds destination-bound new non-loopback IPv4/IPv6 connects, including
+  next-connect withdrawal, using existing BOUNDS rather than another map. Source
+  and seven loaded-kernel test cases inspected. Contributor reports Linux workspace
+  fmt/clippy/tests (114 binaries), warnings-denied rustdoc and pinned BPF fmt/clippy
+  passing; those gates were not rerun here. Five hooks/six pins reported. Production
+  destination wiring, UDP sendto, inherited/established sockets, loopback proxies,
+  mid-attach refusal and all physical evidence remain open. Provider/region policy
+  stays in userspace; no complete boundary-enforcement claim adopted. Shared
+  changelog, roadmap and queue now reflect this qualified evidence.
+- `docs/autonomy/updates/kernel-supervisor-selects-its-own-task.md`: dependency-based
+  task selection and mismatched-handoff refusal source inspected. Contributor
+  reports Windows fmt/clippy/release build and actual mismatched-task refusal;
+  no publication occurred in that refusal check. Code implementation remains manual,
+  waiting is bounded, and empty plan is not workstream completion. No new release
+  scope or shared progress ticks; contributor's gates not rerun here.
+
+Source reports unchanged; later publication reports reconcile next iteration.
+No Claude assignment taken, worker launched or shared kernel test executed.
+
+Own report integrated: `docs/autonomy/updates/atomic-display-property-discovery.md`.
+Atomic inventory owns capability/ioctl transport; atomic output owns selection
+and schema validation. Eight new tests cover complete property handles, stable
+selection, all six transport failure stages, missing/duplicate/aliased properties,
+flags/types/ranges, primary type, unusable/missing planes and real ENOTTY with
+caller-descriptor survival. No buffer/blob allocation, TEST_ONLY, master operation,
+legacy fallback, unsafe code, new dependency, engine patch or agent surface.
+Client-capability changes persist on the open description even on later failure;
+snapshots are not reservations and must be rebuilt after device reacquisition.
+
+Executed final checks: Windows cargo fmt --all and --check, cargo clippy -p
+alo-shell --all-targets --locked -- -D warnings, cargo test -p alo-shell --locked.
+Linux with explicit PATH and CARGO_TARGET_DIR=/root/alo-os-target: focused cargo
+test -p alo-shell --lib atomic_output --locked; full shell --locked tests;
+affected all-target --locked clippy -D warnings; workspace fmt check; shell
+warnings-denied --no-deps --locked rustdoc; shell --examples --locked build.
+All pass: 27 unit + 64 lifecycle + 3 socket = 94 Linux tests, none ignored.
+Windows intentionally excludes Linux shell tests. Initial clippy found test-only
+unwrap calls; explicit error propagation corrected them without lint exemptions.
+No test failed; no repeated failure or gate relaxation. Exact commands in report.
+
+Additional integration: atomic_output_check /dev/null refuses capability ioctl
+ENOTTY (25), exit 1 asserted; /dev/dri/card0 refuses ENOENT (2), exit 1 asserted.
+Nested WSLg --popups --cursor exits 0, submits 115 client surfaces and verifies
+callbacks, reactive popup placement, unmap/remap, isolated refusal and disconnect.
+Local logs: .git/alo-atomic-discovery-{refusal,absent-card,wslg}.log. No successful
+DRM negotiation/query, pixel readback, physical input or scanout measured.
+WSLg socket/native pkg-config prerequisites verified; DRM absent; no packages
+needed. Initial WSL source-read quoting errors corrected using the Ubuntu share;
+existing WSL configuration warnings left alone. No host/kernel/service changes.
+
+Raw drm-rs metadata parser assumptions are source-inspected and recorded in
+quirks; normalized malformed schema tests do not claim kernel parser containment.
+All four shared progress documents and COMPOSITOR updated; source/tests/docs
+review and git diff --check pass. Next component: owned framebuffer/mode blob,
+full-mode atomic TEST_ONLY request, refusal and cleanup, then scanout/page flips,
+renderer pause ordering, direct input and production session. Parent leave still
+blocked upstream. Successful DRM discovery needs a DRM-equipped development login
+or VM; all named laptop/GPU workstation physical acceptance remains owed. Release
+and compositor unchecked; other v0.01 scope retained. Full supervisor publication
+gates have not run for this change. No staging, commit, push, dev-loop edit,
+delegation, other-checkout changes or physical disk install. Ready for integration.

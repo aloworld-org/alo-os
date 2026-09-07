@@ -9,6 +9,8 @@
 
 #![cfg(target_os = "linux")]
 
+mod atomic_inventory;
+mod atomic_output;
 mod cursor;
 mod direct_output;
 mod direct_session;
@@ -28,6 +30,7 @@ mod session_device;
 mod socket;
 mod surfaces;
 
+pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};
 pub use cursor::Cursor;
 pub use direct_output::{DirectOutput, DirectOutputError, discover_output};
 pub use direct_session::DirectSession;

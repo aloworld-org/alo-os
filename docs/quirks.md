@@ -23,6 +23,19 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ---
 
+## Atomic DRM property parsing trusts raw kernel metadata (2026-09-07)
+
+Direct-display schema discovery rejects missing/duplicate properties, wrong
+types, flags and unusable rectangle ranges after parsing. Pinned drm-rs 0.14.1
+`control::Device::get_property` indexes raw range/object metadata and uses
+C-string conversion internally. Invalid kernel response lengths/termination may
+panic or violate upstream assumptions before our schema checks run. This is
+source-inspected, not a reproduced kernel failure. Our code avoids its UTF-8
+hashmap unwrap and enum-index helper, but does not claim to contain all malformed
+kernel responses. No engine patch or lint exemption was introduced. Successful
+DRM-device discovery and production failure recovery still need device evidence.
+See `autonomy/updates/atomic-display-property-discovery.md`.
+
 ## Smithay libseat notification ordering and failure limits (2026-09-07)
 
 Smithay 0.7.0 `backend/session/libseat.rs` forwards libseat callbacks through a

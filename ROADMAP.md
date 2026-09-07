@@ -443,7 +443,14 @@ compositor is not required for, which is why it runs unbroken.
         that actually signs somebody in, fetches a model or checks for an
         update, none of which exists yet; and the enforcement at the network
         boundary, without which all of this describes only the code that
-        asked
+        asked. **Partial enforcement published and reconciled 2026-09-07:**
+        Claude's `socket_connect` hook checks non-loopback IPv4/IPv6 address/port
+        entries per turn, including next-connect withdrawal. Seven loaded-kernel
+        cases and Linux workspace/BPF gates are contributor-reported evidence,
+        not rerun by this desktop worker. Production wiring, UDP sendto,
+        established/inherited sockets, loopback proxies and physical acceptance
+        remain open; the enforcement requirement and machine box stay unchecked.
+        Report: `docs/autonomy/updates/network-egress-enforcement.md`.
 
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
   - [x] **The code.**
@@ -711,6 +718,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Atomic display property discovery (2026-09-07): per-descriptor atomic and
+    universal-plane negotiation, deterministic primary-plane selection and
+    standard property schema checks. Framebuffer/blob ownership, kernel TEST_ONLY,
+    scanout/page flips, direct input and renderer pause ordering remain unfinished.
+    Evidence: `docs/autonomy/updates/atomic-display-property-discovery.md`.
+    WSL has no DRM card; successful kernel discovery and all physical acceptance
+    remain unmeasured. Eight new tests pass (94 Linux shell tests); Windows/Linux
+    affected fmt/clippy/tests and Linux rustdoc/examples pass. Real ENOTTY/ENOENT
+    refusals and WSLg 115-surface regression pass. Supervisor full publication
+    gates remain owed. No compositor or release checkbox changes.
   - Direct-display session lifetime (2026-09-07): libseat device acquisition,
     pause retirement, lazy reacquisition and terminal failure handling implemented
     as a discovery-stage component. Nine new tests pass (86 Linux shell tests),

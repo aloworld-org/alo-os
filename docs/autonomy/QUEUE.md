@@ -16,14 +16,16 @@ integration owner edits this queue; parallel contributors propose queue changes
 in their own reports under `updates/`. Existing identifiers remain historical
 cross-references, not the primary names used in handoffs or status messages.
 
-Published security reports reconciled 2026-09-07: network egress policy and the
-loaded-kernel gap reproduction are ready evidence, not enforcement completion.
-The loopback connection remains allowed inside a turn whose ungranted file read
-is refused. Provider/region policy stays in userspace; departure enforcement
-remains Claude's workstream in `kernel-enforcement-plan.md`. Contributor Linux/
-BPF gates were reported, not rerun here; Windows and physical evidence remain
-unmeasured. The Windows kernel supervisor/WSL gate report is recorded in STATE;
-no worker, shared kernel test or publication process was launched here.
+Published security reports reconciled 2026-09-07: destination-bound socket_connect
+enforcement now supplements the prior policy and gap reproduction. New non-loopback
+IPv4/IPv6 connects are checked against address/port entries in BOUNDS; withdrawal
+applies on the next connect. Contributor Linux workspace/BPF gates and seven loaded
+kernel cases were reported, not rerun here. Production wiring, UDP sendto, existing/
+inherited sockets, loopback proxies and physical evidence remain open. Enforcement
+remains Claude's workstream in `kernel-enforcement-plan.md`; no completion claim.
+The kernel supervisor's dependency-based task selection and mismatched-handoff
+refusal report is also reconciled; its reported Windows checks were not rerun.
+No worker, shared kernel test or publication process was launched here.
 
 - [x] **31. A repository-owned development loop.** Rust runner in
   `tools/dev-loop`; serialized workers, explicit stop/status, independent
@@ -56,6 +58,26 @@ no worker, shared kernel test or publication process was launched here.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected atomic property discovery component (desktop worker):** enable
+  per-descriptor atomic/universal-plane capabilities, discover a fresh output,
+  select a compatible primary plane and validate required connector/CRTC/plane
+  property types and mutability. Acceptance: injected capability/query failures,
+  missing/duplicate/malformed properties, incompatible/no primary plane,
+  deterministic selection, real non-DRM ioctl refusal with descriptor survival,
+  WSLg regression, fmt, affected clippy/tests and rustdoc. This complete discovery
+  component precedes framebuffer/blob ownership and atomic TEST_ONLY validation;
+  it does not change scanout or complete the compositor.
+  **Completed atomic property discovery 2026-09-07:** eight new happy/refusal
+  tests pass (94 Linux shell tests total). Windows/Linux fmt and affected
+  clippy/tests, Linux rustdoc and example build pass. Non-DRM capability ioctl
+  refuses ENOTTY with caller fd retained; absent WSL card refuses ENOENT. WSLg
+  submits 115 client surfaces. Exact commands and limits:
+  `updates/atomic-display-property-discovery.md`. No successful DRM schema query
+  or hardware evidence; upstream malformed raw metadata parser limits documented.
+  Next executable component: framebuffer and mode-blob ownership plus full-mode
+  atomic TEST_ONLY request construction/validation and cleanup on refusal; then
+  scanout/page flips, renderer pause ordering and direct input. Parent leave and
+  production entry remain unfinished. Supervisor full gates still owed.
   **Selected session-device lifetime component (desktop worker):** own a libseat
   notifier and one session-opened display descriptor; dispatch notifications
   before access, release on pause, reacquire on activation, and refuse inactive
