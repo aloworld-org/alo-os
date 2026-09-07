@@ -38,8 +38,8 @@ pub struct ResourceError {
 /// Allocation leaves these resources unbound; optional test-and-release never changes scanout.
 /// Use within `DirectSession::with_device`, with a fresh discovery from that same
 /// descriptor. The borrow prevents resources outliving the session descriptor.
-/// Handles are valid only until release/drop, and must never be bound to scanout:
-/// active framebuffer retirement requires a separate scanout owner.
+/// Handles are valid only until release/drop. Use `activate` to transfer them
+/// into a scanout owner; never bind the exposed IDs through another transport.
 ///
 /// Resources cannot escape the descriptor that owns their kernel handles:
 /// ```compile_fail
@@ -53,13 +53,13 @@ pub struct ResourceError {
 /// ```
 pub struct DisplayResources<'fd> {
     /// Cleanup owner and borrowed ioctl transport.
-    owned: Allocation<Inventory<'fd>>,
+    pub(crate) owned: Allocation<Inventory<'fd>>,
     /// Frozen request prevents later caller mutation from changing the tested mode.
-    plan: AtomicPlan,
+    pub(crate) plan: AtomicPlan,
     /// Registered framebuffer, kept private against accidental ownership transfer.
-    framebuffer: framebuffer::Handle,
+    pub(crate) framebuffer: framebuffer::Handle,
     /// Exact advertised timing blob, not reconstructed from resolution.
-    mode_blob: u64,
+    pub(crate) mode_blob: u64,
 }
 
 impl<'fd> DisplayResources<'fd> {
@@ -146,15 +146,17 @@ pub(crate) trait ResourceDevice {
 }
 
 /// Tracks partial allocation so every successfully acquired resource is retired.
-struct Allocation<D: ResourceDevice> {
+pub(crate) struct Allocation<D: ResourceDevice> {
     /// Same open file description for all allocation and destruction operations.
-    device: D,
+    pub(crate) device: D,
     /// First resource acquired, last released.
     buffer: Option<D::Buffer>,
     /// Registered buffer view.
     framebuffer: Option<framebuffer::Handle>,
     /// Last resource acquired, first released.
     blob: Option<u64>,
+    /// False after uncertain scanout retirement; only descriptor teardown is safe.
+    cleanup_allowed: bool,
 }
 
 impl<D: ResourceDevice> Allocation<D> {
@@ -169,6 +171,7 @@ impl<D: ResourceDevice> Allocation<D> {
             buffer: None,
             framebuffer: None,
             blob: None,
+            cleanup_allowed: true,
         };
         let attempt = (|| {
             let (w, h) = mode.size();
@@ -216,6 +219,9 @@ impl<D: ResourceDevice> Allocation<D> {
 
     /// Drain in reverse order, continuing after errors and never double-destroying.
     fn cleanup(&mut self) -> Vec<ResourceFailure> {
+        if !self.cleanup_allowed {
+            return Vec::new();
+        }
         let mut errors = Vec::new();
         if let Some(blob) = self.blob.take()
             && let Err(e) = operation("destroy mode blob", self.device.destroy_blob(blob))
@@ -250,7 +256,7 @@ impl<D: ResourceDevice> Allocation<D> {
         }
     }
     /// Surface all errors from an explicit release.
-    fn release(&mut self) -> Result<(), ResourceError> {
+    pub(crate) fn release(&mut self) -> Result<(), ResourceError> {
         let mut errors = self.cleanup().into_iter();
         match errors.next() {
             Some(failure) => Err(ResourceError {
@@ -259,6 +265,11 @@ impl<D: ResourceDevice> Allocation<D> {
             }),
             None => Ok(()),
         }
+    }
+
+    /// Leave kernel handles intact after failed disable; retire the session fd.
+    pub(crate) fn quarantine(&mut self) {
+        self.cleanup_allowed = false;
     }
 }
 

@@ -27,6 +27,14 @@ The kernel supervisor's dependency-based task selection and mismatched-handoff
 refusal report is also reconciled; its reported Windows checks were not rerun.
 No worker, shared kernel test or publication process was launched here.
 
+Published `updates/end-to-end-network-enforcement.md` reconciled this iteration:
+provider requests bypass Bounding and have no registered destination. The report's
+counting test and traced production path were reviewed; contributor Linux workspace/
+BPF gates remain reported evidence, not desktop-worker checks. No enforcement was
+added by that audit. Claude's requested turn-lifecycle/destination-lifetime decision
+is pending; DNS, connection reuse, inherited sockets, UDP and loopback-proxy gaps
+remain release obligations. The desktop worker does not take that workstream.
+
 - [x] **31. A repository-owned development loop.** Rust runner in
   `tools/dev-loop`; serialized workers, explicit stop/status, independent
   Windows/Linux gates, owner-authored commits and ordinary pushes. Developer
@@ -58,6 +66,27 @@ No worker, shared kernel test or publication process was launched here.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected blocking scanout ownership component (desktop worker):** consume
+  initialized resources, TEST_ONLY before a synchronous atomic enable, retain
+  resources until synchronous disable succeeds, and quarantine kernel handles
+  until device retirement if disable fails. Acceptance: exact enable/disable
+  requests and flags, happy/drop ordering, test/commit/disable refusals with
+  cleanup errors retained, real ioctl refusal/fd survival, WSLg regression and
+  affected fmt/clippy/tests/rustdoc. Blocking commits provide a complete initial
+  scanout lifetime; nonblocking page-flip retirement, rendering, session pause
+  ordering, direct input and physical evidence remain subsequent work.
+  **Completed blocking scanout ownership 2026-09-07:** TEST_ONLY then blocking
+  enable transfers initialized resources to ActiveScanout. Explicit/drop retirement
+  disables before cleanup; disable failure preserves errno and quarantines handles
+  without retry until the session device is retired. Six new unit tests and an
+  active-lifetime doctest pass; Linux shell total 121 checks. Affected Windows/Linux
+  fmt/clippy/tests, Linux rustdoc/examples, real enable/disable ENOTTY/fd survival,
+  unavailable-seat/usage refusal and WSLg 125-surface regression pass. Report:
+  `updates/blocking-scanout-ownership.md`. Successful DRM enable/disable is unmeasured.
+  Next executable component: nonblocking framebuffer submission and matching
+  page-flip completion/retirement, with stale/foreign event and commit failure tests;
+  then renderer pause ordering, direct input and production entry. Parent-leave/
+  libseat limits, supervisor full gates and all physical acceptance remain owed.
   **Selected scanout-buffer initialization component (desktop worker):** map
   and clear the entire dumb allocation to black before framebuffer registration,
   including stride padding and allocation tail. Refuse invalid/short mappings

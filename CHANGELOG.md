@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display resources now have an active scanout owner.** It validates
+  the initialized buffer, enables it with a blocking atomic commit and disables
+  the output before releasing resources. A failed disable retains kernel handles
+  until session-device retirement. Successful DRM scanout and physical acceptance
+  remain unmeasured. Evidence: `docs/autonomy/updates/blocking-scanout-ownership.md`.
+
+- **Network enforcement evidence corrected.** A production-path audit confirms
+  that provider requests still bypass the kernel destination boundary. No
+  enforcement behavior changed; integration remains unfinished. Evidence:
+  `docs/autonomy/updates/end-to-end-network-enforcement.md`.
+
 - **Direct-display buffers are cleared before they can become framebuffers.**
   Initialization covers visible pixels, row padding and the allocation tail;
   short mappings and mapping failures refuse registration and release the buffer,

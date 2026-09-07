@@ -3,6 +3,9 @@
 use super::*;
 use std::{cell::RefCell, num::NonZeroU32, os::fd::AsFd, rc::Rc};
 
+#[path = "scanout_tests.rs"]
+mod scanout_tests;
+
 /// A public-metadata buffer standing in for a kernel dumb allocation.
 struct FakeBuffer {
     /// Advertised dimensions.

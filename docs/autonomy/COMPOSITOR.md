@@ -881,3 +881,37 @@ evidence: `updates/scanout-buffer-initialization.md`. Successful DRM memory acce
 and physical evidence remain unavailable here. Active commits/page-flip retirement,
 renderer pause ordering, direct input and production entry remain unfinished;
 the compositor and full v0.01 release remain unchecked.
+
+## Blocking scanout ownership (2026-09-07)
+
+`DisplayResources::activate` consumes the initialized candidate, submits TEST_ONLY,
+then enables the frozen full-mode request synchronously. `ActiveScanout::disable`
+detaches the connector and primary plane, clears MODE_ID and deactivates the CRTC
+in one blocking atomic request. Successful disable precedes all resource destruction.
+Drop attempts the same retirement; use explicit disable to observe errors. Failed
+disable quarantines resources, without destruction or retry, until the session
+descriptor and its duplicates are retired. The descriptor borrow remains enforced.
+
+This is a complete initial static scanout lifetime, using ALLOW_MODESET without
+NONBLOCK or PAGE_FLIP_EVENT. Blocking retirement follows the kernel's
+[atomic commit lifecycle](https://www.kernel.org/doc/html/latest/gpu/drm-kms-helpers.html).
+It is an incremental component under ADR 0002, not a replacement for nonblocking
+rendered frames. The caller must exclusively own the output and keep its session
+active; the component does not restore a prior compositor's configuration or solve
+libseat disable-before-notify. No new agent verbs or adapter contract changes.
+
+`scanout_check /dev/dri/cardN --enable-and-disable` provides a session-mediated
+developer diagnostic: enable initialized black, immediately disable, release and
+shut down the seat descriptor on both success and failure, retaining both errors.
+It has no direct-open fallback. The existing allocation/test-only diagnostic remains
+available without active scanout. Do not run the active diagnostic on a live desktop
+whose KMS output belongs to another compositor.
+
+Six new unit tests and one lifetime doctest pass; 121 Linux shell checks in total.
+Real enable/disable atomic ioctls refuse ENOTTY with fd survival; absent-seat and
+usage refusals pass, and WSLg submits 125 client surfaces. Exact commands and limits:
+`updates/blocking-scanout-ownership.md`. No successful DRM enable/disable or pixel
+readback on this host. Next: nonblocking framebuffer submission and page-flip
+matching/retirement; then rendering/session pause ordering, direct input and
+production entry. Parent-leave and all physical acceptance remain outstanding.
+Supervisor full publication gates have not run for this change.

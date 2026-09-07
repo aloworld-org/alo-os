@@ -147,3 +147,41 @@ fn real_atomic_ioctl_refuses_non_drm_and_retains_descriptor()
     eprintln!("real atomic TEST_ONLY refused ENOTTY (25); caller descriptor survived");
     Ok(())
 }
+
+#[test]
+fn disable_request_detaches_only_owned_routing_and_deactivates_crtc() -> io::Result<()> {
+    let mut output = output();
+    let plan = AtomicPlan::new(&output)?;
+    output.connector_properties.clear();
+    output.crtc_properties.clear();
+    output.plane_properties.clear();
+    assert_eq!(
+        plan.disable
+            .iter()
+            .map(|(o, p, v)| (o.get(), u32::from(*p), *v))
+            .collect::<Vec<_>>(),
+        [(1, 11, 0), (2, 21, 0), (2, 22, 0), (3, 31, 0), (3, 32, 0)]
+    );
+    Ok(())
+}
+
+#[test]
+fn real_blocking_enable_and_disable_refuse_without_closing_descriptor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::scanout::ScanoutDevice;
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/null")?;
+    let plan = AtomicPlan::new(&output())?;
+    for resources in [Some((NonZeroU32::MIN.into(), 72)), None] {
+        let error = Inventory(file.as_fd())
+            .commit(AtomicCommitFlags::ALLOW_MODESET, plan.request(resources))
+            .err()
+            .ok_or("non-DRM active request accepted")?;
+        assert_eq!(error.raw_os_error(), Some(25));
+        assert!(file.metadata().is_ok());
+    }
+    eprintln!("real blocking enable/disable atomic ioctls refused ENOTTY (25); caller fd survived");
+    Ok(())
+}

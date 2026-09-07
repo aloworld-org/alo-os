@@ -451,6 +451,12 @@ compositor is not required for, which is why it runs unbroken.
         established/inherited sockets, loopback proxies and physical acceptance
         remain open; the enforcement requirement and machine box stay unchecked.
         Report: `docs/autonomy/updates/network-egress-enforcement.md`.
+        **Production-path audit reconciled 2026-09-07:**
+        `docs/autonomy/updates/end-to-end-network-enforcement.md` traces and tests
+        that file verbs enter Bounding but provider requests do not. Destination
+        enforcement therefore does not cover ordinary provider calls. Claude's
+        boundary/destination-lifetime decision remains pending, including DNS and
+        connection reuse; reported Linux workspace/BPF gates are not rerun here.
 
 - [ ] **`alo-agentd`**: grants, file verbs, application verbs, context on invocation
   - [x] **The code.**
@@ -718,6 +724,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Blocking scanout ownership (2026-09-07): initialized resources transfer to
+    an active owner after TEST_ONLY and synchronous enable. Synchronous disable
+    precedes destruction; disable refusal quarantines handles until session-device
+    retirement. Evidence: `docs/autonomy/updates/blocking-scanout-ownership.md`.
+    Nonblocking page-flip retirement, rendered frames, pause ordering, direct input,
+    production entry and successful DRM/physical checks remain owed. This is one
+    ownership component; compositor and release remain unchecked.
+    Six new unit tests plus an active-lifetime doctest pass (121 Linux shell
+    checks). Affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples,
+    real atomic enable/disable ENOTTY/fd survival, seat/usage refusal and WSLg
+    125-surface regression pass. Supervisor full publication gates remain owed.
   - Scanout-buffer initialization (2026-09-07): full mapped allocation cleared
     to black and unmapped before framebuffer registration, including row padding
     and allocation tail. Mapping refusal unwinds buffer ownership and retains

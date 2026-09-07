@@ -1,4 +1,4 @@
-//! Complete full-mode KMS test requests; never submits an active modeset.
+//! Frozen full-mode KMS requests and their test-only validation.
 
 use crate::{AtomicOutput, drm_inventory::Inventory};
 use drm::control::{AtomicCommitFlags, Device, atomic::AtomicModeReq, framebuffer, property};
@@ -12,6 +12,8 @@ mod tests;
 pub(crate) struct AtomicPlan {
     /// Thirteen mandatory properties with late-bound owned resource IDs.
     writes: Vec<(NonZeroU32, property::Handle, Value)>,
+    /// Detach connector and plane, clear mode and deactivate the CRTC together.
+    disable: Vec<(NonZeroU32, property::Handle, u64)>,
 }
 
 /// Resource IDs must come from the same allocation that owns the test transport.
@@ -36,6 +38,7 @@ impl AtomicPlan {
         }
         let c = u64::from(crtc.get());
         let mut writes = Vec::new();
+        let mut disable = Vec::new();
         for (object, properties, values) in [
             (
                 connector,
@@ -70,10 +73,13 @@ impl AtomicPlan {
                 if !seen.insert(u32::from(handle)) {
                     return Err(io::ErrorKind::InvalidData.into());
                 }
+                if matches!(name, "CRTC_ID" | "ACTIVE" | "MODE_ID" | "FB_ID") {
+                    disable.push((object, handle, 0));
+                }
                 writes.push((object, handle, value));
             }
         }
-        Ok(Self { writes })
+        Ok(Self { writes, disable })
     }
 
     /// Resolve allocation-owned IDs into the exact values sent to drm-rs.
@@ -117,13 +123,22 @@ impl AtomicPlan {
         blob: u64,
         submit: impl FnOnce(AtomicCommitFlags, AtomicModeReq) -> io::Result<()>,
     ) -> io::Result<()> {
-        let mut request = AtomicModeReq::new();
-        for (object, property, value) in self.values(fb, blob) {
-            request.add_raw_property(object, property, value);
-        }
         submit(
             AtomicCommitFlags::TEST_ONLY | AtomicCommitFlags::ALLOW_MODESET,
-            request,
+            self.request(Some((fb, blob))),
         )
+    }
+
+    /// Construct enable or disable from the same frozen routing snapshot.
+    pub(crate) fn request(&self, resources: Option<(framebuffer::Handle, u64)>) -> AtomicModeReq {
+        let values = match resources {
+            Some((fb, blob)) => self.values(fb, blob),
+            None => self.disable.clone(),
+        };
+        let mut request = AtomicModeReq::new();
+        for (object, property, value) in values {
+            request.add_raw_property(object, property, value);
+        }
+        request
     }
 }

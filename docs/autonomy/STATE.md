@@ -11169,3 +11169,79 @@ Successful DRM allocation/mapping/TEST_ONLY/retirement needs a DRM-equipped
 login/VM; certified business laptop and >=24 GB GPU workstation display/input,
 session switching, suspend/resume and all physical checklist records remain owed.
 Full v0.01 scope retained; compositor and release remain unchecked.
+
+---
+
+## 2026-09-07 - blocking scanout ownership
+
+Single desktop worker, initial tree clean; supervisor owns publication. Read
+constitution, delivery order, shared-main/report rules, current queue/state,
+compositor feature/roadmap, ADRs 0001/0002, adapter contract and hardware acceptance.
+Selected blocking scanout ownership in QUEUE before implementation. It is one
+complete static scanout lifetime component; nonblocking frame presentation remains.
+
+Reconciled the one published report missing at iteration start:
+`docs/autonomy/updates/end-to-end-network-enforcement.md`. Read audit and counting
+test source: file verbs enter Bounding, provider requests bypass it, and no
+destination is registered for them. The kernel mechanism does not enforce ordinary
+provider requests. No behavior changed by that report; contributor Linux workspace/
+BPF verification was reported, not rerun here. Claude's boundary/destination-lifetime
+decision remains pending, with DNS/connection reuse, UDP, inherited sockets, loopback
+proxies and physical enforcement gaps retained. Updated all four shared documents;
+did not take Claude's workstream. Reports arriving during publication reconcile next
+iteration; no release verification is claimed.
+
+Own report integrated: `docs/autonomy/updates/blocking-scanout-ownership.md`.
+Initialized resources now transfer to ActiveScanout after TEST_ONLY and synchronous
+enable. Disable uses the frozen connector/CRTC/plane snapshot, detaches routing and
+deactivates CRTC before releasing resources. Failed test/enable keeps errno and all
+cleanup errors. Failed disable quarantines handles until device retirement, without
+destruction or drop retry. Explicit disable reports errors; drop is best effort.
+New session-mediated diagnostic immediately enables/disables initialized black and
+attempts session shutdown on success/refusal, preserving operation and cleanup errors.
+Blocking commits establish initial ownership before asynchronous page flips; this
+follows ADR 0002 and kernel atomic lifecycle without engine patches or agent/adapter
+surface changes. It does not restore another compositor's configuration.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Passed; Linux shell tests are cfg-excluded there.
+After final assertions/doctest edits, cargo fmt --all ran again and Linux final
+fmt passed. Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin,
+CARGO_TARGET_DIR=/root/alo-os-target. Executed cargo test -p alo-shell --lib --locked
+(52 pass); cargo clippy -p alo-shell --all-targets --locked -- -D warnings before
+and after final assertions; cargo test -p alo-shell --locked (52 unit + 64 client
+lifecycle + 3 socket + 2 lifetime doctests = 121 checks, zero failures/ignored);
+cargo fmt --all --check; RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps
+--locked; cargo build -p alo-shell --examples --locked. All underlying checks pass.
+PowerShell outer stderr redirection produced a native-error wrapper exit despite
+successful chained Cargo completion. Final fmt/docs/examples plus focused real
+ioctl test were repeated with Bash redirection and explicit WSL exit assertion,
+all exit 0. Exact commands/logs and distinction recorded in own report.
+
+Six new unit tests plus active-lifetime doctest cover exact requests/flags,
+initialized allocation retention, happy explicit/drop disable-before-cleanup,
+test/enable refusal with simultaneous cleanup errors, failed-disable quarantine,
+cleanup after successful disable and real atomic ioctl refusal. Focused
+cargo test -p alo-shell --lib real_blocking_enable --locked -- --nocapture passes:
+actual enable/disable atomic ioctls refuse ENOTTY (25) with caller fd alive.
+Unavailable seat diagnostic refuses ENOENT/exit 1; invalid option refuses usage
+before seat access/exit 1. WSLg WAYLAND_DEBUG=1 timeout 30s nested_check --popups
+--cursor exits 0, 125 client surfaces with callbacks, unmap/remap, refusal and
+disconnect. No pixel readback, physical input or successful DRM commit measured.
+
+WSLg socket and graphics pkg-config prerequisites verified; Rust 1.98.0, no
+/dev/dri, no routine packages needed. WSL unknown configuration-key warnings left
+untouched. Source/tests/example/tracked and new-file diff inspected; git diff
+--check passes. COMPOSITOR lifecycle and four shared documents updated. No
+staging/commit/push, dev-loop edits, new workers, other checkout access, shared
+kernel/BPF/cgroup/service changes or physical disk install. Full supervisor gates
+have not run for this change; this is ready for independent integration checks.
+
+Next: nonblocking framebuffer submission, matching page-flip completion/old-buffer
+retirement with stale/foreign event and failed-commit tests; then renderer pause
+ordering, direct input and production entry. Parent-leave/libseat disable-order
+limits persist. DRM success needs a DRM-equipped development login/VM; certified
+business laptop and >=24 GB GPU workstation display/input, session switching,
+suspend/resume and all hardware checklist records remain owed. Full v0.01 scope
+retained; compositor and release remain unchecked.
