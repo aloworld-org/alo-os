@@ -42,6 +42,7 @@
 //! fail closed, which is what a value read out of shared memory has to do.
 
 use crate::bound::Place;
+use crate::departure::{Departure, Departures, WORDS as DEPARTURE_WORDS};
 
 /// The most places one turn can be bound to.
 ///
@@ -49,11 +50,16 @@ use crate::bound::Place;
 /// happens to a call that would need more.
 pub const PLACES: usize = 4;
 
-/// How many words of the map one bound is: the count, then two per place.
+/// How many words of the map one bound is: the places, then the destinations.
 ///
 /// The layout is decided here and both halves go through [`Bounds::words`] and
-/// [`Bounds::of_words`] rather than laying out bytes of their own.
-pub const WORDS: usize = 1 + PLACES * 2;
+/// [`Bounds::of_words`] rather than laying out bytes of their own. Each half
+/// owns its own words — `crate::departure` lays out the destinations — so
+/// neither has to know how the other is written.
+pub const WORDS: usize = PLACE_WORDS + DEPARTURE_WORDS;
+
+/// How many words the places are: the count, then two per place.
+const PLACE_WORDS: usize = 1 + PLACES * 2;
 
 /// A place kept in a slot nothing is looking at.
 ///
@@ -74,6 +80,14 @@ pub struct Bounds {
 
     /// How many of them are a turn's, which is never more than [`PLACES`].
     how_many: usize,
+
+    /// Where this turn may connect to, which begins as nowhere.
+    ///
+    /// **Default-deny, and it costs nothing to be so.** A turn is bound before
+    /// it does anything, and until somebody is shown a departure this is empty
+    /// — so every connection the turn makes is refused without anybody having
+    /// to write that down.
+    shown: Departures,
 }
 
 impl Bounds {
@@ -109,7 +123,36 @@ impl Bounds {
         Some(Self {
             held,
             how_many: places.len(),
+            shown: Departures::none(),
         })
+    }
+
+    /// The same bound, and the destinations somebody has been shown.
+    ///
+    /// Separate from [`Bounds::of`] because the two are written at different
+    /// moments by different code: the places when a turn begins and its call is
+    /// known, the destinations when `alo-egress` shows somebody a departure.
+    /// The daemon rewrites the entry, which is also how a destination is
+    /// **withdrawn** — the same call with it left out.
+    #[must_use]
+    pub const fn and_shown(self, shown: Departures) -> Self {
+        Self { shown, ..self }
+    }
+
+    /// Whether this turn was shown this destination.
+    ///
+    /// **Not whether it may open sockets.** One departure is one destination,
+    /// and an address nobody showed is refused while another is permitted;
+    /// `crate::departure` argues why at length.
+    #[must_use]
+    pub fn may_leave(&self, where_to: Departure) -> bool {
+        self.shown.holds(where_to)
+    }
+
+    /// The destinations this turn was shown.
+    #[must_use]
+    pub const fn departures(&self) -> Departures {
+        self.shown
     }
 
     /// A bound over one place.
@@ -124,6 +167,7 @@ impl Bounds {
         Self {
             held: [place, NOWHERE, NOWHERE, NOWHERE],
             how_many: 1,
+            shown: Departures::none(),
         }
     }
 
@@ -165,6 +209,48 @@ impl Bounds {
     /// talking about the same folders, so it is decided here and nowhere else.
     #[must_use]
     pub const fn words(&self) -> [u64; WORDS] {
+        let [
+            how_many,
+            device_one,
+            inode_one,
+            device_two,
+            inode_two,
+            device_three,
+            inode_three,
+            device_four,
+            inode_four,
+        ] = self.place_words();
+        let [
+            shown,
+            one_high,
+            one_low,
+            one_both,
+            two_high,
+            two_low,
+            two_both,
+        ] = self.shown.words();
+        [
+            how_many,
+            device_one,
+            inode_one,
+            device_two,
+            inode_two,
+            device_three,
+            inode_three,
+            device_four,
+            inode_four,
+            shown,
+            one_high,
+            one_low,
+            one_both,
+            two_high,
+            two_low,
+            two_both,
+        ]
+    }
+
+    /// The places as the map holds them: the count, then two words each.
+    const fn place_words(&self) -> [u64; PLACE_WORDS] {
         let [first, second, third, fourth] = self.held;
         let [device_one, inode_one] = first.words();
         let [device_two, inode_two] = second.words();
@@ -203,7 +289,17 @@ impl Bounds {
             inode_three,
             device_four,
             inode_four,
+            shown,
+            one_high,
+            one_low,
+            one_both,
+            two_high,
+            two_low,
+            two_both,
         ] = words;
+        let shown = Departures::of_words([
+            shown, one_high, one_low, one_both, two_high, two_low, two_both,
+        ]);
         let how_many = if how_many < PLACES as u64 {
             how_many as usize
         } else {
@@ -215,7 +311,11 @@ impl Bounds {
             take([device_three, inode_three], how_many > 2),
             take([device_four, inode_four], how_many > 3),
         ];
-        Self { held, how_many }
+        Self {
+            held,
+            how_many,
+            shown,
+        }
     }
 }
 
@@ -246,7 +346,24 @@ mod tests {
         assert_eq!(Bounds::of_words(bound.words()), bound);
         assert_eq!(
             bound.words(),
-            [2, 0x0080_0002, 4_198_531, 27, 12, 0, 0, 0, 0]
+            [
+                2,
+                0x0080_0002,
+                4_198_531,
+                27,
+                12,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
         );
         assert_eq!(bound.len(), 2);
         assert!(!bound.is_empty());
@@ -294,11 +411,13 @@ mod tests {
     /// this has to fail in.
     #[test]
     fn a_count_that_makes_no_sense_is_read_as_fewer_places() {
-        let too_many = Bounds::of_words([99, 64, 100, 64, 200, 65, 100, 66, 900]);
+        let too_many =
+            Bounds::of_words([99, 64, 100, 64, 200, 65, 100, 66, 900, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(too_many.len(), PLACES);
         assert!(too_many.holds(Place::of(66, 900)));
 
-        let none_at_all = Bounds::of_words([0, 64, 100, 64, 200, 65, 100, 66, 900]);
+        let none_at_all =
+            Bounds::of_words([0, 64, 100, 64, 200, 65, 100, 66, 900, 0, 0, 0, 0, 0, 0, 0]);
         assert!(none_at_all.is_empty());
         assert!(
             !none_at_all.holds(Place::of(64, 100)),
@@ -317,7 +436,8 @@ mod tests {
     #[test]
     fn what_is_past_the_count_is_not_part_of_the_bound() {
         let one = Bounds::of(&[Place::of(64, 100)]).expect("one is not too many");
-        let with_rubbish_after_it = Bounds::of_words([1, 64, 100, 7, 7, 7, 7, 7, 7]);
+        let with_rubbish_after_it =
+            Bounds::of_words([1, 64, 100, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(with_rubbish_after_it, one);
         assert!(!with_rubbish_after_it.holds(Place::of(7, 7)));
         assert_eq!(with_rubbish_after_it.words(), one.words());

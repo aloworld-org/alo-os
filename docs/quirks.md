@@ -1235,11 +1235,19 @@ indicator would see a quiet day.
 worked around. Deciding it in code would mean either refusing loopback (which
 breaks the ordinary case ADR 0007 makes the default) or inspecting what is
 listening (which is a guess about a process, and a guess this repository is not
-in a position to make). The place it is caught is **egress enforcement at the
-network boundary**, which is a Linux item in `docs/autonomy/QUEUE.md` and is
-where law 1's measurement actually happens: a proxy's own connection leaves the
-machine, whatever this repository believed about the socket in front of it. Law
-2 is what keeps the hole small — an agent cannot start the proxy.
+in a position to make). The place it was expected to be caught was **egress enforcement at
+the network boundary**, and **that expectation was wrong in a way worth
+correcting here.** That enforcement exists since 2026-09-07 and it is
+*turn-scoped*: `socket_connect` decides where a bound turn may connect, and a
+proxy somebody else started is not a turn, so its own outward connection passes
+untouched. A turn reaching loopback is allowed without having been shown it,
+because `Leaving::asking` does not call that a departure and refusing it would
+break the default ADR 0007 makes.
+
+So the hole is still open, and closing it would need enforcement that is not
+turn-scoped — a filter on everything this machine sends, which is a different
+piece of work with a different blast radius and is not scheduled. Law 2 is what
+keeps it small: an agent cannot start the proxy.
 
 **What this entry did not cover, and now does not need to:** *whether an address
 is loopback at all* was decided by a prefix match until item 18b, so

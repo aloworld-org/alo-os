@@ -55,10 +55,12 @@
 
 mod bound;
 mod bounds;
+mod departure;
 mod field;
 mod reaching;
 
 pub use bound::Place;
 pub use bounds::{Bounds, PLACES, WORDS};
+pub use departure::{DESTINATIONS, Departure, Departures, Family};
 pub use field::Field;
 pub use reaching::{DEPTH, reaches};

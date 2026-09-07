@@ -48,15 +48,16 @@
 //!   somewhere;
 //! - **what is inside a file already open** — a boundary on `file_open`
 //!   decides at the moment of opening and says nothing afterwards;
-//! - **anything that is not a filesystem**: sockets, signals, memory. ADR 0013
-//!   names the network boundary as its own piece of work and it is not built.
+//! - **signals and memory**, and everything else that is not a filesystem. What
+//!   a turn connects to *is* watched, by `socket_connect`, and
+//!   [`decide_departure`] says what that does and does not decide.
 //!
 //! Each of those is a real gap and each is written down rather than left to be
 //! discovered. What they have in common is that none of them moves a byte of
 //! somebody's file to somewhere they did not approve, which is the property the
 //! four hooks that exist were chosen for.
 
-use alo_bounding_map::{Bounds, Field, Place, reaches};
+use alo_bounding_map::{Bounds, Departure, Family, Field, Place, reaches};
 
 use crate::kernel;
 
@@ -147,6 +148,124 @@ fn a_name_being_made(old_entry: u64, new_entry: u64) -> i32 {
         ALLOWED
     } else {
         REFUSED
+    }
+}
+
+/// Where a `sockaddr` keeps the family, which every one of them has first.
+const FAMILY_AT: u64 = 0;
+
+/// Where both kinds keep the port, immediately after the family.
+const PORT_AT: u64 = 2;
+
+/// Where a `sockaddr_in` keeps its four bytes of address.
+const INET_ADDRESS_AT: u64 = 4;
+
+/// Where a `sockaddr_in6` keeps its sixteen, past the flow label.
+const INET6_ADDRESS_AT: u64 = 8;
+
+/// Whether this connection may be made.
+///
+/// # What is decided here, and the much larger thing that is not
+///
+/// **`alo-egress`'s policy is not enforced here and cannot be.** That policy
+/// decides by provider and by region; this program sees a control group, a
+/// family and an address. `alo-bounding`'s own documentation argues it at
+/// length. What is enforced is the sentence that policy makes true:
+///
+/// > A turn opens no socket unless the person has been shown that it is about
+/// > to.
+///
+/// So a destination the person was shown is permitted and **one they were not
+/// is refused, even while another departure of the same turn is open**. One
+/// departure is one address and one port, never permission to connect.
+///
+/// # Four answers, and the reason each is the answer
+///
+/// - **Not a turn** — allowed, and nothing is remembered. Every other process
+///   on this machine, including the person's own browser and this service's own
+///   errands, which are not turns.
+/// - **A family this cannot read the address of** — refused. It is a
+///   destination that cannot be checked against what somebody was shown, and
+///   that is the direction to fail in.
+/// - **A family that is not a network address at all** — allowed, because a
+///   Unix socket is not egress and refusing it would be enforcing something no
+///   policy claims. `alo-egress` decides about what leaves the machine, and a
+///   local socket does not.
+/// - **Loopback** — allowed, and this is the one that deserves saying out loud.
+///   ADR 0007 makes a model on this machine the default; `alo-egress`'
+///   `Leaving::asking` answers that a question answered here is not a departure
+///   at all, so nothing is shown and nothing would ever be written for it.
+///   Refusing loopback would break the ordinary case the whole product is built
+///   around.
+///
+/// **What that last one costs is real and is not closed here.**
+/// `docs/quirks.md` records that a proxy listening on loopback would be
+/// believed by every type in this repository, and says the place it is caught
+/// is egress enforcement at the network boundary. **This is not that place.**
+/// This is turn-scoped: it decides what a *turn* connects to, and a proxy
+/// somebody else started is not a turn, so its own outward connection passes
+/// this program untouched. The quirk's forward reference is corrected rather
+/// than left to read as answered.
+pub fn decide_departure(where_to: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every connection on the machine.
+        return ALLOWED;
+    };
+    let Some(family) = kernel::quarter_word_at(where_to.wrapping_add(FAMILY_AT)) else {
+        return REFUSED;
+    };
+    let Some(family) = Family::of(family) else {
+        // Not a network address, so not egress, so not this program's to
+        // decide about.
+        return ALLOWED;
+    };
+    let Some(port) = kernel::quarter_word_at(where_to.wrapping_add(PORT_AT)) else {
+        return REFUSED;
+    };
+    let Some(address) = address_of(family, where_to) else {
+        return REFUSED;
+    };
+    if stays_on_this_machine(family, address) {
+        return ALLOWED;
+    }
+    if granted.may_leave(Departure::of(family, address, u16::from_be(port))) {
+        ALLOWED
+    } else {
+        REFUSED
+    }
+}
+
+/// The address in a `sockaddr`, in host order, as far as it can be read.
+///
+/// A `sockaddr_in` and a `sockaddr_in6` have layouts the standard fixes rather
+/// than layouts a kernel chooses, so these offsets are not looked up the way
+/// `struct file`'s are — there is nothing about them that moves between
+/// kernels.
+fn address_of(family: Family, where_to: u64) -> Option<u128> {
+    match family {
+        Family::Four => {
+            let four = kernel::half_word_at(where_to.wrapping_add(INET_ADDRESS_AT))?;
+            Some(u128::from(u32::from_be(four)))
+        }
+        Family::Six => {
+            let high = kernel::word_at(where_to.wrapping_add(INET6_ADDRESS_AT))?;
+            let low = kernel::word_at(where_to.wrapping_add(INET6_ADDRESS_AT + 8))?;
+            Some((u128::from(u64::from_be(high)) << 64) | u128::from(u64::from_be(low)))
+        }
+    }
+}
+
+/// Whether this address is one that never leaves the machine.
+///
+/// `127.0.0.0/8` and `::1`. Nothing here treats `::ffff:127.0.0.1` as loopback,
+/// and deliberately: it arrives as an IPv6 address and is compared as one, so a
+/// turn reaching it is checked against what somebody was shown like any other
+/// destination. Being stricter than necessary about a mapped address is the
+/// safe direction.
+const fn stays_on_this_machine(family: Family, address: u128) -> bool {
+    match family {
+        Family::Four => address >> 24 == 127,
+        Family::Six => address == 1,
     }
 }
 

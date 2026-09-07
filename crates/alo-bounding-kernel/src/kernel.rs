@@ -169,6 +169,27 @@ pub fn inode_link(ctx: LsmContext) -> i32 {
     deciding::decide_link(old_entry, new_entry)
 }
 
+/// Every connection made on this machine, until the program is detached.
+///
+/// `socket_connect(struct socket *sock, struct sockaddr *address, int addrlen)`
+/// — three arguments, so the previous module's decision is the fourth. The
+/// socket itself is handed over and is not read: what decides is **where the
+/// connection is going**, and that is the address.
+///
+/// This is the other half of law 1. The four hooks before it are about what a
+/// turn reaches on a disk; this is about what it reaches off the machine, and
+/// [`crate::deciding::decide_departure`] argues what may and may not be decided
+/// here.
+#[lsm(hook = "socket_connect")]
+pub fn socket_connect(ctx: LsmContext) -> i32 {
+    let where_to: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_departure(where_to)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }
@@ -210,4 +231,14 @@ pub fn half_word_at(address: u64) -> Option<u32> {
         return None;
     }
     unsafe { bpf_probe_read_kernel(address as *const u32) }.ok()
+}
+
+/// Two bytes of kernel memory, or [`None`] if the kernel would not give them.
+///
+/// The width a `sockaddr`'s family and port are, which is why it exists.
+pub fn quarter_word_at(address: u64) -> Option<u16> {
+    if address == 0 {
+        return None;
+    }
+    unsafe { bpf_probe_read_kernel(address as *const u16) }.ok()
 }

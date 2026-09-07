@@ -186,19 +186,92 @@ fails and says where to come and what to change.
 
 ### 3. Socket attribution and default-deny for a bound turn
 
-**Status:** blocked on 1 and 2. **Depends on:** 1, 2.
+**Status:** ready. **Depends on:** 1, 2 — both done.
 
 The programme and the map entry that make task 1's policy true.
 
-- **Acceptance:** a bound turn with no departure written is refused a connection
-  by the kernel; a bound turn with one is allowed; a process that is not a turn
-  is unaffected; the daemon can write and withdraw a departure; and authority is
-  gone when the turn ends.
-- **Evidence:** tests against the real loaded programme, in the shape the four
-  filesystem hooks already use, plus every existing filesystem test still
-  passing.
-- **Constraint:** no new agent capability, no widened grant, and the LSM still
-  writes nothing down.
+#### The policy, corrected
+
+Task 1 said a turn with a departure written may open sockets. **That is wrong
+and would have shipped a hole**: one displayed departure would have become
+permission for every destination the turn cared to reach, and a person shown
+*asking alo, in Frankfurt* would have authorised a connection to anywhere. The
+policy is per-destination, and these are its four parts.
+
+- **Destination binding.** A departure permits **one destination** — an address
+  and a port — and nothing else. The bound carries the list of destinations the
+  person was actually shown. An address the person was not shown is refused even
+  while another departure is open.
+- **Lifetime.** A destination is permitted for the **turn**, not for a
+  connection and not for a period. It arrives in the same map entry as the
+  places a turn may reach, is written when the departure is shown, and is gone
+  when the turn ends — which is the existing revocation, unchanged, and already
+  tested.
+- **Withdrawal.** The daemon rewrites the entry without that destination. It
+  takes effect on the next `connect`, immediately, because the programme reads
+  the map on every call and holds nothing between them.
+- **Connection reuse.** `socket_connect` fires when a connection is *made*. A
+  socket already established is **not** re-checked, so a destination withdrawn
+  while a connection to it is open stays reachable over that connection until it
+  closes. This is a gap, it is stated here rather than discovered later, and it
+  is the same shape as the already-open-descriptor gap in task 5.
+
+#### What is covered, and what is a named gap
+
+| | |
+|---|---|
+| TCP over IPv4 | enforced |
+| TCP over IPv6 | enforced — the bound holds 128-bit addresses |
+| UDP with `connect` | enforced, because it reaches the same hook |
+| **UDP with `sendto`** | **not enforced.** An unconnected datagram never reaches `socket_connect`; it would need `socket_sendmsg`, which is a hook on every message rather than every connection. Named, not built |
+| **A socket already open** | **not enforced**, as above |
+| **A socket inherited into a turn** | **not enforced** — the same class as task 5 |
+| A destination reached through a proxy the person was shown | enforced against the *proxy's* address, which is what the machine can see and what the indicator showed |
+
+#### One map, and the guard is not touched
+
+Destinations go in the **existing** `BOUNDS` entry, beside the places. A third
+map would change what `the_program_has_nowhere_to_write_what_it_sees` asserts —
+it names `["BOUNDS", "FIELDS"]` exactly, because *a program that had somewhere
+to write would have to have somewhere, and this is the list of everywhere it
+has*. Extending a value the daemon already writes keeps that guard true as
+written and keeps the rule it stands for intact.
+
+**Cgroup attribution is not an audit record and this task does not claim it is.**
+The programme still writes nothing down; what a person is shown is what
+`alo-egress` shows them. Kernel-sourced recording remains the separate decision
+recorded above, unscheduled and unbuilt.
+
+- **Acceptance:** a bound turn is refused a connection to a destination nobody
+  showed; permitted the one that was; refused a *second* destination while the
+  first is permitted; refused after withdrawal; and unaffected when it is not a
+  turn. Authority gone when the turn ends. Both address families. Every existing
+  filesystem and loader protection still passing.
+- **Evidence:** tests against the real loaded programme, to listeners the tests
+  own on loopback, in the shape the four filesystem hooks already use.
+- **Constraint:** no new agent capability, no widened grant, the userspace
+  provider-and-region policy untouched, and the LSM still writes nothing down.
+- **Approval needed if:** the mechanism turns out to need a third map, a hook
+  that sees message contents, or any change to what `Departing` means.
+
+**Done, 2026-09-07.** A fifth hook, `socket_connect`, and destinations carried
+in the existing `BOUNDS` entry. **None of the three things that would have
+needed approval happened**: no third map, no hook that sees a message,
+`Departing` untouched.
+
+Seven tests against the real loaded programme: a turn shown nothing is refused
+every destination; the one it was shown is permitted; **a second destination is
+refused while the first is still permitted**; another port on the same address
+is refused; a withdrawn destination is refused next time; loopback is not
+checked; a process that is not a turn is unaffected. The gap test written for
+task 2 was inverted by this change, which is what it was for.
+
+`the_program_has_nowhere_to_write_what_it_sees` still asserts exactly
+`["BOUNDS", "FIELDS"]`, **unchanged**. It caught a `.rodata.cst32` section that
+128-bit constants had made the compiler emit; rather than widen the list — even
+with the honest justification that `.rodata` is frozen read-only — the constants
+were written so that none is emitted. The guard was not relaxed, not even
+defensibly.
 
 ### 4. Documenting the filesystem mutations that remain unwatched
 

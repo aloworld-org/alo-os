@@ -1,17 +1,15 @@
 //! What a bound turn can reach on the network, measured rather than assumed.
 //!
-//! The boundary watches four things a turn does to files. It watches **nothing**
-//! a turn does to a socket, and `crates/alo-bounding/src/lib.rs` states the
-//! policy that will close it:
+//! This file reproduced a gap and now holds the answer to it. When it was
+//! written the boundary watched four things a turn did to files and **nothing**
+//! it did to a socket, so a bound turn refused a file could open a connection to
+//! anywhere. `socket_connect` closed that, and the assertion below was inverted
+//! by the change that closed it — which is what a gap test is for.
 //!
-//! > A turn opens no socket unless the person has been shown that it is about
-//! > to.
-//!
-//! This file is that gap, reproduced the way the rename and the delete gaps
-//! were: with a turn bound on a running kernel and the real programme loaded,
-//! before anything is built to close it. Its assertions are what this machine
-//! does **today**, so the day the programme lands they fail and whoever landed
-//! it has to come here and say what changed.
+//! What it holds now is the pair, in one turn: a file nobody granted is refused,
+//! and a destination nobody was shown is refused, by the same boundary in the
+//! same breath. `the_kernel_refuses_a_departure.rs` is where the destination
+//! rule is taken apart case by case; this is the two halves of law 1 meeting.
 //!
 //! # Nothing here reaches the network
 //!
@@ -23,12 +21,9 @@
 //!
 //! # The control comes first, and it is not decoration
 //!
-//! *A bound turn opened a socket* means nothing on its own: it is also what a
-//! turn with no boundary at all would do, and a fixture that quietly failed to
-//! bind anything would report the gap it was written to find. So the same child
-//! in the same turn is first refused a file outside its grant. If that refusal
-//! does not happen, the boundary was not in force and the network result is
-//! thrown away rather than believed.
+//! A refusal means nothing on its own if the boundary was never applied. So the
+//! same child in the same turn is first refused a file outside its grant, and
+//! the network result is thrown away rather than believed unless that happened.
 
 #![cfg(target_os = "linux")]
 #![expect(
@@ -180,19 +175,17 @@ fn next_line_from(saying: &mut BufReader<std::process::ChildStdout>) -> String {
     }
 }
 
-/// **The gap, as this machine has it today.**
+/// **Both halves of law 1, in one turn.**
 ///
-/// One turn, bound to one folder. The same child in the same turn is refused a
-/// file nobody granted — which is the control, and without it the second half
-/// would be indistinguishable from a boundary that was never applied — and then
-/// opens a socket, which nothing stops.
+/// One turn, bound to one folder and shown no departure. The same child is
+/// refused a file nobody granted — the control, without which the second half
+/// would be indistinguishable from a boundary that was never applied — and
+/// refused a connection nobody showed it.
 ///
-/// **This test failing is the good news.** It means the programme
-/// `crates/alo-bounding/src/lib.rs` describes has landed, and whoever landed it
-/// should come here, change the assertion to a refusal, and say so in
-/// `docs/quirks.md` and their report.
+/// This asserted the opposite when it was written, because the second refusal
+/// did not happen then. The commit that added `socket_connect` inverted it.
 #[test]
-fn a_bound_turn_is_refused_a_file_and_is_not_refused_a_socket() {
+fn a_bound_turn_is_refused_a_file_and_a_destination_nobody_showed_it() {
     let machine = a_machine_with_something_worth_protecting();
 
     // A listener this test owns, on loopback, on a port the machine chose.

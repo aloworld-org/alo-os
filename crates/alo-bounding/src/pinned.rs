@@ -14,7 +14,8 @@
 //!   ├─ file_open             0600 root:root                 what a turn reads
 //!   ├─ inode_rename          0600 root:root                 what it moves
 //!   ├─ inode_unlink          0600 root:root                 what it removes
-//!   └─ inode_link            0600 root:root                 what it links
+//!   ├─ inode_link            0600 root:root                 what it links
+//!   └─ socket_connect        0600 root:root                 where it connects
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -87,6 +88,9 @@ const THE_DELETE_HOOK: &str = "inode_unlink";
 /// The pinned link for the hook every hard link goes through.
 const THE_LINK_HOOK: &str = "inode_link";
 
+/// The pinned link for the hook every connection goes through.
+const THE_DEPARTURE_HOOK: &str = "socket_connect";
+
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
 
@@ -119,6 +123,9 @@ pub struct Pinned {
 
     /// The link that holds it on `inode_link`.
     link_hook: PathBuf,
+
+    /// The link that holds it on `socket_connect`.
+    departure_hook: PathBuf,
 }
 
 impl Pinned {
@@ -130,7 +137,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is seven paths joined, and every other
+    /// Nothing is made or looked at: this is eight paths joined, and every other
     /// method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -142,6 +149,7 @@ impl Pinned {
             rename_hook: root.join(THE_RENAME_HOOK),
             delete_hook: root.join(THE_DELETE_HOOK),
             link_hook: root.join(THE_LINK_HOOK),
+            departure_hook: root.join(THE_DEPARTURE_HOOK),
         }
     }
 
@@ -187,6 +195,12 @@ impl Pinned {
         &self.link_hook
     }
 
+    /// The link for the hook every connection goes through.
+    #[must_use]
+    pub fn departure_hook(&self) -> &Path {
+        &self.departure_hook
+    }
+
     /// Every pinned link, in the order the hooks are attached.
     ///
     /// One list so that attaching, refusing over leftovers and taking a
@@ -194,12 +208,13 @@ impl Pinned {
     /// pin was left out of one of those three would be a hook that stayed
     /// attached after the boundary was removed.
     #[must_use]
-    pub fn every_hook(&self) -> [&Path; 4] {
+    pub fn every_hook(&self) -> [&Path; 5] {
         [
             &self.hook,
             &self.rename_hook,
             &self.delete_hook,
             &self.link_hook,
+            &self.departure_hook,
         ]
     }
 
@@ -360,11 +375,15 @@ mod tests {
             Path::new("/sys/fs/bpf/alo/inode_unlink")
         );
         assert_eq!(pinned.link_hook(), Path::new("/sys/fs/bpf/alo/inode_link"));
+        assert_eq!(
+            pinned.departure_hook(),
+            Path::new("/sys/fs/bpf/alo/socket_connect")
+        );
         // Every hook has a pin of its own, and the list is what the loader
         // attaches in the order of: a hook missing from it would be attached
         // and never pinned, which is a hook detached the moment the loader
         // exits.
-        assert_eq!(pinned.every_hook().len(), 4);
+        assert_eq!(pinned.every_hook().len(), 5);
     }
 
     /// The directory is made shut: root owns it, the agent's group may enter

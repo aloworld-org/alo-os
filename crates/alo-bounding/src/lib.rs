@@ -214,4 +214,6 @@ pub use place::{as_the_kernel_keeps_it, place_of};
 pub use places::places_of;
 pub use turns::Turns;
 
-pub use alo_bounding_map::{Bounds, DEPTH, Field, PLACES, Place, WORDS};
+pub use alo_bounding_map::{
+    Bounds, DEPTH, DESTINATIONS, Departure, Departures, Family, Field, PLACES, Place, WORDS,
+};

@@ -68,17 +68,25 @@ fn the_kernel_half() -> &'static [u8] {
 /// The hooks the programme sits on, each called the same inside the compiled
 /// object as the kernel function it stands in front of.
 ///
-/// **Four of them**, and each was added because the ones before it were not
+/// **Five of them**, and each was added because the ones before it were not
 /// enough on their own: `file_open` is what a turn *reads*, `inode_rename` what
-/// it *moves*, `inode_unlink` what it *removes*, and `inode_link` what it gives
-/// a *second name*. A boundary watching only reads lets a file nobody granted
-/// be renamed or linked into a granted folder and read from there, with no step
-/// anything to complain about. ADR 0015 named this shape in its own mechanism.
+/// it *moves*, `inode_unlink` what it *removes*, `inode_link` what it gives a
+/// *second name*, and `socket_connect` where it *goes*. A boundary watching
+/// only reads lets a file nobody granted be renamed or linked into a granted
+/// folder and read from there, with no step anything to complain about; a
+/// boundary watching only files lets everything it protected leave over a
+/// socket. ADR 0015 named this shape in its own mechanism.
 ///
 /// The order is the order [`Pinned::every_hook`] gives their pins in, and that
 /// is not decoration: they are zipped together below, so a hook added to one
 /// list and not the other does not compile.
-const THE_HOOKS: [&str; 4] = ["file_open", "inode_rename", "inode_unlink", "inode_link"];
+const THE_HOOKS: [&str; 5] = [
+    "file_open",
+    "inode_rename",
+    "inode_unlink",
+    "inode_link",
+    "socket_connect",
+];
 
 /// The map of turns to the places each may reach.
 pub(crate) const THE_BOUNDS: &str = "BOUNDS";
