@@ -34,6 +34,17 @@ must expose that lifetime through an owned event loop or another unpatched
 upstream interface before this backend can claim full pointer support. Current
 development input remains explicitly limited; no pinned engine patch is made.
 
+## Smithay final drag release retains the old pointer focus (2026-09-07)
+
+Smithay 0.7.0's implicit pointer grab ends when its final button is released,
+but the protocol handle still reports the drag recipient until another motion.
+The real-client pointer-release popup refusal test exposed this: drag outside,
+release, return inside, then request a popup with that release serial. Merely
+checking the handle's focus allowed the menu. `alo-shell` now re-hits the scene
+at final release before retaining popup authority. It still delivers the release
+to the original drag recipient, and does not patch Smithay. The unchanged refusal
+test passes; this is Unix-socket development evidence, not physical input testing.
+
 ## Hardware and firmware
 
 ### `struct file`'s `f_path` is inside an anonymous union, and a search over named members does not find it

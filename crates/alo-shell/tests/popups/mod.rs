@@ -3,6 +3,7 @@ use super::{Application, Fixture};
 mod chains;
 mod grabs;
 mod keyboard_grabs;
+mod pointer_release;
 mod presentation;
 
 /// Protocol-only fixture explicitly opts in, independently of nested rendering.

@@ -24,7 +24,7 @@ pub(crate) struct Grab {
 }
 
 impl Surfaces {
-    /// Accept a pointer press or key event on the parent, or the current chain serial.
+    /// Accept a pointer press/release or key event, or the current chain serial.
     pub(crate) fn grab_popup(&mut self, role: PopupSurface, seat: WlSeat, serial: Serial) {
         self.prune();
         if self
@@ -112,6 +112,18 @@ impl Surfaces {
             .as_ref()
             .is_some_and(|keyboard| keyboard.popup_key.as_ref() == Some(&(serial, parent.clone())))
             || self.pointer_press_on(parent, serial)
+            || self.pointer.as_ref().is_some_and(|pointer| {
+                pointer
+                    .popup_release
+                    .as_ref()
+                    .is_some_and(|(event, surface)| {
+                        let mut root = surface.clone();
+                        while let Some(ancestor) = get_parent(&root) {
+                            root = ancestor;
+                        }
+                        *event == serial && &root == parent
+                    })
+            })
     }
 
     /// Require the actual active press serial and a surface in the parent tree.

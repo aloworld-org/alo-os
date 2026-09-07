@@ -644,8 +644,38 @@ The wire trace shows key press serial 3, release serial 4, then popup grab seria
 Key-press and pointer-grab graphics regressions also pass. Full commands and local
 log paths: `updates/native-popup-keyboard-release-initiation.md`.
 
-Pointer-release initiation remains the next component. Repositioning/output
+Pointer-release initiation is implemented below. Repositioning/output
 constraints, parent-leave notifications, direct display/input and production
 session integration remain owed. Scripted WSLg submission is not pixel readback,
 actual parent input or physical laptop/GPU workstation certification. Supervisor
 full independent publication gates have not run for this change.
+
+## Pointer-release popup initiation (2026-09-07)
+
+The latest matched real button release authorizes one root popup under its
+recipient's toplevel or popup tree. A subsurface can initiate its parent's menu;
+the exact recipient must retain pointer focus. New accepted button events, focus
+or lifetime loss and successful initiation invalidate the stored release.
+Invalid/duplicate events create no serial; synthetic cancellation never grants
+authority. Active submenus inherit the chain serial as before. Pointer presses
+retain their existing active implicit-grab policy; keyboard authority is unchanged.
+
+At the last held-button release the backend re-hits the scene to validate the
+recipient: Smithay ends the drag but retains pointer focus until the next motion.
+This prevents a release outside the old recipient from authorizing a menu, even
+if a later motion returns there. While another button remains held, its implicit
+drag continues to own delivery. This is local compositor policy, with no engine
+patch, arbitrary timeout or historical serial collection.
+
+Three new real-client tests cover subsurface/submenu success and consumption,
+pending-grab replay, nine refusal scenarios and independent-client survival.
+Linux shell total: 58 tests pass. WSLg `nested_check --pointer-release-grabs`
+submits a real SHM popup and checks callback/output enter, keyboard routing,
+outside dismissal, output leave and disconnect. Pointer press and keyboard release
+regressions pass. Exact commands, initial discovered failure and local wire logs:
+`updates/native-popup-pointer-release-initiation.md`.
+
+Repositioning/output constraints, parent-leave notifications, direct display/input
+and production session remain unfinished. Scripted WSLg is submission/protocol
+evidence, not pixel readback, actual parent input or physical certification.
+Supervisor full Windows/Linux/BPF publication gates remain owed.

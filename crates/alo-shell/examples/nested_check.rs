@@ -40,6 +40,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_shell::{Nested, Server};
+    if std::env::args().any(|arg| arg == "--pointer-release-grabs") {
+        return grab_check::run(false, true);
+    }
     if std::env::args().any(|arg| arg == "--grabs") {
         return grab_check::run(false, false);
     }

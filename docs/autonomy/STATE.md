@@ -10562,3 +10562,47 @@ Supervisor full independent publication gates have not run for this change.
 No staging, commit/push, worker/loop launch, dev-loop edit or other-repository
 changes. Reports arriving during publication are reconciled next iteration.
 The compositor and release remain unverified.
+
+---
+
+## 2026-09-07 - native popup pointer-release initiation
+
+Single desktop worker; clean checkout at iteration start. Read constitution,
+delivery order, shared-main ownership, updates README, current queue/state tail,
+shell feature/roadmap, ADRs 0001/0002 and application-adapter boundary. All nine
+published reports were already referenced in STATE; no pending reconciliation.
+Filesystem security remains Claude's assignment. Recorded selected component and
+acceptance in QUEUE before code; no delegation or other-checkout changes.
+
+Integrated own report:
+`docs/autonomy/updates/native-popup-pointer-release-initiation.md`.
+Latest matched real pointer releases now authorize one parent menu, including
+subsurface initiation and inherited submenu serials. Accepted button events,
+pointer recipient/lifetime loss and consumption invalidate the stored authority;
+synthetic cancellation never authorizes. One stored release avoids timeouts and
+serial history. No new scope, agent/context API, dependency or ADR exception.
+
+Initial focused tests caught Smithay retaining focus after final drag release
+until the next motion. The implementation now re-hits the scene at that release,
+refusing stale authority outside its recipient. The original failing assertion
+passes without modification. Three new socket tests pass; Linux shell total 58,
+none ignored. Focused Windows/Linux tests/clippy/fmt and warnings-denied Linux
+rustdoc pass. Windows excludes Linux protocol tests. Exact commands, initial
+failure and local logs are in the task report; no gate or lint weakened.
+
+Additional WSLg pointer-release fixture uses received release serial 4 (press 3)
+to grab and render a real SHM popup. Callback/output enter, keyboard routing,
+consumed outside click, output leave, parent focus and disconnect cleanup pass.
+Pointer-press and keyboard-release regressions pass. WSLg/native prerequisites
+verified; no package installation or shared kernel/cgroup/BPF/service changes.
+Linux target stays /root/alo-os-target, isolated from the other checkout's build.
+Scripted submission/protocol evidence is not pixel readback or physical input.
+
+CHANGELOG, ROADMAP, QUEUE and COMPOSITOR record the component and limits. Diff
+reviewed and whitespace check passes. Next: XDG popup repositioning, then output
+constraints, parent leave and direct display/input. Production session and every
+other unfinished v0.01 requirement remain. Actual parent input and certified
+laptop/GPU workstation physical records remain owed. Supervisor full independent
+publication gates have not run for this change. No staging, commit/push, worker/
+loop launch, dev-loop edit or unrelated host changes. Reports arriving during
+publication are reconciled next iteration. Compositor and release unverified.

@@ -249,9 +249,25 @@ cross-references, not the primary names used in handoffs or status messages.
   key-press and pointer-grab regressions pass; focused Windows/Linux fmt, tests,
   clippy and Linux rustdoc pass. Exact checks and limits:
   `updates/native-popup-keyboard-release-initiation.md`.
-  **Next useful component:** pointer-release popup initiation with bounded serial
-  lifetime and parent-tree ownership; real-client release, focus/motion/lifecycle,
-  replay and synthetic-cleanup tests plus WSLg submission evidence.
+  **Selected pointer-release popup initiation (desktop worker):** retain only the
+  latest matched real button release for its still-focused surface and parent tree.
+  Accepted button events, pointer focus/lifetime loss and consumption invalidate
+  authority; synthetic cleanup never creates it. Acceptance: real-client release,
+  submenu, focus/motion/lifecycle, foreign/replay/supersession and synthetic-cleanup
+  tests plus WSLg submission evidence, fmt, focused tests/clippy and rustdoc.
+  **Completed pointer-release initiation 2026-09-07:** latest matched release,
+  exact recipient/parent-tree validation and single-use root authority. Final
+  drag releases re-hit the scene because Smithay retains focus until next motion;
+  releasing outside the recipient cannot leave stale menu authority. Three new
+  socket tests pass (58 Linux shell tests), including subsurface/submenu success,
+  pending replay, supersession, foreign/stale serials, focus loss, unmap/remap,
+  child destruction and synthetic-release refusal. WSLg pointer-release, pointer-
+  press and keyboard-release checks pass; focused Windows/Linux tests/clippy/fmt
+  and Linux rustdoc pass. Exact evidence and initial test correction:
+  `updates/native-popup-pointer-release-initiation.md`.
+  **Next useful component:** XDG popup repositioning with configure/acknowledge
+  ordering and shared rendering/input placement; output constraints remain
+  required before production popup support is complete.
   Repositioning/output constraints, parent-leave backend, direct display and physical acceptance
   remain; item 33 is unchecked and supervisor full gates remain owed.
 

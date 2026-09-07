@@ -114,6 +114,9 @@ pub fn run(keyboard: bool, release: bool) -> Result<(), Box<dyn std::error::Erro
             } else {
                 server.pointer_motion(1.0, 1.0, 1)?;
                 assert!(server.pointer_button(0x110, ButtonState::Pressed, 2)?);
+                if release {
+                    assert!(server.pointer_button(0x110, ButtonState::Released, 3)?);
+                }
             }
             done.send(())?;
         }

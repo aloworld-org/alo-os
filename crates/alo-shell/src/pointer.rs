@@ -6,7 +6,7 @@ use smithay::{
     desktop::{WindowSurfaceType, utils::under_from_surface_tree},
     input::pointer::{AxisFrame, ButtonEvent, MotionEvent, PointerHandle},
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
-    utils::{Logical, Point, SERIAL_COUNTER},
+    utils::{Logical, Point, SERIAL_COUNTER, Serial},
     wayland::compositor::get_parent,
 };
 
@@ -20,6 +20,8 @@ pub(crate) struct Pointer {
     pub(crate) location: Point<f64, Logical>,
     /// Timestamp used for synthetic cancellation events.
     time: u32,
+    /// Latest matched real release, valid only while its exact recipient keeps focus.
+    pub(crate) popup_release: Option<(Serial, WlSurface)>,
 }
 
 impl Server {
@@ -39,6 +41,7 @@ impl Server {
                 buttons: Vec::new(),
                 location: (0.0, 0.0).into(),
                 time: 0,
+                popup_release: None,
             });
         }
         Ok(())
@@ -76,6 +79,7 @@ impl Server {
             },
         );
         handle.frame(&mut self.surfaces);
+        self.surfaces.prune_pointer_release();
         Ok(())
     }
 
@@ -85,6 +89,8 @@ impl Server {
     /// pressed outside a client never authorize a later release into a client.
     /// During a popup grab, outside presses dismiss the chain and return false;
     /// neither the press nor its later release is redirected to another client.
+    /// A matched real release may authorize one popup while its recipient stays
+    /// focused. New accepted button events and cancellation invalidate it.
     pub fn pointer_button(
         &mut self,
         button: u32,
@@ -129,6 +135,9 @@ impl Server {
             pointer.buttons.retain(|held| *held != button);
         }
         pointer.time = time;
+        pointer.popup_release = None;
+        let recipient = pointer.handle.current_focus();
+        let serial = SERIAL_COUNTER.next_serial();
         let handle = pointer.handle.clone();
         handle.button(
             &mut self.surfaces,
@@ -136,10 +145,27 @@ impl Server {
                 button,
                 state,
                 time,
-                serial: SERIAL_COUNTER.next_serial(),
+                serial,
             },
         );
         handle.frame(&mut self.surfaces);
+        // Smithay ends the implicit grab on the final release but retains its
+        // focus until the next motion. Re-hit now so moving away during a drag
+        // cannot leave release authority on that stale recipient.
+        let release_target = self.surfaces.pointer.as_ref().is_some_and(|pointer| {
+            !pointer.buttons.is_empty()
+                || self
+                    .pointer_target(pointer.location)
+                    .map(|(surface, _)| surface)
+                    == recipient
+        });
+        if state == ButtonState::Released
+            && release_target
+            && let Some(pointer) = self.surfaces.pointer.as_mut()
+        {
+            pointer.popup_release = recipient.map(|surface| (serial, surface));
+        }
+        self.surfaces.prune_pointer_release();
         Ok(true)
     }
 
@@ -194,6 +220,17 @@ fn bounded(value: f64) -> bool {
 }
 
 impl Surfaces {
+    /// A release cannot authorize a menu after its pointer recipient changes.
+    fn prune_pointer_release(&mut self) {
+        if let Some(pointer) = self.pointer.as_mut()
+            && pointer.popup_release.as_ref().is_some_and(|(_, surface)| {
+                pointer.handle.current_focus().as_ref() != Some(surface)
+            })
+        {
+            pointer.popup_release = None;
+        }
+    }
+
     /// Clear stale focus even if its root survives a child unmap/destruction.
     pub(crate) fn prune_pointer_focus(&mut self) {
         let focus = self.pointer.as_ref().and_then(|p| p.handle.current_focus());
@@ -230,6 +267,7 @@ impl Surfaces {
         let location = pointer.location;
         let time = pointer.time;
         let buttons = std::mem::take(&mut pointer.buttons);
+        pointer.popup_release = None;
         // Remove the pending recipient before releasing the implicit grab.
         handle.motion(
             self,
