@@ -72,6 +72,8 @@ use alo_models::{InferenceSource, Provider, Secret};
 
 use crate::answer::Answer;
 use crate::asking::Asking;
+use std::net::SocketAddr;
+
 use crate::openai;
 use crate::question::Question;
 use crate::refusing::{Miswired, NotAnswered};
@@ -141,13 +143,28 @@ impl<'a> Served<'a> {
     /// Private, and the only caller is
     /// [`Asking::to_a_service_on_this_machine`]: a public one here would be a
     /// way to reach the wire without the permission having been checked.
-    fn ask(&self, question: &Question) -> Result<String, alo_answering::WentWrong> {
+    fn ask(
+        &self,
+        question: &Question,
+        to: &[SocketAddr],
+    ) -> Result<String, alo_answering::WentWrong> {
         openai::put(
             &self.provider.endpoint,
             self.key,
             question,
             WHILE_THIS_MACHINE_THINKS,
+            to,
         )
+    }
+
+    /// The host and port this would connect to, for somebody to resolve.
+    ///
+    /// A service on this machine is loopback, which the boundary does not check
+    /// (ADR 0007, ADR 0020) — but the client still needs somewhere to go, and
+    /// it is given it here rather than resolving a name of its own.
+    #[must_use]
+    pub fn where_it_would_connect(&self) -> Option<(String, u16)> {
+        alo_models::address::where_it_connects(&self.provider.endpoint)
     }
 }
 
@@ -187,10 +204,14 @@ impl Asking<'_> {
     /// [`NotAnswered`], the same two things [`Asking::to_this_machine`] answers
     /// with: law 1's refusals do not exist on this path either, because nothing
     /// on it goes anywhere.
+    /// `to` is where this request may connect. A service on this machine is
+    /// loopback, which the boundary does not check (ADR 0007), but the client
+    /// is still given its address rather than resolving a name of its own.
     pub fn to_a_service_on_this_machine(
         self,
         question: &Question,
         served: &Served<'_>,
+        to: &[SocketAddr],
     ) -> Result<Answer, NotAnswered> {
         let source = self.answering.source().clone();
         match &source {
@@ -207,7 +228,7 @@ impl Asking<'_> {
         // No policy is asked, no indicator is shown and no departure is made.
         // There is nothing here for any of the three to be about, and the
         // reason that is true rather than assumed is that `served` exists.
-        match served.ask(question) {
+        match served.ask(question, to) {
             Ok(said) => Ok(Answer::new(said, source, question.of().to_owned())),
             Err(why) => match self.answering.did_not_answer(why, self.others, self.policy) {
                 Ok(failed) => Err(NotAnswered::DidNotAnswer(Box::new(failed))),
@@ -229,6 +250,22 @@ impl Asking<'_> {
 )]
 mod tests {
     use super::*;
+
+    /// Where a request would connect, resolved before it is made.
+    fn resolved(served: &Served<'_>) -> Vec<SocketAddr> {
+        use std::net::ToSocketAddrs as _;
+        served
+            .where_it_would_connect()
+            .into_iter()
+            .flat_map(|(host, port)| {
+                (host.as_str(), port)
+                    .to_socket_addrs()
+                    .into_iter()
+                    .flatten()
+            })
+            .collect()
+    }
+
     use crate::testing::{in_english, mistral_source, serving, serving_with, translated};
     use alo_answering::{Answering, WentWrong};
     use alo_capability::Grantee;
@@ -280,7 +317,7 @@ mod tests {
         let provider = service(&url);
         let served = Served::at(&provider, None).unwrap();
         let answer = Asking::by(&mail(), here(), &[], &SourcePolicy::Anywhere)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap();
         let request = server.join().unwrap();
 
@@ -349,7 +386,7 @@ mod tests {
             let asking = Asking::by(&mail, here(), &[], &SourcePolicy::ThisMachineOnly);
             assert!(
                 asking
-                    .to_a_service_on_this_machine(&question(), &served)
+                    .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
                     .is_ok()
             );
             server.join().unwrap();
@@ -384,7 +421,7 @@ mod tests {
                 &[],
                 &policy,
             )
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap();
             server.join().unwrap();
             assert_eq!(
@@ -427,7 +464,7 @@ mod tests {
                 &[],
                 &SourcePolicy::Anywhere,
             )
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap_err();
 
             assert_eq!(
@@ -449,7 +486,7 @@ mod tests {
         let key = Secret::typed("not-the-key-vllm-was-started-with").unwrap();
         let served = Served::at(&provider, Some(&key)).unwrap();
         let not_answered = Asking::by(&mail(), here(), &[], &SourcePolicy::Anywhere)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap_err();
         server.join().unwrap();
 
@@ -481,7 +518,7 @@ mod tests {
         let served = Served::at(&provider, None).unwrap();
         let indicator = Indicator::default();
         let not_answered = Asking::by(&mail(), here(), &[], &SourcePolicy::Anywhere)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap_err();
         server.join().unwrap();
 
@@ -500,7 +537,7 @@ mod tests {
         let served = Served::at(&provider, None).unwrap();
         let others = [mistral_source()];
         let not_answered = Asking::by(&mail(), here(), &others, &SourcePolicy::Anywhere)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap_err();
 
         let failed = did_not_answer(not_answered).unwrap();
@@ -528,7 +565,7 @@ mod tests {
         let provider = service("http://127.0.0.1:1");
         let served = Served::at(&provider, None).unwrap();
         let not_answered = Asking::by(&mail(), here(), &[], &SourcePolicy::Anywhere)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap_err();
         let said = did_not_answer(not_answered).unwrap().said(&strings);
         assert!(said.is_translated(), "{said}");
@@ -542,7 +579,7 @@ mod tests {
         let provider = service("http://127.0.0.1:1");
         let served = Served::at(&provider, None).unwrap();
         let not_answered = Asking::by(&mail(), here(), &[], &SourcePolicy::Anywhere)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
             .unwrap_err();
         assert_eq!(
             did_not_answer(not_answered).map(|failed| failed.why()),

@@ -131,7 +131,13 @@ fn a_question_that_was_answered_is_one_departure_in_the_record() {
 
     let answering = Answering::chosen(hosted.named_source(), &policy).expect("nothing forbids it");
     let asked = Asking::by(&mail, answering, &[], &policy)
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(hosted.where_it_would_connect()),
+        )
         .expect("the stub answered");
     server.join().expect("the stub finished");
 
@@ -181,7 +187,13 @@ fn a_question_that_was_not_answered_is_still_one_departure_in_the_record() {
     let answering = Answering::chosen(hosted.named_source(), &policy).expect("nothing forbids it");
     let elsewhere = [InferenceSource::ThisMachine];
     let not_asked = Asking::by(&mail, answering, &elsewhere, &policy)
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(hosted.where_it_would_connect()),
+        )
         .expect_err("the stub was having trouble");
     server.join().expect("the stub finished");
 
@@ -225,7 +237,13 @@ fn a_question_the_rule_refused_is_written_down_as_a_refusal_and_not_as_egress() 
     let answering = Answering::chosen(hosted.named_source(), &SourcePolicy::Anywhere)
         .expect("nothing forbade it then");
     let not_asked = Asking::by(&mail, answering, &[], &SourcePolicy::InTheBuilding)
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(hosted.where_it_would_connect()),
+        )
         .expect_err("the rule keeps questions in the building");
 
     assert!(not_asked.nothing_left());
@@ -247,4 +265,20 @@ fn a_question_the_rule_refused_is_written_down_as_a_refusal_and_not_as_egress() 
         "this machine is set to keep everything in the building, and Mistral, in the EU is \
          outside it"
     );
+}
+
+/// Where a request would connect, resolved the way `alo-turn` resolves it:
+/// before anything is bounded, and handed to the door rather than looked up
+/// inside it (ADR 0020).
+fn resolved(where_to: Option<(String, u16)>) -> Vec<std::net::SocketAddr> {
+    use std::net::ToSocketAddrs as _;
+    where_to
+        .into_iter()
+        .flat_map(|(host, port)| {
+            (host.as_str(), port)
+                .to_socket_addrs()
+                .into_iter()
+                .flatten()
+        })
+        .collect()
 }

@@ -63,14 +63,81 @@
 //! have their body read as far as [`MOST_OF_A_REFUSAL`]. What is taken out of it
 //! is a `bool`; [`ran_out`] is where that is done and why nothing else is.
 
+use std::net::SocketAddr;
 use std::time::Duration;
 
 use alo_answering::WentWrong;
 use alo_models::Secret;
 use serde::{Deserialize, Serialize};
+use ureq::Agent;
+use ureq::config::Config;
+use ureq::unversioned::resolver::{ResolvedSocketAddrs, Resolver};
+use ureq::unversioned::transport::{DefaultConnector, NextTimeout};
 
 use crate::question::Question;
 use crate::ran_out;
+
+/// The most addresses one request is given.
+///
+/// Under the width of the client's own answer, which is private to it and would
+/// panic if pushed past. A caller registers fewer than this with the boundary,
+/// so this is a guard rather than a limit anybody meets.
+const MOST_ADDRESSES: usize = 8;
+
+/// The addresses a request may use, and the only ones it will.
+///
+/// **This is where resolution stops being part of connecting** (ADR 0020). The
+/// caller resolved the provider's name before the boundary was entered and
+/// registered what came back; this hands those addresses to the client and asks
+/// no name server anything. A bounded turn therefore needs no permission to
+/// reach one, which is why there is no exception for DNS to widen later.
+///
+/// Only the resolver is replaced. The connector is the client's own and the URI
+/// keeps the provider's hostname, so the certificate is verified against the
+/// name the person configured rather than against an address — which is the
+/// whole reason this is a resolver and not a rewritten URL.
+#[derive(Debug)]
+struct OnlyThese {
+    /// The first, which is what an empty answer is made from and then emptied.
+    first: SocketAddr,
+
+    /// Where this request may connect, in the order it should try them.
+    addresses: Vec<SocketAddr>,
+}
+
+impl OnlyThese {
+    /// The addresses somebody registered, or [`None`] if there are none — a
+    /// request with nowhere to go is not one to make.
+    fn of(addresses: &[SocketAddr]) -> Option<Self> {
+        let first = *addresses.first()?;
+        Some(Self {
+            first,
+            addresses: addresses.to_vec(),
+        })
+    }
+}
+
+impl Resolver for OnlyThese {
+    fn resolve(
+        &self,
+        _uri: &ureq::http::Uri,
+        _config: &Config,
+        _timeout: NextTimeout,
+    ) -> Result<ResolvedSocketAddrs, ureq::Error> {
+        // The client's answer type is a fixed-width array whose only
+        // constructor fills the backing store with placeholders and reports a
+        // length of nothing, so it is built with one and then pushed into.
+        let mut held = ResolvedSocketAddrs::from_fn(|_| self.first);
+        // Its width is private to the client and pushing past it would panic,
+        // so what is copied in is capped at a number this file owns and is
+        // certainly under it. Nothing is lost in practice: a caller registers
+        // at most `alo_bounding_map::DESTINATIONS` of these, which is fewer.
+        for address in self.addresses.iter().take(MOST_ADDRESSES) {
+            held.push(*address);
+        }
+        Ok(held)
+    }
+}
 
 /// The most of an answer that is read.
 ///
@@ -148,18 +215,33 @@ pub(crate) fn put(
     key: Option<&Secret>,
     question: &Question,
     waiting: Duration,
+    to: &[SocketAddr],
 ) -> Result<String, WentWrong> {
-    let request = ureq::post(answers_url(endpoint))
-        .config()
-        .timeout_global(Some(waiting))
-        // Refused rather than followed — this module's first decision.
-        .max_redirects(0)
-        // Every answer comes back to be read here. A status this file has an
-        // opinion about must not be turned into a transport error by the
-        // client, because "that key was not accepted" and "nothing answered"
-        // are different things to tell somebody.
-        .http_status_as_error(false)
-        .build();
+    let Some(only_these) = OnlyThese::of(to) else {
+        // Nowhere was registered, so there is nowhere to go. Refused here
+        // rather than left to the client, which would resolve the name itself
+        // and reach an address nobody registered.
+        return Err(WentWrong::NothingAnswered);
+    };
+    // **One client, one request, and then it is dropped** (ADR 0020). A pooled
+    // connection that outlived the call would be authority outliving what the
+    // person was shown, which is the thing registering a destination exists to
+    // prevent. The pool lives in the agent, so the agent lives in the request.
+    let agent = Agent::with_parts(
+        Config::builder()
+            .timeout_global(Some(waiting))
+            // Refused rather than followed — this module's first decision.
+            .max_redirects(0)
+            // Every answer comes back to be read here. A status this file has
+            // an opinion about must not be turned into a transport error by the
+            // client, because "that key was not accepted" and "nothing
+            // answered" are different things to tell somebody.
+            .http_status_as_error(false)
+            .build(),
+        DefaultConnector::new(),
+        only_these,
+    );
+    let request = agent.post(answers_url(endpoint));
     // The key is handed the request rather than the other way round: it cannot
     // be read out of `alo-models`, and this crate never holds it as text it
     // could put anywhere else.
@@ -273,6 +355,21 @@ fn answers_url(endpoint: &str) -> String {
 )]
 mod tests {
     use super::*;
+
+    /// Where a URL would connect, resolved the way a caller resolves it: before
+    /// the request, and handed in rather than looked up inside (ADR 0020).
+    fn resolved(url: &str) -> Vec<SocketAddr> {
+        use std::net::ToSocketAddrs as _;
+        alo_models::address::where_it_connects(url)
+            .into_iter()
+            .flat_map(|(host, port)| {
+                (host.as_str(), port)
+                    .to_socket_addrs()
+                    .into_iter()
+                    .flatten()
+            })
+            .collect()
+    }
     use crate::testing::{serving, serving_with};
 
     /// One answer, in the shape every OpenAI-compatible service replies with.
@@ -293,7 +390,7 @@ mod tests {
     fn a_question_goes_out_whole_and_alone_and_the_answer_comes_back_as_it_was_written() {
         let (url, server) = serving(AN_ANSWER, 200);
         let key = Secret::typed("sk-live-0123456789").unwrap();
-        let answer = put(&url, Some(&key), &question(), A_MOMENT);
+        let answer = put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url));
         let request = server.join().unwrap();
 
         assert_eq!(answer.unwrap(), "The tenant may not sublet.");
@@ -328,7 +425,7 @@ mod tests {
     #[test]
     fn a_service_given_no_key_is_sent_no_authorisation_at_all() {
         let (url, server) = serving(AN_ANSWER, 200);
-        let answer = put(&url, None, &question(), A_MOMENT);
+        let answer = put(&url, None, &question(), A_MOMENT, &resolved(&url));
         let request = server.join().unwrap();
         assert!(answer.is_ok(), "{answer:?}");
         assert!(
@@ -343,7 +440,7 @@ mod tests {
     fn a_key_the_service_refuses_is_said_without_quoting_it_or_them() {
         let (url, server) = serving(r#"{"message":"Unauthorized","request_id":"abc"}"#, 401);
         let key = Secret::typed("sk-live-0123456789").unwrap();
-        let went_wrong = put(&url, Some(&key), &question(), A_MOMENT).unwrap_err();
+        let went_wrong = put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url)).unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::KeyNotAccepted);
 
@@ -363,7 +460,7 @@ mod tests {
             "Location: http://127.0.0.1:1/v1/chat/completions\r\n",
         );
         let key = Secret::typed("sk-live-0123456789").unwrap();
-        let went_wrong = put(&url, Some(&key), &question(), A_MOMENT).unwrap_err();
+        let went_wrong = put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url)).unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::SentSomewhereElse);
     }
@@ -391,7 +488,8 @@ mod tests {
         ] {
             let (url, server) = serving(body, status);
             let key = Secret::typed("sk-live-0123456789").unwrap();
-            let went_wrong = put(&url, Some(&key), &question(), A_MOMENT).unwrap_err();
+            let went_wrong =
+                put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url)).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, WentWrong::RanOut, "{status}: {body}");
         }
@@ -420,7 +518,7 @@ mod tests {
             ("<html>403 Forbidden</html>", 403, WentWrong::KeyNotAccepted),
         ] {
             let (url, server) = serving(body, status);
-            let went_wrong = put(&url, None, &question(), A_MOMENT).unwrap_err();
+            let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, expected, "{status}: {body:?}");
         }
@@ -431,7 +529,7 @@ mod tests {
     #[test]
     fn a_refusal_this_file_does_not_have_to_read_is_not_read() {
         let (url, server) = serving(r#"{"error":{"code":"insufficient_quota"}}"#, 401);
-        let went_wrong = put(&url, None, &question(), A_MOMENT).unwrap_err();
+        let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::KeyNotAccepted);
     }
@@ -461,7 +559,7 @@ mod tests {
             ),
         ] {
             let (url, server) = serving(body, status);
-            let went_wrong = put(&url, None, &question(), A_MOMENT).unwrap_err();
+            let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, expected, "{status}");
         }
@@ -479,7 +577,7 @@ mod tests {
             r#"{"choices":[{"index":0,"message":{"role":"assistant","content":"   "}}]}"#,
         ] {
             let (url, server) = serving(body, 200);
-            let went_wrong = put(&url, None, &question(), A_MOMENT).unwrap_err();
+            let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, WentWrong::NothingUsable, "{body}");
         }
@@ -490,7 +588,14 @@ mod tests {
     #[test]
     fn nothing_listening_is_nothing_answered() {
         assert_eq!(
-            put("http://127.0.0.1:1", None, &question(), A_MOMENT).unwrap_err(),
+            put(
+                "http://127.0.0.1:1",
+                None,
+                &question(),
+                A_MOMENT,
+                &resolved("http://127.0.0.1:1"),
+            )
+            .unwrap_err(),
             WentWrong::NothingAnswered
         );
     }

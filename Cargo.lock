@@ -19,6 +19,8 @@ dependencies = [
 name = "alo-agentd"
 version = "0.0.1"
 dependencies = [
+ "alo-answering",
+ "alo-asking",
  "alo-bounding",
  "alo-capability",
  "alo-choosing",

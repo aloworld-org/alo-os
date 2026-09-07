@@ -93,6 +93,12 @@ alo-models = { path = "../alo-models" }
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-record = { path = "../alo-record" }
 
+# And the two a question goes through, for the test that puts one to a provider
+# inside a boundary this machine really imposes. The daemon reaches them through
+# `alo-turn` rather than directly, which is why they are here and not above.
+alo-answering = { path = "../alo-answering" }
+alo-asking = { path = "../alo-asking" }
+
 # The service, as a machine really runs it. `src/lib.rs` is every decision and
 # this is the process that makes them in order — thin on purpose, because what a
 # process does is one sequence and one exit code, and everything it decides on

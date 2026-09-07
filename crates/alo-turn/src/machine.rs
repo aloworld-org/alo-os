@@ -192,6 +192,17 @@ impl<'a> Machine<'a> {
         self.bounding
     }
 
+    /// The boundary and the indicator at once.
+    ///
+    /// Two fields of one machine, handed out together because putting a
+    /// question inside a boundary needs both: the boundary to enter, and the
+    /// indicator for the work that runs in there. Asking for them one at a time
+    /// would be two borrows of one machine, and this is the one place that
+    /// knows they are different fields.
+    pub(crate) fn bounding_and_indicator(&mut self) -> (&mut dyn Bounding, &mut Indicator) {
+        (self.bounding, self.indicator)
+    }
+
     /// What is leaving, to be shown something else.
     ///
     /// `pub(crate)`: the only callers are the doors that put a question

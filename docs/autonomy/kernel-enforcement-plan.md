@@ -275,32 +275,48 @@ defensibly.
 
 ### 4. End-to-end network enforcement integration
 
-**Status:** **blocked, awaiting a decision.** **Depends on:** 3 — done.
+**Status:** done. **Depends on:** 3 — done. **The approval this waited on was
+given** on 2026-09-07 (`d220aef`,
+`docs/autonomy/updates/network-request-boundary-approval.md`) and is recorded as
+**[ADR 0020](../decisions/0020-a-question-is-carried-out-inside-the-turns-boundary.md)**,
+written before any of the implementation below.
 
-The mechanism task 3 built decides by control group, and **a provider request is
-made from a thread in no control group**, so nothing on the production path
-reaches it. Measured, not reasoned:
-`crates/alo-turn/tests/whether_a_question_runs_inside_the_boundary.rs` counts
-executions carried out inside a boundary during one turn that does a file verb
-and asks a question. The count is one, and it was the file verb.
+The mechanism task 3 built decides by control group, and a provider request was
+made from a thread in no control group, so nothing on the production path
+reached it. That is now closed:
+`crates/alo-turn/tests/whether_a_question_runs_inside_the_boundary.rs` counted
+one execution inside a boundary during a turn that did a file verb and asked a
+question, and it was the file verb. **It now counts both**, and asserts the
+question was let reach what its endpoint resolved to and nothing else.
 
-**So the v0.01 network requirement is not met**, and task 3's report should not
-be read as meeting it. The audit, the traced request path and the coverage
-assessment — DNS, UDP `sendto`, pooling, inherited sockets, loopback proxies,
-each for production reachability — are in
-`docs/autonomy/updates/end-to-end-network-enforcement.md`.
+- **Acceptance:** an authorised provider request succeeds through the production
+  path under the real loaded programme; an unauthorised destination is refused
+  while an authorised one stays usable; a question the rule refuses reaches no
+  socket at all; failure leaves no permission or connection behind; local-model
+  operation and every existing filesystem protection still pass.
+- **Evidence:** `crates/alo-agentd/tests/a_question_is_bounded_by_the_kernel.rs`
+  — five tests, against the real loaded BPF LSM, on real sockets.
 
-**The decision this needs:** may a question be carried out inside a turn's
-boundary, with its destination registered for the length of the request? It
-changes the turn lifecycle — `Bounding` takes file places and would need to bound
-a network request — and it changes how every provider request is made, because
-`ureq` resolves and connects in one call and a registration needs a moment
-between those. Two release-relevant gaps ride on the same decision: **DNS**,
-which is UDP and is not the destination anybody was shown, and **connection
-pooling**, where a reused connection makes no `connect` at all.
+**Done, 2026-09-07.** Resolution is separated from connection: the daemon
+resolves the endpoint **outside** any boundary, registers the addresses, enters
+a control group and makes the request with a resolver that returns those
+addresses and asks no name server anything — so **there is no DNS inside the
+boundary and no exception for it**, which is what the approval asked for. The
+client is built per request and dropped with it, so its connection pool cannot
+outlive the permission. Only the resolver is replaced, so the URL keeps the
+provider's hostname and certificate verification is unchanged. `Bounding`'s new
+method is **defaulted to a refusal**, so an implementation that predates ADR 0020
+refuses to send rather than sending unbounded.
 
-Nothing of it is started. No grant, capability, policy or ADR was touched by the
-audit.
+**No approval-scope line was crossed:** no new capability, no widened grant, no
+blanket network permission, *decides and forgets* untouched, loopback still
+unchecked, and the provider-and-region policy still entirely in userspace.
+
+**What is still not covered is named in the report** rather than implied: UDP
+sent without a connection, sockets already open or inherited, the loopback
+proxy, and a provider resolving to more than two addresses being reached at the
+first two. `docs/autonomy/updates/end-to-end-network-enforcement.md` carries the
+whole of it.
 
 ### 5. Documenting the filesystem mutations that remain unwatched
 

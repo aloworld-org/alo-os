@@ -45,7 +45,9 @@
 //! an answerable question rather than as an English sentence somebody would have
 //! had to match on.
 
-use alo_bounding::{Boundary, NotBounded, Pinned, Turns, places_of};
+use alo_bounding::{
+    Boundary, Bounds, Departure, Departures, Family, NotBounded, Pinned, Turns, places_of,
+};
 use alo_files::Reaching;
 use alo_turn::{Bounding, Doing, Done, NoBoundary};
 
@@ -141,6 +143,50 @@ impl Bounding for ByTheKernel {
     /// item 26b's decision: `alo_bounding::places_of` looks each one up and
     /// refuses a path that is not there rather than turning it into a place made
     /// of zeroes.
+    /// Carry out one network request inside a boundary reaching **no file at
+    /// all** and only these addresses.
+    ///
+    /// ADR 0020. Two halves of one guarantee sit here:
+    ///
+    /// - the bound is `Bounds::reaching_nothing_but`, so a turn putting a
+    ///   question may open **nothing** on the disk. A question names no path,
+    ///   and a boundary around it that permitted files would be wider than the
+    ///   work it is around.
+    /// - the destinations are the addresses the caller resolved and handed in,
+    ///   and no others. An address nobody registered is refused by the machine
+    ///   even while another of this turn's own is permitted.
+    ///
+    /// The control group is made, entered, and taken away by the same
+    /// `alo_bounding::Turns::doing` a file verb goes through, so the
+    /// registration is gone when the request is — on success, on failure, and
+    /// on a turn that ends without one.
+    ///
+    /// # Errors
+    /// [`NoBoundary`] when the addresses cannot be held or the kernel would not
+    /// take the entry, and then the question is not put.
+    fn carrying_out_a_departure(
+        &mut self,
+        to: &[std::net::SocketAddr],
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), NoBoundary> {
+        let shown: Vec<Departure> = to.iter().copied().map(as_a_departure).collect();
+        let Some(shown) = Departures::of(&shown) else {
+            return Err(NoBoundary::because(format!(
+                "a request naming {} addresses is more than one entry holds",
+                to.len()
+            )));
+        };
+        let named = next_name(&mut self.named);
+        self.turns
+            .doing(
+                &mut self.boundary,
+                &named,
+                Bounds::reaching_nothing_but(shown),
+                doing,
+            )
+            .map_err(as_no_boundary)
+    }
+
     fn carrying_out(&mut self, reaching: &Reaching, doing: Doing<'_>) -> Result<Done, NoBoundary> {
         let places: Vec<&std::path::Path> = reaching.places().collect();
         let granted = places_of(&places).map_err(as_no_boundary)?;
@@ -148,6 +194,20 @@ impl Bounding for ByTheKernel {
         self.turns
             .doing(&mut self.boundary, &named, granted, || doing.done())
             .map_err(as_no_boundary)
+    }
+}
+
+/// One address, as the map holds a destination.
+///
+/// The two families are kept apart rather than folded together: `::ffff:1.2.3.4`
+/// and `1.2.3.4` are different destinations, and a shape that could not tell
+/// them apart would let one stand for the other.
+fn as_a_departure(address: std::net::SocketAddr) -> Departure {
+    match address {
+        std::net::SocketAddr::V4(four) => {
+            Departure::of(Family::Four, u128::from(four.ip().to_bits()), four.port())
+        }
+        std::net::SocketAddr::V6(six) => Departure::of(Family::Six, six.ip().to_bits(), six.port()),
     }
 }
 

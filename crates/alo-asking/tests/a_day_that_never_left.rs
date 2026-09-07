@@ -319,7 +319,11 @@ fn a_day_of_questions_answered_by_a_local_service_puts_no_egress_in_the_record()
         let answering = Answering::chosen(served.source(), &policy)
             .expect("no rule stops a machine answering itself");
         let answer = Asking::by(&mail, answering, &[mistral()], &policy)
-            .to_a_service_on_this_machine(&question(), &served)
+            .to_a_service_on_this_machine(
+                &question(),
+                &served,
+                &resolved(served.where_it_would_connect()),
+            )
             .expect("the service answered");
         server.join().expect("the stub finished");
 
@@ -366,4 +370,20 @@ fn a_service_that_is_not_on_this_machine_never_becomes_a_door() {
         // about the address being unusable.
         assert!(elsewhere.source().causes_egress(), "{endpoint}");
     }
+}
+
+/// Where a request would connect, resolved the way `alo-turn` resolves it:
+/// before anything is bounded, and handed to the door rather than looked up
+/// inside it (ADR 0020).
+fn resolved(where_to: Option<(String, u16)>) -> Vec<std::net::SocketAddr> {
+    use std::net::ToSocketAddrs as _;
+    where_to
+        .into_iter()
+        .flat_map(|(host, port)| {
+            (host.as_str(), port)
+                .to_socket_addrs()
+                .into_iter()
+                .flatten()
+        })
+        .collect()
 }

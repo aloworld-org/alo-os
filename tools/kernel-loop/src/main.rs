@@ -30,6 +30,13 @@
 //! refused, because a supervisor that took whatever it was given would be one
 //! whose plan is decoration.
 //!
+//! **What passes is not what a worker says passed.** The gates are the
+//! repository's state, which is the state of everything *except* the thing just
+//! written — so a handoff also names the test behind each acceptance criterion,
+//! and `crate::evidence` runs each one on its own and refuses a task whose
+//! evidence is a test that was already green. A blocked or partial worker
+//! leaves no handoff and publishes nothing.
+//!
 //! **The writing is a person's.** That step cannot be automated by this program
 //! and pretending otherwise would put a placeholder at the centre of the thing
 //! that publishes. What the loop removes is everything around it: choosing what
@@ -55,6 +62,7 @@
 //! nothing is rolled back, because a supervisor that tidied up after itself
 //! would be a supervisor that can throw work away.
 
+mod evidence;
 mod gates;
 mod handoff;
 mod journal;

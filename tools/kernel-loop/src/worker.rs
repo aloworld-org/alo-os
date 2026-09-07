@@ -15,6 +15,13 @@
 //! and changed nothing produces the same outcome as one that crashed: no
 //! handoff, so nothing published.
 //!
+//! Nor is a green suite evidence. The gates are the state of everything except
+//! the thing just written, so the handoff names the test behind each acceptance
+//! criterion and `crate::evidence` runs each on its own, refusing any whose file
+//! is not part of the change. A worker that was blocked, or that finished half
+//! of it, cannot produce that — and half a task published as a whole one is the
+//! failure this arrangement exists to make impossible.
+//!
 //! # One at a time, and bounded
 //!
 //! One worker per checkout, held by the same lock the loop is. It gets a
@@ -121,11 +128,19 @@ fn asked_of_it(task: &Task) -> String {
          \n\
          Do not commit and do not push: a supervisor gates and publishes this. When the\n\
          work is finished, write .kernel-loop/handoff.toml naming the task exactly as\n\
-         above, the report path, a conventional commit subject, a body, and every file you\n\
-         touched. docs/autonomy/updates/ has published examples of the format.\n\
+         above, the report path, a conventional commit subject, a body, every file you\n\
+         touched, and an `evidence` block. tools/kernel-loop/src/handoff.rs documents the\n\
+         format.\n\
+         \n\
+         The evidence is one line per acceptance criterion in the plan — the crate, the\n\
+         test target and the test's full name — and each is run on its own before anything\n\
+         is published. A test whose file is not among the files you list is refused: the\n\
+         existing suite passing is the state of the repository, not proof of what you\n\
+         wrote.\n\
          \n\
          If the task cannot be completed within the accepted decisions, write no handoff,\n\
-         leave your work in the tree, and say what decision is needed.",
+         leave your work in the tree, and say what decision is needed. A partial task with\n\
+         a handoff is worse than no handoff at all.",
         task.number, task.named
     )
 }

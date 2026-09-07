@@ -1,15 +1,23 @@
 //! What a contributor hands the loop when a task's code is finished.
 //!
 //! One file, `.kernel-loop/handoff.toml`, naming the task, the files it
-//! touched, the commit it becomes and the report it published. The loop stages
-//! **exactly those files** and no others — `git add -A` would sweep up whatever
+//! touched, the commit it becomes, the report it published, and **the test
+//! behind each acceptance criterion**. The loop stages **exactly those files**
+//! and no others — `git add -A` would sweep up whatever
 //! else happened to be in the tree, which is how an unrelated change gets
 //! published under somebody else's commit message.
+//!
+//! The evidence is not decoration and is not the loop taking a worker's word:
+//! `crate::evidence` runs each named test on its own and refuses one whose file
+//! is not part of the change. A task whose only claim is that the existing
+//! suite still passes has not shown that it was done.
 //!
 //! ```text
 //! task = Reproducing unrestricted network access from inside a bound turn
 //! report = docs/autonomy/updates/network-egress-reproduction.md
 //! subject = test(bounding): reproduce a bound turn opening any socket
+//! evidence =
+//!   alo-bounding a_turn_reaches_the_network a_bound_turn_opens_any_socket
 //! files =
 //!   crates/alo-bounding/tests/a_turn_reaches_the_network.rs
 //!   docs/autonomy/updates/network-egress-reproduction.md
@@ -49,6 +57,12 @@ pub struct Handed {
 
     /// Every file to stage, and nothing else is staged.
     pub files: Vec<String>,
+
+    /// One test per acceptance criterion, each held up by [`crate::evidence`].
+    ///
+    /// Refused when empty, because the gates a task passes are the state of
+    /// everything except the thing it just wrote.
+    pub evidence: Vec<crate::evidence::Shown>,
 }
 
 /// What the file is called inside the loop's own directory.
@@ -98,6 +112,7 @@ impl Handed {
         let mut subject = String::new();
         let mut body = String::new();
         let mut files = Vec::new();
+        let mut evidence = Vec::new();
         let mut inside: Option<&str> = None;
 
         for line in written.lines() {
@@ -108,6 +123,12 @@ impl Handed {
                         let named = line.trim();
                         if !named.is_empty() {
                             files.push(named.to_owned());
+                        }
+                    }
+                    Some("evidence") => {
+                        let named = line.trim();
+                        if !named.is_empty() {
+                            evidence.push(crate::evidence::Shown::read(named)?);
                         }
                     }
                     Some("body") => {
@@ -126,11 +147,12 @@ impl Handed {
                 "task" => task = value.to_owned(),
                 "report" => report = value.to_owned(),
                 "subject" => subject = value.to_owned(),
-                "files" | "body" => {}
+                "files" | "body" | "evidence" => {}
                 _ => {}
             }
             inside = match key {
                 "files" => Some("files"),
+                "evidence" => Some("evidence"),
                 "body" => Some("body"),
                 _ => None,
             };
@@ -153,12 +175,21 @@ impl Handed {
                 "the handoff publishes {report} and does not list it among its files"
             ));
         }
+        if evidence.is_empty() {
+            return Err(
+                "the handoff shows no `evidence`, and a green suite is the state of the \
+                 repository rather than proof this task was done. Name one test per \
+                 acceptance criterion: crate, test target, test name."
+                    .to_owned(),
+            );
+        }
         Ok(Self {
             task,
             report,
             subject,
             body: body.trim_end().to_owned(),
             files,
+            evidence,
         })
     }
 

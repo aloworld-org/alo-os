@@ -46,6 +46,8 @@
 //! `alo-bounding` says the same thing from the other side, and this file is the
 //! caller that honours it.
 
+use std::net::SocketAddr;
+
 use alo_capability::{Grants, Refused};
 use alo_files::{Did, Reaching, Touching};
 use alo_strings::Strings;
@@ -124,6 +126,37 @@ pub trait Bounding {
     /// carry on. An implementation that answered `Ok` having bounded nothing
     /// would be one that turns this guarantee off silently.
     fn carrying_out(&mut self, reaching: &Reaching, doing: Doing<'_>) -> Result<Done, NoBoundary>;
+
+    /// Carry out one network request inside a boundary, reaching **only these
+    /// addresses**.
+    ///
+    /// `to` is where the request may connect: resolved by the caller before
+    /// anything was bounded, and registered so the machine refuses everywhere
+    /// else. ADR 0020 is the whole argument — a question is put from inside a
+    /// turn now, because a boundary that watched only what a turn opened on a
+    /// disk was a boundary a question walked straight past.
+    ///
+    /// # It refuses by default, and that is the point
+    ///
+    /// An implementation written before ADR 0020 does not know how to bound a
+    /// request, and the safe thing for it to do is not make one. A default that
+    /// passed the work through would be ADR 0015's guarantee turned off for
+    /// exactly the thing it was extended to cover, on every implementation that
+    /// had not been updated — which is how a guarantee becomes a comment.
+    ///
+    /// # Errors
+    /// [`NoBoundary`], and ADR 0015's rule is the end of it as it is for a file
+    /// verb: nothing ran, and the question is not put.
+    fn carrying_out_a_departure(
+        &mut self,
+        to: &[SocketAddr],
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), NoBoundary> {
+        let _ = (to, doing);
+        Err(NoBoundary::because(
+            "this machine has no way to put a boundary around a network request".to_owned(),
+        ))
+    }
 }
 
 #[cfg(test)]

@@ -8,6 +8,15 @@
 //! changes that each pass alone and fail together is not a hypothetical; it is
 //! the ordinary way a shared branch breaks.
 //!
+//! # Gates, and then the task's own evidence
+//!
+//! The gates say the repository still works. They cannot say this task was
+//! done: the suite they pass is the one that was already there. So each gating
+//! is followed by `crate::evidence`, which runs the test behind each acceptance
+//! criterion on its own and refuses a task whose evidence is not part of the
+//! change it is publishing. **Passing existing tests is never taken as
+//! completed implementation.**
+//!
 //! # Bounded retries, and what a lost race is
 //!
 //! A push that loses to somebody else's is not a failure, it is a race, and the
@@ -17,7 +26,7 @@
 
 use std::path::Path;
 
-use crate::{gates, handoff::Handed, journal, repository};
+use crate::{evidence, gates, handoff::Handed, journal, repository};
 
 /// How many times a lost race is worth answering before somebody should look.
 const TIMES: u8 = 3;
@@ -34,8 +43,7 @@ pub fn gated_and_pushed(at: &Path, ours: &Path, task: &Handed) -> Result<String,
         ours,
         &format!("running the gates; the report is {}", task.report),
     );
-    let passed = gates::all_of_them(at)?;
-    journal::note(ours, &format!("gates passed: {}", passed.join("; ")));
+    checked(at, ours, task, "this task's tree")?;
 
     repository::staged(at, &task.files)?;
     let sha = repository::committed(at, &task.message())?;
@@ -50,11 +58,7 @@ pub fn gated_and_pushed(at: &Path, ours: &Path, task: &Handed) -> Result<String,
                 ),
             );
             repository::rebased_onto_origin(at)?;
-            let passed = gates::all_of_them(at)?;
-            journal::note(
-                ours,
-                &format!("the combined tree passed: {}", passed.join("; ")),
-            );
+            checked(at, ours, task, "the combined tree")?;
         }
 
         match repository::pushed(at) {
@@ -82,4 +86,24 @@ pub fn gated_and_pushed(at: &Path, ours: &Path, task: &Handed) -> Result<String,
         "publication was not reached in {TIMES} attempts; the work is committed locally and \
          intact"
     ))
+}
+
+/// Every gate, and then the task's own acceptance evidence.
+///
+/// In that order and never one without the other. The gates are cheap to fail
+/// and are about the repository; the evidence is about the task, and running it
+/// on a tree that had not passed the gates would say nothing either way.
+///
+/// # Errors
+/// Whatever stopped it, named. Nothing is staged, committed or pushed on any of
+/// these roads.
+fn checked(at: &Path, ours: &Path, task: &Handed, which: &str) -> Result<(), String> {
+    let passed = gates::all_of_them(at)?;
+    journal::note(ours, &format!("{which} passed: {}", passed.join("; ")));
+    let stood = evidence::stands_up(at, &task.files, &task.evidence)?;
+    journal::note(
+        ours,
+        &format!("the evidence stood up: {}", stood.join("; ")),
+    );
+    Ok(())
 }

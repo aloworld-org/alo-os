@@ -53,6 +53,7 @@
 //! second call in this function**, and the test named for it is the one that
 //! would fail.
 
+use std::net::SocketAddr;
 use std::time::SystemTime;
 
 use alo_answering::Answering;
@@ -151,12 +152,17 @@ impl<'a> Asking<'a> {
     /// [`NotAsked`], which is four different things to do rather than one
     /// sentence — [`crate::refusing`] has the table. Three of the four mean
     /// nothing was sent at all.
+    /// `to` is where this request may connect, resolved and registered by the
+    /// caller before any boundary was entered (ADR 0020). It is not resolved
+    /// here and no name server is asked anything: a request with an address
+    /// nobody registered is one that would reach somewhere nobody was shown.
     pub fn to_a_provider(
         self,
         question: &Question,
         hosted: &Hosted<'_>,
         indicator: &mut Indicator,
         now: SystemTime,
+        to: &[SocketAddr],
     ) -> Result<Asked, NotAsked> {
         let source = self.answering.source().clone();
         match &source {
@@ -187,7 +193,7 @@ impl<'a> Asking<'a> {
             .map_err(NotAsked::HeldBack)?;
 
         // And only now.
-        match hosted.ask(question) {
+        match hosted.ask(question, to) {
             Ok(said) => Ok(Asked::new(
                 departing,
                 Answer::new(said, source, question.of().to_owned()),
@@ -218,6 +224,23 @@ impl<'a> Asking<'a> {
 )]
 mod tests {
     use super::*;
+
+    /// Where a request would connect, resolved before it is made and handed to
+    /// the door rather than looked up inside it (ADR 0020).
+    fn resolved(hosted: &Hosted<'_>) -> Vec<SocketAddr> {
+        use std::net::ToSocketAddrs as _;
+        hosted
+            .where_it_would_connect()
+            .into_iter()
+            .flat_map(|(host, port)| {
+                (host.as_str(), port)
+                    .to_socket_addrs()
+                    .into_iter()
+                    .flatten()
+            })
+            .collect()
+    }
+
     use crate::testing::{in_english, mistral, mistral_source, serving, translated};
     use alo_answering::WentWrong;
     use alo_egress::{DestinationError, Refusal};
@@ -308,7 +331,13 @@ mod tests {
             &[],
             &SourcePolicy::Anywhere,
         )
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(&hosted),
+        )
         .unwrap();
         server.join().unwrap();
 
@@ -362,7 +391,13 @@ mod tests {
             // force now is the one that decides.
             let asking = Asking::by(&mail, permitted(&SourcePolicy::Anywhere), &[], &policy);
             let not_asked = asking
-                .to_a_provider(&question(), &hosted, &mut indicator, noon())
+                .to_a_provider(
+                    &question(),
+                    &hosted,
+                    &mut indicator,
+                    noon(),
+                    &resolved(&hosted),
+                )
                 .unwrap_err();
 
             let refused = held_back(not_asked).unwrap();
@@ -389,7 +424,13 @@ mod tests {
             let hosted = Hosted::provider(&provider, None);
             let mut indicator = Indicator::default();
             let asked = Asking::by(&mail(), permitted(&policy), &[], &policy)
-                .to_a_provider(&question(), &hosted, &mut indicator, noon())
+                .to_a_provider(
+                    &question(),
+                    &hosted,
+                    &mut indicator,
+                    noon(),
+                    &resolved(&hosted),
+                )
                 .unwrap();
             server.join().unwrap();
             assert_eq!(asked.answer().text(), "No, not without written consent.");
@@ -418,7 +459,13 @@ mod tests {
             &[],
             &SourcePolicy::Anywhere,
         )
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(&hosted),
+        )
         .unwrap_err();
 
         assert!(matches!(
@@ -470,7 +517,13 @@ mod tests {
                 &[],
                 &SourcePolicy::Anywhere,
             )
-            .to_a_provider(&question(), &hosted, &mut indicator, noon())
+            .to_a_provider(
+                &question(),
+                &hosted,
+                &mut indicator,
+                noon(),
+                &resolved(&hosted),
+            )
             .unwrap_err();
 
             assert_eq!(miswired(not_asked), Some(expected), "{permitted_place:?}");
@@ -495,7 +548,13 @@ mod tests {
             &[],
             &SourcePolicy::Anywhere,
         )
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(&hosted),
+        )
         .unwrap_err();
         server.join().unwrap();
 
@@ -540,7 +599,13 @@ mod tests {
             &others,
             &SourcePolicy::Anywhere,
         )
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(&hosted),
+        )
         .unwrap_err();
         server.join().unwrap();
 
@@ -576,7 +641,13 @@ mod tests {
             &[],
             &SourcePolicy::Anywhere,
         )
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(&hosted),
+        )
         .unwrap();
         server.join().unwrap();
 
@@ -604,7 +675,13 @@ mod tests {
             &[],
             &SourcePolicy::Anywhere,
         )
-        .to_a_provider(&question(), &hosted, &mut indicator, noon())
+        .to_a_provider(
+            &question(),
+            &hosted,
+            &mut indicator,
+            noon(),
+            &resolved(&hosted),
+        )
         .unwrap_err();
         // It was permitted, shown, attempted, and nothing was there.
         let unanswered = did_not_answer(not_asked).unwrap();

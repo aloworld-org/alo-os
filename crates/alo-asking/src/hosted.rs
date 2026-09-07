@@ -22,6 +22,8 @@
 use std::time::Duration;
 
 use alo_answering::WentWrong;
+use std::net::SocketAddr;
+
 use alo_models::{InferenceSource, Provider, Secret};
 
 use crate::openai;
@@ -92,13 +94,24 @@ impl<'a> Hosted<'a> {
     ///
     /// # Errors
     /// [`WentWrong`], as `openai::put` answers it.
-    pub(crate) fn ask(&self, question: &Question) -> Result<String, WentWrong> {
+    pub(crate) fn ask(&self, question: &Question, to: &[SocketAddr]) -> Result<String, WentWrong> {
         openai::put(
             &self.provider.endpoint,
             self.key,
             question,
             WHILE_A_MODEL_THINKS,
+            to,
         )
+    }
+
+    /// The host and port this would connect to, for somebody to resolve and
+    /// register before the boundary is entered (ADR 0020).
+    ///
+    /// [`None`] for an endpoint with no host, which is one no request can be
+    /// made to either.
+    #[must_use]
+    pub fn where_it_would_connect(&self) -> Option<(String, u16)> {
+        alo_models::address::where_it_connects(&self.provider.endpoint)
     }
 }
 
@@ -137,7 +150,19 @@ mod tests {
         let (url, server) = serving(AN_ANSWER, 200);
         let provider = mistral(&url);
         let key = alo_models::Secret::typed("sk-live-0123456789").unwrap();
-        let answer = Hosted::provider(&provider, Some(&key)).ask(&question());
+        let answer = Hosted::provider(&provider, Some(&key)).ask(&question(), &{
+            use std::net::ToSocketAddrs as _;
+            Hosted::provider(&provider, Some(&key))
+                .where_it_would_connect()
+                .into_iter()
+                .flat_map(|(host, port)| {
+                    (host.as_str(), port)
+                        .to_socket_addrs()
+                        .into_iter()
+                        .flatten()
+                })
+                .collect::<Vec<SocketAddr>>()
+        });
         let request = server.join().unwrap();
 
         assert_eq!(answer.unwrap(), "The tenant may not sublet.");

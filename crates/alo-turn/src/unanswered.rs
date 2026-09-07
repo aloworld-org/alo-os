@@ -60,6 +60,7 @@ use alo_egress::{DestinationError, NotPermitted};
 use alo_keeping::NotKept;
 use alo_strings::{Filling, Said, Strings};
 
+use crate::unbounded::NoBoundary;
 use crate::words;
 
 /// Why a question a turn put somewhere has no answer.
@@ -111,6 +112,16 @@ pub enum NoAnswer {
     /// Something earlier in this turn could not be written down, so nothing
     /// more will be done under it.
     TurnClosed,
+
+    /// There was no boundary to put the request inside, so it was not made.
+    ///
+    /// ADR 0015's rule, reaching the question the same way it reaches a file
+    /// verb: *a turn whose boundary cannot be applied does not run*. Since ADR
+    /// 0020 a question is put from inside one, so a machine that cannot impose
+    /// one asks nothing rather than asking unbounded — which is the direction
+    /// this has to fail in. Nothing left, nothing was shown and nothing is
+    /// written down.
+    NotBounded(NoBoundary),
 }
 
 impl NoAnswer {
@@ -131,6 +142,7 @@ impl NoAnswer {
             Self::Miswired(_) => None,
             Self::NotRecorded { why, .. } => Some(why.said(strings)),
             Self::TurnClosed => Some(strings.say(&words::TURN_CLOSED.key(), &Filling::nothing())),
+            Self::NotBounded(why) => Some(why.said(strings)),
         }
     }
 
@@ -147,6 +159,10 @@ impl NoAnswer {
             | Self::CannotBeShown(_)
             | Self::HeldBack(_)
             | Self::Miswired(_)
+            // A boundary that could not be imposed means the question was never
+            // put, so nothing left — which is the same answer as a rule that
+            // refused it, reached for a different reason.
+            | Self::NotBounded(_)
             | Self::TurnClosed => true,
             // Where it was put decides it, and the place itself is the answer:
             // a provider that did not reply was still reached, and a model on

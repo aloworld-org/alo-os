@@ -52,6 +52,7 @@
 //! provider and there is no evidence of it* are two different mornings for
 //! whoever reads the machine.
 
+use std::net::{SocketAddr, ToSocketAddrs as _};
 use std::time::SystemTime;
 
 use alo_answering::Answering;
@@ -64,6 +65,7 @@ use crate::answers::Answers;
 use crate::places::Places;
 use crate::turning::Turning;
 use crate::unanswered::NoAnswer;
+use crate::unbounded::NoBoundary;
 
 impl Turning<'_, '_> {
     /// Put a question to the place the person's machine is set to use.
@@ -184,16 +186,46 @@ impl Turning<'_, '_> {
 
         match answers {
             Answers::Provider(hosted) => {
-                let outcome =
-                    asking.to_a_provider(&question, hosted, self.machine().indicator(), now);
-                self.what_a_provider_did(outcome, now)
+                // **Resolved out here, deliberately** (ADR 0020). The daemon is
+                // not a turn, so this is the same lookup it has always made;
+                // what changes is that the request below is put from *inside* a
+                // boundary permitting these addresses and no others, and asks
+                // no name server anything of its own.
+                let to = registering(hosted.where_it_would_connect());
+                let (bounding, indicator) = self.machine().bounding_and_indicator();
+                // Moved into the closure once. The door takes `self` because
+                // one permission is one attempt, and this is that one attempt.
+                let mut once = Some(asking);
+                let mut outcome = None;
+                let bounded = bounding.carrying_out_a_departure(&to, &mut || {
+                    if let Some(asking) = once.take() {
+                        outcome =
+                            Some(asking.to_a_provider(&question, hosted, indicator, now, &to));
+                    }
+                });
+                match (bounded, outcome) {
+                    (Ok(()), Some(outcome)) => self.what_a_provider_did(outcome, now),
+                    // A boundary that could not be imposed is ADR 0015's rule
+                    // rather than a smaller question: nothing was asked and
+                    // nothing left. A boundary that was imposed and ran nothing
+                    // is the same fact about this machine, said the same way.
+                    (Err(why), _) => Err(NoAnswer::NotBounded(why)),
+                    (Ok(()), None) => Err(NoAnswer::NotBounded(NoBoundary::because(
+                        "the boundary was imposed and the question was not put inside it"
+                            .to_owned(),
+                    ))),
+                }
             }
             Answers::Runtime(runtime) => {
                 let outcome = asking.to_this_machine(&question, *runtime);
                 self.what_this_machine_did(outcome, &agent, now)
             }
             Answers::Service(served) => {
-                let outcome = asking.to_a_service_on_this_machine(&question, served);
+                // A service on this machine is loopback, which the boundary
+                // does not check (ADR 0007, ADR 0020) — so this is resolved for
+                // the client and not bounded, exactly as a local model is not.
+                let to = registering(served.where_it_would_connect());
+                let outcome = asking.to_a_service_on_this_machine(&question, served, &to);
                 self.what_this_machine_did(outcome, &agent, now)
             }
         }
@@ -293,6 +325,36 @@ fn after_it_left(why: NotKept) -> NoAnswer {
         after_it_left: true,
     }
 }
+
+/// The addresses one request may use, resolved and cut to what a bound holds.
+///
+/// **The first half of ADR 0020's separation.** A name is looked up here, before
+/// any boundary is entered, by the daemon — which is not a turn and never has
+/// been. What comes back is registered and handed to the door, so the request
+/// itself resolves nothing and a bounded turn needs no permission to reach a
+/// name server.
+///
+/// Cut to `alo_bounding_map::DESTINATIONS` worth, because that is what one
+/// entry holds and registering more than can be written would be registering
+/// what is not enforced. A provider answering with more addresses than that is
+/// reached at the first of them; the limitation is real and is in the report.
+///
+/// An address that cannot be resolved yields none, and a request with nowhere
+/// to go is refused by the door rather than sent somewhere nobody registered.
+fn registering(where_to: Option<(String, u16)>) -> Vec<SocketAddr> {
+    let Some((host, port)) = where_to else {
+        return Vec::new();
+    };
+    (host.as_str(), port)
+        .to_socket_addrs()
+        .into_iter()
+        .flatten()
+        .take(MOST_DESTINATIONS)
+        .collect()
+}
+
+/// How many addresses one request registers, which is what one entry holds.
+const MOST_DESTINATIONS: usize = 2;
 
 #[cfg(test)]
 #[expect(

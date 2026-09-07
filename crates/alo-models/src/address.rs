@@ -66,6 +66,35 @@ pub(crate) fn is_on_this_machine(endpoint: &str) -> bool {
         .is_some_and(is_this_machine)
 }
 
+/// The host and port a request to this endpoint would connect to.
+///
+/// **Where a name is turned into something to resolve**, and it is here because
+/// this is the file that already knows how an authority is written and has the
+/// tests for the ways one can be made to look like something it is not. ADR
+/// 0020 separates resolving from connecting; this is the first half of that,
+/// and it is deliberately not a resolver — it answers *what to look up*, and
+/// nothing here touches a name server.
+///
+/// The port is the one written after the host, or the scheme's own: 443 for
+/// `https://` and 80 for `http://`.
+///
+/// [`None`] for anything that is not one of those two schemes, or that has no
+/// host, which is the same answer this file's own loopback question gives such
+/// an address.
+#[must_use]
+pub fn where_it_connects(endpoint: &str) -> Option<(String, u16)> {
+    let authority = authority_of(endpoint)?;
+    let host = host_of(authority)?;
+    let port = match authority.rsplit_once(':') {
+        // A colon inside brackets is part of an IPv6 address rather than a
+        // port, and `host_of` is what knows the difference.
+        Some((_, port)) if !port.contains(']') => port.parse().ok()?,
+        _ if endpoint.starts_with("https://") => 443,
+        _ => 80,
+    };
+    Some((host.to_owned(), port))
+}
+
 /// The part of the address a connection is made out of: host, and port if there
 /// is one.
 ///
@@ -120,6 +149,35 @@ fn is_this_machine(host: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+
+    /// **What a request would connect to**, which is the first half of ADR
+    /// 0020's separation: a name to look up and a port to reach it on, decided
+    /// here where the lookalike cases already have tests.
+    #[test]
+    fn where_a_request_would_connect_is_the_host_and_the_scheme_s_port() {
+        assert_eq!(
+            where_it_connects("https://api.mistral.ai/v1"),
+            Some(("api.mistral.ai".to_owned(), 443))
+        );
+        assert_eq!(
+            where_it_connects("http://127.0.0.1:41234"),
+            Some(("127.0.0.1".to_owned(), 41234))
+        );
+        assert_eq!(
+            where_it_connects("http://127.0.0.1:41234/v1"),
+            Some(("127.0.0.1".to_owned(), 41234))
+        );
+        assert_eq!(
+            where_it_connects("http://localhost"),
+            Some(("localhost".to_owned(), 80))
+        );
+        assert_eq!(
+            where_it_connects("https://[::1]:8443/v1"),
+            Some(("::1".to_owned(), 8443))
+        );
+        // Not an address this can reach, and not one it guesses at either.
+        assert_eq!(where_it_connects("ftp://example.test"), None);
+    }
     use super::*;
 
     /// **The refusals this file exists for**, and every one of them was this

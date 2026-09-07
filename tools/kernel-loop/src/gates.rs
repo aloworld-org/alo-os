@@ -189,10 +189,24 @@ fn the_machine_is_ready(at: &Path) -> Result<(), String> {
 /// One gate, as a command this host can actually run.
 ///
 /// # Errors
+/// Whatever [`running`] answers with.
+fn asking(gate: &Gate, at: &Path) -> Result<Command, String> {
+    let args: Vec<String> = gate.args.iter().map(|&arg| arg.to_owned()).collect();
+    running(at, gate.within, gate.program, &args)
+}
+
+/// Anything else this workstream needs run where the gates run.
+///
+/// The same bridge, exported, because a check that ran somewhere other than
+/// where the gates ran would be a check of a different machine.
+/// [`crate::evidence`] is the caller: it runs one named test on its own, in the
+/// same toolchain, target directory and kernel the suite just passed in.
+///
+/// # Errors
 /// A sentence when a Windows checkout is somewhere `wsl` cannot see.
 #[cfg(windows)]
-fn asking(gate: &Gate, at: &Path) -> Result<Command, String> {
-    let within = as_wsl_sees_it(&at.join(gate.within))?;
+pub fn running(at: &Path, within: &str, program: &str, args: &[String]) -> Result<Command, String> {
+    let within = as_wsl_sees_it(&at.join(within))?;
     let mut asking = Command::new("wsl");
     asking
         .args(["-d", "Ubuntu", "--", "bash", "-lc"])
@@ -200,9 +214,8 @@ fn asking(gate: &Gate, at: &Path) -> Result<Command, String> {
             "export PATH=\"$HOME/.cargo/bin:$PATH\"; \
          export CARGO_TARGET_DIR=\"{ITS_OWN_TARGET}\"; \
          export RUSTDOCFLAGS=\"-D warnings\"; \
-         cd {within} && {} {}",
-            gate.program,
-            gate.args.join(" ")
+         cd {within} && {program} {}",
+            args.join(" ")
         ));
     Ok(asking)
 }
@@ -225,17 +238,17 @@ fn as_wsl_sees_it(path: &Path) -> Result<String, String> {
     Ok(format!("/mnt/{letter}/{rest}"))
 }
 
-/// One gate, run where it stands.
+/// The same, run where it stands.
 ///
 /// # Errors
 /// None on a Linux host; the signature matches the Windows half so the caller
 /// has one shape.
 #[cfg(not(windows))]
-fn asking(gate: &Gate, at: &Path) -> Result<Command, String> {
-    let mut asking = Command::new(gate.program);
+pub fn running(at: &Path, within: &str, program: &str, args: &[String]) -> Result<Command, String> {
+    let mut asking = Command::new(program);
     asking
-        .current_dir(at.join(gate.within))
-        .args(gate.args)
+        .current_dir(at.join(within))
+        .args(args)
         .env("RUSTDOCFLAGS", "-D warnings");
     Ok(asking)
 }

@@ -74,6 +74,20 @@ impl Bounding for NothingIsBounded {
     ) -> Result<Done, NoBoundary> {
         Ok(doing.done())
     }
+
+    /// And a network request, carried out where it stands.
+    ///
+    /// The same four lines as above and the same argument: what a test needs is
+    /// a boundary that is not one, written where whoever reads the test can see
+    /// that is what it is.
+    fn carrying_out_a_departure(
+        &mut self,
+        _to: &[std::net::SocketAddr],
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), NoBoundary> {
+        doing();
+        Ok(())
+    }
 }
 
 /// A machine that cannot put a boundary around anything at all.

@@ -139,6 +139,22 @@ impl Bounds {
         Self { shown, ..self }
     }
 
+    /// A bound over no file at all, and these destinations.
+    ///
+    /// **A turn that may open nothing and connect to what somebody was shown**,
+    /// which is exactly what a question is: it names no path, and a boundary
+    /// around it that permitted files would be wider than the work. `holds`
+    /// answers false for every place, so every open such a turn makes is
+    /// refused.
+    #[must_use]
+    pub const fn reaching_nothing_but(shown: Departures) -> Self {
+        Self {
+            held: [NOWHERE; PLACES],
+            how_many: 0,
+            shown,
+        }
+    }
+
     /// Whether this turn was shown this destination.
     ///
     /// **Not whether it may open sockets.** One departure is one destination,

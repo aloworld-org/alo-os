@@ -1,19 +1,19 @@
 //! Whether a question a turn puts to a provider runs inside the boundary.
 //!
-//! **It does not, and this file is that fact with a test around it.**
+//! **It does now, and this file is that fact with a test around it.** When it
+//! was written the answer was no, and its own message said that whoever bounded
+//! the asking had to come here and say what changed. This is that.
 //!
 //! `alo-bounding`'s `socket_connect` refuses a bound turn any destination the
 //! person was not shown. What decides whether a connection is a *bound turn's*
-//! is the control group it is made from, and the only thing that puts a thread
-//! into one is `Bounding::carrying_out`. So the question this file asks is
-//! narrow and answerable: **is `carrying_out` called around a question?**
+//! is the control group it is made from, and what puts a thread into one is
+//! `Bounding`. So the question this file asks is narrow and answerable: **is a
+//! boundary entered around each of the two things a turn does?**
 //!
-//! It is called around a file verb, by `crate::carrying`. It is not called
-//! around a question: `Turning::asking` reaches `alo_asking::Asking` directly,
-//! on whichever thread the daemon is running on, which is in no turn's control
-//! group. A programme that decides by control group therefore sees a provider
-//! request as *not a turn* — the answer that allows everything — and the
-//! enforcement built for exactly this case never runs.
+//! A file verb goes through `Bounding::carrying_out`, by `crate::carrying`. A
+//! question goes through `Bounding::carrying_out_a_departure`, by
+//! `crate::asking`, with the addresses it resolved before entering — ADR 0020.
+//! Both are counted here, and both have to happen.
 //!
 //! # Why a test rather than a paragraph in a report
 //!
@@ -23,9 +23,8 @@
 //! fails. Neither is a change anybody would make on purpose without noticing,
 //! and both are changes that would leave the reports around them wrong.
 //!
-//! It is measurement, not approval. `docs/autonomy/updates/end-to-end-network-enforcement.md`
-//! is where what to do about it is argued, and doing it changes the turn
-//! lifecycle, which is a decision rather than a commit.
+//! `docs/autonomy/updates/end-to-end-network-enforcement.md` is where the whole
+//! of it is argued, and ADR 0020 is the decision it rests on.
 
 #![expect(
     clippy::unwrap_used,
@@ -90,15 +89,18 @@ fn mistral() -> InferenceSource {
     }
 }
 
-/// A boundary that counts how many executions were carried out inside it.
+/// A boundary that counts what was carried out inside it, of each kind.
 ///
 /// The whole instrument. It bounds nothing — `alo_turn::bounding` says why no
-/// library here may ship an implementation that does — and it remembers one
-/// number, which is the number this file is about.
+/// library here may ship an implementation that does — and it remembers two
+/// numbers, which are the numbers this file is about.
 #[derive(Debug, Default)]
 struct Counting {
-    /// How many times a thread was asked to go inside.
-    times: u32,
+    /// How many file verbs went inside.
+    verbs: u32,
+
+    /// How many network requests went inside, and where they were let reach.
+    departures: Vec<Vec<std::net::SocketAddr>>,
 }
 
 impl alo_turn::Bounding for Counting {
@@ -107,24 +109,36 @@ impl alo_turn::Bounding for Counting {
         _reaching: &alo_files::Reaching,
         doing: alo_turn::Doing<'_>,
     ) -> Result<alo_turn::Done, alo_turn::NoBoundary> {
-        self.times = self.times.saturating_add(1);
+        self.verbs = self.verbs.saturating_add(1);
         Ok(doing.done())
+    }
+
+    fn carrying_out_a_departure(
+        &mut self,
+        to: &[std::net::SocketAddr],
+        doing: &mut dyn FnMut(),
+    ) -> Result<(), alo_turn::NoBoundary> {
+        // What it was let reach is kept, because *that a boundary was entered*
+        // and *what it permitted* are two different claims and only the second
+        // one is worth much.
+        self.departures.push(to.to_vec());
+        doing();
+        Ok(())
     }
 }
 
-/// **A file verb goes inside the boundary and a question does not.**
+/// **Both a file verb and a question are carried out inside a boundary.**
 ///
-/// One turn, one of each. The count is one afterwards, and the one it counted
-/// was the read.
+/// One turn, one of each, and the counts say one apiece. The question's also
+/// says *where it was let reach*: the addresses the provider's endpoint
+/// resolved to, resolved before the boundary was entered and registered so the
+/// machine refuses everywhere else (ADR 0020).
 ///
-/// What follows from it is the whole of
-/// `docs/autonomy/updates/end-to-end-network-enforcement.md`: the destination
-/// enforcement in `alo-bounding` decides by control group, a question is put
-/// from a thread that is in none, and so **no provider request on this machine
-/// is subject to it**. The mechanism is real and the production path does not
-/// reach it.
+/// This asserted the opposite when it was written, and its message named the
+/// documents to change on the day it stopped being true. That day was the
+/// commit that added `Bounding::carrying_out_a_departure`.
 #[test]
-fn a_file_verb_is_carried_out_inside_a_boundary_and_a_question_is_not() {
+fn a_file_verb_and_a_question_are_both_carried_out_inside_a_boundary() {
     let folder = a_folder_of_our_own("counting");
     fs::write(folder.join("march.pdf"), b"an invoice").unwrap();
     let kept_at = folder.join("record.jsonl");
@@ -196,16 +210,24 @@ fn a_file_verb_is_carried_out_inside_a_boundary_and_a_question_is_not() {
             "a question to an address nothing listens on answered: {asked:?}"
         );
 
-        bounding.times
+        (bounding.verbs, bounding.departures.clone())
     };
+    let (verbs, departures) = counted;
 
     assert_eq!(
-        counted, 1,
-        "one execution was carried out inside a boundary and it was the file verb. If this \
-         is now two, a question is being bounded — say so in \
-         docs/autonomy/updates/end-to-end-network-enforcement.md and in the kernel plan, \
-         because the destination enforcement in alo-bounding then finally applies to \
-         provider requests."
+        verbs, 1,
+        "the file verb was not carried out inside a boundary"
+    );
+    assert_eq!(
+        departures.len(),
+        1,
+        "the question was not carried out inside a boundary, so the destination          enforcement in alo-bounding does not apply to provider requests"
+    );
+    // And it was let reach what its endpoint resolves to, and only that.
+    assert_eq!(
+        departures.first().map(Vec::as_slice),
+        Some([std::net::SocketAddr::from(([127, 0, 0, 1], 1))].as_slice()),
+        "the question was bounded to something other than what its endpoint resolves to"
     );
 
     let _ = fs::remove_dir_all(&folder);

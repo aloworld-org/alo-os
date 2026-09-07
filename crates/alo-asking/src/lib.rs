@@ -35,12 +35,25 @@
 //! let question =
 //!     Question::asked("may the tenant sublet?", "mistral-small-latest").expect("a question");
 //!
+//! // Where it would connect is resolved before anything is asked — by the
+//! // caller, outside any boundary, so the request itself resolves nothing
+//! // (ADR 0020). These are the only addresses it may reach.
+//! let to: Vec<std::net::SocketAddr> = hosted
+//!     .where_it_would_connect()
+//!     .into_iter()
+//!     .flat_map(|(host, port)| {
+//!         std::net::ToSocketAddrs::to_socket_addrs(&(host.as_str(), port))
+//!             .into_iter()
+//!             .flatten()
+//!     })
+//!     .collect();
+//!
 //! // And only then is it put anywhere. The indicator is shown the egress
 //! // before a socket opens, and the departure comes back so what left can be
 //! // written down.
 //! let mut indicator = Indicator::default();
 //! match Asking::by(&Grantee::named("@mail"), answering, &[], &policy)
-//!     .to_a_provider(&question, &hosted, &mut indicator, SystemTime::now())
+//!     .to_a_provider(&question, &hosted, &mut indicator, SystemTime::now(), &to)
 //! {
 //!     Ok(asked) => {
 //!         // `record.keep(Entry::left(asked.departing()))` goes here.
