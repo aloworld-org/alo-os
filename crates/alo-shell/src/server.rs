@@ -95,6 +95,12 @@ impl Server {
         target: &mut impl crate::FrameTarget,
         time: u32,
     ) -> Result<usize, crate::RenderError> {
+        let size = target.size();
+        if size.w > 0 && size.h > 0 {
+            // Output mode is published even if submission fails. An empty target
+            // does not replace that last valid mode or move existing popups.
+            self.surfaces.popups.output_size = Some(size);
+        }
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();
         let popups = self.popup_surfaces();

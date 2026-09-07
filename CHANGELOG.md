@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Menus can stay within the development desktop's output edges.** Initial
+  and explicit placement honor the application's flip, slide and resize choices,
+  including nested menus and window shadows. Rendering and input move only on
+  acknowledged commits; unsafe arithmetic dismisses the affected popup tree.
+  Four new socket tests and WSLg edge-submission checks pass. Automatic reactive
+  placement, production desktop and physical acceptance remain unfinished.
+  Evidence: `docs/autonomy/updates/native-popup-output-constraints.md`.
+
 - **Applications can reposition menus without closing them in the development
   compositor.** Token/configure replies preserve request order; rendering and
   pointer targeting move together only after the acknowledged surface commit.

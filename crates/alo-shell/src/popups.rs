@@ -3,7 +3,7 @@
 use smithay::{
     backend::renderer::utils::with_renderer_surface_state,
     reexports::wayland_server::protocol::wl_surface::WlSurface,
-    utils::{Logical, Rectangle},
+    utils::{Logical, Physical, Rectangle, Size},
     wayland::{
         compositor::with_states,
         shell::xdg::{PopupSurface, PositionerState, XdgPopupSurfaceData},
@@ -43,6 +43,8 @@ pub(crate) struct Popups {
     enabled: bool,
     /// Live protocol roles and terminal dismissal state.
     entries: Vec<Entry>,
+    /// Last positive framebuffer extent, at compositor scale one.
+    pub(crate) output_size: Option<Size<i32, Physical>>,
 }
 
 impl crate::Server {
@@ -50,8 +52,10 @@ impl crate::Server {
     ///
     /// `Nested` renders these snapshots and pointer routing consumes them.
     /// Pointer and keyboard press/release grabs and explicit repositioning are
-    /// supported. Output constraints and automatic reactive placement remain
-    /// backend work. No application-adapter or agent authority is introduced.
+    /// supported. Initial and explicit placement use the last positive extent
+    /// supplied to `render` and client-authorized constraints. Before an output exists,
+    /// protocol fixtures use unconstrained placement. Automatic reactive placement
+    /// remains separate work. No application-adapter or agent authority is introduced.
     pub fn enable_popup_protocol(&mut self) {
         self.surfaces.popups.enabled = true;
     }
@@ -101,12 +105,14 @@ impl Popups {
         let parent = role.get_parent_surface().filter(|parent| {
             parents.contains(parent) || self.mapped().any(|p| &p.surface == parent)
         });
-        let safe = safe_positioner(&positioner);
-        let Some(parent) = parent.filter(|_| self.enabled && safe) else {
+        let Some(parent) = parent.filter(|_| self.enabled) else {
             role.send_popup_done();
             return;
         };
-        let geometry = positioner.get_geometry();
+        let Some(geometry) = self.placement(positioner, &parent, parents) else {
+            role.send_popup_done();
+            return;
+        };
         role.with_pending_state(|state| {
             state.geometry = geometry;
             state.positioner = positioner;
@@ -129,16 +135,33 @@ impl Popups {
         role: &PopupSurface,
         positioner: PositionerState,
         token: u32,
+        parents: &[WlSurface],
     ) {
-        if !safe_positioner(&positioner) || !self.live(role.wl_surface()) {
+        let geometry = self
+            .entries
+            .iter()
+            .find(|entry| &entry.role == role && !entry.dismissed && entry.role.alive())
+            .and_then(|entry| self.placement(positioner, &entry.popup.parent, parents));
+        let Some(geometry) = geometry else {
             self.dismiss(role);
             return;
-        }
+        };
         role.with_pending_state(|state| {
-            state.geometry = positioner.get_geometry();
+            state.geometry = geometry;
             state.positioner = positioner;
         });
         role.send_repositioned(token);
+    }
+
+    /// Translate output bounds through the same committed scene used for input.
+    fn placement(
+        &self,
+        positioner: PositionerState,
+        parent: &WlSurface,
+        roots: &[WlSurface],
+    ) -> Option<Rectangle<i32, Logical>> {
+        let popups: Vec<_> = self.mapped().cloned().collect();
+        crate::popup_placement::geometry(positioner, parent, roots, &popups, self.output_size)
     }
 
     /// Apply configure-before-buffer and terminal unmap semantics.
@@ -232,21 +255,4 @@ impl Entry {
         self.dismissed = true;
         self.buffered = false;
     }
-}
-
-/// Bound each operand before invoking upstream i32 placement arithmetic.
-/// The existing initial-placement limit applies equally to reposition requests.
-fn safe_positioner(positioner: &PositionerState) -> bool {
-    [
-        positioner.rect_size.w,
-        positioner.rect_size.h,
-        positioner.anchor_rect.loc.x,
-        positioner.anchor_rect.loc.y,
-        positioner.anchor_rect.size.w,
-        positioner.anchor_rect.size.h,
-        positioner.offset.x,
-        positioner.offset.y,
-    ]
-    .into_iter()
-    .all(|value| (-1_000_000..=1_000_000).contains(&value))
 }

@@ -77,4 +77,54 @@ pub fn check(app: &mut Application) {
     println!(
         "Repositioned popup GLES buffer submitted at (35,-5) with parent/popup geometry offsets; nested child at (43,7), both callbacks/output enter and descendant dismissal leave passed; offscreen callback withheld"
     );
+    constrained(app);
+}
+
+/// Submit both edges using client-authorized sliding in parent window coordinates.
+fn constrained(app: &mut Application) {
+    use wayland_protocols::xdg::shell::client::xdg_positioner::ConstraintAdjustment as Adjust;
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let frames = app.events.frames.len();
+    let enters = app.events.membership.0;
+    let (surface, xdg, role) =
+        app.popup_adjusted(Some(&app.xdg), 10000, Adjust::SlideX | Adjust::SlideY);
+    surface.commit();
+    app.sync();
+    assert_eq!(app.events.popups.geometry.last(), Some(&(302, 10, 16, 16)));
+    app.ack_popup(&xdg);
+    app.attach_popup(&surface);
+    while app.events.frames.len() < frames + 1 {
+        app.sync();
+        assert!(Instant::now() < deadline, "no constrained GLES callback");
+    }
+    assert_eq!(app.events.membership.0, enters + 1);
+    app.reposition_adjusted(&role, -10000, 94, Adjust::SlideX | Adjust::SlideY);
+    app.sync();
+    assert_eq!(app.events.popups.geometry.last(), Some(&(-2, -3, 16, 16)));
+    app.ack_popup(&xdg);
+    app.attach_popup(&surface);
+    while app.events.frames.len() < frames + 2 {
+        app.sync();
+        assert!(
+            Instant::now() < deadline,
+            "no constrained reposition GLES callback"
+        );
+    }
+    let leaves = app.events.membership.1;
+    surface.attach(None, 0, 0);
+    surface.commit();
+    while app.events.membership.1 < leaves + 1 {
+        app.sync();
+        assert!(
+            Instant::now() < deadline,
+            "no constrained popup output leave"
+        );
+    }
+    role.destroy();
+    xdg.destroy();
+    surface.destroy();
+    app.sync();
+    println!(
+        "Constrained popup GLES buffers submitted at (304,13) then (0,0); both callbacks and output enter passed"
+    );
 }

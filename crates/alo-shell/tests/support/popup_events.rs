@@ -79,10 +79,27 @@ impl Application {
     }
     /// Request explicit placement and track its independent token.
     pub fn reposition_popup_to(&self, popup: &xdg_popup::XdgPopup, offset: i32, token: u32) {
+        self.reposition_adjusted(
+            popup,
+            offset,
+            token,
+            xdg_positioner::ConstraintAdjustment::empty(),
+        );
+    }
+
+    /// Reposition with explicit output adjustment permissions.
+    pub fn reposition_adjusted(
+        &self,
+        popup: &xdg_popup::XdgPopup,
+        offset: i32,
+        token: u32,
+        adjustments: xdg_positioner::ConstraintAdjustment,
+    ) {
         let positioner = self.shell.create_positioner(&self.queue.handle(), ());
         positioner.set_size(16, 16);
         positioner.set_anchor_rect(0, 0, 4, 4);
         positioner.set_offset(offset, 0);
+        positioner.set_constraint_adjustment(adjustments);
         popup.reposition(&positioner, token);
         positioner.destroy();
     }
@@ -109,6 +126,24 @@ impl Application {
         xdg_surface::XdgSurface,
         xdg_popup::XdgPopup,
     ) {
+        self.popup_adjusted(
+            parent,
+            offset,
+            xdg_positioner::ConstraintAdjustment::empty(),
+        )
+    }
+
+    /// Create a popup with explicit client-authorized output adjustments.
+    pub fn popup_adjusted(
+        &self,
+        parent: Option<&xdg_surface::XdgSurface>,
+        offset: i32,
+        adjustments: xdg_positioner::ConstraintAdjustment,
+    ) -> (
+        wl_surface::WlSurface,
+        xdg_surface::XdgSurface,
+        xdg_popup::XdgPopup,
+    ) {
         let qh = self.queue.handle();
         let surface = self.compositor.create_surface(&qh, ());
         let xdg = self.shell.get_xdg_surface(&surface, &qh, true);
@@ -118,6 +153,7 @@ impl Application {
         positioner.set_anchor(xdg_positioner::Anchor::BottomRight);
         positioner.set_gravity(xdg_positioner::Gravity::BottomRight);
         positioner.set_offset(offset, 1);
+        positioner.set_constraint_adjustment(adjustments);
         let popup = xdg.get_popup(parent, &positioner, &qh, ());
         positioner.destroy();
         (surface, xdg, popup)

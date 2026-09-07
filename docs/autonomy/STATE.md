@@ -10656,3 +10656,60 @@ and physical laptop/GPU workstation evidence remain owed. Supervisor independent
 full publication gates have not run for this change. No staging, commit/push,
 worker/loop launch, dev-loop edit or other-checkout/unrelated host changes.
 Compositor and release remain unverified.
+
+---
+
+## 2026-09-07 - native popup output constraints
+
+Single desktop worker, clean checkout at iteration start. Read constitution,
+delivery/ownership rules, updates README, current queue/state, relevant feature,
+roadmap, ADRs 0001/0002 and app-adapter contract. Selected acceptance recorded in
+QUEUE before implementation. No task taken from Claude and no delegation.
+
+Reconciled published report:
+`docs/autonomy/updates/kernel-enforcement-plan-and-supervisor.md`.
+Reviewed plan, tier references, ADR 0015 recording passage and supervisor source.
+Retained contributor evidence: Ubuntu WSL2 kernel 6.18.33.2, Rust 1.98.0, standalone
+tool fmt/all-target clippy/release build and manual supervisor refusal/lifetime
+checks passed. Not rerun here; contributor did not rerun workspace gates or
+Windows checks. No enforcement behavior or release boxes changed. The plan keeps
+network-boundary egress enforcement/attribution in v0.01 and broader boundaries/
+records in v0.5, with filesystem hooks delivered early. Reported two-map/recording
+design concern remains for that workstream; ADR 0015 says only turns are recorded,
+so this is not an integration decision to change the ADR. Genuine mid-attach
+refusal remains unforced; all physical evidence remains owed. No tool launched.
+All published reports present at iteration start are now referenced.
+
+Integrated own report:
+`docs/autonomy/updates/native-popup-output-constraints.md`.
+Bounded output-to-parent conversion shares committed scene geometry. Smithay's
+client-authorized flip/slide/resize handles initial and explicit placement;
+acknowledged commits still control scene movement. Failed submission retains
+callbacks and announces its valid output extent; empty output preserves that
+extent. No output fixtures stay explicitly unconstrained. Unsafe arithmetic
+refuses the affected popup tree without disconnecting healthy clients. No new
+agent/context surface, scope, dependencies, upstream patch or ADR exception.
+
+Four new socket tests pass, including extreme parent origins, output bounds,
+flag precedence, nested geometry/input and commit ordering. Final Linux shell
+suite passes 65 tests (3 unit, 59 lifecycle, 3 socket), none ignored; focused and
+wire tests each pass four. Windows/Linux fmt and affected all-target clippy/test
+pass; Windows intentionally excludes Linux protocol tests. Linux warnings-denied
+rustdoc and example build pass. Exact commands and local logs are in the report.
+No test assertions or lint checks failed; no test/gate was weakened.
+
+WSLg combined popup/cursor fixture exits 0, submitting 92 client surfaces. The
+constrained popup submits at (304,13), then (0,0), with callbacks, output enter
+and unmap leave. Existing repositioned parent/child, cursor, unmap/remap,
+isolated refusal and disconnect checks pass. Native prerequisites verified;
+no package or shared-kernel/cgroup/BPF/service mutation. Target remains
+/root/alo-os-target, separate from Claude's checkout. These are scripted protocol
+and GLES submissions, not pixel readback, actual parent input or certification.
+
+Four shared progress documents and COMPOSITOR updated; source/tests/docs diff
+reviewed and whitespace check passed. Next: automatic reactive popup placement,
+then parent leave, direct display/input and session. All remaining v0.01 scope
+preserved. Supervisor full independent publication gates have not run for this
+change. Actual parent input and physical laptop/GPU workstation records remain
+owed; compositor/release unchecked. No staging, commit/push, worker/loop launch,
+dev-loop edit or unrelated changes. Later reports reconcile next iteration.

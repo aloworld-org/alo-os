@@ -280,9 +280,34 @@ cross-references, not the primary names used in handoffs or status messages.
   tests/clippy/fmt and Linux rustdoc pass. Exact checks and development lint
   corrections: `updates/native-popup-repositioning.md`. Full supervisor gates,
   actual parent input and physical laptop/GPU workstation evidence remain owed.
-  **Next useful component:** popup output constraints and automatic reactive
-  placement. Parent-leave backend, direct display/input and physical acceptance
+  **Selected output-constraint component (desktop worker):** constrain initial
+  and explicit popup placement to the last valid single-output extent using
+  client-authorized flip, slide and resize rules in parent window coordinates.
+  Acceptance: real socket edge/flag/geometry/descendant tests, committed-placement
+  and invalid-arithmetic refusal checks, WSLg constrained-buffer submission,
+  focused tests/fmt/clippy/rustdoc. Automatic reactive placement remains separate.
+  Parent-leave backend, direct display/input and physical acceptance
   remain; item 33 is unchecked and supervisor full gates remain owed.
+
+  **Completed output-constraint component 2026-09-07:** initial and explicit
+  placement use client-authorized flip/slide/resize in committed parent window
+  coordinates. Four new socket tests pass (65 Linux shell tests total), including
+  nesting, input, acknowledged commits, empty/failed output, no-output fixtures
+  and extreme-operand/parent-origin refusal. WSLg popup/cursor regression submits
+  constrained buffers at both edges, with callbacks/output membership and cleanup.
+  Focused Windows/Linux tests/clippy/fmt and Linux rustdoc pass; exact commands:
+  `updates/native-popup-output-constraints.md`. Next: automatic reactive placement
+  on output/parent changes, then parent leave and direct display/input. Supervisor
+  full gates, actual parent input and physical laptop/GPU records remain owed.
+
+- **Integrated kernel-workstream audit (2026-09-07).**
+  `updates/kernel-enforcement-plan-and-supervisor.md` adds a contributor-owned
+  audit/plan and standalone publication supervisor. No enforcement or acceptance
+  box changes. Network-boundary egress enforcement/attribution remains v0.01 work
+  owned by Claude; broader kernel boundaries/records are v0.5 promises delivered
+  only in part. Contributor reports Linux tool fmt/clippy/release build and manual
+  supervisor refusal checks; no workspace gates rerun. Recorded kernel-reporting
+  design concern, genuine mid-attach refusal and all physical evidence remain.
 
 - **Integrated filesystem report: Hard-linked files are not read (2026-09-07).**
   Claude's `updates/hard-linked-files-are-not-read.md` adds handle link-count

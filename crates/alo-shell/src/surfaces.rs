@@ -202,7 +202,9 @@ impl XdgShellHandler for Surfaces {
         token: u32,
     ) {
         self.prune();
-        self.popups.reposition(&surface, positioner, token);
+        let parents: Vec<_> = self.mapped().cloned().collect();
+        self.popups
+            .reposition(&surface, positioner, token, &parents);
     }
 }
 

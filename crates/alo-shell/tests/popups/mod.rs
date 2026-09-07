@@ -1,6 +1,7 @@
 //! Opt-in popup handshake, isolated refusal and terminal parent lifetimes.
 use super::{Application, Fixture};
 mod chains;
+mod constraints;
 mod grabs;
 mod keyboard_grabs;
 mod pointer_release;

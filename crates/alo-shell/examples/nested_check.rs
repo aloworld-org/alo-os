@@ -123,7 +123,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             popup_check::check(&mut app);
         }
         if cursor_check {
-            let prior_popups = 2 * usize::from(popup_check);
+            let prior_popups = 3 * usize::from(popup_check);
+            let prior_popup_frames = 4 * usize::from(popup_check);
             while app.events.pointer.enters.is_empty() {
                 app.sync();
                 assert!(Instant::now() < deadline, "no scripted pointer enter");
@@ -135,11 +136,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             assert_eq!(
                 app.events.frames.len(),
-                2 + prior_popups,
+                2 + prior_popup_frames,
                 "offscreen cursor callback"
             );
             app.set_cursor(app.events.pointer.serial, Some(&cursor), (2, 3));
-            while app.events.frames.len() < 3 + prior_popups {
+            while app.events.frames.len() < 3 + prior_popup_frames {
                 app.sync();
                 assert!(Instant::now() < deadline, "no GLES cursor callback");
             }
@@ -158,7 +159,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         app.surface.attach(None, 0, 0);
         app.surface.commit();
-        while app.events.membership.1 < 2 + usize::from(cursor_check) + 2 * usize::from(popup_check)
+        while app.events.membership.1 < 2 + usize::from(cursor_check) + 3 * usize::from(popup_check)
         {
             app.sync();
             assert!(Instant::now() < deadline, "no output leave on unmap");

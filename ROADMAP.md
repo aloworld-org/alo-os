@@ -700,6 +700,13 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Popup output constraints (2026-09-07): initial and explicit placement honor
+    client flip/slide/resize flags against the single output, translated through
+    committed parent window geometry. Four new socket tests pass (65 Linux shell
+    tests total); WSLg constrained popup/cursor submission passes. Exact checks:
+    `docs/autonomy/updates/native-popup-output-constraints.md`. Reactive placement,
+    parent leave, direct display/input, session and physical acceptance remain.
+    No compositor box changes; supervisor full publication gates remain owed.
   - Development prerequisite: `alo-graphics-check` pins Smithay 0.7.0 and
     compiles nested and direct-display dependencies. On 2026-09-07 it submitted
     a 320x200 GLES frame through WSLg and refused an unavailable EGL vendor.

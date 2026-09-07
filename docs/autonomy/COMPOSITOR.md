@@ -699,3 +699,27 @@ commands, lint corrections and limits are in
 placement remain unfinished, along with parent leave, direct display/input and
 production session wiring. WSLg evidence is scripted protocol/submission, not
 pixel readback, actual parent mouse observation or physical certification.
+
+## Popup output constraints (2026-09-07)
+
+Initial and explicit popup placement now uses the last positive target extent
+supplied to Server::render. Client flip/slide/resize flags are applied by pinned
+Smithay after translating output bounds through committed parent window geometry,
+including nested popup origins. The separate popup_placement module bounds every
+operand before upstream i32 arithmetic. Extreme origins/targets refuse safely.
+Requests and acknowledgements alone still do not move the scene. Failed frames
+retain callbacks; empty targets do not overwrite the last valid output extent.
+No output means unconstrained protocol-fixture placement. Impossible fits or
+absent adjustment permissions can leave a popup clipped.
+
+Four new socket tests, final 65-test Linux shell suite and WSLg combined
+popup/cursor submission pass. The real GLES fixture submits constrained buffers
+at (304,13), then (0,0), with callback/output membership and unmap cleanup. Exact
+commands, evidence and reconciliation are in
+`updates/native-popup-output-constraints.md`.
+
+Automatic reactive placement on output/parent changes remains the next component.
+Parent leave, direct display/input and production session remain unfinished;
+scripted WSLg is not pixel readback, actual parent input or hardware acceptance.
+Supervisor independent full publication gates and physical laptop/GPU workstation
+records remain owed. No compositor or release box is ticked.
