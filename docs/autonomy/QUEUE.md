@@ -138,6 +138,23 @@ to main, pulling first and integrating any intervening commits before pushing.
   and usable session entry remain delivery steps 3 and 4; no physical acceptance
   or completed desktop is claimed by this rendering component.
   Keep item 33 unchecked until its complete delivery requirements are met.
+  **Selected client cursor component (desktop worker, this iteration):** retain
+  authorized wl_pointer cursor requests, render cursor surface trees above clients
+  at pointer minus hotspot, honor hidden cursors and restore the parent default
+  after focus loss/destruction. Acceptance: real socket tests for serial/client
+  isolation, role refusal, hotspot/movement, hide/unmap/destruction/disconnect,
+  failed-submit callback retention; WSLg cursor-buffer submission, fmt and affected
+  clippy. Parent-leave notifications, popups and direct display remain separate.
+  **Completed client cursor component 2026-09-07:** authorized cursor snapshots,
+  nested surface-tree rendering above windows, hotspot placement and host-cursor
+  visibility. Three real socket tests pass (31 Linux tests total), including
+  stale/unfocused requests, role conflicts, hide/destruction/unmap/disconnect and
+  failed-submit callback retention. WSLg cursor check exits 0 with extreme hotspot
+  clipping, cursor callback and output leave on unmap; standard graphics regression
+  also exits 0. Focused Windows/Linux fmt, clippy/tests and Linux rustdoc pass;
+  commands/logs in COMPOSITOR.md. Next: unpatched parent-leave notification backend,
+  then popups and direct-display integration. Supervisor full gates, actual parent
+  mouse/cursor observation and physical acceptance remain owed. Item 33 unchecked.
 - [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit

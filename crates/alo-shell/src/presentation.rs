@@ -39,6 +39,20 @@ pub trait FrameTarget {
     fn size(&self) -> Size<i32, Physical>;
     /// Import and draw roots in front-to-back order, then submit the frame.
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError>;
+    /// Submit windows and cursor atomically, returning visible cursor surfaces too.
+    /// Older targets refuse custom cursors instead of silently omitting them.
+    fn submit_scene(
+        &mut self,
+        roots: &[WlSurface],
+        cursor: &crate::Cursor,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        if !matches!(cursor, crate::Cursor::Default) {
+            return Err(RenderError::Submission(
+                "target does not support client cursors".into(),
+            ));
+        }
+        self.submit(roots)
+    }
 }
 
 /// Output global and membership retained across frames.
@@ -57,6 +71,7 @@ impl Presentation {
         display: &DisplayHandle,
         target: &mut impl FrameTarget,
         roots: &[WlSurface],
+        cursor: &crate::Cursor,
         time: u32,
     ) -> Result<usize, RenderError> {
         let size = target.size();
@@ -90,7 +105,7 @@ impl Presentation {
                 Some((0, 0).into()),
             );
         }
-        let submitted = target.submit(roots)?;
+        let submitted = target.submit_scene(roots, cursor)?;
         for surface in &self.entered {
             if !submitted.contains(surface) {
                 output.leave(surface);

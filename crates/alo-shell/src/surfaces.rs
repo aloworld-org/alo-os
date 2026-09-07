@@ -53,6 +53,8 @@ pub(crate) struct Surfaces {
     pub(crate) keyboard: Option<crate::keyboard::Keyboard>,
     /// Optional trusted backend pointer routing state.
     pub(crate) pointer: Option<crate::pointer::Pointer>,
+    /// Latest request accepted by Smithay's focus, serial and role validation.
+    pub(crate) cursor: CursorImageStatus,
 }
 
 impl Surfaces {
@@ -66,6 +68,7 @@ impl Surfaces {
             seats: SeatState::new(),
             keyboard: None,
             pointer: None,
+            cursor: CursorImageStatus::default_named(),
         }
     }
 
@@ -146,8 +149,8 @@ impl SeatHandler for Surfaces {
     fn seat_state(&mut self) -> &mut SeatState<Self> {
         &mut self.seats
     }
-    fn cursor_image(&mut self, _seat: &Seat<Self>, _image: CursorImageStatus) {
-        // Cursor presentation belongs to the subsequent nested input backend.
+    fn cursor_image(&mut self, _seat: &Seat<Self>, image: CursorImageStatus) {
+        self.cursor = image;
     }
 }
 impl ShmHandler for Surfaces {

@@ -8,6 +8,10 @@ use wayland_client::{
 /// Wire facts, independent of compositor routing internals.
 #[derive(Default)]
 pub struct PointerEvents {
+    /// Pointer proxy used for real cursor requests.
+    pub proxy: Option<wl_pointer::WlPointer>,
+    /// Most recent pointer enter serial.
+    pub serial: u32,
     /// Surface protocol ID and local coordinates on entry.
     pub enters: Vec<(u32, f64, f64)>,
     /// Number of focus leaves.
@@ -36,13 +40,16 @@ impl Dispatch<wl_pointer::WlPointer, ()> for Events {
         let p = &mut state.pointer;
         match event {
             wl_pointer::Event::Enter {
+                serial,
                 surface,
                 surface_x,
                 surface_y,
                 ..
-            } => p
-                .enters
-                .push((surface.id().protocol_id(), surface_x, surface_y)),
+            } => {
+                p.serial = serial;
+                p.enters
+                    .push((surface.id().protocol_id(), surface_x, surface_y));
+            }
             wl_pointer::Event::Leave { .. } => p.leaves += 1,
             wl_pointer::Event::Motion {
                 surface_x,

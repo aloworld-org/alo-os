@@ -195,6 +195,35 @@ pub struct Application {
 }
 
 impl Application {
+    /// Send a cursor request with an explicit serial for authorization tests.
+    pub fn set_cursor(
+        &self,
+        serial: u32,
+        surface: Option<&wl_surface::WlSurface>,
+        hotspot: (i32, i32),
+    ) {
+        self.events
+            .pointer
+            .proxy
+            .as_ref()
+            .unwrap()
+            .set_cursor(serial, surface, hotspot.0, hotspot.1);
+    }
+    /// Create a buffered cursor with a pending frame callback using real requests.
+    pub fn cursor(&self, hotspot: (i32, i32)) -> wl_surface::WlSurface {
+        let qh = self.queue.handle();
+        let surface = self.compositor.create_surface(&qh, ());
+        self.events.pointer.proxy.as_ref().unwrap().set_cursor(
+            self.events.pointer.serial,
+            Some(&surface),
+            hotspot.0,
+            hotspot.1,
+        );
+        surface.attach(Some(&self.buffer), 0, 0);
+        surface.frame(&qh, ());
+        surface.commit();
+        surface
+    }
     /// Commit an empty input region so hits fall through to another surface.
     pub fn empty_input(&self) {
         let region = self.compositor.create_region(&self.queue.handle(), ());

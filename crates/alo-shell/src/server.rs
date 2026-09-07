@@ -96,7 +96,8 @@ impl Server {
         time: u32,
     ) -> Result<usize, crate::RenderError> {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
+        let cursor = self.cursor();
         self.presentation
-            .render(&self.display.handle(), target, &roots, time)
+            .render(&self.display.handle(), target, &roots, &cursor, time)
     }
 }

@@ -709,6 +709,15 @@ which made a completely consistent rule look like work being taken out of turn.
     cursor presentation remain next, followed by popups and direct display.
     Full supervisor gates and physical input/display acceptance remain owed.
 
+  - Client cursor component (2026-09-07): focused-client cursor surfaces render
+    above windows with hotspot positioning, hidden requests and lifecycle cleanup.
+    Three new real-client tests bring Linux coverage to 31; stale/unfocused requests,
+    conflicting roles and failed submission are covered. WSLg submits a real cursor
+    buffer, clips extreme hotspots and verifies callbacks/unmap; ordinary rendering
+    regression also passes. Exact focused checks are in `COMPOSITOR.md`.
+    Parent-leave notifications, popups, direct display, full supervisor gates and
+    physical acceptance remain owed. Item 33 and this feature stay unchecked.
+
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
 - [ ] **The agent overlay**: one key, from anywhere

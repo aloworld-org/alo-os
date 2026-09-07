@@ -10202,3 +10202,46 @@ nothing was unloaded.
 **Hardware acceptance remains outstanding.** Every measurement above is from
 WSL2, which `docs/hardware.md` says cannot certify a machine, and no *On the
 machine* box moved.
+
+---
+
+## 2026-09-07 - item 33, client cursor presentation
+
+Desktop worker selected this component in QUEUE before coding. Clean checkout
+at start; item 6b remains Claude-owned. No staging, commit, push, other-checkout
+edits, dev-loop changes or shared-kernel operations performed.
+
+Implemented focused-client cursor snapshots, additive cursor-aware frame
+submission and nested GLES cursor trees above application windows. Cursor origin
+is pointer minus hotspot; hidden requests hide the parent cursor, focus loss or
+surface destruction restores the default, and unbuffered cursors draw nothing.
+Callbacks/output membership use the existing successful-submission coordinator.
+Full-range hotspots are clipped before integer geometry conversion. This reuses
+unpatched Smithay per ADR 0002; no dependency, agent verb, adapter contract or
+context access change (ADR 0001). Public backend APIs have rustdoc.
+
+Actual verification, with exact commands and logs in COMPOSITOR.md's client cursor
+section: Windows/Linux formatting, focused all-target clippy with warnings denied,
+focused tests, Linux warnings-denied rustdoc and example build passed. Linux 31
+tests, no ignored; Windows intentionally zero Linux tests. Three new real-client
+tests cover happy/refusal and lifecycle paths, including unsupported targets and
+failed-submit callback retention. All assertions passed. Initial lint checks
+caught expect/panic in test code; moved protocol request helpers into the existing
+shared test fixture convention, without changing lint configuration or gates.
+
+Additional wire trace: three cursor tests pass, serial/client refusals and role
+conflict disconnect visible. WSLg cursor fixture exits 0: extreme offscreen hotspot
+withholds callback, then real cursor SHM buffer submits at pointer (26,35), hotspot
+(2,3), and leaves output on unmap; 28 submitted client surfaces across frames.
+Ordinary nested regression exits 0 with six submitted surfaces and lifecycle/
+refusal/disconnect checks. Prerequisites verified: socket, xkbcommon 1.13.1,
+Wayland 1.24.0, EGL 1.5; no installation needed. Linux target remains this checkout's
+/root/alo-os-target. Reviewed source, new files and documentation diff; diff check
+passed. CHANGELOG, ROADMAP, QUEUE and COMPOSITOR updated together.
+
+The useful cursor component is complete; item 33 stays unchecked. Next component:
+parent-leave notifications without an upstream patch, then popups and direct
+display. Actual parent cursor/input observation, physical display/input and
+certified hardware acceptance remain owed; scripted motion and WSLg do not certify
+hardware. Supervisor full Windows/Linux/BPF publication gates have not been run
+by this worker. Delivery steps 3-8 and all remaining v0.01 scope are preserved.

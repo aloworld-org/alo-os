@@ -444,3 +444,70 @@ backend events over the real client protocol; it does not inject physical input.
 exit 0. This is graphical integration regression, not actual parent pointer
 movement evidence. Full independent Windows/Linux/BPF publication gates belong
 to the supervisor and have not been run by this worker.
+
+## Client cursor presentation (2026-09-07)
+
+`Server::cursor` snapshots the cursor accepted by Smithay's focus/serial/role
+checks. `FrameTarget::submit_scene` is additive: existing implementations compile
+but explicitly refuse a non-default cursor until they implement presentation.
+`Nested` draws cursor surface trees first in front-to-back order, at pointer
+position minus hotspot, hides the host cursor for surface/hidden requests, and
+restores it for the default. A removed buffer draws nothing; a destroyed surface
+or lost focus returns the default. Output membership and callbacks include visible
+cursor surfaces only after successful submission, using the existing coordinator.
+
+Reasons: reuse pinned Smithay protocol validation and GLES surface-tree import,
+without patching an engine or adding dependencies (ADR 0002). Hotspot subtraction
+and tree offsets use floating point, clipping offscreen geometry before integer
+conversion so full-range i32 hotspots cannot overflow renderer rectangles. No
+agent verb, application adapter, daemon IPC or context reader changes (ADR 0001
+and `docs/contracts/app-adapters.md`). Public backend additions have rustdoc;
+default cursor styling is supplied by the parent in this nested backend.
+
+### Checks actually run
+
+Ubuntu `/run/user/0/wayland-0` socket checked; pkg-config xkbcommon 1.13.1,
+Wayland server 1.24.0 and EGL 1.5. No prerequisite installation or shared-kernel
+changes. This checkout alone uses `/root/alo-os-target`.
+
+```powershell
+cargo fmt --all
+cargo fmt --all --check
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo fmt --all --check
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo build -p alo-shell --example nested_check --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked --test client_lifecycle cursor:: -- --nocapture
+wsl -d Ubuntu -- env WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --cursor
+wsl -d Ubuntu -- env WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check
+git diff --check
+```
+
+Final commands passed. Linux: 31 tests (3 unit, 25 client, 3 socket), no ignored
+tests. Windows: zero Linux tests, intentionally not protocol evidence. Three
+new cursor tests exercise hotspot/movement, hidden requests, stale serial and
+unfocused-client isolation, role conflict disconnect, destruction/unmap/disconnect
+cleanup, explicit leave, unsupported-target refusal and failed-swap callback
+retention. Initial lint checks caught explicit test expect/panic calls; cursor
+requests now use the existing shared test fixture's assertion convention, with
+no lint configuration changes. All executed test assertions passed.
+
+Additional local logs: `.git/alo-cursor-wire.log` records all three cursor tests
+passing and the actual cursor requests/refusals. `.git/alo-cursor-graphics.log`
+records exit 0, a real 16x16 ARGB cursor at scripted pointer (26,35), hotspot
+(2,3), callback after GLES submission and output leave on cursor unmap. The fixture
+first uses (i32::MIN,i32::MAX) and withholds that offscreen callback before moving
+the same cursor onscreen. It counted 28 submitted client surfaces across frames.
+`.git/alo-cursor-regression.log`: normal seat/rendering fixture exit 0, six submitted
+surfaces, unmap/remap/refusal/disconnect. Mesa prints the already documented WSLg
+driver-probing diagnostics before successful EGL rendering.
+
+This completes client cursor presentation as a component, not item 33. The cursor
+fixture uses trusted scripted motion rather than physical parent input. Actual
+parent cursor visibility/input observation, parent-leave notification support,
+popups, direct display/input and certified-machine records remain owed. Full
+independent Windows/Linux/BPF publication gates belong to the supervisor. No WSLg
+test certifies hardware; delivery steps 3-8 and every remaining v0.01 item remain.

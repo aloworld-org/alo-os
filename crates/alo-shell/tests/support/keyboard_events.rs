@@ -39,7 +39,7 @@ impl Dispatch<wl_seat::WlSeat, ()> for Events {
         {
             state.keyboard.capabilities = Some(caps);
             if caps.contains(wl_seat::Capability::Pointer) {
-                seat.get_pointer(qh, ());
+                state.pointer.proxy = Some(seat.get_pointer(qh, ()));
             }
             if caps.contains(wl_seat::Capability::Keyboard) {
                 seat.get_keyboard(qh, ());

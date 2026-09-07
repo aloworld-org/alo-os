@@ -53,6 +53,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     server.enable_pointer()?;
     server.render(&mut nested, 0)?;
     let path = server.socket_path().to_owned();
+    let cursor_check = std::env::args().any(|arg| arg == "--cursor");
     let client = thread::spawn(move || {
         let fixture = Fixture { path };
         let mut app = application::Application::new(&fixture);
@@ -94,9 +95,38 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "SHM client rendered: 16x16 ARGB; output 320x200; callback {:?}",
             app.events.frames
         );
+        if cursor_check {
+            while app.events.pointer.enters.is_empty() {
+                app.sync();
+                assert!(Instant::now() < deadline, "no scripted pointer enter");
+            }
+            let cursor = app.cursor((i32::MIN, i32::MAX));
+            for _ in 0..5 {
+                app.sync();
+                thread::sleep(Duration::from_millis(5));
+            }
+            assert_eq!(app.events.frames.len(), 2, "offscreen cursor callback");
+            app.set_cursor(app.events.pointer.serial, Some(&cursor), (2, 3));
+            while app.events.frames.len() < 3 {
+                app.sync();
+                assert!(Instant::now() < deadline, "no GLES cursor callback");
+            }
+            assert_eq!(app.events.membership, (3, 0));
+            cursor.attach(None, 0, 0);
+            cursor.commit();
+            while app.events.membership.1 < 1 {
+                app.sync();
+                assert!(Instant::now() < deadline, "cursor unmap not presented");
+            }
+            cursor.destroy();
+            app.sync();
+            println!(
+                "Cursor SHM tree submitted at scripted pointer (26,35), hotspot (2,3); callback and output leave on unmap passed"
+            );
+        }
         app.surface.attach(None, 0, 0);
         app.surface.commit();
-        while app.events.membership.1 < 2 {
+        while app.events.membership.1 < if cursor_check { 3 } else { 2 } {
             app.sync();
             assert!(Instant::now() < deadline, "no output leave on unmap");
             thread::sleep(Duration::from_millis(2));
@@ -131,7 +161,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if start.elapsed() > Duration::from_secs(10) {
             return Err("client deadline exceeded".into());
         }
-        nested.pump_seat(&mut server)?;
+        if cursor_check {
+            nested.pump()?;
+            server.pointer_motion(26.0, 35.0, start.elapsed().as_millis() as u32)?;
+        } else {
+            nested.pump_seat(&mut server)?;
+        }
         server.dispatch()?;
         rendered += server.render(&mut nested, start.elapsed().as_millis() as u32)?;
         thread::sleep(Duration::from_millis(4));

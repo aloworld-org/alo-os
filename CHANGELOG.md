@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Nested applications can display their own mouse cursors.** Cursor buffers
+  render above windows at the requested hotspot, and applications can hide them.
+  Stale or unfocused requests cannot replace another client's cursor; losing
+  focus or destroying the cursor restores the default. Extreme offscreen hotspots
+  are clipped safely. Parent-leave support and physical acceptance remain owed.
+
 - **Nested client windows can receive mouse motion, clicks and scrolling.**
   The development backend routes input only while its parent window is active;
   deactivation releases held buttons before a client can receive input again.

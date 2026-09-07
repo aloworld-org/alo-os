@@ -2,12 +2,13 @@
 //!
 //! Owns a private display socket, XDG toplevel buffer lifetimes and a nested
 //! Wayland/GLES rendering backend with keyboard routing and an optional pointer
-//! seat core. Parent leave notifications, cursors and session entry remain separate
+//! seat core and client cursor rendering. Parent leave notifications and session entry remain separate
 //! components. This library exposes no agent capability,
 //! context capture, command execution or clipboard protocol.
 
 #![cfg(target_os = "linux")]
 
+mod cursor;
 mod drawing;
 mod keyboard;
 mod nested;
@@ -18,6 +19,7 @@ mod server;
 mod socket;
 mod surfaces;
 
+pub use cursor::Cursor;
 pub use keyboard::InputError;
 pub use nested::Nested;
 pub use nested_pointer::NestedPointerEvent;

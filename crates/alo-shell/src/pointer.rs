@@ -13,11 +13,11 @@ use smithay::{
 /// Backend bookkeeping complements Smithay's protocol and implicit click grab.
 pub(crate) struct Pointer {
     /// Protocol handle on the existing keyboard seat.
-    handle: PointerHandle<Surfaces>,
+    pub(crate) handle: PointerHandle<Surfaces>,
     /// Accepted buttons only; duplicates never reach Smithay's grab state.
     buttons: Vec<u32>,
     /// Last accepted location and timestamp for cancellation.
-    location: Point<f64, Logical>,
+    pub(crate) location: Point<f64, Logical>,
     /// Timestamp used for synthetic cancellation events.
     time: u32,
 }

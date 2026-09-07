@@ -26,6 +26,16 @@ pub(crate) fn import(
     roots: &[WlSurface],
     bounds: Rectangle<i32, Physical>,
 ) -> Result<Drawing, RenderError> {
+    import_at(renderer, roots, bounds, (0.0, 0.0).into())
+}
+
+/// Import a tree at an explicit origin (cursor hotspot positioning).
+pub(crate) fn import_at(
+    renderer: &mut GlesRenderer,
+    roots: &[WlSurface],
+    bounds: Rectangle<i32, Physical>,
+    origin: Point<f64, Physical>,
+) -> Result<Drawing, RenderError> {
     let mut drawing = Drawing {
         elements: Vec::new(),
         surfaces: Vec::new(),
@@ -34,7 +44,7 @@ pub(crate) fn import(
     for root in roots {
         with_surface_tree_downward(
             root,
-            Point::<i32, Physical>::from((0, 0)),
+            origin,
             |_, states, location| {
                 let view = states
                     .data_map
@@ -42,7 +52,7 @@ pub(crate) fn import(
                     .and_then(|state| state.lock().ok().and_then(|state| state.view()));
                 match view {
                     Some(view) => TraversalAction::DoChildren(
-                        *location + view.offset.to_physical_precise_round(1.0),
+                        *location + view.offset.to_f64().to_physical(1.0),
                     ),
                     None => TraversalAction::SkipChildren,
                 }
@@ -51,17 +61,26 @@ pub(crate) fn import(
                 if failure.is_some() {
                     return;
                 }
-                let offset = states
+                let view = states
                     .data_map
                     .get::<RendererSurfaceStateUserData>()
-                    .and_then(|state| state.lock().ok().and_then(|state| state.view()))
-                    .map(|view| view.offset.to_physical_precise_round(1.0))
-                    .unwrap_or_default();
+                    .and_then(|state| state.lock().ok().and_then(|state| state.view()));
+                let Some(view) = view else {
+                    return;
+                };
+                let location = *location + view.offset.to_f64().to_physical(1.0);
+                // Clip before Smithay converts geometry to i32. Arbitrary cursor
+                // hotspots and child offsets must not overflow rectangle endpoints.
+                if !Rectangle::new(location, view.dst.to_f64().to_physical(1.0))
+                    .overlaps(bounds.to_f64())
+                {
+                    return;
+                }
                 match WaylandSurfaceRenderElement::from_surface(
                     renderer,
                     surface,
                     states,
-                    (*location + offset).to_f64(),
+                    location,
                     1.0,
                     Kind::Unspecified,
                 ) {

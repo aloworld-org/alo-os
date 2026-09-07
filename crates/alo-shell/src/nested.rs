@@ -104,8 +104,8 @@ impl Nested {
     /// Route keyboard and pointer events after `Server::enable_pointer`.
     ///
     /// Parent deactivation and close cancel held input. Smithay 0.7 does not
-    /// forward cursor-leave events; leave-only cancellation and client cursors
-    /// remain backend work. This is not yet a production session backend.
+    /// forward cursor-leave events; leave-only cancellation remains backend work.
+    /// Client cursor presentation happens on render. This is not a production session.
     pub fn pump_seat(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
         self.pump_input(server, true)
     }
@@ -200,6 +200,14 @@ impl FrameTarget for Nested {
     }
 
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_scene(roots, &crate::Cursor::Default)
+    }
+
+    fn submit_scene(
+        &mut self,
+        roots: &[WlSurface],
+        cursor: &crate::Cursor,
+    ) -> Result<Vec<WlSurface>, RenderError> {
         if self.closed {
             return Err(RenderError::Closed);
         }
@@ -210,7 +218,18 @@ impl FrameTarget for Nested {
         let damage = Rectangle::from_size(size);
         let drawing = {
             let (renderer, mut framebuffer) = self.backend.bind().map_err(submission)?;
-            let drawing = drawing::import(renderer, roots, damage)?;
+            let mut drawing = drawing::import(renderer, roots, damage)?;
+            if let crate::Cursor::Surface { surface, location } = cursor {
+                let mut cursor_drawing = drawing::import_at(
+                    renderer,
+                    std::slice::from_ref(surface),
+                    damage,
+                    location.to_physical(1.0),
+                )?;
+                cursor_drawing.elements.append(&mut drawing.elements);
+                cursor_drawing.surfaces.append(&mut drawing.surfaces);
+                drawing = cursor_drawing;
+            }
             let mut frame = renderer
                 .render(&mut framebuffer, size, Transform::Flipped180)
                 .map_err(submission)?;
@@ -224,6 +243,9 @@ impl FrameTarget for Nested {
             drawing
         };
         self.backend.submit(Some(&[damage])).map_err(submission)?;
+        self.backend
+            .window()
+            .set_cursor_visible(matches!(cursor, crate::Cursor::Default));
         Ok(drawing.surfaces)
     }
 }
