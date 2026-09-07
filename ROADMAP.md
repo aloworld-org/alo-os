@@ -728,6 +728,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Unbound scanout frame upload (2026-09-07): validated full-size XRGB CPU frames,
+    independent strides, padding/tail clearing and consuming refusal with all
+    cleanup errors retained. Six new tests; 145 Linux shell checks, affected
+    Windows/Linux fmt/clippy/tests, Linux rustdoc/examples and WSLg regression
+    (128 client surfaces) pass. Evidence:
+    `docs/autonomy/updates/unbound-scanout-frame-upload.md`. Fault-injected
+    allocation/upload/enable/disable integration is not successful DRM evidence.
+    Renderer readback/conversion, cookie-bearing transport, buffer retirement,
+    pause ordering, direct input, production entry and physical acceptance remain.
+    Compositor unchecked; full supervisor publication gates still owed.
   - Session-scoped flip completion gate (2026-09-07): process-unique cookies,
     one pending submission and exactly-once cookie/CRTC matching, integrated with
     bounded event reads. Eight new happy/refusal tests; 139 Linux shell checks,

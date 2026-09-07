@@ -11385,3 +11385,64 @@ direct input and production entry. Parent-leave/libseat limits persist. Successf
 DRM flips require a DRM-equipped development login/VM; physical business laptop
 and >=24 GB GPU workstation display/input, session switching, suspend/resume and
 all hardware checklist records remain owed. Full v0.01 scope is unchanged.
+
+---
+
+## 2026-09-07 - unbound scanout frame upload
+
+Single desktop worker; initial tree clean; supervisor owns publication. Read
+constitution, DELIVERY, SHARED_MAIN, updates README, current queue/state tail,
+compositor feature/roadmap, ADRs 0001/0002, adapter contract and hardware acceptance.
+Every published task report was already referenced in STATE at iteration start;
+no pending reconciliation. Claude's security workstream untouched. Later reports
+reconcile next iteration; release remains unchecked.
+
+Own report integrated: `docs/autonomy/updates/unbound-scanout-frame-upload.md`.
+Selected this complete rendering prerequisite in QUEUE before coding. Read-only
+inspection of pinned drm-ffi and upstream development atomic_commit confirms those
+helpers accept no cookie and leave user_data zero. No engine patch, unsafe code,
+dependency change or new scope. Cookie submission and retirement remain unfinished.
+
+Added XrgbFrame validation and consuming DisplayResources::with_frame: full-mode
+XRGB8888 CPU pixels, explicit separate strides, checked arithmetic, exact input
+length, destination format/size/pitch validation, padding/tail clearing and no
+writes before short-map refusal. Upload failure consumes unbound ownership and
+retains all cleanup failures. No active-buffer write API or upload-time commit.
+Six new tests include a patterned 1280x720 allocation/upload/TEST_ONLY/enable/
+disable integration through production owners and the fault-injection transport.
+This is not real DRM mapping, upload or successful kernel scanout evidence.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Exit 0; Linux shell tests cfg-excluded.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin, CARGO_TARGET_DIR=/root/alo-os-target:
+cargo test -p alo-shell --lib scanout_frame --locked;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo fmt --all --check; cargo test -p alo-shell --locked;
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. Final commands exit 0: 76 unit +
+64 client lifecycle + 3 socket + 2 doctests = 145 passed, zero failed/ignored.
+Initial clippy requested as_chunks in two test iterations; fixed, no exemption.
+Corrected inspection quoting, PowerShell web-fetch mode and local script CRLF.
+No repeated test failure or lowered gate. Exact command/log details in own report.
+
+WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --popups
+--cursor exits 0: 128 client surfaces, popup/cursor callbacks, unmap/remap, refusal
+and disconnect. Known ZINK diagnostic precedes successful GLES rendering. WSLg
+regression does not exercise direct upload, measure pixel readback or physical input.
+Verified Rust 1.98.0, WSLg socket and native pkg-config prerequisites; no installation
+needed. No /dev/dri. Full supervisor Windows/Linux/BPF gates have not run here.
+
+Updated all four progress documents, own report and COMPOSITOR; source/tests and
+tracked/new-file diff reviewed; git diff --check passes. No staging/commit/push,
+dev-loop edits, workers, other checkout access, shared kernel/BPF/cgroup/service
+changes or physical install. Ready for independent integration checks only.
+
+Next independently executable component: renderer output conversion/readback into
+XrgbFrame with patterned pixel/orientation verification. Cookie-bearing nonblocking
+transport, pending-buffer retirement, pause ordering, direct input and production
+entry remain open. Parent-leave/libseat and pinned unmap panic limits remain.
+Successful DRM upload/scanout requires a DRM-equipped development login/VM;
+physical business laptop and >=24 GB GPU workstation display/input, session
+switching, suspend/resume and all hardware checklist records remain owed. Full
+v0.01 scope retained; compositor and release unchecked.

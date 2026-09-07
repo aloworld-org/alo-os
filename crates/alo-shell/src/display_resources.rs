@@ -63,6 +63,18 @@ pub struct DisplayResources<'fd> {
 }
 
 impl<'fd> DisplayResources<'fd> {
+    /// Upload a full-mode CPU frame while this candidate remains unbound.
+    ///
+    /// Returns ownership only after the copy and unmap succeed. Size/layout or
+    /// mapping refusal consumes and releases the candidate, retaining every cleanup
+    /// failure. No commit occurs. Call `activate` afterwards to test and display it.
+    /// ActiveScanout deliberately has no write API: scanned-out memory is immutable.
+    /// The upstream mapping destructor panic limitation also applies here.
+    pub fn with_frame(mut self, frame: &crate::XrgbFrame<'_>) -> Result<Self, ResourceError> {
+        self.owned.write_frame(frame)?;
+        Ok(self)
+    }
+
     /// Allocate an unbound candidate initialized to black, including all padding.
     ///
     /// Supports a linear dumb allocation only. Format advertisement is necessary,
@@ -160,6 +172,27 @@ pub(crate) struct Allocation<D: ResourceDevice> {
 }
 
 impl<D: ResourceDevice> Allocation<D> {
+    /// Upload to an unbound owner; retire all handles after any upload failure.
+    pub(crate) fn write_frame(
+        &mut self,
+        frame: &crate::XrgbFrame<'_>,
+    ) -> Result<(), ResourceError> {
+        let result = self
+            .buffer
+            .as_mut()
+            .ok_or_else(|| invalid("missing buffer"))
+            .and_then(|buffer| {
+                operation(
+                    "upload scanout frame",
+                    crate::scanout_frame::upload(&self.device, buffer, frame),
+                )
+            });
+        result.map_err(|failure| ResourceError {
+            failure,
+            cleanup: self.cleanup(),
+        })
+    }
+
     /// Validate before and after allocation, unwinding all completed stages.
     fn allocate(
         device: D,

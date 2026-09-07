@@ -982,3 +982,30 @@ affected fmt/clippy/tests, Linux rustdoc/examples and WSLg regression pass. Evid
 `updates/session-scoped-flip-completion.md`. Successful DRM commits, buffer retirement,
 rendered frames, pause ordering, direct input, production entry, parent-leave/libseat
 limitations and physical acceptance remain open. Supervisor full gates remain owed.
+
+## Unbound scanout frame upload (2026-09-07)
+
+`XrgbFrame::new(size, stride, pixels)` validates a borrowed full-frame source:
+nonzero dimensions, checked arithmetic, four-byte-aligned stride at least width * 4,
+and exact stride * height byte length. Pixels are top-to-bottom DRM XRGB8888 B,G,R,X
+bytes, with no conversion or scaling. `DisplayResources::with_frame` consumes an
+unbound candidate and returns it only after successful mapping/copy/unmap. Upload
+checks exact destination dimensions, XRGB format, pitch and mapping length, copies
+visible rows across independent strides and clears all destination padding/tail.
+Source padding is never copied. Short mappings refuse before writing any bytes.
+
+On refusal, release all unbound resources once and preserve original plus cleanup
+errors. No commit occurs until activation. ActiveScanout exposes no writable mapping;
+the upload API cannot be used to modify its displayed memory. The existing upstream
+munmap panic limitation still applies. This is a CPU upload boundary; the renderer
+must supply the documented format/orientation. No GLES readback or direct FrameTarget
+is connected yet. No agent/adapter contract or accepted ADR changes.
+
+Six new tests include pixel/stride refusal and allocation/upload/scanout lifecycle
+integration with the existing fault-injection transport. Full Linux shell 145 checks
+and WSLg regression pass; neither proves a successful DRM upload. Exact evidence:
+`updates/unbound-scanout-frame-upload.md`. Next: renderer conversion/readback with
+pixel/orientation checks. Safe cookie-bearing atomic transport, pending retirement,
+session pause ordering, direct input, production entry and physical acceptance
+remain open. Pinned and inspected upstream drm-ffi atomic helpers leave user_data
+zero; no unsafe exemption, dependency change or upstream patch is introduced.

@@ -69,6 +69,29 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected unbound scanout frame upload (desktop worker):** copy validated
+  full-size XRGB8888 frames into unbound allocations, honoring independent source
+  and destination strides and clearing destination padding/tail. Malformed input
+  must refuse before mapping; mapping failure consumes the candidate and preserves
+  all cleanup errors. Acceptance: pixel/stride/bounds happy and refusal tests,
+  allocation/upload/activate/disable lifecycle integration, WSLg regression and
+  affected fmt/clippy/tests/rustdoc. Active buffers expose no writable mapping.
+  Safe cookie-bearing atomic transport remains blocked: both pinned and upstream
+  development drm-ffi helpers leave user_data zero. No unsafe or engine patch.
+  This independently executable rendering prerequisite does not complete the
+  renderer, flips, direct session/input integration or physical acceptance.
+  **Completed unbound scanout frame upload 2026-09-07:** XrgbFrame validation and
+  consuming DisplayResources::with_frame upload preserve pixels across separate
+  strides, clear padding/tail and retain upload/cleanup errors. Six new tests;
+  145 Linux shell checks, affected Windows/Linux fmt/clippy/tests, Linux rustdoc/
+  examples and WSLg regression (128 client surfaces) pass. Allocation/upload/
+  TEST_ONLY/enable/disable integration uses fault injection, not successful DRM.
+  Report: `updates/unbound-scanout-frame-upload.md`. Next independently executable
+  component: renderer output conversion/readback into XrgbFrame with patterned
+  pixel/orientation verification. Cookie transport and pending-buffer retirement
+  remain blocked on a safe API, not bypassed by this upload. Pause ordering, direct
+  input, production entry, parent-leave/libseat limits, supervisor full gates and
+  all physical acceptance remain open; compositor/release stay unchecked.
   **Selected session-scoped flip completion gate (desktop worker):** provide
   process-unique, non-reused cookies, exactly one submitted flip per session gate,
   and matching cookie/CRTC completion before issuing retirement authorization.

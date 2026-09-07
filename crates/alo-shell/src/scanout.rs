@@ -9,7 +9,7 @@ use crate::{
 use drm::control::{AtomicCommitFlags, Device, atomic::AtomicModeReq, framebuffer};
 use std::io;
 
-/// An enabled, black-initialized single output on a borrowed session descriptor.
+/// An enabled, initialized single output on a borrowed session descriptor.
 ///
 /// Created only by `DisplayResources::activate`. Commits are synchronous: no
 /// pending flip event or writable buffer is exposed. Explicit `disable` reports
@@ -39,6 +39,7 @@ pub struct ActiveScanout<'fd> {
 
 impl<'fd> DisplayResources<'fd> {
     /// Validate then synchronously enable this initialized full-mode candidate.
+    /// Displays black by default, or the pixels supplied through `with_frame`.
     ///
     /// Consumes unbound ownership. A failed TEST_ONLY or active commit releases
     /// all resources and retains cleanup failures; there is no retry or fallback.

@@ -69,7 +69,7 @@ fn expected_request(disabling: bool) -> AtomicModeReq {
 }
 
 /// Frozen standard routing for the same mode used by the allocation fixture.
-fn plan() -> io::Result<AtomicPlan> {
+pub(super) fn plan() -> io::Result<AtomicPlan> {
     let properties = |names: &[&'static str], start: u32| {
         names
             .iter()

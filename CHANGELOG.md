@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display candidates can now receive a full CPU-rendered frame.**
+  Upload validates pixel dimensions and row strides, clears padding, and releases
+  the unbound candidate on failure while retaining cleanup errors. Active buffers
+  remain unwritable. Renderer wiring, page flips and successful DRM/physical
+  evidence remain unfinished. Evidence:
+  `docs/autonomy/updates/unbound-scanout-frame-upload.md`.
+
 - **Display completion bookkeeping now rejects stale frame events.** A session
   gate gives each submission a unique cookie, permits one pending flip and accepts
   its matching controller/cookie once. Failed submissions and malformed reads
