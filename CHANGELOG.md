@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct-display backend can identify a usable display before attempting
+  scanout.** Discovery chooses one connected port, advertised progressive mode
+  and compatible display controller from a session descriptor, and preserves
+  kernel query failures. Seven new tests pass, including a real non-DRM ioctl
+  refusal. WSL has no DRM card; successful device discovery, modesetting and
+  hardware acceptance remain unverified. Evidence:
+  `docs/autonomy/updates/direct-display-resource-discovery.md`.
+
 - **Menus can adapt when the development desktop or their parent changes.**
   Applications that request reactive placement receive updated geometry; drawing
   and pointer input move together on an acknowledged commit. Unchanged geometry

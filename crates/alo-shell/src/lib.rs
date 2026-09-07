@@ -10,7 +10,9 @@
 #![cfg(target_os = "linux")]
 
 mod cursor;
+mod direct_output;
 mod drawing;
+mod drm_inventory;
 mod keyboard;
 mod nested;
 mod nested_pointer;
@@ -25,6 +27,7 @@ mod socket;
 mod surfaces;
 
 pub use cursor::Cursor;
+pub use direct_output::{DirectOutput, DirectOutputError, discover_output};
 pub use keyboard::InputError;
 pub use nested::Nested;
 pub use nested_pointer::NestedPointerEvent;

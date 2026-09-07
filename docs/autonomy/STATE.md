@@ -10761,3 +10761,81 @@ full independent publication gates have not run for this change. Actual parent
 input and physical laptop/GPU workstation records remain owed; compositor and
 release stay unchecked. No staging, commit/push, worker/loop launch, dev-loop edit
 or other-checkout modifications. Ready for supervisor integration and gating.
+
+---
+
+## 2026-09-07 - direct-display resource discovery
+
+Single desktop worker, clean tree at iteration start. Read CLAUDE, DELIVERY,
+SHARED_MAIN, updates README, current queue/state, relevant feature/roadmap,
+ADRs 0001/0002, adapter contract and hardware requirements. Component acceptance
+recorded in QUEUE before implementation. No Claude task taken or delegation.
+
+Reconciled all three published reports absent from this journal at start:
+
+- `docs/autonomy/updates/kernel-supervisor-runs-gates-through-wsl.md`: reviewed
+  Windows WSL gate dispatch and porcelain parsing in tools/kernel-loop. Contributor
+  reports Windows fmt/clippy/release build and six Linux/BPF gates in 234 seconds,
+  followed by a local commit; WSL push hung on unavailable credential integration.
+  Windows owns Git and WSL runs gates with a separate target. These are reported
+  checks, not rerun here; corrected end-to-end publication is not proven by the
+  report's local commit. No tool launched or credentials changed here. Genuine
+  mid-attach kernel refusal and physical checks remain unmeasured.
+- `docs/autonomy/updates/network-egress-enforcement-policy.md`: reviewed bounded
+  network policy rustdoc and the workstream plan. Provider/region policy stays in
+  userspace; future kernel enforcement requires a shown departure for bound turns,
+  uses cgroup attribution, and does not add kernel records (ADR 0015). No socket
+  enforcement is implemented. Contributor reports Linux workspace fmt/clippy/test/
+  rustdoc and pinned BPF fmt/clippy passing; Windows not run. Retained as reported,
+  not rerun here. No grant expansion or release box changes.
+- `docs/autonomy/updates/network-egress-gap-reproduced.md`: reviewed the loaded-
+  kernel test's refused ungranted-file control and allowed loopback connection.
+  Five-second connect timeout, existing shared lock and process-specific pins
+  preserve test isolation. Contributor reports full Linux/BPF gates passing,
+  Windows not run; not rerun here to avoid uncoordinated shared-kernel activity.
+  The assertion measures an open gap, not enforcement. Network enforcement remains
+  Claude's workstream. Genuine mid-attach refusal and physical evidence remain owed.
+
+No source reports edited. Their no-user-visible-change changelog decisions are
+retained; ROADMAP/QUEUE carry the open gap and STATE retains tooling limits.
+Reports arriving after iteration start will be reconciled next iteration.
+
+Integrated own report:
+`docs/autonomy/updates/direct-display-resource-discovery.md`.
+Borrowed-session-descriptor DRM discovery chooses one connected display with a
+compatible CRTC and exact advertised progressive mode. Internal usable panels
+win, then stable connector IDs; preferred mode wins or valid driver-order fallback.
+No modeset, force-probe, capability mutation, master-acquisition ioctl or agent
+surface. Query errors preserve their kernel source and refuse incomplete discovery.
+The resulting snapshot is not a resource reservation or atomic validation.
+drm_inventory owns transport, direct_output owns selection; pinned drm-rs/drm-ffi
+versions already existed in the lockfile. No unsafe code or engine patch.
+
+Seven new tests pass: preference/order/timing preservation, fallback, unusable
+ports/modes, unplugged snapshots, query error retention and real ioctl ENOTTY
+with borrowed-descriptor survival. Full Linux shell suite passes 77 tests (10 unit,
+64 lifecycle, 3 socket), none ignored. Windows/Linux workspace fmt and affected
+all-target clippy/tests pass; Linux warnings-denied rustdoc and example build pass.
+Windows intentionally excludes Linux protocol tests. Exact commands and local
+logs are in the report. No test/lint failed or gate was relaxed.
+
+Additional integration: direct_output_check /dev/null exits 1 with ENOTTY (25);
+/dev/dri/card0 exits 1 with ENOENT (2), both checked as expected refusal. This WSL
+has no /dev/dri; successful connector ioctls are explicitly unmeasured. WSLg
+combined popup/cursor regression exits 0, submitting 115 client surfaces with
+reactive placement, callbacks, unmap/remap, isolated refusal and disconnect checks.
+These are scripted protocol/submission checks, not pixel readback or physical input.
+WSLg socket and native pkg-config prerequisites verified; no packages needed.
+No shared kernel/cgroup/BPF/service mutation; separate /root/alo-os-target retained.
+
+All four shared progress documents and COMPOSITOR updated. Next executable
+component: session-mediated device ownership/pause/resume, then atomic test/commit,
+scanout/page flips, direct input and production entry. Parent leave remains blocked
+by the pinned Winit wrapper's absent notification API; no upstream patch is used.
+All other v0.01 scope preserved. Successful DRM query evidence needs a DRM-equipped
+development machine/VM; native-resolution boot, input, suspend/resume and remaining
+physical acceptance still need the specified laptop and GPU workstation records.
+No hardware or release claim; compositor remains unchecked. Full independent
+supervisor publication gates have not run for this change. No staging, commit,
+push, worker/loop launch, dev-loop edit or unrelated changes. Ready for supervisor
+integration and gating after source/tests/docs diff and whitespace review.

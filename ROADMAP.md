@@ -71,6 +71,17 @@ already-open descriptors and non-filesystem enforcement remain unimplemented;
 pre-existing hard links still rely on alo-files refusal. No physical/release box
 changes; supervisor independent gates remain owed.
 
+Network/security reports reconciled 2026-09-07:
+`docs/autonomy/updates/network-egress-enforcement-policy.md` and
+`docs/autonomy/updates/network-egress-gap-reproduced.md`. Provider/region policy
+stays in userspace; kernel enforcement will require a visible departure for a
+bound turn. The contributor's loaded-kernel test refuses an ungranted file but
+allows loopback connection, proving the socket gap is still open. Their Linux/
+BPF gates are retained reported evidence, not rerun here; Windows was not run.
+No enforcement or hardware box changes. Contributor tooling evidence is reconciled
+in STATE from `docs/autonomy/updates/kernel-supervisor-runs-gates-through-wsl.md`; publication
+and physical evidence must not be inferred from a successful local gate/commit.
+
 ## Three states, because two are not enough
 
 Almost every item below is one capability spanning two halves: a crate that
@@ -700,6 +711,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Direct-display resource discovery (2026-09-07): read-only session-descriptor
+    queries choose one usable internal panel or stable external port, a compatible
+    CRTC and an exact advertised progressive mode. Seven new tests pass (77 Linux
+    shell tests total); real non-DRM ioctl and absent-card diagnostics refuse.
+    WSLg regression submits 115 client surfaces. Exact checks and limits:
+    `docs/autonomy/updates/direct-display-resource-discovery.md`. WSL lacks
+    `/dev/dri`; successful DRM queries and physical scanout are not measured.
+    Next: session device ownership and pause/resume, then atomic modesetting,
+    page flips and direct input. Parent leave/session UI and all physical
+    acceptance remain; supervisor independent gates still owed. Box unchanged.
   - Reactive popup placement (2026-09-07): opted-in mapped menus reconstrain on
     output/committed parent changes, preserving configure/commit ordering and
     avoiding duplicate geometry events. Five new socket tests pass (70 Linux

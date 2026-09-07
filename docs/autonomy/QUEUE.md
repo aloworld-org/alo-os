@@ -16,6 +16,15 @@ integration owner edits this queue; parallel contributors propose queue changes
 in their own reports under `updates/`. Existing identifiers remain historical
 cross-references, not the primary names used in handoffs or status messages.
 
+Published security reports reconciled 2026-09-07: network egress policy and the
+loaded-kernel gap reproduction are ready evidence, not enforcement completion.
+The loopback connection remains allowed inside a turn whose ungranted file read
+is refused. Provider/region policy stays in userspace; departure enforcement
+remains Claude's workstream in `kernel-enforcement-plan.md`. Contributor Linux/
+BPF gates were reported, not rerun here; Windows and physical evidence remain
+unmeasured. The Windows kernel supervisor/WSL gate report is recorded in STATE;
+no worker, shared kernel test or publication process was launched here.
+
 - [x] **31. A repository-owned development loop.** Rust runner in
   `tools/dev-loop`; serialized workers, explicit stop/status, independent
   Windows/Linux gates, owner-authored commits and ordinary pushes. Developer
@@ -47,6 +56,30 @@ cross-references, not the primary names used in handoffs or status messages.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected direct-display discovery component (desktop worker):** query DRM
+  connector/mode/encoder resources through a caller-owned session descriptor and
+  select one connected output with a compatible CRTC. Prefer an internal panel,
+  then stable connector ID; prefer an advertised preferred progressive mode.
+  Acceptance: deterministic happy/refusal tests, query failure and hot-unplug
+  refusal, real non-DRM descriptor ioctl refusal, diagnostic WSL device probe,
+  nested WSLg regression, fmt, affected clippy/tests and rustdoc. Discovery never
+  acquires DRM master or changes scanout. Seat ownership, atomic modesetting,
+  page flips, direct input and physical evidence remain later components.
+  Parent leave remains blocked by the pinned wrapper's absent notification API;
+  proceed with direct-display work without patching the engine (ADR 0002).
+  **Completed discovery component 2026-09-07:** borrowed session-descriptor DRM
+  queries and deterministic single-output policy, with seven new tests (77 Linux
+  shell tests total). Exact kernel modes retained; writeback/disconnected/unknown,
+  unsupported timings and absent routes never become a display. Real non-DRM
+  ioctl refuses ENOTTY; absent WSL `/dev/dri/card0` refuses ENOENT. WSLg regression
+  submits 115 client surfaces. Focused Windows/Linux fmt/clippy/tests, Linux
+  rustdoc/example build pass; report `updates/direct-display-resource-discovery.md`.
+  Discovery is not modesetting or DRM ownership. Next executable component:
+  session-mediated device acquisition and pause/resume lifetime, with injected
+  session failures/descriptor cleanup tests and real session diagnostic refusal;
+  then atomic test/commit, scanout/page flips, direct input and production entry.
+  Successful DRM resource queries need a DRM-equipped VM or development machine;
+  all certified laptop/GPU workstation checks and supervisor full gates remain.
   **Selected component (desktop worker):** reusable Linux Wayland server core
   in `alo-shell`, using pinned Smithay, with a private explicitly named socket,
   XDG toplevel configure/acknowledge/buffer lifecycle and disconnect cleanup.

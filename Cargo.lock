@@ -292,6 +292,8 @@ dependencies = [
 name = "alo-shell"
 version = "0.1.0"
 dependencies = [
+ "drm",
+ "drm-ffi",
  "rustix 1.1.4",
  "smithay",
  "tempfile",

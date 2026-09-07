@@ -745,3 +745,37 @@ Parent leave, direct display/input and production session are unfinished. No
 parent-size prediction is implemented; committed parent geometry is authoritative.
 Scripted WSLg does not prove pixel readback, actual parent input or physical
 acceptance. Supervisor full publication gates and hardware records remain owed.
+
+## Direct-display resource discovery (2026-09-07)
+
+`discover_output` borrows the session's descriptor and queries DRM resources,
+connectors (without force-probing) and encoders through pinned drm-rs 0.14.1,
+the version already used by Smithay. `drm_inventory.rs` owns ioctl transport;
+`direct_output.rs` owns single-output policy. No unsafe code, master-acquisition
+ioctl, client capability update or modeset is added. Internal eDP/LVDS/DSI panels
+win if usable, followed by stable connector ID. Writeback and unknown/disconnected
+ports refuse; advertised preferred progressive timings win, falling back to the
+first supported advertised mode. The smallest compatible CRTC ID wins, without
+claiming that it is free. Exact mode timings survive selection.
+
+The result is a snapshot, not a reservation. Session ownership, hotplug
+revalidation and atomic test/commit must precede scanout. Interlaced, doublescan,
+stereo, multiscanned and malformed modes are outside this initial backend's
+supported selection; alternate valid modes remain eligible. Query errors preserve
+the kernel reason and refuse the entire discovery instead of partial selection.
+
+Seven new tests pass, including real `/dev/null` ioctl ENOTTY and descriptor
+survival; the shell suite passes 77 Linux tests. The developer executable
+`direct_output_check /dev/dri/cardN` diagnoses a session-owned development card.
+Opening a primary device may implicitly make its first opener DRM master; the
+library itself only borrows an existing fd. No DRM node exists on this WSL host,
+so only absent-card and non-DRM executable refusals were measured. Do not infer
+successful resource queries, scanout or hardware acceptance from those checks.
+WSLg popup/cursor regression submitted 115 surfaces and exited 0. Exact commands,
+logs, report reconciliation and remaining acceptance:
+`updates/direct-display-resource-discovery.md`.
+
+Next is session-mediated device ownership/pause/resume, followed by atomic
+modesetting, page flips and direct input. Parent-leave backend support and
+production entry remain unfinished. Compositor/release boxes remain unchecked;
+full supervisor gates and physical laptop/GPU workstation records are still owed.
