@@ -2,7 +2,7 @@
 use crate::{Fixture, application};
 
 /// Submit a grabbing popup, route input and verify outside-click dismissal.
-pub fn run(keyboard: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(keyboard: bool, release: bool) -> Result<(), Box<dyn std::error::Error>> {
     use alo_shell::{Nested, Server};
     use smithay::{
         backend::input::{ButtonState, KeyState},
@@ -108,6 +108,9 @@ pub fn run(keyboard: bool) -> Result<(), Box<dyn std::error::Error>> {
                 let root = server.mapped_surfaces().next().cloned();
                 server.keyboard_focus(root.as_ref())?;
                 assert!(server.keyboard_key(28, KeyState::Pressed, 2)?);
+                if release {
+                    assert!(server.keyboard_key(28, KeyState::Released, 3)?);
+                }
             } else {
                 server.pointer_motion(1.0, 1.0, 1)?;
                 assert!(server.pointer_button(0x110, ButtonState::Pressed, 2)?);

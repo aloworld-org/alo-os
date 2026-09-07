@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Menus can now open when a person releases a key in the development compositor.**
+  The latest matched key release can authorize one popup on its focused parent;
+  newer key events, focus loss and reuse refuse. Synthetic cleanup releases do
+  not authorize menus. Three new real-client tests and WSLg release, press and
+  pointer grab checks pass. Pointer-release opening and the production desktop
+  remain unfinished. Exact evidence: `docs/autonomy/updates/native-popup-keyboard-release-initiation.md`.
+
 - **Keyboard-opened menus can now keep focus in the development compositor.**
   A key press delivered to the focused parent authorizes one popup grab; nested
   menus retain the active chain. Released, superseded, foreign and reused serials

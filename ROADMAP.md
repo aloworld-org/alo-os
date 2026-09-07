@@ -771,6 +771,16 @@ which made a completely consistent rule look like work being taken out of turn.
     parent leave, direct display and physical acceptance remain unfinished.
     No compositor box changes; supervisor publication gates remain pending.
 
+  - Keyboard-release popup initiation (2026-09-07): the latest matched real key
+    release authorizes one root grab on its focused parent; supersession,
+    focus/lifetime loss and consumption invalidate it. Synthetic releases refuse.
+    Three new socket tests pass (55 Linux shell tests); WSLg release initiation,
+    key-press and pointer-grab regressions pass. Exact checks and limitations:
+    `docs/autonomy/updates/native-popup-keyboard-release-initiation.md`.
+    Pointer-release initiation, repositioning/output constraints, parent leave,
+    direct display/input, session and physical acceptance remain unfinished.
+    No compositor box changes; supervisor full publication gates remain owed.
+
   - Keyboard-triggered popup grabs (2026-09-07): latest held parent key press
     authorizes one root grab; submenus inherit the active chain serial. Release,
     supersession, focus/lifetime loss and consumption prevent stale reuse. Three

@@ -19,12 +19,12 @@ pub(crate) struct Grab {
     pub(crate) root: WlSurface,
     /// Parent-before-child roles, including a pending initial configure.
     chain: Vec<WlSurface>,
-    /// Original active press authorizes submenus in this chain only.
+    /// Original input event authorizes submenus in this chain only.
     serial: Serial,
 }
 
 impl Surfaces {
-    /// Accept a pointer/key press on the parent, or the current chain's serial.
+    /// Accept a pointer press or key event on the parent, or the current chain serial.
     pub(crate) fn grab_popup(&mut self, role: PopupSurface, seat: WlSeat, serial: Serial) {
         self.prune();
         if self
@@ -57,9 +57,9 @@ impl Surfaces {
         let allowed = parent.as_ref().is_some_and(|parent| {
             if let Some(grab) = &self.popup_grab {
                 grab.chain.last() == Some(parent)
-                    && (serial == grab.serial || self.press_on(parent, serial))
+                    && (serial == grab.serial || self.input_on(parent, serial))
             } else {
-                self.mapped().any(|root| root == parent) && self.press_on(parent, serial)
+                self.mapped().any(|root| root == parent) && self.input_on(parent, serial)
             }
         });
         if !own_seat || !allowed {
@@ -69,7 +69,7 @@ impl Surfaces {
         }
         let Some(parent) = parent else { return };
         if let Some(keyboard) = self.keyboard.as_mut() {
-            keyboard.popup_press = None;
+            keyboard.popup_key = None;
         }
         // End the initiating implicit drag before changing recipients. Its later
         // physical release is unmatched and cannot land in the newly opened menu.
@@ -104,13 +104,14 @@ impl Surfaces {
         }
     }
 
-    /// Keyboard initiation is the latest delivered still-held press on this parent.
-    /// Release, focus changes and successful grabs invalidate it. No time heuristic
+    /// Keyboard initiation is the latest delivered real key event on this parent.
+    /// New key events, focus changes and successful grabs invalidate it. No time heuristic
     /// or client-provided timestamp can extend this authority.
-    fn press_on(&self, parent: &WlSurface, serial: Serial) -> bool {
-        self.keyboard.as_ref().is_some_and(|keyboard| {
-            keyboard.popup_press.as_ref() == Some(&(serial, parent.clone()))
-        }) || self.pointer_press_on(parent, serial)
+    fn input_on(&self, parent: &WlSurface, serial: Serial) -> bool {
+        self.keyboard
+            .as_ref()
+            .is_some_and(|keyboard| keyboard.popup_key.as_ref() == Some(&(serial, parent.clone())))
+            || self.pointer_press_on(parent, serial)
     }
 
     /// Require the actual active press serial and a surface in the parent tree.

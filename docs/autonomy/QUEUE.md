@@ -234,8 +234,24 @@ cross-references, not the primary names used in handoffs or status messages.
   foreign/stale serials, focus loss, unmap/remap and pending-grab replay refusal.
   WSLg keyboard-grab submission and pointer-grab regression pass; focused checks
   are recorded in `updates/native-popup-keyboard-grabs.md`.
-  **Next useful component:** release-triggered opening policy with bounded serial
-  lifetime, real-client happy/refusal tests and WSLg submission evidence.
+  **Selected keyboard-release popup initiation (desktop worker):** accept the
+  latest delivered real key release on the focused parent as a single-use root
+  grab serial. Any later accepted key event, focus/lifetime loss or consumption
+  invalidates it; synthetic cleanup never grants authority. Acceptance: actual
+  socket release serials, submenu inheritance, supersession/foreign/replay and
+  synthetic-release refusals; WSLg release-initiated submission, focused tests,
+  fmt, affected clippy and rustdoc. Pointer-release initiation remains separate.
+  **Completed keyboard-release initiation 2026-09-07:** latest matched real key
+  event authority, consumed once and invalidated by newer key events or focus/
+  lifetime loss. Three new real-client tests pass (55 Linux shell tests), covering
+  release/submenu success, duplicates, pending-grab replay, supersession, foreign
+  parents, unmap/remap and synthetic cleanup refusals. WSLg release initiation,
+  key-press and pointer-grab regressions pass; focused Windows/Linux fmt, tests,
+  clippy and Linux rustdoc pass. Exact checks and limits:
+  `updates/native-popup-keyboard-release-initiation.md`.
+  **Next useful component:** pointer-release popup initiation with bounded serial
+  lifetime and parent-tree ownership; real-client release, focus/motion/lifecycle,
+  replay and synthetic-cleanup tests plus WSLg submission evidence.
   Repositioning/output constraints, parent-leave backend, direct display and physical acceptance
   remain; item 33 is unchecked and supervisor full gates remain owed.
 

@@ -10516,3 +10516,49 @@ Supervisor full independent Windows/Linux/BPF publication gates have not run for
 this change. No staging, commit/push, worker/loop launch, dev-loop edit or changes
 to another repository. Reports arriving during publication wait for reconciliation
 next iteration; compositor and release remain unverified.
+
+
+---
+
+## 2026-09-07 - native popup keyboard-release initiation
+
+Single desktop worker; clean checkout at start. Read constitution, delivery order,
+shared-main ownership, updates README, current queue/state, shell feature/roadmap,
+ADRs 0001/0002 and invocation contract. All eight published reports were already
+referenced here; no unreconciled report or filesystem work was taken. Recorded the
+keyboard-release component and acceptance in QUEUE before implementing it.
+
+Integrated own report:
+`docs/autonomy/updates/native-popup-keyboard-release-initiation.md`.
+The latest matched real key release now authorizes one root popup on its focused
+parent. New key events, focus/lifetime loss and consumption invalidate authority;
+synthetic cleanup never creates it. Submenus inherit the active chain serial.
+The bounded latest-event policy avoids serial history and arbitrary timeouts.
+No new scope, agent/context interface, dependency, upstream patch or ADR exception.
+
+Three new real-client tests pass (55 Linux shell tests total, none ignored),
+covering release/submenu success, pending-grab replay, invalid/unmatched events,
+supersession, foreign/stale serials, focus loss, unmap/remap and synthetic-release
+refusal. Final focused Windows/Linux fmt, all-target clippy and tests pass;
+Windows excludes Linux protocol tests. Warnings-denied Linux rustdoc and example
+build pass. Initial test compile error used a nonexistent helper, corrected to
+the existing backend query; no failing test assertion or weakened lint/gate.
+Six-test Wayland wire run passes. Exact commands/log paths are in the report.
+
+WSLg release-initiation, key-press and pointer-grab fixtures all exit 0. Release
+wire trace records press serial 3, release serial 4 and popup grab with serial 4,
+then GLES callback/output enter, keyboard routing, outside dismissal/output leave,
+restored parent focus and disconnect cleanup. This is scripted submission/protocol
+evidence, not pixel readback or actual parent/physical input. WSLg socket and
+Wayland/EGL/XKB prerequisites verified; no dependency or shared kernel changes.
+Linux target remains /root/alo-os-target, separate from Claude's checkout.
+
+CHANGELOG, ROADMAP, QUEUE and COMPOSITOR record the completed component and limits.
+Diff reviewed and whitespace check passed. Next: pointer-release initiation,
+then repositioning/output constraints, parent-leave backend and direct display/
+input. Production session and all other unfinished v0.01 requirements remain.
+Physical laptop/GPU workstation and actual parent-input evidence remain owed.
+Supervisor full independent publication gates have not run for this change.
+No staging, commit/push, worker/loop launch, dev-loop edit or other-repository
+changes. Reports arriving during publication are reconciled next iteration.
+The compositor and release remain unverified.

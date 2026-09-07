@@ -41,10 +41,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     use alo_shell::{Nested, Server};
     if std::env::args().any(|arg| arg == "--grabs") {
-        return grab_check::run(false);
+        return grab_check::run(false, false);
     }
     if std::env::args().any(|arg| arg == "--keyboard-grabs") {
-        return grab_check::run(true);
+        return grab_check::run(true, false);
+    }
+    if std::env::args().any(|arg| arg == "--keyboard-release-grabs") {
+        return grab_check::run(true, true);
     }
     use std::{
         fs,

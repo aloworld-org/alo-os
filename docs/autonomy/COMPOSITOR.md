@@ -624,3 +624,28 @@ Release-triggered initiation remains the next component. Repositioning/output
 constraints, parent leave, direct display/input, session integration, full
 supervisor gates and physical acceptance remain owed. No adapter/agent contract
 changes; WSLg scripted submission is not physical input/display certification.
+
+
+## Keyboard-release popup initiation (2026-09-07)
+
+The keyboard serial policy now retains the latest delivered real key event,
+including a matched release. This supersedes the held-press-only policy above.
+A newer accepted key event, focus/lifetime loss or successful root initiation
+invalidates it. Invalid/duplicate input creates no event; synthetic cleanup
+releases never create authority. Submenus retain the active chain serial.
+The bounded single-event policy needs neither historical serial storage nor
+an arbitrary timeout. This is trusted backend routing, not an agent API.
+
+Three new real-client tests pass, including pending-grab replay, foreign-parent,
+unmap/remap, superseded event and synthetic-release refusal. Linux shell total:
+55 passing tests. `nested_check --keyboard-release-grabs` submits a real SHM popup
+through GLES and checks focus, outside-click dismissal, output leave and cleanup.
+The wire trace shows key press serial 3, release serial 4, then popup grab serial 4.
+Key-press and pointer-grab graphics regressions also pass. Full commands and local
+log paths: `updates/native-popup-keyboard-release-initiation.md`.
+
+Pointer-release initiation remains the next component. Repositioning/output
+constraints, parent-leave notifications, direct display/input and production
+session integration remain owed. Scripted WSLg submission is not pixel readback,
+actual parent input or physical laptop/GPU workstation certification. Supervisor
+full independent publication gates have not run for this change.

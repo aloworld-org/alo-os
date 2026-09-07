@@ -46,8 +46,8 @@ pub(crate) struct Keyboard {
     handle: KeyboardHandle<Surfaces>,
     /// Last accepted timestamp, reused for releases synthesized on focus loss.
     time: u32,
-    /// Latest real held press; consumed by popup initiation and never synthesized.
-    pub(crate) popup_press: Option<(Serial, WlSurface)>,
+    /// Latest delivered real key event; consumed by popup initiation, never synthesized.
+    pub(crate) popup_key: Option<(Serial, WlSurface)>,
 }
 
 impl Server {
@@ -71,7 +71,7 @@ impl Server {
             seat,
             handle,
             time: 0,
-            popup_press: None,
+            popup_key: None,
         });
         Ok(server)
     }
@@ -99,9 +99,10 @@ impl Server {
     ///
     /// Returns false for no focus, duplicate presses or unmatched releases.
     /// No keys are remembered while unfocused. Call with monotonic milliseconds.
-    /// The latest delivered press may initiate a popup on its focused parent;
+    /// The latest delivered press or release may initiate a popup on its focused parent;
     /// another accepted key event, a focus change or a successful grab invalidates
-    /// that serial. Releases and synthetic focus-cleanup events cannot initiate.
+    /// that serial. Synthetic focus-cleanup events cannot initiate. Only matched
+    /// releases are delivered, so a release without a real held key cannot authorize.
     pub fn keyboard_key(
         &mut self,
         code: u32,
@@ -133,11 +134,7 @@ impl Server {
         });
         if let Some(keyboard) = self.surfaces.keyboard.as_mut() {
             keyboard.time = time;
-            keyboard.popup_press = if state == KeyState::Pressed {
-                focus.map(|surface| (serial, surface))
-            } else {
-                None
-            };
+            keyboard.popup_key = focus.map(|surface| (serial, surface));
         }
         Ok(true)
     }
@@ -170,7 +167,7 @@ impl Surfaces {
             return Ok(());
         }
         if let Some(keyboard) = self.keyboard.as_mut() {
-            keyboard.popup_press = None;
+            keyboard.popup_key = None;
         }
         for code in handle.pressed_keys() {
             handle.input::<(), _>(
