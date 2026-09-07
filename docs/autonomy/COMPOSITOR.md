@@ -840,3 +840,22 @@ Next is full-mode atomic TEST_ONLY construction/refusal/cleanup. Successful DRM
 allocation and destruction, mapping/drawing, scanout/page flips, renderer pause
 ordering, direct input, production entry and all physical acceptance remain.
 No release/compositor checkbox changes; supervisor full publication gates pending.
+
+## Atomic display configuration validation (2026-09-07)
+
+`DisplayResources::allocate` now freezes a full-mode atomic plan before allocation,
+refusing incomplete/aliased required property maps and colliding object IDs.
+`test_and_release` consumes the candidate, submits TEST_ONLY | ALLOW_MODESET on
+its allocation descriptor and explicitly releases every resource on both results.
+Kernel refusal and every cleanup error survive. No active commit, rendering,
+reservation or retry. Caller must supply fresh discovery on the same session fd;
+public snapshot metadata is trusted and kernel compatibility is tested at ioctl.
+
+`atomic_output_check /dev/dri/cardN --test-only` provides the developer diagnostic;
+production remains scoped to DirectSession. Six new tests pass; Linux shell total
+109 checks including doctest. Windows/Linux affected fmt/clippy/tests, Linux docs/
+examples, real atomic ENOTTY and WSLg 115-surface regression pass. Exact commands:
+`updates/atomic-display-configuration-validation.md`. Successful DRM validation
+needs a DRM-equipped login/VM. Scanout ownership/page flips, renderer pause ordering,
+direct input, production entry, parent-leave and all physical acceptance remain.
+Supervisor full publication gates still owed; compositor/release stay unchecked.

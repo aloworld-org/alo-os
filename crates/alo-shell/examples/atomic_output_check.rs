@@ -6,14 +6,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
     let path = args
         .next()
-        .ok_or("usage: atomic_output_check /dev/dri/cardN [--allocate]")?;
-    let allocate = match args.next() {
+        .ok_or("usage: atomic_output_check /dev/dri/cardN [--allocate|--test-only]")?;
+    let option = args.next();
+    let test = option.as_deref().is_some_and(|arg| arg == "--test-only");
+    let allocate = match option {
         None => false,
-        Some(arg) if arg == "--allocate" => true,
-        Some(_) => return Err("usage: atomic_output_check /dev/dri/cardN [--allocate]".into()),
+        Some(arg) if arg == "--allocate" || arg == "--test-only" => true,
+        Some(_) => {
+            return Err(
+                "usage: atomic_output_check /dev/dri/cardN [--allocate|--test-only]".into(),
+            );
+        }
     };
     if args.next().is_some() {
-        return Err("usage: atomic_output_check /dev/dri/cardN [--allocate]".into());
+        return Err("usage: atomic_output_check /dev/dri/cardN [--allocate|--test-only]".into());
     }
     // Developer fixture only. Opening a card can implicitly acquire DRM master;
     // production must use DirectSession::with_device instead of this direct open.
@@ -33,7 +39,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             u32::from(resources.framebuffer()),
             resources.mode_blob(),
         );
-        resources.release()?;
+        if test {
+            resources.test_and_release()?;
+            println!("atomic TEST_ONLY accepted; no scanout change or reservation");
+        } else {
+            resources.release()?;
+        }
         println!("all display resources released");
     }
     Ok(())

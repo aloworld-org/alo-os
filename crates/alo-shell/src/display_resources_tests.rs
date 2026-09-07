@@ -317,3 +317,66 @@ fn real_non_drm_allocation_refuses_without_closing_callers_descriptor()
     eprintln!("real CREATE_DUMB refused ENOTTY (25); borrowed descriptor survived");
     Ok(())
 }
+
+#[test]
+fn atomic_validation_always_retires_resources_and_keeps_all_errors()
+-> Result<(), Box<dyn std::error::Error>> {
+    for refuse in [false, true] {
+        for cleanup in [false, true] {
+            let failures = if cleanup {
+                vec!["destroy blob", "destroy framebuffer", "destroy buffer"]
+            } else {
+                vec![]
+            };
+            let (device, log) = fixture(&failures, 0);
+            let (mut owner, _, _) = allocate(device)?;
+            let result = owner.test_and_release(|device| {
+                device.call("test")?;
+                if refuse {
+                    Err(io::Error::from_raw_os_error(22))
+                } else {
+                    Ok(())
+                }
+            });
+            if refuse || cleanup {
+                let error = result.err().ok_or("failure lost")?;
+                assert_eq!(
+                    error.failure.stage,
+                    if refuse {
+                        "atomic TEST_ONLY"
+                    } else {
+                        "destroy mode blob"
+                    }
+                );
+                assert_eq!(
+                    error.failure.source.raw_os_error(),
+                    Some(if refuse { 22 } else { 5 })
+                );
+                assert_eq!(
+                    error.cleanup.len(),
+                    if cleanup {
+                        if refuse { 3 } else { 2 }
+                    } else {
+                        0
+                    }
+                );
+            } else {
+                result?;
+            }
+            drop(owner);
+            assert_eq!(
+                log.borrow().calls,
+                [
+                    "buffer",
+                    "framebuffer",
+                    "blob",
+                    "test",
+                    "destroy blob",
+                    "destroy framebuffer",
+                    "destroy buffer"
+                ]
+            );
+        }
+    }
+    Ok(())
+}

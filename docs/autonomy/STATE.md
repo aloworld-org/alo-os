@@ -11041,3 +11041,63 @@ Supervisor full Windows/Linux/BPF publication gates have not run for this change
 Source/tests/documentation reviewed and git diff --check passes. No staging,
 commit, push, dev-loop edits, delegation, other-checkout modification or physical
 disk installation. Ready for supervisor integration as one reviewable step.
+
+---
+
+## 2026-09-07 - atomic display configuration validation
+
+Single desktop worker, initial tree clean, supervisor owns publication. Read
+constitution, delivery order, ownership/report rules, current queue/state, native
+compositor feature/roadmap, ADRs 0001/0002, agent context contract and hardware
+acceptance. Every published report was already referenced at iteration start;
+no unreconciled contributor reports, previous evidence/limits retained. Reports
+arriving during publication reconcile next iteration. No Claude assignment taken.
+
+Own report integrated: `docs/autonomy/updates/atomic-display-configuration-validation.md`.
+Selected the component in QUEUE before coding. AtomicPlan freezes thirteen full-
+mode properties before allocation, with owned framebuffer/blob late binding and
+16.16 source dimensions. Consuming test_and_release submits only TEST_ONLY |
+ALLOW_MODESET on the resource descriptor; acceptance and refusal both clean up,
+retaining original errno and all cleanup failures. No active modeset or reservation.
+The native trusted shell API still requires fresh same-descriptor discovery;
+caller-fabricated metadata/upstream raw parser containment is not claimed.
+Developer diagnostic adds --test-only. No agent/adapter public contract changes.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. All final commands exit 0; Linux tests excluded.
+Ubuntu commands with PATH=/root/.cargo/bin:/usr/bin:/bin and
+CARGO_TARGET_DIR=/root/alo-os-target: cargo test -p alo-shell --lib --locked
+(41 pass); cargo fmt --all --check; cargo clippy -p alo-shell --all-targets
+--locked -- -D warnings; cargo test -p alo-shell --locked (41 unit + 64 lifecycle
++ 3 socket + 1 lifetime doctest = 109 checks, zero failed/ignored);
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. All exit 0. Initial fmt checks on
+both platforms requested another formatting pass on expanded diagnostic code;
+fixed, no test failures/lint exemptions/gate changes. Six new tests cover exact
+routing, geometry, snapshot mutation, invalid schema, fixed flags/single ioctl,
+EINVAL/EACCES/ENODEV, and validation crossed with simultaneous cleanup errors.
+
+Additional integration: cargo test -p alo-shell --lib real_atomic_ioctl --locked
+-- --nocapture exits 0, actual atomic TEST_ONLY ENOTTY (25), caller fd survives.
+timeout 15s atomic_output_check /dev/dri/card0 --test-only refuses ENOENT/exit 1;
+/dev/null --unknown refuses usage/exit 1. WAYLAND_DEBUG=1 timeout 30s nested_check
+--popups --cursor exits 0, 115 client surfaces with popup/reactive/cursor callbacks,
+unmap/remap, isolated refusal and disconnect verified. Logs and exact WSL commands
+in own report, .git/alo-atomic-test-{linux,refusal,absent-card,argument,wslg}.log.
+No pixel readback, successful DRM configuration or physical input measured.
+
+WSLg socket/native pkg-config prerequisites verified; /dev/dri absent, no packages
+needed. Optional process inspection failed due shell pipe quoting; no verification
+claim relies on it. No shared kernel/BPF/cgroup/service mutation, other checkout
+access, worker launch, staging, commit, push, dev-loop edits or physical install.
+Source/new tests/tracked diff inspected and git diff --check passes. CHANGELOG,
+ROADMAP, QUEUE and COMPOSITOR updated; full supervisor gates have not run here.
+
+Next: initialized scanout buffer, active commit ownership/page-flip retirement;
+then renderer pause ordering, direct input and production session entry. Existing
+parent-leave and libseat disable-order limitations persist. DRM success needs a
+DRM-equipped development login/VM; certified business laptop and >=24 GB GPU
+workstation physical display/input, session switching, suspend/resume and all
+hardware checklist records remain owed. Full v0.01 scope retained; compositor
+and release unchecked. Ready for supervisor integration as one reviewable step.

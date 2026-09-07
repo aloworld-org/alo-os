@@ -718,6 +718,15 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Atomic configuration validation (2026-09-07): immutable full-mode request,
+    TEST_ONLY | ALLOW_MODESET and explicit cleanup on acceptance/refusal. Six new
+    tests pass (109 Linux shell checks including doctest); Windows/Linux affected
+    fmt/clippy/tests, Linux rustdoc/examples and WSLg 115-surface regression pass.
+    Real atomic ioctl ENOTTY/fd survival and absent-card/usage refusals verified.
+    Evidence: `docs/autonomy/updates/atomic-display-configuration-validation.md`.
+    Successful DRM validation needs a DRM-equipped login/VM. Scanout/page flips,
+    renderer pause ordering, direct input, production entry and all physical
+    acceptance remain; full supervisor publication gates still owed.
   - Direct-display resource ownership (2026-09-07): borrowed-device full-mode
     XRGB8888 buffer/framebuffer and exact mode-blob lifetime, partial-allocation
     unwind and complete cleanup-error reporting. Eight new unit tests plus a

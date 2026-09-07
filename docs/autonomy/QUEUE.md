@@ -58,6 +58,26 @@ No worker, shared kernel test or publication process was launched here.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected atomic configuration validation component (desktop worker):** build
+  the complete connector/CRTC/primary-plane full-mode request from an immutable
+  allocation-time snapshot; submit only TEST_ONLY | ALLOW_MODESET and explicitly
+  release all resources on success or refusal, preserving cleanup failures.
+  Acceptance: exact property/16.16 rectangle tests, malformed snapshot refusal,
+  injected kernel/cleanup failures, real atomic ioctl ENOTTY with fd survival,
+  WSLg regression, affected fmt/clippy/tests/rustdoc. Successful DRM validation,
+  scanout/page flips and physical acceptance remain separately owed.
+  **Completed atomic configuration validation 2026-09-07:** frozen thirteen-
+  property full-mode plan, TEST_ONLY | ALLOW_MODESET, and consuming cleanup on
+  success/refusal with original and cleanup errors retained. Six new tests pass
+  (109 Linux shell checks including doctest). Windows/Linux affected fmt/clippy/
+  tests, Linux rustdoc/examples, real atomic ioctl ENOTTY/fd survival, absent-card
+  and usage refusal, and WSLg 115-surface regression pass. Report:
+  `updates/atomic-display-configuration-validation.md`. Successful DRM validation
+  and resource retirement are unmeasured; supervisor full publication gates owed.
+  Next executable component: initialized scanout buffer and active atomic commit
+  ownership/page-flip retirement, with injected commit failures and cleanup tests;
+  then renderer pause ordering, direct input and production entry. Parent-leave
+  and libseat disable-order limits persist; all physical acceptance remains.
   **Selected display-resource ownership component (desktop worker):** allocate
   one full-mode XRGB8888 dumb buffer, register its framebuffer and own the exact
   mode blob on a borrowed session descriptor. Validate dimensions/format/layout;

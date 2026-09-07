@@ -1,6 +1,6 @@
 //! Owned, unbound KMS resources; allocation never changes scanout.
 
-use crate::{AtomicOutput, drm_inventory::Inventory};
+use crate::{AtomicOutput, atomic_test::AtomicPlan, drm_inventory::Inventory};
 use drm::{
     buffer::{Buffer, DrmFourcc},
     control::{Mode, framebuffer},
@@ -35,7 +35,7 @@ pub struct ResourceError {
 
 /// A full-mode XRGB8888 dumb framebuffer and exact mode blob on a borrowed device.
 ///
-/// These resources are unbound: no test commit, modeset, mapping or drawing occurs.
+/// Allocation leaves these resources unbound; optional test-and-release never changes scanout.
 /// Use within `DirectSession::with_device`, with a fresh discovery from that same
 /// descriptor. The borrow prevents resources outliving the session descriptor.
 /// Handles are valid only until release/drop, and must never be bound to scanout:
@@ -54,6 +54,8 @@ pub struct ResourceError {
 pub struct DisplayResources<'fd> {
     /// Cleanup owner and borrowed ioctl transport.
     owned: Allocation<Inventory<'fd>>,
+    /// Frozen request prevents later caller mutation from changing the tested mode.
+    plan: AtomicPlan,
     /// Registered framebuffer, kept private against accidental ownership transfer.
     framebuffer: framebuffer::Handle,
     /// Exact advertised timing blob, not reconstructed from resolution.
@@ -66,15 +68,34 @@ impl<'fd> DisplayResources<'fd> {
     /// Supports a linear dumb allocation only. Format advertisement is necessary,
     /// not proof of compatibility: kernel atomic TEST_ONLY is still required.
     pub fn allocate(fd: BorrowedFd<'fd>, output: &AtomicOutput) -> Result<Self, ResourceError> {
+        let plan = AtomicPlan::new(output).map_err(|source| ResourceError {
+            failure: ResourceFailure {
+                stage: "atomic request schema",
+                source,
+            },
+            cleanup: Vec::new(),
+        })?;
         let (owned, framebuffer, mode_blob) =
             Allocation::allocate(Inventory(fd), &output.output.mode, &output.formats)?;
         Ok(Self {
             owned,
+            plan,
             framebuffer,
             mode_blob,
         })
     }
 
+    /// Test the frozen full-mode candidate, then release every owned resource.
+    ///
+    /// Uses only TEST_ONLY | ALLOW_MODESET: no scanout changes or page-flip event.
+    /// Success is an instantaneous kernel validation, never a reservation or proof
+    /// that a later modeset succeeds. Use a fresh discovery on this same session
+    /// descriptor; pause/hotplug invalidates it. Both success and refusal consume
+    /// this candidate. Cleanup failures are retained and require device retirement.
+    pub fn test_and_release(mut self) -> Result<(), ResourceError> {
+        self.owned
+            .test_and_release(|device| self.plan.test(device.0, self.framebuffer, self.mode_blob))
+    }
     /// Framebuffer ID for a subsequent TEST_ONLY request on this same descriptor.
     pub fn framebuffer(&self) -> framebuffer::Handle {
         self.framebuffer
@@ -200,6 +221,20 @@ impl<D: ResourceDevice> Allocation<D> {
         errors
     }
 
+    /// Retain ioctl refusal before all release errors, with no retry or fallback.
+    fn test_and_release(
+        &mut self,
+        test: impl FnOnce(&D) -> io::Result<()>,
+    ) -> Result<(), ResourceError> {
+        let result = operation("atomic TEST_ONLY", test(&self.device));
+        match result {
+            Ok(()) => self.release(),
+            Err(failure) => Err(ResourceError {
+                failure,
+                cleanup: self.cleanup(),
+            }),
+        }
+    }
     /// Surface all errors from an explicit release.
     fn release(&mut self) -> Result<(), ResourceError> {
         let mut errors = self.cleanup().into_iter();

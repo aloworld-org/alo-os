@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display preparation can now ask the kernel to validate a complete
+  display configuration without changing the screen.** The frozen full-mode
+  request uses owned resources, then releases all of them on acceptance or
+  refusal while retaining cleanup errors. Six new tests pass; successful DRM
+  validation and physical scanout remain unmeasured on this WSL host.
+  Evidence: `docs/autonomy/updates/atomic-display-configuration-validation.md`.
+
 - **Direct-display preparation now owns and cleans up its graphics resources.**
   A full-mode framebuffer and exact timing blob unwind safely on allocation
   refusal, with cleanup failures retained for diagnosis. Eight new unit tests
