@@ -48,9 +48,20 @@ pub fn on_main_and_clean_but_for(at: &Path, named: &[String]) -> Result<(), Stri
         ));
     }
     let changed = git(at, &["status", "--porcelain"])?;
+    // **Not `line[3..]`, and not a bare `split_once`.** Porcelain writes two
+    // status columns then a space, so counting three characters looks right —
+    // but the whole output is trimmed by the time it arrives here, which eats
+    // the leading space of the first line and takes the first letter of its
+    // path with it. Splitting at the first space fixes that and breaks the
+    // other lines, because an unstaged one *starts* with a space and the split
+    // lands at nothing. Trimming each line first and then dropping its status
+    // field is the one reading that survives all four spellings — ` M`, `M `,
+    // `MM` and `??`. Both mistakes were made here and both were found by
+    // running the loop rather than by reading it.
     let unaccounted: Vec<&str> = changed
         .lines()
-        .filter_map(|line| line.get(3..))
+        .filter_map(|line| line.trim_start().split_once(' '))
+        .map(|(_, path)| path.trim_start())
         .filter(|path| !named.iter().any(|named| named == path))
         .collect();
     if !unaccounted.is_empty() {

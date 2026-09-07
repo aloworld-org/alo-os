@@ -130,11 +130,30 @@ Errands and every other process on the machine are not turns and are unaffected.
   will carry it, naming what the kernel can decide, what it cannot, and which
   half of law 1 each layer keeps. An explicit statement that this does not make
   the kernel the policy engine.
-- **Evidence:** the statement itself, plus a reproduction showing a bound turn
-  can currently open an arbitrary socket, run against the real loaded boundary.
-- **Approval needed if:** the policy above turns out to require the daemon to
-  write anything the current `Bounds` map cannot carry, or to change what
-  `Departing` means. Stop and ask rather than widening either.
+- **Evidence:** the statement itself. The reproduction is task 2.
+- **Approval needed if:** the policy turns out to require the daemon to write
+  anything the current `Bounds` map cannot carry, or to change what `Departing`
+  means. Stop and ask rather than widening either.
+
+**Done, 2026-09-07.** The statement is `crates/alo-bounding/src/lib.rs`, under
+*What this boundary can decide about the network, and what it cannot*, and it
+settles the question the task was written to ask:
+
+> A turn opens no socket unless the person has been shown that it is about to.
+
+`alo-egress`'s policy — provider, region — **cannot** be enforced in the kernel,
+and the statement says so plainly rather than approximating it: a provider is a
+name resolved through DNS and a region is a fact about a company, and a
+programme on a socket sees a control group, a protocol and an address. A
+kernel-side guess at either would be a second policy that disagrees with the
+first unpredictably. The kernel is not the policy engine.
+
+What is enforceable is default-deny for turns, attributed by the control group
+the boundary already reads, with the daemon writing a turn's permission to leave
+exactly as it writes the places a turn may reach — and the programme still
+writing nothing down. **No approval was needed:** no grant widens, no capability
+is added, `Departing` keeps its meaning, and a turn can still open exactly the
+sockets the person was shown.
 
 ### 2. Reproducing unrestricted network access from inside a bound turn
 

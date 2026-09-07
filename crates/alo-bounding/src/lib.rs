@@ -130,6 +130,61 @@
 //! daemon's, which is the division rather than an accident: what a person's own
 //! service can reach is the map it writes, and the map of fields is one it
 //! cannot open at all.
+//!
+//! # What this boundary can decide about the network, and what it cannot
+//!
+//! ADR 0013 gives this crate a second job it has not started: *which sockets
+//! may be opened, and attribution of every one to the turn that caused it.* The
+//! promise it answers is the egress indicator's own remaining half — **the
+//! enforcement at the network boundary, without which all of this describes
+//! only the code that asked.** This section is the policy, written before a
+//! hook is chosen, because the obvious reading does not survive contact with
+//! the kernel.
+//!
+//! **`alo-egress`'s policy cannot be enforced here, and pretending otherwise
+//! would be the failure.** That policy decides by *provider* and by *region*: a
+//! question may be answered in the building, on this machine, or in a named
+//! part of the world. A programme on a socket sees a control group, a protocol
+//! and an address. A provider is a name somebody resolves through DNS and a
+//! region is a fact about a company — neither is visible where the enforcement
+//! would sit, and a kernel-side approximation of them (an address list, a guess
+//! from a hostname seen earlier) would be a second policy disagreeing with the
+//! first in ways nobody could predict. **The kernel is not the policy engine
+//! and this crate will not make it one.**
+//!
+//! What *is* enforceable is narrower and stronger, and it is what ADR 0013
+//! actually names:
+//!
+//! > **A turn opens no socket unless the person has been shown that it is
+//! > about to.**
+//!
+//! `alo-egress` already makes that a thing with a type: an
+//! `alo_egress::Departing` cannot be obtained without `Indicator::beginning`
+//! having asked the policy and shown the person, and nothing may open a
+//! connection without one. Today that is a promise the daemon keeps. The
+//! enforcement is the same promise with the kernel behind it — the daemon
+//! writes a turn's permission to leave where a programme can read it, exactly
+//! as it writes the places a turn may reach, and a turn with nothing written
+//! for it is refused by the machine rather than by our own code.
+//!
+//! Three things follow, and they are the whole of the policy:
+//!
+//! - **Default deny, and for turns only.** A bound turn with no departure
+//!   written opens no socket. Every other process on this machine — a person's
+//!   browser, their mail client, this service's own errands, which are not
+//!   turns — is unaffected, exactly as it is for files.
+//! - **Attribution is the same question as permission.** What the kernel is
+//!   asked is *which turn is this*, and it already knows: the control group. No
+//!   second mechanism, and nothing new for the daemon to keep in step with.
+//! - **Nothing is written down by the programme.** ADR 0015's *the LSM decides
+//!   and forgets* is not relaxed for sockets. What a person is shown is what
+//!   `alo-egress` shows them; the kernel's part is refusing, not recording.
+//!
+//! **This is not a widening.** No grant covers more, no agent gains a
+//! capability, and a turn that could open a socket before can still open
+//! exactly the ones the person was shown. What changes is that a verb with a
+//! bug in it can no longer open one the person was not shown — the same floor
+//! the file hooks are, under the other half of law 1.
 
 #![cfg(target_os = "linux")]
 
