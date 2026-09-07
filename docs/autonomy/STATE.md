@@ -10976,3 +10976,68 @@ or VM; all named laptop/GPU workstation physical acceptance remains owed. Releas
 and compositor unchecked; other v0.01 scope retained. Full supervisor publication
 gates have not run for this change. No staging, commit, push, dev-loop edit,
 delegation, other-checkout changes or physical disk install. Ready for integration.
+
+---
+
+## 2026-09-07 - direct-display resource ownership
+
+Single desktop worker; initial working tree clean, supervisor owns publication.
+Read constitution, delivery order, ownership/report rules, current queue/state,
+compositor feature/roadmap, ADRs 0001/0002, application-adapter/agent boundaries
+and hardware acceptance. Every published report was already referenced in STATE
+at iteration start; no unreconciled contributor report. Existing evidence and
+limits retained; reports arriving during publication reconcile next iteration.
+No Claude assignment taken or other worker launched.
+
+Own report integrated: `docs/autonomy/updates/direct-display-resource-ownership.md`.
+Selected this complete allocation/lifetime component in QUEUE before coding;
+atomic TEST_ONLY remains the next component, not a claimed completed feature.
+Owns one full-mode XRGB8888 dumb buffer, framebuffer and exact mode blob on a
+borrowed descriptor; validates format/dimensions/exposed layout and refuses
+invalid blob IDs. Partial allocation cleanup and explicit release retain every
+failure and continue remaining cleanup. Drop is best effort; release failure
+requires device retirement. New diagnostic --allocate uses explicit release.
+No pixel mapping, modeset, active scanout, new dependency or agent surface.
+
+Final executed Windows commands: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. All exit 0; Windows excludes Linux tests.
+Linux commands use env PATH=/root/.cargo/bin:/usr/bin:/bin and
+CARGO_TARGET_DIR=/root/alo-os-target: initial focused cargo test -p alo-shell
+--lib display_resources --locked passed seven tests; final cargo test -p alo-shell
+--locked passed 35 unit + 64 lifecycle + 3 socket tests and one compile-fail
+doctest (103 total, none ignored/failed). Eight new unit cases cover lifetimes,
+exact modes, every allocation-stage failure, malformed metadata, simultaneous
+cleanup errors and real ENOTTY. The doctest prevents descriptor lifetime escape.
+Final Linux affected all-target --locked clippy -D warnings, workspace fmt check,
+RUSTDOCFLAGS=-Dwarnings shell --no-deps --locked rustdoc and shell --examples
+--locked build pass. Initial clippy flagged three collapsible cleanup conditions;
+corrected without lint allowances. No test failures or repeated failing gates.
+
+Additional integration: focused real_non_drm_allocation_refuses --nocapture
+exercises real CREATE_DUMB, asserts ENOTTY (25), caller fd survives, exit 0.
+atomic_output_check /dev/dri/card0 --allocate refuses absent card ENOENT (2),
+expected exit 1; /dev/null --unknown refuses usage before opening, expected 1.
+Nested WSLg --popups --cursor with WAYLAND_DEBUG=1 exits 0 and submits 115 client
+surfaces, verifies popup/reactive/cursor callbacks, unmap/remap, isolated refusal
+and disconnect. Logs .git/alo-display-resources-{refusal,absent-card,argument,wslg}.log.
+No pixel readback, successful allocation/destruction or physical input measured.
+
+WSLg socket and native pkg-config dependencies verified (libseat 0.9.2, udev 259,
+GBM 26.0.8-1ubuntu0.3, EGL 1.5, xkbcommon 1.13.1); /dev/dri absent. No packages
+needed, no shared kernel/BPF/cgroup/service changes. Source-inspected upstream
+handle conversion and hidden buffer-length limits recorded in quirks; no raw
+kernel fault containment claim. API rustdoc and COMPOSITOR updated; public agent
+and adapter contracts unchanged. Shared changelog, roadmap, queue and this journal
+retain the entire v0.01 scope and unchecked compositor/release status.
+
+Next: full-mode atomic TEST_ONLY request construction and validation/refusal with
+owned-resource cleanup; then scanout/page flips, renderer pause ordering, direct
+input and production entry. Parent-leave and libseat disable-order limits persist.
+DRM allocation/test success needs a DRM-equipped VM/development login; certified
+business laptop and 24-GB-or-larger GPU workstation physical display, input,
+session switching, suspend/resume and all checklist records remain owed.
+Supervisor full Windows/Linux/BPF publication gates have not run for this change.
+Source/tests/documentation reviewed and git diff --check passes. No staging,
+commit, push, dev-loop edits, delegation, other-checkout modification or physical
+disk installation. Ready for supervisor integration as one reviewable step.

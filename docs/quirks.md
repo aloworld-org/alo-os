@@ -23,6 +23,22 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ---
 
+## DRM allocation wrappers assume valid kernel handles (2026-09-07)
+
+Pinned drm-rs 0.14.1 `create_dumb_buffer` and `add_framebuffer` unwrap the
+conversion of returned kernel IDs to nonzero handles. `DumbBuffer` exposes
+size/format/pitch but keeps the allocation length private. The shell validates
+exposed metadata before registration and does not map or access pixels in this
+component; it cannot validate the hidden capacity or contain a zero-handle panic
+inside the wrapper. Mode is a transparent wrapper over the kernel timing struct
+and is passed intact to upstream blob creation. These are source-inspected
+limits, not reproduced malformed-kernel failures. No engine patch or unsafe
+repository code was added. Explicit resource release reports every failed ioctl;
+Drop can only attempt best-effort cleanup. A cleanup failure requires retiring
+the device, with final file-description close as the remaining cleanup boundary.
+Real allocation/destruction still needs a DRM-equipped environment. See
+`autonomy/updates/direct-display-resource-ownership.md`.
+
 ## Atomic DRM property parsing trusts raw kernel metadata (2026-09-07)
 
 Direct-display schema discovery rejects missing/duplicate properties, wrong

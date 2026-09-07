@@ -718,6 +718,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Direct-display resource ownership (2026-09-07): borrowed-device full-mode
+    XRGB8888 buffer/framebuffer and exact mode-blob lifetime, partial-allocation
+    unwind and complete cleanup-error reporting. Eight new unit tests plus a
+    lifetime doctest pass (103 Linux shell checks total). Windows/Linux affected
+    fmt/clippy/tests, Linux rustdoc/examples and WSLg 115-surface regression pass;
+    real CREATE_DUMB ENOTTY and absent-card ENOENT refusals verified. Evidence:
+    `docs/autonomy/updates/direct-display-resource-ownership.md`. Successful DRM
+    allocation, atomic TEST_ONLY, scanout/page flips, renderer pause ordering,
+    direct input and all physical acceptance remain owed. No compositor tick;
+    supervisor full publication gates pending.
   - Atomic display property discovery (2026-09-07): per-descriptor atomic and
     universal-plane negotiation, deterministic primary-plane selection and
     standard property schema checks. Framebuffer/blob ownership, kernel TEST_ONLY,

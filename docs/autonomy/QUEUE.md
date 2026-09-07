@@ -58,6 +58,25 @@ No worker, shared kernel test or publication process was launched here.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected display-resource ownership component (desktop worker):** allocate
+  one full-mode XRGB8888 dumb buffer, register its framebuffer and own the exact
+  mode blob on a borrowed session descriptor. Validate dimensions/format/layout;
+  unwind partial allocation and report every cleanup error. Acceptance: injected
+  allocation/cleanup failures, happy lifetime/drop and malformed-layout tests,
+  real non-DRM allocation refusal with descriptor survival, WSLg regression,
+  fmt, affected clippy/tests and rustdoc. This complete allocation component
+  precedes atomic TEST_ONLY construction; no scanout or feature completion claim.
+  **Completed resource ownership 2026-09-07:** `DisplayResources` owns unbound
+  buffer/framebuffer/blob lifetimes, validates candidate metadata and unwinds
+  partial allocation while preserving every cleanup failure. Eight new unit
+  tests and one lifetime doctest pass (103 Linux shell checks total). Affected
+  Windows/Linux fmt/clippy/tests, Linux rustdoc/examples and WSLg 115-surface
+  regression pass; real CREATE_DUMB ENOTTY and absent-card ENOENT refusals verified.
+  Report: `updates/direct-display-resource-ownership.md`. Successful DRM resource
+  allocation/release is unmeasured. Next executable component: full-mode atomic
+  TEST_ONLY request construction, validation/refusal and resource cleanup; then
+  scanout/page flips, renderer pause ordering, direct input and production entry.
+  All physical acceptance and supervisor full publication gates remain owed.
   **Selected atomic property discovery component (desktop worker):** enable
   per-descriptor atomic/universal-plane capabilities, discover a fresh output,
   select a compatible primary plane and validate required connector/CRTC/plane

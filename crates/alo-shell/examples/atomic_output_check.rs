@@ -1,4 +1,4 @@
-//! Explicit device diagnostic: capability/schema discovery, never a modeset.
+//! Explicit device diagnostic: schema discovery and optional unbound allocation.
 
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -6,9 +6,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
     let path = args
         .next()
-        .ok_or("usage: atomic_output_check /dev/dri/cardN")?;
+        .ok_or("usage: atomic_output_check /dev/dri/cardN [--allocate]")?;
+    let allocate = match args.next() {
+        None => false,
+        Some(arg) if arg == "--allocate" => true,
+        Some(_) => return Err("usage: atomic_output_check /dev/dri/cardN [--allocate]".into()),
+    };
     if args.next().is_some() {
-        return Err("usage: atomic_output_check /dev/dri/cardN".into());
+        return Err("usage: atomic_output_check /dev/dri/cardN [--allocate]".into());
     }
     // Developer fixture only. Opening a card can implicitly acquire DRM master;
     // production must use DirectSession::with_device instead of this direct open.
@@ -21,6 +26,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         u32::from(result.plane),
         result.formats
     );
+    if allocate {
+        let resources = alo_shell::DisplayResources::allocate(file.as_fd(), &result)?;
+        println!(
+            "unbound framebuffer={} mode_blob={}; no mapping, atomic test or modeset",
+            u32::from(resources.framebuffer()),
+            resources.mode_blob(),
+        );
+        resources.release()?;
+        println!("all display resources released");
+    }
     Ok(())
 }
 

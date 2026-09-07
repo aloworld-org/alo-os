@@ -819,3 +819,24 @@ refuses ENOTTY; WSL card is absent (ENOENT). WSLg popup/cursor regression submit
 successful DRM/hardware evidence: `updates/atomic-display-property-discovery.md`.
 Full supervisor publication gates remain pending. No production compositor or
 hardware checkbox is completed by this component.
+
+## Direct-display resource ownership (2026-09-07)
+
+`DisplayResources::allocate` prepares one unbound XRGB8888 dumb framebuffer and
+an exact advertised mode blob inside the session descriptor's lifetime. Explicit
+`release` preserves all cleanup failures; partial allocation unwinds in reverse
+order. These handles are for subsequent TEST_ONLY use, never active scanout.
+`atomic_output_check /dev/dri/cardN --allocate` exercises discovery, allocation
+and explicit cleanup in a developer login. Production must use `DirectSession`.
+
+Eight new unit cases plus a compile-fail lifetime doctest pass; Linux shell total
+is 102 tests plus one doctest. Windows/Linux affected fmt/clippy/tests, Linux
+rustdoc/examples and WSLg 115-surface regression pass. Real CREATE_DUMB on a
+non-DRM fd refuses ENOTTY without closing it; absent card and invalid diagnostic
+arguments refuse. Exact commands, logs and upstream allocation-wrapper limits:
+`updates/direct-display-resource-ownership.md` and `../quirks.md`.
+
+Next is full-mode atomic TEST_ONLY construction/refusal/cleanup. Successful DRM
+allocation and destruction, mapping/drawing, scanout/page flips, renderer pause
+ordering, direct input, production entry and all physical acceptance remain.
+No release/compositor checkbox changes; supervisor full publication gates pending.

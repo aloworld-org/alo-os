@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display preparation now owns and cleans up its graphics resources.**
+  A full-mode framebuffer and exact timing blob unwind safely on allocation
+  refusal, with cleanup failures retained for diagnosis. Eight new unit tests
+  and a descriptor-lifetime doctest pass. This prepares kernel configuration
+  testing; atomic TEST_ONLY, scanout and physical acceptance remain unfinished.
+  Evidence: `docs/autonomy/updates/direct-display-resource-ownership.md`.
+
 - **Direct-display discovery now checks the atomic modesetting interface.**
   It negotiates device capabilities, selects a compatible primary plane and
   refuses missing, ambiguous or unusable standard properties before configuration.
