@@ -58,6 +58,26 @@ No worker, shared kernel test or publication process was launched here.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected scanout-buffer initialization component (desktop worker):** map
+  and clear the entire dumb allocation to black before framebuffer registration,
+  including stride padding and allocation tail. Refuse invalid/short mappings
+  and preserve mapping plus cleanup failures. Acceptance: padded-memory happy
+  path, malformed mapping, map failure and release-order tests, real ioctl
+  refusal/fd survival, WSLg regression, affected fmt/clippy/tests and rustdoc.
+  This completes initialization only; active commits/page-flip retirement,
+  renderer pause ordering, direct input and physical acceptance remain owed.
+  **Completed scanout-buffer initialization 2026-09-07:** clears the entire mapped
+  allocation before framebuffer registration and unmaps before registration or
+  unwind. Short/malformed mappings and mapping failures refuse with cleanup errors
+  retained. Five new tests pass (114 Linux shell checks including doctest).
+  Windows/Linux affected fmt/clippy/tests, Linux rustdoc/examples, real MAP_DUMB
+  ENOTTY/fd survival, absent-card/usage refusal and WSLg regression pass. Report:
+  `updates/scanout-buffer-initialization.md`. Successful DRM memory access remains
+  unmeasured; pinned drm-rs unmap panic boundary is recorded in quirks.
+  Next executable component: active atomic commit ownership/page-flip retirement
+  of initialized buffers, with commit/refusal/cleanup tests; then renderer pause
+  ordering, direct input and production entry. Parent-leave/libseat limits persist;
+  supervisor full gates and all physical acceptance remain owed.
   **Selected atomic configuration validation component (desktop worker):** build
   the complete connector/CRTC/primary-plane full-mode request from an immutable
   allocation-time snapshot; submit only TEST_ONLY | ALLOW_MODESET and explicitly

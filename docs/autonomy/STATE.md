@@ -11101,3 +11101,71 @@ DRM-equipped development login/VM; certified business laptop and >=24 GB GPU
 workstation physical display/input, session switching, suspend/resume and all
 hardware checklist records remain owed. Full v0.01 scope retained; compositor
 and release unchecked. Ready for supervisor integration as one reviewable step.
+
+
+---
+
+## 2026-09-07 - scanout-buffer initialization
+
+Single desktop worker, initial working tree clean; supervisor owns publication.
+Read constitution, delivery order, ownership/report rules, current queue/state,
+native compositor feature/roadmap, ADRs 0001/0002, context contract and hardware
+acceptance. Every published report was already referenced at iteration start;
+no unreconciled reports or Claude assignment taken. Reports arriving during
+publication reconcile next iteration; existing contributor evidence/limits retained.
+
+Own report integrated: `docs/autonomy/updates/scanout-buffer-initialization.md`.
+Selected the initialization component in QUEUE before coding. Separate pixel-memory
+module validates geometry, format, pitch and mapped length, clears all visible
+bytes/padding/allocation tail, then unmaps before framebuffer registration.
+Mapping refusal releases the buffer, retaining original errno and cleanup errors.
+Diagnostic allocation now opens RDWR for shared writable mmap, matching the seat
+transport. Black is deterministic initialization, not a shell palette change.
+No active commit, agent/adapter surface change or feature-completion claim.
+Pinned drm-rs hidden-length/slice and munmap-panic boundaries recorded in quirks;
+no upstream patch or unsafe repository code. Production recovery remains owed.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. All final commands exit 0; Windows excludes
+Linux shell tests. Ubuntu uses PATH=/root/.cargo/bin:/usr/bin:/bin and
+CARGO_TARGET_DIR=/root/alo-os-target. Executed cargo test -p alo-shell --lib
+--locked (46 pass); cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked (46 unit + 64 lifecycle + 3 socket + 1 lifetime
+doctest = 114 checks, zero failed/ignored); cargo fmt --all --check;
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. All final commands exit 0.
+Initial clippy rejected two indices and unwrap_err in new tests; replaced with
+checked access/Result propagation and passed, without exemptions. No test failures.
+The diagnostic RDWR correction was followed by affected clippy/example rebuild,
+runtime refusal checks and final rustdoc/fmt verification.
+
+Five new tests: dirty padded memory/tail cleared, short mapping unchanged and
+unmapped before cleanup, malformed geometry/format/overflow refused before mapping,
+map errno with simultaneous buffer cleanup failure retained, and real MAP_DUMB
+ENOTTY/fd survival. Existing allocation tests assert initialization/unmap ordering.
+Additional integration: cargo test -p alo-shell --lib real_map_dumb --locked --
+--nocapture passes actual MAP_DUMB ioctl ENOTTY (25) with caller fd alive.
+timeout 15s atomic_output_check /dev/dri/card0 --allocate refuses ENOENT/exit 1;
+/dev/null --unknown refuses usage/exit 1. WAYLAND_DEBUG=1 timeout 30s nested_check
+--popups --cursor exits 0, 115 surfaces and popup/reactive/cursor callbacks,
+unmap/remap, refusal/disconnect pass. Exact commands and local logs in own report:
+.git/alo-scanout-{map-refusal,absent-card,argument,wslg}.log. Successful DRM
+mmap/munmap, pixels on an actual display and physical input are unmeasured.
+
+WSLg socket/native pkg-config prerequisites verified, /dev/dri absent; no packages
+needed. Initial compound WSL source search had quoting errors and missing rg;
+corrected with simple grep/source reads, Windows rg used for repository searches.
+No shared kernel/BPF/cgroup/service change, other checkout access, worker launch,
+staging/commit/push, dev-loop edit or physical install. Source/tests/diagnostic and
+tracked/new-file diff inspected, git diff --check passes. Shared CHANGELOG,
+ROADMAP, QUEUE and this journal updated. Supervisor full publication gates have
+not run here; this is a reviewable initialization step ready for integration.
+
+Next: active atomic commit ownership/page-flip retirement for initialized buffers,
+with injected commit/refusal/cleanup tests; then renderer pause ordering, direct
+input and production entry. Parent-leave/libseat disable-order limits persist.
+Successful DRM allocation/mapping/TEST_ONLY/retirement needs a DRM-equipped
+login/VM; certified business laptop and >=24 GB GPU workstation display/input,
+session switching, suspend/resume and all physical checklist records remain owed.
+Full v0.01 scope retained; compositor and release remain unchecked.

@@ -23,7 +23,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // Developer fixture only. Opening a card can implicitly acquire DRM master;
     // production must use DirectSession::with_device instead of this direct open.
-    let file = std::fs::File::open(path)?;
+    // Shared writable mapping requires an RDWR descriptor, just as DirectSession
+    // supplies. Discovery alone does not need writable mapping access.
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(allocate)
+        .open(path)?;
     let result = alo_shell::discover_atomic_output(file.as_fd())?;
     println!(
         "atomic schema connector={} crtc={} primary={} formats={:?}; no atomic test or modeset",
@@ -35,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if allocate {
         let resources = alo_shell::DisplayResources::allocate(file.as_fd(), &result)?;
         println!(
-            "unbound framebuffer={} mode_blob={}; no mapping, atomic test or modeset",
+            "black-initialized unbound framebuffer={} mode_blob={}; mapping released; no atomic test or modeset",
             u32::from(resources.framebuffer()),
             resources.mode_blob(),
         );

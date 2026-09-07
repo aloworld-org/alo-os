@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display buffers are cleared before they can become framebuffers.**
+  Initialization covers visible pixels, row padding and the allocation tail;
+  short mappings and mapping failures refuse registration and release the buffer,
+  retaining cleanup errors. Five new tests cover initialization and refusal.
+  Successful DRM mapping, active scanout and physical acceptance remain owed.
+  Evidence: `docs/autonomy/updates/scanout-buffer-initialization.md`.
+
 - **Direct-display preparation can now ask the kernel to validate a complete
   display configuration without changing the screen.** The frozen full-mode
   request uses owned resources, then releases all of them on acceptance or

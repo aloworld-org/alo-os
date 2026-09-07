@@ -718,6 +718,15 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Scanout-buffer initialization (2026-09-07): full mapped allocation cleared
+    to black and unmapped before framebuffer registration, including row padding
+    and allocation tail. Mapping refusal unwinds buffer ownership and retains
+    cleanup errors. Five new tests pass; 114 Linux shell checks including doctest.
+    Evidence: `docs/autonomy/updates/scanout-buffer-initialization.md`.
+    Successful DRM mapping/unmapping, active commit/page-flip retirement, renderer
+    pause ordering, direct input and production entry remain owed. The pinned
+    mapping destructor's unmap panic boundary is documented in quirks. All physical
+    acceptance and full supervisor publication gates remain; compositor unchecked.
   - Atomic configuration validation (2026-09-07): immutable full-mode request,
     TEST_ONLY | ALLOW_MODESET and explicit cleanup on acceptance/refusal. Six new
     tests pass (109 Linux shell checks including doctest); Windows/Linux affected

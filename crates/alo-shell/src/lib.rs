@@ -27,6 +27,7 @@ mod popup_placement;
 mod popups;
 mod presentation;
 mod resource_device;
+mod scanout_buffer;
 mod scene;
 mod server;
 mod session_device;

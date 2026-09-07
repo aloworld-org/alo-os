@@ -12,6 +12,15 @@ impl ResourceDevice for Inventory<'_> {
     fn create_buffer(&self, size: (u32, u32)) -> io::Result<DumbBuffer> {
         self.create_dumb_buffer(size, DrmFourcc::Xrgb8888, 32)
     }
+    fn with_mapping(
+        &self,
+        buffer: &mut DumbBuffer,
+        initialize: impl FnOnce(&mut [u8]) -> io::Result<()>,
+    ) -> io::Result<()> {
+        let mut mapping = self.map_dumb_buffer(buffer)?;
+        initialize(mapping.as_mut())
+        // drm-rs unmaps on drop, before registration or allocation unwind.
+    }
     fn create_framebuffer(&self, buffer: &DumbBuffer) -> io::Result<framebuffer::Handle> {
         // ADDFB registers the fixed depth-24/bpp-32 XRGB format. It is not a
         // legacy modeset and does not provide a fallback from atomic KMS.

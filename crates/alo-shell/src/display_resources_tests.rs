@@ -34,6 +34,8 @@ struct Log {
     calls: Vec<&'static str>,
     /// Exact mode passed to the blob transport.
     mode: Option<Mode>,
+    /// Bytes observed immediately before unmapping.
+    pixels: Vec<u8>,
 }
 
 /// Configurable failures, including several cleanup failures on the same path.
@@ -73,6 +75,24 @@ impl ResourceDevice for Device {
                 DrmFourcc::Xrgb8888
             },
         })
+    }
+    fn with_mapping(
+        &self,
+        buffer: &mut FakeBuffer,
+        initialize: impl FnOnce(&mut [u8]) -> io::Result<()>,
+    ) -> io::Result<()> {
+        self.call("map")?;
+        let required = buffer.pitch as usize * buffer.size.1 as usize;
+        let length = if self.malformed == 7 {
+            required - 1
+        } else {
+            required + 37
+        };
+        let mut bytes = vec![0xa5; length];
+        let result = initialize(&mut bytes);
+        self.log.borrow_mut().pixels = bytes;
+        self.call("unmap")?;
+        result
     }
     fn create_framebuffer(&self, _: &FakeBuffer) -> io::Result<framebuffer::Handle> {
         self.call("framebuffer")?;
@@ -145,7 +165,10 @@ fn owns_exact_mode_and_releases_in_reverse_order_once() -> Result<(), ResourceEr
     assert_eq!(u32::from(fb), 21);
     assert_eq!(blob, 72);
     assert_eq!(log.borrow().mode, Some(mode()));
-    assert_eq!(log.borrow().calls, ["buffer", "framebuffer", "blob"]);
+    assert_eq!(
+        log.borrow().calls,
+        ["buffer", "map", "unmap", "framebuffer", "blob"]
+    );
     owner.release()?;
     owner.release()?;
     drop(owner);
@@ -153,6 +176,8 @@ fn owns_exact_mode_and_releases_in_reverse_order_once() -> Result<(), ResourceEr
         log.borrow().calls,
         [
             "buffer",
+            "map",
+            "unmap",
             "framebuffer",
             "blob",
             "destroy blob",
@@ -171,6 +196,8 @@ fn drop_retires_all_resources_without_explicit_release() -> Result<(), ResourceE
         log.borrow().calls,
         [
             "buffer",
+            "map",
+            "unmap",
             "framebuffer",
             "blob",
             "destroy blob",
@@ -188,12 +215,14 @@ fn each_allocation_failure_unwinds_only_acquired_resources()
         ("buffer", vec!["buffer"]),
         (
             "framebuffer",
-            vec!["buffer", "framebuffer", "destroy buffer"],
+            vec!["buffer", "map", "unmap", "framebuffer", "destroy buffer"],
         ),
         (
             "blob",
             vec![
                 "buffer",
+                "map",
+                "unmap",
                 "framebuffer",
                 "blob",
                 "destroy framebuffer",
@@ -256,6 +285,8 @@ fn cleanup_errors_preserve_original_failure_and_attempt_every_release()
         log.borrow().calls,
         [
             "buffer",
+            "map",
+            "unmap",
             "framebuffer",
             "blob",
             "destroy framebuffer",
@@ -274,7 +305,7 @@ fn cleanup_errors_preserve_original_failure_and_attempt_every_release()
         assert_eq!(1 + error.cleanup.len(), failure.len());
         assert_eq!(error.failure.source.raw_os_error(), Some(5));
         drop(owner);
-        assert_eq!(log.borrow().calls.len(), 6);
+        assert_eq!(log.borrow().calls.len(), 8);
     }
     Ok(())
 }
@@ -289,6 +320,8 @@ fn invalid_blob_ids_never_become_cleanup_targets() -> Result<(), Box<dyn std::er
             log.borrow().calls,
             [
                 "buffer",
+                "map",
+                "unmap",
                 "framebuffer",
                 "blob",
                 "destroy framebuffer",
@@ -368,6 +401,8 @@ fn atomic_validation_always_retires_resources_and_keeps_all_errors()
                 log.borrow().calls,
                 [
                     "buffer",
+                    "map",
+                    "unmap",
                     "framebuffer",
                     "blob",
                     "test",
@@ -378,5 +413,101 @@ fn atomic_validation_always_retires_resources_and_keeps_all_errors()
             );
         }
     }
+    Ok(())
+}
+
+#[test]
+fn initialization_clears_pixels_stride_padding_and_allocation_tail() -> Result<(), ResourceError> {
+    let (device, log) = fixture(&[], 0);
+    let (mut owner, _, _) = allocate(device)?;
+    let observed = log.borrow();
+    assert_eq!(observed.pixels.len(), (1280 * 4 + 64) * 720 + 37);
+    assert!(observed.pixels.iter().all(|byte| *byte == 0));
+    assert_eq!(
+        observed.calls,
+        ["buffer", "map", "unmap", "framebuffer", "blob"]
+    );
+    drop(observed);
+    owner.release()
+}
+
+#[test]
+fn short_mapping_is_unmapped_without_writing_or_registering()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (device, log) = fixture(&[], 7);
+    let error = allocate(device).err().ok_or("short mapping accepted")?;
+    assert_eq!(error.failure.stage, "initialize dumb buffer");
+    assert_eq!(error.failure.source.kind(), io::ErrorKind::InvalidData);
+    assert!(error.cleanup.is_empty());
+    assert!(log.borrow().pixels.iter().all(|byte| *byte == 0xa5));
+    assert_eq!(
+        log.borrow().calls,
+        ["buffer", "map", "unmap", "destroy buffer"]
+    );
+    Ok(())
+}
+
+#[test]
+fn map_refusal_preserves_errno_and_buffer_cleanup_failure() -> Result<(), Box<dyn std::error::Error>>
+{
+    for cleanup_fails in [false, true] {
+        let failures = if cleanup_fails {
+            vec!["map", "destroy buffer"]
+        } else {
+            vec!["map"]
+        };
+        let (device, log) = fixture(&failures, 0);
+        let error = allocate(device).err().ok_or("failed mapping accepted")?;
+        assert_eq!(error.failure.stage, "initialize dumb buffer");
+        assert_eq!(error.failure.source.raw_os_error(), Some(5));
+        assert_eq!(error.cleanup.len(), usize::from(cleanup_fails));
+        if cleanup_fails {
+            let cleanup = error.cleanup.first().ok_or("cleanup error lost")?;
+            assert_eq!(cleanup.stage, "destroy dumb buffer");
+            assert_eq!(cleanup.source.raw_os_error(), Some(5));
+        }
+        assert_eq!(log.borrow().calls, ["buffer", "map", "destroy buffer"]);
+        assert!(log.borrow().pixels.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn invalid_initialization_layout_never_maps() -> Result<(), Box<dyn std::error::Error>> {
+    for (size, pitch, format) in [
+        ((0, 1), 4, DrmFourcc::Xrgb8888),
+        ((1, 0), 4, DrmFourcc::Xrgb8888),
+        ((2, 1), 4, DrmFourcc::Xrgb8888),
+        ((1, 1), 5, DrmFourcc::Xrgb8888),
+        ((u32::MAX, 1), u32::MAX - 3, DrmFourcc::Xrgb8888),
+        ((1, 1), 4, DrmFourcc::Argb8888),
+    ] {
+        let (device, log) = fixture(&[], 0);
+        let mut buffer = FakeBuffer {
+            size,
+            pitch,
+            format,
+        };
+        let error = crate::scanout_buffer::initialize(&device, &mut buffer)
+            .err()
+            .ok_or("invalid layout accepted")?;
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert!(log.borrow().calls.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn real_map_dumb_ioctl_refuses_without_closing_descriptor() -> Result<(), Box<dyn std::error::Error>>
+{
+    let file = std::fs::File::open("/dev/null")?;
+    // Same MAP_DUMB ioctl used by pinned drm-rs before mmap. No fabricated
+    // DumbBuffer or unsafe mapping is needed to exercise the kernel refusal.
+    let error = drm_ffi::mode::dumbbuffer::map(file.as_fd(), 1, 0, 0)
+        .err()
+        .ok_or("non-DRM mapping accepted")?;
+    assert_eq!(error.raw_os_error(), Some(25));
+    assert!(file.metadata().is_ok());
+    eprintln!("real MAP_DUMB refused ENOTTY (25); borrowed descriptor survived");
     Ok(())
 }

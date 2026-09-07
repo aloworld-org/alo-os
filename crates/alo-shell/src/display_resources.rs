@@ -63,10 +63,14 @@ pub struct DisplayResources<'fd> {
 }
 
 impl<'fd> DisplayResources<'fd> {
-    /// Allocate an unbound test candidate; refuse absent XRGB8888 without fallback.
+    /// Allocate an unbound candidate initialized to black, including all padding.
     ///
     /// Supports a linear dumb allocation only. Format advertisement is necessary,
     /// not proof of compatibility: kernel atomic TEST_ONLY is still required.
+    /// Mapping/initialization finishes before framebuffer registration and
+    /// requires a read/write session descriptor, as supplied by DirectSession.
+    /// Mapping failure releases the buffer and retains any destruction error. The pinned
+    /// drm-rs mapping destructor can panic on munmap failure; see docs/quirks.md.
     pub fn allocate(fd: BorrowedFd<'fd>, output: &AtomicOutput) -> Result<Self, ResourceError> {
         let plan = AtomicPlan::new(output).map_err(|source| ResourceError {
             failure: ResourceFailure {
@@ -123,6 +127,12 @@ pub(crate) trait ResourceDevice {
     type Buffer: Buffer;
     /// Allocate a 32-bit XRGB8888 dumb buffer.
     fn create_buffer(&self, size: (u32, u32)) -> io::Result<Self::Buffer>;
+    /// Borrow mapped bytes only inside the callback; unmap before returning.
+    fn with_mapping(
+        &self,
+        buffer: &mut Self::Buffer,
+        initialize: impl FnOnce(&mut [u8]) -> io::Result<()>,
+    ) -> io::Result<()>;
     /// Register a framebuffer for the buffer.
     fn create_framebuffer(&self, buffer: &Self::Buffer) -> io::Result<framebuffer::Handle>;
     /// Create an exact mode blob.
@@ -177,8 +187,12 @@ impl<D: ResourceDevice> Allocation<D> {
             }
             let buffer = owned
                 .buffer
-                .as_ref()
+                .as_mut()
                 .ok_or_else(|| invalid("missing buffer"))?;
+            operation(
+                "initialize dumb buffer",
+                crate::scanout_buffer::initialize(&owned.device, buffer),
+            )?;
             let framebuffer = operation(
                 "create framebuffer",
                 owned.device.create_framebuffer(buffer),

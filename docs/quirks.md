@@ -23,13 +23,29 @@ We behave correctly; we cope with hardware and applications that do not.
 
 ---
 
+## DRM mapping cleanup is an upstream panic boundary (2026-09-07)
+
+Pinned drm-rs 0.14.1 `map_dumb_buffer` issues MAP_DUMB and a shared read/write
+mmap using its private allocation length. The shell now checks the returned
+slice covers pitch times height before clearing all bytes, including padding
+and allocation tail, and drops the mapping before framebuffer registration.
+MAP_DUMB/mmap errors are returned and unwind buffer ownership. `DumbMapping::drop`
+calls munmap with `expect`, so an unmap failure can panic rather than become a
+ResourceError. The wrapper also constructs its slice before the shell can inspect
+the hidden capacity. These source-inspected limits are not malformed-kernel
+containment or recovered unmap failures. No engine patch or unsafe repository
+code was added. Successful DRM mapping/unmapping and production recovery remain
+unmeasured; fake memory tests and actual MAP_DUMB ENOTTY only prove their stated
+paths. See `autonomy/updates/scanout-buffer-initialization.md`.
+
 ## DRM allocation wrappers assume valid kernel handles (2026-09-07)
 
 Pinned drm-rs 0.14.1 `create_dumb_buffer` and `add_framebuffer` unwrap the
 conversion of returned kernel IDs to nonzero handles. `DumbBuffer` exposes
 size/format/pitch but keeps the allocation length private. The shell validates
-exposed metadata before registration and does not map or access pixels in this
-component; it cannot validate the hidden capacity or contain a zero-handle panic
+exposed metadata before registration. The subsequent initialization component
+now maps and checks the returned slice (see above); it cannot validate the
+hidden capacity before upstream constructs that slice or contain a zero-handle panic
 inside the wrapper. Mode is a transparent wrapper over the kernel timing struct
 and is passed intact to upstream blob creation. These are source-inspected
 limits, not reproduced malformed-kernel failures. No engine patch or unsafe

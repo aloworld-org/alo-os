@@ -859,3 +859,25 @@ examples, real atomic ENOTTY and WSLg 115-surface regression pass. Exact command
 needs a DRM-equipped login/VM. Scanout ownership/page flips, renderer pause ordering,
 direct input, production entry, parent-leave and all physical acceptance remain.
 Supervisor full publication gates still owed; compositor/release stay unchecked.
+
+## Scanout-buffer initialization (2026-09-07)
+
+`DisplayResources::allocate` now initializes every byte of the unbound XRGB8888
+allocation before framebuffer registration. `scanout_buffer.rs` validates the
+layout and mapped capacity, clears visible pixels, stride padding and allocation
+tail, and scopes access to a callback. `resource_device.rs` supplies the pinned
+drm-rs shared writable mapping; its drop unmaps before registration or unwind.
+Allocation therefore requires an RDWR descriptor, already supplied by DirectSession;
+the developer diagnostic requests that access for --allocate/--test-only too.
+Black is deterministic memory initialization, not a change to the shell palette.
+Mapping failure retains errno and any buffer-destruction failure. The upstream
+munmap panic and pre-slice hidden-capacity assumptions are recorded in quirks;
+this is not complete production fault containment. Agent/adapter contracts unchanged.
+
+Five new tests cover padded bytes/tail, short mappings without partial writes,
+invalid geometry/format/overflow, map refusal plus cleanup failure, and actual
+MAP_DUMB ENOTTY with caller descriptor survival. Exact checks and integration
+evidence: `updates/scanout-buffer-initialization.md`. Successful DRM memory access
+and physical evidence remain unavailable here. Active commits/page-flip retirement,
+renderer pause ordering, direct input and production entry remain unfinished;
+the compositor and full v0.01 release remain unchecked.
