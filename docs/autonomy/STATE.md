@@ -11321,3 +11321,67 @@ production entry and parent-leave/libseat limits remain. Successful DRM requires
 DRM-equipped development login/VM; certified business laptop and >=24 GB GPU
 workstation display/input, session switching, suspend/resume and all physical
 checklist records remain owed. Full v0.01 scope retained; compositor/release unchecked.
+
+---
+
+## 2026-09-07 - session-scoped page-flip completion gate
+
+Single desktop worker; initial tree clean; supervisor owns publication. Read
+constitution, DELIVERY, SHARED_MAIN, updates README, current queue/state tail,
+relevant feature/roadmap, ADRs 0001/0002, adapter contract and hardware acceptance.
+Every published task report was already referenced at iteration start; no pending
+reconciliation. Claude's security workstream left alone. Later reports reconcile
+next iteration; release remains unchecked.
+
+Own report integrated: `docs/autonomy/updates/session-scoped-flip-completion.md`.
+Selected completion bookkeeping in QUEUE before implementation after inspecting
+pinned drm-ffi: safe atomic_commit sends zero user_data, raw ioctl is unsafe and
+workspace forbids unsafe. Implemented an independently useful identity component
+without bypassing that gate, patching upstream, or claiming transport completion.
+
+FlipGate reserves process-unique cookies, permits one pending commit and accepts
+one exact cookie/CRTC completion. Failed transport preserves errno and burns its
+cookie. Exhaustion is terminal; concurrent gates cannot reuse identities. Bounded
+reader integration validates an entire batch before matching; malformed/failed
+reads retain pending state. Old-session, foreign and duplicate events do not
+complete another flip. Caller has exclusive session commits/reads and supplies
+truthful transport acceptance; this API owns no buffers and is not yet connected
+to ActiveScanout. Gate drop never authorizes release; production ownership must
+retain both buffers until completion or disable, and quarantine on disable failure.
+
+Executed Windows: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. All exit 0; Linux tests cfg-excluded on Windows.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin and
+CARGO_TARGET_DIR=/root/alo-os-target: cargo test -p alo-shell --lib flip_gate --locked;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo fmt --all --check; cargo test -p alo-shell --locked;
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. All exit 0, first test/lint run
+passed. Eight new tests; 70 unit + 64 client lifecycle + 3 socket + 2 doctests =
+139 passing, zero failed/ignored. Real Linux descriptor integration exercises
+mixed/duplicate completions, malformed trailing bytes, blocking refusal,
+WouldBlock/EOF and fd survival with synthetic native DRM bytes; not kernel flips.
+
+WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --popups
+--cursor exits 0: 135 client surfaces, popup/cursor callbacks, unmap/remap,
+protocol refusal and disconnect. Known ZINK diagnostic precedes GLES success;
+no pixel readback or physical input. Rust 1.98.0 and WSLg socket verified;
+wayland-server/EGL/GLES/GBM/libseat/libinput pkg-config prerequisites available,
+no installation needed, no /dev/dri. Local command/log paths in report. Initial
+root queue/state lookup and WSL quoting errors corrected, no repeated test failure.
+
+Updated all four progress documents and COMPOSITOR; source, tests, tracked/new-file
+diff reviewed and git diff --check passes. No stage/commit/push, dev-loop change,
+new worker, other checkout access, shared kernel/BPF/cgroup/service mutation or
+physical installation. Full supervisor Windows/Linux/BPF gates have not run for
+this change; ready for independent integration checks, not release verification.
+
+Next: investigate safe unpatched upstream cookie-bearing atomic transport; the
+pinned helper cannot supply it. An engine patch needs an ADR; unsafe remains
+forbidden. Connect transport, pending-buffer ownership and this gate to scanout,
+with commit/refusal/teardown tests, then rendered frames, session pause ordering,
+direct input and production entry. Parent-leave/libseat limits persist. Successful
+DRM flips require a DRM-equipped development login/VM; physical business laptop
+and >=24 GB GPU workstation display/input, session switching, suspend/resume and
+all hardware checklist records remain owed. Full v0.01 scope is unchanged.

@@ -69,6 +69,29 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected session-scoped flip completion gate (desktop worker):** provide
+  process-unique, non-reused cookies, exactly one submitted flip per session gate,
+  and matching cookie/CRTC completion before issuing retirement authorization.
+  Failed submission, stale/foreign/duplicate events and malformed reads must not
+  authorize retirement. Acceptance: happy/refusal and exhaustion tests plus real
+  Linux descriptor/event-reader integration, affected fmt/clippy/tests/rustdoc and
+  WSLg regression. This owns completion identity, not scanout buffers. Cookie-bearing
+  atomic transport remains separate: pinned drm-ffi hardcodes zero user_data and
+  its raw ioctl is unsafe, forbidden by workspace policy; no exemption or upstream
+  patch is authorized. Buffer ownership, rendering and direct input remain open.
+  **Completed session-scoped flip completion gate 2026-09-07:** eight tests cover
+  unique cookies, one pending commit, failed submission, stale/foreign/duplicate
+  completion, exhaustion and real descriptor/reader integration. All 139 Linux
+  shell checks, affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples,
+  and WSLg regression (135 client surfaces) pass. Report:
+  `updates/session-scoped-flip-completion.md`. No actual atomic flip or buffer
+  retirement was implemented or measured. Next: investigate a safe unpatched
+  upstream cookie-bearing atomic API, then connect pending-buffer ownership and
+  matching completion to active scanout with commit/refusal/teardown tests. The
+  pinned helper hardcodes zero user_data; raw ioctl is unsafe and forbidden.
+  No engine patch or lint exemption. Rendering, pause ordering, direct input,
+  production entry, parent-leave/libseat limits, supervisor full gates and all
+  physical acceptance remain open. Compositor/release stay unchecked.
   **Selected page-flip event reading component (desktop worker):** prerequisite
   for matching nonblocking completion: pinned drm-rs discards flip user_data.
   Decode bounded native DRM event batches without unsafe casts, preserving the

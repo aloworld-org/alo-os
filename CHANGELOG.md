@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Display completion bookkeeping now rejects stale frame events.** A session
+  gate gives each submission a unique cookie, permits one pending flip and accepts
+  its matching controller/cookie once. Failed submissions and malformed reads
+  cannot authorize retirement. This is a tested prerequisite; cookie-bearing
+  kernel submission and buffer ownership remain unfinished. Evidence:
+  `docs/autonomy/updates/session-scoped-flip-completion.md`.
+
 - **Direct-display event reads preserve the identity needed to match a frame.**
   The bounded reader keeps the full commit cookie and display controller ID,
   refuses malformed batches and never changes descriptor flags or waits on a

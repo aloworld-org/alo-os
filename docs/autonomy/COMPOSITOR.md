@@ -951,3 +951,34 @@ completion evidence. Exact checks and limits: `updates/page-flip-event-reading.m
 Nonblocking submission/retirement, rendered frames, session pause ordering, direct
 input, production entry, parent-leave and libseat limits and physical acceptance
 remain outstanding; compositor and release stay unchecked.
+
+## Session-scoped page-flip completion gate (2026-09-07)
+
+`FlipGate` now supplies the independent identity layer following the event reader.
+It permits one pending submission, reserves a process-unique nonzero cookie before
+calling transport, burns failed cookies and preserves submission errno. Allocation
+never wraps into reused identities, including across gates for the same CRTC.
+Only an exact pending cookie/CRTC match completes, once; sequence and timestamp
+are not identities. Recreate the gate on session reacquisition and never reuse
+inherited event streams after a process restart.
+
+`read_completion` decodes an entire bounded batch before matching. Malformed reads,
+EOF and WouldBlock cannot clear pending state. Other events are consumed, limiting
+this API to one gate with exclusive commit/read ownership on a session descriptor.
+The caller must supply real kernel events and truthful transport acceptance; this
+is not an authority boundary against callers fabricating events.
+
+This does not own or destroy buffers, change blocking ActiveScanout, or issue a
+cookie-bearing ioctl. Dropping it never authorizes retirement. The future owner
+must keep old/new resources alive until matching completion or synchronous disable,
+keep the displayed buffer alive afterwards, and quarantine after disable failure.
+Pinned drm-ffi's safe atomic helper sends zero user_data; its raw ioctl is unsafe
+and workspace policy forbids it. Next investigate an unpatched safe upstream API;
+no unsafe exemption or engine patch is introduced here (an engine patch needs ADR).
+
+Eight happy/refusal tests pass, including concurrent allocation, exhaustion and real
+Linux descriptor integration with synthetic ABI bytes. Full Linux shell: 139 checks;
+affected fmt/clippy/tests, Linux rustdoc/examples and WSLg regression pass. Evidence:
+`updates/session-scoped-flip-completion.md`. Successful DRM commits, buffer retirement,
+rendered frames, pause ordering, direct input, production entry, parent-leave/libseat
+limitations and physical acceptance remain open. Supervisor full gates remain owed.
