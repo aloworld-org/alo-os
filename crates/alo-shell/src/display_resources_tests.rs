@@ -9,6 +9,10 @@ mod scanout_tests;
 #[path = "scanout_frame_tests.rs"]
 mod scanout_frame_tests;
 
+#[path = "scene_identity_tests.rs"]
+mod scene_identity_tests;
+#[path = "scene_replacement_tests.rs"]
+mod scene_replacement_tests;
 #[path = "scene_scanout_tests.rs"]
 mod scene_scanout_tests;
 
@@ -39,6 +43,10 @@ impl Buffer for FakeBuffer {
 /// Shared event log outlives the cleanup owner.
 #[derive(Default)]
 struct Log {
+    /// Dynamically injected faults after initial activation.
+    failures: Vec<&'static str>,
+    /// Released handles, for distinguishing old and replacement allocations.
+    released: Vec<u64>,
     /// Ordered allocation/destruction requests.
     calls: Vec<&'static str>,
     /// Exact mode passed to the blob transport.
@@ -48,6 +56,7 @@ struct Log {
 }
 
 /// Configurable failures, including several cleanup failures on the same path.
+#[derive(Clone)]
 struct Device {
     /// Observed operations.
     log: Rc<RefCell<Log>>,
@@ -60,7 +69,7 @@ impl Device {
     /// Record even refused operations.
     fn call(&self, name: &'static str) -> io::Result<()> {
         self.log.borrow_mut().calls.push(name);
-        if self.failures.contains(&name) {
+        if self.failures.contains(&name) || self.log.borrow().failures.contains(&name) {
             Err(io::Error::from_raw_os_error(5))
         } else {
             Ok(())
@@ -91,7 +100,10 @@ impl ResourceDevice for Device {
         initialize: impl FnOnce(&mut [u8]) -> io::Result<()>,
     ) -> io::Result<()> {
         self.call("map")?;
-        if self.failures.contains(&"upload map") && self.log.borrow().calls.contains(&"blob") {
+        if (self.failures.contains(&"upload map")
+            || self.log.borrow().failures.contains(&"upload map"))
+            && self.log.borrow().calls.last_chunk::<2>() == Some(&["blob", "map"])
+        {
             return Err(io::Error::from_raw_os_error(5));
         }
         let required = buffer.pitch as usize * buffer.size.1 as usize;
@@ -108,7 +120,14 @@ impl ResourceDevice for Device {
     }
     fn create_framebuffer(&self, _: &FakeBuffer) -> io::Result<framebuffer::Handle> {
         self.call("framebuffer")?;
-        Ok(NonZeroU32::MIN.saturating_add(20).into())
+        let count = self
+            .log
+            .borrow()
+            .calls
+            .iter()
+            .filter(|call| **call == "framebuffer")
+            .count() as u32;
+        Ok(NonZeroU32::MIN.saturating_add(19 + count).into())
     }
     fn create_blob(&self, mode: &Mode) -> io::Result<u64> {
         self.call("blob")?;
@@ -116,15 +135,50 @@ impl ResourceDevice for Device {
         Ok(match self.malformed {
             5 => 0,
             6 => u64::from(u32::MAX) + 1,
-            _ => 72,
+            _ => {
+                71 + self
+                    .log
+                    .borrow()
+                    .calls
+                    .iter()
+                    .filter(|call| **call == "blob")
+                    .count() as u64
+            }
         })
     }
     fn destroy_blob(&self, blob: u64) -> io::Result<()> {
-        assert_eq!(blob, 72);
+        let created = self
+            .log
+            .borrow()
+            .calls
+            .iter()
+            .filter(|call| **call == "blob")
+            .count() as u64;
+        assert!((72..=71 + created).contains(&blob));
+        assert!(!self.log.borrow().released.contains(&blob));
+        self.log.borrow_mut().released.push(blob);
         self.call("destroy blob")
     }
     fn destroy_framebuffer(&self, fb: framebuffer::Handle) -> io::Result<()> {
-        assert_eq!(u32::from(fb), 21);
+        let created = self
+            .log
+            .borrow()
+            .calls
+            .iter()
+            .filter(|call| **call == "framebuffer")
+            .count() as u64;
+        assert!((21..=20 + created).contains(&u64::from(u32::from(fb))));
+        assert!(
+            !self
+                .log
+                .borrow()
+                .released
+                .contains(&u64::from(u32::from(fb)))
+        );
+        self.log
+            .borrow_mut()
+            .released
+            .push(u64::from(u32::from(fb)));
         self.call("destroy framebuffer")
     }
     fn destroy_buffer(&self, _: FakeBuffer) -> io::Result<()> {

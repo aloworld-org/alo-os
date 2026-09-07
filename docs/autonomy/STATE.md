@@ -11650,3 +11650,70 @@ loss/draw/readback faults remain untested. Successful scanout needs a DRM-equipp
 login/VM; all physical laptop and >=24 GB GPU workstation acceptance records remain
 owed. Fault-injected success is not hardware certification. Native compositor and
 release stay unchecked; full v0.01 scope retained. Ready for supervisor integration.
+
+---
+
+## 2026-09-07 - Synchronous scene replacement
+
+Single desktop worker; initial tree clean, supervisor owns publication. Read
+CLAUDE, DELIVERY, SHARED_MAIN, updates README, current queue and state tail,
+compositor feature/roadmap, ADRs 0001/0002, application-adapter contract, graphics
+prerequisites and hardware requirements. All published reports were already
+referenced here at iteration start; no unreconciled report, no Claude work taken.
+Later publications reconcile next iteration. Queue acceptance recorded before code.
+
+Own report integrated: `docs/autonomy/updates/synchronous-scene-replacement.md`.
+ActiveScene::replace uses the same descriptor and frozen mode/route. The old
+allocation survives allocation/upload/TEST_ONLY/blocking enable and is released
+only after successful commit, with its disable disarmed. Refusal keeps the old
+identities; success publishes new identities even when old-resource cleanup fails.
+Cleanup errors block further replacements and require disable/session retirement.
+All releases attempted once; failed disable quarantines without drop retry.
+Safe pinned blocking transport follows ADR 0002, no engine patch/unsafe exception.
+No agent contract or release scope change. No callback dispatch in this component.
+
+Windows exit 0: cargo fmt --all; cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked. Linux source/tests cfg-excluded on Windows.
+Ubuntu PATH=/root/.cargo/bin:/usr/bin:/bin, CARGO_TARGET_DIR=/root/alo-os-target:
+cargo test -p alo-shell --lib replacement --locked (5 pass);
+cargo fmt --all --check;
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings;
+cargo test -p alo-shell --locked (92 unit + 65 lifecycle + 3 socket + 2 doctests
+= 162 pass, none failed/ignored);
+RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked;
+cargo build -p alo-shell --examples --locked. All exit 0.
+After stronger resource-ID bounds/duplicate-release assertions, fmt/clippy rerun
+and cargo test -p alo-shell --lib display_resources --locked: 34 pass, exit 0.
+Logs: .git/scene-replacement-linux.log and .git/scene-replacement-final-tests.log.
+Five new tests include three distinct framebuffer/blob allocations, pixel changes,
+commit-before-cleanup, no accidental disable, size/allocation/upload/test/enable
+refusals, clean retry, cleanup-failure shutdown, quarantine and real Wayland resource
+identity changes only on success. Identity-only socket fixture does not dispatch
+clients or claim callback integration. Initial test lint slicing/expect/panic
+issues corrected without exceptions or reduced gates.
+
+Verified Rust 1.98.0, WSLg socket and all native pkg-config requirements; no install.
+No /dev/dri. Existing WSL config diagnostics left untouched. With
+XDG_RUNTIME_DIR=/run/user/0 and WAYLAND_DISPLAY=wayland-0:
+timeout 30s /root/alo-os-target/debug/examples/nested_check --offscreen exits 0;
+WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check --popups
+--cursor exits 0 (135 client surfaces). Existing real 1,056-pixel scene, callback
+preservation, non-DRM activation and truncated-SHM refusals pass. With
+__EGL_VENDOR_LIBRARY_FILENAMES=/nonexistent/alo-replacement-egl.json the offscreen
+command exits 1, invalid EGL Display. First refusal wrapper lost status variable;
+independent direct invocation confirmed exit 1. Logs:
+.git/scene-replacement-{gles,nested,refusal}.log.
+
+Updated all four progress documents and COMPOSITOR, own report. Reviewed tracked
+and new-file diffs; git diff --check passes. Successful DRM
+commit/release is injected; WSLg regression is not KMS replacement/hardware evidence.
+Next: synchronous direct FrameTarget with membership/callback publication only on
+success, refusal preservation and cleanup-failure shutdown. Then default cursor,
+pause/direct input/session entry. Cookie transport/asynchronous retirement, GPU
+context-loss faults, existing libseat/parent-leave/unmap-panic limits remain.
+DRM-equipped login/VM scanout and physical business laptop and >=24 GB GPU workstation
+records remain owed, including display/input/session/suspend/resume acceptance.
+Compositor and release remain unchecked. Supervisor full Windows/Linux/BPF gates
+remain pending. No staging/commit/push, dev-loop edits, worker launch, other checkout
+access, shared kernel/BPF/cgroup/service mutation or physical installation.

@@ -2,7 +2,7 @@
 use super::*;
 use crate::{RowOrder, scene_scanout::activate};
 
-fn pixels(size: (u32, u32)) -> Result<crate::ScanoutPixels, crate::ReadbackError> {
+pub(super) fn pixels(size: (u32, u32)) -> Result<crate::ScanoutPixels, crate::ReadbackError> {
     let rgba: Vec<_> = (0..size.0 * size.1)
         .flat_map(|pixel| [19, (pixel / size.0) as u8, pixel as u8, 255])
         .collect();

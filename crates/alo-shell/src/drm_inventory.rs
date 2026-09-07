@@ -5,6 +5,7 @@ use drm::control::{Device, connector};
 use std::os::fd::{AsFd, BorrowedFd};
 
 /// Borrow a session descriptor without reopening its path or taking ownership.
+#[derive(Clone)]
 pub(crate) struct Inventory<'a>(pub BorrowedFd<'a>);
 
 impl AsFd for Inventory<'_> {

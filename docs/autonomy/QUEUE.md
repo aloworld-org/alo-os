@@ -69,6 +69,27 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected synchronous scene replacement (desktop worker):** replace a prepared
+  scene on the same frozen output and descriptor, retaining old storage until a
+  blocking commit succeeds. Refusal preserves old ownership/identities; successful
+  replacement reports retirement failures distinctly from submission refusal.
+  Acceptance: ordered multi-frame lifecycle, allocation/upload/test/commit refusal,
+  cleanup/quarantine and identity tests, WSLg regression, affected fmt/clippy/tests
+  and rustdoc. Direct FrameTarget, callbacks wiring and physical scanout remain owed.
+  **Completed synchronous scene replacement 2026-09-07:** old allocation survives
+  blocking TEST_ONLY/enable; successful replacement disarms old disable before
+  cleanup and updates identities. Refusal preserves the old scene; cleanup failure
+  blocks further replacement and requires explicit disable/session retirement.
+  Five new tests, 162 Linux shell checks, affected Windows/Linux fmt/clippy/tests,
+  Linux rustdoc/examples and WSLg regressions pass (135 client surfaces). Final
+  strengthened resource-ID/duplicate-release assertions pass 34 allocation tests.
+  Report: `updates/synchronous-scene-replacement.md`. Successful DRM is injected;
+  no /dev/dri or physical acceptance. Next executable component: a synchronous
+  direct FrameTarget using prepared activation/replacement, with correct membership
+  and callback publication on success, refusal preservation and cleanup-failure
+  shutdown. Then default cursor, pause/direct input/session wiring. Safe asynchronous
+  cookie transport, GPU context-loss faults, supervisor full gates and all physical
+  records remain owed. Compositor and release remain unchecked.
   **Selected prepared scene activation (desktop worker):** consume a prepared
   scene through full-mode validation, unbound allocation/upload and blocking
   TEST_ONLY/enable, retaining drawn identities with the active resource owner.

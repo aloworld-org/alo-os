@@ -9,6 +9,7 @@ use std::{collections::BTreeSet, io, num::NonZeroU32, os::fd::BorrowedFd};
 mod tests;
 
 /// Frozen object/property/value snapshot, built before allocating resources.
+#[derive(Clone)]
 pub(crate) struct AtomicPlan {
     /// Thirteen mandatory properties with late-bound owned resource IDs.
     writes: Vec<(NonZeroU32, property::Handle, Value)>,
@@ -17,6 +18,7 @@ pub(crate) struct AtomicPlan {
 }
 
 /// Resource IDs must come from the same allocation that owns the test transport.
+#[derive(Clone)]
 enum Value {
     /// Geometry or object routing value.
     Fixed(u64),

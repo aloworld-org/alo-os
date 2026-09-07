@@ -1,4 +1,4 @@
-//! Initial scene activation: pixels and identities share one scanout lifetime.
+//! Scene activation: pixels and identities share one scanout lifetime.
 
 use crate::scanout::{Scanout, ScanoutDevice};
 use crate::{AtomicOutput, PreparedScanout, ResourceError, ResourceFailure};
@@ -6,10 +6,10 @@ use crate::{atomic_test::AtomicPlan, display_resources::Allocation, drm_inventor
 use smithay::reexports::wayland_server::protocol::wl_surface::WlSurface;
 use std::{io, os::fd::BorrowedFd};
 
-/// A successfully enabled initial scene on an exclusively owned session output.
+/// A successfully enabled scene on an exclusively owned session output.
 ///
 /// Owns immutable scanout storage and the exact drawn surface identities. This
-/// is a static initial modeset, not a continuous `FrameTarget` or a presentation
+/// supports blocking replacement, not a continuous `FrameTarget` or a presentation
 /// timestamp. No method dispatches clients, publishes membership or sends frame
 /// callbacks. Keep the session active and call `disable` before releasing it.
 /// A failed disable quarantines resources until all device descriptors close.
@@ -38,6 +38,21 @@ impl PreparedScanout {
 }
 
 impl ActiveScene<'_> {
+    /// Replace on the original descriptor, mode and route with a blocking commit.
+    ///
+    /// An outer error means no replacement: old pixels and identities remain active.
+    /// Success updates identities even if retiring the old resources failed; the
+    /// returned cleanup error requires stopping presentation and disabling this scene
+    /// before retiring the session device. No callbacks are sent here. Only outer
+    /// success permits callbacks for the new identities, without intervening dispatch.
+    /// No asynchronous event or physical presentation timestamp is promised.
+    pub fn replace(
+        &mut self,
+        prepared: PreparedScanout,
+    ) -> Result<crate::SceneReplacement, ResourceError> {
+        self.submitted.replace(prepared.into_parts())
+    }
+
     /// Identities drawn in the successfully enabled scene, not a timestamp guarantee.
     pub fn surfaces(&self) -> &[WlSurface] {
         &self.submitted.surfaces
@@ -55,6 +70,12 @@ pub(crate) struct Submitted<D: ScanoutDevice> {
     pub(crate) active: Scanout<D>,
     /// Published to the caller only after successful enable.
     pub(crate) surfaces: Vec<WlSurface>,
+    /// Frozen allocation requirements; replacement cannot retarget the output.
+    pub(crate) mode: drm::control::Mode,
+    /// Formats advertised at activation, invalidated with the session.
+    pub(crate) formats: Vec<u32>,
+    /// A cleanup failure requires retirement rather than another allocation.
+    pub(crate) replacement_allowed: bool,
 }
 
 /// Shared production/test transaction. No allocation occurs before CPU validation.
@@ -79,5 +100,11 @@ pub(crate) fn activate<D: ScanoutDevice>(
     let (mut owned, fb, blob) = Allocation::allocate(device, &output.output.mode, &output.formats)?;
     owned.write_frame(&frame)?;
     let active = Scanout::activate(owned, plan, fb, blob)?;
-    Ok(Submitted { active, surfaces })
+    Ok(Submitted {
+        active,
+        surfaces,
+        mode: output.output.mode,
+        formats: output.formats.clone(),
+        replacement_allowed: true,
+    })
 }

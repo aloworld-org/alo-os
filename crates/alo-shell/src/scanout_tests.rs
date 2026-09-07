@@ -9,12 +9,21 @@ use drm::control::{AtomicCommitFlags, atomic::AtomicModeReq};
 
 impl ScanoutDevice for Device {
     fn commit(&self, flags: AtomicCommitFlags, request: AtomicModeReq) -> io::Result<()> {
-        let disabling = self.log.borrow().calls.contains(&"enable");
+        let disabling = format!("{request:?}") == format!("{:?}", expected_request(true, 21, 72));
+        let log = self.log.borrow();
+        let fb = 20
+            + log
+                .calls
+                .iter()
+                .filter(|call| **call == "framebuffer")
+                .count() as u64;
+        let blob = 71 + log.calls.iter().filter(|call| **call == "blob").count() as u64;
+        drop(log);
         // drm-rs exposes Debug, but not a request iterator. Compare independently
         // constructed wire requests, including allocation-owned framebuffer/blob.
         assert_eq!(
             format!("{request:?}"),
-            format!("{:?}", expected_request(disabling))
+            format!("{:?}", expected_request(disabling, fb, blob))
         );
         assert!(
             !flags.intersects(AtomicCommitFlags::NONBLOCK | AtomicCommitFlags::PAGE_FLIP_EVENT)
@@ -27,7 +36,7 @@ impl ScanoutDevice for Device {
             self.call("test")
         } else {
             assert_eq!(flags, AtomicCommitFlags::ALLOW_MODESET);
-            if self.log.borrow().calls.contains(&"enable") {
+            if disabling {
                 self.call("disable")
             } else {
                 self.call("enable")
@@ -37,16 +46,16 @@ impl ScanoutDevice for Device {
 }
 
 /// Expected kernel request from the fixture's documented routing and resources.
-fn expected_request(disabling: bool) -> AtomicModeReq {
+fn expected_request(disabling: bool, fb: u64, blob: u64) -> AtomicModeReq {
     let writes = if disabling {
         vec![(1, 11, 0), (2, 21, 0), (2, 22, 0), (3, 31, 0), (3, 32, 0)]
     } else {
         vec![
             (1, 11, 2),
             (2, 21, 1),
-            (2, 22, 72),
+            (2, 22, blob),
             (3, 31, 2),
-            (3, 32, 21),
+            (3, 32, fb),
             (3, 33, 0),
             (3, 34, 0),
             (3, 35, 1280),

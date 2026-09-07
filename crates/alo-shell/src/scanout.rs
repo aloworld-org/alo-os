@@ -75,14 +75,14 @@ impl ScanoutDevice for Inventory<'_> {
     }
 }
 
-/// No asynchronous commits: the enabled bit is cleared only by retirement.
+/// No asynchronous commits: disable or successful replacement permits retirement.
 pub(crate) struct Scanout<D: ScanoutDevice> {
     /// Resource owner never independently destroys an enabled framebuffer.
-    owned: Allocation<D>,
+    pub(crate) owned: Allocation<D>,
     /// Immutable routing used for both enable and disable.
-    plan: AtomicPlan,
-    /// Whether retirement must disable the output first.
-    enabled: bool,
+    pub(crate) plan: AtomicPlan,
+    /// Whether retirement must disable first; successful replacement disarms the old owner.
+    pub(crate) enabled: bool,
 }
 
 impl<D: ScanoutDevice> Scanout<D> {

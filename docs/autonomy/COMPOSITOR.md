@@ -1072,6 +1072,31 @@ upload and blocking scanout ownership with callback/cleanup tests. Direct target
 cookie transport, retirement, pause/input/session wiring, existing parent-leave/
 libseat limits, supervisor full gates and physical acceptance remain open.
 
+## Synchronous scene replacement (2026-09-07)
+
+`ActiveScene::replace` consumes a prepared scene using the original descriptor,
+mode, formats and frozen atomic route. It validates size before I/O, allocates and
+uploads an unbound buffer, then performs blocking TEST_ONLY and enable. The old
+allocation remains alive through both commits. After successful enable, its disable
+is disarmed before reverse-order cleanup, so retirement cannot blank the new scene.
+The safe transport uses neither NONBLOCK nor PAGE_FLIP_EVENT; no cookie is required.
+This follows ADR 0002 without an engine patch or unsafe exception.
+
+Outer `Err(ResourceError)` preserves the old active allocation and identities.
+Outer `Ok(SceneReplacement)` means the new scene is active; `retirement_error`
+separately reports any old-resource destruction failures. All releases are attempted
+once. Any cleanup failure blocks further replacement: explicitly disable the current
+scene, then retire the session device. Failed disable quarantines the active resources
+without retrying on drop. A clean submission refusal permits a later replacement.
+
+No method dispatches clients or sends callbacks. A caller may notify the returned
+active identities only after successful submission, without intervening dispatch.
+Continuous direct FrameTarget scheduling/callback integration is still unfinished.
+Tests distinguish three framebuffer/blob allocations, verify ordering, pixels,
+refusal/retry, cleanup/quarantine and real Wayland resource identities. Successful
+DRM transport is fault-injected; WSLg regression is not physical scanout evidence.
+Exact checks and limits: `updates/synchronous-scene-replacement.md`.
+
 ## Prepared scene activation (2026-09-07)
 
 `PreparedScanout::activate` consumes the scene and validates its full physical

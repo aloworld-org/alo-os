@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct-display scenes can now be replaced without releasing the current
+  buffer before the replacement succeeds.** Refusals preserve the old scene;
+  cleanup errors retain the identity of the scene actually committed and require
+  session retirement. Five new tests and WSLg regressions pass. Successful DRM
+  commits are fault-injected, not physical scanout evidence. Full direct desktop
+  presentation remains unfinished. `docs/autonomy/updates/synchronous-scene-replacement.md`.
+
 - **Prepared desktop scenes now have an owned initial scanout transaction.**
   Mode validation, upload and blocking activation keep drawn identities with
   the active allocation; refusals preserve cleanup errors and client callbacks.

@@ -728,6 +728,15 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Synchronous scene replacement (2026-09-07): frozen-route allocation/upload/
+    blocking commit preserves old ownership on refusal, retires it only after
+    success and reports post-commit cleanup separately. Five new tests, including
+    real Wayland resource identities, and 162 Linux shell checks pass; affected
+    Windows/Linux fmt/clippy, Linux rustdoc/examples and WSLg regression pass
+    (135 client surfaces). `docs/autonomy/updates/synchronous-scene-replacement.md`.
+    Successful DRM is injected. Direct FrameTarget/callback scheduling, default
+    cursor, pause/input/session wiring, asynchronous transport and physical
+    acceptance remain; supervisor full gates remain owed. Compositor unchecked.
   - Prepared scene activation (2026-09-07): consuming full-mode validation,
     upload and blocking TEST_ONLY/enable retain identities with active ownership.
     Four new tests; 157 Linux shell checks, affected Windows/Linux fmt/clippy/tests,
