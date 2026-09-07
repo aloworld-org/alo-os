@@ -47,8 +47,10 @@ pub(crate) struct Surfaces {
     xdg: XdgShellState,
     /// Live toplevel roots in creation order.
     windows: Vec<Window>,
-    /// Required XDG input plumbing; no seat global until an input backend exists.
-    seats: SeatState<Self>,
+    /// Seat globals, created only when the backend enables input.
+    pub(crate) seats: SeatState<Self>,
+    /// Optional keyboard seat and routing state.
+    pub(crate) keyboard: Option<crate::keyboard::Keyboard>,
 }
 
 impl Surfaces {
@@ -60,12 +62,14 @@ impl Surfaces {
             xdg: XdgShellState::new::<Self>(display),
             windows: Vec::new(),
             seats: SeatState::new(),
+            keyboard: None,
         }
     }
 
     /// Remove resources whose client disappeared without orderly destruction.
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
+        self.prune_keyboard_focus();
     }
 
     /// Roots eligible for rendering; dead handles never escape this iterator.
@@ -139,7 +143,7 @@ impl SeatHandler for Surfaces {
         &mut self.seats
     }
     fn cursor_image(&mut self, _seat: &Seat<Self>, _image: CursorImageStatus) {
-        // No seat or pointer is advertised by this server core.
+        // Pointer capability is not advertised until its backend is implemented.
     }
 }
 impl ShmHandler for Surfaces {

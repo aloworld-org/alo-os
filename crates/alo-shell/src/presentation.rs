@@ -11,6 +11,9 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// Keyboard backend initialization or routing refused.
+    #[error(transparent)]
+    Input(#[from] crate::InputError),
     /// No positive framebuffer extent was supplied.
     #[error("empty framebuffer")]
     EmptySize,

@@ -9861,3 +9861,64 @@ display. Production event scheduling, delivery steps 3–8, the rest of v0.01,
 actual parent-loss/swap-fault evidence and all physical display/input and
 certified-machine records remain owed. WSLg cannot certify hardware. Item 6b
 remains reserved for Claude in its separate checkout.
+
+---
+
+## 2026-09-07 — item 33, keyboard seat and nested routing component
+
+Completed one useful input component in the desktop worker checkout. The next
+keyboard/pointer item was explicitly narrowed in QUEUE before implementation to
+keyboard input; pointer remains the next component and item 33 is still unchecked.
+`Server::bind_keyboard` creates an explicitly configured XKB keyboard seat or
+removes its failed display. Internal focus accepts only live mapped roots;
+evdev delivery refuses invalid codes and drops unfocused/duplicate transitions.
+Held keys release before focus leaves, including unmap, destruction and disconnect.
+`Nested::pump_keyboard` connects parent activation and key events to the renderer's
+frontmost root; parent loss/close clears focus. No agent or context API was added.
+
+Reasons: ADRs 0001/0002 retain native Rust shell control and no agent authority
+from surface ownership. Smithay/XKB are configured, never patched. Backend
+creation order matches current rendering; configurable activation/stacking and
+shortcuts belong to delivery step 3. Client repeat avoids duplicate backend
+presses. Synthetic focus-loss releases use the last accepted key timestamp and
+clear depressed modifiers before the next recipient. Session-owned layout UI,
+persistent preferences and translated startup failures remain unfinished.
+
+Actual checks (exact reproducible commands in COMPOSITOR.md):
+
+- `cargo fmt --all` and Windows/Linux `cargo fmt --all --check`: passed.
+- Linux `cargo test -p alo-shell --locked`: **20 passing tests**, no ignored
+  tests. Five new real-client keyboard tests cover keymap/repeat, focus/key/
+  modifier delivery, isolation, held-key cleanup, unmap/disconnect/destruction,
+  stale/foreign targets, invalid codes, missing keyboard and failed-layout cleanup.
+- Linux and Windows `cargo clippy -p alo-shell --all-targets --locked -- -D
+  warnings`: passed after correcting arithmetic and test idioms, without lint
+  suppression. Windows `cargo test -p alo-shell --locked`: passed, zero Linux
+  tests by target gating. This is not Windows protocol evidence.
+- Linux `RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked`
+  and `cargo build -p alo-shell --example nested_check --locked`: passed.
+- `WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked --test
+  client_lifecycle input::keyboard_keymap_focus_and_keys_are_isolated_between_clients
+  -- --exact --nocapture`: exit 0. `.git/alo-keyboard-wire.log` shows 34206-byte
+  fd-backed keymap, 25/600 repeat, Shift/A presses and releases before leave,
+  followed by empty enter arrays and zero depressed modifiers for the next client.
+- WSLg `WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check`:
+  exit 0. `.git/alo-keyboard-nested.log` shows real root/child rendering, callbacks
+  [367,367], keyboard-seat/keymap assertions, unmap/remap, refusal and disconnect.
+  The fixture injects no keys through the parent; parent physical input remains
+  evidence owed. Its parent's pointer is not our server's pointer capability.
+- Source, new tests, example and documentation diff inspected; `git diff --check`
+  passed. No lockfile/dependency, dev-loop, shared kernel or other checkout changes.
+
+WSLg socket and xkbcommon 1.13.1, Wayland 1.24.0, EGL 1.5 rechecked. No routine
+dependencies were missing. Linux builds used this checkout's `/root/alo-os-target`.
+Initial clippy found manual saturating arithmetic, then test indexing and `expect`;
+these were corrected, with final clippy clean. All test runs passed. CHANGELOG,
+ROADMAP, QUEUE and COMPOSITOR documentation updated in the same change. No staging,
+commit or push; independent supervisor full gates are not claimed.
+
+Next: pointer advertisement, hit testing, motion/button/axis routing and focus/
+disconnect checks, then popups and direct-display integration. Actual parent
+activation cycling with held physical keys, direct seat/display and certified
+hardware acceptance remain owed. Delivery steps 3-8 and all remaining v0.01 scope
+are preserved. WSLg does not certify hardware; item 6b remains reserved for Claude.

@@ -1,8 +1,9 @@
-//! Nested WSLg/Wayland backend. It advertises no input until routing exists.
+//! Nested WSLg/Wayland graphics and keyboard backend.
 
 use crate::{FrameTarget, RenderError, drawing};
 use smithay::{
     backend::{
+        input::{Event, InputEvent, KeyboardKeyEvent},
         renderer::{Color32F, Frame, Renderer, gles::GlesRenderer, utils::draw_render_elements},
         winit::{self, WinitEvent, WinitEventLoop, WinitGraphicsBackend},
     },
@@ -21,7 +22,8 @@ use smithay::{
 ///
 /// Supply a translated title from the session UI (developer fixtures may use a
 /// diagnostic title). This backend requires WAYLAND_DISPLAY and refuses X11.
-/// Call `pump` before each server dispatch/render. Do not recreate winit's event
+/// Call `pump_keyboard` before each server dispatch/render when input is enabled.
+/// Render-only fixtures may use `pump`. Do not recreate winit's event
 /// loop in the same process after failure; report the error and end the session.
 pub struct Nested {
     /// Owned EGL window and renderer.
@@ -30,6 +32,8 @@ pub struct Nested {
     events: WinitEventLoop,
     /// Closing is terminal even if winit continues pumping.
     closed: bool,
+    /// Parent activation; unfocused nested windows must never route keys.
+    focused: bool,
 }
 
 impl Nested {
@@ -77,19 +81,69 @@ impl Nested {
             backend,
             events,
             closed: false,
+            focused: false,
         })
     }
 
-    /// Process pending parent events. Close is terminal; input is not advertised.
+    /// Process graphics events without routing input (render-only fixtures).
     pub fn pump(&mut self) -> Result<(), RenderError> {
-        if let PumpStatus::Exit(_) = self.events.dispatch_new_events(|event| {
-            if matches!(event, WinitEvent::CloseRequested) {
-                self.closed = true;
+        self.pump_events(|_, _| {})
+    }
+
+    /// Route parent keyboard events to the frontmost mapped root.
+    ///
+    /// Creation order is the renderer's current front-to-back order. This minimal
+    /// policy gives clients usable keyboard input until window management supplies
+    /// explicit activation. Parent focus loss/close releases keys and clears focus.
+    /// A keyboard-enabled server is required; pointer events remain unconnected.
+    pub fn pump_keyboard(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
+        let mut failure = None;
+        let result = self.pump_events(|event, focused| {
+            let focus = if focused {
+                server.mapped_surfaces().next().cloned()
+            } else {
+                None
+            };
+            if let Err(error) = server.keyboard_focus(focus.as_ref()) {
+                failure = Some(error);
+                return;
             }
+            if let Some(WinitEvent::Input(InputEvent::Keyboard { event })) = event {
+                let code = u32::from(event.key_code()).saturating_sub(8);
+                if let Err(error) = server.keyboard_key(code, event.state(), event.time_msec()) {
+                    failure = Some(error);
+                }
+            }
+        });
+        result?;
+        if let Some(error) = failure {
+            return Err(RenderError::Input(error));
+        }
+        Ok(())
+    }
+
+    /// Keep event order and apply parent activation before delivering a key.
+    fn pump_events(
+        &mut self,
+        mut route: impl FnMut(Option<WinitEvent>, bool),
+    ) -> Result<(), RenderError> {
+        route(None, self.focused && !self.closed);
+        if let PumpStatus::Exit(_) = self.events.dispatch_new_events(|event| {
+            match event {
+                WinitEvent::CloseRequested => {
+                    self.closed = true;
+                    self.focused = false;
+                }
+                WinitEvent::Focus(focused) => self.focused = focused,
+                _ => {}
+            }
+            route(Some(event), self.focused && !self.closed);
         }) {
             self.closed = true;
         }
         if self.closed {
+            self.focused = false;
+            route(None, false);
             Err(RenderError::Closed)
         } else {
             Ok(())

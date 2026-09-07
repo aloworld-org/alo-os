@@ -12,6 +12,11 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The native shell can now deliver keyboard input to a focused application in
+  its nested backend. Focus changes release held keys; unmapped, destroyed and
+  foreign windows cannot receive focus. Invalid keyboard layouts refuse startup.
+  Pointer input, direct-display operation and physical acceptance remain unfinished.
+
 - The native shell can now render application buffers and their child surfaces
   in a nested Wayland window. Applications see one output and receive frame
   callbacks after successful submission; failed frames retain their callbacks.

@@ -1,6 +1,7 @@
 //! Real XDG clients exercise buffer lifecycle and isolated protocol refusal.
 #![cfg(target_os = "linux")]
 
+mod input;
 mod support;
 use support::{Application, Fixture};
 

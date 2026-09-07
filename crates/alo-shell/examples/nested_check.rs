@@ -42,7 +42,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     nested.pump()?;
     let runtime = tempfile::tempdir()?;
     fs::set_permissions(runtime.path(), fs::Permissions::from_mode(0o700))?;
-    let mut server = Server::bind(runtime.path(), "nested-check")?;
+    let mut server = Server::bind_keyboard(
+        runtime.path(),
+        "nested-check",
+        smithay::input::keyboard::XkbConfig {
+            layout: "us",
+            ..Default::default()
+        },
+    )?;
     server.render(&mut nested, 0)?;
     let path = server.socket_path().to_owned();
     let client = thread::spawn(move || {
@@ -50,6 +57,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut app = application::Application::new(&fixture);
         app.sync();
         assert_eq!(app.events.outputs, 1);
+        assert!(app.events.keyboard.keymap.starts_with("xkb_keymap"));
+        assert_eq!(app.events.keyboard.repeat, Some((25, 600)));
         assert_eq!(app.events.modes.last(), Some(&(320, 200)));
         app.configure();
         let (child, child_role) = app.child((24, 32));
@@ -112,7 +121,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if start.elapsed() > Duration::from_secs(10) {
             return Err("client deadline exceeded".into());
         }
-        nested.pump()?;
+        nested.pump_keyboard(&mut server)?;
         server.dispatch()?;
         rendered += server.render(&mut nested, start.elapsed().as_millis() as u32)?;
         thread::sleep(Duration::from_millis(4));

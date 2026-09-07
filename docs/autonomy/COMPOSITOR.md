@@ -22,7 +22,7 @@ requests, removes dead toplevel handles and flushes events. Each client gets its
 own Smithay compositor transaction state. The display is private, so callers
 cannot insert clients without that state. A backend drives this method and
 consumes `mapped_surfaces`; the nested driver now supplies rendering, while
-production event scheduling and input routing remain subsequent work.
+production event scheduling and pointer routing remain subsequent work.
 The acceptance budget bounds that loop only, not all client request processing.
 
 The advertised protocols are core compositor/subcompositor, SHM and XDG shell.
@@ -37,7 +37,8 @@ policy using upstream APIs, not an engine patch. Protocol errors disconnect only
 the offending client. Dead roots are filtered immediately and pruned on dispatch.
 
 Popups are explicitly dismissed with `popup_done` until popup placement/input
-exists. No seat, selection, context or agent protocol is advertised. An output
+exists. `Server::bind` advertises no seat, selection, context or agent protocol.
+`Server::bind_keyboard` adds the keyboard seat described below. An output
 is advertised when `Server::render` first receives a positive framebuffer size.
 The `SeatHandler` implementation is required by Smithay's XDG dispatch types;
 it creates no seat or input device. Frame callbacks are not completed by this
@@ -115,8 +116,8 @@ the new server's clients** and does not establish GPU acceleration.
 
 ## Remaining work and acceptance
 
-Nested rendering is now implemented as described below. Next implement
-keyboard/pointer routing, popup lifecycle and the direct DRM/seat
+Nested rendering and keyboard routing are implemented as described below. Next
+implement pointer routing, popup lifecycle and the direct DRM/seat
 backend. Window management, native entry, appearance, agent interaction and image
 integration continue in delivery order. This component does not complete item 33.
 
@@ -133,8 +134,8 @@ fixture uses a diagnostic title. Invalid dimensions, missing/unreachable
 Wayland configuration and failed graphics initialization return errors. X11
 is refused after checking the actual display handle. Winit permits one event
 loop per process: initialization failure ends the driver, rather than retrying
-creation. `Nested::pump` handles parent resize/close; close is terminal. Input
-events remain unconnected and no seat is advertised to applications.
+creation. `Nested::pump` handles parent resize/close; close is terminal. The
+keyboard component below adds `pump_keyboard` for input-enabled displays.
 
 Drive `pump`, `Server::dispatch`, then `Server::render(&mut nested, time)`.
 Dispatch flushes pending protocol events before a potentially blocking swap;
@@ -227,3 +228,93 @@ relaxed. Its local failure trace is retained separately. Final checks passed.
 Item 33 remains unchecked. Keyboard/pointer, popups, production scheduling,
 direct display and the usable desktop remain unfinished. Full supervisor
 Windows/Linux/BPF gates and physical certified-machine evidence are still owed.
+
+## Keyboard component (2026-09-07)
+
+`Server::bind_keyboard(runtime, name, XkbConfig)` creates a keyboard-only
+`alo-seat`. A keymap compilation failure drops the new display and its private
+socket, rather than leaving a session that cannot accept keys. The layout is
+explicitly supplied by trusted session configuration; only the developer fixtures
+choose `us`. Keyboard settings UI and persistent preferences remain session work.
+Clients receive an fd-backed XKB keymap and repeat rate/delay of 25 Hz/600 ms.
+Repeat belongs to clients; Winit's repeat events and duplicate transitions do
+not generate additional presses. Smithay and XKB remain pinned and unmodified.
+
+`keyboard_focus` accepts only this display's live mapped toplevel roots. Invalid,
+foreign and stale targets refuse before changing focus. `keyboard_key` accepts
+bounded Linux evdev codes, converts to XKB once and routes only with focus.
+There is no unfocused key buffer. Changing or clearing focus releases held keys
+through XKB before leave, at the last accepted input timestamp, so depressed
+modifiers cannot stick or cross into a new application's enter array. Lock
+modifiers retain the seat's normal XKB semantics. Dispatch clears focus after
+unmap, role destruction and disconnect; key delivery also rechecks eligibility.
+
+`Nested::pump_keyboard(&mut server)` processes parent activation and key events
+in order. Parent focus loss/close clears focus; while active, the first mapped
+root receives focus, matching the renderer's current front-to-back creation
+order. This is a minimal backend policy pending delivery step 3's window
+activation, shortcuts and stacking. Winit supplies XKB-offset codes; the bridge
+converts to the common evdev API without double-offsetting. Render-only callers
+can still use `Server::bind` and `Nested::pump`. Do not mix render-only pumping
+into a keyboard-driven session. Pointer capability is deliberately absent.
+
+These internal Rust interfaces expose no IPC, adapter verb, agent input injection
+or context reader. ADR 0001 and the agent/adapters contracts remain unchanged;
+surface ownership never grants an agent authority. ADR 0002's native shell
+boundary is preserved. Startup errors remain diagnostics that the future session
+entry must translate. Splitting keyboard routing and test wire observations into
+their own files keeps surface lifecycle and input state independently reviewable.
+
+### Checks actually run
+
+WSLg socket and native metadata were rechecked: xkbcommon 1.13.1, Wayland 1.24.0,
+EGL 1.5. No packages, shared kernel resources or other checkouts were changed.
+Linux uses `/root/alo-os-target` and explicit Cargo PATH for this checkout.
+
+```powershell
+cargo fmt --all
+cargo fmt --all --check
+cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo test -p alo-shell --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo clippy -p alo-shell --all-targets --locked -- -D warnings
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo build -p alo-shell --example nested_check --locked
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target cargo fmt --all --check
+git diff --check
+```
+
+All passed. Linux: **20 tests**, no ignored tests (one unit, sixteen real-client
+tests, three socket tests). Five new keyboard tests cover keymap/repeat,
+enter/key/modifiers/leave, two-client isolation, duplicate presses/unmatched
+releases, focus clear/reentry, unmap/disconnect/destruction, invalid key codes,
+missing keyboard, stale/foreign targets, and invalid keymap socket cleanup.
+Windows compiles with Linux code excluded and runs zero Linux tests. Two clippy
+passes found development issues: manual saturating arithmetic, then test slicing
+and `expect` usage. Corrected the code and tests without suppressing lints;
+final affected-target clippy passed. No test failures or gate relaxation.
+
+Additional integration commands, each exit 0:
+
+```powershell
+wsl -d Ubuntu -- env PATH=/root/.cargo/bin:/usr/bin:/bin CARGO_TARGET_DIR=/root/alo-os-target WAYLAND_DEBUG=1 timeout 30s cargo test -p alo-shell --locked --test client_lifecycle input::keyboard_keymap_focus_and_keys_are_isolated_between_clients -- --exact --nocapture
+wsl -d Ubuntu -- env WAYLAND_DEBUG=1 timeout 30s /root/alo-os-target/debug/examples/nested_check
+```
+
+Local `.git/alo-keyboard-wire.log` records 34206-byte keymap fd transfer, repeat
+25/600, evdev 42/30 presses, releases before leave, zero depressed modifiers and
+empty held-key arrays on enter to the next client. Keys are injected at the
+trusted backend API in this test; these are actual Unix-socket protocol events,
+not a physical keyboard measurement. `.git/alo-keyboard-nested.log` records
+320x200 GLES root/child submission (callbacks [367,367] in this run), keyboard-only
+seat/keymap/repeat assertions, unmap/remap, refusal and disconnect. Existing Mesa
+diagnostics remain. The WSLg parent has its own pointer; its wire events do not
+mean our nested server advertises pointer capability.
+
+Still owed: actual parent activation cycling while holding physical keys, direct
+seat/display execution, physical layout/modifier/repeat acceptance and certified
+machine records. The current fixture does not type through the parent window.
+Pointer routing, popups, production scheduling, shortcuts/window management and
+delivery steps 3-8 remain unfinished. Item 33 stays unchecked. The supervisor
+must independently run all full Windows/Linux/BPF publication gates; this worker
+has not staged, committed or pushed.

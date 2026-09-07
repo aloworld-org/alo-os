@@ -79,8 +79,29 @@ to main, pulling first and integrating any intervening commits before pushing.
   and disconnect (exit 0). Missing display and invalid EGL vendor each refused
   startup (exit 1). Focused Linux/Windows clippy/tests, Linux rustdoc and fmt
   evidence is recorded in `COMPOSITOR.md`; full supervisor gates are still owed.
-  **Next component:** keyboard/pointer seat advertisement and routing in the
-  nested backend, with focus, key/button/motion delivery and client-disconnect
+  **Selected keyboard component (desktop worker, this iteration):** explicit
+  fallible keyboard-seat initialization, mapped-root-only focus, nested Winit
+  key routing and parent-focus loss cleanup. Acceptance: real socket clients
+  verify keymap/repeat/enter/key/modifier/leave delivery, unfocused isolation,
+  unmap/disconnect cleanup, duplicate-key suppression and invalid-keymap refusal;
+  WSLg rendering regression and keyboard wire trace, fmt and affected clippy.
+  Pointer routing remains the next complete component, not a completed feature.
+  **Completed keyboard component 2026-09-07:** `bind_keyboard` compiles an explicit
+  XKB layout or removes its failed display; mapped-root focus and evdev key
+  routing deliver through Smithay's keyboard protocol. Focus changes release
+  held keys, and unmap/destruction/disconnect clear focus. `Nested::pump_keyboard`
+  connects parent activation and key events, using the renderer's frontmost root.
+  Twenty Linux tests pass (five new keyboard tests), including foreign/stale
+  target refusal, invalid keymaps/codes, duplicate transitions and client isolation.
+  A real socket trace records 34206-byte keymap fd transfer, repeat 25/600,
+  Shift/A presses, synthetic releases before leave and empty enter key arrays.
+  WSLg still submits real client trees with keyboard-seat/keymap assertions.
+  Focused Linux/Windows clippy/tests, Linux rustdoc, fmt and diff checks are
+  recorded in COMPOSITOR.md. Actual parent focus cycling with held physical keys,
+  direct input/display and certified hardware are still owed, as are supervisor
+  full publication gates. No pointer, shortcuts or completed compositor claim.
+  **Next component:** pointer seat advertisement and routing in the
+  nested backend, with hit testing, button/motion/axis delivery and client-disconnect
   tests. Then popup management and direct-display integration. Window management
   and usable session entry remain delivery steps 3 and 4; no physical acceptance
   or completed desktop is claimed by this rendering component.

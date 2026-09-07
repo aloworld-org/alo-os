@@ -19,7 +19,7 @@ pub struct Server {
     /// The display is private so every inserted client has our client state.
     display: Display<Surfaces>,
     /// Protocol state and mapped toplevels.
-    surfaces: Surfaces,
+    pub(crate) surfaces: Surfaces,
     /// Listener and private directory lifetime.
     socket: Socket,
     /// One output and its successfully submitted surface membership.
@@ -27,6 +27,10 @@ pub struct Server {
 }
 
 impl Server {
+    /// Handle kept private to the library's protocol-global initialization.
+    pub(crate) fn display_handle(&self) -> smithay::reexports::wayland_server::DisplayHandle {
+        self.display.handle()
+    }
     /// Bind `runtime/name/wayland`, refusing existing sessions and unsafe paths.
     pub fn bind(runtime: &Path, name: &str) -> Result<Self, SocketError> {
         let display = Display::new().map_err(io::Error::other)?;

@@ -4,6 +4,8 @@
     reason = "unexpected results fail the integration test"
 )]
 use super::Fixture;
+#[path = "keyboard_events.rs"]
+mod keyboard_events;
 use std::{
     fs::File,
     io::Write,
@@ -21,6 +23,8 @@ use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_ba
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Keyboard wire events, separate from buffer lifecycle observations.
+    pub keyboard: keyboard_events::KeyboardEvents,
     /// Advertised globals with their names and versions.
     globals: Vec<(u32, String, u32)>,
     /// Most recent XDG configure serial.
@@ -55,6 +59,10 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Events {
             if interface == "wl_output" {
                 let _: wl_output::WlOutput = registry.bind(name, version.min(4), qh, ());
                 state.outputs += 1;
+            }
+            if interface == "wl_seat" {
+                let _: wayland_client::protocol::wl_seat::WlSeat =
+                    registry.bind(name, version.min(9), qh, ());
             }
             state.globals.push((name, interface, version));
         }

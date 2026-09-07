@@ -660,9 +660,16 @@ which made a completely consistent rule look like work being taken out of turn.
     The WSLg fixture verifies root/child callbacks, offscreen-child withholding,
     unmap/remap, isolated refusal and disconnect; invalid EGL and missing display
     refuse startup. Focused checks and exact evidence are in `COMPOSITOR.md`.
-    This remains backend code, not a usable desktop. Keyboard/pointer routing,
+    This remains backend code, not a usable desktop. Pointer routing,
     popups, direct display and physical keyboard/pointer/display evidence remain
     owed, along with the supervisor's independent full publication gates.
+  - Keyboard component (2026-09-07): an explicitly configured XKB keyboard seat,
+    mapped-root focus and nested parent key routing. Real clients verify keymap,
+    repeat, modifier/key delivery and isolation, held-key cleanup on focus loss,
+    unmap/destruction/disconnect, and stale/foreign focus refusal. Invalid layouts
+    remove the failed display's socket. Pointer routing is next; item 33 remains
+    incomplete. Exact focused checks and remaining machine evidence are recorded
+    in `docs/autonomy/COMPOSITOR.md`.
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 
