@@ -42,6 +42,13 @@ pub struct Task {
     /// Whether the plan says it is finished.
     pub done: bool,
 
+    /// Whether the plan says it is blocked, which is not the same as unfinished.
+    ///
+    /// A task waiting on a decision somebody has to make is not work a
+    /// supervisor can start, and a loop that took it up would launch a worker
+    /// at a question rather than at a task.
+    pub blocked: bool,
+
     /// The numbers of the tasks it cannot start before.
     pub after: Vec<u32>,
 }
@@ -79,6 +86,7 @@ pub fn every_task(at: &Path) -> Result<Vec<Task>, String> {
                     number,
                     named: named.trim().to_owned(),
                     done: false,
+                    blocked: false,
                     after: Vec::new(),
                 });
             }
@@ -89,6 +97,9 @@ pub fn every_task(at: &Path) -> Result<Vec<Task>, String> {
         };
         if line.starts_with("**Done,") {
             current.done = true;
+        }
+        if line.starts_with("**Status:**") && line.contains("blocked") {
+            current.blocked = true;
         }
         if let Some(after) = line.split("**Depends on:**").nth(1) {
             current.after = numbers_in(after);
@@ -121,10 +132,13 @@ fn numbers_in(written: &str) -> Vec<u32> {
 
 /// The next task that can be worked on, or [`None`] when none can.
 ///
-/// The first that is not done and whose dependencies are all done. **Not the
-/// first that is not done**: a task waiting on one that is blocked is not
-/// executable, and taking it up would be the loop deciding the plan's order was
-/// advice.
+/// The first that is not done, not blocked, and whose dependencies are all
+/// done. **Not simply the first that is not done**: a task waiting on another,
+/// or on a decision somebody has to make, is not executable, and taking it up
+/// would be the loop deciding the plan's order was advice.
+///
+/// A blocked task is **stepped over rather than stopped at**, so one question
+/// awaiting an answer does not hold up work that has none.
 ///
 /// # Errors
 /// A sentence when the plan cannot be read.
@@ -133,6 +147,6 @@ pub fn next_executable(at: &Path) -> Result<Option<Task>, String> {
     let finished = |number: u32| tasks.iter().any(|task| task.number == number && task.done);
     Ok(tasks
         .iter()
-        .find(|task| !task.done && task.after.iter().copied().all(finished))
+        .find(|task| !task.done && !task.blocked && task.after.iter().copied().all(finished))
         .cloned())
 }

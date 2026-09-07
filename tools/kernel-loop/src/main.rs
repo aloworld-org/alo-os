@@ -36,9 +36,17 @@
 //! is next, the pull, the gates, the rebase, the re-gate, the bounded retry,
 //! and the log.
 //!
-//! So a run is: *select, wait, gate, publish, select…* until the plan has no
+//! When `ALO_KERNEL_LOOP_WORKER` names a command, the loop **launches one** for
+//! the task it chose rather than waiting for a person, and then does exactly
+//! what it would have done anyway: looks at the working tree and the handoff,
+//! gates them, and publishes only what passes. A worker's own account of what it
+//! did is never read. Without that setting it launches nothing, because making
+//! an agent run is not a supervisor's decision to take for whoever started it.
+//!
+//! So a run is: *select, work, gate, publish, select…* until the plan has no
 //! executable task left, nobody produces the work for the one selected, or
-//! somebody stops it.
+//! somebody stops it. A task the plan marks **blocked** is stepped over, so one
+//! question awaiting an answer does not hold up work that has none.
 //!
 //! # Stopping
 //!
@@ -54,6 +62,7 @@ mod lock;
 mod plan;
 mod publishing;
 mod repository;
+mod worker;
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -226,6 +235,20 @@ fn one_iteration(at: &Path, ours: &Path) -> Result<journal::Went, String> {
         ours,
         &format!("next in the plan: {}. {}", chosen.number, chosen.named),
     );
+
+    // **The worker writes it; the loop gates it.** Nothing the worker says is
+    // read — what is inspected is the working tree and the handoff, through the
+    // repository's own checks, exactly as for a change a person wrote.
+    if worker::is_configured() && handoff::Handed::waiting(ours)?.is_none() {
+        journal::note(ours, "launching one worker for it");
+        match worker::ran_on(at, &chosen) {
+            Ok(()) => journal::note(ours, "the worker finished; inspecting what it left"),
+            Err(why) => {
+                journal::note(ours, &format!("the worker did not finish: {why}"));
+                return Ok(journal::Went::NobodyWroteIt(chosen.named));
+            }
+        }
+    }
 
     let Some(task) = waiting_for(ours, &chosen.named)? else {
         return Ok(journal::Went::NobodyWroteIt(chosen.named));
