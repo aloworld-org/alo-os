@@ -8,3 +8,10 @@ Thumbs.db
 
 # The kernel half is its own workspace, so its build output is its own directory.
 /crates/alo-bounding-kernel/target
+/tools/kernel-loop/target
+
+# The kernel-enforcement supervisor's own lock, log, stop flag and the handoffs
+# it has already published. Every bit of it is about one machine's run of the
+# loop rather than about the repository, and a committed lock file would be a
+# lock two checkouts fought over while it meant nothing to either.
+/.kernel-loop

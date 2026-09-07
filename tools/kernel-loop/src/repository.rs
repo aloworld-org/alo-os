@@ -1,0 +1,152 @@
+//! Every `git` this loop runs, in one file, so that what it can do to a
+//! checkout is a list somebody can read.
+//!
+//! **What is not here is the point.** There is no `reset`, no `checkout --`, no
+//! `clean`, no `push --force` and no `rebase --skip`. A supervisor with any of
+//! those can throw away work that was never published anywhere, and no message
+//! it writes afterwards brings the work back.
+
+use std::path::Path;
+use std::process::Command;
+
+/// The branch this workstream publishes to.
+const MAIN: &str = "main";
+
+/// Run one `git` and hand back what it said.
+///
+/// # Errors
+/// A sentence naming the command and what it printed, so a failure reads as
+/// *this is what git was asked and this is what it answered* rather than as an
+/// exit code.
+pub fn git(at: &Path, args: &[&str]) -> Result<String, String> {
+    let said = Command::new("git")
+        .current_dir(at)
+        .args(args)
+        .output()
+        .map_err(|why| format!("git could not be run: {why}"))?;
+    let out = String::from_utf8_lossy(&said.stdout).trim().to_owned();
+    if said.status.success() {
+        return Ok(out);
+    }
+    let err = String::from_utf8_lossy(&said.stderr).trim().to_owned();
+    Err(format!("`git {}` refused: {err}{out}", args.join(" ")))
+}
+
+/// That this is `main`, and that nothing is changed except what a task named.
+///
+/// The second half is what stops a task publishing somebody else's work by
+/// accident: a file changed in the tree and absent from the handoff is either a
+/// second task half-done or a mistake, and both are worth stopping over.
+///
+/// # Errors
+/// A sentence naming the branch, or the files nobody accounted for.
+pub fn on_main_and_clean_but_for(at: &Path, named: &[String]) -> Result<(), String> {
+    let branch = git(at, &["rev-parse", "--abbrev-ref", "HEAD"])?;
+    if branch != MAIN {
+        return Err(format!(
+            "the checkout is on `{branch}` and this workstream publishes to `{MAIN}`"
+        ));
+    }
+    let changed = git(at, &["status", "--porcelain"])?;
+    let unaccounted: Vec<&str> = changed
+        .lines()
+        .filter_map(|line| line.get(3..))
+        .filter(|path| !named.iter().any(|named| named == path))
+        .collect();
+    if !unaccounted.is_empty() {
+        return Err(format!(
+            "these are changed and no task named them, so nothing was published: {}",
+            unaccounted.join(", ")
+        ));
+    }
+    Ok(())
+}
+
+/// Bring in whatever was published while the work was being done.
+///
+/// Fast-forward only. A merge commit made by a supervisor is a supervisor
+/// deciding how two people's work fits together, which is a judgement it has no
+/// way to make.
+///
+/// # Errors
+/// A sentence when the checkout cannot be fast-forwarded, which means local
+/// commits exist and the caller should be rebasing rather than pulling.
+pub fn pulled(at: &Path) -> Result<(), String> {
+    git(at, &["pull", "--ff-only", "origin", MAIN]).map(|_| ())
+}
+
+/// Whether `origin/main` has anything this checkout does not.
+///
+/// # Errors
+/// Whatever `git` said about fetching or counting.
+pub fn advanced(at: &Path) -> Result<bool, String> {
+    git(at, &["fetch", "origin", MAIN, "--quiet"])?;
+    let behind = git(at, &["rev-list", "--count", "HEAD..origin/main"])?;
+    Ok(behind.trim() != "0")
+}
+
+/// Put this checkout's unpublished commits on top of what arrived.
+///
+/// # Errors
+/// A sentence when the rebase stops, which on this workstream means a real
+/// conflict. **Nothing is aborted here**: the rebase is left exactly where it
+/// stopped so that whoever looks at it sees what git saw. A supervisor that ran
+/// `--abort` would be one that hides a conflict by undoing it.
+pub fn rebased_onto_origin(at: &Path) -> Result<(), String> {
+    git(at, &["rebase", "origin/main"])
+        .map(|_| ())
+        .map_err(|why| {
+            format!(
+                "{why}\nThe rebase has been left where it stopped, with both sides intact. \
+             Resolve it by hand; nothing has been aborted or discarded."
+            )
+        })
+}
+
+/// Stage exactly these paths.
+///
+/// # Errors
+/// Whatever `git` said. Named one at a time so a path that does not exist is a
+/// failure that names the path.
+pub fn staged(at: &Path, files: &[String]) -> Result<(), String> {
+    for named in files {
+        git(at, &["add", "--", named])?;
+    }
+    Ok(())
+}
+
+/// Commit what is staged, with this message, as whoever the checkout is
+/// configured as.
+///
+/// **No author override and no trailer.** The identity is the repository's own
+/// configuration, which is the owner's; a supervisor that set an author would be
+/// claiming somebody wrote something they did not.
+///
+/// # Errors
+/// Whatever `git` said.
+pub fn committed(at: &Path, message: &str) -> Result<String, String> {
+    let mut wrote = tempting(at, message)?;
+    let made = git(at, &["commit", "--quiet", "--file", &wrote]);
+    drop(std::fs::remove_file(&wrote));
+    wrote.clear();
+    made?;
+    git(at, &["rev-parse", "--short", "HEAD"])
+}
+
+/// Put the message somewhere `git` can read it, because a commit body has
+/// newlines in it and an argument list is a poor place for those.
+fn tempting(at: &Path, message: &str) -> Result<String, String> {
+    let named = at.join(".kernel-loop").join("message.txt");
+    std::fs::write(&named, message)
+        .map_err(|why| format!("the commit message could not be written: {why}"))?;
+    Ok(named.to_string_lossy().into_owned())
+}
+
+/// Publish. An ordinary push, and never a forced one.
+///
+/// # Errors
+/// Whatever `git` said, which for a lost race is the fast-forward hint the
+/// caller reads as *integrate and try again*.
+pub fn pushed(at: &Path) -> Result<(), String> {
+    git(at, &["push", "origin", MAIN]).map(|_| ())
+}

@@ -1,0 +1,25 @@
+[package]
+name = "alo-kernel-loop"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "GPL-3.0-or-later"
+description = "The kernel-enforcement workstream's own supervisor: gates, publishes and records one completed task at a time."
+
+# Its own workspace, as `tools/dev-loop` is. Two reasons, and both matter: this
+# is not part of what alo OS ships, so it has no business in the workspace whose
+# `cargo test --workspace` is a release gate; and the compositor worker's
+# supervisor is a separate program that must keep running whatever happens here.
+[workspace]
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+indexing_slicing = "deny"
