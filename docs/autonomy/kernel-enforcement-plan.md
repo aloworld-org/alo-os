@@ -170,6 +170,20 @@ sockets the person was shown.
   anything the compositor worker's machine shares.** If loopback cannot be used
   safely, stop and report rather than reaching outward.
 
+**Done, 2026-09-07.** `crates/alo-bounding/tests/what_a_turn_can_reach_on_the_network.rs`.
+One turn bound to one folder, on a running kernel with the real programme
+loaded: the same child is **refused a file nobody granted** with `EACCES`, and
+then **opens a socket, which nothing stops**.
+
+The file refusal is the control and it is not decoration — *a bound turn opened
+a socket* is also what a turn with no boundary at all would do, so a fixture
+that quietly failed to bind anything would have reported the gap it was written
+to find. The address is a listener the test owns on loopback, on a port the
+operating system chose; nothing resolves a name and nothing leaves the machine.
+
+The test asserts what this machine does **today**, so the day task 3 lands it
+fails and says where to come and what to change.
+
 ### 3. Socket attribution and default-deny for a bound turn
 
 **Status:** blocked on 1 and 2. **Depends on:** 1, 2.
