@@ -213,15 +213,17 @@ swapped in afterwards, or a hard link, which is a second real name for a file
 that also lives elsewhere and which no amount of resolving reveals. Both are in
 `docs/quirks.md`, and closing the first belongs to the code that opens the file.
 
-**It is closed there, for reads, on Linux.** A file is opened by a single call
-that refuses a symbolic link at *every* component of its path, so a folder on
-the way cannot be exchanged after the questions above were answered. Moving a
-name is one call that refuses or moves rather than a check followed by an act.
-What remains open is a folder on the way to a name a *rename* uses, and the hard
-link, which no platform closes; `docs/quirks.md` has both, and the machines with
-no such calls keep the behaviour this paragraph describes. None of that changes
-what an adapter author writes or what a caller sees — the same refusals, in the
-same words.
+**It is closed there, on Linux.** A file is opened by a single call that refuses
+a symbolic link at *every* component of its path, so a folder on the way cannot
+be exchanged after the questions above were answered. Moving a name is one call
+that refuses or moves rather than a check followed by an act, and it is made
+from **handles** on the two folders rather than from their names — so the folder
+a file leaves and the folder it arrives in cannot be exchanged either.
+
+What remains is the hard link, which no platform closes. `docs/quirks.md` has
+it, and the machines with no such calls keep the behaviour the paragraph above
+describes. None of this changes what an adapter author writes or what a caller
+sees — the same refusals, in the same words.
 
 A refusal at question 1 is the grants' own and travels as the value they made.
 A refusal at question 2 or 3 is worded by whatever executes the verb, because

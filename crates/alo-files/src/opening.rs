@@ -70,19 +70,43 @@
 //! grants were asked. Refusing every link therefore refuses the substitution
 //! and nothing a person legitimately named.
 //!
-//! # What a rename still cannot promise, and why it is not fixed here
+//! # A rename holds its two folders instead, and why that is allowed
 //!
-//! `renameat2` has no `RESOLVE_NO_SYMLINKS`. A rename never follows a link in
-//! the *final* position — it moves the link itself — so the destination cannot
-//! be turned into a way of writing somewhere else. The folders **on the way**
-//! to either name are resolved by name, and closing that would need handles on
-//! the two folders, which needs opening them, which is the boundary again: the
-//! folder a `move_file` takes a file *out of* is not a place its call named.
+//! `renameat2` has no `RESOLVE_NO_SYMLINKS`, so the trick above does not work
+//! twice. What it does take is two directory handles, and the folders on the
+//! way to either name cannot be exchanged once they are held rather than named.
 //!
-//! So a rename closes the collision race — one call that refuses and moves —
-//! and leaves the substitution race on its path components open. That is in
-//! `docs/quirks.md` with what it would take to close it, which is a decision
-//! about how wide a turn's boundary is and belongs in an ADR rather than here.
+//! Taking a handle means opening something, which is the boundary again — and
+//! the folder a `move_file` takes a file *out of* is not a place its call
+//! named. **`O_PATH` is what makes it possible, and it was measured rather than
+//! assumed** (item 6c). `alo-bounding`'s `what_an_o_path_handle_is` puts the
+//! question to a running kernel with the real programme loaded, and the answer
+//! has four parts:
+//!
+//! - an `O_PATH` open of a folder nobody granted **succeeds** — Linux does not
+//!   run `security_file_open` for one, so the boundary never sees it;
+//! - opening a file **through** that handle is refused with `EACCES`, because
+//!   the boundary walks up from the *file's own* directory entry and does not
+//!   care which handle it was reached from;
+//! - so is turning the handle back into a readable one through `/proc/self/fd`,
+//!   which is the way round somebody would actually try;
+//! - and `renameat2` accepts the handles.
+//!
+//! So an `O_PATH` handle is a reference to a place that confers no reading —
+//! exactly the authority needed to move a name, and none of the authority the
+//! boundary exists to withhold. **Nothing here widens what a turn may reach**,
+//! and the test asserts all four parts so that a kernel which changes any of
+//! them fails rather than quietly downgrades.
+//!
+//! There is a plainer reason as well, and it is in that test too: a rename is
+//! not on this boundary's hook at all. ADR 0015 names `inode_rename` beside
+//! `file_open` and only `file_open` is built, so the kernel does not watch
+//! renames yet. This closes a race in our own code above a syscall the boundary
+//! was never checking.
+//!
+//! The final component of each name is not followed, which is `renameat2`'s own
+//! behaviour and the right one: a link put where the file was is moved as the
+//! link it is, rather than being reached through.
 //!
 //! # Refusing rather than degrading
 //!
@@ -131,12 +155,10 @@ pub(crate) fn read_only(path: &Path) -> io::Result<File> {
 /// Move a name, refusing to replace anything already at the destination.
 ///
 /// On Linux this is one syscall that both checks and moves, so there is no
-/// moment in between. Elsewhere it is a check and then a move, and the gap is
-/// the one `docs/quirks.md` records.
-///
-/// Neither half promises anything about a folder **on the way** to either name;
-/// [`self`] says why that is a boundary question rather than a syscall one, and
-/// `docs/quirks.md` keeps it.
+/// moment in between, and it is made from handles on the two folders rather
+/// than from their names, so neither can be exchanged either. Elsewhere it is a
+/// check and then a move, by name, and the gap is the one `docs/quirks.md`
+/// records.
 ///
 /// # Errors
 /// [`io::ErrorKind::AlreadyExists`] when the destination is taken — which the
@@ -151,8 +173,10 @@ pub(crate) fn rename_no_replace(from: &Path, to: &Path) -> io::Result<()> {
 mod platform {
     //! The Linux answers, and the only place `rustix` is named in this crate.
 
+    use std::ffi::OsStr;
     use std::fs::File;
     use std::io;
+    use std::os::fd::OwnedFd;
     use std::path::{Component, Path};
 
     use rustix::fs::{CWD, Mode, OFlags, RenameFlags, ResolveFlags, openat2, renameat_with};
@@ -161,6 +185,10 @@ mod platform {
     const READING: OFlags = OFlags::RDONLY
         .union(OFlags::CLOEXEC)
         .union(OFlags::NOFOLLOW);
+
+    /// Referring to a folder without opening it: a place a name can be moved in
+    /// or out of, and nothing that can be read, written or listed.
+    const REFERRING: OFlags = OFlags::PATH.union(OFlags::CLOEXEC).union(OFlags::DIRECTORY);
 
     /// **The whole of the guarantee.** No component of this path may be a
     /// symbolic link — not the last one, and not one on the way to it.
@@ -216,15 +244,41 @@ mod platform {
         Ok(File::from(opened))
     }
 
+    /// A reference to the folder a path's last name is in, and that name.
+    ///
+    /// `O_PATH` is the whole point: it is a handle on a *place* rather than an
+    /// open file — nothing can be read, written or listed through one — and
+    /// [`super`] gives the measured reason that matters, which is that the
+    /// boundary neither sees it nor needs to. `RESOLVE_NO_SYMLINKS` is what
+    /// makes it worth taking: the folder is reached by a path no component of
+    /// which was a link, and from then on it is held rather than named.
+    fn folder_holding(path: &Path) -> io::Result<(OwnedFd, &OsStr)> {
+        let (Some(folder), Some(name)) = (path.parent(), path.file_name()) else {
+            return Err(not_ours());
+        };
+        let held =
+            openat2(CWD, folder, REFERRING, Mode::empty(), STRICTLY).map_err(io::Error::from)?;
+        Ok((held, name))
+    }
+
     /// See [`super::rename_no_replace`].
     ///
-    /// `CWD` with two absolute paths, and not handles on the two folders. That
-    /// is deliberate and [`super`] argues it: handles would mean opening the
-    /// folders, and a turn's boundary permits opening only what its call named.
+    /// Both folders are held rather than named, so neither can be exchanged
+    /// between being resolved and being renamed in — and the two names are the
+    /// last components, which `renameat2` never follows.
     pub(super) fn rename_no_replace(from: &Path, to: &Path) -> io::Result<()> {
         already_resolved(from)?;
         already_resolved(to)?;
-        renameat_with(CWD, from, CWD, to, RenameFlags::NOREPLACE).map_err(io::Error::from)
+        let (from_folder, from_name) = folder_holding(from)?;
+        let (to_folder, to_name) = folder_holding(to)?;
+        renameat_with(
+            &from_folder,
+            from_name,
+            &to_folder,
+            to_name,
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(io::Error::from)
     }
 }
 

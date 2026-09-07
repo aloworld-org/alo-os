@@ -655,6 +655,42 @@ deny list.** Two patterns later items must follow:
   name, and closing that needs handles the boundary will not permit. There is a
   test asserting the gap as it is, so the day it closes, something fails.
 
+- [x] **6c. A rename holds its two folders.** The gap 6b left, closed — and
+  closed inside the accepted security model rather than by widening it, which
+  was the thing this item existed to find out.
+
+  **The finding first, because the code follows from it.** `O_PATH` was a guess
+  in 6b's write-up and is now a measurement:
+  `crates/alo-bounding/tests/what_an_o_path_handle_is.rs` binds a turn to one
+  folder with the real programme loaded on a running kernel and asks six
+  questions. An `O_PATH` open of a folder **nobody granted** succeeds, so Linux
+  really does not run `security_file_open` for one. Opening a file *through*
+  that handle is `EACCES`, and so is reopening it through `/proc/self/fd` — and
+  those two hold structurally rather than luckily, because `deciding.rs` walks
+  up from the file's own directory entry and does not care which handle reached
+  it. `renameat2` takes the handles.
+
+  So an `O_PATH` handle is a reference to a place that confers no reading:
+  exactly the authority needed to move a name, none of the authority the
+  boundary withholds. **`Reaching` is unchanged, no ADR needed, and nothing a
+  turn may reach got wider.**
+
+  What is built: `folder_holding` in `crates/alo-files/src/opening.rs`, opening
+  each folder with `O_PATH | O_DIRECTORY` and `RESOLVE_NO_SYMLINKS`, and
+  `rename_no_replace` making its one `renameat2` from the two handles and the
+  two last names. Three new integration tests — the folder a move takes a file
+  out of, the folder it puts one into, and a rename's own folder, each exchanged
+  after the grants said yes — of which two were checked against the previous
+  code and failed. `alo-agentd`'s `a_turn_is_bounded_by_the_kernel` now carries
+  out a granted **move** inside a real boundary as well as a read and an
+  archive, which is the guard that would have caught 6b's first design and now
+  guards this one.
+
+  **And it found item 6d**: a plain rename of an ungranted file succeeds under
+  the boundary, because only `file_open` is hooked and ADR 0015 names
+  `inode_rename` too. That is a gap in the boundary rather than in this crate,
+  it is asserted as it stands, and it is not something this item leaned on.
+
   What it could not close is **item 6b, below under *blocked — linux***: the two
   gaps between checking a path and acting on it that only Linux calls close.
 
@@ -4087,25 +4123,29 @@ rather than only of what is convenient.
   v0.01 promise had no item until iteration 24 read this line properly. It is
   item 11 above. What is left here is genuinely Linux: nothing in this
   repository can start a program on a machine that has no compositor.
-- **6c. How wide a turn's boundary is when it moves a file.** What 6b could not
-  close, and the reason is not a missing syscall. `renameat2` has no
-  `RESOLVE_NO_SYMLINKS`, so the only way to keep a folder **on the way** to
-  either name from being exchanged is handles on the two folders — and getting a
-  handle means opening one, and a turn's boundary (ADR 0013, ADR 0015) permits
-  opening only what its call named. The folder a `move_file` takes a file *out
-  of* is not that. So the question is whether `alo_files::Reaching` should
-  include it, which widens what a bugged verb can reach under a single-file
-  grant — the trade `reaching.rs` already argues for a rename and calls *the
-  only case*. Making it two cases is an ADR, not a commit.
+- **6d. A rename is not on the boundary's hook.** Found by measuring, while item
+  6c was checking something else: with a turn bound to one folder and the real
+  programme loaded, **a plain rename of a file nobody granted succeeds.** ADR
+  0015's own mechanism section names `inode_rename` beside `file_open`, and only
+  `file_open` is built — so the kernel watches what a turn *opens* and not what
+  it *moves*.
 
-  There may be a third answer worth checking first: an `O_PATH` open is believed
-  not to reach the `file_open` hook at all, which would mean handles on the two
-  folders that the boundary never sees and that grant no read of anything. That
-  is a claim about kernel internals and has **not** been verified on a running
-  kernel, so it is a thing to test rather than a thing to build on.
+  Nothing is currently wrong because of it: `alo-capability` refuses such a call
+  long before a syscall, and since 6c `alo-files` does not resolve a rename's
+  folders by name either. But that is the daemon's honest account of itself
+  again, which is the exact thing ADR 0013 exists to stop being the only thing
+  standing there — a bug in a verb would be caught for a read and not for a
+  move.
 
-  `crates/alo-files/tests/nothing_is_swapped_in_between.rs` asserts the gap as
-  it is today, so whoever closes it is told by a failing test.
+  What it needs: the same walk `deciding.rs` already does, on `inode_rename`,
+  against both directory entries the hook is handed. The map, the places and the
+  `reaches` rule are all built and unchanged. The one new question is what a
+  bound should say about a rename **out of** one granted folder and **into**
+  another, which is a real call and must not be refused.
+
+  `crates/alo-bounding/tests/what_an_o_path_handle_is.rs` asserts the gap as it
+  is today — the last row of it — so whoever closes this is told by a failing
+  test rather than by finding this paragraph.
 - **4b. Where the record file lives, and when it is shortened.** What item 4a
   could not close, and the whole of what is left of it: a path under `/var/lib`
   that the package decides, the setting the retention rule is read from and

@@ -10105,3 +10105,100 @@ COMPOSITOR and quirks updated together. Supervisor full Windows/Linux/BPF gates
 remain owed, as do actual parent input/focus cycles, parent-leave support,
 physical display/input and certified hardware records. Delivery steps 3-8 and
 all remaining v0.01 scope remain intact. WSLg cannot certify hardware.
+
+---
+
+---
+
+## 2026-09-07 — a rename holds its two folders (item 6c), and what measuring found
+
+Item 6b closed the substitution race for reads and left one open for renames,
+and wrote down two candidate answers: widen `alo_files::Reaching` to include the
+folder a `move_file` takes a file out of, which is an ADR because it widens what
+a bugged verb can reach under a single-file grant; or `O_PATH`, which 6b called
+"a claim about kernel internals" that "has **not** been verified on a running
+kernel, so it is a thing to test rather than a thing to build on."
+
+**It was tested first.** `crates/alo-bounding/tests/what_an_o_path_handle_is.rs`
+binds a turn to one granted folder, with the real programme loaded on this
+kernel, and asks six questions from inside it. What this kernel said:
+
+| | |
+|---|---|
+| `O_PATH` on an **ungranted** folder | opens |
+| `O_PATH` on an ungranted file | opens |
+| `openat` a file **through** that handle | `EACCES` |
+| reopening it through `/proc/self/fd/N` | `EACCES` |
+| `renameat2` between two `O_PATH` handles | works |
+| a plain rename of an ungranted file | **works** |
+
+The first two say the claim is true: Linux does not run `security_file_open` for
+an `O_PATH` open, so the boundary never sees one. **Rows three and four are the
+ones that decide**, and they were the point of testing rather than reasoning: a
+handle the boundary cannot see would be a hole if anything could be read through
+it, and nothing can. That holds structurally rather than luckily — the programme
+in `alo-bounding-kernel` walks upwards from the *file's own* directory entry, so
+what decides an open is where the file is and not which handle reached it.
+
+So an `O_PATH` handle carries exactly the authority needed to move a name and
+none of the authority the boundary exists to withhold. **`Reaching` is
+unchanged, no ADR moved, and nothing a turn may reach got wider.** The
+alternative — widening `Reaching` — was not implemented and is not needed.
+
+**What was built.** `folder_holding` in `crates/alo-files/src/opening.rs` opens
+each folder with `O_PATH | O_DIRECTORY` and `RESOLVE_NO_SYMLINKS`, so the folder
+is reached by a path no component of which was a link and then held rather than
+named; `rename_no_replace` makes its one `renameat2` from the two handles and
+the two last names, still with `RENAME_NOREPLACE`. The final component of each
+name is not followed, which is `renameat2`'s own behaviour and the right one.
+No public surface moved. The portable half is unchanged.
+
+**Tests.** Three new integration tests in `nothing_is_swapped_in_between.rs` —
+the folder a move takes a file **out of**, the folder it puts one **into**, and
+a rename's own folder, each exchanged after the grants said yes. Two of them
+were checked against the previous code by putting the by-name `renameat2` back
+for one run, and both failed. The third (moving *into* an exchanged folder) is
+refused by `move_into`'s own *that is not a folder* check before the handle is
+reached, and its doc comment says so rather than claiming the handle did it.
+The test that asserted the gap as it stood is now a test that asserts the
+refusal.
+
+`alo-agentd`'s `a_turn_is_bounded_by_the_kernel` now carries out a granted
+**move** inside a real boundary, beside the read and the archive it already did.
+That is the guard that caught 6b's first design, and it is now the guard for
+this one: if a kernel ever checked an `O_PATH` open the way it checks an
+ordinary one, a granted move would be refused with `EACCES` and that test says
+so.
+
+**What the measuring found, and it is not this item's to fix — item 6d.** The
+last row above: **a plain rename of a file nobody granted succeeds** under the
+boundary. ADR 0015's mechanism section names `inode_rename` beside `file_open`,
+and only `file_open` is built, so the kernel watches what a turn opens and not
+what it moves. Nothing is wrong today — `alo-capability` refuses such a call
+long before a syscall — but it is the daemon's own account of itself again,
+which is what ADR 0013 exists to stop being the only thing standing there. It is
+written into `docs/quirks.md` and queue item 6d, and asserted as it stands so
+that whoever closes it is told by a failing test. **Item 6c did not lean on it**:
+the argument above is about what an `O_PATH` handle confers, and would hold
+unchanged on a machine whose boundary did watch renames.
+
+Checks actually run, on Linux (Ubuntu/WSL2, kernel 6.18.33.2, stable Rust
+1.98.0), with a `CARGO_TARGET_DIR` of this checkout's own:
+
+- `cargo fmt --all --check`: clean.
+- `cargo clippy --workspace --all-targets -- -D warnings`: zero warnings.
+- `cargo test --workspace`: 108 test binaries, all ok, no failures — including
+  both tests that load the real BPF LSM on this kernel.
+- `RUSTDOCFLAGS=-D warnings cargo doc --workspace --no-deps`: clean.
+
+Shared kernel state: the tests that load a programme take
+`on_this_kernel::one_at_a_time()` and pin under a path named for their own
+process, which is the arrangement the three existing files already use; the new
+one is a fourth and changes none of it. `bpffs` was mounted at `/sys/fs/bpf`
+where a WSL restart had lost it, which is what the supervisor does and what
+`docs/hardware.md` asks for. No other worker's processes were stopped and
+nothing was unloaded.
+
+**Hardware acceptance remains outstanding.** Every measurement above is from
+WSL2, which `docs/hardware.md` says cannot certify a machine, and no *On the
+machine* box moved.

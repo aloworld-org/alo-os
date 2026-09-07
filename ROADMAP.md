@@ -514,9 +514,19 @@ compositor is not required for, which is why it runs unbroken.
         walk this was first written as had to be thrown away, and what threw it
         away was the boundary above: opening `/` and each folder under it is
         opening things the call never named, and a bounded turn was refused its
-        own granted file. What is left of it is item 6c, a question about how
-        wide a turn's boundary is when it moves a file, recorded in
-        `docs/quirks.md` with a test that asserts the gap as it is
+        own granted file. Since item 6c a move is held to the same promise: a
+        rename cannot resolve its whole path in one call, so it **holds** its
+        two folders instead — reached by a path with no link in it and then kept
+        as handles — and neither the folder a file leaves nor the one it arrives
+        in can be exchanged underneath the call. That was allowed to be built
+        because it was measured rather than assumed: an `O_PATH` handle is
+        invisible to the boundary *and confers no reading*, checked against a
+        running kernel with the programme loaded, so nothing a turn may reach
+        got wider and no ADR had to move. A granted move now runs inside a real
+        boundary in `alo-agentd`'s own test, which is the guard that caught 6b's
+        first design. What the measuring found instead is item 6d: a rename is
+        not on the boundary's hook at all, which ADR 0015 names and nothing has
+        built yet
   - [ ] **On the machine.**
         the door being reached — the path moved in code and no connection from a
         second login has been made since, and it cannot be until an image exists

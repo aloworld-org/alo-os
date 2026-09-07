@@ -549,32 +549,67 @@ replaced that was not named* is a property rather than a check with a gap after
 it. A filesystem that does not implement the flag answers `EINVAL` and the move
 is refused rather than done the replacing way.
 
-**What is still open, and why it is not a syscall away.** `renameat2` has no
-`RESOLVE_NO_SYMLINKS`. It never follows a link in the final position — it moves
-the link itself — so a destination cannot become a way of writing somewhere
-else, and a rename moves whatever link was put where the file was rather than
-what it points at. The folders **on the way** to either name are still resolved
-by name, so a `move_file` whose source folder is exchanged after the grants said
-yes takes the file from where the link leads. Closing that needs handles on the
-two folders, which needs opening them — and a turn's kernel boundary (ADR 0013,
-ADR 0015) permits opening only what its call named, which the folder a move
-takes a file *out of* is not. So it is a decision about how wide a turn's
-boundary is, and it belongs in an ADR rather than in a commit.
+**And the folders on the way to a rename are closed too** (item 6c).
+`renameat2` has no `RESOLVE_NO_SYMLINKS`, so it takes **handles on the two
+folders** instead — opened with `O_PATH` and `RESOLVE_NO_SYMLINKS`, which
+reaches each folder by a path no component of which was a link and then holds it
+rather than naming it. A folder exchanged after the grants said yes is therefore
+not walked through, on the source side and the destination side alike. The final
+component of each name is not followed, which is `renameat2`'s own behaviour and
+the right one: a link put where the file was is moved as the link it is.
 
-The same reason is why the first walk written for this — open `/`, then each
-folder relative to the handle before it — could not be used: every one of those
-opens is above what the call named, and a bounded turn was refused its own
-granted file with `EACCES`. `alo-agentd`'s `a_turn_is_bounded_by_the_kernel`
-caught it on a running kernel.
-`crates/alo-files/tests/nothing_is_swapped_in_between.rs` holds all of this
-down, including a test that asserts the remaining gap as it is, so that the day
-it closes something fails and says so.
+Why that is allowed to be done at all is the entry below, and it was measured
+rather than assumed.
+
+The first walk written for reads — open `/`, then each folder relative to the
+handle before it — could not be used: every one of those opens is above what the
+call named, and a bounded turn was refused its own granted file with `EACCES`.
+`alo-agentd`'s `a_turn_is_bounded_by_the_kernel` caught it on a running kernel,
+and since item 6c that test also carries out a granted **move** inside a real
+boundary, so the same mistake cannot be made twice.
+`crates/alo-files/tests/nothing_is_swapped_in_between.rs` holds all of it down.
 
 **Windows and everything else keep what they had:** `File::open` and a check
 before the rename, with the gap this entry is about. `std` has no better answer
 there.
-**Date:** 2026-09-02, extended 2026-09-02 by the acting half, mostly closed on
-Linux 2026-09-07 by item 6b
+**Date:** 2026-09-02, extended 2026-09-02 by the acting half, closed on Linux
+2026-09-07 by items 6b and 6c
+
+### An `O_PATH` open is not on the `file_open` hook, and confers no reading
+**Version:** Linux 6.18.33.2, measured 2026-09-07 with alo OS's own BPF LSM
+loaded; `crates/alo-bounding/tests/what_an_o_path_handle_is.rs`
+**Behaviour:** `O_PATH` produces a handle on a *place* rather than an open file.
+Linux does not run `security_file_open` for one, so a boundary on that hook
+never sees it — which reads like a way round a boundary and is why this was
+measured rather than reasoned about. With a turn bound to one granted folder:
+
+| | |
+|---|---|
+| `O_PATH` on an **ungranted** folder | opens |
+| `O_PATH` on an ungranted file | opens |
+| `openat` a file **through** that handle | `EACCES` |
+| reopening it through `/proc/self/fd/N` | `EACCES` |
+| `renameat2` between two `O_PATH` handles | works |
+| a plain rename of an ungranted file | **works** |
+
+**Our response:** `alo-files` takes `O_PATH` handles on the two folders of a
+rename, and nothing else does. The first two rows are what makes that possible;
+**rows three and four are why it is not a hole**, and they hold for a structural
+reason rather than a lucky one — the programme in `alo-bounding-kernel` walks
+upwards from the *file's own* directory entry, so what decides is where a file
+is and not which handle it was reached from. An `O_PATH` handle therefore
+carries exactly the authority needed to move a name and none of the authority
+the boundary exists to withhold, and **nothing about this widens what a turn may
+reach**. The test asserts every row, so a kernel that changes any of them fails
+loudly rather than downgrading a guarantee in silence.
+
+**The last row is the one to keep in view.** A rename is not on this boundary's
+hook at all: ADR 0015 names `inode_rename` beside `file_open` and only
+`file_open` is built, so moving a file nobody granted is something the kernel
+does not stop today. That is a gap in the *boundary*, not in `alo-files` — the
+capability model refuses such a call long before it reaches a syscall — and it
+is queue item 6d rather than something item 6c quietly relied on.
+**Date:** 2026-09-07
 
 ### Windows returns a path spelled differently from the one it was given
 **Version:** Windows 11 26200, Rust 1.97 `std::fs::canonicalize`

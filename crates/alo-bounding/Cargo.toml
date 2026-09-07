@@ -26,5 +26,12 @@ thiserror = { workspace = true }
 # embeds.
 alo-bounding-map = { path = "../alo-bounding-map" }
 
+# Only for a test, and only to ask this kernel questions `std` has no spelling
+# for: what an `O_PATH` handle is to this boundary, which is what decided
+# whether `alo-files` could take one (queue item 6c). The crate itself uses none
+# of it, and the answer is in `docs/quirks.md` rather than only in the test.
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+rustix = { workspace = true }
+
 [lints]
 workspace = true

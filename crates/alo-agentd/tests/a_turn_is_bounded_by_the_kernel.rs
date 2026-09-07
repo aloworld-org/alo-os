@@ -154,7 +154,7 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
         ByTheKernel::beneath(&pinned).expect("a service can open the map a loader pinned for it");
     let inside = where_this_process_is();
 
-    let (read, archived) = {
+    let (read, archived, moved) = {
         let mut machine = Machine::carrying_out_file_verbs(
             &strings,
             &OnThisMachine,
@@ -210,8 +210,31 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
             )
             .expect("a change the grants permit is put to somebody");
         let archived = turning.approving(id, &grants, noon());
+
+        // **A move, inside the boundary, since item 6c.** A rename takes
+        // handles on the two folders now rather than naming them, and a handle
+        // is an open — so this is the call that would fail if `O_PATH` were
+        // ever checked on this hook the way an ordinary open is. Item 6b's
+        // first design was caught here and this is the same guard for 6c's.
+        let moving = turning
+            .proposing(
+                "move_file",
+                &[
+                    (
+                        "file",
+                        Given::text(invoices.join("march.pdf").to_string_lossy().into_owned()),
+                    ),
+                    ("into", Given::text(archive.to_string_lossy().into_owned())),
+                ],
+                &grants,
+                hour(),
+                noon(),
+            )
+            .expect("a change the grants permit is put to somebody");
+        let moved = turning.approving(moving, &grants, noon());
+
         let _gave_a_grant_back = turning.ending(&mut grants);
-        (read, archived)
+        (read, archived, moved)
     };
 
     let after_the_turn = where_this_process_is();
@@ -258,10 +281,29 @@ fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
         "the archive was answered for and is not on the disk"
     );
 
+    // **A move really happened inside the boundary** (item 6c). Since that item
+    // a rename holds handles on its two folders, and if the kernel ever checked
+    // an `O_PATH` open the way it checks an ordinary one, this is where it
+    // would show: a granted move refused with `EACCES` inside its own bound.
+    let moved = moved.expect("a granted move was refused to the turn inside its boundary");
+    assert_eq!(
+        moved.now_at(),
+        Some(archive.join("march.pdf").as_path()),
+        "the move answered with somewhere other than where it was asked to go"
+    );
+    assert!(
+        archive.join("march.pdf").is_file(),
+        "the move was answered for and the file is not there"
+    );
+    assert!(
+        !invoices.join("march.pdf").exists(),
+        "the file is still in the folder it left"
+    );
+
     let kept = Reading::at(&record).expect("the record can be read back");
     assert_eq!(
         kept.record().len(),
-        2,
+        3,
         "the entries were not written down, which is the boundary being around the record"
     );
     assert!(

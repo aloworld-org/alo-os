@@ -23,21 +23,22 @@
 //! is now the file nobody granted. So a failure here cannot be the fixture
 //! having quietly not worked.
 //!
-//! Two of these were checked against the code as it was — by putting
-//! `File::open` back for one run — and they failed: a link put where the file
-//! was, and a folder exchanged on the way to it. Some of the rest pass either
-//! way, because something else already refused them, and one passes because the
-//! gap it is about is still open. Each says which it is where it stands, so
-//! that nobody reads this file and believes more of it than is true.
+//! Several of these were checked against the code as it was — by putting
+//! `File::open` and the check-then-rename back for one run — and they failed.
+//! Some of the rest pass either way, because something else already refused
+//! them. Each says which it is where it stands, so that nobody reads this file
+//! and believes more of it than is true.
 //!
-//! # What is still open, and it is in here
+//! # Both halves, since item 6c
 //!
-//! A read resolves its whole path in one syscall. A rename cannot, and
-//! `crates/alo-files/src/opening.rs` argues why that is a question about how
-//! wide a turn's kernel boundary is rather than a syscall nobody reached for.
-//! So a move out of a folder exchanged after the grants said yes still takes
-//! the file from where the link leads, and there is a test here that says so
-//! and fails on the day it stops being true.
+//! A read resolves its whole path in one syscall that refuses a link at every
+//! component. A rename cannot — `renameat2` has no such flag — so it holds its
+//! two folders instead, taken by a path no component of which was a link, and a
+//! name that is a handle cannot be exchanged. Both the folder a move takes a
+//! file **out of** and the one it puts it **into** are covered, and a rename's
+//! own folder with them. `crates/alo-files/src/opening.rs` argues why holding
+//! those handles widens nothing, and `alo-bounding`'s
+//! `what_an_o_path_handle_is` is the measurement it rests on.
 //!
 //! Linux only, and deliberately. `openat2` and `renameat2` are what closes
 //! these, `alo OS` runs on Linux, and a test that skipped itself elsewhere
@@ -427,23 +428,15 @@ fn a_name_held_by_a_folder_or_by_a_link_to_nothing_is_a_name_that_is_taken() {
     }
 }
 
-/// **The one this does not close, measured rather than described.**
+/// **The folder a move takes a file out of, exchanged after the grants said
+/// yes** — the gap item 6b left open and item 6c closed.
 ///
-/// A read resolves its whole path inside one syscall that refuses a link at
-/// every component. A rename cannot: `renameat2` has no such flag, and the
-/// alternative — handles on the two folders — means opening them, and the
-/// folder a move takes a file *out of* is not a place its call named, so a
-/// turn's boundary refuses that open. `crates/alo-files/src/opening.rs` argues
-/// it and `docs/quirks.md` keeps it.
-///
-/// So this is what actually happens today: the folder is exchanged after the
-/// grants said yes, and the move takes the file from where the link leads.
-/// Asserting it is not approval of it. It is the difference between a gap
-/// somebody measured and a gap somebody assumed, and the day the gap closes
-/// this test fails and whoever closed it has to say so here, in
-/// `docs/quirks.md`, and in `ROADMAP.md`.
+/// A rename holds its two folders rather than naming them, so a link put where
+/// `Invoices` was is not walked through: the handle was taken by a path no
+/// component of which was a link, and a name cannot be exchanged once it is a
+/// handle. The file nobody granted stays where it is.
 #[test]
-fn a_move_out_of_a_folder_swapped_for_a_link_is_not_yet_refused() {
+fn a_move_out_of_a_folder_swapped_for_a_link_is_refused() {
     let root = a_folder_of_our_own("moving-out");
     let invoices = root.join("Invoices");
     let keep = root.join("Archive");
@@ -465,18 +458,129 @@ fn a_move_out_of_a_folder_swapped_for_a_link_is_not_yet_refused() {
 
     let did = then_done(touching, &grants);
 
+    let failed = did.failure().unwrap();
     assert!(
-        did.failure().is_none(),
-        "the gap this test measures has closed — say so in docs/quirks.md, in \
-         crates/alo-files/src/opening.rs, and in ROADMAP.md, and make this a \
-         refusal: {:?}",
-        did.failure()
+        matches!(failed, Failed::TheMachineSaidNo { .. }),
+        "{failed:?}"
+    );
+    assert!(
+        !everything_it_said(&did).contains(NOBODY_GRANTED_THIS),
+        "{}",
+        everything_it_said(&did)
+    );
+    // The file nobody granted is still where it was, under the name it had.
+    assert_eq!(
+        fs::read_to_string(elsewhere.join("march.pdf")).unwrap(),
+        NOBODY_GRANTED_THIS,
+        "the file nobody granted was moved"
+    );
+    assert!(!keep.join("march.pdf").exists(), "it was moved anyway");
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+/// **The folder a move puts a file into, exchanged after the grants said yes.**
+///
+/// The other half of the same guarantee, and the one that would be a write
+/// rather than a read. **Two things refuse this and the outer one gets there
+/// first:** `move_into` asks what the destination is before it moves anything,
+/// and a folder that has become a link is not a folder — so what a person reads
+/// is *that is not a folder* rather than the machine's own words. The handle is
+/// underneath it for the window that check leaves, which is microseconds wide
+/// and not one a test can stand in.
+///
+/// What is asserted is therefore the property rather than which layer held it:
+/// refused, and nothing put anywhere nobody granted.
+#[test]
+fn a_move_into_a_folder_swapped_for_a_link_is_refused() {
+    let root = a_folder_of_our_own("moving-into");
+    let invoices = root.join("Invoices");
+    let keep = root.join("Archive");
+    fs::create_dir_all(&invoices).unwrap();
+    fs::create_dir_all(&keep).unwrap();
+    let file = invoices.join("march.pdf");
+    fs::write(&file, "an invoice, for March").unwrap();
+    let elsewhere = somewhere_nobody_granted(&root);
+
+    let grants = granting(&[&invoices, &keep]);
+    let touching = checked_change(
+        "move_file",
+        &[("file", as_given(&file)), ("into", as_given(&keep))],
+        &grants,
+    );
+
+    fs::remove_dir_all(&keep).unwrap();
+    symlink(&elsewhere, &keep).unwrap();
+
+    let did = then_done(touching, &grants);
+
+    let failed = did.failure().unwrap();
+    assert!(
+        matches!(
+            failed,
+            Failed::NotAFolder { .. } | Failed::TheMachineSaidNo { .. }
+        ),
+        "{failed:?}"
+    );
+    // Nothing was put in the folder nobody granted — the file of that name
+    // there is the one that was always there, with its own contents — and the
+    // invoice is still where it was.
+    assert_eq!(
+        fs::read_to_string(elsewhere.join("march.pdf")).unwrap(),
+        NOBODY_GRANTED_THIS,
+        "a file was moved into a folder nobody granted"
     );
     assert_eq!(
-        fs::read_to_string(keep.join("march.pdf")).unwrap(),
-        NOBODY_GRANTED_THIS,
-        "the gap this test measures has closed"
+        fs::read_dir(&elsewhere).unwrap().count(),
+        1,
+        "something was put in a folder nobody granted"
     );
+    assert_eq!(
+        fs::read_to_string(&file).unwrap(),
+        "an invoice, for March",
+        "the file left the folder it was in"
+    );
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+/// **A rename whose own folder is exchanged** — the same substitution against
+/// the verb where both folders are one folder.
+#[test]
+fn a_rename_in_a_folder_swapped_for_a_link_is_refused() {
+    let root = a_folder_of_our_own("renaming-in");
+    let invoices = root.join("Invoices");
+    fs::create_dir_all(&invoices).unwrap();
+    let file = invoices.join("march.pdf");
+    fs::write(&file, "an invoice, for March").unwrap();
+    let elsewhere = somewhere_nobody_granted(&root);
+
+    let grants = granting(&[&invoices]);
+    let touching = checked_change(
+        "rename_file",
+        &[
+            ("file", as_given(&file)),
+            ("name", Given::text("march-2026.pdf")),
+        ],
+        &grants,
+    );
+
+    fs::rename(&invoices, root.join("Invoices.moved-aside")).unwrap();
+    symlink(&elsewhere, &invoices).unwrap();
+
+    let did = then_done(touching, &grants);
+
+    let failed = did.failure().unwrap();
+    assert!(
+        matches!(failed, Failed::TheMachineSaidNo { .. }),
+        "{failed:?}"
+    );
+    // The file nobody granted was neither moved nor renamed.
+    assert_eq!(
+        fs::read_to_string(elsewhere.join("march.pdf")).unwrap(),
+        NOBODY_GRANTED_THIS
+    );
+    assert!(!elsewhere.join("march-2026.pdf").exists());
 
     let _ = fs::remove_dir_all(&root);
 }

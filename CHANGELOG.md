@@ -34,11 +34,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
   either refuses or moves. A folder, a file, or a link that leads nowhere all
   count as the name being taken, and what was there keeps its own contents.
 
-  A machine that cannot promise either of these says so and does not do the
-  work, rather than quietly doing it the old way. Windows keeps the behaviour it
-  had, and `docs/quirks.md` says what that costs — along with the one case still
-  open on Linux: a file moved out of a folder that was exchanged after you
-  approved the move.
+  **And moving a file is now held to the same promise as reading one.** A move
+  named two folders — the one the file leaves and the one it arrives in — and
+  either could be exchanged for a link after you approved the move, which would
+  take a file you never granted or put yours somewhere you never approved.
+  Neither is possible now: both folders are held from the moment they are
+  checked, so a name swapped underneath afterwards is not followed. Renaming a
+  file in place is covered by the same change.
+
+  A machine that cannot promise any of this says so and does not do the work,
+  rather than quietly doing it the old way. Windows keeps the behaviour it had,
+  and `docs/quirks.md` says what that costs.
 
 - The native shell's pointer core can deliver clicks, movement and scrolling
   to application surfaces. Drags stay with the original application; leaving,
