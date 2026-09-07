@@ -723,3 +723,25 @@ Parent leave, direct display/input and production session remain unfinished;
 scripted WSLg is not pixel readback, actual parent input or hardware acceptance.
 Supervisor independent full publication gates and physical laptop/GPU workstation
 records remain owed. No compositor or release box is ticked.
+
+## Reactive popup placement (2026-09-07)
+
+Mapped reactive popups now reconstrain after a valid output or committed ancestor
+geometry change. The scheduler in `popup_reactive.rs` uses the existing bounded
+placement helper and Smithay's latest server state to avoid duplicate configures
+while acknowledgements are outstanding. Both committed and latest requested
+positioners must permit reactivity. Initial buffers and newly granted permission
+wait for their acknowledged commit; explicit withdrawal is honored immediately.
+Nested placement uses committed ancestors. Rendering and input remain atomic on
+the popup's acknowledged commit, and unsafe placement dismisses child-first.
+
+Five new socket tests pass (70 Linux shell tests total). Final WSLg combined
+popup/cursor fixture submits reactive SHM buffers at (304,13), then (304,15) after
+committed parent window-geometry change, with callbacks and output leave. Final
+affected Windows/Linux checks pass. Exact commands, local logs, initial lint and
+fixture-count corrections: `updates/native-popup-reactive-placement.md`.
+
+Parent leave, direct display/input and production session are unfinished. No
+parent-size prediction is implemented; committed parent geometry is authoritative.
+Scripted WSLg does not prove pixel readback, actual parent input or physical
+acceptance. Supervisor full publication gates and hardware records remain owed.

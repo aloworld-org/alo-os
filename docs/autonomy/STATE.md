@@ -10713,3 +10713,51 @@ preserved. Supervisor full independent publication gates have not run for this
 change. Actual parent input and physical laptop/GPU workstation records remain
 owed; compositor/release unchecked. No staging, commit/push, worker/loop launch,
 dev-loop edit or unrelated changes. Later reports reconcile next iteration.
+
+---
+
+## 2026-09-07 - native popup reactive placement
+
+Single desktop worker, clean checkout at iteration start. Read constitution,
+delivery/ownership rules, updates README, current queue/state, relevant feature,
+roadmap, ADRs 0001/0002 and app-adapter contract. Recorded component acceptance
+before implementation. Every published task report present at iteration start
+was already referenced here; none required reconciliation. Later reports wait
+next iteration. No Claude assignment taken, source report edited or delegation.
+
+Integrated own report:
+`docs/autonomy/updates/native-popup-reactive-placement.md`.
+Mapped opted-in menus now reconstrain after output or committed ancestor geometry
+changes. Latest Smithay server state suppresses duplicate configures while
+clients acknowledge outstanding changes. Both current and requested positioners
+must permit reactivity; initial mapping/new permission waits for commit. Explicit
+withdrawal is honored immediately. Geometry shared by rendering/input still moves
+only on acknowledged commit. Unsafe placement dismisses child-first and input
+cleanup follows. No speculative parent sizing, engine patch, new agent/context
+authority, dependencies or release scope.
+
+Five new socket tests pass. Final Linux shell suite: 70 tests (3 unit, 64 client
+lifecycle, 3 socket), none ignored; final wire run passes all five reactive tests.
+Windows/Linux workspace fmt and affected all-target clippy/tests pass; Windows
+intentionally excludes Linux protocol tests. Linux warnings-denied rustdoc and
+example build pass. Exact commands and local logs are retained in the report.
+Two intermediate clippy failures (index access, test unwraps) were fixed without
+relaxing lints. First combined WSLg run completed reactive submission but hit the
+old cursor fixture count; exact expected frame/menu/leave counts now include the
+new popup. Corrected combined WSLg run exits 0; no test or gate was lowered.
+
+WSLg submits reactive SHM buffers at (304,13), then (304,15) after a committed
+parent window-origin change, with configure/callback/output-leave checks.
+Existing reposition/constraint/cursor/unmap/remap/refusal/disconnect checks pass.
+Native graphics prerequisites and WSLg socket verified. No package installation,
+shared-kernel/cgroup/BPF/service mutation or unrelated host change. Linux builds
+use explicit cargo PATH and /root/alo-os-target, separate from Claude's checkout.
+This is scripted protocol/GLES submission, not pixel readback or actual input.
+
+All four shared progress documents and COMPOSITOR updated; source/tests/docs diff
+reviewed and whitespace check passed. Next: unpatched parent-leave backend, direct
+display/input and production session. Remaining v0.01 scope preserved. Supervisor
+full independent publication gates have not run for this change. Actual parent
+input and physical laptop/GPU workstation records remain owed; compositor and
+release stay unchecked. No staging, commit/push, worker/loop launch, dev-loop edit
+or other-checkout modifications. Ready for supervisor integration and gating.

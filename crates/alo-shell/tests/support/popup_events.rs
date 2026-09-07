@@ -95,11 +95,26 @@ impl Application {
         token: u32,
         adjustments: xdg_positioner::ConstraintAdjustment,
     ) {
+        self.reposition_reactive(popup, offset, token, adjustments, false);
+    }
+
+    /// Change explicit positioning and its reactive permission together.
+    pub fn reposition_reactive(
+        &self,
+        popup: &xdg_popup::XdgPopup,
+        offset: i32,
+        token: u32,
+        adjustments: xdg_positioner::ConstraintAdjustment,
+        reactive: bool,
+    ) {
         let positioner = self.shell.create_positioner(&self.queue.handle(), ());
         positioner.set_size(16, 16);
         positioner.set_anchor_rect(0, 0, 4, 4);
         positioner.set_offset(offset, 0);
         positioner.set_constraint_adjustment(adjustments);
+        if reactive {
+            positioner.set_reactive();
+        }
         popup.reposition(&positioner, token);
         positioner.destroy();
     }
@@ -144,6 +159,21 @@ impl Application {
         xdg_surface::XdgSurface,
         xdg_popup::XdgPopup,
     ) {
+        self.popup_reactive(parent, offset, adjustments, false)
+    }
+
+    /// Create a positioner with explicit automatic reconstraining permission.
+    pub fn popup_reactive(
+        &self,
+        parent: Option<&xdg_surface::XdgSurface>,
+        offset: i32,
+        adjustments: xdg_positioner::ConstraintAdjustment,
+        reactive: bool,
+    ) -> (
+        wl_surface::WlSurface,
+        xdg_surface::XdgSurface,
+        xdg_popup::XdgPopup,
+    ) {
         let qh = self.queue.handle();
         let surface = self.compositor.create_surface(&qh, ());
         let xdg = self.shell.get_xdg_surface(&surface, &qh, true);
@@ -154,6 +184,9 @@ impl Application {
         positioner.set_gravity(xdg_positioner::Gravity::BottomRight);
         positioner.set_offset(offset, 1);
         positioner.set_constraint_adjustment(adjustments);
+        if reactive {
+            positioner.set_reactive();
+        }
         let popup = xdg.get_popup(parent, &positioner, &qh, ());
         positioner.destroy();
         (surface, xdg, popup)

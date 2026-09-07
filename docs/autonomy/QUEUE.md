@@ -300,6 +300,27 @@ cross-references, not the primary names used in handoffs or status messages.
   on output/parent changes, then parent leave and direct display/input. Supervisor
   full gates, actual parent input and physical laptop/GPU records remain owed.
 
+  **Selected reactive popup component (desktop worker):** recompute opted-in
+  popup placement on valid output and committed parent geometry changes; send
+  configure only when requested geometry changes, preserving acknowledged-commit
+  scene updates and explicit reposition ordering. Acceptance: real socket tests
+  for opt-in isolation, outstanding configures, descendant coordination, unsafe
+  placement dismissal, failed/empty output and terminal cleanup; WSLg reactive
+  parent-geometry submission, focused tests/fmt/clippy and rustdoc. Parent leave,
+  direct display/input and session remain unfinished.
+
+  **Completed reactive popup component 2026-09-07:** opted-in mapped menus
+  reconstrain on valid output and committed ancestor geometry changes. Latest
+  requested geometry suppresses duplicate events; acknowledged commits alone move
+  the scene. Five new socket tests pass (70 Linux shell tests total), covering
+  permission changes, nesting/input, outstanding/stale configures, empty/failed
+  output and isolated terminal refusal. Corrected WSLg popup/cursor fixture passes
+  reactive buffer submission and cleanup. Final Windows/Linux focused tests,
+  clippy/fmt and Linux rustdoc pass; exact checks and initial lint/fixture-count
+  corrections: `updates/native-popup-reactive-placement.md`. Next: unpatched
+  parent-leave backend, direct display/input and session. Item 33 remains unchecked;
+  supervisor full gates, actual parent input and physical acceptance remain owed.
+
 - **Integrated kernel-workstream audit (2026-09-07).**
   `updates/kernel-enforcement-plan-and-supervisor.md` adds a contributor-owned
   audit/plan and standalone publication supervisor. No enforcement or acceptance

@@ -1,5 +1,8 @@
 //! Opt-in popup protocol lifetimes, independent of presentation and grabs.
 
+#[path = "popup_reactive.rs"]
+mod reactive;
+
 use smithay::{
     backend::renderer::utils::with_renderer_surface_state,
     reexports::wayland_server::protocol::wl_surface::WlSurface,
@@ -54,8 +57,9 @@ impl crate::Server {
     /// Pointer and keyboard press/release grabs and explicit repositioning are
     /// supported. Initial and explicit placement use the last positive extent
     /// supplied to `render` and client-authorized constraints. Before an output exists,
-    /// protocol fixtures use unconstrained placement. Automatic reactive placement
-    /// remains separate work. No application-adapter or agent authority is introduced.
+    /// protocol fixtures use unconstrained placement. Mapped reactive popups are
+    /// reconstrained after output or committed parent changes; scene geometry still
+    /// changes only on an acknowledged commit. No agent authority is introduced.
     pub fn enable_popup_protocol(&mut self) {
         self.surfaces.popups.enabled = true;
     }

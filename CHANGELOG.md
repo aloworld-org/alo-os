@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Menus can adapt when the development desktop or their parent changes.**
+  Applications that request reactive placement receive updated geometry; drawing
+  and pointer input move together on an acknowledged commit. Unchanged geometry
+  sends no duplicate configure, and unsafe placement dismisses only its menu tree.
+  Five new socket tests and WSLg reactive popup/cursor submission pass. Production
+  desktop and physical acceptance remain unfinished. Evidence:
+  `docs/autonomy/updates/native-popup-reactive-placement.md`.
+
 - **Menus can stay within the development desktop's output edges.** Initial
   and explicit placement honor the application's flip, slide and resize choices,
   including nested menus and window shadows. Rendering and input move only on

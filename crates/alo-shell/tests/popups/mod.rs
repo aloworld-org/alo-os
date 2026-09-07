@@ -6,6 +6,7 @@ mod grabs;
 mod keyboard_grabs;
 mod pointer_release;
 mod presentation;
+mod reactive;
 mod reposition;
 
 /// Protocol-only fixture explicitly opts in, independently of nested rendering.

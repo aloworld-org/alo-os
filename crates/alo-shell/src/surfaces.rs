@@ -83,6 +83,7 @@ impl Surfaces {
         self.windows.retain(|window| window.surface.alive());
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
+        self.popups.refresh(&parents);
         self.prune_popup_grab();
         self.prune_keyboard_focus();
         self.prune_pointer_focus();

@@ -101,6 +101,7 @@ impl Server {
             // does not replace that last valid mode or move existing popups.
             self.surfaces.popups.output_size = Some(size);
         }
+        self.surfaces.prune();
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();
         let popups = self.popup_surfaces();

@@ -700,6 +700,13 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Reactive popup placement (2026-09-07): opted-in mapped menus reconstrain on
+    output/committed parent changes, preserving configure/commit ordering and
+    avoiding duplicate geometry events. Five new socket tests pass (70 Linux
+    shell tests total); WSLg reactive popup/cursor submission passes. Exact checks
+    and development corrections: `docs/autonomy/updates/native-popup-reactive-placement.md`.
+    Parent leave, direct display/input, session and physical acceptance remain;
+    compositor unchecked and supervisor full publication gates still owed.
   - Popup output constraints (2026-09-07): initial and explicit placement honor
     client flip/slide/resize flags against the single output, translated through
     committed parent window geometry. Four new socket tests pass (65 Linux shell

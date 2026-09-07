@@ -78,6 +78,59 @@ pub fn check(app: &mut Application) {
         "Repositioned popup GLES buffer submitted at (35,-5) with parent/popup geometry offsets; nested child at (43,7), both callbacks/output enter and descendant dismissal leave passed; offscreen callback withheld"
     );
     constrained(app);
+    reactive(app);
+}
+
+/// Submit a reactive menu after a committed change to its parent's window origin.
+fn reactive(app: &mut Application) {
+    use wayland_protocols::xdg::shell::client::xdg_positioner::ConstraintAdjustment as Adjust;
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let frames = app.events.frames.len();
+    let (surface, xdg, role) =
+        app.popup_reactive(Some(&app.xdg), 10000, Adjust::SlideX | Adjust::SlideY, true);
+    surface.commit();
+    app.sync();
+    assert_eq!(app.events.popups.geometry.last(), Some(&(302, 10, 16, 16)));
+    app.ack_popup(&xdg);
+    app.attach_popup(&surface);
+    while app.events.frames.len() < frames + 1 {
+        app.sync();
+        assert!(
+            Instant::now() < deadline,
+            "no reactive initial GLES callback"
+        );
+    }
+    let configs = app.events.popups.geometry.len();
+    app.xdg.set_window_geometry(4, 5, 12, 12);
+    app.surface.commit();
+    while app.events.popups.geometry.len() == configs {
+        app.sync();
+        assert!(Instant::now() < deadline, "no reactive parent configure");
+    }
+    assert_eq!(app.events.popups.geometry.last(), Some(&(300, 10, 16, 16)));
+    app.ack_popup(&xdg);
+    app.attach_popup(&surface);
+    while app.events.frames.len() < frames + 2 {
+        app.sync();
+        assert!(Instant::now() < deadline, "no reactive moved GLES callback");
+    }
+    assert_eq!(app.events.popups.geometry.len(), configs + 1);
+    let leaves = app.events.membership.1;
+    surface.attach(None, 0, 0);
+    surface.commit();
+    while app.events.membership.1 < leaves + 1 {
+        app.sync();
+        assert!(Instant::now() < deadline, "no reactive popup output leave");
+    }
+    role.destroy();
+    xdg.destroy();
+    surface.destroy();
+    app.xdg.set_window_geometry(2, 3, 12, 12);
+    app.surface.commit();
+    app.sync();
+    println!(
+        "Reactive popup GLES buffers submitted at (304,13) then (304,15); parent-commit configure, callbacks and output leave passed"
+    );
 }
 
 /// Submit both edges using client-authorized sliding in parent window coordinates.
