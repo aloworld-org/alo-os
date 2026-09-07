@@ -79,11 +79,30 @@ pub fn on_main_and_clean_but_for(at: &Path, named: &[String]) -> Result<(), Stri
 /// deciding how two people's work fits together, which is a judgement it has no
 /// way to make.
 ///
+/// **Skipped when this checkout has commits of its own that are not published
+/// yet**, because a fast-forward is exactly what that is not, and the publish
+/// path rebases them onto whatever arrived anyway. Found by running the loop
+/// with one task committed and the next being written: it refused to start on
+/// the second because it could not fast-forward past the first.
+///
 /// # Errors
-/// A sentence when the checkout cannot be fast-forwarded, which means local
-/// commits exist and the caller should be rebasing rather than pulling.
+/// A sentence when a checkout with nothing of its own still cannot be
+/// fast-forwarded, which is a state somebody should look at.
 pub fn pulled(at: &Path) -> Result<(), String> {
+    if has_unpublished(at)? {
+        return Ok(());
+    }
     git(at, &["pull", "--ff-only", "origin", MAIN]).map(|_| ())
+}
+
+/// Whether this checkout has commits `origin/main` does not.
+///
+/// # Errors
+/// Whatever `git` said about fetching or counting.
+pub fn has_unpublished(at: &Path) -> Result<bool, String> {
+    git(at, &["fetch", "origin", MAIN, "--quiet"])?;
+    let ahead = git(at, &["rev-list", "--count", "origin/main..HEAD"])?;
+    Ok(ahead.trim() != "0")
 }
 
 /// Whether `origin/main` has anything this checkout does not.

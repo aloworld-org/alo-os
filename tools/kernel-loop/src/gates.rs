@@ -130,6 +130,7 @@ pub const EVERY_GATE: &[Gate] = &[
 /// first is deliberate: the others' output would be noise around the one thing
 /// that has to be fixed.
 pub fn all_of_them(at: &Path) -> Result<Vec<String>, String> {
+    the_machine_is_ready(at)?;
     let mut passed = Vec::new();
     for gate in EVERY_GATE {
         let said = asking(gate, at)?
@@ -149,6 +150,40 @@ pub fn all_of_them(at: &Path) -> Result<Vec<String>, String> {
         passed.push(gate.named.to_owned());
     }
     Ok(passed)
+}
+
+/// That this machine can run the gates at all, before it spends four minutes
+/// discovering that it cannot.
+///
+/// One precondition, and it is the one this machine actually loses: **a BPF
+/// filesystem mounted at `/sys/fs/bpf`**. Every test that loads the boundary
+/// pins to it, and WSL forgets the mount across a restart — so the symptom is
+/// a kernel test panicking about a directory, three gates and several minutes
+/// in, which reads like a broken boundary rather than an unmounted filesystem.
+///
+/// **It reports rather than mounting.** A supervisor that mounted filesystems
+/// would be changing shared kernel state on a machine another worker is using,
+/// and `docs/hardware.md` asks the question of a person instead.
+///
+/// # Errors
+/// A sentence naming what is missing and the command that fixes it.
+fn the_machine_is_ready(at: &Path) -> Result<(), String> {
+    let mounted = Gate {
+        named: "a BPF filesystem to pin to",
+        program: "mountpoint",
+        args: &["-q", "/sys/fs/bpf"],
+        within: ".",
+    };
+    let said = asking(&mounted, at)?
+        .output()
+        .map_err(|why| format!("this machine could not be asked about /sys/fs/bpf: {why}"))?;
+    if said.status.success() {
+        return Ok(());
+    }
+    Err(
+        "/sys/fs/bpf is not a mounted BPF filesystem, so every test that loads the boundary          would fail for that reason rather than for anything in the change. Nothing was          published. On this machine: `mount -t bpf bpf /sys/fs/bpf`, which a boot does for          itself and WSL forgets across a restart."
+            .to_owned(),
+    )
 }
 
 /// One gate, as a command this host can actually run.

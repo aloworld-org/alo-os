@@ -16,8 +16,18 @@ pub enum Went {
     /// A task was gated and pushed, at this commit, under this name.
     Published(String, String),
 
-    /// Nothing was handed over, so there was nothing to publish.
-    NothingReady,
+    /// The plan has no task left that is not done and whose dependencies are.
+    ///
+    /// **A list being empty rather than a workstream being finished.** The plan
+    /// says what the difference is, and the loop repeats it rather than letting
+    /// an empty list read as delivery.
+    PlanIsFinished,
+
+    /// A task was chosen and nobody produced its work in the time allowed.
+    NobodyWroteIt(String),
+
+    /// Somebody asked it to stop.
+    Stopped,
 }
 
 /// The log every iteration appends to.
