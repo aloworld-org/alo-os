@@ -12,6 +12,10 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- Two developers can publish completed tasks to main from separate checkouts:
+  the development loop pulls incoming work and checks the combined changes
+  again before pushing. Conflicts preserve unfinished work for resolution.
+
 - Developers can now check the Linux graphics prerequisites and submit a test
   frame through Wayland with a pinned Smithay build. Missing native packages,
   unavailable sessions and failed graphics initialization return explicit

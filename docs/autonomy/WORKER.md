@@ -6,6 +6,10 @@ Read CLAUDE.md, docs/autonomy/DELIVERY.md, the current portion of QUEUE.md,
 the tail of STATE.md, and the relevant feature, roadmap, ADR and contract sections.
 Use rg to find relevant sections; do not dump the entire historical journal.
 The DELIVERY.md execution order supersedes the old portable-only restriction.
+Follow docs/autonomy/SHARED_MAIN.md for task ownership. Another contributor may
+publish to main from a separate checkout. The supervisor pulls before your task
+and integrates/retests concurrent commits before pushing yours. Do not take a
+task the owner assigned to Claude, or modify another contributor's checkout.
 Linux and WSLg are available; verify prerequisites and use them. Missing routine
 build dependencies are implementation work, not a reason to declare the queue done.
 Make routine design choices consistent with accepted ADRs; document their reasons.

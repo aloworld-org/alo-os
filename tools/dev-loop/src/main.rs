@@ -1,5 +1,6 @@
 //! Single-writer development supervisor. This is a developer tool, never an OS verb.
 mod process;
+mod publication;
 mod report;
 
 use process::{checked, git, worker};
@@ -92,10 +93,10 @@ fn synchronized() -> Result<String> {
     if !git(&["status", "--porcelain"])?.trim().is_empty() {
         return Err("Working tree contains unfinished changes; review before restarting".into());
     }
-    git(&["fetch", "origin", "main"])?;
+    git(&["pull", "--ff-only", "origin", "main"])?;
     let head = git(&["rev-parse", "HEAD"])?;
     if head != git(&["rev-parse", "refs/remotes/origin/main"])? {
-        return Err("Local and remote main differ; reconcile before restarting".into());
+        return Err("Unpublished local commits remain; review before starting another task".into());
     }
     Ok(head)
 }
@@ -143,38 +144,7 @@ fn run(state: &Path, codex: &str) -> Result<()> {
         }
         status(state, "VERIFYING: Windows, Linux, rustdoc and kernel gates")?;
         let mut log = File::create(directory.join("gates.log"))?;
-        checked("cargo", &["fmt", "--all", "--check"], &mut log)?;
-        checked(
-            "cargo",
-            &[
-                "clippy",
-                "--workspace",
-                "--all-targets",
-                "--locked",
-                "--",
-                "-D",
-                "warnings",
-            ],
-            &mut log,
-        )?;
-        checked(
-            "cargo",
-            &["test", "--workspace", "--locked", "--quiet"],
-            &mut log,
-        )?;
-        checked(
-            "wsl",
-            &[
-                "-d", "Ubuntu", "-u", "root", "--", "bash", "-lc", LINUX_GATE,
-            ],
-            &mut log,
-        )?;
-        checked("git", &["diff", "--check"], &mut log)?;
-        // A normal push also rejects races after this fetch. Never force-push.
-        git(&["fetch", "origin", "main"])?;
-        if head != git(&["rev-parse", "refs/remotes/origin/main"])? {
-            return Err("Remote moved during this step; preserve work for reconciliation".into());
-        }
+        gates(&mut log)?;
         git(&["add", "--all"])?;
         git(&[
             "commit",
@@ -183,14 +153,45 @@ fn run(state: &Path, codex: &str) -> Result<()> {
             "-m",
             "Implemented by the development worker; the supervisor independently passed Windows and Linux gates before publication. See docs/autonomy/STATE.md for decisions and verification.",
         ])?;
-        status(state, "PUSHING: origin main")?;
-        git(&["push", "origin", "HEAD:refs/heads/main"])?;
-        synchronized()?;
-        status(
-            state,
-            &format!("PUSHED: {} {title}", git(&["rev-parse", "HEAD"])?.trim()),
-        )?;
+        status(state, "PUBLISHING: integrate main and push")?;
+        let published = publication::publish(&head, git, || {
+            status(state, "VERIFYING: integrated changes from main")?;
+            gates(&mut log)
+        })?;
+        status(state, &format!("PUSHED: {} {title}", published.trim()))?;
     }
+}
+
+/// Gate the current tree, including any changes integrated from another worker.
+fn gates(log: &mut File) -> Result<()> {
+    checked("cargo", &["fmt", "--all", "--check"], log)?;
+    checked(
+        "cargo",
+        &[
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--locked",
+            "--",
+            "-D",
+            "warnings",
+        ],
+        log,
+    )?;
+    checked(
+        "cargo",
+        &["test", "--workspace", "--locked", "--quiet"],
+        log,
+    )?;
+    checked(
+        "wsl",
+        &[
+            "-d", "Ubuntu", "-u", "root", "--", "bash", "-lc", LINUX_GATE,
+        ],
+        log,
+    )?;
+    checked("git", &["diff", "--check"], log)?;
+    Ok(())
 }
 
 // Fixed local checkout and separate Linux artifacts are intentional. No user data

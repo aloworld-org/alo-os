@@ -5,6 +5,9 @@ repository-owned Rust development loop (`tools/dev-loop`).
 `docs/autonomy/DELIVERY.md` orders the Linux, compositor, session, agent and image
 work and the final physical acceptance. Each completed step is gated and pushed;
 these checkpoints do not reduce release scope or discharge hardware obligations.
+The owner's direct-to-main collaboration policy is in
+`docs/autonomy/SHARED_MAIN.md`: separate checkouts, pull before each task,
+integrate concurrent commits and recheck before pushing.
 
 The only order things get built in. Items are checked when they meet the
 definition of done in `CLAUDE.md` law 3 — the full path, on real hardware — and

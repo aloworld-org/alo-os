@@ -9719,3 +9719,25 @@ routing, direct-display execution, then delivery steps 3–8 and remaining v0.01
 coverage. No physical keyboard/pointer/display or certified-machine evidence
 was produced. This worker did not run the supervisor's independent publication
 gates, stage, commit or push. CHANGELOG, ROADMAP and QUEUE updated in this change.
+
+---
+
+## 2026-09-07 — contributors publish tested tasks directly to main
+
+The owner requested separate contributors pull before every task and push each
+completed task directly to main. SHARED_MAIN.md records the workflow and
+separate-checkout ownership; the feature-branch/PR recommendation is superseded.
+
+The Rust supervisor now fast-forwards incoming main before starting a worker.
+After the original task passes its gates and is committed locally, publication
+fetches again, rebases unpublished work over incoming commits and repeats the
+same gates on the combined tree. Normal pushes retry only when another push
+actually advanced the remote, at most three times. Conflicts, failed tests and
+other push errors preserve local work and stop publication without a force push.
+
+Verification: runner formatting, clippy with warnings denied, all 11 tests and
+release build passed. Seven publication tests use real temporary local Git
+remotes and separate clones: incoming changes, a fetch/push race, bounded
+repeated races, a conflict, a failed combined gate, an unchanged remote and a
+push rejection unrelated to a race. No operating-system crate or gate command
+was changed by this update. Physical acceptance remains owed by the release.

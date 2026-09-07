@@ -89,13 +89,18 @@ this development session; the prompt limits its work to this repository and
 Ubuntu build prerequisites. This is not an OS agent verb or part of alo OS.
 
 The supervisor owns an OS file lock for its lifetime. Each step begins with a
-clean `main` equal to `origin/main`; remote changes, a dirty tree, failed tests,
+clean `main` updated by `git pull --ff-only origin main`; a dirty tree, failed tests,
 unexpected commits, supervisor edits and missing progress documents stop it.
 It independently runs Windows fmt/clippy/tests and Linux fmt/clippy/tests/docs
 plus BPF fmt/clippy before staging, committing with the owner's Git identity,
 and normal-pushing. Worker-specific integration evidence remains required.
-Push rejection preserves the local commit; no reset, forced push or automatic
-conflict resolution occurs. Gates may take substantial time on a cold checkout.
+If another worker advances main, the supervisor rebases its unpublished task
+commit onto the new main and repeats the gates before pushing. It retries at
+most three publication races. A rebase conflict, failed integration gate or push
+rejection without a remote change preserves the local work and halts; no reset,
+forced push or automatic conflict resolution occurs. See `SHARED_MAIN.md` for
+the direct-to-main collaboration workflow. Gates may take substantial time on
+a cold checkout.
 
 The worker has a six-hour deadline. On expiry the runner attempts to end that
 worker's process tree and halts; inspect WSL descendants before restarting.

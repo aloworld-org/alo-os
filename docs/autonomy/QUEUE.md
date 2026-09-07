@@ -9,6 +9,8 @@ The owner has authorized continuous work toward the full v0.01 release and a
 GitHub push after each gated step. Follow `DELIVERY.md` for the current execution
 order. Linux and WSLg are available; the historical host restrictions below no
 longer exclude Linux tasks. External hardware requirements remain real.
+`SHARED_MAIN.md` governs collaboration: separate checkouts publish tested tasks
+to main, pulling first and integrating any intervening commits before pushing.
 
 - [x] **31. A repository-owned development loop.** Rust runner in
   `tools/dev-loop`; serialized workers, explicit stop/status, independent
