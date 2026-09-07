@@ -193,11 +193,32 @@ cross-references, not the primary names used in handoffs or status messages.
   callbacks, and live unmap/dismissal cancels drags without redirecting releases.
   WSLg popup submission and clipping pass; exact focused Windows/Linux checks,
   wire trace and graphics evidence are in `updates/native-popup-presentation.md`.
-  **Next useful component:** nested popup parent chains and their ordered
-  lifetime/render/input cleanup, before explicit popup grabs and repositioning.
-  Nested chains, grabs, output constraints/repositioning, parent-leave backend,
-  direct display and all physical acceptance remain. Item 33 remains unchecked;
-  the supervisor has not yet run this change's full publication gates.
+  **Selected nested popup chains (desktop worker):** accept mapped popup parents,
+  accumulate geometry through chains and stack descendants above ancestors; dismiss
+  descendants before parents and cancel input after ancestor loss. Acceptance:
+  real-client chain placement/input, unmapped/dismissed-parent refusal, ordered
+  teardown and no revival; WSLg nested buffer callbacks, fmt, focused clippy/tests
+  and rustdoc. Grabs/repositioning, parent leave and direct display remain owed.
+  **Completed nested popup chains 2026-09-07:** mapped popup parents, iterative
+  accumulated scene placement and child-first terminal cleanup. Three new socket
+  tests pass (43 Linux shell tests total), covering three levels, geometry/input,
+  failed submission, callbacks/membership, ancestor loss and parent refusal.
+  WSLg popup/cursor combination submits 67 client surfaces with nested callbacks
+  and ordered cleanup. Exact checks: `updates/native-popup-chains.md`.
+  **Next useful component:** explicit popup grabs with seat/serial validation,
+  keyboard/pointer routing and outside-click dismissal. Repositioning/output
+  constraints, parent-leave backend, direct display and physical acceptance
+  remain; item 33 is unchecked and supervisor full gates remain owed.
+
+- **Integrated filesystem report: Hard-linked files are not read (2026-09-07).**
+  Claude's `updates/hard-linked-files-are-not-read.md` adds handle link-count
+  refusal for Unix regular-file reads and archives, including harmless same-folder
+  aliases. Reviewed implementation and real-kernel test; independently reran all
+  six alo-files integration tests on Ubuntu (pass). Contributor reports Linux full
+  gates and mutation-test evidence; those were not rerun here. The kernel permits
+  the granted hard-link name, so the userspace check is necessary. Windows remains
+  exposed; macOS and physical acceptance untested. Kernel rename coverage (6d)
+  remains pending under the filesystem workstream; no new ownership claim.
 - [ ] **34. Complete delivery steps 3 through 8.** Expand the next dependency
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit

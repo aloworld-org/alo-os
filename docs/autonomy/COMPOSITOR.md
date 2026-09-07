@@ -561,3 +561,23 @@ repositioning/output constraints, parent-leave notification backend, direct
 display/input, production session entry and physical acceptance remain unfinished.
 The supervisor's complete Windows/Linux/BPF publication gates are still owed.
 WSLg checks exercise development graphics, never certified hardware.
+
+
+## Native popup chains (2026-09-07)
+
+Opt-in popups now accept mapped popup parents. Shared scene placement accumulates
+XDG geometry through ancestors and orders descendants above their parents.
+Parent-before-child storage and iterative traversal avoid recursive client depth;
+terminal dismissal sends done child-first and cancels descendant pointer grabs.
+The trusted FrameTarget contract documents accumulated Popup::location offsets.
+
+Three new real-client tests pass (43 Linux shell tests); WSLg popup/cursor fixture
+submits 67 surfaces across frames, including a nested child and both callbacks/
+output entries and dismissal leaves. Windows/Linux fmt and focused clippy/tests,
+Linux rustdoc and the build pass. Exact commands, intermediate corrections and
+local wire/GLES logs: `updates/native-popup-chains.md`.
+
+Next: explicit popup grabs with serial/seat validation and outside-click dismissal.
+Repositioning/output constraints, parent leave, direct display/input, production
+session, supervisor full publication gates and physical acceptance remain owed.
+No WSLg result certifies hardware.

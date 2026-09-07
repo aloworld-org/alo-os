@@ -23,17 +23,27 @@ impl Popup {
     }
 }
 
-/// Front-to-back roots: each parent's newest popup precedes that parent's tree.
+/// Front-to-back trees, descendants above parents and newest siblings first.
 pub(crate) fn trees(
     roots: &[WlSurface],
     popups: &[Popup],
 ) -> Vec<(WlSurface, Point<f64, Logical>)> {
     let mut trees = Vec::new();
-    for root in roots {
-        for popup in popups.iter().rev().filter(|popup| popup.parent == *root) {
-            trees.push((popup.surface.clone(), popup.location()));
+    // Expand depth-first without recursive calls on client-controlled chains.
+    let mut pending: Vec<_> = roots
+        .iter()
+        .rev()
+        .map(|root| (root.clone(), Point::<f64, Logical>::default(), false))
+        .collect();
+    while let Some((surface, origin, expanded)) = pending.pop() {
+        if expanded {
+            trees.push((surface, origin));
+            continue;
         }
-        trees.push((root.clone(), (0.0, 0.0).into()));
+        pending.push((surface.clone(), origin, true));
+        for popup in popups.iter().filter(|popup| popup.parent == surface) {
+            pending.push((popup.surface.clone(), origin + popup.location(), false));
+        }
     }
     trees
 }

@@ -222,7 +222,7 @@ fn popup_drag_dismissal_parent_loss_and_disconnect_cancel_without_redirecting() 
 }
 
 /// Controlled target tests the coordinator; GLES evidence is in nested_check.
-struct Target(bool);
+pub(super) struct Target(pub(super) bool);
 impl FrameTarget for Target {
     fn size(&self) -> Size<i32, Physical> {
         (320, 200).into()

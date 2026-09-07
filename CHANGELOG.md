@@ -12,6 +12,17 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Application menus can now open nested submenus in the development compositor.**
+  Child popups follow their ancestors' geometry, receive pointer input above their
+  parents, and close child-first when an ancestor disappears. Real-client and WSLg
+  checks cover this component; popup grabs and the production desktop remain owed.
+
+- **Unix files with more than one hard-link name are refused for agent reads and
+  archives.** The open handle is checked because another name can reach outside
+  a granted folder without escaping the kernel's path boundary. Even aliases in
+  one folder are refused. This integrates Claude's published filesystem report;
+  Windows is still uncovered, and macOS and hardware checks remain unperformed.
+
 - **Nested applications can now display and interact with non-grabbing popups.**
   Popup buffers align with their window geometry, stay above their own parent,
   and receive pointer input using the same placement and stacking as rendering.

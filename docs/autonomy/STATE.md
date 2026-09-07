@@ -10369,3 +10369,53 @@ does not certify hardware. The supervisor's full independent Windows/Linux/BPF
 publication gates have not run for this change. No staging/commit/push, new worker,
 dev-loop change or other-repository edits. Reports arriving during publication
 are reconciled next iteration. Every unfinished v0.01 requirement is preserved.
+
+
+---
+
+## 2026-09-07 - native popup chains and filesystem report integration
+
+Single desktop worker; clean checkout at start. Read constitution, delivery order,
+shared ownership, updates README, current queue and state tail, shell feature and
+roadmap, ADRs 0001/0002 and adapter boundary. Recorded chain acceptance in QUEUE
+before implementation; filesystem security remains Claude's workstream.
+
+Reconciled `docs/autonomy/updates/hard-linked-files-are-not-read.md`, the only
+published report not already referenced here at iteration start. Reviewed open-
+handle Unix nlink refusal and kernel test controls. Independently reran six Linux
+alo-files integration tests, all pass. Contributor reports full Linux workspace
+fmt/clippy/tests/rustdoc and mutation checks, plus the kernel finding: a private
+name refuses but its hard link under a granted folder opens. Those full gates and
+kernel tests were not rerun here. Windows exposure, untested macOS and physical
+acceptance, harmless aliases refused, and kernel rename gap (6d) remain recorded.
+CHANGELOG/ROADMAP/QUEUE now retain this evidence and its limits. Source report
+and contributor code unchanged; no ownership claim on that workstream.
+
+Task report integrated in the same change:
+`docs/autonomy/updates/native-popup-chains.md`. Mapped popup parents form an
+acyclic forest; iterative scene traversal accumulates geometry and places
+children above parents. Cleanup dismisses child-first across ancestor unmap,
+dismissal/destruction/disconnect and cancels held input without redirection.
+Rustdoc documents the backend parent/placement contract; no agent/API widening,
+engine patch, dependency, new scope or ADR exception.
+
+Final focused Windows/Linux fmt and all-target clippy pass, Linux warnings-denied
+rustdoc and example build pass. Linux shell: 43 tests, none ignored (three new
+chain tests); Windows intentionally zero Linux tests. Three-test wire trace passes.
+WSLg popup/cursor fixture exits 0 with 67 submitted surfaces across frames, nested
+popup callbacks/membership, ordered cleanup, offscreen withholding and lifecycle/
+refusal/disconnect regression. Exact commands and local logs are in the report.
+Intermediate missing-import/indexing/unwrap diagnostics corrected without lowering
+checks; all executed test assertions passed. Reviewed source and new test/report
+files plus documentation diff; diff whitespace check passes.
+
+WSLg socket and native prerequisites verified; no installation or shared kernel
+changes. Linux target /root/alo-os-target remains separate from other checkout.
+Next component: explicit popup grabs with seat/serial validation, keyboard/pointer
+routing and outside-click dismissal. Repositioning/output constraints, parent
+leave, direct display/input, production session and every other v0.01 requirement
+remain unfinished. Actual parent input and certified laptop/GPU workstation
+physical evidence remain owed; WSLg is not certification. The supervisor's full
+independent Windows/Linux/BPF gates have not run for this change. No staging,
+commit/push, worker launch, dev-loop edit or other-repository changes. Reports
+arriving during publication are reconciled next iteration; no release verified claim.

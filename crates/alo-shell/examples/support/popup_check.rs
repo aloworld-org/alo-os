@@ -44,12 +44,25 @@ pub fn check(app: &mut Application) {
         "extreme offscreen child callback"
     );
     assert_eq!(app.events.membership, (3, 0));
+    let (nested, nested_xdg, nested_role) = app.popup_on(Some(&xdg), 1);
+    nested.commit();
+    app.sync();
+    app.ack_popup(&nested_xdg);
+    app.attach_popup(&nested);
+    while app.events.frames.len() < 4 {
+        app.sync();
+        assert!(Instant::now() < deadline, "no nested GLES popup callback");
+    }
+    assert_eq!(app.events.membership, (4, 0));
     app.reposition_popup(&role);
-    while app.events.membership.1 < 1 {
+    while app.events.membership.1 < 2 {
         app.sync();
         assert!(Instant::now() < deadline, "no popup leave on dismissal");
     }
-    assert_eq!(app.events.popups.done, 1);
+    assert_eq!(app.events.popups.done, 2);
+    nested_role.destroy();
+    nested_xdg.destroy();
+    nested.destroy();
     far_role.destroy();
     far_child.destroy();
     role.destroy();
@@ -57,6 +70,6 @@ pub fn check(app: &mut Application) {
     surface.destroy();
     app.sync();
     println!(
-        "Popup GLES buffer submitted at (8,11) with parent/popup geometry offsets; callback/output enter and dismissal leave passed; offscreen callback withheld"
+        "Popup GLES buffer submitted at (8,11) with parent/popup geometry offsets; nested child at (16,23), both callbacks/output enter and descendant dismissal leave passed; offscreen callback withheld"
     );
 }

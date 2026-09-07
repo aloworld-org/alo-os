@@ -181,6 +181,7 @@ impl XdgShellHandler for Surfaces {
         self.windows.retain(|w| w.surface != surface);
     }
     fn new_popup(&mut self, surface: PopupSurface, positioner: PositionerState) {
+        self.prune();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.insert(surface, positioner, &parents);
     }

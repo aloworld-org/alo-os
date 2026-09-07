@@ -1,5 +1,6 @@
 //! Popup requests and independent configure observations over real sockets.
 use super::*;
+use wayland_client::Proxy;
 use wayland_protocols::xdg::shell::client::{xdg_popup, xdg_positioner};
 
 /// Events kept separate from the toplevel's configure serial.
@@ -11,6 +12,8 @@ pub struct PopupEvents {
     pub serial: Option<u32>,
     /// Terminal dismissal count.
     pub done: usize,
+    /// Dismissed role IDs in protocol order.
+    pub done_order: Vec<u32>,
 }
 
 impl Dispatch<xdg_surface::XdgSurface, bool> for Events {
@@ -30,7 +33,7 @@ impl Dispatch<xdg_surface::XdgSurface, bool> for Events {
 impl Dispatch<xdg_popup::XdgPopup, ()> for Events {
     fn event(
         state: &mut Self,
-        _: &xdg_popup::XdgPopup,
+        popup: &xdg_popup::XdgPopup,
         event: xdg_popup::Event,
         _: &(),
         _: &Connection,
@@ -43,7 +46,10 @@ impl Dispatch<xdg_popup::XdgPopup, ()> for Events {
                 width,
                 height,
             } => state.popups.geometry.push((x, y, width, height)),
-            xdg_popup::Event::PopupDone => state.popups.done += 1,
+            xdg_popup::Event::PopupDone => {
+                state.popups.done += 1;
+                state.popups.done_order.push(popup.id().protocol_id());
+            }
             _ => {}
         }
     }
@@ -69,6 +75,19 @@ impl Application {
         xdg_surface::XdgSurface,
         xdg_popup::XdgPopup,
     ) {
+        self.popup_on(parent.then_some(&self.xdg), offset)
+    }
+
+    /// Create a popup on an explicit XDG parent, including another popup.
+    pub fn popup_on(
+        &self,
+        parent: Option<&xdg_surface::XdgSurface>,
+        offset: i32,
+    ) -> (
+        wl_surface::WlSurface,
+        xdg_surface::XdgSurface,
+        xdg_popup::XdgPopup,
+    ) {
         let qh = self.queue.handle();
         let surface = self.compositor.create_surface(&qh, ());
         let xdg = self.shell.get_xdg_surface(&surface, &qh, true);
@@ -78,7 +97,7 @@ impl Application {
         positioner.set_anchor(xdg_positioner::Anchor::BottomRight);
         positioner.set_gravity(xdg_positioner::Gravity::BottomRight);
         positioner.set_offset(offset, 1);
-        let popup = xdg.get_popup(parent.then_some(&self.xdg), &positioner, &qh, ());
+        let popup = xdg.get_popup(parent, &positioner, &qh, ());
         positioner.destroy();
         (surface, xdg, popup)
     }

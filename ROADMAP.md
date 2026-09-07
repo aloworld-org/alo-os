@@ -41,6 +41,15 @@ because they read as description rather than as work.
 When an iteration cannot find the line a promise belongs to, that is the finding.
 It goes in `STATE.md` and the line gets written, before the work does.
 
+Filesystem report integrated 2026-09-07:
+`docs/autonomy/updates/hard-linked-files-are-not-read.md`. Unix agent reads and
+archives now refuse multiply named regular files using the open handle. The
+contributor measured that the kernel permits the granted hard-link name while
+refusing the private name; six alo-files tests independently pass here on Ubuntu.
+Contributor full Linux gates and mutation evidence are retained as reported, not
+claimed rerun. Windows exposure, untested macOS/physical acceptance and the separate
+kernel rename gap (6d) remain. No hardware or release box changes.
+
 ## Three states, because two are not enough
 
 Almost every item below is one capability spanning two halves: a crate that
@@ -741,6 +750,14 @@ which made a completely consistent rule look like work being taken out of turn.
     Nested popup chains, grabs, output constraints/repositioning, parent-leave
     notifications, direct display and physical acceptance remain. The compositor
     stays unchecked; full independent publication gates belong to the supervisor.
+
+  - Nested popup chains component (2026-09-07): mapped popup parents, accumulated
+    geometry and descendant-first stacking/cleanup are implemented. Three new
+    real-client tests pass (43 Linux shell tests); WSLg nested popup/cursor
+    submission and callbacks pass. `docs/autonomy/updates/native-popup-chains.md`
+    records checks and limits. Explicit grabs, repositioning/output constraints,
+    parent leave, direct display and physical acceptance remain unfinished.
+    No compositor box changes; supervisor publication gates remain pending.
 
 - [ ] **Sign-in**: alo identity, and a local account that needs no tenant
 

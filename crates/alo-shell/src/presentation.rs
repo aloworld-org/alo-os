@@ -41,7 +41,8 @@ pub trait FrameTarget {
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError>;
     /// Submit popup-aware desktop content and cursor in one frame.
     /// Popups belong immediately above their parent, newest first; use
-    /// `Popup::location` for their buffer origin. Older targets explicitly refuse
+    /// `Popup::location` plus the parent buffer origin, accumulated through popup
+    /// ancestors, for their buffer origin. Older targets explicitly refuse
     /// live popups, preserving callbacks instead of silently dropping content.
     fn submit_popups(
         &mut self,
