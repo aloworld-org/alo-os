@@ -136,20 +136,115 @@ use std::fs::File;
 use std::io;
 use std::path::Path;
 
-/// Open a file for reading without following a link at any point in its path.
+/// Why a file was not opened for reading.
+///
+/// Two different facts, and they are not both the machine's: one is what a
+/// syscall answered, and the other is this crate declining to read a file whose
+/// contents may also live somewhere nobody granted.
+#[derive(Debug)]
+pub(crate) enum Opening {
+    /// The machine said no, in its own words.
+    TheMachine(io::Error),
+
+    /// The file has more than one name on this machine, and where the others
+    /// are cannot be asked of it.
+    MoreThanOneName,
+}
+
+impl From<io::Error> for Opening {
+    fn from(why: io::Error) -> Self {
+        Self::TheMachine(why)
+    }
+}
+
+impl Opening {
+    /// Which kind of thing the machine said, when it was the machine.
+    ///
+    /// Only for this file's own tests. Everywhere else the whole point is that
+    /// these two are not the same kind of fact and are not asked about as
+    /// though they were: [`crate::failed::Failed::opening`] is the one place
+    /// that tells them apart, and it does it by matching rather than by asking.
+    #[cfg(test)]
+    fn what_the_machine_said(&self) -> Option<io::ErrorKind> {
+        match self {
+            Self::TheMachine(why) => Some(why.kind()),
+            Self::MoreThanOneName => None,
+        }
+    }
+}
+
+/// Open a file for reading: not through a link, and not one of several names.
 ///
 /// On Linux the whole path is resolved inside one syscall that refuses a link
 /// at every component, so nothing on the way can be exchanged between the check
 /// and the open. Elsewhere it is `File::open`, which resolves the name once
 /// more.
 ///
+/// **Then the open file is asked how many names it has**, which is a question
+/// only a handle can answer honestly — the same discipline as asking a handle
+/// how big a file is rather than asking its name again. More than one, and it
+/// is not read: see [`Opening::MoreThanOneName`] and [`more_than_one_name`].
+///
 /// # Errors
-/// Whatever the machine said. A component that has become a symbolic link is
-/// `ELOOP`, which reaches a person as a refusal rather than as a file somebody
-/// else chose. A kernel too old to promise this is `ENOSYS`, which refuses the
-/// read rather than doing it the old way.
-pub(crate) fn read_only(path: &Path) -> io::Result<File> {
-    platform::read_only(path)
+/// [`Opening::TheMachine`] with whatever the machine said. A component that has
+/// become a symbolic link is `ELOOP`, which reaches a person as a refusal
+/// rather than as a file somebody else chose; a kernel too old to promise this
+/// is `ENOSYS`, which refuses the read rather than doing it the old way. Or
+/// [`Opening::MoreThanOneName`], which is this crate's own answer rather than
+/// the machine's.
+pub(crate) fn read_only(path: &Path) -> Result<File, Opening> {
+    let opened = platform::read_only(path)?;
+    if more_than_one_name(&opened)? {
+        return Err(Opening::MoreThanOneName);
+    }
+    Ok(opened)
+}
+
+/// Whether this machine knows this open file by more than one name.
+///
+/// # Why it is asked of the open file rather than of the path
+///
+/// A **hard link** is a second real name for one file. Nothing about a path
+/// reveals it: `alo-files` resolves every path a verb names and asks the grants
+/// where it really leads, and a hard link inside a granted folder to a file
+/// that also lives outside it resolves to the granted name and passes, because
+/// the granted name *genuinely is* a real name for that file. There is nothing
+/// a cleverer path comparison could do, and `docs/quirks.md` has said so since
+/// 2026-09-02.
+///
+/// What a file will answer is how many names it has, and a handle is what to
+/// ask: the count is read from the file that was opened rather than from the
+/// name it was opened by, so nothing swapped in afterwards changes the answer.
+///
+/// # It cannot say where the other names are, and that decides the policy
+///
+/// There is no way from a file to its own names — that would be a scan of every
+/// filesystem it could be on. So *more than one name* is as much as is known,
+/// and the two ways of being wrong are: read a file whose contents also live
+/// outside the grant, or refuse a file whose second name is inside the grant
+/// and harmless. The second is the safe one and it is the one taken. What that
+/// costs is in `docs/quirks.md`.
+///
+/// # Only regular files
+///
+/// Every directory has at least two names — its own and the `.` inside it —
+/// and one with subdirectories has one more for each. Counting names on a
+/// directory would refuse every folder on the machine, which is why this asks
+/// what the file is first.
+#[cfg(unix)]
+fn more_than_one_name(opened: &File) -> Result<bool, Opening> {
+    use std::os::unix::fs::MetadataExt as _;
+
+    let what = opened.metadata().map_err(Opening::TheMachine)?;
+    Ok(what.is_file() && what.nlink() > 1)
+}
+
+/// See the Unix half. `std` cannot count a file's names on Windows without a
+/// call it does not expose, so this answers *not that we can tell* — which is
+/// the honest answer and is the gap `docs/quirks.md` keeps.
+#[cfg(not(unix))]
+fn more_than_one_name(_: &File) -> Result<bool, Opening> {
+    Ok(false)
 }
 
 /// Move a name, refusing to replace anything already at the destination.
@@ -334,6 +429,59 @@ mod tests {
         let _ = fs::remove_dir_all(&folder);
     }
 
+    /// **A file the machine knows by two names is not read.**
+    ///
+    /// The second name is made *outside* the folder being read from, which is
+    /// the shape that matters: what a person granted is one of the names, and
+    /// the file's contents are equally reachable by the other.
+    #[cfg(unix)]
+    #[test]
+    fn a_file_with_a_second_name_is_not_read() {
+        let folder = a_folder_of_our_own("two-names");
+        let granted = folder.join("Invoices");
+        let elsewhere = folder.join("Elsewhere");
+        fs::create_dir_all(&granted).unwrap();
+        fs::create_dir_all(&elsewhere).unwrap();
+
+        let outside = elsewhere.join("secret.txt");
+        fs::write(&outside, b"not an invoice").unwrap();
+        let inside = granted.join("notes.txt");
+        fs::hard_link(&outside, &inside).unwrap();
+
+        let why = read_only(&inside).unwrap_err();
+        assert!(
+            matches!(why, Opening::MoreThanOneName),
+            "a file with another name was opened: {why:?}"
+        );
+        // And it is this crate's own answer rather than something the machine
+        // said, which is the distinction `Opening` exists to keep.
+        assert_eq!(why.what_the_machine_said(), None);
+
+        let _ = fs::remove_dir_all(&folder);
+    }
+
+    /// The two names taken apart again: the moment one of them is gone the file
+    /// has one name and is read, so what is refused is the *sharing* rather
+    /// than anything about the file itself.
+    #[cfg(unix)]
+    #[test]
+    fn the_same_file_is_read_once_it_has_only_one_name() {
+        let folder = a_folder_of_our_own("one-name-again");
+        let outside = folder.join("secret.txt");
+        let inside = folder.join("notes.txt");
+        fs::write(&outside, b"an invoice").unwrap();
+        fs::hard_link(&outside, &inside).unwrap();
+        assert!(read_only(&inside).is_err());
+
+        fs::remove_file(&outside).unwrap();
+
+        let mut held = Vec::new();
+        read_only(&inside).unwrap().read_to_end(&mut held).unwrap();
+        assert_eq!(held, b"an invoice");
+
+        let _ = fs::remove_dir_all(&folder);
+    }
+
     /// A file that is not there is `NotFound` and not some other complaint,
     /// because [`crate::failed::Failed::machine`] turns exactly that into *it
     /// is gone* and everything else into the machine's own words.
@@ -342,7 +490,11 @@ mod tests {
         let folder = a_folder_of_our_own("open-missing");
 
         let why = read_only(&folder.join("april.pdf")).unwrap_err();
-        assert_eq!(why.kind(), io::ErrorKind::NotFound, "{why:?}");
+        assert_eq!(
+            why.what_the_machine_said(),
+            Some(io::ErrorKind::NotFound),
+            "{why:?}"
+        );
 
         let _ = fs::remove_dir_all(&folder);
     }
@@ -418,8 +570,8 @@ mod tests {
         ] {
             let why = read_only(path).unwrap_err();
             assert_eq!(
-                why.kind(),
-                io::ErrorKind::InvalidInput,
+                why.what_the_machine_said(),
+                Some(io::ErrorKind::InvalidInput),
                 "{} was walked",
                 path.display()
             );

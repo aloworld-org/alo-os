@@ -91,6 +91,19 @@ pub enum Failed {
         path: String,
     },
 
+    /// A file the machine knows by more than one name.
+    ///
+    /// A hard link is a second *real* name for one file, so resolving a path
+    /// does not reveal it and no comparison of paths can: the granted name
+    /// genuinely is a name for that file, and a file cannot say where its other
+    /// names are. `docs/quirks.md` has the whole of it. What is left is a
+    /// choice about which way to be wrong, and this is the safe one — a file
+    /// whose contents may also live outside what somebody granted is not read.
+    HasAnotherName {
+        /// What was named.
+        path: String,
+    },
+
     /// Something is already at the name a change would create.
     AlreadyThere {
         /// Where the change would have put something.
@@ -182,6 +195,10 @@ impl Failed {
             Self::NotText { path } => {
                 strings.say(&words::NOT_TEXT.key(), &Filling::of("path", path.clone()))
             }
+            Self::HasAnotherName { path } => strings.say(
+                &words::HAS_ANOTHER_NAME.key(),
+                &Filling::of("path", path.clone()),
+            ),
             Self::AlreadyThere { path } => strings.say(
                 &words::ALREADY_THERE.key(),
                 &Filling::of("path", path.clone()),
@@ -214,6 +231,26 @@ impl Failed {
                     .and("doing", doing.clone())
                     .and("why", why.clone()),
             ),
+        }
+    }
+
+    /// Why a file could not be opened for reading.
+    ///
+    /// The companion to [`Self::machine`] for the one door every read goes
+    /// through, so that both verbs which open a file answer the same way about
+    /// the same file. Written once here rather than at each call site, for the
+    /// reason [`Self::machine`] is: two places deciding what *this file has
+    /// another name* is called are two answers waiting to disagree.
+    pub(crate) fn opening(
+        path: &std::path::Path,
+        doing: &str,
+        why: &crate::opening::Opening,
+    ) -> Self {
+        match why {
+            crate::opening::Opening::MoreThanOneName => Self::HasAnotherName {
+                path: path.display().to_string(),
+            },
+            crate::opening::Opening::TheMachine(why) => Self::machine(path, doing, why),
         }
     }
 

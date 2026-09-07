@@ -520,10 +520,42 @@ lives outside it resolves to the granted name and passes the check.
 do there — the granted name genuinely is a real name for that file. Making a
 hard link needs write access to the granted folder and read access to the
 target, so it is not a way *in*; it is a way for somebody who can already write
-to a granted folder to widen what an agent may read. It is documented here, in
-the contract and in `alo-files`, and the answer if it ever matters is a policy
-about link counts at the moment of opening, not a cleverer path comparison.
-**Date:** 2026-09-02
+to a granted folder to widen what an agent may read — and what an agent reads
+can leave the machine, while the record of the turn names only a granted path.
+
+**Since 2026-09-07 it is the policy this entry predicted**, and there was only
+one place it could go: a file is asked **how many names it has**, of the open
+handle rather than of the path, and more than one means it is not read.
+`crates/alo-files/src/opening.rs` asks it, so both verbs that read bytes —
+`read_file` and `archive_folder` — answer the same way about the same file. An
+archive is refused rather than made without the file, which is `archiving.rs`'s
+own rule about bounds. A person is told the file has other names, that it was
+not read, and to copy it or grant the folder the other name is in.
+
+**Nothing beneath it was going to catch this, and that was measured rather than
+assumed.** `crates/alo-bounding/tests/a_hard_link_is_inside_every_boundary.rs`
+binds a turn to one folder on a running kernel with the real programme loaded:
+the private file under its own name is `EACCES`, and **the same file under its
+second name inside the granted folder opens and is read**. That is the boundary
+doing exactly what ADR 0015 describes — deciding by where a directory entry sits
+— and this entry sits in a granted folder. So it is not a second answer to this
+question, and the check above is the only one there is.
+
+**What it costs, stated plainly.** A file cannot say *where* its other names
+are; there is no way from a file to its names short of scanning every filesystem
+it could be on. So *more than one name* is all that is known, and a file whose
+second name sits harmlessly beside the first — two names in one granted folder —
+is refused too. That is the safe direction rather than a free one, and it is a
+real cost to whoever meets it.
+`crates/alo-files/tests/a_file_with_another_name_is_not_read.rs` has a test that
+says so out loud, rather than only testing the case that flatters the rule.
+
+**Windows still cannot count.** `std` exposes no name count there, so the check
+answers *not that we can tell* and a hard link on NTFS is not caught.
+Directories are exempt everywhere: every directory has at least two names, its
+own and the `.` inside it, so counting names on one would refuse every folder on
+the machine.
+**Date:** 2026-09-02, answered 2026-09-07
 
 ### A path checked and then opened by name can change in between
 **Version:** every filesystem alo OS will run on; seen 2026-09-02 in

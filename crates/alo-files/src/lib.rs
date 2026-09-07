@@ -93,17 +93,34 @@
 //!
 //! A path resolved and then opened **by that name** can have a link swapped in
 //! underneath it, at any component and not only the last. On Linux that gap is
-//! closed: `opening.rs` walks every component from the root, opening each one
-//! relative to a handle on the one before it and refusing a link at every step,
-//! so a file is reached rather than named — and it moves a name with one call
-//! that refuses to replace anything, rather than a check followed by a rename.
-//! A filesystem that cannot promise the second refuses the move; it does not
-//! quietly go back to replacing.
+//! closed: `opening.rs` resolves the whole path inside one call that refuses a
+//! symbolic link at every component, so a file is reached rather than named —
+//! and it moves a name with one call that refuses to replace anything, from
+//! handles on the two folders rather than from their names. A filesystem that
+//! cannot promise that refuses the move; it does not quietly go back to
+//! replacing.
 //!
 //! On hosts without those calls it is `std`, which resolves the name a second
-//! time, and `docs/quirks.md` says so. **What no platform closes is the hard
-//! link**: a real name for a file that also lives somewhere else, invisible to
-//! any check made of a path. That one is still written down rather than solved.
+//! time, and `docs/quirks.md` says so.
+//!
+//! # And the link no path can reveal
+//!
+//! A **hard** link is a second *real* name for one file. Resolving does not
+//! expose it and no comparison of paths could: the granted name genuinely is a
+//! name for that file. So a hard link inside a granted folder is a way to widen
+//! what an agent may read without widening any grant, and neither layer beneath
+//! this one catches it — the boundary decides an open by where a directory
+//! entry sits, and this entry sits in the granted folder, which
+//! `alo-bounding`'s `a_hard_link_is_inside_every_boundary` measures rather than
+//! assumes.
+//!
+//! What a file *will* answer is **how many names it has**, asked of the open
+//! handle. More than one and it is not read, wherever bytes are read: a person
+//! is told the file has other names, that it was not read, and to copy it or
+//! grant the folder the other name is in. It cannot say *where* the others are,
+//! so this refuses a file whose second name is harmlessly beside the first —
+//! the safe way to be wrong, and `docs/quirks.md` records the cost. On Windows
+//! `std` cannot count names at all, and that gap is written down too.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 

@@ -103,8 +103,10 @@ pub(crate) fn read(file: &Real) -> Result<Answer, Failed> {
 
     // Opened without following a link at any point in the path, so that what is
     // read is what was resolved and asked about rather than whatever the name
-    // leads to now. [`crate::opening`] says what that costs on other hosts.
-    let opened = opening::read_only(at).map_err(|why| Failed::machine(at, "read", &why))?;
+    // leads to now — and refused outright if the machine knows this file by
+    // more than one name, because the others could be anywhere.
+    // [`crate::opening`] argues both, and what they cost on other hosts.
+    let opened = opening::read_only(at).map_err(|why| Failed::opening(at, "read", &why))?;
     // How big it is, asked of the file that is open rather than of its name:
     // the name could be pointing at something else by now, and this handle
     // cannot be.

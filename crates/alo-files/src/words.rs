@@ -145,6 +145,14 @@ pub const NOT_TEXT: Word = Word::saying(
      needs an application that knows what it is",
 );
 
+/// A file that the machine knows by more than one name.
+pub const HAS_ANOTHER_NAME: Word = Word::saying(
+    "files.failed.has-another-name",
+    "{path} is one of several names this machine has for the same file, and the others could be \
+     anywhere — so what is in it was not read. Make a copy and read that, or grant the folder \
+     the other name is in",
+);
+
 /// Something is already at the name a change would create.
 pub const ALREADY_THERE: Word = Word::saying(
     "files.failed.already-there",
@@ -376,13 +384,14 @@ pub const ARCHIVE_FOLDER_NAME: Word = Word::saying(
 /// Every plain string this crate can say, in the order a translator meets them:
 /// what the machine could not do, what could not be followed, what a refusal
 /// says, and then the six verbs.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 42] = [
     NOT_A_FILE_VERB,
     MISSING,
     NOT_A_FOLDER,
     NOT_A_FILE,
     GONE,
     NOT_TEXT,
+    HAS_ANOTHER_NAME,
     ALREADY_THERE,
     ALREADY_IN,
     INTO_ITSELF,

@@ -179,9 +179,12 @@ impl Archive {
 
         // Opened without following a link at any point in the path: an archive
         // is made of what was resolved and approved, not of whatever a name
-        // leads to by the time the archive gets to it.
+        // leads to by the time the archive gets to it. A file the machine knows
+        // by more than one name stops the archive rather than being left out of
+        // it quietly — [`crate::archiving`]'s rule, which is that a bound
+        // refused in words beats an archive missing a document nobody mentioned.
         let mut reading =
-            opening::read_only(from).map_err(|why| Failed::machine(from, "read", &why))?;
+            opening::read_only(from).map_err(|why| Failed::opening(from, "read", &why))?;
         let mut buffer = [0_u8; AT_A_TIME];
         let mut crc = Crc::new();
         let mut bytes = 0_u64;

@@ -220,10 +220,20 @@ that refuses or moves rather than a check followed by an act, and it is made
 from **handles** on the two folders rather than from their names — so the folder
 a file leaves and the folder it arrives in cannot be exchanged either.
 
-What remains is the hard link, which no platform closes. `docs/quirks.md` has
-it, and the machines with no such calls keep the behaviour the paragraph above
-describes. None of this changes what an adapter author writes or what a caller
-sees — the same refusals, in the same words.
+**A hard link is answered by counting rather than by resolving.** It is a second
+*real* name for one file, so no comparison of paths can see it and the granted
+name genuinely is a name for that file. So a file is asked how many names it
+has, of the handle that was opened, and **a file with more than one name is not
+read** — by any verb that reads bytes, which is `read_file` and
+`archive_folder`. A caller sees a failure saying the file has other names, that
+it was not read, and what to do instead. It cannot be told *where* the other
+names are, because a file does not know; a second name harmlessly beside the
+first is refused as well, and `docs/quirks.md` records that cost. On a machine
+whose `std` cannot count names this check does not apply.
+
+The machines with no such calls keep the behaviour the paragraph above
+describes. Apart from the new failure, none of this changes what an adapter
+author writes or what a caller sees — the same refusals, in the same words.
 
 A refusal at question 1 is the grants' own and travels as the value they made.
 A refusal at question 2 or 3 is worded by whatever executes the verb, because

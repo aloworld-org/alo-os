@@ -112,6 +112,9 @@ pub(crate) fn every_failure() -> Vec<Failed> {
         Failed::NotText {
             path: "/home/anna/Invoices/scan.tiff".to_owned(),
         },
+        Failed::HasAnotherName {
+            path: "/home/anna/Invoices/notes.txt".to_owned(),
+        },
         Failed::AlreadyThere {
             path: "/home/anna/Archive/march.pdf".to_owned(),
         },
