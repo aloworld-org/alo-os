@@ -36,6 +36,14 @@
 //! ever in a turn and holds it for the life of the daemon. Leaving is a write to
 //! a descriptor that already exists, and a write is not an open.
 //!
+//! **That is the same property as the gap this crate documents**, used on
+//! purpose. A descriptor opened before a turn began is inside no boundary, which
+//! is why the daemon's record and its socket stay reachable from inside one —
+//! and why a boundary that re-decided about a descriptor at the moment it was
+//! *used* would refuse a turn its own way out. `crates/alo-bounding/src/lib.rs`
+//! has the account and `tests/what_a_turn_inherits.rs` measures both halves of
+//! it, this one included.
+//!
 //! # The shape on the machine
 //!
 //! ```text

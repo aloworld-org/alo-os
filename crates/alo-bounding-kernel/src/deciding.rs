@@ -55,7 +55,15 @@
 //!   read — which moves no contents anywhere and destroys them where they are.
 //!   It is the sharpest thing on this list and `docs/quirks.md` says so;
 //! - **what is inside a file already open** — a boundary on `file_open`
-//!   decides at the moment of opening and says nothing afterwards;
+//!   decides at the moment of opening and says nothing afterwards. **A
+//!   descriptor opened before a turn began** is therefore inside no boundary,
+//!   and since a turn is one thread of `alo-agentd` that means the daemon's
+//!   record, its socket and its own way out of a turn. It is the one gap here
+//!   that moves contents past a grant, and closing it in the kernel would mean
+//!   `file_permission` — a walk on every read and write on the machine — or
+//!   `file_receive`. Neither is declared in `kernel.rs`; `docs/quirks.md` has
+//!   the account, `alo-bounding/tests/what_a_turn_inherits.rs` reproduces it,
+//!   and the decision it needs belongs in an ADR rather than in a commit;
 //! - **signals and memory**, and everything else that is not a filesystem. What
 //!   a turn connects to *is* watched, by `socket_connect`, and
 //!   [`decide_departure`] says what that does and does not decide.

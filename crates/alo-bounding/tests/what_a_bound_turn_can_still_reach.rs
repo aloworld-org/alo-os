@@ -17,7 +17,11 @@
 //!   connection is *made*. A socket connected before the turn began is invisible
 //!   to it, and stays writable inside. This is the network's version of the
 //!   already-open-descriptor gap, and it has the same answer: a hook that
-//!   decides at the moment of opening says nothing afterwards.
+//!   decides at the moment of opening says nothing afterwards. It is the row
+//!   `a socket already connected` in the account of what a turn inherits — the
+//!   entry *A descriptor opened before a turn began is inside no boundary* in
+//!   `docs/quirks.md`, whose other four rows are reproduced in
+//!   `what_a_turn_inherits.rs`.
 //! - **A datagram sent without connecting.** `sendto` on an unconnected socket
 //!   reaches no `connect` hook at all. Closing it needs `socket_sendmsg`, which
 //!   fires on every message rather than every connection.

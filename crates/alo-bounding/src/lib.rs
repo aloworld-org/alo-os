@@ -163,11 +163,10 @@
 //! measurement and says why it is the one item not in the committed suite.
 //!
 //! Two things sit beside the list rather than in it. **A descriptor opened
-//! before the turn began** stays usable inside it, because a hook that decides
-//! at the moment of opening says nothing afterwards; the socket half of that is
-//! reproduced in `tests/what_a_bound_turn_can_still_reach.rs`. And **starting a
-//! program is not a way round any of this**: `execve` opens the file it runs, so
-//! a turn asking for a program outside its bound is refused like any other file.
+//! before a turn began** stays usable inside it, which is its own section below.
+//! And **starting a program is not a way round any of this**: `execve` opens the
+//! file it runs, so a turn asking for a program outside its bound is refused like
+//! any other file.
 //!
 //! Every one of these is reproduced against the real loaded programme in
 //! `tests/what_a_bound_turn_can_still_change.rs`, each with a refused open
@@ -177,6 +176,47 @@
 //! with ADR 0013's other primitives — and
 //! `tests/the_unwatched_mutations_are_written_down.rs` fails the day one of them
 //! lands while the documents still call it unwatched.
+//!
+//! # What a turn inherits, and why it is not on that list
+//!
+//! Every hook above decides at the moment something is *done to a name*. None of
+//! them decides about a descriptor that already exists, and there is no hook here
+//! on a read, on a write, or on a descriptor arriving from somewhere else. **So
+//! anything open when a turn begins stays fully usable inside it**, and the
+//! boundary is never asked.
+//!
+//! That is not a corner of the design, it is most of the daemon. [`Turns::doing`]
+//! puts **one thread** of `alo-agentd` into a control group — the argument is in
+//! `turns.rs` and it is law 2's — and a thread shares its process's whole
+//! descriptor table. What is in that table on this machine today is the record
+//! `alo_keeping::Writing` holds open for appending, the socket the daemon is
+//! listening on and the caller it is answering, standard output and error, and
+//! [`Turns::doing`]'s own way out of a turn.
+//!
+//! **A descriptor opened before a turn began is the one gap in this crate that
+//! moves contents past a grant.** The list above was measured against exactly
+//! that promise and every item keeps it; this does not. A turn reads a file
+//! nobody granted through an inherited descriptor and writes what it read into
+//! the folder somebody did, where a `move_file` or an `archive_folder` carries it
+//! onwards and where the record names only a granted path. It is why this is its
+//! own piece of work rather than a seventh row.
+//!
+//! What it does **not** permit is measured beside it and is the floor under it: a
+//! descriptor cannot be reopened by name, `/proc/self/fd/<n>` does not turn one
+//! back into an open — the walk starts at the file the open really reached — and
+//! `openat` relative to an inherited folder is an open like any other, so a
+//! directory handle is not a key to what is under it.
+//!
+//! **Closing it is a decision rather than a patch, and this crate has not taken
+//! it.** The kernel's answer would be `file_permission` — a hook on every read
+//! and write on the machine, which is the opposite direction from *decides and
+//! forgets* — and it would refuse a turn its own way out, because leaving one is
+//! a write to a descriptor opened before it began. The other answer is to make a
+//! turn a process of its own, which is a change to what a turn *is* and belongs
+//! in an ADR. `docs/quirks.md` carries the account, every row of it is reproduced
+//! in `tests/what_a_turn_inherits.rs` against the real loaded programme, and
+//! `tests/what_a_turn_inherits_is_written_down.rs` fails the day either hook
+//! lands while the documents still say neither has.
 //!
 //! # What this boundary can decide about the network, and what it cannot
 //!

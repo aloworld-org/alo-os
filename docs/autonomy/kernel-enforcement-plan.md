@@ -76,7 +76,7 @@ Four hooks exist: `file_open`, `inode_rename`, `inode_unlink`, `inode_link`.
 | **Network egress enforcement and attribution** | **v0.01** | `alo-egress` is policy and indicator only. No socket or cgroup programme exists anywhere in the tree. This is the one in-scope item. |
 | Filesystem: `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink` | v0.5 | Documented and, since task 5, reproduced; none moves a byte of somebody's file past a grant |
 | Filesystem: `inode_setattr`, `inode_setxattr` — attributes, ownership **and size** | v0.5 | Not hooked. Task 5 measured what the size half means: `truncate(2)` reaches `inode_setattr` without an open, so a bound turn can **empty** a file nobody granted it. No contents leave a grant and contents are destroyed where they are — the only item on the unwatched list that does more than litter, and the one to close first |
-| Already-open descriptors, and access inherited across the start of a turn | v0.5 | A `file_open` hook decides at open time and says nothing afterwards; a descriptor opened before the turn began stays usable inside it. **Not addressed anywhere** |
+| Already-open descriptors, and access inherited across the start of a turn | v0.5 | A `file_open` hook decides at open time and says nothing afterwards; a descriptor opened before the turn began stays usable inside it. Documented and, since task 6, reproduced against the production door — and it is **the one gap in this crate that moves contents past a grant**, which is why closing it needs the ADR task 6 names rather than a hook |
 | Landlock, seccomp, namespaces — ADR 0013's other three primitives | v0.5 | None built; the BPF LSM carries the whole boundary today |
 | A snapshot at turn start, and exact undo | v0.5 / v1 | Not built |
 | Kernel-sourced enforcement records | v0.5 | **Needs a decision, not code** — see below |
@@ -374,6 +374,57 @@ open files — its record, its socket, its vocabulary.
 - **Evidence:** the account, and any test it produces.
 - **Approval needed if:** closing it would need the turn to become a separate
   process, which is a change to how a turn works and belongs in an ADR.
+
+**Done, 2026-09-08.** The account is `docs/quirks.md` under *A descriptor opened
+before a turn began is inside no boundary*, with the same argument beside the
+code in `crates/alo-bounding-kernel/src/deciding.rs`, where an auditor of the
+crate reads in `crates/alo-bounding/src/lib.rs`, and beside the descriptor the
+mechanism itself depends on in `crates/alo-bounding/src/turns.rs`. Five rows,
+each naming what a turn inherits, what it permits inside the boundary, what it
+still does not permit, the test that reproduces it, and v0.5 as the release that
+owns closing it.
+
+**A test could be written honestly, and it uses the production door.** Its two
+siblings bind a child process; inheritance is exactly what a child gets
+differently, so `what_a_turn_inherits.rs` goes through `Turns::doing` on the
+thread the assertions are made from — which is what `alo-agentd` really does.
+Four rows are reproduced there and the fifth was already reproduced by task 7.
+`what_a_turn_inherits_is_written_down.rs` parses the table and fails the day
+`file_permission` or `file_receive` lands while the entry still says neither has,
+a row stops saying what it cannot do, a row names a release `docs/features.md`
+has never heard of, a row's named reproduction is missing or silent about it, or
+the list of what a turn inherits changes without a person looking at it.
+
+**What the audit found that the task did not ask for, and it is the sharpest
+thing in this plan.** Every unwatched mutation in task 5 was measured against one
+promise — *no unwatched mutation moves a byte of somebody's file past a grant* —
+and each keeps it. **An inherited read descriptor does not.** Measured here: the
+same thread, in the same instant, is refused `open` on a file nobody granted and
+reads every byte of it through a descriptor that already existed, then writes
+what it read into the folder somebody *did* grant, where an `archive_folder` or a
+`move_file` carries it onwards and where the record names only a granted path.
+That is the whole of what the boundary exists to prevent, so this is its own
+piece of work rather than a seventh row in that table.
+
+The floor under it is measured beside it: a descriptor cannot be reopened by
+name, `/proc/self/fd/<n>` does not turn one back into an open — with the
+*granted* file reopened the same way as the control, because a boundary refusing
+everything under `/proc` would look identical and mean nothing — and `openat`
+relative to an inherited folder is an open like any other.
+
+**The approval line was not crossed and the decision is named rather than
+taken.** Closing this in the kernel means `file_permission`, a walk on every read
+and write on the machine, which is the opposite direction from *decides and
+forgets* — **and it would refuse a turn its own way out**, because leaving a
+boundary is a write to `home/cgroup.threads`, opened before the first turn ever
+ran. That is measured here too: the same turn is refused `open` on that file and
+leaves through the descriptor anyway. The other answer is to make a turn a
+process of its own, which is a change to what a turn *is*, collides with law 2's
+*nothing is started*, and belongs in an ADR. **Neither was built and no ADR was
+written**; `docs/autonomy/updates/descriptors-opened-before-a-turn.md` states the
+decision the next scheduler of v0.5 has to take.
+
+Nothing was closed, nothing was ticked, and no *On the machine* box is touched.
 
 ### 7. Hardening publication, and the egress coverage audit
 
