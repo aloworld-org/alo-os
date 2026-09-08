@@ -77,6 +77,15 @@ impl TheBus {
         // at somebody else's socket would otherwise be followed and then
         // checked at the far end, which answers a question about the wrong
         // file. What is wanted is *this name is a socket of theirs*.
+        // **And it has to be sayable as an address**, which is checked before
+        // anything is opened rather than after. `libsecret` cannot be told
+        // which bus to use at all — no API of it accepts a connection — so the
+        // client that eventually does is given [`TheBus::as_an_address`] and
+        // nothing else, and a path that does not survive that grammar would
+        // quietly become a different address.
+        if !can_be_said_as_an_address(at) {
+            return Err(NotStored::Unavailable);
+        }
         let it = std::fs::symlink_metadata(at).map_err(|_| NotStored::Unavailable)?;
         if !it.file_type().is_socket() {
             return Err(NotStored::Unavailable);
@@ -113,6 +122,31 @@ impl TheBus {
     pub fn as_an_address(&self) -> String {
         format!("unix:path={}", self.at.display())
     }
+}
+
+/// Whether this path can be written as a D-Bus address without becoming a
+/// different one.
+///
+/// D-Bus address grammar separates key–value pairs with `,` and whole addresses
+/// with `;`. A socket path containing either would be **parsed as more than it
+/// is** — `unix:path=/run/user/0/b,us` is a `path` of `/run/user/0/b` and a key
+/// called `us`, and a `;` offers the client a second address to fall back to.
+/// Neither is a path this could open, and both are a client connecting somewhere
+/// this crate did not choose.
+///
+/// It must also be absolute: a relative path is resolved against whatever
+/// directory the process happens to be in, which is not a decision anybody made.
+///
+/// Refused before the socket is looked at, because what is being refused is the
+/// *name*, and looking first would answer a question about a file that is not
+/// the one the client would open.
+fn can_be_said_as_an_address(at: &Path) -> bool {
+    let Some(said) = at.to_str() else {
+        // A path that is not UTF-8 has no spelling in a D-Bus address, which is
+        // text. Nothing on a machine `logind` made has one.
+        return false;
+    };
+    at.is_absolute() && !said.contains(',') && !said.contains(';')
 }
 
 #[cfg(test)]
@@ -212,6 +246,39 @@ mod tests {
         assert_eq!(TheBus::at(&pointed, ours), Err(NotStored::Unavailable));
 
         drop(listening);
+    }
+
+    /// **A path that would say more than itself as an address is refused.**
+    ///
+    /// D-Bus separates key–value pairs with `,` and addresses with `;`, so
+    /// `unix:path=/tmp/b,us` is a path of `/tmp/b` and a key called `us`, and a
+    /// `;` hands the client a second address to try. Either is a client
+    /// connecting somewhere this crate did not choose — which matters because
+    /// **libsecret cannot be told which bus to use at all**, so the address is
+    /// the only control there is.
+    ///
+    /// Refused on the name, before the socket is looked at.
+    #[test]
+    fn a_path_that_would_become_a_different_address_is_refused() {
+        let place = a_place_of_our_own("ambiguous");
+        let ours = rustix::process::getuid().as_raw();
+
+        for named in ["b,us", "b;us"] {
+            let at = place.join(named);
+            let listening =
+                std::os::unix::net::UnixListener::bind(&at).expect("a socket of our own");
+            assert_eq!(
+                TheBus::at(&at, ours),
+                Err(NotStored::Unavailable),
+                "{named} was accepted, and as an address it is not itself"
+            );
+            drop(listening);
+        }
+
+        // A relative name is refused too: it would be resolved against whatever
+        // directory the process happens to be in.
+        assert!(!can_be_said_as_an_address(Path::new("run/user/0/bus")));
+        assert!(can_be_said_as_an_address(Path::new("/run/user/0/bus")));
     }
 
     /// **What a client is handed is an address for this bus**, so that whatever

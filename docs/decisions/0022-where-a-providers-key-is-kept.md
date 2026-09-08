@@ -302,6 +302,46 @@ authenticated HTTPS operation through the daemon.**
 - **Nothing about alo's own endpoint**, which does not exist and is not invented
   here.
 
+## Amendment proposed 2026-09-08: the binding, and only the binding
+
+**libsecret cannot honour this ADR's own requirement**, measured on the build
+machine after installing `libsecret-1-dev` 0.21.7:
+
+```
+grep -rn "GDBusConnection" /usr/include/libsecret-1/libsecret/*.h   # nothing
+secret_service_open_sync(GType, const gchar *service_bus_name, SecretServiceFlags, ...)
+```
+
+**No libsecret API accepts a connection.** `secret_service_open_sync` takes a bus
+*name*, not a bus; the connection always comes from `g_bus_get_sync(G_BUS_TYPE_SESSION)`,
+whose address GDBus reads from the environment. So a daemon using libsecret
+connects to whatever `DBUS_SESSION_BUS_ADDRESS` names — which is exactly the
+*default connection* this ADR exists to refuse, and exactly what `TheBus::of`
+taking a uid and nothing else was built to prevent.
+
+Passing our derived address to our own wrapper would not change that. It would
+look like compliance and be nothing of the kind.
+
+**A pure-Rust client can.** `zbus` 5.19.0 has `Builder::address(...)` in both its
+async and blocking builders, so a connection is made to **the address we hand
+it** and to no other. `secret-service` 5.2.0 speaks the same Secret Service
+protocol on top of it. Both fetch on this machine.
+
+**The amendment asked for is narrow.** The *store* stays the Secret Service. The
+*bus* stays `/run/user/<uid>/bus` derived from the daemon's own uid. **Only the
+binding changes**, from libsecret to a Rust client that can be given a
+connection — and it removes a C dependency rather than adding one.
+
+Consequences worth stating: the shared-singleton limitation this ADR records is
+libsecret's, and a client we construct per connection may not have it — which
+makes *connection lifetime* something to measure rather than inherit.
+`libsecret-1-dev` stays installed on the build machine; it is what made this
+measurable and it harms nothing.
+
+**Not decided here.** Steps 2 to 5 — retrieval, routing tests, the four store
+states, and authenticated HTTPS through the daemon — all wait on this, because
+each of them is built on whichever client is chosen.
+
 ## What is built, and what is not
 
 **Built and tested, 2026-09-08** — `crates/alo-secrets`:
