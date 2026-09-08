@@ -17,6 +17,7 @@ impl Surfaces {
     ) -> Option<(Point<f64, Logical>, Vec<u32>)> {
         if self.window_move.is_some()
             || self.window_resize.is_some()
+            || self.has_window_maximize(root)
             || self.popup_grab.is_some()
             || self.mapped_toplevel(root).is_none()
             || !self.keyboard.as_ref().is_some_and(|keyboard| {

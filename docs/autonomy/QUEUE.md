@@ -5,6 +5,22 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed trusted maximise and restore transactions (desktop worker, 2026-09-08):**
+per-mapping normal geometry, successfully submitted output sizing, XDG maximized
+state and latest acknowledged-commit placement are connected. Seven real-client
+tests cover ordering/toggles, limits, target refusal, output change/retirement,
+input isolation and mapping lifetime. Linux affected clippy, 277 tests plus three
+doctests, rustdoc/examples/fmt and Windows affected checks pass. Final conforming
+buffer fixture change passes all seven focused tests and affected Linux clippy;
+WSLg passes 21 offscreen stages (five new 6,400-pixel frames) and nested regression
+with 115 submitted surfaces. Full supervisor gates pending. Exact commands and
+limits: `updates/trusted-window-maximize-and-restore.md`. No published reports
+awaited reconciliation at iteration start; publication arrivals reconcile next
+iteration. Next executable component: XDG client maximize/unmaximize policy,
+including pre-map requests, mapped requests, refusal/response and lifetime tests
+using the trusted transactions. Then minimise/tile and native controls. This
+completes the transaction component, not maximise or window management as a whole.
+
 **Completed interactive resize transactions (desktop worker, 2026-09-08):**
 XDG held-press authority, validated edges, live limits, resizing configures and
 acknowledged committed-size anchoring are connected to shared native input.

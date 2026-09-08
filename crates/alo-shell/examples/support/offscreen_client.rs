@@ -221,6 +221,35 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     fresh.sync();
     assert!(send.send(16).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    assert!(send.send(17).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    assert_eq!(fresh.events.maximized.last(), Some(&true));
+    // The production coordinator last successfully submitted a 33x32 output.
+    assert_eq!(fresh.events.sizes.last(), Some(&(33, 32)));
+    if let Some(serial) = fresh.events.serial {
+        fresh.xdg.ack_configure(serial);
+    }
+    fresh.sync();
+    assert!(send.send(18).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.attach_maximized();
+    fresh.sync();
+    assert!(send.send(19).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    assert_eq!(fresh.events.maximized.last(), Some(&false));
+    assert_eq!(fresh.events.sizes.last(), Some(&(32, 24)));
+    if let Some(serial) = fresh.events.serial {
+        fresh.xdg.ack_configure(serial);
+    }
+    fresh.sync();
+    assert!(send.send(20).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.attach_resized();
+    fresh.sync();
+    assert!(send.send(21).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.surface.attach(None, 0, 0);
     fresh.surface.commit();
     fresh.sync();

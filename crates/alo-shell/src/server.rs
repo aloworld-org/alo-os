@@ -116,12 +116,14 @@ impl Server {
         let roots: Vec<_> = self.mapped_surfaces().cloned().collect();
         let cursor = self.cursor();
         let popups = self.popup_surfaces();
-        self.presentation.render(
+        let submitted = self.presentation.render(
             &self.display.handle(),
             target,
             (&roots, &popups),
             &cursor,
             time,
-        )
+        )?;
+        self.surfaces.update_maximize_output(Some(size));
+        Ok(submitted)
     }
 }

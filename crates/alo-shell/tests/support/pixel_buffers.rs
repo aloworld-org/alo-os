@@ -2,6 +2,19 @@
 use super::*;
 
 impl Application {
+    /// Commit a buffer matching the offscreen fixture's complete 33x32 output.
+    pub fn attach_maximized(&self) {
+        let qh = self.queue.handle();
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&[0xff; 33 * 32 * 4]).unwrap();
+        let pool = self.shm.create_pool(file.as_fd(), 33 * 32 * 4, &qh, ());
+        let buffer = pool.create_buffer(0, 33, 32, 33 * 4, wl_shm::Format::Argb8888, &qh, ());
+        self.surface.attach(Some(&buffer), 0, 0);
+        self.surface.damage_buffer(0, 0, 33, 32);
+        self.surface.commit();
+        pool.destroy();
+    }
+
     /// Commit an opaque 32x24 buffer for resize negotiation and input geometry.
     pub fn attach_resized(&self) {
         let qh = self.queue.handle();

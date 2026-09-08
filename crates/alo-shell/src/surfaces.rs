@@ -39,6 +39,10 @@ struct Window {
 
 /// Protocol globals and toplevel roots shared by display backends.
 pub(crate) struct Surfaces {
+    /// Per-mapping normal geometry and maximize/restore response boundaries.
+    pub(crate) window_maximize: Vec<crate::window_maximize::MaximizedWindow>,
+    /// Last successfully submitted output extent supported by maximization.
+    pub(crate) maximize_output: Option<(i32, i32)>,
     /// Resize protocol state owned by one held press and mapping lifetime.
     pub(crate) window_resize: Option<crate::resize_transaction::Resize>,
     /// Pointer-authorized interactive movement of one mapped root.
@@ -69,6 +73,8 @@ impl Surfaces {
     /// Advertise only protocols this component implements.
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
+            window_maximize: Vec::new(),
+            maximize_output: None,
             window_resize: None,
             window_move: None,
             popups: Default::default(),
@@ -89,6 +95,7 @@ impl Surfaces {
         self.windows.retain(|window| window.surface.alive());
         self.prune_window_move();
         self.prune_window_resize();
+        self.prune_window_maximize();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
         self.popups.refresh(&parents);
@@ -181,6 +188,7 @@ impl CompositorHandler for Surfaces {
         }
         self.prune_window_move();
         self.commit_window_resize(surface);
+        self.commit_window_maximize(surface);
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
     }

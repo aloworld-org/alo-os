@@ -1228,6 +1228,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Trusted maximise/restore transactions (2026-09-08): normal geometry survives
+    output changes and rapid toggles; only the newest acknowledged committed
+    response places the actual buffer. Failed output submission/retirement and
+    competing operations refuse without changing state; unmap forgets it.
+    Seven real-client tests, affected Linux clippy/tests/rustdoc/examples/fmt,
+    Windows affected checks and five complete WSLg GLES frames pass. Full
+    supervisor publication gates remain pending. Exact commands and limits:
+    `docs/autonomy/updates/trusted-window-maximize-and-restore.md`. Next: client
+    XDG maximize/unmaximize policy, including pre-map handling, then remaining
+    minimise/tile operations and controls. Transaction component complete;
+    maximise feature, window management and release remain unchecked.
   - Interactive resize transactions (2026-09-08): shared XDG press authority,
     current-limit clamping, resizing configures and committed-response anchoring
     now connect all eight edges to native input. Last release retains the anchor

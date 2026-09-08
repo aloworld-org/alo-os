@@ -13069,3 +13069,51 @@ window operations and controls. Window management and release remain unchecked.
 Direct DRM/seat, populated devices/hotplug, GPU/recovery and physical records are
 still owed at their delivery phases; WSLg is not hardware certification. No
 staging, commit, push, other checkout/identity/supervisor changes or worker launch.
+
+## 2026-09-08 - Trusted window maximization and restoration
+
+Initial tree clean. Read constitution, delivery/shared-main/report rules, current
+queue/STATE tail, relevant feature/roadmap and application/native resize contracts,
+accepted ADRs 0002/0010. Compared every published task report filename with STATE:
+none awaited reconciliation at iteration start. Reports arriving at publication
+remain for next iteration. Claude's credential/filesystem workstream untouched.
+
+Selected trusted maximise/restore transactions in QUEUE before implementation.
+New window_maximize component remembers normal committed geometry per mapping,
+uses only successfully submitted output dimensions and sets XDG maximized state.
+Latest acknowledged root commit applies placement; stale responses, rapid toggles
+and output changes cannot overwrite saved normal geometry. Restore clamps to live
+committed limits. Output retirement suspends maximize anchoring; new submission
+reconfigures it, while restore remains possible without an output. Competing
+placement/size/move/resize operations refuse until restore commits. Unmap and
+disconnect discard state. Public rustdoc and native maximize contract updated.
+
+Verified Ubuntu WSL2 Rust 1.98.0, WSLg socket and eight graphics/input libraries;
+corrected unquoted inherited PATH using a fixed explicit Linux PATH. No packages,
+services or shared kernel state changed. First four-test run exposed two fixture
+thread-local geometry reads; serialized them on the display thread and all six
+then-existing tests passed. Added effective-geometry coverage. Initial clippy
+found indexing risk; replaced with iterator access, no allowances. Full affected
+Linux suite passed 141 unit + 133 lifecycle + three socket tests and three
+compile-fail doctests. Rustdoc with warnings denied, examples and fmt passed.
+Windows affected fmt/clippy/tests passed, executing zero Linux-only runtime cases.
+
+Final graphics helper added a conforming output-sized buffer; clippy caught its
+absence from the protocol test target. Used it in the happy-path test; final
+affected Linux clippy, all seven focused tests and examples passed. WSLg offscreen
+passed 21 stages, including five complete 6,400-pixel maximize/restore frames;
+nested popup/cursor regression passed 115 submitted client surfaces. Expected
+Mesa fallback and deliberate protocol errors were not skipped checks. Full
+independent supervisor Windows/Linux workspace/rustdoc/BPF gates remain pending.
+
+Own report: `docs/autonomy/updates/trusted-window-maximize-and-restore.md`, with
+exact commands, decisions and evidence limits. All four shared progress documents
+updated; source/new files/tests/fixtures/contracts and diff reviewed; final
+Windows/Linux fmt and git diff --check passed. Next component: XDG client
+maximize/unmaximize policy with pre-map, refusal/response and lifetime coverage,
+then minimise/tile and native controls. The trusted transaction is complete;
+maximise feature, window management and release remain unchecked. WSLg cannot
+certify physical DRM/seat/input/GPU/recovery or laptop/workstation acceptance;
+those records remain owed at their scheduled phases. No staging, commit, push,
+supervisor edit, worker launch, other checkout/credential/identity or unrelated
+host changes. Ready for supervisor integration and publication gates.

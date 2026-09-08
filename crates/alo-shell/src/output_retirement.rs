@@ -15,6 +15,7 @@ impl Server {
     pub fn retire_output(&mut self, target: &mut impl FrameTarget) -> Result<(), RenderError> {
         self.presentation.retire(&self.display_handle(), target)?;
         self.surfaces.popups.output_size = None;
+        self.surfaces.update_maximize_output(None);
         Ok(())
     }
 }

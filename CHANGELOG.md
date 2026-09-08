@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window controls can maximise and restore a window's normal geometry.**
+  The shell waits for the application's acknowledged commit before moving it,
+  preserves typing and rejects competing operations. Output changes and rapid
+  toggles retain the original normal position. The trusted transaction component
+  is tested; rendered controls and client request integration remain unfinished.
+  Evidence: `docs/autonomy/updates/trusted-window-maximize-and-restore.md`.
+
 - **Applications can resize a window from a held pointer press.** The shell
   respects current application limits, keeps typing with its existing window,
   and anchors the opposite edge to the size the application actually commits.
