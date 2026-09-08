@@ -11,10 +11,16 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// The target does not support explicit retirement.
+    #[error("target does not support output retirement")]
+    RetirementUnsupported,
+    /// Direct shutdown failed; retire the session descriptor before recovery.
+    #[error(transparent)]
+    Retirement(#[from] crate::DirectShutdownError),
     /// The backend supplied malformed output metadata.
     #[error("invalid output metadata")]
     InvalidOutputMetadata,
-    /// A live single-output server cannot replace its output identity.
+    /// A live output cannot change identity before successful retirement.
     #[error("output identity changed; a new output lifetime is required")]
     OutputIdentityChanged,
     /// Blocking scanout refused; no identities or callbacks are published.
@@ -50,6 +56,12 @@ pub enum RenderError {
 /// on import, draw or submit failure and must not dispatch client requests.
 /// No returned surface receives a presentation-time guarantee.
 pub trait FrameTarget {
+    /// Stop submission and disable the output before releasing its storage.
+    /// No client dispatch is allowed. Failure must forbid further submission
+    /// when hardware state is uncertain. Legacy targets explicitly refuse.
+    fn retire(&mut self) -> Result<(), RenderError> {
+        Err(RenderError::RetirementUnsupported)
+    }
     /// Output identity, physical size and current refresh; no client dispatch.
     /// Older custom targets advertise an unknown-size virtual output.
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
@@ -97,11 +109,13 @@ pub trait FrameTarget {
 #[derive(Default)]
 pub(crate) struct Presentation {
     /// Created after the first successful frame with valid metadata and size.
-    output: Option<Output>,
+    pub(crate) output: Option<Output>,
+    /// Registry handle retained for explicit removal.
+    pub(crate) global: Option<smithay::reexports::wayland_server::backend::GlobalId>,
     /// Frozen after the first successful submission.
-    metadata: Option<crate::OutputMetadata>,
+    pub(crate) metadata: Option<crate::OutputMetadata>,
     /// Surfaces in the previous successfully submitted frame.
-    entered: Vec<WlSurface>,
+    pub(crate) entered: Vec<WlSurface>,
 }
 
 impl Presentation {
@@ -138,7 +152,7 @@ impl Presentation {
         let submitted = target.submit_popups(desktop.0, desktop.1, cursor)?;
         let output = self.output.get_or_insert_with(|| {
             let output = Output::new(metadata.name.clone(), metadata.properties());
-            output.create_global::<Surfaces>(display);
+            self.global = Some(output.create_global::<Surfaces>(display));
             output
         });
         let mode = Mode {

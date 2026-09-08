@@ -27,6 +27,7 @@ mod nested;
 mod nested_pointer;
 mod offscreen;
 mod output_metadata;
+mod output_retirement;
 mod pointer;
 mod popup_grabs;
 mod popup_placement;

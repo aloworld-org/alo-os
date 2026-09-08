@@ -12,6 +12,39 @@ use smithay::{
 #[path = "direct_target_protocol_tests.rs"]
 mod protocol;
 
+#[test]
+fn replacement_connector_aliases_are_refused_before_drm_io()
+-> Result<(), Box<dyn std::error::Error>> {
+    for alias in [2, 3] {
+        let (device, log) = fixture(&[], 0);
+        let mut output = scanout_tests::output();
+        output.output.connector = NonZeroU32::MIN.saturating_add(alias - 1).into();
+        let mut target = Target::new(Painter::default(), device, output);
+        let Err(RenderError::Scanout(error)) = target.submit(&[]) else {
+            return Err("aliased display objects were not refused".into());
+        };
+        assert_eq!(error.failure.stage, "validate prepared scene");
+        assert_eq!(error.failure.source.kind(), io::ErrorKind::InvalidData);
+        drop(target);
+        assert!(log.borrow().calls.is_empty());
+    }
+    Ok(())
+}
+
+#[test]
+fn unused_direct_output_retirement_is_terminal_without_graphics_or_drm() {
+    let (device, log) = fixture(&[], 0);
+    let painter = Painter::default();
+    let paints = painter.calls.clone();
+    let mut target = Target::new(painter, device, scanout_tests::output());
+    assert!(target.retire().is_ok());
+    assert!(matches!(target.submit(&[]), Err(RenderError::DirectHalted)));
+    assert!(matches!(target.retire(), Err(RenderError::DirectHalted)));
+    drop(target);
+    assert_eq!(paints.get(), 0);
+    assert!(log.borrow().calls.is_empty());
+}
+
 /// Synthetic pixels; only the graphics boundary is replaced in these tests.
 #[derive(Default)]
 struct Painter {

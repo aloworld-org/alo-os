@@ -7,7 +7,8 @@ use smithay::output::{PhysicalProperties, Subpixel};
 ///
 /// Zero millimetres and zero refresh explicitly mean unknown. Make/model are
 /// descriptive data, not a claim of EDID discovery. Identity and physical size
-/// must stay fixed for the lifetime of a Server; hotplug is not implemented.
+/// must stay fixed until the output is successfully retired; automatic hotplug
+/// is not implemented.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputMetadata {
     /// Session-unique ASCII connector or virtual-output name.
@@ -53,7 +54,7 @@ impl OutputMetadata {
         Ok(())
     }
 
-    /// Refresh may vary; replacing the output identity requires a new server.
+    /// Refresh may vary; replacing identity requires successful output retirement.
     pub(crate) fn same_identity(&self, other: &Self) -> bool {
         self.name == other.name
             && self.make == other.make

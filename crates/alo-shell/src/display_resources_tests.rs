@@ -61,6 +61,8 @@ struct Log {
 /// Configurable failures, including several cleanup failures on the same path.
 #[derive(Clone)]
 struct Device {
+    /// Connector expected by the independent atomic-request oracle.
+    connector: NonZeroU32,
     /// Observed operations.
     log: Rc<RefCell<Log>>,
     /// Operations refused with a stable errno.
@@ -212,6 +214,7 @@ fn fixture(failures: &[&'static str], malformed: u8) -> (Device, Rc<RefCell<Log>
     let log = Rc::new(RefCell::new(Log::default()));
     (
         Device {
+            connector: NonZeroU32::MIN,
             log: log.clone(),
             failures: failures.to_vec(),
             malformed,

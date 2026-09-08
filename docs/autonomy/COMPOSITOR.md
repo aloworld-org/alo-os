@@ -1196,7 +1196,7 @@ unknown; no EDID parser or hardware identity claim. Invalid strings, dimensions,
 refresh, unsupported timings and conversion overflow refuse before submission.
 
 First successful submission creates the global and freezes identity/physical
-properties. Identity replacement requires a new Server lifetime. Successful
+properties. Identity replacement requires successful explicit output retirement. Successful
 resize replaces the mode on that global; failure preserves advertised metadata,
 callbacks and membership. Reactive popup negotiation still uses a valid desired
 extent even when submit fails; metadata refusal does not accept a new extent.
@@ -1210,3 +1210,23 @@ with 115 client surfaces. Invalid EGL still refuses with exit 1. Exact checks,
 publication gate results and limitations: updates/truthful-output-metadata.md.
 Neither these fixtures nor automated tests establish physical scanout or release
 completion. Output retirement/pause and direct session/input wiring remain.
+
+## Explicit output retirement (2026-09-08)
+
+`Server::retire_output` checks the trusted target's identity, retires the backend,
+then sends surface leaves and withdraws its global. Failed retirement preserves
+advertised state and pending callbacks. Direct targets stop submitting after any
+retirement attempt and never retry a failed disable. Success clears popup output
+constraints and permits a fresh output identity in the same server.
+
+Disabled globals retain inert binding data until display teardown so a queued
+client bind does not become a disconnect. This retains one global per retired
+lifetime; early reclamation is not implemented. Automatic seat pause, device
+failure recovery and direct input/session wiring are not part of this operation.
+
+The real Wayland/injected DRM fixture verifies success and failed disable,
+callback retention, late binding, replacement identity and no repeated disable.
+Connector IDs are independently configured in its exact transport oracle; alias
+and wrong-target refusal checks remain mandatory. WSLg graphical regressions
+pass. Publication evidence and limits: `updates/explicit-output-retirement.md`.
+Physical retirement/scanout and certified-machine acceptance remain outstanding.

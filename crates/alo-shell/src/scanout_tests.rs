@@ -9,7 +9,8 @@ use drm::control::{AtomicCommitFlags, atomic::AtomicModeReq};
 
 impl ScanoutDevice for Device {
     fn commit(&self, flags: AtomicCommitFlags, request: AtomicModeReq) -> io::Result<()> {
-        let disabling = format!("{request:?}") == format!("{:?}", expected_request(true, 21, 72));
+        let disabling = format!("{request:?}")
+            == format!("{:?}", expected_request(self.connector, true, 21, 72));
         let log = self.log.borrow();
         let fb = 20
             + log
@@ -23,7 +24,10 @@ impl ScanoutDevice for Device {
         // constructed wire requests, including allocation-owned framebuffer/blob.
         assert_eq!(
             format!("{request:?}"),
-            format!("{:?}", expected_request(disabling, fb, blob))
+            format!(
+                "{:?}",
+                expected_request(self.connector, disabling, fb, blob)
+            )
         );
         assert!(
             !flags.intersects(AtomicCommitFlags::NONBLOCK | AtomicCommitFlags::PAGE_FLIP_EVENT)
@@ -46,12 +50,18 @@ impl ScanoutDevice for Device {
 }
 
 /// Expected kernel request from the fixture's documented routing and resources.
-fn expected_request(disabling: bool, fb: u64, blob: u64) -> AtomicModeReq {
+fn expected_request(connector: NonZeroU32, disabling: bool, fb: u64, blob: u64) -> AtomicModeReq {
     let writes = if disabling {
-        vec![(1, 11, 0), (2, 21, 0), (2, 22, 0), (3, 31, 0), (3, 32, 0)]
+        vec![
+            (connector.get(), 11, 0),
+            (2, 21, 0),
+            (2, 22, 0),
+            (3, 31, 0),
+            (3, 32, 0),
+        ]
     } else {
         vec![
-            (1, 11, 2),
+            (connector.get(), 11, 2),
             (2, 21, 1),
             (2, 22, blob),
             (3, 31, 2),

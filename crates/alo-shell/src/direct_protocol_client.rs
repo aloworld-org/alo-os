@@ -16,6 +16,10 @@ struct Events {
     membership: (usize, usize),
     /// Unmodified output wire events from the direct backend metadata path.
     outputs: Vec<wl_output::Event>,
+    /// Registry withdrawal count; output objects may remain client-owned.
+    removed: usize,
+    /// Advertised names retained to exercise a delayed bind after withdrawal.
+    output_globals: Vec<u32>,
 }
 impl Dispatch<wl_registry::WlRegistry, ()> for Events {
     fn event(
@@ -26,6 +30,9 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Events {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
+        if matches!(event, wl_registry::Event::GlobalRemove { .. }) {
+            state.removed += 1;
+        }
         if let wl_registry::Event::Global {
             name,
             interface,
@@ -37,12 +44,97 @@ impl Dispatch<wl_registry::WlRegistry, ()> for Events {
                     state.compositor = Some(registry.bind(name, version.min(6), qh, ()))
                 }
                 "wl_output" => {
+                    state.output_globals.push(name);
                     let _: wl_output::WlOutput = registry.bind(name, version.min(4), qh, ());
                 }
                 _ => {}
             }
         }
     }
+}
+
+/// Real protocol retirement, failed-disable refusal and a fresh output lifetime.
+pub(super) fn retirement(
+    socket: UnixStream,
+    send: mpsc::Sender<(u32, u32)>,
+    responses: mpsc::Receiver<()>,
+    refuse: bool,
+) -> Result<(), String> {
+    retirement_inner(socket, send, responses, refuse).map_err(|error| error.to_string())
+}
+
+fn retirement_inner(
+    socket: UnixStream,
+    send: mpsc::Sender<(u32, u32)>,
+    responses: mpsc::Receiver<()>,
+    refuse: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    socket.set_read_timeout(Some(Duration::from_secs(3)))?;
+    let connection = Connection::from_socket(socket)?;
+    let mut queue = connection.new_event_queue();
+    let qh = queue.handle();
+    let registry = connection.display().get_registry(&qh, ());
+    let mut events = Events::default();
+    queue.roundtrip(&mut events)?;
+    let surface = events
+        .compositor
+        .as_ref()
+        .ok_or("missing compositor")?
+        .create_surface(&qh, ());
+    for stage in 0..=3 {
+        if stage == 2 && !refuse {
+            let _: wl_output::WlOutput = registry.bind(
+                *events
+                    .output_globals
+                    .first()
+                    .ok_or("missing retired global")?,
+                4,
+                &qh,
+                (),
+            );
+        }
+        if stage <= 1 {
+            surface.frame(&qh, ());
+            surface.commit();
+        }
+        queue.roundtrip(&mut events)?;
+        send.send((stage, surface.id().protocol_id()))?;
+        responses.recv_timeout(Duration::from_secs(5))?;
+        queue.roundtrip(&mut events)?;
+        queue.roundtrip(&mut events)?;
+        assert_eq!(events.removed, usize::from(stage >= 1 && !refuse));
+        let resumed = stage == 3 && !refuse;
+        assert_eq!(events.frames, if resumed { vec![80, 83] } else { vec![80] });
+        assert_eq!(
+            events.membership,
+            if resumed {
+                (2, 1)
+            } else if stage >= 1 && !refuse {
+                (1, 1)
+            } else {
+                (1, 0)
+            }
+        );
+        let names: Vec<_> = events
+            .outputs
+            .iter()
+            .filter_map(|event| match event {
+                wl_output::Event::Name { name } => Some(name.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            names,
+            if resumed {
+                vec!["alo-drm-1", "alo-drm-1", "alo-drm-4"]
+            } else if stage >= 2 && !refuse {
+                vec!["alo-drm-1", "alo-drm-1"]
+            } else {
+                vec!["alo-drm-1"]
+            }
+        );
+    }
+    Ok(())
 }
 impl Dispatch<wl_surface::WlSurface, ()> for Events {
     fn event(

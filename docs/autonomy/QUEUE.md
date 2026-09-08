@@ -5,6 +5,14 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+Kernel follow-up reconciled 2026-09-08: publication hardening and the unwatched
+mutation/inherited-descriptor audits are published through b010137. These audits
+do not close their gaps. The production-reachable loopback-proxy case keeps the
+egress requirement open; descriptor isolation and use-time enforcement require
+decisions. Claude's next assignment is `claude-network-decision-proposal.md`,
+not a repeat of completed audits or authority to change security policy. Source
+report paths and limitations are recorded in STATE.md.
+
 The owner has authorized continuous work toward the full v0.01 release and a
 GitHub push after each gated step. Follow `DELIVERY.md` for the current execution
 order. Linux and WSLg are available; the historical host restrictions below no
@@ -69,6 +77,25 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected explicit output retirement (desktop worker, 2026-09-08):** add a
+  trusted target retirement boundary and server operation that disables first,
+  then sends leaves and removes the output global without draining callbacks.
+  Failed disable preserves advertised state and terminally halts the direct
+  target; successful retirement permits a fresh output lifetime. Acceptance:
+  real Wayland removal/rebind/callback tests, injected disable refusal and no
+  repeated I/O, WSLg regression, affected fmt/clippy/tests/rustdoc. This is the
+  retirement component; automatic seat pause/input/renderer wiring remains owed.
+  **Recovered explicit output retirement 2026-09-08:** owner authorized fixture
+  correction and verification. Replacement connector 4 no longer aliases CRTC 2
+  or plane 3; its transport oracle independently expects connector 4. Exact
+  request and protocol assertions remain. Eight focused tests pass, including
+  alias refusal before DRM I/O, unused retirement, wrong-target refusal, pending
+  callbacks, delayed bind, fresh identity and no repeated disable on drop.
+  WSLg offscreen and nested popup/cursor checks pass (115 client surfaces).
+  Report: `updates/explicit-output-retirement.md`. Complete Windows/Linux
+  workspace, Linux rustdoc and pinned BPF gates pass; supervisor tests pass.
+  Automatic session pause, direct input/renderer integration,
+  descriptor recovery and physical acceptance remain unfinished.
   **Selected truthful output metadata (desktop worker):** give FrameTarget a
   validated identity/physical-size/refresh snapshot; nested reports an explicitly
   virtual output, direct reports its connector and timing-derived millihertz plus

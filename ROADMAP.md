@@ -415,6 +415,11 @@ compositor is not required for, which is why it runs unbroken.
         the Settings panel to type it into
 
 - [ ] **Egress indicator**, and no telemetry
+  - Kernel coverage audit reconciled 2026-09-08: publication checks now fail
+    closed through the shared kernel verify/publish path. Reproduced loopback
+    proxy, unconnected datagram and established-socket gaps remain, not fixes.
+    The production-reachable proxy gap still needs a decision; no enforcement or
+    machine checkbox moves. See `docs/autonomy/updates/publication-hardening-and-egress-coverage.md`.
   - [x] **The code.**
         `alo-egress` — what counts as leaving, and the line said about it
         while it happens, now in the language the person reads rather than
@@ -728,6 +733,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Explicit output retirement (2026-09-08, recovered): target retirement and server
+    withdrawal preserve callbacks, reject further direct submission and retain
+    inert global bindings to avoid disconnecting delayed binders. Initial real
+    wire test passed; owner-authorized recovery uses connector 4, distinct from
+    CRTC 2 and plane 3, with an independently configured exact transport oracle.
+    Eight focused tests pass, including aliased-route refusal, wrong-target
+    refusal, delayed bind and no repeated disable. WSLg offscreen and nested
+    regressions pass. Report: `docs/autonomy/updates/explicit-output-retirement.md`.
+    Full Windows/Linux workspace, Linux rustdoc and pinned BPF gates pass.
+    Automatic seat pause, direct renderer/input and physical records remain
+    owed. Explicit retirement is code-ready; compositor and release are not complete.
   - Truthful output metadata (2026-09-07): backend identity, kernel connector
     millimetres and timing-derived millihertz replace shared nested placeholders.
     Validation and frozen identity refuse before submission; output globals/modes

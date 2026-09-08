@@ -23,7 +23,7 @@ pub struct Server {
     /// Listener and private directory lifetime.
     socket: Socket,
     /// One output and its successfully submitted surface membership.
-    presentation: crate::presentation::Presentation,
+    pub(crate) presentation: crate::presentation::Presentation,
 }
 
 impl Server {

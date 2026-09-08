@@ -51,6 +51,9 @@ impl<'renderer, 'fd> DirectTarget<'renderer, 'fd> {
 }
 
 impl FrameTarget for DirectTarget<'_, '_> {
+    fn retire(&mut self) -> Result<(), RenderError> {
+        self.target.retire()
+    }
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         self.target.metadata()
     }
@@ -126,6 +129,8 @@ pub(crate) struct Target<R, D: ScanoutDevice> {
     halted: bool,
     /// Successful commit cannot be represented as a submission refusal.
     retirement_error: Option<ResourceError>,
+    /// A retirement attempt is terminal, including failed disable.
+    retired: bool,
 }
 
 impl<R, D: ScanoutDevice> Target<R, D> {
@@ -138,11 +143,19 @@ impl<R, D: ScanoutDevice> Target<R, D> {
             scene: None,
             halted: false,
             retirement_error: None,
+            retired: false,
         }
     }
 
     /// Retire once and preserve chronological post-commit and shutdown errors.
     pub(crate) fn disable(mut self) -> Result<(), DirectShutdownError> {
+        self.shutdown()
+    }
+
+    /// Never retry uncertain disable or release quarantined storage.
+    fn shutdown(&mut self) -> Result<(), DirectShutdownError> {
+        self.halted = true;
+        self.retired = true;
         let mut errors: Vec<_> = self.retirement_error.take().into_iter().collect();
         if let Some(mut scene) = self.scene.take()
             && let Err(error) = scene.active.retire()
@@ -158,6 +171,12 @@ impl<R, D: ScanoutDevice> Target<R, D> {
 }
 
 impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
+    fn retire(&mut self) -> Result<(), RenderError> {
+        if self.retired {
+            return Err(RenderError::DirectHalted);
+        }
+        self.shutdown().map_err(RenderError::Retirement)
+    }
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         crate::output_metadata::direct_metadata(&self.output.output)
     }

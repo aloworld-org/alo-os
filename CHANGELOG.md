@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Inherited-access limits are now documented and reproduced.** A turn shares
+  the agent service's already-open handles; the kernel's open-time checks do not
+  prevent access through those handles. This audit closes no security gap.
+  Evidence: `docs/autonomy/updates/descriptors-opened-before-a-turn.md`.
+
+- **The compositor can withdraw a display after disabling its scanout.**
+  Pending callbacks survive retirement and a replacement display gets a fresh
+  output lifetime. Failed disable preserves advertised state and stops further
+  submission. The corrected replacement fixture passes the real protocol checks.
+  Direct session integration and hardware acceptance remain unfinished.
+  Evidence: `docs/autonomy/updates/explicit-output-retirement.md`.
+
 - **Direct displays no longer identify themselves as nested windows.** The
   compositor advertises backend output names, known physical dimensions and
   timing-derived refresh rates. Failed frames preserve the advertised mode,

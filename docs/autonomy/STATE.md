@@ -11939,3 +11939,109 @@ session integration. Metadata is ready for normal publication and the desktop
 supervisor can restart from a clean synchronized tree. All physical acceptance
 remains outstanding. No Windows boot/disk/networking configuration changed;
 WSL tests cannot certify the machine. No compositor or release box moved.
+
+---
+
+## 2026-09-08 - Explicit output retirement (halted)
+
+Single desktop/integration worker; initial tree clean. Read CLAUDE, DELIVERY,
+SHARED_MAIN, updates README, current queue and journal tail, relevant feature/
+roadmap, ADRs 0001/0002, app-adapter contract and graphics/compositor evidence.
+Compared report filenames against this journal: all reports published at start
+already referenced; no unreconciled reports. No Claude assignment taken.
+Selected explicit output retirement and recorded acceptance in QUEUE first.
+Own report: `docs/autonomy/updates/explicit-output-retirement.md`.
+
+Preserved implementation adds trusted target retirement and server withdrawal:
+disable before client leaves/global removal, preserve pending callbacks and
+advertised state on refusal, terminal direct-target halt after retirement, fresh
+output lifetime after success. Inert globals remain bindable until display
+teardown to avoid killing clients with queued binds. Automatic seat pause and
+direct renderer/input/session integration remain separate unfinished work.
+
+WSL Ubuntu Rust 1.98.0, native pkg-config dependencies and WSLg socket verified;
+no /dev/dri. No installation or host configuration changes. Linux fmt passes.
+Initial focused real-client test failed UnsafeRuntime; corrected fixture mode
+to required 0700 and the test passed, covering disable/refusal/leaves/removal/
+callbacks/rebind. Expanded delayed-bind and different-identity test introduced
+a connector fixture compile error, corrected to NonZeroU32. Final focused run:
+unused-target retirement passes; protocol test fails validate prepared scene
+(InvalidData). Connector 2 aliases fixture CRTC 2; existing transport also expects
+connector 1. Production validation correctly refuses. Stopped implementation
+retries after this second runtime test failure as instructed by the owner.
+No assertion weakened or gate bypassed. Final log:
+`.git/output-retirement-linux-final.log`; exact commands and prior limits in report.
+
+Windows cargo fmt --all --check, affected all-target clippy with -D warnings,
+and cargo test -p alo-shell --locked pass (Linux tests excluded). The failed
+Linux chain did not reach affected clippy/full tests/rustdoc/example build;
+final Linux fmt check and WSLg regression remain owed. No full supervisor gates
+run. Read-only diff review and git diff --check pass. Updated CHANGELOG, ROADMAP,
+QUEUE and this journal in the same work; component and release stay unfinished.
+
+HALTED: owner must authorize resumption. Correct the coherent replacement-identity
+fixture while retaining atomic route validation and exact transport assertions,
+then rerun focused/affected checks and WSLg integration. Next after this component:
+direct renderer/input/session pause wiring, including failed-descriptor recovery.
+Physical laptop and >=24 GB GPU workstation records, GPU context-loss and async
+transport evidence remain owed. No staging/commit/push, worker launch, other
+checkout access, tools/dev-loop modification, shared kernel/BPF/service changes,
+or physical installation. STEP BLOCKED, not a publication signal.
+
+---
+
+## 2026-09-08 - Output retirement fixture recovery and kernel report integration
+
+The owner explicitly asked to correct the test, verify the feature and write
+Claude's next assignment. The supervisor was halted with no live process; all
+unfinished changes were preserved. Reproduced the InvalidData refusal, then
+corrected both halves of the fixture: connector 4 is distinct from CRTC 2 and
+plane 3, and the injected transport independently expects connector 4. Existing
+fixtures keep connector 1. No production validation or exact wire check changed.
+
+Eight focused direct-target tests pass. A new test proves connector aliases of
+either CRTC or plane refuse without DRM I/O. Expanded real Wayland assertions
+cover a wrong-target retirement refusal, delayed bind, new output identity,
+callback retention and no repeated disable when the target drops. Normal WSLg
+offscreen and nested popup/cursor regressions pass (115 client surfaces); invalid
+EGL exits 1 as expected. Recovery compile/lint findings were corrected through
+the API and Result-returning tests, without visibility changes or exemptions.
+Complete gate results are recorded in `updates/explicit-output-retirement.md`.
+Automatic seat pause and direct session/input wiring remain next; no physical
+display, compositor or release acceptance is claimed.
+
+Fast-forward integrated main through b010137 without conflicting with the
+preserved desktop changes. Reviewed the incoming kernel reports and proposed
+integration updates:
+
+- `docs/autonomy/updates/publication-hardening-and-egress-coverage.md`: kernel
+  verify/publish now share readiness, exact test-result evidence and fail-closed
+  worker/publication handling. Reproductions leave unconnected UDP, established
+  sockets and loopback-proxy gaps open. The proxy gap is production-reachable
+  and release-relevant; the egress requirement remains unchecked.
+- `docs/autonomy/updates/unwatched-filesystem-mutations.md`: documents and tests
+  unhooked filesystem operations. The report's truncate observation is manual,
+  not a committed acceptance test; the ability to empty an ungranted file remains
+  open. These are later-release hardening, not completed enforcement.
+- `docs/autonomy/updates/descriptors-opened-before-a-turn.md`: inherited file
+  handles can read private bytes and copy them into a granted folder; the shared
+  record and cgroup-return descriptors also remain usable. Ordinary verbs do not
+  accept arbitrary descriptors, but this is a gap in the floor under a bugged
+  verb. No gap was closed and no architectural decision was accepted.
+
+The last report's proposed sentence calling the current-release requirement
+complete is NOT adopted: the earlier egress report explicitly leaves the
+production-reachable proxy gap open. A finished audit list is not a release gate.
+Claude's next assignment is `docs/autonomy/claude-network-decision-proposal.md`:
+reconcile the kernel plan and propose decisions without implementing unapproved
+enforcement or silently changing release promises. No Claude worker was started
+and its checkout was not edited here. WSL evidence is not hardware certification.
+
+Recovery publication gates passed on main integrated through b010137: Windows
+and Linux workspace fmt/clippy/tests, Linux warnings-denied rustdoc, pinned BPF
+fmt/release clippy, and 11 desktop supervisor tests. Both workspace logs have
+121 successful result groups (including zero-test groups; existing ignored tests
+remain ignored). Final affected checks also cover the public-doc correction from
+server lifetime to output lifetime. Report and local log names above retain the
+earlier failures rather than erasing them. Publish normally after checking main,
+then restart the single desktop worker from a clean synchronized checkout.
