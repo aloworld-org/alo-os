@@ -13,10 +13,10 @@ use std::{io, os::fd::BorrowedFd, path::PathBuf, time::Duration};
 /// A trusted shell session, with no direct-open fallback or VT-switch interface.
 ///
 /// Poll regularly in the compositor loop, even while idle. Each access also
-/// dispatches pending seat events. Pause closes the old device; activation lazily
-/// reacquires it. Callers must rebuild DRM resources after reacquisition, and must
-/// not duplicate or retain the scoped descriptor or scanout objects across polls.
-/// This discovery-stage owner does not yet coordinate a running DRM renderer.
+/// dispatches pending seat events. Activation lazily reacquires a fresh device;
+/// callers must rebuild DRM resources and never duplicate the scoped descriptor.
+/// `with_device` supports short discovery operations. `with_active_device` keeps
+/// a renderer's descriptor alive across polls until its retirement scope returns.
 pub struct DirectSession {
     /// Declared first so device cleanup precedes notifier/seat destruction.
     device: SessionDevice<LibSeatSession>,
@@ -64,6 +64,33 @@ impl DirectSession {
     ) -> Result<T, SessionError> {
         self.poll()?;
         Ok(operation(self.device.device()?))
+    }
+
+    /// Lend one device lifetime and a nonblocking seat poll to a trusted loop.
+    ///
+    /// Poll before every frame and while idle. On any poll error, stop submitting,
+    /// call `Server::retire_output`, drop the target and return from the closure.
+    /// Pause remains latched even if activation arrives in the same batch. The
+    /// descriptor stays open until the closure returns (also during unwinding),
+    /// then closes exactly once; a subsequent scope reacquires fresh resources.
+    /// Both the caller's outcome and close failure are returned independently.
+    ///
+    /// This is trusted shell control flow, not authority to continue after pause.
+    /// Kernel revocation may precede notification, so retirement can still fail.
+    /// Pinned Smithay acknowledges libseat disable before delivering the event;
+    /// this API does not fix that upstream ordering or certify physical scanout.
+    /// A borrowed descriptor (and thus a target borrowing it) cannot escape:
+    ///
+    /// ```compile_fail
+    /// # fn cannot_escape(session: &mut alo_shell::DirectSession) {
+    /// let _escaped = session.with_active_device(|fd, _poll| fd);
+    /// # }
+    /// ```
+    pub fn with_active_device<T>(
+        &mut self,
+        operation: impl FnOnce(BorrowedFd<'_>, &mut dyn FnMut() -> Result<(), SessionError>) -> T,
+    ) -> Result<crate::ActiveSessionResult<T>, SessionError> {
+        crate::active_session::run(&mut self.device, &mut self.events, operation)
     }
 
     /// Close the device while the seat connection is alive and report errors.

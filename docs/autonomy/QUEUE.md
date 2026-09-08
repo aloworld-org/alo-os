@@ -77,6 +77,26 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected scoped session pause polling (desktop worker, 2026-09-08):**
+  lend the active descriptor across a trusted synchronous compositor loop while
+  polling seat notifications. Latch pause even across immediate activation,
+  retain the descriptor until the caller retires/drops its target, then close it
+  exactly once. Preserve operation and cleanup outcomes independently. Acceptance:
+  forwarded calloop notifications, real descriptor lifetime/order, inactive and
+  notifier/close refusal tests, affected fmt/clippy/tests/rustdoc and WSLg regression.
+  This supplies the pause-aware lifetime component; direct renderer/input wiring
+  and physical acceptance remain open.
+  **Completed scoped session pause polling 2026-09-08:** public trusted scope
+  preserves a borrowed descriptor while polling, latches interruption, then closes
+  exactly once after caller cleanup. Separate operation/close outcomes, unwind
+  cleanup, backend-state fallback and terminal notifier/close refusal are tested.
+  Six new tests; Linux shell 181 tests and three doctests pass, including descriptor
+  escape refusal. Affected Windows/Linux fmt/clippy, tests, Linux rustdoc/examples
+  and WSLg offscreen/nested regression pass (115 client surfaces). Report:
+  `updates/scoped-session-pause-polling.md`. Next executable component: wire direct
+  GLES renderer lifetime and server output retirement through this scope, then
+  direct input. WSL has no /dev/dri; real DRM/seat pause and physical records are
+  still owed, as are full independent supervisor gates. Compositor unfinished.
   **Selected explicit output retirement (desktop worker, 2026-09-08):** add a
   trusted target retirement boundary and server operation that disables first,
   then sends leaves and removes the output global without draining callbacks.

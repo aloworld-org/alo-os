@@ -54,6 +54,8 @@ pub(crate) struct SessionDevice<S: Session> {
     enabled: bool,
     /// Terminal failures cannot be erased by a later activation notification.
     failed: bool,
+    /// A pause cannot be erased within a borrowed rendering lifetime.
+    interrupted: bool,
     /// Callback error retained for the event-loop caller.
     pub(crate) pending: Option<SessionError>,
 }
@@ -68,6 +70,7 @@ impl<S: Session> SessionDevice<S> {
             fd: None,
             enabled,
             failed: false,
+            interrupted: false,
             pending: None,
         }
     }
@@ -75,10 +78,7 @@ impl<S: Session> SessionDevice<S> {
     /// Close through the session manager, consuming the descriptor even on error.
     fn release(&mut self) -> Result<(), SessionError> {
         if let Some(fd) = self.fd.take() {
-            self.session.close(fd).map_err(|error| {
-                self.failed = true;
-                backend_error("close device", error)
-            })?;
+            self.close_owned(fd)?;
         }
         Ok(())
     }
@@ -87,6 +87,7 @@ impl<S: Session> SessionDevice<S> {
     pub(crate) fn event(&mut self, event: Event) -> Result<(), SessionError> {
         match event {
             Event::PauseSession => {
+                self.interrupted = true;
                 self.enabled = false;
                 self.release()
             }
@@ -99,6 +100,7 @@ impl<S: Session> SessionDevice<S> {
 
     /// Retire device access permanently after notifier loss.
     pub(crate) fn fail(&mut self) {
+        self.interrupted = true;
         self.failed = true;
         self.enabled = false;
         let _ = self.release();
@@ -145,6 +147,34 @@ impl<S: Session> SessionDevice<S> {
             .as_ref()
             .map(AsFd::as_fd)
             .ok_or(SessionError::Failed)
+    }
+
+    /// Transfer ownership to a scope which closes after renderer retirement.
+    pub(crate) fn take_active(&mut self) -> Result<OwnedFd, SessionError> {
+        self.device()?;
+        self.interrupted = false;
+        self.fd.take().ok_or(SessionError::Failed)
+    }
+
+    /// Check authority without closing the scope's still-borrowed descriptor.
+    pub(crate) fn check_active(&mut self) -> Result<(), SessionError> {
+        self.check()?;
+        if !self.session.is_active() {
+            self.interrupted = true;
+        }
+        if self.interrupted || !self.enabled {
+            Err(SessionError::Inactive)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Consume the scope's descriptor through the manager, including on failure.
+    pub(crate) fn close_owned(&mut self, fd: OwnedFd) -> Result<(), SessionError> {
+        self.session.close(fd).map_err(|error| {
+            self.failed = true;
+            backend_error("close device", error)
+        })
     }
 
     /// Explicit shutdown reports cleanup failure; drop remains a final backstop.

@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct compositor can poll for session pause without closing its borrowed
+  display descriptor prematurely.** Pause stays latched until the rendering scope
+  returns, allowing target retirement first; device-close errors and rendering
+  outcomes are preserved separately. Real notification/descriptor tests pass.
+  Direct renderer/input integration and physical acceptance remain unfinished.
+  Evidence: `docs/autonomy/updates/scoped-session-pause-polling.md`.
+
 - **Inherited-access limits are now documented and reproduced.** A turn shares
   the agent service's already-open handles; the kernel's open-time checks do not
   prevent access through those handles. This audit closes no security gap.

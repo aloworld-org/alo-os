@@ -733,6 +733,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Scoped session pause polling (2026-09-08): `with_active_device` lends a device
+    and nonblocking poll across a rendering lifetime. Pause/activate batches stay
+    interrupted; descriptor close follows caller retirement/drop, including unwind.
+    Six new calloop/real-descriptor happy/refusal tests and a compile-fail escape
+    check pass. Linux shell: 181 tests and three doctests; affected clippy/rustdoc,
+    Windows checks and WSLg offscreen/nested regressions pass (115 client surfaces).
+    Report: `docs/autonomy/updates/scoped-session-pause-polling.md`.
+    Next: connect direct renderer/input and server retirement to this scope.
+    Upstream libseat acknowledgement ordering, physical DRM/GPU acceptance and
+    full supervisor publication gates remain owed; no compositor/release tick.
   - Explicit output retirement (2026-09-08, recovered): target retirement and server
     withdrawal preserve callbacks, reject further direct submission and retain
     inert global bindings to avoid disconnecting delayed binders. Initial real

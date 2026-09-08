@@ -11,11 +11,12 @@ use std::os::fd::BorrowedFd;
 
 /// A blocking, full-frame direct target on an exclusively owned active session.
 ///
-/// Construct inside `DirectSession::with_device` using fresh discovery from the
-/// same descriptor and an inactive output. Keep the session active until `disable`
-/// completes. No dispatch may interleave rendering and submission. The renderer
-/// must be current on this thread. Positioned arrows, hidden and client cursors
-/// use the shared scene painter.
+/// Construct inside `DirectSession::with_active_device` using fresh discovery
+/// from the same descriptor and an inactive output. Poll before frames and while
+/// idle; on pause retire through `Server::retire_output` and drop the target before
+/// returning from the scope. No dispatch may interleave rendering and submission.
+/// The renderer must be current on this thread. Positioned arrows, hidden and
+/// client cursors use the shared scene painter.
 ///
 /// Success permits callbacks, not a physical presentation timestamp. A successful
 /// commit with failed old-resource cleanup still returns its drawn identities,

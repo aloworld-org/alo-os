@@ -12045,3 +12045,52 @@ remain ignored). Final affected checks also cover the public-doc correction from
 server lifetime to output lifetime. Report and local log names above retain the
 earlier failures rather than erasing them. Publish normally after checking main,
 then restart the single desktop worker from a clean synchronized checkout.
+
+---
+
+## 2026-09-08 - Scoped session pause polling
+
+At iteration start, read the constitution, delivery order, ownership/report rules,
+current queue and journal tail, v0.01 compositor feature/roadmap, ADR 0002 and
+relevant contract references. Working tree was clean. Compared all published task
+report filenames against this journal: none were unreferenced; no incoming report
+needed consolidation. Claude's network workstream remains assigned to Claude.
+Supervisor owns pull/integration and publication; no other checkout was accessed.
+
+Selected and recorded the scoped session pause component before implementation.
+`DirectSession::with_active_device` now lends the active descriptor with a seat
+poll callback, latches interruption across pause/activate batches, and lets the
+caller retire/drop its target before closing the descriptor exactly once. Caller
+outcome and session-close failure remain independently available. Added RAII
+unwind cleanup and compile-fail descriptor-escape coverage. See
+`docs/autonomy/updates/scoped-session-pause-polling.md` for decisions, source paths,
+exact commands and limitations. No engine patch or public agent contract change.
+
+Verified Ubuntu WSL2/Rust and all eight graphics pkg-config prerequisites; WSLg
+socket exists but /dev/dri does not. No installation or shared kernel changes.
+Six new focused tests passed, followed by Linux shell 111 unit, 67 client-lifecycle,
+three socket tests and three compile-fail doctests. Real two-stage calloop channels
+and Unix socket descriptors demonstrate sticky pause, live retirement access,
+close ordering and fresh acquisition; injected backend/notifier/open/close and
+unwind cases cover refusal. This is not a real seat or physical DRM pause test.
+
+Windows fmt/all-target affected clippy/tests pass (zero Linux-only shell tests).
+Linux fmt, affected all-target clippy with -D warnings, shell tests/doctests,
+warnings-denied shell rustdoc and example builds pass. WSLg offscreen pixels and
+nested popup/cursor regression pass (115 client surfaces); invalid EGL refuses
+with expected exit 1. Logs: `.git/scoped-session-checks.log` and
+`.git/scoped-session-egl-refusal.log`. Initial clippy findings were corrected with
+private documentation and checked/asserted test operations; no lint exemptions or
+test weakening. Focused/full tests had no failures. Final diff review and
+`git diff --check` pass. All four shared progress documents updated in this change.
+
+Next executable component: connect the direct GLES renderer and server retirement
+through the scoped session loop, then direct input. The caller must still stop,
+retire and drop on poll error; the API does not automatically withdraw output.
+Pinned Smithay's early libseat disable acknowledgement remains a known limitation.
+Physical DRM/seat, GPU context-loss, failed-disable recovery, safe asynchronous
+transport and certified laptop/GPU-workstation records remain owed. Compositor
+and release remain unchecked. Full independent Windows/Linux workspace/rustdoc/BPF
+publication gates have not been run by this worker; supervisor must run them.
+No staging, commit, push, worker/loop launch, tools/dev-loop modification, other
+repository changes or physical installation. Component ready for integration.
