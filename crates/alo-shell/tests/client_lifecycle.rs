@@ -15,6 +15,7 @@ mod support;
 mod window_activation;
 mod window_close;
 mod window_maximize;
+mod window_minimize;
 mod window_move;
 mod window_placement;
 mod window_raise;

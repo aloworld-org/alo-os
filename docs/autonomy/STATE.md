@@ -13165,3 +13165,55 @@ At verification end C: had about 15.5 GiB free. One desktop loop may restart
 after clean-tree publication. Claude must hold builds/publication until explicit
 handoff; its source is preserved and its revised prompt is supplied in chat.
 No kernel supervisor was started. Company-managed files were not touched.
+
+## 2026-09-08 - Trusted window minimization and restoration
+
+Initial tree clean. Read constitution, delivery/shared-main/report rules, current
+queue/STATE tail, relevant v0.01 feature/roadmap and native maximize/application
+contract sections, accepted ADRs 0002/0010. Every published task report filename
+was already referenced in STATE at iteration start; no reconciliation outstanding.
+Publication arrivals reconcile next iteration. Claude's assignments untouched.
+
+Recorded the trusted minimization/restoration component and acceptance checks in
+QUEUE before coding. Added a visibility transition separate from buffered mapping
+lifetime: hidden windows preserve placement, maximize memory and cycling order,
+but retire held keyboard/pointer input, popups and move/resize transactions.
+Restoration reveals without raising or activating. Hidden commits cannot reveal;
+unmap/remap and disconnect reset state. Native rustdoc and minimize/maximize
+contracts describe refusal, lifecycle and integration boundaries.
+
+Verified Ubuntu WSL2 Rust 1.98.0, WSLg socket and all eight graphics/input library
+prerequisites. No dependency installation or shared service/kernel changes. C:
+was 15.518 GiB free initially and remained above 15.49 GiB at all preflights;
+checked before every build/test/lint command, with a hard stop below 12 GiB.
+No cleanup or second workstream. This reserve is not a continuous disk quota.
+
+Five initial real-client tests passed. The added move/resize test exposed a
+fixture duplicate initial-configure acknowledgement in the move case. Fixed
+the fixture sequence without changing production behavior or weakening assertions;
+all six focused tests then passed. Linux affected all-target warnings-denied
+clippy, full shell suite (141 unit + 143 lifecycle + three socket tests and three
+compile-fail doctests), warnings-denied rustdoc and examples passed. Windows
+affected fmt/clippy/tests passed, executing zero Linux-only runtime cases.
+Final Linux fmt and git diff --check passed; source/new files/tests/graphics/
+contracts and progress diff reviewed. Full independent supervisor gates pending.
+
+WSLg offscreen passed all 21 existing stages and four new full 6,400-pixel
+hide/restore frames. Nested popup/cursor regression passed 115 submitted client
+surfaces. Mesa fallback and deliberate malformed-client protocol diagnostics did
+not skip checks. These are protocol/GLES fixtures, not DRM or physical-machine
+certification. Exact commands, decisions, development correction and evidence
+limits: `docs/autonomy/updates/trusted-window-minimization-and-restoration.md`.
+
+All four shared progress documents updated. Next: XDG client minimize request
+policy, pre-map/mapped/duplicate/refusal/lifetime tests and truthful capability
+advertisement; then tiling and native controls. The trusted component is complete;
+minimize feature, window management and release remain unchecked. Physical DRM/
+seat, populated input/hotplug, GPU/recovery and certified laptop/workstation
+records remain owed at their delivery phases; physical acceptance follows image
+VM validation. Configurable keyboard integration remains phase 3 after window
+operations; ordinary keyboard routing and component tests remain active.
+
+No staging, commit, push, supervisor/other-checkout edits, credential/identity
+access, worker/loop launch or unrelated host changes. Ready for the supervisor's
+independent workspace/rustdoc/BPF gates, concurrent-main integration and publication.

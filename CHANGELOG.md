@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native shell controls can minimize and restore windows without losing their geometry.**
+  Hidden windows stop receiving input and frames; held input and popup ownership
+  are retired. Restoring preserves position without stealing focus, and window
+  cycling skips hidden windows without forgetting their order. The trusted
+  component is tested; client minimize requests and rendered controls remain.
+  Evidence: `docs/autonomy/updates/trusted-window-minimization-and-restoration.md`.
+
 - **Development stops before starting more work when host storage is low.**
   The desktop supervisor requires a 12 GiB reserve on C: before tasks and
   top-level gates, refuses unknown readings, and never performs automatic

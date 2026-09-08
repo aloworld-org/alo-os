@@ -35,6 +35,8 @@ struct Window {
     surface: ToplevelSurface,
     /// A configured buffer is currently attached.
     mapped: bool,
+    /// Shell visibility is independent of the client's buffer mapping.
+    minimized: bool,
 }
 
 /// Protocol globals and toplevel roots shared by display backends.
@@ -108,8 +110,35 @@ impl Surfaces {
     pub(crate) fn mapped(&self) -> impl Iterator<Item = &WlSurface> {
         self.windows
             .iter()
+            .filter(|w| w.mapped && !w.minimized && w.surface.alive())
+            .map(|w| w.surface.wl_surface())
+    }
+
+    /// All buffered mappings, including windows hidden by the person.
+    pub(crate) fn buffered(&self) -> impl Iterator<Item = &WlSurface> {
+        self.windows
+            .iter()
             .filter(|w| w.mapped && w.surface.alive())
             .map(|w| w.surface.wl_surface())
+    }
+
+    /// Current hidden mappings in stacking order, for trusted restore controls.
+    pub(crate) fn minimized(&self) -> impl Iterator<Item = &WlSurface> {
+        self.windows
+            .iter()
+            .filter(|w| w.mapped && w.minimized && w.surface.alive())
+            .map(|w| w.surface.wl_surface())
+    }
+
+    /// Change visibility only for an exact live buffered root.
+    pub(crate) fn minimize(&mut self, surface: &WlSurface, value: bool) -> Option<bool> {
+        let window = self
+            .windows
+            .iter_mut()
+            .find(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)?;
+        let changed = window.minimized != value;
+        window.minimized = value;
+        Some(changed)
     }
 
     /// Live roles, regardless of buffer state.
@@ -121,17 +150,17 @@ impl Surfaces {
     pub(crate) fn mapped_toplevel(&self, surface: &WlSurface) -> Option<&ToplevelSurface> {
         self.windows
             .iter()
-            .find(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)
+            .find(|w| {
+                w.mapped && !w.minimized && w.surface.alive() && w.surface.wl_surface() == surface
+            })
             .map(|w| &w.surface)
     }
 
     /// Raise only a live mapped root; refusal leaves the entire order unchanged.
     pub(crate) fn raise(&mut self, surface: &WlSurface) -> bool {
-        let Some(index) = self
-            .windows
-            .iter()
-            .position(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)
-        else {
+        let Some(index) = self.windows.iter().position(|w| {
+            w.mapped && !w.minimized && w.surface.alive() && w.surface.wl_surface() == surface
+        }) else {
             return false;
         };
         if let Some(prefix) = self.windows.get_mut(..=index) {
@@ -174,6 +203,7 @@ impl CompositorHandler for Surfaces {
             window.mapped = window.surface.ensure_configured();
         } else if window.mapped {
             window.mapped = false;
+            window.minimized = false;
             crate::window_placement::reset(surface);
             // XDG unmap requires a fresh handshake. Smithay resets its initial
             // configure flag, but retains `configured` and old acknowledgements.
@@ -229,6 +259,7 @@ impl XdgShellHandler for Surfaces {
         self.windows.push(Window {
             surface,
             mapped: false,
+            minimized: false,
         });
     }
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {

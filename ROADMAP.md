@@ -1239,6 +1239,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Trusted minimization/restoration (2026-09-08): buffered mapping and visibility
+    are separate; hiding retires input/popups/move/resize, preserves maximize
+    geometry and withholds callbacks. Restoration does not steal focus; cycling
+    retains hidden ring positions. Six real-client tests, affected Linux tests,
+    clippy/rustdoc/examples and four full 6,400-pixel WSLg GLES frames pass;
+    nested regression passes 115 submitted surfaces. Exact commands and limits:
+    `docs/autonomy/updates/trusted-window-minimization-and-restoration.md`.
+    Supervisor full publication gates pending. Next: XDG client minimize policy
+    and truthful capability advertisement, then tiling and native controls.
+    This completes the trusted component, not window management or the release.
   - Trusted maximise/restore transactions (2026-09-08): normal geometry survives
     output changes and rapid toggles; only the newest acknowledged committed
     response places the actual buffer. Failed output submission/retirement and

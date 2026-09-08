@@ -38,6 +38,9 @@ mod resize_geometry_check;
 #[path = "support/window_maximize_check.rs"]
 mod window_maximize_check;
 #[cfg(target_os = "linux")]
+#[path = "support/window_minimize_check.rs"]
+mod window_minimize_check;
+#[cfg(target_os = "linux")]
 #[path = "support/window_placement_check.rs"]
 mod window_placement_check;
 #[cfg(target_os = "linux")]

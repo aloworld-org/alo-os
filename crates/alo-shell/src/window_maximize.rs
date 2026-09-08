@@ -214,7 +214,7 @@ impl Surfaces {
 
     /// Remove dead/unmapped roles, including an unmap followed immediately by remap.
     pub(crate) fn prune_window_maximize(&mut self) {
-        let mapped: Vec<_> = self.mapped().cloned().collect();
+        let mapped: Vec<_> = self.buffered().cloned().collect();
         self.window_maximize
             .retain(|window| mapped.contains(window.role.wl_surface()));
     }

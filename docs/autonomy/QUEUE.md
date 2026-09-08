@@ -17,9 +17,25 @@ is advertised. Four real-client tests and all five 6,400-pixel GLES boundaries
 pass, with full-suite verification recorded in
 `updates/client-window-maximize-requests.md`.
 
-**Next desktop component:** trusted minimization/restoration, covering scene
+**Completed trusted minimization/restoration (2026-09-08):** visibility is separate
+from buffered lifetime; held input/popups and move/resize retire on hide while
+normal geometry and cycling order survive. Six real-client tests, Linux affected
+clippy, 287 tests plus three doctests, rustdoc/examples and WSLg offscreen/nested
+regressions pass. Four new frames each check all 6,400 pixels; nested submits 115
+surfaces. Exact evidence and limitations:
+`updates/trusted-window-minimization-and-restoration.md`. Supervisor gates pending.
+Next executable component: XDG client minimize policy with pre-map, mapped,
+duplicate and refusal/lifetime tests, and truthful Minimize capability advertising.
+Then tiling and native controls; window management remains unfinished.
+
+**Selected desktop component (2026-09-08):** trusted minimization/restoration, covering scene
 visibility, focus and held-input retirement, window cycling, unmap/disconnect
-and full-frame pixel evidence. Then client minimize policy, tiling and controls.
+and full-frame pixel evidence. Acceptance: real-client happy/refusal tests,
+hidden buffer commits and frame callbacks, popup dismissal, ordinary keyboard
+isolation, stable cycling order, maximize memory and mapping lifetime; affected
+fmt/tests/clippy/rustdoc and WSLg GLES. Restore reveals without stealing focus;
+cycling skips hidden roots while retaining their original positions. Then client
+minimize policy, tiling and controls. This is one component, not feature completion.
 
 **Completed trusted maximise and restore transactions (desktop worker, 2026-09-08):**
 per-mapping normal geometry, successfully submitted output sizing, XDG maximized

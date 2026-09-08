@@ -198,6 +198,17 @@ impl Surfaces {
         }
     }
 
+    /// Hiding a root ends only its own resize, while it can still be configured.
+    pub(crate) fn cancel_resize_for(&mut self, surface: &WlSurface) {
+        if self
+            .window_resize
+            .as_ref()
+            .is_some_and(|resize| resize.role.wl_surface() == surface)
+        {
+            self.cancel_window_resize();
+        }
+    }
+
     /// Unmap and disconnect retire authority without configuring a dead mapping.
     pub(crate) fn prune_window_resize(&mut self) {
         if self

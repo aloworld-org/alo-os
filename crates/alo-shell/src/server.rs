@@ -75,15 +75,15 @@ impl Server {
         }
         self.display.dispatch_clients(&mut self.surfaces)?;
         self.surfaces.prune();
-        self.switch_order.refresh(self.surfaces.mapped());
+        self.switch_order.refresh(self.surfaces.buffered());
         self.display.flush_clients()
     }
 
-    /// Live, configured toplevel roots with buffers, in front-to-back order.
+    /// Visible, configured toplevel roots with buffers, in front-to-back order.
     /// New roles initially follow existing roles; explicit raising changes order.
     ///
     /// This is an internal renderer input, not an agent context or window API.
-    /// Buffer removal, surface destruction and disconnect remove a root here.
+    /// Minimization, buffer removal, destruction and disconnect exclude roots here.
     pub fn mapped_surfaces(&self) -> impl Iterator<Item = &WlSurface> {
         self.surfaces.mapped()
     }

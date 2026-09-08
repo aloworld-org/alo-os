@@ -63,13 +63,15 @@ impl SwitchOrder {
 }
 
 impl Server {
-    /// Activate the next or previous mapped window from trusted shell controls.
+    /// Activate the next or previous visible window from trusted shell controls.
     ///
     /// The ring follows first observation at dispatch boundaries, not raising or
     /// activation history. New mappings append; observed unmap/disconnect removes
     /// them. Remapping after removal appends anew. No client work is dispatched
-    /// inside this operation. With no focused root, forward selects the first and
-    /// backward the last. A sole root selects itself, preserving its popup grab.
+    /// inside this operation. Minimized roots are skipped without losing their
+    /// original ring positions. With no focused root, forward selects the first
+    /// visible root and backward the last. A sole visible root selects itself,
+    /// preserving its popup grab.
     /// Popup focus counts as its owning root; switching away dismisses the grab
     /// and releases held keys through `activate_window` before recipient transfer.
     ///
@@ -84,9 +86,16 @@ impl Server {
         if self.surfaces.keyboard.is_none() {
             return Err(WindowActivationError::Input(InputError::Unavailable).into());
         }
-        self.switch_order.refresh(self.surfaces.mapped());
-        let root = self
-            .switch_order
+        self.switch_order.refresh(self.surfaces.buffered());
+        let visible = SwitchOrder(
+            self.switch_order
+                .0
+                .iter()
+                .filter(|root| self.surfaces.mapped_toplevel(root).is_some())
+                .cloned()
+                .collect(),
+        );
+        let root = visible
             .select(self.surfaces.keyboard_root().as_ref(), direction)
             .ok_or(WindowSwitchError::Empty)?;
         self.activate_window(&root)?;

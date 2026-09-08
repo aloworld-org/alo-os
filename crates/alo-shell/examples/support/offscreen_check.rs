@@ -55,7 +55,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
-                17..=21 => crate::window_maximize_check::stage(&mut server, renderer, stage)?,
+                17..=21 => {
+                    crate::window_maximize_check::stage(&mut server, renderer, stage)?;
+                    if stage == 21 {
+                        crate::window_minimize_check::run(&mut server, renderer)?;
+                    }
+                }
                 13..=16 => crate::interactive_resize_check::stage(&mut server, renderer, stage)?,
                 11 => {
                     // The cursor fixture must not inject a second motion between

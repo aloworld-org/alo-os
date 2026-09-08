@@ -4,9 +4,11 @@ Status: additive trusted Rust shell API, 2026-09-08; v0.01 window management
 under accepted ADR 0002. No agent verb or application-adapter endpoint is added.
 
 `Server::set_window_maximized(surface, bool)` accepts only this display's live
-mapped toplevel root. It returns the fresh XDG configure serial, or `None` for
+visible mapped toplevel root. It returns the fresh XDG configure serial, or `None` for
 an unchanged request (including restore of a normal window). Children, popups,
-foreign, unmapped and dead roots refuse with `Unmapped`. Outstanding pointer
+foreign, minimized, unmapped and dead roots refuse with `Unmapped`. Minimization
+preserves existing normal-geometry memory and pending response boundaries;
+see `native-window-minimize.md`. Outstanding pointer
 move/resize transactions, including resize's final-response interval, or popup
 grabs refuse with `Busy` before any state change.
 
