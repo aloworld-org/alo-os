@@ -1,5 +1,6 @@
 //! Real-client maximize/restore ordering, isolation and lifetime evidence.
 use super::{Application, Fixture};
+mod client_requests;
 use alo_shell::WindowMaximizeError;
 use smithay::{
     backend::input::KeyState, reexports::wayland_server::protocol::wl_surface::WlSurface,

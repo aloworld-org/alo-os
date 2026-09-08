@@ -799,6 +799,13 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Client maximize/restore requests (2026-09-08): XDG requests share trusted
+    transactions, pre-map intent is declined without premature configuration,
+    unchanged/refused requests receive responses and only Maximize is advertised.
+    Four real-client tests and five full-frame GLES boundaries pass. Verification
+    is recorded in `docs/autonomy/updates/client-window-maximize-requests.md`.
+    Next: minimization/restoration, then client minimize policy and tiling;
+    this does not complete rendered controls or the compositor release gate.
   - Native window placement (2026-09-08): bounded mapped-root geometry origins
     feed drawing, input and popup output constraints, with committed-geometry and
     unmap semantics. Evidence: `docs/autonomy/updates/native-window-placement.md`.

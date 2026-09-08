@@ -54,7 +54,8 @@ impl Server {
     /// Output changes supersede pending maximize responses after successful frame
     /// submission. Retirement suspends maximization until a new output submits.
     /// Unmap/disconnect forget normal geometry. Movement and exact sizing refuse
-    /// until restore commits. This is not an agent API or client-request handler.
+    /// until restore commits. Client XDG requests share these transactions;
+    /// this trusted entry point is not an agent API.
     pub fn set_window_maximized(
         &mut self,
         surface: &WlSurface,
@@ -65,6 +66,25 @@ impl Server {
 }
 
 impl Surfaces {
+    /// Answer client intent without bypassing mapping, output or operation policy.
+    pub(crate) fn client_window_maximize(&mut self, role: ToplevelSurface, value: bool) {
+        // Before the first empty commit there is no initial configure boundary.
+        // Decline pre-map intent there, rather than sending a premature configure
+        // or inventing normal geometry to restore later.
+        if !role.is_initial_configure_sent() {
+            return;
+        }
+        if !matches!(
+            self.set_window_maximized(role.wl_surface(), value),
+            Ok(Some(_))
+        ) {
+            // XDG requires a configure response even when policy declines or the
+            // mode is unchanged. Preserve the latest pending state, including an
+            // in-flight restore/resize; do not erase another transaction's flags.
+            role.send_configure();
+        }
+    }
+
     /// Whether this mapping still owns normal-geometry memory or a restore response.
     pub(crate) fn has_window_maximize(&self, surface: &WlSurface) -> bool {
         self.window_maximize

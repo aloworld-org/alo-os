@@ -54,7 +54,31 @@ and resize requests cannot take held-press authority for that root. This avoids
 two operations racing to overwrite saved normal geometry. Restoration's committed
 response retires that restriction. Other windows and ordinary typing continue.
 
-The component is the trusted transaction API, not the complete maximise feature:
-client maximize/unmaximize request policy, rendered controls, dock work areas and
-configurable keyboard dispatch remain integration work. Tests and exact evidence
-limits: `docs/autonomy/updates/trusted-window-maximize-and-restore.md`.
+## Client requests
+
+XDG `set_maximized` and `unset_maximized` requests use the same validated
+transactions for the requesting role only. Initial configuration advertises the
+Maximize WM capability, including after remap; unsupported fullscreen, minimize
+and window-menu capabilities are not advertised. No focus or input serial is
+required: this is an application's cooperative request about its own window,
+not authority to operate another application's window or an agent verb.
+
+Every request after the initial configure receives a fresh configure, even when
+unchanged or refused. Refusal retains the latest requested state and size, so a
+busy resize or pending restore is not overwritten. A response serial alone is
+not acceptance; the returned state describes the decision. The trusted Rust API
+continues to return errors/None without sending redundant configures.
+
+Pre-map maximization is declined because there is no committed normal geometry
+to save. Requests before the first empty commit produce no premature configure;
+the normal initial configure answers them together. Requests after that handshake
+but before a buffer maps receive a normal-state configure. Intent is not queued
+for later automatic execution: the client may request again once mapped. Unmap
+discards geometry and intent and requires the same fresh initial handshake.
+This uses XDG's explicit compositor-policy discretion, not a fabricated restore
+size. No upstream engine changes or new product scope are introduced.
+
+Rendered controls, dock work areas and configurable keyboard dispatch remain
+integration work. Tests and exact evidence limits:
+`docs/autonomy/updates/trusted-window-maximize-and-restore.md` and
+`docs/autonomy/updates/client-window-maximize-requests.md`.

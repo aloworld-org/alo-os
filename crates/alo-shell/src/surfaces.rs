@@ -184,6 +184,11 @@ impl CompositorHandler for Surfaces {
                 }
             });
         } else if !window.surface.is_initial_configure_sent() {
+            window.surface.with_pending_state(|pending| {
+                pending.capabilities.replace([
+                    smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::WmCapabilities::Maximize,
+                ]);
+            });
             window.surface.send_configure();
         }
         self.prune_window_move();
@@ -239,6 +244,12 @@ impl XdgShellHandler for Surfaces {
     }
     fn move_request(&mut self, surface: ToplevelSurface, seat: WlSeat, serial: Serial) {
         self.start_window_move(surface, seat, serial);
+    }
+    fn maximize_request(&mut self, surface: ToplevelSurface) {
+        self.client_window_maximize(surface, true);
+    }
+    fn unmaximize_request(&mut self, surface: ToplevelSurface) {
+        self.client_window_maximize(surface, false);
     }
     fn resize_request(
         &mut self,

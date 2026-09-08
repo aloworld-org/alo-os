@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Applications can request maximize and restore through the native window protocol.**
+  Requests share the shell's validated transactions, preserve normal geometry
+  and typing, and receive a response even when refused. Clients are offered only
+  the window-management capability currently implemented. Evidence:
+  `docs/autonomy/updates/client-window-maximize-requests.md`.
+
 - **Native window controls can maximise and restore a window's normal geometry.**
   The shell waits for the application's acknowledged commit before moving it,
   preserves typing and rejects competing operations. Output changes and rapid

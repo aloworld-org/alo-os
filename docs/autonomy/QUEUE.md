@@ -5,6 +5,17 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Client maximize/restore requests verified (desktop worker, 2026-09-08):**
+mapped XDG requests share trusted transactions; unchanged/refused requests receive
+responses, pre-map intent is declined at the initial configure, and only Maximize
+is advertised. Four real-client tests and all five 6,400-pixel GLES boundaries
+pass, with full-suite verification recorded in
+`updates/client-window-maximize-requests.md`.
+
+**Next desktop component:** trusted minimization/restoration, covering scene
+visibility, focus and held-input retirement, window cycling, unmap/disconnect
+and full-frame pixel evidence. Then client minimize policy, tiling and controls.
+
 **Completed trusted maximise and restore transactions (desktop worker, 2026-09-08):**
 per-mapping normal geometry, successfully submitted output sizing, XDG maximized
 state and latest acknowledged-commit placement are connected. Seven real-client

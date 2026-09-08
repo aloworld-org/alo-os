@@ -221,6 +221,9 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     fresh.sync();
     assert!(send.send(16).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.toplevel.set_maximized();
+    fresh.toplevel.set_maximized();
+    fresh.sync();
     assert!(send.send(17).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.sync();
@@ -234,6 +237,9 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     assert!(send.send(18).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.attach_maximized();
+    fresh.sync();
+    fresh.toplevel.unset_maximized();
+    fresh.toplevel.unset_maximized();
     fresh.sync();
     assert!(send.send(19).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());

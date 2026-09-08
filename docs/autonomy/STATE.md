@@ -13117,3 +13117,27 @@ certify physical DRM/seat/input/GPU/recovery or laptop/workstation acceptance;
 those records remain owed at their scheduled phases. No staging, commit, push,
 supervisor edit, worker launch, other checkout/credential/identity or unrelated
 host changes. Ready for supervisor integration and publication gates.
+
+## 2026-09-08 - Client maximize requests recovered and verified
+
+The storage pause interrupted the desktop worker after it saved client
+maximize/restore code and fixed a capability-advertisement test failure. The
+owner authorized resuming one workstream. All source edits were preserved and
+reviewed before verification; the normal supervisor's dirty-tree gate was not
+bypassed. No desktop or kernel supervisor was active during this recovery.
+
+XDG maximize/unmaximize requests now share trusted transactions, answer unchanged
+and refused requests, preserve normal geometry and input, and decline pre-map
+intent at the initial configure. Initial/remapped windows advertise only the
+implemented Maximize capability. Four client-request tests pass. The full Linux
+shell suite passes 141 unit, 137 lifecycle and three socket tests, plus three
+doctests. Both WSLg graphics regressions pass; maximize stages 17–21 each check
+all 6,400 pixels. Full Windows/Linux workspace fmt/clippy/tests, Linux rustdoc
+and pinned BPF fmt/clippy all returned exit 0. Existing ignored workspace cases
+are unchanged, not additional acceptance evidence.
+
+Report: `docs/autonomy/updates/client-window-maximize-requests.md`. Local logs:
+`.git/storage-resume-windows.log` and `.git/storage-resume-linux.log`. All four
+shared progress documents and the contract are updated. No later release scope
+or hardware claim follows. Next desktop component: trusted minimization and
+restoration; do not repeat this completed client-maximize implementation.

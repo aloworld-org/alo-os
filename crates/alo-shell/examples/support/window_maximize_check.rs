@@ -1,4 +1,4 @@
-//! Full-frame GLES checks through trusted maximize/restore transactions.
+//! Full-frame GLES checks through client maximize/restore requests.
 use alo_shell::{Cursor, Server, render_scanout};
 use smithay::backend::renderer::gles::GlesRenderer;
 
@@ -11,17 +11,10 @@ pub fn stage(
     let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
     let root = roots.first().ok_or("maximize root missing")?;
     let (origin, size) = match stage {
-        17 => {
-            assert!(server.set_window_maximized(root, true)?.is_some());
-            assert!(server.set_window_maximized(root, true)?.is_none());
-            ((20, 20), (32, 24))
-        }
+        17 => ((20, 20), (32, 24)),
         18 => ((20, 20), (32, 24)), // Acknowledgement has no pixel effect.
-        19 => {
-            assert!(server.set_window_maximized(root, false)?.is_some());
-            ((0, 0), (33, 32)) // The client's real output-sized buffer, no scaling.
-        }
-        20 => ((0, 0), (33, 32)), // Restore acknowledgement also waits for commit.
+        19 => ((0, 0), (33, 32)),   // The client's real output-sized buffer, no scaling.
+        20 => ((0, 0), (33, 32)),   // Restore acknowledgement also waits for commit.
         21 => ((20, 20), (32, 24)),
         _ => return Err("unknown maximize stage".into()),
     };

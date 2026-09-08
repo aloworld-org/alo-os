@@ -29,6 +29,8 @@ use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_ba
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Window-management capabilities advertised before initial configuration.
+    pub wm_capabilities: Vec<Vec<u32>>,
     /// Logical sizes suggested by successive XDG toplevel configures.
     pub sizes: Vec<(i32, i32)>,
     /// Activated flags in successive XDG toplevel configures, observed on wire.
@@ -200,6 +202,16 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Events {
     ) {
         match event {
             xdg_toplevel::Event::Close => state.close_requests += 1,
+            xdg_toplevel::Event::WmCapabilities { capabilities } => {
+                state.wm_capabilities.push(
+                    capabilities
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
+                        .map(|bytes| u32::from_ne_bytes(*bytes))
+                        .collect(),
+                );
+            }
             xdg_toplevel::Event::Configure {
                 width,
                 height,
