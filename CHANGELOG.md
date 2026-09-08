@@ -12,10 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Selecting a window now gives it keyboard focus and tells applications which
+  window is active.** Trusted compositor selection raises the chosen window,
+  releases old held keys and preserves same-window popup interaction. Invalid
+  targets refuse; clearing focus clears activation. Native switching controls
+  and the application adapter remain unfinished. Evidence:
+  `docs/autonomy/updates/native-window-activation.md`.
+
 - **The compositor can bring a window and its popups to the front.** Trusted
   shell controls can now change the order used by drawing and pointer routing.
   Invalid targets refuse, and held-button/popup grabs remain isolated. Keyboard
-  activation and native switching controls still need implementation. Report:
+  activation is implemented below the native switching controls, which remain
+  unfinished. Report:
   `docs/autonomy/updates/native-window-raising.md`.
 
 - **The native compositor can ask one window to close without discarding work.**

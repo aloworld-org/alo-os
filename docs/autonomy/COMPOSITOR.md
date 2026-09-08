@@ -5,6 +5,32 @@ ADR 0002. The first component is `crates/alo-shell`: a reusable Linux Wayland
 server library. The second adds nested Wayland/GLES rendering, described below.
 It is not yet a session executable or a usable desktop.
 
+## Explicit window activation
+
+`Server::activate_window` selects and raises a live mapped same-display root.
+It refuses foreign, dead, unmapped and popup targets, or a missing keyboard,
+before mutation. The existing focus boundary releases held keys before transfer,
+preserves a selected root's popup grab and dismisses grabs on another root.
+Raising retains its ordinary pointer-grab policy. A defensive raise error after
+focus changes is reported distinctly; there is no rollback claim.
+
+All compositor keyboard-focus paths now configure XDG Activated on the owning
+root, including when a grabbed descendant receives keys. Clearing focus removes
+activation. Popup destruction restores the surviving parent without deactivation;
+unmap resets role state and a fresh configured remap needs explicit focus.
+No automatic fallback selects another client after destruction/disconnect.
+Smithay's pending state preserves other flags and suppresses identical configures,
+including rapid selection before acknowledgement. Configures are queued proposals,
+not proof that a client acknowledged or drew them. Smithay 0.7 omits its seat
+focus callback when clearing, so synchronization observes the result of our
+central focus operation instead. The engine is unchanged.
+
+This implements trusted native plumbing under ADR 0002, not an agent endpoint,
+context reader, XDG activation-token protocol or rendered switching control.
+Application-adapter focus still requires its grants/proposal/approval contract.
+Native controls, shortcuts and direct/hardware acceptance remain owed. Socket
+and real GLES evidence: `updates/native-window-activation.md`.
+
 ## Explicit window raising
 
 `Server::raise_window` moves a live mapped toplevel to the front of the shared
@@ -16,8 +42,8 @@ roles; mapping alone does not implicitly raise them.
 
 An existing pointer focus is re-hit at its last validated location/time, through
 the ordinary routing path so held-button and popup grabs retain their authority.
-A cleared pointer focus is not re-entered by raising. Keyboard focus and XDG
-activation are separate policy; the nested backend still selects the front root
+A cleared pointer focus is not re-entered by raising. Raising alone does not
+change keyboard focus or XDG activation; the nested backend still selects the front root
 on its next keyboard event. This trusted native API is not an agent endpoint,
 activation protocol or native switching control. WindowRaiseError distinguishes
 invalid targets from a pointer refresh failure after stacking changed.

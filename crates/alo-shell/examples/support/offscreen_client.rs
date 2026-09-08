@@ -139,6 +139,10 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     other.sync();
     assert!(send.send(8).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    app.sync();
+    other.sync();
+    assert_eq!(app.events.activation.last(), Some(&true));
+    assert!(other.events.activation.ends_with(&[true, false]));
     drop(other);
     app.sync();
     app.set_cursor(app.events.pointer.serial, None, (0, 0));

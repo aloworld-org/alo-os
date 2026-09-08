@@ -56,9 +56,11 @@ mod session_device;
 mod session_input;
 mod socket;
 mod surfaces;
+mod window_activation;
 mod window_close;
 mod window_raise;
 
+pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_raise::WindowRaiseError;
 

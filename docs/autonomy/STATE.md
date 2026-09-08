@@ -12578,3 +12578,61 @@ other delivery work and certified laptop/workstation physical records remain
 owed. All four shared progress documents updated. No staging/commit/push, other
 checkout edits, worker/loop launch, tools/dev-loop change or physical install.
 Reports arriving during publication are reconciled next iteration.
+
+---
+
+## 2026-09-08 - Native window activation
+
+Read constitution, delivery/shared-main/report rules, current queue and STATE
+tail, relevant v0.01 features/roadmap, ADRs 0002/0010 and application contracts.
+Initial tree clean; supervisor owns publication. Compared published task report
+filenames against STATE at iteration start: none unreconciled. Claude retains
+security/model-choice ownership. Rechecked pinned EGLDisplay::new's unsafe
+signature; standalone direct GLES remains restricted. Selected the first
+independent activation component and recorded acceptance in QUEUE before coding.
+
+Server::activate_window validates and focuses a mapped same-display root before
+raising it. Central keyboard focus now configures XDG Activated on the owning
+root, including grabbed descendants, and clears it on focus loss. Same-root
+grabs survive; other-root selection dismisses; held keys release before transfer.
+Unmap resets role state, remap needs fresh focus, popup teardown restores its
+parent and dead clients do not select another client. Invalid/no-keyboard targets
+refuse before mutation. Configures are queued proposals, not client rendering.
+Public rustdoc and COMPOSITOR.md document the trusted boundary, with no agent
+endpoint/context capture, new scope, UI strings, unsafe exception or engine patch.
+
+Report: `docs/autonomy/updates/native-window-activation.md`. Four new real socket
+checks cover wire state, unacknowledged/acknowledged selection, idempotence, key
+isolation, stacking, explicit clearing, foreign/unmapped/dead/popup/no-keyboard
+refusal, remap, grab preservation/dismissal and popup teardown. Rebuilt WSLg GLES
+fixture now checks activation selection pixels and both clients' activation wire
+states. Eight-stage offscreen regression and 115-surface nested popup/cursor run
+passed, with expected Mesa fallback and deliberately invalid-client diagnostics.
+
+Ubuntu Rust 1.98.0 and eight graphics/input dependencies verified; WSLg socket
+present, /dev/dri absent. Initial shell lacked Rust in PATH; used the documented
+root toolchain and isolated /root/alo-os-target. No package, shared kernel/BPF,
+service or other checkout changes. Exact commands are in the report. Windows
+fmt, affected all-target clippy and shell tests passed (zero Linux runtime cases).
+Linux focused tests, full shell tests (138 unit, 91 lifecycle, three socket and
+three compile-fail doctests), affected all-target clippy, warnings-denied rustdoc,
+examples and fmt passed. Full independent Windows/Linux workspace/rustdoc/BPF
+publication gates were not run by this worker and remain supervisor work.
+
+Initial compile errors (private grab field and fixture serial typo) corrected.
+One socket assertion exposed that Smithay 0.7 does not call SeatHandler on focus
+clearing; inspected source and synchronized after our central focus operation.
+Subsequent focused/full tests passed. Clippy's constant-chunk decoding finding
+was corrected with as_chunks, without suppression. Initial path/quoted registry
+reads were corrected. No repeated runtime-failure loop or gate weakening.
+Source/test/documentation diff reviewed; git diff --check passed.
+
+Activation plumbing complete; native controls/window-management/compositor/release
+remain unchecked. Next: native window switching/close controls and configurable
+shortcuts. Adapter wiring, move/resize/minimise/maximise/tile, launcher/dock,
+clipboard and other delivery work remain unfinished. Safe standalone GLES, full
+DRM/seat entry, populated input/hotplug, GPU/disable recovery and certified laptop/
+GPU workstation physical records remain owed. All four shared progress documents
+updated. No staging/commit/push, other repository edit, worker/loop launch,
+tools/dev-loop modification or physical installation. Reports arriving during
+publication are reconciled next iteration.

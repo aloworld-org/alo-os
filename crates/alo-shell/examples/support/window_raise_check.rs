@@ -35,5 +35,21 @@ pub fn run(
     println!(
         "Window raising GLES pixels passed: second root occludes first root/popup, restoring parent restores popup; no DRM evidence"
     );
+    for (root, expected) in [(second, [255, 0, 255, 0]), (first, [0, 0, 255, 0])] {
+        server.activate_window(root)?;
+        let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
+        let scene = render_scanout(
+            renderer,
+            (33, 32).into(),
+            &roots,
+            &server.popup_surfaces(),
+            &Cursor::Hidden,
+        )?;
+        assert_eq!(
+            scene.pixels().pixels().get(136..140),
+            Some(expected.as_slice())
+        );
+    }
+    println!("Window activation GLES pixels passed: selected root is visible; no DRM evidence");
     Ok(())
 }

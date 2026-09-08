@@ -10,6 +10,7 @@ mod output_metadata;
 mod pointer;
 mod popups;
 mod support;
+mod window_activation;
 mod window_close;
 mod window_raise;
 use support::{Application, Fixture};

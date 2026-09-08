@@ -1172,10 +1172,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native window activation (2026-09-08): trusted selection focuses and raises
+    mapped same-display roots. XDG activation follows actual keyboard ownership,
+    including popup focus, explicit clearing and lifecycle cleanup. Four socket
+    tests cover state, held keys, grabs, refusal, remap and parent restoration.
+    Native switching controls/shortcuts and adapter wiring remain next; window
+    management and release unchecked. Exact checks and machine limits:
+    `docs/autonomy/updates/native-window-activation.md`.
   - Native window raising (2026-09-08): explicit mapped-root stacking feeds
     rendering and hit testing, preserving other roots, popup subtrees and grabs.
-    Foreign, stale, unmapped and popup targets refuse. Keyboard activation and
-    native switching controls remain next; window management stays unchecked.
+    Foreign, stale, unmapped and popup targets refuse. Activation is now available
+    above; native switching controls remain next, window management unchecked.
     Checks and limits: `docs/autonomy/updates/native-window-raising.md`.
   - Native window close requests (2026-09-08): trusted per-window XDG close
     delivery preserves application choice and refuses stale, foreign, unmapped

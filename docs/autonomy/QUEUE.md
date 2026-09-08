@@ -953,6 +953,23 @@ not take that workstream.
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit
   gate. A dependency in this list does not erase any original requirement.
+  **Selected native window activation (desktop worker, 2026-09-08):**
+  explicitly focus and raise mapped same-display roots; synchronize XDG activated
+  state with actual keyboard focus, including popup ownership and lifecycle loss.
+  Preserve held-key cleanup and same-root popup grabs; refuse invalid targets and
+  missing keyboards before mutation. Acceptance: real socket activation/configure,
+  idempotence, focus transfer, grab/lifecycle/refusal tests and WSLg regression;
+  affected formatting, clippy, tests and rustdoc. Native controls remain separate.
+  **Completed native window activation 2026-09-08:** activate_window focuses and
+  raises a validated root; central keyboard routing synchronizes XDG Activated,
+  including popup ownership and clearing. Four real socket tests and WSLg GLES
+  selection pixels/wire activation pass. Linux shell 232 tests and three doctests,
+  affected Windows/Linux clippy/fmt/tests, Linux rustdoc/examples and nested
+  115-surface regression pass. Report: `updates/native-window-activation.md`.
+  Next: native switching/close controls and configurable shortcuts. Adapter
+  wiring, other window-management operations, safe standalone GLES/direct entry
+  and physical acceptance remain. Feature/release unchecked; supervisor gates
+  pending. This completes activation plumbing, not the native desktop controls.
   **Selected native window raising (desktop worker, 2026-09-08):**
   move a live mapped toplevel to the front of the shared rendering/hit-test
   order, preserving other windows and popup subtrees. Refresh stationary pointer
