@@ -13,6 +13,7 @@ mod shortcut_dispatch;
 mod support;
 mod window_activation;
 mod window_close;
+mod window_placement;
 mod window_raise;
 mod window_size;
 mod window_switch;

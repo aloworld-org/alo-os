@@ -5,6 +5,29 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Native window placement verified (desktop worker, 2026-09-08):** bounded
+trusted mapped-root placement is shared by drawing, input and popup constraints.
+Five real-client placement tests, full-frame GLES checks, Windows/Linux workspace
+gates, rustdoc and pinned BPF checks pass. Interactive dragging is the next
+component, not part of this completed placement primitive.
+
+**Native window placement validation resumed by the owner, 2026-09-08:** the
+incorrect whole-scene translation expectation is replaced by analytic pixel
+layers: moving root, child and popup over a stationary second root. Every pixel
+is checked for positive/negative movement, all-edge clipping and restoration;
+stacking and the second root's origin are unchanged. Full offscreen and nested
+popup/cursor regressions now pass. Full publication gates and integration are
+recorded in `updates/native-window-placement.md`, all passed on the combined
+tree. Next implementation is interactive move/resize. No release/feature tick.
+
+Published `updates/three-model-choices-in-the-backend.md` reconciled: format 2
+settings persist and resolve person-owned providers; format 1 stays compatible.
+Contributor reports six choosing/two daemon tests and workspace/BPF gates, not
+rerun by this desktop worker. Keyring support remains required in delivery phase
+5; authenticated providers refuse, Alo has no endpoint, paired machines remain
+unreachable. Raw TOML refusal Debug can retain a pasted secret despite safe UI
+rendering; preserve this security follow-up with Claude. ADR 0021 stays proposed.
+
 **Selected cooperative window sizing (desktop worker, 2026-09-08):**
 implement a trusted mapped-root size request with positive logical dimensions,
 committed client min/max refusal and duplicate-configure suppression. Preserve

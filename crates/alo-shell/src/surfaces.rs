@@ -159,6 +159,7 @@ impl CompositorHandler for Surfaces {
             window.mapped = window.surface.ensure_configured();
         } else if window.mapped {
             window.mapped = false;
+            crate::window_placement::reset(surface);
             // XDG unmap requires a fresh handshake. Smithay resets its initial
             // configure flag, but retains `configured` and old acknowledgements.
             // Reset role state too so an old configure cannot authorize remapping.

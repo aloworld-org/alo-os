@@ -70,6 +70,8 @@ pub trait FrameTarget {
     /// Current framebuffer dimensions, in physical pixels at compositor scale 1.
     fn size(&self) -> Size<i32, Physical>;
     /// Import and draw roots in front-to-back order, then submit the frame.
+    /// Each root's buffer starts at [`crate::window_buffer_origin`]; custom
+    /// targets must honor this placement (or refuse unsupported placement).
     fn submit(&mut self, roots: &[WlSurface]) -> Result<Vec<WlSurface>, RenderError>;
     /// Submit popup-aware desktop content and cursor in one frame.
     /// Popups belong immediately above their parent, newest first; use

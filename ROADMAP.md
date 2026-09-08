@@ -423,6 +423,14 @@ compositor is not required for, which is why it runs unbroken.
 
 - [ ] **Add your own provider in Settings** — name, address, key to the keyring;
       the region stated rather than guessed; https required off this machine
+  - Provider configuration reconciliation (2026-09-08): format 2 settings now
+    persist the person's provider list and selected model; format 1 compatibility
+    and no local fallback are tested. Contributor-reported six choosing/two daemon
+    tests and workspace/BPF gates: `docs/autonomy/updates/three-model-choices-in-the-backend.md`.
+    Credential store and native controls remain delivery phase 5 work; providers
+    requiring a key refuse, Alo has no endpoint, paired machines stay unreachable.
+    Raw parse-error Debug may retain pasted credentials despite safe UI messages;
+    follow-up remains open with Claude. ADR 0021 remains proposed; no release tick.
   - [x] **The code.**
         `alo-models` — the provider, the key held as a keyring handle and
         never in the record, testing it before it is saved, and every
@@ -777,6 +785,13 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Native window placement (2026-09-08): bounded mapped-root geometry origins
+    feed drawing, input and popup output constraints, with committed-geometry and
+    unmap semantics. Evidence: `docs/autonomy/updates/native-window-placement.md`.
+    Corrected independent full-frame GLES expectations pass with a stationary
+    second window, all-edge clipping and restoration. Interactive dragging/resizing,
+    remaining operations, rendered controls and direct desktop entry remain.
+    Publication gates are recorded in the task report. No feature/release tick.
   - Cooperative window sizing (2026-09-08): trusted mapped-root logical-size
     requests validate dimensions and committed client limits, suppress duplicate
     configures and preserve committed buffers and input until client response.
@@ -1199,6 +1214,9 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native placement implementation shares drawing/input/popup origins; graphical
+    fixture validation is unfinished. Interactive move/resize follows that gate;
+    no usable window-management completion claim.
   - Native window activation (2026-09-08): trusted selection focuses and raises
     mapped same-display roots. XDG activation follows actual keyboard ownership,
     including popup focus, explicit clearing and lifecycle cleanup. Four socket

@@ -12814,3 +12814,109 @@ GLES, full DRM/seat entry, populated input/hotplug, GPU/disable recovery and cer
 physical laptop/GPU workstation records remain owed at their delivery phases.
 No staging, commit, push, other checkout edit, tools/dev-loop changes, worker/loop
 launch or physical installation.
+
+---
+
+## 2026-09-08 - Native window placement validation halted
+
+Read constitution, delivery/shared-main/report instructions, current queue and
+STATE tail, v0.01 feature/roadmap sections, ADRs 0002/0010 and application adapter
+contract. Initial working tree clean. Reconciled the sole published report not
+referenced here at iteration start:
+`docs/autonomy/updates/three-model-choices-in-the-backend.md`. Provider selection
+now persists in format 2 settings and resolves through the daemon, without local
+fallback; format 1 stays compatible. Contributor reports six choosing/two daemon
+tests and workspace/rustdoc/BPF gates, reviewed but not rerun here. Authenticated
+providers still refuse pending keyring support; Alo has no endpoint and paired
+machines remain unreachable. Raw TOML parse-error Debug can retain a pasted
+credential despite safe UI messages; preserve this follow-up with Claude. ADR
+0021 stays proposed and no policy/tier changes follow. Updated all four shared
+progress documents with these limits. Later published reports reconcile next
+iteration.
+
+Selected bounded native root placement in QUEUE before coding. Implementation
+adds Server::place_window and dispatch-thread window_buffer_origin; drawing,
+pointer hits and popup output constraints share committed-geometry origins.
+Unmap resets placement; invalid coordinates and foreign/child/popup/unmapped/dead
+roots refuse. No size/activation/stacking changes or agent endpoint. Coordinate
+bounds retain arithmetic headroom and allow negative/offscreen placement, without
+silently clamping intent. Custom FrameTargets must honor origins or refuse them.
+Interactive move/resize is still unimplemented; primitive acceptance is pending.
+
+Own report: `docs/autonomy/updates/native-window-placement.md`. Exact commands,
+versions, failures and remaining evidence are there. Ubuntu WSL2 Rust 1.98.0,
+eight graphics/input libraries and WSLg socket checked; /dev/dri absent. Isolated
+/root/alo-os-target used. No dependency, service or shared kernel/BPF changes.
+Final Linux affected all-target clippy, full shell tests (138 unit, 109 lifecycle,
+three socket, three compile-fail doctests), warnings-denied rustdoc, example build
+and fmt passed. Five new socket tests cover placement/input, geometry/lifecycle,
+target refusal, popup constraints and reactive acknowledged commit/coalescing.
+Affected Windows fmt/clippy/tests passed after correcting a Linux-only module
+guard; Windows runs zero Linux-only runtime cases. Final Linux-only test edits
+were formatted and checked in Linux. Full independent supervisor workspace,
+rustdoc and BPF gates have not run.
+
+First runtime failure was an off-thread test observation of Smithay thread-local
+state; fixed by observing through Fixture::backend, then all four focused tests
+passed. Added reactive coverage and all five passed in the full suite. Lints
+caught missing private helper docs and unchecked fixture indexing; corrected
+without suppression. Routine root-document lookups and one malformed tool-call
+wrapper were corrected without file changes from the failed wrapper.
+
+New WSLg offscreen GLES check then failed at translated pixel zero: the scene's
+stationary magenta second root remained visible, while the oracle expected the
+entire scene to translate after moving only the first root. Its client also
+failed its coordination wait after renderer exit. This second runtime validation
+failure triggers the owner's explicit halt rule. Offscreen command exited 1;
+the chained nested popup/cursor regression did NOT run. Earlier component checks
+printed success but the full graphics run is incomplete. No retry or lower bar.
+
+Next iteration: correct the graphical oracle to account for the stationary root
+or isolate the intended root/popup subtree. Preserve whole-frame positive and
+negative translation, clipping, restoration and stacking checks; rerun offscreen,
+nested and affected gates. The placement implementation is preserved, NOT a
+completed component, and this step is NOT ready for supervisor publication.
+Interactive move/resize and all later window operations remain next after that
+acceptance. Full desktop, agent/image integration and remaining v0.01 features
+stay unfinished. DRM/seat/GPU recovery and physical laptop/GPU workstation records
+remain owed at their scheduled phases; no hardware or release certification.
+
+Source, new tests/example and tracked diff reviewed; git diff --check passed.
+All four shared progress documents and own report updated. No staging, commit,
+push, tools/dev-loop edit, other checkout change, worker/loop launch or physical
+installation. Result: STEP BLOCKED under the repeated-runtime-failure halt rule.
+
+## 2026-09-08 - Owner-authorized recovery of native window placement
+
+The owner explicitly requested fixing the graphics failure and resuming the
+desktop loop. No desktop supervisor/worker was running at recovery start. The
+unpublished placement implementation and all its tests were preserved.
+
+The failed expectation translated the whole framebuffer, including a second
+window that was never moved. It now computes each fixture layer independently:
+the moving red/green root, yellow child and blue popup, the stationary magenta
+root, and background. Every pixel is compared at baseline and positive,
+negative and bottom-right positions. Exact framebuffer restoration, stationary
+root origin and unchanged stacking are also checked. No renderer implementation
+was altered to make this test pass. Both full WSLg offscreen and nested
+popup/cursor regressions returned exit 0 after the correction.
+
+Integrated published main through `66d2e15` without conflicts before full gates.
+The recovered task is a local unpublished commit while verification runs.
+Subsequent Claude credential reports will be reconciled by the next worker;
+the older TOML diagnostic exposure above was addressed in published `41c9f1e`.
+This recovery does not certify the complete credential-store path.
+
+The supervisor was formatted, linted, tested (11 passing tests) and rebuilt
+with the current embedded WORKER.md instructions. No supervisor source or
+failure gate was weakened. Full Windows/Linux workspace gates, warnings-denied
+rustdoc and pinned BPF fmt/clippy passed. Final focused placement tests passed
+(five, zero failed/ignored), as did both rebuilt WSLg graphical regressions.
+The standard Linux workspace suite retains 13 existing ignored entries, not
+claimed as passing evidence. Details and local log paths are in
+`docs/autonomy/updates/native-window-placement.md`.
+
+This supersedes the earlier halt: the native placement primitive is verified
+and ready for normal publication, followed by restart of one desktop supervisor.
+The next worker should reconcile newly published Claude reports and proceed to
+the next executable desktop component, not repeat this completed fixture repair.

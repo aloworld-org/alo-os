@@ -33,7 +33,7 @@ pub(crate) fn trees(
     let mut pending: Vec<_> = roots
         .iter()
         .rev()
-        .map(|root| (root.clone(), Point::<f64, Logical>::default(), false))
+        .map(|root| (root.clone(), crate::window_buffer_origin(root), false))
         .collect();
     while let Some((surface, origin, expanded)) = pending.pop() {
         if expanded {

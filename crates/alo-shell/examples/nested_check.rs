@@ -29,6 +29,9 @@ mod default_cursor_check;
 mod window_raise_check;
 
 #[cfg(target_os = "linux")]
+#[path = "support/window_placement_check.rs"]
+mod window_placement_check;
+#[cfg(target_os = "linux")]
 #[path = "support/window_size_check.rs"]
 mod window_size_check;
 #[cfg(target_os = "linux")]

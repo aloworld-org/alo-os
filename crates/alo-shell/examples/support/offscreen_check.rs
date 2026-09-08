@@ -86,6 +86,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     crate::window_raise_check::run(&mut server, renderer)?;
                     crate::window_switch_check::run(&mut server, renderer)?;
                     crate::window_size_check::run(&mut server, renderer)?;
+                    crate::window_placement_check::run(&mut server, renderer)?;
                 }
                 1 => {
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {

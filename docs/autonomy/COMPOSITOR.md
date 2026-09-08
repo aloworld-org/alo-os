@@ -1,5 +1,35 @@
 # Native compositor development
 
+## Native window placement (2026-09-08)
+
+`Server::place_window(surface, (x, y))` places a live same-display mapped root's
+window-geometry origin in logical output coordinates. Both axes must be within
+[-1,000,000, 1,000,000], leaving headroom for existing bounded popup arithmetic.
+Negative/offscreen positions are intentional; invalid coordinates and foreign,
+child, popup, unmapped or dead targets refuse before mutation. No XDG configure,
+resize, activation or stacking change occurs. This is trusted shell plumbing;
+agent arrangement still requires the existing grant/proposal/approval contract.
+
+The private placement state lives with the surface and resets on unmap. Scene
+traversal subtracts committed, surface-tree-clamped XDG geometry to obtain the
+root buffer origin, then accumulates popup origins as before. Pending geometry
+does not move pixels or input. Unplaced mappings preserve initial buffer-origin
+zero. `window_buffer_origin` exposes the same origin to custom FrameTargets;
+read it on the display dispatch/render thread, as with Smithay renderer state.
+Custom targets must honor placement or refuse it. All built-in scene painters,
+hit testing and output-to-popup constraint conversion share scene traversal.
+
+Existing pointer position is re-hit immediately, retaining grab policy. A pointer
+refresh failure reports that placement already changed. Reactive popup configures
+are scheduled by normal dispatch, coalesced and applied only on acknowledged
+commit; nonreactive popups follow the root without unsolicited configures.
+Real-client and GLES evidence: `updates/native-window-placement.md`.
+Real-client tests and independent GLES pixel expectations pass, including the
+stationary second window, all-edge clipping and restoration. The previous
+whole-scene translation expectation was corrected, not the production renderer.
+Interactive move/resize, remaining window operations and rendered controls remain
+unfinished. This component does not complete window management or the compositor.
+
 ## Cooperative window sizing (2026-09-08)
 
 `Server::request_window_size(surface, (width, height))` suggests a positive

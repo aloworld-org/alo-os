@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native shell controls can place a window and its popups together.** Drawing,
+  pointer routing and popup constraints share the position; invalid targets and
+  excessive coordinates refuse. Interactive dragging remains unfinished.
+  Full-frame graphics checks verify that the selected window and its descendants
+  move while the other window stays in place, including clipping and restoration.
+  Evidence: `docs/autonomy/updates/native-window-placement.md`.
+
+- **A person can choose and persist an API provider they added.** The daemon
+  resolves that choice without falling back to a local model. Providers needing
+  credentials still refuse until keyring support exists. Contributor evidence:
+  `docs/autonomy/updates/three-model-choices-in-the-backend.md`.
+
 - **Native shell controls can now ask a window to change size.** Invalid targets,
   dimensions and sizes outside committed client limits refuse; repeated requests
   do not flood the client. The current window stays usable while the application
