@@ -41,17 +41,75 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let client = thread::spawn(move || offscreen_client::run(fixture, send, responses));
     let start = Instant::now();
     let mut stages = 0;
+    let mut drive_cursor = true;
     while !client.is_finished() {
         if start.elapsed() > Duration::from_secs(15) {
             return Err("client deadline exceeded".into());
         }
         server.dispatch()?;
-        server.pointer_motion(10.0, 14.0, 1)?;
+        if drive_cursor {
+            server.pointer_motion(10.0, 14.0, 1)?;
+        }
         if let Ok(stage) = receive.try_recv() {
             let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
+                11 => {
+                    // The cursor fixture must not inject a second motion between
+                    // this press and the client's ensuing move request.
+                    drive_cursor = false;
+                    server.pointer_motion(4.0, 5.0, 100)?;
+                    assert!(server.pointer_button(
+                        0x110,
+                        smithay::backend::input::ButtonState::Pressed,
+                        101
+                    )?);
+                }
+                12 => {
+                    let root = roots.first().ok_or("move client missing")?;
+                    for (pointer, delta) in [((14.0, 15.0), (10, 10)), ((-1.0, -1.0), (-5, -6))] {
+                        server.pointer_motion(pointer.0, pointer.1, 102)?;
+                        let prepared = render_scanout(
+                            renderer,
+                            (40, 40).into(),
+                            &roots,
+                            &popups,
+                            &alo_shell::Cursor::Hidden,
+                        )?;
+                        assert_eq!(
+                            alo_shell::window_buffer_origin(root),
+                            (f64::from(delta.0), f64::from(delta.1)).into()
+                        );
+                        for (index, pixel) in prepared
+                            .pixels()
+                            .pixels()
+                            .as_chunks::<4>()
+                            .0
+                            .iter()
+                            .enumerate()
+                        {
+                            let x = i32::try_from(index % 40)? - delta.0;
+                            let y = i32::try_from(index / 40)? - delta.1;
+                            let expected = if (0..32).contains(&x) && (0..24).contains(&y) {
+                                [255, 255, 255, 0]
+                            } else {
+                                [0; 4]
+                            };
+                            assert_eq!(*pixel, expected, "interactive move pixel {index}");
+                        }
+                    }
+                    assert!(!server.pointer_button(
+                        0x110,
+                        smithay::backend::input::ButtonState::Released,
+                        103
+                    )?);
+                    server.pointer_motion(20.0, 20.0, 104)?;
+                    assert_eq!(alo_shell::window_buffer_origin(root), (-5.0, -6.0).into());
+                    println!(
+                        "Real XDG interactive movement: positive/negative clipped full-frame GLES and release passed"
+                    );
+                }
                 9 => {
                     let root = roots.first().ok_or("resize client missing")?;
                     assert!(server.request_window_size(root, (32, 24))?.is_some());
@@ -197,7 +255,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 10);
+    assert_eq!(stages, 12);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

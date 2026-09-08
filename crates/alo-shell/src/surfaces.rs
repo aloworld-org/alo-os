@@ -39,6 +39,8 @@ struct Window {
 
 /// Protocol globals and toplevel roots shared by display backends.
 pub(crate) struct Surfaces {
+    /// Pointer-authorized interactive movement of one mapped root.
+    pub(crate) window_move: Option<crate::window_move::Move>,
     /// Opt-in popup handshake and parent lifetime tracking.
     pub(crate) popups: crate::popups::Popups,
     /// Seat-scoped explicit popup input ownership.
@@ -65,6 +67,7 @@ impl Surfaces {
     /// Advertise only protocols this component implements.
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
+            window_move: None,
             popups: Default::default(),
             popup_grab: None,
             compositor: CompositorState::new::<Self>(display),
@@ -81,6 +84,7 @@ impl Surfaces {
     /// Remove resources whose client disappeared without orderly destruction.
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
+        self.prune_window_move();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
         self.popups.refresh(&parents);
@@ -171,6 +175,7 @@ impl CompositorHandler for Surfaces {
         } else if !window.surface.is_initial_configure_sent() {
             window.surface.send_configure();
         }
+        self.prune_window_move();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
     }
@@ -218,6 +223,9 @@ impl XdgShellHandler for Surfaces {
     }
     fn grab(&mut self, surface: PopupSurface, seat: WlSeat, serial: Serial) {
         self.grab_popup(surface, seat, serial);
+    }
+    fn move_request(&mut self, surface: ToplevelSurface, seat: WlSeat, serial: Serial) {
+        self.start_window_move(surface, seat, serial);
     }
     fn popup_destroyed(&mut self, surface: PopupSurface) {
         self.popup_grab_destroyed(&surface);

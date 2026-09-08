@@ -12,9 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Applications can request a window drag from a held pointer press.** The
+  native shell moves that window, keeps typing with its existing recipient, and
+  ends the drag on release or cancellation. Forged and reused press serials do
+  not move windows. Evidence: `docs/autonomy/updates/interactive-window-movement.md`.
+
+- **Settings-error diagnostics no longer repeat pasted credentials.** Published
+  credential reports also establish explicit routing to the person's own bus;
+  authenticated providers still refuse pending real-store integration. These are
+  contributor-reported checks, not a complete credential-store verification.
+  Reconciliation: `docs/autonomy/updates/interactive-window-movement.md`.
+
 - **Native shell controls can place a window and its popups together.** Drawing,
   pointer routing and popup constraints share the position; invalid targets and
-  excessive coordinates refuse. Interactive dragging remains unfinished.
+  excessive coordinates refuse. Interactive dragging is recorded above.
   Full-frame graphics checks verify that the selected window and its descendants
   move while the other window stays in place, including clipping and restoration.
   Evidence: `docs/autonomy/updates/native-window-placement.md`.

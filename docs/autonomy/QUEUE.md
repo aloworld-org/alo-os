@@ -5,6 +5,41 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+Published credential reports reconciled 2026-09-08: settings diagnostic exposure
+is fixed; ADR 0022's accepted binding is now explicit `secret-service`/`zbus`.
+The libsecret install/binding blockers are superseded. Claude's next dependency
+is a running real Secret Service fixture for store states, HTTPS daemon requests,
+connection lifetime/concurrency and logout checks. Contributor tests/gates were
+reviewed, not rerun here. Sign-in/session bus integration belongs to desktop
+phase 4, native choosing to phase 5 and Secret Service image package/unit to phase
+7. Separate-user login evidence remains owed; same-process API redaction is not
+security isolation. No ADR 0017 conflict, ADR 0021 acceptance or release-tier
+change. Full report paths and corrections are retained in STATE and this task's
+report. Claude retains credential implementation ownership.
+
+**Selected interactive window movement (desktop worker, 2026-09-08):**
+accept XDG move requests only from a mapped root with this seat's active pointer
+press on its own surface tree. Move committed geometry with bounded pointer
+deltas; consume drag input and cancel on release, leave, unmap or disconnect.
+Acceptance: real-client movement, serial/target refusal, keyboard isolation,
+lifecycle cancellation and scene integration; affected fmt, tests and clippy.
+Interactive resize remains the next component; this does not complete window
+management.
+
+**Completed interactive window movement 2026-09-08:** six real-client tests
+cover active-press authority, movement/keyboard isolation, serial/target/range
+refusal, subsurface initiation, multiple buttons and lifecycle cancellation.
+Linux affected clippy, 256 tests plus three doctests, rustdoc/examples/fmt and
+Windows affected fmt/clippy/tests pass. WSLg offscreen passes 12 stages including
+full-frame positive/negative clipped drag pixels; nested popup/cursor regression
+passes 115 submitted surfaces. One fixture cursor-injection conflict was fixed
+without changing production code or pixel expectations. Exact commands/limits:
+`updates/interactive-window-movement.md`. Full supervisor gates remain pending.
+Next executable component: pointer-authorized interactive resize using existing
+cooperative sizing and placement, including edge anchoring, client min/max limits,
+acknowledged buffer changes, invalid serial/edge refusal and cancellation. Window
+management as a whole remains unfinished.
+
 **Native window placement verified (desktop worker, 2026-09-08):** bounded
 trusted mapped-root placement is shared by drawing, input and popup constraints.
 Five real-client placement tests, full-frame GLES checks, Windows/Linux workspace

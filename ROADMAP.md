@@ -12,6 +12,20 @@ New work uses descriptive task names and individual reports. Only the integratio
 owner consolidates those reports into this roadmap and the shared progress files;
 historical queue identifiers remain secondary cross-references.
 
+Credential reports reconciled 2026-09-08: ADR 0022 is accepted and amended to
+`secret-service` over explicitly addressed `zbus`; the old libsecret dependency
+and binding decision blockers are superseded. Synthetic endpoint routing,
+no-connect refusal, settings redaction, eight bus/refusal tests, protocol shape
+and intended/decoy listener checks are contributor evidence, not rerun here.
+Real-store states, authenticated HTTPS through the daemon, connection lifetime,
+concurrency and logout remain unverified. Claude reports needing a running Secret
+Service fixture. Desktop sign-in/session integration and the image's Secret
+Service package/unit remain scheduled in phases 4/7, with configuration in phase
+5. Separate-user access still needs real login evidence; a compromised daemon
+can retrieve keys. ADR 0017 permits outbound bus access; ADR 0021 remains proposed.
+No store/portal tier is moved and no release gate closes. Exact source reports
+and superseded claims: `docs/autonomy/updates/interactive-window-movement.md`.
+
 Three-primary-source direction reconciled 2026-09-08 from
 `docs/autonomy/updates/three-primary-model-choices.md`: Local models, Your own API
 provider and Alo form the main choices; no-agent opt-out remains and paired-machine
@@ -1214,6 +1228,13 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Interactive window movement (2026-09-08): XDG requests require the current
+    seat's held press on the exact mapped root or its subsurface tree. Drag input
+    is consumed; release, leave, unmap and disconnect cancel ownership. Six
+    real-client tests and positive/negative full-frame GLES checks are the
+    component acceptance; exact executed results are in
+    `docs/autonomy/updates/interactive-window-movement.md`. Interactive resize,
+    remaining operations and rendered shell controls remain; no feature tick.
   - Native placement implementation shares drawing/input/popup origins; graphical
     fixture validation is unfinished. Interactive move/resize follows that gate;
     no usable window-management completion claim.

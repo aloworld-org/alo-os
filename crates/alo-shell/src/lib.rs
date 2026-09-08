@@ -59,6 +59,7 @@ mod socket;
 mod surfaces;
 mod window_activation;
 mod window_close;
+mod window_move;
 mod window_placement;
 mod window_raise;
 mod window_size;

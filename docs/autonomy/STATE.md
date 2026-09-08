@@ -12920,3 +12920,67 @@ This supersedes the earlier halt: the native placement primitive is verified
 and ready for normal publication, followed by restart of one desktop supervisor.
 The next worker should reconcile newly published Claude reports and proceed to
 the next executable desktop component, not repeat this completed fixture repair.
+
+## 2026-09-08 - Interactive window movement
+
+Initial tree clean. Read constitution, delivery/shared-main/report rules, current
+queue and journal tail, relevant feature/roadmap, ADRs 0002/0010 and application
+contracts. Selected interactive movement in QUEUE before implementation.
+
+Reconciled all seven published reports absent from STATE at iteration start:
+
+- `docs/autonomy/updates/settings-refusals-carry-no-credential.md`
+- `docs/autonomy/updates/where-a-credential-goes.md`
+- `docs/autonomy/updates/what-actually-protects-a-credential.md`
+- `docs/autonomy/updates/what-the-agent-cannot-reach.md`
+- `docs/autonomy/updates/the-persons-own-bus.md`
+- `docs/autonomy/updates/libsecret-cannot-be-told-which-bus.md`
+- `docs/autonomy/updates/the-client-is-given-the-connection.md`
+
+Exact per-report evidence and superseded claims are retained in own report
+`docs/autonomy/updates/interactive-window-movement.md`. Settings redaction fixes
+the earlier person-settings diagnostic leak; machine-description TOML remains a
+follow-up. Endpoint pairing uses local services, not authenticated HTTPS; daemon
+refusal observes no accepted connection. Unix-socket bounding does not isolate a
+store from same-process turns. Separate identities protect the agent boundary;
+a compromised daemon running as the person can retrieve keys. ADR 0017 allows
+outbound bus access and its inbound socket remains unchanged. ADR 0022 is accepted
+and amended to explicit secret-service/zbus. Eight uid-path/refusal tests and
+intended/decoy listeners remain contributor evidence, not rerun here. Libsecret
+package and binding blockers are superseded; its singleton claim does not transfer
+to zbus. Real-store states, authenticated HTTPS through the daemon, logout and
+connection lifetime/concurrency need Claude's reported missing running Secret
+Service fixture. Wrong-owner socket tests do not prove separate-agent-login
+refusal. Desktop sign-in/session and image Secret Service package/unit remain
+phases 4/7; choosing remains phase 5. No tier or ADR 0021 status changes. Reports
+arriving during publication reconcile next iteration; Claude retains that work.
+
+Implemented XDG move authorization on the exact mapped root's held pointer
+press, including subsurfaces. Shared nested/direct routing moves committed
+geometry, consumes drag pointer input and preserves keyboard focus/stacking.
+Six real-client tests cover serial/target/range refusal, multiple buttons,
+no-pointer requests, child initiation, unrelated unmap and cancellation on
+release/leave/unmap/remap/disconnect. No agent surface or vocabulary change.
+
+Ubuntu WSL2 Rust 1.98.0, WSLg socket and eight graphics/input libraries checked;
+no install/service/shared-kernel change. Linux affected all-target clippy, 138
+unit + 115 lifecycle + three socket tests, three compile-fail doctests,
+warnings-denied rustdoc, example build and fmt passed. Windows affected
+fmt/clippy/tests passed; zero Linux-only runtime cases execute on Windows.
+Fixture expect/unwrap lints were corrected without allowances. First graphical
+attempt failed because cursor-fixture motion intervened between press and move
+request; its chained nested regression did not run. Disabled only that competing
+fixture injection, retaining all pixel assertions. Rechecked clippy, rebuilt the
+example, ran full offscreen (12 stages, two full 1,600-pixel drag frames) and nested
+popup/cursor regression (115 submitted surfaces), then fmt: all passed. Expected
+Mesa fallback/protocol-refusal diagnostics are not failures or skips.
+
+Own report contains exact commands and limits. All four progress documents
+updated; source/tests/example and diff reviewed, `git diff --check` passed.
+Interactive resize is next; remaining operations/controls and full v0.01 scope
+remain. Full independent supervisor workspace/rustdoc/BPF gates are pending.
+Direct DRM/seat entry, populated device/hotplug and GPU/recovery evidence remain
+owed; physical laptop/GPU workstation acceptance follows VM image integration.
+No release or hardware certification. No staging, commit, push, other checkout
+edit, tools/dev-loop change, worker/loop launch, identity change, physical
+installation or unrelated host change. Component ready for supervisor integration.

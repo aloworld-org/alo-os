@@ -176,6 +176,19 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     fresh.sync();
     assert!(send.send(10).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    assert!(send.send(11).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    assert!(fresh.events.keyboard.seat.is_some());
+    if let Some(seat) = &fresh.events.keyboard.seat {
+        fresh
+            .toplevel
+            ._move(seat, fresh.events.pointer.button_serial);
+    }
+    fresh.sync();
+    assert!(send.send(12).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
     fresh.surface.attach(None, 0, 0);
     fresh.surface.commit();
     fresh.sync();

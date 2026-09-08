@@ -47,7 +47,7 @@ pub(crate) fn reset(surface: &WlSurface) {
 }
 
 /// Replace compositor-owned placement on the display thread.
-fn set(surface: &WlSurface, point: Option<Point<i32, Logical>>) {
+pub(crate) fn set(surface: &WlSurface, point: Option<Point<i32, Logical>>) {
     with_states(surface, |states| {
         states.data_map.insert_if_missing(Placement::default);
         if let Some(data) = states.data_map.get::<Placement>() {
