@@ -6,6 +6,12 @@ Read CLAUDE.md, docs/autonomy/DELIVERY.md, the current portion of QUEUE.md,
 the tail of STATE.md, and the relevant feature, roadmap, ADR and contract sections.
 Use rg to find relevant sections; do not dump the entire historical journal.
 The DELIVERY.md execution order supersedes the old portable-only restriction.
+Follow its deferred-work phase boundaries: configurable shortcuts belong to
+desktop interaction integration after the underlying window operations; physical
+acceptance belongs to release validation after VM image integration. Keep normal
+keyboard input and all applicable component tests in the current implementation.
+Do not repeat unchanged later-phase obligations in routine owner status updates;
+retain exact evidence limits in task reports and raise concrete blockers promptly.
 Follow docs/autonomy/SHARED_MAIN.md for task ownership. Another contributor may
 publish to main from a separate checkout. The supervisor pulls before your task
 and integrates/retests concurrent commits before pushing yours. Do not take a

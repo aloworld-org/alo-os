@@ -59,6 +59,33 @@ next component and its acceptance checks in QUEUE.md before implementing it,
 then update the same entry with evidence and what remains. The release target
 never becomes whatever was easiest to test on the current development host.
 
+## Deferred work and phase boundaries
+
+Owner sequencing clarification, 2026-09-08:
+
+- **Keyboard shortcuts: desktop interaction integration (phase 3).** Finish the
+  underlying compositor/window operations first, then wire configurable shortcut
+  dispatch and its settings to those operations. Shortcuts are not an exit gate
+  for phase 2's compositor plumbing; they remain required for phase 3's usable
+  desktop. Keep ordinary keyboard input, focus isolation and component tests in
+  the current work; those are prerequisites, not deferred shortcut features.
+- **Physical-hardware acceptance: release validation (phase 8).** Perform this
+  after phase 7's integrated image has passed its VM boot and recovery checks.
+  Lack of a certified machine does not block earlier independently executable
+  implementation. Hardware-dependent findings may still require fixes during
+  validation, so the release cannot be certified before this phase passes.
+
+This schedules the work within the existing release, not into a later release
+and not as completed. Preserve all component test gates and hardware evidence
+requirements. If a specific earlier task genuinely cannot be validated or safely
+continued without hardware, report that concrete dependency when it arises.
+
+Routine owner updates should name the current phase, completed/published work,
+current activity and any immediate blocker. Do not repeatedly append deferred
+shortcuts or physical acceptance to unrelated updates. Keep their pending status
+in the plan and task evidence; mention them to the owner when their phase begins,
+their status changes, a release-readiness question is asked, or they block work.
+
 ## Runner
 
 New task names and reports describe the work, not historical queue codes.
