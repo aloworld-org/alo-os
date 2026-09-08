@@ -95,12 +95,27 @@ pub const NOTHING_WAS_ASKED: Word = Word::saying(
      apology.",
 );
 
+/// A provider was chosen and its credential cannot be reached on this machine.
+pub const NO_KEYRING_FOR_A_PROVIDER: Word = Word::saying(
+    "agentd.no-keyring-for-a-provider",
+    "the provider you chose needs a key, and this alo OS has nowhere to keep one yet — nothing \
+     was sent",
+)
+.noting(
+    "Said when somebody has chosen a provider that requires a credential: alo OS holds a \
+     *reference* to where a key lives and there is no store behind that reference on this machine \
+     yet. The question is not sent without the key, and no other place answers it in its stead. \
+     It names no provider deliberately — no sentence this service says has a gap in it, because a \
+     gap is the one road text somebody else wrote could take into a sentence a person reads.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 4] = [
+pub const EVERY_WORD: [Word; 5] = [
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,
     NOTHING_WAS_ASKED,
+    NO_KEYRING_FOR_A_PROVIDER,
 ];
 
 /// Why this crate's own list could not be declared.

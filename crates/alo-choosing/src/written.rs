@@ -7,7 +7,8 @@
 //!
 //! # The format number
 //!
-//! [`THE_FORMAT`] is `1`, and a file saying anything else is **refused rather
+//! [`THE_FORMAT`] is `2` and `1` is still read, and a file saying anything else
+//! is **refused rather
 //! than guessed at**. It is the same rule `docs/contracts/record-file.md` makes
 //! about a record from a newer alo OS, and it is what makes this file's future
 //! safe: a provider, a paired machine and whatever else somebody may one day
@@ -51,14 +52,38 @@
 
 use serde::Deserialize;
 
-use alo_models::{Brought, Driving, Weights, WeightsError};
+use alo_models::{
+    Brought, Driving, Provider, ProviderError, Providers, Region, SecretRef, Weights, WeightsError,
+};
 
-use crate::chosen::{Chosen, Which};
+use crate::chosen::{Chosen, Picked, Which};
 use crate::refusing::NotSet;
-use crate::settings::Settings;
+use crate::settings::{Settings, Unresolved};
 
-/// The shape of settings this alo OS reads.
-pub const THE_FORMAT: u32 = 1;
+/// The shape of settings this alo OS writes, and the newest it reads.
+///
+/// **`2` since providers.** A file may still say `1` and be read exactly as it
+/// always was — that is [`ALSO_READ`], and it is why a machine that has been
+/// configured for a year keeps working. What `2` buys is the other direction:
+/// an alo OS from before providers, handed a file that chooses one, refuses it
+/// as *a shape I do not read* rather than as *a key I have not heard of*, which
+/// is the difference between a person being told to upgrade and a person
+/// hunting for a typo.
+pub const THE_FORMAT: u32 = 2;
+
+/// Every shape this alo OS still reads, oldest first.
+///
+/// Expand, migrate, contract — `CLAUDE.md`'s rule for a schema, and this is the
+/// expand. A file written before providers existed says `1`, has no provider in
+/// it, and means exactly what it meant; nothing rewrites it and nothing asks
+/// the person to.
+pub const ALSO_READ: [u32; 1] = [1];
+
+/// Whether this alo OS reads a file that says it is this shape.
+#[must_use]
+pub const fn is_a_shape_we_read(format: u32) -> bool {
+    format == THE_FORMAT || format == ALSO_READ[0]
+}
 
 /// Which shape of settings this is, and nothing else.
 ///
@@ -93,6 +118,8 @@ struct AsWritten {
     /// brought any. An array of tables, so a file that has none simply has no
     /// `[[brought]]` in it.
     brought: Option<Vec<WeightsAsWritten>>,
+    /// The providers they added themselves, where they have added any.
+    provider: Option<Vec<ProviderAsWritten>>,
     /// What they read, where they have said.
     reading: Option<TheReading>,
 }
@@ -140,12 +167,19 @@ fn not_weights(at: &std::path::Path, why: WeightsError) -> NotSet {
     }
 }
 
-/// Which list, and which entry in it.
+/// Which place, and which entry in it.
 ///
-/// One key, and the key **is** the list: `catalogue = "mistral-small"` or
-/// `brought = "my-finetune"`. Two keys at once is not a choice and does not
-/// read; a key that is neither is refused naming the two that are, which is
-/// where a provider lands until this machine keeps a list of those.
+/// One key, and the key **is** the place: `catalogue = "mistral-small"`,
+/// `brought = "my-finetune"`, or
+/// `provider = { name = "Mistral", model = "mistral-small-latest" }`. Two keys
+/// at once is not a choice and does not read; a key that is none of the three
+/// is refused naming the three that are.
+///
+/// The provider form carries **two** names where the other two carry one, and
+/// they are two different pairs: on this machine it is *which list* and *which
+/// entry*, and for a provider it is *which provider* and *which of its models*.
+/// A shape with one name for both would have to guess which question it was
+/// answering.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum TheAnswers {
@@ -153,6 +187,86 @@ enum TheAnswers {
     Catalogue(String),
     /// Weights somebody brought themselves.
     Brought(String),
+    /// A provider the person added, and the model they want from it.
+    Provider(ProviderChosen),
+}
+
+/// Which provider, and which of its models.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProviderChosen {
+    /// The person's own name for it, matched against their `[[provider]]` list.
+    name: String,
+    /// What that provider is asked for, exactly as they wrote it.
+    model: String,
+}
+
+/// One provider on the person's own list, exactly as it was written.
+///
+/// # There is no key here, and that is the protection
+///
+/// A settings file is a text file in a person's home directory, and the single
+/// most reliable way for a credential to end up in one is for there to be a
+/// field called `key`. So there is not one. The keyring name a provider's
+/// credential lives under is **derived** from the provider's own name, and
+/// `deny_unknown_fields` refuses a file that invents a place to paste a
+/// credential — naming the key, so the person is told rather than left with a
+/// file that silently did nothing.
+///
+/// `alo_models::SecretRef` is the handle, `alo_models::Secret` is the
+/// credential, and nothing in this crate ever holds the second.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+struct ProviderAsWritten {
+    /// What the person calls it, and what an answer says it came from.
+    name: String,
+    /// Where it is. `https://` unless it is on this machine, which
+    /// `alo_models::Provider::checked` is what decides.
+    endpoint: String,
+    /// Where it runs, as **stated** by whoever added it. Absent is
+    /// `Region::Unknown`, which is honest: a region inferred from a domain name
+    /// would be a reassuring label over a breach.
+    #[serde(default)]
+    region: Option<String>,
+    /// Whether this provider is asked for a credential at all.
+    ///
+    /// `true` and absent both mean *it needs one*, because almost every hosted
+    /// API does and the safe default is the common one. A compatible service
+    /// that takes no credential says `needs-a-key = false`, and then nothing is
+    /// looked up and nothing is sent.
+    #[serde(default = "needs_a_key")]
+    needs_a_key: bool,
+}
+
+/// What a provider that says nothing about a credential is taken to need.
+const fn needs_a_key() -> bool {
+    true
+}
+
+impl ProviderAsWritten {
+    /// This as a provider, or the reason it is not.
+    fn checked(self) -> Result<Provider, ProviderError> {
+        let region = self.region.map_or(Region::Unknown, Region::Declared);
+        // Derived, never read from the file: `provider/<their own name for it>`
+        // is where this provider's credential lives, and the file has nowhere
+        // to say otherwise.
+        let key = self
+            .needs_a_key
+            .then(|| SecretRef::named(&format!("provider/{}", self.name.trim())));
+        Provider::checked(&self.name, &self.endpoint, region, key)
+    }
+}
+
+/// This crate's own reason for a `[[provider]]` entry that is not a provider.
+///
+/// `alo_models::ProviderError` is about a **list** and these are about a
+/// **file**: what a person needs in order to act is the path, and the list has
+/// no path in it. The same argument [`not_weights`] makes one list to the left.
+fn not_a_provider(at: &std::path::Path, why: ProviderError) -> NotSet {
+    NotSet::NotAProvider {
+        at: at.to_owned(),
+        why,
+    }
 }
 
 /// What this person reads.
@@ -177,12 +291,22 @@ impl AsWritten {
     /// of.
     fn checked(self, at: &std::path::Path) -> Result<Settings, NotSet> {
         let chosen = match self.answers {
-            Some(TheAnswers::Catalogue(model)) => Some(Chosen::of(Which::Catalogue, &model)),
-            Some(TheAnswers::Brought(model)) => Some(Chosen::of(Which::Brought, &model)),
+            Some(TheAnswers::Catalogue(model)) => Some(
+                Chosen::of(Which::Catalogue, &model)
+                    .map(Picked::OnThisMachine)
+                    .map_err(|_| NotSet::Nameless { at: at.to_owned() })?,
+            ),
+            Some(TheAnswers::Brought(model)) => Some(
+                Chosen::of(Which::Brought, &model)
+                    .map(Picked::OnThisMachine)
+                    .map_err(|_| NotSet::Nameless { at: at.to_owned() })?,
+            ),
+            Some(TheAnswers::Provider(picked)) => Some(
+                Picked::from_a_provider(&picked.name, &picked.model)
+                    .map_err(|_| NotSet::Nameless { at: at.to_owned() })?,
+            ),
             None => None,
-        }
-        .transpose()
-        .map_err(|_| NotSet::Nameless { at: at.to_owned() })?;
+        };
 
         // `Brought::add` is what refuses two entries answering to one name, so
         // the list is built through its door rather than collected into one.
@@ -206,11 +330,28 @@ impl AsWritten {
                 })?;
             languages.push(language);
         }
-        // Last, because it is the only question that needs both halves of the
-        // file: a choice from the brought list has to name something on it.
-        Settings::of(chosen, brought, languages).map_err(|why| NotSet::NotBrought {
-            at: at.to_owned(),
-            model: why.named().to_owned(),
+        // `Providers::add` is what refuses two providers answering to one
+        // name, for the reason `Brought::add` refuses two sets of weights: an
+        // answer that said *by Mistral* would not say which one.
+        let mut providers = Providers::default();
+        for entry in self.provider.unwrap_or_default() {
+            let provider = entry.checked().map_err(|why| not_a_provider(at, why))?;
+            providers
+                .add(provider)
+                .map_err(|why| not_a_provider(at, why))?;
+        }
+
+        // Last, because it is the only question that needs two halves of the
+        // file: a choice into a list has to name something on that list.
+        Settings::of(chosen, brought, providers, languages).map_err(|why| match why {
+            Unresolved::Weights(model) => NotSet::NotBrought {
+                at: at.to_owned(),
+                model,
+            },
+            Unresolved::Provider(provider) => NotSet::NoSuchProvider {
+                at: at.to_owned(),
+                provider,
+            },
         })
     }
 }
@@ -233,7 +374,7 @@ pub(crate) fn read(said: &str, at: &std::path::Path) -> Result<Settings, NotSet>
     };
 
     let which: WhichFormat = toml::from_str(said).map_err(not_understood)?;
-    if which.format != THE_FORMAT {
+    if !is_a_shape_we_read(which.format) {
         return Err(NotSet::AnotherFormat {
             at: at.to_owned(),
             format: which.format,
@@ -242,6 +383,18 @@ pub(crate) fn read(said: &str, at: &std::path::Path) -> Result<Settings, NotSet>
     }
 
     let written: AsWritten = toml::from_str(said).map_err(not_understood)?;
+    // A file from before providers existed cannot choose or list one. The keys
+    // parse — they are the same shape either way — and honouring them would be
+    // this machine believing the half of a disagreement it preferred.
+    if which.format < THE_FORMAT
+        && (written.provider.is_some() || matches!(written.answers, Some(TheAnswers::Provider(_))))
+    {
+        return Err(NotSet::ProviderNeedsANewerShape {
+            at: at.to_owned(),
+            format: which.format,
+            reads: THE_FORMAT,
+        });
+    }
     written.checked(at)
 }
 
@@ -285,7 +438,7 @@ drives-verbs = "reliably"
     fn the_settings_in_the_contract_are_settings() {
         let settings = read(&as_the_contract_writes_them(), somewhere()).unwrap();
         let chosen = settings.chosen().unwrap();
-        assert_eq!(chosen.which(), Which::Catalogue);
+        assert_eq!(chosen.on_this_machine().unwrap().which(), Which::Catalogue);
         assert_eq!(chosen.model(), "mistral-small");
         assert_eq!(
             settings
@@ -307,7 +460,15 @@ drives-verbs = "reliably"
             r#"brought = "my-finetune""#,
         );
         let settings = read(&said, somewhere()).unwrap();
-        assert_eq!(settings.chosen().unwrap().which(), Which::Brought);
+        assert_eq!(
+            settings
+                .chosen()
+                .unwrap()
+                .on_this_machine()
+                .unwrap()
+                .which(),
+            Which::Brought
+        );
         assert_eq!(settings.chosen().unwrap().model(), "my-finetune");
         // And what it resolves to is the entry, not the name again.
         assert_eq!(settings.weights().unwrap().bytes_on_disk, 4_700_000_000);
@@ -421,7 +582,15 @@ drives-verbs = "reliably"
     #[test]
     fn a_catalogued_choice_is_not_looked_for_in_the_list_the_person_brought() {
         let settings = read(&as_the_contract_writes_them(), somewhere()).unwrap();
-        assert_eq!(settings.chosen().unwrap().which(), Which::Catalogue);
+        assert_eq!(
+            settings
+                .chosen()
+                .unwrap()
+                .on_this_machine()
+                .unwrap()
+                .which(),
+            Which::Catalogue
+        );
         assert_eq!(settings.chosen().unwrap().model(), "mistral-small");
         assert!(settings.brought().get("mistral-small").is_none());
         assert!(settings.weights().is_none());
@@ -453,15 +622,79 @@ drives-verbs = "reliably"
     /// first; it fails to read rather than reading as a setting that quietly
     /// does nothing.
     #[test]
-    fn a_provider_is_refused_naming_the_two_lists_this_machine_has() {
-        let said = "format = 1\n\n[answers]\nprovider = \"mistral\"\n";
+    fn a_provider_chosen_in_the_older_shape_is_refused_as_the_older_shape() {
+        // This test used to assert that a provider was refused outright,
+        // naming the two lists this machine had. It has two lists and a
+        // provider now, and what survives of the old rule is the half that
+        // matters: a file that says it is the shape from before providers
+        // existed does not get one, and is told which number it needs rather
+        // than which key it should not have used.
+        let said = "format = 1\n\n[answers]\nprovider = { name = \"Mistral\", model = \"m\" }\n";
+        assert!(
+            matches!(
+                read(said, somewhere()).unwrap_err(),
+                NotSet::ProviderNeedsANewerShape {
+                    format: 1,
+                    reads: 2,
+                    ..
+                }
+            ),
+            "a provider in a format 1 file was not refused as an older shape"
+        );
+
+        // And so is a list of them, because either half alone is the same
+        // disagreement between a file's number and its keys.
+        let listed = "format = 1\n\n[[provider]]\nname = \"Mistral\"\nendpoint = \"https://api.mistral.ai\"\n";
+        assert!(matches!(
+            read(listed, somewhere()).unwrap_err(),
+            NotSet::ProviderNeedsANewerShape { .. }
+        ));
+    }
+
+    /// **A key nobody declared is still refused, and `key` is one of them.**
+    ///
+    /// The protection is that there is nowhere in this file to put a
+    /// credential: the keyring name is derived from the provider's own name, so
+    /// a person who pastes their API key into their settings is told the key is
+    /// not a key this file has, rather than left with a credential on their
+    /// disk in a file alo OS quietly read.
+    #[test]
+    fn a_settings_file_has_nowhere_to_put_a_credential() {
+        let said = "format = 2\n\n[[provider]]\nname = \"Mistral\"\n\
+                    endpoint = \"https://api.mistral.ai\"\nkey = \"sk-live-0123456789\"\n";
         let refused = read(said, somewhere()).unwrap_err();
-        assert!(matches!(refused, NotSet::NotUnderstood { .. }));
-        let NotSet::NotUnderstood { why, .. } = refused else {
-            unreachable!("the shape was matched above")
+        let NotSet::NotUnderstood { ref why, .. } = refused else {
+            unreachable!("a key nobody declared is refused as text that is not settings")
         };
-        assert!(why.to_string().contains("catalogue"), "{why}");
-        assert!(why.to_string().contains("brought"), "{why}");
+        assert!(why.to_string().contains("key"), "{why}");
+
+        // **And the sentence the person reads carries no credential.** That is
+        // the guarantee: `choosing.settings.not-understood` is filled with the
+        // path and nothing else, so a pasted key does not reach a screen, a
+        // notification or anywhere it could be read over a shoulder.
+        //
+        // What it is *not* is a claim that the value has been forgotten. The
+        // parse error quotes the line it failed on, as every TOML parser does,
+        // and it is carried inside this refusal — so a `Debug` of one would
+        // show it. Nothing renders that today and nothing logs it; the residual
+        // is named in
+        // `docs/autonomy/updates/three-model-choices-in-the-backend.md` rather
+        // than asserted away here.
+        let strings = alo_strings::Strings::of({
+            let mut vocabulary = alo_strings::Vocabulary::default();
+            crate::declare_into(&mut vocabulary).unwrap();
+            vocabulary
+        });
+        let sentence = refused.said(&strings);
+        assert!(
+            !sentence.text().contains("sk-live-0123456789"),
+            "the credential reached the sentence a person reads: {sentence}"
+        );
+        assert!(
+            sentence
+                .text()
+                .contains("nothing in the file has been used")
+        );
     }
 
     /// **A list named with no model is refused**, rather than read as a person
@@ -479,12 +712,12 @@ drives-verbs = "reliably"
     /// the refusal says both numbers.
     #[test]
     fn settings_from_a_newer_alo_os_are_refused() {
-        let said = as_the_contract_writes_them().replace("format = 1", "format = 2");
+        let said = as_the_contract_writes_them().replace("format = 1", "format = 3");
         assert!(matches!(
             read(&said, somewhere()).unwrap_err(),
             NotSet::AnotherFormat {
-                format: 2,
-                reads: 1,
+                format: 3,
+                reads: 2,
                 ..
             }
         ));
@@ -554,6 +787,12 @@ drives-verbs = "reliably"
     /// it is one string in one place.
     #[test]
     fn the_shape_is_numbered_once() {
-        assert_eq!(THE_FORMAT, 1);
+        assert_eq!(THE_FORMAT, 2);
+        // And the one before it is still read, which is what makes a machine
+        // configured a year ago keep working. Expand, then migrate, then
+        // contract — and nothing here is the contract.
+        assert_eq!(ALSO_READ, [1]);
+        assert!(is_a_shape_we_read(1) && is_a_shape_we_read(2));
+        assert!(!is_a_shape_we_read(3));
     }
 }

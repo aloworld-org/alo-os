@@ -66,12 +66,23 @@
 //!
 //! # What is not here yet
 //!
-//! **A provider, and a machine in the next room.** Both are places ADR 0008
-//! permits and both need a list this machine does not keep anywhere — the
-//! providers somebody added, with a key in a keyring, and the machines they
-//! paired with (ADR 0003). [`Which`] is the closed list of the two lists that
-//! do exist, so a choice this machine cannot honour is a file that fails to
-//! read rather than a setting that silently does nothing.
+//! **A machine in the next room.** ADR 0008 permits it and ADR 0003 says what
+//! pairing is, and this machine keeps no list of paired machines anywhere — so
+//! a choice naming one is a file that fails to read rather than a setting that
+//! silently does nothing. `alo-asking` refuses it too: *nothing anywhere
+//! reaches a machine on this network yet.*
+//!
+//! **A provider is here since format 2**, which is the second of the three
+//! choices `docs/features.md` names, and the third — alo's own service — is the
+//! same one, because ADR 0014 makes it one more provider with no special case
+//! anywhere in the code. What is *not* here is a credential: the file holds a
+//! provider's address and the region whoever added it stated, and the key lives
+//! in a keyring under a name derived from the provider's own.
+//!
+//! **And there is no keyring on this machine yet.** `alo_models::SecretRef`
+//! names where a key would live and nothing keeps one, so a provider that needs
+//! a credential is chosen, persisted and refused at the moment of asking —
+//! never asked without its key, and never answered somewhere else instead.
 //!
 //! **And an address, which is not coming.** Where a model runtime on this
 //! machine is, is `alo_models`' adapter's own knowledge — ADR 0019 — so there
@@ -88,9 +99,9 @@ mod testing;
 mod words;
 mod written;
 
-pub use chosen::{Chosen, NoModel, Which};
+pub use chosen::{Chosen, NoModel, NoProvider, Picked, Which};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is};
 pub use refusing::NotSet;
-pub use settings::{NoSuchWeights, Settings};
+pub use settings::{Settings, Unresolved};
 pub use words::{EVERY_WORD, Word, WordsError, choosing_words, declare_into};
-pub use written::THE_FORMAT;
+pub use written::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};

@@ -181,7 +181,7 @@ impl Provider {
 }
 
 /// The providers configured on this machine.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Providers {
     /// In the order they were added.
     #[serde(default)]

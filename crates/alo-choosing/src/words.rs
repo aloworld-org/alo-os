@@ -143,8 +143,34 @@ pub const SETTINGS_NOT_BROUGHT: Word = Word::saying(
      nothing on the second. Most often a name typed twice with one letter different.",
 );
 
+/// A choice naming a provider the person's own list does not have.
+pub const SETTINGS_NO_SUCH_PROVIDER: Word = Word::saying(
+    "choosing.settings.no-such-provider",
+    "your settings at {path} say {provider} answers your questions and do not list a provider of \
+     that name, so nothing in the file has been used",
+)
+.noting(
+    "{path} and {provider} are both taken from the file exactly as they are written there and are \
+     never translated. The provider half of `choosing.settings.not-brought`: one section says \
+     which provider answers, another is the list of providers the person added, and the first \
+     names nothing on the second.",
+);
+
+/// A provider chosen in a file that says it is the older shape.
+pub const SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE: Word = Word::saying(
+    "choosing.settings.provider-needs-a-newer-shape",
+    "your settings at {path} choose a provider, which settings must say format {reads} to do, and \
+     they say format {format} — so nothing in the file has been used",
+)
+.noting(
+    "{path} is the file, {format} what it says it is, {reads} what it must say. Numbers and a \
+     path, none of them translated. Said of a file that was written by hand from an older \
+     example and had a provider added to it: the keys are right and the number above them is \
+     from before they existed.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 8] = [
+pub const EVERY_WORD: [Word; 10] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -153,6 +179,8 @@ pub const EVERY_WORD: [Word; 8] = [
     SETTINGS_WEIGHTS_UNNAMED,
     SETTINGS_WEIGHTS_TWICE,
     SETTINGS_NOT_BROUGHT,
+    SETTINGS_NO_SUCH_PROVIDER,
+    SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE,
 ];
 
 /// Why this crate's own list could not be declared.

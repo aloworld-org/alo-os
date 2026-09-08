@@ -115,6 +115,36 @@ pub enum NotSet {
         /// What the choice named, exactly as it is written.
         model: String,
     },
+    /// A `[[provider]]` entry that is not a provider: unnamed, an address that
+    /// is not one, a key that would travel in clear, or a name already taken.
+    NotAProvider {
+        /// Where it is.
+        at: PathBuf,
+        /// What the list refused, kept as the fact it is rather than reworded.
+        why: alo_models::ProviderError,
+    },
+    /// A choice named a provider and the person's own list does not have one.
+    NoSuchProvider {
+        /// Where it is.
+        at: PathBuf,
+        /// What the choice named, exactly as it is written.
+        provider: String,
+    },
+    /// A provider was chosen or listed in a file that says it is the shape from
+    /// before providers were in it.
+    ///
+    /// Refused rather than read, because a file whose number says one shape and
+    /// whose keys say another is one somebody edited from an old example — and
+    /// honouring the keys would be this machine deciding which half of a
+    /// disagreement to believe.
+    ProviderNeedsANewerShape {
+        /// Where it is.
+        at: PathBuf,
+        /// What the file says it is.
+        format: u32,
+        /// What it has to say to choose a provider.
+        reads: u32,
+    },
 }
 
 impl NotSet {
@@ -129,7 +159,10 @@ impl NotSet {
             | Self::NotALanguage { at, .. }
             | Self::WeightsUnnamed { at }
             | Self::WeightsTwice { at, .. }
-            | Self::NotBrought { at, .. } => at,
+            | Self::NotBrought { at, .. }
+            | Self::NotAProvider { at, .. }
+            | Self::NoSuchProvider { at, .. }
+            | Self::ProviderNeedsANewerShape { at, .. } => at,
         }
     }
 
@@ -145,6 +178,12 @@ impl NotSet {
             Self::WeightsUnnamed { .. } => words::SETTINGS_WEIGHTS_UNNAMED,
             Self::WeightsTwice { .. } => words::SETTINGS_WEIGHTS_TWICE,
             Self::NotBrought { .. } => words::SETTINGS_NOT_BROUGHT,
+            // The list's own refusal already has a sentence for the person;
+            // this carries it rather than writing a second one that could
+            // disagree with it.
+            Self::NotAProvider { why, .. } => why.word(),
+            Self::NoSuchProvider { .. } => words::SETTINGS_NO_SUCH_PROVIDER,
+            Self::ProviderNeedsANewerShape { .. } => words::SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE,
         }
     }
 
@@ -170,6 +209,20 @@ impl NotSet {
             // never translated — the rule a filename is held to in `alo-files`.
             Self::WeightsTwice { id, .. } => filling.and("model", id.clone()),
             Self::NotBrought { model, .. } => filling.and("model", model.clone()),
+            // The provider's name is the person's own word for it and is data,
+            // like a model's.
+            Self::NoSuchProvider { provider, .. } => filling.and("provider", provider.clone()),
+            Self::NotAProvider { why, .. } => match why {
+                alo_models::ProviderError::AlreadyAdded(name) => {
+                    filling.and("provider", name.clone())
+                }
+                alo_models::ProviderError::Unnamed
+                | alo_models::ProviderError::NotAnAddress
+                | alo_models::ProviderError::InsecureEndpoint => filling,
+            },
+            Self::ProviderNeedsANewerShape { format, reads, .. } => filling
+                .and("format", format.to_string())
+                .and("reads", reads.to_string()),
             Self::NotRead { .. }
             | Self::NotUnderstood { .. }
             | Self::AnotherFormat { .. }

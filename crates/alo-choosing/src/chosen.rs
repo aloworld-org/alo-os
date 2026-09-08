@@ -27,7 +27,7 @@
 //! decides whose terms it is under and what it cost the disk, and both of those
 //! are read by a panel that has this value in front of it.
 
-use alo_models::InferenceSource;
+use alo_models::{InferenceSource, Providers};
 
 /// Which of this machine's two lists of models a choice names.
 ///
@@ -109,6 +109,132 @@ impl Chosen {
     #[must_use]
     pub const fn source(&self) -> InferenceSource {
         InferenceSource::ThisMachine
+    }
+}
+
+/// A provider named nothing.
+///
+/// The same shape of mistake as [`NoModel`] and a different word for it,
+/// because the two are fixed in different places: a nameless model is a model
+/// picker that wrote an empty string, and a nameless provider is a provider
+/// list that did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoProvider;
+
+/// **What this person chose to answer their questions**, which is one of the
+/// three the owner named on 2026-09-08.
+///
+/// `docs/features.md`: *local models*, *your own API provider*, and *alo*. This
+/// type is the first two, and the third is the second — [ADR 0014](../../../docs/decisions/0014-alos-own-model-is-a-provider-like-any-other.md)
+/// makes alo's own service **exactly one more provider**, with no default, no
+/// pre-selection and no special case anywhere in the code. So there is no
+/// variant for it here, and its absence is the decision being kept rather than
+/// an omission.
+///
+/// **These are model-source choices and not privacy levels.** Where a question
+/// is answered follows from the choice; it is not the choice. What a person is
+/// promised about confinement is a separate matter and
+/// [ADR 0021](../../../docs/decisions/0021-what-a-service-on-this-machine-vouches-for.md)
+/// is proposed and unaccepted.
+///
+/// # Why a provider is a name and a model, and a local choice is a list and a
+/// model
+///
+/// Both name **two** things, and they are two different pairs. On this machine
+/// the pair is *which list* and *which entry*, because a machine has two lists
+/// and a name can be on both. For a provider the pair is *which provider* and
+/// *which model*, because one provider offers many and the person picked one of
+/// them. A shape that carried one name for both would have to guess which
+/// question it was answering.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Picked {
+    /// A model on this machine, from one of its two lists.
+    OnThisMachine(Chosen),
+
+    /// A provider the person added, and the model they picked from it.
+    ///
+    /// The provider is named, not described: what it is and where it runs live
+    /// in `alo_models::Providers`, which is the person's own list, so that a
+    /// question about a provider is answered by the list rather than by
+    /// whatever a settings file happened to repeat.
+    FromAProvider {
+        /// What the person called it in their own list.
+        provider: String,
+
+        /// What they asked that provider for, exactly as they wrote it.
+        model: String,
+    },
+}
+
+impl Picked {
+    /// A provider by name, and the model to ask it for.
+    ///
+    /// # Errors
+    /// [`NoProvider`] when either is empty or nothing but spaces. A provider
+    /// with no name cannot be looked up, and a provider asked for a model
+    /// called nothing is a question nobody can answer.
+    pub fn from_a_provider(provider: &str, model: &str) -> Result<Self, NoProvider> {
+        let (provider, model) = (provider.trim(), model.trim());
+        if provider.is_empty() || model.is_empty() {
+            return Err(NoProvider);
+        }
+        Ok(Self::FromAProvider {
+            provider: provider.to_owned(),
+            model: model.to_owned(),
+        })
+    }
+
+    /// What the thing answering is asked for, whichever it is.
+    #[must_use]
+    pub fn model(&self) -> &str {
+        match self {
+            Self::OnThisMachine(chosen) => chosen.model(),
+            Self::FromAProvider { model, .. } => model,
+        }
+    }
+
+    /// The local choice, where that is what this is.
+    #[must_use]
+    pub const fn on_this_machine(&self) -> Option<&Chosen> {
+        match self {
+            Self::OnThisMachine(chosen) => Some(chosen),
+            Self::FromAProvider { .. } => None,
+        }
+    }
+
+    /// The provider's name, where that is what this is.
+    #[must_use]
+    pub fn provider(&self) -> Option<&str> {
+        match self {
+            Self::OnThisMachine(_) => None,
+            Self::FromAProvider { provider, .. } => Some(provider),
+        }
+    }
+
+    /// **Where a question put to this choice is answered** — asked of the
+    /// person's own list, never of the choice alone.
+    ///
+    /// This is the one method in this crate that must not be convenient.
+    /// [`Chosen::source`] can be a `const fn` answering `ThisMachine` because
+    /// for a model on one of this machine's lists there is no other answer. A
+    /// provider's answer is a fact about the provider — its region, whether it
+    /// is this machine at all — and it lives in [`Providers`]. A version of
+    /// this that guessed would be a local choice and a remote one becoming the
+    /// same value, which is precisely the silent switch between local and
+    /// remote processing that nothing here may do.
+    ///
+    /// [`None`] when the choice names a provider that is not in the list. That
+    /// cannot happen inside [`crate::Settings`], which refuses such a file, and
+    /// it is not made impossible by the type because a caller may hold a choice
+    /// and a list that were never checked against each other.
+    #[must_use]
+    pub fn source(&self, providers: &Providers) -> Option<InferenceSource> {
+        match self {
+            Self::OnThisMachine(chosen) => Some(chosen.source()),
+            Self::FromAProvider { provider, .. } => {
+                providers.get(provider).map(alo_models::Provider::source)
+            }
+        }
     }
 }
 

@@ -60,7 +60,7 @@
 use std::ffi::{OsStr, OsString};
 
 use alo_choosing::{CONFIG_HOME, Chosen, HOME, NotSet};
-use alo_models::{Catalogue, ModelRuntime, SourcePolicy, found_on_this_machine};
+use alo_models::{Catalogue, ModelRuntime, Provider, SourcePolicy, found_on_this_machine};
 use alo_turn::Places;
 
 use crate::settings::of_a_session;
@@ -103,6 +103,17 @@ enum Looked {
         /// The runtime that was found, which nothing here can point anywhere.
         runtime: Box<dyn ModelRuntime>,
     },
+    /// A provider the person added, and the model they asked it for.
+    ///
+    /// Resolved out of their own list when the file was read, so what is held
+    /// is the provider itself rather than the name of one — which is what makes
+    /// *where does this answer come from* a question with an answer.
+    FromAProvider {
+        /// The provider, as their list has it.
+        provider: Provider,
+        /// What they asked it for, exactly as they wrote it.
+        model: String,
+    },
 }
 
 /// What a question in this turn goes to, or why it goes nowhere.
@@ -117,6 +128,21 @@ pub enum WhatAnswers<'a> {
     NotRunning,
     /// The person's settings are there and could not be read.
     NotSet(&'a NotSet),
+    /// The question goes to a provider the person added.
+    ///
+    /// **This is the second of the three choices**, and alo's own service is
+    /// the same one (ADR 0014). Nothing here decides whether it can be asked;
+    /// `crate::doing` does, and refuses when the provider needs a credential
+    /// this machine has nowhere to keep.
+    FromAProvider {
+        /// The provider, as the person's own list has it.
+        provider: &'a Provider,
+        /// What it is asked for.
+        model: &'a str,
+        /// What is permitted, and what else could be offered — which is
+        /// nothing, honestly.
+        places: Places<'a>,
+    },
     /// The question is answered here, by this.
     OnThisMachine {
         /// What the person chose, which is also what the runtime is asked for.
@@ -185,6 +211,11 @@ impl Questions {
                 runtime: runtime.as_ref(),
                 places: Places::under(bound),
             },
+            Some(Looked::FromAProvider { provider, model }) => WhatAnswers::FromAProvider {
+                provider,
+                model,
+                places: Places::under(bound),
+            },
             Some(Looked::NotSet(why)) => WhatAnswers::NotSet(why),
             Some(Looked::NotRunning) => WhatAnswers::NotRunning,
             // Filled two lines above, so `None` is unreachable rather than
@@ -232,9 +263,25 @@ fn look(config_home: Option<&OsStr>, home: Option<&OsStr>, catalogue: &Catalogue
     let Some(chosen) = settings.chosen() else {
         return Looked::Nothing;
     };
+    // A provider is looked up in the person's own list and not on this machine.
+    // Falling through to `found_on_this_machine` here would be the one thing
+    // nothing may do: a question the person addressed elsewhere answered by
+    // whatever happens to be running locally.
+    if let Some(provider) = settings.provider() {
+        return Looked::FromAProvider {
+            provider: provider.clone(),
+            model: chosen.model().to_owned(),
+        };
+    }
+    let Some(local) = chosen.on_this_machine() else {
+        // A provider was chosen and the list did not resolve it. `Settings`
+        // refuses such a file, so this is unreachable through `Settings::at`
+        // and is a refusal rather than an assumption.
+        return Looked::Nothing;
+    };
     match found_on_this_machine(catalogue.clone()) {
         Some(runtime) => Looked::OnThisMachine {
-            chosen: chosen.clone(),
+            chosen: local.clone(),
             runtime: Box::new(runtime),
         },
         None => Looked::NotRunning,
@@ -275,6 +322,80 @@ mod tests {
             Questions::of_a_session(None, None, Catalogue::built_in().unwrap(), None);
 
         assert!(matches!(questions.what_answers(), WhatAnswers::Nothing));
+    }
+
+    /// **The second of the three choices reaches the daemon**, resolved out of
+    /// the person's own list rather than looked for on this machine.
+    ///
+    /// What comes back is the provider itself — its address and the region
+    /// whoever added it stated — because *where did this answer come from* is a
+    /// question `crate::doing` has to be able to answer, and a name alone
+    /// cannot.
+    #[test]
+    fn a_provider_the_person_chose_is_what_answers() {
+        let mut questions = a_machine_whose_person_wrote(
+            "a-provider",
+            "format = 2
+
+[answers]
+provider = { name = \"Mistral\", model = \"mistral-small-latest\" }
+
+             [[provider]]
+name = \"Mistral\"
+endpoint = \"https://api.mistral.ai\"
+region = \"the EU\"
+",
+        );
+
+        let WhatAnswers::FromAProvider {
+            provider, model, ..
+        } = questions.what_answers()
+        else {
+            unreachable!("a provider the person chose did not reach the daemon")
+        };
+        assert_eq!(provider.name, "Mistral");
+        assert_eq!(provider.endpoint, "https://api.mistral.ai");
+        assert_eq!(model, "mistral-small-latest");
+        // The credential is referred to and not held: what the daemon has is a
+        // name in a keyring, and `crate::doing` refuses rather than sending
+        // without it, because there is no store behind that name yet.
+        assert_eq!(
+            provider.key.as_ref().map(alo_models::SecretRef::as_str),
+            Some("provider/Mistral")
+        );
+    }
+
+    /// **A provider choice never becomes a local answer**, which is the
+    /// no-fallback rule at the layer where it would be easiest to break.
+    ///
+    /// `look` used to end in *find a runtime on this machine*, and a provider
+    /// choice that reached it would have been answered by whatever was running
+    /// here — a question addressed to a company answered by a model on the
+    /// person's own disk, with the answer saying so and nobody having chosen
+    /// it. The provider is looked up first and returns before that.
+    #[test]
+    fn a_provider_choice_does_not_fall_back_to_this_machine() {
+        let mut questions = a_machine_whose_person_wrote(
+            "no-local-fallback",
+            "format = 2
+
+[answers]
+provider = { name = \"Mistral\", model = \"m\" }
+
+             [[provider]]
+name = \"Mistral\"
+endpoint = \"https://api.mistral.ai\"
+",
+        );
+
+        assert!(
+            !matches!(questions.what_answers(), WhatAnswers::OnThisMachine { .. }),
+            "a question addressed to a provider was answered on this machine"
+        );
+        assert!(
+            !matches!(questions.what_answers(), WhatAnswers::Nothing),
+            "a provider choice read as nobody having chosen anything"
+        );
     }
 
     /// **A choice with no runtime behind it is not *nothing chosen*.** The

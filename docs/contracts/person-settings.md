@@ -87,12 +87,17 @@ questions. A file with no `[reading]` is a person who has not said what they
 read. A file with no `[[brought]]` is a person who has brought no weights of
 their own. None of the three is a mistake, and none is filled in for them.
 
-**There is no address in this file, and there will not be one.** Where a model
-runtime on this machine is, is the adapter's own knowledge and nothing else's —
+**There is no address for a runtime on this machine, and there will not be
+one.** Where it is, is the adapter's own knowledge and nothing else's —
 [ADR 0019](../decisions/0019-a-runtime-is-found-not-configured.md) says why, and
 says it positively so a later reader does not add the key believing it was an
 oversight. A runtime somewhere else is a **provider**, which is a different key
-in a different shape and is not here yet.
+in a different shape, and since format 2 it is here: `[[provider]]` below.
+
+**There is no credential in this file, and there is nowhere to put one.** A
+provider's key lives in a keyring under a name **derived** from the provider's
+own name, so the file has no field to paste one into, and a file that invents
+one is refused naming the key. See `[[provider]]`.
 
 **A file that is there and wrong is refused whole**, and nothing in it is
 honoured — not the half that parsed. Taking what read and dropping what did not
@@ -106,10 +111,19 @@ what says so is `format`, and a typo is not an addition.
 
 | Field | Meaning |
 |---|---|
-| `format` | Which shape these settings are in. Required. `1` today. |
+| `format` | Which shape these settings are in. Required. `2` today; `1` is still read. |
 
-Settings that say anything but `1` are **refused rather than guessed at**, and
-the refusal names both numbers. It is answered before any other value in the
+**`2` since providers**, and **`1` is read exactly as it always was** — a machine
+configured before providers existed keeps working, nothing rewrites its file and
+nobody is asked to. That is expand, then migrate, then contract, and nothing here
+is the contract yet.
+
+A file that says `1` and contains a provider — chosen or listed — is **refused**,
+naming the number it needs. Its keys parse either way, and honouring them would
+be this machine believing whichever half of a disagreement it preferred.
+
+Settings that say a shape this alo OS does not read are **refused rather than
+guessed at**, and the refusal names both numbers. It is answered before any other value in the
 file, so settings written for a later alo OS are refused as such rather than as
 whichever of their keys this alo OS happened not to know.
 
@@ -126,6 +140,18 @@ says otherwise.
 |---|---|
 | `catalogue = "<name>"` | A model in the catalogue alo OS ships, named exactly as the catalogue names it. |
 | `brought = "<name>"` | Weights the person brought themselves, named exactly as that list names them. |
+| `provider = { name = "<provider>", model = "<model>" }` | A provider from `[[provider]]` below, and the model to ask it for. Format 2. |
+
+These are the three choices `docs/features.md` names — **local models**, **your
+own API provider**, and **alo**, which is the second one because
+[ADR 0014](../decisions/0014-alos-own-model-is-a-provider-like-any-other.md)
+makes alo's service one more provider with no special case anywhere. They are
+**model-source choices and not privacy levels**: where a question is answered
+follows from the choice and is not the choice.
+
+The provider form carries **two** names where the others carry one, and they are
+different pairs: on this machine it is *which list* and *which entry*; for a
+provider it is *which provider* and *which of its models*.
 
 There are two lists of models on a machine — the catalogue and the weights
 somebody added — and neither knows about the other. A model called
@@ -191,6 +217,50 @@ have checked one.** There is no licence key here and there is nowhere to put
 one: what somebody brings is theirs, including its terms. The catalogue is where
 alo OS states licences, because offering something is what makes a licence ours
 to state.
+
+## `[[provider]]` — the providers this person added
+
+Format 2. An array of tables, so a person who has added none simply has no
+`[[provider]]` in their file.
+
+| Key | Meaning |
+|---|---|
+| `name` | What they call it, and what an answer says it came from. Matched case-insensitively against `[answers] provider.name`; two providers of one name is refused, because *answered by Mistral* would not say which. |
+| `endpoint` | Where it is. `https://` unless it is on this machine — a key over plain `http://` to anywhere else is refused, and "it is only our internal network" is how that gets shipped. |
+| `region` | Where it runs, **as stated by whoever added it**. Optional; absent is *unknown*. Never inferred from the address: `api.example.fr` is not evidence of anything, and a guess here would hand somebody a reassuring label while putting them in breach. |
+| `needs-a-key` | Whether it is asked for a credential. Optional, and **absent means yes**, because almost every hosted API needs one. A compatible service that takes none says `false`, and then nothing is looked up and nothing is sent. |
+
+**There is no `key`, and that is the protection rather than an omission.** The
+single most reliable way for a credential to end up in a text file in somebody's
+home directory is for the file to have a field called `key`. So it has none: the
+keyring name is derived as `provider/<name>`, and a file that invents a `key` is
+refused naming it — the person is told, rather than left with a credential on
+their disk that alo OS quietly read.
+
+```toml
+format = 2
+
+[answers]
+provider = { name = "Mistral", model = "mistral-small-latest" }
+
+[[provider]]
+name = "Mistral"
+endpoint = "https://api.mistral.ai"
+region = "the EU"
+```
+
+**`[answers] provider.name` must name an entry in `[[provider]]`**, and a file
+whose two halves disagree is refused whole — the same rule `brought` is held to.
+
+**A provider choice is never answered on this machine.** Not if a model of the
+same name is in a list here, and not if the provider cannot be reached. What
+happens then is a refusal naming the reason; what does not happen is another
+place answering in its stead.
+
+**A provider that needs a key cannot be asked on this machine yet.** alo OS holds
+a reference to where a key lives and there is no store behind that reference,
+so such a choice is read, kept, and refused at the moment of asking — never sent
+without its key.
 
 ## `[reading]` — what this person reads
 

@@ -96,7 +96,7 @@ mod tests {
 
         let chosen = settings.chosen().unwrap();
         assert_eq!(chosen.model(), "mistral-small");
-        assert_eq!(chosen.which(), Which::Catalogue);
+        assert_eq!(chosen.on_this_machine().unwrap().which(), Which::Catalogue);
     }
 
     /// **A file nobody has written is a person who has not chosen**, which is
@@ -159,6 +159,6 @@ mod tests {
 
         let chosen = settings.chosen().unwrap();
         assert_eq!(chosen.model(), "mine");
-        assert_eq!(chosen.which(), Which::Brought);
+        assert_eq!(chosen.on_this_machine().unwrap().which(), Which::Brought);
     }
 }

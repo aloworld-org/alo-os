@@ -61,7 +61,7 @@ fn what_a_person_wrote_is_what_the_machine_reads_back() {
 
     let settings = Settings::at(&at).unwrap();
     let chosen = settings.chosen().unwrap();
-    assert_eq!(chosen.which(), Which::Catalogue);
+    assert_eq!(chosen.on_this_machine().unwrap().which(), Which::Catalogue);
     assert_eq!(chosen.model(), "mistral-small");
     assert_eq!(
         settings
@@ -88,7 +88,15 @@ fn the_weights_a_person_brought_are_read_back_from_their_own_file() {
     );
 
     let settings = Settings::at(&at).unwrap();
-    assert_eq!(settings.chosen().unwrap().which(), Which::Brought);
+    assert_eq!(
+        settings
+            .chosen()
+            .unwrap()
+            .on_this_machine()
+            .unwrap()
+            .which(),
+        Which::Brought
+    );
     let weights = settings.weights().unwrap();
     assert_eq!(weights.id, "my-finetune");
     assert_eq!(weights.bytes_on_disk, 4_700_000_000);

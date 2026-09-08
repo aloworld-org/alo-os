@@ -41,10 +41,10 @@
 
 use std::path::Path;
 
-use alo_models::{Brought, Weights};
+use alo_models::{Brought, Providers, Weights};
 use alo_strings::Language;
 
-use crate::chosen::{Chosen, Which};
+use crate::chosen::{Picked, Which};
 use crate::refusing::NotSet;
 use crate::written::read;
 
@@ -55,13 +55,22 @@ use crate::written::read;
 /// [`crate::NotSet::NotBrought`] is the one that can name the file it is in.
 /// This says only that the two halves of a settings value have to agree.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NoSuchWeights(String);
+pub enum Unresolved {
+    /// A choice named the brought list and nothing on it answers to the name.
+    Weights(String),
 
-impl NoSuchWeights {
+    /// A choice named a provider and the person's own list has none of that
+    /// name.
+    Provider(String),
+}
+
+impl Unresolved {
     /// What the choice named, exactly as it was written.
     #[must_use]
     pub fn named(&self) -> &str {
-        &self.0
+        match self {
+            Self::Weights(named) | Self::Provider(named) => named,
+        }
     }
 }
 
@@ -69,9 +78,19 @@ impl NoSuchWeights {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Settings {
     /// What they chose to answer their questions, where they have chosen.
-    chosen: Option<Chosen>,
+    ///
+    /// One of the three the owner named: a model on this machine, or a provider
+    /// they added — which is also how alo's own service is chosen, because
+    /// ADR 0014 makes it one more provider with no special case anywhere.
+    chosen: Option<Picked>,
     /// The weights they brought to this machine themselves.
     brought: Brought,
+    /// The providers they added themselves.
+    ///
+    /// **No credential is in here.** `alo_models::Provider` holds a
+    /// `SecretRef`, which is a name in a keyring and not a key, and the settings
+    /// file has no field a key could be typed into at all — see `written.rs`.
+    providers: Providers,
     /// The languages they read, best first.
     languages: Vec<Language>,
 }
@@ -80,23 +99,34 @@ impl Settings {
     /// Settings holding what somebody chose, brought and reads.
     ///
     /// # Errors
-    /// [`NoSuchWeights`] when the choice names the brought list and nothing on
-    /// that list answers to the name. This file's header says why that is a
-    /// refusal here rather than a `None` somewhere later.
+    /// [`Unresolved`] when the choice is a reference into a list this person
+    /// keeps and that list has nothing of the name — weights they brought, or a
+    /// provider they added. This file's header says why that is a refusal here
+    /// rather than a `None` somewhere later.
     pub fn of(
-        chosen: Option<Chosen>,
+        chosen: Option<Picked>,
         brought: Brought,
+        providers: Providers,
         languages: Vec<Language>,
-    ) -> Result<Self, NoSuchWeights> {
-        if let Some(chosen) = &chosen
-            && chosen.which() == Which::Brought
-            && brought.get(chosen.model()).is_none()
-        {
-            return Err(NoSuchWeights(chosen.model().to_owned()));
+    ) -> Result<Self, Unresolved> {
+        match &chosen {
+            Some(Picked::OnThisMachine(local))
+                if local.which() == Which::Brought && brought.get(local.model()).is_none() =>
+            {
+                return Err(Unresolved::Weights(local.model().to_owned()));
+            }
+            // The same rule one list to the right: a choice is a reference into
+            // a list the person keeps, and a reference that resolves to nothing
+            // is a file whose two halves disagree.
+            Some(Picked::FromAProvider { provider, .. }) if providers.get(provider).is_none() => {
+                return Err(Unresolved::Provider(provider.clone()));
+            }
+            Some(_) | None => {}
         }
         Ok(Self {
             chosen,
             brought,
+            providers,
             languages,
         })
     }
@@ -111,13 +141,29 @@ impl Settings {
         Self {
             chosen: None,
             brought: Brought::default(),
+            providers: Providers::default(),
             languages: Vec::new(),
         }
     }
 
-    /// What answers this person's questions, where they have chosen.
+    /// The providers this person added themselves.
+    ///
+    /// Empty on a machine where nobody has added one, which is not the same as
+    /// a machine that cannot have any.
     #[must_use]
-    pub fn chosen(&self) -> Option<&Chosen> {
+    pub const fn providers(&self) -> &Providers {
+        &self.providers
+    }
+
+    /// What answers this person's questions, where they have chosen.
+    ///
+    /// **Not `Option<&Chosen>`.** It was, and a provider choice would have read
+    /// as *nobody has chosen* — which is not a silent switch to somewhere else,
+    /// and is still a machine telling somebody they have chosen nothing when
+    /// they have. Every caller now has to say what it does about a provider,
+    /// and the compiler is what asks them.
+    #[must_use]
+    pub fn chosen(&self) -> Option<&Picked> {
         self.chosen.as_ref()
     }
 
@@ -145,11 +191,23 @@ impl Settings {
     /// and both are read beside the name a runtime is asked for.
     #[must_use]
     pub fn weights(&self) -> Option<&Weights> {
-        let chosen = self.chosen.as_ref()?;
+        let chosen = self.chosen.as_ref()?.on_this_machine()?;
         if chosen.which() != Which::Brought {
             return None;
         }
         self.brought.get(chosen.model())
+    }
+
+    /// The provider this person chose, where that is what they chose.
+    ///
+    /// Resolved against their own list, so what comes back is the provider
+    /// itself — its address, the region whoever added it **stated**, and the
+    /// keyring name its credential lives under. [`Settings::of`] has already
+    /// refused a choice that names a provider the list does not have, so a
+    /// [`Picked::FromAProvider`] here always resolves.
+    #[must_use]
+    pub fn provider(&self) -> Option<&alo_models::Provider> {
+        self.providers.get(self.chosen.as_ref()?.provider()?)
     }
 
     /// The languages this person reads, best first.
@@ -203,6 +261,7 @@ impl Settings {
 )]
 mod tests {
     use super::*;
+    use crate::chosen::Chosen;
     use alo_models::Driving;
 
     /// One set of weights on somebody's own list, measured well enough to be
@@ -235,13 +294,24 @@ mod tests {
     #[test]
     fn settings_say_back_what_somebody_chose() {
         let settings = Settings::of(
-            Some(Chosen::of(Which::Brought, "my-finetune").unwrap()),
+            Some(Picked::OnThisMachine(
+                Chosen::of(Which::Brought, "my-finetune").unwrap(),
+            )),
             theirs("my-finetune"),
+            Providers::default(),
             vec![Language::written("pt-BR").unwrap()],
         )
         .unwrap();
         assert_eq!(settings.chosen().unwrap().model(), "my-finetune");
-        assert_eq!(settings.chosen().unwrap().which(), Which::Brought);
+        assert_eq!(
+            settings
+                .chosen()
+                .unwrap()
+                .on_this_machine()
+                .unwrap()
+                .which(),
+            Which::Brought
+        );
         assert_eq!(
             settings
                 .languages()
@@ -258,8 +328,11 @@ mod tests {
     #[test]
     fn a_choice_of_brought_weights_comes_back_as_the_weights() {
         let settings = Settings::of(
-            Some(Chosen::of(Which::Brought, "my-finetune").unwrap()),
+            Some(Picked::OnThisMachine(
+                Chosen::of(Which::Brought, "my-finetune").unwrap(),
+            )),
             theirs("my-finetune"),
+            Providers::default(),
             Vec::new(),
         )
         .unwrap();
@@ -274,8 +347,11 @@ mod tests {
     #[test]
     fn a_choice_naming_weights_nobody_brought_is_not_settings() {
         let refused = Settings::of(
-            Some(Chosen::of(Which::Brought, "my-finetune").unwrap()),
+            Some(Picked::OnThisMachine(
+                Chosen::of(Which::Brought, "my-finetune").unwrap(),
+            )),
             theirs("something-else"),
+            Providers::default(),
             Vec::new(),
         )
         .unwrap_err();
@@ -285,8 +361,11 @@ mod tests {
         // arrives in: somebody wrote the choice and never wrote the list.
         assert!(
             Settings::of(
-                Some(Chosen::of(Which::Brought, "my-finetune").unwrap()),
+                Some(Picked::OnThisMachine(
+                    Chosen::of(Which::Brought, "my-finetune").unwrap()
+                )),
                 Brought::default(),
+                Providers::default(),
                 Vec::new(),
             )
             .is_err()
@@ -302,8 +381,11 @@ mod tests {
     #[test]
     fn a_catalogued_choice_is_carried_as_written_and_names_no_weights() {
         let settings = Settings::of(
-            Some(Chosen::of(Which::Catalogue, "a-model-nobody-here-lists").unwrap()),
+            Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "a-model-nobody-here-lists").unwrap(),
+            )),
             theirs("my-finetune"),
+            Providers::default(),
             Vec::new(),
         )
         .unwrap();

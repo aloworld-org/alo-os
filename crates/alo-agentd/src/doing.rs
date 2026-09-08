@@ -39,6 +39,8 @@
 
 use std::time::{Duration, SystemTime};
 
+use alo_answering::Answering;
+use alo_asking::Hosted;
 use alo_capability::{AnswerError, Grants, ProposalId};
 use alo_models::RuntimeError;
 use alo_protocol::{FromAnAgent, ToAnAgent};
@@ -46,7 +48,7 @@ use alo_strings::{Filling, Said, Strings};
 use alo_turn::{Answers, NoAnswer, Turning};
 
 use crate::questions::{Questions, WhatAnswers};
-use crate::words::{NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED};
+use crate::words::{NO_KEYRING_FOR_A_PROVIDER, NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED};
 
 /// Read one line as something an agent asked, and do it.
 ///
@@ -117,6 +119,43 @@ fn put_to_a_model(
         }
         WhatAnswers::NotRunning => ToAnAgent::refused(&RuntimeError::Unreachable.said(strings)),
         WhatAnswers::NotSet(why) => ToAnAgent::refused(&why.said(strings)),
+        // **The second of the three choices**, and alo's own service is this
+        // one too (ADR 0014). A provider that needs a credential cannot be
+        // asked from this machine yet — `alo_models::SecretRef` names where a
+        // key lives and nothing on this machine keeps one — so the question is
+        // not sent, and it is not sent anywhere else either.
+        WhatAnswers::FromAProvider {
+            provider,
+            model,
+            places,
+        } => {
+            if provider.key.is_some() {
+                return ToAnAgent::refused(
+                    &strings.say(&NO_KEYRING_FOR_A_PROVIDER.key(), &Filling::nothing()),
+                );
+            }
+            // The source is the provider's own, read off the provider the
+            // person's list resolved — never assumed, and never `ThisMachine`
+            // because the address happened to look local.
+            match Answering::chosen(provider.source(), places.policy()) {
+                Ok(permission) => match turning.asking(
+                    question,
+                    model,
+                    permission,
+                    &Answers::Provider(Hosted::provider(provider, None)),
+                    &places,
+                    now,
+                ) {
+                    Ok(answer) => ToAnAgent::answered(
+                        answer.text(),
+                        &answer.came_from(strings),
+                        answer.model(),
+                    ),
+                    Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
+                },
+                Err(why) => ToAnAgent::refused(&why.said(strings)),
+            }
+        }
         WhatAnswers::OnThisMachine {
             chosen,
             runtime,

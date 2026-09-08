@@ -87,17 +87,19 @@ alo-choosing = { path = "../alo-choosing" }
 # type no caller can name and therefore cannot point anywhere.
 alo-models = { path = "../alo-models" }
 
+# The two a question goes through, and the daemon names them directly since it
+# learned to put one to a provider the person added. `alo_turn::Answers` takes
+# an `alo_asking::Hosted`, and the permission to send is an
+# `alo_answering::Answering` — so a process that offers the second of the three
+# model choices cannot reach them through `alo-turn` alone.
+alo-answering = { path = "../alo-answering" }
+alo-asking = { path = "../alo-asking" }
+
 # Somewhere for a test's machine to write what happened that is not a file on a
 # disk. The process writes to `alo-keeping`'s real one; a test wants to read the
 # entries back and count them, which is what `alo_record::Record` is.
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-record = { path = "../alo-record" }
-
-# And the two a question goes through, for the test that puts one to a provider
-# inside a boundary this machine really imposes. The daemon reaches them through
-# `alo-turn` rather than directly, which is why they are here and not above.
-alo-answering = { path = "../alo-answering" }
-alo-asking = { path = "../alo-asking" }
 
 # The service, as a machine really runs it. `src/lib.rs` is every decision and
 # this is the process that makes them in order — thin on purpose, because what a

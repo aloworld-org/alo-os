@@ -39,9 +39,9 @@
 //! organisation has nobody to name in a refusal, and it has none to make.
 
 use alo_answering::Answering;
-use alo_models::{NotAllowed, SourcePolicy};
+use alo_models::{NotAllowed, Providers, SourcePolicy};
 
-use crate::chosen::Chosen;
+use crate::chosen::{Chosen, Picked};
 
 /// What a personal machine's bound is, where there is none.
 ///
@@ -66,6 +66,37 @@ impl Chosen {
     /// attempted, nothing is sent, and no other place is offered in its stead.
     pub fn asking(&self, bound: Option<&SourcePolicy>) -> Result<Answering, NotAllowed> {
         Answering::chosen(self.source(), bound.unwrap_or(&UNBOUNDED))
+    }
+}
+
+impl Picked {
+    /// The permission to put a question where this person chose, whichever of
+    /// the three that is.
+    ///
+    /// `providers` is the person's own list, and it is required rather than
+    /// optional because that is the only place a provider's source can come
+    /// from. [`Chosen::asking`] is the local half of this and can do without
+    /// one; there is no version of this that can.
+    ///
+    /// # Errors
+    /// `alo_models::NotAllowed` when the rule in force refuses the place they
+    /// chose — naming the rule and the place, in the language they read.
+    /// Nothing is attempted, nothing is sent, and **no other place is offered
+    /// in its stead**: a question bound for a provider does not become a
+    /// question for a model on this machine because the provider was refused.
+    ///
+    /// [`None`] — rather than a refusal — when the choice names a provider this
+    /// list does not have. That is not a rule refusing a place; it is a
+    /// question with no place in it, and dressing it as a policy refusal would
+    /// tell somebody their organisation had stopped them when nothing had.
+    /// [`crate::Settings`] refuses such a file, so it cannot arise from one.
+    pub fn asking(
+        &self,
+        providers: &Providers,
+        bound: Option<&SourcePolicy>,
+    ) -> Option<Result<Answering, NotAllowed>> {
+        let source = self.source(providers)?;
+        Some(Answering::chosen(source, bound.unwrap_or(&UNBOUNDED)))
     }
 }
 
