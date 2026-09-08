@@ -5,6 +5,13 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+Owner model-choice clarification reconciled 2026-09-08:
+`updates/owner-model-choice-direction.md` separates ownership, processing location
+and verified privacy. Alo services, user-owned local runtimes and compatible
+third-party APIs remain choices, alongside paired-machine and no-agent setups.
+No implementation, release tier or ThisMachineOnly policy changes. ADR 0021 is
+still proposed; Claude owns its revision and remaining decision presentation.
+
 Published security follow-ups reconciled 2026-09-08:
 `updates/network-boundary-decisions-proposed.md` corrects the loopback-proxy
 entry point to Answers::Service; the provider path refuses ThisMachine sources.
@@ -91,6 +98,29 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected session-integrated direct input (desktop worker, 2026-09-08):**
+  own SeatInput within the active DirectSession device scope, route events under
+  the latched poll during idle/render iterations, and suspend/reset/flush input
+  before output retirement. Preserve input, flush, output and close failures.
+  Acceptance: loop ordering/refusal tests, real empty-seat/calloop integration,
+  affected fmt/clippy/tests/rustdoc and WSLg regression. Standalone GLES and
+  physical populated-seat/DRM acceptance remain separate obligations.
+  **Completed session-integrated direct input 2026-09-08:**
+  run_compositor_with_input owns libinput under the active device scope, using
+  the same manager and latched poll, with idle/render delivery and ordered
+  suspension/reset/flush before output retirement. Independent input/runtime,
+  output and close errors remain observable. Three new tests; Linux shell 221
+  tests and three doctests, affected Windows/Linux fmt/clippy/tests, Linux
+  rustdoc/examples and WSLg (115 surfaces) pass. Report:
+  `updates/session-integrated-direct-input.md`. Full supervisor gates pending.
+  Next: safe standalone GLES construction under current lint policy, then full
+  direct entry integration on a DRM/seat fixture. The pinned unsafe constructors
+  remain a dependency restriction, not authorization for a lint exception. If
+  that restriction persists, select the first independent window-management
+  component under delivery step 3. Populated input/hotplug, real DRM/seat, GPU
+  context loss/failed-disable recovery and physical acceptance remain owed.
+  The connected entry method is compiled; WSL lacks DRM to run it end-to-end.
+  Compositor and release remain unchecked.
   **Selected libinput seat-event routing (desktop worker, 2026-09-08):**
   translate keyboard, relative/absolute pointer, button and modern scroll events
   into existing validated Server routes. Aggregate identical keys/buttons across

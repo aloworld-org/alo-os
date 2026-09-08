@@ -19,6 +19,9 @@ pub enum DirectLoopError {
     /// Seat pause or notification failure; no further dispatch/submission occurs.
     #[error(transparent)]
     Session(#[from] SessionError),
+    /// Input acquisition, dispatch or routing refused this lifetime.
+    #[error(transparent)]
+    Input(#[from] crate::InputDispatchError),
     /// Client transport failed.
     #[error("direct client dispatch failed: {0}")]
     Dispatch(#[from] std::io::Error),
@@ -38,6 +41,10 @@ pub struct DirectLoopResult {
     pub outcome: Result<(), DirectLoopError>,
     /// Output disable/withdrawal result; absent if discovery never made a target.
     pub retirement: Option<Result<(), RenderError>>,
+    /// Input suspension/close result, independent of the runtime outcome.
+    pub input_cleanup: Option<Result<(), std::io::Error>>,
+    /// Flush input reset before attempting output retirement.
+    pub input_flush: Option<Result<(), std::io::Error>>,
     /// Flush queued output events without dispatch; absent before target creation.
     /// Would-block clients still require later dispatch or server teardown.
     pub flush: Option<Result<(), std::io::Error>>,
@@ -75,6 +82,8 @@ impl crate::DirectSession {
                     return DirectLoopResult {
                         outcome: Err(error.into()),
                         retirement: None,
+                        input_cleanup: None,
+                        input_flush: None,
                         flush: None,
                     };
                 }
@@ -88,9 +97,26 @@ impl crate::DirectSession {
 /// Own the target so its destructor runs before the enclosing device scope closes.
 pub(crate) fn run(
     server: &mut Server,
+    target: impl LoopTarget,
+    poll: &mut dyn FnMut() -> Result<(), SessionError>,
+    next: &mut dyn FnMut() -> DirectFrame,
+) -> DirectLoopResult {
+    run_with_input(
+        server,
+        target,
+        poll,
+        next,
+        crate::direct_input_loop::NoInput,
+    )
+}
+
+/// Input lifetime is consumed so suspension and reset precede target retirement.
+pub(crate) fn run_with_input(
+    server: &mut Server,
     mut target: impl LoopTarget,
     poll: &mut dyn FnMut() -> Result<(), SessionError>,
     next: &mut dyn FnMut() -> DirectFrame,
+    mut input: impl crate::direct_input_loop::LoopInput,
 ) -> DirectLoopResult {
     let outcome = (|| {
         loop {
@@ -100,6 +126,7 @@ pub(crate) fn run(
             if matches!(frame, DirectFrame::Stop) {
                 return Ok(());
             }
+            input.dispatch(server, poll)?;
             server.dispatch()?;
             if let DirectFrame::Render(time) = frame {
                 server.render(&mut target, time)?;
@@ -107,11 +134,15 @@ pub(crate) fn run(
             }
         }
     })();
+    let input_cleanup = input.shutdown(server);
     server.clear_input();
+    let input_flush = input_cleanup.as_ref().map(|_| server.flush());
     let retirement = Some(server.retire_output(&mut target));
     let flush = Some(server.flush());
     DirectLoopResult {
         outcome,
+        input_cleanup,
+        input_flush,
         retirement,
         flush,
     }

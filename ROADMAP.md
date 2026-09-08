@@ -130,6 +130,12 @@ slowly.
 
 ---
 
+Owner clarification reconciled 2026-09-08: model ownership does not establish
+processing location or privacy. Existing local, paired, provider and no-agent
+choices and release tiers stand; ADR 0021 remains proposed. Documentation-only
+report: `docs/autonomy/updates/owner-model-choice-direction.md`; no runtime
+verification or completion tick follows from that report.
+
 ## v0.01 — it boots and the agent acts
 
 The point is to prove one sentence on real hardware: *an action a person would
@@ -742,6 +748,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Session-integrated direct input (2026-09-08): a new direct entry method creates
+    SeatInput through the same libseat connection inside the active display scope.
+    Idle/render dispatch uses latched authority polling; input suspension/reset
+    and flush precede output retirement. Three new tests include real empty-seat
+    libinput/calloop and descriptor EOF. Linux shell 221 tests and three doctests,
+    affected Windows/Linux checks, Linux rustdoc/examples and WSLg regression
+    (115 surfaces) pass. Report:
+    `docs/autonomy/updates/session-integrated-direct-input.md`. Standalone safe
+    GLES construction, real DRM/populated-seat acquisition, recovery and physical
+    records remain owed. Full supervisor gates pending; compositor unchecked.
   - Libinput seat-event routing (2026-09-08): keyboard, relative/absolute pointer,
     button and modern scroll translation; first-press/last-release device counts
     and conservative whole-seat removal/reset cleanup. Nine new tests include

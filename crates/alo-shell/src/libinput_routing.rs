@@ -20,7 +20,8 @@ impl Server {
     /// switch events are ignored; v0.01 exposes keyboard and pointer only.
     /// Deprecated axis events are ignored because libinput also emits modern
     /// scroll events. Processing both would scroll twice.
-    /// This callback does not wire the live DirectSession poll or frame loop.
+    /// `DirectSession::run_compositor_with_input` supplies that polling and flush
+    /// lifecycle for the direct backend.
     pub fn libinput_update(
         &mut self,
         update: InputUpdate<'_>,

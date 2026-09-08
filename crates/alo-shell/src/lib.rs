@@ -15,6 +15,7 @@ mod atomic_output;
 mod atomic_test;
 mod cursor;
 mod default_cursor;
+mod direct_input_loop;
 mod direct_keyboard;
 mod direct_loop;
 mod direct_output;

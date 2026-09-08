@@ -93,6 +93,11 @@ impl DirectSession {
         crate::active_session::run(&mut self.device, &mut self.events, operation)
     }
 
+    /// Internal input acquisition uses the same libseat connection and notifier.
+    pub(crate) fn input_session(&self) -> LibSeatSession {
+        self.device.input_session()
+    }
+
     /// Close the device while the seat connection is alive and report errors.
     pub fn shutdown(mut self) -> Result<(), SessionError> {
         self.device.shutdown()

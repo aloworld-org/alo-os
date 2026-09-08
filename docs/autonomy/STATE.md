@@ -12407,3 +12407,62 @@ certified laptop/GPU-workstation records remain owed. Event routing complete;
 compositor/release unchecked. No staging, commit, push, worker/loop launch, other
 checkout edit, tools/dev-loop change or physical installation. Reports arriving
 during publication are reconciled next iteration.
+
+
+---
+
+## 2026-09-08 - Session-integrated direct input
+
+Read constitution, delivery and shared-main/report rules, current queue/journal,
+v0.01 feature/roadmap, ADR 0002 and invocation-only contract. Initial tree clean;
+the supervisor owns pulls and publication. Selected the component and acceptance
+checks in QUEUE before implementing. Claude retains the security workstream.
+
+One published report needed reconciliation at iteration start:
+`docs/autonomy/updates/owner-model-choice-direction.md`. Reviewed the report and
+feature text and consolidated all four progress documents. Model ownership,
+processing location and verified privacy remain separate. Existing local, paired,
+provider and no-agent choices and release tiers stand. The report has only
+documentation/diff evidence, not runtime checks. ADR 0021 is still proposed;
+Claude's proposal revision and precise policy decision remain assigned to Claude.
+No privacy guarantee, release acceptance or runtime implementation follows from
+that clarification.
+
+DirectSession::run_compositor_with_input now creates SeatInput using the same
+libseat connection inside the active display scope after fresh discovery and a
+latched poll. Existing event translation uses the mode dimensions and authority
+checks even while idle. The shared loop suspends/closes input, resets and flushes
+before output retirement, retaining input/runtime, both flush, output and display
+close outcomes. Early setup refusal also attempts a reset flush. No automatic
+resume, engine patch, unsafe/lint exception, agent IPC/context capture or new UI
+strings. Existing display-only entry is preserved. Decisions and exact commands:
+`docs/autonomy/updates/session-integrated-direct-input.md`.
+
+Ubuntu Rust and the eight required graphics/input pkg-config prerequisites checked;
+WSLg present, /dev/dri absent. No package, kernel, BPF or service changes needed.
+Three new tests pass: idle/render/stop and combined refusal ordering; real empty
+libinput seat under active-scope/calloop pause-plus-activation with descriptor EOF;
+and pause during empty input dispatch preventing a scheduled frame despite output
+retirement refusal. Physical manager/DRM/graphics are injected in the new tests.
+Real populated evdev extraction/hotplug and direct entry execution are not claimed.
+An initial test compile required Smithay's supported error type. Initial fmt ran
+before the test module was created; corrected after writing it. Initial read/path
+and prerequisite-command mistakes were corrected. No runtime test failure or
+weakened gate.
+
+Windows fmt/affected clippy/tests passed (zero Linux-only runtime cases). Linux
+focused tests, affected all-target clippy/fmt, shell tests (138 unit, 80 lifecycle,
+three socket, three compile-fail doctests), warnings-denied rustdoc and examples
+passed. WSLg golden pixels/SHM refusal and nested popup/cursor regression passed,
+115 client surfaces, with expected Mesa/invalid-client diagnostics. Source/test/
+documentation diff reviewed and git diff --check passed. Full independent
+Windows/Linux workspace/rustdoc/BPF supervisor gates were not run by this worker.
+
+Next: safe standalone GLES construction under current lint policy, then full
+direct entry on a DRM/seat fixture. If that dependency remains blocked, select
+independent delivery-step-3 window-management work. Populated input/hotplug,
+actual libseat/DRM, GPU-context-loss/failed-disable recovery and certified laptop/
+GPU-workstation physical records remain owed. Input-loop component complete;
+compositor and release unchecked. No staging, commit, push, other checkout edits,
+worker/loop launch, tools/dev-loop modification or physical installation. Reports
+arriving during publication are reconciled next iteration.

@@ -75,6 +75,14 @@ impl<S: Session> SessionDevice<S> {
         }
     }
 
+    /// Share only the manager connection, never the scoped display descriptor.
+    pub(crate) fn input_session(&self) -> S
+    where
+        S: Clone,
+    {
+        self.session.clone()
+    }
+
     /// Close through the session manager, consuming the descriptor even on error.
     fn release(&mut self) -> Result<(), SessionError> {
         if let Some(fd) = self.fd.take() {

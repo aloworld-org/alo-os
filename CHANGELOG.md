@@ -12,6 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct compositor loop now owns and polls its input context.** Input
+  continues during idle iterations and stops on seat pause or failure. Devices
+  are suspended and input releases flushed before output retirement, with cleanup
+  failures retained separately. Three new tests include real empty-seat libinput,
+  calloop pause/activation and descriptor cleanup. Physical DRM/input and standalone
+  renderer acceptance remain unfinished. Report:
+  `docs/autonomy/updates/session-integrated-direct-input.md`.
+
+- **Model-choice documentation now distinguishes who provides a model from
+  where it runs and what privacy is verified.** Existing user-owned runtimes,
+  compatible APIs, paired machines and no-agent choices remain; no privacy policy
+  or runtime behavior changes. Reconciled documentation-only report:
+  `docs/autonomy/updates/owner-model-choice-direction.md`.
+
 - **Direct input now routes keyboard, pointer and scroll events into the native
   desktop's validated input paths.** Multiple devices share first-press/last-release
   behavior; device removal releases held input and cancels drags and popup grabs.
