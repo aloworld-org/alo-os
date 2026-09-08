@@ -61,7 +61,7 @@ fn client_maximize_premap_declines_at_initial_commit_and_unmap_forgets_intent()
     app.sync();
     assert!(app.events.serial.is_none());
     app.configure();
-    assert_eq!(app.events.wm_capabilities, [vec![2]]);
+    crate::support::assert_window_capabilities(&app.events.wm_capabilities, 1);
     assert_eq!(app.events.maximized, [false]);
     assert_eq!(app.events.sizes, [(0, 0)]);
     // After initial configure but before mapping, each request gets a refusal.
@@ -83,7 +83,7 @@ fn client_maximize_premap_declines_at_initial_commit_and_unmap_forgets_intent()
     app.sync();
     assert_eq!(app.events.sizes.len(), count);
     app.configure();
-    assert_eq!(app.events.wm_capabilities.last(), Some(&vec![2]));
+    crate::support::assert_window_capabilities(&app.events.wm_capabilities, 2);
     assert_eq!(app.events.maximized.last(), Some(&false));
     assert_eq!(app.events.sizes.last(), Some(&(0, 0)));
     app.attach();

@@ -39,8 +39,22 @@ output changes still refresh its requested extent. Client maximize requests whil
 hidden are refused with the existing configure-response policy. Maximization
 restoration remains distinct from minimization restoration.
 
-XDG client minimize request policy and Minimize capability advertisement remain
-the next component. No new surface text, agent API, upstream patch or release
-scope is introduced. Native rendered controls remain integration work. Protocol,
-input and GLES evidence and machine limits are recorded in
-`../autonomy/updates/trusted-window-minimization-and-restoration.md`.
+## Client requests
+
+XDG `set_minimized` uses the same transition for the requesting mapped role.
+No seat serial or focus is required: an application may hide its own window,
+including an inactive window, without authority over another client's role.
+Initial and remapped configurations advertise Maximize and Minimize only.
+
+Requests before a buffered mapping are ignored, both before and after initial
+configuration. They do not send a configure or retain intent for a future map.
+XDG defines no minimized state, acknowledgement or client unminimize request;
+duplicate requests are inert. Focus retirement can still send an ordinary
+activation configure. Only trusted restoration reveals a hidden mapping;
+buffer commits, maximize requests and duplicate minimize requests cannot do so.
+Unmap/remap and disconnect retain the existing lifecycle reset.
+
+No new surface text, agent API, upstream patch or release scope is introduced.
+Rendered controls remain integration work. Protocol, input and GLES evidence:
+`../autonomy/updates/client-window-minimize-requests.md`. WSLg fixtures do not
+certify physical DRM/seat operation or release hardware acceptance.

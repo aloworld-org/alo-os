@@ -60,8 +60,9 @@ response retires that restriction. Other windows and ordinary typing continue.
 
 XDG `set_maximized` and `unset_maximized` requests use the same validated
 transactions for the requesting role only. Initial configuration advertises the
-Maximize WM capability, including after remap; unsupported fullscreen, minimize
-and window-menu capabilities are not advertised. No focus or input serial is
+Maximize and Minimize WM capabilities, including after remap; unsupported
+fullscreen and window-menu capabilities are not advertised. Minimize policy is
+defined in `native-window-minimize.md`. No focus or input serial is
 required: this is an application's cooperative request about its own window,
 not authority to operate another application's window or an agent verb.
 

@@ -1,5 +1,6 @@
 //! Real-client visibility, input isolation, refusal and mapping lifetime.
 use super::{Application, Fixture};
+mod client_requests;
 mod interaction;
 use alo_shell::{WindowMinimizeError, WindowSwitchDirection as Direction};
 use smithay::{

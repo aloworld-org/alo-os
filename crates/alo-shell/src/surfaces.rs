@@ -217,6 +217,7 @@ impl CompositorHandler for Surfaces {
             window.surface.with_pending_state(|pending| {
                 pending.capabilities.replace([
                     smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::WmCapabilities::Maximize,
+                    smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::WmCapabilities::Minimize,
                 ]);
             });
             window.surface.send_configure();
@@ -278,6 +279,11 @@ impl XdgShellHandler for Surfaces {
     }
     fn maximize_request(&mut self, surface: ToplevelSurface) {
         self.client_window_maximize(surface, true);
+    }
+    fn minimize_request(&mut self, surface: ToplevelSurface) {
+        // XDG has no minimized state or response handshake. Ignore unbuffered
+        // intent; only this request's own mapped role may become hidden.
+        let _ = self.set_window_minimized(surface.wl_surface(), true);
     }
     fn unmaximize_request(&mut self, surface: ToplevelSurface) {
         self.client_window_maximize(surface, false);

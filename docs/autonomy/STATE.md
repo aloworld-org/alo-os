@@ -13217,3 +13217,74 @@ operations; ordinary keyboard routing and component tests remain active.
 No staging, commit, push, supervisor/other-checkout edits, credential/identity
 access, worker/loop launch or unrelated host changes. Ready for the supervisor's
 independent workspace/rustdoc/BPF gates, concurrent-main integration and publication.
+
+## 2026-09-08 - Client minimize requests verification halted
+
+Initial tree clean; supervisor owns pull/publication. Read constitution,
+delivery/ownership/report rules, current queue and STATE tail, feature/roadmap,
+ADRs 0002/0010 and relevant native-window contracts. Compared published report
+filenames with STATE: none unreconciled at iteration start. No Claude work taken.
+Recorded the selected component and acceptance before implementation.
+
+Shared the existing trusted minimize transition with the XDG request handler;
+pre-map intent is refused by buffered-root validation without a configure or
+retained intent. Advertise Maximize and Minimize. Added two real-client tests and
+a two-frame graphical fixture, with updated contracts. Rust formatting ran.
+
+Two focused Linux test runs each passed the input/isolation/duplicate/commit/
+disconnect test and failed the pre-map test's capability assertion. First failure:
+actual [2,4] versus incorrect expected [2,3]. Replaced literals with protocol enum
+values. Second failure: actual [4,2] versus [2,4]; capabilities are an unordered
+set. Owner requires repeated failures to halt, so no third test attempt or further
+build was launched. The existing maximize capability assertions also need set
+comparison on resume. No production workaround or weakened assertion added.
+
+C: preflights were 15.497 GiB or higher. WSL2 Rust 1.98.0, WSLg socket and eight
+graphics/input pkg-config dependencies confirmed. Initial PATH probe had shell
+word-splitting errors; corrected explicit PATH probe succeeded. No installs or
+cleanup. Affected clippy/full tests/rustdoc/examples and new graphical execution
+remain unrun, as do all independent supervisor gates. Exact commands/results:
+`docs/autonomy/updates/client-window-minimize-requests.md`.
+
+All four progress documents record in-progress/blocked status. Changes preserved;
+no stage, commit, push, loop, other checkout or tools/dev-loop modifications.
+Owner must authorize a resumed iteration to correct order-independent exact
+capability assertions and finish verification. No component/release completion
+or hardware certification claimed; tiling and controls follow this component.
+
+## 2026-09-08 - Client minimize recovery verified
+
+Owner authorized correcting the failed tests and restarting the desktop loop.
+Confirmed no supervisor, worker or competing build was active. Preserved the
+unfinished client-minimize change; HEAD and origin/main were both `7e5e456`, the
+supervisor-published trusted minimization component with full gates passed.
+
+Added exact order-independent WM capability assertions shared by client minimize
+and maximize tests, retaining duplicate detection and checking every map/remap
+event plus event counts. Four helper cases prove both valid orders are accepted
+and missing, extra or duplicate capabilities are refused. No wire capture or
+production policy was changed to satisfy an assertion. Review also corrected the
+offscreen fixture's final stage count from 21 to 22 for its new minimize case.
+
+Focused Linux client tests passed 11 cases, including both new minimize cases and
+all four client maximize cases. Full Windows and Linux workspace fmt, clippy
+with warnings denied and tests passed. Linux rustdoc with warnings denied and
+pinned BPF fmt/clippy passed. Linux shell counts: 141 unit, 149 lifecycle, three
+socket tests and three doctests, all passed. No existing ignored acceptance was
+claimed as executed. Built nested_check and ran WSLg offscreen plus popup/cursor
+checks: all 22 stages, two new full 6,400-pixel minimize/restore frames and 115
+nested submitted client surfaces passed. Final diff whitespace check passed.
+
+Evidence and exact commands: `updates/client-window-minimize-requests.md`.
+Local gate log: `.git/client-minimize-resume-gates.log`. The local PowerShell
+launcher initially treated native stderr progress as an exception; corrected
+that launcher to use exit status and reran the full sequence successfully.
+Supervisor source, repeated-failure halt and all gates remain unchanged.
+
+C: was checked before each verification phase and remained above the 12 GiB
+reserve, approximately 14.49 GiB at completion. No cleanup, Windows/company
+settings, other checkout, credential or Git identity changes. Desktop retains
+the build slot; Claude's unfinished work remains separate. Publish this verified
+component before restarting the single-writer supervisor. Next: trusted tiling
+and restoration, then native controls. No window-management/release checkbox
+was promoted; unchanged later-phase obligations remain in their existing phases.

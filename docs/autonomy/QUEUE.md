@@ -5,6 +5,24 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Client minimize requests verified (2026-09-08):** owner authorized recovery
+after two assertion failures. Exact capability comparisons now ignore ordering
+without discarding duplicates; all initial/remapped events are checked. Both new
+real-client tests, 149 lifecycle cases, Windows/Linux workspace gates, rustdoc,
+BPF gates and all 22 offscreen stages pass. The graphical minimize/restore case
+checks two full 6,400-pixel frames; nested popup/cursor regression also passes.
+No gate or production policy was weakened. Next executable component: trusted
+window tiling and restoration, followed by native controls; record its concrete
+geometry, handshake and refusal acceptance criteria before implementation.
+Report: `updates/client-window-minimize-requests.md`.
+
+**Selected client minimize requests (2026-09-08):** share trusted visibility
+transitions for mapped XDG roots; ignore pre-map intent without configuration or
+latent hiding, make duplicates inert, and advertise Maximize plus Minimize.
+Acceptance: real-client mapped/input isolation, pre-map and remap refusal,
+duplicate/hidden commits, disconnect and restoration; affected fmt/tests/clippy,
+rustdoc and WSLg graphical regression. Then tiling and native controls.
+
 **Storage-constrained execution (2026-09-08):** desktop builds run alone until
 explicit handoff to Claude. Check the Windows C: reserve before builds/tests;
 below 12 GiB, preserve work and report the reading. No automatic cleanup or
@@ -23,10 +41,9 @@ normal geometry and cycling order survive. Six real-client tests, Linux affected
 clippy, 287 tests plus three doctests, rustdoc/examples and WSLg offscreen/nested
 regressions pass. Four new frames each check all 6,400 pixels; nested submits 115
 surfaces. Exact evidence and limitations:
-`updates/trusted-window-minimization-and-restoration.md`. Supervisor gates pending.
-Next executable component: XDG client minimize policy with pre-map, mapped,
-duplicate and refusal/lifetime tests, and truthful Minimize capability advertising.
-Then tiling and native controls; window management remains unfinished.
+`updates/trusted-window-minimization-and-restoration.md`. Supervisor gates passed
+and published as `7e5e456`; client policy is verified above. Tiling and native
+controls remain; window management remains unfinished.
 
 **Selected desktop component (2026-09-08):** trusted minimization/restoration, covering scene
 visibility, focus and held-input retirement, window cycling, unmap/disconnect

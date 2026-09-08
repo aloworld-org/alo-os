@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Applications can minimize their own windows without disturbing another.**
+  Requests before mapping are ignored, repeated requests are inert, and hidden
+  windows cannot reveal themselves by committing another buffer. Native restore
+  preserves their geometry without stealing focus. Capability checks accept either
+  wire order but refuse missing, extra or duplicate capabilities. Real-client,
+  full workspace and graphical checks pass; rendered controls remain integration
+  work. Evidence: `docs/autonomy/updates/client-window-minimize-requests.md`.
+
+
 - **Native shell controls can minimize and restore windows without losing their geometry.**
   Hidden windows stop receiving input and frames; held input and popup ownership
   are retired. Restoring preserves position without stealing focus, and window

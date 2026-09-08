@@ -256,6 +256,11 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     fresh.sync();
     assert!(send.send(21).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.toplevel.set_minimized();
+    fresh.toplevel.set_minimized();
+    fresh.sync();
+    assert!(send.send(22).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.surface.attach(None, 0, 0);
     fresh.surface.commit();
     fresh.sync();

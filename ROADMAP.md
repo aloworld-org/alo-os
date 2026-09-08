@@ -1239,6 +1239,14 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Client minimize requests (2026-09-08): verified after owner-authorized recovery.
+    Mapped requests share native visibility policy; pre-map intent and duplicates
+    are inert. Exact order-independent capabilities are checked on map/remap.
+    Both new real-client tests, 149 lifecycle tests, Windows/Linux workspace
+    gates, Linux rustdoc, BPF checks and all 22 offscreen stages pass, including
+    hidden/restored full-frame pixels. Next: tiling, then native controls.
+    Report: `docs/autonomy/updates/client-window-minimize-requests.md`.
+
   - Trusted minimization/restoration (2026-09-08): buffered mapping and visibility
     are separate; hiding retires input/popups/move/resize, preserves maximize
     geometry and withholds callbacks. Restoration does not steal focus; cycling
@@ -1246,8 +1254,8 @@ which made a completely consistent rule look like work being taken out of turn.
     clippy/rustdoc/examples and four full 6,400-pixel WSLg GLES frames pass;
     nested regression passes 115 submitted surfaces. Exact commands and limits:
     `docs/autonomy/updates/trusted-window-minimization-and-restoration.md`.
-    Supervisor full publication gates pending. Next: XDG client minimize policy
-    and truthful capability advertisement, then tiling and native controls.
+    Supervisor gates passed and published as `7e5e456`. Client minimize policy
+    is verified above; tiling and native controls remain.
     This completes the trusted component, not window management or the release.
   - Trusted maximise/restore transactions (2026-09-08): normal geometry survives
     output changes and rapid toggles; only the newest acknowledged committed

@@ -45,3 +45,31 @@ pub fn run(
     }
     Ok(())
 }
+
+/// A real wire request has hidden the preceding root; inspect every hidden pixel,
+/// then restore through trusted controls and verify its preserved client buffer.
+pub fn client_request(
+    server: &mut Server,
+    renderer: &mut GlesRenderer,
+) -> Result<(), Box<dyn std::error::Error>> {
+    assert_eq!(server.mapped_surfaces().count(), 0);
+    let root = server
+        .minimized_surfaces()
+        .next()
+        .cloned()
+        .ok_or("hidden root missing")?;
+    assert_eq!(server.minimized_surfaces().count(), 1);
+    let frame = render_scanout(
+        renderer,
+        (80, 80).into(),
+        &[],
+        &server.popup_surfaces(),
+        &Cursor::Hidden,
+    )?;
+    assert_eq!(frame.pixels().pixels().len(), 6400 * 4);
+    assert!(frame.pixels().pixels().iter().all(|byte| *byte == 0));
+    assert!(server.set_window_minimized(&root, false)?);
+    crate::window_maximize_check::stage(server, renderer, 21)?;
+    println!("Client minimize and trusted restore: two full 6400-pixel frames passed");
+    Ok(())
+}
