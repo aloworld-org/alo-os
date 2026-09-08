@@ -2,6 +2,7 @@
 #![cfg(target_os = "linux")]
 
 mod cursor;
+mod direct_keyboard;
 mod direct_pointer;
 mod input;
 mod output_metadata;

@@ -733,6 +733,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Direct keyboard and input retirement (2026-09-08): activity-checked evdev
+    routing, pause focus/grab cleanup and both input capabilities cleared before
+    direct-loop output retirement. Five new tests pass, including real client
+    releases/modifiers/serial refusal and stop/pause cleanup before failed disable.
+    Linux shell: 195 tests and three doctests; affected Windows/Linux checks,
+    Linux rustdoc/examples and WSLg regression (115 surfaces) pass. Report:
+    `docs/autonomy/updates/direct-keyboard-input-retirement.md`. Libinput acquisition,
+    open/dispatch/device-removal handling and live session wiring remain next.
+    Safe standalone GLES initialization and real DRM/seat/physical acceptance
+    remain owed; full independent supervisor gates pending, compositor unchecked.
   - Bounded direct-pointer routing (2026-09-08): relative and normalized absolute
     motion map to scale-one output coordinates, with edge clamping, unchanged
     state on refusal and pause drag cleanup. Five focused tests pass; Linux shell

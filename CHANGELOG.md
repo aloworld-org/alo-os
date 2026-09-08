@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Stopping the direct compositor now releases held keys and mouse buttons.**
+  Pause dismisses grabbed popups and clears focus; reactivation requires fresh
+  focus or pointer motion. Direct keyboard routing refuses invalid active keys
+  and discards inactive events. Five new tests cover real client delivery and
+  cleanup before failed output retirement. Live libinput and physical checks
+  remain unfinished. Evidence: `docs/autonomy/updates/direct-keyboard-input-retirement.md`.
+
 - **Direct pointer input can now translate mouse movement into bounded desktop
   coordinates.** Relative and absolute motion share existing client routing;
   malformed input preserves position and drag state, and pause releases held

@@ -12193,3 +12193,50 @@ live direct renderer/input/session integration, real seat/DRM, GPU context loss,
 failed-disable recovery and certified laptop/GPU-workstation physical records
 remain owed. Component complete, compositor and release unchecked. No staging,
 commit, push, other repository change, worker/loop launch or tools/dev-loop edit.
+
+---
+
+## 2026-09-08 - Direct keyboard and input retirement
+
+Read CLAUDE, delivery/ownership/report guidance, current queue and journal tail,
+relevant feature/roadmap, ADR 0002 and daemon-protocol's invocation-only boundary.
+Working tree clean; compared all published report filenames with STATE at start:
+none unreconciled. Claude retains network request-boundary work. Selected the
+keyboard cleanup portion of the next input component in QUEUE before coding;
+libinput acquisition remains independently executable next.
+
+`DirectKeyEvent` and `Server::direct_keyboard` route activity-checked evdev
+transitions through existing XKB/focus validation. Inactivity releases keys,
+dismisses grabs and clears focus, ignoring queued malformed input. Reactivation
+requires explicit focus; duplicate/unmatched keys cannot deliver input or
+authorize popups. `clear_input` also cancels pointer drags. The direct frame loop
+clears input before acquisition and before output retirement, including failed
+disable. Cleanup before acquisition/discovery refusal remains queued for caller
+flush. Device authority and live libinput wiring are not implemented here.
+Decisions, exact commands and evidence:
+`docs/autonomy/updates/direct-keyboard-input-retirement.md`.
+
+Ubuntu Rust and eight graphics pkg-config prerequisites verified; WSLg present,
+/dev/dri absent. Five new tests pass: four real client wire tests and one real
+seat/XKB ordering test across stop/pause and successful/refused retirement. Wire
+evidence includes matched releases/leaves, modifier reset, empty reentry state,
+disconnect isolation, popup dismissal and fresh unconsumed serial refusal after
+pause. Ordering fixture asserts empty pressed keys/no focus before retirement,
+exactly one retirement and zero submissions; target/identity injected, not DRM.
+
+Windows fmt/affected clippy/tests pass (zero Linux-only tests). Linux affected
+clippy/fmt, shell tests (118 unit, 74 lifecycle, three socket and three doctests),
+warnings-denied rustdoc and examples pass. Strengthened popup refusal check passed
+in a final four-test rerun with affected clippy. Initial keycode type compilation
+and test-panic lint failures corrected without exceptions or weakened checks;
+no runtime test failed. WSLg offscreen golden pixels/refusal and nested popup/
+cursor regression pass, 115 client surfaces, expected Mesa/client diagnostics.
+Final source/diff review and git diff --check pass. All four shared documents
+updated. Full independent workspace/rustdoc/BPF supervisor gates remain pending.
+
+Next: seat-owned libinput acquisition/dispatch with open/dispatch refusal and
+device-removal cleanup; safe standalone GLES construction, live session/input/
+renderer integration, real DRM/seat behavior and physical laptop/GPU-workstation
+records remain owed. Existing context-loss and failed-disable recovery limits
+remain. This component is complete; compositor/release unchecked. No staging,
+commit, push, worker/loop launch, other checkout edit or tools/dev-loop change.

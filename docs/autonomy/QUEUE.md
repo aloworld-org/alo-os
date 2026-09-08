@@ -77,6 +77,28 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected direct keyboard and input retirement (desktop worker, 2026-09-08):**
+  complete the keyboard pause-cleanup portion of the next input component.
+  Route activity-checked evdev transitions through existing focus/XKB policy;
+  inactive events clear focus and cannot authorize popups. Retire both input
+  capabilities before direct-loop output retirement on stop and failure.
+  Acceptance: real Wayland held-key/modifier, popup, pointer and reactivation
+  refusal checks; loop cleanup integration; affected fmt/clippy/tests/rustdoc
+  and WSLg regression. Libinput acquisition/open/dispatch/device-removal wiring
+  remains a separate next component, not completed by this step.
+  **Completed direct keyboard and input retirement 2026-09-08:** direct evdev
+  routing checks activity; pause releases held keys and dismisses popup grabs.
+  Whole-seat cleanup cancels pointer drags too, and runs before direct-loop
+  output retirement on stop/failure, even if disable refuses. Five new tests;
+  Linux shell 195 tests and three doctests, affected Windows/Linux checks,
+  Linux rustdoc/examples and WSLg regression (115 surfaces) pass. Report:
+  `updates/direct-keyboard-input-retirement.md`. Next executable component:
+  seat-owned libinput acquisition/event dispatch, open/dispatch refusal and
+  device-removal cleanup wired to these keyboard/pointer boundaries. Safe GLES
+  construction, live direct session integration and real DRM/seat/physical
+  acceptance remain owed. Full independent supervisor gates pending; compositor
+  and release unfinished. Pre-target acquisition/discovery refusal queues input
+  cleanup events for caller flush; this is not device acquisition evidence.
   **Selected bounded direct-pointer routing (desktop worker, 2026-09-08):**
   translate relative mouse deltas and normalized absolute motion to scale-one
   output pixels; share button/scroll routing and cancel drags on inactive input.

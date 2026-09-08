@@ -54,7 +54,11 @@ impl crate::DirectSession {
     /// after it returns, before any client dispatch or rendering. No retry or
     /// automatic resume occurs. Retire and drop precede session descriptor close,
     /// including when submission fails; inspect all independent outcomes. Queued
-    /// output events are flushed without dispatching more requests after pause.
+    /// input releases/leaves and output events are flushed without dispatching
+    /// more requests after pause. Input is cleared before acquisition/discovery
+    /// and on every loop exit, including stop and failed submission/retirement.
+    /// If acquisition or discovery fails before a target exists, cleanup events
+    /// remain queued for the caller to flush or dispatch.
     /// Failed retirement preserves advertised output, so discard the server
     /// before recovery. Upstream libseat acknowledgement ordering still applies.
     pub fn run_compositor(
@@ -63,6 +67,7 @@ impl crate::DirectSession {
         renderer: &mut smithay::backend::renderer::gles::GlesRenderer,
         mut next: impl FnMut() -> DirectFrame,
     ) -> Result<crate::ActiveSessionResult<DirectLoopResult>, SessionError> {
+        server.clear_input();
         self.with_active_device(|fd, poll| {
             let output = match crate::discover_atomic_output(fd) {
                 Ok(output) => output,
@@ -102,6 +107,7 @@ pub(crate) fn run(
             }
         }
     })();
+    server.clear_input();
     let retirement = Some(server.retire_output(&mut target));
     let flush = Some(server.flush());
     DirectLoopResult {
@@ -126,3 +132,7 @@ impl LoopTarget for crate::DirectTarget<'_, '_> {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "direct_input_retirement_tests.rs"]
+mod input_retirement_tests;
