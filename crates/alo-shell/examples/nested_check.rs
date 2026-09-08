@@ -52,6 +52,9 @@ mod window_size_check;
 #[cfg(target_os = "linux")]
 #[path = "support/window_switch_check.rs"]
 mod window_switch_check;
+#[cfg(target_os = "linux")]
+#[path = "support/window_tile_check.rs"]
+mod window_tile_check;
 
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]

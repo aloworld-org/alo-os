@@ -1,15 +1,11 @@
-//! Trusted maximization, normal-geometry memory and committed-response placement.
-use crate::{ResizeEdge, ResizeGeometry, ResizeGeometryError, Server, surfaces::Surfaces};
+//! Trusted maximize entry and client intent policy using shared layout transactions.
+use crate::{
+    ResizeGeometryError, Server, TileGeometryError, WindowModeError, surfaces::Surfaces,
+    window_mode::Mode,
+};
 use smithay::{
-    reexports::{
-        wayland_protocols::xdg::shell::server::xdg_toplevel,
-        wayland_server::protocol::wl_surface::WlSurface,
-    },
-    utils::{Physical, Serial, Size},
-    wayland::{
-        compositor::with_states,
-        shell::xdg::{ToplevelSurface, XdgToplevelSurfaceData},
-    },
+    reexports::wayland_server::protocol::wl_surface::WlSurface, utils::Serial,
+    wayland::shell::xdg::ToplevelSurface,
 };
 
 /// A refused trusted maximize/restore request; refusal changes no protocol state.
@@ -29,16 +25,30 @@ pub enum WindowMaximizeError {
     Geometry(#[from] ResizeGeometryError),
 }
 
-/// One mapping's saved normal geometry, retained until restoration commits.
-pub(crate) struct MaximizedWindow {
-    /// Exact mapped protocol role, never a client-selected identifier.
-    role: ToplevelSurface,
-    /// Initial committed normal geometry; later maximize requests never replace it.
-    normal: ResizeGeometry,
-    /// Last requested mode, separate from the client's committed state.
-    maximized: bool,
-    /// Latest configure and origin; older responses cannot place this window.
-    pending: Option<(Serial, (i32, i32))>,
+/// Preserve the existing exhaustive public maximize error contract.
+/// Tile planning is not reached by maximize/restore; defensive translations still
+/// refuse if that internal invariant changes, without adding a public variant.
+fn maximize_refusal(error: WindowModeError) -> WindowMaximizeError {
+    match error {
+        WindowModeError::Unmapped | WindowModeError::Tile(TileGeometryError::Unmapped) => {
+            WindowMaximizeError::Unmapped
+        }
+        WindowModeError::OutputUnavailable
+        | WindowModeError::Tile(TileGeometryError::OutputUnavailable) => {
+            WindowMaximizeError::OutputUnavailable
+        }
+        WindowModeError::Busy => WindowMaximizeError::Busy,
+        WindowModeError::Geometry(error)
+        | WindowModeError::Tile(TileGeometryError::Geometry(error)) => {
+            WindowMaximizeError::Geometry(error)
+        }
+        WindowModeError::Tile(TileGeometryError::ClientLimits) => {
+            WindowMaximizeError::Geometry(ResizeGeometryError::ClientLimits)
+        }
+        WindowModeError::Tile(TileGeometryError::Size) => {
+            WindowMaximizeError::Geometry(ResizeGeometryError::Geometry)
+        }
+    }
 }
 
 impl Server {
@@ -85,150 +95,20 @@ impl Surfaces {
         }
     }
 
-    /// Whether this mapping still owns normal-geometry memory or a restore response.
-    pub(crate) fn has_window_maximize(&self, surface: &WlSurface) -> bool {
-        self.window_maximize
-            .iter()
-            .any(|window| window.role.wl_surface() == surface)
-    }
-
-    /// Validate before remembering geometry or sending any configure.
+    /// Translate existing maximize intent into the shared layout transaction.
     pub(crate) fn set_window_maximized(
         &mut self,
         surface: &WlSurface,
         maximized: bool,
     ) -> Result<Option<Serial>, WindowMaximizeError> {
-        self.prune_window_maximize();
-        let role = self
-            .mapped_toplevel(surface)
-            .ok_or(WindowMaximizeError::Unmapped)?
-            .clone();
-        if self.window_move.is_some() || self.window_resize.is_some() || self.popup_grab.is_some() {
-            return Err(WindowMaximizeError::Busy);
-        }
-        let previous = self
-            .window_maximize
-            .iter()
-            .find(|window| window.role == role);
-        if previous.is_none() && !maximized {
-            return Ok(None);
-        }
-        let output = if maximized {
-            Some(
-                self.maximize_output
-                    .ok_or(WindowMaximizeError::OutputUnavailable)?,
-            )
-        } else {
-            None
-        };
-        if previous.is_some_and(|window| window.maximized == maximized) {
-            return Ok(None);
-        }
-        let normal = match previous {
-            Some(window) => window.normal,
-            None => self.resize_geometry(surface, ResizeEdge::BottomRight)?,
-        };
-        let (size, origin) = match output {
-            Some(size) => (size, (0, 0)),
-            None => {
-                let size = normal
-                    .with_current_limits(surface)
-                    .requested_size((0.0, 0.0))?;
-                (size, normal.committed_origin(size)?)
-            }
-        };
-        let serial = configure(&role, maximized, size);
-        let window = MaximizedWindow {
-            role,
-            normal,
-            maximized,
-            pending: Some((serial, origin)),
-        };
-        if let Some(previous) = self
-            .window_maximize
-            .iter_mut()
-            .find(|previous| previous.role == window.role)
-        {
-            *previous = window;
-        } else {
-            self.window_maximize.push(window);
-        }
-        Ok(Some(serial))
+        self.set_window_mode(
+            surface,
+            if maximized {
+                Mode::Maximized
+            } else {
+                Mode::Normal
+            },
+        )
+        .map_err(maximize_refusal)
     }
-
-    /// Publish only successful output extents; retirement invalidates old anchors.
-    pub(crate) fn update_maximize_output(&mut self, size: Option<Size<i32, Physical>>) {
-        let size = size
-            .filter(|size| {
-                [size.w, size.h]
-                    .into_iter()
-                    .all(|v| (1..=1_000_000).contains(&v))
-            })
-            .map(|size| (size.w, size.h));
-        if self.maximize_output == size {
-            return;
-        }
-        self.maximize_output = size;
-        self.prune_window_maximize();
-        for window in &mut self.window_maximize {
-            if window.maximized {
-                window.pending = size.map(|size| (configure(&window.role, true, size), (0, 0)));
-            }
-        }
-    }
-
-    /// Only the newest acknowledged and committed response may change placement.
-    pub(crate) fn commit_window_maximize(&mut self, surface: &WlSurface) {
-        self.prune_window_maximize();
-        let Some(window) = self
-            .window_maximize
-            .iter_mut()
-            .find(|window| window.role.wl_surface() == surface)
-        else {
-            return;
-        };
-        let Some((required, origin)) = window.pending else {
-            return;
-        };
-        let serial = with_states(surface, |states| {
-            states
-                .data_map
-                .get::<XdgToplevelSurfaceData>()
-                .and_then(|data| {
-                    data.lock()
-                        .unwrap_or_else(|_| std::process::abort())
-                        .current_serial
-                })
-        });
-        if !serial.is_some_and(|serial| serial >= required) {
-            return;
-        }
-        crate::window_placement::set(surface, Some(origin.into()));
-        if window.maximized {
-            window.pending = None;
-        } else {
-            self.window_maximize
-                .retain(|window| window.role.wl_surface() != surface);
-        }
-    }
-
-    /// Remove dead/unmapped roles, including an unmap followed immediately by remap.
-    pub(crate) fn prune_window_maximize(&mut self) {
-        let mapped: Vec<_> = self.buffered().cloned().collect();
-        self.window_maximize
-            .retain(|window| mapped.contains(window.role.wl_surface()));
-    }
-}
-
-/// Preserve unrelated XDG flags and always obtain a fresh response boundary.
-fn configure(role: &ToplevelSurface, maximized: bool, size: (i32, i32)) -> Serial {
-    role.with_pending_state(|pending| {
-        pending.size = Some(size.into());
-        if maximized {
-            pending.states.set(xdg_toplevel::State::Maximized);
-        } else {
-            pending.states.unset(xdg_toplevel::State::Maximized);
-        }
-    });
-    role.send_configure()
 }

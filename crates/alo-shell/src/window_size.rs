@@ -11,8 +11,9 @@ use crate::Server;
 /// A refused native size request; no configure is sent on refusal.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum WindowSizeError {
-    /// Restore must commit before another operation can change normal geometry.
-    #[error("window is maximized or awaiting restoration")]
+    /// Maximize/tile restoration must commit before changing normal geometry.
+    /// The historical variant name is retained for source compatibility.
+    #[error("window is maximized, tiled or awaiting restoration")]
     Maximized,
     /// Only live mapped toplevel roots owned by this display can be sized.
     #[error("size target is not a mapped toplevel in this display")]
@@ -49,7 +50,7 @@ impl Server {
             .surfaces
             .mapped_toplevel(surface)
             .ok_or(WindowSizeError::Unmapped)?;
-        if self.surfaces.has_window_maximize(surface) {
+        if self.surfaces.has_window_mode(surface) {
             return Err(WindowSizeError::Maximized);
         }
         if size.0 <= 0 || size.1 <= 0 {

@@ -85,3 +85,17 @@ Rendered controls, dock work areas and configurable keyboard dispatch remain
 integration work. Tests and exact evidence limits:
 `docs/autonomy/updates/trusted-window-maximize-and-restore.md` and
 `docs/autonomy/updates/client-window-maximize-requests.md`.
+
+## Shared tile transactions
+
+Integration status: verified after owner-authorized recovery on 2026-09-08;
+see the trusted tiling task report for exact checks and evidence limits.
+
+Normal-geometry memory and response ordering now also cover trusted tiling.
+Maximize clears all tiled states; unmaximize restores original normal geometry
+even after side changes. `WindowMaximizeError` remains its original separate
+four-variant enum, including variant imports, exhaustive matches and error text.
+The new tile entry point uses `WindowModeError`; it does not widen the existing
+maximize error contract. Existing
+`Maximized` sizing/placement refusals also cover tiled/restore memory. See
+`native-window-tiling.md` for the additive API and precise output/commit rules.

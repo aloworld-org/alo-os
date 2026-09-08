@@ -1,5 +1,6 @@
 //! Real-client tiling plans: committed limits, output lifetime and input isolation.
 use super::{Application, Fixture};
+mod transactions;
 use alo_shell::{TileGeometry, TileGeometryError, TileSide};
 use smithay::{
     backend::input::KeyState, reexports::wayland_server::protocol::wl_surface::WlSurface,

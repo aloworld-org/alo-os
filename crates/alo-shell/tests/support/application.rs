@@ -39,6 +39,8 @@ pub struct Events {
     pub resizing: Vec<bool>,
     /// Maximized flags received in successive configurations.
     pub maximized: Vec<bool>,
+    /// Exact tiled-state wire values, retaining duplicates for assertions.
+    pub tiled: Vec<Vec<u32>>,
     /// Cooperative close requests received; the fixture never closes implicitly.
     pub close_requests: usize,
     /// Popup configuration and terminal dismissal wire events.
@@ -218,6 +220,23 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Events {
                 states,
             } => {
                 state.sizes.push((width, height));
+                state.tiled.push(
+                    states
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
+                        .map(|bytes| u32::from_ne_bytes(*bytes))
+                        .filter(|value| {
+                            [
+                                xdg_toplevel::State::TiledLeft as u32,
+                                xdg_toplevel::State::TiledRight as u32,
+                                xdg_toplevel::State::TiledTop as u32,
+                                xdg_toplevel::State::TiledBottom as u32,
+                            ]
+                            .contains(value)
+                        })
+                        .collect(),
+                );
                 state
                     .maximized
                     .push(states.as_chunks::<4>().0.iter().any(|bytes| {

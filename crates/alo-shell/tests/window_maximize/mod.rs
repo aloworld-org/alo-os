@@ -6,6 +6,25 @@ use smithay::{
     backend::input::KeyState, reexports::wayland_server::protocol::wl_surface::WlSurface,
 };
 
+#[test]
+fn maximize_error_retains_its_exhaustive_public_contract() {
+    // Importing variants and matching without a wildcard must remain source compatible.
+    use alo_shell::WindowMaximizeError::{Busy, Geometry, OutputUnavailable, Unmapped};
+    let errors = [
+        Unmapped,
+        OutputUnavailable,
+        Busy,
+        Geometry(alo_shell::ResizeGeometryError::ClientLimits),
+    ];
+    let codes = errors.map(|error| match error {
+        Unmapped => 0,
+        OutputUnavailable => 1,
+        Busy => 2,
+        Geometry(_) => 3,
+    });
+    assert_eq!(codes, [0, 1, 2, 3]);
+}
+
 /// Map a real protocol client.
 fn mapped(f: &Fixture) -> Application {
     let mut app = Application::new(f);

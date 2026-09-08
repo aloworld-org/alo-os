@@ -13343,3 +13343,85 @@ Independent supervisor workspace/rustdoc/BPF gates and concurrent-main
 integration remain pending. No staging, commit, push, tools/dev-loop changes,
 other checkout edits, worker/loop launch, credential/identity access or unrelated
 host changes. Ready for supervisor verification and publication.
+
+
+## 2026-09-08 - Trusted tiling and restoration verification halted
+
+Initial tree clean; supervisor owns pull/publication. Read delivery/shared-main
+and report guidance, relevant constitution/features/roadmap/ADRs/contracts and
+current queue/journal. All published reports already referenced here at iteration
+start; no reconciliation outstanding. Claude assignments/checkout untouched.
+Recorded component and acceptance in QUEUE before implementation.
+
+Preserved shared normal/maximized/tiled transactions, exact tiled-state capture,
+nine real-client cases and six proposed 6,400-pixel GLES boundaries. Focused Linux
+checks passed seven then nine cases; final internal renaming, error wording and
+helper edits postdate that success. One initial test compilation error was fixed
+using an exact matches! assertion. Two affected clippy attempts then failed:
+missing private docs (corrected), followed by prohibited panic! in
+`crates/alo-shell/tests/window_tiling/transactions.rs:41` (preserved at halt).
+No assertions or lint settings were weakened. Treating the repeated verification
+failures as a halt; no further build/test/lint commands authorized this iteration.
+
+Windows fmt ran successfully on intermediate trees. Final fmt, successful Linux
+clippy, final focused/full shell tests, rustdoc, example build, graphical
+boundary/nested regressions, Windows affected tests and all supervisor gates
+remain unrun. Exact commands/results, decisions and limits:
+`docs/autonomy/updates/trusted-window-tiling-and-restoration.md`.
+
+Verified Ubuntu Rust 1.98.0, WSLg socket and all eight graphics/input dependencies;
+no installation needed. First prerequisite PATH export produced quoting warnings;
+cargo used the fixed explicit PATH documented in the report. C: preflights all
+exceeded 12 GiB; final status 15,534,075,904 bytes (14.4672 GiB). No cleanup,
+second worker/loop, tools/dev-loop changes, host/service/kernel edits, credential
+or identity access, unrelated process stops, staging, commit or push.
+
+All four progress files record blocked/in-progress status. Owner must authorize
+resumption, preserving changes and the gate. Use a fallible missing-configure
+check in the exact-flags helper, then complete final format/lint/test/graphical
+verification and diff review. This does not complete tiling or window management;
+native controls follow once transactions are verified. WSL/VM evidence never
+certifies physical hardware; exact deferred acceptance limits remain in report.
+
+Read-only `git -c core.safecrlf=false diff --check` passed at halt; no build/test
+was restarted. Final source/graphical review and verification remain unfinished.
+
+## 2026-09-08 - Trusted tiling/restoration recovery verified
+
+Owner authorized continuation and loop restart. Confirmed the supervisor and
+worker had exited and no competing build was running. Preserved all unfinished
+changes on `08a1b62`, the supervisor-published bounded-tiling geometry component.
+Fetch confirmed HEAD and origin/main matched before recovery publication.
+
+The exact tiled-flags helper now propagates a missing-configure error through
+Result, with no prohibited panic or lint exemption. Callers propagate failure;
+sorted exact comparisons still retain duplicates. A regression verifies missing
+events fail for both tiled and normal expectations. Reviewed shared mode memory,
+output/commit lifetime, operation exclusion and all six graphical stages.
+
+Public compatibility review found the proposed WindowMaximizeError alias would
+break exhaustive callers by adding Tile. Kept the original enum and its four
+variants, resize-error conversion and messages; shared transactions translate
+refusals at the existing maximize entry point. WindowModeError is new for the
+new tiling API only. A regression imports and exhaustively matches all four
+original variants, without a wildcard. No accepted API or ADR was broken.
+
+Final Linux focused window test selection passed 69 cases, including nine tile
+transactions and both recovery regressions. Complete Windows/Linux workspace
+fmt, clippy with warnings denied and tests passed; Linux rustdoc and pinned BPF
+fmt/clippy passed. Shell: 144 unit, 164 lifecycle, three socket tests and three
+doctests passed. Existing ignored hardware/platform checks remain unclaimed.
+The rebuilt WSLg fixture passed all 28 offscreen stages: six new tile/restore
+boundaries each checked all 6,400 pixels. Nested popup/cursor regression passed
+115 submitted client surfaces. Diff whitespace check passed. Exact commands
+and retained evidence limits: `updates/trusted-window-tiling-and-restoration.md`.
+Local gate log: `.git/tiling-resume-gates.log`.
+
+Recovery gates were run interactively before publication; the halted supervisor
+was not credited with them. Supervisor source, gate policy, lint configuration,
+Git identity and other checkouts are untouched. C: was checked before every
+phase and remained above 12 GiB, about 14.16 GiB at completion. No cleanup or
+Windows/company-managed changes. Desktop retains the build slot; Claude's
+workstream has not been activated. Publish this verified step, then restart the
+single-writer supervisor. Next: native controls and operation dispatch using
+the verified primitives. No complete window-management or release claim made.

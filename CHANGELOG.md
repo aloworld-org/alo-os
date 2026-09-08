@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The shell can tile windows and restore their original geometry.**
+  Left/right tiling shares normal-size memory with maximization, waits for the
+  application's acknowledged buffer commit, and preserves ordinary typing and
+  focus. Invalid sizes and competing operations refuse without moving a window.
+  Real-client, full workspace and graphical checks pass; rendered controls remain
+  integration work. Existing maximize error handling remains source compatible.
+  `docs/autonomy/updates/trusted-window-tiling-and-restoration.md`.
+
 - **Native window tiling now has a tested geometry foundation.** The shell can
   plan either half of the submitted display, handle odd widths without gaps and
   refuse incompatible application size limits without disturbing windows or

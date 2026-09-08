@@ -2,6 +2,24 @@
 use super::*;
 
 impl Application {
+    /// Commit the exact half of the graphical fixture's 33x32 output.
+    pub fn attach_tiled(&self, side: alo_shell::TileSide) {
+        let width = match side {
+            alo_shell::TileSide::Left => 16,
+            alo_shell::TileSide::Right => 17,
+        };
+        let qh = self.queue.handle();
+        let mut file = tempfile::tempfile().unwrap();
+        file.write_all(&vec![0xff; width as usize * 32 * 4])
+            .unwrap();
+        let pool = self.shm.create_pool(file.as_fd(), width * 32 * 4, &qh, ());
+        let buffer = pool.create_buffer(0, width, 32, width * 4, wl_shm::Format::Argb8888, &qh, ());
+        self.surface.attach(Some(&buffer), 0, 0);
+        self.surface.damage_buffer(0, 0, width, 32);
+        self.surface.commit();
+        pool.destroy();
+    }
+
     /// Commit a buffer matching the offscreen fixture's complete 33x32 output.
     pub fn attach_maximized(&self) {
         let qh = self.queue.handle();

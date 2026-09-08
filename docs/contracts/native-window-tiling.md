@@ -40,8 +40,64 @@ Normal keyboard/pointer routing continues. No tiled state or normal-geometry
 memory is established by this API.
 
 This completes the planning component, not tiling/restoration as a feature.
-Next are trusted tile/restore transactions with shared maximize normal-geometry
-memory, tiled XDG states, latest-response placement, output/lifetime retirement
-and real-client/GLES boundary tests. Native controls follow those operations.
+Trusted tile/restore transactions are described below, with shared maximize
+normal-geometry memory, tiled XDG states, latest-response placement and
+output/lifetime retirement. Native controls follow those operations.
 Linked-neighbour resizing, corner snapping and remembered arrangements remain
 v0.5 scope. Evidence: `../autonomy/updates/bounded-window-tiling-geometry.md`.
+
+## Trusted tile and restore transactions
+
+Implementation status: verified after owner-authorized recovery on 2026-09-08.
+Real-client and graphical evidence is recorded in the task report below;
+rendered native controls remain separate integration work.
+
+`Server::set_window_tiled(surface, Some(TileSide::{Left, Right}))` now requests
+an actual tile; `None` restores normal geometry, including from maximize. The
+existing immutable planning API remains side-effect free. Transactions return a
+fresh configure serial, or `None` for an unchanged valid mode. Refusals use
+`WindowModeError`: `Unmapped`, `Busy`, `OutputUnavailable`, `Geometry`, or
+`Tile(TileGeometryError)` for exact-tile planning failures. `WindowMaximizeError`
+remains its original, separate four-variant enum, not an alias to the larger
+type. Existing variant imports and exhaustive matches remain source compatible;
+maximize callers do not acquire a tile-only error variant.
+
+The first non-normal request captures normal geometry once per buffer mapping.
+Side switches, maximize transitions, output changes and rapid restore/re-enter
+requests retain it. Restore clamps the saved dimensions to committed current
+hints and retains the original origin. Both restore entry points share this
+policy, including XDG client unmaximize. No output is required to restore.
+
+Tile configures set all four `tiled_*` states: every edge abuts either the output
+boundary or the split. Maximize clears those states and sets `maximized`; normal
+clears both. Unrelated activation flags are preserved. No tile protocol request
+or WM capability exists to advertise. Input, focus, stacking and visibility do
+not change on request. Existing move/resize/popup grabs refuse with `Busy`.
+While any mode memory or restore boundary remains, interactive move/resize is
+refused and exact sizing/placement returns the existing `Maximized` variant,
+whose meaning now includes tiling. Native controls remain integration work.
+
+Only a root commit with a serial at least as new as the latest request can
+apply an anchor. Acknowledgement alone and stale responses cannot move pixels.
+Right tiles anchor their *actual effective geometry* at the output's right edge;
+left tiles anchor at (0,0). Shadow offsets are preserved; no buffers are scaled.
+Subsequent geometry commits keep that anchor while the tile is valid. Actual
+nonconforming sizes remain visible as real pixels, including normal clipping.
+
+Commit-time incompatible limits or unsupported actual dimensions invalidate the
+anchor without erasing original normal geometry. Merely reverting hints cannot
+revive an old response: an explicit valid tile request obtains a fresh serial.
+Successfully changed output extents also reconfigure eligible tiles. Unsupported
+outputs, incompatible new output sizes and successful retirement suspend old
+anchors. Failed submission/retirement preserves them. A valid replacement output
+gets a fresh boundary; output changes cannot supersede an in-flight normal
+restore. No timeout, forced client resizing or engine patch is introduced.
+
+Minimized mappings preserve mode memory and accept commits while hidden; new
+trusted tile/restore requests refuse until revealed. Revealing does not steal
+focus. Unmap/disconnect discards all mode memory and serial authority; remapping
+starts normal under the existing fresh handshake.
+
+Evidence: `../autonomy/updates/trusted-window-tiling-and-restoration.md`.
+This completes trusted transactions only. Rendered controls, dock work areas and
+configurable operation dispatch remain; no window-management/release tick.

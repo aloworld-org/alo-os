@@ -1239,16 +1239,25 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Trusted tiling/restoration (2026-09-08), verified after authorized recovery:
+    shared normal/maximized/tiled memory, latest acknowledged-commit placement,
+    output/limit suspension and lifecycle isolation are tested. Nine transaction
+    cases, missing-event and maximize compatibility regressions, 164 lifecycle
+    tests, Windows/Linux workspace gates, rustdoc and pinned BPF checks pass.
+    All 28 offscreen stages pass, including six full 6,400-pixel tile/restore
+    boundaries; the nested regression passes 115 submitted client surfaces.
+    Next: rendered native controls and operation dispatch. Evidence/limits:
+    `docs/autonomy/updates/trusted-window-tiling-and-restoration.md`.
+    No window-management or release checkbox is promoted.
   - Bounded tiling geometry (2026-09-08): immutable left/right half-output plans
     use successfully submitted extents, committed client limits and bounded
     actual-size outside-edge anchoring. Three unit/four real-client tests, Linux
     affected clippy, 300 tests plus three doctests, rustdoc/examples and WSLg
     offscreen/nested regressions pass. Both plans preserve all 6,400 GLES pixels.
     Evidence: `docs/autonomy/updates/bounded-window-tiling-geometry.md`.
-    Next: tile/restore transactions sharing normal geometry with maximize,
-    tiled XDG states, latest acknowledged-commit placement and output/lifetime
-    cancellation, then native controls. Planning is complete; tiling/window
-    management and release remain unchecked. Supervisor gates remain pending.
+    Supervisor gates passed and published as `08a1b62`. Trusted transactions are
+    verified above; native controls remain. Planning and transactions do not
+    complete window management or the release.
   - Client minimize requests (2026-09-08): verified after owner-authorized recovery.
     Mapped requests share native visibility policy; pre-map intent and duplicates
     are inert. Exact order-independent capabilities are checked on map/remap.

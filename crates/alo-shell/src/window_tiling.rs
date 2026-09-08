@@ -73,6 +73,28 @@ impl TileGeometry {
         Ok(tile)
     }
 
+    /// Read current committed limits for a live transaction's output snapshot.
+    pub(crate) fn for_surface(
+        surface: &WlSurface,
+        output: (i32, i32),
+        side: TileSide,
+    ) -> Result<Self, TileGeometryError> {
+        let (min, max) = with_states(surface, |states| {
+            let mut cached = states.cached_state.get::<SurfaceCachedState>();
+            let current = cached.current();
+            (
+                (current.min_size.w, current.min_size.h),
+                (current.max_size.w, current.max_size.h),
+            )
+        });
+        Self::new(output, side, min, max)
+    }
+
+    /// A committed limit change cannot authorize placement from an invalid plan.
+    pub(crate) fn revalidate(&self, surface: &WlSurface) -> Result<(), TileGeometryError> {
+        Self::for_surface(surface, self.output, self.side).map(|_| ())
+    }
+
     /// Exact positive logical dimensions; both tiles cover the output without gaps.
     pub fn requested_size(&self) -> (i32, i32) {
         let left = self.output.0 / 2;
@@ -118,24 +140,46 @@ impl Server {
         surface: &WlSurface,
         side: TileSide,
     ) -> Result<TileGeometry, TileGeometryError> {
-        self.surfaces
-            .mapped_toplevel(surface)
+        self.surfaces.tile_geometry(surface, side)
+    }
+
+    /// Request a half-output tile, or restore the original normal geometry.
+    ///
+    /// Shares mapping memory and serial ordering with maximize. All four tiled
+    /// flags are set; switching sides preserves original normal geometry. Only
+    /// an acknowledged root commit can anchor actual dimensions. Invalid current
+    /// limits cancel placement until a fresh request or output change; hidden
+    /// mappings retain memory. Unmap/disconnect forget it. Neither focus nor
+    /// stacking changes. This trusted native API is not an agent endpoint.
+    pub fn set_window_tiled(
+        &mut self,
+        surface: &WlSurface,
+        side: Option<TileSide>,
+    ) -> Result<Option<smithay::utils::Serial>, crate::WindowModeError> {
+        self.surfaces.set_window_mode(
+            surface,
+            side.map_or(
+                crate::window_mode::Mode::Normal,
+                crate::window_mode::Mode::Tiled,
+            ),
+        )
+    }
+}
+
+impl crate::surfaces::Surfaces {
+    /// Resolve live mapping and current output before capturing tile geometry.
+    pub(crate) fn tile_geometry(
+        &self,
+        surface: &WlSurface,
+        side: TileSide,
+    ) -> Result<TileGeometry, TileGeometryError> {
+        self.mapped_toplevel(surface)
             .ok_or(TileGeometryError::Unmapped)?;
-        self.surfaces
-            .resize_geometry(surface, ResizeEdge::BottomRight)?;
+        self.resize_geometry(surface, ResizeEdge::BottomRight)?;
         let output = self
-            .surfaces
-            .maximize_output
+            .window_mode_output
             .ok_or(TileGeometryError::OutputUnavailable)?;
-        let (min, max) = with_states(surface, |states| {
-            let mut cached = states.cached_state.get::<SurfaceCachedState>();
-            let current = cached.current();
-            (
-                (current.min_size.w, current.min_size.h),
-                (current.max_size.w, current.max_size.h),
-            )
-        });
-        TileGeometry::new(output, side, min, max)
+        TileGeometry::for_surface(surface, output, side)
     }
 }
 

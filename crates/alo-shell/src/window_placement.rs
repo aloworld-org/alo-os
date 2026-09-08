@@ -11,8 +11,9 @@ use std::sync::Mutex;
 /// A refused placement, or a failure refreshing input after placement changed.
 #[derive(Debug, thiserror::Error)]
 pub enum WindowPlacementError {
-    /// Restore must commit before another operation can change normal geometry.
-    #[error("window is maximized or awaiting restoration")]
+    /// Maximize/tile restoration must commit before changing normal geometry.
+    /// The historical variant name is retained for source compatibility.
+    #[error("window is maximized, tiled or awaiting restoration")]
     Maximized,
     /// Only this display's live mapped roots may be placed.
     #[error("placement target is not a mapped toplevel in this display")]
@@ -78,7 +79,7 @@ impl Server {
         if self.surfaces.mapped_toplevel(surface).is_none() {
             return Err(WindowPlacementError::Unmapped);
         }
-        if self.surfaces.has_window_maximize(surface) {
+        if self.surfaces.has_window_mode(surface) {
             return Err(WindowPlacementError::Maximized);
         }
         if ![position.0, position.1]

@@ -5,14 +5,38 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Trusted tiling/restoration verified (2026-09-08):** owner-authorized recovery
+replaced the prohibited test panic with a propagated missing-event error and
+preserved exact flag assertions. Kept the original four-variant maximize error
+enum rather than a source-breaking alias; a regression uses exhaustive matching.
+All nine transaction cases plus both regressions pass, along with 164 lifecycle
+tests, Windows/Linux workspace gates, rustdoc and pinned BPF checks. All 28
+offscreen stages pass, including six full 6,400-pixel tile/restore boundaries;
+nested regression passes 115 client surfaces. No lint or assertion weakened.
+Next executable work: rendered native controls and operation dispatch using the
+verified window operations. Record the selected complete component, input/target
+validation, externalized labels and graphical/refusal acceptance before building.
+Report: `updates/trusted-window-tiling-and-restoration.md`. No release checkbox moved.
+
+**Selected trusted tiling/restoration transactions (2026-09-08):** share original
+normal geometry with maximize; configure left/right tiled states and wait for
+the latest acknowledged root commit before anchoring actual dimensions. Validate
+committed limits at request and commit, suspend invalidated output responses,
+preserve hidden mapping memory and forget unmap/disconnect. Acceptance: real
+clients covering duplicate/rapid modes, stale acknowledgements, output failure,
+retirement/replacement, limits, foreign targets, competing operations and normal
+keyboard isolation; full-frame GLES boundaries and affected Rust gates. Native
+controls follow; no feature completion claim from the transaction component.
+
 **Completed bounded window tiling geometry (2026-09-08):** left/right plans use
 successful output extents and committed limits; invalid targets/sizes refuse
 without configures, placement or input changes. Three unit/four real-client
 tests, Linux affected clippy, 300 tests plus three doctests, rustdoc/examples
 and WSLg offscreen/nested regressions pass. Both half plans preserve all 6,400
 GLES pixels. Exact checks and limits:
-`updates/bounded-window-tiling-geometry.md`. Full supervisor gates pending.
-Next executable component: trusted tile/restore transactions sharing original
+`updates/bounded-window-tiling-geometry.md`. Supervisor gates passed and published
+as `08a1b62`. The following selected transaction component is verified above:
+trusted tile/restore transactions sharing original
 normal geometry with maximize. Acceptance: tiled XDG states, duplicate and rapid
 mode changes, latest configure/ack/commit placement with actual dimensions,
 client limits, competing operations, output failure/retirement/replacement,

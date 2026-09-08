@@ -261,6 +261,25 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     fresh.sync();
     assert!(send.send(22).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    for stage in 23..=28 {
+        if matches!(stage, 24 | 26 | 27) {
+            fresh.sync();
+            assert!(fresh.events.serial.is_some());
+            if let Some(serial) = fresh.events.serial {
+                fresh.xdg.ack_configure(serial);
+            }
+            fresh.sync();
+        }
+        match stage {
+            25 => fresh.attach_tiled(alo_shell::TileSide::Right),
+            26 => fresh.attach_tiled(alo_shell::TileSide::Left),
+            28 => fresh.attach_resized(),
+            _ => {}
+        }
+        fresh.sync();
+        assert!(send.send(stage).is_ok());
+        assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    }
     fresh.surface.attach(None, 0, 0);
     fresh.surface.commit();
     fresh.sync();

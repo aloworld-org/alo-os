@@ -123,7 +123,7 @@ impl Server {
             &cursor,
             time,
         )?;
-        self.surfaces.update_maximize_output(Some(size));
+        self.surfaces.update_window_mode_output(Some(size));
         Ok(submitted)
     }
 }

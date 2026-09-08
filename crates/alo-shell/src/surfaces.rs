@@ -41,10 +41,10 @@ struct Window {
 
 /// Protocol globals and toplevel roots shared by display backends.
 pub(crate) struct Surfaces {
-    /// Per-mapping normal geometry and maximize/restore response boundaries.
-    pub(crate) window_maximize: Vec<crate::window_maximize::MaximizedWindow>,
-    /// Last successfully submitted extent, shared by maximize and tile planning.
-    pub(crate) maximize_output: Option<(i32, i32)>,
+    /// Per-mapping normal geometry and normal/maximized/tiled response boundaries.
+    pub(crate) window_modes: Vec<crate::window_mode::ModeWindow>,
+    /// Last successfully submitted extent, shared by maximize and tile transactions.
+    pub(crate) window_mode_output: Option<(i32, i32)>,
     /// Resize protocol state owned by one held press and mapping lifetime.
     pub(crate) window_resize: Option<crate::resize_transaction::Resize>,
     /// Pointer-authorized interactive movement of one mapped root.
@@ -75,8 +75,8 @@ impl Surfaces {
     /// Advertise only protocols this component implements.
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
-            window_maximize: Vec::new(),
-            maximize_output: None,
+            window_modes: Vec::new(),
+            window_mode_output: None,
             window_resize: None,
             window_move: None,
             popups: Default::default(),
@@ -97,7 +97,7 @@ impl Surfaces {
         self.windows.retain(|window| window.surface.alive());
         self.prune_window_move();
         self.prune_window_resize();
-        self.prune_window_maximize();
+        self.prune_window_modes();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
         self.popups.refresh(&parents);
@@ -224,7 +224,7 @@ impl CompositorHandler for Surfaces {
         }
         self.prune_window_move();
         self.commit_window_resize(surface);
-        self.commit_window_maximize(surface);
+        self.commit_window_mode(surface);
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
     }
