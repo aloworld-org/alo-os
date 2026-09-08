@@ -87,7 +87,7 @@ fn a_file_that_is_not_settings_is_refused_in_the_readers_own_language() {
     )]);
     let said = NotSet::NotUnderstood {
         at: somewhere(),
-        why: Box::new(toml::from_str::<toml::Table>("=").unwrap_err()),
+        why: alo_choosing::NotToml::of(&toml::from_str::<toml::Table>("=").unwrap_err(), "="),
     }
     .said(&strings);
 

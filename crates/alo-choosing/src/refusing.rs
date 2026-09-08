@@ -41,6 +41,7 @@ use std::path::{Path, PathBuf};
 
 use alo_strings::{Filling, LanguageError, Said, Strings};
 
+use crate::unreadable::NotToml;
 use crate::words;
 
 /// Why the settings at a path are not settings.
@@ -66,9 +67,12 @@ pub enum NotSet {
     NotUnderstood {
         /// Where it is.
         at: PathBuf,
-        /// What the parser made of it. Boxed because it is much larger than
-        /// every other variant here and this type travels inside a `Result`.
-        why: Box<toml::de::Error>,
+        /// What the parser made of it, **with everything the file said taken
+        /// out**. `crate::unreadable` is the whole argument: a TOML error
+        /// quotes the line it failed on, and the line a person is most likely
+        /// to have got wrong in a settings file is the one they pasted a
+        /// credential into.
+        why: NotToml,
     },
     /// The file says it is a shape this alo OS does not read.
     AnotherFormat {
@@ -258,7 +262,7 @@ mod tests {
             },
             NotSet::NotUnderstood {
                 at: somewhere(),
-                why: Box::new(toml::from_str::<toml::Table>("=").unwrap_err()),
+                why: NotToml::of(&toml::from_str::<toml::Table>("=").unwrap_err(), "="),
             },
             NotSet::AnotherFormat {
                 at: somewhere(),
@@ -362,7 +366,7 @@ mod tests {
         )]);
         let said = NotSet::NotUnderstood {
             at: somewhere(),
-            why: Box::new(toml::from_str::<toml::Table>("=").unwrap_err()),
+            why: NotToml::of(&toml::from_str::<toml::Table>("=").unwrap_err(), "="),
         }
         .said(&strings);
         assert!(said.is_translated(), "{said}");

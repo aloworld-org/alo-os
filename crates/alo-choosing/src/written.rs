@@ -59,6 +59,7 @@ use alo_models::{
 use crate::chosen::{Chosen, Picked, Which};
 use crate::refusing::NotSet;
 use crate::settings::{Settings, Unresolved};
+use crate::unreadable::NotToml;
 
 /// The shape of settings this alo OS writes, and the newest it reads.
 ///
@@ -370,7 +371,10 @@ impl AsWritten {
 pub(crate) fn read(said: &str, at: &std::path::Path) -> Result<Settings, NotSet> {
     let not_understood = |why: toml::de::Error| NotSet::NotUnderstood {
         at: at.to_owned(),
-        why: Box::new(why),
+        // Redacted here, at the one place a parser's error becomes one of
+        // ours, so that there is no road by which an unredacted one reaches a
+        // caller. `crate::unreadable` says what survives and why.
+        why: NotToml::of(&why, said),
     };
 
     let which: WhichFormat = toml::from_str(said).map_err(not_understood)?;
@@ -666,7 +670,14 @@ drives-verbs = "reliably"
         let NotSet::NotUnderstood { ref why, .. } = refused else {
             unreachable!("a key nobody declared is refused as text that is not settings")
         };
-        assert!(why.to_string().contains("key"), "{why}");
+        assert!(why.said().contains("unknown field"), "{why}");
+        // Not `contains("key")`: `needs-a-key` is one of this format's own
+        // words and survives on purpose. What must not survive is the name the
+        // credential was pasted under, quoted back as the field it was.
+        assert!(
+            !why.to_string().contains("`key`"),
+            "the refusal repeated the name a credential had been pasted under: {why}"
+        );
 
         // **And the sentence the person reads carries no credential.** That is
         // the guarantee: `choosing.settings.not-understood` is filled with the
@@ -739,15 +750,27 @@ drives-verbs = "reliably"
 
     /// **A key nobody declared is refused**, because the only other thing to do
     /// with a typo is run under whatever the key it was meant to be says.
+    ///
+    /// This used to assert that the refusal quoted the typo back — `readng` —
+    /// and it deliberately no longer does. A key nobody declared is exactly
+    /// where a pasted credential lands, and `crate::unreadable` cannot tell a
+    /// person's typo from a person's API key. What is kept instead is what
+    /// sends somebody to the right place without repeating what they wrote:
+    /// the line, and the names this format really has.
     #[test]
     fn a_key_nobody_declared_is_refused() {
         let said = as_the_contract_writes_them().replace("[reading]", "[readng]");
         let refused = read(&said, somewhere()).unwrap_err();
-        assert!(matches!(refused, NotSet::NotUnderstood { .. }));
         let NotSet::NotUnderstood { why, .. } = refused else {
-            unreachable!("the shape was matched above")
+            unreachable!("a key nobody declared is text that is not settings")
         };
-        assert!(why.to_string().contains("readng"), "{why}");
+
+        assert!(why.said().contains("unknown field"), "{why}");
+        assert!(why.said().contains("`format`"), "{why}");
+        assert!(why.at().is_some(), "{why}");
+        // And it does not repeat what was typed, whether that was a typo or a
+        // credential — this cannot tell them apart and does not try.
+        assert!(!why.to_string().contains("readng"), "{why}");
     }
 
     /// **A language that is not one is refused, and the whole file with it.**
