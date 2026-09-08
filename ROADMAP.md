@@ -733,6 +733,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Session-driven direct frame loop (2026-09-08): fresh atomic discovery and
+    the GLES target now run within the active descriptor scope. Polling surrounds
+    pacing, idle dispatch remains active, and stop/failure retires and drops before
+    close. Post-commit cleanup failure stops immediately; retirement flushes queued
+    output events without more client dispatch. Four focused tests pass; Linux
+    shell 185 tests plus three doctests, affected Windows/Linux fmt/clippy/tests,
+    Linux rustdoc/examples and WSLg offscreen/nested checks pass (115 surfaces).
+    Report: `docs/autonomy/updates/session-driven-direct-frame-loop.md`.
+    Next: native GLES initialization, direct input and boot/session wiring.
+    Caller still supplies the current renderer; real DRM/seat, recovery and
+    physical acceptance remain owed. Supervisor full gates remain independent.
   - Scoped session pause polling (2026-09-08): `with_active_device` lends a device
     and nonblocking poll across a rendering lifetime. Pause/activate batches stay
     interrupted; descriptor close follows caller retirement/drop, including unwind.

@@ -8,6 +8,9 @@ use std::{cell::RefCell, io::Read, os::unix::net::UnixStream, rc::Rc};
 #[path = "active_session_tests.rs"]
 mod active;
 
+#[path = "session_loop_tests.rs"]
+mod compositor;
+
 /// Shared observations survive destruction of the device owner.
 #[derive(Default)]
 struct State {

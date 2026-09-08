@@ -12094,3 +12094,52 @@ and release remain unchecked. Full independent Windows/Linux workspace/rustdoc/B
 publication gates have not been run by this worker; supervisor must run them.
 No staging, commit, push, worker/loop launch, tools/dev-loop modification, other
 repository changes or physical installation. Component ready for integration.
+
+
+---
+
+## 2026-09-08 - Session-driven direct frame loop
+
+Read constitution, delivery/ownership/report rules, current queue/journal tail,
+v0.01 feature/roadmap, ADR 0002 and relevant daemon contract boundaries. Working
+tree was clean. Compared every published report filename against STATE: none
+unreferenced at iteration start. No incoming report required consolidation;
+Claude's network request-boundary assignment remains with Claude. Supervisor
+owns synchronization and publication; no other checkout was accessed.
+
+Recorded the session-driven loop component in QUEUE before implementation.
+`DirectSession::run_compositor` now performs fresh atomic discovery and constructs
+a GLES DirectTarget within the active descriptor scope. The loop polls before
+and after trusted pacing, dispatches clients only while active, and stops on seat,
+dispatch, render or committed-cleanup failure. It retires, flushes queued output
+events without dispatch, and drops before descriptor close. Failures remain
+independent. Current renderer creation and direct input are still caller work.
+Decisions, exact commands and evidence are in
+`docs/autonomy/updates/session-driven-direct-frame-loop.md`.
+
+Verified Ubuntu Rust/graphics pkg-config prerequisites and WSLg; /dev/dri absent.
+Four focused tests pass. Additional integration uses real calloop notifications
+and Unix descriptors to prove retirement/drop before close for pause during frame
+and idle scheduling. Injected production scanout tests cover both sides of pacing,
+stop, replacement refusal, committed cleanup failure and single failed disable.
+No actual libseat/DRM or physical certification is claimed.
+
+Final Windows/Linux formatting and affected all-target clippy/tests pass. Linux:
+115 unit, 67 client-lifecycle and three socket tests, plus three compile-fail
+doctests. Warnings-denied shell rustdoc and examples pass. WSLg offscreen golden
+pixels and nested popup/cursor checks pass (115 client surfaces); invalid EGL
+refuses with exit 1. Initial runtime-permission fixtures and a clippy test unwrap
+were corrected without weakening checks. A CRLF local shell script invocation
+was invalid and not counted; corrected checks are retained in
+`.git/direct-loop-final-checks.log`. Redirected native stderr affected PowerShell's
+wrapper status; standalone WSLg runs explicitly confirmed success/refusal exits.
+The report retains these limits and the earlier invalid log path.
+
+Updated CHANGELOG, ROADMAP, QUEUE and this journal in the same change. Reviewed
+changed/new files and `git diff --check`. Next: native offscreen GLES initialization
+with ownership/refusal coverage, then direct input and boot/session wiring.
+Real DRM/seat pause/resume, libseat acknowledgement ordering, failed-disable
+recovery, context loss, asynchronous transport and physical laptop/GPU-workstation
+records remain owed. Compositor/release unchecked; independent full Windows/Linux
+workspace, rustdoc and BPF gates must still be run by the supervisor. No staging,
+commit, push, tools/dev-loop edit, worker/loop launch or physical installation.

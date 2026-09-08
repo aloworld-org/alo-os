@@ -27,6 +27,11 @@ pub struct Server {
 }
 
 impl Server {
+    /// Flush queued protocol events without accepting or dispatching client work.
+    pub(crate) fn flush(&mut self) -> io::Result<()> {
+        self.display.flush_clients()
+    }
+
     /// Handle kept private to the library's protocol-global initialization.
     pub(crate) fn display_handle(&self) -> smithay::reexports::wayland_server::DisplayHandle {
         self.display.handle()

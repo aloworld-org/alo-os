@@ -77,6 +77,27 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected session-driven direct frame loop (desktop worker, 2026-09-08):**
+  connect fresh atomic discovery and the GLES DirectTarget to the active device
+  scope. Poll before and after the trusted pacing callback, dispatch/render only
+  while active, and retire/drop on stop or error before descriptor close. Preserve
+  loop, output-retirement and close failures independently. Acceptance: ordering,
+  idle/pause, render/disable refusal tests with real session descriptors and the
+  production target, affected fmt/clippy/tests/rustdoc and WSLg regression.
+  Renderer creation, direct input, real seat/DRM and physical acceptance remain.
+  **Completed session-driven direct frame loop 2026-09-08:** fresh discovery and
+  GLES target run in the active device scope; seat polls surround scheduler work,
+  idle keeps polling, and stop/error retires, flushes protocol events and drops
+  before close. Post-commit cleanup failure stops without another scheduler call.
+  Independent runtime/retirement/flush/close results preserve refusal evidence.
+  Four new tests pass; Linux shell 185 tests and three doctests, affected
+  Windows/Linux checks, Linux rustdoc/examples and WSLg regression pass (115
+  client surfaces). Report: `updates/session-driven-direct-frame-loop.md`.
+  Next executable component: native offscreen GLES initialization and ownership
+  with initialization/refusal evidence, then direct input and boot/session wiring.
+  The caller still supplies the current renderer. Physical DRM/seat, recovery,
+  GPU context loss and full independent supervisor publication gates remain owed.
+  This loop component is complete; compositor and release remain unfinished.
   **Selected scoped session pause polling (desktop worker, 2026-09-08):**
   lend the active descriptor across a trusted synchronous compositor loop while
   polling seat notifications. Latch pause even across immediate activation,

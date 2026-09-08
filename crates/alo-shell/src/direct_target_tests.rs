@@ -183,3 +183,6 @@ fn direct_target_graphics_failure_never_touches_drm() {
     ));
     assert!(log.borrow().calls.is_empty());
 }
+
+#[path = "direct_loop_tests.rs"]
+mod direct_loop;

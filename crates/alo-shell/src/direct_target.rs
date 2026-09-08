@@ -229,3 +229,13 @@ impl<R: ScenePainter, D: ScanoutDevice + Clone> FrameTarget for Target<R, D> {
         })
     }
 }
+
+impl<R: ScenePainter, D: ScanoutDevice + Clone> crate::direct_loop::LoopTarget for Target<R, D> {
+    fn check(&self) -> Result<(), RenderError> {
+        if self.halted {
+            Err(RenderError::DirectHalted)
+        } else {
+            Ok(())
+        }
+    }
+}

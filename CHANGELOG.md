@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct compositor now stops and retires its output when its session
+  pauses or rendering fails.** The session-driven loop checks seat state around
+  pacing, keeps polling while idle, and retires/drops its target before closing
+  the display descriptor. Rendering, retirement, event-flush and close failures
+  remain independently inspectable. Four new tests and WSLg regressions pass;
+  native renderer initialization, direct input and physical acceptance remain.
+  Evidence: `docs/autonomy/updates/session-driven-direct-frame-loop.md`.
+
 - **The direct compositor can poll for session pause without closing its borrowed
   display descriptor prematurely.** Pause stays latched until the rendering scope
   returns, allowing target retirement first; device-close errors and rendering
