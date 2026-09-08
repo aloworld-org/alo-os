@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Development stops before starting more work when host storage is low.**
+  The desktop supervisor requires a 12 GiB reserve on C: before tasks and
+  top-level gates, refuses unknown readings, and never performs automatic
+  cleanup. Builds remain one workstream at a time until explicit handoff.
+  Evidence: `docs/autonomy/updates/storage-aware-desktop-loop.md`.
+
 - **Applications can request maximize and restore through the native window protocol.**
   Requests share the shell's validated transactions, preserve normal geometry
   and typing, and receive a response even when refused. Clients are offered only

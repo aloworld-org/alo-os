@@ -13141,3 +13141,27 @@ Report: `docs/autonomy/updates/client-window-maximize-requests.md`. Local logs:
 shared progress documents and the contract are updated. No later release scope
 or hardware claim follows. Next desktop component: trusted minimization and
 restoration; do not repeat this completed client-maximize implementation.
+
+## 2026-09-08 - Storage-aware desktop loop restart
+
+The owner requested restarting one workstream and a revised Claude prompt, while
+reserving company-managed cleanup for the administrator. Report:
+`docs/autonomy/updates/storage-aware-desktop-loop.md`.
+
+The desktop supervisor now refuses new tasks and top-level gate commands below
+12 GiB available on C: or when its measurement fails. Worker instructions require
+the same preflight for focused commands. This is headroom, not continuous quota
+enforcement; a running command can still consume space. No automatic cleanup,
+force publication, dirty-tree bypass or test weakening was introduced.
+
+All 15 supervisor tests, all-target warnings-denied clippy, fmt check and release
+build passed. Four tests cover the threshold, malformed/absent/overflow values and
+line endings; the real query also runs in the existing process-gate test. The
+release executable was rebuilt with current worker instructions. Windows/Linux
+workspace and graphical gates for the recovered desktop task passed in this
+same checkout. Only documentation changed after those workspace checks.
+
+At verification end C: had about 15.5 GiB free. One desktop loop may restart
+after clean-tree publication. Claude must hold builds/publication until explicit
+handoff; its source is preserved and its revised prompt is supplied in chat.
+No kernel supervisor was started. Company-managed files were not touched.

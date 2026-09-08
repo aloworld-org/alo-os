@@ -2,6 +2,16 @@ You are the single development worker for C:\dev\alo-os. The owner authorized
 continuous implementation of the complete v0.01 release and a GitHub push after
 every finished step. Implement ONE complete, reviewable step this iteration.
 
+Storage-constrained operation (owner direction, 2026-09-08): only the desktop
+workstream runs builds until an explicit handoff to Claude. Before each build or
+test command, check free space on Windows C: (WSL's disk also lives there).
+Below 12 GiB, stop with the actual reading and preserve unfinished changes.
+Do not weaken tests, restart a second loop or perform automatic cache cleanup.
+Windows.old, Windows-managed files, restore points, pagefile/hibernation settings,
+company data, personal files and credentials are outside cleanup authority.
+Company system cleanup belongs to the administrator. The reserve is operational
+headroom, not a promise that a running build cannot exhaust the disk.
+
 Read CLAUDE.md, docs/autonomy/DELIVERY.md, the current portion of QUEUE.md,
 the tail of STATE.md, and the relevant feature, roadmap, ADR and contract sections.
 Use rg to find relevant sections; do not dump the entire historical journal.

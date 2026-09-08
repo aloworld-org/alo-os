@@ -26,6 +26,7 @@ pub fn git(args: &[&str]) -> Result<String> {
 }
 
 pub fn checked(program: &str, args: &[&str], log: &mut File) -> Result<()> {
+    crate::storage::require_space()?;
     writeln!(log, "COMMAND: {program} {}", args.join(" "))?;
     let exit = Command::new(program)
         .args(args)

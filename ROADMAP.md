@@ -8,6 +8,10 @@ these checkpoints do not reduce release scope or discharge hardware obligations.
 The owner's direct-to-main collaboration policy is in
 `docs/autonomy/SHARED_MAIN.md`: separate checkouts, pull before each task,
 integrate concurrent commits and recheck before pushing.
+Storage-constrained restart (2026-09-08): the desktop build workstream runs alone
+until explicit handoff; a 12 GiB C: preflight reserve guards new tasks and gates.
+Company-managed cleanup belongs to the company administrator. Details:
+`docs/autonomy/updates/storage-aware-desktop-loop.md`. Release scope is unchanged.
 New work uses descriptive task names and individual reports. Only the integration
 owner consolidates those reports into this roadmap and the shared progress files;
 historical queue identifiers remain secondary cross-references.

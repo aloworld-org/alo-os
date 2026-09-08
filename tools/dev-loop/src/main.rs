@@ -2,6 +2,7 @@
 mod process;
 mod publication;
 mod report;
+mod storage;
 
 use process::{checked, git, worker};
 use std::{
@@ -107,6 +108,7 @@ fn run(state: &Path, codex: &str) -> Result<()> {
             status(state, "STOPPED: requested by owner")?;
             return Ok(());
         }
+        storage::require_space()?;
         let head = synchronized()?;
         let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         let directory = state.join(stamp.to_string());

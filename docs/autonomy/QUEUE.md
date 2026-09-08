@@ -5,6 +5,11 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Storage-constrained execution (2026-09-08):** desktop builds run alone until
+explicit handoff to Claude. Check the Windows C: reserve before builds/tests;
+below 12 GiB, preserve work and report the reading. No automatic cleanup or
+company-managed file changes. See `updates/storage-aware-desktop-loop.md`.
+
 **Client maximize/restore requests verified (desktop worker, 2026-09-08):**
 mapped XDG requests share trusted transactions; unchanged/refused requests receive
 responses, pre-map intent is declined at the initial configure, and only Maximize

@@ -88,6 +88,16 @@ their status changes, a release-readiness question is asked, or they block work.
 
 ## Runner
 
+During storage-constrained operation, the desktop workstream runs alone until
+an explicit handoff to Claude; do not run both supervisors/build pipelines.
+The supervisor measures Windows C: free space before each task and top-level
+gate command, refusing below 12 GiB or if the reading fails. Worker instructions
+require the same check before focused builds/tests. WSL virtual free space is
+not additional host-disk capacity. This preflight is not a continuous disk quota:
+one running command can consume its reserve. A low-space halt preserves work and
+requires review, never automatic cleanup or weakened tests. Company-managed
+system files and Windows rollback data are for the company administrator only.
+
 New task names and reports describe the work, not historical queue codes.
 `SHARED_MAIN.md` assigns the four shared progress documents to the integration
 worker alone; other contributors publish separate reports under `updates/`.
