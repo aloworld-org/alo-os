@@ -110,8 +110,20 @@ fn opening(what: &Path) -> Outcome {
 /// no capability — a turn is bound through it, and the kernel refuses an open
 /// outside the bound. The refusal is the assertion that matters: it is a
 /// programme nothing in this test still holds, doing its whole job.
+/// One loader at a time on this machine, in either checkout.
+///
+/// These attach programmes to the machine's own hooks, so two of them at once —
+/// or one of these beside `alo-bounding`'s — is two sets of programmes deciding
+/// about each other's control groups. `alo_bounding::waiting` is the argument
+/// and the measurement.
+fn the_only_loader_on_this_machine() -> alo_bounding::Waited {
+    alo_bounding::Waited::on_this_kernel()
+        .expect("this kernel can be taken, and nothing is forced if it cannot")
+}
+
 #[test]
 fn the_loader_lets_go_and_a_daemon_that_holds_nothing_can_still_bound_a_turn() {
+    let _kernel = the_only_loader_on_this_machine();
     let pinned = somewhere_of_our_own("outlives");
     let (granted, invoice, key) = a_folder_and_something_beside_it("outlives");
 
@@ -173,6 +185,7 @@ fn the_loader_lets_go_and_a_daemon_that_holds_nothing_can_still_bound_a_turn() {
 /// off the filesystem after a real load rather than asserted about a constant.
 #[test]
 fn what_the_loader_leaves_is_one_map_the_agents_group_can_write() {
+    let _kernel = the_only_loader_on_this_machine();
     let pinned = somewhere_of_our_own("modes");
 
     let loaded = imposed(our_user(), THE_AGENTS_GROUP, &pinned)
@@ -212,6 +225,7 @@ fn what_the_loader_leaves_is_one_map_the_agents_group_can_write() {
 /// the one that is there.
 #[test]
 fn a_second_loader_refuses_and_leaves_the_first_boundary_alone() {
+    let _kernel = the_only_loader_on_this_machine();
     let pinned = somewhere_of_our_own("twice");
 
     let loaded = imposed(our_user(), THE_AGENTS_GROUP, &pinned)

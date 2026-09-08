@@ -115,12 +115,37 @@ impl Drop for AsAMachineHasIt {
 /// They have to: one of them moves this whole process into a control group,
 /// two of them measure counters the whole machine shares, and every one of them
 /// attaches a programme to `file_open` for as long as it runs.
-pub fn one_at_a_time() -> MutexGuard<'static, ()> {
+pub fn one_at_a_time() -> Ours {
     static ORDER: OnceLock<Mutex<()>> = OnceLock::new();
-    match ORDER.get_or_init(|| Mutex::new(())).lock() {
+    let order = match ORDER.get_or_init(|| Mutex::new(())).lock() {
         Ok(order) => order,
         // A test that panicked while holding it poisoned it, and what is left is
         // still a lock: the next test wants the exclusion rather than the value.
         Err(poisoned) => poisoned.into_inner(),
+    };
+    // **This process first, then the machine, and never the other way round.**
+    // Two threads of this binary that both took the socket name first would
+    // have one of them waiting five minutes for its own sibling. The mutex
+    // makes at most one thread here contend for the machine.
+    let kernel = alo_bounding::Waited::on_this_kernel()
+        .unwrap_or_else(|why| panic!("this kernel could not be taken, so nothing ran: {why}"));
+    Ours {
+        _order: order,
+        _kernel: kernel,
     }
+}
+
+/// This binary's turn, and this machine's.
+///
+/// Two locks, because there are two ways for kernel tests to collide: two
+/// threads of this test binary, and two test binaries — which since 2026-09-08
+/// means **two checkouts**, since both run the same source against the same WSL
+/// kernel. `alo_bounding::waiting` argues the second at length and carries the
+/// measurement that found it.
+pub struct Ours {
+    /// No other thread of this binary.
+    _order: MutexGuard<'static, ()>,
+
+    /// No other process on this machine, in either checkout.
+    _kernel: alo_bounding::Waited,
 }

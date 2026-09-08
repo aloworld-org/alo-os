@@ -43,12 +43,20 @@ of which has already been delivered early. That is stated here so that nothing
 in this plan is mistaken for release scope it does not have, and so that
 finishing the list is never read as finishing the release.
 
-## Audit — what is implemented, verified, incomplete, or hardware-bound
+## Audit — five sections, and each one is a different kind of claim
+
+Reconciled with the code and the published reports on 2026-09-08. What is built
+and proved, what this release still owes, what a later release owes, what only a
+physical machine can settle, and what nobody has decided. A row that moved
+between them says which report moved it.
+
+### 1. Implemented and verified
 
 Evidence means a test that runs against the **real loaded BPF LSM** on a running
 kernel, not a mock and not compilation.
 
-### Implemented and verified
+**Five hooks exist:** `file_open`, `inode_rename`, `inode_unlink`, `inode_link`,
+`socket_connect`. The programme has exactly two maps and writes nothing down.
 
 | Requirement | Evidence |
 |---|---|
@@ -62,44 +70,93 @@ kernel, not a mock and not compilation.
 | The LSM decides and forgets — no map, counter or `bpf_printk` beyond the two the loader fills | `the_boundary_decides_and_forgets.rs` |
 | An `O_PATH` handle is invisible to the boundary and confers no reading | `what_an_o_path_handle_is.rs` |
 | A hard link made *before* a turn is inside every boundary, so `alo-files` refuses to read one | `a_hard_link_is_inside_every_boundary.rs` |
+| A bound turn cannot start a program — `execve` opens the file it runs | `what_a_bound_turn_can_still_change.rs` |
+| **A bound turn is refused a destination nobody showed it** | `the_kernel_refuses_a_departure.rs` — seven cases; second destination refused while the first is permitted, withdrawal, both address families, loopback exempt, non-turn unaffected |
+| **Both halves of law 1 in one turn** — a file nobody granted and a destination nobody showed, refused together | `what_a_turn_can_reach_on_the_network.rs` |
+| **A provider request runs inside the boundary and answers** | `alo-agentd/tests/a_question_is_bounded_by_the_kernel.rs` — production path, real socket, answer and `authorization:` header asserted |
+| **The production path reaches a destination the kernel rules on** | same file, at this machine's own non-loopback address |
+| **An unregistered destination is refused while the registered one works** | same file, `EACCES` |
+| **A question the rule refuses reaches no socket** | same file; indicator quiet, server saw nothing |
+| **A failed request leaves no permission for the next one** | same file, asked of the kernel rather than assumed |
+| **A question is bounded, and only to what it resolved** | `alo-turn` `a_file_verb_and_a_question_are_both_carried_out_inside_a_boundary` |
 | Loader: a leftover pin on any hook is refused over and not removed | `alo-boundaryd` `a_machine_that_already_has_a_boundary_keeps_it`, per hook |
 | Loader: taking a boundary away leaves no hook attached | `taking_a_boundary_away_leaves_none_of_its_hooks_attached` |
 | Loader: the boundary outlives the loader; a second loader refuses | `the_boundary_outlives_the_loader.rs` |
 | The whole journey — a real approved read, archive and move inside a real boundary | `alo-agentd/tests/a_turn_is_bounded_by_the_kernel.rs` |
+| Publication fails closed on every path, including a person's | `tools/kernel-loop`, 23 tests |
 
-Four hooks exist: `file_open`, `inode_rename`, `inode_unlink`, `inode_link`.
+**The stale row this table used to carry** said *no socket or cgroup programme
+exists anywhere in the tree*. It was written before task 3 and left standing
+through task 4. It is gone; the eight rows above replace it.
 
-### Incomplete — and which release owns it
+### 2. Remaining current-release (v0.01) gaps
 
-| Gap | Release | Note |
+The in-scope kernel-security requirement for this release is the *On the machine*
+half of **Egress indicator, and no telemetry**, and the sovereignty claim it
+serves is `docs/features.md`'s *every network egress an agent causes, visible at
+the moment it happens*.
+
+| Gap | State | What it needs |
 |---|---|---|
-| **Network egress enforcement and attribution** | **v0.01** | `alo-egress` is policy and indicator only. No socket or cgroup programme exists anywhere in the tree. This is the one in-scope item. |
-| Filesystem: `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink` | v0.5 | Documented and, since task 5, reproduced; none moves a byte of somebody's file past a grant |
-| Filesystem: `inode_setattr`, `inode_setxattr` — attributes, ownership **and size** | v0.5 | Not hooked. Task 5 measured what the size half means: `truncate(2)` reaches `inode_setattr` without an open, so a bound turn can **empty** a file nobody granted it. No contents leave a grant and contents are destroyed where they are — the only item on the unwatched list that does more than litter, and the one to close first |
-| Already-open descriptors, and access inherited across the start of a turn | v0.5 | A `file_open` hook decides at open time and says nothing afterwards; a descriptor opened before the turn began stays usable inside it. Documented and, since task 6, reproduced against the production door — and it is **the one gap in this crate that moves contents past a grant**, which is why closing it needs the ADR task 6 names rather than a hook |
+| **A proxy on loopback carries a question off the machine, unshown** | **Open, production-reachable, reproduced** — `what_a_bound_turn_can_still_reach.rs` for the kernel half, and the door is `Answers::Service`, not `Answers::Provider`, which already refuses a loopback address | **A decision, not code.** [ADR 0021](../decisions/0021-what-a-service-on-this-machine-vouches-for.md) is **proposed** and recommends trusting a service the person started *with the promise reworded to say so*. Nothing is built and no promise is narrowed until the owner answers |
+
+**Nothing else in this workstream is v0.01.** Everything below is later-release
+hardening with its release named, and the remaining clauses of the *Egress
+indicator* roadmap line — the compositor surface, and the daemon code that signs
+somebody in and fetches a model — belong to other workstreams.
+
+### 3. Later-release hardening (v0.5 and beyond)
+
+Each is documented, most are reproduced, and none is scheduled here.
+
+| Gap | Release | State |
+|---|---|---|
+| **A descriptor opened before the turn began** | v0.5 | **Reproduced, and the only gap in this crate that moves contents past a grant**: the same thread is refused `open` on a private key and reads every byte of it through a descriptor that already existed. `what_a_turn_inherits.rs`. **Needs a decision** — options in `docs/autonomy/updates/network-boundary-decisions-proposed.md` |
+| **A socket already open or inherited** | v0.5 | Reproduced, `what_a_bound_turn_can_still_reach.rs`. Same class, same decision |
+| **A datagram sent without connecting** | v0.5 | Reproduced, same file. `sendto` reaches no `connect` hook. Nothing shipped sends one from inside a turn |
+| A connection reused after its destination is withdrawn | v0.5 | Closed on the production path by ADR 0020's per-request client; the hook still does not re-check an established connection |
+| Filesystem: `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink` | v0.5 | Documented and reproduced by task 5; none moves a byte past a grant |
+| Filesystem: `inode_setattr`, `inode_setxattr` — attributes, ownership **and size** | v0.5 | Not hooked. `truncate(2)` reaches `inode_setattr` without an open, so a bound turn can **empty** a file nobody granted. No contents leave a grant and contents are destroyed where they are — the one row that does more than litter, and the one to close first |
 | Landlock, seccomp, namespaces — ADR 0013's other three primitives | v0.5 | None built; the BPF LSM carries the whole boundary today |
 | A snapshot at turn start, and exact undo | v0.5 / v1 | Not built |
 | Kernel-sourced enforcement records | v0.5 | **Needs a decision, not code** — see below |
 | Loader upgrade path | — | A machine carrying pins from an older build refuses a new loader and an operator removes them by hand. Correct and deliberate; no automated upgrade exists |
 
-### Hardware-dependent, and not tickable here
+### 4. Physical hardware acceptance
 
-Every measurement in this workstream is from Ubuntu on WSL2. `docs/hardware.md`
-says that cannot certify a machine. **No *On the machine* box may be ticked from
-anything in this plan**, and no task below claims otherwise.
+**Every measurement in this workstream is Ubuntu on WSL2**, kernel 6.18.33.2.
+`docs/hardware.md` says that cannot certify a machine, and ADR 0007 requires
+**two** certified machines — an ordinary business laptop first, then a GPU
+workstation with 24 GB VRAM or more.
 
-### The one thing that needs a decision rather than an implementation
+- **No *On the machine* box may be ticked from anything in this plan**, and no
+  task in it claims otherwise.
+- The image has been booted in QEMU with KVM and answered all five kernel
+  questions; a virtual machine is not a certified one, and `ROADMAP.md`'s image
+  line keeps its machine box empty for that reason.
+- Nothing here is certified. The honest phrase when the task list empties is
+  *implementation complete for the in-scope requirement; hardware acceptance
+  pending* — never release completion.
 
-ADR 0015 promises that *the record stops being the daemon's account and becomes
-what the kernel watched happen*. Its own discipline forbids exactly the mechanism
-that would produce that: **the LSM decides and forgets** — no map of
-observations, no counter, no ring buffer — and there is a test that fails if a
-third map appears.
+### 5. Decisions awaiting an answer
 
-Those two cannot both be delivered as written. Resolving it is a decision about
-how much a security module may remember, which is the most dangerous question in
-this repository, and it belongs in an ADR. **This workstream will not build a
-reporting path without one.** Recorded here; not scheduled.
+Three, and this workstream builds none of them without one.
+
+1. **The loopback proxy.** [ADR 0021](../decisions/0021-what-a-service-on-this-machine-vouches-for.md),
+   proposed 2026-09-08 and revised the same day with a third option. Recommends
+   **not** filtering the person's own processes, and **C1** — that an answer from
+   a service alo cannot verify stops being described as *on this machine*. The
+   gap stays open under every option; what changes is that alo stops claiming
+   otherwise. C2 and C3, which restrict the alo-managed runtime's own egress, are
+   blocked on a runtime unit that does not exist and belong to v0.5.
+2. **Inherited descriptors and sockets, and checks after a connection.** Options
+   in `docs/autonomy/updates/network-boundary-decisions-proposed.md`. The
+   question is not which hook: every hook runs into the same exemption, because
+   the way out of a turn is itself an inherited descriptor.
+3. **Kernel-sourced enforcement records.** ADR 0015 promises the record becomes
+   what the kernel watched; *the LSM decides and forgets* forbids the mechanism
+   that would produce it, and a test fails if a third map appears. Those two
+   cannot both be delivered as written. Recorded, not scheduled.
 
 ## Tasks
 
@@ -470,6 +527,48 @@ stop being turn-scoped.
 
 **Task 6 is not closed by this.** The socket half of *what a turn inherits* is
 reproduced here; the descriptor half is still audit-and-document work.
+
+### 8. One kernel, two checkouts
+
+**Status:** done. **Depends on:** nothing.
+
+Two checkouts run kernel tests against one WSL kernel. Every test binary
+serialised within itself and nothing serialised them across processes, so a gate
+run in one checkout failed five tests in `alo-agentd` while the other was running
+its own suite — on a tree where only documents had changed. A failure that
+reruns clean is the worst shape there is, because rerunning is what people do.
+
+- **Acceptance:** one lock, taken by every test entry point that touches this
+  kernel in either checkout; a second process refused while it is held; entry
+  after a normal release; entry after the holder is killed; a bounded wait that
+  fails without touching anything; and existing enforcement still passing under
+  it.
+- **Evidence:** `crates/alo-bounding/tests/two_processes_take_turns_on_this_kernel.rs`
+  and `alo_bounding::waiting`'s own unit tests.
+- **Constraint:** no production path may call it, and a wait that runs out must
+  refuse rather than proceed.
+
+**Done, 2026-09-08.** `alo_bounding::waiting` — an **abstract Unix socket name**,
+`alo-os/one-kernel-at-a-time`, which belongs to the machine rather than to a
+checkout and which **the kernel frees the instant the process holding it dies**.
+That last property is the reason it is not a lock file: a file a crashed holder
+leaves behind can only be cleared by deleting a lock somebody might still hold,
+which is the one thing this workstream may never do.
+
+Taken by `on_this_kernel::one_at_a_time()` — which covers twelve `alo-bounding`
+test files — and by `alo-agentd`'s two kernel tests and `alo-boundaryd`'s three.
+In-process mutex first, machine second, so two threads of one binary cannot make
+each other wait five minutes.
+
+**The deadlock audit is in the module.** Eleven test files spawn a child of the
+same binary; every child runs an `#[ignore]`d helper and none takes the lock,
+because the parent holds it across the spawn. That invariant is documented and
+the timeout message names it, since a process cannot ask whether an ancestor
+holds a socket name. The lib's own unit tests were audited and take nothing:
+they test names refused *before* anything is made.
+
+Nothing was closed, nothing was ticked, no production path calls it, and no
+*On the machine* box is touched.
 
 ## Rules this workstream holds itself to
 

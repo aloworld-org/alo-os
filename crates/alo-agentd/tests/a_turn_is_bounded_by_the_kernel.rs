@@ -113,6 +113,11 @@ fn where_this_process_is() -> String {
 /// Then the subtree is given back and this process is where it started.
 #[test]
 fn a_turn_of_this_service_runs_inside_a_boundary_and_does_what_it_was_asked() {
+    // This machine has one kernel and two checkouts run tests against it.
+    // `alo_bounding::waiting` carries the measurement that made this necessary;
+    // nothing is forced if it cannot be taken, and this test fails instead.
+    let _kernel = alo_bounding::Waited::on_this_kernel()
+        .expect("this kernel can be taken, and nothing is forced if it cannot");
     let root = PathBuf::from("/tmp").join(format!("alo-agentd-bounded-{}", std::process::id()));
     let invoices = root.join("Invoices");
     let archive = root.join("Archive");

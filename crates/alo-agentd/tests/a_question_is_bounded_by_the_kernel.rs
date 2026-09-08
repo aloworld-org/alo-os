@@ -108,9 +108,20 @@ fn our_own_address() -> std::net::IpAddr {
 /// Poisoning is stepped over deliberately: a panicking test leaves nothing
 /// behind that a later one reads, and turning one failure into three would hide
 /// which test actually broke.
-fn the_only_one_on_this_machine() -> MutexGuard<'static, ()> {
+///
+/// The second half is `alo_bounding::Waited`, which keeps **the other
+/// checkout** out — the same machine runs two of them, and before this existed
+/// a gate run here failed all five of these tests because the other one was
+/// running its own suite at that moment.
+fn the_only_one_on_this_machine() -> (MutexGuard<'static, ()>, alo_bounding::Waited) {
     static ONE_AT_A_TIME: Mutex<()> = Mutex::new(());
-    ONE_AT_A_TIME.lock().unwrap_or_else(PoisonError::into_inner)
+    let ours = ONE_AT_A_TIME.lock().unwrap_or_else(PoisonError::into_inner);
+    // This binary first, then the machine — `alo_bounding::waiting` says why
+    // that order and not the other. The second one is what keeps the other
+    // checkout's kernel tests out while these run.
+    let kernel = alo_bounding::Waited::on_this_kernel()
+        .expect("this kernel can be taken, and nothing is forced if it cannot");
+    (ours, kernel)
 }
 
 /// A socket that accepts one connection and says nothing.

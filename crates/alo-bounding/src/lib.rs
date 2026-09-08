@@ -286,6 +286,7 @@ mod pinned;
 mod place;
 mod places;
 mod turns;
+mod waiting;
 
 #[cfg(test)]
 mod testing;
@@ -300,6 +301,7 @@ pub use pinned::{Pinned, THE_ROOT};
 pub use place::{as_the_kernel_keeps_it, place_of};
 pub use places::places_of;
 pub use turns::Turns;
+pub use waiting::{A_NOTE, AT_MOST, NotWaited, ON_THIS_KERNEL, Waited};
 
 pub use alo_bounding_map::{
     Bounds, DEPTH, DESTINATIONS, Departure, Departures, Family, Field, PLACES, Place, WORDS,
