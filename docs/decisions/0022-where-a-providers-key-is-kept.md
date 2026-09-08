@@ -302,7 +302,7 @@ authenticated HTTPS operation through the daemon.**
 - **Nothing about alo's own endpoint**, which does not exist and is not invented
   here.
 
-## Amendment proposed 2026-09-08: the binding, and only the binding
+## Amendment accepted 2026-09-08: the binding, and only the binding
 
 **libsecret cannot honour this ADR's own requirement**, measured on the build
 machine after installing `libsecret-1-dev` 0.21.7:
@@ -327,10 +327,17 @@ async and blocking builders, so a connection is made to **the address we hand
 it** and to no other. `secret-service` 5.2.0 speaks the same Secret Service
 protocol on top of it. Both fetch on this machine.
 
-**The amendment asked for is narrow.** The *store* stays the Secret Service. The
-*bus* stays `/run/user/<uid>/bus` derived from the daemon's own uid. **Only the
-binding changes**, from libsecret to a Rust client that can be given a
-connection — and it removes a C dependency rather than adding one.
+**The amendment is narrow, and it was approved on 2026-09-08.** The *store*
+stays the Secret Service. The *bus* stays `/run/user/<uid>/bus` derived from the
+daemon's own uid. The security policy and the release scope are untouched.
+**Only the client library changes**, from libsecret to `secret-service` over
+`zbus` — and it removes a C dependency rather than adding one.
+
+`SecretService::connect_with_existing(EncryptionType::Dh, connection)` takes the
+connection, and `zbus::blocking::connection::Builder::address` is where that
+connection comes from. **Built and proved**: `crates/alo-secrets/src/store.rs`,
+and `which_bus_is_reached.rs` observes at two listeners that the intended bus
+receives the connection while an environment-named decoy does not.
 
 Consequences worth stating: the shared-singleton limitation this ADR records is
 libsecret's, and a client we construct per connection may not have it — which
@@ -338,9 +345,10 @@ makes *connection lifetime* something to measure rather than inherit.
 `libsecret-1-dev` stays installed on the build machine; it is what made this
 measurable and it harms nothing.
 
-**Not decided here.** Steps 2 to 5 — retrieval, routing tests, the four store
-states, and authenticated HTTPS through the daemon — all wait on this, because
-each of them is built on whichever client is chosen.
+The session is **encrypted** (`EncryptionType::Dh`), never `Plain`: a secret
+crossing the bus in clear is a secret available to whatever else can read that
+bus. `crypto-rust` rather than `crypto-openssl`, so the encryption brings no
+second C library.
 
 ## What is built, and what is not
 

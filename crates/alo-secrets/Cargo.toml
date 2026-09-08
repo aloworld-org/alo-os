@@ -25,5 +25,29 @@ rustix = { workspace = true }
 alo-models = { path = "../alo-models" }
 alo-strings = { path = "../alo-strings" }
 
+# The Secret Service, spoken over a connection **we** made. ADR 0022's amendment
+# of 2026-09-08 chose this over `libsecret` for one measured reason: no libsecret
+# API accepts a `GDBusConnection`, so a daemon using it reaches whichever bus the
+# environment names. `SecretService::connect_with_existing` takes the connection,
+# and `zbus::blocking::connection::Builder::address` is where that connection's
+# address comes from — this crate's, derived from a uid.
+#
+# `crypto-rust` rather than `crypto-openssl`: the encrypted session is pure Rust
+# and brings no second C library. The session is **encrypted** (`EncryptionType::Dh`)
+# and not plain, because a secret crossing the bus in clear is a secret in
+# whatever else can read that bus.
+secret-service = { version = "5.2", default-features = false, features = [
+  "crypto-rust",
+  "rt-async-io",
+] }
+zbus = { version = "5.19", default-features = false }
+
 [lints]
 workspace = true
+
+# The routing test drives both ways of getting a bus: the one this crate uses,
+# and the environment's own — which it has to reach for directly, because
+# nothing in the crate will.
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+zbus = { version = "5.19", default-features = false }
+rustix = { workspace = true }
