@@ -11,6 +11,7 @@ mod pointer;
 mod popups;
 mod support;
 mod window_close;
+mod window_raise;
 use support::{Application, Fixture};
 
 #[test]

@@ -52,6 +52,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
+                8 => crate::window_raise_check::run(&mut server, renderer)?,
                 1 => {
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {
                         assert!(
@@ -161,7 +162,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 7);
+    assert_eq!(stages, 8);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

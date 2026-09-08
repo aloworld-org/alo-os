@@ -953,6 +953,23 @@ not take that workstream.
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit
   gate. A dependency in this list does not erase any original requirement.
+  **Selected native window raising (desktop worker, 2026-09-08):**
+  move a live mapped toplevel to the front of the shared rendering/hit-test
+  order, preserving other windows and popup subtrees. Refresh stationary pointer
+  routing while preserving existing grabs. Refuse foreign, stale, unmapped and
+  popup targets without changing order. Acceptance: real socket happy/refusal,
+  pointer/grab and render-order tests, GLES integration, affected fmt/clippy/tests
+  and rustdoc. Keyboard activation and native switching controls remain next.
+  **Completed native window raising 2026-09-08:** trusted raise_window changes
+  shared front-to-back order and refreshes existing pointer focus without
+  redirecting held-button or popup grabs. Four real socket tests and new WSLg
+  GLES root/popup occlusion/restoration pixels pass. Linux shell 228 tests and
+  three doctests, affected clippy/fmt/rustdoc/examples and Windows shell checks
+  pass. Evidence: `updates/native-window-raising.md`. Next component: explicit
+  keyboard activation with XDG activated-state configuration and lifecycle/grab
+  policy, followed by native switching/close controls and configurable shortcuts.
+  This finishes stacking plumbing only; window management and release unchecked.
+  Full independent supervisor gates and physical acceptance remain pending.
   **Selected native window close requests (desktop worker, 2026-09-08):**
   delivery step 3's first independent window-management component while pinned
   standalone GLES initialization still requires forbidden unsafe constructors.
@@ -969,7 +986,7 @@ not take that workstream.
   Windows/Linux affected fmt/clippy/tests, Linux rustdoc/examples and WSLg
   regressions passed; Linux shell 224 tests and three doctests. Report:
   `updates/native-window-close-requests.md`. Full supervisor gates pending.
-  Next independent component: toplevel activation and stacking integrated with
+  Next independent component (stacking now completed above): activation integrated with
   rendering/input, then native switching/close controls and configurable shortcuts.
   Safe standalone GLES construction, direct DRM/seat entry and physical acceptance
   remain open under item 33; window management and the release stay unchecked.

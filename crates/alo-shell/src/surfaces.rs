@@ -49,7 +49,7 @@ pub(crate) struct Surfaces {
     shm: ShmState,
     /// XDG shell role and configure tracking.
     xdg: XdgShellState,
-    /// Live toplevel roots in creation order.
+    /// Live toplevel roots in front-to-back stacking order.
     windows: Vec<Window>,
     /// Seat globals, created only when the backend enables input.
     pub(crate) seats: SeatState<Self>,
@@ -108,6 +108,23 @@ impl Surfaces {
             .iter()
             .find(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)
             .map(|w| &w.surface)
+    }
+
+    /// Raise only a live mapped root; refusal leaves the entire order unchanged.
+    pub(crate) fn raise(&mut self, surface: &WlSurface) -> bool {
+        let Some(index) = self
+            .windows
+            .iter()
+            .position(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)
+        else {
+            return false;
+        };
+        if let Some(prefix) = self.windows.get_mut(..=index) {
+            prefix.rotate_right(1);
+            true
+        } else {
+            false
+        }
     }
 }
 

@@ -1172,6 +1172,11 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native window raising (2026-09-08): explicit mapped-root stacking feeds
+    rendering and hit testing, preserving other roots, popup subtrees and grabs.
+    Foreign, stale, unmapped and popup targets refuse. Keyboard activation and
+    native switching controls remain next; window management stays unchecked.
+    Checks and limits: `docs/autonomy/updates/native-window-raising.md`.
   - Native window close requests (2026-09-08): trusted per-window XDG close
     delivery preserves application choice and refuses stale, foreign, unmapped
     and non-toplevel targets. Real socket tests cover isolation, continued input/

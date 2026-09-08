@@ -24,6 +24,10 @@ mod offscreen_client;
 #[path = "support/default_cursor_check.rs"]
 mod default_cursor_check;
 
+#[cfg(target_os = "linux")]
+#[path = "support/window_raise_check.rs"]
+mod window_raise_check;
+
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]
 pub struct Fixture {

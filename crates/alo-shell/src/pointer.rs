@@ -220,6 +220,13 @@ fn bounded(value: f64) -> bool {
 }
 
 impl Surfaces {
+    /// Last validated pointer event, used to re-hit after an explicit scene edit.
+    pub(crate) fn pointer_position(&self) -> Option<(Point<f64, Logical>, u32)> {
+        self.pointer
+            .as_ref()
+            .and_then(|p| p.handle.current_focus().map(|_| (p.location, p.time)))
+    }
+
     /// A release cannot authorize a menu after its pointer recipient changes.
     fn prune_pointer_release(&mut self) {
         if let Some(pointer) = self.pointer.as_mut()

@@ -57,8 +57,10 @@ mod session_input;
 mod socket;
 mod surfaces;
 mod window_close;
+mod window_raise;
 
 pub use window_close::WindowCloseError;
+pub use window_raise::WindowRaiseError;
 
 pub use active_session::ActiveSessionResult;
 pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};

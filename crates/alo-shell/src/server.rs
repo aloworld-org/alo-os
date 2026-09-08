@@ -75,7 +75,8 @@ impl Server {
         self.display.flush_clients()
     }
 
-    /// Live, configured toplevel roots with committed buffers, in creation order.
+    /// Live, configured toplevel roots with buffers, in front-to-back order.
+    /// New roles initially follow existing roles; explicit raising changes order.
     ///
     /// This is an internal renderer input, not an agent context or window API.
     /// Buffer removal, surface destruction and disconnect remove a root here.

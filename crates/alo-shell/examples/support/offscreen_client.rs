@@ -133,6 +133,14 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
             assert_eq!(app.events.membership, (4, 0));
         }
     }
+    let mut other = Application::new(&fixture);
+    other.configure();
+    let _magenta = other.attach_pixels(&other.surface, &solid([255, 0, 255, 255]));
+    other.sync();
+    assert!(send.send(8).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    drop(other);
+    app.sync();
     app.set_cursor(app.events.pointer.serial, None, (0, 0));
     app.sync();
     assert!(send.send(6).is_ok());

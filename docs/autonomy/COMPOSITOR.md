@@ -5,6 +5,24 @@ ADR 0002. The first component is `crates/alo-shell`: a reusable Linux Wayland
 server library. The second adds nested Wayland/GLES rendering, described below.
 It is not yet a session executable or a usable desktop.
 
+## Explicit window raising
+
+`Server::raise_window` moves a live mapped toplevel to the front of the shared
+rendering and hit-test order, carrying its popup subtree with it. Other roots
+retain their relative order; repeated raising is idempotent. Invalid foreign,
+stale, unmapped and non-toplevel targets refuse without changing order. The next
+successful frame presents the change. New roles still initially follow existing
+roles; mapping alone does not implicitly raise them.
+
+An existing pointer focus is re-hit at its last validated location/time, through
+the ordinary routing path so held-button and popup grabs retain their authority.
+A cleared pointer focus is not re-entered by raising. Keyboard focus and XDG
+activation are separate policy; the nested backend still selects the front root
+on its next keyboard event. This trusted native API is not an agent endpoint,
+activation protocol or native switching control. WindowRaiseError distinguishes
+invalid targets from a pointer refresh failure after stacking changed.
+Real socket and GLES evidence: `updates/native-window-raising.md`.
+
 ## Cooperative window close requests
 
 `Server::request_window_close` is trusted native shell plumbing for delivery

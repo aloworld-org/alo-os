@@ -12527,3 +12527,54 @@ populated input/hotplug, GPU/disable recovery and certified laptop/workstation
 physical records remain owed. No compositor/release tick, staging/commit/push,
 other checkout edit, worker/loop launch, tools/dev-loop change or physical install.
 Reports arriving during publication are reconciled next iteration.
+
+---
+
+## 2026-09-08 - Native window raising
+
+Read constitution, delivery/shared-main/report rules, current queue and STATE
+tail, relevant v0.01 features/roadmap, ADRs 0002/0010 and application contracts.
+Initial tree clean; supervisor owns publication. Compared all published report
+filenames to STATE: no unreconciled reports at iteration start. Claude retains
+security/model-choice ownership; no policy or release scope change. The pinned
+standalone GLES restriction remains; selected independent delivery-step-3
+stacking component and recorded acceptance in QUEUE before implementation.
+
+Server::raise_window validates a mapped live toplevel in this display, rotates
+it to the shared front-to-back render/hit-test order, preserves other roots and
+popup subtrees, and refreshes existing stationary pointer focus using ordinary
+grab-aware routing. Invalid foreign, dead, unmapped and popup targets refuse;
+fresh remap works. No entry after pointer leave. Keyboard activation and XDG
+activated state remain separate; native controls/shortcuts are still unfinished.
+Public rustdoc and COMPOSITOR.md document the boundary. No agent API/context,
+engine patch, unsafe/lint exception or user-facing UI string. Exact commands,
+decisions and limits: `docs/autonomy/updates/native-window-raising.md`.
+
+Ubuntu Rust and eight graphics/input prerequisites verified; WSLg socket present,
+/dev/dri absent. No packages, shared kernel/BPF state or services changed. Four
+real socket tests cover order at the renderer boundary, stationary pointer,
+keyboard preservation, held-button and popup-grab isolation, pointer leave and
+target refusal/remap. New real GLES samples prove raising a second window hides
+both a root and its popup, and restoring the parent restores the popup's pixels.
+
+Windows affected fmt/clippy/tests passed (zero Linux-only runtime cases). Linux
+focused tests, all-target clippy, shell tests (138 unit, 87 lifecycle, three socket
+and three compile-fail doctests), warnings-denied rustdoc, examples and fmt passed.
+Rebuilt WSLg offscreen fixture completed eight stages including new raising pixels;
+nested popup/cursor regression submitted 115 client surfaces. Both exited zero
+with expected Mesa/invalid-client diagnostics. First order test required explicit
+cursor support in its controlled sink; subsequent runtime checks passed. Clippy
+findings across source/example/tests were corrected with checked access/fallible
+test returns, without suppression. An earlier graphics run used an old binary;
+only the final rebuilt run establishes new pixel evidence. Source/test/docs diff
+reviewed; git diff --check passed. Independent full Windows/Linux workspace,
+rustdoc and BPF publication gates were not run by this worker.
+
+Stacking component complete, window management/compositor/release unchecked.
+Next: explicit keyboard activation with XDG state and lifecycle/grab policy,
+then native switching/close controls and configurable shortcuts. Safe standalone
+GLES, full direct DRM/seat entry, populated input/hotplug, GPU/disable recovery,
+other delivery work and certified laptop/workstation physical records remain
+owed. All four shared progress documents updated. No staging/commit/push, other
+checkout edits, worker/loop launch, tools/dev-loop change or physical install.
+Reports arriving during publication are reconciled next iteration.
