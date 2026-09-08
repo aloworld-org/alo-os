@@ -48,6 +48,7 @@ mod scene_replacement;
 mod scene_scanout;
 mod server;
 mod session_device;
+mod session_input;
 mod socket;
 mod surfaces;
 
@@ -78,3 +79,5 @@ pub use scene_scanout::ActiveScene;
 pub use server::Server;
 pub use session_device::SessionError;
 pub use socket::SocketError;
+
+pub use session_input::{SessionInput, SessionInputStatus};

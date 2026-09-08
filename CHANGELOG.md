@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct-input device bridge now preserves seat-manager failures.**
+  Inactive seats cannot open input devices through the bridge, and failed opens
+  or closes prevent further acquisition. Cleanup still reaches the seat manager.
+  Six new tests include real libinput refusal and descriptor-close evidence.
+  Live input dispatch and physical-device acceptance remain unfinished. Report:
+  `docs/autonomy/updates/session-owned-input-descriptors.md`.
+
 - **Stopping the direct compositor now releases held keys and mouse buttons.**
   Pause dismisses grabbed popups and clears focus; reactivation requires fresh
   focus or pointer motion. Direct keyboard routing refuses invalid active keys

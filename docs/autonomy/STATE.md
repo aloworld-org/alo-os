@@ -12240,3 +12240,51 @@ renderer integration, real DRM/seat behavior and physical laptop/GPU-workstation
 records remain owed. Existing context-loss and failed-disable recovery limits
 remain. This component is complete; compositor/release unchecked. No staging,
 commit, push, worker/loop launch, other checkout edit or tools/dev-loop change.
+
+
+---
+
+## 2026-09-08 - Session-owned input descriptors
+
+Read constitution, delivery/ownership/report rules, current queue and journal
+tail, relevant v0.01 feature/roadmap, ADR 0002 and daemon-protocol invocation-only
+boundary. Initial tree clean. Compared every published report filename against
+STATE at iteration start: none unreconciled. Claude retains the network workstream;
+no other checkout accessed. Selected the acquisition-bridge component in QUEUE
+before implementation, with event dispatch and live seat wiring explicitly owed.
+
+`SessionInput` implements libinput restricted open/close through Smithay Session.
+Inactive opens never reach the manager; close still runs during inactivity or
+failure. CLOEXEC/NOCTTY/NONBLOCK are requested, retaining the upstream access mode.
+The first open/close failure survives the void callback and context destruction
+through `SessionInputStatus`, and prevents further acquisition. Ordinary pause
+refusal remains recoverable. Pinned Smithay's adapter discards close failures;
+this safe local bridge preserves them without an engine patch or lint exemption.
+No agent API, context capture, UI strings or daemon-contract change. Decisions,
+exact commands and limits: `docs/autonomy/updates/session-owned-input-descriptors.md`.
+
+Verified Ubuntu Rust and eight graphics pkg-config prerequisites; WSLg socket
+present, /dev/dri absent. No dependency installation or shared kernel changes.
+Six new tests pass: real Unix descriptor lifetime/EOF, manager happy/refusal
+paths, and two actual libinput context refusal tests. Non-evdev rejection closes
+through the manager exactly once; permission refusal retains the error. These
+use an injected manager and socket descriptors, not physical input hardware.
+
+Windows fmt, affected all-target clippy and tests pass (zero Linux-only tests).
+Linux focused session_input tests, fmt, affected all-target clippy, shell tests
+(124 unit, 74 lifecycle, three socket, three compile-fail doctests), warnings-denied
+rustdoc and examples pass. WSLg offscreen golden pixels/refusal and nested popup/
+cursor regression pass, 115 surfaces, expected Mesa/client diagnostics. No runtime
+test, compilation or lint failure. Source/diff review and git diff --check pass;
+all four shared progress documents updated. Independent full Windows/Linux
+workspace/rustdoc/BPF gates were not run by this worker and remain supervisor work.
+
+Next: libinput context ownership and event dispatch tied to seat notifications,
+open/dispatch failure retirement, and device-removal cleanup through the existing
+keyboard/pointer boundaries; connect to DirectSession. This bridge cannot suspend
+existing descriptors; polling and suspend/drop remain caller obligations, not
+implemented lifecycle evidence. Standalone safe GLES, real DRM/seat integration,
+GPU context-loss/failed-disable recovery and physical laptop/GPU-workstation
+records remain owed. Acquisition bridge complete, compositor/release unchecked.
+No staging, commit, push, other checkout edit, worker/loop launch, physical
+installation or tools/dev-loop modification.

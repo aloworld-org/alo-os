@@ -733,6 +733,15 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Session-owned input descriptors (2026-09-08): restricted libinput opens/closes
+    use the seat manager, refuse inactivity and latch acquisition/cleanup failures.
+    Six new tests include real libinput refusal and Unix descriptor EOF evidence.
+    Linux shell 201 tests and three doctests, affected Windows/Linux checks,
+    warnings-denied Linux rustdoc/examples and WSLg regression (115 surfaces) pass.
+    Report: `docs/autonomy/updates/session-owned-input-descriptors.md`. Context
+    ownership, event dispatch, pause/device-removal cleanup and live DirectSession
+    wiring remain next. Safe standalone GLES and real DRM/seat/physical acceptance
+    remain owed; independent supervisor gates pending, compositor unchecked.
   - Direct keyboard and input retirement (2026-09-08): activity-checked evdev
     routing, pause focus/grab cleanup and both input capabilities cleared before
     direct-loop output retirement. Five new tests pass, including real client

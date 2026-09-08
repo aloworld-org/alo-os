@@ -77,6 +77,25 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected session-owned input descriptors (desktop worker, 2026-09-08):**
+  implement libinput's restricted-open/close bridge through Smithay Session.
+  Refuse inactive and failed acquisition without a direct-open fallback, retain
+  close errors beyond libinput's void callback, and enforce descriptor flags.
+  Acceptance: real descriptor lifetime and happy/refusal tests, actual libinput
+  invalid-device refusal, affected fmt/clippy/tests/rustdoc and WSLg regression.
+  This completes the acquisition bridge only; event dispatch, device-removal
+  cleanup and connection to the live DirectSession remain subsequent components.
+  **Completed session-owned input descriptors 2026-09-08:** restricted callbacks
+  use Smithay Session, reject inactive opens, retain first open/close errors and
+  block new acquisition after failure. Six tests pass, including real libinput
+  non-evdev/open refusal and descriptor EOF cleanup. Linux shell 201 tests and
+  three doctests, affected Windows/Linux checks, Linux rustdoc/examples and WSLg
+  regression (115 surfaces) pass. Report: `updates/session-owned-input-descriptors.md`.
+  Next executable component: libinput context ownership/event dispatch linked to
+  seat polling, dispatch/open failure retirement and device-removal input cleanup.
+  The acquisition bridge alone does not implement live direct input. Safe GLES,
+  real DRM/seat, recovery and physical acceptance remain owed; compositor/release
+  unchecked and full independent supervisor publication gates pending.
   **Selected direct keyboard and input retirement (desktop worker, 2026-09-08):**
   complete the keyboard pause-cleanup portion of the next input component.
   Route activity-checked evdev transitions through existing focus/XKB policy;
