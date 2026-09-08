@@ -168,6 +168,23 @@ your network, with a provider you added — and with no model at all.** Those ar
 four supported configurations, not one real one and three compromises, and
 **“works well” is a measured bar in each of them rather than a hope in three.**
 
+**Model choice belongs to the person** (owner clarification, 2026-09-08).
+Alo-provided models or services, the person's own local models and runtimes,
+and compatible third-party APIs are legitimate choices. Alo ownership is never
+a condition of being a valid choice. Model ownership and processing location
+are separate: an alo-provided service may be remote, and a third-party model
+may run entirely on this machine. Existing organisation policy, capability
+validation and the release tiers below still apply; this clarification does not
+bring later-release features forward or claim unimplemented integrations work.
+
+Freedom to choose a model is distinct from a verified privacy guarantee. A
+loopback address establishes where a service is contacted, not where it performs
+inference. Any stronger local-only guarantee must be based on established
+protection, not the model's brand. The treatment of unverified services under
+`ThisMachineOnly` and the enforcement options in proposed ADR 0021 remain
+unaccepted; this clarification neither changes that policy nor narrows the
+egress promise. Paired-machine operation and the no-agent choice remain intact.
+
 Each has its own bar, and they are not interchangeable:
 
 - **On this machine** — CPU or GPU, and the model must actually drive the verbs,
