@@ -60,11 +60,13 @@ mod surfaces;
 mod window_activation;
 mod window_close;
 mod window_raise;
+mod window_size;
 mod window_switch;
 
 pub use window_activation::WindowActivationError;
 pub use window_close::WindowCloseError;
 pub use window_raise::WindowRaiseError;
+pub use window_size::WindowSizeError;
 pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 
 pub use active_session::ActiveSessionResult;

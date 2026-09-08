@@ -716,6 +716,11 @@ compositor is not required for, which is why it runs unbroken.
         the compositor's and the settings panel's, and neither exists
 
 - [ ] Keyboard shortcuts a person can change
+  - Scheduling clarified 2026-09-08: finish underlying window operations before
+    integrating phase 3 shortcuts. Physical acceptance remains phase 8, following
+    phase 7 VM image checks. Documentation-only report
+    `docs/autonomy/updates/deferred-desktop-and-hardware-acceptance.md` reconciled;
+    no requirement is completed or moved to a later release.
   - Configurable window command dispatch (2026-09-08): current bindings drive
     native next/previous window and focused-root cooperative close, with conflict,
     unbound, unsupported-action and missing-target handling. Five real-client
@@ -772,6 +777,13 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Cooperative window sizing (2026-09-08): trusted mapped-root logical-size
+    requests validate dimensions and committed client limits, suppress duplicate
+    configures and preserve committed buffers and input until client response.
+    Real-client negotiation/refusal and GLES evidence is recorded in
+    `docs/autonomy/updates/cooperative-window-sizing.md`. Size-request primitive
+    complete; interactive resize, placement, rendered controls and full native
+    desktop entry remain unfinished. No feature or release gate is ticked.
   - Session-integrated direct input (2026-09-08): a new direct entry method creates
     SeatInput through the same libseat connection inside the active display scope.
     Idle/render dispatch uses latched authority polling; input suspension/reset

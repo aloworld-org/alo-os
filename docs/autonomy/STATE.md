@@ -12749,3 +12749,68 @@ v0.01 requirements remain unfinished. Safe standalone GLES, real DRM/seat entry,
 populated input/hotplug, GPU/disable recovery and certified physical laptop/GPU
 workstation records remain owed. No staging, commit, push, other repository edit,
 worker/loop launch, tools/dev-loop changes or physical installation.
+
+---
+
+## 2026-09-08 - Cooperative window sizing
+
+Read constitution, delivery/shared-main/report rules, current queue, STATE tail,
+v0.01 features/roadmap, ADRs 0002/0010 and application contract sections. Initial
+working tree clean. Reconciled the sole published report absent from STATE at
+iteration start: `docs/autonomy/updates/deferred-desktop-and-hardware-acceptance.md`.
+Its documentation-only diff-check evidence records owner sequencing: underlying
+window operations before phase 3 shortcut integration, physical acceptance in
+phase 8 after phase 7 VM image verification. Updated queue/roadmap sequencing;
+no functional changelog entry, runtime behavior or release tier changed for this
+clarification. Claude retains security/model-choice work. Reports arriving during
+publication reconcile next iteration.
+
+Pinned Smithay EGLDisplay::new at display.rs:201 remains unsafe under workspace
+forbid. Selected the next independently executable window operation and recorded
+acceptance in QUEUE before coding. Server::request_window_size takes raw signed
+logical dimensions, validates positive sizes and committed client min/max limits,
+and queues a cooperative XDG configure, returning its serial or None for unchanged
+state. Refuses exact requests outside limits rather than silently clamping.
+Smithay owns serial/acknowledgement/duplicate tracking. Activation, stacking,
+keyboard and old buffers remain intact. Normal clients may choose another size;
+only committed buffers/geometry change presentation and input. Unmap resets
+requested state. No agent endpoint/context capture, UI strings, unsafe exception,
+engine patch or new release scope. Rustdoc and COMPOSITOR.md describe the boundary.
+
+Report: `docs/autonomy/updates/cooperative-window-sizing.md`. Four new real socket
+tests prove size/serial and client isolation, duplicate suppression, client choice,
+committed versus pending limits, invalid dimensions, foreign/child/popup/unmapped/
+dead refusal, remap reset and changed input extent only after a replacement buffer
+commit. WSLg's ten-stage offscreen regression checks full framebuffer preservation
+while pending and every pixel of a real acknowledged 32x24 resize. Nested popup/
+cursor regression also passes (115 client surfaces). Both graphical commands exit
+zero with expected Mesa fallback and deliberately invalid-client diagnostics.
+
+Prerequisites verified: Ubuntu WSL2 Rust 1.98.0, eight graphics/input libraries and
+WSLg socket; /dev/dri absent. Isolated target /root/alo-os-target, explicit Linux
+PATH. No dependencies, shared kernel/BPF state or services changed. Exact commands
+and versions are in the report. Executed Windows cargo fmt --all and --check,
+affected all-target clippy and shell tests (zero Linux-only runtime cases).
+Executed Linux focused window_size tests (four passed), affected all-target clippy,
+full shell tests (138 unit, 104 lifecycle, three socket, three compile-fail
+doctests), warnings-denied rustdoc, example builds and fmt --all --check; all final
+checks passed. Supervisor full Windows/Linux workspace/rustdoc/BPF gates remain
+pending and were not run by this worker.
+
+First focused test exposed a negative Size constructor panic before validation;
+changed the API to raw dimensions and the rerun passed. First Linux clippy found
+the shared resized-buffer helper unused in the example; added the acknowledged
+GLES resize integration, then clippy and the full suite passed. No test or lint
+was lowered. Routine root-document/glob/quoting lookups corrected; registry search
+used grep because Ubuntu rg is absent. Source, tracked diff, new files and docs
+reviewed; git diff --check passed. All four shared progress documents updated.
+
+Size-request primitive complete; the interactive resize feature, window management,
+compositor and release stay unchecked. Next independent component: root placement
+shared by drawing, input and popup output constraints, followed by interactive
+resize and remaining window operations before shortcut integration. Launcher/dock,
+clipboard and all remaining delivery requirements stay unfinished. Safe standalone
+GLES, full DRM/seat entry, populated input/hotplug, GPU/disable recovery and certified
+physical laptop/GPU workstation records remain owed at their delivery phases.
+No staging, commit, push, other checkout edit, tools/dev-loop changes, worker/loop
+launch or physical installation.

@@ -29,6 +29,8 @@ use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_ba
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Logical sizes suggested by successive XDG toplevel configures.
+    pub sizes: Vec<(i32, i32)>,
     /// Activated flags in successive XDG toplevel configures, observed on wire.
     pub activation: Vec<bool>,
     /// Cooperative close requests received; the fixture never closes implicitly.
@@ -194,7 +196,12 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Events {
     ) {
         match event {
             xdg_toplevel::Event::Close => state.close_requests += 1,
-            xdg_toplevel::Event::Configure { states, .. } => {
+            xdg_toplevel::Event::Configure {
+                width,
+                height,
+                states,
+            } => {
+                state.sizes.push((width, height));
                 state
                     .activation
                     .push(states.as_chunks::<4>().0.iter().any(|bytes| {

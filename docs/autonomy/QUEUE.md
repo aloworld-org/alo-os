@@ -5,6 +5,37 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Selected cooperative window sizing (desktop worker, 2026-09-08):**
+implement a trusted mapped-root size request with positive logical dimensions,
+committed client min/max refusal and duplicate-configure suppression. Preserve
+activation, stacking, input and existing buffers until the client commits.
+Acceptance: real-client size/serial and acknowledgement tests, invalid dimensions,
+limits, foreign/child/popup/unmapped/dead target refusal, lifecycle reset, GLES
+old-buffer evidence, affected fmt/clippy/tests/rustdoc.
+
+**Completed cooperative window sizing 2026-09-08:** mapped-root requests return
+the configure serial (or None for unchanged state), validate raw dimensions
+before Smithay Size construction and refuse committed client-limit violations.
+Four real-client tests cover negotiation, input/buffer commit, client choice,
+pending limits, invalid dimensions, target isolation and lifecycle reset. Linux
+shell 245 tests plus three doctests, affected Windows/Linux clippy/tests/fmt,
+Linux rustdoc/examples, ten-stage WSLg offscreen pixels and nested regression
+(115 surfaces) pass. Exact commands, initial fixes and limits:
+`updates/cooperative-window-sizing.md`. Full supervisor gates remain pending.
+The size-request primitive is complete; interactive resize and the window
+management feature are not. Next independent component: native root placement
+shared by drawing, hit testing and popup output constraints, with invalid-target
+refusal and committed-geometry/lifecycle evidence. Then interactive resize and
+remaining window operations, before raw shortcut integration and controls.
+
+Published `updates/deferred-desktop-and-hardware-acceptance.md` reconciled:
+finish underlying window operations before phase 3 shortcut integration; physical
+acceptance follows phase 7 VM image verification in phase 8. Documentation-only
+diff-check evidence; no runtime change or release tick. This supersedes the
+earlier raw-shortcut next-component selection below. Safe standalone GLES remains
+blocked by pinned unsafe constructors under the accepted workspace lint policy;
+cooperative sizing is the next independently executable window operation.
+
 **Selected configurable window command dispatch (desktop worker, 2026-09-08):**
 implement the trusted chord-to-window-action bridge using alo-shortcuts' current
 person-owned bindings. Execute next/previous window and cooperative focused-root

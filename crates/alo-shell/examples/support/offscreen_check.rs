@@ -52,9 +52,40 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
+                9 => {
+                    let root = roots.first().ok_or("resize client missing")?;
+                    assert!(server.request_window_size(root, (32, 24))?.is_some());
+                }
+                10 => {
+                    let prepared = render_scanout(
+                        renderer,
+                        (33, 32).into(),
+                        &roots,
+                        &popups,
+                        &alo_shell::Cursor::Hidden,
+                    )?;
+                    assert_eq!(prepared.surfaces().len(), 1);
+                    for (index, pixel) in prepared
+                        .pixels()
+                        .pixels()
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
+                        .enumerate()
+                    {
+                        let expected = if index % 33 < 32 && index / 33 < 24 {
+                            [255, 255, 255, 0]
+                        } else {
+                            [0; 4]
+                        };
+                        assert_eq!(*pixel, expected, "resized pixel {index}");
+                    }
+                    println!("Acknowledged 32x24 window resize GLES pixels passed");
+                }
                 8 => {
                     crate::window_raise_check::run(&mut server, renderer)?;
                     crate::window_switch_check::run(&mut server, renderer)?;
+                    crate::window_size_check::run(&mut server, renderer)?;
                 }
                 1 => {
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {
@@ -165,7 +196,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 8);
+    assert_eq!(stages, 10);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native shell controls can now ask a window to change size.** Invalid targets,
+  dimensions and sizes outside committed client limits refuse; repeated requests
+  do not flood the client. The current window stays usable while the application
+  responds. Interactive resize controls remain unfinished. Evidence:
+  `docs/autonomy/updates/cooperative-window-sizing.md`.
+
 - **Configured window commands now reach native window switching and close.**
   The compositor honors current rebinding, clearing and conflict rules. Close
   asks the keyboard-focused window once, even when another window is on top;

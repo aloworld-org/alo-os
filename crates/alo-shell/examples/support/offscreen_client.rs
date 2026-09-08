@@ -162,6 +162,24 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     assert!(send.send(4).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.configure();
+    fresh.attach();
+    fresh.sync();
+    assert!(send.send(9).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    assert_eq!(fresh.events.sizes.last(), Some(&(32, 24)));
+    assert!(fresh.events.serial.is_some());
+    if let Some(serial) = fresh.events.serial {
+        fresh.xdg.ack_configure(serial);
+    }
+    fresh.attach_resized();
+    fresh.sync();
+    assert!(send.send(10).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.surface.attach(None, 0, 0);
+    fresh.surface.commit();
+    fresh.sync();
+    fresh.configure();
     fresh.surface.frame(&fresh.queue.handle(), ());
     let storage = fresh.attach_pixels(&fresh.surface, &solid([255, 255, 255, 255]));
     fresh.sync();

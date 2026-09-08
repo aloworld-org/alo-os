@@ -1,5 +1,33 @@
 # Native compositor development
 
+## Cooperative window sizing (2026-09-08)
+
+`Server::request_window_size(surface, (width, height))` suggests a positive
+logical window-geometry size to a live mapped same-display root. Raw signed
+dimensions are validated before constructing Smithay Size, whose negative-size
+constructor panics. Invalid dimensions, foreign/dead/unmapped roots, children,
+popups and violations of committed client min/max limits refuse without mutation.
+Zero client limits mean unconstrained axes. Exact requests are refused rather
+than clamped; callers can distinguish invalid dimensions from client constraints.
+
+The result is the queued configure serial, or None for an identical latest
+server configuration. Smithay owns serial tracking and duplicate suppression.
+Only pending size changes; activation and other flags, keyboard focus, stacking
+and existing buffers remain intact. Normal clients may choose a different size.
+An acknowledgement alone does not change hit testing or pixels: committed
+buffers and geometry remain authoritative. Unmap resets requested state, and
+fresh configured remaps are eligible again. No buffer allocation or scaling,
+timeout, retry, interactive Resizing state, drag handle or agent endpoint is added.
+Agent arrangement still requires the existing grant/proposal/approval path.
+
+Real socket tests cover wire size/serial, pending limits versus committed limits,
+duplicate suppression, acknowledgement and buffer commit, changed input extent,
+client size choice and refusal/lifecycle isolation. GLES checks preserve the old
+framebuffer while a request is pending and verify a client's acknowledged 32x24
+replacement across every output pixel. Evidence and limits:
+`updates/cooperative-window-sizing.md`. Interactive resize and placement remain
+unfinished; this is the complete size-request primitive, not the resize feature.
+
 ## Configured window commands (2026-09-08)
 
 `Server::dispatch_window_shortcut(&Shortcuts, Chord)` connects the person's
