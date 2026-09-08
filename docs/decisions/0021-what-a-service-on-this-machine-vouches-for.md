@@ -3,8 +3,11 @@
 **Status:** **PROPOSED — not accepted, and nothing in it is built.** It asks the
 repository owner one question and recommends an answer. No enforcement, promise
 or default changes until it is accepted.
-**Date:** 2026-09-08, revised the same day with a third option the owner asked
-for. Neither A nor B nor C is approved.
+**Date:** 2026-09-08. Revised twice the same day: once for a third option, and
+once to align with the owner's model-choice clarification
+(`docs/autonomy/updates/owner-model-choice-direction.md`, `9707ad5`). **Nothing
+is approved.** The owner's support for model freedom is not approval of any
+enforcement policy here.
 **Proposed by:** the kernel-enforcement workstream
 **Context:** [ADR 0007](0007-the-cpu-is-the-default.md) (the CPU is the default),
 [ADR 0013](0013-the-grant-is-enforced-by-the-kernel.md),
@@ -18,6 +21,37 @@ for. Neither A nor B nor C is approved.
 **Does `Served` vouch that the address is on this machine, or that nothing
 leaves this machine?** The code takes the first and the documentation around it
 reads as the second, and a proxy on loopback is the case where those differ.
+
+## Five things that are not the same thing
+
+The owner's clarification of 2026-09-08 says it in one line — *a loopback address
+establishes where a service is contacted, not where it performs inference* — and
+the confusion it corrects runs through this whole subject. So they are separated
+here first, and every option below is judged against the separation rather than
+against a brand.
+
+| | The question | What alo OS knows |
+|---|---|---|
+| **1. Who provides the model** | alo's catalogue, the person's own weights, a third party's | **exactly**, because the person chose it |
+| **2. Who manages the runtime** | the unit alo ships, a service the person runs, a company's API | **exactly**, and it is which of the three doors was used |
+| **3. Where processing occurs** | this machine, a paired machine, somewhere else | **almost nothing**, once a socket is involved. This is the one that matters and the one alo cannot see |
+| **4. What alo can verify or enforce** | the address connected to; the destination a *turn* may reach; what its own components do | **not** what a process on the other end of a loopback socket does next |
+| **5. What has been permitted** | `SourcePolicy`, the organisation's rule, the grant, the typed capability | **exactly** — this is userspace and it is settled before anything opens |
+
+**Brand is not evidence of privacy, in either direction.**
+
+- A **third-party model can be genuinely local**: llama.cpp serving weights the
+  person downloaded themselves never touches a network, and no part of that
+  depends on who wrote it.
+- An **alo-provided service can be remote**: `docs/features.md` already says our
+  own hosted service gets no exemption — *the same egress indicator fires, the
+  same provenance line is shown, a machine set to keep questions in the building
+  refuses ours too.*
+
+The mistake this ADR exists to correct is a **category error, not a
+vulnerability**: `Served::source()` answers (3) with a fact about (4). It says
+*this machine* because the address is loopback. That is the strongest thing alo
+knows and it is not the thing being claimed.
 
 ## The gap, stated precisely — and it is not where the last report said
 
@@ -54,6 +88,18 @@ That is exactly right about the *address* and it is an assumption about the
 door with `127.0.0.1:8000`. A person who runs something on `127.0.0.1:8000` that
 forwards elsewhere configures it identically, and alo OS cannot tell them apart:
 it shows nothing, records no departure, and the answer says *on this machine*.
+
+**And the production half is reproduced, through the real door.**
+`crates/alo-asking/tests/a_day_that_only_looks_like_it_never_left.rs` copies every
+assertion from the honest case in `a_day_that_never_left.rs` — the answer says
+*on this machine*, the indicator is quiet, the record's *what left this machine*
+is empty — and makes them against a service at `127.0.0.1` that forwards the
+question to a listener on this machine's own interface. **All of them still
+pass**, while the far service holds the person's question and reports the text of
+it. A transparent relay is not a redirect: it answers in its own voice, so
+nothing in the HTTP exchange gives it away, and
+`a_local_service_cannot_redirect_a_question_off_this_machine` — which is a real
+guarantee — does not touch it.
 
 **The kernel half is reproduced.**
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs` drives a bound
@@ -282,81 +328,188 @@ splitting the *permission* means splitting the *work*, and there are two ways:
 | Blocked on | nothing | nothing | **C2/C3 blocked on a runtime unit that does not exist** |
 | Scope | multiple releases | days | C1 days; C2+C3 a release of their own |
 
+## Model choice is one thing; a local-only guarantee is another
+
+The owner's direction is that **alo-provided models and services, the person's
+own local models and runtimes, and compatible third-party APIs are all
+legitimate choices, and alo ownership is never a condition of being one.** This
+ADR must not narrow that, and none of the options below does: every one of them
+leaves ordinary use of an owner-configured local service and of a third-party API
+exactly as it is.
+
+What follows from separating (1) from (3) is that **choosing a model and being
+promised something about where it runs are different transactions.**
+
+- **Ordinary selection** — the person picks a model, a runtime or an API. Free,
+  unrestricted, and nothing here touches it. What alo owes is a truthful account
+  of what it knows, which today it does not give.
+- **An enforceable local-only restriction** — the person or the organisation
+  says *questions must not leave this machine* and wants that to be **true**
+  rather than intended. That is a guarantee, and a guarantee needs a mechanism.
+
+Today those two are the same setting, and the setting is decided by an address.
+
+### How a runtime the person owns could qualify — without alo owning it
+
+The owner's question, and it has a clean answer: **qualification is about
+supervision, not ownership.**
+
+A runtime qualifies for a local-only guarantee when alo OS can *observe or
+constrain its egress* — which means it runs under a unit whose control group
+carries a zero-egress rule. Nothing in that mentions who wrote it. The runtime
+alo ships would qualify because it happens to run that way; llama.cpp, vLLM or
+LM Studio would qualify **identically** if the person asks alo to run them that
+way, and the runtime alo ships would **stop** qualifying if it were run outside
+that supervision.
+
+That is the honest form of the guarantee: *this question cannot leave, because
+the thing answering it cannot reach the network*, rather than *this question will
+not leave, because of who wrote the thing answering it.*
+
+**What it costs, and none of it is decided here:**
+
+- It needs the cgroup egress mechanism of **C2**, which needs a second programme
+  type ADR 0018's loader does not have, and which is blocked on there being a
+  supervised unit at all.
+- It needs **C3**: a supervised runtime that must fetch models needs the fetching
+  to happen somewhere else, or its egress budget is not zero.
+- It needs a way for a person to place their own runtime under that supervision
+  — packaging work, not security work, and **not** alo starting a program on an
+  agent's behalf, which law 2 forbids and which this is not.
+- Until it exists, **no configuration qualifies**, including alo's own. Offering
+  the guarantee before the mechanism exists would be the thing the owner's
+  clarification explicitly forbids.
+
 ## Recommendation, revised
 
-**Option B for the enforcement question, and C1 for the disclosure — and C1
-replaces B's wording change rather than joining it.**
+**Three parts, and only the first is buildable today.**
 
-1. **Do not filter the person's own processes (reject A).** Off a turn's control
-   group a refusal cannot be attributed to the agent that caused it, and an
-   unattributed block is a worse answer than a stated limit. It drags in the
-   unmade kernel-records decision. And it turns a workspace the person owns into
-   a managed device, which is a change of product taken by accident.
-2. **Stop saying "on this machine" for a service alo cannot verify (take C1).**
-   This is the strongest single sentence in the whole comparison: it is small, it
-   needs no kernel, it breaks no local model, and it removes an untruth from the
-   place the person actually reads. It does more for the v0.01 promise than
-   Option B's configuration-time notice, because the promise is about what a
-   person is shown at the moment it happens.
-3. **On `SourcePolicy::ThisMachineOnly`: permit and label, do not refuse.** A
-   person who set that rule and then pointed alo at their own vLLM meant to keep
-   their questions local, and refusing them would punish the honest case to
-   inconvenience the dishonest one. The label is what carries the truth.
-4. **Treat C2 and C3 as a separate, later piece of work** aimed at a different
-   risk — our own runtime's egress, and the v0.5 *zero inference egress, measured
-   at the network boundary* claim. **Do not schedule them under this decision**,
-   and do not build C2 before there is a runtime unit to attach it to.
+**1. Take C1 — truthful, externalised processing-location labels.** It is
+independent of every enforcement question below, it restricts nobody's choice of
+model, and it is the only part of this subject that is both correct and
+available now. It stops alo OS answering question (3) with a fact about (4).
 
-**What this recommendation does not do is close the gap.** A proxy the person
-starts still carries a question off the machine and alo still cannot see it. What
-changes is that alo stops claiming otherwise.
+Proposed shape, to be written as words in the vocabulary rather than as English
+in the code:
 
-## Success and refusal tests, if the recommendation is accepted
+| Configuration | Today | Proposed |
+|---|---|---|
+| The runtime alo OS ships, unsupervised | *on this machine* | *on this machine* — unchanged, and true |
+| A service the person configured at a loopback address | *on this machine* | *by a service on this machine's address — alo cannot verify where your question was processed* |
+| A supervised runtime, once supervision exists | — | *on this machine, verified* |
+| A provider | *by {provider}, in {region}* | unchanged |
+| A paired machine | *on {machine}, in your network* | unchanged |
 
-Named now so acceptance can be finished rather than argued. Each fails in a
-direction somebody can act on.
+**2. Reject A.** Filtering what the person's own processes send cannot attribute
+a refusal to the turn that caused it, drags in ADR 0015's unmade records
+question, and turns a workspace the person owns into a managed device.
 
-**Success**
+**3. Treat the enforceable local-only guarantee as its own piece of work**,
+qualified by supervision rather than by ownership, and **do not offer it until it
+is implemented and measured** — including its failure and bypass cases. Until
+then no configuration qualifies, alo's own included.
 
-1. `an_answer_from_a_service_we_cannot_verify_does_not_claim_this_machine` — the
-   provenance line for `Answers::Service` does not render *on this machine*, and
-   says alo cannot verify where the question was processed.
-2. `the_runtime_alo_ships_still_says_on_this_machine` — `Answers::Runtime` is
-   unchanged, because for it the sentence is true.
-3. `the_words_are_externalised_like_every_other` — the new string is in the
-   vocabulary and translatable; a hardcoded English sentence is a bug in a
-   European product.
-4. `a_machine_that_keeps_questions_on_it_still_permits_a_local_service` —
-   `SourcePolicy::ThisMachineOnly` permits `Answers::Service`, labelled. The
-   recommendation's step 3, asserted rather than assumed.
-5. `a_service_on_this_machine_still_answers_without_showing_anything` — no
-   indicator, no departure, no policy asked. Regression cover for what must not
-   change.
+**What none of this does is close the gap.** A service the person configured can
+still forward every question, and alo OS still cannot see it. What changes is
+that alo OS stops saying otherwise.
 
-**Refusal**
+## The unresolved decision, stated as options
 
-6. `a_provider_at_a_loopback_address_is_still_not_a_provider` —
-   `Miswired::NotAProvider`, unchanged.
-7. `a_service_that_is_not_on_this_machine_is_still_refused` —
-   `Served::at` still answers `Miswired::ReachesOffThisMachine`.
-8. `a_bound_turn_is_still_refused_an_address_nobody_showed_it` — the existing
-   kernel reproduction, unchanged: accepting this must not relax `socket_connect`
-   by one case.
+> **When *This machine only* is selected and the configured service's processing
+> location cannot be verified, what should happen?**
 
-**Not a test:** nothing asserts a proxy is absent, because nothing can.
+This is the owner's to settle. **It is not settled here, and nothing in this
+repository has been changed to anticipate any of these.** Today's behaviour is
+D1 without the label, asserted in
+`a_day_that_only_looks_like_it_never_left.rs::this_machine_only_still_permits_a_service_that_cannot_be_verified`
+so that whoever changes it has to come here.
+
+| | What happens | Ordinary use | The guarantee | The cost |
+|---|---|---|---|---|
+| **D1 — permit, and label** | as today, plus C1's truthful line | **preserved** | none. A label is a disclosure, **not evidence that a service cannot forward a question** | the setting keeps a name that promises more than it delivers, unless its own wording is corrected too |
+| **D2 — refuse unless verifiable** | the strictest reading: no unsupervised local service under this rule | **broken for everyone**, since no configuration is verifiable today | real, once there is something to verify | a regression with no upside until supervision exists; it would refuse the honest vLLM user to inconvenience nobody |
+| **D3 — permit, label, and ask once** | a one-time acknowledgement per service | preserved, with friction | none — consent is not enforcement | teaches people to click through a dialog, which is worse than a quiet truthful label |
+| **D4 — two settings** | *prefer this machine* (permit + label) and *only verifiably this machine* (refuse unless supervised) | **preserved** under the first | **real** under the second | two settings to explain; the strict one is empty until C2/C3 exist, and offering an empty guarantee is the thing the owner's clarification forbids |
+
+**Recommended: D1 now, with the setting's own wording corrected to match what it
+does, and D4 when supervision exists.** D1 alone, with the setting still reading
+as a guarantee, is the outcome this ADR argues against in every version — it is
+the version where the words stay as written and stop being true.
+
+**Explicitly: recommending D1 is not implementing it.** No code in this
+repository has been changed toward any option, the rule still behaves exactly as
+it did, and `docs/features.md` has not been touched.
+
+## The tests, and which kind each one is
+
+Distinguished on purpose, because a test that documents a gap and a test that
+proves a guarantee read the same and mean opposite things.
+
+**Guarantees, already tested, and none of them changes under any option**
+
+| Guarantee | Test |
+|---|---|
+| A service that is not on this machine cannot become a door | `a_service_that_is_not_on_this_machine_never_becomes_a_door` |
+| A local service cannot redirect a question off this machine | `a_local_service_cannot_redirect_a_question_off_this_machine` |
+| A local model that fails never becomes an API call — **no silent fallback** | `a_local_model_that_fails_never_becomes_an_api_call` |
+| A question bound for a provider never reaches the model here | `a_question_bound_for_a_provider_never_reaches_the_model_on_this_machine` |
+| A day answered here puts no egress on the indicator or in the record | `a_day_of_questions_answered_by_a_local_service_puts_no_egress_in_the_record` |
+| A provider at a loopback address is not a provider | `Miswired::NotAProvider`, `alo-asking`'s own tests |
+| A bound turn is refused a destination nobody showed it | `the_kernel_refuses_a_departure.rs` |
+
+**Gaps, documented, added by this work**
+
+| Gap | Test | Layer |
+|---|---|---|
+| A forwarding service is answered as though it never left | `a_service_that_forwards_is_answered_as_though_it_never_left` | **the production `Served` door** |
+| `ThisMachineOnly` permits a service alo cannot verify | `this_machine_only_still_permits_a_service_that_cannot_be_verified` | the production rule |
+| A bound turn reaches a non-loopback address through a loopback relay | `a_proxy_on_loopback_carries_a_bound_turn_somewhere_nobody_showed_it` | the kernel |
+
+**What acceptance would need, and what none of it may be**
+
+If C1 is accepted: that the unverifiable case no longer renders *on this
+machine*, that the shipped runtime still does, that the words are externalised,
+and that the three gap tests above are updated to say what changed rather than
+deleted. **No test may be written to certify this document.**
 
 ## The approvals each option needs, exactly
 
 | Change | Approval | Why |
 |---|---|---|
-| C1 — a source of its own for an unverifiable local service | **yes** | it changes what an answer says about where it came from, and touches `InferenceSource`, which several crates match exhaustively |
-| C1's policy consequence — `ThisMachineOnly` permits and labels | **yes** | a rule's meaning, which is the owner's to set |
-| B — trusting an owner-started service | **yes** | it is a statement about what alo does not defend against |
-| B's promise rewording | **superseded by C1** if C1 is taken, and still required if it is not |
+| C1 — a source of its own for an unverifiable local service | **yes** | it changes what an answer says about where it came from, and `InferenceSource` is matched exhaustively in several crates |
+| D1/D2/D3/D4 — the `ThisMachineOnly` rule | **yes** | a rule's meaning, and the owner has said model freedom is not approval of one |
+| Correcting the setting's own wording | **yes** | `docs/features.md` is the only list of what gets built |
 | A — filtering the person's processes | **yes**, and ADR 0015's records question first | a different product, and a refusal it cannot attribute |
-| C2 — a cgroup egress programme on the managed runtime | **yes** | a second programme type and attachment point ADR 0018 does not have |
+| C2 — a cgroup egress programme on a supervised runtime | **yes** | a second programme type and attachment point ADR 0018 does not have |
 | C3.1 — alo fetches models, the runtime does not | **yes** | it changes ADR 0006's adapter shape |
-| C3.2 — a time window for fetching | **rejected here**, not proposed | authority that outlives what was shown |
+| Supervision as the qualification for a local-only guarantee | **yes** | it is a new guarantee, and it must be measured before it is offered |
+
+## What exists today, and what does not
+
+Stated so that nothing here reads as a claim that every model or API works.
+
+**Implemented and reachable now**
+
+- **The runtime alo OS ships** — Ollama, pinned by ADR 0006, behind
+  `ModelRuntime`, through `Answers::Runtime`.
+- **An OpenAI-compatible service the person runs on this machine** — vLLM,
+  llama.cpp's server, LM Studio — through `Answers::Service`, loopback enforced.
+- **An OpenAI-compatible hosted provider** — through `Answers::Provider`, with
+  the indicator, the policy and the record.
+- **No model at all**, which stays a supported configuration.
+
+**Typed but not reachable**
+
+- **A paired machine.** `InferenceSource::PairedMachine` exists and every door
+  refuses it — `Miswired::NoPathToAPairedMachine`, *nothing anywhere reaches a
+  machine on this network yet*. The configuration is preserved as the owner asks
+  and **it is not an integration that works today**.
+
+**Not claimed**
+
+Compatibility is with the OpenAI-compatible shape and with Ollama through its
+adapter. **No claim is made that every model or every API is supported**, and
+nothing in this ADR brings a later-release feature forward.
 
 ## What this ADR does not decide
 

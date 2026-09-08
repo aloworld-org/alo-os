@@ -142,13 +142,18 @@ workstation with 24 GB VRAM or more.
 
 Three, and this workstream builds none of them without one.
 
-1. **The loopback proxy.** [ADR 0021](../decisions/0021-what-a-service-on-this-machine-vouches-for.md),
-   proposed 2026-09-08 and revised the same day with a third option. Recommends
-   **not** filtering the person's own processes, and **C1** — that an answer from
-   a service alo cannot verify stops being described as *on this machine*. The
-   gap stays open under every option; what changes is that alo stops claiming
-   otherwise. C2 and C3, which restrict the alo-managed runtime's own egress, are
-   blocked on a runtime unit that does not exist and belong to v0.5.
+1. **What a service on this machine vouches for.**
+   [ADR 0021](../decisions/0021-what-a-service-on-this-machine-vouches-for.md),
+   proposed 2026-09-08 and revised twice — for a third option, and to align with
+   the owner's model-choice clarification. It separates who provides the model,
+   who manages the runtime, where processing occurs, what alo can verify, and
+   what has been permitted; **brand is evidence of none of them**. Recommends
+   **C1** (truthful processing-location labels), rejects A, and leaves the
+   `ThisMachineOnly` rule as **four stated options with consequences** rather
+   than taking one. A future local-only guarantee would be qualified by
+   **supervision, not ownership** — a third-party runtime under alo's
+   supervision qualifies and alo's own outside it does not — and is blocked on a
+   mechanism that does not exist. **The gap is open under every option.**
 2. **Inherited descriptors and sockets, and checks after a connection.** Options
    in `docs/autonomy/updates/network-boundary-decisions-proposed.md`. The
    question is not which hook: every hook runs into the same exemption, because
@@ -569,6 +574,37 @@ they test names refused *before* anything is made.
 
 Nothing was closed, nothing was ticked, no production path calls it, and no
 *On the machine* box is touched.
+
+### 9. What a person is told about where their question was answered
+
+**Status:** done, as documentation and behavioural coverage. **The decision it
+asks for is not taken.** **Depends on:** nothing.
+
+The owner clarified on 2026-09-08 that model choice belongs to the person —
+alo's models, the person's own runtimes and third-party APIs are all legitimate,
+and alo ownership is never a condition of being one. The same clarification says
+a loopback address establishes where a service is *contacted*, not where it
+performs inference.
+
+- **Acceptance:** the proposal separates the five things that are not the same
+  thing; ordinary use of owner-configured local services and third-party APIs is
+  preserved by every option; the `ThisMachineOnly` question is presented as
+  options with consequences rather than answered; and the gap is covered by a
+  behavioural test through the production door rather than argued.
+- **Evidence:** `crates/alo-asking/tests/a_day_that_only_looks_like_it_never_left.rs`.
+- **Constraint:** no enforcement, no label, no rule and no promise changed.
+
+**Done, 2026-09-08.** The test copies every assertion from the honest local
+service in `a_day_that_never_left.rs` and makes them against a service at
+`127.0.0.1` that forwards to a listener on this machine's own interface. All of
+them still pass while the far service reports holding the question — which is the
+category error in one run: `Served::source()` answers *where processing occurs*
+with a fact about *what alo can verify*. A transparent relay is not a redirect,
+so the existing redirect guarantee does not touch it.
+
+**Nothing was implemented and nothing was decided.** ADR 0021 stays PROPOSED, the
+rule behaves exactly as before, `docs/features.md` was not touched, and the
+recommendation is explicitly not an approval.
 
 ## Rules this workstream holds itself to
 
