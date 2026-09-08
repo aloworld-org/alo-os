@@ -291,6 +291,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-secrets"
+version = "0.0.1"
+dependencies = [
+ "alo-models",
+ "alo-strings",
+ "rustix 1.1.4",
+]
+
+[[package]]
 name = "alo-shell"
 version = "0.1.0"
 dependencies = [

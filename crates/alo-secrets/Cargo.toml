@@ -1,0 +1,29 @@
+[package]
+name = "alo-secrets"
+version = "0.0.1"
+description = "Where a provider's key is kept, and where the bus that keeps it is."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Everything in this crate is a Unix socket, a uid and a keyring that only
+# exists on Linux. On any other host it compiles to nothing at all rather than
+# to a version of itself that pretends — `alo-bounding`'s argument, and the same
+# one: a credential store that could be constructed on a machine that has none
+# would be a type whose existence means nothing.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The person's own uid, asked of the process rather than of an environment.
+# `getuid` is a syscall and this workspace forbids `unsafe` outside
+# `alo-bounding-kernel`, so it is asked through a crate that has already made
+# that call safely.
+rustix = { workspace = true }
+
+# The key itself, and the handle that names one. `alo-secrets` implements what
+# `alo_models::SecretRef` refers to and never widens it: nothing here can render
+# a key, because `Secret` is what it hands back.
+alo-models = { path = "../alo-models" }
+alo-strings = { path = "../alo-strings" }
+
+[lints]
+workspace = true

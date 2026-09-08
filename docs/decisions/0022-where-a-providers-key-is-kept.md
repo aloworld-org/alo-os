@@ -1,8 +1,15 @@
 # ADR 0022 — Where a provider's key is kept
 
-**Status:** **PROPOSED — not accepted, and nothing in it is built.** It asks the
-repository owner one question, because the accepted documents answer it two
-different ways.
+**Status:** **accepted — approved by the repository owner on 2026-09-08.** The
+architecture below is settled: a provider's key lives in the **Secret Service**,
+and `alo-agentd` reaches it over the person's own session bus at
+`/run/user/<uid>/bus`, derived from the daemon's own uid.
+
+What the approval covered, exactly: that store, that bus, that derivation, and
+the scheduling of its two image dependencies with the desktop worker. What it did
+**not** cover, stated so it cannot be read in: no release tier moves, no interim
+store, no credential-transfer protocol, no amendment to ADR 0017, and no
+acceptance of ADR 0021.
 **Date:** 2026-09-08. Revised twice: after the owner declined the release-scope
 change this ADR first proposed, and again after two of its own claims turned out
 to be wrong — what ADR 0017 forbids, and what protects a credential.
@@ -295,9 +302,28 @@ authenticated HTTPS operation through the daemon.**
 - **Nothing about alo's own endpoint**, which does not exist and is not invented
   here.
 
-## The approval requested
+## What is built, and what is not
 
-One thing, and nothing else in this ADR is being asked for:
+**Built and tested, 2026-09-08** — `crates/alo-secrets`:
+
+- `TheBus::of(uid)` — where a person's bus is, **taking a uid and nothing else**,
+  so `DBUS_SESSION_BUS_ADDRESS` cannot reach the decision through any parameter.
+- `TheBus::of_this_process()` — the uid the kernel says this process runs as.
+- The three checks: it is there, it is a socket, and **it is that uid's** — asked
+  of the name itself rather than of whatever a symlink points at.
+- `TheBus::as_an_address()` — what a client is *handed*, so that a binding cannot
+  quietly connect somewhere else. ADR 0022's *verify the bus actually selected*
+  begins here and is finished when a library is holding it.
+- `NotStored` — unavailable, locked, missing, denied; four states told apart, and
+  `nothing_was_sent` as a method rather than a comment.
+
+**Not built, and not stubbed:** the lookup itself. It needs `libsecret`, and the
+build machine this repository is gated on **does not have the C library
+installed**. Adding the dependency before it does would break the build for
+everybody sharing that machine, so it is a coordination step rather than a commit.
+There is no placeholder implementation and no trait with an empty body.
+
+## The approval, as it was requested and given
 
 > **Approve the Secret Service — reached by `alo-agentd` over the person's own
 > session bus at `/run/user/<uid>/bus`, discovered from the daemon's own uid — as
