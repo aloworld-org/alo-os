@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct pointer input can now translate mouse movement into bounded desktop
+  coordinates.** Relative and absolute motion share existing client routing;
+  malformed input preserves position and drag state, and pause releases held
+  buttons. Five new tests, including real Wayland wire checks, pass. Live device
+  acquisition, standalone graphics initialization and physical acceptance remain.
+  Evidence: `docs/autonomy/updates/bounded-direct-pointer-routing.md`.
+
 - **The direct compositor now stops and retires its output when its session
   pauses or rendering fails.** The session-driven loop checks seat state around
   pacing, keeps polling while idle, and retires/drops its target before closing

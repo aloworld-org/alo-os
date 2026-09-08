@@ -77,6 +77,28 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected bounded direct-pointer routing (desktop worker, 2026-09-08):**
+  translate relative mouse deltas and normalized absolute motion to scale-one
+  output pixels; share button/scroll routing and cancel drags on inactive input.
+  Refuse invalid dimensions/nonfinite motion without changing pointer state.
+  Acceptance: coordinate edge/refusal tests and real Wayland motion, drag, pause,
+  reactivation and disconnect checks; affected fmt/clippy/tests and WSLg regression.
+  Native standalone GLES initialization is dependency-blocked: pinned Smithay
+  EGLDisplay::new/GlesRenderer::new require unsafe, forbidden by workspace lints.
+  No lint exception or upstream patch is authorized. This independent input
+  component proceeds; libinput acquisition and full direct input remain owed.
+  **Completed bounded direct-pointer routing 2026-09-08:** fractional relative
+  motion, normalized absolute motion and output clamping now reach existing
+  pointer hit testing. Invalid input preserves state; pause cancels drags and
+  fresh motion is required after reactivation. Five new tests pass, including
+  real wire refusal, drag, scroll and disconnect cases. Linux shell 190 tests and
+  three doctests, affected Windows/Linux checks, Linux rustdoc/examples and WSLg
+  regression (115 surfaces) pass. Report: `updates/bounded-direct-pointer-routing.md`.
+  Next executable component: seat-owned libinput acquisition/event routing and
+  keyboard pause cleanup, with device removal and open/dispatch refusal tests.
+  Standalone safe GLES construction, live input/session wiring, real DRM/seat and
+  physical acceptance remain owed; no compositor or release completion claim.
+  Independent supervisor workspace/rustdoc/BPF publication gates remain pending.
   **Selected session-driven direct frame loop (desktop worker, 2026-09-08):**
   connect fresh atomic discovery and the GLES DirectTarget to the active device
   scope. Poll before and after the trusted pacing callback, dispatch/render only

@@ -733,6 +733,17 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Bounded direct-pointer routing (2026-09-08): relative and normalized absolute
+    motion map to scale-one output coordinates, with edge clamping, unchanged
+    state on refusal and pause drag cleanup. Five focused tests pass; Linux shell
+    190 tests plus three doctests, affected Windows/Linux clippy/fmt/tests, Linux
+    rustdoc/examples and WSLg regression (115 surfaces) pass. Report:
+    `docs/autonomy/updates/bounded-direct-pointer-routing.md`. Live libinput and
+    keyboard pause wiring remain next. Standalone GLES construction currently
+    requires unsafe Smithay APIs forbidden by workspace policy; no gate exception
+    or engine patch was made. Safe construction, direct session wiring and real
+    DRM/seat/physical acceptance remain owed. Compositor and release unchecked;
+    full independent publication gates remain with the supervisor.
   - Session-driven direct frame loop (2026-09-08): fresh atomic discovery and
     the GLES target now run within the active descriptor scope. Polling surrounds
     pacing, idle dispatch remains active, and stop/failure retires and drops before

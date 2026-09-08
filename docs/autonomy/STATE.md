@@ -12143,3 +12143,53 @@ recovery, context loss, asynchronous transport and physical laptop/GPU-workstati
 records remain owed. Compositor/release unchecked; independent full Windows/Linux
 workspace, rustdoc and BPF gates must still be run by the supervisor. No staging,
 commit, push, tools/dev-loop edit, worker/loop launch or physical installation.
+
+---
+
+## 2026-09-08 - Bounded direct-pointer routing
+
+Read constitution, delivery/ownership/report rules, current queue and journal
+tail, relevant v0.01 feature/roadmap sections, ADR 0002 and daemon contract input
+boundaries. Working tree was clean. Compared every published task report filename
+against STATE at iteration start: no unreconciled reports. Claude's network
+request-boundary work remains with Claude. Supervisor owns synchronization and
+publication; no other checkout accessed.
+
+Standalone native GLES initialization was the first remaining component. Pinned
+Smithay constructors require unsafe, forbidden by workspace Cargo.toml. Preserved
+the gate and engine policy, recorded the dependency and selected independent
+bounded direct-pointer translation before implementation. A safe upstream
+construction path or owner-approved design change remains necessary; a nested
+window does not close native initialization. See
+`docs/autonomy/updates/bounded-direct-pointer-routing.md` for exact source evidence,
+decisions, commands, results and limitations.
+
+The trusted Server API translates relative and normalized absolute pointer motion
+into bounded scale-one output coordinates, retaining fractional movement. Invalid
+input leaves position/focus/buttons unchanged; inactive routing cancels a drag
+and fresh motion is needed after reactivation. Existing pointer routing owns all
+state; no new agent API, context capture or UI strings. Libinput acquisition and
+automatic seat integration are not implemented by this component.
+
+Verified Ubuntu Rust and eight graphics pkg-config prerequisites. WSLg socket is
+present; /dev/dri absent. No dependency installation or shared kernel changes.
+Five focused tests pass: two numeric tests and three real Wayland socket tests.
+Wire evidence includes unchanged frames/position on refusal, matched drag release,
+edge clamping, pause cleanup, no reactivation click/scroll, absolute reentry,
+scroll and disconnect/replacement isolation. Linux shell 117 unit, 70 lifecycle,
+three socket tests and three compile-fail doctests pass without test failures.
+Windows fmt/affected clippy/tests pass (zero Linux-only tests on Windows).
+Linux fmt/affected clippy, warnings-denied rustdoc and examples pass. WSLg golden
+pixels/refusal and nested regression pass (115 client surfaces). Expected Mesa and
+invalid-client diagnostics remain. Full independent Windows/Linux workspace,
+rustdoc and BPF gates were not run by this worker; supervisor must run them.
+Final source/diff review and git diff --check pass. All four progress documents
+updated. Intermediate PowerShell queue encoding damage was corrected from HEAD's
+UTF-8 bytes; final diff contains only intended additions.
+
+Next: seat-owned libinput acquisition/event routing and keyboard pause cleanup,
+with device removal/open/dispatch refusal tests. Standalone GLES safe construction,
+live direct renderer/input/session integration, real seat/DRM, GPU context loss,
+failed-disable recovery and certified laptop/GPU-workstation physical records
+remain owed. Component complete, compositor and release unchecked. No staging,
+commit, push, other repository change, worker/loop launch or tools/dev-loop edit.
