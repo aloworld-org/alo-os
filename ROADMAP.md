@@ -733,6 +733,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Seat-checked libinput context lifetime (2026-09-08): udev assignment through
+    SessionInput, seat checks before dispatch/delivery and terminal suspension
+    before reset on failure. Eight new tests include real empty-seat integration
+    and descriptor EOF/error retention. Linux shell 209 tests and three doctests,
+    affected Windows/Linux fmt/clippy/tests, Linux rustdoc/examples and WSLg
+    regression (115 surfaces) pass. Report:
+    `docs/autonomy/updates/seat-checked-libinput-context-lifetime.md`. Event
+    translation, device-removal cleanup and live DirectSession/frame-loop wiring
+    remain next. Safe standalone GLES, real DRM/seat and physical acceptance
+    remain owed; full supervisor publication gates pending, compositor unchecked.
   - Session-owned input descriptors (2026-09-08): restricted libinput opens/closes
     use the seat manager, refuse inactivity and latch acquisition/cleanup failures.
     Six new tests include real libinput refusal and Unix descriptor EOF evidence.

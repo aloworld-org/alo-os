@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The direct-input context now stops dispatching when seat authority is lost.**
+  It suspends devices before requesting input reset, refuses reuse after pause or
+  failure, and retains cleanup errors. Eight new tests include real libinput
+  empty-seat dispatch and pause retirement. Event translation, live seat wiring
+  and physical acceptance remain unfinished. Report:
+  `docs/autonomy/updates/seat-checked-libinput-context-lifetime.md`.
+
 - **The direct-input device bridge now preserves seat-manager failures.**
   Inactive seats cannot open input devices through the bridge, and failed opens
   or closes prevent further acquisition. Cleanup still reaches the seat manager.

@@ -46,6 +46,7 @@ mod scene;
 mod scene_drawing;
 mod scene_replacement;
 mod scene_scanout;
+mod seat_input;
 mod server;
 mod session_device;
 mod session_input;
@@ -80,4 +81,5 @@ pub use server::Server;
 pub use session_device::SessionError;
 pub use socket::SocketError;
 
+pub use seat_input::{InputDispatchError, InputUpdate, SeatInput};
 pub use session_input::{SessionInput, SessionInputStatus};

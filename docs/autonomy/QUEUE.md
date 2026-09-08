@@ -77,6 +77,26 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected seat-checked libinput context lifetime (desktop worker, 2026-09-08):**
+  own a udev context through SessionInput; validate activity and seat names before
+  assignment. Poll seat authority before dispatch and each delivery, suspend/drop
+  on pause or callback/dispatch failure, preserve cleanup errors, and issue input
+  reset on retirement. Acceptance: ordered happy/refusal lifecycle tests plus real
+  libinput empty-seat integration; affected fmt/clippy/tests/rustdoc and WSLg.
+  Event translation, device-removal policy and live DirectSession wiring remain
+  subsequent components; this is context lifetime, not completed direct input.
+  **Completed seat-checked libinput context lifetime 2026-09-08:** owned udev
+  assignment through SessionInput, authority checks before dispatch and delivery,
+  terminal suspend/drop before reset and independent cleanup error evidence.
+  Eight new tests include real empty-seat libinput dispatch/pause and descriptor
+  EOF. Linux shell 209 tests and three doctests, affected Windows/Linux checks,
+  Linux rustdoc/examples and WSLg regression (115 surfaces) pass. Report:
+  `updates/seat-checked-libinput-context-lifetime.md`. Next executable component:
+  libinput keyboard/pointer translation and device-removal state cleanup, then
+  connect this owner to DirectSession polling and the direct frame loop. The
+  callback contract is not live-wiring evidence. Safe standalone GLES, real DRM/
+  seat input acquisition, recovery and physical acceptance remain owed. Compositor
+  and release unchecked; independent full supervisor publication gates pending.
   **Selected session-owned input descriptors (desktop worker, 2026-09-08):**
   implement libinput's restricted-open/close bridge through Smithay Session.
   Refuse inactive and failed acquisition without a direct-open fallback, retain

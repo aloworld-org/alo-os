@@ -12288,3 +12288,53 @@ GPU context-loss/failed-disable recovery and physical laptop/GPU-workstation
 records remain owed. Acquisition bridge complete, compositor/release unchecked.
 No staging, commit, push, other checkout edit, worker/loop launch, physical
 installation or tools/dev-loop modification.
+
+
+---
+
+## 2026-09-08 - Seat-checked libinput context lifetime
+
+Read constitution, delivery/ownership/report rules, current queue and journal
+tail, relevant v0.01 feature/roadmap, ADR 0002 and daemon-protocol invocation-only
+boundary. Initial tree clean; compared every published report filename with
+STATE, none unreconciled. Claude retains the network workstream. Selected the
+context-lifetime component in QUEUE before coding; no other checkout accessed.
+
+SeatInput owns a udev/libinput context through SessionInput and validates activity
+and seat names before assignment. Dispatch checks the supplied seat poll before
+reading and delivering (also for empty batches). Pause, dispatch/callback or
+handler failure suspends/drops before one Reset notification; the context cannot
+resume. Shutdown resets explicitly; Drop only closes device lifetime. Original
+and cleanup errors remain inspectable, including reset refusal. The callback
+latch retains the first device failure rather than an exhaustive error list.
+Smithay backend_udev enabled without a dependency version/lockfile change, engine
+patch or lint exception. No agent API, context capture or UI strings changed.
+Decisions, exact commands and limits:
+`docs/autonomy/updates/seat-checked-libinput-context-lifetime.md`.
+
+Ubuntu Rust and eight graphics/input pkg-config prerequisites checked; WSLg
+present, /dev/dri absent. Eight new tests pass: ordered happy/refusal dispatch,
+queued-event discard and terminal pause, dispatch/handler/reset failures,
+restricted-callback errors with real descriptor EOF, and two real libinput udev
+empty-seat cases. These do not demonstrate populated-seat or physical acquisition.
+Initial compilation required the udev feature; initial clippy found missing
+private rustdoc and a collapsible conditional. Corrected without weakened checks;
+no runtime test failed. A preliminary WSL prerequisite command had a shell quoting
+error and was corrected before execution; no environment change resulted.
+
+Windows fmt/affected clippy/tests passed (zero Linux-only tests). Linux focused
+tests, affected all-target clippy/fmt, shell tests (132 unit, 74 lifecycle, three
+socket, three compile-fail doctests), warnings-denied rustdoc and examples passed.
+WSLg offscreen golden pixels/SHM refusal and nested popup/cursor regression passed,
+115 surfaces with expected Mesa/client diagnostics. Source/test/documentation diff
+review and git diff --check passed; all four shared documents updated. Independent
+full Windows/Linux workspace/rustdoc/BPF supervisor gates were not run here.
+
+Next: translate libinput keyboard/pointer events and clean up removed devices,
+then connect SeatInput to DirectSession polling and the direct frame loop. The
+trusted poll must latch pause; Reset must call Server::clear_input and flush.
+Those obligations remain unwired. Safe standalone GLES, real DRM/seat acquisition,
+GPU context-loss/failed-disable recovery and certified laptop/GPU-workstation
+physical records remain owed. Context lifetime complete; compositor/release
+unchecked. No staging, commit, push, other checkout edits, worker/loop launch,
+physical installation or tools/dev-loop modification.
