@@ -5,6 +5,16 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+Published model-choice gap coverage reconciled 2026-09-08:
+`updates/model-choice-and-what-alo-can-verify.md` adds two production Service-door
+tests showing a forwarding service still receives local provenance, a quiet
+indicator and ThisMachineOnly permission. Contributor-reported Linux workspace,
+rustdoc and BPF gates were reviewed, not rerun here. ADR 0021 remains proposed;
+its revised D1-now/D4-later recommendation is not an accepted policy. Runtime
+supervision, not model ownership, would qualify a future enforceable guarantee;
+that mechanism is missing. Paired-machine configuration is typed but unreachable.
+Claude retains this workstream. No privacy gap or release gate is closed.
+
 Owner model-choice clarification reconciled 2026-09-08:
 `updates/owner-model-choice-direction.md` separates ownership, processing location
 and verified privacy. Alo services, user-owned local runtimes and compatible
@@ -943,6 +953,26 @@ not take that workstream.
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit
   gate. A dependency in this list does not erase any original requirement.
+  **Selected native window close requests (desktop worker, 2026-09-08):**
+  delivery step 3's first independent window-management component while pinned
+  standalone GLES initialization still requires forbidden unsafe constructors.
+  Add a trusted Server request for a live mapped toplevel in this display; send
+  XDG close without destroying resources, changing focus or killing clients.
+  Acceptance: real wire delivery to only the selected client, continued rendering
+  and input when ignored, voluntary teardown, unmapped/dead/foreign/non-root
+  refusal and remap recovery; affected fmt/clippy/tests/rustdoc and WSLg regression.
+  Native close controls/shortcuts and application-adapter wiring remain separate.
+  **Completed native window close requests 2026-09-08:** one cooperative XDG
+  close event per trusted call, mapped same-display root validation and no forced
+  teardown. Three new real socket tests cover delivery/isolation, ignored-close
+  input/rendering, voluntary exit, stale/foreign/popup/unmapped refusal and remap.
+  Windows/Linux affected fmt/clippy/tests, Linux rustdoc/examples and WSLg
+  regressions passed; Linux shell 224 tests and three doctests. Report:
+  `updates/native-window-close-requests.md`. Full supervisor gates pending.
+  Next independent component: toplevel activation and stacking integrated with
+  rendering/input, then native switching/close controls and configurable shortcuts.
+  Safe standalone GLES construction, direct DRM/seat entry and physical acceptance
+  remain open under item 33; window management and the release stay unchecked.
 
 ## The historical constraint (superseded by DELIVERY.md)
 

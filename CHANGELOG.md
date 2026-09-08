@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The native compositor can ask one window to close without discarding work.**
+  The trusted shell API sends an XDG close request and lets the application
+  decide how to respond. Unmapped, disconnected, foreign and popup targets
+  refuse; an ignored request leaves rendering and input working. Native controls,
+  shortcuts and the application adapter still need wiring. Report:
+  `docs/autonomy/updates/native-window-close-requests.md`.
+
+- **New privacy gap tests distinguish a local service address from local
+  processing.** Claude's two production-path tests demonstrate the existing
+  misleading provenance and ThisMachineOnly permission for a forwarding service.
+  No runtime behavior or privacy policy changed; ADR 0021 remains proposed.
+  Reconciled report: `docs/autonomy/updates/model-choice-and-what-alo-can-verify.md`.
+
 - **The direct compositor loop now owns and polls its input context.** Input
   continues during idle iterations and stops on seat pause or failure. Devices
   are suspended and input releases flushed before output retirement, with cleanup

@@ -101,6 +101,14 @@ impl Surfaces {
     pub(crate) fn count(&self) -> usize {
         self.windows.iter().filter(|w| w.surface.alive()).count()
     }
+
+    /// Resolve only a live mapped root owned by this display, never a child.
+    pub(crate) fn mapped_toplevel(&self, surface: &WlSurface) -> Option<&ToplevelSurface> {
+        self.windows
+            .iter()
+            .find(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)
+            .map(|w| &w.surface)
+    }
 }
 
 impl CompositorHandler for Surfaces {

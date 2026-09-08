@@ -5,6 +5,25 @@ ADR 0002. The first component is `crates/alo-shell`: a reusable Linux Wayland
 server library. The second adds nested Wayland/GLES rendering, described below.
 It is not yet a session executable or a usable desktop.
 
+## Cooperative window close requests
+
+`Server::request_window_close` is trusted native shell plumbing for delivery
+step 3. It resolves a live mapped toplevel owned by this display and queues one
+XDG close event per explicit call. Normal dispatch flushes the event. Success
+means queued, not received or closed: the application can ignore it or show its
+own save dialog. No resource destruction, focus change, retry or process kill
+follows. Unmapped, destroyed, disconnected, foreign and non-toplevel targets
+return `WindowCloseError::Unmapped`; a fresh configured remap is eligible again.
+
+This API exposes no agent endpoint or window enumeration capability. The
+application-verbs contract's approval/grant boundary remains unchanged, including
+its requirement that close asks rather than discards unsaved work. Native close
+controls, configurable shortcut dispatch and the application adapter remain
+separate unfinished components. The real socket tests exercise wire delivery,
+isolation, continued keyboard input/render eligibility and voluntary teardown.
+WSLg regression is graphics development evidence only. Report:
+`updates/native-window-close-requests.md`.
+
 ## Protocol core
 
 `Server::bind(runtime, name)` creates `runtime/name/wayland`. The runtime must

@@ -10,6 +10,7 @@ mod output_metadata;
 mod pointer;
 mod popups;
 mod support;
+mod window_close;
 use support::{Application, Fixture};
 
 #[test]

@@ -29,6 +29,8 @@ use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_ba
 /// Registry and configure events actually received from the compositor.
 #[derive(Default)]
 pub struct Events {
+    /// Cooperative close requests received; the fixture never closes implicitly.
+    pub close_requests: usize,
     /// Popup configuration and terminal dismissal wire events.
     pub popups: popup_events::PopupEvents,
     /// Pointer events observed on the wire.
@@ -179,7 +181,20 @@ impl Dispatch<wl_buffer::WlBuffer, ()> for Events {
         }
     }
 }
-delegate_noop!(Events: ignore xdg_toplevel::XdgToplevel);
+impl Dispatch<xdg_toplevel::XdgToplevel, ()> for Events {
+    fn event(
+        state: &mut Self,
+        _: &xdg_toplevel::XdgToplevel,
+        event: xdg_toplevel::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let xdg_toplevel::Event::Close = event {
+            state.close_requests += 1;
+        }
+    }
+}
 
 /// A real XDG application with a CPU-backed 16x16 ARGB buffer.
 pub struct Application {

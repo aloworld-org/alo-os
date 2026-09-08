@@ -12,6 +12,15 @@ New work uses descriptive task names and individual reports. Only the integratio
 owner consolidates those reports into this roadmap and the shared progress files;
 historical queue identifiers remain secondary cross-references.
 
+Model-choice gap coverage reconciled 2026-09-08:
+`docs/autonomy/updates/model-choice-and-what-alo-can-verify.md` records two
+production Service-path gap tests and contributor-reported Linux/BPF gates.
+The forwarding-service privacy gap remains open. ADR 0021 is still proposed;
+its D1/D4 recommendation is not acceptance. A future verifiable restriction
+requires runtime supervision regardless of ownership; that mechanism remains
+unimplemented. Paired-machine configuration is still unreachable, and no scope,
+runtime policy or release checkbox changes follow from this report.
+
 The only order things get built in. Items are checked when they meet the
 definition of done in `CLAUDE.md` law 3 — the full path, on real hardware — and
 a release is done only when its **exit gate** is fully checked.
@@ -1163,6 +1172,12 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native window close requests (2026-09-08): trusted per-window XDG close
+    delivery preserves application choice and refuses stale, foreign, unmapped
+    and non-toplevel targets. Real socket tests cover isolation, continued input/
+    rendering and voluntary destruction. Native close controls/shortcuts and
+    application-adapter integration remain; no window-management or release tick.
+    Evidence: `docs/autonomy/updates/native-window-close-requests.md`.
 
 - [ ] Copy, cut and paste across applications; switching between windows
 

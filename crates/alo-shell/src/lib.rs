@@ -56,6 +56,9 @@ mod session_device;
 mod session_input;
 mod socket;
 mod surfaces;
+mod window_close;
+
+pub use window_close::WindowCloseError;
 
 pub use active_session::ActiveSessionResult;
 pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};

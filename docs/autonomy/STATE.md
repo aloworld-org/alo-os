@@ -12466,3 +12466,64 @@ GPU-workstation physical records remain owed. Input-loop component complete;
 compositor and release unchecked. No staging, commit, push, other checkout edits,
 worker/loop launch, tools/dev-loop modification or physical installation. Reports
 arriving during publication are reconciled next iteration.
+
+---
+
+## 2026-09-08 - Native window close requests
+
+Read constitution, delivery/shared-main/report rules, current queue and journal,
+v0.01 features/roadmap, ADRs 0002/0010 and the application-verbs close contract.
+Initial working tree clean; supervisor owns pulls and publication. The direct
+standalone renderer still depends on pinned unsafe EGL construction forbidden
+by workspace policy. Selected the queue-authorized independent delivery-step-3
+close-request component and recorded its acceptance criteria before coding.
+
+Reconciled the one unreferenced published report at iteration start:
+`docs/autonomy/updates/model-choice-and-what-alo-can-verify.md`. Reviewed its
+production Service-door gap-test source and revised proposed ADR 0021. Two tests
+show forwarding still receives local provenance, quiet indicator/empty egress
+record and ThisMachineOnly permission. Contributor Linux workspace/rustdoc/BPF
+and supervisor gates are reported evidence, not rerun here. ADR 0021 remains
+proposed; D1-now/D4-later is not an accepted decision. Supervision rather than
+ownership would qualify a future verified guarantee; that mechanism is missing.
+Paired-machine configuration remains typed but unreachable. Consolidated all
+four shared documents without policy, scope or release checkbox changes. Claude
+retains the security workstream and the privacy gap remains open.
+
+Server::request_window_close now resolves this display's mapped live toplevel
+and queues one XDG close event per explicit call. Success means queued, not
+received or closed. Applications may ignore it or show their save dialog; no
+focus change, resource destruction, process kill or automatic retry occurs.
+Foreign, stale, unmapped and non-toplevel targets refuse. Fresh configured remap
+works. Rustdoc and COMPOSITOR.md document the trusted shell boundary; no agent
+endpoint/context reader, unsafe exemption, engine patch or new UI strings.
+Exact commands, decisions and limits:
+`docs/autonomy/updates/native-window-close-requests.md`.
+
+Ubuntu Rust and eight graphics/input prerequisites verified; WSLg socket present,
+/dev/dri absent. No packages or shared kernel/services changed. Three new real
+Wayland socket tests pass: selected-only close delivery and continued keyboard/
+render eligibility when ignored, voluntary teardown, unmap/remap/disconnect and
+stale replacement refusal, foreign display and popup refusal without dismissal.
+The render eligibility test uses a controlled FrameTarget; it is not scanout.
+
+Windows cargo fmt --all and --check, affected all-target clippy and shell tests
+passed (zero Linux-only runtime cases). Linux focused window_close tests, fmt,
+affected all-target clippy, shell tests (138 unit, 83 lifecycle, three socket and
+three compile-fail doctests), warnings-denied rustdoc and examples passed. WSLg
+nested_check --offscreen and --popups --cursor both exited 0; golden pixels/SHM
+refusal and 115-surface popup/cursor regression with expected diagnostics.
+Initial test module placement caused a compile failure; moved under its module
+directory and every subsequent check passed. Initial path/glob reads and an
+invalid documentation patch were corrected; no runtime failure or lowered gate.
+Source/test/docs diff reviewed; git diff --check passed. Full independent
+Windows/Linux workspace/rustdoc/BPF gates remain supervisor work, not claimed.
+
+Next: toplevel activation/stacking integrated with rendering/input, followed by
+native switching/close controls and configurable shortcuts. This is a complete
+close-request component, not complete window management. Native control/adapter
+wiring, other delivery steps, safe standalone GLES, full direct DRM/seat entry,
+populated input/hotplug, GPU/disable recovery and certified laptop/workstation
+physical records remain owed. No compositor/release tick, staging/commit/push,
+other checkout edit, worker/loop launch, tools/dev-loop change or physical install.
+Reports arriving during publication are reconciled next iteration.
