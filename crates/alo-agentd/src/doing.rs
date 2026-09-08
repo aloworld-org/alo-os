@@ -243,6 +243,105 @@ mod tests {
     use alo_choosing::{Chosen, Which};
     use alo_record::Record;
 
+    /// This machine's own address, which is what a provider's has to be: a
+    /// loopback one reports as this machine and the provider door refuses it.
+    fn our_own_address() -> std::net::IpAddr {
+        let asking = std::net::UdpSocket::bind("0.0.0.0:0").unwrap();
+        match asking
+            .connect("192.0.2.1:9")
+            .and_then(|()| asking.local_addr())
+        {
+            Ok(ours) => ours.ip(),
+            Err(_) => std::net::IpAddr::from([127, 0, 0, 1]),
+        }
+    }
+
+    /// **A provider that needs a credential sends nothing at all**, and says
+    /// why.
+    ///
+    /// The second of the three model choices, on a machine with no credential
+    /// store: `alo_models::SecretRef` names where a key would live and nothing
+    /// on this machine keeps one. So the question is refused at the moment of
+    /// asking — **not sent without its key**, and not answered anywhere else
+    /// instead.
+    ///
+    /// The provider's address is a listener this test owns, on this machine's
+    /// own interface rather than loopback, because a loopback address reports
+    /// as this machine and the provider door refuses that outright. **The
+    /// assertion is that it was never connected to.**
+    #[test]
+    fn a_provider_that_needs_a_key_is_refused_and_nothing_is_sent() {
+        let listener =
+            std::net::TcpListener::bind(std::net::SocketAddr::new(our_own_address(), 0)).unwrap();
+        let at = listener.local_addr().unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let heard = std::thread::spawn(move || {
+            let until = std::time::Instant::now() + Duration::from_secs(2);
+            while std::time::Instant::now() < until {
+                if listener.accept().is_ok() {
+                    return true;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            false
+        });
+
+        let config = a_directory_of_our_own("needs-a-key");
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            format!(
+                "format = 2
+
+[answers]
+provider = {{ name = \"Mine\", model = \"a-model\" }}
+
+                 [[provider]]
+name = \"Mine\"
+endpoint = \"https://{at}\"
+"
+            ),
+        )
+        .unwrap();
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            None,
+        );
+
+        let mut record = Record::default();
+        let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            )
+        });
+
+        let refusal = said.refusal().unwrap();
+        assert!(
+            refusal.text().contains("nowhere to keep one"),
+            "{refusal:?}"
+        );
+        assert!(!refusal.is_a_bug(), "{refusal:?}");
+
+        assert!(
+            !heard.join().unwrap(),
+            "a question was sent to a provider whose key this machine cannot reach"
+        );
+        // And nothing was written down as having left, because nothing did.
+        assert_eq!(
+            record
+                .answering(&alo_record::Asking::anything().only(alo_record::Only::Egress))
+                .count(),
+            0
+        );
+    }
+
     /// **A read answers inside the turn**, and what comes back is what the
     /// machine found rather than a promise to find it.
     #[test]
