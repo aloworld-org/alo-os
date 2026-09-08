@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The compositor can cycle through every mapped window in either direction.**
+  Selection keeps a stable order while bringing each window forward, removes
+  retired windows and preserves keyboard and popup isolation. Four real-client
+  tests cover traversal, lifecycle and refusal. Shortcut bindings and rendered
+  switching controls remain unfinished. Evidence:
+  `docs/autonomy/updates/stable-native-window-cycling.md`.
+
 - **Selecting a window now gives it keyboard focus and tells applications which
   window is active.** Trusted compositor selection raises the chosen window,
   releases old held keys and preserves same-window popup interaction. Invalid

@@ -145,6 +145,18 @@ impl Server {
 }
 
 impl Surfaces {
+    /// Actual keyboard owner expressed as a toplevel, including a grabbed popup.
+    pub(crate) fn keyboard_root(&self) -> Option<WlSurface> {
+        let focus = self.keyboard.as_ref()?.handle.current_focus()?;
+        if self.mapped_toplevel(&focus).is_some() {
+            Some(focus)
+        } else {
+            self.popup_grab.as_ref().and_then(|grab| {
+                (self.popup_keyboard_focus().as_ref() == Some(&focus)).then(|| grab.root.clone())
+            })
+        }
+    }
+
     /// Remove focus immediately after processing unmap/destruction/disconnect.
     pub(crate) fn prune_keyboard_focus(&mut self) {
         let focus = self

@@ -1192,6 +1192,14 @@ which made a completely consistent rule look like work being taken out of turn.
     Evidence: `docs/autonomy/updates/native-window-close-requests.md`.
 
 - [ ] Copy, cut and paste across applications; switching between windows
+  - Stable native window cycling (2026-09-08): trusted forward/backward selection
+    traverses a mapped-root ring independent of raising, anchored on actual
+    keyboard/popup ownership. Four socket tests cover three-client wrap/reverse,
+    refusal, unmap/disconnect/remap and held-key isolation. Configurable shortcut
+    dispatch, rendered controls, application grouping and clipboard remain owed.
+    Component checks and graphics evidence are recorded in
+    `docs/autonomy/updates/stable-native-window-cycling.md`. Full independent
+    supervisor gates and physical evidence remain owed; no release checkbox changes.
 
 - [ ] The workspace client runs as an application on the shell
 

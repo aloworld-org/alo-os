@@ -13,6 +13,7 @@ mod support;
 mod window_activation;
 mod window_close;
 mod window_raise;
+mod window_switch;
 use support::{Application, Fixture};
 
 #[test]

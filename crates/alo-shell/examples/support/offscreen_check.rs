@@ -52,7 +52,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
-                8 => crate::window_raise_check::run(&mut server, renderer)?,
+                8 => {
+                    crate::window_raise_check::run(&mut server, renderer)?;
+                    crate::window_switch_check::run(&mut server, renderer)?;
+                }
                 1 => {
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {
                         assert!(

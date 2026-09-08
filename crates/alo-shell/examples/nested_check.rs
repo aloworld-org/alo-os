@@ -28,6 +28,10 @@ mod default_cursor_check;
 #[path = "support/window_raise_check.rs"]
 mod window_raise_check;
 
+#[cfg(target_os = "linux")]
+#[path = "support/window_switch_check.rs"]
+mod window_switch_check;
+
 /// Socket location shared with the real protocol-client fixture.
 #[cfg(target_os = "linux")]
 pub struct Fixture {

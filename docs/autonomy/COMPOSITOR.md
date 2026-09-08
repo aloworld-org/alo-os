@@ -5,6 +5,28 @@ ADR 0002. The first component is `crates/alo-shell`: a reusable Linux Wayland
 server library. The second adds nested Wayland/GLES rendering, described below.
 It is not yet a session executable or a usable desktop.
 
+## Stable window cycling
+
+`Server::switch_window` selects forward or backward through a session-owned ring
+of mapped toplevel roots. Dispatch retains surviving roots and appends newly
+observed mappings; raising never reorders this ring, so three or more windows
+remain reachable. An observed unmap/disconnect removes a root; a later remap
+appends it. Transitions entirely within one dispatch are observed at its end.
+Actual keyboard focus anchors selection, with grabbed popups counted as their
+owning root. No focus selects the first/last root; traversal wraps. A sole root
+selects itself without dismissing its popup grab. Empty displays refuse; missing
+keyboards refuse first, without mutation. Activation errors preserve any reported
+partial focus/raise change. Success returns the selected root, not a rendering
+acknowledgement. Selection shares activation's held-key cleanup and popup policy.
+
+This deterministic mapping order is deliberately separate from stacking to avoid
+cycling between only the most recently raised pair. It is native Rust plumbing
+under ADR 0002 and the v0.01 switching requirement. It introduces no user-facing
+strings, agent endpoint or background context access. Application grouping,
+person-configured shortcut dispatch and rendered controls remain unimplemented;
+agent focus still requires the application contract's grant/proposal/approval.
+Evidence: `updates/stable-native-window-cycling.md`; WSLg does not certify hardware.
+
 ## Explicit window activation
 
 `Server::activate_window` selects and raises a live mapped same-display root.

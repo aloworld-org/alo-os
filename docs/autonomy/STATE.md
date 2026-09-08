@@ -12636,3 +12636,59 @@ GPU workstation physical records remain owed. All four shared progress documents
 updated. No staging/commit/push, other repository edit, worker/loop launch,
 tools/dev-loop modification or physical installation. Reports arriving during
 publication are reconciled next iteration.
+
+---
+
+## 2026-09-08 - Stable native window cycling
+
+Read constitution, delivery/shared-main/report rules, current queue and STATE
+tail, v0.01 feature/roadmap lines, ADRs 0002/0010 and application contracts.
+Initial tree clean; supervisor owns publication. Compared all published report
+filenames with STATE at iteration start: none unreconciled. Claude retains the
+security/model-choice workstream. Pinned EGLDisplay::new remains unsafe under
+the current lint policy; selected DELIVERY's first independent window-management
+component and recorded acceptance in QUEUE before implementation.
+
+Server::switch_window cycles forward/backward through a session-owned mapped-root
+ring independent of stacking, so raising cannot strand a third window. Actual
+keyboard ownership anchors selection, including grabbed popup roots. Newly
+observed mappings append, observed unmaps/disconnects remove, and remaps append
+anew. No focus selects first/last; singleton selection preserves grabs; empty and
+missing-keyboard requests refuse. Activation retains held-key release, popup
+dismissal, XDG state and partial-error detail. Public rustdoc and COMPOSITOR.md
+record dispatch-boundary observation and trusted native scope. No agent endpoint,
+context reader, UI strings, unsafe exception, engine patch or new release scope.
+
+Report: `docs/autonomy/updates/stable-native-window-cycling.md`. Four new real
+socket tests cover three-client wrap/reverse despite raising, actual focus,
+empty/no-keyboard refusal, lifecycle/remap, singleton idempotence, popup ownership
+and held-key isolation, including release and empty-enter wire evidence. New
+GLES readback samples verify forward selection of the magenta client and backward
+restoration of the red client. Rebuilt eight-stage offscreen regression and nested
+popup/cursor regression (115 surfaces) passed, with expected Mesa fallback and
+deliberately invalid-client diagnostics. Both graphical commands exited zero.
+
+Ubuntu Rust 1.98.0, eight graphics/input dependencies and WSLg socket verified;
+/dev/dri absent. Used PATH=/root/.cargo/bin:/usr/bin:/bin and isolated target
+/root/alo-os-target. No dependencies, shared kernel/BPF state or services changed.
+Exact commands and versions are in the report. Windows fmt, affected all-target
+clippy and shell tests passed (zero Linux runtime cases). Linux focused tests,
+affected all-target clippy, full shell tests (138 unit, 95 lifecycle, three socket
+and three compile-fail doctests), warnings-denied rustdoc, examples and fmt passed.
+First clippy attempt found one missing private-method comment; added docs without
+suppression and reran successfully. No runtime test failed. Initial root queue/
+state path lookup corrected to docs/autonomy; registry search used grep because
+Ubuntu rg is absent. No test, lint or publication gate was weakened.
+
+Source, new files, tests and documentation reviewed; git diff --check passed.
+Full independent Windows/Linux workspace/rustdoc/BPF gates remain supervisor
+work and were not run by this worker. All four shared progress documents updated.
+Stable cycling component complete; switching feature/compositor/release unchecked.
+Next component: person-configured shortcut dispatch for cycling and close, with
+consumed press/release isolation in nested/direct input. Rendered controls,
+application grouping, adapter wiring, move/resize/minimise/maximise/tile,
+launcher/dock, clipboard and remaining delivery work are unfinished. Safe
+standalone GLES, full DRM/seat entry, populated input/hotplug, GPU/disable recovery
+and certified physical laptop/GPU workstation records remain owed. No staging,
+commit, push, other repository edit, worker/loop launch, tools/dev-loop change or
+physical installation. Reports arriving during publication reconcile next time.

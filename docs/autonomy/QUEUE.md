@@ -953,6 +953,26 @@ not take that workstream.
   into an actionable entry with its existing feature/ADR/contract references.
   Cover all remaining v0.01 work, including the old queue and the release exit
   gate. A dependency in this list does not erase any original requirement.
+  **Selected stable native window cycling (desktop worker, 2026-09-08):**
+  add trusted forward/backward selection over a session-owned mapped-root ring,
+  independent of raising. Start from actual keyboard ownership, including popup
+  grabs; skip retired roots and append newly observed mappings. Acceptance: three-
+  client wrap/reverse tests, empty/no-keyboard refusal, unmap/disconnect/remap and
+  popup/key isolation, real GLES switching pixels, affected fmt/clippy/tests/docs.
+  Shortcut dispatch and rendered controls remain subsequent components.
+  **Completed stable native window cycling 2026-09-08:** switch_window uses a
+  session-owned first-observed mapping ring, independent of raises. Actual
+  keyboard/popup ownership anchors selection; empty/no-keyboard refusal and
+  activation's key/grab cleanup are preserved. Four new socket tests and WSLg
+  forward/backward GLES samples pass; Linux shell 236 tests and three doctests,
+  affected Windows/Linux clippy/tests, Linux rustdoc/examples pass. Exact commands
+  and formatting evidence: `updates/stable-native-window-cycling.md`. Supervisor
+  full gates pending; no feature/release tick. Next component: person-configured
+  shortcut dispatch for window cycling and close, with consumed press/release
+  isolation in nested/direct input. Rendered controls, application grouping,
+  move/resize/minimise/maximise/tile, launcher/dock and clipboard remain unfinished.
+  Safe standalone GLES, full DRM/seat entry, populated input/hotplug, GPU/disable
+  recovery and certified physical laptop/workstation records remain owed.
   **Selected native window activation (desktop worker, 2026-09-08):**
   explicitly focus and raise mapped same-display roots; synchronize XDG activated
   state with actual keyboard focus, including popup ownership and lifecycle loss.

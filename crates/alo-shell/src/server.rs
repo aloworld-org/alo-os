@@ -24,6 +24,8 @@ pub struct Server {
     socket: Socket,
     /// One output and its successfully submitted surface membership.
     pub(crate) presentation: crate::presentation::Presentation,
+    /// Stable mapped-root order for trusted window cycling.
+    pub(crate) switch_order: crate::window_switch::SwitchOrder,
 }
 
 impl Server {
@@ -46,6 +48,7 @@ impl Server {
             surfaces,
             socket,
             presentation: Default::default(),
+            switch_order: Default::default(),
         })
     }
 
@@ -72,6 +75,7 @@ impl Server {
         }
         self.display.dispatch_clients(&mut self.surfaces)?;
         self.surfaces.prune();
+        self.switch_order.refresh(self.surfaces.mapped());
         self.display.flush_clients()
     }
 
