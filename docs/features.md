@@ -161,7 +161,29 @@ each portal request is a grant in the sense of ADR 0001.
 - [v1] Policy: which verbs and adapters are permitted, set per machine or per fleet
 - [v1] Screenshot-and-click, marked in the record and disabled by policy by default — last resort only, never the default mechanism
 
-## The AI stack — four ways to run it, and none is a fallback
+## The AI stack — model choice and deployment configurations
+
+**Three main model-selection choices** (owner clarification, 2026-09-08):
+
+1. **Local models** — the person's selected model and runtime on their PC,
+   including models such as Llama where the integration supports them.
+2. **Your own API provider** — a compatible API selected by the person,
+   such as OpenAI or Mistral, using the credentials that provider requires.
+3. **Alo** — alo's model service, with its provider, processing-location and
+   subscription requirements stated honestly rather than hidden.
+
+These are the primary user-facing choices, not three different privacy policies.
+Do not replace them with "prefer local processing" and "keep questions on this
+PC", or present those as competing setup choices. Any advanced privacy controls
+belong separately in settings. This establishes the model-selection direction,
+not acceptance of proposed ADR 0021 or new `ThisMachineOnly` semantics.
+
+The deployment configurations below are a separate technical distinction, not
+four competing model-source buttons. The existing no-agent path remains a
+separate opt-out, and paired-machine support is preserved without adding a
+fourth primary source category; its detailed placement remains to be designed.
+Existing release tiers still apply: this is not a claim that alo's hosted service
+or every listed integration is available in the current release.
 
 **alo OS works well with a model on this machine, with a model on a machine on
 your network, with a provider you added — and with no model at all.** Those are
