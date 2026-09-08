@@ -1315,6 +1315,13 @@ turn-scoped — a filter on everything this machine sends, which is a different
 piece of work with a different blast radius and is not scheduled. Law 2 is what
 keeps it small: an agent cannot start the proxy.
 
+**It is now reproduced rather than only reasoned.**
+`crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs` builds the
+proxy — eleven lines, on loopback, forwarding to this machine's own `eth0`
+address — and drives a bound turn through it. The turn is refused that address
+directly with `EACCES`, and reaches it through the proxy in the same breath. The
+day something closes it, that test fails and says so.
+
 **What this entry did not cover, and now does not need to:** *whether an address
 is loopback at all* was decided by a prefix match until item 18b, so
 `http://localhost.attacker.example` and `http://127.0.0.1@attacker.example/`

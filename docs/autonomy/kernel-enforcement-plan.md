@@ -344,6 +344,51 @@ open files — its record, its socket, its vocabulary.
 - **Approval needed if:** closing it would need the turn to become a separate
   process, which is a change to how a turn works and belongs in an ADR.
 
+### 7. Hardening publication, and the egress coverage audit
+
+**Status:** done. **Depends on:** 4 — done.
+
+Two things the network integration left, and the first is about this
+workstream's own machinery rather than about the kernel.
+
+**Publication had a hole that was not in the code.** On 2026-09-07 this
+workstream gated a combined tree and pushed in one shell line, the two joined by
+a newline rather than by a check of the first command's result. The gates had
+failed — the machine had lost its BPF filesystem between runs — and the push
+went out anyway. The change was sound; the sequence was not. The supervisor's
+own path was already fail-closed, so what had to go was the hand-rolled one
+beside it.
+
+**And the coverage assessment was argued rather than reproduced.** UDP without a
+connection, sockets already open or inherited, and the loopback proxy were named
+in reports and in `deciding.rs` and demonstrated nowhere.
+
+- **Acceptance:** every publication path — the loop's and a person's — fails
+  closed on a failed readiness check, a failed gate, a failed acceptance test or
+  a failed combined-tree check, with the work preserved; each of those refusals
+  has a regression test; and each of the three egress gaps is reproduced against
+  the real loaded programme with a control proving the boundary was in force.
+- **Evidence:** `tools/kernel-loop`'s own suite, and
+  `crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`.
+
+**Done, 2026-09-08.** `publish` and `verify` are subcommands, so there is no
+hand-rolled publication path left; a person recovering by hand walks the same
+checks in the same order as the loop, because it is the same code. Readiness
+grew from one check to three. Acceptance evidence is read from cargo's result
+line rather than from its exit code, because a test name that matches nothing
+reports zero tests passing **and exits successfully**. A worker that exits
+unsuccessfully is a task nobody has done, whatever it left behind.
+
+The three gaps are reproduced, each with a destination the kernel really refuses
+as its control. Their release placement is in
+`docs/autonomy/updates/publication-hardening-and-egress-coverage.md`, along with
+the two decisions this workstream is **not** taking without an answer: whether
+anything watches a socket after it is opened, and whether egress enforcement may
+stop being turn-scoped.
+
+**Task 6 is not closed by this.** The socket half of *what a turn inherits* is
+reproduced here; the descriptor half is still audit-and-document work.
+
 ## Rules this workstream holds itself to
 
 - No `unsafe` outside `alo-bounding-kernel`'s one permitted file, no weakened

@@ -84,7 +84,9 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
     let until = Instant::now() + AT_MOST;
     loop {
         match child.try_wait() {
-            Ok(Some(_)) => return Ok(()),
+            Ok(Some(status)) => {
+                return whether_it_finished(&named, status.success(), status.code());
+            }
             Ok(None) => {}
             Err(why) => return Err(format!("the worker could not be waited on: {why}")),
         }
@@ -102,6 +104,33 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
         }
         std::thread::sleep(LOOKING_EVERY);
     }
+}
+
+/// What a worker's exit means for the task it was given.
+///
+/// **A worker that stopped unsuccessfully did not finish the task**, whatever it
+/// left behind. The loop still never reads what a worker *said*; this reads the
+/// one thing an operating system is willing to state about a process, and takes
+/// it the safe way round. A worker that was blocked, killed, or that gave up
+/// part way through reports it here, and a task with a handoff beside a failed
+/// exit is a contradiction that must not be resolved in favour of publishing.
+///
+/// The cost of being wrong in this direction is a task nobody published, which
+/// somebody notices. The cost of the other is half a task on `main`.
+///
+/// # Errors
+/// A sentence naming the worker and what it exited with.
+fn whether_it_finished(named: &str, success: bool, code: Option<i32>) -> Result<(), String> {
+    if success {
+        return Ok(());
+    }
+    let said = code.map_or_else(
+        || "it was stopped by a signal".to_owned(),
+        |code| format!("it exited with {code}"),
+    );
+    Err(format!(
+        "the worker `{named}` did not finish successfully — {said}. Whatever it wrote is still          in the working tree; nothing was published and nothing was discarded. A task it could          not complete is a task nobody has done, even if it left a handoff behind."
+    ))
 }
 
 /// What the worker is asked to do.
@@ -132,15 +161,48 @@ fn asked_of_it(task: &Task) -> String {
          touched, and an `evidence` block. tools/kernel-loop/src/handoff.rs documents the\n\
          format.\n\
          \n\
-         The evidence is one line per acceptance criterion in the plan — the crate, the\n\
-         test target and the test's full name — and each is run on its own before anything\n\
-         is published. A test whose file is not among the files you list is refused: the\n\
-         existing suite passing is the state of the repository, not proof of what you\n\
-         wrote.\n\
+         The evidence is one line per acceptance criterion in the plan — the workspace\n\
+         (`.` for the product's), the crate, the test target and the test's full name —\n\
+         and each is run on its own before anything is published. A test whose file is not\n\
+         among the files you list is refused: the existing suite passing is the state of\n\
+         the repository, not proof of what you wrote.\n\
          \n\
          If the task cannot be completed within the accepted decisions, write no handoff,\n\
          leave your work in the tree, and say what decision is needed. A partial task with\n\
          a handoff is worse than no handoff at all.",
         task.number, task.named
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// **A worker that exited unsuccessfully publishes nothing**, and the
+    /// sentence says the work is still there.
+    ///
+    /// This is the blocked-or-partial case. A worker that ran out of road,
+    /// was killed, or decided it could not proceed leaves the tree as it is —
+    /// and a handoff it may have written beside a failed exit does not turn
+    /// half a task into a whole one.
+    #[test]
+    fn a_worker_that_did_not_finish_is_not_a_completed_task() {
+        let stopped = whether_it_finished("claude", false, Some(1));
+        assert!(stopped.is_err_and(|why| {
+            why.contains("did not finish successfully")
+                && why.contains("exited with 1")
+                && why.contains("nothing was discarded")
+        }));
+
+        let killed = whether_it_finished("claude", false, None);
+        assert!(killed.is_err_and(|why| why.contains("stopped by a signal")));
+    }
+
+    /// And a worker that finished is simply that — which is not the same claim
+    /// as the task being done. The gates and the evidence decide that, and
+    /// neither of them asks this function anything.
+    #[test]
+    fn a_worker_that_finished_is_not_by_itself_evidence_of_anything() {
+        assert_eq!(whether_it_finished("claude", true, Some(0)), Ok(()));
+    }
 }

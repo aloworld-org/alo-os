@@ -17,7 +17,7 @@
 //! report = docs/autonomy/updates/network-egress-reproduction.md
 //! subject = test(bounding): reproduce a bound turn opening any socket
 //! evidence =
-//!   alo-bounding a_turn_reaches_the_network a_bound_turn_opens_any_socket
+//!   . alo-bounding a_turn_reaches_the_network a_bound_turn_opens_any_socket
 //! files =
 //!   crates/alo-bounding/tests/a_turn_reaches_the_network.rs
 //!   docs/autonomy/updates/network-egress-reproduction.md
@@ -200,6 +200,123 @@ impl Handed {
             self.subject.clone()
         } else {
             format!("{}\n\n{}", self.subject, self.body)
+        }
+    }
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::expect_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+mod tests {
+    use super::*;
+
+    /// A handoff with everything a commit needs, a line at a time so that a
+    /// test can take one of them away.
+    const WHOLE: &[&str] = &[
+        "task = Auditing what a bound turn can still reach",
+        "report = docs/autonomy/updates/an-audit.md",
+        "subject = test(bounding): reproduce what a bound turn can still reach",
+        "evidence =",
+        "  . alo-bounding what_a_bound_turn_can_still_reach a_datagram_leaves_unchecked",
+        "files =",
+        "  crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs",
+        "  docs/autonomy/updates/an-audit.md",
+        "body =",
+        "  What it says.",
+    ];
+
+    /// The whole thing.
+    fn whole() -> String {
+        WHOLE.join(
+            "
+",
+        )
+    }
+
+    /// The same with one key gone, and whatever was indented under it —
+    /// which is the shape of what a worker that stopped part way through
+    /// leaves behind.
+    fn without(key: &str) -> String {
+        let mut kept = Vec::new();
+        let mut dropping = false;
+        for line in WHOLE {
+            if !line.starts_with(' ') {
+                dropping = line.starts_with(key);
+            }
+            if !dropping {
+                kept.push(*line);
+            }
+        }
+        kept.join(
+            "
+",
+        )
+    }
+
+    /// **A whole handoff reads**, so that the refusals below are about what is
+    /// missing rather than about a parser that never worked.
+    #[test]
+    fn a_handoff_with_everything_a_commit_needs_reads() {
+        let read = Handed::read(&whole()).expect("a whole handoff reads");
+        assert_eq!(read.task, "Auditing what a bound turn can still reach");
+        assert_eq!(read.report, "docs/autonomy/updates/an-audit.md");
+        assert_eq!(read.files.len(), 2);
+        assert_eq!(read.evidence.len(), 1);
+        assert_eq!(read.body, "What it says.");
+    }
+
+    /// **A partial handoff publishes nothing, one missing piece at a time.**
+    ///
+    /// Every one of these is a task that does not reach `main`. The evidence
+    /// block is the newest of them and the one that matters most: without it a
+    /// task's whole claim is that the suite which was already there still
+    /// passes.
+    #[test]
+    fn a_partial_handoff_publishes_nothing() {
+        for key in ["task", "report", "subject", "evidence", "files"] {
+            let refused = Handed::read(&without(key));
+            assert!(
+                refused.is_err_and(|why| why.contains(key)),
+                "a handoff with no `{key}` was accepted"
+            );
+        }
+    }
+
+    /// **A handoff that does not publish its own report is refused**, because a
+    /// task whose evidence stayed on somebody's disk is a task nobody can check.
+    #[test]
+    fn a_report_that_is_not_being_published_is_refused() {
+        let elsewhere = whole().replace(
+            "  docs/autonomy/updates/an-audit.md",
+            "  docs/autonomy/updates/a-different-one.md",
+        );
+        assert!(Handed::read(&elsewhere).is_err_and(|why| why.contains("among its files")));
+    }
+
+    /// **A line of evidence that does not name one test is refused**, rather
+    /// than guessed at — a guess would run some other test and pass.
+    ///
+    /// The line here is the likeliest mistake rather than nonsense: a crate, a
+    /// target and a name, with the workspace left off. It used to be the whole
+    /// format, and reading it as one would run the test from the wrong
+    /// directory or not at all.
+    #[test]
+    fn evidence_that_does_not_name_one_test_is_refused() {
+        for instead in [
+            "  alo-bounding what_a_bound_turn_can_still_reach a_datagram_leaves_unchecked",
+            "  it is tested",
+            "  .",
+        ] {
+            let vague = whole().replace(
+                "  . alo-bounding what_a_bound_turn_can_still_reach a_datagram_leaves_unchecked",
+                instead,
+            );
+            assert!(
+                Handed::read(&vague).is_err_and(|why| why.contains("not a piece of evidence")),
+                "`{instead}` was accepted as evidence"
+            );
         }
     }
 }

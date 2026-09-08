@@ -206,6 +206,14 @@ const INET6_ADDRESS_AT: u64 = 8;
 /// somebody else started is not a turn, so its own outward connection passes
 /// this program untouched. The quirk's forward reference is corrected rather
 /// than left to read as answered.
+///
+/// **All three of what a bound turn can still reach are reproduced**, against
+/// this programme on a running kernel, in
+/// `alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`: a connection made
+/// before the turn began, a datagram sent without connecting, and this — a
+/// proxy on loopback carrying a turn to an address the boundary would have
+/// refused it directly. Each asserts what happens today, so the day one is
+/// closed its own assertion fails and names the documents to change.
 pub fn decide_departure(where_to: u64) -> i32 {
     let Some(granted) = kernel::granted(kernel::turn()) else {
         // Not a turn, and this is almost every connection on the machine.

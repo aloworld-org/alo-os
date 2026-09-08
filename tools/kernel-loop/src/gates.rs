@@ -93,6 +93,28 @@ pub const EVERY_GATE: &[Gate] = &[
         args: &["test", "--workspace"],
         within: ".",
     },
+    // **The supervisor's own.** Its workspace is separate from the product's,
+    // so `cargo test --workspace` above never reaches it — which meant the
+    // program that decides what gets published was the one thing nothing
+    // checked. Cheap, and it runs before the slow BPF gates.
+    Gate {
+        named: "the supervisor's formatting",
+        program: "cargo",
+        args: &["fmt", "--all", "--check"],
+        within: "tools/kernel-loop",
+    },
+    Gate {
+        named: "the supervisor's clippy",
+        program: "cargo",
+        args: &["clippy", "--all-targets", "--", "-D", "warnings"],
+        within: "tools/kernel-loop",
+    },
+    Gate {
+        named: "the supervisor's own tests",
+        program: "cargo",
+        args: &["test"],
+        within: "tools/kernel-loop",
+    },
     Gate {
         named: "rustdoc, warnings denied",
         program: "cargo",
@@ -136,55 +158,120 @@ pub fn all_of_them(at: &Path) -> Result<Vec<String>, String> {
         let said = asking(gate, at)?
             .output()
             .map_err(|why| format!("`{}` could not be run: {why}", gate.named))?;
-        if !said.status.success() {
-            let err = String::from_utf8_lossy(&said.stderr);
-            let out = String::from_utf8_lossy(&said.stdout);
-            let tail: Vec<&str> = err.lines().chain(out.lines()).collect();
-            let from = tail.len().saturating_sub(25);
-            return Err(format!(
-                "the gate `{}` did not pass, so nothing was published:\n{}",
-                gate.named,
-                tail.get(from..).unwrap_or_default().join("\n")
-            ));
-        }
+        whether_it_passed(
+            gate.named,
+            said.status.success(),
+            &String::from_utf8_lossy(&said.stdout),
+            &String::from_utf8_lossy(&said.stderr),
+        )?;
         passed.push(gate.named.to_owned());
     }
     Ok(passed)
 }
 
+/// One gate's result, read.
+///
+/// Separate from running it so that *what a failure does* is a thing this
+/// crate's own tests can state: it stops, it names the gate, and it carries the
+/// tail of what the gate printed so the sentence is diagnosable without going
+/// to look for a log.
+///
+/// # Errors
+/// A sentence whenever the gate did not exit successfully. There is no gate
+/// whose failure is ignorable and no flag anywhere that makes one so.
+fn whether_it_passed(named: &str, ok: bool, out: &str, err: &str) -> Result<(), String> {
+    if ok {
+        return Ok(());
+    }
+    let tail: Vec<&str> = err.lines().chain(out.lines()).collect();
+    let from = tail.len().saturating_sub(25);
+    Err(format!(
+        "the gate `{named}` did not pass, so nothing was published:\n{}",
+        tail.get(from..).unwrap_or_default().join("\n")
+    ))
+}
+
 /// That this machine can run the gates at all, before it spends four minutes
 /// discovering that it cannot.
 ///
-/// One precondition, and it is the one this machine actually loses: **a BPF
-/// filesystem mounted at `/sys/fs/bpf`**. Every test that loads the boundary
-/// pins to it, and WSL forgets the mount across a restart — so the symptom is
-/// a kernel test panicking about a directory, three gates and several minutes
-/// in, which reads like a broken boundary rather than an unmounted filesystem.
+/// Three preconditions, and every one of them is a thing that makes the gates
+/// fail for a reason that has nothing to do with the change:
 ///
-/// **It reports rather than mounting.** A supervisor that mounted filesystems
-/// would be changing shared kernel state on a machine another worker is using,
-/// and `docs/hardware.md` asks the question of a person instead.
+/// - **A BPF filesystem mounted at `/sys/fs/bpf`.** Every test that loads the
+///   boundary pins to it, and WSL forgets the mount across a restart — so the
+///   symptom is a kernel test panicking about a directory, three gates and
+///   several minutes in, which reads like a broken boundary rather than an
+///   unmounted filesystem. This is not hypothetical: it is what made a gate run
+///   fail on 2026-09-07, and the publication that followed it went out because
+///   the result was never looked at.
+/// - **A toolchain the bridge can reach.** If `cargo` cannot be run where the
+///   gates run, every gate fails identically and none of the messages says why.
+/// - **The pinned nightly the BPF target needs.** Its LLVM is what matches the
+///   `bpf-linker` on this machine, and a missing toolchain fails the last two
+///   gates only — after the slow ones have already run.
+///
+/// **It reports rather than fixing.** A supervisor that mounted filesystems or
+/// installed toolchains would be changing shared state on a machine another
+/// worker is using, and `docs/hardware.md` asks the question of a person
+/// instead.
 ///
 /// # Errors
 /// A sentence naming what is missing and the command that fixes it.
 fn the_machine_is_ready(at: &Path) -> Result<(), String> {
-    let mounted = Gate {
-        named: "a BPF filesystem to pin to",
-        program: "mountpoint",
-        args: &["-q", "/sys/fs/bpf"],
-        within: ".",
-    };
-    let said = asking(&mounted, at)?
-        .output()
-        .map_err(|why| format!("this machine could not be asked about /sys/fs/bpf: {why}"))?;
-    if said.status.success() {
-        return Ok(());
+    for (check, why) in READY {
+        let said = asking(check, at)?.output().map_err(|it| {
+            format!(
+                "this machine could not be asked about {}: {it}",
+                check.named
+            )
+        })?;
+        if !said.status.success() {
+            return Err(format!(
+                "this machine is not ready to be gated, so nothing was published: {why}"
+            ));
+        }
     }
-    Err(
-        "/sys/fs/bpf is not a mounted BPF filesystem, so every test that loads the boundary          would fail for that reason rather than for anything in the change. Nothing was          published. On this machine: `mount -t bpf bpf /sys/fs/bpf`, which a boot does for          itself and WSL forgets across a restart."
-            .to_owned(),
-    )
+    Ok(())
 }
+
+/// What has to be true before a gate run means anything, and what to say when
+/// it is not.
+const READY: &[(Gate, &str)] = &[
+    (
+        Gate {
+            named: "/sys/fs/bpf",
+            program: "mountpoint",
+            args: &["-q", "/sys/fs/bpf"],
+            within: ".",
+        },
+        "/sys/fs/bpf is not a mounted BPF filesystem, so every test that loads the boundary \
+         would fail for that reason rather than for anything in the change. On this machine: \
+         `mount -t bpf bpf /sys/fs/bpf`, which a boot does for itself and WSL forgets across a \
+         restart.",
+    ),
+    (
+        Gate {
+            named: "the toolchain the gates run with",
+            program: "cargo",
+            args: &["--version"],
+            within: ".",
+        },
+        "`cargo` could not be run where the gates run, so every gate would fail for the same \
+         reason and none of them would say which. Check that the Linux side of this machine is \
+         reachable and that its toolchain is installed.",
+    ),
+    (
+        Gate {
+            named: "the pinned nightly the BPF target needs",
+            program: "cargo",
+            args: &["+nightly-2026-06-01", "--version"],
+            within: "crates/alo-bounding-kernel",
+        },
+        "the pinned nightly toolchain is not installed, so the BPF target's gates would fail \
+         after the slow ones had already run. `crates/alo-bounding-kernel/rust-toolchain.toml` \
+         names it, and its LLVM is what matches the `bpf-linker` on this machine.",
+    ),
+];
 
 /// One gate, as a command this host can actually run.
 ///
@@ -251,4 +338,66 @@ pub fn running(at: &Path, within: &str, program: &str, args: &[String]) -> Resul
         .args(args)
         .env("RUSTDOCFLAGS", "-D warnings");
     Ok(asking)
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected Ok is the failure being reported"
+)]
+mod tests {
+    use super::*;
+
+    /// **A gate that did not exit successfully stops publication**, and says
+    /// which gate and what it printed.
+    ///
+    /// There is no flag here that skips one and no result that is looked at and
+    /// stepped over. The sentence carries the tail of the output because a
+    /// refusal somebody has to go and investigate is a refusal somebody
+    /// overrides.
+    #[test]
+    fn a_gate_that_failed_stops_and_says_which() {
+        let refused = whether_it_passed(
+            "the workspace's tests",
+            false,
+            "test result: FAILED. 0 passed; 5 failed\n",
+            "error: test failed\n",
+        );
+        let Err(why) = refused else {
+            panic!("a failed gate was treated as a pass")
+        };
+        assert!(why.contains("the workspace's tests"), "{why}");
+        assert!(why.contains("nothing was published"), "{why}");
+        assert!(why.contains("0 passed; 5 failed"), "{why}");
+    }
+
+    /// And a gate that passed says nothing at all, which is what lets the
+    /// caller add it to the list and go on to the next one.
+    #[test]
+    fn a_gate_that_passed_is_simply_a_pass() {
+        assert_eq!(whether_it_passed("formatting", true, "", ""), Ok(()));
+    }
+
+    /// **Every readiness check has a sentence a person can act on.**
+    ///
+    /// A precondition that failed with `false` and no explanation would send
+    /// whoever hit it to read this file, and the one that actually bit this
+    /// machine — an unmounted BPF filesystem — looks like a broken boundary
+    /// until somebody says otherwise.
+    #[test]
+    fn each_readiness_check_names_what_to_do_about_it() {
+        assert!(!READY.is_empty());
+        for (check, why) in READY {
+            assert!(!check.named.is_empty());
+            assert!(
+                why.len() > 60,
+                "`{}` fails with too little to act on",
+                check.named
+            );
+        }
+        assert!(
+            READY.iter().any(|(check, _)| check.named == "/sys/fs/bpf"),
+            "the precondition this machine actually loses is not checked"
+        );
+    }
 }

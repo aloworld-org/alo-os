@@ -89,6 +89,14 @@ enum Asked {
 
     /// Ask the running loop to finish and not begin again.
     Stop,
+
+    /// Gate and publish the handoff that is waiting, choosing nothing and
+    /// launching nothing.
+    Publish,
+
+    /// Run every gate and every piece of the waiting handoff's evidence, and
+    /// publish nothing.
+    Verify,
 }
 
 impl Asked {
@@ -99,6 +107,8 @@ impl Asked {
             Some("run") => Some(Self::Run),
             Some("status") => Some(Self::Status),
             Some("stop") => Some(Self::Stop),
+            Some("publish") => Some(Self::Publish),
+            Some("verify") => Some(Self::Verify),
             _ => None,
         }
     }
@@ -112,7 +122,9 @@ fn main() -> ExitCode {
              usage:\n\
              \x20 alo-kernel-loop run      gate and publish ready tasks until told to stop\n\
              \x20 alo-kernel-loop status   what is happening, and what happened last\n\
-             \x20 alo-kernel-loop stop     finish the current task and begin no other\n"
+             \x20 alo-kernel-loop stop     finish the current task and begin no other\n\
+             \x20 alo-kernel-loop verify   run every gate and the waiting handoff's evidence\n\
+             \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n"
         );
         return ExitCode::FAILURE;
     };
@@ -128,6 +140,8 @@ fn main() -> ExitCode {
 
     match asked {
         Asked::Run => run(&at, &ours),
+        Asked::Publish => publish(&at, &ours),
+        Asked::Verify => verify(&at, &ours),
         Asked::Status => match journal::said(&ours) {
             Ok(said) => {
                 println!("{said}");
@@ -266,8 +280,103 @@ fn one_iteration(at: &Path, ours: &Path) -> Result<journal::Went, String> {
     repository::on_main_and_clean_but_for(at, &task.files)?;
     repository::pulled(at)?;
 
-    publishing::gated_and_pushed(at, ours, &task)
+    let mut steps = publishing::OnThisMachine::publishing(at, ours, &task);
+    publishing::gated_and_pushed(&mut steps)
         .map(|sha| journal::Went::Published(sha, task.task.clone()))
+}
+
+/// Gate and publish whatever handoff is waiting, choosing no task and launching
+/// nothing.
+///
+/// **The manual recovery path, and the reason there is no other one.** A person
+/// finishing a task by hand — or picking up after a loop that stopped — walks
+/// through the same checks in the same order as the loop, because it is the same
+/// code. What this replaces is a shell line with a `git push` on the end of it,
+/// which is how a publication went out over failed gates on 2026-09-07: the two
+/// commands were joined by a newline rather than by a check of the first one's
+/// result.
+///
+/// It does not consult the plan. Task order is the loop's business, and somebody
+/// recovering from a stopped run already knows which task they are holding.
+fn publish(at: &Path, ours: &Path) -> ExitCode {
+    let waiting = match handoff::Handed::waiting(ours) {
+        Ok(Some(waiting)) => waiting,
+        Ok(None) => {
+            eprintln!(
+                "alo-kernel-loop: there is no handoff waiting, and this publishes one. Write \
+                 .kernel-loop/handoff.toml first — tools/kernel-loop/src/handoff.rs documents \
+                 the format, including the acceptance evidence every task shows."
+            );
+            return ExitCode::FAILURE;
+        }
+        Err(why) => {
+            eprintln!("alo-kernel-loop: {why}");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let published = repository::on_main_and_clean_but_for(at, &waiting.files)
+        .and_then(|()| repository::pulled(at))
+        .and_then(|()| {
+            let mut steps = publishing::OnThisMachine::publishing(at, ours, &waiting);
+            publishing::gated_and_pushed(&mut steps)
+        });
+    match published {
+        Ok(sha) => {
+            journal::note(ours, &format!("published {sha} — {}", waiting.task));
+            println!("alo-kernel-loop: published {sha} — {}", waiting.task);
+            ExitCode::SUCCESS
+        }
+        Err(why) => {
+            journal::note(ours, &format!("NOTHING PUBLISHED: {why}"));
+            eprintln!("alo-kernel-loop: nothing was published. {why}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Every gate and every piece of a waiting handoff's evidence, and nothing else.
+///
+/// For looking before publishing, and for a machine somebody has just changed
+/// something on. It stages nothing, commits nothing and pushes nothing, so a
+/// green answer here is *the checks pass* and never *the work is published*.
+///
+/// It refuses when no handoff is waiting rather than running the gates alone:
+/// the gates are the state of the repository, and an answer that said `ok` while
+/// no acceptance evidence had been looked at is the exact answer this program
+/// exists not to give.
+fn verify(at: &Path, ours: &Path) -> ExitCode {
+    let waiting = match handoff::Handed::waiting(ours) {
+        Ok(waiting) => waiting,
+        Err(why) => {
+            eprintln!("alo-kernel-loop: {why}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let Some(waiting) = waiting else {
+        eprintln!(
+            "alo-kernel-loop: there is no handoff waiting, so the gates could be run but no \
+             acceptance evidence could be checked. Write the handoff first; \
+             tools/kernel-loop/src/handoff.rs documents the format."
+        );
+        return ExitCode::FAILURE;
+    };
+
+    let mut steps = publishing::OnThisMachine::publishing(at, ours, &waiting);
+    match publishing::Steps::check(&mut steps, "this task's tree") {
+        Ok(()) => {
+            println!(
+                "alo-kernel-loop: every gate passed and the evidence for `{}` stood up. Nothing \
+                 was staged, committed or pushed — `publish` does that.",
+                waiting.task
+            );
+            ExitCode::SUCCESS
+        }
+        Err(why) => {
+            eprintln!("alo-kernel-loop: {why}");
+            ExitCode::FAILURE
+        }
+    }
 }
 
 /// The handoff for the task that was chosen, once somebody writes it.
