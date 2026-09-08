@@ -55,6 +55,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
+                13..=16 => crate::interactive_resize_check::stage(&mut server, renderer, stage)?,
                 11 => {
                     // The cursor fixture must not inject a second motion between
                     // this press and the client's ensuing move request.
@@ -256,7 +257,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 12);
+    assert_eq!(stages, 16);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

@@ -3,10 +3,9 @@
 use crate::{InputError, surfaces::Surfaces};
 use smithay::{
     backend::input::ButtonState,
-    input::Seat,
     reexports::wayland_server::protocol::{wl_seat::WlSeat, wl_surface::WlSurface},
     utils::{Logical, Point, Serial},
-    wayland::{compositor::get_parent, shell::xdg::ToplevelSurface},
+    wayland::shell::xdg::ToplevelSurface,
 };
 
 /// A compositor-owned drag, detached from client pointer delivery.
@@ -31,34 +30,14 @@ impl Surfaces {
     ) {
         self.prune();
         let root = role.wl_surface();
-        if self.window_move.is_some()
-            || self.popup_grab.is_some()
-            || self.mapped_toplevel(root).is_none()
-            || !self.keyboard.as_ref().is_some_and(|keyboard| {
-                Seat::<Self>::from_resource(&seat).as_ref() == Some(&keyboard.seat)
-            })
-        {
-            return;
-        }
-        let Some(pointer) = &self.pointer else { return };
-        if !pointer.handle.has_grab(serial) || pointer.buttons.is_empty() {
-            return;
-        }
-        let Some((mut target, _)) = pointer.handle.grab_start_data().and_then(|data| data.focus)
-        else {
+        let Some((pointer, buttons)) = self.window_press(root, &seat, serial) else {
             return;
         };
-        while let Some(parent) = get_parent(&target) {
-            target = parent;
-        }
-        if &target != root {
-            return;
-        }
         let movement = Move {
             root: root.clone(),
-            pointer: pointer.location,
+            pointer,
             origin: crate::window_buffer_origin(root) + crate::scene::geometry_origin(root),
-            buttons: pointer.buttons.clone(),
+            buttons,
         };
         // Balance the client's press and leave before taking over. No synthetic
         // release may subsequently authorize a popup or another move.

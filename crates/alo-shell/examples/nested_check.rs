@@ -29,6 +29,9 @@ mod default_cursor_check;
 mod window_raise_check;
 
 #[cfg(target_os = "linux")]
+#[path = "support/interactive_resize_check.rs"]
+mod interactive_resize_check;
+#[cfg(target_os = "linux")]
 #[path = "support/resize_geometry_check.rs"]
 mod resize_geometry_check;
 #[cfg(target_os = "linux")]

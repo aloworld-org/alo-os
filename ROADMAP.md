@@ -1228,6 +1228,15 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Interactive resize transactions (2026-09-08): shared XDG press authority,
+    current-limit clamping, resizing configures and committed-response anchoring
+    now connect all eight edges to native input. Last release retains the anchor
+    through the final response; leave/unmap/disconnect retire ownership. Evidence
+    and exact checks: `docs/autonomy/updates/interactive-resize-transactions.md`.
+    Full supervisor publication gates remain pending. Next: trusted maximise
+    and restore with remembered normal geometry, output-bound sizing and actual
+    commit placement; then remaining minimise/tile operations and native controls.
+    Window management and the release remain unchecked.
   - Constrained edge resize geometry (2026-09-08): immutable mapped-root
     snapshots use committed scene bounds/limits; all eight edges clamp moving
     dimensions and anchor using the actual client size. Three unit and four

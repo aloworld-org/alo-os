@@ -11,8 +11,8 @@ surface-tree intersection as scene placement. Pending geometry, client limits,
 configure suggestions and acknowledgements alone do not change it.
 
 `ResizeEdge` enumerates the eight sides/corners. There is no unspecified or
-arbitrary bit-mask edge. Protocol integration must validate protocol edge values
-before constructing this type; no XDG resize request handler is added here.
+arbitrary bit-mask edge. The XDG resize handler validates known edge values;
+`None` and unknown wire values are ignored without taking pointer ownership.
 
 `ResizeGeometry::requested_size(delta)` uses total logical pointer displacement
 from the initial position. Round each delta to the nearest pixel (half away from
@@ -36,9 +36,45 @@ Nonpositive or excessive dimensions refuse with `Size`; excessive placement
 refuses with `Geometry`. Snapshot origins and dimensions are bounded too.
 
 These methods only return data. They send no configure, move no pixels and
-consume no input. A snapshot carries no surface handle or authority. Native
-callers must validate seat, held press serial, target tree and mapping lifetime,
-then implement resizing configure state, acknowledgement/commit ordering and
-cancellation. Placement must follow a committed buffer/geometry, never a size
-suggestion or acknowledgement alone. That interactive lifecycle remains the
-next component, with its own integration tests; it is not certified by this API.
+consume no input. A snapshot carries no surface handle or authority.
+
+## Interactive XDG resize transactions
+
+The shared nested/direct input implementation accepts a resize only for this
+seat's active held pointer press on the requested mapped root or its subsurface
+tree. Foreign targets, stale/forged/released serials, missing pointer capability,
+active popup/move/resize ownership and invalid geometry refuse before any
+configure or input consumption. Resize and move share the same authority check.
+
+Acceptance balances the client's held buttons and clears pointer focus before
+taking ownership. Keyboard focus and stacking do not change. Motion uses the
+fixed initial pointer/geometry and current committed min/max constraints;
+pending constraints have no effect. Duplicate sizes suppress duplicate pending
+configures. Invalid motion returns `InputError::InvalidPointer` without changing
+the transaction; impossible live constraints cancel it. Button release refreshes
+constraints too, so a final suggestion cannot silently reuse stale limits.
+
+Accepted requests configure the XDG `resizing` state. Acknowledgement alone never
+moves a window. On a mapped root commit, Smithay's committed configure serial
+must be at least the first resize serial before its actual geometry is anchored.
+The client may choose a different size. A pre-resize acknowledgement cannot
+authorize anchoring, even if the client changes its buffer. Geometry-only root
+commits after acknowledgement count as committed responses; no new buffer is
+required if the client keeps its existing storage.
+
+Additional buttons are consumed; the last release sends a final configure with
+`resizing` cleared and restores ordinary pointer routing. Anchoring remains until
+a commit acknowledges that final configure or a newer configure. Older resize
+responses can still anchor while it is pending. After completion, spontaneous
+size changes no longer reuse the anchor. A new move/resize is refused while the
+previous final response remains outstanding. There is no timeout, forced client
+size, synthetic response or allocation based on the requested size.
+
+Pointer leave cancels both active and final-response state, clears `resizing`
+on a still-mapped client and abandons future anchoring. Unmap/disconnect retire
+the transaction without configuring a dead mapping; remap requires its normal
+fresh handshake. Impossible live limits or out-of-range committed geometry also
+abandon anchoring. These are trusted native input operations, not agent verbs.
+Tests and WSLg pixel evidence are recorded in
+`docs/autonomy/updates/interactive-resize-transactions.md`; direct hardware
+acceptance and remaining window operations are separate delivery work.

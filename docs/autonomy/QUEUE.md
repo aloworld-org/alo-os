@@ -5,6 +5,23 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed interactive resize transactions (desktop worker, 2026-09-08):**
+XDG held-press authority, validated edges, live limits, resizing configures and
+acknowledged committed-size anchoring are connected to shared native input.
+Last release keeps anchoring through its final response; leave/unmap/disconnect
+cancel ownership. Seven new real-client tests, Linux affected clippy, 270 tests
+plus three doctests, rustdoc/examples/fmt and Windows affected checks pass.
+WSLg offscreen passes all 16 stages, including four complete 6,400-pixel resize
+frames; nested popup/cursor regression passes 115 submitted client surfaces.
+Full supervisor gates pending. Exact commands, development fixes and limits:
+`updates/interactive-resize-transactions.md`. No published reports awaited
+reconciliation at iteration start; publication arrivals reconcile next iteration.
+Next executable component: trusted maximise/restore transactions with remembered
+normal geometry, output-bound sizing, XDG maximized state, committed-size
+placement, invalid/unmapped target refusal, output-change/unmap lifetime tests,
+ordinary keyboard isolation and GLES frames. Then minimise/tile and remaining
+controls. Interactive resizing is code-ready; window management is not complete.
+
 **Completed constrained edge resize geometry 2026-09-08:** all eight edges,
 client limits, bounded deltas and actual-size anchoring are implemented as a
 trusted immutable calculation component. Three unit/four real-client tests,

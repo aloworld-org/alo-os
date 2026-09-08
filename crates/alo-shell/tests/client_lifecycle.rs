@@ -6,6 +6,7 @@ mod direct_keyboard;
 mod direct_pointer;
 mod direct_seat;
 mod input;
+mod interactive_resize;
 mod output_metadata;
 mod pointer;
 mod popups;

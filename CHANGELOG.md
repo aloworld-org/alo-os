@@ -12,6 +12,12 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Applications can resize a window from a held pointer press.** The shell
+  respects current application limits, keeps typing with its existing window,
+  and anchors the opposite edge to the size the application actually commits.
+  Invalid requests refuse; release and cancellation end pointer ownership.
+  Evidence: `docs/autonomy/updates/interactive-resize-transactions.md`.
+
 - **Native resize calculations keep the opposite edge anchored and respect
   application size limits.** All eight edges/corners use committed window
   geometry; invalid targets and excessive values refuse. Calculating a resize

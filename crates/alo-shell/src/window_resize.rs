@@ -87,6 +87,18 @@ pub struct ResizeGeometry {
 }
 
 impl ResizeGeometry {
+    /// Refresh only committed constraints, preserving the drag's initial anchor.
+    pub(crate) fn with_current_limits(mut self, surface: &WlSurface) -> Self {
+        (self.min, self.max) = with_states(surface, |states| {
+            let mut cached = states.cached_state.get::<SurfaceCachedState>();
+            let current = cached.current();
+            (
+                (current.min_size.w, current.min_size.h),
+                (current.max_size.w, current.max_size.h),
+            )
+        });
+        self
+    }
     /// Calculate the suggested logical size from an initial-pointer delta.
     ///
     /// Moving axes clamp to committed client limits and at least one pixel;
@@ -160,8 +172,18 @@ impl Server {
         surface: &WlSurface,
         edge: ResizeEdge,
     ) -> Result<ResizeGeometry, ResizeGeometryError> {
-        self.surfaces
-            .mapped_toplevel(surface)
+        self.surfaces.resize_geometry(surface, edge)
+    }
+}
+
+impl crate::surfaces::Surfaces {
+    /// Capture geometry only for a current root in this compositor.
+    pub(crate) fn resize_geometry(
+        &self,
+        surface: &WlSurface,
+        edge: ResizeEdge,
+    ) -> Result<ResizeGeometry, ResizeGeometryError> {
+        self.mapped_toplevel(surface)
             .ok_or(ResizeGeometryError::Unmapped)?;
         let geometry = crate::scene::geometry(surface);
         let origin = crate::window_buffer_origin(surface) + geometry.loc;

@@ -39,6 +39,8 @@ struct Window {
 
 /// Protocol globals and toplevel roots shared by display backends.
 pub(crate) struct Surfaces {
+    /// Resize protocol state owned by one held press and mapping lifetime.
+    pub(crate) window_resize: Option<crate::resize_transaction::Resize>,
     /// Pointer-authorized interactive movement of one mapped root.
     pub(crate) window_move: Option<crate::window_move::Move>,
     /// Opt-in popup handshake and parent lifetime tracking.
@@ -67,6 +69,7 @@ impl Surfaces {
     /// Advertise only protocols this component implements.
     pub(crate) fn new(display: &DisplayHandle) -> Self {
         Self {
+            window_resize: None,
             window_move: None,
             popups: Default::default(),
             popup_grab: None,
@@ -85,6 +88,7 @@ impl Surfaces {
     pub(crate) fn prune(&mut self) {
         self.windows.retain(|window| window.surface.alive());
         self.prune_window_move();
+        self.prune_window_resize();
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
         self.popups.refresh(&parents);
@@ -176,6 +180,7 @@ impl CompositorHandler for Surfaces {
             window.surface.send_configure();
         }
         self.prune_window_move();
+        self.commit_window_resize(surface);
         let parents: Vec<_> = self.mapped().cloned().collect();
         self.popups.prune(&parents);
     }
@@ -226,6 +231,15 @@ impl XdgShellHandler for Surfaces {
     }
     fn move_request(&mut self, surface: ToplevelSurface, seat: WlSeat, serial: Serial) {
         self.start_window_move(surface, seat, serial);
+    }
+    fn resize_request(
+        &mut self,
+        surface: ToplevelSurface,
+        seat: WlSeat,
+        serial: Serial,
+        edges: smithay::reexports::wayland_protocols::xdg::shell::server::xdg_toplevel::ResizeEdge,
+    ) {
+        self.start_window_resize(surface, seat, serial, edges);
     }
     fn popup_destroyed(&mut self, surface: PopupSurface) {
         self.popup_grab_destroyed(&surface);

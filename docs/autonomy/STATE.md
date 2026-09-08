@@ -13027,3 +13027,45 @@ The geometry component is complete; interactive resize, window management and
 release remain unchecked. Physical desktop/GPU workstation records follow image
 VM integration; WSLg does not certify DRM/seat entry or physical hardware.
 No staging, commit, push, supervisor change, other checkout edit or worker launch.
+
+## 2026-09-08 - Interactive resize transactions
+
+Initial tree clean. Read constitution, delivery/shared-main/report rules, current
+queue/STATE tail, relevant feature/roadmap and native resize/application contracts,
+ADRs 0002/0010. Every published task report filename was already referenced in
+STATE at iteration start; no reconciliation outstanding. Publication arrivals
+remain for next iteration. Claude's workstream remains untouched.
+
+Selected the complete XDG resize transaction component in QUEUE before coding.
+Shared held-press authority with movement; validated all eight edges and reused
+fixed initial geometry with live committed limits. Shared native input consumes
+resize drag events while preserving keyboard routing. Only acknowledged root
+commits anchor the actual client geometry; last release retains anchoring through
+the final response. Leave/unmap/disconnect and impossible constraints cancel.
+Public input rustdoc and native resize contract updated; no agent API/UI change.
+
+Verified Ubuntu WSL2 Rust 1.98.0, WSLg socket and eight graphics/input libraries.
+No installation or shared service/kernel changes. Initial focused run passed
+four tests and exposed one duplicate-acknowledgement fixture error after remap;
+fixed that sequence and five-test rerun passed. First all-target clippy caught
+u32/u8 graphical-stage mismatch; fixed without allowances. Added two more tests
+and release-time limit refresh, then final Linux affected clippy, 141 unit + 126
+lifecycle + three socket tests and three compile-fail doctests, warnings-denied
+rustdoc, examples and fmt all passed. Windows affected fmt/clippy/tests passed;
+zero Linux runtime tests execute there. Full independent supervisor gates pending.
+
+WSLg offscreen passed all 16 stages, including four complete 6,400-pixel resize
+frames proving old-buffer preservation, actual-size anchoring and final-response
+placement. Nested popup/cursor regression passed with 115 submitted client
+surfaces. Expected Mesa fallback and deliberate malformed-client diagnostics did
+not skip checks. Source/new files/tests/example/docs and diff inspected;
+`git diff --check` passed. Exact commands, decisions and limits in own report:
+`docs/autonomy/updates/interactive-resize-transactions.md`.
+
+All four shared progress documents updated. Next: trusted maximise/restore with
+remembered normal geometry, output-bound sizing, acknowledged commit placement,
+target/lifecycle refusal, normal keyboard and GLES evidence; then remaining
+window operations and controls. Window management and release remain unchecked.
+Direct DRM/seat, populated devices/hotplug, GPU/recovery and physical records are
+still owed at their delivery phases; WSLg is not hardware certification. No
+staging, commit, push, other checkout/identity/supervisor changes or worker launch.

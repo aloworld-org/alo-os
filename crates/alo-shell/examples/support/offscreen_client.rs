@@ -189,6 +189,38 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     assert!(send.send(12).is_ok());
     assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.sync();
+    assert!(send.send(13).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    if let Some(seat) = &fresh.events.keyboard.seat {
+        fresh.toplevel.resize(
+            seat,
+            fresh.events.pointer.button_serial,
+            wayland_protocols::xdg::shell::client::xdg_toplevel::ResizeEdge::TopLeft,
+        );
+    }
+    fresh.sync();
+    assert_eq!(fresh.events.resizing.last(), Some(&true));
+    assert!(send.send(14).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    assert_eq!(fresh.events.sizes.last(), Some(&(40, 32)));
+    if let Some(serial) = fresh.events.serial {
+        fresh.xdg.ack_configure(serial);
+    }
+    let _white = fresh.attach_pixels(&fresh.surface, &solid([255; 4]));
+    fresh.sync();
+    assert!(send.send(15).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+    fresh.sync();
+    assert_eq!(fresh.events.resizing.last(), Some(&false));
+    if let Some(serial) = fresh.events.serial {
+        fresh.xdg.ack_configure(serial);
+    }
+    fresh.attach_resized();
+    fresh.sync();
+    assert!(send.send(16).is_ok());
+    assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
     fresh.surface.attach(None, 0, 0);
     fresh.surface.commit();
     fresh.sync();

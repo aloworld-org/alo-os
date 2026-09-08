@@ -54,15 +54,18 @@ impl Server {
     /// buffer dimensions and subsurface stacking/offsets are respected. A held
     /// button retains the original recipient until release, including outside
     /// its bounds. Invalid coordinates leave routing state unchanged.
-    /// An accepted XDG move instead consumes motion and places the owning root
-    /// until all drag buttons are released. Keyboard routing remains independent.
+    /// An accepted XDG move consumes motion and places the owning root; a resize
+    /// negotiates dimensions and anchors only acknowledged committed geometry.
+    /// Both consume drag buttons until release. Keyboard routing is independent.
     pub fn pointer_motion(&mut self, x: f64, y: f64, time: u32) -> Result<(), InputError> {
         if !bounded(x) || !bounded(y) {
             return Err(InputError::InvalidPointer);
         }
         self.surfaces.prune_pointer_focus();
         let location = (x, y).into();
-        if self.surfaces.move_window_pointer(location)? {
+        if self.surfaces.move_window_pointer(location)?
+            || self.surfaces.resize_window_pointer(location)?
+        {
             if let Some(pointer) = self.surfaces.pointer.as_mut() {
                 pointer.location = location;
                 pointer.time = time;
@@ -100,7 +103,7 @@ impl Server {
     /// neither the press nor its later release is redirected to another client.
     /// A matched real release may authorize one popup while its recipient stays
     /// focused. New accepted button events and cancellation invalidate it.
-    /// Interactive move buttons are consumed and return false, including the
+    /// Interactive move/resize buttons are consumed and return false, including the
     /// final release; that release restores hit testing without client delivery.
     pub fn pointer_button(
         &mut self,
@@ -113,6 +116,14 @@ impl Server {
         }
         self.surfaces.prune_pointer_focus();
         self.surfaces.prune_window_move();
+        if self.surfaces.window_resize_button(button, state) {
+            if !self.surfaces.resizing_pointer()
+                && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)
+            {
+                self.pointer_motion(location.x, location.y, time)?;
+            }
+            return Ok(false);
+        }
         if self.surfaces.window_move_button(button, state) {
             if self.surfaces.window_move.is_none()
                 && let Some(location) = self.surfaces.pointer.as_ref().map(|p| p.location)
@@ -287,6 +298,7 @@ impl Surfaces {
     /// Clear the pending grab target before synthesizing button releases.
     pub(crate) fn clear_pointer(&mut self) -> Result<(), InputError> {
         self.window_move = None;
+        self.cancel_window_resize();
         let pointer = self
             .pointer
             .as_mut()
