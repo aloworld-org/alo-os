@@ -271,6 +271,31 @@ promise that refuses the move rather than replacing. Elsewhere it is a check
 followed by a move, and the gap is in `docs/quirks.md`. Either way the answer a
 caller gets is the same one.
 
+### Underneath the grants there is a floor, and it does not cover everything
+
+On a machine whose kernel can impose one, a verb's work runs inside a boundary
+the kernel holds: the places that call named, and nothing else. It is not a
+second capability check and it decides nothing about authority — **inside the
+bound is never the same as authorised**, `alo-capability` is what permits a call,
+and the floor is what a verb with a bug in it meets. What it covers is opening a
+file, moving one, removing a name and giving a file a second name: outside the
+call's own places, each of those is refused by the machine with the ordinary
+permission failure rather than by our code.
+
+**It does not cover every way a filesystem changes, and an adapter author should
+not read it as if it did.** A bounded turn can still make a symbolic link, make
+an empty file, make and remove empty directories, and change a file's mode, owner
+and attributes. None of those moves the contents of somebody's file past a grant
+— the reading and writing that would are opens, and opens are covered — but *a
+turn cannot change anything outside its grant* is not a sentence this contract
+makes. The complete list, what each one can and cannot lead to, and the release
+that owns closing each, is in `docs/quirks.md` under *Four hooks are not a
+filesystem*.
+
+Nothing here changes what a caller sees. Every refusal an adapter can receive is
+still one of the ones in *Being told no*; the floor exists so that a refusal
+nobody wrote still happens.
+
 ## Context on invocation
 
 An agent is handed three things at the moment it is invoked, and only then: the

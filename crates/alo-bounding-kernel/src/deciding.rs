@@ -31,9 +31,10 @@
 
 //! # What is watched, and what is not
 //!
-//! Four hooks: what a turn **opens**, **moves**, **removes**, and gives a
-//! **second name**. That is not the whole of a filesystem and this file does
-//! not pretend it is. Nothing here watches:
+//! Four hooks on the filesystem — `file_open`, `inode_rename`, `inode_unlink`
+//! and `inode_link` — which is what a turn **opens**, **moves**, **removes**,
+//! and gives a **second name**. That is not the whole of a filesystem and this
+//! file does not pretend it is. Nothing here watches:
 //!
 //! - **symbolic links** (`inode_symlink`) — a turn can make one pointing
 //!   anywhere. It is not a way out on its own: following it to read something
@@ -43,9 +44,16 @@
 //! - **directories** (`inode_mkdir`, `inode_rmdir`) — a turn can make and
 //!   remove empty ones. Removing a directory with anything in it needs the
 //!   contents gone first, and that is `inode_unlink`;
-//! - **making a file** (`inode_create`) — a turn can create one. Writing to it
-//!   is an open, which is watched, so what this leaves is an empty file
-//!   somewhere;
+//! - **making a file** (`inode_create`, and `inode_mknod` for the call that
+//!   makes one without opening it) — a turn can create one. Writing to it is an
+//!   open, which is watched, so what this leaves is an empty file somewhere;
+//! - **attributes** (`inode_setattr`, `inode_setxattr`) — a turn can change the
+//!   mode, owner, times and extended attributes of a file nobody granted it,
+//!   and is no better off for it: what decides here is where a file is and not
+//!   what its mode says. **The exception is size.** `truncate(2)` reaches
+//!   `inode_setattr` without an open, so a turn can empty a file it cannot
+//!   read — which moves no contents anywhere and destroys them where they are.
+//!   It is the sharpest thing on this list and `docs/quirks.md` says so;
 //! - **what is inside a file already open** — a boundary on `file_open`
 //!   decides at the moment of opening and says nothing afterwards;
 //! - **signals and memory**, and everything else that is not a filesystem. What
@@ -53,9 +61,22 @@
 //!   [`decide_departure`] says what that does and does not decide.
 //!
 //! Each of those is a real gap and each is written down rather than left to be
-//! discovered. What they have in common is that none of them moves a byte of
-//! somebody's file to somewhere they did not approve, which is the property the
-//! four hooks that exist were chosen for.
+//! discovered. What they have in common — size aside, which is named above
+//! rather than filed under it — is that none of them moves a byte of somebody's
+//! file to somewhere they did not approve, which is the property the four hooks
+//! that exist were chosen for.
+//!
+//! **All of them are reproduced** against this programme on a running kernel, in
+//! `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`, each with a
+//! refused open beside it proving the boundary was in force. `docs/quirks.md`
+//! carries the same list with the release that owns closing each — every one of
+//! them v0.5 — and `alo-bounding/tests/the_unwatched_mutations_are_written_down.rs`
+//! fails the day one of these hooks lands and the documents still call it
+//! unwatched.
+//!
+//! One thing that is **not** a way round any of it: a turn cannot start a
+//! program to make the calls for it, because starting one opens the program's
+//! own file and that is a `file_open`.
 
 use alo_bounding_map::{Bounds, Departure, Family, Field, Place, reaches};
 

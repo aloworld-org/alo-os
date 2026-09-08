@@ -567,6 +567,81 @@ A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
+### Four hooks are not a filesystem: what a bound turn can still change
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
+`crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
+**Behaviour:** the boundary watches five hooks — `file_open`, `inode_rename`,
+`inode_unlink`, `inode_link` and `socket_connect` — and a filesystem has more
+verbs than five. The four filesystem hooks were chosen for one property: **none
+of the mutations they leave unwatched moves a byte of somebody's file past a
+grant.** That is a narrower promise than *a turn cannot change anything outside
+its bound*, and reading the second where the first is written is how somebody
+audits this boundary and comes away believing more than it does.
+
+So this is the list, each one run against the real loaded programme with a
+refused open beside it proving the boundary was in force:
+
+| Hook | What a bound turn can still do | Why no contents leave a grant | Release |
+|---|---|---|---|
+| `inode_symlink` | make a symbolic link, in a folder somebody granted, pointing at a file nobody did | a name is not contents. Opening through it is a `file_open` on the file it leads to, which is outside the bound and refused — the walk starts at the file the open reached, so the *link's* place buys nothing | v0.5 |
+| `inode_create` | make a file in a folder nobody granted, by opening with `O_CREAT` | the create is unwatched and the open that follows it is not, in that order, so the inode is made and the write is refused. What is left is an empty file with a name of the turn's choosing | v0.5 |
+| `inode_mknod` | make the same file without opening it at all, so nothing refuses anything | the same empty file at the end of it, and putting anything in it is an open, which is watched and refused | v0.5 |
+| `inode_mkdir` | make a directory in a place nobody granted | a directory holds no bytes of anybody's file, and filling one means creating files in it and writing to them, which is an open | v0.5 |
+| `inode_rmdir` | remove an **empty** directory nobody granted | removing one that is not empty needs its contents unlinked first, and `inode_unlink` is watched | v0.5 |
+| `inode_setattr` | change the mode, owner or times of a file nobody granted — **and its size** | the boundary decides by where a file is and not by what its mode says, so the same open is refused after `0o777` as before it. **Size is the exception that is not about contents leaving**: see below | v0.5 |
+| `inode_setxattr` | set an extended attribute on a file nobody granted | an attribute is somewhere to put bytes that is not the file's contents, and filling it needs bytes the turn cannot read | v0.5 |
+
+Two things are **not** on that list and belong beside it. **What is inside a
+file already open** is not a hook at all: `file_open` decides at the moment of
+opening and says nothing afterwards, so a descriptor that existed before the
+turn began stays usable inside it. That is its own piece of work, with the socket
+half of it already reproduced in `what_a_bound_turn_can_still_reach.rs`. And
+**starting a program** is not a way round any of this: `execve` opens the file it
+runs, `file_open` is watched, and a bound turn asking for `/bin/true` is refused
+with `EACCES` like any other file outside its bound. That is a floor under law 2
+rather than the law, which is `alo-capability`'s.
+
+**The size half of `inode_setattr` is the sharpest thing here and it is stated
+plainly.** `truncate(2)` changes a file's length through that unwatched hook
+without opening it, so **a bound turn can empty a file nobody granted it**.
+Measured on 2026-09-08 on this kernel: the same turn was refused `open` on the
+file with `EACCES` and then truncated it to zero bytes. That is not contents
+leaving a grant — nothing is read and nothing is copied — but it is destruction
+outside the bound, and the list's headline promise does not cover it.
+
+It is the one item here **not reproduced in the committed suite**, and the reason
+is a rule rather than an oversight: no call this repository can make reaches
+`truncate(2)` without an open. `std` has no path truncate, `rustix` has only
+`ftruncate` on a descriptor, `unsafe` is forbidden outside
+`alo-bounding-kernel`'s one file, and the ordinary program that would do it —
+`truncate` from coreutils — is refused at the `execve` above. The measurement was
+made by hand with a Python child joined to the turn's control group; a language
+that is not Rust is a bug in this repository, so it was not committed. Whoever
+closes `inode_setattr` will get the reproduction for free.
+
+**Our response:** documented rather than closed, and every claim above is a test
+except the one that says it is not. `crates/alo-bounding-kernel/src/deciding.rs`
+carries the list beside the code that decides, `crates/alo-bounding/src/lib.rs`
+carries it where somebody auditing the crate reads, and
+`crates/alo-bounding/tests/the_unwatched_mutations_are_written_down.rs` holds
+this table to the programme: a hook that appears in `kernel.rs` and is still
+listed here as unwatched fails that test, as does a row with no release, a row
+nobody reproduced, or a release `docs/features.md` has never heard of. So the
+list cannot rot into a description of a boundary this one stopped being.
+
+Every row is **v0.5**, which is where `docs/features.md` puts *the grant is a
+boundary the kernel imposes* (ADR 0013) and *the kernel is taught what a turn is*
+(ADR 0015). Nothing here is a v0.01 delivery commitment and nothing here ticks
+anything. Whoever schedules v0.5 should take `inode_setattr` first, because it is
+the only one that destroys.
+
+**What the ordinary permissions still do.** These measurements run as root, so
+nothing was refused by the mode — every *allowed* above is the boundary's own
+answer. On a real machine `alo-agentd` runs as the person, and a turn can only
+make these changes to files that person may already change. The boundary is a
+floor under the ordinary bits and never a replacement for them.
+**Date:** 2026-09-08
+
 ### The device number `stat` reports is not the one the kernel keeps
 **Version:** Linux, any; found 2026-09-04 while writing `crates/alo-bounding`.
 **Behaviour:** `stat` reports a file's device in `st_dev`, and the kernel holds

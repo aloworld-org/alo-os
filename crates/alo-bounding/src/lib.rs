@@ -131,6 +131,53 @@
 //! service can reach is the map it writes, and the map of fields is one it
 //! cannot open at all.
 //!
+//! # What this boundary watches on a filesystem, and what it does not
+//!
+//! Four hooks decide about files — `file_open`, `inode_rename`, `inode_unlink`
+//! and `inode_link` — and a fifth, `socket_connect`, about the network. A
+//! filesystem has more verbs than four, and somebody auditing this crate is owed
+//! the list of the ones nothing here decides about rather than the count of the
+//! ones it does.
+//!
+//! **The promise these four keep is narrower than *a turn cannot change
+//! anything outside its bound*, and reading the second where the first is
+//! written is the mistake this section exists to prevent.** What they keep is
+//! this: **no mutation left unwatched moves a byte of somebody's file past a
+//! grant.** A turn can still make a symbolic link (`inode_symlink`) in a folder
+//! somebody granted that leads to a file nobody did — and reading through it is
+//! an open of the file it leads to, refused. It can make a file
+//! (`inode_create`, or `inode_mknod` without an open at all) in a folder nobody
+//! granted — and putting anything in it is an open, refused, so what it leaves
+//! is an empty file. It can make and remove **empty** directories
+//! (`inode_mkdir`, `inode_rmdir`) — and emptying one that is not needs
+//! `inode_unlink`, which is watched. It can change a file's mode, owner, times
+//! and extended attributes (`inode_setattr`, `inode_setxattr`) — and is no
+//! better off, because what decides here is where a file is and not what its
+//! mode says.
+//!
+//! **One of those goes further than the promise and is not hidden inside it.**
+//! `truncate(2)` reaches `inode_setattr` without opening anything, so a bound
+//! turn can empty a file nobody granted it. Nothing is read and nothing is
+//! copied, so no contents leave a grant; contents are destroyed where they sit,
+//! which is a different harm and a real one. `docs/quirks.md` has the
+//! measurement and says why it is the one item not in the committed suite.
+//!
+//! Two things sit beside the list rather than in it. **A descriptor opened
+//! before the turn began** stays usable inside it, because a hook that decides
+//! at the moment of opening says nothing afterwards; the socket half of that is
+//! reproduced in `tests/what_a_bound_turn_can_still_reach.rs`. And **starting a
+//! program is not a way round any of this**: `execve` opens the file it runs, so
+//! a turn asking for a program outside its bound is refused like any other file.
+//!
+//! Every one of these is reproduced against the real loaded programme in
+//! `tests/what_a_bound_turn_can_still_change.rs`, each with a refused open
+//! beside it proving the boundary was in force and a legitimate write inside the
+//! grant proving it was not simply refusing everything. `docs/quirks.md` carries
+//! the same list with the release that owns closing each — all of them v0.5,
+//! with ADR 0013's other primitives — and
+//! `tests/the_unwatched_mutations_are_written_down.rs` fails the day one of them
+//! lands while the documents still call it unwatched.
+//!
 //! # What this boundary can decide about the network, and what it cannot
 //!
 //! ADR 0013 gives this crate a second job it has not started: *which sockets

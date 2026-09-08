@@ -74,8 +74,8 @@ Four hooks exist: `file_open`, `inode_rename`, `inode_unlink`, `inode_link`.
 | Gap | Release | Note |
 |---|---|---|
 | **Network egress enforcement and attribution** | **v0.01** | `alo-egress` is policy and indicator only. No socket or cgroup programme exists anywhere in the tree. This is the one in-scope item. |
-| Filesystem: `inode_create`, `inode_mkdir`, `inode_rmdir`, `inode_symlink` | v0.5 | Documented in `deciding.rs`; none moves a byte of somebody's file past a grant |
-| Filesystem: `inode_setattr`, `inode_setxattr` — attributes and ownership | v0.5 | Not hooked |
+| Filesystem: `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink` | v0.5 | Documented and, since task 5, reproduced; none moves a byte of somebody's file past a grant |
+| Filesystem: `inode_setattr`, `inode_setxattr` — attributes, ownership **and size** | v0.5 | Not hooked. Task 5 measured what the size half means: `truncate(2)` reaches `inode_setattr` without an open, so a bound turn can **empty** a file nobody granted it. No contents leave a grant and contents are destroyed where they are — the only item on the unwatched list that does more than litter, and the one to close first |
 | Already-open descriptors, and access inherited across the start of a turn | v0.5 | A `file_open` hook decides at open time and says nothing afterwards; a descriptor opened before the turn began stays usable inside it. **Not addressed anywhere** |
 | Landlock, seccomp, namespaces — ADR 0013's other three primitives | v0.5 | None built; the BPF LSM carries the whole boundary today |
 | A snapshot at turn start, and exact undo | v0.5 / v1 | Not built |
@@ -329,6 +329,37 @@ This is documentation of a known limit, not new enforcement.
   a file's contents past a grant, and which release owns closing it, written
   where somebody auditing the boundary will find it.
 - **Evidence:** the text, and `cargo doc` clean.
+
+**Done, 2026-09-08.** The list is in `docs/quirks.md` under *Four hooks are not a
+filesystem*, beside the code in `crates/alo-bounding-kernel/src/deciding.rs`,
+where an auditor of the crate reads in `crates/alo-bounding/src/lib.rs`, and in
+plain words for an adapter author in `docs/contracts/agent-verbs.md`. Seven rows,
+each naming what a bound turn can still do, why it moves no contents past a
+grant, and v0.5 as the release that owns closing it.
+
+**It is documentation that runs.** `what_a_bound_turn_can_still_change.rs`
+reproduces every row against the real loaded programme — each with a refused open
+proving the boundary was in force and a legitimate write inside the grant proving
+it was not simply refusing everything — and
+`the_unwatched_mutations_are_written_down.rs` parses the table and fails the day
+a listed hook is watched, a row names a release `docs/features.md` has never
+heard of, a row says nothing about why contents stay inside, a row is reproduced
+nowhere, or a sixth hook arrives with no document naming it.
+
+**Two things the audit found that the task did not ask for.** A bound turn
+**cannot start a program**, because `execve` opens the file it runs and
+`file_open` is watched — so none of the unwatched mutations can be escalated by
+running something that makes the calls instead. And the size half of
+`inode_setattr` is worse than the rest of the list: `truncate(2)` empties a file
+without opening it, measured here with the same turn refused `open` on the file
+it had just emptied. It moves no contents past a grant, which is why the list's
+promise survives, and it destroys them where they are, which is why it is named
+rather than filed. It is the only row **not** reproduced in the committed suite,
+because no call this repository can make reaches `truncate(2)` without an open
+and a language that is not Rust is a bug here; `docs/quirks.md` records the
+method and the limit rather than a claim.
+
+Nothing was closed, nothing was ticked, and no *On the machine* box is touched.
 
 ### 6. Descriptors opened before a turn began
 
