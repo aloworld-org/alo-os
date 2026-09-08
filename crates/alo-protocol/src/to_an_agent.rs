@@ -200,6 +200,43 @@ mod tests {
     use crate::{ToAPerson, wording::CameFrom};
     use alo_strings::Filling;
 
+    /// **The four things this daemon can say to an agent, and a credential is
+    /// not among them.**
+    ///
+    /// [ADR 0022](../../../docs/decisions/0022-where-a-providers-key-is-kept.md)
+    /// leans on this. What stops the agent reaching a provider's key is not a
+    /// type that refuses to render: it is that the agent is a **different
+    /// login** on the other side of a socket, and that the protocol it speaks
+    /// has no verb a key could travel in. The first half is the kernel's —
+    /// `SO_PEERCRED`, and ADR 0001 §5. This is the second half.
+    ///
+    /// **The match below has no wildcard, deliberately.** A fifth variant does
+    /// not fail this test at runtime; it fails to compile it, and whoever adds
+    /// one comes here and decides what it may carry. That is the same shape as
+    /// `alo-bounding`'s *the programme has nowhere to write what it sees*,
+    /// which names its two maps exactly rather than counting them.
+    #[test]
+    fn the_four_things_this_daemon_says_to_an_agent_carry_no_credential() {
+        /// What each one is, in a match a new variant breaks.
+        fn what_it_carries(said: &ToAnAgent) -> &'static str {
+            match said {
+                ToAnAgent::Did(_) => "what a read found",
+                ToAnAgent::Proposed(_) => "a change waiting for the person",
+                ToAnAgent::Answered { .. } => "what a model said, in its own words",
+                ToAnAgent::Refused(_) => "a sentence saying it did not happen",
+            }
+        }
+
+        assert_eq!(
+            what_it_carries(&ToAnAgent::refused(&a_sentence())),
+            "a sentence saying it did not happen"
+        );
+        assert_eq!(
+            what_it_carries(&ToAnAgent::answered("No.", &a_sentence(), "a-model")),
+            "what a model said, in its own words"
+        );
+    }
+
     /// One sentence this crate really declares.
     fn a_sentence() -> Said {
         in_english().say(&words::NOT_READABLE.key(), &Filling::nothing())

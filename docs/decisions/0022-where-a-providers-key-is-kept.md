@@ -3,9 +3,9 @@
 **Status:** **PROPOSED — not accepted, and nothing in it is built.** It asks the
 repository owner one question, because the accepted documents answer it two
 different ways.
-**Date:** 2026-09-08, revised the same day after the owner declined the
-release-scope change this ADR first proposed, and after a measurement corrected
-its central claim about D-Bus.
+**Date:** 2026-09-08. Revised twice: after the owner declined the release-scope
+change this ADR first proposed, and again after two of its own claims turned out
+to be wrong — what ADR 0017 forbids, and what protects a credential.
 **Proposed by:** the model-selection workstream
 **Context:** `docs/features.md` (two lines, below),
 [ADR 0005](0005-applications-are-sandboxed-and-ask.md) (applications are
@@ -61,14 +61,39 @@ is `fedora-bootc:42` plus two binaries, two units, two directories and one
 description — *"There is no compositor in it, no desktop, no wallpaper and
 nothing to sign in at."* A keyring is a package and a unit that nobody has added.
 
-**2. `alo-agentd` is a system unit, and a Secret Service is a session one.**
-`image/usr/lib/systemd/system/alo-agentd.service` is `WantedBy=multi-user.target`,
-started at boot, `User=alo`, `Group=alo`, `SupplementaryGroups=alo-agent`. It
-runs **as the person** and has no session, no session bus and no `DBUS_SESSION_BUS_ADDRESS`.
-[ADR 0017](0017-the-agents-door-is-ours-and-not-in-the-session.md) put the
-agent's door outside the session **on purpose**, so this is a deliberate
-property rather than an oversight — and it is the dependency that needs a
-decision rather than work.
+**2. The image has no session integration** — which is **not** the same thing as
+an accepted prohibition, and the previous revision of this ADR confused the two.
+
+The correction, cited rather than paraphrased.
+[ADR 0017](0017-the-agents-door-is-ours-and-not-in-the-session.md) decides one
+thing: *"The daemon's socket moves out of the person's session directory to
+`/run/alo/<uid>/agentd.sock`."* Its reason is **reachability of the
+agent-facing socket**, and it is specific:
+
+> `logind` creates `$XDG_RUNTIME_DIR` — `/run/user/<uid>` — as **`0700`, owned
+> by the person**. The agent is a different user (ADR 0001 §5), so it is refused
+> by the *parent* directory before either of our two modes is ever consulted.
+
+Its consequence clause is scoped the same way: *"`session.rs` stops reading
+`$XDG_RUNTIME_DIR` **for this purpose**"* — the purpose being where to put the
+socket. And its rejected alternative is about identity, not about D-Bus:
+*"**Running the agent as the person.** … it would delete the boundary the whole
+design rests on: `SO_PEERCRED` answers which of two users is on this
+connection."*
+
+**There is no clause forbidding the daemon from making outbound connections, to
+the session bus or anywhere else.** ADR 0017 is about an inbound socket's
+address. It says nothing about this, and this ADR was wrong to say it did.
+
+**And the obstacle it names does not apply here.** `/run/user/<uid>` is `0700`
+owned by the person; the *agent* cannot enter it, which is why the agent's door
+moved. But `alo-agentd` runs as **`User=alo`** — the person — so the person's own
+runtime directory is exactly the one directory it may open. The thing ADR 0017
+could not do for the agent is the thing the daemon can do for itself.
+
+So what blocks this is the image: **no Secret Service package, no unit, no
+desktop and nothing to sign in at.** That is work with an owner, not a decision
+about architecture.
 
 **3. Unlock is tied to signing in.** A keyring unlocked by the login password
 needs the sign-in path to exist. `docs/features.md` promises `[v0.01] Boots on
@@ -109,54 +134,139 @@ real loaded programme:
 
 **So none of the three mechanisms is isolated from a turn by the kernel
 boundary, and choosing between them on that basis would be choosing on a
-mistake.** What actually protects a credential is three things, and all of them
-are about *when* rather than *where*:
+mistake.**
 
-1. it is fetched **outside** the turn's boundary, in the daemon, exactly where
-   the endpoint is already resolved
-   ([ADR 0020](0020-a-question-is-carried-out-inside-the-turns-boundary.md));
-2. what crosses into the turn is an `alo_models::Secret` — no accessor, no
-   `Display`, no `Serialize`, no `Clone`, and a hand-written `Debug` that says
-   nothing;
-3. **the store handle is not held open across a turn**, which is the same
-   discipline ADR 0020 already applies to the HTTP client and to DNS.
+### What is kernel-enforced, and what is not
 
-Point 3 is the one an implementation can get wrong quietly, and it is the one
-that must be tested rather than intended.
+The previous revision listed `Secret`'s API and the timing of retrieval as what
+protects a credential. **They are application-level safeguards and this ADR was
+wrong to present them as isolation.** Separating the two is the point of this
+section.
+
+**Kernel-enforced — two logins, and one question the kernel answers.**
+ADR 0001 §5 gives the agent a login of its own: `alo-agent`, uid 60989, while
+`alo-agentd` runs as `alo`. What stops the agent reaching a credential is
+therefore not a type:
+
+- **The agent is on the other side of a socket**, and `SO_PEERCRED` is what says
+  which of two users is on it — ADR 0017 rejected running the agent as the person
+  precisely because that *"would delete the boundary the whole design rests
+  on"*.
+- **The agent cannot reach the store at all.** The person's session bus lives at
+  `/run/user/1000/bus` inside a `0700` directory owned by the person. A process
+  running as `alo-agent` is refused by that directory — the same refusal ADR 0017
+  measured, working in our favour this time.
+- **The protocol has no verb that returns a credential.** `ToAnAgent` carries an
+  answer, a refusal or a proposal, and nothing that a key could travel in.
+
+**Application-level — worth having, and not isolation.** `Secret` has no
+accessor, no `Display`, no `Serialize`, no `Clone` and a hand-written `Debug`
+that says nothing. That prevents a credential reaching a log, a record, a
+support bundle or a serialised structure **by accident**, which is a real class
+of failure and the one `41c9f1e` closed for settings refusals. It prevents
+nothing on purpose.
+
+Fetching outside the turn's boundary narrows *when* a bounded turn's own code
+has the value in reach. It does not isolate the daemon's address space from
+itself.
+
+### The limitation this ADR keeps, explicitly
+
+**Anything running as the person can retrieve the credential**, including
+`alo-agentd` itself if it is compromised. A process that can execute code in the
+daemon can open the same bus, ask the same service and read the same key —
+`Secret`'s shape does not stop it, and the kernel boundary does not either,
+because the daemon *is* the person.
+
+What the design buys is that a compromise of **the agent** is not a compromise
+of the credential, and that an accident anywhere is not one either. What it does
+not buy is protection against a compromised daemon, and no arrangement of these
+three mechanisms would.
 
 ## The recommended architecture
 
-One, concrete.
+One, concrete, and it adds **no protocol**. The daemon makes an outbound
+connection; nothing new is spoken to the agent, and nothing hands a credential
+between processes.
 
-- **Store:** the **Secret Service**, through `libsecret`, under the attributes
-  alo already derives — `provider/<the person's own name for it>`. Standard, not
-  invented, and what the v0.01 line's own word means.
-- **Who reaches it:** `alo-agentd`, as the person it already runs as. No new
-  login, no new capability; `CapabilityBoundingSet=` stays empty.
-- **When:** immediately before the question and **outside**
-  `carrying_out_a_departure` — beside the resolution ADR 0020 already does
-  there. **Opened and closed per retrieval.** Nothing is held across a turn.
-- **What crosses:** a `Secret`, and nothing else. `SecretRef` is unchanged; this
-  ADR adds an implementation behind it and changes no abstraction.
-- **Unlock:** at sign-in, by the login password, as on every other Linux desktop.
-- **Failure:** unavailable, locked, missing and denied each refuse in their own
-  words, and **none falls back** — not to plaintext, not to another provider,
-  not to another model.
+**Store.** The **Secret Service**, through `libsecret`, under the attributes alo
+already derives — `provider/<the person's own name for it>`. `SecretRef` is
+unchanged: this puts an implementation behind it and alters no abstraction.
+
+**Who reaches it.** `alo-agentd`, as `User=alo` — the person it already runs as.
+No new login, no capability, `CapabilityBoundingSet=` stays empty.
+
+**How the session is found, and it is not an environment variable.** The bus is
+at **`/run/user/<uid>/bus`**, with `<uid>` taken from the daemon's own
+`getuid()` — never from `DBUS_SESSION_BUS_ADDRESS`, never from anything an agent
+or an application can set, and never announced. It is per **user**, not per
+session, which is what makes the concurrent case have one answer.
+
+That directory is `0700` and the person's. ADR 0017 measured that as the reason
+the *agent* could not be given a door there; the daemon runs as the person, so
+for it the same permission is the discovery working. Where a stronger answer is
+wanted later, `sd-login` (`sd_uid_get_sessions`) asks logind directly rather than
+trusting a path — named as an option, not required.
+
+**What is preserved, unchanged.** `/run/alo/<uid>/agentd.sock` and every check in
+`place.rs` — this touches the *inbound* door not at all. The separate agent
+identity and `SO_PEERCRED`. The record, the indicator, and ADR 0020's
+request-scoped destinations and hostname verification.
+
+**Lifecycle, stated for each state rather than assumed:**
+
+| | What the daemon finds | What happens |
+|---|---|---|
+| **Before login** | no `/run/user/<uid>/bus` | **unavailable** — refused, nothing sent |
+| **Signed in, keyring locked** | a bus, a service, a locked collection | **locked** — refused, and it says *locked*, which is a different thing to do about it |
+| **Signed in, no entry** | a bus, an unlocked collection, nothing under `provider/<name>` | **missing** — refused, naming that this provider has no key here |
+| **Denied** | the service refuses this caller | **denied** — refused, and **never retried against another store** |
+| **After logout** | the bus is gone; a held connection breaks | **unavailable** — refused. `/run/alo/<uid>` is removed at sign-out, which ADR 0017 already made this daemon's business |
+| **Concurrent sessions** | one bus per uid, whichever seats are open | one answer, no ambiguity, no choosing between sessions |
+
+**None of the six falls back** — not to plaintext, not to another provider, not
+to another model.
+
+### Connection ownership — a claim withdrawn
+
+The previous revision said the store handle would be *"opened and closed per
+retrieval"*, so that nothing was held across a turn. **That is withdrawn, because
+libsecret is unlikely to be able to honour it and this ADR had not checked.**
+
+What is documented, and is documentation rather than a measurement this
+repository has made:
+
+- `secret_service_get_sync()` returns a **shared singleton** service proxy — the
+  default service object is not per-caller.
+- It is built on GDBus, and `g_bus_get_sync(G_BUS_TYPE_SESSION, …)` returns a
+  **shared, process-wide** connection.
+- A Rust wrapper's `Drop` unrefs a GObject. **Dropping it is not evidence that
+  the underlying bus connection closed**, and with a singleton it is evidence of
+  the opposite.
+
+**So the daemon will hold a session-bus connection across turns**, and that is
+exactly `a_connection_made_before_the_boundary_stays_usable_inside_it` — the
+inherited-socket case this workstream reproduced. Concurrent retrievals share
+that one connection, and a turn is a thread of the same process, so a turn shares
+it too.
+
+**This does not sink the architecture; it removes a reason that was never load-
+bearing.** What protects the credential is the two logins, not the lifetime of a
+socket. But the claim has to go, and its verification is in the acceptance plan
+below as a measurement rather than an assumption: this ADR does not add a
+dependency in order to check a proposal.
 
 ### Dependencies, in the order they block
 
-1. **A Secret Service in the image** — a package and a unit. Image work.
-2. **A session bus the daemon can reach.** This **collides with ADR 0017** and
-   is the one that needs a decision: either that ADR is amended to let the
-   daemon reach the person's session bus, or something in the session hands the
-   credential to the daemon over the door it already has at `/run/alo/1000`.
-   Both are defensible and they are different products.
-3. **Sign-in**, so that there is something to unlock with. Compositor and
-   session work.
-4. **A `libsecret` binding.** `libsecret` is C, behind a Rust crate — the same
-   shape as `aya` or `ureq`, and *not* a third language in this repository,
-   which is what `CLAUDE.md` forbids. Named so it is decided rather than
-   assumed.
+1. **A Secret Service in the image** — a package and a unit. **Desktop worker's**,
+   and to be scheduled with them rather than assumed.
+2. **Sign-in**, so there is something to unlock with. **Desktop worker's.**
+3. **A `libsecret` binding.** C behind a Rust crate — the same shape as `aya` or
+   `ureq`, and *not* a third language in this repository, which is what
+   `CLAUDE.md` forbids. Named so it is decided rather than assumed.
+
+**There is no fourth**, and in particular no ADR amendment: the previous revision
+listed one and it was based on the misreading corrected above.
 
 ## The acceptance plan
 
@@ -172,7 +282,9 @@ authenticated HTTPS operation through the daemon.**
 | The credential comes from the store, not from anywhere else | the store empty ⇒ refused; the store holding it ⇒ sent |
 | Unavailable / locked / missing / denied | four refusals, four sentences, **nothing sent in any of them** |
 | No fallback | in each of the four, no other provider and no other model is asked |
-| The store handle is not held across a turn | asserted, because it is the one thing an implementation gets wrong quietly |
+| **What the bus connection actually does** — measured, not assumed | count the daemon's open Unix sockets across several turns (`/proc/<pid>/fd`, `ss -x`) and record whether the connection persists, is shared, and survives dropping the wrapper. This replaces the withdrawn *opened and closed per retrieval* claim, and its answer changes the documentation rather than the design |
+| **Concurrent retrievals** | two questions in flight sharing one connection: both get their own credential, neither gets the other's, and neither blocks on the other past the timeout |
+| The agent cannot reach the store | a process as `alo-agent` is refused `/run/user/<uid>/bus` by the directory — the kernel-enforced half, on a real machine with two logins, since a root test box cannot show it |
 | The published guarantees still hold | settings refusals carry no credential (`41c9f1e`); a key is never rendered (`secret.rs`) |
 
 ## What this ADR does not decide
@@ -183,23 +295,26 @@ authenticated HTTPS operation through the daemon.**
 - **Nothing about alo's own endpoint**, which does not exist and is not invented
   here.
 
-## The decision the owner must make
+## The approval requested
 
-> **1. Is the Secret Service the v0.01 store**, with dependencies 1–4 above —
-> a keyring in the image, a session bus the daemon can reach, sign-in, and a
-> `libsecret` binding? Recommended: yes.
->
-> **2. How does the daemon reach it, given ADR 0017?** Either that ADR is
-> amended so `alo-agentd` may reach the person's session bus, or the session
-> hands the credential to the daemon over the door it already has. **This is
-> the decision that blocks the work**; the other three dependencies are
-> ordinary tasks with owners.
->
-> **3. If sign-in will not land in time for v0.01**, does the kernel keyring
-> hold the key in the meantime — a key re-entered after every reboot — or do
-> provider keys wait? **Not** a release-tier change either way: the promise
-> stays at v0.01 and the question is only which existing mechanism keeps it.
+One thing, and nothing else in this ADR is being asked for:
 
-Until these are answered, a provider that needs a credential is chosen,
-persisted, and refused at the moment of asking — which is what this machine does
-today, and is the honest behaviour rather than a placeholder.
+> **Approve the Secret Service — reached by `alo-agentd` over the person's own
+> session bus at `/run/user/<uid>/bus`, discovered from the daemon's own uid — as
+> the v0.01 store for provider keys**, and with it the scheduling of its two
+> image dependencies with the desktop worker: a Secret Service in the image, and
+> sign-in.
+
+What that approval does **not** include, and what nobody should read into it:
+no release tier moves; no temporary or interim store is created; no
+credential-transfer protocol is added; ADR 0017 is not amended; ADR 0021 is
+untouched; and this ADR stays **PROPOSED** until the approval is given.
+
+**If the two image dependencies cannot land inside v0.01**, that is a scheduling
+question to answer then — with the kernel keyring as the mechanism that needs
+neither of them, at the cost of a key re-entered after every reboot. **It is not
+a reason to move the promise**, and this ADR does not propose moving it.
+
+Until this is approved, a provider that needs a credential is chosen, persisted,
+and refused at the moment of asking — which is what this machine does today, and
+is the honest behaviour rather than a placeholder.
