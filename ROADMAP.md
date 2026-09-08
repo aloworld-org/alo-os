@@ -1239,6 +1239,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Bounded tiling geometry (2026-09-08): immutable left/right half-output plans
+    use successfully submitted extents, committed client limits and bounded
+    actual-size outside-edge anchoring. Three unit/four real-client tests, Linux
+    affected clippy, 300 tests plus three doctests, rustdoc/examples and WSLg
+    offscreen/nested regressions pass. Both plans preserve all 6,400 GLES pixels.
+    Evidence: `docs/autonomy/updates/bounded-window-tiling-geometry.md`.
+    Next: tile/restore transactions sharing normal geometry with maximize,
+    tiled XDG states, latest acknowledged-commit placement and output/lifetime
+    cancellation, then native controls. Planning is complete; tiling/window
+    management and release remain unchecked. Supervisor gates remain pending.
   - Client minimize requests (2026-09-08): verified after owner-authorized recovery.
     Mapped requests share native visibility policy; pre-map intent and duplicates
     are inert. Exact order-independent capabilities are checked on map/remap.

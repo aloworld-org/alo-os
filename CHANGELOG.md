@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window tiling now has a tested geometry foundation.** The shell can
+  plan either half of the submitted display, handle odd widths without gaps and
+  refuse incompatible application size limits without disturbing windows or
+  typing. Real-client and complete-frame graphical checks pass. Tile/restore
+  transactions and rendered controls remain unfinished. Evidence:
+  `docs/autonomy/updates/bounded-window-tiling-geometry.md`.
+
 - **Applications can minimize their own windows without disturbing another.**
   Requests before mapping are ignored, repeated requests are inert, and hidden
   windows cannot reveal themselves by committing another buffer. Native restore

@@ -5,6 +5,33 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed bounded window tiling geometry (2026-09-08):** left/right plans use
+successful output extents and committed limits; invalid targets/sizes refuse
+without configures, placement or input changes. Three unit/four real-client
+tests, Linux affected clippy, 300 tests plus three doctests, rustdoc/examples
+and WSLg offscreen/nested regressions pass. Both half plans preserve all 6,400
+GLES pixels. Exact checks and limits:
+`updates/bounded-window-tiling-geometry.md`. Full supervisor gates pending.
+Next executable component: trusted tile/restore transactions sharing original
+normal geometry with maximize. Acceptance: tiled XDG states, duplicate and rapid
+mode changes, latest configure/ack/commit placement with actual dimensions,
+client limits, competing operations, output failure/retirement/replacement,
+hidden/unmap/disconnect lifetime and keyboard isolation; real-client and GLES
+boundary tests plus affected gates. Then native controls. Do not mark tiling or
+window management complete from geometry-only planning.
+
+**Selected bounded window tiling geometry (2026-09-08):** implement immutable
+left/right half-output planning for visible mapped roots, using only successfully
+submitted output dimensions and committed client limits. Odd widths assign the
+extra pixel to the right; refuse outputs narrower than two pixels, unsupported
+geometry, impossible exact half sizes and foreign/hidden/unmapped targets.
+Acceptance: unit bounds/coverage and actual-size anchoring; real-client limit,
+output retirement/replacement, mapping and ordinary-input isolation tests;
+full-frame GLES preservation, affected fmt/tests/clippy/rustdoc. This completes
+the geometry component only. Next: trusted tile/restore transactions sharing
+normal-geometry memory with maximize, fresh configure boundaries, tiled XDG
+states, stale response refusal and committed placement; then native controls.
+
 **Client minimize requests verified (2026-09-08):** owner authorized recovery
 after two assertion failures. Exact capability comparisons now ignore ordering
 without discarding duplicates; all initial/remapped events are checked. Both new

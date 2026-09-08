@@ -13288,3 +13288,58 @@ the build slot; Claude's unfinished work remains separate. Publish this verified
 component before restarting the single-writer supervisor. Next: trusted tiling
 and restoration, then native controls. No window-management/release checkbox
 was promoted; unchanged later-phase obligations remain in their existing phases.
+
+## 2026-09-08 - Bounded window tiling geometry
+
+Initial tree clean; supervisor owns pull/publication. Read constitution,
+delivery/shared-main/report rules, current queue/STATE tail, relevant v0.01
+feature/roadmap sections, accepted ADRs 0002/0010 and native-window/application
+adapter contracts. Compared published report filenames against STATE: none
+unreconciled at iteration start. Publication arrivals reconcile next iteration;
+Claude's filesystem/credential assignments and separate checkout untouched.
+
+Recorded the selected geometry component and acceptance in QUEUE before coding.
+Added immutable left/right half-output plans using successful output extents,
+committed exact client limits and bounded actual-size outside-edge anchoring.
+Odd widths give the right half the extra pixel. Invalid root/output/geometry/
+limits refuse without configuring, moving, hiding or consuming input. Public
+rustdoc and `docs/contracts/native-window-tiling.md` describe the additive API
+and why this is calculation data without live role/serial authority.
+
+Verified Ubuntu WSL2 Rust 1.98.0, WSLg socket and eight graphics/input pkg-config
+dependencies; no installation or service/kernel changes. Checked C: before every
+build/test/lint command, all at least 14.491 GiB, above the 12 GiB reserve. Last
+verification preflight: 15,559,065,600 bytes. No cleanup or second build workstream.
+
+All seven new focused tests passed on the first run: three unit and four real
+Wayland client cases. Linux affected all-target warnings-denied clippy and full
+shell suite pass (144 unit + 153 lifecycle + three socket tests, plus three
+compile-fail doctests). Warnings-denied rustdoc and examples pass. Windows
+affected fmt/clippy/tests pass, executing zero Linux-only cases. Final Linux
+fmt passes. Review caught and fixed a missing Linux cfg on the graphical module
+before Windows checks. No test failures or weakened assertions.
+
+WSLg offscreen passes all 22 stages; the new tile-planning fixture verifies
+preservation of every pixel in both 80x80 readbacks against its submitted 33x32
+output. Nested popup/cursor regression passes 115 submitted client surfaces.
+Mesa fallback and deliberate malformed-client diagnostics did not skip checks.
+Source/new files/tests/examples/contract and shared progress diff inspected;
+`git diff --check` passes. Exact commands, decisions and limits:
+`docs/autonomy/updates/bounded-window-tiling-geometry.md`.
+
+All four shared progress files updated. Next: trusted tile/restore transactions
+sharing original normal geometry with maximize, tiled states, fresh configure
+boundaries, latest acknowledged-commit actual-size placement, competing operation
+refusal, output/lifetime cancellation and normal keyboard isolation; then native
+controls. Geometry is complete; tiling and window management remain unfinished.
+No feature or release checkbox changed. Ordinary input/component tests remain
+active; configurable dispatch follows window operations in phase 3.
+
+The WSLg/readback fixtures prove planning preservation, not tiled-window
+transactions, physical DRM/seat entry, populated input/hotplug, GPU/recovery or
+certified laptop/workstation acceptance. Those records remain owed in their
+delivery phases; physical acceptance follows phase 7 VM image validation.
+Independent supervisor workspace/rustdoc/BPF gates and concurrent-main
+integration remain pending. No staging, commit, push, tools/dev-loop changes,
+other checkout edits, worker/loop launch, credential/identity access or unrelated
+host changes. Ready for supervisor verification and publication.

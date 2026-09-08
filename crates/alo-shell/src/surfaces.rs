@@ -43,7 +43,7 @@ struct Window {
 pub(crate) struct Surfaces {
     /// Per-mapping normal geometry and maximize/restore response boundaries.
     pub(crate) window_maximize: Vec<crate::window_maximize::MaximizedWindow>,
-    /// Last successfully submitted output extent supported by maximization.
+    /// Last successfully submitted extent, shared by maximize and tile planning.
     pub(crate) maximize_output: Option<(i32, i32)>,
     /// Resize protocol state owned by one held press and mapping lifetime.
     pub(crate) window_resize: Option<crate::resize_transaction::Resize>,

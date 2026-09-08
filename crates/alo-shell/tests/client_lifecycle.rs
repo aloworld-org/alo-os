@@ -22,6 +22,7 @@ mod window_raise;
 mod window_resize;
 mod window_size;
 mod window_switch;
+mod window_tiling;
 use support::{Application, Fixture};
 
 #[test]
