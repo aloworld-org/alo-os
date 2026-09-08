@@ -31,8 +31,10 @@
 //!
 //! # It is opt-in, and its absence is not a failure
 //!
-//! Without `ALO_KERNEL_LOOP_WORKER` naming a command, the loop does not launch
-//! anything and says so: it waits for work to be handed over by a person, which
+//! `ALO_KERNEL_LOOP_WORKER` names the **whole command** up to the prompt, which
+//! the loop appends as the last argument — `claude
+//! --dangerously-skip-permissions -p` on this machine. Without it the loop
+//! launches nothing and says so: it waits for work to be handed over by a person, which
 //! is the arrangement every task so far has used. Making an agent run by
 //! default is not something a supervisor should decide for whoever started it.
 
@@ -69,23 +71,24 @@ pub fn is_configured() -> bool {
 pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
     let named = std::env::var(THE_WORKER)
         .map_err(|_| format!("no worker is configured; set {THE_WORKER} to a command"))?;
-    let named = named.trim().to_owned();
+    let (program, args) = as_a_command(&named)
+        .ok_or_else(|| format!("{THE_WORKER} is set to nothing a program could be run from"))?;
 
-    let mut child = Command::new(&named)
-        .arg("-p")
+    let mut child = Command::new(&program)
+        .args(&args)
         .arg(asked_of_it(task))
         .current_dir(at)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|why| format!("the worker `{named}` could not be started: {why}"))?;
+        .map_err(|why| format!("the worker `{program}` could not be started: {why}"))?;
 
     let until = Instant::now() + AT_MOST;
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
-                return whether_it_finished(&named, status.success(), status.code());
+                return whether_it_finished(&program, status.success(), status.code());
             }
             Ok(None) => {}
             Err(why) => return Err(format!("the worker could not be waited on: {why}")),
@@ -96,7 +99,7 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
             let _ = child.kill();
             let _ = child.wait();
             return Err(format!(
-                "the worker `{named}` was still running after {} minutes and was stopped. \
+                "the worker `{program}` was still running after {} minutes and was stopped. \
                  Whatever it had written is still in the working tree; nothing was published \
                  and nothing was discarded.",
                 AT_MOST.as_secs() / 60
@@ -104,6 +107,26 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
         }
         std::thread::sleep(LOOKING_EVERY);
     }
+}
+
+/// The setting, read as a program and the arguments that go before the prompt.
+///
+/// **Split on whitespace, because the command that runs an agent
+/// non-interactively is never one word.** The other supervisor in this
+/// repository runs `codex exec --sandbox danger-full-access`; this one is set to
+/// something like `claude --dangerously-skip-permissions -p`. A setting that
+/// could only name a bare program would force a wrapper script between the loop
+/// and what it really runs, which is one more file to drift and one more place
+/// for a flag nobody reviewed.
+///
+/// The prompt is appended as the last argument, so whatever makes the program
+/// take one there belongs in the setting.
+///
+/// [`None`] for a setting that is empty or only spaces.
+fn as_a_command(named: &str) -> Option<(String, Vec<String>)> {
+    let mut words = named.split_whitespace().map(str::to_owned);
+    let program = words.next()?;
+    Some((program, words.collect()))
 }
 
 /// What a worker's exit means for the task it was given.
@@ -204,5 +227,24 @@ mod tests {
     #[test]
     fn a_worker_that_finished_is_not_by_itself_evidence_of_anything() {
         assert_eq!(whether_it_finished("claude", true, Some(0)), Ok(()));
+    }
+
+    /// **The setting carries the flags, not just the program**, because no
+    /// agent runs non-interactively without them and a wrapper script would be
+    /// one more file between the loop and what it runs.
+    #[test]
+    fn the_worker_setting_is_a_whole_command() {
+        assert_eq!(
+            as_a_command("  claude --dangerously-skip-permissions -p  "),
+            Some((
+                "claude".to_owned(),
+                vec!["--dangerously-skip-permissions".to_owned(), "-p".to_owned(),],
+            ))
+        );
+        assert_eq!(
+            as_a_command("claude"),
+            Some(("claude".to_owned(), Vec::new()))
+        );
+        assert_eq!(as_a_command("   "), None);
     }
 }

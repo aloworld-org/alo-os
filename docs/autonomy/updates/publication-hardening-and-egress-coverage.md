@@ -113,6 +113,19 @@ its own process id.
 **This report's own publication went through `alo-kernel-loop publish`**, which
 is the best evidence available that the manual path works.
 
+### One thing found by starting the loop
+
+`ALO_KERNEL_LOOP_WORKER` could only name a bare program, and the loop appended
+`-p` to it. No agent runs non-interactively on one word: the other supervisor in
+this repository runs `codex exec --sandbox danger-full-access`, and this one
+needs `claude --dangerously-skip-permissions -p`. The setting now carries the
+whole command and the loop appends the prompt as the last argument, so there is
+no wrapper script between the supervisor and what it actually runs — one fewer
+file to drift, and one fewer place for a flag nobody reviewed.
+
+Found by trying to start the loop rather than by reading it, which is where the
+two `git status --porcelain` parsing bugs in `repository.rs` came from as well.
+
 ## Part two — the egress coverage audit
 
 Three gaps were named in reports and in `deciding.rs` and demonstrated nowhere.
