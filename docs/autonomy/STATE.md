@@ -13425,3 +13425,48 @@ Windows/company-managed changes. Desktop retains the build slot; Claude's
 workstream has not been activated. Publish this verified step, then restart the
 single-writer supervisor. Next: native controls and operation dispatch using
 the verified primitives. No complete window-management or release claim made.
+
+## 2026-09-08 — Focused window layout command dispatch
+
+Single desktop worker in C:\dev\alo-os; integration owner of the four progress
+documents. At iteration start the tree was clean and all published task report
+filenames were already referenced here. No unreconciled report to consolidate;
+publication arrivals reconcile next iteration. Claude's assignments and checkout
+remain untouched. Selected the command bridge and acceptance in QUEUE before code.
+
+Added native configured minimise, maximise/restore and left/right snap dispatch
+against actual keyboard ownership. Maximise toggles latest intent, including
+pending replies, preserving original normal geometry. Underlying output, limits,
+busy-operation and commit checks remain authoritative. Review preserved the old
+close/cycle-only API and exhaustive error enum: the broader entry point has its
+own non-exhaustive error with detailed refusals. A regression compiles an exhaustive
+legacy match. Labels use existing Action::said vocabulary; no new agent endpoint.
+Public rustdoc, COMPOSITOR and native-window-commands contract describe the boundary.
+
+Verified Ubuntu Rust 1.98.0, eight graphics/input pkg-config dependencies and WSLg
+socket. C: preflight before every build/test/lint exceeded 14.075 GiB; lowest
+15,113,056,256 bytes. No cleanup, shared kernel/service changes or second workstream.
+Initial focused run: eight passed, two new fixture failures (wrong expected normal
+buffer dimensions and omitted popup enablement). Corrected fixtures with exact
+assertions; all ten then passed. Added conflict/clearing and API compatibility tests
+before final validation. Final affected Linux all-target clippy and full shell tests
+pass: 144 unit, 171 lifecycle, three socket and three compile-fail doctests. Rustdoc
+with warnings denied, examples, Windows affected clippy/tests and both formatting
+checks pass. Windows executes zero Linux-only tests. No repeated failure or weakened
+assertion/lint. Full independent supervisor workspace/BPF gates remain pending.
+
+WSLg passes all 28 offscreen stages. Minimise dispatch preserves four full 6,400-pixel
+hidden/restored frames; snap dispatch preserves six full tile/restore boundaries.
+Nested popup/cursor regression passes 115 submitted client surfaces. Mesa fallback
+and intentional malformed-client diagnostics did not skip assertions. This is
+Wayland/GLES development evidence; raw physical keyboard, direct DRM and certified
+machine acceptance are not claimed. Exact commands, decisions and evidence limits:
+`docs/autonomy/updates/focused-window-layout-command-dispatch.md`.
+
+All four shared progress documents updated; source/tests/examples/contract and
+documentation diff reviewed, git diff --check passes. No staging, commit, push,
+tools/dev-loop, identity or unrelated host changes. Next: rendered native window
+controls and pointer press/release dispatch, externalized labels, disabled/refusal
+states, stale-target isolation and ordinary keyboard/graphical acceptance. Raw
+key/settings integration and remaining desktop work are unfinished. This completes
+one command bridge component, not window management or the release.

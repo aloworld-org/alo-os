@@ -1,5 +1,6 @@
 //! Full-frame GLES boundaries for trusted tile/restore transactions.
 use alo_shell::{Cursor, Server, TileSide, render_scanout};
+use alo_shortcuts::{Action, Shortcuts};
 use smithay::backend::renderer::gles::GlesRenderer;
 
 /// Verify every pixel before proceeding to the next protocol boundary.
@@ -11,11 +12,8 @@ pub fn stage(
     let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
     let root = roots.first().ok_or("tile root missing")?;
     if stage == 23 {
-        assert!(
-            server
-                .set_window_tiled(root, Some(TileSide::Right))?
-                .is_some()
-        );
+        server.keyboard_focus(Some(root))?;
+        command(server, Action::SnapRight)?;
         assert!(
             server
                 .set_window_tiled(root, Some(TileSide::Right))?
@@ -61,11 +59,23 @@ pub fn stage(
         assert_eq!(*pixel, expected, "tile stage {stage} pixel {index}");
     }
     if stage == 25 {
-        server.set_window_tiled(root, Some(TileSide::Left))?;
+        server.keyboard_focus(Some(root))?;
+        command(server, Action::SnapLeft)?;
     }
     if stage == 26 {
         server.set_window_tiled(root, None)?;
     }
     println!("Tile/restore stage {stage}: all 6400 GLES pixels passed");
+    Ok(())
+}
+
+/// Exercise actual configured layout dispatch before the client's response.
+fn command(server: &mut Server, action: Action) -> Result<(), Box<dyn std::error::Error>> {
+    let settings = Shortcuts::shipped();
+    let chord = settings.chord_for(action).ok_or("missing layout binding")?;
+    assert_eq!(
+        server.dispatch_window_command(&settings, chord)?,
+        Some(action)
+    );
     Ok(())
 }

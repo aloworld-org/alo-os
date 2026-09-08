@@ -65,6 +65,14 @@ enum Anchor {
 }
 
 impl Surfaces {
+    /// Latest requested mode, so toggles can supersede an uncommitted response.
+    pub(crate) fn requested_window_mode(&self, surface: &WlSurface) -> Mode {
+        self.window_modes
+            .iter()
+            .find(|window| window.role.wl_surface() == surface)
+            .map_or(Mode::Normal, |window| window.mode)
+    }
+
     /// Whether this mapping still owns normal-geometry memory or a restore response.
     pub(crate) fn has_window_mode(&self, surface: &WlSurface) -> bool {
         self.window_modes

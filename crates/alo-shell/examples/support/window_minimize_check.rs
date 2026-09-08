@@ -13,7 +13,20 @@ pub fn run(
         .cloned()
         .ok_or("minimize root missing")?;
     for minimized in [true, false, true, false] {
-        assert!(server.set_window_minimized(&root, minimized)?);
+        if minimized {
+            use alo_shortcuts::{Action, Shortcuts};
+            server.keyboard_focus(Some(&root))?;
+            let settings = Shortcuts::shipped();
+            let chord = settings
+                .chord_for(Action::MinimiseWindow)
+                .ok_or("missing minimize binding")?;
+            assert_eq!(
+                server.dispatch_window_command(&settings, chord)?,
+                Some(Action::MinimiseWindow)
+            );
+        } else {
+            assert!(server.set_window_minimized(&root, false)?);
+        }
         assert!(!server.set_window_minimized(&root, minimized)?);
         assert_eq!(server.minimized_surfaces().count(), usize::from(minimized));
         let roots: Vec<_> = server.mapped_surfaces().cloned().collect();

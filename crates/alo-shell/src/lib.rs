@@ -60,6 +60,7 @@ mod socket;
 mod surfaces;
 mod window_activation;
 mod window_close;
+mod window_command;
 mod window_maximize;
 mod window_minimize;
 mod window_mode;
@@ -113,6 +114,7 @@ pub use server::Server;
 pub use session_device::SessionError;
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use socket::SocketError;
+pub use window_command::WindowCommandError;
 
 pub use seat_input::{InputDispatchError, InputUpdate, SeatInput};
 pub use session_input::{SessionInput, SessionInputStatus};

@@ -1239,6 +1239,19 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Focused layout command dispatch (2026-09-08): an additive native API resolves
+    configured minimise, maximise/restore and left/right snap using actual keyboard
+    ownership and latest requested mode. The original close/cycle API and exhaustive
+    errors remain compatible. Seven new real-client tests, Linux affected clippy,
+    144 unit/171 lifecycle/three socket tests plus three doctests, rustdoc/examples,
+    Windows affected checks and both formatting checks pass. WSLg passes all 28
+    offscreen stages, including configured minimise/snap full-frame boundaries,
+    and the 115-surface nested regression. Full supervisor gates remain pending.
+    Next: rendered native controls and pointer press/release dispatch with localized
+    labels, refusal/disabled states and input isolation. Raw key/settings integration
+    remains unfinished. Exact evidence and limits:
+    `docs/autonomy/updates/focused-window-layout-command-dispatch.md`.
+    No window-management or release checkbox is promoted.
   - Trusted tiling/restoration (2026-09-08), verified after authorized recovery:
     shared normal/maximized/tiled memory, latest acknowledged-commit placement,
     output/limit suspension and lifecycle isolation are tested. Nine transaction

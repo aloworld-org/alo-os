@@ -5,6 +5,31 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed focused window layout command dispatch (2026-09-08):** an additive
+command API connects configured minimise, maximise/restore and left/right snap,
+resolving actual keyboard ownership and latest requested mode. Existing close/cycle
+behavior and exhaustive errors are unchanged. Seven new real-client tests, affected
+Linux clippy and full shell tests (144 unit/171 lifecycle/three socket plus three
+doctests), rustdoc/examples, Windows affected checks and Windows/Linux fmt pass.
+All 28 WSLg offscreen stages pass, including configured minimise/snap full-frame
+boundaries; nested regression passes 115 client surfaces. Initial fixture mistakes
+and exact evidence are retained in `updates/focused-window-layout-command-dispatch.md`.
+Full supervisor gates pending; no feature completion claim. Next executable
+component: rendered native window controls with externalized labels and pointer
+press/release dispatch, truthful disabled/refusal states, stale-target isolation,
+ordinary client typing and graphical hit/paint acceptance. Raw keyboard/settings
+integration remains unfinished; this completed component is the command bridge.
+
+**Selected focused window layout command dispatch (2026-09-08):** connect the
+existing configurable minimise, maximise/restore and left/right snap actions to
+verified transactions. Resolve actual keyboard ownership without stacking fallback;
+toggle against latest requested mode, including pending replies. Acceptance:
+real-client rebinding/conflicts, missing focus/seat, output/limits/busy refusal,
+rapid toggles, mapping lifetime, normal keyboard isolation and full-frame GLES
+dispatch evidence; affected fmt/tests/clippy/rustdoc. Labels remain the existing
+externalized `alo-shortcuts` vocabulary. This completes the command bridge only;
+rendered native controls, raw key consumption and settings wiring remain next.
+
 **Trusted tiling/restoration verified (2026-09-08):** owner-authorized recovery
 replaced the prohibited test panic with a propagated missing-event error and
 preserved exact flag assertions. Kept the original four-variant maximize error

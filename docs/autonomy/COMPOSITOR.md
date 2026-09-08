@@ -60,13 +60,31 @@ unfinished; this is the complete size-request primitive, not the resize feature.
 
 ## Configured window commands (2026-09-08)
 
-`Server::dispatch_window_shortcut(&Shortcuts, Chord)` connects the person's
-current bindings to next/previous window and cooperative close. No cached
+`Server::dispatch_window_command(&Shortcuts, Chord)` connects the person's
+current bindings to next/previous window, cooperative close, minimise,
+maximise/restore and left/right snap. No cached
 defaults override changes. Unbound or conflicting personal bindings return None;
-other resolved actions explicitly return Unsupported. Close uses actual keyboard
+agent, launcher and application-switch actions explicitly return Unsupported.
+Close uses actual keyboard
 ownership (including a grabbed popup's root), never the frontmost fallback, and
 queues one XDG request without retrying, killing or dismissing a popup.
 Cycling preserves the underlying activation error, including partial changes.
+The original `dispatch_window_shortcut` keeps its close/cycle-only behavior and
+exhaustive `ShortcutDispatchError` contract. The new additive entry point wraps
+those errors in `WindowCommandError::Shortcut` and uses a non-exhaustive error
+type for detailed layout refusals, allowing future commands without breaking
+existing exhaustive matches.
+
+Layout commands also resolve actual keyboard ownership, including popup roots,
+and refuse missing seats/focus without falling back to stacking. Minimise hides
+the focused root and retires input without choosing another. Maximise toggles the
+latest requested mode, including pending configures: maximized restores normal;
+normal or tiled maximizes. Snap always requests its named half. These commands
+share the existing output, limits, busy-operation and acknowledged-commit checks;
+refusals retain the detailed minimize/maximize/tile error. Existing
+`Action::said` and the `alo-shortcuts` vocabulary provide localized labels;
+diagnostic errors must not be rendered as labels. This adds no raw key handler.
+Contract: `docs/contracts/native-window-commands.md`.
 
 This trusted native API is an action bridge only. Raw keyboard layout lookup,
 consumed press/release and repeat isolation, nested/direct input integration,

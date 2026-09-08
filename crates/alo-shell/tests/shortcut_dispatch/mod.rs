@@ -2,6 +2,7 @@
 use super::{Application, Fixture};
 use alo_shell::{InputError, ShortcutDispatchError, WindowSwitchError};
 use alo_shortcuts::{Action, Changes, Chord, Key, Modifier, Modifiers, Shortcuts};
+mod layout;
 
 /// Create a mapped root with a connected client to observe protocol effects.
 fn mapped(f: &Fixture) -> Application {

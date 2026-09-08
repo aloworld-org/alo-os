@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window commands now honour configured minimise, maximise and snap
+  actions.** They act on keyboard focus, retain original geometry across rapid
+  maximise/restore requests, and refuse missing focus or invalid layouts without
+  choosing another window. The new command API preserves existing callers.
+  Real-client and graphical checks pass; rendered controls and raw key routing
+  remain integration work. `docs/autonomy/updates/focused-window-layout-command-dispatch.md`.
+
 - **The shell can tile windows and restore their original geometry.**
   Left/right tiling shares normal-size memory with maximization, waits for the
   application's acknowledged buffer commit, and preserves ordinary typing and
