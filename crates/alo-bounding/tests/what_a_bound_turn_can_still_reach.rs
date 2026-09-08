@@ -402,6 +402,53 @@ fn a_proxy_on_loopback_carries_a_bound_turn_somewhere_nobody_showed_it() {
     );
 }
 
+/// **A bound turn may reach a Unix socket nobody showed it.**
+///
+/// Deliberate, and `deciding.rs` says why: *a Unix socket is not egress, and
+/// refusing it would be enforcing something no policy claims.* `alo-egress`
+/// decides about what leaves the machine, and a local socket does not.
+///
+/// It is reproduced here because of what it means for **where a credential is
+/// kept**. A store reached over a Unix socket — the D-Bus session bus, a
+/// keyring daemon's own socket — is reachable *from inside a bound turn*, by
+/// the turn, directly. The boundary offers no protection there at all, and an
+/// architecture that assumed "D-Bus, therefore isolated" would be assuming the
+/// opposite of what this machine does.
+///
+/// [ADR 0022](../../../docs/decisions/0022-where-a-providers-key-is-kept.md)
+/// carries the consequence: what protects a credential is that it is fetched
+/// **outside** the boundary and crosses in as a value that cannot be read —
+/// never that the store is hard to reach from inside.
+///
+/// The socket is one this test owns, in a directory of its own, and nothing
+/// listens on it beyond accepting once.
+#[test]
+fn a_bound_turn_may_reach_a_unix_socket_nobody_showed_it() {
+    let at = PathBuf::from("/tmp").join(format!("alo-still-unix-{}", std::process::id()));
+    drop(fs::remove_file(&at));
+    let listening = std::os::unix::net::UnixListener::bind(&at).expect("a socket of our own");
+    let heard = thread::spawn(move || listening.accept().is_ok());
+
+    let (control, subject) =
+        a_turn_shown_no_destination("alo-still-unix", "unix", &at.to_string_lossy());
+
+    assert_eq!(
+        control,
+        Outcome::Refused(13),
+        "the boundary was not in force, so what the Unix socket did means nothing"
+    );
+    assert_eq!(
+        subject,
+        Outcome::Allowed,
+        "a bound turn was refused a Unix socket — which would be this machine enforcing          something no policy claims, and would break every local socket alo OS uses"
+    );
+    assert!(
+        heard.join().expect("the listener thread finishes"),
+        "the connection was allowed and never arrived"
+    );
+    drop(fs::remove_file(&at));
+}
+
 /// The work of a turn, which is a second process because a cgroup holds
 /// processes.
 ///
@@ -418,7 +465,13 @@ fn the_work_a_turn_does() {
     ) else {
         return;
     };
-    let reaching: SocketAddr = address.parse().expect("the parent named an address");
+    // A path for the Unix subject, an address for every other one — parsed
+    // where it is an address, so that a path is never silently read as one.
+    let reaching: SocketAddr = if subject == "unix" {
+        SocketAddr::from(([127, 0, 0, 1], 9))
+    } else {
+        address.parse().expect("the parent named an address")
+    };
 
     // **Before the control group**, for the one subject that is about what a
     // turn inherits. Everything else opens what it opens from inside.
@@ -465,6 +518,13 @@ fn the_work_a_turn_does() {
         "datagram" => match UdpSocket::bind("0.0.0.0:0")
             .and_then(|sending| sending.send_to(THE_BYTES, reaching))
         {
+            Ok(_) => "allowed".to_owned(),
+            Err(why) => why.raw_os_error().unwrap_or(0).to_string(),
+        },
+        // A Unix socket, which is not egress and is not this programme's to
+        // decide about. `ALO_STILL_ADDRESS` is a path rather than an address
+        // for this one.
+        "unix" => match std::os::unix::net::UnixStream::connect(&address) {
             Ok(_) => "allowed".to_owned(),
             Err(why) => why.raw_os_error().unwrap_or(0).to_string(),
         },

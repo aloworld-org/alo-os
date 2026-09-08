@@ -3,7 +3,9 @@
 **Status:** **PROPOSED — not accepted, and nothing in it is built.** It asks the
 repository owner one question, because the accepted documents answer it two
 different ways.
-**Date:** 2026-09-08
+**Date:** 2026-09-08, revised the same day after the owner declined the
+release-scope change this ADR first proposed, and after a measurement corrected
+its central claim about D-Bus.
 **Proposed by:** the model-selection workstream
 **Context:** `docs/features.md` (two lines, below),
 [ADR 0005](0005-applications-are-sandboxed-and-ask.md) (applications are
@@ -14,11 +16,12 @@ sandboxed and ask), [ADR 0013](0013-the-grant-is-enforced-by-the-kernel.md),
 
 ## The question in one line
 
-**Where does a provider's key actually live, and what may read it?** Nothing
-accepted says, and the two lines that come closest disagree about when it
-exists.
+**Where does a provider's key actually live, and what may read it?** The
+release-scope half is settled below — a v0.01 store and the v0.5 Secret portal
+are **distinct deliverables**, and nothing moves. What is left is the mechanism,
+its dependencies, and one decision that blocks them.
 
-## The disagreement, quoted
+## The apparent disagreement, and why it is not one
 
 `docs/features.md`, *Add your own provider in Settings*:
 
@@ -30,121 +33,147 @@ and, in the desktop section:
 > `[v0.5]` **Secret storage** — one keyring behind the Secret portal, so
 > applications stop inventing credential storage.
 
-So a v0.01 promise depends on a keyring, and the keyring is v0.5. Both can be
-true only if they are **two different things**: alo's own store for the
-providers a person adds, now; and the portal-backed one that other applications
-may use, later. That reading is reasonable and **it is not written anywhere**,
-which is why this is an ADR rather than a commit.
+The first revision of this ADR read those as one deliverable promised twice, and
+proposed moving the v0.01 clause. **That was wrong, the owner declined it, and
+the reason it was wrong is [ADR 0005](0005-applications-are-sandboxed-and-ask.md).**
 
-## What exists today
+**They are distinct deliverables.** ADR 0005 says third-party applications
+install sandboxed and reach the system **through portals** — *file access,
+screenshots, camera, printing, notifications, secrets* — and that a portal
+request is ADR 0001's grant model with "application" in place of "agent". So the
+v0.5 line is about the **portal**: the interface a Flatpak uses, so that
+applications stop each keeping their own credentials.
 
-- `alo_models::SecretRef` — *where a key lives in the keyring*, an opaque handle
-  that is deliberately not a key.
-- `alo_models::Secret` — a key for the length of one call: no accessor, no
-  `Display`, no `Serialize`, no `Clone`, a hand-written `Debug` that says
-  nothing, and one use — `carried_by`, which takes a request and gives it back
-  with the key on it.
-- `docs/contracts/person-settings.md` — the settings file has **no `key` field**
-  and the keyring name is derived as `provider/<name>`.
-- **Nothing behind the handle.** No store, no reader, no writer. A provider that
-  needs a key is chosen, persisted, and refused at the moment of asking.
+`alo-agentd` is not a sandboxed application. It is the system, running as the
+person. **A store for the person's own provider keys at v0.01 does not need the
+portal, and the portal at v0.5 does not deliver one.** One is an interface for
+other people's software; the other is where alo keeps a key somebody typed into
+its own settings panel.
 
-The abstraction is right and is not what is missing. What is missing is one
-implementation of it, and where that implementation puts bytes is a decision
-with consequences that outlive it.
+That settles the release-scope half: **nothing moves.**
 
-## What is not settled, and cannot be guessed
+## What specifically prevents the desktop secret service from shipping at v0.01
 
-**1. Where the bytes are.** A file alo owns, the desktop secret service over
-D-Bus, or the kernel keyring. These differ in what *locked*, *unavailable* and
-*denied* even mean.
+Not "it does not exist". Three named dependencies, each with an owner.
 
-**2. What protects them at rest.** Full-disk encryption is `[v0.5] Full-disk
-encryption, enrolled at install`. Until then a file store is protected by file
-permissions and nothing else. That may be acceptable — it is what most systems
-do — but it has to be **said**, because the v0.01 line's own justification is
-*so it cannot leak through a backup or a support bundle*, and a mode-0600 file
-in a home directory is exactly what a backup takes.
+**1. The image ships no Secret Service implementation.** `image/Containerfile`
+is `fedora-bootc:42` plus two binaries, two units, two directories and one
+description — *"There is no compositor in it, no desktop, no wallpaper and
+nothing to sign in at."* A keyring is a package and a unit that nobody has added.
 
-**3. What may read it — and this one is not obvious.** `alo-agentd` runs as the
-person, and a turn is one of its threads. [ADR 0013](0013-the-grant-is-enforced-by-the-kernel.md)
-means a bound turn may open only what its grant names, so:
+**2. `alo-agentd` is a system unit, and a Secret Service is a session one.**
+`image/usr/lib/systemd/system/alo-agentd.service` is `WantedBy=multi-user.target`,
+started at boot, `User=alo`, `Group=alo`, `SupplementaryGroups=alo-agent`. It
+runs **as the person** and has no session, no session bus and no `DBUS_SESSION_BUS_ADDRESS`.
+[ADR 0017](0017-the-agents-door-is-ours-and-not-in-the-session.md) put the
+agent's door outside the session **on purpose**, so this is a deliberate
+property rather than an oversight — and it is the dependency that needs a
+decision rather than work.
 
-- opening a key file **inside** a turn is refused by the kernel — correctly, and
-  it would break every keyed provider;
-- opening it **before** the turn and holding the descriptor is the
-  inherited-descriptor gap this workstream has already reproduced
-  (`what_a_turn_inherits.rs`), which is the one gap that moves contents past a
-  grant.
+**3. Unlock is tied to signing in.** A keyring unlocked by the login password
+needs the sign-in path to exist. `docs/features.md` promises `[v0.01] Boots on
+one certified machine, firmware to sign-in`, and that work belongs to the
+compositor and session workstream. Until a person signs in, there is no secret
+with which to unlock anything.
 
-**A file store therefore lands on an open security question.** A D-Bus or kernel
-keyring store does not: neither is a `file_open`, and a Unix socket is not egress
-(`deciding.rs` permits it explicitly). That is a real argument about mechanism
-rather than taste, and it is the single most useful thing in this ADR.
+## Whether an existing implementation can satisfy it
 
-## The options
+Yes, and the field is small. Nothing below is a store alo would be inventing.
 
-**A — a file alo owns.** `$XDG_DATA_HOME/alo/credentials`, mode 0600, read by
-the daemon. Cheapest, works with no session bus and no desktop, and it is the
-one that meets the v0.01 line as written. Costs: the boundary question above,
-protection by file permissions only until full-disk encryption, and it is
-precisely the *inventing credential storage* the v0.5 line exists to stop.
+| | Fits? | Why |
+|---|---|---|
+| **Secret Service** (`libsecret`; gnome-keyring or another provider) | **yes**, with dependencies 1–3 | The standard, and what *keyring* means on Linux. Locked, unavailable and denied are native states with real meanings rather than ones we invent |
+| **`systemd-creds`** | **no**, and worth saying why | It is already in the base and needs no session or bus — but it is for credentials an **administrator provisions to a unit**, decrypted by systemd at unit start from a root-only host key or the TPM. A person adding a provider at runtime cannot write one, and a service running as the person cannot decrypt one. Named here so it is not re-proposed |
+| **The kernel keyring** (`@u`) | **partly** | No daemon, no bus, no session — it works today for a system unit running as the person. **Nothing survives a reboot**, so the key is typed again after every restart. A real answer with a real price |
+| A file alo owns | — | The thing not to invent |
 
-**B — the desktop secret service, behind a portal.** What the v0.5 line
-describes, and what ADR 0005's sandboxed-and-ask shape already implies.
-*Locked*, *unavailable* and *denied* are native states with real meanings rather
-than ones we invent. It sidesteps the boundary question. Costs: it does not
-exist, it needs something running in the session, and a headless machine has no
-session at all — which matters because `alo-agentd` is a service.
+## The trust boundary, measured rather than assumed
 
-**C — the kernel keyring.** No file, cleared on logout, nothing to back up.
-Costs: it is a third mechanism nobody has asked for, it needs syscalls this
-workspace cannot make without `unsafe` or a new dependency, and a key that
-disappears on logout has to be typed again on every login.
+**The first revision of this ADR said a D-Bus or kernel-keyring store "lands on
+neither" of the boundary questions a file store lands on. That was wrong**, and
+the correction is the most useful thing here.
 
-## Recommendation
+`crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`, against the
+real loaded programme:
 
-**B, and therefore a decision about the v0.01 line.**
+- **`a_bound_turn_may_reach_a_unix_socket_nobody_showed_it`** — a turn bound to
+  one folder and shown no destination is refused a non-loopback address with
+  `EACCES` and **connects to a Unix socket in the same breath**. Deliberate:
+  `deciding.rs` permits it because *a Unix socket is not egress, and refusing it
+  would be enforcing something no policy claims*. So **a bound turn can reach
+  the session bus, or a keyring daemon's own socket, directly.**
+- **`a_connection_made_before_the_boundary_stays_usable_inside_it`** — a
+  connection opened before the turn stays usable inside it. A pooled D-Bus
+  connection held across a turn is that case exactly.
+- And `keyctl` is a **syscall**, which this boundary does not hook at all.
 
-The v0.5 line is right that applications inventing credential storage is the
-problem, and A is alo inventing one. B also avoids putting a credential file
-inside the reach of a question this workstream has open.
+**So none of the three mechanisms is isolated from a turn by the kernel
+boundary, and choosing between them on that basis would be choosing on a
+mistake.** What actually protects a credential is three things, and all of them
+are about *when* rather than *where*:
 
-But B cannot ship for v0.01, so **the v0.01 provider line needs an answer of its
-own**, and there are two honest ones:
+1. it is fetched **outside** the turn's boundary, in the daemon, exactly where
+   the endpoint is already resolved
+   ([ADR 0020](0020-a-question-is-carried-out-inside-the-turns-boundary.md));
+2. what crosses into the turn is an `alo_models::Secret` — no accessor, no
+   `Display`, no `Serialize`, no `Clone`, and a hand-written `Debug` that says
+   nothing;
+3. **the store handle is not held open across a turn**, which is the same
+   discipline ADR 0020 already applies to the HTTP client and to DNS.
 
-1. **Ship A as a stated interim** — alo's own store, named as such, with the
-   protection it really has written down, replaced by B when B exists. The
-   boundary question must be answered first, because a keyed provider that works
-   only outside a turn is not a working provider.
-2. **Move the clause.** Keep `Add your own provider` at v0.01 for providers that
-   need no credential — which **works today** — and move *the key goes to the
-   keyring* to v0.5 beside the store that makes it true. Nothing is promised
-   that does not exist, and nothing is built that has to be replaced.
+Point 3 is the one an implementation can get wrong quietly, and it is the one
+that must be tested rather than intended.
 
-Between those two the second is the one that promises only what it delivers, and
-the first is the one that gets a person using OpenAI on a v0.01 machine. That is
-a product call rather than a technical one.
+## The recommended architecture
 
-## What acceptance would need, whichever is chosen
+One, concrete.
 
-Named now so the work is finishable rather than open-ended. All four states, and
-none of them may fall back:
+- **Store:** the **Secret Service**, through `libsecret`, under the attributes
+  alo already derives — `provider/<the person's own name for it>`. Standard, not
+  invented, and what the v0.01 line's own word means.
+- **Who reaches it:** `alo-agentd`, as the person it already runs as. No new
+  login, no new capability; `CapabilityBoundingSet=` stays empty.
+- **When:** immediately before the question and **outside**
+  `carrying_out_a_departure` — beside the resolution ADR 0020 already does
+  there. **Opened and closed per retrieval.** Nothing is held across a turn.
+- **What crosses:** a `Secret`, and nothing else. `SecretRef` is unchanged; this
+  ADR adds an implementation behind it and changes no abstraction.
+- **Unlock:** at sign-in, by the login password, as on every other Linux desktop.
+- **Failure:** unavailable, locked, missing and denied each refuse in their own
+  words, and **none falls back** — not to plaintext, not to another provider,
+  not to another model.
 
-| State | What must happen |
+### Dependencies, in the order they block
+
+1. **A Secret Service in the image** — a package and a unit. Image work.
+2. **A session bus the daemon can reach.** This **collides with ADR 0017** and
+   is the one that needs a decision: either that ADR is amended to let the
+   daemon reach the person's session bus, or something in the session hands the
+   credential to the daemon over the door it already has at `/run/alo/1000`.
+   Both are defensible and they are different products.
+3. **Sign-in**, so that there is something to unlock with. Compositor and
+   session work.
+4. **A `libsecret` binding.** `libsecret` is C, behind a Rust crate — the same
+   shape as `aya` or `ureq`, and *not* a third language in this repository,
+   which is what `CLAUDE.md` forbids. Named so it is decided rather than
+   assumed.
+
+## The acceptance plan
+
+Nothing here is done until all of it passes. **The published routing test does
+not count toward it**: `the_key_reaches_the_chosen_one_and_the_other_hears_nothing`
+used the **local-service door** on loopback, because a plain-HTTP provider cannot
+be constructed. It establishes the pairing and it establishes **nothing about
+authenticated HTTPS operation through the daemon.**
+
+| Must be proved | Shape |
 |---|---|
-| **Unavailable** — no store on this machine | the question is refused, saying so; nothing is sent |
-| **Locked** — the store exists and will not open | refused, saying it is locked, which is a different thing to do about it |
-| **Missing** — a store, and no entry for this provider | refused, naming that this provider has no key here |
-| **Denied** — the store refuses this reader | refused, and **never retried against a different store** |
-
-And in every one of them: **no plaintext fallback, no other provider, no other
-model.** A refusal that quietly asked somewhere else would be the worst reading
-of ADR 0008's *never a silent fallback*, with a credential attached.
-
-Plus: a key never reaches a settings file, a record, a log, or any `Debug` —
-which `secret.rs` makes structural and which a store must not undo by holding
-bytes anywhere else.
+| **An authenticated HTTPS provider request through the production daemon path** | an owned TLS server, a synthetic credential in a real store, the question driven through `alo-agentd`, and the credential asserted **on the wire** at the far end |
+| The credential comes from the store, not from anywhere else | the store empty ⇒ refused; the store holding it ⇒ sent |
+| Unavailable / locked / missing / denied | four refusals, four sentences, **nothing sent in any of them** |
+| No fallback | in each of the four, no other provider and no other model is asked |
+| The store handle is not held across a turn | asserted, because it is the one thing an implementation gets wrong quietly |
+| The published guarantees still hold | settings refusals carry no credential (`41c9f1e`); a key is never rendered (`secret.rs`) |
 
 ## What this ADR does not decide
 
@@ -156,17 +185,20 @@ bytes anywhere else.
 
 ## The decision the owner must make
 
-> **1. Is a provider's key kept in a store alo owns (A), or behind the desktop
-> secret service (B)?** Recommended: B.
+> **1. Is the Secret Service the v0.01 store**, with dependencies 1–4 above —
+> a keyring in the image, a session bus the daemon can reach, sign-in, and a
+> `libsecret` binding? Recommended: yes.
 >
-> **2. Since B cannot ship for v0.01 — does `Add your own provider` ship with a
-> stated interim store, or does *the key goes to the keyring* move to v0.5 with
-> the store that makes it true?** Recommended: the second, and it is a product
-> call.
+> **2. How does the daemon reach it, given ADR 0017?** Either that ADR is
+> amended so `alo-agentd` may reach the person's session bus, or the session
+> hands the credential to the daemon over the door it already has. **This is
+> the decision that blocks the work**; the other three dependencies are
+> ordinary tasks with owners.
 >
-> **3. If a file store is chosen: may `alo-agentd` hold a credential descriptor
-> across a turn?** It is the inherited-descriptor gap, and a keyed provider
-> cannot work without an answer.
+> **3. If sign-in will not land in time for v0.01**, does the kernel keyring
+> hold the key in the meantime — a key re-entered after every reboot — or do
+> provider keys wait? **Not** a release-tier change either way: the promise
+> stays at v0.01 and the question is only which existing mechanism keeps it.
 
 Until these are answered, a provider that needs a credential is chosen,
 persisted, and refused at the moment of asking — which is what this machine does
