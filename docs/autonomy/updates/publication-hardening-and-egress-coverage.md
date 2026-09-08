@@ -123,8 +123,17 @@ whole command and the loop appends the prompt as the last argument, so there is
 no wrapper script between the supervisor and what it actually runs — one fewer
 file to drift, and one fewer place for a flag nobody reviewed.
 
-Found by trying to start the loop rather than by reading it, which is where the
-two `git status --porcelain` parsing bugs in `repository.rs` came from as well.
+And the task is now written to the worker's **standard input** rather than
+appended as an argument. Since Rust 1.77 a `.cmd` or `.bat` — which is what an
+npm-shipped agent is on Windows — refuses arguments it cannot quote safely, and
+a prompt with newlines in it is exactly that. The failure reads `batch file
+arguments are invalid` and looks like a broken setting rather than a platform
+rule. `tools/dev-loop` feeds its own worker the same way, for the same reason.
+
+Both were found by trying to start the loop rather than by reading it, which is
+where the two `git status --porcelain` parsing bugs in `repository.rs` came from
+as well. The loop stopped visibly and preserved everything on each of the three
+attempts, which is the behaviour under test rather than an accident.
 
 ## Part two — the egress coverage audit
 

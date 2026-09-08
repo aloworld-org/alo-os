@@ -31,13 +31,14 @@
 //!
 //! # It is opt-in, and its absence is not a failure
 //!
-//! `ALO_KERNEL_LOOP_WORKER` names the **whole command** up to the prompt, which
-//! the loop appends as the last argument — `claude
+//! `ALO_KERNEL_LOOP_WORKER` names the **whole command**, and the task is
+//! written to the worker's standard input — `claude
 //! --dangerously-skip-permissions -p` on this machine. Without it the loop
 //! launches nothing and says so: it waits for work to be handed over by a person, which
 //! is the arrangement every task so far has used. Making an agent run by
 //! default is not something a supervisor should decide for whoever started it.
 
+use std::io::Write as _;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -76,13 +77,39 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
 
     let mut child = Command::new(&program)
         .args(&args)
-        .arg(asked_of_it(task))
         .current_dir(at)
-        .stdin(Stdio::null())
+        .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
         .map_err(|why| format!("the worker `{program}` could not be started: {why}"))?;
+
+    // **The task goes in on stdin, not as an argument**, and it is not a style
+    // choice. Since Rust 1.77 a `.cmd` or `.bat` — which is what an npm-shipped
+    // agent is on Windows — refuses arguments it cannot quote safely, and a
+    // prompt with newlines in it is exactly that; the failure reads `batch file
+    // arguments are invalid` and looks like a broken setting. `tools/dev-loop`
+    // feeds its worker the same way for the same reason. The pipe is closed
+    // straight afterwards, because a worker waiting on a handle nobody will
+    // write to again is a worker that runs until its deadline.
+    match child.stdin.take() {
+        Some(mut asking) => {
+            if let Err(why) = asking.write_all(asked_of_it(task).as_bytes()) {
+                drop(child.kill());
+                drop(child.wait());
+                return Err(format!(
+                    "the worker `{program}` could not be told what to do: {why}"
+                ));
+            }
+        }
+        None => {
+            drop(child.kill());
+            drop(child.wait());
+            return Err(format!(
+                "the worker `{program}` has no stdin to be told anything on"
+            ));
+        }
+    }
 
     let until = Instant::now() + AT_MOST;
     loop {
@@ -119,8 +146,9 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
 /// and what it really runs, which is one more file to drift and one more place
 /// for a flag nobody reviewed.
 ///
-/// The prompt is appended as the last argument, so whatever makes the program
-/// take one there belongs in the setting.
+/// The task itself is written to the worker's standard input rather than
+/// appended here, so whatever makes the program read one from there belongs in
+/// the setting.
 ///
 /// [`None`] for a setting that is empty or only spaces.
 fn as_a_command(named: &str) -> Option<(String, Vec<String>)> {
@@ -162,6 +190,8 @@ fn whether_it_finished(named: &str, success: bool, code: Option<i32>) -> Result<
 /// loop to be able to publish anything. Deliberately short on instructions
 /// about *how*: the repository's own documents say that at length, and a prompt
 /// that restated them would be a second copy to drift.
+///
+/// Written to the worker's standard input by [`ran_on`].
 fn asked_of_it(task: &Task) -> String {
     format!(
         "You are the kernel-enforcement workstream's development worker in this checkout.\n\
@@ -227,6 +257,35 @@ mod tests {
     #[test]
     fn a_worker_that_finished_is_not_by_itself_evidence_of_anything() {
         assert_eq!(whether_it_finished("claude", true, Some(0)), Ok(()));
+    }
+
+    /// **The task a worker is given names the task and demands a handoff.**
+    ///
+    /// Short, because everything about *how* is in documents the worker is
+    /// told to read and a prompt that restated them would be a second copy to
+    /// drift. But these four things cannot be left to drift: which task it is,
+    /// that it publishes nothing itself, that it produces a handoff, and that
+    /// the handoff carries evidence. A prompt missing any of them produces work
+    /// the loop then refuses, after forty-five minutes.
+    #[test]
+    fn the_task_a_worker_is_given_names_it_and_demands_a_handoff() {
+        let asked = asked_of_it(&Task {
+            number: 5,
+            named: "Documenting the filesystem mutations that remain unwatched".to_owned(),
+            done: false,
+            blocked: false,
+            after: Vec::new(),
+        });
+
+        assert!(asked.contains("Task 5"), "{asked}");
+        assert!(
+            asked.contains("Documenting the filesystem mutations that remain unwatched"),
+            "{asked}"
+        );
+        assert!(asked.contains("Do not commit and do not push"), "{asked}");
+        assert!(asked.contains(".kernel-loop/handoff.toml"), "{asked}");
+        assert!(asked.contains("evidence"), "{asked}");
+        assert!(asked.contains("write no handoff"), "{asked}");
     }
 
     /// **The setting carries the flags, not just the program**, because no
