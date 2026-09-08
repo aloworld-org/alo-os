@@ -16,6 +16,7 @@ mod window_close;
 mod window_move;
 mod window_placement;
 mod window_raise;
+mod window_resize;
 mod window_size;
 mod window_switch;
 use support::{Application, Fixture};

@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native resize calculations keep the opposite edge anchored and respect
+  application size limits.** All eight edges/corners use committed window
+  geometry; invalid targets and excessive values refuse. Calculating a resize
+  leaves windows and typing unchanged. This completes the geometry component;
+  interactive resize protocol handling remains next. Evidence:
+  `docs/autonomy/updates/constrained-edge-resize-geometry.md`.
+
 - **Applications can request a window drag from a held pointer press.** The
   native shell moves that window, keeps typing with its existing recipient, and
   ends the drag on release or cancellation. Forged and reused press serials do

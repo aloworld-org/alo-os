@@ -50,6 +50,11 @@ pub(crate) fn trees(
 
 /// Protocol geometry is clamped to the surface tree, as required by XDG shell.
 pub(crate) fn geometry_origin(surface: &WlSurface) -> Point<f64, Logical> {
+    geometry(surface).loc
+}
+
+/// Committed window geometry, including its effective surface-tree bounds.
+pub(crate) fn geometry(surface: &WlSurface) -> Rectangle<f64, Logical> {
     let bounds = tree_bounds(surface);
     with_states(surface, |states| {
         states
@@ -59,7 +64,6 @@ pub(crate) fn geometry_origin(surface: &WlSurface) -> Point<f64, Logical> {
             .geometry
             .and_then(|geometry| geometry.to_f64().intersection(bounds))
             .unwrap_or(bounds)
-            .loc
     })
 }
 

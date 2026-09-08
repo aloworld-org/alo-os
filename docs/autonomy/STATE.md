@@ -12984,3 +12984,46 @@ owed; physical laptop/GPU workstation acceptance follows VM image integration.
 No release or hardware certification. No staging, commit, push, other checkout
 edit, tools/dev-loop change, worker/loop launch, identity change, physical
 installation or unrelated host change. Component ready for supervisor integration.
+
+## 2026-09-08 - Constrained edge resize geometry
+
+Initial tree clean. Read constitution, delivery order, shared-main/report rules,
+current queue/STATE tail, feature/roadmap sections, ADRs 0002/0010 and application
+contracts. All published task report filenames were already referenced in STATE
+at iteration start; no report reconciliation was outstanding. Reports arriving
+during publication remain for next iteration. No contributor-owned work taken.
+
+Selected the complete geometry component of interactive resize in QUEUE before
+implementation. `window_resize.rs` captures mapped-root committed scene bounds
+and client limits, calculates eight edge/corner sizes and separately anchors the
+client's actual committed size. Fixed initial deltas avoid drift. Selected axes
+clamp at positive client limits while exact cooperative sizing remains unchanged.
+Malformed delta/size, excessive geometry, impossible limits and ineligible roots
+refuse. Immutable snapshots carry no authority and cannot mutate the scene.
+Public rustdoc and `docs/contracts/native-window-resize.md` state the boundary.
+
+Three unit and four real-client tests verify all-edge mathematics, crossing,
+limits/refusal, committed versus pending/acknowledged state, effective clipping,
+foreign/child/popup/unmapped/dead refusal, remapping, excessive child bounds,
+unchanged configuration/stacking and normal keyboard/pointer isolation. WSLg
+GLES checks preserve each of 6,400 pixels for all eight edges; full offscreen and
+nested popup/cursor regression pass, nested submits 115 client surfaces.
+
+Ubuntu WSL2 Rust 1.98.0 and WSLg socket/eight development libraries verified.
+Initial default PATH lacked rustc; explicit /root/.cargo/bin PATH resolved it.
+No dependencies, services or shared kernel/BPF state changed. Focused six tests
+passed before adding the seventh. Two clippy attempts found private-doc omissions
+and a test-helper panic; fixed without allowances (tests return Result). Final
+Linux affected clippy, 141 unit + 119 lifecycle + three socket tests, three
+compile-fail doctests, warnings-denied rustdoc, examples and Linux fmt pass. Final
+diff review and `git diff --check` passed. Windows affected
+fmt/clippy/tests passed, executing zero Linux-only runtime cases. Full independent
+supervisor workspace/rustdoc/BPF gates have not run for this task.
+
+Own report: `docs/autonomy/updates/constrained-edge-resize-geometry.md`, with exact
+commands and evidence limits. XDG resize press authority, live-limit validation,
+resizing configure/ack/commit state and cancellation are the next component.
+The geometry component is complete; interactive resize, window management and
+release remain unchecked. Physical desktop/GPU workstation records follow image
+VM integration; WSLg does not certify DRM/seat entry or physical hardware.
+No staging, commit, push, supervisor change, other checkout edit or worker launch.

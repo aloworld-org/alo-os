@@ -5,6 +5,30 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed constrained edge resize geometry 2026-09-08:** all eight edges,
+client limits, bounded deltas and actual-size anchoring are implemented as a
+trusted immutable calculation component. Three unit/four real-client tests,
+Linux affected clippy, 263 tests plus three doctests, rustdoc/example build,
+Windows affected checks and WSLg offscreen/nested graphics pass. Full-frame
+preservation covers 6,400 pixels for each edge. Full supervisor gates pending;
+exact final checks and limits: `updates/constrained-edge-resize-geometry.md`.
+Next executable component: XDG interactive resize authorization and transaction
+lifetime using this geometry, including live limit revalidation, resizing state,
+configure acknowledgement, placement only on committed actual size, final-release
+configuration and leave/unmap/disconnect cancellation. Test invalid serial/edge,
+foreign target, normal keyboard isolation and real resized GLES frames. Do not
+repeat geometry implementation or call interactive resize complete.
+
+**Selected constrained edge resize geometry (desktop worker, 2026-09-08):**
+complete a trusted mapped-root snapshot and bounded all-edge/corner resize
+calculation using committed geometry and client limits. Calculate the anchored
+origin separately from the requested size so only a client's committed size can
+move the opposite edge. Acceptance: every edge, crossing/min/max/invalid-input
+refusal, real-client commit/target isolation, unchanged input/configuration and
+scene integration; affected fmt, tests, clippy and rustdoc. This is the geometry
+component of interactive resize, not the protocol drag feature. Next: XDG press
+authority, resizing configure/ack lifecycle and cancellation using this component.
+
 Published credential reports reconciled 2026-09-08: settings diagnostic exposure
 is fixed; ADR 0022's accepted binding is now explicit `secret-service`/`zbus`.
 The libsecret install/binding blockers are superseded. Claude's next dependency

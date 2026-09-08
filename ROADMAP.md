@@ -1228,6 +1228,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Constrained edge resize geometry (2026-09-08): immutable mapped-root
+    snapshots use committed scene bounds/limits; all eight edges clamp moving
+    dimensions and anchor using the actual client size. Three unit and four
+    real-client tests, affected Linux clippy/tests/rustdoc/examples and WSLg
+    all-edge 6,400-pixel preservation checks pass. Windows affected checks pass
+    but run no Linux runtime cases. Exact commands and limits:
+    `docs/autonomy/updates/constrained-edge-resize-geometry.md`. Next: XDG resize
+    press authority, configure/ack/commit state and cancellation. Geometry is
+    complete; interactive resize and window management remain unfinished.
+    Full independent supervisor gates remain pending.
   - Interactive window movement (2026-09-08): XDG requests require the current
     seat's held press on the exact mapped root or its subsurface tree. Drag input
     is consumed; release, leave, unmap and disconnect cancel ownership. Six
