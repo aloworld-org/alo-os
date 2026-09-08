@@ -12338,3 +12338,72 @@ GPU context-loss/failed-disable recovery and certified laptop/GPU-workstation
 physical records remain owed. Context lifetime complete; compositor/release
 unchecked. No staging, commit, push, other checkout edits, worker/loop launch,
 physical installation or tools/dev-loop modification.
+
+---
+
+## 2026-09-08 - Libinput seat-event routing
+
+Read constitution, delivery/ownership/report rules, current queue and journal tail,
+v0.01 feature/roadmap, ADR 0002 and invocation-only contract boundary. Initial tree
+clean. Selected this complete component in QUEUE before implementation. No other
+checkout accessed; Claude retains the security workstream.
+
+Reconciled the two published reports not yet referenced at iteration start:
+`docs/autonomy/updates/network-boundary-decisions-proposed.md` and
+`docs/autonomy/updates/one-kernel-two-checkouts.md`. The first corrects the relay
+entry point to Answers::Service; provider ThisMachine sources refuse before a
+socket opens. ADR 0021 and inherited-descriptor/use-time options remain proposals.
+The later report supersedes B's recommendation with C1 truthful provenance and
+permit-and-label under ThisMachineOnly; publication is not acceptance. C2/C3 need
+runtime/image dependencies and separate decisions. No loopback-proxy, inherited
+socket/descriptor or use-time gap closes and no v0.01 promise is narrowed.
+
+Waited's abstract Unix socket now serializes kernel suites across both checkouts;
+bounded timeout fails without removing pins, signalling holders or bypassing the
+lock. Reviewed waiting.rs and the relevant provider refusal. Contributor reports
+five cross-process tests, four unit tests, 25 kernel test binaries and full Linux/
+BPF gates; these were not rerun by this worker. Children must not reacquire their
+parent's lock, nesting remains forbidden, and holder notes are diagnostic only.
+An already-running old binary cannot acquire the newly published coordination.
+The proposal-only publication limitation was preserved and the revised proposal
+travelled with the lock code; no gate bypass was authorized. These reports are
+consolidated in all four shared progress documents, with no release tick.
+
+Server::libinput_update now extracts evdev keys, relative/normalized absolute
+pointer events, buttons and modern scroll. DirectSeatEvent applies seat-wide
+first-press/last-release counts. Any device removal or context Reset clears held
+input, modifiers, focus and popup/drag authority conservatively across the seat.
+Malformed codes/counts/scroll values refuse; legacy duplicate scroll events are
+ignored. No borrowed device references survive routing. The callback must still
+run under SeatInput authority polling and propagate errors and flush cleanup.
+No agent IPC, context capture, user-facing strings, dependency changes, engine
+patches or unsafe/lint exemptions. Decisions, exact commands and limits:
+`docs/autonomy/updates/libinput-seat-event-routing.md`.
+
+Ubuntu Rust and eight graphics/input pkg-config prerequisites checked. WSLg
+present, /dev/dri absent; no package/kernel/service changes needed. Nine new tests
+cover scroll conversion/refusal and real Wayland multi-device counts, cleanup,
+malformed input/activity, motion/scroll/disconnect and popup-serial refusal. One
+uses actual libinput empty-seat dispatch and pause/reset wired to client release,
+leave and modifier reset. Populated raw event extraction is compiled, not
+runtime-proven; no physical evdev/hotplug evidence is claimed.
+
+Windows fmt, affected clippy and tests passed (zero Linux-only cases). Linux
+focused tests and affected all-target clippy/fmt passed; shell totals: 135 unit,
+80 client-lifecycle, three socket tests and three compile-fail doctests. Linux
+warnings-denied rustdoc and examples passed. WSLg golden pixels/SHM refusal and
+nested popup/cursor regression passed with 115 surfaces and expected diagnostics.
+Initial test compilation needed an AsErrno-compatible fixture; one initial wire
+assertion mistook pointer enter for motion. Corrected that assertion. Clippy
+identified test placement, indexing, expect calls and a test panic; corrected
+without exemptions. All final affected checks pass. Diff review and git diff
+--check passed. Full independent workspace/rustdoc/BPF gates remain supervisor
+work and were not run here.
+
+Next: connect SeatInput to DirectSession's latched polling and direct frame loop,
+including reset/error flush before output retirement. Safe standalone GLES, real
+DRM/seat/device acquisition, GPU context-loss/failed-disable recovery and physical
+certified laptop/GPU-workstation records remain owed. Event routing complete;
+compositor/release unchecked. No staging, commit, push, worker/loop launch, other
+checkout edit, tools/dev-loop change or physical installation. Reports arriving
+during publication are reconciled next iteration.

@@ -12,6 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Direct input now routes keyboard, pointer and scroll events into the native
+  desktop's validated input paths.** Multiple devices share first-press/last-release
+  behavior; device removal releases held input and cancels drags and popup grabs.
+  Nine new tests include real Wayland clients and an empty libinput seat reset.
+  Live seat/frame-loop wiring and physical input acceptance remain unfinished.
+  Report: `docs/autonomy/updates/libinput-seat-event-routing.md`.
+
+- **Kernel tests in separate checkouts now wait for each other safely.**
+  Reconciled Claude's shared-lock report and its process-test evidence; timeout
+  refuses without disturbing another holder. The accompanying privacy proposal
+  remains unaccepted and closes no security gap. Reports:
+  `docs/autonomy/updates/one-kernel-two-checkouts.md` and
+  `docs/autonomy/updates/network-boundary-decisions-proposed.md`.
+
 - **The direct-input context now stops dispatching when seat authority is lost.**
   It suspends devices before requesting input reset, refuses reuse after pause or
   failure, and retains cleanup errors. Eight new tests include real libinput

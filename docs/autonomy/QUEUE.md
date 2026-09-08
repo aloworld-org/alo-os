@@ -5,12 +5,26 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+Published security follow-ups reconciled 2026-09-08:
+`updates/network-boundary-decisions-proposed.md` corrects the loopback-proxy
+entry point to Answers::Service; the provider path refuses ThisMachine sources.
+`updates/one-kernel-two-checkouts.md` implements the shared abstract-socket test
+lock, with five process tests, four unit tests and contributor-reported kernel/
+workspace/BPF gates. The lock is present in this checkout; no kernel tests were
+rerun by this desktop worker. Timeout fails without disturbing another holder.
+ADR 0021 remains proposed: the later report recommends C1 truthful provenance
+and permit-and-label under ThisMachineOnly, superseding the earlier B recommendation.
+Neither recommendation is accepted. Loopback relays, inherited descriptors/sockets
+and use-time enforcement remain open; C2/C3 require runtime/image dependencies
+and separate decisions. No release tick or security-policy change follows.
+Claude retains the security workstream; do not repeat the completed proposal.
+
 Kernel follow-up reconciled 2026-09-08: publication hardening and the unwatched
 mutation/inherited-descriptor audits are published through b010137. These audits
 do not close their gaps. The production-reachable loopback-proxy case keeps the
 egress requirement open; descriptor isolation and use-time enforcement require
-decisions. Claude's next assignment is `claude-network-decision-proposal.md`,
-not a repeat of completed audits or authority to change security policy. Source
+decisions. Claude's `claude-network-decision-proposal.md` assignment is now
+published and reconciled above; it is not authority to change security policy. Source
 report paths and limitations are recorded in STATE.md.
 
 The owner has authorized continuous work toward the full v0.01 release and a
@@ -77,6 +91,24 @@ not take that workstream.
   v0.01 compositor feature and roadmap line. Break down complete components
   with tests in this entry before implementing; carry input, real clients,
   nested development and direct-display integration through to their gates.
+  **Selected libinput seat-event routing (desktop worker, 2026-09-08):**
+  translate keyboard, relative/absolute pointer, button and modern scroll events
+  into existing validated Server routes. Aggregate identical keys/buttons across
+  devices; reset focus, held input and grabs on removal or context retirement.
+  Acceptance: happy/refusal and multi-device Wayland tests, scroll conversion,
+  real empty-seat reset integration, affected fmt/clippy/tests/rustdoc and WSLg.
+  Live DirectSession polling/frame-loop wiring and physical acquisition remain.
+  **Completed libinput seat-event routing 2026-09-08:** borrowed event translation
+  through Server validation, multi-device key/button counts, modern scroll units
+  and conservative removal/reset cleanup. Nine new tests; Linux shell 218 tests
+  and three doctests, affected Windows/Linux fmt/clippy/tests, Linux rustdoc/
+  examples and WSLg regression (115 surfaces) pass. Report:
+  `updates/libinput-seat-event-routing.md`. Next executable component: connect
+  SeatInput to DirectSession's latched poll and frame loop, flushing reset/error
+  events before retiring output. Raw populated libinput extraction/hotplug remains
+  runtime-unverified; test injections and a real empty seat are not hardware
+  evidence. Safe standalone GLES, real DRM/seat, recovery and physical acceptance
+  remain owed. Full supervisor gates pending; compositor/release unchecked.
   **Selected seat-checked libinput context lifetime (desktop worker, 2026-09-08):**
   own a udev context through SessionInput; validate activity and seat names before
   assignment. Poll seat authority before dispatch and each delivery, suspend/drop

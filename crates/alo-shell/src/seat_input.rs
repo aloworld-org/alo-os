@@ -70,9 +70,9 @@ impl SeatInput {
 
     /// Poll before reading and before each event; reset on any failure.
     ///
-    /// The handler translates keyboard/pointer events using existing Server
-    /// validation. It must handle device removal; this owner provides lifetime
-    /// enforcement, not per-device key accounting. A handler error also retires
+    /// `Server::libinput_update` translates keyboard/pointer events and resets
+    /// the seat on removal. This owner provides lifetime enforcement, not input
+    /// routing; map handler errors to io::Error. A handler error also retires
     /// the context. Reset must be infallible (queue cleanup for a later flush).
     pub fn dispatch(
         &mut self,

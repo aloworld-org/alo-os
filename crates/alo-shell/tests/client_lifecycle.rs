@@ -4,6 +4,7 @@
 mod cursor;
 mod direct_keyboard;
 mod direct_pointer;
+mod direct_seat;
 mod input;
 mod output_metadata;
 mod pointer;

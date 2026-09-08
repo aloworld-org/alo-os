@@ -456,6 +456,15 @@ compositor is not required for, which is why it runs unbroken.
         established/inherited sockets, loopback proxies and physical acceptance
         remain open; the enforcement requirement and machine box stay unchecked.
         Report: `docs/autonomy/updates/network-egress-enforcement.md`.
+        **Security follow-ups reconciled 2026-09-08:** reports
+        `docs/autonomy/updates/network-boundary-decisions-proposed.md` and
+        `docs/autonomy/updates/one-kernel-two-checkouts.md` correct the relay door
+        to Answers::Service (the provider door refuses ThisMachine), and serialize
+        kernel tests across checkouts with a bounded abstract-socket lock. Five
+        process tests, four unit tests and full gates are contributor-reported,
+        not rerun here. ADR 0021 is still proposed; its revised C1 recommendation
+        is not approval or implementation. Loopback-proxy, inherited-descriptor/
+        socket and use-time gaps remain; no enforcement or machine box closes.
         **Production-path audit reconciled 2026-09-07:**
         `docs/autonomy/updates/end-to-end-network-enforcement.md` traces and tests
         that file verbs enter Bounding but provider requests do not. Destination
@@ -733,6 +742,16 @@ which made a completely consistent rule look like work being taken out of turn.
       *Found missing by an audit of the ADRs: a consequence of ADR 0002 with no
       line here and no entry in `docs/features.md`*
 - [ ] **Compositor**: Wayland via Smithay, one display, keyboard and pointer
+  - Libinput seat-event routing (2026-09-08): keyboard, relative/absolute pointer,
+    button and modern scroll translation; first-press/last-release device counts
+    and conservative whole-seat removal/reset cleanup. Nine new tests include
+    client-wire refusal, popup/drag cleanup and real empty-seat reset delivery.
+    Linux shell 218 tests and three doctests, affected Windows/Linux checks,
+    Linux rustdoc/examples and WSLg regression (115 surfaces) pass. Report:
+    `docs/autonomy/updates/libinput-seat-event-routing.md`. Next: live DirectSession
+    polling/frame-loop wiring. Populated input acquisition/hotplug, safe standalone
+    GLES, real DRM/seat, recovery and physical acceptance remain owed. Supervisor
+    full publication gates pending; compositor and release remain unchecked.
   - Seat-checked libinput context lifetime (2026-09-08): udev assignment through
     SessionInput, seat checks before dispatch/delivery and terminal suspension
     before reset on failure. Eight new tests include real empty-seat integration
