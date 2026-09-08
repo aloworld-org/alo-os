@@ -9,6 +9,7 @@ mod input;
 mod output_metadata;
 mod pointer;
 mod popups;
+mod shortcut_dispatch;
 mod support;
 mod window_activation;
 mod window_close;

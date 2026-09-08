@@ -5,6 +5,36 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Selected configurable window command dispatch (desktop worker, 2026-09-08):**
+implement the trusted chord-to-window-action bridge using alo-shortcuts' current
+person-owned bindings. Execute next/previous window and cooperative focused-root
+close; refuse unavailable actions and missing targets explicitly. Acceptance:
+real Wayland tests for rebinding/clearing/conflicts, focus versus stacking,
+one close request, unsupported actions and missing keyboard/empty display;
+GLES readback through configured dispatch, affected fmt/clippy/tests/rustdoc.
+Raw keyboard layout matching and consumed press/release isolation in nested/direct
+input are the next component, not claimed complete by this bridge.
+
+**Completed configurable window command dispatch 2026-09-08:** the trusted
+Server bridge resolves current Shortcuts and invokes cycling or focused-root
+cooperative close. Five real-client tests cover rebinding/clearing/conflicts,
+unsupported actions, focus versus stacking, empty/no-keyboard refusal and popup
+ownership. Linux shell 241 tests and three doctests, affected Windows/Linux
+fmt/clippy/tests, Linux rustdoc/examples and WSLg configured GLES pixels plus
+nested regression (115 surfaces) pass. Exact commands and limits:
+`updates/configurable-window-command-dispatch.md`. Next: layout-aware raw-key
+matching and consumed press/release/repeat isolation shared by nested/direct input,
+then settings loading and controls. The action bridge is complete; keyboard
+shortcuts, compositor and release remain unchecked. Supervisor full gates and
+physical keyboard, DRM/seat, GPU/recovery and certified-machine records remain owed.
+
+Published `updates/three-primary-model-choices.md` reconciled 2026-09-08:
+the owner specifies Local models, Your own API provider and Alo as the three
+main source choices, with no-agent opt-out and paired-machine placement pending.
+Advanced privacy settings are separate; ADR 0021 remains proposed. Documentation
+only, with contributor diff-check evidence; no runtime checks or release ticks.
+Alo hosting retains its later-release tier. Claude's workstream is unchanged.
+
 Published model-choice gap coverage reconciled 2026-09-08:
 `updates/model-choice-and-what-alo-can-verify.md` adds two production Service-door
 tests showing a forwarding service still receives local provenance, a quiet

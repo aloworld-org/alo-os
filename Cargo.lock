@@ -294,6 +294,7 @@ dependencies = [
 name = "alo-shell"
 version = "0.1.0"
 dependencies = [
+ "alo-shortcuts",
  "drm",
  "drm-ffi",
  "rustix 1.1.4",

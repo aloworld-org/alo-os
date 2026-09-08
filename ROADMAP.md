@@ -12,6 +12,13 @@ New work uses descriptive task names and individual reports. Only the integratio
 owner consolidates those reports into this roadmap and the shared progress files;
 historical queue identifiers remain secondary cross-references.
 
+Three-primary-source direction reconciled 2026-09-08 from
+`docs/autonomy/updates/three-primary-model-choices.md`: Local models, Your own API
+provider and Alo form the main choices; no-agent opt-out remains and paired-machine
+placement is undecided. Advanced privacy settings are separate. Documentation-only
+diff-check evidence; no runtime verification, enforcement change, release tick or
+promotion of Alo hosting's later-release tier. ADR 0021 remains proposed.
+
 Model-choice gap coverage reconciled 2026-09-08:
 `docs/autonomy/updates/model-choice-and-what-alo-can-verify.md` records two
 production Service-path gap tests and contributor-reported Linux/BPF gates.
@@ -709,6 +716,14 @@ compositor is not required for, which is why it runs unbroken.
         the compositor's and the settings panel's, and neither exists
 
 - [ ] Keyboard shortcuts a person can change
+  - Configurable window command dispatch (2026-09-08): current bindings drive
+    native next/previous window and focused-root cooperative close, with conflict,
+    unbound, unsupported-action and missing-target handling. Five real-client
+    tests and configured GLES readback are recorded in
+    `docs/autonomy/updates/configurable-window-command-dispatch.md`. This is the
+    action bridge only: layout matching, consumed press/release isolation,
+    nested/direct input wiring and settings UI/persistence remain owed. Full
+    supervisor gates and physical acceptance remain; feature stays unchecked.
   - [x] **The code.**
         `alo-shortcuts` — the shortcuts, rebindable, nothing quietly taking
         one away, and every row and key of the panel said in the language

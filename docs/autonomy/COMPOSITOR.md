@@ -1,5 +1,23 @@
 # Native compositor development
 
+## Configured window commands (2026-09-08)
+
+`Server::dispatch_window_shortcut(&Shortcuts, Chord)` connects the person's
+current bindings to next/previous window and cooperative close. No cached
+defaults override changes. Unbound or conflicting personal bindings return None;
+other resolved actions explicitly return Unsupported. Close uses actual keyboard
+ownership (including a grabbed popup's root), never the frontmost fallback, and
+queues one XDG request without retrying, killing or dismissing a popup.
+Cycling preserves the underlying activation error, including partial changes.
+
+This trusted native API is an action bridge only. Raw keyboard layout lookup,
+consumed press/release and repeat isolation, nested/direct input integration,
+settings persistence and native settings controls remain unfinished. Callers must
+not treat this as an input filter. Each call is an explicit command; success is
+queued protocol work, not proof that the client closed or rendered. No agent
+endpoint or context capture is added; the application verbs retain grants and
+single-approval requirements. Diagnostic errors are not settings-panel strings.
+
 Item 33 implements the v0.01 Smithay compositor in `docs/features.md`, following
 ADR 0002. The first component is `crates/alo-shell`: a reusable Linux Wayland
 server library. The second adds nested Wayland/GLES rendering, described below.

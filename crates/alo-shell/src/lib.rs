@@ -54,6 +54,7 @@ mod seat_input;
 mod server;
 mod session_device;
 mod session_input;
+mod shortcut_dispatch;
 mod socket;
 mod surfaces;
 mod window_activation;
@@ -93,6 +94,7 @@ pub use scene_replacement::SceneReplacement;
 pub use scene_scanout::ActiveScene;
 pub use server::Server;
 pub use session_device::SessionError;
+pub use shortcut_dispatch::ShortcutDispatchError;
 pub use socket::SocketError;
 
 pub use seat_input::{InputDispatchError, InputUpdate, SeatInput};

@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Configured window commands now reach native window switching and close.**
+  The compositor honors current rebinding, clearing and conflict rules. Close
+  asks the keyboard-focused window once, even when another window is on top;
+  unavailable actions refuse explicitly. Raw keyboard interception and settings
+  controls remain unfinished. Evidence:
+  `docs/autonomy/updates/configurable-window-command-dispatch.md`.
+
+- **Model setup direction now distinguishes three main sources:** Local models,
+  Your own API provider and Alo, with no-agent opt-out. Privacy settings remain
+  separate; no runtime behavior, enforcement or release tier changed. Reconciled
+  documentation evidence: `docs/autonomy/updates/three-primary-model-choices.md`.
+
 - **The compositor can cycle through every mapped window in either direction.**
   Selection keeps a stable order while bringing each window forward, removes
   retired windows and preserves keyboard and popup isolation. Four real-client

@@ -12692,3 +12692,60 @@ standalone GLES, full DRM/seat entry, populated input/hotplug, GPU/disable recov
 and certified physical laptop/GPU workstation records remain owed. No staging,
 commit, push, other repository edit, worker/loop launch, tools/dev-loop change or
 physical installation. Reports arriving during publication reconcile next time.
+
+---
+
+## 2026-09-08 - Configurable window command dispatch
+
+Read constitution, delivery/shared-main/report rules, current queue, STATE tail,
+v0.01 feature/roadmap lines, ADRs 0002/0010 and application-verb contracts.
+Initial tree clean. Reconciled the sole published report absent from STATE at
+iteration start: `docs/autonomy/updates/three-primary-model-choices.md`.
+Its documentation-only diff-check evidence supports Local models, Your own API
+provider and Alo as the three main source choices, no-agent opt-out and separate
+advanced privacy settings. Paired-machine UI placement is undecided; ADR 0021
+remains proposed and Alo hosting retains its later-release tier. No runtime
+behavior or release gate changed. Consolidated all four shared documents;
+Claude retains security/model-choice work. Later reports reconcile next iteration.
+
+Pinned Smithay EGLDisplay::new remains unsafe under workspace forbid; Ubuntu
+WSLg and graphics/input prerequisites are available, /dev/dri absent. Selected
+DELIVERY's first independent window-management component and recorded acceptance
+before coding. The complete action bridge dispatch_window_shortcut resolves the
+current Shortcuts snapshot to stable next/previous window or cooperative close.
+Rebindings/clearing take effect immediately; conflicting personal chords do
+nothing, unsupported actions explicitly refuse. Close uses keyboard/popup root
+ownership rather than stacking, queues one request and preserves client choice
+and popup grabs. Switch errors preserve partial activation detail. No raw-key
+filter, agent endpoint/context capture, unsafe exception, engine patch or new scope.
+
+Report: `docs/autonomy/updates/configurable-window-command-dispatch.md`.
+Five new real-client tests cover bindings/conflicts, unsupported actions, missing
+keyboard/empty display, focus versus stacking, one close request and popup-owned
+focus. Full Linux shell tests passed: 138 unit, 100 lifecycle, three socket and
+three compile-fail doctests. Affected Windows/Linux all-target clippy and tests,
+Windows/Linux fmt, Linux warnings-denied rustdoc and example builds passed.
+Windows runs zero Linux-only runtime cases. WSLg configured forward/reverse GLES
+pixel checks and nested popup/cursor regression (115 surfaces) passed, exit zero.
+Expected Mesa fallback and deliberately invalid-client diagnostics occurred.
+Exact commands and dependency versions are in the report. No shared kernel/BPF
+state, services, dependencies or other checkout changed; isolated Linux target
+/root/alo-os-target used. Full independent Windows/Linux workspace/rustdoc/BPF
+publication gates were not run here and remain supervisor work.
+
+Initial locked build requested the newly added workspace dependency lock entry;
+offline generation changed only alo-shell's dependency list. First compile found
+a test method-name typo (clear instead of unbind); corrected before four focused
+tests passed, then added the fifth before full verification. No runtime test
+failed or gate was weakened. Routine path and registry quoting lookups corrected.
+Source, tests, fixture, lockfile and documentation reviewed; git diff --check
+passed. All four shared progress files and this task's own report updated.
+
+Action dispatch component complete; raw layout-aware shortcut matching, consumed
+press/release/repeat isolation in nested/direct input and settings loading/controls
+remain next. Keyboard shortcuts, compositor and release remain unchecked. Other
+window operations, rendered controls, launcher/dock, clipboard and all remaining
+v0.01 requirements remain unfinished. Safe standalone GLES, real DRM/seat entry,
+populated input/hotplug, GPU/disable recovery and certified physical laptop/GPU
+workstation records remain owed. No staging, commit, push, other repository edit,
+worker/loop launch, tools/dev-loop changes or physical installation.
