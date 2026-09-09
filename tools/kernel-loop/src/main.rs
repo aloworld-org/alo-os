@@ -341,6 +341,12 @@ fn one_iteration(at: &Path, ours: &Path) -> Result<journal::Went, String> {
 /// It does not consult the plan. Task order is the loop's business, and somebody
 /// recovering from a stopped run already knows which task they are holding.
 fn publish(at: &Path, ours: &Path) -> ExitCode {
+    // **Gating takes minutes, and WSL stops a distribution nothing is using.**
+    // `run` has held one open since it gained the helper; this did not, and the
+    // symptom is a publish that fails its readiness check because
+    // `/sys/fs/bpf` went away between one command and the next. It happened
+    // twice in a row before this line existed.
+    let _ubuntu = keeping_ubuntu_up::Awake::started();
     let waiting = match handoff::Handed::waiting(ours) {
         Ok(Some(waiting)) => waiting,
         Ok(None) => {
@@ -388,6 +394,9 @@ fn publish(at: &Path, ours: &Path) -> ExitCode {
 /// no acceptance evidence had been looked at is the exact answer this program
 /// exists not to give.
 fn verify(at: &Path, ours: &Path) -> ExitCode {
+    // As `publish`: the gates take minutes and the distribution they run in
+    // stops when nothing is using it.
+    let _ubuntu = keeping_ubuntu_up::Awake::started();
     let waiting = match handoff::Handed::waiting(ours) {
         Ok(waiting) => waiting,
         Err(why) => {

@@ -12,7 +12,7 @@
 //! file is created with `create_new`, which is one call that both refuses and
 //! creates, so two loops starting together cannot both be told they are alone.
 
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
@@ -28,6 +28,12 @@ const THE_LOCK: &str = "lock";
 pub struct Held {
     /// Where the lock file is.
     at: PathBuf,
+    /// The open handle, where holding one **is** the lock.
+    ///
+    /// Kept for the whole life of the loop and closed by the operating system
+    /// however the process ends. That is what makes a stale lock impossible
+    /// here rather than merely recoverable — see [`Held::taken`].
+    held_open: Option<File>,
     /// The process this lock was taken over from, when it was left by one that
     /// had gone. `None` for a lock nobody held before.
     ///
@@ -45,6 +51,21 @@ impl Held {
     /// machine said otherwise.
     pub fn taken(ours: &Path) -> Result<Self, String> {
         let at = ours.join(THE_LOCK);
+
+        // **Where the operating system can hold it, it does.** A process id is
+        // not an identity: the number is reused, so a lock naming one is a lock
+        // that can be read as *alive* when its owner is long gone and something
+        // unrelated has the number — or, far worse, taken over from a live loop
+        // if the answer ever came back wrong. A handle nobody may share is not
+        // a claim about a number; it is the thing itself, and the operating
+        // system closes it however the process ends, crash included.
+        //
+        // The pid is still written into the file, and is still only ever read
+        // to tell a person which process to look at.
+        #[cfg(windows)]
+        return Self::held_exclusively(at);
+
+        #[cfg(not(windows))]
         match OpenOptions::new().write(true).create_new(true).open(&at) {
             Ok(mut lock) => {
                 // Best effort, and deliberately not checked: what the lock is
@@ -53,6 +74,7 @@ impl Held {
                 let _ = writeln!(lock, "{}", std::process::id());
                 Ok(Self {
                     at,
+                    held_open: None,
                     took_over_from: None,
                 })
             }
@@ -84,6 +106,7 @@ impl Held {
                         let _ = writeln!(lock, "{}", std::process::id());
                         Ok(Self {
                             at,
+                            held_open: None,
                             took_over_from: Some(gone),
                         })
                     }
@@ -114,10 +137,97 @@ impl Held {
     pub const fn took_over_from(&self) -> Option<u32> {
         self.took_over_from
     }
+
+    /// The lock, held by a handle nobody else may open.
+    ///
+    /// The share mode is the whole mechanism: while this handle is open, every
+    /// other attempt to open that path **for writing** fails, and when the
+    /// process ends — asked to stop, killed, or crashed — the operating system
+    /// closes it and the next loop opens it without anybody deciding anything.
+    /// Reading stays open to everybody, so `status` can still say who holds it.
+    ///
+    /// So there is no stale lock to recover from and **no process id is
+    /// consulted to decide**. A number that has been reused cannot be mistaken
+    /// for a live owner, and a live owner cannot be taken over, because neither
+    /// question is asked.
+    ///
+    /// What was in the file before is read first, so a takeover can still be
+    /// reported: a supervisor that restarted after a kill should say so.
+    ///
+    /// # Errors
+    /// A sentence when another loop holds it, and whatever the machine said
+    /// otherwise.
+    #[cfg(windows)]
+    fn held_exclusively(at: PathBuf) -> Result<Self, String> {
+        use std::io::{Read as _, Seek as _, SeekFrom};
+        use std::os::windows::fs::OpenOptionsExt as _;
+
+        /// `FILE_SHARE_READ`: anybody may **read** this while it is held, and
+        /// nobody may write or delete it.
+        ///
+        /// Not zero, which was the first attempt and was wrong: sharing nothing
+        /// locks out `status` as well, and a supervisor whose own status command
+        /// cannot read the lock reports *no loop is running* while one is —
+        /// which is precisely the confusion the liveness work exists to remove.
+        /// Its tests caught it.
+        ///
+        /// Reading is all anybody else needs: the file's contents are only ever
+        /// used to tell a person which process to look at.
+        const ONLY_READING: u32 = 1;
+
+        let mut lock = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .share_mode(ONLY_READING)
+            .open(&at)
+            .map_err(|why| {
+                /// `ERROR_SHARING_VIOLATION`: somebody already has it open in a
+                /// way that will not have us.
+                ///
+                /// Matched on the number rather than on `ErrorKind`, because
+                /// this one has no kind of its own — it arrives uncategorised,
+                /// and a `PermissionDenied` arm silently never fired. Its test
+                /// is what noticed.
+                const SOMEBODY_HAS_IT: i32 = 32;
+
+                if why.raw_os_error() == Some(SOMEBODY_HAS_IT) {
+                    format!(
+                        "another loop is running in this checkout and holds {}. One supervisor \
+                         per checkout: ask that one to stop rather than starting a second beside \
+                         it.",
+                        at.display()
+                    )
+                } else {
+                    format!("the lock at {} could not be taken: {why}", at.display())
+                }
+            })?;
+
+        let mut before = String::new();
+        drop(lock.read_to_string(&mut before));
+        let took_over_from = before.trim().parse::<u32>().ok();
+
+        // Best effort, as it always was: what is written here only tells a
+        // person which process to look at.
+        let _ = lock.set_len(0);
+        let _ = lock.seek(SeekFrom::Start(0));
+        let _ = writeln!(lock, "{}", std::process::id());
+        let _ = lock.flush();
+
+        Ok(Self {
+            at,
+            held_open: Some(lock),
+            took_over_from,
+        })
+    }
 }
 
 impl Drop for Held {
     fn drop(&mut self) {
+        // **The handle first.** It was opened so that nobody else may even
+        // delete the file, so this process cannot either while it holds it.
+        drop(self.held_open.take());
         drop(std::fs::remove_file(&self.at));
     }
 }
@@ -321,5 +431,72 @@ mod tests {
     #[test]
     fn this_process_is_alive() {
         assert!(is_alive(std::process::id()));
+    }
+}
+
+#[cfg(test)]
+#[cfg(windows)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod when_a_number_is_reused {
+    use super::{Held, THE_LOCK};
+
+    /// A folder of this test's own.
+    fn a_folder(called: &str) -> std::path::PathBuf {
+        let at = std::env::temp_dir().join(format!("alo-reuse-{}-{called}", std::process::id()));
+        drop(std::fs::remove_dir_all(&at));
+        std::fs::create_dir_all(&at).unwrap();
+        at
+    }
+
+    /// **A lock a live loop holds is never taken over, whatever the file says.**
+    ///
+    /// The case a process id cannot survive: the number in the file is one that
+    /// has been reused — here, a process that has finished — while the lock is
+    /// genuinely held by something that is still running. Deciding by pid, this
+    /// reads as *nobody holds it* and the live owner is taken over, which is two
+    /// supervisors on one working tree.
+    ///
+    /// Deciding by the handle, the number is not consulted at all: the operating
+    /// system knows the file is open and refuses. That is why this passes.
+    #[test]
+    fn a_lock_whose_number_was_reused_is_still_not_taken_from_its_live_owner() {
+        let ours = a_folder("reused");
+        let held = Held::taken(&ours).unwrap();
+
+        // Overwrite the recorded number with one belonging to nothing, exactly
+        // as a reused pid would look to a reader. The handle is unaffected: it
+        // is what holds the lock, not the text.
+        //
+        // Written through a separate handle, which is allowed — the lock shares
+        // reading. This one asks to write and is refused, which is itself the
+        // property under test, so the number is left as it is and the point
+        // stands: a reader cannot even change it while a loop is running.
+        let rewritten = std::fs::write(ours.join(THE_LOCK), "4294967294\n");
+        assert!(
+            rewritten.is_err(),
+            "the lock could be rewritten while a live loop held it"
+        );
+
+        // And a second loop is still refused.
+        let second = Held::taken(&ours);
+        assert!(
+            second.is_err(),
+            "a second loop took a lock its live owner was holding"
+        );
+
+        drop(held);
+
+        // Once the owner has gone, the next one takes it without anybody
+        // deciding anything about a number.
+        let after = Held::taken(&ours);
+        assert!(
+            after.is_ok(),
+            "the lock was not free after its owner gave it back: {after:?}"
+        );
+        drop(after);
+        drop(std::fs::remove_dir_all(&ours));
     }
 }
