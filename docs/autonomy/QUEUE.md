@@ -5,6 +5,26 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed nested reader event routing (2026-09-10):** the ordered nested seat
+pump now routes PageUp/PageDown/Escape and pointer/axis events through the live
+publication coordinator. Actual parent position survives consumed motion;
+removal, loss and errors cancel while retaining releases. Backend-owned frames
+share the same feedback owner. Four new private-client tests, affected Linux/
+Windows checks, rustdoc, and WSLg reader/control regression pass. Exact evidence:
+`updates/nested-reader-event-routing.md`. Independent supervisor gates pending.
+Next: native reader selection from full-name access and cursor selection, then
+direct backend integration. Nested event attachment is complete; full-name access
+and window management remain unfinished.
+
+**Selected nested reader event routing (2026-09-10):** attach publication-bound
+reader input to the ordered nested seat pump, map PageUp/PageDown/Escape,
+retain actual parent position and ownership across removal/loss/errors, and use
+the same owner for reader frame feedback. Acceptance: private-client pump-adapter
+navigation, typing, pointer/axis, malformed input, loss/removal and release-drain
+checks; affected fmt/clippy/tests/rustdoc and WSLg reader/control regression.
+Native reader selection/cursor and direct integration remain subsequent work.
+
+
 **Completed publication-bound reader input coordination (2026-09-10):** a
 backend-owned coordinator validates continuous publication before key/pointer
 execution, cancels cross-device competition and changed geometry (including

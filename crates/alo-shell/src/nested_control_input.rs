@@ -8,11 +8,14 @@ use smithay::backend::input::ButtonState;
 ///
 /// Keep this with its backend and server for their entire lifetime. Native grabs
 /// intentionally freeze client motion, so subsequent buttons must use this actual
-/// parent position instead. This contains no window or execution authority.
+/// parent position instead. Reader transactions retain publication-bound authority
+/// and cancelled release ownership; use `route_reader` throughout a reader session.
 #[derive(Default)]
 pub struct NestedControlInput {
     /// Last finite parent motion since activation; never inferred from client focus.
-    position: Option<(f64, f64)>,
+    pub(crate) position: Option<(f64, f64)>,
+    /// Reader ownership survives removal, deactivation and routing failures.
+    pub(crate) reader: crate::WindowControlReaderInput,
 }
 
 impl NestedControlInput {

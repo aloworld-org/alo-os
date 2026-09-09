@@ -325,6 +325,7 @@ mod reader_input;
 mod reader_navigation;
 mod routing;
 
+mod nested_reader;
 mod reader_interaction;
 mod reader_keys;
 mod reader_pointer;

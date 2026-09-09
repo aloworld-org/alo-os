@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The nested name reader now receives keyboard and pointer input.** PageUp,
+  PageDown and Escape navigate or dismiss the published reader, while ordinary
+  typing remains available. Consumed motion retains the real pointer position;
+  removal and input failures cancel commands without leaking their releases.
+  Reader rendering shares the backend's input feedback. Private-client and WSLg
+  component checks pass; reader selection and direct integration remain next.
+  Evidence: `docs/autonomy/updates/nested-reader-event-routing.md`.
+
 - **Native reader input now follows the page actually submitted.** A reusable
   host coordinator cancels held navigation when geometry changes, input is lost
   or the other device takes over, while preserving ordinary typing and draining

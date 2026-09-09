@@ -1,7 +1,7 @@
 //! Actual parent EGL submission of live pages, feedback, removal and refusal.
 use alo_appearance::{Scheme, TextScale};
 use alo_shell::{
-    LabelGeometry, Nested, ReaderKeyCommand as Command, ReaderKeyRoute as Route,
+    LabelGeometry, Nested, NestedReaderFrame, ReaderKeyCommand as Command, ReaderKeyRoute as Route,
     ReaderPointerHit as Hit, Server, WindowControlLabels, WindowControlPointerEvent,
     WindowControlReaderFrame, WindowControlReaderInput, WindowControlReaderStyle,
 };
@@ -176,10 +176,39 @@ pub fn run(
         assert!(server.presented_window_controls(None).is_none());
         nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
         server.render(nested, time)?;
+        // Exercise the production wrapper and actual ordered parent event pump.
+        // Parent activation is external; no synthetic key delivery is claimed.
+        nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
+        let mut owned = server
+            .begin_window_control_reader(
+                &mut labels,
+                &words,
+                Action::CloseWindow,
+                WindowControlReaderStyle {
+                    size: (140, 28),
+                    scheme,
+                    scale: TextScale::ordinary(),
+                },
+            )?
+            .ok_or("backend-owned reader refused")?;
+        nested.render_reader(
+            server,
+            &mut owned,
+            NestedReaderFrame {
+                strings: &words,
+                labels: &mut labels,
+                chrome: geometry,
+            },
+            time,
+        )?;
+        assert!(server.window_control_reader_presented(&mut owned));
+        nested.pump_reader_seat(server, Some(&mut owned))?;
+        nested.pump_reader_seat(server, None)?;
+        nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
     }
     assert_eq!(submissions, 12);
     println!(
-        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences passed"
+        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes"
     );
     Ok(())
 }

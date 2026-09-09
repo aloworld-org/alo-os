@@ -1334,6 +1334,14 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Nested reader event routing (2026-09-10): ordered parent activation, reader
+    PageUp/PageDown/Escape, motion/buttons/axes now use publication coordination;
+    actual parent position and cancelled releases survive native interception,
+    removal and errors. Backend frames use the same feedback owner. Four new
+    private-client tests and WSLg backend-owned submissions/pump calls pass.
+    Evidence: `docs/autonomy/updates/nested-reader-event-routing.md`. Native
+    reader selection/cursor and direct integration remain; full-name access and
+    feature/release boxes unchecked. Independent supervisor gates pending.
   - Publication-bound reader input coordination (2026-09-10): a backend-owned
     coordinator gates both devices on continuously submitted identity/geometry,
     cancels cross-device competition, requires a fresh frame after deactivation,

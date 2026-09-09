@@ -899,3 +899,43 @@ For developer diagnosis, setting `ALO_NESTED_TRACE_SUBMISSION` enables stderr
 timing for nested bind, paint and upstream submission; it does not change
 submission behavior or fixture deadlines.
 Evidence: `docs/autonomy/updates/publication-bound-reader-input.md`.
+
+## Nested parent reader routing
+
+2026-09-10 additive trusted API: `Nested::pump_reader_seat(server, reader)`
+attaches the publication coordinator to ordered Winit activation, keyboard,
+absolute motion, button and axis events. Pass the live reader explicitly; None
+handles removal and still drains owned releases. `pump_seat` uses the same owner
+with no reader. Continue a full-seat pump after pointer acquisition; the
+keyboard-only pump does not deliver pointer events. Render-only `pump` remains
+input-free and is not an alternative for an active input session.
+
+`NestedControlInput::route_reader` is the exact pointer/activation adapter used
+by that pump; `reader_key` maps evdev PageUp (104), PageDown (109), and Escape (1)
+to previous, next and dismiss. These local reader navigation keys leave normal
+text and other keys on the existing client path and are not configurable desktop
+shortcuts. Repeats, boundaries, client-owned keys and stale publications keep
+the existing transaction rules. Only Forward reaches ordinary delivery once.
+The pump supplies keyboard focus before key delivery and drops inactive ordinary
+keys. No reader opens automatically and no navigation key closes an application.
+
+Actual finite parent position is retained even when reader motion is consumed;
+buttons and axes use it, never the frozen client position. Axes revalidate the
+current hit before interception. Malformed coordinates/buttons/axes refuse and
+cancel, without retry or forwarding. Input loss/close/errors clear actual
+position and retire authority. `cancel` retains owned key/button releases; the
+pump no longer replaces input state after error. Reactivation requires fresh
+motion and fresh publication. Hosts must continue forwarding all ordered events.
+
+`Nested::render_reader` takes `NestedReaderFrame` (strings, shaper and chrome
+geometry), and supplies the same backend-owned pointer feedback to the existing
+server frame transaction. No event dispatch occurs during this borrow. Inspect
+the reader after pumping, draw its current page or remove its pixels; failure
+and dismissal never authorize input against an old scene. Reader selection,
+cursor selection and direct backend integration remain separate work.
+
+Four private-client tests exercise the installed adapter. WSLg checks include
+two backend-owned reader submissions and actual reader-pump calls, in addition
+to the existing twelve explicitly host-driven frames. They do not synthesize
+parent key/button events or read back those submitted frames. Exact evidence:
+`docs/autonomy/updates/nested-reader-event-routing.md`.

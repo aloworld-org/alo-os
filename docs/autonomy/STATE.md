@@ -14847,3 +14847,51 @@ pointer position and drain on removal/loss, then reader selection/cursor and dir
 integration. Full-name access/window management remain unfinished. No physical
 scanout/VM evidence; physical laptop/GPU workstation records remain owed during
 release validation. Reports arriving during publication reconcile next iteration.
+
+## 2026-09-10 - nested reader event routing
+
+Started clean at e04e215. Read CLAUDE, DELIVERY, SHARED_MAIN, report guidance,
+current QUEUE/STATE, relevant features/roadmap, ADRs 0002/0010 and native-control
+contract. No AGENTS.md found. All published reports already had STATE references
+at iteration start; no reconciliation due. Selected component and acceptance
+recorded in QUEUE before code. Desktop ownership retained; no filesystem work.
+
+Nested parent activation, keyboard and pointer events now use the publication
+coordinator before controls/clients. PageUp/PageDown/Escape navigate/dismiss the
+live reader while ordinary typing keeps its route. Actual parent position survives
+consumed motion; axes revalidate hits. Removal/loss/errors cancel but preserve
+owned releases. Full-seat pumps drain after removal; keyboard-only loss clears
+position. Backend reader rendering shares the same feedback owner through a
+synchronous frame wrapper. Native reader selection/cursor and direct integration
+remain next; nested event attachment complete, full-name access unfinished.
+
+Four new private-client tests pass. Linux: 168 unit, 246 lifecycle, three socket
+and four doctests, none ignored. Affected Linux/Windows clippy/tests, example
+build, warnings-denied rustdoc, format and diff checks pass. Windows shell cases
+are zero (Linux-only crate). WSLg: existing 12 coordinated reader frames plus two
+backend-owned reader submissions and real parent pump calls; existing controls
+and six-client lifecycle regression pass. No graphical failure this iteration.
+These are private-client adapter events and nested submissions, not synthetic
+parent key/button delivery, readback of submitted frames or physical evidence.
+Earlier upstream submission stalls remain unresolved, not fixed by these passes.
+Supervisor independent workspace Windows/Linux/rustdoc/BPF gates remain pending.
+
+Original focused compile failed on two test assertions using events.keys instead
+of events.keyboard.keys. Corrected the field path; focused and full tests pass.
+No assertion, deadline or gate weakened. Final tests/clippy/graphics rerun after
+the keyboard-only loss-path adjustment; public rustdoc checked after review.
+
+Every build/test/format/lint/doc/graphical command checked Windows C: reserve;
+all readings exceeded 53 billion bytes and the 12 GiB floor. Ubuntu graphics
+packages, WSLg socket and existing bpffs checked, no installation needed. Private
+fixtures only, no kernel mutation or outer machine lock. Separate desktop target
+/root/alo-os-target retained. No cleanup, WSL helper/restart, shared maintenance,
+staging/commit/push, supervisor edit, second worker/loop, other checkout change
+or credential/identity access.
+
+Exact commands, decisions, failure and evidence limits:
+`docs/autonomy/updates/nested-reader-event-routing.md`.
+Logs: `.git/alo-loop/nested-reader-event-routing/`.
+Contract and all four progress documents updated. No feature/release checkbox
+promoted. VM boot and physical laptop/GPU workstation evidence remain owed in
+their delivery phases. Reports arriving during publication reconcile next iteration.

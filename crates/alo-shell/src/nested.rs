@@ -36,7 +36,7 @@ pub struct Nested {
     /// Parent activation; unfocused nested windows must never route keys.
     focused: bool,
     /// Actual parent position, including motion consumed by native controls.
-    control_input: crate::NestedControlInput,
+    pub(crate) control_input: crate::NestedControlInput,
 }
 
 impl Nested {
@@ -105,7 +105,7 @@ impl Nested {
     /// explicit activation. Parent focus loss/close releases keys and clears focus.
     /// A keyboard-enabled server is required; pointer events remain unconnected.
     pub fn pump_keyboard(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
-        self.pump_input(server, false)
+        self.pump_input(server, false, None)
     }
 
     /// Route keyboard and pointer events after `Server::enable_pointer`.
@@ -116,11 +116,30 @@ impl Nested {
     /// Published native controls intercept primary gestures; absent presentation
     /// uses ordinary client routing. This method does not compose controls/labels.
     pub fn pump_seat(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
-        self.pump_input(server, true)
+        self.pump_input(server, true, None)
+    }
+
+    /// Route a published reader through the ordered parent seat events.
+    /// PageUp/PageDown navigate and Escape dismisses; other keys keep typing.
+    /// Render with `render_reader` to use this backend's feedback owner. Continue
+    /// pumping a full seat with None after removal to drain owned pointer releases.
+    /// Selection/removal remains the host's responsibility; inspect the live reader
+    /// and redraw after pumping. This does not open a reader automatically.
+    pub fn pump_reader_seat(
+        &mut self,
+        server: &mut crate::Server,
+        reader: Option<&mut crate::WindowControlReader>,
+    ) -> Result<(), RenderError> {
+        self.pump_input(server, true, reader)
     }
 
     /// Share ordered parent activation handling across keyboard-only and full seats.
-    fn pump_input(&mut self, server: &mut crate::Server, pointer: bool) -> Result<(), RenderError> {
+    fn pump_input(
+        &mut self,
+        server: &mut crate::Server,
+        pointer: bool,
+        mut reader: Option<&mut crate::WindowControlReader>,
+    ) -> Result<(), RenderError> {
         let mut failure = None;
         let mut control_input = std::mem::take(&mut self.control_input);
         let result = self.pump_events(|event, focused| {
@@ -151,11 +170,19 @@ impl Nested {
                 };
                 if let Err(error) = translated.map_err(RenderError::Input).and_then(|event| {
                     control_input
-                        .route(server, focused, event)
+                        .route_reader(server, reader.as_deref_mut(), focused, event)
+                        .map(|_| ())
                         .map_err(RenderError::WindowControl)
                 }) {
                     failure = Some(error);
                     return;
+                }
+            }
+            if !pointer {
+                if focused {
+                    control_input.reader.synchronize(server, None, true);
+                } else {
+                    control_input.cancel(server);
                 }
             }
             let focus = if focused {
@@ -169,19 +196,25 @@ impl Nested {
             }
             if let Some(WinitEvent::Input(InputEvent::Keyboard { event })) = event {
                 let code = u32::from(event.key_code()).saturating_sub(8);
-                if let Err(error) = server.keyboard_key(code, event.state(), event.time_msec()) {
+                if let Err(error) = control_input.reader_key(
+                    server,
+                    reader.as_deref_mut(),
+                    focused,
+                    (code, event.state(), event.time_msec()),
+                ) {
                     failure = Some(RenderError::Input(error));
                 }
             }
         });
         self.control_input = control_input;
         if let Some(error) = failure {
-            self.control_input = crate::NestedControlInput::default();
-            server.clear_input();
+            self.control_input.cancel(server);
             return Err(error);
         }
-        result?;
-        Ok(())
+        if result.is_err() {
+            self.control_input.cancel(server);
+        }
+        result
     }
 
     /// Keep event order and apply parent activation before delivering a key.
