@@ -5,6 +5,32 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed mapping-bound native control presentation (2026-09-09):** explicit
+painted target, visibility identity, geometry/intent and native label focus now
+share one server-owned lifetime. Replacement/failure, hide/remap, pointer loss and
+seat reset retire focus and cancel execution while retaining release ownership;
+same-frame refresh preserves valid gestures. Five new real-client tests pass;
+Linux affected clippy, 156 unit/203 lifecycle/three socket/three doctests, examples,
+rustdoc and Windows affected checks pass. WSLg passes ten new complete lifetime
+frames, all 28 nested stages, 72 label and 896 painter frames. Report:
+`updates/mapping-bound-native-control-presentation.md`. Independent supervisor
+gates pending. Next executable component: nested native strip/label composition
+and event-pump integration using this lifetime, with overlay hit policy and full
+clipped-text access; native navigation and corresponding direct integration remain.
+The lifetime component is complete, not usable desktop controls or the feature.
+
+**Selected mapping-bound native control presentation (2026-09-09):** implement
+the target/focus lifetime component of nested composition. One server-owned
+presentation binds an explicitly painted root, geometry and maximize/restore
+intent to its visibility identity. Replacement, failed presentation, hide/remap,
+leave and seat reset must retire native focus and cancel held execution without
+losing release ownership. Acceptance: real-client normal typing, disabled names,
+same-frame refresh, replacement/relayout/foreign refusal, hide/reveal and remap,
+exactly-once routing, backend deactivation and GLES label retirement checks;
+affected tests, clippy, rustdoc and fmt. Actual nested composition/event pumping,
+label overlay hit policy and full clipped-text access remain subsequent work,
+followed by direct integration; this component does not finish usable controls.
+
 **Completed live native control label presentation (2026-09-09):** current hover
 and explicit native-focus selection, disabled name access, output-contained placement
 and dismissal during native/competing input or target loss are code-ready. Three

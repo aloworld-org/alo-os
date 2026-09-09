@@ -52,9 +52,9 @@ impl Server {
     /// This clears routing, not device authority: the backend must stop feeding
     /// events until active again, then explicitly restore keyboard focus and
     /// supply fresh pointer motion. No device is opened or closed here.
-    /// Native control presses are disarmed, retaining their release ownership.
+    /// Native presentation/focus retire; presses disarm but retain release ownership.
     pub fn clear_input(&mut self) {
-        self.cancel_window_control();
+        self.retire_window_controls();
         // These operations can only refuse an absent capability, intentionally
         // allowed for a display without input or with a keyboard-only seat.
         let _ = self.keyboard_focus(None);

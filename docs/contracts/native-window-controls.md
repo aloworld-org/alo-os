@@ -311,3 +311,51 @@ The existing font, tokens and action strings remain authoritative (ADRs 0002/001
 Tests: `tests/window_controls/labels.rs`; live GLES hide/reveal readback:
 `examples/support/window_control_label_check.rs`. Exact evidence and limits:
 `docs/autonomy/updates/live-native-control-label-presentation.md`.
+
+## Mapping-bound host presentation
+
+Additive trusted Rust API, 2026-09-09. `Server::present_window_controls` records
+one explicitly composed strip, with its surface, visibility identity, geometry
+and maximize/restore intent. It does not paint or select a window. The host calls
+it after successful composition of that mapping, and passes None on removal or
+failed submission. A retained surface handle alone does not prove a current frame.
+An invalid or foreign candidate also retires the old presentation before refusal.
+Replacing the target, viewport, origin, visibility identity or observed intent
+clears native label focus and disarms held execution. Repeating the same live
+frame preserves focus and a held gesture. This is one server-owned state, not a
+transferable token, saved stack index or client-keyboard-focus fallback.
+
+`presented_window_controls(position)` returns fresh feedback, and
+`presented_window_control_label(hover, size)` selects current native focus or fresh
+hover through the existing selector. Both revalidate the mapping and observed
+intent, retiring stale presentation. Hide/reveal and unmap/remap retire identity
+even when both happen between host observations. Returned snapshots/labels are
+still frozen; discard previous rendering on None/error. Hover is never cached.
+
+`focus_window_control(action)` explicitly chooses a visible strip action solely
+for label presentation. Disabled controls remain eligible. None, non-strip actions,
+fully clipped controls and held/competing input clear old focus and return false.
+Client keyboard focus, wire events and operations are unchanged. Observing held
+or competing input through these APIs clears focus permanently; the host must
+observe input/ownership changes, not defer them until after a grab has ended.
+
+`route_presented_window_control_pointer(position, event, time)` dismisses native
+label focus, validates the published target and calls the existing combined router
+exactly once. It caches no position and adds no hit area. Missing presentation
+uses ordinary client fallback. Retired native presses keep their matching release
+ownership, so returning to a target never rearms execution or leaks the release.
+Do not mix this lifecycle with independently supplied low-level painted targets.
+
+`retire_window_controls()` is idempotent and cancels execution while preserving
+release ownership. Existing `pointer_leave` (including nested/direct pointer
+deactivation) and `clear_input` call it before capability-dependent cleanup;
+missing pointer capability cannot retain native focus. Hosts must also retire on
+their own output/submission loss paths. No backend starts composing a strip or
+routing its normal event pump through these APIs automatically in this component.
+
+Nested composition/event pumping, native keyboard navigation, label overlay hit
+policy and readable full-text presentation for clipped names remain integration
+work, followed by direct composition. The existing font/vocabulary/tokens and
+ADRs 0002/0010 remain unchanged. Tests: `tests/window_controls/presentation.rs`;
+ten full-frame GLES label lifecycle checks in the existing nested fixture.
+Evidence and limits: `docs/autonomy/updates/mapping-bound-native-control-presentation.md`.

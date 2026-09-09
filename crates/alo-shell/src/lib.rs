@@ -67,6 +67,7 @@ mod window_control_label;
 mod window_control_label_paint;
 mod window_control_label_target;
 mod window_control_paint;
+mod window_control_presentation;
 mod window_control_routing;
 mod window_control_snapshot;
 mod window_controls;

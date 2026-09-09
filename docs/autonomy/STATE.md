@@ -14000,3 +14000,48 @@ integration. The per-frame selector is complete; installed native controls remai
 unfinished. No feature or release tick. Reports arriving during publication are
 reconciled next iteration. No staging/commit/push, dev-loop changes, worker launch,
 credential/identity access, other-checkout edits or unrelated host actions.
+
+## 2026-09-09 - mapping-bound native control presentation
+
+Started clean at 8bb8165. Read delivery/ownership/report instructions and relevant
+constitution, feature, roadmap, ADR and contract sections. All published reports
+already had STATE references at iteration start. Selected the target/focus lifetime
+component of nested composition with acceptance checks in QUEUE before coding.
+
+Added server-owned explicit painted target/visibility identity, geometry/intent
+and native label focus. Same-frame refresh preserves valid focus/gestures;
+replacement/failure, hide/remap and observed intent changes retire them. Fresh
+feedback/labels/routing validate this state; pointer leave and whole-seat reset
+retire it even without pointer capability. Cancelled native releases remain owned.
+No focus/stack fallback, cached hover, client keyboard change or new agent surface.
+Reused existing visibility tokens, vocabulary, tokens and policy per ADRs 0002/0010.
+
+Five real-client tests pass. Initial configure-count assumption failed after
+ordinary client focus; corrected to compare the synchronized post-focus state
+without weakening assertions. Initial clippy missing-private-doc warnings fixed
+without exemptions. Linux affected clippy, 156 unit/203 lifecycle/three socket/
+three doctests, examples and warnings-denied rustdoc pass. Windows affected
+clippy/tests pass (zero Linux-only cases), both fmt checks pass. Final review
+strengthened feedback/hover/label-geometry assertions; focused tests/clippy pass
+again. No production behavior changed after the full suite/graphics checks.
+
+WSLg passes ten new complete 5,760-pixel label lifetime frames, fourteen existing
+live label frames, all 28 nested stages, 72 prepared-label frames and 896 painter
+frames. Raster/background comparison proves lifecycle through label painting and
+retirement, not independent shaping or on-screen scanout. Mesa and intentional
+malformed-client/keymap/SHM diagnostics skipped no assertions; no timeout.
+
+Rust 1.98.0, eight graphics/input prerequisites and WSLg socket checked; no install
+or shared maintenance. Every command preflight exceeded 12 GiB, minimum
+62,192,496,640 bytes. No cleanup, kernel mutation, outer lock, WSL restart or helper.
+Exact commands, first failures, decisions and evidence limits:
+`docs/autonomy/updates/mapping-bound-native-control-presentation.md`.
+
+Four progress documents updated and new/tracked diff reviewed; whitespace clean.
+Independent full supervisor Windows/Linux/rustdoc/BPF publication gates pending.
+Next: nested strip/label composition and event pumping, overlay hit policy and
+full clipped-text access, with native navigation/direct integration still owed.
+Lifetime component complete; usable controls/feature remain unfinished. Reports
+arriving during publication reconcile next iteration; release remains unverified.
+No staging, commit, push, dev-loop edits, worker launch, private credential/identity
+access, other-checkout modification or unrelated host action.

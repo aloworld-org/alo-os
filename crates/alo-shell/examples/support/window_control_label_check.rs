@@ -2,7 +2,7 @@
 use alo_appearance::{Scheme, TextScale};
 use alo_shell::{
     PaintedWindowControls, RowOrder, Server, WindowControlLabelSelection as Selection,
-    WindowControlLabels, readback_xrgb,
+    WindowControlLabelTarget, WindowControlLabels, readback_xrgb,
 };
 use alo_shortcuts::{Action, shortcut_words};
 use alo_strings::Strings;
@@ -32,6 +32,65 @@ pub fn paint(
         Selection::Pointer(4.0, 5.0),
         (100, 40),
     )?;
+    paint_choice(renderer, choice, visible)
+}
+
+/// Ten full frames exercise retained focus, invisible transitions and retirement.
+pub fn presentation(
+    server: &mut Server,
+    renderer: &mut GlesRenderer,
+    root: &WlSurface,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let publish = |server: &mut Server| {
+        server.present_window_controls(Some(PaintedWindowControls {
+            surface: root,
+            viewport: (120, 48),
+            origin: (3, 4),
+        }))
+    };
+    publish(server)?;
+    assert!(server.focus_window_control(Some(Action::MinimiseWindow)));
+    publish(server)?;
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(None, (100, 40))?,
+        true,
+    )?;
+    server.set_window_minimized(root, true)?;
+    server.set_window_minimized(root, false)?;
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(None, (100, 40))?,
+        false,
+    )?;
+    publish(server)?;
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(None, (100, 40))?,
+        false,
+    )?;
+    assert!(server.focus_window_control(Some(Action::MinimiseWindow)));
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(None, (100, 40))?,
+        true,
+    )?;
+    server.retire_window_controls();
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(None, (100, 40))?,
+        false,
+    )?;
+    println!("Mapping-bound presentation: ten complete label lifetime frames passed");
+    Ok(())
+}
+
+/// Compare every output pixel to the selected raster or cleared background.
+fn paint_choice(
+    renderer: &mut GlesRenderer,
+    choice: Option<WindowControlLabelTarget>,
+    visible: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(choice.is_some(), visible);
     if let Some(choice) = choice {
         assert_eq!(choice.control.action(), Action::MinimiseWindow);

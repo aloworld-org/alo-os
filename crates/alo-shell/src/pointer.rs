@@ -224,10 +224,10 @@ impl Server {
 
     /// Cancel held buttons and clear focus on parent leave, deactivation or close.
     /// A subsequent motion is required before another client can receive input.
-    /// Native control execution is cancelled even if pointer capability is absent;
+    /// Native presentation/focus retire and execution cancels even without a pointer;
     /// its matching primary release remains owned by the native transaction.
     pub fn pointer_leave(&mut self) -> Result<(), InputError> {
-        self.cancel_window_control();
+        self.retire_window_controls();
         self.surfaces.dismiss_popup_grab();
         self.surfaces.clear_pointer()
     }

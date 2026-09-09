@@ -13,6 +13,7 @@ pub fn run(
         .cloned()
         .ok_or("minimize root missing")?;
     crate::window_control_label_check::paint(server, renderer, &root, true)?;
+    crate::window_control_label_check::presentation(server, renderer, &root)?;
     for (step, minimized) in [true, false, true, false, true, false]
         .into_iter()
         .enumerate()

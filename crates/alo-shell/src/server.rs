@@ -18,6 +18,8 @@ use crate::{
 pub struct Server {
     /// Native control ownership is separate from client pointer grabs.
     pub(crate) control_press: Option<crate::window_control_input::Press>,
+    /// Explicitly composed strip and mapping-bound native label focus.
+    pub(crate) control_presentation: Option<crate::window_control_presentation::Presentation>,
     /// The display is private so every inserted client has our client state.
     display: Display<Surfaces>,
     /// Protocol state and mapped toplevels.
@@ -47,6 +49,7 @@ impl Server {
         let socket = Socket::bind(runtime, name)?;
         Ok(Self {
             control_press: None,
+            control_presentation: None,
             display,
             surfaces,
             socket,

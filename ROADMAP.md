@@ -1302,6 +1302,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Mapping-bound native control presentation (2026-09-09): server-owned explicit
+    painted target, visibility identity, geometry/intent and native label focus
+    now share a lifecycle. Replacement, invalid candidates, hide/remap, pointer
+    deactivation and seat reset retire focus and disarm held execution without
+    losing release ownership. Same-frame refresh preserves valid gestures. Five
+    real-client tests and ten complete GLES lifetime frames pass; affected Linux
+    and Windows checks, rustdoc and graphical regressions pass. Nested composition/
+    event pumping, native navigation, overlay hit policy and full clipped-text
+    access remain next, then direct integration. No feature tick or installed
+    controls claim; independent supervisor gates pending. Exact evidence/limits:
+    `docs/autonomy/updates/mapping-bound-native-control-presentation.md`.
   - Live native control label presentation (2026-09-09): read-only current hover
     or explicitly supplied native focus selection, disabled name access, bounded
     below/above/clamped placement and dismissal on absent/hidden/foreign targets

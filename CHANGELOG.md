@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native control focus cannot survive a retired window presentation.**
+  The host API binds a painted strip to its current mapping and geometry. Replacing,
+  hiding or remapping the window clears native label focus and cancels held actions
+  while still consuming their releases. Unchanged frames keep valid gestures;
+  disabled names and normal client typing remain available. Five real-client tests
+  and ten new complete GLES frames cover the lifecycle. Desktop composition remains
+  unfinished. Evidence: `docs/autonomy/updates/mapping-bound-native-control-presentation.md`.
+
 - **Window-control labels can follow live hover or explicit native focus.**
   The shell presentation API keeps disabled controls' names available, fits label
   boxes inside the output and dismisses them during presses, competing input or
