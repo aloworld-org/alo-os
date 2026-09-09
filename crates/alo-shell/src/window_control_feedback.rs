@@ -28,6 +28,7 @@ impl Server {
         let mut snapshot = self.window_control_snapshot(surface, viewport, origin)?;
         let eligible = position.filter(|position| {
             !self.window_control_input_busy()
+                && !self.control_overlay.held()
                 && self
                     .control_press
                     .as_ref()

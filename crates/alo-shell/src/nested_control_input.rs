@@ -38,6 +38,15 @@ impl NestedControlInput {
             self.position = None;
             server.pointer_leave()?;
         }
+        if let Some(NestedPointerEvent::Button {
+            code,
+            state: ButtonState::Released,
+            ..
+        }) = &event
+            && server.control_overlay.release(*code)
+        {
+            return Ok(());
+        }
         // A cancelled release is still ours, even with no new motion or while
         // inactive. NaN cannot hit a control; retirement already disarmed it.
         if let Some(NestedPointerEvent::Button {
@@ -84,9 +93,8 @@ impl NestedControlInput {
                 }
             }
             Some(NestedPointerEvent::Axis(frame)) => {
-                server.focus_window_control(None);
-                if self.position.is_some() {
-                    server.pointer_axis(frame)?;
+                if let Some(position) = self.position {
+                    server.route_presented_window_control_axis(position, frame)?;
                 }
             }
             None => {}

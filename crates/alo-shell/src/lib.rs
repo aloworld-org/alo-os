@@ -68,6 +68,7 @@ mod window_control_input;
 mod window_control_label;
 mod window_control_label_paint;
 mod window_control_label_target;
+mod window_control_overlay;
 mod window_control_paint;
 mod window_control_presentation;
 mod window_control_routing;
@@ -131,6 +132,7 @@ pub use shortcut_dispatch::ShortcutDispatchError;
 pub use socket::SocketError;
 pub use window_command::WindowCommandError;
 pub use window_control_frame::WindowControlFrame;
+pub use window_control_frame::WindowControlLabelFrame;
 pub use window_control_input::{
     WindowControlPressError, WindowControlRelease, WindowControlReleaseError,
 };

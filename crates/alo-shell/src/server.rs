@@ -16,6 +16,8 @@ use crate::{
 /// No environment is mutated and no client process is launched. Drop closes
 /// clients and removes the owned socket. Dispatch must be driven by the backend.
 pub struct Server {
+    /// Submitted opaque label and pointer releases owned independently of pixels.
+    pub(crate) control_overlay: crate::window_control_overlay::Overlay,
     /// Native control ownership is separate from client pointer grabs.
     pub(crate) control_press: Option<crate::window_control_input::Press>,
     /// Explicitly composed strip and mapping-bound native label focus.
@@ -48,6 +50,7 @@ impl Server {
         let surfaces = Surfaces::new(&display.handle());
         let socket = Socket::bind(runtime, name)?;
         Ok(Self {
+            control_overlay: Default::default(),
             control_press: None,
             control_presentation: None,
             display,

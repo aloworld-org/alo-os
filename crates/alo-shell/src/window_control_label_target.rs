@@ -50,6 +50,7 @@ impl Server {
         let Some(view) = painted else { return Ok(None) };
         if matches!(selection, WindowControlLabelSelection::Dismissed)
             || self.control_press.is_some()
+            || self.control_overlay.held()
             || self.window_control_input_busy()
         {
             return Ok(None);

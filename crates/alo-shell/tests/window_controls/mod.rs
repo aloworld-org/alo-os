@@ -314,6 +314,7 @@ mod input;
 
 mod feedback;
 mod frame;
+mod label_frame;
 mod labels;
 mod motion;
 mod nested_input;

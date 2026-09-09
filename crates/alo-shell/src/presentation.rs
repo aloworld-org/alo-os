@@ -11,6 +11,9 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// Fresh native label selection or shaping refused before submission.
+    #[error(transparent)]
+    ControlLabel(#[from] crate::WindowControlLabelError),
     /// This backend has not implemented native scene submission.
     #[error("target does not support native controls")]
     ControlsUnsupported,

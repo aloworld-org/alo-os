@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Window-control labels now share desktop submission and block clicks through
+  their text.** Fresh labels appear and disappear with their controls, while held
+  button releases stay owned even after dismissal or a failed frame. Ordinary
+  typing and existing client drags remain available. Five real-client tests and
+  nested EGL label submissions pass. Full-text alternatives and remaining usable
+  desktop integration are unfinished. Evidence:
+  `docs/autonomy/updates/transactional-native-label-composition.md`.
+
 - **Failed desktop frames cannot leave window controls authorized to act.**
   Native strip submission now publishes the exact live target only after success,
   and removes authority on failure or ordinary-frame replacement while consuming

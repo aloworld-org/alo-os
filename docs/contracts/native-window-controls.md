@@ -451,10 +451,58 @@ presentation. The first output submission may enable maximize on the next freshl
 captured frame; input operations always revalidate current policy.
 
 This transaction composes strips only. It does not silently install opaque labels
-without overlay input policy. Fresh label composition/dismissal and that policy
-are the next complete host component; alternate full-text access, native navigation,
+without overlay input policy. The labeled transaction below adds fresh labels and
+their pointer policy; alternate full-text access, native navigation,
 cursor selection during native gestures and direct integration remain unfinished.
 There is no new agent surface, vocabulary, font, palette or policy decision.
 Tests: `tests/window_controls/frame.rs`; actual EGL submission integration:
 `nested_check --controls`. Report and precise evidence limits:
 `docs/autonomy/updates/transactional-native-control-submission.md`.
+
+## Transactional native label composition
+
+Additive trusted Rust API, 2026-09-09: `WindowControlLabelFrame` supplies the
+session vocabulary, reusable private native shaper, requested box and existing
+text scale. `Server::render_labeled_window_controls` selects and shapes a fresh
+label in the strip transaction, before submission and without client dispatch.
+Only identical live mapping/geometry may reuse explicit native label focus;
+otherwise current hover selects the name, including disabled controls. The nested
+entry point supplies actual parent position. Neither entry point infers client
+keyboard focus or chooses a window. Pump input before rendering.
+
+Clients/popups, strip, complete label and cursor share one backend submission.
+Only success publishes label bounds with strip authority. Missing selection,
+held native/overlay/client input and None dismiss labels in the next frame.
+`ControlLabel` preserves selection/shaping errors; missing vocabulary, malformed
+geometry, clipping or overlap refuse before backend submission. Output/callback
+publication is unchanged. Failure retires native authority and preserves pending
+callbacks. Strip-only and ordinary rendering remove label exclusion as well.
+
+Published opaque bounds exclude pointer motion, buttons and scroll from clients.
+The published pointer router consumes covered events, clears client pointer focus
+without changing keyboard focus, and retains bounds across an input batch until
+replacement/removal/retirement. Thus moving into a label and pressing before the
+next frame cannot click through it. Existing client grabs and window/popup grabs
+retain priority; a label never steals their release. Button presses over labels
+are separately owned for every button code, including secondary/chorded buttons.
+Their matching releases remain consumed through label dismissal, failed frames,
+strip replacement, mapping retirement and backend leave/reset. While held, they
+suppress labels, native focus acquisition and strip hover feedback. No operation
+executes from a label. Fresh motion restores client routing after exclusion ends.
+
+`route_presented_window_control_axis(position, frame)` validates coordinates and
+axis values, retires stale presentation, dismisses native focus and consumes
+covered/overlay-owned scroll. Its boolean reports client delivery. The nested
+adapter uses it and drains owned releases even inactive or without fresh motion.
+Hosts composing these labels must use the published pointer/axis routes, never
+mix them with independent low-level painted targets or direct client forwarding.
+Failure is a rendering failure, not permission to keep operating an old frame.
+
+Five real-client tests are in `tests/window_controls/label_frame.rs`. Actual
+nested EGL label submission/dismissal/refusal checks extend `nested_check --controls`.
+Existing offscreen full-scene readback continues to cover painter ordering.
+This completes the nested label transaction and overlay pointer policy. Alternate
+full-text access on constrained outputs, native navigation/cursor selection and
+direct integration remain unfinished; clipped labels currently refuse rather
+than silently losing words. No agent surface, vocabulary, palette, fonts or
+accepted ADR changes. Evidence: `docs/autonomy/updates/transactional-native-label-composition.md`.

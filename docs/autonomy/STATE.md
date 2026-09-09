@@ -14194,3 +14194,55 @@ during publication reconcile next iteration.
 
 Final warnings-denied rustdoc passed; tracked and new-file diff reviewed, with
 git diff --check clean. Full independent supervisor gates remain pending.
+
+## 2026-09-09 - transactional native label composition
+
+Started clean at 59f60c7. Read required delivery/ownership/report guidance and
+relevant constitution, features, roadmap, ADR and contract sections. Every
+published report already had a STATE reference. Selected the component and
+acceptance in QUEUE before implementation. Reports arriving during publication
+reconcile next iteration.
+
+Added fresh native label selection/shaping to the strip frame transaction, using
+explicit current hover or identical live mapping-bound native focus. Only successful
+submission publishes label bounds. Missing selection and held input dismiss labels;
+clipping, invalid size, missing vocabulary and control overlap refuse before backend
+submission. Failed submission keeps callbacks pending and retires native authority.
+No client keyboard-focus inference, new palette/font/vocabulary or agent surface.
+
+Opaque label input ownership is separate from pixels: covered motion, buttons and
+scroll are consumed; primary/secondary/chorded releases drain through removal,
+failure and deactivation, even with no fresh position. Bounds persist across an
+input batch to prevent click-through before repaint. Existing client grabs and
+ordinary typing remain routed. Held overlay input suppresses labels/native focus
+and strip hover. Native label hits never execute a window operation.
+
+Five new real-client tests pass; final full Linux suite passes 157 unit,
+215 lifecycle, three socket and three doctests, none ignored. Initial clippy found
+two redundant tuple conversions in test placements; removed without exemptions.
+Final affected Linux clippy passes. Windows affected clippy/tests pass (zero
+Linux-only tests there), examples build, Linux/Windows fmt and warnings-denied
+rustdoc pass. Review-added held-overlay hover suppression is covered by the final
+full suite/clippy and rebuilt nested check. No full supervisor gates claimed.
+
+WSLg passes eight strip submissions, two label submissions, two dismissals and
+two ordinary removals in light/dark, clipping and strip refusal/recovery, actual
+client callbacks and teardown. All 28 offscreen stages and existing full-scene/
+label/lifetime/input pixel checks pass. Mesa fallback and deliberate malformed
+client/keymap/SHM diagnostics skipped no assertions. No failed tests or timeouts.
+EGL acceptance is not on-screen pixel capture, actual parent input delivery,
+direct scanout or hardware certification. Exact commands, decisions and limits:
+`docs/autonomy/updates/transactional-native-label-composition.md`.
+
+Ubuntu Rust/graphics/input prerequisites and WSLg socket verified. All command
+C: preflights exceeded 12 GiB; minimum 56,455,680,000 bytes. No cleanup, shared
+maintenance, kernel mutation, outer machine lock, WSL restart or helper. Separate
+desktop target retained. Contract, task report and all four progress documents
+updated. Next: alternate full-text access for constrained names, then native
+navigation/cursor selection and direct integration. This component is complete;
+usable controls/window management remain unfinished. Independent supervisor
+Windows/Linux/rustdoc/BPF gates pending; no feature/release tick.
+
+No staging, commit, push, dev-loop edit, extra worker, private credential/identity
+access, other-checkout edits or unrelated host changes. Tracked and new-file diffs
+reviewed; git diff --check passed. Full independent supervisor gates pending.

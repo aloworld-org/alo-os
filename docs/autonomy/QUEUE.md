@@ -5,6 +5,28 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed transactional native label composition (2026-09-09):** fresh labels
+now share strip submission; only success publishes opaque pointer exclusion.
+Covered motion/buttons/scroll are consumed, held releases survive dismissal,
+failure and deactivation, and client grabs/typing remain intact. Five real-client
+tests, Linux 157 unit/215 lifecycle/three socket/three doctests, affected checks,
+actual nested EGL label/dismissal/refusal recovery and all 28 offscreen stages pass.
+Report: `updates/transactional-native-label-composition.md`. Supervisor gates pending.
+Next executable component: alternate full-text access for constrained/clipped
+control names, with source/fallback text and ordinary input preserved; then native
+navigation/cursor selection and direct integration. Label transaction and overlay
+policy complete; usable controls/window management remain unfinished.
+
+**Selected transactional native label composition (2026-09-09):** compose fresh
+hover/mapping-bound focus labels in the strip submission transaction; publish
+opaque overlay bounds only on success. Consume covered pointer input and retain
+owned button releases through dismissal/failure/deactivation, preserving client
+grabs and ordinary typing. Acceptance: real-client fresh/replaced/dismissed labels,
+shaping/clipping/submission refusals, no click/scroll-through, release drainage,
+normal client input, and actual nested EGL label submissions; affected fmt, tests,
+clippy and rustdoc. Full-text alternatives, navigation/cursor selection and direct
+integration remain later components; usable window management stays unfinished.
+
 **Completed transactional native control submission (2026-09-09):** fresh explicit
 strip snapshots now submit with clients/popups/cursor and publish authority only
 on success. Validation/submission failure, omission and ordinary-frame removal

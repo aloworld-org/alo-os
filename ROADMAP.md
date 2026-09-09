@@ -1307,6 +1307,15 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Transactional native label composition (2026-09-09): fresh hover/live native
+    focus labels now submit with the strip; only success publishes opaque pointer
+    exclusion. Covered clicks/scroll cannot reach clients, owned releases drain
+    after removal/failure/leave and client grabs/typing remain intact. Five new
+    real-client tests, affected tests/clippy/rustdoc/fmt, actual light/dark nested
+    EGL labels/dismissals/refusal recovery and all 28 offscreen stages pass.
+    Alternate full-text access, navigation/cursor selection and direct integration
+    remain. No feature tick; independent supervisor gates pending. Evidence:
+    `docs/autonomy/updates/transactional-native-label-composition.md`.
   - Transactional native control submission (2026-09-09): fresh explicit strips
     now share backend submission and callback publication, with authority retired
     on validation/submission failure, omitted targets and ordinary-frame removal.

@@ -104,6 +104,7 @@ impl Server {
     /// Remove native presentation and focus without forwarding an owned release.
     /// Idempotent, including on seats lacking pointer or keyboard capability.
     pub fn retire_window_controls(&mut self) {
+        self.control_overlay.bounds = None;
         self.control_presentation = None;
         self.cancel_window_control();
     }
@@ -120,7 +121,10 @@ impl Server {
         let Some(view) = self.live_window_controls() else {
             return false;
         };
-        if self.window_control_input_busy() || self.control_press.is_some() {
+        if self.window_control_input_busy()
+            || self.control_press.is_some()
+            || self.control_overlay.held()
+        {
             return false;
         }
         let Ok(snapshot) = self.window_control_snapshot(&view.surface, view.viewport, view.origin)
@@ -193,12 +197,37 @@ impl Server {
             view.focus = None;
         }
         let view = self.live_window_controls();
+        if self.route_control_overlay(position, event)? {
+            return Ok(WindowControlRoute::Consumed);
+        }
         self.route_window_control_pointer(
             view.as_ref().map(Presentation::painted),
             position,
             event,
             time,
         )
+    }
+
+    /// Route a scroll frame once, consuming opaque-label hits and owned gestures.
+    /// Existing client grabs retain priority. Returns false when not delivered.
+    pub fn route_presented_window_control_axis(
+        &mut self,
+        position: (f64, f64),
+        frame: smithay::input::pointer::AxisFrame,
+    ) -> Result<bool, crate::InputError> {
+        if !crate::pointer::bounded(position.0)
+            || !crate::pointer::bounded(position.1)
+            || !crate::pointer::bounded(frame.axis.0)
+            || !crate::pointer::bounded(frame.axis.1)
+        {
+            return Err(crate::InputError::InvalidPointer);
+        }
+        self.focus_window_control(None);
+        self.live_window_controls();
+        if self.control_overlay_axis(position)? {
+            return Ok(false);
+        }
+        self.pointer_axis(frame)
     }
 
     /// Revalidate even when no backend event observed an intervening hide/remap.
@@ -215,11 +244,26 @@ impl Server {
             self.retire_window_controls();
             return None;
         }
-        if (self.window_control_input_busy() || self.control_press.is_some())
+        if (self.window_control_input_busy()
+            || self.control_press.is_some()
+            || self.control_overlay.held())
             && let Some(view) = &mut self.control_presentation
         {
             view.focus = None;
         }
         self.control_presentation.clone()
+    }
+
+    /// Focus survives only an identical live candidate; never carry it to a new root.
+    pub(crate) fn control_frame_focus(
+        &mut self,
+        painted: &PaintedWindowControls<'_>,
+    ) -> Option<Action> {
+        let old = self.live_window_controls()?;
+        (old.surface == *painted.surface
+            && old.viewport == painted.viewport
+            && old.origin == painted.origin)
+            .then_some(old.focus)
+            .flatten()
     }
 }
