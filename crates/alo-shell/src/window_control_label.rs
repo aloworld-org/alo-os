@@ -90,10 +90,21 @@ impl WindowControlLabels {
         scale: TextScale,
     ) -> Result<(Said, Buffer), WindowControlLabelError> {
         let said = control.action().said(strings);
+        let buffer = self.shape_said(&said, width, scale)?;
+        Ok((said, buffer))
+    }
+
+    /// Shape explicit externalized wording with the same font and scale policy.
+    pub(crate) fn shape_said(
+        &mut self,
+        said: &Said,
+        width: i32,
+        scale: TextScale,
+    ) -> Result<Buffer, WindowControlLabelError> {
         if said.is_a_bug() {
             return Err(WindowControlLabelError::Vocabulary);
         }
-        if said.text().is_empty() || said.text().len() > 4096 {
+        if said.text().trim().is_empty() || said.text().len() > 4096 {
             return Err(WindowControlLabelError::Text);
         }
         let factor = f32::from(scale.as_percent()) / 100.0;
@@ -114,7 +125,7 @@ impl WindowControlLabels {
         {
             return Err(WindowControlLabelError::MissingGlyph);
         }
-        Ok((said, buffer))
+        Ok(buffer)
     }
 
     /// Prepare one control's full `Action::said` label, including disabled ones.
@@ -131,6 +142,17 @@ impl WindowControlLabels {
         scheme: Scheme,
         scale: TextScale,
     ) -> Result<WindowControlLabel, WindowControlLabelError> {
+        self.prepare_said(control.action().said(strings), geometry, scheme, scale)
+    }
+
+    /// Raster explicit wording using the ordinary complete-label policy.
+    pub(crate) fn prepare_said(
+        &mut self,
+        said: Said,
+        geometry: LabelGeometry,
+        scheme: Scheme,
+        scale: TextScale,
+    ) -> Result<WindowControlLabel, WindowControlLabelError> {
         let LabelGeometry {
             viewport,
             origin,
@@ -141,7 +163,7 @@ impl WindowControlLabels {
         if !(9..=2048).contains(&size.0) || !(9..=512).contains(&size.1) {
             return Err(WindowControlLabelError::Geometry);
         }
-        let (said, buffer) = self.shape(control, strings, size.0, scale)?;
+        let buffer = self.shape_said(&said, size.0, scale)?;
         let viewport = Rectangle::from_size(viewport.into());
         let bounds = Rectangle::new(origin.into(), size.into());
         let mut clipped = bounds.intersection(viewport) != Some(bounds)

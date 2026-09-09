@@ -212,3 +212,71 @@ fn native_reader_vocabulary_validates_gaps_and_registers_atomically() -> Result 
     }
     Ok(())
 }
+
+#[test]
+fn native_reader_chrome_prepares_live_pages_without_input_or_window_operations() -> Result {
+    let f = Fixture::keyboard();
+    let mut app = mapped(&f);
+    let root = f.root();
+    f.focus_surface(root.clone())?;
+    present(&f, &root, (640, 480), (3, 4))?;
+    let reader = begin(&f, Action::CloseWindow)?;
+    let mut vocabulary = shortcut_words()?;
+    declare_reader_words(&mut vocabulary)?;
+    let words = Strings::of(vocabulary);
+    f.backend(move |s| -> Result {
+        let mut reader = reader;
+        let mut labels = WindowControlLabels::new()?;
+        let snapshot = s.window_control_snapshot(&root, (640, 480), (3, 4))?;
+        for index in [0, 1, 2, 1, 0] {
+            let page = s
+                .read_window_control_page(&mut reader, index)
+                .ok_or("live page")?;
+            let geometry = alo_shell::LabelGeometry {
+                viewport: (640, 480),
+                origin: (260, 40),
+                size: (380, 400),
+            };
+            let scale = TextScale::percent(100).map_err(|_| "fixture scale")?;
+            let prepared = page.chrome(&words)?.prepare(
+                &mut labels,
+                snapshot.layout(),
+                page.page,
+                geometry,
+                Scheme::Light,
+                scale,
+            )?;
+            assert_eq!(prepared.available(), [index > 0, index < 2]);
+            assert_eq!(
+                prepared.rows().first().ok_or("position")?.said().text(),
+                format!("Page {} of 3", index + 1)
+            );
+            assert_eq!(
+                page.chrome(&words)?
+                    .prepare(
+                        &mut labels,
+                        snapshot.layout(),
+                        page.page,
+                        alo_shell::LabelGeometry {
+                            origin: (page.page.bounds().loc.x, page.page.bounds().loc.y),
+                            ..geometry
+                        },
+                        Scheme::Light,
+                        scale
+                    )
+                    .err(),
+                Some(alo_shell::WindowControlPageError::Placement)
+            );
+        }
+        s.retire_window_controls();
+        assert!(s.read_window_control_page(&mut reader, 0).is_none());
+        Ok(())
+    })?;
+    assert!(f.key(30, KeyState::Pressed)?);
+    assert!(f.key(30, KeyState::Released)?);
+    app.sync();
+    assert_eq!(app.events.keyboard.keys.len(), 2);
+    assert_eq!(app.events.keyboard.leaves, 0);
+    assert_eq!(app.events.close_requests, 0);
+    Ok(())
+}

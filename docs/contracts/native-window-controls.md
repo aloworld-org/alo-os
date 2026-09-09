@@ -649,3 +649,41 @@ booleans. Chrome layout/rasterization, input routing and transactional reader
 composition/submission/publication are still required before usable full-name
 access. Existing complete-label transactions keep their strict refusal behavior.
 Evidence: `docs/autonomy/updates/externalized-native-reader-navigation.md`.
+
+
+## Bounded reader chrome preparation
+
+2026-09-09 additive trusted API: `WindowControlReaderChrome::prepare` consumes the
+worded model and takes the explicit shaper, strip layout, prepared page,
+`LabelGeometry`, scheme and text scale. It returns
+`PreparedWindowControlReaderChrome` only when all four complete wording rows fit.
+`rows()` is an immutable four-element array in position/previous/next/dismiss
+order; `available()` retains previous/next availability as frozen data.
+
+The capacity uses the existing 9..=2048 by 9..=512 geometry limits. It must be
+wholly on the shared page/strip viewport, overlapping neither the page nor any
+strip control. Each row uses its natural wrapped height with four-pixel padding
+and four-pixel gaps between rows; unused capacity remains unpainted. The sum of
+row allocations cannot exceed 1,048,576 opaque RGBA pixels (4 MiB). All wording
+is checked again, including the final row, because the input model has public
+fields. Invalid geometry/text/vocabulary/glyphs retain the label error; mismatched
+or overlapping placement returns `Placement`; exhausted height or any clipped
+ink returns `LineTooLarge`. Refusal yields no partial prepared chrome.
+
+Preparation preserves each original Said and its entire displayed text, including
+source guillemets supplied by `Strings::shown(Showing::InDevelopment)`. It does
+not invent a source marker or change `Showing::ToAPerson`. The bundled Inter,
+14px/20px metrics multiplied by the person's scale, wrapping and scheme tokens
+are shared with complete control labels. No shrinking, ellipsis or host-font scan.
+
+`paint` draws every opaque row into a matching scale-one frame using the existing
+label painter. The host must discard a failed frame. These are wording rasters,
+not interactive button state: unavailable navigation retains its complete name
+and availability for the later interaction renderer. The prepared data retains
+no live mapping and grants no pointer/keyboard ownership. The host must still
+revalidate the page, compose and submit one reader transaction, publish overlay
+input ownership only on success, and retire on lifecycle changes. Native input
+navigation, interaction feedback and integrated reader publication remain owed.
+Existing full-label scene validation and normal keyboard routing are unchanged.
+
+Evidence: `docs/autonomy/updates/bounded-native-reader-chrome-rendering.md`.

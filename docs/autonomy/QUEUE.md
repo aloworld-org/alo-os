@@ -5,6 +5,27 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed bounded native reader chrome rendering (2026-09-09):** four complete
+wording rows preserve translation/source marking and text scale, refusing overlap,
+output mismatch, invalid text/vocabulary/glyphs and any lost text/ink atomically.
+Three new unit tests and one private-client test; Linux 165 unit/224 lifecycle/
+three socket/four doctests, affected Linux/Windows checks, rustdoc, 72 complete
+GLES page-and-chrome frames and nested control regression pass. Report:
+`updates/bounded-native-reader-chrome-rendering.md`. Independent supervisor gates
+pending. Next executable reader component: keyboard/pointer ownership and
+interaction feedback connected to transactional composition/submission/publication/
+retirement. Then native navigation/cursor selection and direct integration.
+Wording raster preparation is complete; reader UI and window management are not.
+
+**Selected bounded native reader chrome rendering (2026-09-09):** prepare all four
+complete navigation labels in an output-contained, nonoverlapping chrome box.
+Retain per-string source marking/provenance and text scale; refuse missing words,
+unsupported glyphs, invalid placement and any lost text/ink atomically. Acceptance:
+layout/raster happy and refusal tests, mixed translation and scale coverage,
+private-client page/chrome integration with ordinary typing, and complete GLES
+readback; affected fmt/tests/clippy/rustdoc. Input ownership and transactional
+reader composition/publication remain the next component; no feature completion.
+
 **Completed externalized native reader navigation model (2026-09-09):** complete
 position/previous/next/dismiss wording retains per-string provenance; atomic
 vocabulary registration and bounded live navigation refuse missing wording,

@@ -1334,6 +1334,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Bounded reader chrome rendering (2026-09-09): four complete wording rows
+    retain translation/source marking and text scale; overlap, mismatched output,
+    invalid wording, missing glyphs and lost text/ink refuse atomically. Three new
+    unit tests and one private-client test; Linux 165 unit/224 lifecycle/three
+    socket/four doctests, affected Linux/Windows checks and rustdoc pass. WSLg:
+    72 complete 307,200-pixel page-and-chrome frames and nested control regression
+    pass. Input ownership, interaction feedback and transactional reader
+    composition/publication/retirement remain next, then native navigation/cursor
+    selection and direct integration. No feature tick; full supervisor gates
+    pending. `docs/autonomy/updates/bounded-native-reader-chrome-rendering.md`.
   - Externalized reader navigation model (2026-09-09): complete position and
     previous/next/dismiss wording retains per-string provenance; vocabulary
     collisions, missing wording and invalid positions refuse. Live semantic

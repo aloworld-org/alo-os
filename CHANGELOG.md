@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Long-name reader navigation can now be rendered without shortening its words.**
+  The native preparer fits page position and previous/next/dismiss wording at the
+  person's text scale, preserving individual translations and development source
+  marks. Overlapping placement, missing words and insufficient space refuse the
+  entire preparation. Interactive reader submission remains unfinished. Evidence:
+  `docs/autonomy/updates/bounded-native-reader-chrome-rendering.md`.
+
 - **Long window-control names now have translatable page navigation wording.**
   The reader model keeps page position, previous/next and dismissal wording with
   their individual translation provenance. Checked navigation stops at each end

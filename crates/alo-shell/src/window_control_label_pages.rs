@@ -69,6 +69,11 @@ impl WindowControlLabelPages {
 }
 
 impl WindowControlLabelPage {
+    /// Output identity for composition validation, never inferred from bounds.
+    pub(crate) fn viewport(&self) -> Rectangle<i32, Physical> {
+        self.raster.viewport
+    }
+
     /// Contiguous visual-line indices; all pages partition the full shaped name.
     pub fn lines(&self) -> Range<usize> {
         self.lines.clone()

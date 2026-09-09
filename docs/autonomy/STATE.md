@@ -14524,3 +14524,60 @@ state/navigation and existing GLES regressions, not rendered chrome, parent key
 navigation delivery, on-screen reader UI, scanout or integrated VM boot. Physical
 laptop/GPU workstation records remain owed during release validation; no feature
 checkbox or release certification. Later published reports reconcile next iteration.
+
+
+## 2026-09-09 - bounded native reader chrome rendering
+
+Started clean at 9855d76. Read required instructions and current progress,
+relevant features/roadmap, ADR 0002/0010 and native-control/translation contracts.
+Compared published task reports against STATE: all already referenced; no report
+reconciliation needed. Selected complete wording layout/raster acceptance in
+QUEUE before implementation. No additional AGENTS.md found.
+
+Added atomic preparation of four complete reader wording rows, retaining each
+Said, source-development marks and text scale. Natural wrapped row heights use
+existing label padding/metrics and scheme tokens. Capacity must share the page/
+strip viewport and intersect neither page nor controls. Invalid text/vocabulary/
+glyphs, placement or lost text/ink refuse with no partial result. Existing shaper/
+raster logic is reused; prepared chrome has no input or publication authority.
+No new font, palette, vocabulary, engine, configured shortcut or ADR decision.
+
+Three new unit tests and one private-client test cover complete words/provenance,
+four scales and both schemes, exact fit/one-pixel-short refusal, wrapping/narrow
+ink refusal, invalid geometry, page/control overlap, viewport mismatch, late
+wording/glyph refusal, shaper recovery, live forward/reverse traversal, retirement
+and normal typing without focus leave or close. Final Linux suite: 165 unit,
+224 lifecycle, three socket and four compile-fail doctests pass, none ignored.
+Affected Linux/Windows clippy/tests/fmt, Linux rustdoc and examples pass. Windows
+shell cases are zero because the implementation is Linux-only.
+
+New WSLg evidence: 72 complete 307,200-pixel page-and-chrome frames pass across
+partial translation/source marking, light/dark and four scales in forward/reverse
+order. Existing nested control submission, label/expansion, removal and refusal/
+recovery with real clients passes. Mesa/EGL discovery warnings remain visible;
+no graphical timeout. Full independent supervisor workspace/Windows/Linux/rustdoc/
+BPF gates remain pending. No feature or release checkbox promoted.
+
+Development failures retained: test TextError conversion repaired with fixture
+mapping; source-mark assertion corrupted by a Windows text pipe repaired with an
+explicit Rust Unicode escape. A default-cp1252 edit-script read of multilingual
+source failed; UTF-8 mode preserved it in subsequent edits. No test/limit/deadline
+weakening. Final affected acceptance passes after all source changes.
+
+Ubuntu dependencies, WSLg socket and existing bpffs verified. Every command
+preflight exceeded 12 GiB C:; minimum 54,645,133,312 bytes. No cleanup, shared
+maintenance, WSL restart/helper, kernel mutation or outer machine lock. Desktop
+Linux target remains /root/alo-os-target. No staging/commit/push, dev-loop edits,
+extra worker, other-checkout edits, credential/identity or unrelated host access.
+
+Exact commands, decisions, failures and limits:
+`docs/autonomy/updates/bounded-native-reader-chrome-rendering.md`.
+Logs: `.git/alo-loop/bounded-native-reader-chrome/`.
+All four progress documents and public contract updated; source/new-file diffs
+reviewed and git diff --check passed. Next reader component: keyboard/pointer
+ownership and interaction feedback connected to transactional composition/
+submission/publication/retirement. Native navigation/cursor selection and direct
+integration follow. Current evidence is wording raster preparation and GLES
+readback, not parent navigation input, on-screen reader UI, scanout or VM boot.
+Physical laptop/GPU workstation evidence remains owed during release validation.
+Reports arriving during publication reconcile next iteration.
