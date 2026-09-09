@@ -156,3 +156,33 @@ This component adds cancellation hooks, not automatic motion/button interception
 hover feedback, rendered labels or composed production controls.
 
 Evidence and limits: `docs/autonomy/updates/native-control-motion-cancellation.md`.
+
+## Combined native and client pointer routing
+
+`Server::route_window_control_pointer` accepts a current `PaintedWindowControls`
+view (explicit root, viewport and origin), output-local position, motion/button
+event and monotonic timestamp. None denotes absent controls. The router consumes
+owned primary transitions and motion, or calls the existing ordinary client
+route itself. Its `Client`, `Consumed` and `Released` results must never be
+forwarded a second time. Typed input/press/release errors also prohibit automatic
+fallback or retry; a release error has already consumed native ownership.
+
+Replacement or removal of the painted root disarms a held press on any routed
+event, including duplicate presses and releases at identical geometry. Restoring
+the original target cannot rearm it. Existing mapping, geometry, intent and live
+operation validation remain in the transaction component. Disabled hits consume
+their gestures. Client-held buttons and popup/interactive grabs refuse new native
+acquisition; ordinary unmatched releases retain their existing semantics.
+
+Other buttons keep ordinary routing. Unowned motion updates client seat position
+and focus; owned motion updates neither. The host supplies every motion and uses
+the existing keyboard/axis routes and leave/reset hooks. Cancel immediately if
+presentation disappears between events. Continue routing the matching primary
+release even after loss of input. This additive API is trusted shell input, never
+an agent verb. It does not automatically select, paint or install controls in the
+nested/direct backends. Native labels, feedback, cursor/presentation integration
+and production composition remain work to complete usable controls.
+
+Real-client routing tests: `tests/window_controls/routing.rs`. Graphical fixture:
+`examples/support/window_minimize_check.rs`. Exact executed evidence and limits:
+`docs/autonomy/updates/native-control-pointer-routing.md`.

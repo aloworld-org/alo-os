@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window controls now have a pointer router that keeps owned clicks
+  and drag motion out of client applications.** Replacing or removing a painted
+  target cancels its held action without redirecting the release. Ordinary client
+  input retains its existing route. This completes the routing component;
+  labels, feedback and production composition remain integration work.
+  `docs/autonomy/updates/native-control-pointer-routing.md`.
+
 - **Native window-control gestures now cancel when the pointer leaves the
   pressed action or input is lost.** Returning to the button cannot rearm a held
   press, and cancellation keeps its release from becoming a second action.

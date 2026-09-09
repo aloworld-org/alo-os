@@ -13736,3 +13736,46 @@ owned-motion consumption and ordinary client routing isolation; then native
 labels/feedback and production composition. Cancellation is complete; the strip
 router and usable controls are unfinished. Reports arriving during publication
 reconcile next iteration. Release remains unverified.
+
+## 2026-09-09 - native control pointer routing
+
+Started clean; read constitution, delivery and ownership rules, report guidance,
+current queue, journal tail and relevant feature/roadmap/ADR/contract sections.
+Every published report was already referenced in STATE. No contributor evidence
+needed new reconciliation and Claude's workstream/checkout remain untouched.
+Selected the combined primary/motion router in QUEUE before implementation.
+
+Added a trusted routing API with explicit current painted target/geometry, typed
+outcomes and ordinary client fallback. Owned native primary gestures and motion
+never fall through, including disabled/cancelled hits and consumed live errors.
+Painted root replacement/removal permanently disarms the old press even at the
+same geometry. No focus/stacking fallback; keyboard/axis and other button routes
+are unchanged. Owned motion leaves ordinary seat position/focus untouched.
+Public rustdoc and the contract document backend opt-in and presentation duties.
+
+Four new private-display real-client tests passed first focused run. Linux affected
+all-target clippy, 150 unit/192 lifecycle/three socket tests, three doctests,
+warnings-denied rustdoc, examples and fmt passed. Windows affected clippy/tests/fmt
+passed; zero Linux-only tests run there. No failing build/test or weakened check.
+WSLg passed all 28 offscreen stages, twelve snapshot frames and 128 painter frames.
+The graphical minimize fixture now uses the router for cancellation and execution;
+complete visible/hidden/restored 6,400-pixel assertions remain passing. Mesa fallback
+and deliberate malformed SHM diagnostics skipped no checks. No on-screen mode,
+direct DRM/input or hardware evidence claimed.
+
+Rust 1.98.0, eight graphics/input packages and the WSLg socket verified. All
+build/test/lint/format preflights exceeded 12 GiB; minimum 72,154,546,176 bytes.
+Initial read-only inventory: 71,570,845,696 bytes. No cleanup, installation,
+shared-system maintenance, kernel mutation or outer fixture lock.
+Report: `docs/autonomy/updates/native-control-pointer-routing.md` records exact
+commands, decisions and scheduled machine evidence limits. Four shared progress
+documents updated; no feature box promoted. Diff and new files reviewed;
+whitespace clean. Full independent supervisor publication gates remain pending.
+
+Next: native hover/pressed feedback using existing tokens and shared hit geometry,
+including disabled/cancelled states and full-frame rendering tests; then native
+externalized labels and production nested/direct composition. The router component
+is complete; usable controls and window management remain unfinished. Reports
+arriving during publication reconcile next iteration. No staging, commit, push,
+dev-loop edits, other-checkout changes, credential/identity access or worker/loop
+launch. Release remains unverified.

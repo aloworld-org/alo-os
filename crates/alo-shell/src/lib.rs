@@ -63,6 +63,7 @@ mod window_close;
 mod window_command;
 mod window_control_input;
 mod window_control_paint;
+mod window_control_routing;
 mod window_control_snapshot;
 mod window_controls;
 mod window_maximize;
@@ -122,6 +123,9 @@ pub use socket::SocketError;
 pub use window_command::WindowCommandError;
 pub use window_control_input::{
     WindowControlPressError, WindowControlRelease, WindowControlReleaseError,
+};
+pub use window_control_routing::{
+    PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,
 };
 pub use window_control_snapshot::{WindowControlSnapshot, WindowControlSnapshotError};
 pub use window_controls::{WindowControl, WindowControlLayout, WindowControlLayoutError};

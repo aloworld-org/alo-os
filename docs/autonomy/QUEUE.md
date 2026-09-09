@@ -5,6 +5,29 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native control pointer routing (2026-09-09):** combined primary/motion
+interception and client fallback are code-ready. Painted target replacement or
+removal permanently cancels native authority. Disabled hits and consumed failed
+releases cannot leak to clients; other buttons and typing retain their routes.
+Four new real-client tests pass. Linux affected clippy, 150 unit/192 lifecycle/
+three socket tests and three doctests, rustdoc/examples/fmt and Windows affected
+checks pass. WSLg's 28 offscreen stages and 128 painter frames pass, including
+routed full-frame cancellation/minimize/restore assertions. Report:
+`updates/native-control-pointer-routing.md`. Full supervisor gates pending.
+Next executable component: native control hover/pressed feedback using the
+existing appearance tokens and shared hit geometry, with disabled/cancelled states
+and full-frame rendering tests; then externalized native label presentation and
+production nested/direct composition. No usable-controls or feature completion.
+
+**Selected native control pointer routing (2026-09-09):** implement one trusted
+router for primary buttons and motion against the current explicit painted target,
+with native ownership consumption and ordinary client fallback. Target replacement
+or removal cancels held authority even at identical geometry. Acceptance: real
+client exactly-once execution, disabled hits, cancellation, target replacement,
+client-held refusal, other buttons and typing isolation; affected Rust gates and
+offscreen routed minimize/cancellation scene evidence. Labels/feedback and backend
+composition follow; this component does not complete usable controls.
+
 **Completed native control motion and input-loss cancellation (2026-09-09):**
 motion excursions, relayout and transient intent changes permanently disarm held
 presses. Pointer leave, nested/direct pointer deactivation and whole-seat reset

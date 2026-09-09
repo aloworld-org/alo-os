@@ -27,6 +27,11 @@ pub(crate) struct Press {
 }
 
 impl Press {
+    /// Compare current presentation identity without exposing transaction authority.
+    pub(crate) fn targets(&self, surface: &WlSurface) -> bool {
+        self.surface == *surface
+    }
+
     /// Shared motion/release boundary; operation policy is still checked at release.
     fn matches(
         &self,

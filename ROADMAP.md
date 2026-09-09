@@ -1265,6 +1265,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native control pointer routing (2026-09-09): one trusted entry point consumes
+    native primary gestures and motion, with ordinary client fallback. Current
+    painted target replacement/removal cancels even at unchanged geometry.
+    Four new real-client tests; Linux affected clippy, 150 unit/192 lifecycle/
+    three socket tests and three doctests, rustdoc/examples and fmt pass.
+    Windows affected clippy/tests/fmt pass (zero Linux-only tests). WSLg passes
+    all 28 offscreen stages and 128 full painter frames; routed cancellation,
+    minimize and restore retain complete 6,400-pixel scene assertions. No on-screen
+    or direct-input evidence claimed. Labels/feedback and production nested/direct
+    composition remain next; no feature tick. Full supervisor gates pending.
+    `docs/autonomy/updates/native-control-pointer-routing.md`.
   - Native control motion cancellation (2026-09-09): out-and-back gestures,
     relayout and transient intent changes cannot rearm a press. Pointer leave and
     seat reset cancel even when pointer cleanup refuses, retaining release

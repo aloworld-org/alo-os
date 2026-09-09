@@ -17,27 +17,47 @@ pub fn run(
         .enumerate()
     {
         if step == 4 {
-            use alo_shell::WindowControlRelease;
-            assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
+            use alo_shell::{
+                PaintedWindowControls, WindowControlPointerEvent as Event, WindowControlRelease,
+                WindowControlRoute as Route,
+            };
+            use smithay::backend::input::ButtonState;
+            let route = |server: &mut Server, position, event| {
+                server.route_window_control_pointer(
+                    Some(PaintedWindowControls {
+                        surface: &root,
+                        viewport: (120, 48),
+                        origin: (3, 4),
+                    }),
+                    position,
+                    event,
+                    1,
+                )
+            };
+            let down = Event::Button(0x110, ButtonState::Pressed);
+            let up = Event::Button(0x110, ButtonState::Released);
+            assert_eq!(route(server, (4.0, 5.0), down)?, Route::Consumed);
             server.cancel_window_control();
             assert_eq!(
-                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
-                WindowControlRelease::Cancelled
+                route(server, (4.0, 5.0), up)?,
+                Route::Released(WindowControlRelease::Cancelled)
             );
             assert_eq!(server.mapped_surfaces().count(), 1);
-            assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
-            assert!(server.window_control_motion((120, 48), (3, 4), (35.0, 5.0)));
-            assert!(server.window_control_motion((120, 48), (3, 4), (4.0, 5.0)));
+            assert_eq!(route(server, (4.0, 5.0), down)?, Route::Consumed);
+            assert_eq!(route(server, (35.0, 5.0), Event::Motion)?, Route::Consumed);
+            assert_eq!(route(server, (4.0, 5.0), Event::Motion)?, Route::Consumed);
             assert_eq!(
-                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
-                WindowControlRelease::Cancelled
+                route(server, (4.0, 5.0), up)?,
+                Route::Released(WindowControlRelease::Cancelled)
             );
             visible_after_cancellation(server, renderer)?;
-            assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
-            assert!(server.window_control_motion((120, 48), (3, 4), (5.0, 6.0)));
+            assert_eq!(route(server, (4.0, 5.0), down)?, Route::Consumed);
+            assert_eq!(route(server, (5.0, 6.0), Event::Motion)?, Route::Consumed);
             assert_eq!(
-                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
-                WindowControlRelease::Executed(alo_shortcuts::Action::MinimiseWindow)
+                route(server, (4.0, 5.0), up)?,
+                Route::Released(WindowControlRelease::Executed(
+                    alo_shortcuts::Action::MinimiseWindow
+                ))
             );
             assert_eq!(
                 server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
