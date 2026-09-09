@@ -1334,6 +1334,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Mapping-bound reader pointer transactions (2026-09-09): primary release acts
+    once on the exact reader/page visit/command. Leaving, competing buttons,
+    cancellation and replacement disarm; disabled/content/non-primary presses
+    consume, client grabs refuse acquisition, and inactive releases drain.
+    Validated semantic hover/pressed feedback is available. Five private-client
+    tests include host motion/scroll/button routing and ordinary typing. Affected
+    Linux/Windows checks pass; exact commands and limits in
+    `docs/autonomy/updates/mapping-bound-reader-pointer-transactions.md`.
+    Hit geometry, feedback painting, transactional reader composition/publication
+    and coordinated backend key/pointer activation remain unfinished. Independent
+    supervisor gates pending; no feature tick.
   - Mapping-bound reader key transactions (2026-09-09): exact reader/page-visit
     presses execute once on release; cancellation drains ownership, repeats and
     replacement refuse, and ordinary client keys remain intact. Four new private

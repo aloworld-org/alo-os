@@ -5,6 +5,29 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed mapping-bound reader pointer transactions (2026-09-09):** exact reader/
+page-visit/command presses execute once on primary release. Leaving, replacement,
+competing buttons and cancellation disarm permanently; owned releases drain even
+while inactive. Content/disabled/non-primary presses consume without action;
+client grabs refuse acquisition. Semantic hover/pressed feedback revalidates live
+identity. Five private-client tests cover transactions and host pointer routing.
+Affected checks and evidence: `updates/mapping-bound-reader-pointer-transactions.md`.
+Independent supervisor gates pending. Next executable component: published reader
+hit geometry and interaction feedback painting connected to transactional reader
+composition/submission/publication/retirement, then coordinated backend key/pointer
+activation, native navigation/cursor selection and direct integration. Pointer
+transactions are complete; rendered reader interaction remains unfinished.
+
+**Selected mapping-bound reader pointer transactions (2026-09-09):** implement
+trusted semantic pointer ownership and validated hover/pressed feedback. Primary
+press/release must bind to the exact reader/page visit and target; leaving,
+cancellation, competing buttons and replacement cannot rearm it. Covered content,
+disabled navigation and non-primary buttons consume without action; client grabs
+and absent seats refuse acquisition. Acceptance: real private-client happy/refusal
+and ordinary input checks, affected tests/fmt/clippy/rustdoc. Geometry hit testing,
+feedback painting, reader frame publication and backend activation remain the next
+integration component; this does not complete usable full-name access.
+
 **Completed mapping-bound reader key transactions (2026-09-09):** exact reader
 and page-visit identity protects release execution; repeats, replacement and
 cancelled keys cannot act. Owned releases drain and client-owned keys refuse

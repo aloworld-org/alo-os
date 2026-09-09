@@ -14619,3 +14619,49 @@ integration. New evidence is private-client semantic transactions, not parent
 key delivery, rendered reader UI, scanout or VM boot; no new GLES path or test.
 Physical laptop/GPU workstation evidence remains owed at release validation.
 No feature tick or release verdict; later reports reconcile next iteration.
+
+## 2026-09-09 - mapping-bound reader pointer transactions
+
+Started clean at ce5b73d. Read required guidance and relevant features/roadmap,
+ADRs and contracts. No AGENTS.md found; every published task report already had
+a STATE reference. Selected pointer transaction acceptance in QUEUE before coding.
+
+Added trusted semantic pointer transactions and live hover/pressed feedback.
+Primary release acts once on the exact reader/page visit/command. Leaving,
+competing buttons, cancellation, page away-and-back and replacement disarm;
+disabled/content/non-primary presses consume without action. All eight buttons
+retain release ownership while inactive. Client grabs/missing seats refuse new
+acquisition. Shared command/route enums retain existing keyboard behavior. No
+palette/string/engine/ADR change and no new agent surface or focus manipulation.
+
+Five new real private-client tests pass, including explicit host routing that
+withholds covered pointer input, drains inactive releases and restores measured
+ordinary motion/scroll/button delivery. Normal typing remains intact. Final Linux
+suite: 165 unit, 233 lifecycle, three socket and four compile-fail doctests pass,
+none ignored. Affected Linux/Windows clippy/tests, Linux rustdoc with warnings
+denied and fmt pass; Windows shell cases are zero because code is Linux-only.
+Clippy caught a direct test index; checked lookup preserves length/value assertions.
+Repaired clippy and reran full tests. Final fmt caught the new assertion's wrapping;
+cargo fmt and fmt --check then passed. No gate/assertion/deadline weakening.
+
+Ubuntu libraries, WSLg socket and existing bpffs checked. Every command reserve
+preflight exceeded 12 GiB C:; minimum 53,049,700,352 bytes. No cleanup/shared
+maintenance, WSL restart/helper, kernel mutation or outer machine lock. Desktop
+target remained /root/alo-os-target. No staging/commit/push, dev-loop edit, extra
+worker, other-checkout edit, credential/identity access or unrelated host change.
+
+Exact commands, preserved development failures, decisions and evidence limits:
+`docs/autonomy/updates/mapping-bound-reader-pointer-transactions.md`.
+Logs: `.git/alo-loop/mapping-bound-reader-pointer-transactions/`.
+All four progress documents and contract updated; tracked/new-file diffs reviewed
+and git diff --check passed. Full independent supervisor gates remain pending.
+
+Next: published hit geometry and interaction feedback painting connected to
+transactional reader composition/submission/publication/retirement, coordinated
+backend key/pointer activation, native navigation/cursor selection and direct
+integration. Pointer transactions complete; rendered reader interaction unfinished.
+Evidence is semantic private-client state and explicit host pointer routing, not
+parent delivery, on-screen reader feedback, scanout or VM boot. No new graphical
+run claimed. Physical laptop/GPU workstation records remain owed during release
+validation. No feature tick or release verdict; later reports reconcile next
+iteration.

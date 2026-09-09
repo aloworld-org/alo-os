@@ -16,10 +16,10 @@ pub enum ReaderKeyCommand {
     Dismiss,
 }
 
-/// Whether the host must withhold this event from ordinary keyboard routing.
+/// Whether the host must withhold this reader event from ordinary client routing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReaderKeyRoute {
-    /// No ownership acquired; route through the existing keyboard path once.
+    /// No ownership acquired; route through the existing input path once.
     Forward,
     /// Owned event, including repeats, boundaries and cancelled releases.
     Consumed,

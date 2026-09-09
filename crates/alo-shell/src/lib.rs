@@ -78,6 +78,7 @@ mod window_control_reader;
 mod window_control_reader_chrome;
 mod window_control_reader_keys;
 mod window_control_reader_navigation;
+mod window_control_reader_pointer;
 pub mod window_control_reader_words;
 mod window_control_routing;
 mod window_control_scene;
@@ -171,3 +172,6 @@ pub use seat_input::{InputDispatchError, InputUpdate, SeatInput};
 pub use session_input::{SessionInput, SessionInputStatus};
 
 pub use window_control_reader_keys::{ReaderKeyCommand, ReaderKeyRoute, WindowControlReaderKeys};
+pub use window_control_reader_pointer::{
+    ReaderPointerFeedback, ReaderPointerHit, WindowControlReaderPointer,
+};

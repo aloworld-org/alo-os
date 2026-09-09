@@ -720,3 +720,42 @@ This completes explicit keyboard transaction ownership, not automatically active
 reader keyboard UI. Pointer ownership, interaction feedback, transactional
 reader composition/publication/retirement and backend mapping remain required.
 Evidence: `docs/autonomy/updates/mapping-bound-reader-key-transactions.md`.
+
+## Mapping-bound reader pointer transactions
+
+2026-09-09 additive trusted host primitive: `WindowControlReaderPointer` accepts
+semantic `ReaderPointerHit::Content` or `Command(ReaderKeyCommand)` hits from the
+host's successfully published reader frame. None means outside/inactive. This
+component does not perform geometry hit testing, paint feedback, publish a reader
+or install backend routing. Existing ReaderKeyCommand/ReaderKeyRoute enums are
+shared to keep previous/next/dismiss and routing outcomes identical across input.
+
+`motion` validates the current reader and pointer seat, computes enabled hover,
+and returns whether motion and axes must be withheld from clients. Content and
+disabled navigation consume but have no command feedback. Existing client-held
+buttons and competing popup/move/resize/control input refuse new ownership. An
+owned reader gesture consumes even outside the reader until its releases drain.
+
+`button` accepts only BTN_LEFT through BTN_TASK (eight retained slots). Only the
+primary button on an enabled command arms. It captures the exact reader, page
+visit and semantic command; matching release executes once. Leaving that command,
+page away-and-back, replacement, stale/foreign reader, cancellation or another
+button disarms permanently. Returning and duplicate presses cannot rearm. Content,
+disabled rows and other mouse buttons consume without executing. Unknown releases
+and invalid codes return Forward. Changed requests fresh composition; Dismissed
+requests reader removal, never an application close or focus change.
+
+`feedback` revalidates semantic hovered/pressed commands against the live reader;
+stale feedback clears all armed commands. It is state for a future painter, not
+rendering evidence. `cancel` clears hover and execution but retains every matching
+release obligation. Hosts must cancel on failed/removed frames, pointer leave,
+focus/seat/session loss, geometry changes and competing keyboard interaction;
+keep routing owned releases while inactive. Offer hits only after successful
+reader publication, re-hit before axes/buttons, and never forward consumed input.
+This host integration and coordinated key/pointer activation remain unfinished.
+
+Private-client tests cover semantic transactions, all eight button release slots,
+ordinary typing, existing client grabs and explicit host pointer routing. They do
+not prove parent pointer delivery, rendered interaction feedback or on-screen
+reader navigation. Evidence:
+`docs/autonomy/updates/mapping-bound-reader-pointer-transactions.md`.

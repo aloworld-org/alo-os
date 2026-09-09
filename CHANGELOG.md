@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Reader pointer presses cannot activate a different page or replacement reader.**
+  The native host component cancels a click when it leaves its command, suppresses
+  competing buttons and drains releases after dismissal. Disabled navigation and
+  covered text consume input without acting; ordinary client grabs remain intact.
+  Semantic hover/pressed feedback is available for the interaction painter.
+  Reader frame publication and backend activation remain unfinished. Evidence:
+  `docs/autonomy/updates/mapping-bound-reader-pointer-transactions.md`.
+
 - **Reader navigation key transactions cannot act on a replacement reader.**
   The native host component binds each press to its reader and page, executes
   once on release, and drains cancelled keys without sending them to an app.
