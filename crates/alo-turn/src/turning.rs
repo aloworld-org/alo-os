@@ -71,6 +71,7 @@ use alo_capability::{
 use alo_context::{Context, Turn};
 use alo_files::Answer;
 use alo_record::Entry;
+use alo_strings::Said;
 
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
@@ -358,6 +359,39 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// to answer with and the sentence the person is being asked about.
     pub fn waiting_at(&self, now: SystemTime) -> impl Iterator<Item = &Waiting> {
         self.approvals.waiting_at(now)
+    }
+
+    /// A question that was refused before it was put anywhere, written down.
+    ///
+    /// The refusal is decided and worded by whoever refused it — an
+    /// organisation's rule, in the one case that reaches this today — and
+    /// arrives here **already rendered**. This crate does not word it, does not
+    /// re-decide it, and has no `Strings` for it: what a person read and what
+    /// the record keeps are then one value, and cannot become two accounts of
+    /// one moment.
+    ///
+    /// **The agent comes from the turn**, not from the caller, so a door cannot
+    /// write somebody else's name against a question. The moment is the
+    /// caller's, as it is for every other entry.
+    ///
+    /// It goes through the same private road to the record as everything else,
+    /// so *every execution and every refusal leaves a record* stays true of this
+    /// door as well.
+    ///
+    /// # Errors
+    /// [`NotDone::NotRecorded`] when the record could not be written — and the
+    /// turn is closed by it, exactly as an unwritable verb closes one. **A
+    /// caller must answer with this rather than with the refusal it was
+    /// carrying**: somebody told only that a rule refused their question would
+    /// believe the machine had behaved correctly, when it had also failed to
+    /// write down that it had.
+    pub fn a_question_that_went_nowhere(
+        &mut self,
+        why: &Said,
+        now: SystemTime,
+    ) -> Result<(), NotDone> {
+        let entry = Entry::never_put_anywhere(self.turn.grantee(), why.text(), now);
+        self.writing_down(entry)
     }
 
     /// What is leaving this machine right now.
@@ -916,6 +950,83 @@ mod tests {
             record.is_empty(),
             "a question nobody answered became an entry"
         );
+    }
+
+    /// **A question that went nowhere is written down as its own kind of thing,
+    /// with the words the person was shown.**
+    ///
+    /// The sentence arrives already rendered and is kept exactly: what a person
+    /// read and what the record holds are one value, which is the whole reason
+    /// this door takes a `Said` rather than something to word.
+    ///
+    /// The agent is the turn's, not the caller's — asserted, because a door that
+    /// took one would be a door that could write somebody else's name against a
+    /// question.
+    #[test]
+    fn a_question_that_went_nowhere_is_written_down_in_the_words_it_was_refused_in() {
+        let mut record = Record::default();
+        let refused = in_english().say(
+            &alo_capability::words::NOTHING_NAMED.key(),
+            &alo_strings::Filling::nothing(),
+        );
+
+        on_a_machine("went-nowhere", &mut record, |turning, _grants, _, _| {
+            turning
+                .a_question_that_went_nowhere(&refused, noon())
+                .unwrap();
+        });
+
+        assert_eq!(record.len(), 1, "the refusal was not written down");
+        let entry = record.everything().next().unwrap();
+        assert_eq!(entry.at(), noon());
+        assert_eq!(
+            entry.agent().map(alo_record::Line::as_str),
+            Some("@files"),
+            "the entry did not name the agent whose turn it was"
+        );
+        assert_eq!(
+            entry.happened().why_stopped().map(alo_record::Line::as_str),
+            Some(refused.text()),
+            "the record does not hold the sentence the person was shown"
+        );
+        assert!(
+            entry.what().is_none(),
+            "a refused question was written down as though it were a call"
+        );
+    }
+
+    /// **A question that could not be written down closes the turn**, and the
+    /// caller is told the record failed rather than told the refusal.
+    ///
+    /// This is the half that matters for what a person is eventually told: a
+    /// caller answering with the policy refusal it was carrying would leave
+    /// somebody believing the machine had behaved correctly, when it had also
+    /// failed to write down that it had. The door hands back
+    /// [`NotDone::NotRecorded`] so there is nothing else it *can* honestly say.
+    #[test]
+    fn a_question_that_could_not_be_written_down_closes_the_turn() {
+        let mut disk = ANoSpaceLeftDisk::default();
+        let refused = in_english().say(
+            &alo_capability::words::NOTHING_NAMED.key(),
+            &alo_strings::Filling::nothing(),
+        );
+
+        on_a_machine("went-nowhere-unwritable", &mut disk, |turning, _, _, _| {
+            let not_recorded = turning
+                .a_question_that_went_nowhere(&refused, noon())
+                .unwrap_err();
+
+            assert!(
+                matches!(not_recorded, NotDone::NotRecorded(_)),
+                "a record that could not be written answered with something else: \
+                 {not_recorded:?}"
+            );
+            assert!(
+                not_recorded.is_the_end_of_the_turn(),
+                "a question that could not be written down left the turn open"
+            );
+            assert!(turning.is_closed(), "the turn did not close");
+        });
     }
 
     /// **Nothing is handed back that has not been written down, and a turn that

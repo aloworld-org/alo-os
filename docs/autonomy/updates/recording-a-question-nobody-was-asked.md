@@ -3,7 +3,7 @@
 - Date: 2026-09-09
 - Workstream: model selection and configuration (`alo-record`, `alo-turn`, `alo-agentd`)
 - Contributor: Claude Code
-- Status: **the reader-side half is built; nothing emits it.** The variant, its
+- Status: **the reader side and the turn's door are built; nothing emits one.** The variant, its
   constructor and the compatibility tests exist. **No production path writes
   one**, and **response/record agreement is not claimed** — that is claimed when
   a daemon test reads the persisted refusal back, and that test does not exist
@@ -16,7 +16,8 @@
 | `Happened::NeverPutAnywhere`, `Entry::never_put_anywhere` | **built** |
 | Compatibility behaviour under an unknown tag | **built, four tests** |
 | Stored bytes carry no question, credential or endpoint | **built** |
-| `Turning` recording method, write-failure behaviour | not built |
+| `Turning::a_question_that_went_nowhere` | **built** |
+| Write-failure closes the turn, refusal not reported | **built, mutation-checked** |
 | Daemon emission | **not built, deliberately** |
 | Persisted response/record agreement | **not claimed** |
 
