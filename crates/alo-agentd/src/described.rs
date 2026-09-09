@@ -34,10 +34,11 @@
 //! **The directory the socket goes in**, which is the session's rather than the
 //! machine's; `crate::session` is the whole of that argument.
 //!
-//! **Which model or provider answers a question, and under which policy.** That
-//! is the rest of queue item 21e and it arrives with the process that asks one:
-//! `crate::doing` refuses a question in words today, and the sentence stops
-//! being the only answer when there is something behind it to ask.
+//! **Which model or provider answers a question.** That is the person's, in
+//! their own settings, and nothing here rewrites it. What a machine may say
+//! about it is [`Described::questions`] — *where* an answer may come from, which
+//! ADR 0016 gives to the organisation — and a bound refuses a choice without
+//! ever replacing one.
 
 use std::path::{Path, PathBuf};
 
@@ -46,6 +47,7 @@ use alo_keeping::Keeping;
 use crate::caller::Uid;
 use crate::describing::{THE_RECORD, read};
 use crate::lasting::Lasting;
+use crate::questions::TheBound;
 use crate::refusing::NotDescribed;
 use crate::side::Sides;
 use crate::trusting::as_written;
@@ -71,6 +73,8 @@ pub struct Described {
     record: PathBuf,
     /// How long it is kept.
     keeping: Keeping,
+    /// Where a question may be answered, and who said so.
+    questions: TheBound,
 }
 
 impl Described {
@@ -86,6 +90,12 @@ impl Described {
     /// [`NotDescribed::NotAbsolute`] for a record path that is relative, which
     /// would put the evidence of what an agent did wherever the service happened
     /// to be started from — and somewhere different the next time.
+    ///
+    /// `questions` is the bound and its origin, which `crate::describing` has
+    /// already refused every way of not holding. It is a parameter rather than
+    /// something added afterwards because a machine assembled without it would
+    /// be an unmanaged machine by omission, and *nobody set a rule* has to be a
+    /// thing somebody wrote rather than a thing somebody forgot.
     pub fn of(
         sides: Sides,
         agent: &str,
@@ -93,6 +103,7 @@ impl Described {
         proposal: Lasting,
         record: &Path,
         keeping: Keeping,
+        questions: TheBound,
     ) -> Result<Self, NotDescribed> {
         if agent.trim().is_empty() {
             return Err(NotDescribed::Anonymous);
@@ -110,6 +121,7 @@ impl Described {
             proposal,
             record: record.to_owned(),
             keeping,
+            questions,
         })
     }
 
@@ -126,7 +138,8 @@ impl Described {
     /// file itself (`crate::trusting`), the format number, the shape, and each
     /// of the values. Nothing is started and nothing is written in any of them.
     pub fn at(path: &Path, us: Uid) -> Result<Self, NotDescribed> {
-        read(&as_written(path, us)?, path)
+        let (said, who) = as_written(path, us)?;
+        read(&said, path, who)
     }
 
     /// The two logins this machine has, and the group they meet in.
@@ -167,6 +180,17 @@ impl Described {
     #[must_use]
     pub const fn keeping(&self) -> Keeping {
         self.keeping
+    }
+
+    /// Where a question may be answered on this machine, and who said so.
+    ///
+    /// [`TheBound::Nobodys`] on every machine no organisation manages, which is
+    /// ADR 0016's *absent* rather than a permissive default — and the only
+    /// answer a description with no `[questions]` in it can produce. What reads
+    /// it is `crate::starting`, which hands it to the questions a turn puts.
+    #[must_use]
+    pub const fn questions(&self) -> &TheBound {
+        &self.questions
     }
 }
 
@@ -210,6 +234,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
+            TheBound::Nobodys,
         )
         .unwrap()
     }
@@ -240,6 +265,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
+            TheBound::Nobodys,
         )
         .unwrap_err();
         assert!(matches!(refused, NotDescribed::Anonymous));
@@ -258,6 +284,7 @@ mod tests {
                 a_proposal(),
                 Path::new("/var/lib/alo/record"),
                 Keeping::Forever,
+                TheBound::Nobodys,
             )
             .unwrap_err(),
             NotDescribed::Anonymous
@@ -276,6 +303,7 @@ mod tests {
             a_proposal(),
             Path::new("record"),
             Keeping::Forever,
+            TheBound::Nobodys,
         )
         .unwrap_err();
         assert!(matches!(refused, NotDescribed::NotAbsolute { what, .. } if what == THE_RECORD));
@@ -294,6 +322,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             ninety,
+            TheBound::Nobodys,
         )
         .unwrap();
         assert_eq!(machine.keeping(), ninety);
@@ -313,6 +342,7 @@ mod tests {
             a_proposal(),
             Path::new("/var/lib/alo/record"),
             Keeping::Forever,
+            TheBound::Nobodys,
         )
         .unwrap();
         assert_eq!(machine.agent(), "Alo Assistant");

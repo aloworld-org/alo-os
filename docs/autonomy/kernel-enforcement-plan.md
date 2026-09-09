@@ -608,8 +608,20 @@ recommendation is explicitly not an approval.
 
 ### 10. What a credential does when a session really ends
 
-**Status:** scheduled, blocked on a machine with `logind`. **Depends on:** the
-credential store — done.
+**Status:** scheduled. **Depends on:** the credential store — done.
+
+**A correction, because the line above used to say *blocked on a machine with
+`logind`*, and that was wrong.** It was written without looking. Asked directly,
+this machine answers `systemctl is-system-running` → **running**,
+`systemd-logind` → **active**, `loginctl list-sessions` → **two sessions**.
+There is a `logind` here.
+
+What is actually unsettled is narrower: those two are WSL's own `user-early` and
+`manager-early` classes rather than ordinary logins, and `Linger` is `no`. So the
+first thing this task establishes is whether a session of the kind a person
+really has can be started and ended here at all — and only then whether the three
+cases below can be observed. It is scheduled rather than blocked, and neither
+word may be used to imply the work was done.
 
 `connections_come_and_go.rs` proves **disconnection handling**: a keyring handle
 whose bus has stopped refuses, promptly, and hands back no key. Its fixture stops
@@ -647,11 +659,84 @@ needing a second seat at all:
   needs its own handoff** — it is not something to turn on inside somebody
   else's test run.
 - **Constraint:** not on the shared build machine while another worker is using
-  it, and nothing here changes what a credential is allowed to be. **WSL does
-  not settle it**: this environment has a session bus at `/run/user/0` with no
-  `logind` session behind it, which is precisely why the fixture cannot stand in.
+  it, and nothing here changes what a credential is allowed to be. **Sessions and
+  lingering are not to be changed while anything else is testing** — both are
+  machine-wide, and `enable-linger` has its own handoff above.
 - **Not claimed until then.** ADR 0022 says so where it records the measurement,
   and the reports say so.
+
+### 11. Load an organisation's inference policy into the daemon
+
+**Status:** done. **Depends on:** nothing — the daemon already carried the
+bound; nothing wrote one into it.
+
+ADR 0016 gives the bound to the organisation and the choice to the person, and
+`alo-agentd` has carried `TheBound` since `6cff37c`: it words a refusal, names
+that an administrator set it, asks the rule before the keyring, and writes a
+refused question into the record. **Every machine is `TheBound::Nobodys`**,
+because `docs/contracts/machine-description.md` had no key for a policy, so the
+whole path is unreachable in production. This is the key.
+
+It is an **existing v0.01 requirement of an accepted ADR**, not new scope: no
+enrolment, no identity, no reporting, no server, no fleet. One optional section
+in a file that is already read once at startup from the disk it is on.
+
+- **The contract first.** `[questions]` with `may-go` and an optional `region`,
+  specified in `docs/contracts/machine-description.md` before any of it is built.
+  It requires `format = 2`, and the reason is the contract's own additive rule:
+  an older service would ignore the section and send questions wherever the
+  person chose, which is not the same machine. A description carrying it says
+  `2`; a service that reads only `1` refuses it and **does not start**, so a
+  managed machine too old to understand its policy does not run unmanaged.
+- **Absent stays unmanaged.** No section is `TheBound::Nobodys` and no
+  administrator is named — ADR 0016's *absent*, not *permissive*. Every machine
+  today, unchanged, still `format = 1`.
+- **Present, valid and trusted becomes `TheBound::AnOrganisations`.** Trusted
+  means the checks the file already gets in *Who may write it*: not a symlink,
+  owned by root or the person the service runs as, writable by nobody else.
+  Those exist and are not relaxed.
+- **Present and not holding is refused, and the service does not start.** An
+  unknown `may-go`, `in-a-region` with no region, a region beside another
+  `may-go`, a section with no `may-go`. **Never read as unrestricted**: an
+  organisation that wrote a policy and got none, with nothing saying so, is the
+  one failure this must not have.
+- **The person's choices are untouched.** Their model and provider stay in their
+  own settings and are never rewritten from here. A bound can refuse a choice;
+  it can never replace one, and no fallback follows a refusal.
+
+- **Acceptance:** the four states above, each tested; and one end-to-end test on
+  **isolated files** that loads a description naming a policy, asks a question
+  the policy refuses, and shows the refusal happening **before the keyring is
+  opened or any socket is touched**, then reads the **persisted** record back and
+  finds the same sentence the agent was given. The refusal ordering and the
+  persisted agreement both already have their mechanisms; this is them reached
+  from a real configuration.
+- **Evidence:** those tests, and a report naming what is still not covered.
+- **Constraint:** **this machine's own `/etc/alo/agentd.toml` is not touched.**
+  Every test writes its own description in a temporary directory and points the
+  code at it. Nothing here starts, stops or reconfigures a service on this
+  machine, and no organisation's real configuration exists here to alter.
+- **Not in scope:** anything that would make this fleet management — a server, an
+  identity, a report, a key that names one. The section is read from the disk it
+  is on, as the rest of that file always has been.
+
+**What was built.** `docs/contracts/machine-description.md` gained `[questions]`
+and the `format = 2` decision; `alo-agentd`'s reader gained the section, the four
+refusals and `ALSO_READ`, so `1` is still read; `Described` carries a `TheBound`
+and `crate::starting` hands the description's to `Questions`. The attribution
+rests on **who owns the description** — root is an organisation's configuration
+system, the person is their own — which `crate::trusting` already established
+before parsing and now carries out rather than discards. Report:
+`docs/autonomy/updates/an-organisations-rule-off-a-disk.md`.
+
+**What it does not cover**, and the report says so rather than implying
+otherwise: the one expression in `starting::until_stopped` that hands the bound
+over is in the same untestable class as `Questions::of_this_process` reading the
+process environment — this crate sets no environment variables in tests by
+policy, so every question test drives `of_a_session`. The `ThePersons` origin is
+proved in the reader's own tests; the disk-level tests take their expectation
+from who really owns the file, which under a suite running as root is an
+administrator.
 
 ## Rules this workstream holds itself to
 

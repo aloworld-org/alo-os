@@ -41,6 +41,20 @@
 //!
 //! That is `alo-files`' rule since item 6a — *a read asks the open handle how
 //! big a file is rather than asking the name again* — arriving in the daemon.
+//!
+//! # And the answer to *who* is carried out, not thrown away
+//!
+//! The two permitted owners are two different people, and since the description
+//! can carry an organisation's bound (ADR 0016) the difference decides a
+//! sentence somebody reads. A policy in a root-owned `/etc/alo/agentd.toml` was
+//! written by whoever administers the machine; the same policy in a file the
+//! person owns is their own rule for their own machine, and telling them *an
+//! administrator set that rule* would be this service inventing one.
+//!
+//! So `as_written` answers with `WhoDescribedIt` beside the text. It is the
+//! ownership that was checked anyway — nothing extra is asked of the disk — and
+//! it means the attribution rests on a fact about the file rather than on how
+//! strict the rule in it happens to be.
 
 use std::io::Read as _;
 use std::os::unix::fs::MetadataExt as _;
@@ -56,7 +70,26 @@ const SOMEBODY_ELSE_MAY_WRITE: u32 = 0o022;
 /// Root, which may describe a machine it manages.
 const ROOT: u32 = 0;
 
-/// The description as it is written, if it is a file this machine may believe.
+/// Which of the two permitted owners wrote what this machine says about itself.
+///
+/// Not a judgement about the file's contents and not a level of trust — both
+/// owners are believed exactly the same amount, which is what
+/// [`may_be_believed`] decides. It is *who*, kept because a bound in this file
+/// is attributed to whoever set it and the two answers are different people.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WhoDescribedIt {
+    /// Root: an organisation's configuration system (ADR 0004), or whoever
+    /// installed the machine. The only owner an administrator is named for.
+    AnAdministrator,
+
+    /// The person this process runs as, on a machine that is theirs. Their own
+    /// rules bound them the same way and **name nobody**, because there is
+    /// nobody to name.
+    ThePerson,
+}
+
+/// The description as it is written, and which of the two owners wrote it, if
+/// it is a file this machine may believe.
 ///
 /// `us` is the user this process is running as, which
 /// [`crate::unix::us`] answers and which the process passes in rather than this
@@ -70,7 +103,7 @@ const ROOT: u32 = 0;
 /// file exists for, and in all of them nothing has been parsed and nothing has
 /// been changed. [`NotDescribed::Unreadable`] is the machine saying it would
 /// not.
-pub(crate) fn as_written(at: &Path, us: Uid) -> Result<String, NotDescribed> {
+pub(crate) fn as_written(at: &Path, us: Uid) -> Result<(String, WhoDescribedIt), NotDescribed> {
     let mut opened = open_not_a_link(at).map_err(|why| match why {
         NotOpened::ALink => NotDescribed::ALink { at: at.to_owned() },
         NotOpened::Machine(why) => NotDescribed::Unreadable {
@@ -86,7 +119,7 @@ pub(crate) fn as_written(at: &Path, us: Uid) -> Result<String, NotDescribed> {
     if !what_is_there.is_file() {
         return Err(NotDescribed::NotAFile { at: at.to_owned() });
     }
-    may_be_believed(at, what_is_there.uid(), what_is_there.mode() & 0o777, us)?;
+    let who = may_be_believed(at, what_is_there.uid(), what_is_there.mode() & 0o777, us)?;
 
     let mut said = String::new();
     opened
@@ -95,31 +128,44 @@ pub(crate) fn as_written(at: &Path, us: Uid) -> Result<String, NotDescribed> {
             at: at.to_owned(),
             why,
         })?;
-    Ok(said)
+    Ok((said, who))
 }
 
 /// Whether a file owned by this user, with these permissions, describes this
-/// machine.
+/// machine — and, when it does, which of the two owners it is.
 ///
 /// Separated from the disk on purpose. Producing a file owned by a third user
 /// takes a privilege the tests do not have on every machine they run on, and a
 /// rule that could only be exercised where somebody happens to be root is a rule
 /// tested where it does not matter. The disk is where the link and the loose
 /// mode are proved; this is where the ownership is.
-fn may_be_believed(at: &Path, owner: u32, mode: u32, us: Uid) -> Result<(), NotDescribed> {
-    if owner != ROOT && owner != us.raw() {
+///
+/// Root wins the answer where a process really is running as root, which
+/// `crate::starting::not_as_root` has already refused before any of this is
+/// reached. Order matters nowhere else: the two are different numbers.
+fn may_be_believed(
+    at: &Path,
+    owner: u32,
+    mode: u32,
+    us: Uid,
+) -> Result<WhoDescribedIt, NotDescribed> {
+    let who = if owner == ROOT {
+        WhoDescribedIt::AnAdministrator
+    } else if owner == us.raw() {
+        WhoDescribedIt::ThePerson
+    } else {
         return Err(NotDescribed::SomebodyElses {
             at: at.to_owned(),
             owner,
         });
-    }
+    };
     if mode & SOMEBODY_ELSE_MAY_WRITE != 0 {
         return Err(NotDescribed::Loose {
             at: at.to_owned(),
             mode,
         });
     }
-    Ok(())
+    Ok(who)
 }
 
 #[cfg(test)]
@@ -149,7 +195,21 @@ mod tests {
     #[test]
     fn a_file_of_our_own_is_read() {
         let at = a_file("ours", 0o600);
-        assert_eq!(as_written(&at, us().unwrap()).unwrap(), "format = 1\n");
+        let (said, who) = as_written(&at, us().unwrap()).unwrap();
+        assert_eq!(said, "format = 1\n");
+        // Whoever this test is running as is who owns the file it just wrote,
+        // and the answer follows that rather than the other way round — which
+        // is the property, and is why this is not pinned to one value. A suite
+        // run as root writes a root-owned description; run as anybody else it
+        // writes theirs. [`may_be_believed`] asks both cases directly.
+        assert_eq!(
+            who,
+            if us().unwrap().is_root() {
+                WhoDescribedIt::AnAdministrator
+            } else {
+                WhoDescribedIt::ThePerson
+            }
+        );
     }
 
     /// **A description anybody can write is refused**, and the refusal says the
@@ -247,6 +307,25 @@ mod tests {
         assert!(may_be_believed(at, 0, 0o644, person).is_ok());
         assert!(may_be_believed(at, 1000, 0o600, person).is_ok());
         assert!(may_be_believed(at, 1000, 0o600, Uid::of(0).unwrap()).is_err());
+    }
+
+    /// **And the two are told apart**, because a bound in this file is
+    /// attributed to whoever set it: root is an administrator, the person is
+    /// themselves, and nothing about the file's contents is consulted to
+    /// decide which.
+    #[test]
+    fn root_is_an_administrator_and_the_person_is_not() {
+        let at = Path::new("/etc/alo/agentd.toml");
+        let person = Uid::of(1000).unwrap();
+
+        assert_eq!(
+            may_be_believed(at, 0, 0o644, person).unwrap(),
+            WhoDescribedIt::AnAdministrator
+        );
+        assert_eq!(
+            may_be_believed(at, 1000, 0o600, person).unwrap(),
+            WhoDescribedIt::ThePerson
+        );
     }
 
     /// **Who owns it is asked before how loose it is**, because a file that is

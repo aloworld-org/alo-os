@@ -112,15 +112,51 @@ pub enum NotDescribed {
     },
     /// The description is not what this alo OS reads.
     #[error(
-        "{at} says format {format}, and this alo-agentd reads format {reads}; a description written for a newer alo OS is not guessed at"
+        "{at} says format {format}, and this alo-agentd reads format {reads} and every earlier one; a description written for a newer alo OS is not guessed at"
     )]
     AnotherFormat {
         /// The description.
         at: PathBuf,
         /// What it says it is.
         format: u32,
-        /// What this service reads.
+        /// The newest shape this service reads.
         reads: u32,
+    },
+    /// The description states a policy in a shape that could not have carried
+    /// one.
+    #[error(
+        "{at} says format {format} and has a [questions] section in it, which arrived in format {reads}; an alo OS reading format {format} would ignore that section and send this organisation's questions wherever the person chose, so the file is refused rather than half-honoured — say format {reads}"
+    )]
+    APolicyNeedsANewerShape {
+        /// The description.
+        at: PathBuf,
+        /// What it says it is.
+        format: u32,
+        /// The shape a policy needs.
+        reads: u32,
+    },
+    /// The bound names somewhere this service has never heard of.
+    #[error(
+        "questions.may-go is \"{said}\", which is nowhere this alo OS knows; it is one of {every}, and a bound that could not be read is refused rather than treated as unrestricted"
+    )]
+    NowhereNamedThat {
+        /// What the description said.
+        said: String,
+        /// Every place it could have said.
+        every: String,
+    },
+    /// The bound is a region and no region is named.
+    #[error(
+        "questions.may-go is \"in-a-region\" and questions.region names none, so there is no region to hold anything to; name it as the organisation says it — \"the EU\", \"Switzerland\""
+    )]
+    NoRegionNamed,
+    /// A region is named beside a bound that has no use for one.
+    #[error(
+        "questions.region is written beside questions.may-go = \"{may_go}\", which bounds by something other than a region and would ignore it; a key somebody believes is bounding their questions and is not is refused — take it out, or say \"in-a-region\""
+    )]
+    ARegionThatBoundsNothing {
+        /// The bound it was written beside.
+        may_go: String,
     },
     /// The description is not the shape a description is.
     #[error("{at} is not a machine description: {why}")]

@@ -31,7 +31,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use alo_agentd::side::Side;
 use alo_agentd::unix::{our_group, us};
-use alo_agentd::{Described, Listening, NotDescribed, Place, THE_DESCRIPTION, THE_FORMAT};
+use alo_agentd::{
+    ALSO_READ, Described, Listening, NotDescribed, Place, THE_DESCRIPTION, THE_FORMAT, TheBound,
+};
 use alo_keeping::{Reading, Writing};
 
 /// The login this test gives the agent, which is not the one it runs as.
@@ -177,17 +179,126 @@ fn a_description_the_world_can_write_is_refused() {
 fn a_description_from_a_newer_alo_os_is_refused_off_the_disk() {
     let folder = a_directory_of_our_own("newer");
     let record = folder.join("record");
-    let said = describing_this_machine(&record).replace("format = 1", "format = 2");
+    // One past whatever this alo OS reads, taken from the constant so that the
+    // next shape does not quietly turn this into a test about a number this
+    // service now reads perfectly well.
+    let newer = THE_FORMAT + 1;
+    let said = describing_this_machine(&record).replace(
+        &format!("format = {THE_FORMAT}"),
+        &format!("format = {newer}"),
+    );
     let at = described("newer-file", &said, 0o600);
 
-    assert!(matches!(
-        Described::at(&at, us().unwrap()).unwrap_err(),
-        NotDescribed::AnotherFormat {
-            format: 2,
-            reads: 1,
-            ..
-        }
-    ));
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::AnotherFormat { format, reads, .. }
+            if format == newer && reads == THE_FORMAT),
+        "{refused}"
+    );
+}
+
+/// **And the shape before this one is still read off a disk**, unchanged, which
+/// is every description that exists today: `[questions]` is what made a second
+/// shape necessary, and a file without one means the same thing under either
+/// number.
+#[test]
+fn the_shape_before_this_one_is_still_read_off_the_disk() {
+    let folder = a_directory_of_our_own("older");
+    let record = folder.join("record");
+    let said = describing_this_machine(&record).replace(
+        &format!("format = {THE_FORMAT}"),
+        &format!("format = {}", ALSO_READ[0]),
+    );
+    let at = described("older-file", &said, 0o600);
+
+    let machine = Described::at(&at, us().unwrap()).unwrap();
+    assert_eq!(machine.agent(), "alo");
+    assert_eq!(
+        machine.questions(),
+        &TheBound::Nobodys,
+        "a description from before there was anywhere to state a policy was read as stating one"
+    );
+}
+
+/// **A bound an organisation wrote is read off a disk, and attributed to
+/// whoever wrote the file.**
+///
+/// The file-level half of loading a policy: the section is parsed from a
+/// description on the disk this test is running on, under that file's own
+/// ownership and permission rules, and the rule that comes back is the one
+/// written in it. Who it is attributed to follows **who owns the file**, which
+/// this test reads back rather than assumes — a suite run as root writes a
+/// root-owned description and exercises an organisation's; run as anybody else
+/// it writes their own and exercises theirs.
+#[test]
+fn a_bound_on_a_disk_is_read_and_attributed_to_whoever_wrote_it() {
+    use std::os::unix::fs::MetadataExt as _;
+
+    let folder = a_directory_of_our_own("bounded");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[questions]\nmay-go = \"in-a-region\"\nregion = \"the EU\"\n",
+        describing_this_machine(&record)
+    );
+    let at = described("bounded-file", &said, 0o600);
+
+    let machine = Described::at(&at, us().unwrap()).unwrap();
+    assert_eq!(
+        machine.questions().policy(),
+        &alo_models::SourcePolicy::InRegion("the EU".to_owned()),
+        "the region an organisation named did not come off the disk as it was written"
+    );
+    assert_eq!(
+        machine.questions().by_an_organisation(),
+        std::fs::metadata(&at).unwrap().uid() == 0,
+        "the administrator attribution did not follow who owns the description"
+    );
+}
+
+/// **A policy written into the shape that could not carry one is refused off a
+/// disk**, and nothing is started. An alo OS reading the older shape would
+/// ignore the section and send this organisation's questions wherever the person
+/// chose, so a file claiming an older service could read it is not half-honoured.
+#[test]
+fn a_policy_in_the_older_shape_is_refused_off_the_disk() {
+    let folder = a_directory_of_our_own("bounded-older");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[questions]\nmay-go = \"this-machine-only\"\n",
+        describing_this_machine(&record).replace(
+            &format!("format = {THE_FORMAT}"),
+            &format!("format = {}", ALSO_READ[0]),
+        )
+    );
+    let at = described("bounded-older-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::APolicyNeedsANewerShape { .. }),
+        "{refused}"
+    );
+    assert!(!record.exists(), "and nothing was started");
+}
+
+/// **A bound this alo OS cannot read stops the machine**, off a disk, rather
+/// than leaving an organisation's questions unbounded with nothing on the
+/// machine saying so.
+#[test]
+fn a_bound_that_cannot_be_read_stops_the_machine() {
+    let folder = a_directory_of_our_own("unreadable-bound");
+    let record = folder.join("record");
+    let said = format!(
+        "{}\n[questions]\nmay-go = \"in-the-buiding\"\n",
+        describing_this_machine(&record)
+    );
+    let at = described("unreadable-bound-file", &said, 0o600);
+
+    let refused = Described::at(&at, us().unwrap()).unwrap_err();
+    assert!(
+        matches!(refused, NotDescribed::NowhereNamedThat { .. }),
+        "{refused}"
+    );
+    assert!(!record.exists(), "and nothing was started");
 }
 
 /// **A link where the description belongs is refused even when it points at a

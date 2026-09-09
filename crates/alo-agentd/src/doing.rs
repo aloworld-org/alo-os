@@ -1828,6 +1828,258 @@ endpoint = \"https://{other}\"
         assert_ne!(managed.text(), unmanaged.text());
     }
 
+    /// A machine description on a disk, written the way
+    /// `docs/contracts/machine-description.md` writes it, with whatever
+    /// `[questions]` section is given — and the record going where it is told.
+    fn a_machine_described(
+        folder: &std::path::Path,
+        record: &str,
+        questions: &str,
+    ) -> std::path::PathBuf {
+        use std::os::unix::fs::PermissionsExt as _;
+
+        let at = folder.join("agentd.toml");
+        let us = crate::unix::us().unwrap().raw();
+        std::fs::write(
+            &at,
+            format!(
+                "format = {format}\n\n\
+                 [logins]\n\
+                 person = {us}\n\
+                 agent = {agent}\n\
+                 group = {group}\n\n\
+                 [agent]\n\
+                 name = \"alo\"\n\
+                 turn-seconds = 900\n\
+                 proposal-seconds = 300\n\n\
+                 [record]\n\
+                 path = \"{record}\"\n\
+                 keeping = \"forever\"\n\
+                 {questions}",
+                format = crate::describing::THE_FORMAT,
+                // Any login that is not the person's: `crate::side` refuses one
+                // that is, and nothing here opens a socket from either.
+                agent = us + 1,
+                group = crate::unix::our_group().unwrap().raw(),
+            ),
+        )
+        .unwrap();
+        std::fs::set_permissions(&at, std::fs::Permissions::from_mode(0o600)).unwrap();
+        at
+    }
+
+    /// **A machine description on a disk bounds a real question, and the same
+    /// sentence reaches the person and the record.**
+    ///
+    /// The acceptance for loading an organisation's policy, and every step is
+    /// the production one: the description is read off the disk by
+    /// `Described::at` under the file's own rules, the bound it produces is
+    /// handed to `Questions` exactly as `crate::starting` hands it, the question
+    /// goes through `put_to_a_model` against a file-backed record, and the
+    /// record is then **read back off the disk** and compared with what the
+    /// agent was told.
+    ///
+    /// Every other policy test in this file states the rule in Rust, which shows
+    /// the daemon honours a bound but not that any file can produce one. This is
+    /// the road from the file.
+    ///
+    /// # Two things it proves are not reached
+    ///
+    /// Both providers are real listeners and neither is connected to. The
+    /// keyring is real, running, and holds no key for this provider — so a
+    /// daemon that looked would answer with a sentence this crate can name, and
+    /// the sentence is the rule's instead.
+    ///
+    /// # Which origin it exercises
+    ///
+    /// Root owning the description is an organisation's configuration system
+    /// (ADR 0004); the person owning it is their own rule for their own machine.
+    /// A test cannot make a root-owned file on every machine it runs on, so the
+    /// expectation is taken from **who really owns the file it just wrote** —
+    /// and that the attribution follows that is the assertion rather than a
+    /// compromise.
+    #[test]
+    fn a_policy_on_a_disk_bounds_a_question_and_reaches_the_record() {
+        use std::os::unix::fs::MetadataExt as _;
+
+        let folder = a_directory_of_our_own("policy-from-a-file");
+        let path = folder.join("record.jsonl");
+        let described = a_machine_described(
+            &folder,
+            &path.display().to_string(),
+            "\n[questions]\nmay-go = \"this-machine-only\"\n",
+        );
+
+        // Off the disk, through the file's own rules.
+        let machine =
+            crate::described::Described::at(&described, crate::unix::us().unwrap()).unwrap();
+        assert_eq!(
+            machine.questions().policy(),
+            &SourcePolicy::ThisMachineOnly,
+            "the rule in the file is not the rule the daemon would be run under"
+        );
+
+        // Whoever really owns it is who the attribution has to follow.
+        let by_root = std::fs::metadata(&described).unwrap().uid() == 0;
+        assert_eq!(
+            machine.questions().by_an_organisation(),
+            by_root,
+            "the administrator attribution did not follow who owns the description"
+        );
+
+        let mut writing = alo_keeping::Writing::opening(&path).unwrap();
+        let (chosen, nobody) = a_listener_that_reports_connections();
+        let (other, also_nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("policy-from-a-file", chosen, other);
+        // Real, running, and holding no key for `provider/Mine`.
+        let keyring = AKeyringOfOurOwn::started("policy-from-a-file");
+
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            // The whole point: the bound the file produced, unchanged.
+            machine.questions().clone(),
+            WhoseKeyring::On(keyring.bus()),
+        );
+
+        let said = on_a_machine_that_answers(&mut writing, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            )
+        });
+        drop(writing);
+
+        let strings = crate::testing::in_english();
+        let by_the_rule = NotAllowed::NotThisMachine {
+            source: alo_models::InferenceSource::Hosted {
+                provider: "Mine".to_owned(),
+                region: alo_models::Region::Unknown,
+            },
+        };
+        let told = said
+            .refusal()
+            .map(|wording| wording.text().to_owned())
+            .unwrap_or_default();
+
+        assert!(
+            told.contains(by_the_rule.said(&strings).text()),
+            "the refusal is not the rule the file states: {told}"
+        );
+        assert_eq!(
+            told.contains("an administrator set that rule"),
+            by_root,
+            "the sentence named an administrator on the strength of the rule rather than of who \
+             wrote the file: {told}"
+        );
+        // The keyring was never asked: it would have said something else.
+        let if_it_had_looked = strings
+            .say(&NO_KEY_FOR_THIS_PROVIDER.key(), &Filling::nothing())
+            .text()
+            .to_owned();
+        assert_ne!(
+            told, if_it_had_looked,
+            "the credential store was asked on the way to refusing by a rule from the description"
+        );
+
+        // Off the disk, not out of this process.
+        let reading = alo_keeping::Reading::at(&path).unwrap();
+        assert!(
+            reading.damage().unreadable().is_empty(),
+            "the record this daemon wrote could not be read back"
+        );
+        let record = reading.into_record();
+        assert_eq!(
+            record.len(),
+            1,
+            "a refused question wrote {} entries",
+            record.len()
+        );
+        let entry = record.everything().next().unwrap();
+        assert_eq!(
+            entry.happened().why_stopped().map(alo_record::Line::as_str),
+            Some(told.as_str()),
+            "the record and the response are two different accounts of one moment"
+        );
+        assert!(
+            entry.what().is_none(),
+            "a refused question was written down as though it were a call"
+        );
+
+        assert!(!nobody.join().unwrap(), "the provider was connected to");
+        assert!(
+            !also_nobody.join().unwrap(),
+            "a provider nobody chose was connected to"
+        );
+        drop(std::fs::remove_dir_all(&folder));
+    }
+
+    /// **A description with no policy in it leaves the person's own choice
+    /// alone**, which is the other half of the acceptance above: a bound can
+    /// refuse a choice and can never replace one.
+    ///
+    /// The same file and the same daemon path with `[questions]` deleted. The
+    /// provider the person chose is the one connected to, and the one they did
+    /// not choose is not — so loading a description reaches into nothing of
+    /// theirs.
+    #[test]
+    fn a_description_with_no_policy_leaves_the_persons_own_choice_alone() {
+        let folder = a_directory_of_our_own("no-policy-from-a-file");
+        let described = a_machine_described(&folder, "/var/lib/alo/record.jsonl", "");
+
+        // Off the disk, through the file's own rules.
+        let machine =
+            crate::described::Described::at(&described, crate::unix::us().unwrap()).unwrap();
+        assert_eq!(
+            machine.questions(),
+            &TheBound::Nobodys,
+            "a description with no [questions] in it was read as though somebody had set a rule"
+        );
+
+        let (chosen, heard) = a_listener_that_reports_connections();
+        let (other, nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("no-policy-from-a-file", chosen, other);
+        let keyring = AKeyringOfOurOwn::started("no-policy-from-a-file");
+        stored_in(&keyring, "provider/Mine", A_SYNTHETIC_KEY);
+
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            machine.questions().clone(),
+            WhoseKeyring::On(keyring.bus()),
+        );
+
+        let mut record = Record::default();
+        drop(on_a_machine_that_answers(
+            &mut record,
+            |turning, _grants, strings| {
+                put_to_a_model(
+                    "may the tenant sublet?",
+                    turning,
+                    &mut questions,
+                    strings,
+                    noon(),
+                )
+            },
+        ));
+
+        assert!(
+            heard.join().unwrap(),
+            "the provider the person chose was never reached, so an absent policy did not leave \
+             their choice alone"
+        );
+        assert!(
+            !nobody.join().unwrap(),
+            "a provider nobody chose was connected to"
+        );
+        drop(std::fs::remove_dir_all(&folder));
+    }
+
     /// **Every way the store says no ends with nothing sent to any provider.**
     ///
     /// Each state is produced for real: no bus at all, a real keyring with no

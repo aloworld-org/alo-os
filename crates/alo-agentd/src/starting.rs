@@ -44,15 +44,19 @@
 //! before anybody had asked it anything would be doing exactly what ADR 0001
 //! forbids. The first question of the first turn is what opens the file.
 //!
-//! Two of the three things it is made of are settled and one is not. The
-//! catalogue is the one built into this image, and a malformed one stops the
-//! process ([`NotStarted::NoCatalogue`]) rather than becoming a machine that
-//! quietly offers nothing. **The bound is `None`**, because no file on this
-//! machine states what an organisation permits:
-//! `docs/contracts/machine-description.md` has no policy key, whether it gains
-//! one is ADR 0016's subject and a queue item of its own, and today no
-//! `alo_models::SourcePolicy` refuses this machine answering on itself — so
-//! every machine passes the same value and none is affected by it either way.
+//! Two of the three things it is made of come from somewhere and one is built
+//! in. The catalogue is the one built into this image, and a malformed one stops
+//! the process ([`NotStarted::NoCatalogue`]) rather than becoming a machine that
+//! quietly offers nothing. **The bound is the description's**, which is where
+//! ADR 0016's rule finally arrives: `[questions]` in `/etc/alo/agentd.toml`
+//! states where an organisation permits a question to be answered, the file's
+//! owner says whether it is an organisation's rule or the person's own, and a
+//! machine with no such section is `TheBound::Nobodys` — *absent*, which is
+//! every personal machine and is not the same thing as permissive.
+//!
+//! Nothing about **which** model or provider answers is decided from here. That
+//! is the person's, in their own settings, and a bound refuses a choice without
+//! ever replacing one.
 //!
 //! # What is not read from anywhere, and is not a stub
 //!
@@ -81,7 +85,7 @@ use alo_turn::{Bounding, Machine, Shortening};
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
-use crate::questions::{Questions, TheBound};
+use crate::questions::Questions;
 use crate::refusing::NotStarted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
@@ -174,17 +178,17 @@ pub fn until_stopped(
     // Nothing is read or probed here: the environment is copied, and the first
     // question of the first turn is what opens the person's file.
     //
-    // **The bound is nobody's, because nothing on this machine states one.**
-    // `docs/contracts/machine-description.md` has no key for a policy, so there
-    // is no road by which an organisation's rule reaches this process today and
-    // every machine running this is unmanaged. `TheBound::AnOrganisations` is
-    // the value that would arrive the day there is one, and the day it does,
-    // this line is the whole of the change here.
+    // **The bound is the description's**, which is `[questions]` in
+    // `/etc/alo/agentd.toml` where an organisation wrote one and
+    // `TheBound::Nobodys` on every machine none manages. Nothing is decided
+    // here: `crate::describing` refused every way that section does not hold
+    // before this machine was a `Described` at all, and who owns the file is
+    // what makes it an organisation's rather than the person's.
     let mut questions = Questions::of_this_process(
         Catalogue::built_in().map_err(|why| NotStarted::NoCatalogue {
             why: why.to_string(),
         })?,
-        TheBound::Nobodys,
+        described.questions().clone(),
     );
     Ok(Serving::of(
         knocking,
@@ -205,6 +209,7 @@ pub fn until_stopped(
 mod tests {
     use super::*;
     use crate::lasting::Lasting;
+    use crate::questions::TheBound;
     use crate::side::Side;
     use crate::testing::{Pretending, a_folder_with_an_invoice, a_message, ourselves};
     use crate::words::A_TURN_IS_UNDER_WAY;
@@ -223,6 +228,7 @@ mod tests {
             Lasting::of_seconds(3600, "agent.proposal-seconds").unwrap(),
             Path::new("/var/lib/alo/record.jsonl"),
             Keeping::Forever,
+            TheBound::Nobodys,
         )
         .unwrap()
     }

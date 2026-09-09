@@ -42,20 +42,22 @@
 //! Collapsing them would send somebody who *has* chosen back to a settings
 //! panel that already agrees with them.
 //!
-//! # What is deliberately still `None`
+//! # Where the bound comes from
 //!
-//! The bound is what an organisation permits (ADR 0016), and nothing on this
-//! machine states one: `docs/contracts/machine-description.md` has no policy
-//! key, and queue item 21o is where whether it gains one is decided. Until then
-//! a machine no organisation manages passes `None` and is unaffected — and so
-//! is every other machine today, because both lists a choice can name are *this
-//! machine* and no `alo_models::SourcePolicy` refuses this machine answering on
-//! itself. The argument is `Option<SourcePolicy>` rather than absent so that
-//! the day a machine states one, this file is a caller's change.
+//! The bound is what an organisation permits (ADR 0016), and it arrives as
+//! [`TheBound`] from the machine's own description: `[questions]` in
+//! `/etc/alo/agentd.toml`, read once at startup by `crate::describing` and
+//! handed here by `crate::starting`. Nothing about it is decided in this file.
+//! What the rule says and **who set it** are both settled before a [`Questions`]
+//! exists — the second from who owns the description, which is a fact about the
+//! file rather than a guess read off how strict the rule is.
 //!
-//! `alo_turn::Places` is the same shape of honesty: ADR 0008's *somewhere else
-//! to offer* is a provider list this machine keeps nowhere, so the offer beside
-//! a refusal is empty rather than invented.
+//! A machine with no such section is [`TheBound::Nobodys`], ADR 0016's *absent*,
+//! and that is the common case rather than a gap.
+//!
+//! `alo_turn::Places` is a different shape of honesty: ADR 0008's *somewhere
+//! else to offer* is a provider list this machine keeps nowhere, so the offer
+//! beside a refusal is empty rather than invented.
 
 use std::ffi::{OsStr, OsString};
 
@@ -104,10 +106,13 @@ pub struct Questions {
 /// off that would tell a person an administrator restricted them when nobody
 /// did.
 ///
-/// So the origin is carried rather than inferred. Nothing supplies
-/// [`Self::ThePersons`] today — there is no key for it and this does not add
-/// one — and it exists because the distinction has to be **unrepresentable to
-/// get wrong**, not because something writes it yet.
+/// So the origin is carried rather than inferred, and what carries it is a fact
+/// about a file: `crate::describing` reads `[questions]` from the machine's
+/// description, and **who owns that description** decides between the two
+/// `Some`s. Root wrote it, so an organisation's configuration system did (ADR
+/// 0004) and there is an administrator to name; the person owns it, so it is
+/// their own rule for their own machine and there is not. Neither answer is
+/// read off how strict the rule turned out to be.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TheBound {
     /// No policy at all, which is ADR 0016's *absent* and the common case.

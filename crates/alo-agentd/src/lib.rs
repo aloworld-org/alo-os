@@ -232,7 +232,7 @@ pub use caller::{Caller, Gid, Uid};
 #[cfg(target_os = "linux")]
 pub use described::{Described, THE_DESCRIPTION};
 #[cfg(target_os = "linux")]
-pub use describing::THE_FORMAT;
+pub use describing::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};
 #[cfg(target_os = "linux")]
 pub use doing::what_an_agent_said;
 #[cfg(target_os = "linux")]
@@ -246,7 +246,7 @@ pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
 pub use place::{Place, THE_ROOT};
 #[cfg(target_os = "linux")]
-pub use questions::{Questions, WhatAnswers};
+pub use questions::{Questions, TheBound, WhatAnswers};
 #[cfg(target_os = "linux")]
 pub use refusing::{
     NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotStarted, NotTwoSides,

@@ -69,9 +69,10 @@ addition.
 
 | Field | Meaning |
 |---|---|
-| `format` | Which shape this description is in. Required. `1` today. |
+| `format` | Which shape this description is in. Required. `1`, or `2` when it carries `[questions]`. |
 
-A description that says anything but `1` is **refused rather than guessed at**,
+A description that says a number this service does not read is **refused rather
+than guessed at**,
 which is the rule `docs/contracts/record-file.md` states about a record from a
 newer alo OS. It is answered before any other value in the file, so a
 description written for a later alo OS is refused as one rather than as
@@ -149,6 +150,83 @@ that manages the machine; alo OS ships no number of days of its own, because how
 long an organisation may keep a record of what its staff's machines did has a
 legal answer in some places and a cultural one in others.
 
+## `[questions]`
+
+Where an organisation permits a person's questions to be answered — ADR 0016's
+bound, which the organisation sets and the person chooses within.
+
+| Field | Meaning |
+|---|---|
+| `may-go` | `"anywhere"`, `"in-the-building"`, `"this-machine-only"`, or `"in-a-region"`. Required when the section is present. |
+| `region` | Which region, and **only** when `may-go` is `"in-a-region"`. |
+
+**The section is optional and its absence is the common case.** A machine no
+organisation manages has no policy at all — *not empty, not permissive by
+default, absent* (ADR 0016) — and a person on it chooses freely. Absence is not
+written as `"anywhere"`: the two permit exactly the same things, and what they do
+not share is somebody to name in a refusal.
+
+**A section that is present and does not hold is refused, and the service does
+not start.** It is never read as unrestricted, which is the one failure worth
+avoiding here: an organisation that wrote a policy and got no policy, with
+nothing on the machine saying so. So each of these refuses —
+
+- a `may-go` this service does not know;
+- `may-go = "in-a-region"` with no `region`;
+- a `region` beside any other `may-go`, because a key that does nothing is a key
+  somebody believes is doing something;
+- `[questions]` with no `may-go` at all.
+
+**It bounds where a question may be answered and nothing else.** It does not name
+a provider, choose a model, or touch what the person picked: their choices live
+in their own settings (`docs/contracts/person-settings.md`) and are never
+rewritten from here. What it can do is refuse one — and then the person is told
+what the rule is and that an administrator set it.
+
+**Who is named in that refusal is decided by who owns this file**, and by nothing
+about the rule itself. *Who may write it* below permits two owners, and they are
+two different people: root is an organisation's configuration system (ADR 0004)
+or whoever installed the machine, so there is an administrator to name; the
+person alo-agentd runs as is the owner of their own machine, so there is not. A
+person who writes `may-go = "this-machine-only"` into their own description is
+bounded exactly as strictly and is told no administrator did it — a restrictive
+value is never, on its own, evidence that somebody else set it. **An organisation
+that wants its rule attributed to it writes this file as root**, which is where
+its configuration system writes into `/etc` anyway.
+
+**Nothing here is fleet management.** There is no enrolment, no identity, no
+reporting and no key naming a server. This file is read from the disk it is on,
+as it always was, and by the same rules in *Who may write it* below.
+
+### It requires `format = 2`
+
+This is the one place the additive rule below does not reach, and the reason is
+worth stating plainly. An older service reading a description that carries
+`[questions]` would ignore the section and go on sending questions wherever the
+person chose — **an organisation's policy silently not enforced**, which is not
+"the same machine" under any reading.
+
+So a description carrying `[questions]` says `format = 2`, and a service that
+reads only `1` refuses it and does not start. That is the fail-closed direction:
+a managed machine whose alo OS is too old to understand its policy does not run
+unmanaged — it does not run.
+
+A description **without** `[questions]` means the same thing under either number,
+so both are read and neither is a migration anybody performs. `1` is every
+description that exists today and it goes on working untouched; `2` without a
+policy is the same machine, which matters when an organisation **takes** a bound
+off — deleting the section is the whole edit, and nothing has to be renumbered
+back. What is refused is `format = 1` carrying a `[questions]` section, because
+that is a file claiming an older service could have read it correctly when it
+could not.
+
+alo OS's own image ships `format = 1` and no `[questions]`: the image installs an
+unmanaged machine, and an organisation with a policy replaces the file with
+theirs. `crates/alo-image` reads the shipped file for the handful of things the
+image is answerable for and knows only `1` — which is correct for what it checks,
+and is why a policy in a built image would need that reader taught the section
+first.
+
 ## What is **not** in it
 
 **Where the socket goes.** It is `/run/alo/<uid>/agentd.sock` for the person
@@ -188,7 +266,9 @@ that is checked and a description that is read cannot be two different files.
 
 ## What changes additively
 
-New keys may be added and `format` stays `1` for as long as an older service
-reading the file without them would still describe the same machine. Anything
+New keys may be added and `format` stays as it is for as long as an older
+service reading the file without them would still describe the same machine.
+`[questions]` is the one section that fails that test and says why, above:
+ignoring a policy is not describing the same machine. Anything
 else — a key removed, a meaning changed, a default introduced — is a new
 `format`, and a service refuses a number it does not read.
