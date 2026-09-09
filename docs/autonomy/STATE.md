@@ -13835,3 +13835,66 @@ usable controls and window management remain unfinished. Published reports
 arriving during publication reconcile next iteration; release remains unverified.
 No staging, commit, push, dev-loop edit, worker/loop launch, credential/identity
 access or other-checkout changes.
+
+## 2026-09-09 - native control label rendering
+
+Started clean at `024b309`; read constitution, delivery/shared ownership rules,
+report guidance, current queue, journal tail and relevant feature/roadmap/ADR/
+contract sections. Selected the bounded native text component in QUEUE before
+implementation. Claude's checkout/workstream remain untouched.
+
+Reconciled `docs/autonomy/updates/the-daemon-fetches-and-connects.md`, the only
+published report not previously referenced here. Reviewed its two real-keyring
+daemon fixtures in `crates/alo-agentd/src/doing.rs`. Contributor reports all four
+store refusals reach no provider/fallback and successful retrieval connects only
+to the chosen provider. No exact commands/numeric results are supplied; these
+credential checks were not independently rerun in this desktop task. Authenticated
+HTTPS key delivery remains unproved and blocked on the report's trust-anchor
+decision. No root-store/config/ADR change is approved by reconciliation. Claude's
+independent next work is connection lifetime, concurrency and logout. No provider
+or keyring gate moves.
+
+Added an immutable native label renderer: existing Action::said vocabulary and
+full translated/source-fallback metadata, bundled OFL Inter, pinned unpatched
+cosmic-text with fontconfig disabled, existing 75..300% TextScale and appearance
+tokens. Explicit geometry bounds allocation/wrapping, retains every word on
+clipping, and refuses invalid fonts, missing glyphs/vocabulary and oversized text.
+A separate coalesced-scanline painter clips to the output and propagates errors.
+No input/window/mapping authority, context access or new user-facing strings.
+Public rustdoc and native-control contract updated with host responsibilities.
+
+Four new unit tests. Initial European-script test exposed clipping at the text
+advance rather than the actual box: negative glyph bearings lost padding space.
+Fixed the implementation and kept the assertion; next focused run passed all four.
+Initial Linux clippy found potentially panicking vector indexing; replaced it
+with checked access and explicit errors/assertions, without lint exemptions.
+Final affected all-target clippy passed. Full Linux shell tests passed 156 unit,
+195 lifecycle, three socket tests and three doctests, none ignored. Examples,
+warnings-denied rustdoc and Linux fmt passed. Windows affected clippy/tests/fmt
+passed; zero Linux-only shell tests run there. Existing malformed-client/keymap
+diagnostics remain refusal fixtures. No repeated-failure loop or weakened test.
+
+WSLg passed 72 complete 57,600-pixel label frames against prepared CPU text and
+untouched background: translated/source fallback, all actions, both schemes,
+100/200/300% and four clipping origins. CPU tests separately check script/text/
+scale behavior; graphics comparison is not an independent text shaper. Existing
+896 painter frames and all 28 nested offscreen stages also passed, including
+live snapshots/feedback and full minimize/restore scenes. Mesa fallback and
+malformed-SHM diagnostics skipped no checks; no timeout. On-screen labels and
+direct DRM/input are not claimed.
+
+Rust 1.98.0, eight graphics/input packages and WSLg socket verified. Every build/
+test/lint/format preflight exceeded 12 GiB; minimum 67,215,818,752 bytes. No cleanup,
+installation, shared maintenance, kernel mutation or outer fixture lock. Report:
+`docs/autonomy/updates/native-control-label-rendering.md` contains exact commands,
+font provenance, initial failures, decisions and scheduled machine evidence limits.
+All four progress documents updated; tracked and new files reviewed, whitespace
+clean. Independent supervisor workspace/rustdoc/BPF publication gates pending.
+
+Next: live native label selection, output-bounded placement and dismissal from
+hover/focus, retaining disabled label access and mapping/input ownership; then
+production nested/direct composition. Text rendering is complete; usable controls
+and window management remain unfinished. Reports arriving during publication
+reconcile next iteration; release remains unverified. No staging, commit, push,
+dev-loop edits, worker/loop launch, credential/identity access or other-checkout
+changes.

@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window-control names can now be rendered as scaled, translated text.**
+  The prepared label keeps every word and its translation/fallback provenance,
+  wraps long names, reports clipping and refuses unavailable glyphs. Disabled
+  controls retain their names. Bundled Inter makes rendering independent of host
+  fonts. This completes the text component; live label placement and production
+  desktop composition remain integration work.
+  `docs/autonomy/updates/native-control-label-rendering.md`.
+
+- Contributor evidence reconciled from
+  `docs/autonomy/updates/the-daemon-fetches-and-connects.md`: real-keyring daemon
+  refusal and chosen-provider connection tests. Authenticated HTTPS key delivery
+  still requires a trust-anchor decision; no usable-provider gate is promoted.
+
 - **Native window controls can now show hover and armed-press feedback.**
   Distinct borders accompany the light/dark token colors; disabled, cancelled
   and stale gestures cannot look armed. Reads preserve client typing and input

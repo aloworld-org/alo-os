@@ -5,6 +5,37 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native control label rendering (2026-09-09):** immutable externalized
+labels retain full text and fallback provenance; pinned native shaping, bundled
+Inter, existing text scale, bounded wrapping and clipped token painting are
+code-ready. Four new unit tests cover happy/refusal paths. Linux affected clippy,
+156 unit/195 lifecycle/three socket tests and three doctests, examples and rustdoc
+pass; Windows affected clippy/tests/fmt pass. WSLg passes 72 full label frames,
+896 control painter frames and all 28 nested offscreen stages. Initial glyph-bearing
+clipping defect and indexing lints fixed without weakening checks. Report:
+`updates/native-control-label-rendering.md`. Independent supervisor gates pending.
+Next executable component: live native label selection, output-bounded placement
+and dismissal from control hover/focus, preserving disabled label access and
+mapping/input ownership; then production nested/direct composition. Text rendering
+is complete; usable controls and window management remain unfinished.
+
+**Selected native control label rendering (2026-09-09):** implement a bounded
+native shaped-text label component using the existing action vocabulary and
+appearance text scale, with retained full label/fallback metadata, output clipping
+and explicit font/size refusals. Acceptance: translated and source-fallback labels,
+Unicode shaping, disabled label access, scale and clipping tests, complete GLES
+readback against the prepared raster, affected tests/clippy/rustdoc/fmt. Production
+hover-label placement and nested/direct composition remain subsequent integration;
+this component does not complete usable controls.
+
+Contributor reconciliation: `updates/the-daemon-fetches-and-connects.md` reports
+real-keyring daemon tests for four no-provider/no-fallback refusals and connection
+only to the chosen provider after lookup. No exact commands/results are supplied.
+Authenticated HTTPS key delivery remains blocked on a trust-anchor decision;
+compiled Mozilla roots and loopback classification prevent the proposed owned
+server fixture. No trust change approved here. Connection lifetime/concurrency
+and logout remain Claude's independent next work.
+
 **Completed native control pointer feedback (2026-09-09):** live hover and
 armed-press capture, shared hit geometry, token grounds and distinct borders
 are code-ready. Disabled, cancelled, client-owned, foreign and stale gestures

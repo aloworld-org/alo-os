@@ -63,6 +63,8 @@ mod window_close;
 mod window_command;
 mod window_control_feedback;
 mod window_control_input;
+mod window_control_label;
+mod window_control_label_paint;
 mod window_control_paint;
 mod window_control_routing;
 mod window_control_snapshot;
@@ -124,6 +126,9 @@ pub use socket::SocketError;
 pub use window_command::WindowCommandError;
 pub use window_control_input::{
     WindowControlPressError, WindowControlRelease, WindowControlReleaseError,
+};
+pub use window_control_label::{
+    LabelGeometry, WindowControlLabel, WindowControlLabelError, WindowControlLabels,
 };
 pub use window_control_routing::{
     PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,

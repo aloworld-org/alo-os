@@ -233,3 +233,49 @@ schemes. These are offscreen development checks. Native externalized label
 presentation and production nested/direct composition remain unfinished;
 this component completes feedback, not usable controls. Exact checks and limits:
 `docs/autonomy/updates/native-control-pointer-feedback.md`.
+
+## Prepared native control labels
+
+Additive trusted Rust rendering API, 2026-09-09. `WindowControlLabels::new()`
+loads bundled Inter, the design brief's operating typeface, from an explicitly
+populated private font database. Pinned cosmic-text performs advanced shaping,
+wrapping and rasterization; its fontconfig feature is disabled. No host-font scan,
+network access, client context or new user-facing vocabulary is involved.
+`from_fonts` accepts a primary face and explicit fallback fonts; an empty database
+or any unparseable entry returns `Font`. Unsupported shaped glyphs return
+`MissingGlyph`, even when the offending text would lie below the visible box.
+The bundled face supports the European-script fixtures; this is not a claim of
+universal script coverage. Additional fonts must be supplied for other scripts.
+
+`prepare(control, strings, geometry, scheme, scale)` uses the existing
+`control.action().said(strings)` for every action, including disabled controls.
+The maximize action still names maximize/restore together. The host must register
+`shortcut_words`; missing vocabulary/unfilled text refuses with `Vocabulary`.
+Empty text and text above 4096 UTF-8 bytes refuse with `Text`. No ellipsis or
+second English fallback is invented. `said()` retains the complete text and its
+translation/source provenance for the host's full-name and fallback presentation.
+
+`LabelGeometry` supplies explicit output, origin and box size. Viewport and origin
+use the strip's limits; width is 9..=2048 and height 9..=512, with at most 1,048,576
+opaque RGBA pixels. Invalid geometry refuses before shaping/allocation. Base text
+is 14px with 20px line height, multiplied by the existing 75..300% `TextScale`.
+Four pixels of nominal padding accommodate glyph bearings and accents. Text wraps
+at words, then glyphs; actual ink clips at box edges, not at the advance boundary.
+`clipped()` reports text/line-height overflow or any output-clipped box. Full words
+remain available via `said()`; the host must arrange a readable full-text surface
+when clipping occurs. This component does not claim accessibility conformance.
+
+`WindowControlLabel::paint(frame)` draws coalesced opaque scanline spans in the
+existing light (cream/navy) or dark (charcoal/cream) tokens, clipping every span
+to the viewport. The frame must match that viewport at scale one and normal
+transform. Paint after controls and before the pointer; on submission error,
+discard the partial frame. `pixels()` exposes the bounded prepared RGBA image
+for native composition and deterministic readback verification.
+
+Preparation and painting own no client/mapping or input authority. Disabled names
+remain readable; label boxes do not change strip hit geometry. Host placement,
+hover/focus selection, dismissal, input ownership for overlaid labels and actual
+nested/direct production composition remain the next integration component.
+No automatic tooltip, window decoration or new shortcut is installed by this API.
+Existing client typing/routing code is unchanged. Component evidence:
+`docs/autonomy/updates/native-control-label-rendering.md`.

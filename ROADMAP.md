@@ -51,6 +51,17 @@ recorded in the report. No independent credential/tooling rerun is claimed here.
 Production credential architecture is unchanged. Authenticated daemon HTTPS
 remains Claude's next task; no feature or release checkbox changes.
 
+### Credential contributor reconciliation, 2026-09-09
+
+`docs/autonomy/updates/the-daemon-fetches-and-connects.md` records real-keyring
+end-to-end daemon no-provider/no-fallback checks for four refusals and a connection
+to only the chosen provider after key retrieval. The report supplies no exact
+commands or numeric test results; these are contributor claims, not independent
+checks in the native-label task. Authenticated HTTPS key delivery is unproved,
+blocked on the report's trust-anchor decision. No machine-store or extra-root
+change is authorized by this reconciliation. Claude retains connection lifetime,
+concurrency/logout work; no provider/keyring or release acceptance box moves.
+
 Credential reports reconciled 2026-09-08: ADR 0022 is accepted and amended to
 `secret-service` over explicitly addressed `zbus`; the old libsecret dependency
 and binding decision blockers are superseded. Synthetic endpoint routing,
@@ -1274,6 +1285,19 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native control label rendering (2026-09-09): externalized `Action::said` names,
+    retained translation/fallback provenance, bundled Inter, advanced shaping,
+    bounded wrapping/clipping and the existing 75..300% text scale. Disabled
+    controls retain readable names. Font, glyph, vocabulary, length and geometry
+    refusals are explicit. Live label placement/selection/dismissal, overlay input
+    ownership and nested/direct production composition remain integration work;
+    no window-management or release box is promoted. Component evidence and exact
+    verification: `docs/autonomy/updates/native-control-label-rendering.md`.
+    Four new tests; Linux 156 unit/195 lifecycle/three socket/three doctests and
+    affected clippy, examples, rustdoc pass; Windows affected checks pass. WSLg
+    passes 72 complete label frames, 896 control frames and 28 offscreen stages.
+    Initial bearing-clipping defect and indexing lints corrected. Supervisor
+    independent publication gates remain pending.
   - Native control pointer feedback (2026-09-09): immutable hover/armed-press
     presentation shares live mapping, hit and availability checks. Disabled,
     cancelled, foreign and stale gestures remain idle; client input is preserved.
