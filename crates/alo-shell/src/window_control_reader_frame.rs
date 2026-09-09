@@ -26,6 +26,8 @@ pub struct WindowControlReaderFrame<'a> {
 
 /// Exact reader/page visit and painted geometry, stored only after submission.
 pub(crate) struct ReaderPresentation {
+    /// Continuous publication with unchanged identity and geometry.
+    pub(crate) authority: Arc<()>,
     /// Exact reading session, distinct even for the same name.
     reader: Arc<()>,
     /// Exact page visit, including away-and-back transitions.
@@ -122,11 +124,12 @@ impl Server {
                 scheme: style.scheme,
             };
             let hits = scene.interaction.hit_map();
-            if !previous.as_ref().is_some_and(|old| {
+            let unchanged = previous.as_ref().is_some_and(|old| {
                 Arc::ptr_eq(&old.reader, &identity)
                     && Arc::ptr_eq(&old.selection, &selection)
                     && old.hits == hits
-            }) {
+            });
+            if !unchanged {
                 frame.pointer.cancel();
                 scene.feedback = crate::ReaderPointerFeedback::default();
             }
@@ -141,6 +144,9 @@ impl Server {
             )?;
             self.control_overlay.bounds = None;
             self.reader_presentation = Some(ReaderPresentation {
+                authority: previous
+                    .filter(|_| unchanged)
+                    .map_or_else(|| Arc::new(()), |old| old.authority),
                 reader: identity,
                 selection,
                 hits,

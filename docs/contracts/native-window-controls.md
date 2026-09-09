@@ -860,3 +860,42 @@ dismissal. It does not synthesize parent navigation events or certify scanout.
 `--trace` optionally reports event-loop timing without changing any deadline.
 Exact results, preserved failures and evidence limits:
 `docs/autonomy/updates/transactional-native-reader-frames.md`.
+
+## Publication-bound reader input coordination
+
+2026-09-10 additive trusted API: `WindowControlReaderInput` owns the key and
+pointer transactions for one backend/server lifetime, including inactive periods.
+Pass its `frame_pointer()` to reader frame preparation. `key` accepts an explicit
+host semantic mapping (None for ordinary typing); `pointer` derives its own hit
+from the current publication and actual backend position. It never accepts a
+caller-provided semantic hit. Motion also determines axis interception. Forward
+events exactly once only on `Forward`; `Changed` requests a fresh reader frame,
+and `Dismissed` requests removal. This API performs no client delivery itself.
+
+Every event revalidates the live reader and a private continuous-publication
+identity. Identical successful refreshes preserve that identity. Changed reader,
+page visit or geometry, even geometry changed away and back between input events,
+creates a new identity and cancels both devices before routing. Removal/refusal
+leaves no authority. `synchronize` handles activation changes without an input
+event; false activation retires publication and requires a fresh frame on return.
+Hosts still perform ordinary seat/focus teardown on loss. `cancel` disarms both
+owners on key-mapping changes while retaining release obligations.
+
+Any key press cancels pointer execution; any pointer press cancels key execution.
+Motion alone does not cancel a key. Navigation/dismissal cancels both immediately.
+Every owned release must reach this object, including with no reader or inactive
+input. Client-owned keys/buttons cannot be acquired. Unknown events retain their
+ordinary path, subject to the backend's existing activation/coordinate validation.
+Absent/nonfinite pointer positions hit nothing and cannot execute; do not infer
+the actual parent position from the client seat while native input is consumed.
+
+This completes the reusable ordered-input coordinator, not its attachment to the
+nested/direct event pumps, key mapping, reader selection or cursor selection.
+Four private-client tests cover continuous publication, navigation, typing,
+refusal, client grabs, cross-device cancellation and loss/removal release draining.
+The WSLg reader fixture now routes its explicit host gestures through this API;
+it still does not synthesize parent events or certify physical presentation.
+For developer diagnosis, setting `ALO_NESTED_TRACE_SUBMISSION` enables stderr
+timing for nested bind, paint and upstream submission; it does not change
+submission behavior or fixture deadlines.
+Evidence: `docs/autonomy/updates/publication-bound-reader-input.md`.

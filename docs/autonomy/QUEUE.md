@@ -5,6 +5,32 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed publication-bound reader input coordination (2026-09-10):** a
+backend-owned coordinator validates continuous publication before key/pointer
+execution, cancels cross-device competition and changed geometry (including
+away-and-back), and drains owned releases after loss/removal/refusal. Deactivation
+requires a fresh frame. Four new private-client tests pass with normal typing
+and client-grab refusals. Linux 168 unit/242 lifecycle/three socket/four doctests,
+affected clippy/tests/rustdoc and format pass. WSLg: 12 coordinated reader EGL
+submissions and existing controls regression pass. Earlier deadlines failed;
+tracing measured an empty-scene upstream submission delay, not reader execution.
+The underlying intermittent delay is unresolved; deadlines/assertions unchanged.
+Exact evidence: `updates/publication-bound-reader-input.md`. Supervisor gates
+pending. Next: attach this coordinator to ordered nested parent events, map
+reader keys, retain actual pointer position, cancel on backend loss and drain
+releases across reader removal; then native selection/cursor and direct integration.
+Reusable coordination is complete; full-name access/window management unfinished.
+
+**Selected publication-bound reader input coordination (2026-09-10):** one
+backend-owned coordinator gates semantic key and geometry-derived pointer events
+on successful publication, cancels competing devices and changed publication,
+and drains releases after removal or input loss. Preserve ordinary typing and
+client grabs. Acceptance: private-client navigation, geometry replacement,
+refusal/loss/recovery and cross-device tests, affected fmt/clippy/tests/rustdoc,
+and existing WSLg reader submission regression. This completes the reusable
+ordered-input coordinator; parent event-pump attachment/key mapping, reader
+selection and direct integration remain subsequent components.
+
 **Completed transactional native reader frames (2026-09-10):** complete live page,
 chrome, feedback and strip now share one desktop submission; exact reader/page-
 visit hits publish only after success including the root. Invalid/unsupported/

@@ -1334,6 +1334,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Publication-bound reader input coordination (2026-09-10): a backend-owned
+    coordinator gates both devices on continuously submitted identity/geometry,
+    cancels cross-device competition, requires a fresh frame after deactivation,
+    and drains releases after loss/removal/refusal. Four new real-client tests and
+    12 coordinated WSLg submissions pass; original graphical deadline failures
+    and measured upstream submission delays remain recorded without a root-cause
+    claim. Evidence: `docs/autonomy/updates/publication-bound-reader-input.md`.
+    Reusable coordination complete; nested event-pump attachment/key mapping,
+    native reader selection/cursor and direct integration remain. Independent
+    supervisor gates pending; full-name access and feature/release boxes unchecked.
   - Transactional native reader frames (2026-09-10): fresh complete page/chrome/
     feedback and strip share one desktop submission. Exact reader/page-visit hits
     publish only after success including the target root; failures retire authority

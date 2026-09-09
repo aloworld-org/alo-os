@@ -310,8 +310,16 @@ impl Nested {
             return Err(RenderError::EmptySize);
         }
         let damage = Rectangle::from_size(size);
+        let trace = std::env::var_os("ALO_NESTED_TRACE_SUBMISSION").is_some();
+        let start = std::time::Instant::now();
+        if trace {
+            eprintln!("Nested submission: before bind, {} roots", roots.len());
+        }
         let drawing = {
             let (renderer, mut framebuffer) = self.backend.bind().map_err(submission)?;
+            if trace {
+                eprintln!("Nested submission {:?}: after bind", start.elapsed());
+            }
             crate::scene_drawing::paint(
                 renderer,
                 &mut framebuffer,
@@ -322,7 +330,13 @@ impl Nested {
                 controls,
             )?
         };
+        if trace {
+            eprintln!("Nested submission {:?}: after paint", start.elapsed());
+        }
         self.backend.submit(Some(&[damage])).map_err(submission)?;
+        if trace {
+            eprintln!("Nested submission {:?}: after swap", start.elapsed());
+        }
         // Positioned arrows are now in the submitted scene, just like client
         // cursors. Change host visibility only after that submission succeeds.
         self.backend

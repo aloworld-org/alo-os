@@ -14782,3 +14782,68 @@ host semantic input, not automatic parent key/pointer delivery, physical scanout
 or integrated VM boot. Pixel readback covers the component painter, not the new
 nested submitted frames. Physical laptop/GPU workstation records remain owed at
 release validation. Reports arriving during publication reconcile next iteration.
+
+## 2026-09-10 - publication-bound reader input coordination
+
+Started clean at 5518bcb. Read CLAUDE, DELIVERY, SHARED_MAIN, report guidance,
+current QUEUE/STATE, relevant features/roadmap, ADRs 0002/0010 and native-control
+contract. No AGENTS.md found. Every published report already had a STATE reference
+at iteration start; no reconciliation was due. Selected component and acceptance
+in QUEUE before code. Desktop ownership retained; no filesystem-security work.
+
+Added WindowControlReaderInput as the reusable ordered-event coordinator.
+Semantic key mappings and pointer positions validate continuous submitted page/
+geometry identity before acquisition/execution. Identical refreshes preserve
+presses; geometry changed away-and-back cancels them. Cross-device presses cancel
+the other owner, navigation/dismissal cancels both, and inactive/removal/refusal
+releases drain. Deactivation retires publication until a fresh frame. Ordinary
+key routing and client grabs remain intact. Existing WSLg reader fixture now
+uses the coordinator with the same frame pointer owner and all prior assertions.
+Optional ALO_NESTED_TRACE_SUBMISSION logs bind/paint/submission timing without
+changing rendering or deadlines. No engine patch, agent surface or palette change.
+
+Four new real-client tests pass. Linux: 168 unit, 242 lifecycle, three socket and
+four doctests, none ignored. Affected Linux/Windows clippy/tests, Linux example
+build and warnings-denied rustdoc, and fmt pass. Windows shell cases are zero
+because the crate is Linux-only. Final normal WSLg reader passes 12 complete EGL
+page/feedback submissions in both schemes with coordinator navigation/dismissal,
+removal and refusal/recovery; existing controls regression also passes. These are
+explicit host events, not automatic parent keyboard/pointer delivery or readback
+of submitted frames. Independent supervisor workspace/Windows/Linux/rustdoc/BPF
+gates are pending; no feature or release tick.
+
+Preserved failures: initial new test returned unit through a trailing ?; repaired
+its return type. Another test wrongly reused a reader after a client grab;
+existing control_reader_binding/read_window_control_page intentionally invalidate
+it permanently. Test now asserts invalidation and opens a fresh reader for its
+separate frame-refusal check. No product lifecycle weakened.
+
+First WSLg reader run exceeded the existing ten-second client deadline before
+reader output. No surviving fixture process; WSLg socket and bpffs remain present.
+Known-good controls with tracing passed (early empty render 22.37 ms to 2.260 s).
+Reader tracing then measured an empty render from 17.38 ms to 13.862 s and failed.
+Finer tracing measured bind 40 microseconds, paint complete at 2.38 ms, upstream
+submission complete at 8.568 s. That run completed all 12 reader submissions but
+later exceeded the client deadline, causing teardown-related client errors.
+The exact delay within upstream pre-present/EGL submission remains unknown; its
+vsync default is already false, so no speculative setting/engine change was made.
+Final normal reader and controls pass. A pass does not explain the earlier stalls.
+Every assertion and ten-/30-second deadline is retained; diagnostic logs preserved.
+
+All C: reserve preflights exceeded 12 GiB; minimum observed 52,863,983,616 bytes.
+Ubuntu graphics packages, WSLg socket and existing bpffs checked; no installation
+needed. Private clients only, no kernel mutation or outer machine lock. Separate
+/root/alo-os-target retained. No cleanup, shared maintenance, WSL restart/helper,
+staging/commit/push, dev-loop modification, second worker/loop, other-checkout
+change, credential or identity access. Tracked/new source, tests and documentation
+reviewed; git diff --check passes.
+
+Exact commands, logs, decisions and evidence limits:
+`docs/autonomy/updates/publication-bound-reader-input.md`.
+Logs: `.git/alo-loop/publication-bound-reader-input/`.
+Contract and all four shared progress documents updated. Next: attach the reusable
+coordinator to ordered nested parent events and key mapping, keep actual backend
+pointer position and drain on removal/loss, then reader selection/cursor and direct
+integration. Full-name access/window management remain unfinished. No physical
+scanout/VM evidence; physical laptop/GPU workstation records remain owed during
+release validation. Reports arriving during publication reconcile next iteration.

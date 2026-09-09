@@ -20,7 +20,7 @@ use smithay::{
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 #[derive(Default)]
-struct Target {
+pub(super) struct Target {
     fail: bool,
     omit: bool,
     calls: usize,
@@ -81,7 +81,7 @@ fn words() -> Result<Strings> {
     Ok(Strings::of(vocabulary))
 }
 
-fn draw(
+pub(super) fn draw(
     s: &mut Server,
     target: &mut impl FrameTarget,
     reader: &mut WindowControlReader,

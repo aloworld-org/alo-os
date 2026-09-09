@@ -78,6 +78,7 @@ mod window_control_presentation;
 mod window_control_reader;
 mod window_control_reader_chrome;
 mod window_control_reader_frame;
+mod window_control_reader_input;
 mod window_control_reader_interaction;
 mod window_control_reader_keys;
 mod window_control_reader_navigation;
@@ -161,6 +162,7 @@ pub use window_control_reader::{
 };
 pub use window_control_reader_chrome::PreparedWindowControlReaderChrome;
 pub use window_control_reader_frame::WindowControlReaderFrame;
+pub use window_control_reader_input::WindowControlReaderInput;
 pub use window_control_reader_interaction::WindowControlReaderInteraction;
 pub use window_control_reader_navigation::{
     WindowControlReaderChrome, WindowControlReaderNavigation,

@@ -2,8 +2,8 @@
 use alo_appearance::{Scheme, TextScale};
 use alo_shell::{
     LabelGeometry, Nested, ReaderKeyCommand as Command, ReaderKeyRoute as Route,
-    ReaderPointerHit as Hit, Server, WindowControlLabels, WindowControlReaderFrame,
-    WindowControlReaderPointer, WindowControlReaderStyle,
+    ReaderPointerHit as Hit, Server, WindowControlLabels, WindowControlPointerEvent,
+    WindowControlReaderFrame, WindowControlReaderInput, WindowControlReaderStyle,
 };
 use alo_shortcuts::{Action, shortcut_words};
 use alo_strings::{Language, Strings, Translation};
@@ -31,7 +31,7 @@ pub fn run(
     words.speaks(translation)?;
     words.prefers(&[language]);
     let mut labels = WindowControlLabels::new()?;
-    let mut pointer = WindowControlReaderPointer::default();
+    let mut input = WindowControlReaderInput::default();
     let geometry = LabelGeometry {
         viewport: (320, 200),
         origin: (162, 74),
@@ -77,7 +77,7 @@ pub fn run(
                     strings: &words,
                     labels: &mut labels,
                     chrome: geometry,
-                    pointer: &mut pointer,
+                    pointer: input.frame_pointer(),
                 },
                 time,
             )?;
@@ -96,7 +96,13 @@ pub fn run(
             let hit = server.presented_window_control_reader_hit(&mut reader, position);
             assert_eq!(hit, Some(Hit::Command(command)));
             assert_eq!(
-                pointer.button(server, Some(&mut reader), hit, 0x110, Pressed),
+                input.pointer(
+                    server,
+                    Some(&mut reader),
+                    true,
+                    Some(position),
+                    WindowControlPointerEvent::Button(0x110, Pressed)
+                ),
                 Route::Consumed
             );
             server.render_window_control_reader(
@@ -106,17 +112,26 @@ pub fn run(
                     strings: &words,
                     labels: &mut labels,
                     chrome: geometry,
-                    pointer: &mut pointer,
+                    pointer: input.frame_pointer(),
                 },
                 time,
             )?;
             submissions += 1;
             assert_eq!(
-                pointer.feedback(server, Some(&mut reader)).pressed,
+                input
+                    .frame_pointer()
+                    .feedback(server, Some(&mut reader))
+                    .pressed,
                 Some(command)
             );
             assert_eq!(
-                pointer.button(server, Some(&mut reader), hit, 0x110, Released),
+                input.pointer(
+                    server,
+                    Some(&mut reader),
+                    true,
+                    Some(position),
+                    WindowControlPointerEvent::Button(0x110, Released)
+                ),
                 if selected == 2 {
                     Route::Dismissed
                 } else {
@@ -151,7 +166,7 @@ pub fn run(
                             origin: (200, 40),
                             ..geometry
                         },
-                        pointer: &mut pointer,
+                        pointer: input.frame_pointer(),
                     },
                     time
                 )
@@ -164,7 +179,7 @@ pub fn run(
     }
     assert_eq!(submissions, 12);
     println!(
-        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, live hit navigation/dismissal, two removals and geometry refusal/recovery sequences passed"
+        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences passed"
     );
     Ok(())
 }

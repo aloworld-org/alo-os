@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native reader input now follows the page actually submitted.** A reusable
+  host coordinator cancels held navigation when geometry changes, input is lost
+  or the other device takes over, while preserving ordinary typing and draining
+  cancelled releases. Reactivation requires a fresh reader frame. Real-client
+  checks and WSLg host-driven navigation pass; attachment to parent event pumps
+  remains next. Evidence: `docs/autonomy/updates/publication-bound-reader-input.md`.
+
 - **Native name reader targets now follow successfully submitted pages.**
   The host composes the complete page, navigation and feedback with the desktop
   before publishing pointer targets. Stale pages, invalid geometry, unsupported
