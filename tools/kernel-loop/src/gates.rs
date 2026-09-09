@@ -234,9 +234,36 @@ fn the_machine_is_ready(at: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// The disk a build needs before it starts, in bytes.
+///
+/// Twelve gibibytes. A full workspace build with the graphics crates in it takes
+/// several, and a build that runs out partway does not fail as a build: it fails
+/// as a linker that could not open a file, which reads like a broken change and
+/// is not one. That happened on 2026-09-09 and cost an afternoon of looking in
+/// the wrong place.
+const THE_RESERVE: &str = "12884901888";
+
 /// What has to be true before a gate run means anything, and what to say when
 /// it is not.
 const READY: &[(Gate, &str)] = &[
+    (
+        Gate {
+            named: "room on the disk to build in",
+            // Asked of the filesystem the checkout is on, which is the one that
+            // fills: `df` in bytes, the last line, against the reserve. One
+            // mechanism on both hosts, because the gates already run through a
+            // shell that has `df`.
+            program: "test",
+            args: &["$(df -B1 --output=avail . | tail -n1)", "-ge", THE_RESERVE],
+            within: ".",
+        },
+        "there is less than 12 GiB free on the disk this checkout is on, and a build needs more \
+         than that. Nothing was staged, committed or pushed. A build started here would not fail \
+         as a build — it fails as a linker that cannot open a file, which reads like a broken \
+         change and is not one. **Do not delete anything shared to get past this.** Caches, \
+         another worker's build directory and anything under a system folder belong to whoever \
+         owns them; ask for space to be made.",
+    ),
     (
         Gate {
             named: "/sys/fs/bpf",

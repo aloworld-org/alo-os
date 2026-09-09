@@ -28,6 +28,12 @@ const THE_LOCK: &str = "lock";
 pub struct Held {
     /// Where the lock file is.
     at: PathBuf,
+    /// The process this lock was taken over from, when it was left by one that
+    /// had gone. `None` for a lock nobody held before.
+    ///
+    /// Kept so the loop can write it down: a supervisor that silently took over
+    /// would be one nobody could tell had restarted after a kill.
+    took_over_from: Option<u32>,
 }
 
 impl Held {
@@ -45,22 +51,68 @@ impl Held {
                 // *for* is that it exists. What is written in it only helps a
                 // person work out which process to look at.
                 let _ = writeln!(lock, "{}", std::process::id());
-                Ok(Self { at })
+                Ok(Self {
+                    at,
+                    took_over_from: None,
+                })
             }
             Err(why) if why.kind() == std::io::ErrorKind::AlreadyExists => {
-                let whose = std::fs::read_to_string(&at).unwrap_or_default();
-                let whose = whose.trim();
-                Err(format!(
-                    "another loop already holds {} (process {whose}). One supervisor per \
-                     checkout: if that process is gone, remove the file and start again.",
-                    at.display()
-                ))
+                // **A lock is not the same as a loop.** A supervisor that was
+                // killed leaves the file behind, and a person then has a
+                // checkout that refuses to start for a process that no longer
+                // exists — which is a machine telling somebody to go and delete
+                // a file to make it work, and how a safeguard becomes a habit of
+                // deleting locks.
+                //
+                // So it is taken over, and only when the operating system says
+                // the process is gone. Never when it is running, and never when
+                // the question could not be asked.
+                match what_is_running(ours) {
+                    Running::ALockNobodyHolds(gone) => {
+                        drop(std::fs::remove_file(&at));
+                        let mut lock = OpenOptions::new()
+                            .write(true)
+                            .create_new(true)
+                            .open(&at)
+                            .map_err(|why| {
+                                format!(
+                                    "the lock at {} was left by a process that is gone, and could \
+                                     not be taken over: {why}",
+                                    at.display()
+                                )
+                            })?;
+                        let _ = writeln!(lock, "{}", std::process::id());
+                        Ok(Self {
+                            at,
+                            took_over_from: Some(gone),
+                        })
+                    }
+                    Running::ALoop(whose) => Err(format!(
+                        "another loop is running in this checkout (process {whose}), and it holds \
+                         {}. One supervisor per checkout: ask that one to stop rather than \
+                         starting a second beside it.",
+                        at.display()
+                    )),
+                    Running::Nothing => Err(format!(
+                        "the lock at {} appeared and disappeared while this was starting, which \
+                         means something else is starting too. Nothing was done.",
+                        at.display()
+                    )),
+                }
             }
             Err(why) => Err(format!(
                 "the lock at {} could not be made: {why}",
                 at.display()
             )),
         }
+    }
+}
+
+impl Held {
+    /// The process this took the lock over from, when it took it from one.
+    #[must_use]
+    pub const fn took_over_from(&self) -> Option<u32> {
+        self.took_over_from
     }
 }
 
@@ -75,4 +127,199 @@ impl Drop for Held {
 pub fn whose(ours: &Path) -> Option<String> {
     let held = std::fs::read_to_string(ours.join(THE_LOCK)).ok()?;
     Some(held.trim().to_owned())
+}
+
+/// What is actually running here, as opposed to what the journal last said.
+///
+/// A journal is a list of things that have happened, and its last line reads
+/// exactly the same whether the loop is still working or stopped an hour ago
+/// mid-sentence. Somebody asking *is it running* wants this instead.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Running {
+    /// No lock, so no loop.
+    Nothing,
+    /// A lock, and the process that made it is alive.
+    ALoop(u32),
+    /// A lock whose process is gone: a loop that was killed rather than asked
+    /// to stop.
+    ///
+    /// **Reported rather than tidied away by whoever asked.** `status` answers a
+    /// question and does not change anything; taking the lock over is `run`'s,
+    /// where it is one decision made once and written down.
+    ALockNobodyHolds(u32),
+}
+
+/// Whether a loop is running in this checkout, and which process it is.
+#[must_use]
+pub fn what_is_running(ours: &Path) -> Running {
+    let Some(whose) = whose(ours) else {
+        return Running::Nothing;
+    };
+    let Ok(pid) = whose.parse::<u32>() else {
+        // A lock with something else in it is still a lock, and the answer to
+        // *is a loop running* is *something thinks so and cannot say who*.
+        return Running::ALockNobodyHolds(0);
+    };
+    if is_alive(pid) {
+        Running::ALoop(pid)
+    } else {
+        Running::ALockNobodyHolds(pid)
+    }
+}
+
+/// Whether this process id belongs to something that is still running.
+///
+/// Asked of the operating system rather than inferred from a heartbeat this
+/// program would have to keep writing: a heartbeat is a second thing that can be
+/// wrong, and a loop that is busy for forty minutes inside one worker is exactly
+/// when a heartbeat would look like a death.
+#[must_use]
+pub(crate) fn is_alive(pid: u32) -> bool {
+    #[cfg(windows)]
+    let asked = std::process::Command::new("tasklist")
+        .args(["/FI", &format!("PID eq {pid}"), "/NH"])
+        .output();
+    #[cfg(not(windows))]
+    let asked = std::process::Command::new("kill")
+        .args(["-0", &pid.to_string()])
+        .output();
+
+    match asked {
+        // `tasklist` says so by naming the process; with no match it prints a
+        // line saying there is none, and exits successfully either way.
+        #[cfg(windows)]
+        Ok(said) => String::from_utf8_lossy(&said.stdout).contains(&pid.to_string()),
+        #[cfg(not(windows))]
+        Ok(said) => said.status.success(),
+        // The question could not be asked. **Answering *alive* is the safe
+        // way to be wrong**: it refuses to start a second loop rather than
+        // starting one beside a loop that is running.
+        Err(_) => true,
+    }
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use super::{Held, Running, is_alive, what_is_running};
+
+    /// A folder of this test's own.
+    fn a_folder(called: &str) -> std::path::PathBuf {
+        let at = std::env::temp_dir().join(format!("alo-lock-{}-{called}", std::process::id()));
+        drop(std::fs::remove_dir_all(&at));
+        std::fs::create_dir_all(&at).unwrap();
+        at
+    }
+
+    /// A process id that certainly belongs to nothing.
+    ///
+    /// Started and waited for, rather than a large number guessed at: a guess
+    /// can be somebody else's process, and this test would then be asserting
+    /// something about a program it knows nothing about.
+    fn one_that_has_finished() -> u32 {
+        #[cfg(windows)]
+        let mut child = std::process::Command::new("cmd")
+            .args(["/C", "exit"])
+            .spawn()
+            .unwrap();
+        #[cfg(not(windows))]
+        let mut child = std::process::Command::new("true").spawn().unwrap();
+        let pid = child.id();
+        drop(child.wait());
+        pid
+    }
+
+    /// **A checkout with no lock has no loop in it.**
+    #[test]
+    fn no_lock_is_no_loop() {
+        let ours = a_folder("nothing");
+        assert_eq!(what_is_running(&ours), Running::Nothing);
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **A lock this process holds is a loop that is running**, which is the
+    /// answer `status` gives.
+    #[test]
+    fn a_lock_whose_process_is_alive_is_a_running_loop() {
+        let ours = a_folder("alive");
+        let held = Held::taken(&ours).unwrap();
+        assert_eq!(
+            what_is_running(&ours),
+            Running::ALoop(std::process::id()),
+            "a lock held by this very process was not reported as running"
+        );
+        assert_eq!(held.took_over_from(), None, "nothing was taken over");
+        drop(held);
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **A lock left by a process that is gone is not a running loop**, and
+    /// saying otherwise is what makes somebody delete a lock by hand.
+    #[test]
+    fn a_lock_left_by_a_dead_process_is_not_a_loop() {
+        let ours = a_folder("stale");
+        let gone = one_that_has_finished();
+        std::fs::write(ours.join("lock"), format!("{gone}\n")).unwrap();
+
+        assert_eq!(
+            what_is_running(&ours),
+            Running::ALockNobodyHolds(gone),
+            "a lock left behind by process {gone} was reported as a running loop"
+        );
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **A run takes over a lock nobody holds, and says whose it was.**
+    ///
+    /// The guarded half of restarting: taken over only because the operating
+    /// system says that process is gone, and written down rather than passed
+    /// over in silence.
+    #[test]
+    fn a_lock_nobody_holds_is_taken_over_and_the_takeover_is_reported() {
+        let ours = a_folder("takeover");
+        let gone = one_that_has_finished();
+        std::fs::write(ours.join("lock"), format!("{gone}\n")).unwrap();
+
+        let held = Held::taken(&ours).unwrap();
+        assert_eq!(
+            held.took_over_from(),
+            Some(gone),
+            "the takeover did not say which process it took the lock from"
+        );
+        assert_eq!(what_is_running(&ours), Running::ALoop(std::process::id()));
+        drop(held);
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **A lock a living process holds is never taken**, which is the guard.
+    #[test]
+    fn a_lock_a_living_process_holds_is_refused() {
+        let ours = a_folder("refused");
+        let held = Held::taken(&ours).unwrap();
+
+        let second = Held::taken(&ours);
+        assert!(
+            second.is_err(),
+            "a second loop took a lock this process is holding"
+        );
+        if let Err(why) = second {
+            assert!(
+                why.contains("another loop is running"),
+                "the refusal did not say a loop is running: {why}"
+            );
+        }
+        drop(held);
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **This process is alive**, which is the one answer `is_alive` must never
+    /// get wrong — a `false` here would let a second loop start beside a running
+    /// one.
+    #[test]
+    fn this_process_is_alive() {
+        assert!(is_alive(std::process::id()));
+    }
 }

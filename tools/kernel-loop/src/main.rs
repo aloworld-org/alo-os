@@ -66,6 +66,7 @@ mod evidence;
 mod gates;
 mod handoff;
 mod journal;
+mod keeping_ubuntu_up;
 mod lock;
 mod plan;
 mod publishing;
@@ -142,16 +143,40 @@ fn main() -> ExitCode {
         Asked::Run => run(&at, &ours),
         Asked::Publish => publish(&at, &ours),
         Asked::Verify => verify(&at, &ours),
-        Asked::Status => match journal::said(&ours) {
-            Ok(said) => {
-                println!("{said}");
-                ExitCode::SUCCESS
+        Asked::Status => {
+            // **Whether anything is running, before what last happened.** A
+            // journal's last line reads exactly the same whether the loop is
+            // still working or was killed an hour ago mid-sentence, and
+            // somebody asking `status` is usually asking the first question.
+            match lock::what_is_running(&ours) {
+                lock::Running::ALoop(pid) => {
+                    println!("alo-kernel-loop: a loop is running here, process {pid}.");
+                }
+                lock::Running::Nothing => {
+                    println!(
+                        "alo-kernel-loop: no loop is running here. What follows is what happened \
+                         last, not what is happening."
+                    );
+                }
+                lock::Running::ALockNobodyHolds(gone) => {
+                    println!(
+                        "alo-kernel-loop: no loop is running here — process {gone} left a lock \
+                         behind, so it was killed rather than asked to stop. `run` takes that \
+                         over. What follows is what happened last."
+                    );
+                }
             }
-            Err(why) => {
-                eprintln!("alo-kernel-loop: {why}");
-                ExitCode::FAILURE
+            match journal::said(&ours) {
+                Ok(said) => {
+                    println!("{said}");
+                    ExitCode::SUCCESS
+                }
+                Err(why) => {
+                    eprintln!("alo-kernel-loop: {why}");
+                    ExitCode::FAILURE
+                }
             }
-        },
+        }
         Asked::Stop => match journal::asked_to_stop(&ours) {
             Ok(()) => {
                 println!(
@@ -185,6 +210,23 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    // A restart after a kill is written down rather than passed over, because a
+    // loop that took a lock from a process nobody stopped is a fact about the
+    // last run that somebody reading this journal will want.
+    if let Some(gone) = held.took_over_from() {
+        journal::note(
+            ours,
+            &format!("took the lock over from process {gone}, which is gone"),
+        );
+    }
+
+    // **Ubuntu is kept up for as long as this loop runs, and no longer.** The
+    // gates run inside it and it stops itself when nothing is using it, taking
+    // `/sys/fs/bpf` with it — which then fails the readiness check halfway
+    // through a run for a reason that has nothing to do with the work. This
+    // holds one process open there and kills it on the way out. It mounts
+    // nothing, restarts nothing, and changes no shared service.
+    let _ubuntu = keeping_ubuntu_up::Awake::started();
 
     // A stop asked for before this run began is not this run's to obey — it
     // belonged to the loop that has already finished. Cleared here so that
