@@ -422,3 +422,39 @@ Nested host transactions, overlay policy, full clipped-name access, navigation a
 native cursor selection remain integration work; direct installation also remains.
 No new vocabulary, agent surface, palette or ADR. Evidence and precise limits:
 `docs/autonomy/updates/native-control-scene-composition.md`.
+
+## Transactional native strip submission
+
+Additive trusted Rust API, 2026-09-09: `WindowControlFrame` supplies an explicit
+root, origin, current pointer position and scheme. `Server::render_window_controls`
+takes the viewport from its actual `FrameTarget`, captures fresh layout/feedback,
+and submits clients, popups, strip and cursor through the existing output and
+callback transaction without intervening dispatch. Only success publishes the
+mapping-bound strip. `Nested::render_window_controls` supplies its own actual
+parent pointer position; pump input before rendering.
+
+`FrameTarget::submit_controls` must compose the supplied scene or refuse. Its
+default refuses Some with `RenderError::ControlsUnsupported`, and forwards None
+to the existing popup/cursor submission. Nested implements the shared GLES path.
+`ControlSnapshot` preserves live-target/geometry refusal details; a backend that
+omits the selected root returns `ControlTargetOmitted` before output/callback
+publication. The backend remains trusted to report the surfaces it actually drew.
+
+Any validation/submission error retires previous native authority, clears native
+focus and cancels held execution while keeping ownership of the release. Pending
+callbacks remain queued. None, including ordinary `Server::render`, explicitly
+removes controls and retires their authority even if that removal frame fails.
+Unchanged successful presentation preserves valid gestures and native label focus;
+replacement/relayout uses the existing retirement policy. Frame callbacks and
+output membership retain their original meaning: backend submission, not physical
+presentation. The first output submission may enable maximize on the next freshly
+captured frame; input operations always revalidate current policy.
+
+This transaction composes strips only. It does not silently install opaque labels
+without overlay input policy. Fresh label composition/dismissal and that policy
+are the next complete host component; alternate full-text access, native navigation,
+cursor selection during native gestures and direct integration remain unfinished.
+There is no new agent surface, vocabulary, font, palette or policy decision.
+Tests: `tests/window_controls/frame.rs`; actual EGL submission integration:
+`nested_check --controls`. Report and precise evidence limits:
+`docs/autonomy/updates/transactional-native-control-submission.md`.

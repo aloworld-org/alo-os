@@ -313,6 +313,7 @@ fn window_controls_excessive_geometry_disables_maximize_without_changing_client(
 mod input;
 
 mod feedback;
+mod frame;
 mod labels;
 mod motion;
 mod nested_input;

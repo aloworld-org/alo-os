@@ -11,6 +11,15 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// This backend has not implemented native scene submission.
+    #[error("target does not support native controls")]
+    ControlsUnsupported,
+    /// The backend omitted the root whose strip it was asked to compose.
+    #[error("native control target omitted from submitted scene")]
+    ControlTargetOmitted,
+    /// The explicitly selected native control target is no longer paintable.
+    #[error(transparent)]
+    ControlSnapshot(#[from] crate::WindowControlSnapshotError),
     /// Native output geometry differs or its label is obscured/clipped.
     #[error("native control scene requires matching geometry and an unobscured complete label")]
     ControlScene,
@@ -62,6 +71,21 @@ pub enum RenderError {
 /// on import, draw or submit failure and must not dispatch client requests.
 /// No returned surface receives a presentation-time guarantee.
 pub trait FrameTarget {
+    /// Submit native controls in the same frame as clients, popups and cursor.
+    /// Implementations must honor the supplied scene or refuse before submission.
+    /// None removes native content. No dispatch or publication is allowed here.
+    fn submit_controls(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        controls: Option<crate::WindowControlScene<'_>>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        if controls.is_some() {
+            return Err(RenderError::ControlsUnsupported);
+        }
+        self.submit_popups(roots, popups, cursor)
+    }
     /// Stop submission and disable the output before releasing its storage.
     /// No client dispatch is allowed. Failure must forbid further submission
     /// when hardware state is uncertain. Legacy targets explicitly refuse.

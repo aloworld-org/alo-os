@@ -32,6 +32,9 @@ mod window_raise_check;
 #[path = "support/interactive_resize_check.rs"]
 mod interactive_resize_check;
 #[cfg(target_os = "linux")]
+#[path = "support/nested_control_frame_check.rs"]
+mod nested_control_frame_check;
+#[cfg(target_os = "linux")]
 #[path = "support/resize_geometry_check.rs"]
 mod resize_geometry_check;
 #[cfg(target_os = "linux")]
@@ -266,6 +269,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     });
     let start = Instant::now();
     let mut rendered = 0;
+    let controls_check = std::env::args().any(|arg| arg == "--controls");
+    let mut controls_checked = false;
     while !client.is_finished() {
         if start.elapsed() > Duration::from_secs(10) {
             return Err("client deadline exceeded".into());
@@ -277,6 +282,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             nested.pump_seat(&mut server)?;
         }
         server.dispatch()?;
+        if controls_check && !controls_checked && server.mapped_surfaces().next().is_some() {
+            nested_control_frame_check::run(
+                &mut server,
+                &mut nested,
+                start.elapsed().as_millis() as u32,
+            )?;
+            controls_checked = true;
+        }
         rendered += server.render(&mut nested, start.elapsed().as_millis() as u32)?;
         thread::sleep(Duration::from_millis(4));
     }
@@ -286,6 +299,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     assert!(server.popup_surfaces().is_empty());
     assert_eq!(server.render(&mut nested, 10000)?, 0);
     assert!(rendered > 0);
+    assert!(!controls_check || controls_checked);
     println!(
         "Nested GLES submissions included {rendered} client surfaces; unmap/remap, refusal and disconnect passed; physical display unverified"
     );

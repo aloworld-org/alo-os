@@ -111,6 +111,15 @@ impl Server {
         target: &mut impl crate::FrameTarget,
         time: u32,
     ) -> Result<usize, crate::RenderError> {
+        self.render_window_controls(target, None, time)
+    }
+
+    /// Shared submission path; callers own native presentation retirement.
+    pub(crate) fn render_frame(
+        &mut self,
+        target: &mut impl crate::FrameTarget,
+        time: u32,
+    ) -> Result<usize, crate::RenderError> {
         let size = target.size();
         self.presentation.validate_target(target)?;
         if size.w > 0 && size.h > 0 {

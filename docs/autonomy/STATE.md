@@ -14142,3 +14142,55 @@ worker launch, other-checkout edit, private credential/identity access or unrela
 host changes.
 
 Final tracked and new-file diff reviewed; git diff --check passed.
+
+## 2026-09-09 - transactional native control submission
+
+Started clean at 4c10814. Read required delivery/ownership/report guidance and
+relevant constitution, feature, roadmap, ADR and contract sections. Selected the
+complete strip transaction component and acceptance criteria in QUEUE before code.
+Reconciled `docs/autonomy/updates/an-administrator-set-that-rule.md`: policy now
+precedes credential lookup; organisation attribution is explicit, not inferred
+from a supplied policy. Reported mutation evidence lacks exact command/results
+listing. Code review confirms production still supplies TheBound::Nobodys;
+pre-turn refused questions have no record entry. Settings remains unfinished.
+The superseded local-only blocker in the policy-refusal queue entry is corrected.
+
+Fresh explicit strip snapshots now share client/popup/cursor submission and output/
+callback publication; only success publishes native authority. Legacy targets
+refuse controls. Invalid/foreign targets, backend omission/failure and ordinary
+frame removal retire authority and cancel execution without losing owned releases.
+Same-frame refresh preserves valid gestures/focus. Nested uses actual parent
+position. No dispatch, focus fallback, new agent authority, vocabulary or palette.
+Labels with overlay input policy remain the next host transaction component.
+
+Three new real-client tests pass. Final full Linux suite passes 157 unit,
+210 lifecycle, three socket and three doctests, none ignored. Initial test-helper
+expect/panic clippy findings fixed without exemptions; final affected Linux/Windows
+clippy passes. Windows affected tests pass (zero Linux-only cases). Examples and
+both fmt checks pass. Exact commands, decisions, initial failures and limits:
+`docs/autonomy/updates/transactional-native-control-submission.md`.
+
+First nested --controls run failed its existing client deadline before the new
+checks. Cause unproven; unchanged rerun without a build running from this worker
+passed in 4.65s. Six actual EGL strip submissions, two removals and two refusal/
+recovery sequences pass, with real client callbacks and teardown. All 28 offscreen
+stages and existing complete scene/label/lifetime/input checks pass. No deadline
+change or weakened test. Final diagnostic refinement was followed by full tests
+and clippy; successful graphical behavior is unchanged. EGL acceptance is not
+on-screen pixel capture, physical input delivery, direct scanout or hardware proof.
+
+Ubuntu Rust/graphics/input prerequisites and WSLg socket verified. Every build/
+test/lint/doc C: preflight exceeded 12 GiB; minimum 58,797,293,568 bytes. No cleanup,
+shared maintenance, kernel mutation, outer lock, WSL restart or helper. Separate
+desktop target retained. No staging/commit/push, dev-loop edit, extra worker,
+private credential/identity access, other-checkout edit or unrelated host changes.
+
+Contract, task report and four progress documents updated. Strip transaction is
+complete; usable controls/window management remain unfinished. Next: fresh label
+composition/dismissal with overlay input ownership, then alternate full-text access,
+navigation/cursor selection and direct integration. Independent supervisor full
+Windows/Linux/rustdoc/BPF gates pending; no feature or release tick. Reports arriving
+during publication reconcile next iteration.
+
+Final warnings-denied rustdoc passed; tracked and new-file diff reviewed, with
+git diff --check clean. Full independent supervisor gates remain pending.

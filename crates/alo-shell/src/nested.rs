@@ -40,6 +40,10 @@ pub struct Nested {
 }
 
 impl Nested {
+    /// Actual parent position for transaction feedback, never cached client focus.
+    pub(crate) fn control_position(&self) -> Option<(f64, f64)> {
+        self.control_input.position()
+    }
     /// Initialize graphics, refusing missing Wayland configuration and failures.
     pub fn new(title: &str, size: (u32, u32)) -> Result<Self, RenderError> {
         if size.0 == 0 || size.1 == 0 || size.0 > i32::MAX as u32 || size.1 > i32::MAX as u32 {
@@ -210,6 +214,15 @@ impl Nested {
 }
 
 impl FrameTarget for Nested {
+    fn submit_controls(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        controls: Option<crate::WindowControlScene<'_>>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_control_scene(roots, popups, cursor, controls)
+    }
     fn metadata(&self) -> Result<crate::OutputMetadata, RenderError> {
         Ok(crate::OutputMetadata {
             name: "alo-nested".into(),

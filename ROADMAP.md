@@ -29,6 +29,11 @@ passed in the complete combined-tree recovery gates. All Windows/Linux workspace
 rustdoc, BPF and label/control/nested graphical checks passed on 5e3a66b plus
 the preserved labels and lease fix; normal publication and clean-tree restart
 follow. No feature/release checkbox is promoted by that development evidence.
+Contributor reconciliation (2026-09-09): policy-before-credential ordering and
+explicit organisation/personal attribution are implemented; production still
+supplies no bound, and pre-turn policy refusals have no record entry. Contributor
+mutation evidence has no exact command/results listing; settings/release remain
+unchecked. `docs/autonomy/updates/an-administrator-set-that-rule.md`.
 Company-managed cleanup belongs to the company administrator. Details:
 `docs/autonomy/updates/storage-aware-desktop-loop.md`. Release scope is unchanged.
 Recovery verified (2026-09-09): C: had recovered to 82.3 GiB at restart review;
@@ -1302,6 +1307,15 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Transactional native control submission (2026-09-09): fresh explicit strips
+    now share backend submission and callback publication, with authority retired
+    on validation/submission failure, omitted targets and ordinary-frame removal.
+    Three new real-client tests, six nested EGL strip submissions, two removals
+    and two refusal/recovery sequences pass. All 28 offscreen stages pass. Initial
+    nested deadline failure and evidence limits are retained in the report.
+    Labels with overlay input policy are next, followed by full-text access,
+    navigation/cursor selection and direct integration. No feature tick; full
+    supervisor gates pending. `docs/autonomy/updates/transactional-native-control-submission.md`.
   - Native control scene composition (2026-09-09): nested submission and offscreen
     preparation share client/popup, strip, complete label, cursor ordering. Stale
     viewports, clipped labels and labels covering controls refuse before import.

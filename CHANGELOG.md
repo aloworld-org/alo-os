@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Failed desktop frames cannot leave window controls authorized to act.**
+  Native strip submission now publishes the exact live target only after success,
+  and removes authority on failure or ordinary-frame replacement while consuming
+  cancelled releases. Three real-client tests and actual nested EGL submissions
+  cover the transaction; labels and usable desktop controls remain unfinished.
+  Evidence: `docs/autonomy/updates/transactional-native-control-submission.md`.
+
+- **Policy refusal is checked before retrieving a provider credential.**
+  The daemon now distinguishes an organisation's rule from a personal rule when
+  wording refusals. This is backend readiness: production has no configured bound,
+  and recording pre-turn refused questions remains unfinished. Contributor evidence:
+  `docs/autonomy/updates/an-administrator-set-that-rule.md`.
+
 - **Native window controls and labels can now be composed with client windows.**
   The shared nested/offscreen painter keeps both cursor types above native content,
   refuses clipped or obstructing labels and stale output geometry, and removes

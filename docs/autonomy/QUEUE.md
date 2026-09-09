@@ -5,6 +5,38 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed transactional native control submission (2026-09-09):** fresh explicit
+strip snapshots now submit with clients/popups/cursor and publish authority only
+on success. Validation/submission failure, omission and ordinary-frame removal
+retire authority and retain cancelled release ownership. Three new real-client
+tests cover success/refusal, callbacks, replacement, legacy targets and typing.
+Six actual nested EGL strip submissions, two removals and two refusal/recovery
+sequences pass; all 28 existing offscreen stages pass. Initial nested deadline
+failure is retained in the report, with no proven cause or timeout changes.
+Report: `updates/transactional-native-control-submission.md`. Full supervisor
+gates pending. Next executable component: fresh native label composition and
+dismissal in the host transaction with overlay pointer-input ownership; then
+alternate full-text access, native navigation/cursor selection and direct integration.
+Strip transaction complete; usable controls/window management remain unfinished.
+
+**Selected transactional native control submission (2026-09-09):** implement the
+complete strip submission/publication component of the nested host transaction.
+Refresh explicit target, geometry and feedback without dispatch; publish only
+successful frames; retire on validation/submission failure and ordinary-frame
+removal. Legacy targets must refuse native pixels. Acceptance: real-client
+success, replacement, invalid/foreign target, failed submission, pending callbacks,
+owned-release cancellation, ordinary typing, and actual nested GLES submissions;
+affected tests/clippy/fmt/rustdoc. Label composition with overlay input policy is
+the next host component, followed by full-text access and native navigation/cursor
+selection/direct integration. This does not complete usable window controls.
+
+Contributor reconciliation: `updates/an-administrator-set-that-rule.md` moves
+policy refusal before credential retrieval and distinguishes personal from
+organisation policy when wording refusals. Reported mutation checks caught the
+old ordering; exact verification commands/results are not supplied. Production
+still supplies no bound, and pre-turn question refusals have no record entry.
+Settings integration and the release remain unfinished; no policy decision here.
+
 **Completed native control scene composition (2026-09-09):** shared nested/
 offscreen rendering now orders clients/popups, strip, complete label, cursor.
 Viewport mismatch, clipped labels and labels over controls refuse before import.
@@ -4292,22 +4324,19 @@ out.
   No code changed, no test moved: 1756 tests and 45 doctests on Linux, 1563 and
   45 on Windows, both unchanged and both green.
 
-- [ ] **21l. A refusal that names who set the rule.** The half of ADR 0016 that
-  21h could not reach: *the bound wins, and the person is told who set it*. It
-  is unreachable today because both lists a choice can name are this machine and
-  no `SourcePolicy` refuses that, so `crates/alo-choosing/src/bound.rs` carries
-  `alo_models::NotAllowed` whole and adds nothing.
+- [ ] **21l. A refusal that names who set the rule.** Updated 2026-09-09 from
+  `updates/an-administrator-set-that-rule.md`: providers now make policy refusal
+  executable; the old local-only blocker is superseded. The daemon checks policy
+  before credential lookup, words local/provider refusals through one typed value,
+  and distinguishes personal rules from organisation rules before attribution.
+  Contributor reports two independently mutation-checked refusal-before-lookup
+  tests, plus no invented administrator or client-text interpolation. No exact
+  verification commands/results were supplied in the report.
 
-  **Blocked on a place a question can leave for**, which is a provider or a
-  paired machine in `alo_choosing::Which`. Item 21k did **not** free it, and
-  saying which half it freed is the point: 21k gave the brought list a home, and
-  a brought model is this machine — so both lists a choice can name are still
-  this machine and no `SourcePolicy` refuses that. What is missing is a list of
-  providers somebody added and of machines somebody paired with, and neither has
-  an item yet. The day a choice can name one, this crate gains one sentence with
-  the rule inside it, `alo-choosing`'s test fixture gains `alo-models`' words for
-  the same reason `alo-egress`' does, and the test that walks every policy
-  against every list stops passing for the reason it passes now.
+  Still unfinished: production supplies `TheBound::Nobodys`; a machine-description
+  bound depends on 21o. Pre-turn refused questions have no record entry; completion
+  needs an appropriate alo-record/alo-turn surface. Settings integration and
+  response/record agreement are not claimed. Existing ADRs 0016/0019 still apply.
 
 - [ ] **21i. Where a machine's grants are kept.** The storage item 1 left —
   *storage is serde, as with `Providers`; where the list is written and when is
