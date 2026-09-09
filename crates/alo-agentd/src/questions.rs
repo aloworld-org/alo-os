@@ -231,6 +231,25 @@ impl Questions {
         }
     }
 
+    /// Whether an **organisation** supplied the bound, rather than how strict
+    /// the bound happens to be.
+    ///
+    /// ADR 0016: a personal machine has no policy at all — *not empty, not
+    /// permissive by default, absent* — and therefore **no administrator to
+    /// name in a refusal**. The absence is answered with
+    /// `SourcePolicy::Anywhere` for every decision, because the two permit
+    /// exactly the same things; what they do not share is somebody to attribute
+    /// a refusal to, and that is the whole reason this is asked separately
+    /// rather than read off the policy.
+    ///
+    /// So a person who chose `ThisMachineOnly` for their own machine is `false`
+    /// here, and a refusal tells them what the rule is without inventing an
+    /// administrator who does not exist.
+    #[must_use]
+    pub const fn by_an_organisation(&self) -> bool {
+        self.bound.is_some()
+    }
+
     /// Which keyring a key would be asked of, taken before a turn borrows this.
     ///
     /// `None` means *the person this process runs as*, which is production and

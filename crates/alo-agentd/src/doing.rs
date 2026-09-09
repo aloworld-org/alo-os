@@ -42,7 +42,7 @@ use std::time::{Duration, SystemTime};
 use alo_answering::Answering;
 use alo_asking::Hosted;
 use alo_capability::{AnswerError, Grants, ProposalId};
-use alo_models::RuntimeError;
+use alo_models::{NotAllowed, RuntimeError};
 use alo_protocol::{FromAnAgent, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
 use alo_turn::{Answers, NoAnswer, Turning};
@@ -51,8 +51,9 @@ use alo_secrets::NotStored;
 
 use crate::questions::{Questions, WhatAnswers};
 use crate::words::{
-    NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER, NOTHING_ANSWERS_QUESTIONS,
-    NOTHING_WAS_ASKED, THE_KEYRING_IS_LOCKED, THE_KEYRING_REFUSED_US, Word,
+    AN_ADMINISTRATOR_SET_THAT_RULE, NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER,
+    NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED, THE_KEYRING_IS_LOCKED, THE_KEYRING_REFUSED_US,
+    Word,
 };
 
 /// Read one line as something an agent asked, and do it.
@@ -118,6 +119,31 @@ const fn said_about(why: NotStored) -> Word {
     }
 }
 
+/// A rule refused the place this person chose, said once.
+///
+/// **One value, and the same one wherever it goes.** `alo_models::NotAllowed`
+/// decided it and words it; this does not re-decide anything, does not reword
+/// what the rule said, and composes no second sentence beside it. Where an
+/// organisation supplied the bound, that refusal is carried **inside** this
+/// crate's own sentence through `Filling::and_said`, so what a person reads and
+/// what anything else is handed are one rendering in one language.
+///
+/// `by_an_organisation` is the fact that a bound was *supplied*, never a guess
+/// from how strict it looks. ADR 0016 is explicit that a personal machine has
+/// **no administrator to name in a refusal**, and a machine whose owner chose a
+/// strict policy for themselves is exactly that machine — so the attribution
+/// turns on where the bound came from and on nothing else.
+fn a_rule_refused(why: &NotAllowed, by_an_organisation: bool, strings: &Strings) -> Said {
+    let said = why.said(strings);
+    if !by_an_organisation {
+        return said;
+    }
+    strings.say(
+        &AN_ADMINISTRATOR_SET_THAT_RULE.key(),
+        &Filling::nothing().and_said("refusal", &said),
+    )
+}
+
 /// A question, put to whatever this person chose — or refused in one sentence.
 ///
 /// The three refusals are three different things to go and fix, and each is
@@ -136,6 +162,11 @@ fn put_to_a_model(
     // Taken before the turn's answer borrows `questions`, and per question
     // rather than at startup: somebody may sign in after this daemon did.
     let keyring = questions.whose_keyring();
+    // **Whether an organisation supplied the bound at all**, taken with the
+    // rest before the turn's answer borrows `questions`. It is never inferred
+    // from how strict the policy looks: a person who set a strict rule for
+    // themselves has no administrator, and naming one would be inventing them.
+    let by_an_organisation = questions.by_an_organisation();
     match questions.what_answers() {
         WhatAnswers::Nothing => {
             ToAnAgent::refused(&strings.say(&NOTHING_ANSWERS_QUESTIONS.key(), &Filling::nothing()))
@@ -154,6 +185,23 @@ fn put_to_a_model(
             model,
             places,
         } => {
+            // **The rule is asked first, and that ordering is the point.**
+            // A question the organisation's bound refuses is refused before the
+            // keyring is opened, so a policy refusal never reaches for the
+            // person's credential — there is nothing to reach it for, and a
+            // store touched on the way to saying no is a store touched for
+            // nothing.
+            //
+            // The source is the provider's own, read off the provider the
+            // person's list resolved — never assumed, and never `ThisMachine`
+            // because the address happened to look local.
+            let permission = match Answering::chosen(provider.source(), places.policy()) {
+                Ok(permission) => permission,
+                Err(why) => {
+                    return ToAnAgent::refused(&a_rule_refused(&why, by_an_organisation, strings));
+                }
+            };
+
             // Held out here because `Hosted::provider` borrows it, and it must
             // outlive the ask. This is the only place in the daemon where a
             // credential exists at all, and it lives no longer than the turn.
@@ -174,26 +222,19 @@ fn put_to_a_model(
                     }
                 },
             };
-            // The source is the provider's own, read off the provider the
-            // person's list resolved — never assumed, and never `ThisMachine`
-            // because the address happened to look local.
-            match Answering::chosen(provider.source(), places.policy()) {
-                Ok(permission) => match turning.asking(
-                    question,
-                    model,
-                    permission,
-                    &Answers::Provider(Hosted::provider(provider, key)),
-                    &places,
-                    now,
-                ) {
-                    Ok(answer) => ToAnAgent::answered(
-                        answer.text(),
-                        &answer.came_from(strings),
-                        answer.model(),
-                    ),
-                    Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
-                },
-                Err(why) => ToAnAgent::refused(&why.said(strings)),
+
+            match turning.asking(
+                question,
+                model,
+                permission,
+                &Answers::Provider(Hosted::provider(provider, key)),
+                &places,
+                now,
+            ) {
+                Ok(answer) => {
+                    ToAnAgent::answered(answer.text(), &answer.came_from(strings), answer.model())
+                }
+                Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
             }
         }
         WhatAnswers::OnThisMachine {
@@ -217,9 +258,11 @@ fn put_to_a_model(
                 }
                 Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
             },
-            // What an organisation permits, refusing what the person chose —
-            // and the sentence names the rule rather than the machine.
-            Err(why) => ToAnAgent::refused(&why.said(strings)),
+            // What an organisation permits, refusing what the person chose.
+            // **The same sentence as the provider door's**, because it is the
+            // same fact and a person reading two wordings of one rule would be
+            // reading two accounts of one moment.
+            Err(why) => ToAnAgent::refused(&a_rule_refused(&why, by_an_organisation, strings)),
         },
     }
 }
@@ -286,6 +329,7 @@ mod tests {
     };
     use alo_choosing::{Chosen, Which};
     use alo_keyring_fixture::AKeyringOfOurOwn;
+    use alo_models::SourcePolicy;
     use alo_record::Record;
 
     /// This machine's own address, which is what a provider's has to be: a
@@ -1174,6 +1218,232 @@ endpoint = \"https://{other}\"
             !nobody.join().unwrap(),
             "an unused listener was connected to"
         );
+    }
+
+    /// Ask through the production daemon path with a bound in force, and report
+    /// what came back and whether any provider was reached.
+    ///
+    /// `bound` is `None` for a machine no organisation manages and `Some` for
+    /// one that is managed — the same distinction `Questions` carries, kept here
+    /// so a test cannot accidentally prove the managed case with an unmanaged
+    /// machine.
+    fn asked_under(
+        called: &str,
+        bound: Option<SourcePolicy>,
+        keyring: WhoseKeyring,
+    ) -> (Option<String>, bool, bool) {
+        let (chosen, nobody) = a_listener_that_reports_connections();
+        let (other, also_nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose(called, chosen, other);
+
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            bound,
+            keyring,
+        );
+
+        let mut record = Record::default();
+        let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            )
+        });
+
+        (
+            said.refusal().map(|wording| wording.text().to_owned()),
+            nobody.join().unwrap(),
+            also_nobody.join().unwrap(),
+        )
+    }
+
+    /// **A managed machine refuses the provider, names the rule, and says an
+    /// administrator set it.**
+    ///
+    /// The sentence is not typed out here. It is rendered from the vocabulary
+    /// the same way `crate::doing` renders it, so this asserts *the daemon says
+    /// what this crate declares* rather than *the daemon says this English*.
+    #[test]
+    fn a_rule_an_organisation_set_refuses_and_says_who_set_it() {
+        let (refusal, reached, elsewhere) = asked_under(
+            "managed-refusal",
+            Some(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::Nobodys,
+        );
+
+        let strings = crate::testing::in_english();
+        let refused_by_the_rule = NotAllowed::NotThisMachine {
+            source: alo_models::InferenceSource::Hosted {
+                provider: "Mine".to_owned(),
+                region: alo_models::Region::Unknown,
+            },
+        };
+        let expected = strings
+            .say(
+                &AN_ADMINISTRATOR_SET_THAT_RULE.key(),
+                &Filling::nothing().and_said("refusal", &refused_by_the_rule.said(&strings)),
+            )
+            .text()
+            .to_owned();
+
+        assert_eq!(
+            refusal.as_deref(),
+            Some(expected.as_str()),
+            "a managed machine did not say the rule and that an administrator set it"
+        );
+        // The rule's own sentence is carried whole rather than reworded.
+        assert!(
+            expected.contains(refused_by_the_rule.said(&strings).text()),
+            "the rule's own words are not inside the sentence: {expected}"
+        );
+        assert!(!reached, "the provider was connected to despite the rule");
+        assert!(!elsewhere, "a provider nobody chose was connected to");
+    }
+
+    /// **An unmanaged machine is not told about an administrator**, however
+    /// strict the rule the person set for themselves.
+    ///
+    /// ADR 0016: a personal machine has no policy at all and therefore nobody to
+    /// name. This is the test that stops the attribution being read off the
+    /// policy value — the bound here is the strictest one there is, supplied by
+    /// nobody.
+    #[test]
+    fn a_person_who_set_their_own_rule_is_told_of_no_administrator() {
+        let (refusal, reached, elsewhere) =
+            asked_under("unmanaged-choice", None, WhoseKeyring::Nobodys);
+
+        let strings = crate::testing::in_english();
+        let administrators = strings
+            .say(
+                &AN_ADMINISTRATOR_SET_THAT_RULE.key(),
+                &Filling::nothing().and_said(
+                    "refusal",
+                    &strings.say(&NOTHING_WAS_ASKED.key(), &Filling::nothing()),
+                ),
+            )
+            .text()
+            .to_owned();
+        // Whatever came back, it is not the administrator sentence: on a machine
+        // nobody manages there is no administrator to name.
+        if let Some(said) = refusal.as_deref() {
+            assert!(
+                !said.contains("an administrator set that rule"),
+                "an unmanaged machine named an administrator: {said}"
+            );
+            assert_ne!(said, administrators);
+        }
+        assert!(!reached, "nothing should have been connected to");
+        assert!(!elsewhere, "a provider nobody chose was connected to");
+    }
+
+    /// **A rule that permits the place somebody chose does not refuse it**, and
+    /// all three model choices survive this change.
+    ///
+    /// `Anywhere` is what a managed machine that permits everything sets, and it
+    /// is also what an unmanaged machine's absence is answered with — so this is
+    /// the case that would break first if the policy check had been put in the
+    /// wrong place or made stricter than the rule.
+    #[test]
+    fn a_rule_that_permits_the_choice_refuses_nothing() {
+        for (which, bound) in [
+            (
+                "a managed machine that permits everywhere",
+                Some(SourcePolicy::Anywhere),
+            ),
+            ("a machine no organisation manages", None),
+        ] {
+            let (refusal, _, _) = asked_under(
+                &format!("permits-{}", bound.is_some()),
+                bound,
+                WhoseKeyring::Nobodys,
+            );
+            let said = refusal.unwrap_or_default();
+            assert!(
+                !said.contains("an administrator set that rule"),
+                "{which} refused with a rule that permits the choice: {said}"
+            );
+        }
+    }
+
+    /// **A policy refusal never reaches for the key**, and the refusal itself
+    /// is how that is known.
+    ///
+    /// The keyring here is **real and deliberately empty**: it holds no key for
+    /// this provider, so a daemon that looked would come back with *there is no
+    /// key saved* — a different sentence from the rule's, and one this crate can
+    /// name exactly. The assertion is that the refusal is the **rule's**, so the
+    /// lookup never happened.
+    ///
+    /// **Measured, not assumed.** An earlier version counted connections on the
+    /// fixture's bus after the fact and passed with the lookup in front of the
+    /// rule, because the handle is a temporary that is dropped inside the call
+    /// and the count was back to baseline before anything looked at it. Putting
+    /// the lookup back in front now fails this one.
+    #[test]
+    fn a_rule_that_refuses_never_reaches_for_the_key() {
+        // Real, and with nothing filed for `provider/Mine`.
+        let keyring = AKeyringOfOurOwn::started("policy-before-key");
+
+        let (refusal, reached, elsewhere) = asked_under(
+            "policy-before-key",
+            Some(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::On(keyring.bus()),
+        );
+
+        let strings = crate::testing::in_english();
+        let if_it_had_looked = strings
+            .say(&NO_KEY_FOR_THIS_PROVIDER.key(), &Filling::nothing())
+            .text()
+            .to_owned();
+        let said = refusal.unwrap_or_default();
+
+        assert_ne!(
+            said, if_it_had_looked,
+            "the credential store was asked on the way to refusing by policy, so a person's key              was fetched only to be thrown away"
+        );
+        assert!(
+            said.contains("an administrator set that rule"),
+            "the refusal was not the rule's: {said}"
+        );
+        assert!(!reached, "the provider was connected to");
+        assert!(!elsewhere, "a provider nobody chose was connected to");
+    }
+
+    /// **One refusal value, not two sentences composed twice.**
+    ///
+    /// `crate::doing::a_rule_refused` is the only thing that words a policy
+    /// refusal, and both doors go through it — so what a person reads and what
+    /// anything else would be handed are the same value. Asserted by rendering
+    /// it directly and comparing with what the daemon answered.
+    #[test]
+    fn both_doors_word_a_rule_the_same_way() {
+        let strings = crate::testing::in_english();
+        let refused = NotAllowed::NotThisMachine {
+            source: alo_models::InferenceSource::Hosted {
+                provider: "Mine".to_owned(),
+                region: alo_models::Region::Unknown,
+            },
+        };
+
+        let managed = a_rule_refused(&refused, true, &strings);
+        let unmanaged = a_rule_refused(&refused, false, &strings);
+
+        assert_eq!(
+            unmanaged.text(),
+            refused.said(&strings).text(),
+            "an unmanaged refusal is not the rule's own sentence, so it was reworded"
+        );
+        assert!(
+            managed.text().contains(unmanaged.text()),
+            "the managed sentence does not carry the rule's own inside it, so there are two \
+             sentences rather than one"
+        );
+        assert_ne!(managed.text(), unmanaged.text());
     }
 
     /// **Every way the store says no ends with nothing sent to any provider.**

@@ -158,8 +158,29 @@ pub const THE_KEYRING_REFUSED_US: Word = Word::saying(
      was tried and no other model answered in its stead.",
 );
 
+/// A rule an organisation set refused the place somebody chose.
+///
+/// **The only sentence this crate declares with a gap in it**, and the gap
+/// carries `alo_models::NotAllowed`'s own rendering through
+/// `Filling::and_said` — this repository's words, in the reader's language,
+/// never anything a client sent. `crate::doing::a_rule_refused` is the one
+/// place that fills it.
+///
+/// It names the rule by carrying the rule's own sentence, and names **that an
+/// administrator set it** — not who. ADR 0016 asks for the fact of an
+/// administrator, and this service knows no name to give: `agentd.toml` is a
+/// file, not a person, and a name invented here would be a name a person could
+/// go and ask for and not find.
+pub const AN_ADMINISTRATOR_SET_THAT_RULE: Word = Word::saying(
+    "agentd.an-administrator-set-that-rule",
+    "{refusal} — an administrator set that rule for this machine, so it is not yours to change",
+)
+.noting(
+    "Said when the organisation's own policy refuses the place somebody chose for their question.      `{refusal}` is the rule's own sentence, rendered from this system's words and never anything      a client sent; keep it whole and put the rest of the sentence around it. It is said only on      a machine an organisation manages — a person who set a strict rule for their own machine is      told the rule and no administrator is mentioned, because there is none. Name no      administrator: this service knows the policy, not who wrote it.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 8] = [
+pub const EVERY_WORD: [Word; 9] = [
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,
@@ -168,6 +189,7 @@ pub const EVERY_WORD: [Word; 8] = [
     THE_KEYRING_IS_LOCKED,
     NO_KEY_FOR_THIS_PROVIDER,
     THE_KEYRING_REFUSED_US,
+    AN_ADMINISTRATOR_SET_THAT_RULE,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -258,13 +280,46 @@ mod tests {
     /// arrives at this service is written by somebody else.
     #[test]
     fn no_sentence_here_can_be_handed_something_a_client_wrote() {
+        // **The rule is about where a gap is filled from, and the test used to
+        // approximate it as *no gaps at all*.** That held while nothing here
+        // had one. `AN_ADMINISTRATOR_SET_THAT_RULE` does, and its only filling
+        // is `alo_models::NotAllowed`'s own rendering through
+        // `Filling::and_said` — this repository's words, in the reader's
+        // language, and nothing a client can reach.
+        //
+        // So the exemption is by name and there is exactly one. Anything else
+        // gaining a gap fails here and has to argue for itself the same way.
+        const FILLED_FROM_OUR_OWN_WORDS: [&str; 1] = ["agentd.an-administrator-set-that-rule"];
+
         for word in EVERY_WORD {
+            if FILLED_FROM_OUR_OWN_WORDS.contains(&word.named()) {
+                continue;
+            }
             assert!(
                 !word.says().contains('{'),
                 "{} has a gap in it",
                 word.named()
             );
         }
+    }
+
+    /// **And the one exemption is really the one that needs it.**
+    ///
+    /// A name left in that list after its word stopped having a gap would be an
+    /// exemption nobody notices, which is how the rule above quietly stops
+    /// meaning anything.
+    #[test]
+    fn the_only_sentence_exempted_from_that_is_the_one_with_a_gap() {
+        let with_a_gap: Vec<&str> = EVERY_WORD
+            .iter()
+            .filter(|word| word.says().contains('{'))
+            .map(|word| word.named())
+            .collect();
+        assert_eq!(
+            with_a_gap,
+            vec!["agentd.an-administrator-set-that-rule"],
+            "the list of sentences with a gap has changed, so the exemption above no longer              matches what it exempts"
+        );
     }
 
     /// The list can be declared, which is what anything loading it does.

@@ -19,15 +19,26 @@
 //! # The refusal is `alo-models`' and is not reworded here
 //!
 //! `alo_models::NotAllowed` names the rule and the place it refused, and
-//! `NotAllowed::said` renders it. This crate adds nothing to it, and the
-//! addition ADR 0016 asks for — *and an administrator set that rule* — is
-//! deliberately not written yet: **no rule an organisation can set refuses
-//! anything a person can currently choose**, because both lists a choice can
-//! name are this machine and no policy forbids a machine answering on itself.
-//! There is a test below that says so. A sentence for a refusal that cannot
-//! happen would be a string a translator was handed for nothing, and the item
-//! that makes it reachable is the item that adds a place a question can leave
-//! for.
+//! `NotAllowed::said` renders it. This crate adds nothing to it.
+//!
+//! **That paragraph used to end differently, and it had stopped being true.** It
+//! said no rule an organisation can set refuses anything a person can currently
+//! choose, because both lists a choice can name are this machine — so the
+//! addition ADR 0016 asks for, *and an administrator set that rule*, would be a
+//! string handed to a translator for a refusal that could not happen.
+//!
+//! A person can now choose a **provider**. [`crate::Picked`] resolves one
+//! through their own list, `alo_models::Provider::source` answers
+//! `InferenceSource::Hosted`, and `SourcePolicy::ThisMachineOnly` refuses
+//! exactly that. `a_rule_can_now_refuse_a_place_a_person_can_choose` is that,
+//! held up — and it is the condition the queue's item 21l named as the day this
+//! becomes writable.
+//!
+//! The sentence itself is **still not written here**, and the reason has changed
+//! from *unreachable* to *undecided*: what a person is told belongs beside
+//! whoever says it, the daemon's provider path reaches `alo_answering` directly
+//! rather than through this crate, and wording it in two places is how a screen
+//! and a record become two accounts of one moment.
 //!
 //! # Absent is not the same as permissive, except in what it permits
 //!
@@ -107,8 +118,8 @@ impl Picked {
 )]
 mod tests {
     use super::*;
-    use crate::chosen::Which;
-    use alo_models::InferenceSource;
+    use crate::chosen::{Picked, Which};
+    use alo_models::{InferenceSource, Providers};
 
     /// The ordinary choice these tests are about.
     fn a_model() -> Chosen {
@@ -130,10 +141,8 @@ mod tests {
     /// strictest policy ADR 0004 permits, and both lists a choice can name are
     /// their own machine.
     ///
-    /// It is also why there is no refusal to test here yet. When a person can
-    /// choose a provider or a machine in the next room, this test stops being
-    /// the whole story and the sentence naming who set the rule is written
-    /// then.
+    /// It is **no longer the whole story**, and the test below is the rest of
+    /// it: a person can choose a provider now, and a rule can refuse one.
     #[test]
     fn no_rule_an_organisation_can_set_forbids_this_machine_answering_on_itself() {
         for bound in [
@@ -147,6 +156,55 @@ mod tests {
                 assert!(chosen.asking(Some(&bound)).is_ok(), "{bound:?} {which:?}");
             }
         }
+    }
+
+    /// **A rule can now refuse a place a person can choose**, which it could
+    /// not when this file was written.
+    ///
+    /// The refusal below is asked of the rule directly because nothing this
+    /// crate could express reached it. This one goes through
+    /// [`crate::Picked::asking`] — the person's own choice, resolved against
+    /// their own list — so it is the crate's own API refusing, and that is what
+    /// makes the sentence ADR 0016 asks for worth writing at all.
+    ///
+    /// **And the invariant that makes it sayable**: a refusal from here always
+    /// means an organisation set a rule. `asking(None)` is `Anywhere`, which
+    /// permits everything, so there is no road to a refusal on a machine with no
+    /// policy — and therefore no refusal that would have to name an
+    /// administrator who does not exist. Both halves are asserted.
+    #[test]
+    fn a_rule_can_now_refuse_a_place_a_person_can_choose() {
+        let mut providers = Providers::default();
+        providers
+            .add(
+                alo_models::Provider::checked(
+                    "Mistral",
+                    "https://api.mistral.ai",
+                    alo_models::Region::Declared("the EU".to_owned()),
+                    None,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        let picked = Picked::FromAProvider {
+            provider: "Mistral".to_owned(),
+            model: "a-model".to_owned(),
+        };
+
+        let asked = picked
+            .asking(&providers, Some(&SourcePolicy::ThisMachineOnly))
+            .unwrap();
+        assert!(
+            matches!(asked, Err(NotAllowed::NotThisMachine { .. })),
+            "a rule permitting only this machine did not refuse a hosted provider: {asked:?}"
+        );
+
+        // And with no organisation, the same choice is permitted — so a refusal
+        // from this crate is always one an administrator's rule caused.
+        assert!(
+            picked.asking(&providers, None).unwrap().is_ok(),
+            "a machine with no policy refused a choice, so a refusal here would have no              administrator to name"
+        );
     }
 
     /// **A rule that refuses is carried whole rather than reworded**, which is
