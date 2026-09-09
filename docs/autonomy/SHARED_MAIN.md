@@ -17,6 +17,31 @@ task. No feature branch or pull request is required by this workflow.
   alter the shared WSL kernel, cgroups, BPF pins or system services; separate
   build directories do not isolate those resources.
 
+## Concurrent work and shared-system tests
+
+Owner-approved 2026-09-09: both loops may implement, compile and run isolated tests
+concurrently. This replaces the temporary single-workstream disk-space rule.
+Keep the desktop target at `/root/alo-os-target` and Claude's at
+`/root/target-claude`; never clean or reuse the other worker's target. Keep the
+12 GiB Windows C: preflight before each build/test phase. Separate targets prevent
+artifact collisions, not memory pressure or exhaustion during a running command.
+
+Tests that attach BPF programs or manipulate kernel-global state must take
+`alo_bounding::Waited::on_this_kernel()` for the entire fixture lifetime. Both
+checkouts use the abstract socket name `alo-os/one-kernel-at-a-time`. Existing
+bounding, boundary-loader and daemon integration fixtures already participate.
+The parent holds it across its test child; the child must not acquire it again.
+Do not add an outer suite lock using the same name. Contention waits, and the
+existing bounded timeout fails rather than running unprotected. Never remove
+another fixture's pins or stop its processes to obtain access.
+
+Private buses, temporary files and ordinary compile/lint work may overlap when
+they are actually isolated. Package installs, mounts, global service changes,
+session changes or other shared maintenance outside these fixtures need an
+explicit idle handoff with both workers. No supervisor restarts WSL or silently
+repairs the shared environment. A waiting test is not a reason to pause all
+development or weaken its assertions.
+
 ## Task lifecycle
 
 1. Start with a clean working tree and `git pull --ff-only origin main`.

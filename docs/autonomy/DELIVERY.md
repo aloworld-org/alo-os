@@ -88,15 +88,27 @@ their status changes, a release-readiness question is asked, or they block work.
 
 ## Runner
 
-During storage-constrained operation, the desktop workstream runs alone until
-an explicit handoff to Claude; do not run both supervisors/build pipelines.
-The supervisor measures Windows C: free space before each task and top-level
-gate command, refusing below 12 GiB or if the reading fails. Worker instructions
-require the same check before focused builds/tests. WSL virtual free space is
+Owner direction, 2026-09-09: both supervisors may develop and build concurrently
+in separate checkouts with separate target directories. This supersedes the
+temporary single-workstream storage restriction. Kernel-mutating tests serialize
+through the existing per-test `alo_bounding::Waited` lock; do not hold that lock
+around an entire suite whose children acquire it. Shared environment maintenance
+requires a coordinated idle handoff, not a unilateral service/WSL restart.
+The desktop supervisor measures Windows C: free space before each task and
+gate command (including each Linux phase), refusing below 12 GiB or if the reading
+fails. Worker instructions require the same check before focused builds/tests.
+WSL virtual free space is
 not additional host-disk capacity. This preflight is not a continuous disk quota:
 one running command can consume its reserve. A low-space halt preserves work and
 requires review, never automatic cleanup or weakened tests. Company-managed
 system files and Windows rollback data are for the company administrator only.
+
+The workspace's development and test profiles use `debug = "line-tables-only"`
+to reduce generated artifact size. Filename/line backtraces remain available;
+full variable/type inspection in a debugger does not. Assertions, overflow checks,
+optimization, panic behavior and every gate remain unchanged. Release and the
+excluded BPF workspace profiles are unchanged. This reduces future build output,
+not a disk quota or proof that a full rebuild fits the remaining host space.
 
 New task names and reports describe the work, not historical queue codes.
 `SHARED_MAIN.md` assigns the four shared progress documents to the integration

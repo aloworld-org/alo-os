@@ -8,13 +8,34 @@ these checkpoints do not reduce release scope or discharge hardware obligations.
 The owner's direct-to-main collaboration policy is in
 `docs/autonomy/SHARED_MAIN.md`: separate checkouts, pull before each task,
 integrate concurrent commits and recheck before pushing.
-Storage-constrained restart (2026-09-08): the desktop build workstream runs alone
-until explicit handoff; a 12 GiB C: preflight reserve guards new tasks and gates.
+Concurrent development approved 2026-09-09: desktop and Claude may work in
+separate checkouts at once; existing per-test kernel locks serialize shared
+kernel fixtures. This supersedes the temporary single-workstream restriction.
+A 12 GiB C: preflight reserve still guards new tasks and each gate phase.
 Company-managed cleanup belongs to the company administrator. Details:
 `docs/autonomy/updates/storage-aware-desktop-loop.md`. Release scope is unchanged.
+Recovery verified (2026-09-09): C: had recovered to 82.3 GiB at restart review;
+the cause was not measured by this worker. The preserved painter, smaller build
+profiles and updated supervisor passed all combined-tree publication gates, the
+supervisor's 17 tests and full-frame graphical checks. Normal publication and
+clean-tree restart follow; no further cleanup is requested. Historical
+cleanup evidence: `docs/autonomy/updates/reclaiming-development-storage.md`.
+Current coordination: `docs/autonomy/updates/concurrent-development-with-shared-kernel-tests.md`.
 New work uses descriptive task names and individual reports. Only the integration
 owner consolidates those reports into this roadmap and the shared progress files;
 historical queue identifiers remain secondary cross-references.
+
+Credential continuation reconciled 2026-09-09 from `8096910` and
+`docs/autonomy/updates/a-real-keyring-answers.md`: an isolated Secret Service
+fixture demonstrates DH retrieval, Missing and schema isolation (also passed in
+combined-tree validation here). The later `9109875` and
+`docs/autonomy/updates/the-four-refusals-against-a-real-store.md` add real
+Locked/Denied evidence and correct Denied classification; its combined re-gate
+passed. `c4e20c7` and `docs/autonomy/updates/a-bus-with-nothing-on-it.md` subsequently
+add live empty-bus Unavailable evidence and avoid stacked absent-service timeouts;
+that combined re-gate passed. Daemon wiring, authenticated HTTPS,
+lifetime/concurrency and logout remain open. No keyring or provider-completion
+checkbox is moved.
 
 Credential reports reconciled 2026-09-08: ADR 0022 is accepted and amended to
 `secret-service` over explicitly addressed `zbus`; the old libsecret dependency
@@ -1239,6 +1260,18 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native window control view (2026-09-08): immutable minimise/maximise-or-restore/
+    close layout shares clipped paint/hit rectangles; disabled hits remain owned
+    and carry a non-color mark. Light/dark appearance tokens and existing action
+    labels avoid a second palette or vocabulary. Six new tests, Linux affected
+    clippy, 150 unit/171 lifecycle/three socket tests plus three doctests,
+    rustdoc/examples, Windows affected checks and both fmt checks pass. WSLg
+    validates 128 full 5,760-pixel frames against independent glyph masks.
+    Next: live target snapshots and availability, native label presentation,
+    pointer ownership/cancellation and stale-target/typing/graphical interaction.
+    This is the completed view component, not usable controls; no feature tick.
+    Full supervisor gates pending. Evidence and limits:
+    `docs/autonomy/updates/native-window-control-strip-painting.md`.
   - Focused layout command dispatch (2026-09-08): an additive native API resolves
     configured minimise, maximise/restore and left/right snap using actual keyboard
     ownership and latest requested mode. The original close/cycle API and exhaustive

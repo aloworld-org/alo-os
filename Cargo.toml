@@ -97,6 +97,15 @@ missing_docs_in_private_items = "warn"
 [workspace.lints.rustdoc]
 private_intra_doc_links = "deny"
 
+# Keep filename/line backtraces without embedding full type/variable debug data
+# in every development executable. Assertions, overflow checks, optimization and
+# panic behavior retain their defaults. The excluded BPF workspace is unchanged.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.test]
+debug = "line-tables-only"
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

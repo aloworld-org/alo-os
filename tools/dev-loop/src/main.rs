@@ -1,4 +1,5 @@
 //! Single-writer development supervisor. This is a developer tool, never an OS verb.
+mod linux_gate;
 mod process;
 mod publication;
 mod report;
@@ -185,30 +186,7 @@ fn gates(log: &mut File) -> Result<()> {
         &["test", "--workspace", "--locked", "--quiet"],
         log,
     )?;
-    checked(
-        "wsl",
-        &[
-            "-d", "Ubuntu", "-u", "root", "--", "bash", "-lc", LINUX_GATE,
-        ],
-        log,
-    )?;
+    linux_gate::run(log)?;
     checked("git", &["diff", "--check"], log)?;
     Ok(())
 }
-
-// Fixed local checkout and separate Linux artifacts are intentional. No user data
-// is interpolated into this shell programme. It never installs system services.
-const LINUX_GATE: &str = r#"set -eu
-export PATH=/root/.cargo/bin:/usr/lib/llvm-22/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-export LLVM_PREFIX=/usr/lib/llvm-22
-export CARGO_TARGET_DIR=/root/alo-os-target
-cd /mnt/c/dev/alo-os
-mountpoint -q /sys/fs/bpf || mount -t bpf bpffs /sys/fs/bpf
-cargo fmt --all --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked --quiet
-RUSTDOCFLAGS=-Dwarnings cargo doc --workspace --no-deps --locked
-cd crates/alo-bounding-kernel
-cargo fmt --all --check
-cargo clippy --release --target bpfel-unknown-none -Z build-std=core -- -D warnings
-"#;

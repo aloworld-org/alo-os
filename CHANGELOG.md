@@ -12,6 +12,20 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Development work can proceed in both checkouts without overlapping kernel
+  fixtures.** The existing test lock serializes shared kernel access; compilation
+  and isolated tests may overlap. Each desktop Linux gate now checks the host-disk
+  reserve separately and never mounts shared filesystems automatically. Smaller
+  development/test debug output retains filename/line backtraces, with less
+  debugger detail. `docs/autonomy/updates/concurrent-development-with-shared-kernel-tests.md`.
+
+- **Native window controls now have a tested light and dark painter.** Minimise,
+  maximise/restore and close share precise drawing and hit areas, preserve gaps
+  and output clipping, and visibly mark disabled actions without relying on color.
+  Existing translated action labels remain available to the native host. Full-frame
+  graphics checks pass; connecting this view to live windows, label presentation
+  and pointer actions remains next. `docs/autonomy/updates/native-window-control-strip-painting.md`.
+
 - **Native window commands now honour configured minimise, maximise and snap
   actions.** They act on keyboard focus, retain original geometry across rapid
   maximise/restore requests, and refuse missing focus or invalid layouts without

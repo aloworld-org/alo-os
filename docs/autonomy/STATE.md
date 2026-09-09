@@ -13470,3 +13470,126 @@ controls and pointer press/release dispatch, externalized labels, disabled/refus
 states, stale-target isolation and ordinary keyboard/graphical acceptance. Raw
 key/settings integration and remaining desktop work are unfinished. This completes
 one command bridge component, not window management or the release.
+
+## 2026-09-08 - Native window control strip painting
+
+Single desktop worker and shared-progress integration owner in C:\dev\alo-os.
+Initial tree clean; all published report filenames already referenced here, so
+no reconciliation was outstanding. Supervisor owns pull/publication; Claude's
+assignment and separate checkout untouched. Read delivery/ownership/report rules,
+constitution, relevant v0.01 features/roadmap, ADRs 0002/0010 and native command
+contract. Recorded selected view component and acceptance in QUEUE before coding.
+
+Completed immutable minimise/maximise-or-restore/close geometry and native solid
+painter. Shared clipped rectangles keep hit and paint boundaries identical;
+disabled controls retain hit ownership and carry a non-color mark. Reused existing
+appearance tokens and externalized action labels, adding only the workspace
+appearance dependency. Geometry, painting and tests have separate responsibilities.
+The additive native-window-controls contract states the matching-frame requirement,
+error propagation and absent client/input authority. This is a complete view
+component; usable controls and window management remain unfinished.
+
+Ubuntu Rust 1.98.0, all eight graphics/input packages and WSLg socket verified.
+Every build/test/lint/format command had a C: preflight above 12 GiB; lowest was
+13,969,088,512 bytes (13.0097 GiB). No cleanup, concurrent build workstream or
+shared service/kernel change. Initial focused compilation found ambiguous generic
+coordinate conversions; removed them and all six new tests passed. Initial
+clippy rejected constant chunks_exact in the fixture; used as_chunks with an
+explicit empty-remainder assertion, retaining exact pixels. Final affected Linux
+clippy passed. No lint/assertion weakened or repeated failing test run.
+
+Full shell suite passed 150 unit, 171 lifecycle and three socket tests plus three
+doctests, including ordinary keyboard and refusal regressions. Linux rustdoc with
+warnings denied and examples passed. Windows affected clippy/tests passed (zero
+Linux-only tests executed); Windows/Linux formatting clean. WSLg graphical fixture
+passed 128 full 5,760-pixel frames, checking independent masks/palette bytes for
+both schemes, all availability combinations, maximize/restore and four clipping
+positions. Expected Mesa fallback messages did not skip assertions. This proves
+offscreen view painting/hit boundaries, not live control input or display submission.
+Existing scene examples rebuilt but not rerun. Full independent supervisor workspace
+and BPF gates remain pending; physical and integrated-image claims are not made.
+
+Exact commands, decisions, historical failed attempts and remaining machine limits:
+`docs/autonomy/updates/native-window-control-strip-painting.md`.
+All four progress documents updated; code, tests, fixture, lockfile and contract
+reviewed. Next: live mapped-window snapshots and truthful availability, native
+label presentation and pointer press/release ownership/cancellation, stale-target
+isolation and graphical/ordinary typing acceptance. This view cannot authorize
+operations. No staging, commit, push, tools/dev-loop edit, identity/credential
+access, other checkout changes or worker/loop launch. Publication arrivals reconcile
+next iteration; no feature or release checkbox promoted.
+
+## 2026-09-09 - approved build-cache cleanup; host-space recovery pending
+
+Removed only `/root/ficina-target` and `/root/alo-os-target` through Cargo clean
+after resolving their paths, checking cache tags and confirming no build worker.
+Cargo reported 2.3 and 31.1 GiB removed. Git status was identical across cleanup;
+Claude's cache, models, source and Windows system files were preserved. Linux
+usage fell to about 49 GiB, but C: stayed at about 12.15 GiB: the Ubuntu VHDX did
+not shrink. Even read-only `Get-VHD` was denied by Windows permissions. No WSL
+shutdown or compaction attempted; host-space recovery is an administrator handoff.
+
+Development/test profiles now request line-only debug information, retaining
+assertions and checks. Release and the excluded BPF workspace are unchanged.
+Linux `alo-bounding-map` passed 26 unit and three documentation tests; verbose
+rustc output confirmed the requested debug flag. Workspace fmt and `git diff
+--check` passed. Full combined-tree gates remain pending; no commit or push.
+The supervisor remains halted and the painter work above is preserved. Evidence
+and the exact Ubuntu disk path: `updates/reclaiming-development-storage.md`.
+
+## 2026-09-09 - native control recovery validation
+
+Owner requested restart and then recovery of the preserved dirty tree. C: now
+measures 82.3 GiB free; the cause of that later recovery was not established here.
+Reviewed the painter, layout, tests, fixture, contract and smaller build profiles;
+no source fix identified. Windows fmt, all-target clippy and workspace tests
+(including documentation tests) passed; Linux/kernel/graphical gates remain
+pending. Claude's supervisor started testing during Windows validation, so the
+shared Linux gates await handoff.
+No other checkout or process was modified. No commit, push or desktop loop start
+yet. Evidence: `updates/resuming-native-window-control-verification.md`.
+
+## 2026-09-09 - concurrent work approved, combined-tree verification
+
+Owner explicitly approved both loops working concurrently with serialized shared
+kernel tests. The previous one-workstream storage rule is superseded. Existing
+Waited guards already serialize the bounding, loader and daemon fixtures; no outer
+non-reentrant suite lock added. Shared maintenance still needs an idle handoff.
+Desktop gates now check disk space before each Linux phase and refuse missing
+bpffs rather than automatically mount it. Supervisor fmt/clippy, 17 tests and
+release rebuild passed; the worker instructions embedded in the binary are current.
+
+Fast-forwarded to `8096910`, preserving all dirty painter/profile work. Reconciled
+`updates/a-real-keyring-answers.md`: isolated real store with DH retrieval, Missing
+and schema isolation are contributor evidence; unavailable-with-real-bus,
+locked/denied, daemon wiring, HTTPS, lifetime/concurrency and logout are not done.
+No completion checkbox moved. Combined-tree gates and graphics are now running.
+Evidence: `updates/concurrent-development-with-shared-kernel-tests.md`.
+
+All Windows/Linux workspace, rustdoc and pinned BPF gates passed on the combined
+tree at `8096910`, along with all 128 full-frame graphical comparisons. Source
+remained unchanged by verification. Claude published `9109875` during that run;
+fast-forward integrated it and full combined-tree gates were restarted. Reconciled
+`updates/the-four-refusals-against-a-real-store.md`: Denied error classification
+and real Locked/Denied fixtures; Unavailable still socket-shaped only, live empty
+bus unproven, production daemon/HTTPS/lifetime/concurrency still open. Its type
+assertion of no-send is not on-wire evidence. No other checkout touched, no gate
+weakened, no commit or push before the combined-tree result.
+
+The complete `9109875` Windows/Linux/rustdoc/BPF/graphics run passed too. Incoming
+`c4e20c7` was integrated next, again without overlap, and all gates restarted on
+that combined tree. Reconciled `updates/a-bus-with-nothing-on-it.md`: live bus
+without a started keyring, liveness and name-absence controls, Unavailable and a
+response-time bound instead of stacked method timeouts. The empty-bus gap is now
+contributor-tested; daemon wiring/HTTPS/lifetime/concurrency/logout are not done.
+Asked the owner for a temporary hold on new Claude pushes, while development may
+continue, to allow a stable final integration. No publication yet.
+
+Final `c4e20c7` combined-tree verification passed: Windows workspace fmt/clippy/
+tests; Linux workspace fmt/clippy/tests/rustdoc; pinned BPF fmt/clippy; example
+build and all 128 full-frame graphical comparisons. Real empty-bus, Locked,
+Missing and Denied fixture checks passed in this tree. No daemon HTTPS or provider
+integration claim follows. Supervisor fmt/clippy, 17 tests and release build also
+passed. No source changed during these gates; final remote check matched the base.
+The preserved painter and concurrent-workflow update are ready for normal commit,
+push and clean-tree desktop restart. No cleanup or Windows setting was changed.

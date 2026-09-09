@@ -5,6 +5,57 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Recovery verified (2026-09-09):** C: had recovered to 82.3 GiB at restart review.
+No causal claim is made for that recovery, and no further cleanup is requested.
+The owner requested restart, then completion of the preserved painter and build
+profile work after the dirty-tree guard correctly refused. Review and full gates
+precede publication and restart; no dirty-tree guard is bypassed. The owner now
+permits concurrent development; kernel fixtures use the existing machine lock,
+and only shared-environment maintenance requires an idle handoff. Windows workspace
+fmt/clippy/tests and full Linux/kernel/graphics gates passed with Claude's
+`8096910`, `9109875` and finally `c4e20c7`. All combined-tree Windows/Linux,
+rustdoc, pinned BPF and 128 full-frame graphics checks passed on the last tree.
+The supervisor's own 17 tests and release rebuild passed. The recovered work is
+ready for normal publication and clean-tree restart; no gate bypass is needed.
+Workflow: `updates/concurrent-development-with-shared-kernel-tests.md`. Recovery evidence:
+`updates/resuming-native-window-control-verification.md`.
+Preserve both checkouts and the 12 GiB reserve. Historical cleanup:
+`updates/reclaiming-development-storage.md`.
+
+Credential continuation from `8096910`: isolated real-store retrieval, Missing
+and schema isolation passed in combined-tree validation. `9109875` adds real
+locked/denied evidence and corrects Denied classification (combined re-gate passed).
+Daemon integration, HTTPS and connection lifetime/concurrency remain Claude's
+work. Reports: `updates/a-real-keyring-answers.md`
+and `updates/the-four-refusals-against-a-real-store.md`. The subsequent
+`updates/a-bus-with-nothing-on-it.md` (`c4e20c7`) now supplies live empty-bus
+Unavailable evidence and a bounded response-time check; the combined re-gate
+passed. A refusal type assertion is still not an HTTPS no-send test.
+
+**Completed native window control strip painting (2026-09-08):** immutable
+minimise/maximise-or-restore/close layout, shared clipped paint/hit geometry,
+externalized action label access and token-based light/dark glyphs are code-ready.
+Disabled targets retain hit ownership and a non-color mark. Six new view tests,
+affected Linux clippy, 150 unit/171 lifecycle/three socket tests and three doctests,
+rustdoc/examples, Windows affected checks and Windows/Linux fmt pass. WSLg checks
+128 complete 5,760-pixel frames against independent masks. Exact commands and
+limits: `updates/native-window-control-strip-painting.md`. Full publication gates
+passed during recovery; no feature checkbox moved. Next executable component: bind this view to
+live mapped-window snapshots and truthful operation availability, then integrate
+native label presentation and pointer press/release dispatch with cancellation,
+stale-target isolation, ordinary client typing and graphical interaction checks.
+The view itself has no client identity/input authority; usable controls remain open.
+
+**Selected native window control strip painting (2026-09-08):** implement the
+complete immutable view component for minimise, maximise/restore and close:
+shared paint/hit rectangles, output clipping, normal/restoring glyphs, explicit
+disabled styling, existing appearance tokens and externalized action labels.
+Acceptance: exact geometry/hit/refusal tests, full-frame GLES readback for light,
+dark, disabled and clipped strips, affected fmt/tests/clippy/rustdoc. This view
+owns no client identity or input and cannot authorize an operation. Live target
+snapshots, availability derivation, stale-target isolation and pointer press/release
+dispatch follow as the next component; rendered usable controls remain unfinished.
+
 **Completed focused window layout command dispatch (2026-09-08):** an additive
 command API connects configured minimise, maximise/restore and left/right snap,
 resolving actual keyboard ownership and latest requested mode. Existing close/cycle
