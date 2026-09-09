@@ -66,7 +66,7 @@ use alo_turn::{Machine, Turning};
 use crate::caller::{Caller, Uid};
 use crate::knocking::Knocking;
 use crate::place::Place;
-use crate::questions::{Questions, WhoseKeyring};
+use crate::questions::{Questions, TheBound, WhoseKeyring};
 use crate::refusing::NotACaller;
 use crate::side::{Side, Sides};
 use crate::unix::{our_group, us};
@@ -391,7 +391,7 @@ pub(crate) fn nothing_has_been_chosen() -> Questions {
         None,
         None,
         Catalogue::built_in().unwrap(),
-        None,
+        TheBound::Nobodys,
         WhoseKeyring::Nobodys,
     )
 }

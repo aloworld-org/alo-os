@@ -20,11 +20,22 @@ The rule is now asked first. Nothing reaches for a key on the way to saying no.
 **Proved by mutation, because the first version of the test did not prove it.**
 That version counted connections on the fixture's bus afterwards and **passed
 with the wrong order** — the keyring handle is a temporary dropped inside the
-call, so the count was back to baseline before anything looked. The test now uses
-a real, deliberately **empty** keyring: a daemon that looked would answer *there
-is no key saved*, which is a sentence this crate can name exactly, and the
-assertion is that the refusal is the **rule's** instead. Putting the lookup back
-in front now fails it.
+call, so the count was back to baseline before anything looked.
+
+Two tests now, and they are independent:
+
+- `a_rule_that_refuses_never_reaches_for_the_key` uses a real, deliberately
+  **empty** keyring. A daemon that looked would answer *there is no key saved*,
+  a sentence this crate names exactly, so the refusal being the **rule's** is the
+  evidence. That is an argument about *one scenario's sentence*, which is why it
+  is not the only one.
+- `a_rule_that_refuses_opens_no_connection_to_the_keyring` **watches the bus**. A
+  lookup has to open it, so a socket nothing ever connected to is a lookup that
+  never happened, whatever any sentence said. The bus is a Unix socket the test
+  binds and never answers on; it passes `TheBus`'s checks, so the daemon would
+  reach it if it reached for a key, and the accept count is zero.
+
+Both fail when the lookup is put back in front, each for its own reason.
 
 ## One refusal value, worded once
 
@@ -41,13 +52,22 @@ It names the rule and **that** an administrator set it. It does not name **who**
 `agentd.toml` is a file, not a person, and an invented name is one somebody could
 go and ask for and not find.
 
-### The attribution is never inferred from the policy value
+### The origin is carried, not inferred — and not from an `Option` either
 
-`Questions::by_an_organisation` answers whether a bound was **supplied**, not how
-strict it looks. ADR 0016 is explicit that a personal machine has no policy at
-all and therefore nobody to name — so a person who set `ThisMachineOnly` for
-their own machine is told the rule and no administrator is mentioned. That is its
-own test.
+`Option<SourcePolicy>` was the first shape and it is not enough. It collapses two
+different things into `Some`: a rule an administrator wrote, and a rule the
+machine's owner chose for themselves. Attribution read off *a policy was
+supplied* would tell a person an administrator restricted them when nobody did.
+
+So the daemon carries `TheBound` — `Nobodys`, `ThePersons(policy)` or
+`AnOrganisations(policy)` — and only the last earns the sentence. Nothing
+supplies `ThePersons` today and this adds no key for it; it exists so the
+distinction is **unrepresentable to get wrong**.
+
+`a_persons_own_strict_rule_names_no_administrator` is the case an `Option` could
+not tell apart: a policy *was* supplied, it is the strictest one there is, the
+question is refused by it — and no administrator is named. It also asserts the
+refusal is the rule's own words, so it is not passing because nothing happened.
 
 ## The one gap in this crate's vocabulary, and the rule it did not break
 
@@ -57,9 +77,16 @@ test approximated it as *no gaps*, which held while nothing had one.
 
 The new sentence has one, and its only filling is `NotAllowed`'s own rendering
 through `and_said` — this repository's words, never anything a client sent. So
-the test now exempts that word **by name**, and a second test asserts the
-exemption list is exactly the set of words that have a gap, so a stale exemption
-cannot quietly turn the rule off.
+the test exempts that word **by name**, and a second test asserts the exemption
+list is exactly the set of words with a gap, so a stale exemption cannot quietly
+turn the rule off.
+
+**An exemption list is bookkeeping, not the security property**, so the property
+itself is tested: `the_gap_takes_a_typed_refusal_and_never_a_clients_words` puts
+braces and an instruction to ignore the rule into **the question** — the one
+thing on this path a client controls — has it refused by policy, and asserts none
+of it appears in what comes back, that no braces survive, and that the refusal is
+byte-for-byte the one rendered from the typed refusal alone.
 
 ## The stale documentation is corrected
 

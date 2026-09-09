@@ -83,13 +83,65 @@ pub struct Questions {
     /// `$HOME`, the same.
     home: Option<OsString>,
     /// What an organisation permits, or `None` where none manages this machine.
-    bound: Option<SourcePolicy>,
+    bound: TheBound,
     /// Every model this system offers, which is what a runtime may fetch.
     catalogue: Catalogue,
     /// What this turn's first question found, or `None` before there was one.
     looked: Option<Looked>,
     /// Whose keyring a provider's key is asked of.
     keyring: WhoseKeyring,
+}
+
+/// Who set the rule a question is bounded by, kept apart from what the rule
+/// says.
+///
+/// **Three states rather than an `Option<SourcePolicy>`, and the reason is a
+/// sentence a person reads.** ADR 0016 gives the bound to the organisation and
+/// says a personal machine has *no policy at all — not empty, not permissive by
+/// default, absent* — and therefore **nobody to name in a refusal**. An
+/// `Option` collapses two different things into `Some`: a rule an administrator
+/// wrote, and a rule the machine's owner chose for themselves. Attribution read
+/// off that would tell a person an administrator restricted them when nobody
+/// did.
+///
+/// So the origin is carried rather than inferred. Nothing supplies
+/// [`Self::ThePersons`] today — there is no key for it and this does not add
+/// one — and it exists because the distinction has to be **unrepresentable to
+/// get wrong**, not because something writes it yet.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TheBound {
+    /// No policy at all, which is ADR 0016's *absent* and the common case.
+    Nobodys,
+
+    /// The person's own rule for their own machine. Bounds the same way and
+    /// **names no administrator**, because there is none.
+    ThePersons(SourcePolicy),
+
+    /// An organisation's, from a file an administrator wrote. The only origin
+    /// that earns the attribution.
+    AnOrganisations(SourcePolicy),
+}
+
+impl TheBound {
+    /// What the rule says, whoever set it.
+    ///
+    /// Absence answers [`SourcePolicy::Anywhere`], because ADR 0016's *absent*
+    /// and *permits everything* decide identically — what they do not share is
+    /// somebody to attribute a refusal to, which is [`Self::by_an_organisation`]
+    /// and is asked separately for exactly that reason.
+    #[must_use]
+    pub const fn policy(&self) -> &SourcePolicy {
+        match self {
+            Self::Nobodys => &UNMANAGED,
+            Self::ThePersons(policy) | Self::AnOrganisations(policy) => policy,
+        }
+    }
+
+    /// Whether an **organisation** set it — never how strict it is.
+    #[must_use]
+    pub const fn by_an_organisation(&self) -> bool {
+        matches!(self, Self::AnOrganisations(_))
+    }
 }
 
 /// Whose keyring a provider's key is asked of.
@@ -195,7 +247,7 @@ impl Questions {
     /// Nothing is read here: the environment is copied, and
     /// [`Questions::what_answers`] is what opens a file.
     #[must_use]
-    pub fn of_this_process(catalogue: Catalogue, bound: Option<SourcePolicy>) -> Self {
+    pub fn of_this_process(catalogue: Catalogue, bound: TheBound) -> Self {
         Self::of_a_session(
             std::env::var_os(CONFIG_HOME),
             std::env::var_os(HOME),
@@ -218,7 +270,7 @@ impl Questions {
         config_home: Option<OsString>,
         home: Option<OsString>,
         catalogue: Catalogue,
-        bound: Option<SourcePolicy>,
+        bound: TheBound,
         keyring: WhoseKeyring,
     ) -> Self {
         Self {
@@ -234,20 +286,12 @@ impl Questions {
     /// Whether an **organisation** supplied the bound, rather than how strict
     /// the bound happens to be.
     ///
-    /// ADR 0016: a personal machine has no policy at all — *not empty, not
-    /// permissive by default, absent* — and therefore **no administrator to
-    /// name in a refusal**. The absence is answered with
-    /// `SourcePolicy::Anywhere` for every decision, because the two permit
-    /// exactly the same things; what they do not share is somebody to attribute
-    /// a refusal to, and that is the whole reason this is asked separately
-    /// rather than read off the policy.
-    ///
-    /// So a person who chose `ThisMachineOnly` for their own machine is `false`
-    /// here, and a refusal tells them what the rule is without inventing an
-    /// administrator who does not exist.
+    /// [`TheBound`] carries the origin; this is that fact, asked where a
+    /// refusal is worded. A person's own strict rule answers `false`, so a
+    /// refusal tells them what the rule is without inventing an administrator.
     #[must_use]
     pub const fn by_an_organisation(&self) -> bool {
-        self.bound.is_some()
+        self.bound.by_an_organisation()
     }
 
     /// Which keyring a key would be asked of, taken before a turn borrows this.
@@ -306,7 +350,7 @@ impl Questions {
                 &self.catalogue,
             ));
         }
-        let bound = self.bound.as_ref().unwrap_or(&UNMANAGED);
+        let bound = self.bound.policy();
         match &self.looked {
             Some(Looked::OnThisMachine { chosen, runtime }) => WhatAnswers::OnThisMachine {
                 chosen,
@@ -339,7 +383,7 @@ impl Questions {
     pub(crate) fn already_found(
         chosen: Chosen,
         runtime: Box<dyn ModelRuntime>,
-        bound: Option<SourcePolicy>,
+        bound: TheBound,
     ) -> Self {
         Self {
             config_home: None,
@@ -412,7 +456,7 @@ mod tests {
             Some(config.into_os_string()),
             None,
             Catalogue::built_in().unwrap(),
-            None,
+            TheBound::Nobodys,
             WhoseKeyring::Nobodys,
         )
     }
@@ -426,7 +470,7 @@ mod tests {
             None,
             None,
             Catalogue::built_in().unwrap(),
-            None,
+            TheBound::Nobodys,
             WhoseKeyring::Nobodys,
         );
 
@@ -545,7 +589,7 @@ endpoint = \"https://api.mistral.ai\"
         let mut questions = Questions::already_found(
             Chosen::of(Which::Brought, "my-finetune").unwrap(),
             a_runtime_saying(Ok("four".to_owned())),
-            None,
+            TheBound::Nobodys,
         );
 
         let WhatAnswers::OnThisMachine { chosen, places, .. } = questions.what_answers() else {
@@ -568,7 +612,7 @@ endpoint = \"https://api.mistral.ai\"
         let mut questions = Questions::already_found(
             Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
             a_runtime_saying(Ok("four".to_owned())),
-            Some(SourcePolicy::ThisMachineOnly),
+            TheBound::AnOrganisations(SourcePolicy::ThisMachineOnly),
         );
 
         let WhatAnswers::OnThisMachine { chosen, places, .. } = questions.what_answers() else {
@@ -631,7 +675,7 @@ endpoint = \"https://api.mistral.ai\"
             Some(OsString::from("/home/ada/.config")),
             Some(OsString::from("/home/ada")),
             Catalogue::built_in().unwrap(),
-            None,
+            TheBound::Nobodys,
             WhoseKeyring::Nobodys,
         );
 

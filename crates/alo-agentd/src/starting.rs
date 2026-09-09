@@ -81,7 +81,7 @@ use alo_turn::{Bounding, Machine, Shortening};
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
-use crate::questions::Questions;
+use crate::questions::{Questions, TheBound};
 use crate::refusing::NotStarted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
@@ -172,14 +172,19 @@ pub fn until_stopped(
     // rather than a hole.
     let mut grants = Grants::default();
     // Nothing is read or probed here: the environment is copied, and the first
-    // question of the first turn is what opens the person's file. The bound is
-    // `None` because nothing on this machine states one — the header says why,
-    // and `crate::questions` says what changes the day something does.
+    // question of the first turn is what opens the person's file.
+    //
+    // **The bound is nobody's, because nothing on this machine states one.**
+    // `docs/contracts/machine-description.md` has no key for a policy, so there
+    // is no road by which an organisation's rule reaches this process today and
+    // every machine running this is unmanaged. `TheBound::AnOrganisations` is
+    // the value that would arrive the day there is one, and the day it does,
+    // this line is the whole of the change here.
     let mut questions = Questions::of_this_process(
         Catalogue::built_in().map_err(|why| NotStarted::NoCatalogue {
             why: why.to_string(),
         })?,
-        None,
+        TheBound::Nobodys,
     );
     Ok(Serving::of(
         knocking,
