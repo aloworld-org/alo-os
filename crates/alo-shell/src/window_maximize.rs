@@ -28,7 +28,7 @@ pub enum WindowMaximizeError {
 /// Preserve the existing exhaustive public maximize error contract.
 /// Tile planning is not reached by maximize/restore; defensive translations still
 /// refuse if that internal invariant changes, without adding a public variant.
-fn maximize_refusal(error: WindowModeError) -> WindowMaximizeError {
+pub(crate) fn maximize_refusal(error: WindowModeError) -> WindowMaximizeError {
     match error {
         WindowModeError::Unmapped | WindowModeError::Tile(TileGeometryError::Unmapped) => {
             WindowMaximizeError::Unmapped

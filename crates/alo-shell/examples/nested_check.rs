@@ -38,6 +38,12 @@ mod resize_geometry_check;
 #[path = "support/tile_geometry_check.rs"]
 mod tile_geometry_check;
 #[cfg(target_os = "linux")]
+#[path = "support/window_control_snapshot_check.rs"]
+mod window_control_snapshot_check;
+#[cfg(target_os = "linux")]
+#[path = "support/window_controls_pixels.rs"]
+mod window_controls_pixels;
+#[cfg(target_os = "linux")]
 #[path = "support/window_maximize_check.rs"]
 mod window_maximize_check;
 #[cfg(target_os = "linux")]

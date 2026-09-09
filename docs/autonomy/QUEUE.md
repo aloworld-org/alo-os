@@ -5,6 +5,32 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed live window control snapshots (2026-09-09):** explicit visible roots,
+shared read-only execution planning and latest-requested maximize/restore glyphs
+are code-ready. Reads preserve wire state, geometry, focus and normal typing;
+output/limits/geometry/busy refusals and foreign/hidden/unmapped/dead targets are
+tested. Six new real-client tests; affected Linux clippy; 150 unit/177 lifecycle/
+three socket plus three doctests; rustdoc/examples; Windows affected checks and
+both fmt checks pass. WSLg passes all 28 offscreen stages, including 12 complete
+snapshot-derived 5,760-pixel frames, plus the existing 128-frame view regression.
+Report: `updates/live-window-control-snapshots.md`. Full supervisor gates pending.
+Next executable component: mapping-lifetime-bound control press/release ownership
+and cancellation with live operation revalidation. Preserve disabled hit ownership,
+refuse stale targets after unmap/remap or disconnect, and isolate normal client
+keyboard/pointer input. Native label presentation, hover/pressed feedback and
+production nested/direct composition remain required. Snapshot data is explicitly
+not input authority; usable controls and window management remain unfinished.
+
+**Selected live window control snapshots (2026-09-09):** bind the immutable
+control view to an explicit live visible root, derive maximize/restore availability
+from the same read-only plan consumed by execution, and follow latest requested
+mode through pending replies. Minimise/close remain available without output or
+focus. Acceptance: real-client no-effect snapshots, foreign/hidden/unmapped/dead
+refusal, output failure/retirement, busy operations, committed restore limits,
+rapid toggles and ordinary typing; graphical regression and affected Rust gates.
+This completes snapshot capture only; mapping-bound press/release ownership,
+native labels and production composition follow. No feature checkbox moves.
+
 **Recovery verified (2026-09-09):** C: had recovered to 82.3 GiB at restart review.
 No causal claim is made for that recovery, and no further cleanup is requested.
 The owner requested restart, then completion of the preserved painter and build

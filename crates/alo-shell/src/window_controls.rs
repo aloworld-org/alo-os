@@ -99,6 +99,11 @@ impl WindowControlLayout {
         &self.controls
     }
 
+    /// Whether the captured latest maximize intent selects the restore glyph.
+    pub fn restoring(&self) -> bool {
+        self.restoring
+    }
+
     /// Hit the same half-open rectangles the painter uses. Non-finite and
     /// out-of-output positions, gaps and clipped-away portions return no hit.
     /// Disabled controls still own their rectangles; inspect `enabled` separately.

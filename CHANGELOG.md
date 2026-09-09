@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window controls can now show whether the selected window can
+  maximise or restore.** Live snapshots use the same checks as the operation,
+  follow rapid pending requests, and refuse hidden, unmapped or dead targets
+  without selecting another window. Reads preserve client input and send no requests.
+  Real-client and full-frame graphics checks pass. Pointer actions and native
+  labels remain integration work.
+  `docs/autonomy/updates/live-window-control-snapshots.md`.
+
 - **Development work can proceed in both checkouts without overlapping kernel
   fixtures.** The existing test lock serializes shared kernel access; compilation
   and isolated tests may overlap. Each desktop Linux gate now checks the host-disk

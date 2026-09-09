@@ -1260,6 +1260,18 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Live window control snapshots (2026-09-09): explicit visible roots derive
+    availability from the same read-only planner as execution. Latest requested
+    mode selects maximize/restore; output, geometry, limits and busy refusals
+    remain authoritative. Six new real-client tests, affected Linux clippy,
+    150 unit/177 lifecycle/three socket tests plus three doctests, rustdoc/examples,
+    Windows affected checks and Windows/Linux fmt pass. WSLg passes all 28
+    offscreen stages, including 12 snapshot-derived full 5,760-pixel frames;
+    the existing 128-frame painter regression also passes. Snapshots are frozen
+    presentation data, not mapping-lifetime input authority. Next: mapping-bound
+    press/release ownership, live revalidation/cancellation, native labels and
+    production composition. Full supervisor gates pending; no feature tick.
+    Evidence: `docs/autonomy/updates/live-window-control-snapshots.md`.
   - Native window control view (2026-09-08): immutable minimise/maximise-or-restore/
     close layout shares clipped paint/hit rectangles; disabled hits remain owned
     and carry a non-color mark. Light/dark appearance tokens and existing action

@@ -13593,3 +13593,51 @@ integration claim follows. Supervisor fmt/clippy, 17 tests and release build als
 passed. No source changed during these gates; final remote check matched the base.
 The preserved painter and concurrent-workflow update are ready for normal commit,
 push and clean-tree desktop restart. No cleanup or Windows setting was changed.
+
+## 2026-09-09 - live window control snapshots
+
+Started clean and reviewed the delivery order, ownership rules, current queue,
+state tail, report guidance and relevant feature/roadmap/ADR/contract sections.
+Every published report was already referenced here; no new contributor evidence
+needed consolidation. Selected the next complete window-control component in
+QUEUE before implementation. Claude's workstream and checkout remain untouched.
+
+Added read-only control snapshots for explicit live visible roots. Availability
+uses the same extracted planner as maximize/restore/tile execution, preserving
+validation order, no-op behavior and original error contracts. Latest requested
+mode determines the glyph before acknowledgment/commit. Capture changes no wire,
+geometry, focus or input state; invalid targets never fall back to another root.
+Snapshots are frozen presentation data, explicitly not mapping-lifetime tokens
+or execution authority. Native labels remain the existing externalized actions.
+
+Ubuntu Rust 1.98.0, eight graphics/input packages and WSLg socket verified without
+installation or shared environment maintenance. Every build/test/lint/format
+preflight exceeded 12 GiB; minimum 74,726,813,696 bytes (69.59 GiB). No cleanup,
+shared-kernel mutation, outer fixture lock or service/session/mount change.
+Six new private-display tests passed first focused run; child refusal added
+before final clippy also passed in the full suite. No test/lint weakening or
+failed test runs. Final affected Linux all-target clippy, 150 unit/177 lifecycle/
+three socket tests and three doctests, rustdoc with warnings denied and examples
+passed. Windows affected clippy/tests passed (zero Linux-only tests executed).
+Windows and Linux formatting and diff whitespace checks passed.
+
+WSLg offscreen integration passed all 28 stages and 12 new complete 5,760-pixel
+snapshot-derived control frames against independent masks in light/dark themes.
+Five maximize/restore boundaries and a reused restored boundary after minimize
+check requested intent without weakening existing 6,400-pixel client scene
+assertions. The existing 128-frame control-view regression also passed. New live
+frames cover enabled controls; disabled availability is real-client evidence,
+and disabled painting is separate view-regression evidence. Mesa fallback and
+deliberate malformed-client diagnostics skipped no assertions. No direct scanout,
+physical input, on-screen control interaction or hardware certification claim.
+
+Task report: `docs/autonomy/updates/live-window-control-snapshots.md` contains
+exact commands, decisions, evidence and scheduled machine limits. CHANGELOG,
+ROADMAP, QUEUE and this journal updated in the same change; no feature/release
+checkbox promoted. Full independent supervisor workspace/rustdoc/BPF publication
+gates remain pending. Next: mapping-lifetime-bound press/release ownership and
+cancellation with live revalidation, disabled hit isolation and normal client
+input tests; native labels, hover/pressed feedback and production composition
+remain integration work. Usable controls and window management are unfinished.
+Reports arriving during publication reconcile next iteration. No staging, commit,
+push, tools/dev-loop edit, identity/credential access or worker/loop launch.

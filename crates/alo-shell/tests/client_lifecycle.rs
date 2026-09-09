@@ -14,6 +14,7 @@ mod shortcut_dispatch;
 mod support;
 mod window_activation;
 mod window_close;
+mod window_controls;
 mod window_maximize;
 mod window_minimize;
 mod window_move;

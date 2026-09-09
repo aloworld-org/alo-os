@@ -34,7 +34,7 @@ a partially drawn frame must not be published after failure.
 
 The component owns no server, surface, input seat, callbacks or window authority.
 Availability is supplied presentation data and is not derived or cached policy.
-Production composition, native label presentation, target/mapping snapshots,
+Production composition, native label presentation, mapping-lifetime input tokens,
 live operation revalidation, pointer press/release ownership and cancellation,
 hover/pressed feedback and nested/direct routing remain integration work.
 Existing ordinary client keyboard paths are unchanged. This API completes the
@@ -45,3 +45,41 @@ coverage and non-color disabled distinctions. The `window_controls_check` exampl
 compares complete GLES readbacks to independent literal glyph masks and palette
 values. This is a WSLg development fixture, not display submission, live control
 interaction, physical input or certified hardware evidence.
+
+## Live presentation snapshots
+
+Additive trusted Rust API, 2026-09-09:
+`Server::window_control_snapshot(surface, viewport, origin)` returns a
+`WindowControlSnapshot` for the explicit visible mapped toplevel in this display.
+`surface()` retains that exact protocol handle; `layout()` exposes the immutable
+view, actions, hit geometry and derived availability. `layout().restoring()`
+reports the glyph choice. Foreign, hidden, child, popup, unmapped and dead targets
+return `WindowControlSnapshotError::Unmapped`; malformed layout returns `Layout`.
+There is no focused-window or stacking fallback, and no input seat is required.
+
+Minimise and close are enabled for every eligible root. Maximize/restore uses the
+same side-effect-free layout planner as execution, including output availability,
+competing move/resize/popup grabs, representable normal geometry and committed
+restore limits. `maximize_refusal()` exposes the existing `WindowMaximizeError`
+for diagnostics, not user-facing text. No new refusal text vocabulary is added.
+The latest requested mode drives the glyph even before acknowledgment or commit:
+maximized offers restore, while normal and tiled offer maximize. Restore can remain
+available after output retirement; a new maximize requires a submitted output.
+The supplied painting viewport does not establish that output availability.
+
+Capture takes `&self`: it sends no configure or close, prunes no state, remembers
+no geometry, changes no focus and consumes no input. Availability is true only at
+capture time. Refresh for every frame and use the existing `Action::said` labels.
+The snapshot has no dispatch method and is **not a mapping-lifetime token**:
+unmap/remap can reuse the same protocol handle, and a retained snapshot remains
+frozen. Future pointer routing must bind presses to a separate mapping lifetime,
+cancel stale ownership and revalidate operations at release. These rules prevent
+presentation data from becoming cached authority; usable controls remain open.
+
+Six real-client tests in `tests/window_controls/mod.rs` cover no-effect reads,
+typing isolation, output/limits/geometry/busy refusal, pending mode changes and
+target lifetime. The nested offscreen fixture paints twelve complete snapshot-derived
+light/dark frames across five maximize/restore boundaries and a reused restored
+boundary after minimization, alongside its unchanged client scene pixel assertions.
+Exact executed results and limits belong to
+`docs/autonomy/updates/live-window-control-snapshots.md`.

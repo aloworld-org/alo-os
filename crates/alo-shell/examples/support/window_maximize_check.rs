@@ -10,6 +10,18 @@ pub fn stage(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
     let root = roots.first().ok_or("maximize root missing")?;
+    let controls = server.window_control_snapshot(root, (120, 48), (3, 4))?;
+    assert_eq!(controls.surface(), root);
+    assert_eq!(controls.layout().restoring(), stage <= 18);
+    assert_eq!(controls.maximize_refusal(), None);
+    assert!(
+        controls
+            .layout()
+            .controls()
+            .iter()
+            .all(|control| control.enabled())
+    );
+    crate::window_control_snapshot_check::paint(renderer, controls.layout(), stage <= 18)?;
     let (origin, size) = match stage {
         17 => ((20, 20), (32, 24)),
         18 => ((20, 20), (32, 24)), // Acknowledgement has no pixel effect.
