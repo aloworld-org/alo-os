@@ -22,6 +22,11 @@ cgroup-controller or session changes outside those locked fixtures require a
 coordinated maintenance handoff with both workers idle. Never restart WSL or a
 shared service to fix your test while another worker is using it. See SHARED_MAIN.md.
 
+The supervisor now keeps an owned WSL process alive for its run, including during
+Windows gates. Do not create timed keep-alive helpers or restart WSL yourself.
+This does not restore mounts after an external shutdown: missing bpffs remains
+a coordinated-maintenance blocker, never an automatic remount.
+
 Read CLAUDE.md, docs/autonomy/DELIVERY.md, the current portion of QUEUE.md,
 the tail of STATE.md, and the relevant feature, roadmap, ADR and contract sections.
 Use rg to find relevant sections; do not dump the entire historical journal.

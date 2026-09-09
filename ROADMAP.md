@@ -12,6 +12,23 @@ Concurrent development approved 2026-09-09: desktop and Claude may work in
 separate checkouts at once; existing per-test kernel locks serialize shared
 kernel fixtures. This supersedes the temporary single-workstream restriction.
 A 12 GiB C: preflight reserve still guards new tasks and each gate phase.
+Desktop recovery (2026-09-09): restored missing bpffs during a verified idle
+handoff and integrated the preserved label-rendering commit with current main.
+An owned WSL stdin lease now spans worker/Windows/Linux/publication phases;
+no automatic mount, service or WSL restart is introduced. Combined-tree recovery
+verification and clean-tree loop restart are tracked in
+`docs/autonomy/updates/keeping-ubuntu-active-through-desktop-verification.md`.
+Credential reports `connections-come-and-go.md` and
+`a-key-over-a-verified-connection.md` under `docs/autonomy/updates/` now establish
+fixture connection lifetime/concurrency and authenticated daemon HTTPS under
+test trust. Real-session logout remains session-integration work; no release
+checkbox moves. Subsequent `what-the-server-saw.md` (5e3a66b) supplies separate
+untrusted-issuer/identity rejection with server-side handshake/application-data
+instrumentation, a positive control and cross-thread test-trust isolation. This
+passed in the complete combined-tree recovery gates. All Windows/Linux workspace,
+rustdoc, BPF and label/control/nested graphical checks passed on 5e3a66b plus
+the preserved labels and lease fix; normal publication and clean-tree restart
+follow. No feature/release checkbox is promoted by that development evidence.
 Company-managed cleanup belongs to the company administrator. Details:
 `docs/autonomy/updates/storage-aware-desktop-loop.md`. Release scope is unchanged.
 Recovery verified (2026-09-09): C: had recovered to 82.3 GiB at restart review;

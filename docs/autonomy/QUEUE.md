@@ -5,6 +5,30 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Desktop verification recovery (2026-09-09):** the label task's first gates passed,
+but its integrated-tree re-gate stopped at the missing bpffs mount. The unpublished
+commit was preserved. Both supervisors/builds/kernel tests were idle at recovery;
+mounted bpffs once, then resumed isolated development. Added a supervisor-owned
+WSL stdin lease so ordinary idle shutdown cannot remove the mount while Windows
+checks run. Twenty-two supervisor tests passed, including actual WSL pipe-close,
+failed-helper and readiness-timeout cases. Full combined-tree recovery gates and
+normal publication precede restart. Report:
+`updates/keeping-ubuntu-active-through-desktop-verification.md`.
+
+Credential reconciliation: `updates/connections-come-and-go.md` and
+`updates/a-key-over-a-verified-connection.md` demonstrate per-handle connections,
+concurrent retrievals and authenticated HTTPS under fixture trust. The latter
+corrects the former's broad logout wording: stopping owned fixture processes is
+disconnection evidence only. Real-session logout belongs with session integration.
+The subsequent `updates/what-the-server-saw.md` (5e3a66b) supplies separate
+untrusted-issuer/identity rejection, server-side handshake/application-data
+instrumentation with a positive control and cross-thread trust isolation. Initial
+raw-capture assertions alone did not prove no encrypted data was sent. Combined
+recovery re-gate passed on 5e3a66b, including all Windows/Linux/rustdoc/BPF and
+three graphical fixtures. Normal publication and clean-tree restart follow;
+no tier/feature tick moved. The next desktop component remains live label
+selection/placement/dismissal, not a repeated implementation of the renderer.
+
 **Completed native control label rendering (2026-09-09):** immutable externalized
 labels retain full text and fallback provenance; pinned native shaping, bundled
 Inter, existing text scale, bounded wrapping and clipped token painting are

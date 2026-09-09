@@ -1,4 +1,5 @@
 //! Single-writer development supervisor. This is a developer tool, never an OS verb.
+mod awake;
 mod linux_gate;
 mod process;
 mod publication;
@@ -104,12 +105,14 @@ fn synchronized() -> Result<String> {
 }
 
 fn run(state: &Path, codex: &str) -> Result<()> {
+    let mut linux = awake::Awake::start()?;
     loop {
         if state.join("STOP").exists() {
             status(state, "STOPPED: requested by owner")?;
             return Ok(());
         }
         storage::require_space()?;
+        linux.check()?;
         let head = synchronized()?;
         let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         let directory = state.join(stamp.to_string());
@@ -120,6 +123,7 @@ fn run(state: &Path, codex: &str) -> Result<()> {
             &format!("WORKING: {} logs={}", head.trim(), directory.display()),
         )?;
         worker(codex, &response, &directory)?;
+        linux.check()?;
         let result = fs::read_to_string(&response)?;
         let title = report::done_title(&result)?;
         if head != git(&["rev-parse", "HEAD"])? {
@@ -148,6 +152,7 @@ fn run(state: &Path, codex: &str) -> Result<()> {
         status(state, "VERIFYING: Windows, Linux, rustdoc and kernel gates")?;
         let mut log = File::create(directory.join("gates.log"))?;
         gates(&mut log)?;
+        linux.check()?;
         git(&["add", "--all"])?;
         git(&[
             "commit",
@@ -158,8 +163,10 @@ fn run(state: &Path, codex: &str) -> Result<()> {
         ])?;
         status(state, "PUBLISHING: integrate main and push")?;
         let published = publication::publish(&head, git, || {
+            linux.check()?;
             status(state, "VERIFYING: integrated changes from main")?;
-            gates(&mut log)
+            gates(&mut log)?;
+            linux.check()
         })?;
         status(state, &format!("PUSHED: {} {title}", published.trim()))?;
     }

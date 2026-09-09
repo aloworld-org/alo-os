@@ -13898,3 +13898,61 @@ and window management remain unfinished. Reports arriving during publication
 reconcile next iteration; release remains unverified. No staging, commit, push,
 dev-loop edits, worker/loop launch, credential/identity access or other-checkout
 changes.
+
+## 2026-09-09 - recovering label publication and keeping Ubuntu active
+
+Owner requested recovery of the halted desktop loop. Read-only checks confirmed
+both supervisors stopped and no Linux build/kernel test process active. bpffs
+was absent. Mounted it once in the approved idle maintenance window, verified
+the filesystem type/target and held an explicitly owned temporary WSL process
+during interactive recovery. No other process, pins, service or Windows setting
+changed. Claude can resume isolated tests under the existing kernel lock.
+
+Preserved local label commit 77534eb; rebased it onto published 329c6be. Two
+Cargo.lock conflict hunks were independent package additions (rcgen/read-fonts
+and yasna/yazi). Manually retained both with their exact versions/checksums,
+rather than regenerating or updating the dependency set. Rebase produced d49f195.
+Source/report review found no label fix required; full combined-tree gates now
+run independently before publication.
+
+Added tools/dev-loop's supervisor-owned stdin lease: bounded WSL readiness,
+EOF-based release and helper-loss refusal, no timer or automatic environment
+repair. Supervisor fmt/all-target clippy and all 22 tests passed, including actual
+WSL lifetime/closure and refusal paths. Worker instructions describe the lease;
+release rebuild and final product gates precede restart. Evidence:
+`updates/keeping-ubuntu-active-through-desktop-verification.md`.
+
+Read contributor reports `updates/connections-come-and-go.md` and
+`updates/a-key-over-a-verified-connection.md`. Reconciled measured independent
+connections/closure, eight retrievals and exact synthetic-key HTTPS delivery
+under fixture trust. The later report/ADR narrows the former's logout claim to
+private-bus/keyring shutdown, not logind acceptance. Production roots unchanged;
+real-session logout remains due with session work. Published 329c6be still has
+global test trust and no independent untrusted-issuer case; Claude's announced
+follow-up owns those corrections. No broad authentication/network/release claim
+or checklist promotion. Historical contributor reports remain untouched.
+
+First recovery tree (329c6be plus labels/lease) passed all Windows/Linux workspace,
+rustdoc, pinned BPF and three graphical gates. Supervisor fmt/clippy and 22 tests
+passed again; release binary rebuilt. Incoming 5e3a66b arrived during gates;
+integrating and re-gating is required before publication. No guard bypassed.
+
+Rebased both unpublished desktop commits onto 5e3a66b without conflict. Read
+`updates/what-the-server-saw.md` and reviewed its trust seam, image-feature guard
+and kernel-supervisor readiness-message diff. Thread-local trust now prevents
+cross-thread inheritance; distinct issuer/identity refusals use server-side
+handshake/application-data observations and a trusted control, with raw capture
+supplementary only. Contributor reports mutation evidence; no mutation run claimed
+here. Logout's single-session, lingering and concurrent-session cases are scheduled
+separately, not two physical seats or completed acceptance. Combined re-gate now
+includes this contributor change; production roots and feature/release ticks remain
+unchanged. No contributor checkout/report modified.
+
+Final 5e3a66b combined-tree Windows workspace checks and all Linux/workspace/
+rustdoc/BPF/three-graphics checks passed, every command exit zero. Logs:
+`.git/alo-loop/label-recovery-5e3-windows/` and `label-recovery-5e3-linux/`.
+No source changed during verification. Recorded an existing bus-routing helper's
+BrokenPipe diagnostic and missing child wait/exit check in the recovery report;
+the parent and full suite passed, no suppression or Claude-file edit. Final
+remote check matched 5e3a66b. Ready for normal publication and clean-tree restart
+of the rebuilt supervisor; release scope remains unchanged.

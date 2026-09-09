@@ -12,6 +12,23 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- The desktop development loop now keeps Ubuntu active across Windows checks,
+  preventing ordinary WSL idle shutdown from discarding its temporary BPF mount
+  between verification phases. A missing mount still stops publication; the loop
+  never repairs shared state over another worker's tests. Recovery evidence:
+  `docs/autonomy/updates/keeping-ubuntu-active-through-desktop-verification.md`.
+
+- Contributor evidence reconciled: a synthetic provider key reaches an owned
+  HTTPS server through the daemon with fixture trust and TLS identity checks;
+  production roots are unchanged. Independent keyring connections close after
+  their handles are dropped, and eight concurrent retrievals succeed. Private-bus
+  shutdown is not real-session logout acceptance. Reports:
+  `docs/autonomy/updates/a-key-over-a-verified-connection.md` and
+  `docs/autonomy/updates/connections-come-and-go.md`.
+  Follow-up `docs/autonomy/updates/what-the-server-saw.md` adds untrusted-issuer
+  rejection and cross-thread isolation of test trust. Server-side TLS/application
+  evidence replaces the insufficient inference from absent plaintext on the wire.
+
 - **Native window-control names can now be rendered as scaled, translated text.**
   The prepared label keeps every word and its translation/fallback provenance,
   wraps long names, reports clipping and refuses unavailable glyphs. Disabled

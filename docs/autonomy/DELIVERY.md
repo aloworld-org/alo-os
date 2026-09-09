@@ -179,6 +179,14 @@ The runner operates while this PC is awake; it is not a cloud job or a scheduled
 task and does not restart itself after a reboot. Status is last recorded state;
 check its PID is still alive after interruption or reboot.
 
+The desktop supervisor holds a private WSL stdin lease across worker execution,
+Windows gates and publication. Its Linux process exits on pipe EOF when the
+supervisor releases it; it is not a timer, permanent service or WSL configuration
+change. Startup requires a bounded readiness handshake and loss of the helper
+refuses further work at the next check. This prevents ordinary WSL idle shutdown
+between phases, not Windows sleep, reboot or an external WSL termination. Missing
+bpffs still refuses: restore it only during a coordinated idle maintenance handoff.
+
 Blocked means blocked, not complete. The historical LOOP COMPLETE marker only
 closed the old backend queue. The new runner uses the current worker result,
 never scans historical journal prose, and stops on lack of completed work.
