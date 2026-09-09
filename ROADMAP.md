@@ -2,6 +2,24 @@
 
 **Execution resumed 2026-09-07.** The full v0.01 release is now pursued by the
 repository-owned Rust development loop (`tools/dev-loop`).
+
+Native reader state (2026-09-09): whole-name page selection is now bound to one
+live strip publication, with stale/foreign/retired readers refusing permanently.
+This is a complete reader-state component; externalized position wording, input
+navigation and transactional reader composition remain next. No feature tick.
+Evidence: `docs/autonomy/updates/mapping-bound-native-name-readers.md`.
+
+Contributor reconciliation (2026-09-09): machine-description format 2 now loads
+inference policy and retains owner-based attribution, with invalid rules refusing
+startup. This supersedes the earlier production-no-bound limitation below.
+`docs/autonomy/updates/an-organisations-rule-off-a-disk.md` reports 134 passing
+workspace binaries and targeted mutations without exact commands. Startup's bound
+handoff remains inspection-only, person-owned disk evidence depends on runner UID,
+and alo-image still reads only unmanaged format 1. No broader policy/release tick.
+`docs/autonomy/updates/a-loop-that-chose-an-audit-heading.md` reports six selection
+tests: only headings inside Tasks count, and scheduled work is skipped. No ready
+backend plan entry is not a release-completion verdict.
+
 `docs/autonomy/DELIVERY.md` orders the Linux, compositor, session, agent and image
 work and the final physical acceptance. Each completed step is gated and pushed;
 these checkpoints do not reduce release scope or discharge hardware obligations.
@@ -36,8 +54,9 @@ rustdoc, BPF and label/control/nested graphical checks passed on 5e3a66b plus
 the preserved labels and lease fix; normal publication and clean-tree restart
 follow. No feature/release checkbox is promoted by that development evidence.
 Contributor reconciliation (2026-09-09): policy-before-credential ordering and
-explicit organisation/personal attribution are implemented; production still
-supplies no bound. Pre-turn refusal recording is now implemented, with persisted
+explicit organisation/personal attribution are implemented; production supplied
+no bound at that checkpoint (superseded by format 2 loading above). Pre-turn
+refusal recording is now implemented, with persisted
 response/record agreement and write-failure tests; see
 `docs/autonomy/updates/recording-a-question-nobody-was-asked.md`. Contributor
 mutation evidence has no exact command/results listing; settings/release remain

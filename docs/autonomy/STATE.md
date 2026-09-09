@@ -14404,3 +14404,65 @@ pointer ownership, submission/publication and retirement; then native navigation
 cursor selection and direct integration. Rendering component is complete, reader
 and usable window management unfinished. Physical acceptance remains owed during
 release validation. Reports arriving during publication reconcile next iteration.
+
+## 2026-09-09 - mapping-bound native name reader state
+
+Started clean at d3fb280. Read required constitution, delivery, ownership/report
+guidance, current queue/STATE, relevant features/roadmap, ADRs 0002/0010 and native
+control contract. Selected reader-state acceptance in QUEUE before implementation.
+
+Reconciled published reports previously absent from STATE:
+`docs/autonomy/updates/a-loop-that-chose-an-audit-heading.md` and
+`docs/autonomy/updates/an-organisations-rule-off-a-disk.md`. Verified relevant code
+and read ADR 0016/machine-description contract. Backend selection reads only Tasks
+and skips scheduled entries; six tests reported without exact commands. Format 2
+now loads inference policy and attributes it by file ownership, preserving format
+1 without policy and refusing unreadable bounds. Contributor reports 134 passing
+workspace binaries and targeted mutations without exact command listings. Startup
+handoff is inspection-only; person-owned disk evidence depends on runner UID and
+root/third-owner disk fixtures on privilege; alo-image remains unmanaged format 1.
+Historical mount handoff is contributor evidence, not maintenance performed here.
+Consolidated into all four shared progress documents; no source-report edits or
+release tick. Backend lack of a ready entry does not complete release coverage.
+
+Added opaque host-owned name readers, immutable appearance/page sets, checked
+selection and a unique strip-publication identity. Identical live refresh preserves
+reading; replacement, hide/remap, retirement, foreign server and observed competing
+input refuse old readers. Explicit dismissal is permanent; invalid indices preserve
+selection after live validation. Complete Said/raster/line provenance remains intact.
+No client/native focus acquisition, input ownership or window-operation dispatch.
+
+Four new real-client tests cover page traversal/raster agreement, typing, disabled
+names, invalid selection/geometry, stale/foreign handles, root/geometry replacement,
+remap, failed publication, backend input loss and competing presses. Final Linux
+checks pass: 162 unit, 220 lifecycle, three socket and four compile-fail doctests,
+none ignored; affected clippy/examples/rustdoc/fmt pass. Windows affected fmt/clippy/
+tests pass (zero Linux-only shell test cases). WSLg: 72 complete page GLES frames
+and nested strip/label/expanded submission, dismissal, refusal/recovery and client
+lifetime checks pass. Full independent supervisor gates have not run this iteration.
+
+Development failures preserved: clippy rejected test expects, replaced with propagated
+errors. Expanded retirement fixture failed in the full suite; inspection showed
+`Fixture::root()` does not promise a second root. Fixed explicit distinct selection
+and asserted inequality. Original failure did not log the case index; no claim of
+measured original identity. Focused and full final acceptance rerun after repair.
+No assertion/deadline/lint weakening. An early UTF-8 queue-edit error was repaired
+from original HEAD bytes and the intended addition; final historical diff checked.
+
+Ubuntu libraries, WSLg socket and existing bpffs verified; no maintenance needed.
+All C: preflights exceeded 12 GiB, lowest 54,677,307,392 bytes. No cleanup, mount/
+service/session/package changes, WSL restart/helper or kernel-global mutation.
+Separate desktop target retained. No stage/commit/push, dev-loop edit, extra worker,
+other-checkout edit, private credential/identity access or unrelated host change.
+
+Exact commands, failures, decisions and evidence:
+`docs/autonomy/updates/mapping-bound-native-name-readers.md`.
+Local logs: `.git/alo-loop/mapping-bound-native-name-readers/`.
+Source/new-file diff reviewed; `git diff --check` passes. Reader state is complete;
+next: externalized position/navigation chrome, keyboard/pointer ownership and
+transactional reader composition/submission/publication/retirement. Full-name
+access and usable window management remain unfinished. Evidence is private-client
+state/raster checks and existing GLES checks, not parent key delivery, on-screen
+reader navigation, scanout, VM image integration or physical certification.
+Hardware acceptance remains owed at release validation. Reports arriving during
+publication reconcile next iteration; no release-verification verdict.

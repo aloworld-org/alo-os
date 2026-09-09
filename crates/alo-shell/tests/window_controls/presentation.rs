@@ -16,7 +16,7 @@ use smithay::{
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-fn present(
+pub(super) fn present(
     f: &Fixture,
     root: &WlSurface,
     viewport: (i32, i32),

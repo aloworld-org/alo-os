@@ -574,3 +574,36 @@ and release ownership are unchanged. Native navigation/cursor selection and
 direct integration remain later components. No new agent surface, vocabulary,
 palette, font or ADR. Component evidence and exact limits:
 `docs/autonomy/updates/paged-native-control-label-rendering.md`.
+
+## Mapping-bound name reading state
+
+2026-09-09 additive trusted API: `Server::begin_window_control_reader` prepares
+the complete page set for an explicitly named action on the published strip.
+`WindowControlReaderStyle` fixes preferred size, scheme and text scale for that
+reading session; the host must dismiss/reopen when vocabulary or style changes.
+Disabled names remain eligible. Missing/hidden/non-strip selection or competing
+input yields None; geometry, placement, text and allocation errors retain the
+page preparer's atomic refusal. Opening does not change native/client focus.
+
+`read_window_control_page` validates the server's live publication identity before
+selecting a zero-based page. The borrowed result carries the page, unabridged Said
+and one-based position/total numbers. Out-of-range selection does not wrap or
+change the previous index. Stale identity or observed competing input permanently
+dismisses the reader even if the requested index is invalid. Explicit `dismiss`
+is permanent. No pages can be extracted from the opaque reader without validation.
+
+Each published strip lifetime has a unique identity, shared only by identical
+live refreshes. Removal/republication, different root, changed viewport/origin,
+hide/remap, changed maximize/restore intent and backend retirement invalidate
+old readers. Observing competing input also renews that identity. Another server
+cannot accept the handle, and refusal there permanently closes it. Ordinary
+typing does not navigate, steal keyboard focus or execute an operation.
+
+This completes reader state and checked selection, not a submitted reader frame.
+Borrowed pages remain frozen snapshots: discard them across host events. No input
+ownership or scene-publication authority is granted. Externalized position wording,
+keyboard/pointer navigation and transactional reader rendering/retirement are the
+next component; ordinary full-label rendering still refuses incomplete names.
+Tests use real private Wayland clients with raster comparisons and lifecycle
+changes; they do not prove parent key delivery, on-screen reader UI or scanout.
+Evidence: `docs/autonomy/updates/mapping-bound-native-name-readers.md`.

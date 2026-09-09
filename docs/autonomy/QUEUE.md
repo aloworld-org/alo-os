@@ -5,6 +5,36 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed mapping-bound native name reader state (2026-09-09):** immutable page
+sets now bind to a live strip publication; checked selection refuses stale,
+foreign, dismissed and out-of-range readers without executing controls. Four new
+real-client tests cover traversal/raster agreement, typing and lifecycle refusals.
+Linux 162 unit/220 lifecycle/three socket/four doctests, affected clippy/rustdoc,
+Windows affected checks, 72 GLES page frames and nested control checks pass.
+Report: `updates/mapping-bound-native-name-readers.md`. Supervisor gates pending.
+Next executable component: externalized position/navigation chrome and keyboard/
+pointer ownership connected to transactional reader submission/publication and
+retirement. Then native navigation/cursor selection and direct integration.
+Reader state is complete; full-name access and usable window management are not.
+
+**Selected mapping-bound native name readers (2026-09-09):** bind immutable page
+sets and checked page selection to a published strip generation and live mapping.
+Retire on replacement, hide/remap, input competition and backend loss; refuse
+stale/foreign readers and out-of-range selection without executing controls.
+Acceptance: real-client lifecycle/refusal checks, all-page raster equivalence,
+ordinary typing, affected tests/fmt/clippy/rustdoc and existing GLES page checks.
+This is the reader-state component. Externalized position wording, keyboard/
+pointer routing and transactional reader composition remain subsequent work.
+
+Contributor reconciliation: backend selection now reads only `## Tasks` and skips
+scheduled entries. Machine descriptions now load `[questions]` under format 2,
+retaining format 1 without policy and refusing unreadable bounds. Attribution
+follows file ownership. Reports claim six selection tests and 134 passing workspace
+test binaries respectively, without exact command listings; startup handoff and
+image-reader policy support remain unexercised/unimplemented as reported. No
+release tick. See `updates/a-loop-that-chose-an-audit-heading.md` and
+`updates/an-organisations-rule-off-a-disk.md`.
+
 **Completed paged native control label rendering (2026-09-09):** bounded immutable
 pages preserve complete shaped lines, full wording/provenance and text scale.
 Invalid placement, lost ink and excessive allocation refuse atomically; pages

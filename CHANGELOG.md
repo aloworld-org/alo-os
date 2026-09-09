@@ -12,6 +12,19 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Paged window-control names now have a reader tied to the displayed window.**
+  Page selection preserves complete wording and refuses stale or foreign readers
+  after replacement, remapping or retirement. This completes reader state;
+  navigable reader UI and frame submission remain unfinished. Evidence:
+  `docs/autonomy/updates/mapping-bound-native-name-readers.md`.
+
+- **Machine descriptions can now bound where questions are answered.** Format 2
+  carries inference policy, refuses unreadable rules and attributes them to the
+  file's owner. The contributor reports file-to-record and mutation checks, with
+  134 passing workspace test binaries but no exact command listing. The startup
+  handoff expression is not exercised; image policy-reader support remains pending.
+  Evidence: `docs/autonomy/updates/an-organisations-rule-off-a-disk.md`.
+
 - **Long window-control names can now be prepared as readable pages.** The
   renderer keeps whole shaped lines, words and text scale, and refuses partial
   or oversized page sets. All 72 new GLES page frames match full readback.
@@ -30,7 +43,8 @@ grant now takes effect immediately instead of at the next sign-in" is.
   The daemon uses the same wording in the response and record, and closes the
   turn if recording fails. No question text, credential or endpoint is added.
   The contributor reports persisted agreement and mutation checks without exact
-  verification commands/results; production policy loading remains unfinished.
+  verification commands/results; production policy loading was unfinished at
+  that checkpoint and is now implemented as recorded above.
   Older readers report the new event tag as an unreadable line and refuse record
   shortening. Evidence: `docs/autonomy/updates/recording-a-question-nobody-was-asked.md`.
 

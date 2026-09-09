@@ -13,6 +13,8 @@ use crate::{
 /// Never exported as an authority token or transferable to another display.
 #[derive(Clone)]
 pub(crate) struct Presentation {
+    /// Unique publication lifetime, including removal and identical republication.
+    generation: Arc<()>,
     /// Exact root explicitly composed by this display's host.
     surface: WlSurface,
     /// Identity changes on every hide or mapping retirement, not just destruction.
@@ -48,6 +50,34 @@ impl Presentation {
 }
 
 impl Server {
+    /// Fresh explicit reader selection without changing native or client focus.
+    pub(crate) fn control_reader_target(
+        &mut self,
+        action: Action,
+        size: (i32, i32),
+    ) -> Result<Option<WindowControlLabelTarget>, WindowControlLabelError> {
+        let Some(view) = self.live_window_controls() else {
+            return Ok(None);
+        };
+        self.window_control_label_target(
+            Some(view.painted()),
+            WindowControlLabelSelection::Focus(action),
+            size,
+        )
+    }
+
+    /// Validated reader binding; competing gestures refuse reader access.
+    pub(crate) fn control_reader_binding(&mut self) -> Option<Arc<()>> {
+        self.live_window_controls()?;
+        if self.window_control_input_busy()
+            || self.control_press.is_some()
+            || self.control_overlay.held()
+        {
+            return None;
+        }
+        Some(self.control_presentation.as_ref()?.generation.clone())
+    }
+
     /// Publish one explicitly painted strip after successful host composition.
     ///
     /// This records presentation, never paints it or chooses a focused window.
@@ -72,6 +102,7 @@ impl Server {
             let snapshot =
                 self.window_control_snapshot(view.surface, view.viewport, view.origin)?;
             Ok::<_, WindowControlSnapshotError>(Presentation {
+                generation: Arc::new(()),
                 surface: view.surface.clone(),
                 visibility: self
                     .surfaces
@@ -250,6 +281,7 @@ impl Server {
             && let Some(view) = &mut self.control_presentation
         {
             view.focus = None;
+            view.generation = Arc::new(());
         }
         self.control_presentation.clone()
     }
