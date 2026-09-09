@@ -59,6 +59,18 @@ impl TheKeyring {
             .map_err(|_| NotStored::Unavailable)?;
         let service = SecretService::connect_with_existing(EncryptionType::Dh, connection)
             .map_err(|_| NotStored::Unavailable)?;
+
+        // **And it is asked something.** Building the client is a proxy and a
+        // session handshake, and on a bus with no Secret Service on it that can
+        // still come back holding nothing — measured, in
+        // `a_bus_with_no_keyring_on_it_is_unavailable`, where `opened` returned
+        // a keyring nobody was serving. So the collections are asked for, which
+        // is the cheapest question only a real service can answer, and a store
+        // that cannot answer it is `Unavailable` here rather than at the first
+        // key somebody wanted.
+        service
+            .get_all_collections()
+            .map_err(|_| NotStored::Unavailable)?;
         Ok(Self { service })
     }
 

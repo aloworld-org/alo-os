@@ -146,7 +146,24 @@ fn can_be_said_as_an_address(at: &Path) -> bool {
         // text. Nothing on a machine `logind` made has one.
         return false;
     };
-    at.is_absolute() && !said.contains(',') && !said.contains(';')
+    at.is_absolute() && said.chars().all(is_plain_in_an_address)
+}
+
+/// Whether this character may stand for itself in a D-Bus address value.
+///
+/// The specification's *optionally-escaped* set — `A-Z a-z 0-9 _ - / . \` — and
+/// **everything else is refused rather than escaped**. Escaping would be a
+/// second spelling of the same path, and two spellings is one more than a thing
+/// this crate hands to a client should have.
+///
+/// The set was widened from *not a comma and not a semicolon* after a real
+/// failure: a fixture whose directory name contained `(` produced
+/// `Failed to start message bus: In D-Bus address, character '(' should have
+/// been escaped`. The first version refused the two characters that change an
+/// address's *meaning* and let through every one that makes it invalid, which
+/// would have been a bus this crate said was fine and no client could open.
+const fn is_plain_in_an_address(letter: char) -> bool {
+    letter.is_ascii_alphanumeric() || matches!(letter, '_' | '-' | '/' | '.' | '\\')
 }
 
 #[cfg(test)]
@@ -263,7 +280,7 @@ mod tests {
         let place = a_place_of_our_own("ambiguous");
         let ours = rustix::process::getuid().as_raw();
 
-        for named in ["b,us", "b;us"] {
+        for named in ["b,us", "b;us", "b(us", "b us", "b%us"] {
             let at = place.join(named);
             let listening =
                 std::os::unix::net::UnixListener::bind(&at).expect("a socket of our own");
@@ -279,6 +296,8 @@ mod tests {
         // directory the process happens to be in.
         assert!(!can_be_said_as_an_address(Path::new("run/user/0/bus")));
         assert!(can_be_said_as_an_address(Path::new("/run/user/0/bus")));
+        // The real bus path for every uid this machine can have.
+        assert!(can_be_said_as_an_address(&TheBus::of(60989)));
     }
 
     /// **What a client is handed is an address for this bus**, so that whatever
