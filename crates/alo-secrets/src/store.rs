@@ -117,12 +117,44 @@ impl TheKeyring {
 /// was asked about. `alo_choosing::NotToml` is the same argument one file to the
 /// left, and `41c9f1e` is the day it stopped being theoretical.
 fn as_not_stored(why: secret_service::Error) -> NotStored {
+    // Asked first, because a refusal is not one of `secret_service`'s own
+    // variants and would otherwise fall through to the last arm below.
+    if is_a_refusal(&why) {
+        return NotStored::Denied;
+    }
     match why {
-        // The prompt was dismissed, or the service would not have this caller.
+        // The prompt was dismissed, or the collection will not open.
         secret_service::Error::Prompt | secret_service::Error::Locked => NotStored::Locked,
         secret_service::Error::NoResult => NotStored::Missing,
         // Anything else is the bus or the service, which is one thing to a
         // person: there is nothing here to ask.
         _ => NotStored::Unavailable,
+    }
+}
+
+/// Whether the bus refused to carry this, which is what being denied *is*.
+///
+/// **`secret_service::Error` has no denied variant at all**, so before this
+/// existed every refusal fell through to [`NotStored::Unavailable`] and
+/// [`NotStored::Denied`] was a state no code path could reach — a person the
+/// store had refused was told there was nothing there to ask, and went looking
+/// for a service that had been running the whole time.
+///
+/// It is matched on the **error name**, which is the interoperable part of the
+/// D-Bus specification, and never on the message beside it: that message is
+/// `dbus-daemon`'s own English and carries the caller's uid, pid and executable
+/// path. Measured, not assumed — a real denial arrives as
+/// `Zbus(MethodError(..))` and not as the `fdo` variant, which is why matching
+/// only the latter left this unreachable.
+fn is_a_refusal(why: &secret_service::Error) -> bool {
+    /// What the bus calls it when it will not deliver.
+    const REFUSED: &str = "org.freedesktop.DBus.Error.AccessDenied";
+
+    match why {
+        secret_service::Error::Zbus(zbus::Error::MethodError(named, _, _)) => {
+            named.as_str() == REFUSED
+        }
+        secret_service::Error::ZbusFdo(zbus::fdo::Error::AccessDenied(_)) => true,
+        _ => false,
     }
 }

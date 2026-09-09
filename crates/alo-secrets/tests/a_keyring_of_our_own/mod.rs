@@ -63,6 +63,13 @@ pub struct AKeyringOfOurOwn {
 
     /// The daemon serving `org.freedesktop.secrets` on it.
     keyring: Option<Child>,
+
+    /// The bus's configuration file, when this fixture was started with one.
+    ///
+    /// Only the refusal tests need it: a bus started from a config can have its
+    /// policy rewritten and reloaded, which is how a **real** access denial is
+    /// produced rather than simulated.
+    config: Option<PathBuf>,
 }
 
 impl AKeyringOfOurOwn {
@@ -74,6 +81,24 @@ impl AKeyringOfOurOwn {
     /// machine in the world, including the ones with no Secret Service at all.
     #[must_use]
     pub fn started(what: &str) -> Self {
+        Self::start(what, false)
+    }
+
+    /// One whose bus is started from a configuration file, so its policy can be
+    /// rewritten and reloaded while it runs.
+    ///
+    /// Everything else is identical to [`Self::started`] — same isolation, same
+    /// synthetic password, still never `--replace`.
+    ///
+    /// # Panics
+    /// As [`Self::started`].
+    #[must_use]
+    pub fn started_where_the_bus_can_refuse(what: &str) -> Self {
+        Self::start(what, true)
+    }
+
+    /// The two of them, which differ only in how the bus is told where to listen.
+    fn start(what: &str, from_a_config: bool) -> Self {
         // Only characters a D-Bus address may carry unescaped: the socket
         // under this directory becomes one, and `(` from a thread id is exactly
         // what `dbus-daemon` refuses.
@@ -100,10 +125,23 @@ impl AKeyringOfOurOwn {
         let nothing_to_activate = place.join("empty");
         std::fs::create_dir_all(&nothing_to_activate).expect("a directory can be made");
 
-        let bus = Command::new("dbus-daemon")
-            .arg("--session")
-            .arg("--address")
-            .arg(format!("unix:path={}", at.display()))
+        let config = from_a_config.then(|| {
+            let config = place.join("bus.conf");
+            std::fs::write(&config, policy_allowing_everything(&at))
+                .expect("a configuration can be written");
+            config
+        });
+
+        let mut starting = Command::new("dbus-daemon");
+        if let Some(config) = config.as_ref() {
+            starting.arg("--config-file").arg(config);
+        } else {
+            starting
+                .arg("--session")
+                .arg("--address")
+                .arg(format!("unix:path={}", at.display()));
+        }
+        let bus = starting
             .arg("--nofork")
             .arg("--nopidfile")
             .env("XDG_DATA_DIRS", &nothing_to_activate)
@@ -113,13 +151,15 @@ impl AKeyringOfOurOwn {
             ))
             .spawn()
             .expect(
-                "this machine has `dbus-daemon`. Install it with `gnome-keyring dbus-daemon`;                  docs/autonomy/updates/ records the prerequisites",
+                "this machine has `dbus-daemon`. Install it with `gnome-keyring dbus-daemon`; \
+                 docs/autonomy/updates/ records the prerequisites",
             );
 
         let mut ours = Self {
             place,
             bus,
             keyring: None,
+            config,
         };
         ours.wait_for(&at);
 
@@ -226,6 +266,92 @@ impl AKeyringOfOurOwn {
             "the fixture's keyring never offered a collection to store a secret in.\n\
              keyring said: {said}\nbus said: {bus}"
         );
+    }
+}
+
+/// A session bus that allows what a session bus normally allows.
+///
+/// No `<servicedir>`, so this bus can start nothing on demand — the same
+/// isolation `XDG_DATA_DIRS` gives the other constructor, said outright.
+fn policy_allowing_everything(at: &std::path::Path) -> String {
+    format!(
+        r#"<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:path={at}</listen>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+  </policy>
+</busconfig>
+"#,
+        at = at.display()
+    )
+}
+
+/// The same, with the Secret Service put out of reach.
+///
+/// The `<deny>` comes after the allows because the last matching rule wins, and
+/// it names the well-known destination rather than a connection: this is the
+/// bus refusing to carry the message, which is what a refusal actually is.
+fn policy_refusing_the_secrets(at: &std::path::Path) -> String {
+    format!(
+        r#"<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:path={at}</listen>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+    <deny send_destination="org.freedesktop.secrets"/>
+  </policy>
+</busconfig>
+"#,
+        at = at.display()
+    )
+}
+
+impl AKeyringOfOurOwn {
+    /// Make the **bus itself** refuse to carry anything to the Secret Service,
+    /// and have it take effect now.
+    ///
+    /// This is the real mechanism by which a caller is refused: not a keyring
+    /// deciding, but the bus declining to deliver, which is what
+    /// `org.freedesktop.DBus.Error.AccessDenied` means when a person meets it.
+    /// The service stays running and stays reachable by anything the policy
+    /// still allows, so what this produces is a **refusal** and not an outage —
+    /// the distinction the four refusal states exist to make.
+    ///
+    /// # Panics
+    /// When the fixture was not started by
+    /// [`Self::started_where_the_bus_can_refuse`], or the bus will not reload.
+    pub fn stop_letting_anyone_reach_the_keyring(&self) {
+        let config = self
+            .config
+            .as_ref()
+            .expect("this fixture was started without a configuration to rewrite");
+        std::fs::write(config, policy_refusing_the_secrets(&self.place.join("bus")))
+            .expect("the configuration can be rewritten");
+
+        // Reloading is asked of the bus over its own connection, which the new
+        // policy still permits — the deny names the secrets service alone.
+        let connection = zbus::blocking::connection::Builder::address(self.address().as_str())
+            .expect("an address")
+            .build()
+            .expect("a connection");
+        connection
+            .call_method(
+                Some("org.freedesktop.DBus"),
+                "/org/freedesktop/DBus",
+                Some("org.freedesktop.DBus"),
+                "ReloadConfig",
+                &(),
+            )
+            .expect("the bus reloads its configuration");
     }
 }
 
