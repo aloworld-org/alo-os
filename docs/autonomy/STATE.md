@@ -14466,3 +14466,61 @@ state/raster checks and existing GLES checks, not parent key delivery, on-screen
 reader navigation, scanout, VM image integration or physical certification.
 Hardware acceptance remains owed at release validation. Reports arriving during
 publication reconcile next iteration; no release-verification verdict.
+
+## 2026-09-09 - externalized native reader navigation
+
+Started clean at 41ab2ba. Read constitution, delivery/ownership/report guidance,
+current queue and STATE tail, relevant feature/roadmap, ADR 0002/0010 and native
+control/translation contracts. All published task reports already had STATE
+references; none needed reconciliation. Selected the worded navigation component
+and its acceptance in QUEUE before implementing it.
+
+Added four reader-only externalized strings with translator notes, atomic
+registration and per-string Said provenance. Complete chrome wording includes
+position, previous/next and dismissal even for disabled directions. Invalid page
+metadata, missing vocabulary and excessive text refuse. Trusted semantic navigation
+validates live identity before first/last boundary checks, never wraps, captures
+input or dispatches a window operation. No palette/font/engine/ADR change. Full
+reader rendering and input/submission integration remain unfinished.
+
+Three new tests cover reordered/partial translations, source wording, all missing
+word prefixes, atomic key collisions, invalid metadata, 128-page and 4096/4097-byte
+bounds, blank/malformed translation refusal, live forward/backward/single-page
+navigation, stale boundary requests and republication refusal. A real private
+client retains focus and receives ordinary typing, with no close request.
+
+Final Linux checks pass: 162 unit, 223 lifecycle, three socket and four compile-fail
+doctests, none ignored; affected clippy/rustdoc/examples/fmt pass. Windows affected
+fmt/clippy/tests pass (zero Linux-only shell test cases). Existing WSLg regressions
+pass: 72 complete GLES page frames and nested strip/label/expansion submission,
+dismissal/refusal/recovery and client lifecycle checks. No graphical timeout.
+Independent supervisor workspace/Windows/Linux/rustdoc/BPF gates remain pending.
+
+Preserved development failures: the single-page fixture produced two pages at
+180x28; explicit 180x128 preparation now proves the intended single-page boundary.
+The test split accidentally removed imports, restored after compiler diagnosis.
+Blank translation refusal occurs at loading, now asserted there. Clippy rejected
+unwrap_err assertions and a single-element loop; exact error comparisons and
+4096/4097-byte boundary cases replace them. Final affected acceptance passes after
+repair, with no lint exemptions, suppressed assertions or deadline changes.
+
+Ubuntu libraries, WSLg socket and existing bpffs verified. All reserve readings
+exceeded 12 GiB; minimum 54,672,064,512 bytes. The first combined format/focused
+command shared a preflight; subsequent commands each used an immediate reading.
+No cleanup or shared environment maintenance, WSL restart/helper, kernel mutation
+or outer lock. Desktop target remains /root/alo-os-target. No stage/commit/push,
+dev-loop edit, additional worker, other-checkout edit, credential/identity access
+or unrelated host changes.
+
+Exact commands, failures, decisions and evidence limits:
+`docs/autonomy/updates/externalized-native-reader-navigation.md`.
+Logs: `.git/alo-loop/externalized-native-reader-navigation/`.
+Updated all four progress documents and the native-control contract; reviewed
+source/new-file diffs and git diff --check. Next: complete chrome layout/raster
+with full wording and source marking at unchanged scale, then input ownership
+and transactional reader submission/publication/retirement, native navigation/
+cursor selection and direct integration. New evidence is worded live-reader
+state/navigation and existing GLES regressions, not rendered chrome, parent key
+navigation delivery, on-screen reader UI, scanout or integrated VM boot. Physical
+laptop/GPU workstation records remain owed during release validation; no feature
+checkbox or release certification. Later published reports reconcile next iteration.

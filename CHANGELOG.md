@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Long window-control names now have translatable page navigation wording.**
+  The reader model keeps page position, previous/next and dismissal wording with
+  their individual translation provenance. Checked navigation stops at each end
+  and refuses stale readers without operating the window. Rendering and input
+  integration remain unfinished. Evidence:
+  `docs/autonomy/updates/externalized-native-reader-navigation.md`.
+
 - **Paged window-control names now have a reader tied to the displayed window.**
   Page selection preserves complete wording and refuses stale or foreign readers
   after replacement, remapping or retirement. This completes reader state;

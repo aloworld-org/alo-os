@@ -30,7 +30,7 @@ fn strings() -> Result<Strings> {
     Ok(strings)
 }
 
-fn begin(f: &Fixture, action: Action) -> Result<WindowControlReader> {
+pub(super) fn begin(f: &Fixture, action: Action) -> Result<WindowControlReader> {
     let mut labels = WindowControlLabels::new()?;
     let strings = strings()?;
     let style = style()?;

@@ -607,3 +607,45 @@ next component; ordinary full-label rendering still refuses incomplete names.
 Tests use real private Wayland clients with raster comparisons and lifecycle
 changes; they do not prove parent key delivery, on-screen reader UI or scanout.
 Evidence: `docs/autonomy/updates/mapping-bound-native-name-readers.md`.
+
+## Externalized reader navigation model
+
+2026-09-09 additive trusted API: `WindowControlReaderPage::chrome(&Strings)`
+returns the complete position, previous, next and dismiss wording as four
+independent `Said` values, plus `can_previous`/`can_next` boundary state. Disabled
+navigation retains its name. All wording is prepared or none is returned.
+Missing/unfilled vocabulary refuses with `WindowControlLabelError::Vocabulary`;
+blank or over-4096-byte wording refuses with `Text`; invalid one-based position
+or a total outside 1..=128 refuses with `Geometry`. These are diagnostic errors,
+not person-facing refusal sentences. No shaping or fit is promised by this model.
+
+Hosts register `window_control_reader_words::declare_reader_words` before loading
+translations. Registration is atomic on key collision and composes with the
+existing shortcut vocabulary. The four additive format-1 translation keys are:
+
+| Key | Source wording |
+| --- | --- |
+| `shell.name-page` | `Page {page} of {total}` |
+| `shell.name-previous` | `Previous page` |
+| `shell.name-next` | `Next page` |
+| `shell.name-dismiss` | `Done reading` |
+
+Position uses bounded decimal integers without grouping (1 through 128). The
+translator owns the order of both gaps. Each string retains its own source or
+translation provenance: translating position does not mark an untranslated
+button translated. Dismiss refers only to the reader, never CloseWindow.
+
+`Server::navigate_window_control_reader` accepts `Previous` or `Next`, validates
+the live reader before considering boundaries, and returns the borrowed page.
+There is no wraparound; unavailable navigation preserves selection. A stale
+request at a boundary still permanently retires the reader. Explicit dismissal
+continues to use `WindowControlReader::dismiss`. No window operation, client
+focus change, configured shortcut or keyboard/pointer ownership is introduced.
+
+These are frozen host snapshots, to discard across host events. Public chrome
+data does not prove a live reader or successful frame submission. The live
+server navigation check remains mandatory; never dispatch from old availability
+booleans. Chrome layout/rasterization, input routing and transactional reader
+composition/submission/publication are still required before usable full-name
+access. Existing complete-label transactions keep their strict refusal behavior.
+Evidence: `docs/autonomy/updates/externalized-native-reader-navigation.md`.

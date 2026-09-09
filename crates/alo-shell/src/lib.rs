@@ -75,6 +75,8 @@ mod window_control_overlay;
 mod window_control_paint;
 mod window_control_presentation;
 mod window_control_reader;
+mod window_control_reader_navigation;
+pub mod window_control_reader_words;
 mod window_control_routing;
 mod window_control_scene;
 mod window_control_snapshot;
@@ -149,6 +151,9 @@ pub use window_control_label_pages::{
 pub use window_control_label_target::{WindowControlLabelSelection, WindowControlLabelTarget};
 pub use window_control_reader::{
     WindowControlReader, WindowControlReaderPage, WindowControlReaderStyle,
+};
+pub use window_control_reader_navigation::{
+    WindowControlReaderChrome, WindowControlReaderNavigation,
 };
 pub use window_control_routing::{
     PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,

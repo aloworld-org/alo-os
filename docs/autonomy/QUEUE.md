@@ -5,6 +5,30 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed externalized native reader navigation model (2026-09-09):** complete
+position/previous/next/dismiss wording retains per-string provenance; atomic
+vocabulary registration and bounded live navigation refuse missing wording,
+invalid positions and stale/boundary requests. Three new tests; Linux 162 unit,
+223 lifecycle/three socket/four doctests, affected Linux/Windows checks, 72 GLES
+page frames and nested controls pass. Report:
+`updates/externalized-native-reader-navigation.md`. Supervisor gates pending.
+Next executable component: bounded chrome layout/raster preparation preserving
+complete wording and source marking at the person's text scale, with explicit
+refusal when it cannot fit. Then keyboard/pointer ownership and transactional
+reader composition/submission/publication/retirement, native navigation/cursor
+selection and direct integration. Navigation model is complete; reader UI and
+usable window management remain unfinished.
+
+**Selected externalized native reader navigation model (2026-09-09):** provide
+complete externalized page-position, previous/next and dismiss wording with
+per-string provenance, bounded navigation targets and live-reader semantic
+navigation. Refuse incomplete vocabulary and invalid/stale navigation; preserve
+ordinary typing and never dispatch a window control. Acceptance: source/partial/
+reordered translations, malformed gaps, page boundaries, stale readers and real
+private-client traversal; affected fmt/tests/clippy/rustdoc. This completes the
+worded navigation model only; chrome raster/layout, input ownership and reader
+submission/publication remain subsequent components of full-name access.
+
 **Completed mapping-bound native name reader state (2026-09-09):** immutable page
 sets now bind to a live strip publication; checked selection refuses stale,
 foreign, dismissed and out-of-range readers without executing controls. Four new

@@ -1334,6 +1334,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Externalized reader navigation model (2026-09-09): complete position and
+    previous/next/dismiss wording retains per-string provenance; vocabulary
+    collisions, missing wording and invalid positions refuse. Live semantic
+    navigation validates lifetime before boundary refusal, without wrapping or
+    window dispatch. Three new private-client/vocabulary tests; Linux 162 unit,
+    223 lifecycle, three socket and four doctests pass, affected Linux/Windows
+    checks and existing 72 GLES page frames/nested controls pass. Chrome layout,
+    raster, input ownership and reader transaction remain next; then native
+    navigation/cursor selection and direct integration. No feature tick; full
+    supervisor gates pending. `docs/autonomy/updates/externalized-native-reader-navigation.md`.
   - Paged native control label rendering (2026-09-09): immutable whole-line pages
     preserve full translation/source provenance and text scale. Foreign/clipped
     placement, lost ink and excessive page allocation refuse atomically; a page
