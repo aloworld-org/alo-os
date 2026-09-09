@@ -5,6 +5,42 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Recovered adaptive native control labels (2026-09-09):** automatic expansion
+below/above controls is implemented with source/fallback and text scale intact.
+Linux 159 unit/216 lifecycle/three socket/three doctests, affected Linux/Windows
+clippy/tests and example compilation pass. The original EGL timeout's cause
+remains unknown; controlled traced and normal nested runs now pass. An offscreen
+acknowledgement timeout was observed while both scheme matrices ran together;
+they now have two explicit pre-submission stages, with all assertions and all
+deadlines preserved. All 30 offscreen stages pass. Full Windows/Linux/rustdoc/BPF
+and graphical publication gates passed on the combined tree.
+Report: `updates/repairing-an-unfinished-desktop-task.md`, preserving
+`updates/adaptive-native-control-labels.md` as the earlier failure record.
+Next: paged full-name access where expansion cannot fit, followed by native
+navigation/cursor selection and direct integration. Feature unfinished.
+
+**Desktop recovery protocol (2026-09-09):** ordinary worker/gate failures request
+up to three repair workers on the same dirty task. Diagnose, repair, recheck the
+affected acceptance, then repeat every independent gate. Integrated-tree repairs
+are gated before their own commit and normal push. Missing authority, shared
+maintenance, unsafe Git state, process/auth failures and exhausted recovery still
+require a handoff; no gate weakening or unrelated task selection to look busy.
+
+**Backend supervisor reconciliation (305cab1, 6704741):** live status, the C:
+reserve and WSL lifetime helper are published. The latter replaces PID-based
+Windows lock recovery with an OS-held handle; its non-Windows PID path remains.
+The contributor reports 34 Windows tests. Its plan has no ready entry; that is
+not proof all backend or release work is complete. No release checkbox moved.
+
+**Selected adaptive native control labels (2026-09-09):** complete automatic
+full-text expansion within available output space. Keep a fitting requested box;
+otherwise try bounded output-contained boxes below/above the strip, preserving
+all words, translation provenance and text scale. Refuse when no complete label
+fits; paged access on still-smaller outputs remains subsequent work. Acceptance:
+shaping/placement happy and refusal tests, real-client expanded submission,
+ordinary typing, overlay exclusion, failure/callback retirement and actual nested
+EGL expansion; affected tests, fmt, clippy and rustdoc. No feature completion claim.
+
 **Completed transactional native label composition (2026-09-09):** fresh labels
 now share strip submission; only success publishes opaque pointer exclusion.
 Covered motion/buttons/scroll are consumed, held releases survive dismissal,
@@ -56,7 +92,9 @@ Contributor reconciliation: `updates/an-administrator-set-that-rule.md` moves
 policy refusal before credential retrieval and distinguishes personal from
 organisation policy when wording refusals. Reported mutation checks caught the
 old ordering; exact verification commands/results are not supplied. Production
-still supplies no bound, and pre-turn question refusals have no record entry.
+still supplies no bound. The later `updates/recording-a-question-nobody-was-asked.md`
+adds pre-turn refusal records and persisted response/record agreement tests;
+its reported mutation evidence also lacks exact verification commands/results.
 Settings integration and the release remain unfinished; no policy decision here.
 
 **Completed native control scene composition (2026-09-09):** shared nested/

@@ -3,8 +3,9 @@
 One entry per loop iteration, newest last. What was built, what the gate said,
 and anything the next iteration should know before it starts.
 
-The stop markers `LOOP COMPLETE` and `LOOP HALT` are read from this file by the
-supervisor, so they appear only when they are true.
+The original supervisor read `LOOP COMPLETE` and `LOOP HALT` from this journal.
+The current desktop supervisor reads only its current worker result, never
+historical markers below; see DELIVERY.md for recovery and handoff semantics.
 
 ---
 
@@ -14246,3 +14247,111 @@ Windows/Linux/rustdoc/BPF gates pending; no feature/release tick.
 No staging, commit, push, dev-loop edit, extra worker, private credential/identity
 access, other-checkout edits or unrelated host changes. Tracked and new-file diffs
 reviewed; git diff --check passed. Full independent supervisor gates pending.
+
+## 2026-09-09 - adaptive native control labels: graphical verification blocked
+
+Started clean at 677159e. Read required delivery/ownership/report guidance and
+relevant feature/roadmap, ADR and contract sections. Selected bounded full-name
+expansion and acceptance in QUEUE before code. Reconciled the sole published report
+not previously referenced: `docs/autonomy/updates/recording-a-question-nobody-was-asked.md`.
+Review confirms pre-turn refusal recording, persisted wording-agreement and
+write-failure tests. Mutation evidence lacks exact command/results listing;
+production bound loading remains unfinished. Older readers flag the new event
+line and refuse shortening. Corrected shared progress; no contributor gate claimed.
+
+Implemented automatic full-name expansion in the labeled frame transaction.
+Fitting requested boxes remain; alternatives use available bounded space below
+then above the strip, preserving words/provenance/text scale and refusing if no
+complete box fits. Successful submission publishes expanded pointer exclusion;
+failures retire authority while callbacks/releases remain protected. Low-level
+clipping validation is unchanged. No new agent surface, palette/font or ADR.
+
+Two new unit tests and one new real-client test pass. Full Linux affected suite:
+159 unit, 216 lifecycle, three socket and three compile-fail doctests, none ignored.
+Affected Linux/Windows clippy, Windows tests (zero Linux-only cases), formatting
+application and Linux examples pass. Initial new client test timeout with a
+4000-byte name in a 9px box resolved by retaining near-limit shaping coverage in
+unit tests and using a still-unfittable 500-byte transaction name. Existing deadline
+unchanged. One example needless-borrow lint fixed without exemptions.
+
+BLOCKER: `timeout 30s /root/alo-os-target/debug/examples/nested_check --controls`
+exited 124 after EGL/Mesa initialization warnings, with no submission success
+output. Windows call also experienced about 4794 seconds of unexplained wall-clock
+delay. No proven cause; no graphics evidence claimed. Second timeout triggers
+owner-directed halt. Offscreen command was not reached; final Linux fmt and
+warnings-denied rustdoc plus independent supervisor gates remain pending. No
+retry, WSL restart, shared repair or bypass. Preserve all unfinished changes.
+
+Exact commands, decisions, failed checks and evidence limits:
+`docs/autonomy/updates/adaptive-native-control-labels.md`.
+All C: preflights exceeded 12 GiB; minimum 47,775,219,712 bytes. Ubuntu development
+libraries and WSLg socket verified at start. No cleanup, kernel mutation, outer
+lock, package/mount/service/session change or keep-alive helper. Separate target
+retained. No staging/commit/push, dev-loop edit, extra worker, other-checkout edit,
+private credential/identity access or unrelated host changes.
+
+Owner/supervisor must review the timeout and restore a working graphical gate or
+authorize resumed diagnosis; shared maintenance requires a coordinated idle
+handoff. Then finish component runtime/fmt/rustdoc checks. Automatic expansion is
+implemented but unverified graphically; paged full-text access on still-smaller
+outputs, native navigation/cursor selection and direct integration remain. No
+feature/release tick. Four progress documents and report record blocked status.
+
+Tracked and new-file diffs reviewed; git diff --check passed. Changes remain unstaged.
+
+## 2026-09-09 — repair an unfinished desktop task instead of abandoning it
+
+Owner requested automatic diagnosis/repair and continuation. The desktop loop
+was stopped; this interactive integration worker is its checkout's sole writer.
+Preserved all adaptive-label work and fast-forwarded bb3fec3's later descendant
+677159e to current main 6704741 without overlap. No worker was launched while
+this tree was being repaired.
+
+Added a bounded recovery state machine: a blocked worker or failed independent
+gate starts up to three repair workers on the same task, preserving the diff and
+each attempt's logs. Each completion must pass every gate again. Combined-tree
+gate failures use the same path and commit the repair only after verification.
+STOP, authority/shared-maintenance needs, unsafe history/index, supervisor edits,
+process/auth failures, lost WSL lease and low space still refuse. No blind retries,
+weakened tests, new scope, force push or shared-host repair is authorized.
+
+Windows supervisor fmt/clippy and 29 tests passed, including an isolated real
+Git remote that remains unchanged until the repaired combined tree is checked.
+Release executable rebuilt with the revised WORKER.md instructions. These are
+developer-tool tests, not product/hardware acceptance.
+
+Investigated preserved graphical failure. A traced control run showed real
+buffer submission/teardown and passed; a normal control run passed too. The
+original EGL timeout's cause remains unknown. The next offscreen run observed
+the client's five-second acknowledgement timeout while the full light/dark
+scene matrix was still executing; the matrix subsequently passed, then the
+reply channel was closed. This is not proof why the host was slow. Split the
+independent schemes into two explicit pre-submission stages, retaining every
+pixel/callback/refusal assertion and all existing deadlines. Rebuilt offscreen
+passed all 30 stages in 1.50 seconds. Full Windows publication checks pass;
+Linux workspace/kernel verification was then still in progress.
+
+Contributor reconciliation: read and integrated
+`docs/autonomy/updates/a-loop-that-says-whether-it-is-running.md` (305cab1) and
+`docs/autonomy/updates/a-lock-the-operating-system-holds.md` (6704741). The latter
+replaces Windows PID-based lock takeover with an open handle and reports 34
+Windows tests. The backend reserve measures C: via the checkout; its WSL helper
+also spans verify/publish. Its lack of ready plan entries does not finish the
+release. No release checkbox moved or contributor source report rewritten.
+
+Follow-up evidence and safety limits:
+`docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`. Preserved earlier
+report: `docs/autonomy/updates/adaptive-native-control-labels.md`. Remaining
+desktop work: paged full names when expansion cannot fit, native navigation/
+cursor selection and direct integration. No Windows configuration, cleanup,
+mount, service, other-checkout or unrelated-process changes were made.
+
+Final verification for this recovery: all Windows fmt/clippy/workspace tests,
+Linux fmt/clippy/workspace tests and rustdoc, pinned BPF fmt/clippy, shell example
+build, control-label/control-pixel checks and both normal nested modes passed.
+Existing explicitly ignored environment/model checks remain unexecuted; no new
+ignore or exemption. Logs: `.git/alo-loop/automatic-recovery-670-windows` and
+`automatic-recovery-670-linux`. All phases checked actual C: reserve and passed.
+Fetched main after gating: still 6704741, the combined base tested. Final source
+diff reviewed; release supervisor rebuilt. Publication and clean-tree restart
+follow these results, never precede them.

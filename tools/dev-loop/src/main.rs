@@ -3,10 +3,12 @@ mod awake;
 mod linux_gate;
 mod process;
 mod publication;
+mod recovery;
 mod report;
+mod step;
 mod storage;
 
-use process::{checked, git, worker};
+use process::{checked, git};
 use std::{
     env,
     error::Error,
@@ -117,55 +119,48 @@ fn run(state: &Path, codex: &str) -> Result<()> {
         let stamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         let directory = state.join(stamp.to_string());
         fs::create_dir(&directory)?;
-        let response = directory.join("result.txt");
         status(
             state,
             &format!("WORKING: {} logs={}", head.trim(), directory.display()),
         )?;
-        worker(codex, &response, &directory)?;
-        linux.check()?;
-        let result = fs::read_to_string(&response)?;
-        let title = report::done_title(&result)?;
-        if head != git(&["rev-parse", "HEAD"])? {
-            return Err("Worker committed unexpectedly; review before publishing".into());
-        }
-        if git(&["status", "--porcelain"])?.trim().is_empty() {
-            return Err("Worker reported done without changes".into());
-        }
-        // The running supervisor cannot gate a changed copy of itself.
-        if !git(&["status", "--porcelain", "--", "tools/dev-loop"])?
-            .trim()
-            .is_empty()
-        {
-            return Err("Supervisor changes require interactive review and restart".into());
-        }
-        for file in [
-            "CHANGELOG.md",
-            "ROADMAP.md",
-            "docs/autonomy/QUEUE.md",
-            "docs/autonomy/STATE.md",
-        ] {
-            if git(&["diff", "HEAD", "--", file])?.is_empty() {
-                return Err(format!("Required progress document was not updated: {file}").into());
-            }
-        }
-        status(state, "VERIFYING: Windows, Linux, rustdoc and kernel gates")?;
-        let mut log = File::create(directory.join("gates.log"))?;
-        gates(&mut log)?;
+        let title = step::finish(state, codex, &head, &directory, None, &mut linux)?;
         linux.check()?;
         git(&["add", "--all"])?;
         git(&[
             "commit",
             "-m",
-            title,
+            &title,
             "-m",
             "Implemented by the development worker; the supervisor independently passed Windows and Linux gates before publication. See docs/autonomy/STATE.md for decisions and verification.",
         ])?;
         status(state, "PUBLISHING: integrate main and push")?;
+        let mut integration_attempt = 0;
         let published = publication::publish(&head, git, || {
             linux.check()?;
+            integration_attempt += 1;
+            let integrated_directory = directory.join(format!("integration-{integration_attempt}"));
+            fs::create_dir_all(&integrated_directory)?;
+            let mut log = File::create(integrated_directory.join("gates.log"))?;
             status(state, "VERIFYING: integrated changes from main")?;
-            gates(&mut log)?;
+            if let Err(error) = gates(&mut log) {
+                let integrated_head = git(&["rev-parse", "HEAD"])?;
+                let repair_title = step::finish(
+                    state,
+                    codex,
+                    &integrated_head,
+                    &integrated_directory,
+                    Some(format!("Combined-tree gate failed: {error}; see gates.log")),
+                    &mut linux,
+                )?;
+                git(&["add", "--all"])?;
+                git(&[
+                    "commit",
+                    "-m",
+                    &repair_title,
+                    "-m",
+                    "Repair of the integrated task; all independent gates rerun before publication.",
+                ])?;
+            }
             linux.check()
         })?;
         status(state, &format!("PUSHED: {} {title}", published.trim()))?;

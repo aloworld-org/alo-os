@@ -12,6 +12,12 @@ Concurrent development approved 2026-09-09: desktop and Claude may work in
 separate checkouts at once; existing per-test kernel locks serialize shared
 kernel fixtures. This supersedes the temporary single-workstream restriction.
 A 12 GiB C: preflight reserve still guards new tasks and each gate phase.
+Repairable desktop worker/gate failures now enter bounded diagnosis and repair
+of the same unfinished task, then full verification again before publication.
+Safety/authority handoffs and exhausted recovery preserve work. Details:
+`docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`. Backend supervisor
+305cab1/6704741 also add live status, C: reserve and an OS-held Windows lock;
+these development safeguards do not move release requirements.
 Desktop recovery (2026-09-09): restored missing bpffs during a verified idle
 handoff and integrated the preserved label-rendering commit with current main.
 An owned WSL stdin lease now spans worker/Windows/Linux/publication phases;
@@ -31,7 +37,9 @@ the preserved labels and lease fix; normal publication and clean-tree restart
 follow. No feature/release checkbox is promoted by that development evidence.
 Contributor reconciliation (2026-09-09): policy-before-credential ordering and
 explicit organisation/personal attribution are implemented; production still
-supplies no bound, and pre-turn policy refusals have no record entry. Contributor
+supplies no bound. Pre-turn refusal recording is now implemented, with persisted
+response/record agreement and write-failure tests; see
+`docs/autonomy/updates/recording-a-question-nobody-was-asked.md`. Contributor
 mutation evidence has no exact command/results listing; settings/release remain
 unchecked. `docs/autonomy/updates/an-administrator-set-that-rule.md`.
 Company-managed cleanup belongs to the company administrator. Details:
@@ -1307,6 +1315,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Adaptive native labels (2026-09-09), **graphical recovery verified**: fitting boxes
+    stay; clipped names expand below/above controls at unchanged text scale and
+    retain translation/source fallback. Exhausted space refuses. Linux 159 unit,
+    216 lifecycle, three socket/three doctests and affected clippy/tests pass;
+    examples compile. The earlier unexplained EGL timeout is preserved in the
+    report; traced and normal nested runs now pass. Two explicit pre-submission
+    scene stages preserve all pixel/callback assertions and deadlines; all 30
+    offscreen stages pass. Full Windows/Linux/rustdoc/BPF and graphical gates
+    passed on the combined tree. Paged names on
+    smaller outputs remain next; no feature tick.
+    `docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`.
   - Transactional native label composition (2026-09-09): fresh hover/live native
     focus labels now submit with the strip; only success publishes opaque pointer
     exclusion. Covered clicks/scroll cannot reach clients, owned releases drain

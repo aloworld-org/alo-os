@@ -28,7 +28,7 @@ pub struct WindowControlLabelFrame<'a> {
     pub strings: &'a Strings,
     /// Private native font/shaping state.
     pub labels: &'a mut crate::WindowControlLabels,
-    /// Requested label box; incomplete text refuses submission.
+    /// Preferred box; clipped text expands below/above controls before refusing.
     pub size: (i32, i32),
     /// Existing person-selected text scale.
     pub scale: TextScale,
@@ -93,8 +93,9 @@ impl Server {
 
     /// Submit freshly selected/shaped labels with controls and publish their
     /// pointer exclusion only on success. Native focus is mapping-bound; otherwise
-    /// current hover selects the name. Held gestures dismiss labels. Clipped text,
-    /// overlapping controls, invalid geometry and shaping failures refuse the frame.
+    /// current hover selects the name. Held gestures dismiss labels. Constrained
+    /// labels expand without reducing text scale; if no complete box fits clear
+    /// of controls, or geometry/shaping fails, the frame refuses.
     /// None removes labels, retaining any owned button releases. No keyboard grab.
     pub fn render_labeled_window_controls(
         &mut self,
@@ -135,10 +136,10 @@ impl Server {
                     });
                 self.window_control_label_target(Some(painted), selection, text.size)?
                     .map(|selected| {
-                        text.labels.prepare(
-                            &selected.control,
+                        text.labels.prepare_expanded(
+                            selected,
+                            snapshot.layout(),
                             text.strings,
-                            selected.geometry,
                             view.scheme,
                             text.scale,
                         )

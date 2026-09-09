@@ -2,7 +2,8 @@
 use crate::Result;
 
 /// Replay unpublished work over advancing main and retest before a normal push.
-/// A conflict, a failed gate, or unchanged remote after a push failure halts.
+/// Verification may repair and re-gate the combined tree. An unresolved error,
+/// conflict or unchanged remote after a push failure preserves work and halts.
 pub fn publish(
     base: &str,
     mut git: impl FnMut(&[&str]) -> Result<String>,

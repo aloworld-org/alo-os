@@ -35,6 +35,151 @@ fn geometry() -> LabelGeometry {
 }
 
 #[test]
+fn expanded_labels_preserve_full_words_scale_and_fallback_on_both_sides() {
+    let mut labels = WindowControlLabels::new().unwrap();
+    for (origin, expected_y) in [((3, 4), 40), ((3, 144), 0)] {
+        let layout = WindowControlLayout::new((320, 180), origin, [false; 3], false).unwrap();
+        for strings in [
+            translated("Dieses Fenster schließen"),
+            Strings::of(shortcut_words().unwrap()),
+        ] {
+            for scale in [100, 200, 300] {
+                let control = layout.controls()[2];
+                let selected = crate::WindowControlLabelTarget {
+                    control,
+                    geometry: LabelGeometry {
+                        viewport: (320, 180),
+                        origin: (75, 40),
+                        size: (9, 9),
+                    },
+                };
+                let expanded = labels
+                    .prepare_expanded(
+                        selected,
+                        &layout,
+                        &strings,
+                        Scheme::Dark,
+                        TextScale::percent(scale).unwrap(),
+                    )
+                    .unwrap();
+                assert!(!expanded.clipped());
+                assert_eq!(expanded.said(), &control.action().said(&strings));
+                assert_eq!(expanded.bounds().loc.y, expected_y);
+                assert_eq!(expanded.bounds().size.w, 320);
+                let direct = labels
+                    .prepare(
+                        &control,
+                        &strings,
+                        LabelGeometry {
+                            viewport: (320, 180),
+                            origin: (expanded.bounds().loc.x, expanded.bounds().loc.y),
+                            size: (expanded.bounds().size.w, expanded.bounds().size.h),
+                        },
+                        Scheme::Dark,
+                        TextScale::percent(scale).unwrap(),
+                    )
+                    .unwrap();
+                assert_eq!(expanded.pixels(), direct.pixels(), "no text shrinking");
+            }
+        }
+    }
+}
+
+#[test]
+fn expanded_labels_keep_fitting_box_and_refuse_incomplete_or_foreign_names() {
+    let mut labels = WindowControlLabels::new().unwrap();
+    let layout = WindowControlLayout::new((320, 180), (3, 4), [false; 3], false).unwrap();
+    let mut selected = crate::WindowControlLabelTarget {
+        control: layout.controls()[2],
+        geometry: LabelGeometry {
+            viewport: (320, 180),
+            origin: (75, 40),
+            size: (160, 40),
+        },
+    };
+    let strings = translated("Schließen");
+    let label = labels
+        .prepare_expanded(
+            selected,
+            &layout,
+            &strings,
+            Scheme::Light,
+            TextScale::ordinary(),
+        )
+        .unwrap();
+    assert_eq!(
+        label.bounds(),
+        Rectangle::new((75, 40).into(), (160, 40).into())
+    );
+    assert!(matches!(
+        labels.prepare_expanded(
+            selected,
+            &layout,
+            &translated(&"long ".repeat(800)),
+            Scheme::Light,
+            TextScale::ordinary()
+        ),
+        Err(crate::RenderError::ControlScene)
+    ));
+    selected.geometry.size = (8, 40);
+    assert!(matches!(
+        labels.prepare_expanded(
+            selected,
+            &layout,
+            &strings,
+            Scheme::Light,
+            TextScale::ordinary()
+        ),
+        Err(crate::RenderError::ControlLabel(
+            WindowControlLabelError::Geometry
+        ))
+    ));
+    selected.geometry.size = (9, 9);
+    selected.geometry.viewport = (321, 180);
+    assert!(matches!(
+        labels.prepare_expanded(
+            selected,
+            &layout,
+            &strings,
+            Scheme::Light,
+            TextScale::ordinary()
+        ),
+        Err(crate::RenderError::ControlScene)
+    ));
+    selected.geometry.viewport = (320, 180);
+    selected.control = WindowControlLayout::new((320, 180), (4, 4), [false; 3], false)
+        .unwrap()
+        .controls()[2];
+    assert!(matches!(
+        labels.prepare_expanded(
+            selected,
+            &layout,
+            &strings,
+            Scheme::Light,
+            TextScale::ordinary()
+        ),
+        Err(crate::RenderError::ControlScene)
+    ));
+    let tiny = WindowControlLayout::new((104, 40), (0, 0), [false; 3], false).unwrap();
+    selected.control = tiny.controls()[2];
+    selected.geometry = LabelGeometry {
+        viewport: (104, 40),
+        origin: (0, 31),
+        size: (9, 9),
+    };
+    assert!(matches!(
+        labels.prepare_expanded(
+            selected,
+            &tiny,
+            &strings,
+            Scheme::Light,
+            TextScale::ordinary()
+        ),
+        Err(crate::RenderError::ControlScene)
+    ));
+}
+
+#[test]
 fn control_labels_keep_translation_fallback_and_disabled_access() {
     let mut renderer = WindowControlLabels::new().unwrap();
     let layout = WindowControlLayout::new((640, 480), (0, 0), [false; 3], true).unwrap();

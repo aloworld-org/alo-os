@@ -114,11 +114,16 @@ pub fn run(fixture: Fixture, send: mpsc::Sender<u8>, receive: mpsc::Receiver<()>
     let cursor = app.cursor((0, 0));
     let _cyan = app.attach_pixels(&cursor, &solid([255, 255, 0, 255]));
     app.sync();
-    for stage in 1..=3 {
+    // Independent scene matrices have separate acknowledgements. Neither may
+    // submit an output or complete a callback; all waits keep the same bound.
+    for stage in [29, 30, 1, 2, 3] {
         assert!(send.send(stage).is_ok());
-        assert!(receive.recv_timeout(Duration::from_secs(5)).is_ok());
+        assert!(
+            receive.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "offscreen stage {stage} was not acknowledged within five seconds"
+        );
         app.sync();
-        if stage < 3 {
+        if stage != 3 {
             assert!(app.events.frames.is_empty());
             assert_eq!(app.events.membership, (0, 0));
             assert_eq!(app.events.outputs, 0);

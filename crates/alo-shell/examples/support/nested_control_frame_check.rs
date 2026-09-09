@@ -71,6 +71,32 @@ pub fn run(
             Route::Consumed
         );
         assert!(server.focus_window_control(Some(Action::CloseWindow)));
+        nested.render_labeled_window_controls(
+            server,
+            Some((&root, (3, 4))),
+            scheme,
+            Some(WindowControlLabelFrame {
+                labels: &mut labels,
+                strings: &strings,
+                size: (9, 9),
+                scale,
+            }),
+            time,
+        )?;
+        // The 9px preferred box expands to full output width without clipping.
+        assert_eq!(
+            server.route_presented_window_control_pointer((1.0, 45.0), Event::Motion, time)?,
+            Route::Consumed
+        );
+        assert!(server.focus_window_control(Some(Action::CloseWindow)));
+        let mut impossible = Strings::of(shortcut_words()?);
+        let language = alo_strings::Language::written("de")?;
+        let translation = shortcut_words()?.check(
+            alo_strings::Translation::into_language(language.clone())
+                .says(Action::CloseWindow.word().key(), "long ".repeat(100)),
+        )?;
+        impossible.speaks(translation)?;
+        impossible.prefers(&[language]);
         assert!(matches!(
             nested.render_labeled_window_controls(
                 server,
@@ -78,7 +104,7 @@ pub fn run(
                 scheme,
                 Some(WindowControlLabelFrame {
                     labels: &mut labels,
-                    strings: &strings,
+                    strings: &impossible,
                     size: (9, 9),
                     scale
                 }),
@@ -86,6 +112,7 @@ pub fn run(
             ),
             Err(alo_shell::RenderError::ControlScene)
         ));
+        assert!(server.presented_window_controls(None).is_none());
         nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
         assert_eq!(
             server
@@ -123,7 +150,7 @@ pub fn run(
         assert!(server.presented_window_controls(None).is_none());
     }
     println!(
-        "Nested control transactions: eight EGL strip submissions, two label submissions, two label dismissals, two ordinary removals, clipping and strip refusal/recovery sequences passed"
+        "Nested control transactions: eight EGL strip submissions, two label submissions, two expanded full-name submissions, two label dismissals, two ordinary removals, exhausted-space and strip refusal/recovery sequences passed"
     );
     Ok(())
 }

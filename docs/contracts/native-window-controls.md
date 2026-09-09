@@ -506,3 +506,30 @@ full-text access on constrained outputs, native navigation/cursor selection and
 direct integration remain unfinished; clipped labels currently refuse rather
 than silently losing words. No agent surface, vocabulary, palette, fonts or
 accepted ADR changes. Evidence: `docs/autonomy/updates/transactional-native-label-composition.md`.
+
+## Adaptive full-name expansion
+
+2026-09-09: `WindowControlLabels::prepare_expanded` retains a fitting requested
+box. If it clips text/output or covers a control, it tries output-contained space
+below, then above the strip, keeping a four-pixel gap. Alternative boxes use the
+available width/height, capped at 2048 by 512. At most three rasters are prepared;
+there is no search loop, font shrinking, ellipsis or discarded source/fallback
+text. Selection action, geometry and availability must belong to the supplied
+layout; transient hover feedback is irrelevant to naming. Viewports must agree.
+Invalid geometry, vocabulary and unsupported glyphs still refuse immediately.
+
+The existing labeled Server/Nested transaction now uses this preparation, so a
+9px preferred box can produce a full-width name. If no complete candidate fits,
+`ControlScene` still refuses before backend submission. The low-level `prepare`
+and scene validation remain strict and unchanged. Only successful submission
+publishes the expanded rectangle for pointer exclusion. Failed expansion or
+submission retires native authority and preserves callbacks; held overlay input
+still dismisses the label and drains releases. Ordinary client typing is intact.
+
+Automatic expansion is implemented and graphical recovery checks pass. Full-text
+access remains incomplete for constrained
+output: names exceeding both available boxes still need a bounded paged reader.
+That remaining component precedes native navigation/cursor selection and direct
+integration. No public agent interface, vocabulary, palette, font or ADR changes.
+Evidence: `docs/autonomy/updates/adaptive-native-control-labels.md` and its
+follow-up `docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`.

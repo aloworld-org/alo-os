@@ -130,6 +130,58 @@ fn a_failed_combined_gate_leaves_remote_unchanged() -> Result<()> {
 }
 
 #[test]
+fn an_integrated_repair_is_gated_before_it_can_reach_the_remote() -> Result<()> {
+    use crate::recovery::{self, Action, Outcome};
+    let fixture = Fixture::new()?;
+    commit(&fixture.first, "first.txt", "first worker\n")?;
+    fixture.publish_second("second.txt")?;
+    let before = fixture.remote_head()?;
+    let mut repaired = false;
+    let mut regated = false;
+    let head = publish(
+        &fixture.base,
+        |args| command(&fixture.first, args),
+        || {
+            recovery::finish(Some("combined check failed".into()), |action| {
+                assert_eq!(fixture.remote_head()?, before);
+                match action {
+                    Action::Work { attempt, .. } => {
+                        assert_eq!(attempt, 1);
+                        fs::write(fixture.first.join("repair.txt"), "repaired\n")?;
+                        repaired = true;
+                        Ok(Outcome::Ready("fix(shell): integrated repair".into()))
+                    }
+                    Action::Verify => {
+                        assert!(repaired);
+                        assert!(fixture.first.join("first.txt").exists());
+                        assert!(fixture.first.join("second.txt").exists());
+                        assert_eq!(
+                            fs::read_to_string(fixture.first.join("repair.txt"))?,
+                            "repaired\n"
+                        );
+                        regated = true;
+                        Ok(Outcome::Passed)
+                    }
+                }
+            })?;
+            assert!(regated);
+            commit(&fixture.first, "repair.txt", "repaired\n")?;
+            Ok(())
+        },
+    )?;
+    assert!(regated);
+    assert_eq!(head, fixture.remote_head()?);
+    assert_eq!(
+        command(
+            &fixture.root.join("remote.git"),
+            &["show", "main:repair.txt"]
+        )?,
+        "repaired\n"
+    );
+    Ok(())
+}
+
+#[test]
 fn conflicting_changes_are_preserved_without_a_push() -> Result<()> {
     let fixture = Fixture::new()?;
     commit(&fixture.first, "shared.txt", "first worker\n")?;

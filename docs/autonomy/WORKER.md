@@ -77,9 +77,21 @@ that is not permission for unrelated host changes. Keep scope to OS development.
 Never certify hardware from WSL/VM tests. If external hardware, an unavailable
 credential, or a decision conflicting with an accepted ADR is the only remaining
 path, state the exact requirement and evidence in your result. Preserve unfinished
-work. Treat exhausted usage/authentication and repeated test failures as halts,
-not invitations to loop or lower the tests. Prefer another independently executable
-release item before stopping on a dependency.
+work. Exhausted usage/authentication, new authority, unavailable hardware and
+shared-environment maintenance require STEP NEEDS INPUT, with the exact evidence
+and requested handoff. Ordinary compile/test/graphical failures are recovery work,
+not an automatic halt merely because two commands failed. Diagnose the specific
+failure: inspect logs and process state, compare a known-good control, instrument
+the failing path and make a targeted fix where justified. Preserve the original
+failure and distinguish measured causes from hypotheses. Do not blindly rerun,
+increase timeouts just to pass, suppress diagnostics, ignore assertions or weaken
+gates. An isolated diagnostic rerun after investigation is permitted; a pass does
+not prove the original cause. Re-run the relevant acceptance checks after repair.
+The supervisor can launch up to three repair workers for the same unfinished task,
+with previous logs and dirty work preserved, then repeat every independent gate.
+Only an exhausted recovery budget or genuine external dependency should escalate.
+Prefer another independently executable release item before starting work on a
+known blocked dependency; never mix a different task into unfinished dirty work.
 
 Your final response MUST start with one of:
 
@@ -90,12 +102,24 @@ Explain the change and verification below the title.
 or:
 
 STEP BLOCKED
-Explain the exact blocker, unfinished work and what the owner must supply.
+Explain the repairable failure, diagnosis attempted, unfinished work and log paths.
+This asks the supervisor for recovery of the SAME task, not permission to publish.
+
+or:
+
+STEP NEEDS INPUT
+Explain the genuine external dependency, missing authority or coordinated shared
+maintenance needed. Exhaust safe in-scope diagnostics first. Do not use this for
+an ordinary test failure that can still be investigated in this checkout.
 
 or:
 
 RELEASE VERIFIED
 List the release exit evidence, including physical hardware records.
 
-Only STEP DONE permits the supervisor to gate and publish. All other results
-halt it visibly. Historical LOOP COMPLETE markers are not execution signals.
+Only STEP DONE permits independent gating; only passing gates permit publication.
+STEP BLOCKED and failed independent gates enter bounded recovery. STEP NEEDS INPUT,
+unrecognized reports, exhausted recovery, process/auth failures and unsafe git or
+supervisor changes halt visibly with work preserved. RELEASE VERIFIED requires
+owner review of the evidence, never an automatic certification. Historical LOOP
+COMPLETE markers are not execution signals.

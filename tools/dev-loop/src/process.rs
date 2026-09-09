@@ -39,7 +39,7 @@ pub fn checked(program: &str, args: &[&str], log: &mut File) -> Result<()> {
     Ok(())
 }
 
-pub fn worker(codex: &str, result: &Path, directory: &Path) -> Result<()> {
+pub fn worker(codex: &str, result: &Path, directory: &Path, instructions: &str) -> Result<()> {
     let events = File::create(directory.join("events.jsonl"))?;
     let errors = File::create(directory.join("worker.log"))?;
     let mut child = Command::new(codex)
@@ -59,7 +59,7 @@ pub fn worker(codex: &str, result: &Path, directory: &Path) -> Result<()> {
         .stderr(errors)
         .spawn()?;
     if let Some(mut input) = child.stdin.take() {
-        input.write_all(include_bytes!("../../../docs/autonomy/WORKER.md"))?;
+        input.write_all(instructions.as_bytes())?;
     }
     let started = Instant::now();
     loop {

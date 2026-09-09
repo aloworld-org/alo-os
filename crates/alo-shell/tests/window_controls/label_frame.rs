@@ -60,10 +60,33 @@ fn draw(
     size: (i32, i32),
     fail: bool,
 ) -> Result<Option<String>> {
+    draw_text(f, root, position, size, fail, None)
+}
+
+fn draw_text(
+    f: &Fixture,
+    root: &WlSurface,
+    position: Option<(f64, f64)>,
+    size: (i32, i32),
+    fail: bool,
+    text: Option<String>,
+) -> Result<Option<String>> {
     let root = root.clone();
     Ok(f.backend(move |s| -> std::result::Result<_, String> {
         let mut labels = WindowControlLabels::new().map_err(|e| e.to_string())?;
-        let strings = Strings::of(shortcut_words().map_err(|e| e.to_string())?);
+        let vocabulary = shortcut_words().map_err(|e| e.to_string())?;
+        let mut strings = Strings::of(vocabulary.clone());
+        if let Some(text) = text {
+            let language = alo_strings::Language::written("de").map_err(|e| e.to_string())?;
+            let translation = vocabulary
+                .check(
+                    alo_strings::Translation::into_language(language.clone())
+                        .says(Action::CloseWindow.word().key(), &text),
+                )
+                .map_err(|e| e.to_string())?;
+            strings.speaks(translation).map_err(|e| e.to_string())?;
+            strings.prefers(&[language]);
+        }
         let mut target = Target {
             fail,
             ..Default::default()
@@ -94,6 +117,69 @@ fn draw(
         assert_eq!(target.calls, 1);
         Ok(target.label)
     })?)
+}
+
+#[test]
+fn expanded_label_frame_owns_new_area_and_refuses_exhausted_space_without_callbacks() -> Result {
+    let f = Fixture::keyboard();
+    f.backend(|s| s.enable_pointer())?;
+    let mut app = mapped(&f);
+    let root = f.root();
+    f.focus_surface(root.clone())?;
+    let placed = root.clone();
+    f.backend(move |s| s.place_window(&placed, (0, 40)))?;
+    let covered = (1.0, 45.0);
+    assert_eq!(route(&f, covered, Event::Motion)?, Route::Client(true));
+    let words = "Dieses Fenster schließen";
+    assert_eq!(
+        draw_text(&f, &root, Some(CLOSE), (9, 9), false, Some(words.into()))?.as_deref(),
+        Some(words)
+    );
+    assert_eq!(route(&f, covered, Event::Motion)?, Route::Consumed);
+    assert!(!f.backend(move |s| s.route_presented_window_control_axis(
+        covered,
+        AxisFrame::new(3).value(Axis::Vertical, 10.0)
+    ))?);
+    assert!(f.key(30, KeyState::Pressed)?);
+    assert!(f.key(30, KeyState::Released)?);
+    app.surface.frame(&app.queue.handle(), ());
+    app.surface.commit();
+    app.sync();
+    assert!(
+        draw_text(
+            &f,
+            &root,
+            Some(CLOSE),
+            (9, 9),
+            false,
+            Some("long ".repeat(100))
+        )
+        .is_err()
+    );
+    assert!(f.backend(|s| s.presented_window_controls(None)).is_none());
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    assert_eq!(app.events.keyboard.keys.len(), 2);
+    assert!(app.events.pointer.axes.is_empty());
+    assert_eq!(route(&f, covered, Event::Motion)?, Route::Client(true));
+    assert!(draw(&f, &root, Some(CLOSE), (9, 9), true).is_err());
+    app.sync();
+    assert!(app.events.frames.is_empty());
+    assert!(draw(&f, &root, Some(CLOSE), (9, 9), false)?.is_some());
+    assert_eq!(
+        route(&f, covered, Event::Button(0x111, ButtonState::Pressed))?,
+        Route::Consumed
+    );
+    assert_eq!(draw(&f, &root, Some(CLOSE), (9, 9), false)?, None);
+    assert_eq!(
+        route(&f, covered, Event::Button(0x111, ButtonState::Released))?,
+        Route::Consumed
+    );
+    app.sync();
+    assert_eq!(app.events.frames, [91]);
+    assert!(app.events.pointer.buttons.is_empty());
+    assert_eq!(app.events.close_requests, 0);
+    Ok(())
 }
 
 fn route(f: &Fixture, position: (f64, f64), event: Event) -> Result<Route> {
@@ -248,12 +334,13 @@ fn label_frame_failed_submission_keeps_callbacks_pending_and_retires_exclusion()
 }
 
 #[test]
-fn label_frame_refuses_clipping_geometry_and_preserves_existing_client_grab() -> Result {
+fn label_frame_expands_clipping_refuses_geometry_and_preserves_existing_client_grab() -> Result {
     let f = Fixture::keyboard();
     f.backend(|s| s.enable_pointer())?;
     let mut app = mapped(&f);
     let root = f.root();
-    for size in [(9, 9), (8, 40)] {
+    assert!(draw(&f, &root, Some(CLOSE), (9, 9), false)?.is_some());
+    for size in [(8, 9), (8, 40)] {
         assert!(draw(&f, &root, Some(CLOSE), size, false).is_err());
         assert!(f.backend(|s| s.presented_window_controls(None)).is_none());
     }

@@ -56,8 +56,12 @@ development or weaken its assertions.
 
 The Rust supervisor performs this sequence for its worker. It retries up to
 three publication races; an unchanged remote after rejection means a real push
-error, so it stops and preserves the local commit. Rebase conflicts and failed
-integration checks also stop publication and preserve the work for resolution.
+error, so it stops and preserves the local commit. Rebase conflicts require
+deliberate review. Failed integration checks enter up to three repair attempts
+on the same combined tree, followed by all independent gates again. A repair
+is separately committed only after those gates pass; exhausted recovery or a
+missing authority/resource preserves the work without publication. See
+`DELIVERY.md` for the recovery protocol and its non-bypassable safety checks.
 The worker itself still does not stage, commit or push; the supervisor does.
 
 Keeping main clean means it contains integrated, tested work from both checkouts.

@@ -66,6 +66,7 @@ mod window_control_feedback;
 mod window_control_frame;
 mod window_control_input;
 mod window_control_label;
+mod window_control_label_expansion;
 mod window_control_label_paint;
 mod window_control_label_target;
 mod window_control_overlay;

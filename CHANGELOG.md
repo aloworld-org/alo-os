@@ -12,6 +12,21 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Window-control names expand when their preferred box is too
+  small.** Full words and text scale are retained, with pointer exclusion across
+  the expanded area. Component tests and graphical submission/scene checks pass;
+  names that cannot fit still refuse rather than becoming clipped controls.
+  Evidence: `docs/autonomy/updates/adaptive-native-control-labels.md` and the
+  follow-up `docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`.
+
+- **A provider question refused by policy now leaves a record of that refusal.**
+  The daemon uses the same wording in the response and record, and closes the
+  turn if recording fails. No question text, credential or endpoint is added.
+  The contributor reports persisted agreement and mutation checks without exact
+  verification commands/results; production policy loading remains unfinished.
+  Older readers report the new event tag as an unreadable line and refuse record
+  shortening. Evidence: `docs/autonomy/updates/recording-a-question-nobody-was-asked.md`.
+
 - **Window-control labels now share desktop submission and block clicks through
   their text.** Fresh labels appear and disappear with their controls, while held
   button releases stay owned even after dismissal or a failed frame. Ordinary
@@ -30,7 +45,7 @@ grant now takes effect immediately instead of at the next sign-in" is.
 - **Policy refusal is checked before retrieving a provider credential.**
   The daemon now distinguishes an organisation's rule from a personal rule when
   wording refusals. This is backend readiness: production has no configured bound,
-  and recording pre-turn refused questions remains unfinished. Contributor evidence:
+  and production policy loading remains unfinished. Contributor evidence:
   `docs/autonomy/updates/an-administrator-set-that-rule.md`.
 
 - **Native window controls and labels can now be composed with client windows.**

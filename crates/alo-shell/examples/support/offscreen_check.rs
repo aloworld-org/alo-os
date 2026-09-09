@@ -55,6 +55,15 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             let popups = server.popup_surfaces();
             let cursor = server.cursor();
             match stage {
+                29 | 30 => crate::window_control_scene_check::run(
+                    &server,
+                    renderer,
+                    if stage == 29 {
+                        alo_appearance::Scheme::Light
+                    } else {
+                        alo_appearance::Scheme::Dark
+                    },
+                )?,
                 23..=28 => crate::window_tile_check::stage(&mut server, renderer, stage)?,
                 22 => crate::window_minimize_check::client_request(&mut server, renderer)?,
                 17..=21 => {
@@ -158,7 +167,6 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     crate::tile_geometry_check::run(&mut server, renderer)?;
                 }
                 1 => {
-                    crate::window_control_scene_check::run(&server, renderer)?;
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {
                         assert!(
                             render_scanout(renderer, size.into(), &roots, &popups, &cursor)
@@ -267,7 +275,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(1));
     }
     client.join().map_err(|_| "client assertion failed")?;
-    assert_eq!(stages, 28);
+    assert_eq!(stages, 30);
     println!(
         "Real SHM window/child/popup/client and default cursor golden pixels, clipping, hidden/destroyed switching, orientation, preparation and refusal callback preservation, fixture-only submission, disconnect and truncated-SHM import refusal passed; DRM and hardware unverified"
     );

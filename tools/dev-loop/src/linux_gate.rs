@@ -32,6 +32,12 @@ fn phases(mut check: impl FnMut(&str) -> Result<()>) -> Result<()> {
 }
 
 /// Each `checked` call measures Windows host space before launching its phase.
+pub fn ready(log: &mut File) -> Result<()> {
+    checked("wsl", &["-d", "Ubuntu", "-u", "root", "--", "bash", "-lc", &format!("{ENVIRONMENT}{READY}")], log)
+        .map_err(|error| format!("Recovery preflight failed: {error}. Missing bpffs needs coordinated maintenance, not a repair worker.").into())
+}
+
+/// Each `checked` call measures Windows host space before launching its phase.
 pub fn run(log: &mut File) -> Result<()> {
     phases(|script| {
         checked(

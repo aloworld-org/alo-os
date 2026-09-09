@@ -145,18 +145,37 @@ this development session; the prompt limits its work to this repository and
 Ubuntu build prerequisites. This is not an OS agent verb or part of alo OS.
 
 The supervisor owns an OS file lock for its lifetime. Each step begins with a
-clean `main` updated by `git pull --ff-only origin main`; a dirty tree, failed tests,
-unexpected commits, supervisor edits and missing progress documents stop it.
+clean `main` updated by `git pull --ff-only origin main`; an unexplained dirty
+tree at startup, unexpected commits, staged/conflicted files and supervisor
+edits require review. Ordinary task/test failures and missing progress updates
+enter recovery of the same unfinished task, not selection of unrelated work.
 It independently runs Windows fmt/clippy/tests and Linux fmt/clippy/tests/docs
 plus BPF fmt/clippy before staging, committing with the owner's Git identity,
 and normal-pushing. Worker-specific integration evidence remains required.
 If another worker advances main, the supervisor rebases its unpublished task
 commit onto the new main and repeats the gates before pushing. It retries at
-most three publication races. A rebase conflict, failed integration gate or push
-rejection without a remote change preserves the local work and halts; no reset,
+most three publication races. A rebase conflict or push rejection without a
+remote change preserves the local work and halts; no reset,
 forced push or automatic conflict resolution occurs. See `SHARED_MAIN.md` for
 the direct-to-main collaboration workflow. Gates may take substantial time on
 a cold checkout.
+
+Recovery is bounded to three repair workers per unfinished task or integrated
+gate failure. Each reads the preserved diff, result and gate logs, diagnoses a
+specific cause and reruns affected acceptance checks. `STEP BLOCKED` requests
+recovery; `STEP NEEDS INPUT` requests an actual owner/external dependency. Every
+repair reporting `STEP DONE` is followed by every independent gate again; no
+failed attempt authorizes publication. Integrated repairs are separately
+committed only after their combined tree passes. Attempt logs stay in
+`repair-N` (or `integration-N/repair-N`), and status says `RECOVERING`.
+
+No blind retries, weakened assertions, skipped gates or timeout increases just
+to obtain green. A successful investigated rerun does not establish the original
+failure's cause. Low disk, missing shared mounts, lost WSL lease, worker process
+or authentication failures, owner STOP, unsafe Git state and exhausted recovery
+require a handoff with work intact. Recovery does not authorize shared-host
+maintenance or editing the other checkout. Persistence never means bypassing
+the safety check that exposed a problem.
 
 The worker has a six-hour deadline. On expiry the runner attempts to end that
 worker's process tree and halts; inspect WSL descendants before restarting.
@@ -171,7 +190,8 @@ Status, stop and local logs:
 Get-Content .git\alo-loop\history.log -Tail 10
 ```
 
-`stop` finishes the current step and prevents the next one. Review the working
+`stop` lets in-flight work finish and prevents the next task or repair worker.
+Review the working
 tree and processes before a restart; remove `.git/alo-loop/STOP` explicitly if
 present. Each timestamped directory holds worker events, errors, the result and
 independent gate output. Logs stay local in `.git/alo-loop`, never in a commit.
@@ -189,4 +209,5 @@ bpffs still refuses: restore it only during a coordinated idle maintenance hando
 
 Blocked means blocked, not complete. The historical LOOP COMPLETE marker only
 closed the old backend queue. The new runner uses the current worker result,
-never scans historical journal prose, and stops on lack of completed work.
+never scans historical journal prose. Repairable lack of completed work enters
+bounded recovery; absent executable scope or missing authority requires review.
