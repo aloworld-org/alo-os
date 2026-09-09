@@ -38,6 +38,9 @@ mod resize_geometry_check;
 #[path = "support/tile_geometry_check.rs"]
 mod tile_geometry_check;
 #[cfg(target_os = "linux")]
+#[path = "support/window_control_label_check.rs"]
+mod window_control_label_check;
+#[cfg(target_os = "linux")]
 #[path = "support/window_control_snapshot_check.rs"]
 mod window_control_snapshot_check;
 #[cfg(target_os = "linux")]

@@ -1302,6 +1302,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Live native control label presentation (2026-09-09): read-only current hover
+    or explicitly supplied native focus selection, disabled name access, bounded
+    below/above/clamped placement and dismissal on absent/hidden/foreign targets
+    or held/competing input. Three new real-client tests include prepared text,
+    small/invalid outputs and ordinary typing isolation. Linux 156 unit/198 lifecycle/
+    three socket/three doctests, affected clippy/examples/rustdoc/fmt and Windows
+    affected checks pass. WSLg adds fourteen complete 5,760-pixel hide/reveal frames;
+    28 nested stages, 72 label frames and 896 control frames pass. Production
+    nested/direct composition, native focus dispatch and full clipped-text access
+    remain integration work. No usable-controls or feature tick; independent
+    supervisor gates pending. `docs/autonomy/updates/live-native-control-label-presentation.md`.
   - Native control label rendering (2026-09-09): externalized `Action::said` names,
     retained translation/fallback provenance, bundled Inter, advanced shaping,
     bounded wrapping/clipping and the existing 75..300% text scale. Disabled

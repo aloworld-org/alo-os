@@ -65,6 +65,7 @@ mod window_control_feedback;
 mod window_control_input;
 mod window_control_label;
 mod window_control_label_paint;
+mod window_control_label_target;
 mod window_control_paint;
 mod window_control_routing;
 mod window_control_snapshot;
@@ -130,6 +131,7 @@ pub use window_control_input::{
 pub use window_control_label::{
     LabelGeometry, WindowControlLabel, WindowControlLabelError, WindowControlLabels,
 };
+pub use window_control_label_target::{WindowControlLabelSelection, WindowControlLabelTarget};
 pub use window_control_routing::{
     PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,
 };

@@ -13956,3 +13956,47 @@ BrokenPipe diagnostic and missing child wait/exit check in the recovery report;
 the parent and full suite passed, no suppression or Claude-file edit. Final
 remote check matched 5e3a66b. Ready for normal publication and clean-tree restart
 of the rebuilt supervisor; release scope remains unchanged.
+
+## 2026-09-09 - live native control label presentation
+
+Started clean at 671d83a; read required delivery/ownership/report guidance, current
+queue and journal, relevant features/roadmap/ADRs and native-control contract.
+No published task reports lacked a STATE reference at iteration start. Selected
+this component and its acceptance checks in QUEUE before implementation.
+
+Added read-only per-frame hover/explicit native-focus label selection with disabled
+name access, current visible-root validation, output-contained below/above/clamped
+placement and dismissal for absent/hidden/foreign targets or held/competing input.
+No retained focus/authority or wire/input mutation. Existing text preparation,
+vocabulary, tokens and full-text clipping/provenance remain authoritative. Contract
+states host freshness, dismissal, overlay and clipping duties explicitly.
+
+Three new real-client tests pass, including actual disabled-label preparation,
+edge/tiny/invalid output cases, cancellation/client ownership, hide/reveal/unmap/
+foreign refusals and normal typing isolation. Initial test-only TextError conversion
+failed compilation; fixed without weakening assertions, focused rerun passed.
+Linux affected all-target clippy passed; full shell tests passed 156 unit, 198
+lifecycle, three socket and three doctests, none ignored. Examples, warnings-denied
+rustdoc and Linux fmt pass. Windows affected clippy/tests/fmt pass, with zero
+Linux-only tests executed on Windows. No independent workspace gate claim.
+
+WSLg passes fourteen new complete 5,760-pixel live label frames across hide/reveal
+in both schemes, all 28 nested stages, 72 prepared-label frames and 896 control
+painter frames. Full-frame raster/background comparisons prove selection/placement/
+painting/removal, not independent shaping or on-screen scanout. Existing Mesa and
+malformed-client/keymap/SHM refusal diagnostics skipped no checks; no timeout.
+
+Rust 1.98.0, eight graphics/input packages and WSLg socket checked. Every command
+preflight exceeded 12 GiB; minimum 62,309,507,072 bytes. No install, cleanup, shared
+maintenance, kernel mutation or outer fixture lock. No helper or WSL restart.
+Exact commands, decisions, initial failure and evidence limits are in
+`docs/autonomy/updates/live-native-control-label-presentation.md`.
+
+Four progress documents updated, tracked/new files reviewed, whitespace clean.
+Independent supervisor full Windows/Linux/rustdoc/BPF publication gates pending.
+Next: production nested control composition/event ownership with current target/
+focus lifetime, label overlay hit policy and clipped full-text access, then direct
+integration. The per-frame selector is complete; installed native controls remain
+unfinished. No feature or release tick. Reports arriving during publication are
+reconciled next iteration. No staging/commit/push, dev-loop changes, worker launch,
+credential/identity access, other-checkout edits or unrelated host actions.

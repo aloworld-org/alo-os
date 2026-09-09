@@ -5,6 +5,28 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed live native control label presentation (2026-09-09):** current hover
+and explicit native-focus selection, disabled name access, output-contained placement
+and dismissal during native/competing input or target loss are code-ready. Three
+new real-client tests pass. Linux affected clippy, 156 unit/198 lifecycle/three socket/
+three doctests, examples/rustdoc/fmt and Windows affected checks pass. WSLg passes
+14 new complete live-label hide/reveal frames, all 28 nested stages, 72 label frames
+and 896 control painter frames. Report: `updates/live-native-control-label-presentation.md`.
+Full supervisor gates pending. Next executable component: production nested native
+control composition and event ownership, including explicit current target and focus
+lifetime, label overlay hit policy and full-text access when clipping occurs; then
+corresponding direct backend integration. This completes the per-frame selector,
+not an installed tooltip, native focus dispatcher or usable window controls.
+
+**Selected live native control label presentation (2026-09-09):** select from
+current pointer hover or explicitly supplied native-control focus, preserve disabled
+names, place a bounded label inside the output, and dismiss on absent/hidden targets,
+input ownership or explicit dismissal. Acceptance: real-client happy/refusal paths,
+normal typing isolation, edge/small-output geometry and prepared-label integration,
+affected Rust tests/clippy/rustdoc/fmt and graphical regression. This read-only
+component requires fresh host presentation each frame; production nested/direct
+composition and native focus dispatch remain the next integration work.
+
 **Desktop verification recovery (2026-09-09):** the label task's first gates passed,
 but its integrated-tree re-gate stopped at the missing bpffs mount. The unpublished
 commit was preserved. Both supervisors/builds/kernel tests were idle at recovery;

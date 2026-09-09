@@ -12,6 +12,7 @@ pub fn run(
         .next()
         .cloned()
         .ok_or("minimize root missing")?;
+    crate::window_control_label_check::paint(server, renderer, &root, true)?;
     for (step, minimized) in [true, false, true, false, true, false]
         .into_iter()
         .enumerate()
@@ -93,6 +94,7 @@ pub fn run(
         }
         assert!(!server.set_window_minimized(&root, minimized)?);
         assert_eq!(server.minimized_surfaces().count(), usize::from(minimized));
+        crate::window_control_label_check::paint(server, renderer, &root, !minimized)?;
         let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
         let frame = render_scanout(
             renderer,

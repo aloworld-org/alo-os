@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Window-control labels can follow live hover or explicit native focus.**
+  The shell presentation API keeps disabled controls' names available, fits label
+  boxes inside the output and dismisses them during presses, competing input or
+  window removal. Real-client typing stays isolated. Fourteen new complete GLES
+  frames verify label hide/restore; production desktop composition remains next.
+  Evidence: `docs/autonomy/updates/live-native-control-label-presentation.md`.
+
 - The desktop development loop now keeps Ubuntu active across Windows checks,
   preventing ordinary WSL idle shutdown from discarding its temporary BPF mount
   between verification phases. A missing mount still stops publication; the loop

@@ -279,3 +279,35 @@ nested/direct production composition remain the next integration component.
 No automatic tooltip, window decoration or new shortcut is installed by this API.
 Existing client typing/routing code is unchanged. Component evidence:
 `docs/autonomy/updates/native-control-label-rendering.md`.
+
+## Live native label selection and placement
+
+Additive trusted Rust API, 2026-09-09:
+`Server::window_control_label_target(painted, selection, size)` returns an optional
+`WindowControlLabelTarget` containing the current control and `LabelGeometry`.
+It takes `&self`, sends no wire event and retains no surface, focus or input token.
+`Pointer(x, y)` uses the strip's clipped hit test, including disabled controls;
+`Focus(action)` selects an explicitly current native control, never the client's
+keyboard focus. Non-strip actions and fully clipped controls select nothing.
+`Dismissed`, absent/hidden/unmapped/foreign targets, any held native press (even
+cancelled) and competing popup/client-button/move/resize ownership select nothing.
+
+The host refreshes on every frame and discards the old label on None or error.
+It supplies Dismissed on leave, focus loss, dismissal or input backend deactivation,
+and must never carry native focus across target replacement or mapping retirement.
+This API intentionally has no persistent focus cache to confuse with authority.
+Focus event dispatch, overlay input ownership, a full-text surface when the shaper
+reports clipping, and production nested/direct composition remain host integration.
+The label itself adds no pointer hit region and does not forward or consume input.
+
+Size must be 9..=2048 by 9..=512. A selected label on an output smaller than 9px
+refuses with Geometry. Otherwise shrink the box to the output, align to the visible
+control's left edge, prefer a four-pixel gap below, then above, then clamp vertically.
+Horizontal placement clamps to the output. On small outputs the box can overlap
+the strip; the host must handle overlay composition/input before shipping it.
+Text preparation still reports clipping and preserves full vocabulary/provenance.
+The existing font, tokens and action strings remain authoritative (ADRs 0002/0010).
+
+Tests: `tests/window_controls/labels.rs`; live GLES hide/reveal readback:
+`examples/support/window_control_label_check.rs`. Exact evidence and limits:
+`docs/autonomy/updates/live-native-control-label-presentation.md`.
