@@ -173,6 +173,35 @@ impl Entry {
         )
     }
 
+    /// A question that was refused before it was put anywhere.
+    ///
+    /// The other ending of [`Entry::answered_here`]'s event. `why` is the
+    /// sentence the person was shown, handed in already rendered so that the
+    /// record and the screen cannot become two accounts of one moment — this
+    /// does not word anything and has no `Strings` to word it with.
+    ///
+    /// **What was asked is not passed in and there is no field for it**, as
+    /// above. Neither is an endpoint: `why` names the source somebody
+    /// configured, which is what they read, and nothing here adds an address
+    /// beside it.
+    ///
+    /// It goes through [`Line`] like every other sentence the record keeps, so
+    /// a record stays one line per entry however it was worded.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision, and states what an older
+    /// reader does with a tag it has never heard of.
+    #[must_use]
+    pub fn never_put_anywhere(agent: &Grantee, why: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::NeverPutAnywhere {
+                agent: Line::of(agent.as_str()),
+                why: Line::of(why),
+            },
+        )
+    }
+
     /// A properly formed call that was stopped somewhere.
     ///
     /// Private because *where* it was stopped is not a caller's choice to make

@@ -190,6 +190,34 @@ pub enum Happened {
         /// Which agent asked.
         agent: Line,
     },
+    /// A question was refused before it was put anywhere.
+    ///
+    /// The other ending of [`Happened::AnsweredHere`]'s event: somebody asked,
+    /// and a rule refused the place they had chosen, so the question went
+    /// nowhere at all. Nothing was sent, nothing answered it in its stead, and
+    /// no credential was fetched on the way — the rule is asked before the
+    /// keyring is opened.
+    ///
+    /// **It is not a call and holds nothing of one**: no `What`, no verb, no
+    /// approval and no grant, because none was involved. A refused question in
+    /// any of those shapes would put a call nobody made into a record that
+    /// people read.
+    ///
+    /// **What was asked is not kept**, for the reason
+    /// [`Happened::AnsweredHere`] gives and with the same absence of anywhere to
+    /// put it. Neither is the endpoint: `why` is the sentence the person was
+    /// shown, and it names the source they configured rather than an address.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason, including what an older reader does with
+    /// a tag it has never heard of.
+    NeverPutAnywhere {
+        /// Which agent asked.
+        agent: Line,
+        /// Why it went nowhere, in the words the person was shown.
+        why: Line,
+    },
     /// Something left this machine (law 1).
     ///
     /// Made only from an [`alo_egress::Departing`], which the indicator is the
@@ -256,6 +284,7 @@ impl Happened {
             | Self::Stopped { agent, .. }
             | Self::TurnedAway { agent, .. }
             | Self::AnsweredHere { agent }
+            | Self::NeverPutAnywhere { agent, .. }
             | Self::Left { agent, .. }
             | Self::HeldBack { agent, .. } => Some(agent),
             Self::LeftOnItsOwn { .. } => None,
@@ -275,6 +304,7 @@ impl Happened {
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
         }
@@ -291,8 +321,12 @@ impl Happened {
     pub fn what(&self) -> Option<&What> {
         match self {
             Self::Ran { what, .. } | Self::Stopped { what, .. } => Some(what),
+            // **Deliberately none here.** A refused question never became a
+            // call, so there is nothing for `what` to answer with and no shape
+            // in which it could pretend otherwise.
             Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -325,9 +359,12 @@ impl Happened {
     pub fn stopped(&self) -> Option<&Stopped> {
         match self {
             Self::Stopped { how, .. } => Some(how),
+            // A refused question was never a call, so it was never stopped at a
+            // point in one — `why_stopped` is where its reason is.
             Self::Ran { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -344,7 +381,12 @@ impl Happened {
     pub fn why_stopped(&self) -> Option<&Line> {
         match self {
             Self::Stopped { how, .. } => how.why(),
-            Self::TurnedAway { why, .. } | Self::HeldBack { refused: why, .. } => Some(why),
+            // A refused question belongs here rather than with the entries that
+            // answer `None`: it *was* refused, and this is where a reader looks
+            // for the sentence saying so.
+            Self::TurnedAway { why, .. }
+            | Self::HeldBack { refused: why, .. }
+            | Self::NeverPutAnywhere { why, .. } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
@@ -360,6 +402,7 @@ impl Happened {
             Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -374,6 +417,7 @@ impl Happened {
             Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => &[],
@@ -387,10 +431,14 @@ impl Happened {
             Self::Left { destination, .. }
             | Self::HeldBack { destination, .. }
             | Self::LeftOnItsOwn { destination, .. } => Some(destination),
+            // **No destination, and that is the point.** A refused question
+            // never left, so there is nowhere for an address to be kept and no
+            // field it could be kept in.
             Self::Ran { .. }
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
-            | Self::AnsweredHere { .. } => None,
+            | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. } => None,
         }
     }
 
@@ -410,6 +458,7 @@ impl Happened {
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::NeverPutAnywhere { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
     }
