@@ -720,7 +720,7 @@ in a file that is already read once at startup from the disk it is on.
   identity, a report, a key that names one. The section is read from the disk it
   is on, as the rest of that file always has been.
 
-**What was built.** `docs/contracts/machine-description.md` gained `[questions]`
+**Done, 2026-09-09.** `docs/contracts/machine-description.md` gained `[questions]`
 and the `format = 2` decision; `alo-agentd`'s reader gained the section, the four
 refusals and `ALSO_READ`, so `1` is still read; `Described` carries a `TheBound`
 and `crate::starting` hands the description's to `Questions`. The attribution

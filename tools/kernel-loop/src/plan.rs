@@ -14,9 +14,23 @@
 //! **Status:** ready. **Depends on:** 1, 2 — both done.
 //! ```
 //!
-//! A task is a `###` heading beginning with a number. It is **done** when its
-//! section contains a line beginning `**Done,`. It **depends on** the numbers on
-//! its `**Depends on:**` line, and `nothing` there means it depends on nothing.
+//! A task is a `###` heading beginning with a number **under the plan's
+//! `## Tasks`**. It is **done** when its section contains a line beginning
+//! `**Done,`. It **depends on** the numbers on its `**Depends on:**` line, and
+//! `nothing` there means it depends on nothing.
+//!
+//! # Why the section is read, and not the depth alone
+//!
+//! The plan's audit is `### 1. Implemented and verified` and four more like it:
+//! same depth, numbered from one. An earlier version took the number for what
+//! made a heading a task, on the belief that the audit's headings had none — so
+//! the first thing this loop ever selected on its own was an audit section, and
+//! it launched a worker at *Implemented and verified*. Found by running it.
+//!
+//! The numbers collide as well as the shape: audit `1` and task `1` are
+//! different sections, and a `**Depends on:** 1` answered by the wrong one is a
+//! dependency satisfied by something that is not a task. So the boundary is the
+//! section, which is what a person reading the plan uses too.
 //!
 //! Nothing here writes to the plan. A task is marked done by the person who did
 //! it, in the same change that did it, because *done* is a judgement about
@@ -28,6 +42,20 @@ use crate::repository;
 
 /// Where this workstream's plan lives.
 const THE_PLAN: &str = "docs/autonomy/kernel-enforcement-plan.md";
+
+/// The one section of it that holds work.
+const THE_TASKS: &str = "Tasks";
+
+/// Every `**Status:**` word that means *a person has to arrange something
+/// first*.
+///
+/// **`scheduled` is one of them, and that is not a synonym for blocked.** A
+/// blocked task waits on a decision; a scheduled one waits on a moment — a real
+/// session to log out of, a maintenance window on a shared machine. Neither is
+/// work a supervisor can start on its own, and a loop that took one up would be
+/// arranging the thing rather than doing the task: changing sessions or
+/// lingering on a machine somebody else may be testing on.
+const NOT_YET: [&str; 2] = ["blocked", "scheduled"];
 
 /// One task, as the plan has it.
 #[derive(Debug, Clone)]
@@ -72,13 +100,31 @@ pub struct Task {
 pub fn every_task(at: &Path) -> Result<Vec<Task>, String> {
     let written = repository::git(at, &["show", &format!("HEAD:{THE_PLAN}")])
         .map_err(|why| format!("the published plan could not be read: {why}"))?;
+    Ok(read(&written))
+}
 
+/// Every task in a plan that has already been read.
+///
+/// Separated from the commit it comes out of so that what this program believes
+/// a plan says is a thing tests can ask it, rather than a thing only a real
+/// repository with a real history could show. The audit heading it once took
+/// for work is one line of markdown; proving it no longer does should not need
+/// a commit.
+fn read(written: &str) -> Vec<Task> {
     let mut tasks: Vec<Task> = Vec::new();
+    let mut in_the_tasks = false;
     for line in written.lines() {
+        if let Some(heading) = line.strip_prefix("## ") {
+            // The plan's sections. Only one of them holds work, and every other
+            // `##` closes it — including the *Rules* and *Completion* that come
+            // after the last task.
+            in_the_tasks = heading.trim() == THE_TASKS;
+            continue;
+        }
+        if !in_the_tasks {
+            continue;
+        }
         if let Some(heading) = line.strip_prefix("### ") {
-            // The number is what makes it a task. The plan's audit sections are
-            // headings at the same depth, and without this the loop would take
-            // one of them for work.
             if let Some((number, named)) = heading.split_once(". ")
                 && let Ok(number) = number.parse::<u32>()
             {
@@ -98,14 +144,14 @@ pub fn every_task(at: &Path) -> Result<Vec<Task>, String> {
         if line.starts_with("**Done,") {
             current.done = true;
         }
-        if line.starts_with("**Status:**") && line.contains("blocked") {
+        if line.starts_with("**Status:**") && NOT_YET.iter().any(|word| line.contains(word)) {
             current.blocked = true;
         }
         if let Some(after) = line.split("**Depends on:**").nth(1) {
             current.after = numbers_in(after);
         }
     }
-    Ok(tasks)
+    tasks
 }
 
 /// The task numbers written in a fragment of a line.
@@ -143,10 +189,163 @@ fn numbers_in(written: &str) -> Vec<u32> {
 /// # Errors
 /// A sentence when the plan cannot be read.
 pub fn next_executable(at: &Path) -> Result<Option<Task>, String> {
-    let tasks = every_task(at)?;
+    Ok(the_next_of(&every_task(at)?))
+}
+
+/// The same choice, made from tasks already read.
+fn the_next_of(tasks: &[Task]) -> Option<Task> {
     let finished = |number: u32| tasks.iter().any(|task| task.number == number && task.done);
-    Ok(tasks
+    tasks
         .iter()
         .find(|task| !task.done && !task.blocked && task.after.iter().copied().all(finished))
-        .cloned())
+        .cloned()
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod tests {
+    use super::*;
+
+    /// A plan shaped the way this workstream's is: an audit whose headings are
+    /// numbered from one at the same depth as the tasks, and then the tasks.
+    const A_PLAN: &str = "\
+# A plan
+
+## Audit — five sections
+
+### 1. Implemented and verified
+
+Some prose about what is already true.
+
+### 2. Remaining gaps
+
+More prose.
+
+## Tasks
+
+### 1. Something that is finished
+
+**Status:** ready. **Depends on:** nothing.
+
+**Done, 2026-09-08.** It is.
+
+### 2. Something waiting on a moment
+
+**Status:** scheduled. **Depends on:** nothing.
+
+### 3. Something waiting on an answer
+
+**Status:** blocked. **Depends on:** nothing.
+
+### 4. Something that can be worked on
+
+**Status:** ready. **Depends on:** 1 — done.
+
+### 5. Something that cannot start yet
+
+**Status:** ready. **Depends on:** 4.
+
+## Rules this workstream holds itself to
+
+### 1. Not a task either
+";
+
+    /// **The audit is not work.** Its headings are numbered and at the same
+    /// depth as the tasks, and the first thing this loop ever chose on its own
+    /// was one of them — it launched a worker at *Implemented and verified*.
+    #[test]
+    fn the_audits_numbered_headings_are_not_tasks() {
+        let tasks = read(A_PLAN);
+        assert!(
+            !tasks
+                .iter()
+                .any(|task| task.named == "Implemented and verified"),
+            "an audit heading was read as a task: {:?}",
+            tasks.iter().map(|task| &task.named).collect::<Vec<_>>()
+        );
+        assert_eq!(tasks.len(), 5, "{tasks:?}");
+        assert_eq!(
+            tasks.first().unwrap().named,
+            "Something that is finished",
+            "the first task is not the first heading under `## Tasks`"
+        );
+    }
+
+    /// **And neither is anything after the tasks.** The plan's rules and
+    /// completion sections come last and are headed the same way.
+    #[test]
+    fn a_heading_after_the_tasks_is_not_a_task() {
+        assert!(
+            !read(A_PLAN)
+                .iter()
+                .any(|task| task.named == "Not a task either")
+        );
+    }
+
+    /// **A scheduled task is stepped over, like a blocked one.** It waits on a
+    /// moment somebody has to arrange — a real session, a maintenance window on
+    /// a shared machine — and a loop that took it up would arrange the thing
+    /// rather than do the task.
+    #[test]
+    fn a_scheduled_task_is_not_work_a_loop_may_start() {
+        let tasks = read(A_PLAN);
+        let scheduled = tasks.iter().find(|task| task.number == 2).unwrap();
+        assert!(scheduled.blocked, "a scheduled task was offered as work");
+        let waiting = tasks.iter().find(|task| task.number == 3).unwrap();
+        assert!(waiting.blocked);
+    }
+
+    /// The next task is the first that is not done, not waiting on a moment or
+    /// an answer, and whose dependencies are done — stepping over the two in
+    /// between rather than stopping at them.
+    #[test]
+    fn the_next_task_steps_over_what_is_waiting() {
+        let chosen = the_next_of(&read(A_PLAN)).unwrap();
+        assert_eq!(chosen.number, 4);
+        assert_eq!(chosen.named, "Something that can be worked on");
+    }
+
+    /// A task whose dependency is unfinished is not chosen, even when nothing
+    /// else is left.
+    #[test]
+    fn a_task_waiting_on_another_is_not_chosen() {
+        let only_the_last: Vec<Task> = read(A_PLAN)
+            .into_iter()
+            .filter(|task| task.number == 5)
+            .collect();
+        assert!(the_next_of(&only_the_last).is_none());
+    }
+
+    /// **This workstream's own plan reads as tasks and nothing else**, which is
+    /// the file the loop really opens. A synthetic plan proves the rule; this
+    /// proves the rule is about the plan we have.
+    #[test]
+    fn the_real_plan_holds_only_tasks() {
+        let written = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join(THE_PLAN),
+        )
+        .unwrap();
+        let tasks = read(&written);
+        assert!(tasks.len() > 1, "the plan read as {} tasks", tasks.len());
+        assert!(
+            !tasks
+                .iter()
+                .any(|task| task.named == "Implemented and verified"),
+            "the real plan's audit is being read as work"
+        );
+        // Numbered from one, in order, with no repeats — which is what makes
+        // `**Depends on:** 1` mean one thing.
+        for (which, task) in tasks.iter().enumerate() {
+            assert_eq!(
+                task.number,
+                u32::try_from(which).unwrap() + 1,
+                "the plan's tasks are not numbered in order: {task:?}"
+            );
+        }
+    }
 }
