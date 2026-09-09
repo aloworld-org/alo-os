@@ -5,6 +5,33 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed mapping-bound window control transactions (2026-09-09):** primary
+press/release ownership, disabled-hit consumption, duplicate isolation, explicit
+cancellation, mapping/visibility lifetime and live release revalidation are
+code-ready. Seven new real-client tests; final Linux clippy, 150 unit/184 lifecycle/
+three socket tests plus three doctests, rustdoc/examples and Windows affected
+checks pass. Both formatting checks and WSLg's 28 offscreen stages pass, including
+two added complete 6,400-pixel transaction/restore frames; the 128-frame control
+painter regression passes. One new popup fixture assertion was corrected to the
+existing consumed-key contract; exact evidence and limits:
+`updates/mapping-bound-window-control-transactions.md`. Full supervisor gates
+pending. Next executable component: native strip pointer routing with motion,
+leave/reset cancellation, primary-event consumption and ordinary client routing
+isolation; then native labels, hover/pressed feedback and production nested/direct
+composition. The completed transaction API does not automatically intercept input;
+usable controls and window management remain unfinished. No feature tick.
+
+**Selected mapping-bound window control transactions (2026-09-09):** implement
+trusted primary-button press/release ownership for one explicit visible mapping,
+with disabled-hit consumption, duplicate-press isolation, explicit cancellation,
+geometry/intent matching and live release revalidation. Invalidate ownership on
+unmap/remap and hide/reveal even between dispatch boundaries. Acceptance: real
+clients exercise exactly-once close, minimise/maximise/restore, stale and foreign
+refusals, disabled-to-enabled changes, cancellation and normal typing/pointer
+isolation; affected Rust gates and WSLg regression. This component provides the
+transaction boundary; production backend event interception and label/feedback
+composition follow, without marking usable controls complete.
+
 **Completed live window control snapshots (2026-09-09):** explicit visible roots,
 shared read-only execution planning and latest-requested maximize/restore glyphs
 are code-ready. Reads preserve wire state, geometry, focus and normal typing;
@@ -14,11 +41,10 @@ three socket plus three doctests; rustdoc/examples; Windows affected checks and
 both fmt checks pass. WSLg passes all 28 offscreen stages, including 12 complete
 snapshot-derived 5,760-pixel frames, plus the existing 128-frame view regression.
 Report: `updates/live-window-control-snapshots.md`. Full supervisor gates pending.
-Next executable component: mapping-lifetime-bound control press/release ownership
-and cancellation with live operation revalidation. Preserve disabled hit ownership,
-refuse stale targets after unmap/remap or disconnect, and isolate normal client
-keyboard/pointer input. Native label presentation, hover/pressed feedback and
-production nested/direct composition remain required. Snapshot data is explicitly
+The mapping-lifetime-bound transaction component is now completed above, with
+live revalidation and cancellation. Production input routing remains next. Native
+label presentation, hover/pressed feedback and production nested/direct composition
+remain required. Snapshot data is explicitly
 not input authority; usable controls and window management remain unfinished.
 
 **Selected live window control snapshots (2026-09-09):** bind the immutable

@@ -1260,6 +1260,18 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Mapping-bound control transactions (2026-09-09): disabled-hit ownership,
+    duplicate isolation, explicit cancellation and exactly-once live release
+    validation are code-ready. Unmap/remap and hide/reveal retire authority;
+    existing client grabs refuse without theft. Seven new real-client tests;
+    final Linux clippy, 150 unit/184 lifecycle/three socket tests and three
+    doctests, rustdoc/examples, Windows affected checks and both fmt checks pass.
+    WSLg's 28 offscreen stages include two additional full 6,400-pixel scene
+    checks through native minimization/restoration; 128-frame painter passes.
+    One new fixture assertion corrected to existing popup consumed-key behavior.
+    Production event routing, motion/leave/reset handling, labels, feedback and
+    nested/direct scene integration remain. Full supervisor gates pending;
+    no feature tick. `docs/autonomy/updates/mapping-bound-window-control-transactions.md`.
   - Live window control snapshots (2026-09-09): explicit visible roots derive
     availability from the same read-only planner as execution. Latest requested
     mode selects maximize/restore; output, geometry, limits and busy refusals

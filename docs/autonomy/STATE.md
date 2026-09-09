@@ -13641,3 +13641,51 @@ input tests; native labels, hover/pressed feedback and production composition
 remain integration work. Usable controls and window management are unfinished.
 Reports arriving during publication reconcile next iteration. No staging, commit,
 push, tools/dev-loop edit, identity/credential access or worker/loop launch.
+
+
+## 2026-09-09 - mapping-bound window control transactions
+
+Started with a clean checkout; read delivery/shared-work rules, report guidance,
+current queue, journal tail and relevant feature/roadmap/ADR/contract sections.
+Every published report was already referenced in STATE; no new contributor report
+required reconciliation. Selected the next complete component in QUEUE before
+implementation. Claude's assignment and checkout remain untouched.
+
+Added a trusted primary-button transaction API: one explicit visible mapping,
+disabled-hit ownership, duplicate isolation, explicit cancellation and exactly-once
+release consumption before live operation validation. Per-window visibility
+identities retire inside unmap/hide transitions, including hide/reveal within one
+backend call. Remapping cannot revive old authority. Geometry/hit/intent changes
+cancel; existing client grabs refuse new hits. Normal client input and existing
+operation contracts are preserved. Public rustdoc and the native-control contract
+explain host routing responsibilities; no agent API, vocabulary or dependency added.
+
+Seven new private-display tests. Initial six passed focused testing. The first
+full Linux run passed 150 units and 183/184 lifecycle cases; the new popup test
+incorrectly expected its initiating key release to be delivered. Existing popup
+semantics consume it. Corrected the assertion and added a subsequent ordinary key
+pair; focused correction and full suite pass. No existing test, lint or production
+semantics weakened. Final Linux all-target clippy, 150 units/184 lifecycle/three
+socket tests and three doctests, warnings-denied rustdoc, examples and fmt pass.
+Windows affected clippy/tests and fmt pass (zero Linux-only tests execute there).
+
+WSLg offscreen passes all 28 stages, retains 12 complete live snapshot frames and
+adds two complete 6,400-pixel native-minimize/restored scene comparisons. Explicit
+cancellation preserves visible mapping count; no separate cancelled-scene pixel
+claim. The existing 128 complete control-view frames pass. Mesa fallback and
+intentional malformed SHM diagnostics skipped no assertions. No on-screen pointer,
+direct DRM or hardware certification claim; unchanged nested on-screen regression
+was rebuilt but not rerun. Rust 1.98.0, eight graphics/input packages and WSLg
+socket verified. Every build/test/lint/format preflight exceeded 12 GiB; minimum
+73,956,642,816 bytes (68.88 GiB). No cleanup, shared-system maintenance, shared-kernel
+mutation or outer fixture lock.
+
+Report: `docs/autonomy/updates/mapping-bound-window-control-transactions.md`.
+CHANGELOG, ROADMAP, QUEUE and this journal updated; no feature checkbox promoted.
+Full independent supervisor workspace/Linux/rustdoc/BPF gates remain pending.
+Next: native strip pointer router with motion/leave/reset cancellation and client
+routing isolation, then labels/feedback and production nested/direct composition.
+This completes the transaction component; usable controls remain unfinished.
+Exact scheduled machine evidence limits remain in the task report. Published
+reports arriving during publication reconcile next iteration. No staging, commit,
+push, tools/dev-loop edits, git identity/credential access or worker/loop launch.

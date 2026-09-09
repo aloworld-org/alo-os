@@ -12,8 +12,29 @@ pub fn run(
         .next()
         .cloned()
         .ok_or("minimize root missing")?;
-    for minimized in [true, false, true, false] {
-        if minimized {
+    for (step, minimized) in [true, false, true, false, true, false]
+        .into_iter()
+        .enumerate()
+    {
+        if step == 4 {
+            use alo_shell::WindowControlRelease;
+            assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
+            server.cancel_window_control();
+            assert_eq!(
+                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
+                WindowControlRelease::Cancelled
+            );
+            assert_eq!(server.mapped_surfaces().count(), 1);
+            assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
+            assert_eq!(
+                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
+                WindowControlRelease::Executed(alo_shortcuts::Action::MinimiseWindow)
+            );
+            assert_eq!(
+                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
+                WindowControlRelease::Unowned
+            );
+        } else if minimized {
             use alo_shortcuts::{Action, Shortcuts};
             server.keyboard_focus(Some(&root))?;
             let settings = Shortcuts::shipped();

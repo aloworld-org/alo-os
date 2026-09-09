@@ -16,6 +16,8 @@ use crate::{
 /// No environment is mutated and no client process is launched. Drop closes
 /// clients and removes the owned socket. Dispatch must be driven by the backend.
 pub struct Server {
+    /// Native control ownership is separate from client pointer grabs.
+    pub(crate) control_press: Option<crate::window_control_input::Press>,
     /// The display is private so every inserted client has our client state.
     display: Display<Surfaces>,
     /// Protocol state and mapped toplevels.
@@ -44,6 +46,7 @@ impl Server {
         let surfaces = Surfaces::new(&display.handle());
         let socket = Socket::bind(runtime, name)?;
         Ok(Self {
+            control_press: None,
             display,
             surfaces,
             socket,

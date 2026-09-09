@@ -31,6 +31,8 @@ impl ClientData for ClientState {}
 
 /// A toplevel's presentation eligibility, separate from merely owning a role.
 struct Window {
+    /// Fresh identity for each uninterrupted visible mapping; never a counter.
+    visibility: std::sync::Arc<()>,
     /// Smithay's role handle.
     surface: ToplevelSurface,
     /// A configured buffer is currently attached.
@@ -137,6 +139,9 @@ impl Surfaces {
             .iter_mut()
             .find(|w| w.mapped && w.surface.alive() && w.surface.wl_surface() == surface)?;
         let changed = window.minimized != value;
+        if changed {
+            window.visibility = Default::default();
+        }
         window.minimized = value;
         Some(changed)
     }
@@ -144,6 +149,16 @@ impl Surfaces {
     /// Live roles, regardless of buffer state.
     pub(crate) fn count(&self) -> usize {
         self.windows.iter().filter(|w| w.surface.alive()).count()
+    }
+
+    /// Identity changes at each unmap or visibility transition, including within dispatch.
+    pub(crate) fn window_visibility(&self, surface: &WlSurface) -> Option<std::sync::Arc<()>> {
+        self.windows
+            .iter()
+            .find(|w| {
+                w.mapped && !w.minimized && w.surface.alive() && w.surface.wl_surface() == surface
+            })
+            .map(|w| w.visibility.clone())
     }
 
     /// Resolve only a live mapped root owned by this display, never a child.
@@ -202,6 +217,7 @@ impl CompositorHandler for Surfaces {
         if has_buffer {
             window.mapped = window.surface.ensure_configured();
         } else if window.mapped {
+            window.visibility = Default::default();
             window.mapped = false;
             window.minimized = false;
             crate::window_placement::reset(surface);
@@ -258,6 +274,7 @@ impl XdgShellHandler for Surfaces {
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
         // Initial configure is sent only after the client's first empty commit.
         self.windows.push(Window {
+            visibility: Default::default(),
             surface,
             mapped: false,
             minimized: false,

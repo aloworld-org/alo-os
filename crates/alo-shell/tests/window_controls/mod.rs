@@ -309,3 +309,5 @@ fn window_controls_excessive_geometry_disables_maximize_without_changing_client(
     assert_eq!(app.events.close_requests, 0);
     Ok(())
 }
+
+mod input;

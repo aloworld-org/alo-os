@@ -72,7 +72,7 @@ no geometry, changes no focus and consumes no input. Availability is true only a
 capture time. Refresh for every frame and use the existing `Action::said` labels.
 The snapshot has no dispatch method and is **not a mapping-lifetime token**:
 unmap/remap can reuse the same protocol handle, and a retained snapshot remains
-frozen. Future pointer routing must bind presses to a separate mapping lifetime,
+frozen. Pointer routing must bind presses to a separate mapping lifetime,
 cancel stale ownership and revalidate operations at release. These rules prevent
 presentation data from becoming cached authority; usable controls remain open.
 
@@ -83,3 +83,50 @@ light/dark frames across five maximize/restore boundaries and a reused restored
 boundary after minimization, alongside its unchanged client scene pixel assertions.
 Exact executed results and limits belong to
 `docs/autonomy/updates/live-window-control-snapshots.md`.
+
+## Mapping-bound primary-button transactions
+
+Additive trusted Rust API, 2026-09-09. `Server::press_window_control` takes an
+explicit root, the currently painted viewport/origin and output-local position.
+It captures live layout and a private visibility identity, never authorizing
+from a retained presentation snapshot. A true result owns the primary press,
+including disabled hits and duplicates. A duplicate cannot replace the target or
+rearm a cancelled press. Gaps, clipped positions and non-finite coordinates return
+false. Invalid roots/layouts return `WindowControlPressError::Snapshot`; existing
+client held buttons, popup grabs or interactive move/resize return `Busy` on hits.
+Refusals take no new ownership and do not disturb the existing client operation.
+
+`cancel_window_control` disarms execution but retains ownership of the matching
+release. `release_window_control` takes the current painted viewport/origin and
+release position, removes ownership before validation/execution and returns:
+
+- `Unowned`: no native press exists; ordinary routing may continue.
+- `Cancelled`: native release consumed with no execution; never forward it.
+- `Executed(Action)`: exactly one existing trusted operation was queued.
+- `WindowControlReleaseError`: native release consumed; the existing live
+  maximize/minimize/close refusal is preserved. Never forward or retry it.
+
+Release requires the original visible mapping, unchanged layout, matching hit,
+enabled state at press and (for maximize/restore) matching captured intent.
+Changed output/limits or competing operations are revalidated by the existing
+transaction methods. A disabled press stays disarmed when output becomes available.
+Leaving the hit area at release, invalid coordinates, explicit cancellation,
+unmap/remap, hide/reveal and death cancel without selecting another window.
+A private `Arc` identity changes inside the actual unmap/visibility transition;
+it cannot wrap like a counter or survive a hide/reveal within one dispatch.
+Ordinary buffer updates preserve it. No native press emits client pointer events,
+changes keyboard focus, raises a window or grants any agent authority.
+
+This completes the trusted transaction component. The production nested/direct
+host must still intercept primary events before client routing, supply current
+paint geometry, consume owned events and invoke cancellation on pointer leave,
+input reset, removed controls and seat/session loss. Other buttons and normal
+keyboard input retain their existing routes. The component is callable without
+an input seat for isolated fixtures; it is not automatic event interception or
+an on-screen interaction claim. Motion feedback, native labels and composed
+production controls remain subsequent components.
+
+Real-client tests live in `tests/window_controls/input.rs`. The offscreen GLES
+fixture additionally minimizes via a native transaction, verifies the full hidden
+scene, restores and verifies the full preserved client scene. Executed checks and
+limits: `docs/autonomy/updates/mapping-bound-window-control-transactions.md`.

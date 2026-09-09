@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **A native window-control press now stays bound to its original window.**
+  Release consumes the press once, rechecks the operation and cancels after
+  unmap/remap, hide/reveal or explicit cancellation. Disabled controls cannot
+  become armed while held, and duplicate presses cannot switch targets.
+  Real-client and offscreen scene checks pass. This completes the transaction
+  component; production pointer routing and composed controls remain next.
+  `docs/autonomy/updates/mapping-bound-window-control-transactions.md`.
+
 - **Native window controls can now show whether the selected window can
   maximise or restore.** Live snapshots use the same checks as the operation,
   follow rapid pending requests, and refuse hidden, unmapped or dead targets
