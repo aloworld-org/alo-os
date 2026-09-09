@@ -124,6 +124,28 @@ secret-service = { version = "5.2", default-features = false, features = [
 ] }
 zbus = { version = "5.19", default-features = false }
 
+# **A certificate authority of this test's own, and a server that speaks TLS.**
+# `rcgen` issues a root and a leaf while the test runs; `rustls` answers with
+# them. `ring` rather than `aws-lc-rs` because `ureq` already brings `ring` and a
+# second cryptography provider — a C one at that — is not a thing to add for a
+# test. Dev only, both of them.
+rcgen = { version = "0.14", default-features = false, features = [
+  "pem",
+  "crypto",
+  "ring",
+] }
+rustls = { version = "0.23", default-features = false, features = [
+  "std",
+  "ring",
+  "tls12",
+] }
+
+# And the feature that lets this crate's tests name that authority. It is turned
+# on **here and nowhere else**: `alo-asking` appears in `[dependencies]` above
+# without it, so a build that resolves no dev-dependency — which is what the
+# image does — compiles the seam away entirely.
+alo-asking = { path = "../alo-asking", features = ["trust-a-test-authority"] }
+
 # The service, as a machine really runs it. `src/lib.rs` is every decision and
 # this is the process that makes them in order — thin on purpose, because what a
 # process does is one sequence and one exit code, and everything it decides on

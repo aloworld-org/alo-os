@@ -227,20 +227,27 @@ pub(crate) fn put(
     // connection that outlived the call would be authority outliving what the
     // person was shown, which is the thing registering a destination exists to
     // prevent. The pool lives in the agent, so the agent lives in the request.
-    let agent = Agent::with_parts(
-        Config::builder()
-            .timeout_global(Some(waiting))
-            // Refused rather than followed — this module's first decision.
-            .max_redirects(0)
-            // Every answer comes back to be read here. A status this file has
-            // an opinion about must not be turned into a transport error by the
-            // client, because "that key was not accepted" and "nothing
-            // answered" are different things to tell somebody.
-            .http_status_as_error(false)
-            .build(),
-        DefaultConnector::new(),
-        only_these,
-    );
+    let building = Config::builder()
+        .timeout_global(Some(waiting))
+        // Refused rather than followed — this module's first decision.
+        .max_redirects(0)
+        // Every answer comes back to be read here. A status this file has
+        // an opinion about must not be turned into a transport error by the
+        // client, because "that key was not accepted" and "nothing
+        // answered" are different things to tell somebody.
+        .http_status_as_error(false);
+
+    // **Nothing here in a build a machine runs.** Without the feature this line
+    // does not exist and the roots are `ureq`'s default, which is Mozilla's
+    // programme compiled in. `crate::an_authority_a_test_made` is the whole of
+    // that argument.
+    #[cfg(feature = "trust-a-test-authority")]
+    let building = match crate::an_authority_a_test_made::named_by_a_test() {
+        Some(only_this_one) => building.tls_config(only_this_one),
+        None => building,
+    };
+
+    let agent = Agent::with_parts(building.build(), DefaultConnector::new(), only_these);
     let request = agent.post(answers_url(endpoint));
     // The key is handed the request rather than the other way round: it cannot
     // be read out of `alo-models`, and this crate never holds it as text it

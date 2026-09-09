@@ -263,6 +263,49 @@ socket. But the claim has to go, and its verification is in the acceptance plan
 below as a measurement rather than an assumption: this ADR does not add a
 dependency in order to check a proposal.
 
+### Measured, 2026-09-09 — and everything above is libsecret's, not ours
+
+The description to this point is **libsecret's behaviour**, kept because it is
+why the question was asked at all. The 2026-09-08 amendment replaced libsecret
+with `secret-service` over `zbus` — a client this repository constructs **per
+connection** — and left connection lifetime open as something to measure rather
+than inherit. It has now been measured against a real `gnome-keyring-daemon` on
+a private bus.
+
+Counted by asking the **bus** rather than the crate: a unique name is one per
+client connection, so `ListNames` counts them, and the counting connection is
+opened once and kept.
+
+- **Four simultaneous handles produced four bus connections.** After dropping
+  them, the count **returned to baseline within the bounded wait** — polled
+  rather than read instantly, because a connection closing is the client's socket
+  shutting *and* the bus noticing, which is two things.
+- **Eight concurrent retrievals succeeded**, each on its own connection and
+  therefore its own `Dh` handshake, against one daemon.
+- A handle whose bus has stopped **refuses, promptly, and hands back no key.**
+
+**So the shared-singleton limitation does not apply to the current
+implementation.** A handle that goes out of scope stops holding a session on the
+person's bus.
+
+This does **not** reinstate the withdrawn *no connection outlives a retrieval*
+promise: nothing in the code enforces it, and what is recorded here is what a
+handle does, not a guarantee about how long a caller keeps one.
+
+**What the logout test does and does not show.** Its fixture **stops the private
+bus and keyring daemon that the fixture itself started** — nothing more. That is
+**disconnection handling**: a handle whose bus has gone refuses rather than
+answering or hanging. It is **not** acceptance of real user logout, where
+`/run/user/<uid>` and the user bus may well survive — another session may still
+be open, or the user may be lingering — so a real machine can present a live bus
+after somebody has logged out of one seat. **Real-session logout acceptance is
+outstanding and is not claimed here.**
+
+The **same-process** limitation recorded above is untouched and still true.
+
+Evidence: `crates/alo-secrets/tests/connections_come_and_go.rs` and
+`docs/autonomy/updates/connections-come-and-go.md`.
+
 ### Dependencies, in the order they block
 
 1. **A Secret Service in the image** — a package and a unit. **Desktop worker's**,

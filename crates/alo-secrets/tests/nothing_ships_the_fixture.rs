@@ -27,6 +27,14 @@ use std::path::{Path, PathBuf};
 /// What must never appear outside a `dev-dependencies` table.
 const THE_FIXTURE: &str = "alo-keyring-fixture";
 
+/// The other thing that must not: the feature letting a test name a certificate
+/// authority of its own.
+///
+/// Off, `alo-asking` trusts the compiled-in Mozilla roots and the seam is not
+/// compiled at all. On in anything a machine runs, a credential-bearing
+/// connection could be verified against an authority somebody else chose.
+const THE_TRUST_SEAM: &str = "trust-a-test-authority";
+
 /// Where the crates are, from this test's own location rather than a guess
 /// about the working directory.
 fn every_manifest() -> Vec<PathBuf> {
@@ -62,7 +70,7 @@ fn every_manifest() -> Vec<PathBuf> {
 /// the plain one and the `[target.'cfg(..)'.dev-dependencies]` this workspace
 /// actually uses.
 #[test]
-fn the_fixture_is_named_only_under_dev_dependencies() {
+fn the_fixture_and_the_trust_seam_are_named_only_under_dev_dependencies() {
     let mut wrong = Vec::new();
 
     for manifest in every_manifest() {
@@ -82,14 +90,26 @@ fn the_fixture_is_named_only_under_dev_dependencies() {
             }
             // A comment mentioning the fixture is prose, not a dependency —
             // and this file's own reason for existing is written in several.
-            if bare.starts_with('#') || !bare.contains(THE_FIXTURE) {
+            let names_one = bare.contains(THE_FIXTURE) || bare.contains(THE_TRUST_SEAM);
+            if bare.starts_with('#') || !names_one {
                 continue;
             }
             if table == "workspace" || table.starts_with("workspace.") {
                 continue;
             }
+            // **Declaring a feature is not enabling one.** `[features]` is where
+            // `alo-asking` says the seam exists at all, and it must. What is not
+            // allowed here is a line turning on somebody else's feature, which
+            // in this table is spelled `their-crate/their-feature` — so the
+            // slash is the whole difference and the check is on the slash.
+            if table == "features" && !bare.contains('/') {
+                continue;
+            }
             if !table.ends_with("dev-dependencies") {
-                wrong.push(format!("{} names it under [{table}]", manifest.display()));
+                wrong.push(format!(
+                    "{} names it under [{table}]: {bare}",
+                    manifest.display()
+                ));
             }
         }
     }

@@ -521,6 +521,264 @@ endpoint = \"https://{other}\"
         }
     }
 
+    /// An authority this test made, and a server certificate it signed.
+    ///
+    /// The authority is written to a file and named to the daemon through
+    /// `alo-asking`'s test-only seam, so the chain is verified **for real**: the
+    /// leaf must chain to this root, be in date, and carry the identity the
+    /// daemon is connecting to. Nothing is disabled anywhere.
+    struct AnAuthorityOfOurOwn {
+        /// Where the root certificate is, in PEM, for the daemon to be told.
+        root: std::path::PathBuf,
+        /// The chain the server answers with.
+        chain: Vec<rustls::pki_types::CertificateDer<'static>>,
+        /// The key that goes with it.
+        key: rustls::pki_types::PrivateKeyDer<'static>,
+    }
+
+    impl AnAuthorityOfOurOwn {
+        /// Issue a root, and a leaf carrying exactly this identity.
+        ///
+        /// `identity` is what goes in the certificate's subject-alternative
+        /// name. Handing in something other than the address the daemon will
+        /// connect to is how the mismatch test is written, and it is the only
+        /// difference between the two.
+        fn issuing(called: &str, identity: std::net::IpAddr) -> Self {
+            let mut authority = rcgen::CertificateParams::new(Vec::new()).unwrap();
+            authority.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+            authority
+                .distinguished_name
+                .push(rcgen::DnType::CommonName, "an authority one test made");
+            let signing = rcgen::KeyPair::generate().unwrap();
+            let root = authority.self_signed(&signing).unwrap();
+            let issuer = rcgen::Issuer::from_params(&authority, &signing);
+
+            let mut leaf = rcgen::CertificateParams::new(Vec::new()).unwrap();
+            leaf.subject_alt_names = vec![rcgen::SanType::IpAddress(identity)];
+            leaf.distinguished_name
+                .push(rcgen::DnType::CommonName, "a provider one test made");
+            let held = rcgen::KeyPair::generate().unwrap();
+            let issued = leaf.signed_by(&held, &issuer).unwrap();
+
+            let at = a_directory_of_our_own(called).join("authority.pem");
+            std::fs::create_dir_all(at.parent().unwrap()).unwrap();
+            std::fs::write(&at, root.pem()).unwrap();
+
+            Self {
+                root: at,
+                chain: vec![issued.der().clone(), root.der().clone()],
+                key: rustls::pki_types::PrivateKeyDer::Pkcs8(held.serialize_der().into()),
+            }
+        }
+
+        /// Run `doing` with this as the only authority the daemon trusts.
+        ///
+        /// A window rather than a setting: outside it the daemon trusts what it
+        /// always trusted, which is the compiled-in Mozilla roots. Tests calling
+        /// this take turns, so one never sees another's authority.
+        fn while_it_is_the_only_one_trusted<T>(&self, doing: impl FnOnce() -> T) -> T {
+            let pem = std::fs::read(&self.root).unwrap();
+            alo_asking::an_authority_a_test_made::while_trusting_only(&pem, doing)
+        }
+    }
+
+    /// A server that really speaks TLS, and reports what arrived inside it.
+    ///
+    /// Answers one request with an OpenAI-shaped completion and hands back the
+    /// decrypted head and body — so what is asserted is what came **out of** the
+    /// encrypted connection, not what was pointed at it.
+    fn a_provider_that_answers_over_tls(
+        authority: &AnAuthorityOfOurOwn,
+        at: std::net::IpAddr,
+    ) -> (
+        std::net::SocketAddr,
+        std::thread::JoinHandle<Option<String>>,
+    ) {
+        let serving = rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(authority.chain.clone(), authority.key.clone_key())
+            .unwrap();
+        let serving = std::sync::Arc::new(serving);
+
+        let listener = std::net::TcpListener::bind(std::net::SocketAddr::new(at, 0)).unwrap();
+        let where_it_is = listener.local_addr().unwrap();
+        let heard = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().ok()?;
+            let mut connection = rustls::ServerConnection::new(serving).ok()?;
+            // The handshake either completes or it does not, and a failed one is
+            // this returning `None` — which is what the mismatch test asserts.
+            connection.complete_io(&mut stream).ok()?;
+            let mut tls = rustls::Stream::new(&mut connection, &mut stream);
+
+            let mut reader = std::io::BufReader::new(&mut tls);
+            let mut head = String::new();
+            let mut length = 0usize;
+            loop {
+                let mut line = String::new();
+                if std::io::BufRead::read_line(&mut reader, &mut line).ok()? == 0 {
+                    break;
+                }
+                if let Some(said) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                    length = said.trim().parse().unwrap_or(0);
+                }
+                let done = line == "\r\n" || line == "\n";
+                head.push_str(&line);
+                if done {
+                    break;
+                }
+            }
+            let mut body = vec![0u8; length];
+            if length > 0 {
+                std::io::Read::read_exact(&mut reader, &mut body).ok()?;
+            }
+            let answer = r#"{"id":"c1","object":"chat.completion","model":"a-model","choices":[{"index":0,"message":{"role":"assistant","content":"No, not without written consent."},"finish_reason":"stop"}]}"#;
+            let reply = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n{answer}",
+                answer.len()
+            );
+            std::io::Write::write_all(&mut tls, reply.as_bytes()).ok()?;
+            let _ = std::io::Write::flush(&mut tls);
+            Some(format!("{head}{}", String::from_utf8_lossy(&body)))
+        });
+        (where_it_is, heard)
+    }
+
+    /// **The key reaches the provider the person chose, over a verified TLS
+    /// connection, and no other provider is contacted.**
+    ///
+    /// This is the whole path with nothing stubbed and nothing weakened: a real
+    /// `gnome-keyring-daemon` holds the key, the daemon fetches it, and it
+    /// arrives at a server this test owns — read back **out of the encrypted
+    /// connection** rather than off the wire.
+    ///
+    /// The connection is verified for real. The daemon is told about one
+    /// certificate authority, this test's own, **instead of** the compiled-in
+    /// Mozilla roots; the leaf must chain to it, be in date, and carry the
+    /// address being connected to. Nothing is disabled and no verification is
+    /// skipped — `a_certificate_for_the_wrong_address_is_refused` is the proof
+    /// that the identity is actually being checked.
+    #[test]
+    fn the_key_reaches_the_chosen_provider_over_a_verified_connection() {
+        let ours = our_own_address();
+        let authority = AnAuthorityOfOurOwn::issuing("tls-right", ours);
+        let keyring = AKeyringOfOurOwn::started("agentd-tls");
+        stored_in(&keyring, "provider/Mine", A_SYNTHETIC_KEY);
+
+        let (chosen, heard) = a_provider_that_answers_over_tls(&authority, ours);
+        let (other, nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("tls-reaches", chosen, other);
+
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            None,
+            WhoseKeyring::On(keyring.bus()),
+        );
+
+        let mut record = Record::default();
+        let said = authority.while_it_is_the_only_one_trusted(|| {
+            on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+                put_to_a_model(
+                    "may the tenant sublet?",
+                    turning,
+                    &mut questions,
+                    strings,
+                    noon(),
+                )
+            })
+        });
+
+        assert!(
+            said.refusal().is_none(),
+            "the question was refused: {:?}",
+            said.refusal()
+        );
+
+        let arrived = heard.join().unwrap();
+        assert!(
+            arrived.is_some(),
+            "the TLS handshake did not complete, so no request reached the provider"
+        );
+        let request = arrived.unwrap();
+        assert!(
+            request.contains("may the tenant sublet?"),
+            "the question did not arrive inside the encrypted connection: {request}"
+        );
+        // **The key itself.** Asserting that some `authorization:` header
+        // arrived would pass for an empty one.
+        assert!(
+            request.contains(A_SYNTHETIC_KEY),
+            "the key out of the keyring did not arrive with the question"
+        );
+        assert!(
+            !nobody.join().unwrap(),
+            "a provider the person did not choose was connected to"
+        );
+    }
+
+    /// **A certificate for the wrong address is refused, and the key stays
+    /// home.**
+    ///
+    /// The other half, and the one that makes the test above mean something. The
+    /// certificate is issued by the same authority the daemon trusts and is
+    /// perfectly valid — it simply carries a **different address** from the one
+    /// being connected to. If identity were not checked this would pass.
+    ///
+    /// The assertion is in two parts: the handshake does not complete, and
+    /// **nothing that arrived contains the key**. A refusal that had already put
+    /// the credential on the wire would be no protection at all.
+    #[test]
+    fn a_certificate_for_the_wrong_address_is_refused_and_no_key_is_sent() {
+        let ours = our_own_address();
+        // Issued for a documentation address (RFC 5737) that this machine is
+        // not, so the certificate is sound and the identity is wrong.
+        let authority =
+            AnAuthorityOfOurOwn::issuing("tls-wrong", std::net::IpAddr::from([198, 51, 100, 7]));
+        let keyring = AKeyringOfOurOwn::started("agentd-tls-wrong");
+        stored_in(&keyring, "provider/Mine", A_SYNTHETIC_KEY);
+
+        let (chosen, heard) = a_provider_that_answers_over_tls(&authority, ours);
+        let (other, nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("tls-wrong", chosen, other);
+
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            None,
+            WhoseKeyring::On(keyring.bus()),
+        );
+
+        let mut record = Record::default();
+        let said = authority.while_it_is_the_only_one_trusted(|| {
+            on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+                put_to_a_model(
+                    "may the tenant sublet?",
+                    turning,
+                    &mut questions,
+                    strings,
+                    noon(),
+                )
+            })
+        });
+
+        assert!(
+            said.refusal().is_some(),
+            "a certificate carrying the wrong address was accepted"
+        );
+
+        let arrived = heard.join().unwrap();
+        assert!(
+            arrived.is_none(),
+            "the handshake completed against a certificate for another address: {arrived:?}"
+        );
+        assert!(
+            !nobody.join().unwrap(),
+            "a provider the person did not choose was connected to"
+        );
+    }
+
     /// **Every way the store says no ends with nothing sent to any provider.**
     ///
     /// Each state is produced for real: no bus at all, a real keyring with no

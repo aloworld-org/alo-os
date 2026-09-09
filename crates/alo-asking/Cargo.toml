@@ -7,6 +7,16 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+# **Off, and off is what a machine builds.** `trust-a-test-authority` compiles
+# `src/an_authority_a_test_made.rs`, which lets a test name a certificate
+# authority of its own so that a server it owns can be verified for real. It is
+# turned on by a `dev-dependencies` entry and by nothing else; the image builds
+# `--package alo-agentd --package alo-boundaryd`, which resolves no
+# dev-dependency, and `alo-secrets/tests/nothing_ships_the_fixture.rs` refuses
+# any manifest that enables it outside a `dev-dependencies` table.
+[features]
+trust-a-test-authority = []
+
 [dependencies]
 # The place a question may go, and the failure it becomes when it does not
 # answer. This crate never decides where a question goes; it carries out a
