@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window-control gestures now cancel when the pointer leaves the
+  pressed action or input is lost.** Returning to the button cannot rearm a held
+  press, and cancellation keeps its release from becoming a second action.
+  This completes motion/lifecycle cancellation; production event interception
+  and composed controls remain integration work.
+  `docs/autonomy/updates/native-control-motion-cancellation.md`.
+
+- Credential implementation evidence reconciled from
+  `docs/autonomy/updates/the-daemon-asks-for-the-key.md`: production daemon lookup
+  and distinct refusal wording are wired. Authenticated provider delivery has
+  not yet been demonstrated; no new usable-provider completion is claimed.
+
 - **A native window-control press now stays bound to its original window.**
   Release consumes the press once, rechecks the operation and cancels after
   unmap/remap, hide/reveal or explicit cancellation. Disabled controls cannot

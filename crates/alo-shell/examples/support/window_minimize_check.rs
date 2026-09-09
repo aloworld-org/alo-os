@@ -26,6 +26,15 @@ pub fn run(
             );
             assert_eq!(server.mapped_surfaces().count(), 1);
             assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
+            assert!(server.window_control_motion((120, 48), (3, 4), (35.0, 5.0)));
+            assert!(server.window_control_motion((120, 48), (3, 4), (4.0, 5.0)));
+            assert_eq!(
+                server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
+                WindowControlRelease::Cancelled
+            );
+            visible_after_cancellation(server, renderer)?;
+            assert!(server.press_window_control(&root, (120, 48), (3, 4), (4.0, 5.0))?);
+            assert!(server.window_control_motion((120, 48), (3, 4), (5.0, 6.0)));
             assert_eq!(
                 server.release_window_control((120, 48), (3, 4), (4.0, 5.0))?,
                 WindowControlRelease::Executed(alo_shortcuts::Action::MinimiseWindow)
@@ -77,6 +86,40 @@ pub fn run(
         }
         println!("Trusted minimized={minimized}: all 6400 GLES pixels passed");
     }
+    Ok(())
+}
+
+/// Out-and-back motion must preserve the complete visible scene before release retry.
+fn visible_after_cancellation(
+    server: &Server,
+    renderer: &mut GlesRenderer,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let roots: Vec<_> = server.mapped_surfaces().cloned().collect();
+    assert_eq!(roots.len(), 1);
+    let frame = render_scanout(
+        renderer,
+        (80, 80).into(),
+        &roots,
+        &server.popup_surfaces(),
+        &Cursor::Hidden,
+    )?;
+    assert_eq!(frame.pixels().pixels().len(), 6400 * 4);
+    for (index, pixel) in frame
+        .pixels()
+        .pixels()
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .enumerate()
+    {
+        let expected = if (20..52).contains(&(index % 80)) && (20..44).contains(&(index / 80)) {
+            [255, 255, 255, 0]
+        } else {
+            [0; 4]
+        };
+        assert_eq!(*pixel, expected, "cancelled motion pixel {index}");
+    }
+    println!("Native out-and-back cancellation: all 6400 visible GLES pixels passed");
     Ok(())
 }
 

@@ -13689,3 +13689,50 @@ This completes the transaction component; usable controls remain unfinished.
 Exact scheduled machine evidence limits remain in the task report. Published
 reports arriving during publication reconcile next iteration. No staging, commit,
 push, tools/dev-loop edits, git identity/credential access or worker/loop launch.
+
+## 2026-09-09 - native control motion and input-loss cancellation
+
+Started clean; reviewed delivery/ownership rules, report guidance, current queue,
+journal tail and relevant feature/roadmap/ADR/contract sections. Reconciled the
+one previously unreferenced published report,
+`docs/autonomy/updates/the-daemon-asks-for-the-key.md`, into all four shared
+progress documents. Daemon lookup and distinct externalized refusals are wired;
+explicit keyring selection has a hermetic default. The report corrects an earlier
+environment claim: the build host has a session bus and activated keyring. It
+contains no exact verification commands/results; no new executed gate is inferred.
+Real-fixture daemon retrieval, authenticated HTTPS, connection lifetime/concurrency
+and logout remain unproved by it and in Claude's workstream. No credentials read.
+
+Selected the cancellation portion of the next strip-router component in QUEUE
+before implementing it. Motion and release now share mapping/geometry/intent
+validation. Excursions permanently cancel even when the pointer returns before
+release. Pointer leave and whole-seat reset cancel before cleanup can refuse;
+nested/direct pointer deactivation inherits the leave hook. Cancellation retains
+release ownership. This additive trusted observer changes no client focus, seat
+position or keyboard input; primary interception remains host integration work.
+Public rustdoc and the control contract record that boundary. No feature tick.
+
+Four new private-display tests passed on the first focused run; no shared-kernel
+mutation or outer suite lock. Final Linux affected all-target clippy, 150 units,
+188 lifecycle tests, three socket tests and three doctests, warnings-denied
+rustdoc, examples and fmt pass. Windows affected clippy/tests and fmt pass;
+Windows executes zero Linux-only shell tests. No build/test failures or weakened
+checks. WSLg passes all 28 offscreen stages, the twelve snapshot frames and 128
+full-frame painter cases. Added one complete 6,400-pixel visible scene check after
+out-and-back cancellation, then in-hit motion through the existing minimize
+and restored-frame assertions. Mesa fallback and malformed SHM refusal diagnostics
+skipped no checks. No on-screen pointer/direct DRM or hardware evidence claimed.
+
+Prerequisites verified: Rust 1.98.0, eight graphics/input packages and WSLg socket.
+Every build/test/lint/format preflight exceeded 12 GiB; minimum 71,270,281,216 bytes
+(66.38 GiB). No installation, cleanup or shared service/session/mount changes.
+Report: `docs/autonomy/updates/native-control-motion-cancellation.md` includes
+exact commands, decisions and machine evidence limits. Tracked diff and new files
+reviewed; diff whitespace clean. Full independent supervisor publication gates
+remain pending. No staging, commit, push, dev-loop edit or new worker/loop.
+
+Next: native primary-event interception using current painted target/geometry,
+owned-motion consumption and ordinary client routing isolation; then native
+labels/feedback and production composition. Cancellation is complete; the strip
+router and usable controls are unfinished. Reports arriving during publication
+reconcile next iteration. Release remains unverified.

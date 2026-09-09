@@ -26,6 +26,37 @@ pub(crate) struct Press {
     armed: bool,
 }
 
+impl Press {
+    /// Shared motion/release boundary; operation policy is still checked at release.
+    fn matches(
+        &self,
+        server: &Server,
+        viewport: (i32, i32),
+        origin: (i32, i32),
+        position: (f64, f64),
+    ) -> bool {
+        if self.viewport != viewport
+            || self.origin != origin
+            || !server
+                .surfaces
+                .window_visibility(&self.surface)
+                .is_some_and(|current| Arc::ptr_eq(&current, &self.visibility))
+        {
+            return false;
+        }
+        let Ok(snapshot) = server.window_control_snapshot(&self.surface, viewport, origin) else {
+            return false;
+        };
+        snapshot
+            .layout()
+            .hit(position.0, position.1)
+            .map(|hit| hit.action())
+            == Some(self.action)
+            && (self.action != Action::MaximiseWindow
+                || self.restoring == snapshot.layout().restoring())
+    }
+}
+
 /// A press refused before taking native ownership.
 #[derive(Debug, thiserror::Error)]
 pub enum WindowControlPressError {
@@ -125,6 +156,34 @@ impl Server {
         }
     }
 
+    /// Observe motion for the held native primary press before client routing.
+    ///
+    /// Returns true while a native press owns the gesture, even after cancellation;
+    /// the host must withhold that motion from ordinary client routing. Returns
+    /// false without ownership, leaving ordinary pointer routing to the host.
+    /// Supply the current painted geometry and output-local position on every
+    /// motion. Leaving the original hit, malformed coordinates, changed geometry,
+    /// visibility or maximize/restore intent permanently disarms this press.
+    /// Returning to the hit cannot rearm it. Removed UI must explicitly cancel.
+    ///
+    /// No focus, client event, window operation or seat position is changed here.
+    /// The matching release must still go through `release_window_control`, even
+    /// after input loss. This is not automatic nested/direct event interception.
+    pub fn window_control_motion(
+        &mut self,
+        viewport: (i32, i32),
+        origin: (i32, i32),
+        position: (f64, f64),
+    ) -> bool {
+        let Some(press) = &self.control_press else {
+            return false;
+        };
+        if press.armed && !press.matches(self, viewport, origin, position) {
+            self.cancel_window_control();
+        }
+        true
+    }
+
     /// Consume the primary release once and revalidate the original visible mapping.
     ///
     /// Supply the strip's current painted viewport/origin and release position.
@@ -143,27 +202,7 @@ impl Server {
         let Some(press) = self.control_press.take() else {
             return Ok(WindowControlRelease::Unowned);
         };
-        if !press.armed
-            || press.viewport != viewport
-            || press.origin != origin
-            || !self
-                .surfaces
-                .window_visibility(&press.surface)
-                .is_some_and(|current| Arc::ptr_eq(&current, &press.visibility))
-        {
-            return Ok(WindowControlRelease::Cancelled);
-        }
-        let Ok(snapshot) = self.window_control_snapshot(&press.surface, viewport, origin) else {
-            return Ok(WindowControlRelease::Cancelled);
-        };
-        if snapshot
-            .layout()
-            .hit(position.0, position.1)
-            .map(|hit| hit.action())
-            != Some(press.action)
-            || (press.action == Action::MaximiseWindow
-                && press.restoring != snapshot.layout().restoring())
-        {
+        if !press.armed || !press.matches(self, viewport, origin, position) {
             return Ok(WindowControlRelease::Cancelled);
         }
         match press.action {

@@ -33,7 +33,12 @@ combined-tree validation here). The later `9109875` and
 Locked/Denied evidence and correct Denied classification; its combined re-gate
 passed. `c4e20c7` and `docs/autonomy/updates/a-bus-with-nothing-on-it.md` subsequently
 add live empty-bus Unavailable evidence and avoid stacked absent-service timeouts;
-that combined re-gate passed. Daemon wiring, authenticated HTTPS,
+that combined re-gate passed. The report
+`docs/autonomy/updates/the-daemon-asks-for-the-key.md`, reconciled 2026-09-09,
+adds production daemon lookup, four distinct refusals and hermetic test defaults.
+It corrects the earlier environment assumption: a session keyring was activated
+on the build host. The report lists no exact commands/results, so no additional
+executed gate is claimed here. End-to-end daemon retrieval, authenticated HTTPS,
 lifetime/concurrency and logout remain open. No keyring or provider-completion
 checkbox is moved.
 
@@ -1260,6 +1265,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native control motion cancellation (2026-09-09): out-and-back gestures,
+    relayout and transient intent changes cannot rearm a press. Pointer leave and
+    seat reset cancel even when pointer cleanup refuses, retaining release
+    ownership. Four new real-client tests; Linux affected clippy, 150 unit/188
+    lifecycle/three socket tests and three doctests, rustdoc/examples, Windows
+    affected checks and both fmt checks pass. WSLg passes 28 offscreen stages,
+    one new full 6,400-pixel cancellation frame and 128 painter regression frames.
+    Primary event interception, labels/feedback and production composition remain;
+    this completes cancellation only. Full supervisor gates pending; no feature
+    tick. `docs/autonomy/updates/native-control-motion-cancellation.md`.
   - Mapping-bound control transactions (2026-09-09): disabled-hit ownership,
     duplicate isolation, explicit cancellation and exactly-once live release
     validation are code-ready. Unmap/remap and hide/reveal retire authority;

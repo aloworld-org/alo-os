@@ -130,3 +130,29 @@ Real-client tests live in `tests/window_controls/input.rs`. The offscreen GLES
 fixture additionally minimizes via a native transaction, verifies the full hidden
 scene, restores and verifies the full preserved client scene. Executed checks and
 limits: `docs/autonomy/updates/mapping-bound-window-control-transactions.md`.
+
+## Motion and input-loss cancellation
+
+`Server::window_control_motion(viewport, origin, position)` observes each native
+gesture motion using the current painted geometry. It returns true while the
+transaction owns motion, including after cancellation; the host must withhold
+that event from client routing. False means no native owner. It never changes
+client focus, ordinary seat position, keyboard input or window state. Primary
+press/release interception remains a host responsibility.
+
+Motion outside the original action, including gaps, clipping and non-finite
+coordinates, permanently disarms the press. Changed geometry, mapping identity
+or maximize/restore intent also disarms it. Returning to the original state or
+receiving a duplicate press does not rearm it. Motion and release share one
+identity/geometry/intent predicate; live operation refusal remains at release.
+An unavailable operation still produces its existing typed release error.
+
+`pointer_leave` now cancels native execution before clearing client input, even
+if pointer capability is missing and cleanup returns an error. Nested/direct
+pointer deactivation inherits this behavior. `clear_input` also cancels native
+execution on whole-seat reset. Cancellation retains matching release ownership;
+hosts must continue consuming that release and must explicitly cancel removed UI.
+This component adds cancellation hooks, not automatic motion/button interception,
+hover feedback, rendered labels or composed production controls.
+
+Evidence and limits: `docs/autonomy/updates/native-control-motion-cancellation.md`.

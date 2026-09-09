@@ -5,6 +5,37 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native control motion and input-loss cancellation (2026-09-09):**
+motion excursions, relayout and transient intent changes permanently disarm held
+presses. Pointer leave, nested/direct pointer deactivation and whole-seat reset
+cancel even without pointer capability; matching release stays owned. Four new
+real-client tests pass. Linux affected clippy, 150 unit/188 lifecycle/three socket
+tests and three doctests, rustdoc/examples, Windows affected checks and both fmt
+checks pass. All 28 WSLg offscreen stages and 128 painter frames pass, with one
+new complete 6,400-pixel visible cancellation frame. Report:
+`updates/native-control-motion-cancellation.md`. Full supervisor gates pending.
+Next executable component: native primary-event interception using current
+painted target/geometry and client routing isolation, consuming owned motion via
+the new observer; then labels/feedback and production nested/direct composition.
+This completes cancellation only, not the strip router or usable controls.
+
+**Selected native control motion and input-loss cancellation (2026-09-09):**
+complete the cancellation portion of the next pointer-routing component. Observe
+motion against the original hit, current geometry, mapping and requested intent;
+leaving and returning must never rearm a held press. Wire existing pointer leave
+and seat reset paths to cancellation, retaining release ownership even on reset
+failure. Acceptance: real-client in-hit execution, out-and-back/invalid/relayout
+refusals, nested/direct deactivation, seat reset, ordinary keyboard/pointer
+isolation and graphical regression. Primary event interception and composed
+controls remain the following component; this is not the complete strip router.
+
+Contributor reconciliation: `updates/the-daemon-asks-for-the-key.md` wires
+production key lookup and four distinct externalized refusals, with an explicit
+hermetic default for tests. It corrects earlier assumptions: the build environment
+does have an activated session keyring. The report supplies no exact verification
+commands/results; daemon end-to-end retrieval, authenticated HTTPS, connection
+lifetime/concurrency remain unproved here and belong to Claude's workstream.
+
 **Completed mapping-bound window control transactions (2026-09-09):** primary
 press/release ownership, disabled-hit consumption, duplicate isolation, explicit
 cancellation, mapping/visibility lifetime and live release revalidation are
