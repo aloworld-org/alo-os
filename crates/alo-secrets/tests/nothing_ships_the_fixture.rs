@@ -153,4 +153,39 @@ fn the_image_builds_only_the_two_processes() {
         "the image builds the whole workspace, which pulls every dev-dependency — including a \
          fixture that starts a keyring with a password in its source"
     );
+
+    // **And that command turns nothing on.** A `--features` on it could enable
+    // the trust seam without any manifest naming it, which is the one road past
+    // the check in the other test. Measured beside this: `cargo tree -e features
+    // --edges no-dev` for `alo-agentd` mentions the seam **zero** times, and
+    // once when dev-dependencies are resolved.
+    //
+    // Read from `cargo build` to the end of its continuations and no further.
+    // The whole file will not do: `cargo install bpf-linker` a few lines above
+    // carries `--features llvm-…`, which is a tool this image needs and has
+    // nothing to do with what our workspace compiles. A check that read the file
+    // whole failed on it, which is a check reporting the wrong thing rather than
+    // a finding.
+    let building: String = runs
+        .lines()
+        .skip_while(|line| !line.contains("cargo build"))
+        .take_while(|line| line.trim_end().ends_with('\\') || line.contains("cargo build"))
+        .chain(
+            runs.lines()
+                .skip_while(|line| !line.contains("cargo build"))
+                .skip(1)
+                .take(1),
+        )
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    assert!(
+        building.contains("cargo build"),
+        "the image has no `cargo build` line, so what it compiles could not be read"
+    );
+    assert!(
+        !building.contains("--features") && !building.contains("--all-features"),
+        "the image's build command enables cargo features, so what it compiles is no longer \
+         decided by the manifests the other test reads: {building}"
+    );
 }

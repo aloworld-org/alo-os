@@ -530,6 +530,12 @@ endpoint = \"https://{other}\"
     struct AnAuthorityOfOurOwn {
         /// Where the root certificate is, in PEM, for the daemon to be told.
         root: std::path::PathBuf,
+        /// The root itself, for a chain issued under it later.
+        root_der: rustls::pki_types::CertificateDer<'static>,
+        /// What the root was made from, kept so it can sign again.
+        was: rcgen::CertificateParams,
+        /// And the key it signs with.
+        signs_with: rcgen::KeyPair,
         /// The chain the server answers with.
         chain: Vec<rustls::pki_types::CertificateDer<'static>>,
         /// The key that goes with it.
@@ -566,7 +572,35 @@ endpoint = \"https://{other}\"
 
             Self {
                 root: at,
+                root_der: root.der().clone(),
+                was: authority,
+                signs_with: signing,
                 chain: vec![issued.der().clone(), root.der().clone()],
+                key: rustls::pki_types::PrivateKeyDer::Pkcs8(held.serialize_der().into()),
+            }
+        }
+
+        /// A second certificate under **this** authority, for another identity.
+        ///
+        /// The chain is sound and leads somewhere the daemon trusts; only the
+        /// identity is wrong. That is what separates *this certificate is for
+        /// another address* from *this certificate was signed by a stranger*,
+        /// and a verifier that checked only one of the two would pass the other.
+        fn also_issuing(&self, identity: std::net::IpAddr) -> Self {
+            let issuer = rcgen::Issuer::from_params(&self.was, &self.signs_with);
+            let mut leaf = rcgen::CertificateParams::new(Vec::new()).unwrap();
+            leaf.subject_alt_names = vec![rcgen::SanType::IpAddress(identity)];
+            leaf.distinguished_name
+                .push(rcgen::DnType::CommonName, "another provider one test made");
+            let held = rcgen::KeyPair::generate().unwrap();
+            let issued = leaf.signed_by(&held, &issuer).unwrap();
+
+            Self {
+                root: self.root.clone(),
+                root_der: self.root_der.clone(),
+                was: self.was.clone(),
+                signs_with: rcgen::KeyPair::generate().unwrap(),
+                chain: vec![issued.der().clone(), self.root_der.clone()],
                 key: rustls::pki_types::PrivateKeyDer::Pkcs8(held.serialize_der().into()),
             }
         }
@@ -717,30 +751,168 @@ endpoint = \"https://{other}\"
         );
     }
 
-    /// **A certificate for the wrong address is refused, and the key stays
-    /// home.**
+    /// Everything a client said, kept as it crossed the socket.
     ///
-    /// The other half, and the one that makes the test above mean something. The
-    /// certificate is issued by the same authority the daemon trusts and is
-    /// perfectly valid — it simply carries a **different address** from the one
-    /// being connected to. If identity were not checked this would pass.
+    /// Wrapped **under** TLS, so what is recorded is the bytes themselves. It is
+    /// supplementary evidence only — see [`WhatTheServerSaw`] for why the bytes
+    /// cannot settle whether anything was transmitted.
+    struct Overheard {
+        /// The socket itself.
+        talking: std::net::TcpStream,
+        /// What arrived on it.
+        said: std::sync::Arc<std::sync::Mutex<Vec<u8>>>,
+    }
+
+    impl std::io::Read for Overheard {
+        fn read(&mut self, into: &mut [u8]) -> std::io::Result<usize> {
+            let read = std::io::Read::read(&mut self.talking, into)?;
+            if let Ok(mut said) = self.said.lock() {
+                said.extend_from_slice(into.get(..read).unwrap_or_default());
+            }
+            Ok(read)
+        }
+    }
+
+    impl std::io::Write for Overheard {
+        fn write(&mut self, from: &[u8]) -> std::io::Result<usize> {
+            std::io::Write::write(&mut self.talking, from)
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            std::io::Write::flush(&mut self.talking)
+        }
+    }
+
+    /// What the server actually saw, from inside its own TLS.
     ///
-    /// The assertion is in two parts: the handshake does not complete, and
-    /// **nothing that arrived contains the key**. A refusal that had already put
-    /// the credential on the wire would be no protection at all.
-    #[test]
-    fn a_certificate_for_the_wrong_address_is_refused_and_no_key_is_sent() {
+    /// # Why the raw bytes are not the evidence
+    ///
+    /// An earlier version asserted only that the key and question did not appear
+    /// **in plaintext** in what crossed the socket, and called that *nothing was
+    /// transmitted*. **That does not follow.** Application data on a TLS
+    /// connection is encrypted, so a client that had completed a handshake and
+    /// sent the credential would leave no plaintext either, and the assertion
+    /// would pass on exactly the case it was meant to catch.
+    ///
+    /// What settles it is the **server's own view**: whether the handshake ever
+    /// completed, and whether any application data was decrypted out of it. A
+    /// client cannot send HTTP application data through a handshake that never
+    /// finished, so `handshake_completed == false` with nothing decrypted is the
+    /// claim, and it is made from the side that would know.
+    ///
+    /// The raw capture is kept as **supplementary**: it says the credential was
+    /// not sent in the clear either, which is worth knowing and is not the same
+    /// statement.
+    struct WhatTheServerSaw {
+        /// Whether TLS ever finished. Application data is impossible before it.
+        handshake_completed: bool,
+        /// What was decrypted, when anything was.
+        application_data: Option<String>,
+        /// Every byte the client sent, as it crossed the socket.
+        on_the_wire: Vec<u8>,
+    }
+
+    /// A TLS server that reports all three, whatever happens.
+    ///
+    /// The same server for the rejection tests and for the control: a control
+    /// answered by a different server would be a different measurement, and the
+    /// point of the control is that **this** instrument registers a key when one
+    /// really arrives.
+    fn a_provider_that_records_what_it_receives(
+        authority: &AnAuthorityOfOurOwn,
+        at: std::net::IpAddr,
+    ) -> (
+        std::net::SocketAddr,
+        std::thread::JoinHandle<WhatTheServerSaw>,
+    ) {
+        let serving = rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(authority.chain.clone(), authority.key.clone_key())
+            .unwrap();
+        let serving = std::sync::Arc::new(serving);
+
+        let listener = std::net::TcpListener::bind(std::net::SocketAddr::new(at, 0)).unwrap();
+        let where_it_is = listener.local_addr().unwrap();
+        let heard = std::thread::spawn(move || {
+            let said = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+            let kept = std::sync::Arc::clone(&said);
+            let mut handshake_completed = false;
+            let mut application_data = None;
+
+            if let Ok((talking, _)) = listener.accept() {
+                let mut overheard = Overheard { talking, said };
+                if let Ok(mut connection) = rustls::ServerConnection::new(serving) {
+                    // The handshake either finishes or it does not, and which it
+                    // was is the evidence.
+                    handshake_completed = connection.complete_io(&mut overheard).is_ok()
+                        && !connection.is_handshaking();
+
+                    if handshake_completed {
+                        let mut tls = rustls::Stream::new(&mut connection, &mut overheard);
+                        let mut reader = std::io::BufReader::new(&mut tls);
+                        let mut head = String::new();
+                        let mut length = 0usize;
+                        while let Ok(read) = {
+                            let mut line = String::new();
+                            std::io::BufRead::read_line(&mut reader, &mut line).map(|n| (n, line))
+                        } {
+                            let (n, line) = read;
+                            if n == 0 {
+                                break;
+                            }
+                            if let Some(says) =
+                                line.to_ascii_lowercase().strip_prefix("content-length:")
+                            {
+                                length = says.trim().parse().unwrap_or(0);
+                            }
+                            let done = line == "\r\n" || line == "\n";
+                            head.push_str(&line);
+                            if done {
+                                break;
+                            }
+                        }
+                        let mut body = vec![0u8; length];
+                        if length > 0 {
+                            let _ = std::io::Read::read_exact(&mut reader, &mut body);
+                        }
+                        application_data =
+                            Some(format!("{head}{}", String::from_utf8_lossy(&body)));
+
+                        let answer = r#"{"id":"c1","object":"chat.completion","model":"a-model","choices":[{"index":0,"message":{"role":"assistant","content":"No, not without written consent."},"finish_reason":"stop"}]}"#;
+                        let reply = format!(
+                            "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n{answer}",
+                            answer.len()
+                        );
+                        let _ = std::io::Write::write_all(&mut tls, reply.as_bytes());
+                        let _ = std::io::Write::flush(&mut tls);
+                    }
+                }
+            }
+
+            WhatTheServerSaw {
+                handshake_completed,
+                application_data,
+                on_the_wire: kept.lock().map(|said| said.clone()).unwrap_or_default(),
+            }
+        });
+        (where_it_is, heard)
+    }
+
+    /// Ask through the production daemon path, and report what the server saw.
+    ///
+    /// `presenting` is the certificate the server holds; `trusting` is the
+    /// authority the daemon is told about. Making them the same is the control.
+    fn asked_over_tls(
+        called: &str,
+        presenting: &AnAuthorityOfOurOwn,
+        trusting: &AnAuthorityOfOurOwn,
+    ) -> (Option<String>, WhatTheServerSaw, bool) {
         let ours = our_own_address();
-        // Issued for a documentation address (RFC 5737) that this machine is
-        // not, so the certificate is sound and the identity is wrong.
-        let authority =
-            AnAuthorityOfOurOwn::issuing("tls-wrong", std::net::IpAddr::from([198, 51, 100, 7]));
-        let keyring = AKeyringOfOurOwn::started("agentd-tls-wrong");
+        let keyring = AKeyringOfOurOwn::started(called);
         stored_in(&keyring, "provider/Mine", A_SYNTHETIC_KEY);
 
-        let (chosen, heard) = a_provider_that_answers_over_tls(&authority, ours);
+        let (chosen, heard) = a_provider_that_records_what_it_receives(presenting, ours);
         let (other, nobody) = a_listener_that_reports_connections();
-        let config = a_person_who_chose("tls-wrong", chosen, other);
+        let config = a_person_who_chose(called, chosen, other);
 
         let mut questions = Questions::of_a_session(
             Some(config.into_os_string()),
@@ -751,7 +923,7 @@ endpoint = \"https://{other}\"
         );
 
         let mut record = Record::default();
-        let said = authority.while_it_is_the_only_one_trusted(|| {
+        let said = trusting.while_it_is_the_only_one_trusted(|| {
             on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
                 put_to_a_model(
                     "may the tenant sublet?",
@@ -763,19 +935,244 @@ endpoint = \"https://{other}\"
             })
         });
 
+        let refusal = said.refusal().map(|wording| wording.text().to_owned());
+        (refusal, heard.join().unwrap(), nobody.join().unwrap())
+    }
+
+    /// **The control: this instrument does register a key when one arrives.**
+    ///
+    /// The same server, the same assertions, and a certificate the daemon
+    /// trusts. Without it, *no application data* proves nothing — a server that
+    /// never records anything would satisfy every rejection test in this file.
+    ///
+    /// Here the handshake completes, application data **is** decrypted, and it
+    /// carries the synthetic key and the question. So when the rejection tests
+    /// find neither, that is the daemon's doing rather than the instrument's.
+    #[test]
+    fn a_trusted_certificate_lets_the_key_and_question_through() {
+        let ours = our_own_address();
+        let trusted = AnAuthorityOfOurOwn::issuing("tls-control", ours);
+
+        let (refusal, saw, elsewhere) = asked_over_tls("tls-control-ask", &trusted, &trusted);
+
+        assert!(refusal.is_none(), "the control was refused: {refusal:?}");
         assert!(
-            said.refusal().is_some(),
+            saw.handshake_completed,
+            "the control's handshake did not complete, so this instrument proves nothing about \
+             the rejections"
+        );
+        let arrived = saw
+            .application_data
+            .unwrap_or_else(|| String::from("<nothing was decrypted>"));
+        assert!(
+            arrived.contains(A_SYNTHETIC_KEY),
+            "the control did not receive the key: {arrived}"
+        );
+        assert!(
+            arrived.contains("may the tenant sublet?"),
+            "the control did not receive the question: {arrived}"
+        );
+        assert!(
+            !elsewhere,
+            "a provider the person did not choose was connected to"
+        );
+    }
+
+    /// **A certificate from an authority the daemon does not trust is refused,
+    /// and no application data reaches the provider.**
+    ///
+    /// The companion to the wrong-address test, and a different failure: there
+    /// the chain was sound and the identity wrong; here the identity is right
+    /// and **the chain leads nowhere the daemon knows**. A verifier that checked
+    /// only the name would pass this one.
+    #[test]
+    fn a_certificate_from_an_authority_we_do_not_trust_is_refused_and_no_key_is_sent() {
+        let ours = our_own_address();
+        // Both name this machine's address, so the only thing wrong is who
+        // signed it.
+        let trusted = AnAuthorityOfOurOwn::issuing("tls-trusted", ours);
+        let a_stranger = AnAuthorityOfOurOwn::issuing("tls-stranger", ours);
+
+        let (refusal, saw, elsewhere) = asked_over_tls("tls-stranger-ask", &a_stranger, &trusted);
+
+        assert!(
+            refusal.is_some(),
+            "a certificate from an authority nobody trusts was accepted"
+        );
+        nothing_of_the_persons_reached(&saw);
+        assert!(
+            !elsewhere,
+            "a provider the person did not choose was connected to"
+        );
+    }
+
+    /// **A certificate for the wrong address is refused, and no application data
+    /// reaches the provider.**
+    ///
+    /// Issued by the authority the daemon trusts, for an address this machine is
+    /// not — so the chain is sound and only the identity is wrong. If identity
+    /// were not checked, this would pass silently.
+    #[test]
+    fn a_certificate_for_the_wrong_address_is_refused_and_no_key_is_sent() {
+        let ours = our_own_address();
+        let trusted = AnAuthorityOfOurOwn::issuing("wire-trusted", ours);
+        // RFC 5737 documentation address, which this machine is not.
+        let misnamed = trusted.also_issuing(std::net::IpAddr::from([198, 51, 100, 7]));
+
+        let (refusal, saw, elsewhere) = asked_over_tls("wire-misnamed-ask", &misnamed, &trusted);
+
+        assert!(
+            refusal.is_some(),
             "a certificate carrying the wrong address was accepted"
         );
-
-        let arrived = heard.join().unwrap();
+        nothing_of_the_persons_reached(&saw);
         assert!(
-            arrived.is_none(),
-            "the handshake completed against a certificate for another address: {arrived:?}"
+            !elsewhere,
+            "a provider the person did not choose was connected to"
+        );
+    }
+
+    /// Nothing of the person's reached this provider, said the way it can be.
+    ///
+    /// **The load-bearing part is the handshake and the application data**, from
+    /// the server's own side: HTTP cannot cross a TLS connection that never
+    /// finished being established, so no completed handshake and nothing
+    /// decrypted is *no application data was transmitted* — whether it would
+    /// have been encrypted or not.
+    ///
+    /// The plaintext check underneath is **supplementary**. On its own it proves
+    /// only that the credential did not cross in the clear, which a completed
+    /// handshake would also satisfy while sending the key encrypted.
+    fn nothing_of_the_persons_reached(saw: &WhatTheServerSaw) {
+        assert!(
+            !saw.handshake_completed,
+            "the handshake completed against a certificate that should have been refused, so the \
+             daemon was willing to send application data over it"
+        );
+        assert!(
+            saw.application_data.is_none(),
+            "application data was decrypted from a connection whose certificate was refused: {:?}",
+            saw.application_data
+        );
+
+        // Supplementary, and only that: nothing crossed in the clear either.
+        let key = A_SYNTHETIC_KEY.as_bytes();
+        assert!(
+            !saw.on_the_wire.windows(key.len()).any(|at| at == key),
+            "the key crossed the socket in plaintext"
+        );
+        let question = b"may the tenant sublet?";
+        assert!(
+            !saw.on_the_wire
+                .windows(question.len())
+                .any(|at| at == question.as_slice()),
+            "the question crossed the socket in plaintext"
+        );
+    }
+
+    /// **A request on another thread does not inherit a test's trust, while the
+    /// thread that opened the window still has it.**
+    ///
+    /// The seam is thread-local for this reason, and this is the reason as a
+    /// check. One window is open on this thread; two asks happen inside it, one
+    /// on another thread and one here, against two servers holding certificates
+    /// from the same authority.
+    ///
+    /// **Both halves are needed or the test proves nothing.** These servers
+    /// would *answer* a client that trusted them, so a seam held in a global
+    /// would let the other thread through and this test would fail — which is
+    /// what makes it a test. Verified by reverting the seam to a global and
+    /// watching this fail, then restoring it. An earlier draft pointed the other
+    /// thread at a server that never answers, and would have passed either way.
+    #[test]
+    fn a_request_on_another_thread_does_not_inherit_a_tests_trust() {
+        let ours = our_own_address();
+        let authority = AnAuthorityOfOurOwn::issuing("tls-not-inherited", ours);
+
+        let keyring = AKeyringOfOurOwn::started("agentd-not-inherited");
+        stored_in(&keyring, "provider/Mine", A_SYNTHETIC_KEY);
+        let bus = keyring.bus();
+
+        let (for_the_other, theirs) = a_provider_that_records_what_it_receives(&authority, ours);
+        let (for_this_one, mine) = a_provider_that_records_what_it_receives(&authority, ours);
+        let (unused, nobody) = a_listener_that_reports_connections();
+        let elsewhere_config = a_person_who_chose("not-inherited-far", for_the_other, unused);
+        let here_config = a_person_who_chose("not-inherited-near", for_this_one, unused);
+
+        let (elsewhere, here) = authority.while_it_is_the_only_one_trusted(|| {
+            let elsewhere = std::thread::scope(|scope| {
+                scope
+                    .spawn(|| {
+                        let mut questions = Questions::of_a_session(
+                            Some(elsewhere_config.clone().into_os_string()),
+                            None,
+                            alo_models::Catalogue::built_in().unwrap(),
+                            None,
+                            WhoseKeyring::On(bus.clone()),
+                        );
+                        let mut record = Record::default();
+                        let said =
+                            on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+                                put_to_a_model(
+                                    "may the tenant sublet?",
+                                    turning,
+                                    &mut questions,
+                                    strings,
+                                    noon(),
+                                )
+                            });
+                        said.refusal().map(|wording| wording.text().to_owned())
+                    })
+                    .join()
+                    .unwrap()
+            });
+
+            let mut questions = Questions::of_a_session(
+                Some(here_config.clone().into_os_string()),
+                None,
+                alo_models::Catalogue::built_in().unwrap(),
+                None,
+                WhoseKeyring::On(keyring.bus()),
+            );
+            let mut record = Record::default();
+            let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+                put_to_a_model(
+                    "may the tenant sublet?",
+                    turning,
+                    &mut questions,
+                    strings,
+                    noon(),
+                )
+            });
+            (
+                elsewhere,
+                said.refusal().map(|wording| wording.text().to_owned()),
+            )
+        });
+
+        assert!(
+            elsewhere.is_some(),
+            "a request on another thread inherited this test's authority, so the trust window is              not confined to the thread that opened it"
+        );
+        assert!(
+            here.is_none(),
+            "the thread that opened the window was refused, so the two halves cannot be told              apart: {here:?}"
+        );
+
+        let theirs = theirs.join().unwrap();
+        assert!(
+            !theirs.handshake_completed && theirs.application_data.is_none(),
+            "the other thread got application data through a certificate it should not trust"
+        );
+        let mine = mine.join().unwrap();
+        assert!(
+            mine.application_data
+                .is_some_and(|request| request.contains(A_SYNTHETIC_KEY)),
+            "the thread holding the window did not reach its provider with the key"
         );
         assert!(
             !nobody.join().unwrap(),
-            "a provider the person did not choose was connected to"
+            "an unused listener was connected to"
         );
     }
 

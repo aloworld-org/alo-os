@@ -606,6 +606,53 @@ so the existing redirect guarantee does not touch it.
 rule behaves exactly as before, `docs/features.md` was not touched, and the
 recommendation is explicitly not an approval.
 
+### 10. What a credential does when a session really ends
+
+**Status:** scheduled, blocked on a machine with `logind`. **Depends on:** the
+credential store — done.
+
+`connections_come_and_go.rs` proves **disconnection handling**: a keyring handle
+whose bus has stopped refuses, promptly, and hands back no key. Its fixture stops
+the private bus and keyring daemon **that the fixture itself started**, and that
+is all it stops. Real logout is a different event and this workstream has not
+tested it.
+
+**Two seats are not the premise, and assuming they were is what kept this
+unscheduled.** Three cases, each reachable differently and only one of them
+needing a second seat at all:
+
+1. **One session, ended.** A single login, logged out, no lingering. `logind`
+   removes `/run/user/<uid>` and the user bus with it. Reachable with **one
+   login over `ssh`**, logging out and looking. *Expected:* the bus is gone and
+   `TheBus::of_this_process` is `Unavailable` for anything started afterwards;
+   a handle held across the logout refuses. This is nearest to what the fixture
+   already shows, and is the one that would make the fixture's result
+   representative.
+2. **Logged out while lingering is on.** `loginctl enable-linger <user>` and the
+   user manager — and its bus — **survives with no session at all**. Reachable
+   with **one login**, and needs no second seat. *Expected:* the bus is still
+   there and a key is still retrievable after logout, which is the case a
+   daemon's author would not predict from case 1 and the reason this is listed
+   separately. Whether that is what we want is a **question for the owner**, not
+   something to decide here: a credential reachable when nobody is signed in is
+   a policy, not a bug to fix quietly.
+3. **Two sessions, one ended.** Two concurrent logins for the same user; log out
+   of one. *Expected:* the bus survives, because the other session holds it.
+   Reachable with **two `ssh` logins** — still no second physical seat, though a
+   console plus `ssh` is the same test if a seat is available.
+
+- **Acceptance:** each case observed on a machine running `logind`, with what
+  `/run/user/<uid>` and the bus actually do recorded per case, and the daemon's
+  behaviour beside it. **`loginctl enable-linger` is a machine-wide change and
+  needs its own handoff** — it is not something to turn on inside somebody
+  else's test run.
+- **Constraint:** not on the shared build machine while another worker is using
+  it, and nothing here changes what a credential is allowed to be. **WSL does
+  not settle it**: this environment has a session bus at `/run/user/0` with no
+  `logind` session behind it, which is precisely why the fixture cannot stand in.
+- **Not claimed until then.** ADR 0022 says so where it records the measurement,
+  and the reports say so.
+
 ## Rules this workstream holds itself to
 
 - No `unsafe` outside `alo-bounding-kernel`'s one permitted file, no weakened

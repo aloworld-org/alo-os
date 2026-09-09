@@ -245,9 +245,13 @@ const READY: &[(Gate, &str)] = &[
             within: ".",
         },
         "/sys/fs/bpf is not a mounted BPF filesystem, so every test that loads the boundary \
-         would fail for that reason rather than for anything in the change. On this machine: \
-         `mount -t bpf bpf /sys/fs/bpf`, which a boot does for itself and WSL forgets across a \
-         restart.",
+         would fail for that reason rather than for anything in the change. Nothing was staged, \
+         committed or pushed, and the work is where it was. \
+         **Do not mount it in order to get a task out.** This mount is shared with whoever else \
+         is testing on this kernel — a boot makes it and WSL forgets it across a restart — and a \
+         checkout that remounts whenever it wants to publish is one that changes another \
+         worker's ground while their tests are running. Ask for a coordinated maintenance \
+         handoff, and let it be done once while nothing else is in flight.",
     ),
     (
         Gate {

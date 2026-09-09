@@ -27,7 +27,10 @@
 //! 3. **`crates/alo-secrets/tests/nothing_ships_the_fixture.rs`** refuses any
 //!    manifest that turns it on outside a `dev-dependencies` table.
 //!
-//! # Why it is a scope and not a variable
+//! # Why it is a scope on one thread, and not a variable
+//!
+//! Thread-local, so a request on another thread cannot inherit it — see
+//! `IN_FORCE`.
 //!
 //! An environment variable was the obvious way and is the wrong one twice over:
 //! `std::env::set_var` is `unsafe` in this edition and `CLAUDE.md` allows no
@@ -43,25 +46,45 @@
 //! exactly as they always were — what changes is **which authority** is at the
 //! root of the chain, and only inside that window.
 
-use std::sync::{Arc, Mutex, PoisonError, RwLock};
+use std::cell::RefCell;
+use std::sync::Arc;
 
 use ureq::tls::{Certificate, RootCerts, TlsConfig};
 
-/// The authority in force, which is `None` everywhere except inside
-/// [`while_trusting_only`].
-static IN_FORCE: RwLock<Option<TlsConfig>> = RwLock::new(None);
+thread_local! {
+    /// The authority in force **on this thread**, and `None` on every other.
+    ///
+    /// Thread-local rather than a global, and that is a correctness matter
+    /// rather than tidiness. A request runs on the thread that made it —
+    /// `ureq` is synchronous — so a window opened here must not change what
+    /// anything else in the process trusts. Held in a global, a request on
+    /// another thread would **inherit** this test's authority while the window
+    /// happened to be open, and would then be verifying against something its
+    /// own test never chose.
+    static IN_FORCE: RefCell<Option<TlsConfig>> = const { RefCell::new(None) };
+}
 
-/// One test at a time, because two windows would disagree about the answer.
-static ONE_AT_A_TIME: Mutex<()> = Mutex::new(());
+/// Puts the authority back the way it was, however the closure ends.
+///
+/// A `Drop` rather than a line after the call, so that a panicking test — which
+/// is how a test reports failure — cannot leave its authority in force for
+/// whatever this thread does next.
+struct OnlyUntilThisIsDropped;
 
-/// Run `doing` with this authority as **the only one trusted**.
+impl Drop for OnlyUntilThisIsDropped {
+    fn drop(&mut self) {
+        IN_FORCE.with_borrow_mut(|held| *held = None);
+    }
+}
+
+/// Run `doing` with this authority as **the only one trusted, on this thread**.
 ///
 /// Instead of the compiled-in roots rather than as well as them: a test proving
 /// a server is verified should not have Mozilla's roots underneath it, or a
 /// certificate that chained to a public authority by accident would pass and
 /// nobody would know.
 ///
-/// Tests calling this take turns, so one window never sees another's authority.
+/// Nothing on any other thread is affected, and nothing after the closure is.
 ///
 /// # Panics
 /// When `pem` is not a certificate, which in a test is the failure being
@@ -71,30 +94,23 @@ static ONE_AT_A_TIME: Mutex<()> = Mutex::new(());
 /// could see.
 #[expect(
     clippy::expect_used,
-    reason = "this function exists only under a test-only feature, and a certificate a test \
-              could not make is that test's failure rather than something to work around"
+    reason = "this function exists only under a test-only feature, and a certificate a test               could not make is that test's failure rather than something to work around"
 )]
 pub fn while_trusting_only<T>(pem: &[u8], doing: impl FnOnce() -> T) -> T {
-    let _turn = ONE_AT_A_TIME.lock().unwrap_or_else(PoisonError::into_inner);
-
     let authority = Certificate::from_pem(pem).expect("a test's authority is a certificate");
     let only_this_one = TlsConfig::builder()
         .root_certs(RootCerts::Specific(Arc::new(vec![authority])))
         .build();
 
-    *IN_FORCE.write().unwrap_or_else(PoisonError::into_inner) = Some(only_this_one);
-    let answered = doing();
-    *IN_FORCE.write().unwrap_or_else(PoisonError::into_inner) = None;
-    answered
+    IN_FORCE.with_borrow_mut(|held| *held = Some(only_this_one));
+    let _until_this_is_dropped = OnlyUntilThisIsDropped;
+    doing()
 }
 
-/// The authority a test named, if a window is open.
+/// The authority a test named, if a window is open **on this thread**.
 ///
 /// `None` everywhere else, and then the caller changes nothing — so the default,
 /// Mozilla's roots, still applies.
 pub(crate) fn named_by_a_test() -> Option<TlsConfig> {
-    IN_FORCE
-        .read()
-        .unwrap_or_else(PoisonError::into_inner)
-        .clone()
+    IN_FORCE.with_borrow(Clone::clone)
 }
