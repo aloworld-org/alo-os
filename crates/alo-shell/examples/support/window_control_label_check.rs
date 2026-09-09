@@ -82,6 +82,81 @@ pub fn presentation(
         false,
     )?;
     println!("Mapping-bound presentation: ten complete label lifetime frames passed");
+    nested_input(server, renderer, root)?;
+    Ok(())
+}
+
+/// Exercise the event-pump adapter through live label pixels and minimization.
+fn nested_input(
+    server: &mut Server,
+    renderer: &mut GlesRenderer,
+    root: &WlSurface,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use alo_shell::{NestedControlInput, NestedPointerEvent};
+    use smithay::backend::input::ButtonState;
+    server.present_window_controls(Some(PaintedWindowControls {
+        surface: root,
+        viewport: (120, 48),
+        origin: (3, 4),
+    }))?;
+    let mut input = NestedControlInput::default();
+    input.route(
+        server,
+        true,
+        Some(NestedPointerEvent::Motion {
+            x: 4.0,
+            y: 5.0,
+            time: 1,
+        }),
+    )?;
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(input.position(), (100, 40))?,
+        true,
+    )?;
+    input.route(
+        server,
+        true,
+        Some(NestedPointerEvent::Button {
+            code: 0x110,
+            state: ButtonState::Pressed,
+            time: 2,
+        }),
+    )?;
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(input.position(), (100, 40))?,
+        false,
+    )?;
+    input.route(
+        server,
+        true,
+        Some(NestedPointerEvent::Button {
+            code: 0x110,
+            state: ButtonState::Released,
+            time: 3,
+        }),
+    )?;
+    assert!(!server.mapped_surfaces().any(|surface| surface == root));
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(input.position(), (100, 40))?,
+        false,
+    )?;
+    server.set_window_minimized(root, false)?;
+    server.present_window_controls(Some(PaintedWindowControls {
+        surface: root,
+        viewport: (120, 48),
+        origin: (3, 4),
+    }))?;
+    input.route(server, false, None)?;
+    assert_eq!(input.position(), None);
+    paint_choice(
+        renderer,
+        server.presented_window_control_label(input.position(), (100, 40))?,
+        false,
+    )?;
+    println!("Nested control input: eight complete label frames and live minimization passed");
     Ok(())
 }
 

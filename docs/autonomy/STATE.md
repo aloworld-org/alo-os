@@ -14045,3 +14045,48 @@ Lifetime component complete; usable controls/feature remain unfinished. Reports
 arriving during publication reconcile next iteration; release remains unverified.
 No staging, commit, push, dev-loop edits, worker launch, private credential/identity
 access, other-checkout modification or unrelated host action.
+
+## 2026-09-09 - nested native control event routing
+
+Started clean at 54a63a8; read required delivery/ownership/report guidance and
+relevant constitution, feature, roadmap, ADR and contract sections. No published
+report lacked a STATE reference at iteration start. Selected the parent-event
+adapter component and acceptance checks in QUEUE before implementation.
+
+Nested::pump_seat now routes through the published control lifetime using actual
+parent position, independently of frozen client motion during native gestures.
+Out-and-back motion permanently cancels execution. Deactivation forgets position
+and retires presentation; owned releases drain while inactive or before fresh
+motion. Invalid coordinates retire before refusal. Client typing/buttons/scroll
+retain their routes. The pump preserves its first error, stops later routing in
+that pump and clears input. No new agent surface, string, authority or ADR.
+
+Four new real-client tests pass. Initial clippy found four test-helper lock unwraps
+and one unchecked index; replaced with explicit errors without weakening checks.
+Affected Linux/Windows clippy passed. Full Linux shell suite passed 156 unit,
+207 lifecycle, three socket and three doctests; no ignores. Focused tests passed
+again after test-only lint fixes. Examples, warnings-denied rustdoc, Linux/Windows
+fmt and Windows affected tests pass (zero Linux-only tests on Windows). Independent
+workspace gates have not run here.
+
+WSLg passes eight new complete 5,760-pixel light/dark label frames through the
+adapter, live minimization, ten existing lifetime/fourteen live-label frames and
+all 28 nested stages. Mesa fallback and intentional malformed-client/keymap/SHM
+refusal diagnostics skipped no checks; no timeout. Synthetic adapter input proves
+routing and offscreen pixel lifetime, not actual parent event delivery or on-screen
+interaction. Unchanged standalone label/strip painter executables were not rerun.
+
+Ubuntu Rust 1.98.0, eight graphics/input packages and WSLg socket verified. All
+command C: preflights exceeded 12 GiB; minimum 60,557,508,608 bytes. No package,
+service, mount or session maintenance, kernel mutation, outer fixture lock, cleanup,
+WSL restart or keep-alive helper. Exact commands, decisions and evidence limits:
+`docs/autonomy/updates/nested-native-control-event-routing.md`.
+
+Contract, report and four progress documents updated. Tracked/new diff reviewed;
+whitespace clean. Supervisor full Windows/Linux/rustdoc/BPF gates pending. Next:
+nested strip/label composition with overlay hit policy and full clipped-name
+access, followed by remaining native navigation/cursor and direct integration.
+Event adapter complete; usable controls/feature remain unfinished, no release tick.
+Reports arriving during publication reconcile next iteration. No staging, commit,
+push, dev-loop edits, worker launch, private credential/identity access, other
+checkout edits or unrelated host changes.

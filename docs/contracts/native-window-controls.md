@@ -359,3 +359,37 @@ work, followed by direct composition. The existing font/vocabulary/tokens and
 ADRs 0002/0010 remain unchanged. Tests: `tests/window_controls/presentation.rs`;
 ten full-frame GLES label lifecycle checks in the existing nested fixture.
 Evidence and limits: `docs/autonomy/updates/mapping-bound-native-control-presentation.md`.
+
+## Nested parent-event integration
+
+Additive trusted Rust adapter, 2026-09-09: `NestedControlInput` owns only the last
+validated parent motion, separately from the client seat position that native
+gestures deliberately freeze. Keep one adapter with one backend/server lifetime.
+`route(server, active, event)` accepts the existing `NestedPointerEvent` and routes
+motion/buttons exactly once through the current published presentation. No window
+is inferred from focus. `position()` supplies current hover coordinates, not
+authority. Native out-and-back motion permanently cancels execution.
+
+Deactivation/close forgets position and retires controls. Buttons and scroll wait
+for fresh motion after reactivation. An owned primary release is still consumed
+while inactive or before new motion, so a cancelled gesture cannot leak or block
+the next genuine gesture. Invalid motion uses the ordinary fixed-point coordinate
+limits, retires presentation and forgets position before refusal. Scroll clears
+native label focus and retains the existing seat route; secondary buttons and
+ordinary keyboard routing remain independent.
+
+`Nested::pump_seat` now uses this adapter automatically. It retains the first input
+failure, stops routing subsequent events in that pump, resets input, and returns
+the error without fallback/retry. `RenderError::WindowControl` retains native
+routing refusal details. The graphics-only and keyboard-only pumps do not install
+native pointer routing. The legacy explicit `Server::nested_pointer` is unchanged.
+
+This installs event routing, not strip/label composition. The host must still
+publish only successfully composed controls and retire failed/removed frames.
+Overlay hit policy, full clipped-name access, native navigation, cursor integration
+during native grabs and direct-backend composition remain work. Smithay 0.7's
+missing parent cursor-leave notifications remain an existing backend limitation.
+Four real-client adapter tests and eight complete GLES label frames plus live
+minimization pass; synthetic adapter events do not prove actual parent-event
+delivery, on-screen interaction, direct scanout or hardware acceptance. Report:
+`docs/autonomy/updates/nested-native-control-event-routing.md`.

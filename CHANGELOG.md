@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The nested desktop routes pointer gestures through its published window controls.**
+  It keeps the actual pointer position during a native gesture, cancels a drag
+  that leaves its control, and consumes cancelled releases across deactivation.
+  Ordinary typing, client buttons and scroll retain their routes. Four real-client
+  tests and eight complete GLES label frames cover the adapter; composing usable
+  desktop controls remains unfinished. Evidence:
+  `docs/autonomy/updates/nested-native-control-event-routing.md`.
+
 - **Native control focus cannot survive a retired window presentation.**
   The host API binds a painted strip to its current mapping and geometry. Replacing,
   hiding or remapping the window clears native label focus and cancels held actions

@@ -249,7 +249,7 @@ impl Server {
 }
 
 /// Wayland fixed-point values have a signed 24-bit integer part.
-fn bounded(value: f64) -> bool {
+pub(crate) fn bounded(value: f64) -> bool {
     value.is_finite() && (-8_388_608.0..8_388_608.0).contains(&value)
 }
 

@@ -35,6 +35,9 @@ pub enum RenderError {
     /// Keyboard backend initialization or routing refused.
     #[error(transparent)]
     Input(#[from] crate::InputError),
+    /// Native control routing refused; the event must not be retried.
+    #[error(transparent)]
+    WindowControl(#[from] crate::WindowControlRouteError),
     /// No positive framebuffer extent was supplied.
     #[error("empty framebuffer")]
     EmptySize,

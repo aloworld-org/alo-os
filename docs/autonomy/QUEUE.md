@@ -5,6 +5,30 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed nested native control event routing (2026-09-09):** `pump_seat` routes
+published native gestures through the new parent-position adapter. Out-and-back
+motion/deactivation cancel execution; releases drain while inactive or before
+fresh motion. Ordinary typing, client buttons and scroll remain routed. Four new
+real-client tests, Linux 156 unit/207 lifecycle/three socket/three doctests,
+affected Linux/Windows clippy/tests/fmt, examples and rustdoc pass. WSLg passes
+eight new complete label frames with live minimization and all 28 nested stages.
+Report: `updates/nested-native-control-event-routing.md`. Supervisor gates pending.
+Next executable component: nested strip/label composition using published lifetime
+and event routing, with overlay hit policy and readable full clipped-name access;
+native navigation/cursor and direct integration remain. This completes the event
+adapter, not installed usable controls or the window-management feature.
+
+**Selected nested native control event routing (2026-09-09):** complete the
+parent-event adapter and connect `Nested::pump_seat` to the published control
+lifetime. Keep a backend position distinct from client focus during native grabs;
+require fresh motion after deactivation, consume cancelled releases and preserve
+ordinary keyboard, secondary-button and scroll routing. Acceptance: real-client
+exactly-once close, out-and-back cancellation, deactivation/reactivation, invalid
+motion and client fallback tests; affected fmt/tests/clippy/rustdoc and WSLg
+regression. Strip/label composition, overlay policy, clipped full-text access,
+native navigation and direct integration remain subsequent components.
+
+
 **Completed mapping-bound native control presentation (2026-09-09):** explicit
 painted target, visibility identity, geometry/intent and native label focus now
 share one server-owned lifetime. Replacement/failure, hide/remap, pointer loss and

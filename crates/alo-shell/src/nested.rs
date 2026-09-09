@@ -35,6 +35,8 @@ pub struct Nested {
     closed: bool,
     /// Parent activation; unfocused nested windows must never route keys.
     focused: bool,
+    /// Actual parent position, including motion consumed by native controls.
+    control_input: crate::NestedControlInput,
 }
 
 impl Nested {
@@ -83,6 +85,7 @@ impl Nested {
             events,
             closed: false,
             focused: false,
+            control_input: crate::NestedControlInput::default(),
         })
     }
 
@@ -106,6 +109,8 @@ impl Nested {
     /// Parent deactivation and close cancel held input. Smithay 0.7 does not
     /// forward cursor-leave events; leave-only cancellation remains backend work.
     /// Client cursor presentation happens on render. This is not a production session.
+    /// Published native controls intercept primary gestures; absent presentation
+    /// uses ordinary client routing. This method does not compose controls/labels.
     pub fn pump_seat(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
         self.pump_input(server, true)
     }
@@ -113,7 +118,11 @@ impl Nested {
     /// Share ordered parent activation handling across keyboard-only and full seats.
     fn pump_input(&mut self, server: &mut crate::Server, pointer: bool) -> Result<(), RenderError> {
         let mut failure = None;
+        let mut control_input = std::mem::take(&mut self.control_input);
         let result = self.pump_events(|event, focused| {
+            if failure.is_some() {
+                return;
+            }
             if pointer {
                 let translated = match &event {
                     Some(WinitEvent::Input(InputEvent::PointerMotionAbsolute { event })) => {
@@ -136,10 +145,13 @@ impl Nested {
                     }
                     _ => Ok(None),
                 };
-                if let Err(error) =
-                    translated.and_then(|event| server.nested_pointer(focused, event))
-                {
+                if let Err(error) = translated.map_err(RenderError::Input).and_then(|event| {
+                    control_input
+                        .route(server, focused, event)
+                        .map_err(RenderError::WindowControl)
+                }) {
                     failure = Some(error);
+                    return;
                 }
             }
             let focus = if focused {
@@ -148,20 +160,23 @@ impl Nested {
                 None
             };
             if let Err(error) = server.keyboard_focus(focus.as_ref()) {
-                failure = Some(error);
+                failure = Some(RenderError::Input(error));
                 return;
             }
             if let Some(WinitEvent::Input(InputEvent::Keyboard { event })) = event {
                 let code = u32::from(event.key_code()).saturating_sub(8);
                 if let Err(error) = server.keyboard_key(code, event.state(), event.time_msec()) {
-                    failure = Some(error);
+                    failure = Some(RenderError::Input(error));
                 }
             }
         });
-        result?;
+        self.control_input = control_input;
         if let Some(error) = failure {
-            return Err(RenderError::Input(error));
+            self.control_input = crate::NestedControlInput::default();
+            server.clear_input();
+            return Err(error);
         }
+        result?;
         Ok(())
     }
 

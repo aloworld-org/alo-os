@@ -1302,6 +1302,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Nested native control event routing (2026-09-09): the seat pump now uses the
+    published presentation and actual parent position through native grabs.
+    Out-and-back motion and deactivation cancel execution; cancelled releases
+    drain while inactive or before fresh motion. Client typing/buttons/scroll
+    remain available. Four real-client tests, eight new complete GLES label
+    frames and live minimization pass, alongside affected Linux/Windows checks
+    and rustdoc. Composition, overlay policy, full clipped-name access, native
+    navigation/cursor integration and direct integration remain unfinished.
+    No feature tick; independent supervisor gates pending. Evidence/limits:
+    `docs/autonomy/updates/nested-native-control-event-routing.md`.
   - Mapping-bound native control presentation (2026-09-09): server-owned explicit
     painted target, visibility identity, geometry/intent and native label focus
     now share a lifecycle. Replacement, invalid candidates, hide/remap, pointer
