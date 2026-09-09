@@ -533,3 +533,44 @@ That remaining component precedes native navigation/cursor selection and direct
 integration. No public agent interface, vocabulary, palette, font or ADR changes.
 Evidence: `docs/autonomy/updates/adaptive-native-control-labels.md` and its
 follow-up `docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`.
+
+## Bounded native-name page preparation
+
+2026-09-09 additive trusted Rust API: `WindowControlLabels::prepare_pages` takes
+an explicit selection, matching layout, output-contained reader box, vocabulary,
+scheme and text scale. It shapes the complete name once using the same private
+fonts and shaping rules as ordinary labels, then partitions whole visual lines
+into immutable `WindowControlLabelPages`. Words, shaping clusters, line order,
+source/translation provenance and text scale remain intact. It does not split
+the source into independently shaped substrings. Explicit line breaks and wrapped
+lines participate in the same partition, including blank visual lines.
+
+`said()` retains the unabridged name. `pages()` exposes a nonempty ordered slice;
+each `WindowControlLabelPage` exposes its contiguous visual-line range, bounds,
+opaque RGBA pixels and scale-one painter. All ranges together cover every shaped
+line exactly once. A one-page name has the same raster as ordinary preparation
+at the same geometry. A page is a distinct type: it cannot be supplied as a
+complete label to `WindowControlScene`. The painter reuses the ordinary label's
+scanline drawing, without granting input authority or installing navigation.
+
+The reader box retains 9..=2048 by 9..=512 limits and four-pixel padding, must
+belong to the layout viewport and must not cover any control. The selection's
+action, bounds and availability must match a control; transient feedback does
+not change the name. Each page must contain complete lines and every nontransparent
+ink pixel. Too-small line/ink space returns `LineTooLarge`, foreign/off-output/
+overlapping placement returns `Placement`, and existing geometry, text, vocabulary
+or missing-glyph errors are preserved under `Label`. Shaping checks all glyphs,
+including later pages. More than 128 pages or 4,194,304 aggregate RGBA pixels
+returns `Budget` before page raster allocation. These limits bound the prepared
+reader to 16 MiB of pixels, independently of its 4096-byte wording limit.
+All refusals are atomic: no prefix of the page set escapes on failure.
+
+This completes page preparation/rendering only. Live mapping-bound navigation,
+page position wording, keyboard/pointer ownership, submission/publication and
+retirement still need a reader transaction before full-name access is usable.
+Ordinary label transactions still refuse names that cannot expand completely;
+they do not silently replace a name with its first page. Existing client typing
+and release ownership are unchanged. Native navigation/cursor selection and
+direct integration remain later components. No new agent surface, vocabulary,
+palette, font or ADR. Component evidence and exact limits:
+`docs/autonomy/updates/paged-native-control-label-rendering.md`.

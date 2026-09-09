@@ -14355,3 +14355,52 @@ ignore or exemption. Logs: `.git/alo-loop/automatic-recovery-670-windows` and
 Fetched main after gating: still 6704741, the combined base tested. Final source
 diff reviewed; release supervisor rebuilt. Publication and clean-tree restart
 follow these results, never precede them.
+
+## 2026-09-09 - paged native control label rendering
+
+Started clean at 3c77864. Read constitution, delivery/ownership/report guidance,
+current queue and STATE tail, relevant feature/roadmap, ADR 0002/0010 and native
+control contract. All published task reports were already referenced in STATE;
+no new report reconciliation was needed at iteration start. Selected page
+preparation/rendering and its acceptance in QUEUE before implementation.
+
+Added immutable whole-shaped-line pages with full wording, translation/source
+provenance and unchanged scale. Shared complete-name shaping checks later glyphs;
+whole-line rasterization refuses lost ink. Selection, output containment and
+control exclusion validate before rendering. At most 128 pages and 4,194,304
+aggregate RGBA pixels (16 MiB) are allowed, checked before raster allocation.
+Refusals return no partial page set. A distinct page type cannot enter the
+ordinary complete-label scene; compile-fail evidence covers this boundary.
+No input authority, page navigation or new vocabulary/palette/font/ADR.
+
+Final checks: Linux 162 unit, 216 real-client lifecycle, three socket and four
+compile-fail doctests pass, none ignored. Affected Linux/Windows clippy/tests,
+Linux examples/rustdoc and both fmt checks pass; Windows has zero Linux-only
+shell cases. Actual WSLg GLES checks pass: 72 new full page frames forward/reverse,
+72 existing full label frames and nested strip/label/expansion submission,
+dismissal, refusal/recovery and client lifecycle checks. Complete frame readback
+is not live reader navigation, parent input delivery, on-screen capture or direct
+scanout. Full independent supervisor workspace/Windows/Linux/rustdoc/BPF gates
+remain pending. No feature/release checkbox changes or hardware certification.
+
+Development repair evidence: incorrect test constructor replaced with the actual
+Vocabulary::empty API; the pixel-budget test now accepts the exact four-page
+boundary and refuses five pages, with no limit changes. Clippy unchecked indexing
+and missing private documentation repaired without exemptions. Final affected
+acceptance rerun after repair; no graphical failures/timeouts. Local logs:
+`.git/alo-loop/paged-native-control-label-rendering/`.
+
+Ubuntu graphics/input libraries and WSLg socket verified. Every command preflight
+exceeded 12 GiB C:; minimum recorded 55,149,518,848 bytes. No cleanup, package/mount/
+service/session changes, WSL restart, helper, kernel mutation or outer machine
+lock. Separate desktop Linux target retained. No staging/commit/push, dev-loop
+edit, extra worker, other-checkout edit, credential/identity access or unrelated
+host changes. Source/new-file diffs reviewed and git diff --check passed.
+
+Exact commands, decisions, failures, evidence and limits:
+`docs/autonomy/updates/paged-native-control-label-rendering.md`.
+Next component: live mapping-bound page navigation/position wording, keyboard/
+pointer ownership, submission/publication and retirement; then native navigation/
+cursor selection and direct integration. Rendering component is complete, reader
+and usable window management unfinished. Physical acceptance remains owed during
+release validation. Reports arriving during publication reconcile next iteration.

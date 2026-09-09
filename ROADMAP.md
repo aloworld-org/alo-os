@@ -1315,6 +1315,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Paged native control label rendering (2026-09-09): immutable whole-line pages
+    preserve full translation/source provenance and text scale. Foreign/clipped
+    placement, lost ink and excessive page allocation refuse atomically; a page
+    cannot masquerade as a complete scene label. Linux 162 unit/216 lifecycle/
+    three socket/four doctests, affected Linux/Windows clippy/tests/fmt, Linux rustdoc,
+    72 new and 72 existing full GLES frames and nested control transactions pass.
+    Live mapping-bound reader navigation, page position wording, input ownership
+    and submission/retirement remain next, then native navigation/cursor selection
+    and direct integration. Full supervisor publication gates pending; no feature
+    checkbox changes. `docs/autonomy/updates/paged-native-control-label-rendering.md`.
   - Adaptive native labels (2026-09-09), **graphical recovery verified**: fitting boxes
     stay; clipped names expand below/above controls at unchanged text scale and
     retain translation/source fallback. Exhausted space refuses. Linux 159 unit,

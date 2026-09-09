@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Long window-control names can now be prepared as readable pages.** The
+  renderer keeps whole shaped lines, words and text scale, and refuses partial
+  or oversized page sets. All 72 new GLES page frames match full readback.
+  Live page navigation and desktop presentation remain unfinished; this is the
+  rendering component, not completed full-name access. Evidence:
+  `docs/autonomy/updates/paged-native-control-label-rendering.md`.
+
 - **Window-control names expand when their preferred box is too
   small.** Full words and text scale are retained, with pointer exclusion across
   the expanded area. Component tests and graphical submission/scene checks pass;

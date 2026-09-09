@@ -31,14 +31,14 @@ pub enum WindowControlLabelError {
 /// No filesystem scan, network access, application context or input authority.
 pub struct WindowControlLabels {
     /// Loaded once, with only explicitly supplied fonts.
-    fonts: FontSystem,
+    pub(crate) fonts: FontSystem,
 }
 
 /// Immutable label pixels and the full externalized text, including provenance.
 /// It does not own a window, change hit geometry or authorize an action.
 pub struct WindowControlLabel {
     /// Unabridged words and translation provenance.
-    said: Said,
+    pub(crate) said: Said,
     /// Validated clipping output.
     pub(crate) viewport: Rectangle<i32, Physical>,
     /// Validated label box, including padding.
@@ -46,7 +46,7 @@ pub struct WindowControlLabel {
     /// Bounded row-major opaque RGBA image.
     pub(crate) pixels: Vec<[u8; 4]>,
     /// Text or output loss requires alternate full-text presentation.
-    clipped: bool,
+    pub(crate) clipped: bool,
 }
 
 impl WindowControlLabels {
@@ -81,6 +81,42 @@ impl WindowControlLabels {
         })
     }
 
+    /// Shape the entire bounded wording once, including off-page glyph checks.
+    pub(crate) fn shape(
+        &mut self,
+        control: &WindowControl,
+        strings: &Strings,
+        width: i32,
+        scale: TextScale,
+    ) -> Result<(Said, Buffer), WindowControlLabelError> {
+        let said = control.action().said(strings);
+        if said.is_a_bug() {
+            return Err(WindowControlLabelError::Vocabulary);
+        }
+        if said.text().is_empty() || said.text().len() > 4096 {
+            return Err(WindowControlLabelError::Text);
+        }
+        let factor = f32::from(scale.as_percent()) / 100.0;
+        let mut buffer = Buffer::new(&mut self.fonts, Metrics::new(14.0 * factor, 20.0 * factor));
+        buffer.set_wrap(&mut self.fonts, Wrap::WordOrGlyph);
+        // Shape the complete bounded label so clipping cannot hide missing glyphs.
+        buffer.set_size(&mut self.fonts, Some((width - 8) as f32), None);
+        buffer.set_text(
+            &mut self.fonts,
+            said.text(),
+            &Attrs::new().family(Family::SansSerif),
+            Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(&mut self.fonts, false);
+        if buffer
+            .layout_runs()
+            .any(|run| run.glyphs.iter().any(|glyph| glyph.glyph_id == 0))
+        {
+            return Err(WindowControlLabelError::MissingGlyph);
+        }
+        Ok((said, buffer))
+    }
+
     /// Prepare one control's full `Action::said` label, including disabled ones.
     /// At scale one, 14px text/20px line height follow the person's TextScale.
     /// The explicit box has 4px padding and wraps at word/glyph boundaries.
@@ -105,31 +141,7 @@ impl WindowControlLabels {
         if !(9..=2048).contains(&size.0) || !(9..=512).contains(&size.1) {
             return Err(WindowControlLabelError::Geometry);
         }
-        let said = control.action().said(strings);
-        if said.is_a_bug() {
-            return Err(WindowControlLabelError::Vocabulary);
-        }
-        if said.text().is_empty() || said.text().len() > 4096 {
-            return Err(WindowControlLabelError::Text);
-        }
-        let factor = f32::from(scale.as_percent()) / 100.0;
-        let mut buffer = Buffer::new(&mut self.fonts, Metrics::new(14.0 * factor, 20.0 * factor));
-        buffer.set_wrap(&mut self.fonts, Wrap::WordOrGlyph);
-        // Shape the complete bounded label so clipping cannot hide missing glyphs.
-        buffer.set_size(&mut self.fonts, Some((size.0 - 8) as f32), None);
-        buffer.set_text(
-            &mut self.fonts,
-            said.text(),
-            &Attrs::new().family(Family::SansSerif),
-            Shaping::Advanced,
-        );
-        buffer.shape_until_scroll(&mut self.fonts, false);
-        if buffer
-            .layout_runs()
-            .any(|run| run.glyphs.iter().any(|glyph| glyph.glyph_id == 0))
-        {
-            return Err(WindowControlLabelError::MissingGlyph);
-        }
+        let (said, buffer) = self.shape(control, strings, size.0, scale)?;
         let viewport = Rectangle::from_size(viewport.into());
         let bounds = Rectangle::new(origin.into(), size.into());
         let mut clipped = bounds.intersection(viewport) != Some(bounds)

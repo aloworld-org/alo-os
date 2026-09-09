@@ -5,6 +5,28 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed paged native control label rendering (2026-09-09):** bounded immutable
+pages preserve complete shaped lines, full wording/provenance and text scale.
+Invalid placement, lost ink and excessive allocation refuse atomically; pages
+cannot pass as full scene labels. Three new unit tests and one compile-fail check;
+Linux 162 unit/216 lifecycle/three socket/four doctests, affected Linux/Windows
+checks, 72 new and 72 existing full GLES frames and nested control transactions
+pass. Report: `updates/paged-native-control-label-rendering.md`. Independent
+supervisor gates pending. Next executable reader component: bind page selection
+and navigation to the live control mapping, with externalized page position,
+keyboard/pointer ownership, transactional submission/publication and retirement.
+Then native navigation/cursor selection and direct integration. Page rendering
+is complete; full-name access and usable window management remain unfinished.
+
+**Selected paged native control label rendering (2026-09-09):** implement a
+bounded, immutable page preparation component preserving complete shaped lines,
+full translation/source provenance and text scale. Refuse invalid geometry,
+unsupported glyphs, a line that cannot fit and excessive page allocation; never
+return a partial set. Acceptance: page coverage and raster equivalence, happy/
+refusal tests and complete GLES page readback; affected tests/fmt/clippy/rustdoc.
+Live mapping-bound page navigation/submission remains the next reader component;
+this step does not complete full-name access or usable window management.
+
 **Recovered adaptive native control labels (2026-09-09):** automatic expansion
 below/above controls is implemented with source/fallback and text scale intact.
 Linux 159 unit/216 lifecycle/three socket/three doctests, affected Linux/Windows
@@ -16,7 +38,8 @@ deadlines preserved. All 30 offscreen stages pass. Full Windows/Linux/rustdoc/BP
 and graphical publication gates passed on the combined tree.
 Report: `updates/repairing-an-unfinished-desktop-task.md`, preserving
 `updates/adaptive-native-control-labels.md` as the earlier failure record.
-Next: paged full-name access where expansion cannot fit, followed by native
+Next (page rendering component now complete above): live paged full-name access
+where expansion cannot fit, followed by native
 navigation/cursor selection and direct integration. Feature unfinished.
 
 **Desktop recovery protocol (2026-09-09):** ordinary worker/gate failures request

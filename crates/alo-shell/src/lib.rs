@@ -67,6 +67,8 @@ mod window_control_frame;
 mod window_control_input;
 mod window_control_label;
 mod window_control_label_expansion;
+mod window_control_label_page_raster;
+mod window_control_label_pages;
 mod window_control_label_paint;
 mod window_control_label_target;
 mod window_control_overlay;
@@ -139,6 +141,9 @@ pub use window_control_input::{
 };
 pub use window_control_label::{
     LabelGeometry, WindowControlLabel, WindowControlLabelError, WindowControlLabels,
+};
+pub use window_control_label_pages::{
+    WindowControlLabelPage, WindowControlLabelPages, WindowControlPageError,
 };
 pub use window_control_label_target::{WindowControlLabelSelection, WindowControlLabelTarget};
 pub use window_control_routing::{
