@@ -3,11 +3,10 @@
 - Date: 2026-09-09
 - Workstream: model selection and configuration (`alo-record`, `alo-turn`, `alo-agentd`)
 - Contributor: Claude Code
-- Status: **the reader side and the turn's door are built; nothing emits one.** The variant, its
-  constructor and the compatibility tests exist. **No production path writes
-  one**, and **response/record agreement is not claimed** — that is claimed when
-  a daemon test reads the persisted refusal back, and that test does not exist
-  yet.
+- Status: **complete.** The daemon writes one, and **response/record agreement
+  is now claimed** — a daemon test drives a real policy refusal through the
+  production path, reads the record back **off the disk**, and compares its
+  wording with the response the agent was given.
 
 ## What is built, and what is not
 
@@ -18,8 +17,9 @@
 | Stored bytes carry no question, credential or endpoint | **built** |
 | `Turning::a_question_that_went_nowhere` | **built** |
 | Write-failure closes the turn, refusal not reported | **built, mutation-checked** |
-| Daemon emission | **not built, deliberately** |
-| Persisted response/record agreement | **not claimed** |
+| Daemon emission | **built** |
+| Persisted response/record agreement | **built, mutation-checked** |
+| Write failure: not-recorded answer, closed turn, no connection, no fallback | **built, mutation-checked** |
 
 The rest of this note is the design the remaining work follows.
 

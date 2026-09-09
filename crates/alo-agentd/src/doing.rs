@@ -144,6 +144,36 @@ fn a_rule_refused(why: &NotAllowed, by_an_organisation: bool, strings: &Strings)
     )
 }
 
+/// A rule refused the place somebody chose: said once, written down, answered.
+///
+/// **One value goes to both.** [`a_rule_refused`] words it, the record is handed
+/// that same `Said`, and the agent is told the same one — so what a person reads
+/// and what is written down cannot be two accounts of one moment. Nothing here
+/// re-renders and nothing composes a second sentence.
+///
+/// **A refusal that could not be written down is not answered as a refusal.**
+/// `alo_turn::Turning::a_question_that_went_nowhere` closes the turn and hands
+/// back `NotDone::NotRecorded`, and that is what crosses instead — in
+/// `alo-turn`'s words, which already say what happened. Answering with the
+/// policy sentence would leave somebody believing the machine had behaved
+/// correctly, when it had also failed to keep the evidence that it had.
+///
+/// Nothing was sent to a provider on either road, and nothing else answered in
+/// its stead.
+fn refused_by_a_rule(
+    turning: &mut Turning<'_, '_>,
+    why: &NotAllowed,
+    by_an_organisation: bool,
+    strings: &Strings,
+    now: SystemTime,
+) -> ToAnAgent {
+    let said = a_rule_refused(why, by_an_organisation, strings);
+    match turning.a_question_that_went_nowhere(&said, now) {
+        Ok(()) => ToAnAgent::refused(&said),
+        Err(not_recorded) => ToAnAgent::refused(&not_recorded.said(strings)),
+    }
+}
+
 /// A question, put to whatever this person chose — or refused in one sentence.
 ///
 /// The three refusals are three different things to go and fix, and each is
@@ -198,7 +228,7 @@ fn put_to_a_model(
             let permission = match Answering::chosen(provider.source(), places.policy()) {
                 Ok(permission) => permission,
                 Err(why) => {
-                    return ToAnAgent::refused(&a_rule_refused(&why, by_an_organisation, strings));
+                    return refused_by_a_rule(turning, &why, by_an_organisation, strings, now);
                 }
             };
 
@@ -259,10 +289,10 @@ fn put_to_a_model(
                 Err(why) => ToAnAgent::refused(&nothing_answered(&why, strings)),
             },
             // What an organisation permits, refusing what the person chose.
-            // **The same sentence as the provider door's**, because it is the
-            // same fact and a person reading two wordings of one rule would be
-            // reading two accounts of one moment.
-            Err(why) => ToAnAgent::refused(&a_rule_refused(&why, by_an_organisation, strings)),
+            // **The same sentence as the provider door's, and written down the
+            // same way**, because it is the same fact and a person reading two
+            // wordings of one rule would be reading two accounts of one moment.
+            Err(why) => refused_by_a_rule(turning, &why, by_an_organisation, strings, now),
         },
     }
 }
@@ -1585,6 +1615,185 @@ endpoint = \"https://{other}\"
             "a question a client wrote changed the refusal, so something of theirs reached it"
         );
         assert!(!nobody.join().unwrap() && !also_nobody.join().unwrap());
+    }
+
+    /// A record on a disk with no space left on it.
+    ///
+    /// Every write is refused and the entry is kept, so a test can say what the
+    /// daemon *tried* to write as well as what it did about being unable to.
+    #[derive(Debug, Default)]
+    struct ANoSpaceLeftDisk {
+        /// What was offered to it.
+        tried: Vec<alo_record::Entry>,
+    }
+
+    impl alo_turn::Kept for ANoSpaceLeftDisk {
+        fn keep(&mut self, entry: alo_record::Entry) -> Result<(), alo_keeping::NotKept> {
+            self.tried.push(entry);
+            Err(alo_keeping::NotKept::NotAddedTo {
+                path: "/var/lib/alo/record.jsonl".to_owned(),
+                why: "no space left on device".to_owned(),
+            })
+        }
+    }
+
+    impl alo_turn::Shortening for ANoSpaceLeftDisk {
+        fn shorten(
+            &mut self,
+            _keeping: alo_keeping::Keeping,
+            _now: std::time::SystemTime,
+        ) -> Result<alo_turn::Shortened, alo_keeping::NotKept> {
+            Ok(alo_turn::Shortened::NotOnADisk)
+        }
+    }
+
+    /// **A rule's refusal reaches the person and the disk as one sentence.**
+    ///
+    /// The acceptance for this whole piece of work, and it is deliberately not a
+    /// comparison of two values this test rendered: the question is driven
+    /// through the production daemon path against a **file-backed** record, the
+    /// response is captured, and then the record is **read back off the disk**
+    /// and its wording compared with what the agent was told.
+    ///
+    /// Two values a test rendered itself would prove only that one function is
+    /// deterministic. Reading it back is what makes it an agreement.
+    #[test]
+    fn what_the_person_is_told_is_what_reaches_the_record() {
+        let folder = a_directory_of_our_own("persisted-agreement");
+        let path = folder.join("record.jsonl");
+        let mut writing = alo_keeping::Writing::opening(&path).unwrap();
+
+        let (chosen, nobody) = a_listener_that_reports_connections();
+        let (other, also_nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("persisted-agreement", chosen, other);
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            TheBound::AnOrganisations(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::Nobodys,
+        );
+
+        let said = on_a_machine_that_answers(&mut writing, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            )
+        });
+        drop(writing);
+
+        let told = said.refusal().map(|wording| wording.text().to_owned());
+        assert!(
+            told.is_some(),
+            "the rule did not refuse, so there is nothing to compare"
+        );
+        let told = told.unwrap_or_default();
+        assert!(
+            told.contains("an administrator set that rule"),
+            "the refusal was not the organisation's rule: {told}"
+        );
+
+        // Off the disk, not out of this process.
+        let reading = alo_keeping::Reading::at(&path).unwrap();
+        assert!(
+            reading.damage().unreadable().is_empty(),
+            "the record this daemon wrote could not be read back"
+        );
+        let record = reading.into_record();
+        assert_eq!(
+            record.len(),
+            1,
+            "a refused question wrote {} entries",
+            record.len()
+        );
+        let entry = record.everything().next().unwrap();
+
+        assert_eq!(
+            entry.happened().why_stopped().map(alo_record::Line::as_str),
+            Some(told.as_str()),
+            "the record and the response are two different accounts of one moment"
+        );
+        assert!(
+            entry.what().is_none(),
+            "a refused question was written down as though it were a call"
+        );
+        assert_eq!(entry.at(), noon(), "the moment was not the turn's");
+
+        assert!(!nobody.join().unwrap(), "the provider was connected to");
+        assert!(
+            !also_nobody.join().unwrap(),
+            "a provider nobody chose was connected to"
+        );
+        drop(std::fs::remove_dir_all(&folder));
+    }
+
+    /// **A refusal that could not be written down is not answered as a refusal.**
+    ///
+    /// The disk refuses every write. What must *not* happen is the person being
+    /// told only that a rule refused their question: they would believe the
+    /// machine had behaved correctly, when it had also failed to keep the
+    /// evidence that it had.
+    ///
+    /// Four things are asserted together, because each without the others would
+    /// leave the interesting failure open: the answer is the record's, the turn
+    /// is closed, no provider was connected to, and nothing answered in its
+    /// stead.
+    #[test]
+    fn a_refusal_that_could_not_be_written_down_says_so_instead() {
+        let mut disk = ANoSpaceLeftDisk::default();
+
+        let (chosen, nobody) = a_listener_that_reports_connections();
+        let (other, also_nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("unwritable-refusal", chosen, other);
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            TheBound::AnOrganisations(SourcePolicy::ThisMachineOnly),
+            WhoseKeyring::Nobodys,
+        );
+
+        let mut closed = false;
+        let said = on_a_machine_that_answers(&mut disk, |turning, _grants, strings| {
+            let said = put_to_a_model(
+                "may the tenant sublet?",
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            );
+            closed = turning.is_closed();
+            said
+        });
+
+        let told = said
+            .refusal()
+            .map(|wording| wording.text().to_owned())
+            .unwrap_or_default();
+
+        // It tried to write the rule's sentence, and then did not report it.
+        assert_eq!(
+            disk.tried.len(),
+            1,
+            "the refusal was not offered to the record at all"
+        );
+        assert!(
+            !told.contains("an administrator set that rule"),
+            "a refusal that could not be written down was reported as though it had been: {told}"
+        );
+        assert!(
+            !told.is_empty(),
+            "nothing was said at all, and every request is refused in words"
+        );
+        assert!(closed, "the turn stayed open after the record failed");
+        assert!(!nobody.join().unwrap(), "the provider was connected to");
+        assert!(
+            !also_nobody.join().unwrap(),
+            "a provider nobody chose was connected to, which is a fallback"
+        );
     }
 
     /// **One refusal value, not two sentences composed twice.**

@@ -313,8 +313,14 @@ impl Knocking for Pretending {
 /// to a model leaves behind is the thing being tested — and a machine with no
 /// grant is the honest setting for it: asking a model is not a verb and reaches
 /// no folder.
+///
+/// The record is whatever a test hands in, rather than an in-memory one: a
+/// question refused by a rule is now written down, and *what reached the disk*
+/// is a different question from *what this process remembers*. A file-backed
+/// record and one that refuses every write are both `Shortening`, and both are
+/// used.
 pub(crate) fn on_a_machine_that_answers<T>(
-    record: &mut Record,
+    record: &mut dyn alo_turn::Shortening,
     doing: impl FnOnce(&mut Turning<'_, '_>, &Grants, &Strings) -> T,
 ) -> T {
     let strings = in_english();
