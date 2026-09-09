@@ -316,6 +316,7 @@ dependencies = [
 name = "alo-shell"
 version = "0.1.0"
 dependencies = [
+ "alo-appearance",
  "alo-shortcuts",
  "drm",
  "drm-ffi",
