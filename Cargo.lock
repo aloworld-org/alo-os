@@ -39,6 +39,7 @@ dependencies = [
  "alo-egress",
  "alo-files",
  "alo-keeping",
+ "alo-keyring-fixture",
  "alo-models",
  "alo-protocol",
  "alo-record",
@@ -47,10 +48,12 @@ dependencies = [
  "alo-strings",
  "alo-turn",
  "rustix 1.1.4",
+ "secret-service",
  "serde",
  "signal-hook",
  "thiserror 2.0.20",
  "toml",
+ "zbus",
 ]
 
 [[package]]

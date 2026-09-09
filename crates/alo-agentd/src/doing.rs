@@ -285,6 +285,7 @@ mod tests {
         on_a_machine, on_a_machine_that_answers,
     };
     use alo_choosing::{Chosen, Which};
+    use alo_keyring_fixture::AKeyringOfOurOwn;
     use alo_record::Record;
 
     /// This machine's own address, which is what a provider's has to be: a
@@ -346,6 +347,261 @@ mod tests {
                     "{one_why:?} and {other_why:?} say the same thing, so a person is                      sent to the wrong place for one of them: {one}"
                 );
             }
+        }
+    }
+
+    /// A key that is a credential to nothing, and never leaves this machine.
+    const A_SYNTHETIC_KEY: &str = "sk-live-AGENTD-FIXTURE-ONLY-91c4";
+
+    /// Put a synthetic key in the fixture's keyring, through a client of its own.
+    fn stored_in(keyring: &AKeyringOfOurOwn, reference: &str, secret: &str) {
+        let connection = zbus::blocking::connection::Builder::address(keyring.address().as_str())
+            .unwrap()
+            .build()
+            .unwrap();
+        let service = secret_service::blocking::SecretService::connect_with_existing(
+            secret_service::EncryptionType::Dh,
+            connection,
+        )
+        .unwrap();
+        let mut attributes = std::collections::HashMap::new();
+        attributes.insert("xdg:schema", "dev.alo.Provider");
+        attributes.insert("reference", reference);
+        service
+            .get_default_collection()
+            .unwrap()
+            .create_item(
+                "a provider key this test invented",
+                attributes,
+                secret.as_bytes(),
+                true,
+                "text/plain",
+            )
+            .unwrap();
+    }
+
+    /// A listener this test owns, which reports whether anybody connected to it.
+    ///
+    /// On this machine's own interface rather than loopback, because that is the
+    /// only kind of address the Provider door will carry a key to.
+    fn a_listener_that_reports_connections() -> (std::net::SocketAddr, std::thread::JoinHandle<bool>)
+    {
+        let listener =
+            std::net::TcpListener::bind(std::net::SocketAddr::new(our_own_address(), 0)).unwrap();
+        let at = listener.local_addr().unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let heard = std::thread::spawn(move || {
+            let until = std::time::Instant::now() + Duration::from_secs(2);
+            while std::time::Instant::now() < until {
+                if listener.accept().is_ok() {
+                    return true;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            false
+        });
+        (at, heard)
+    }
+
+    /// Settings naming two providers, with the person having chosen the first.
+    fn a_person_who_chose(
+        called: &str,
+        chosen: std::net::SocketAddr,
+        other: std::net::SocketAddr,
+    ) -> std::path::PathBuf {
+        let config = a_directory_of_our_own(called);
+        let folder = config.join(alo_choosing::THE_FOLDER);
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(
+            folder.join(alo_choosing::THE_SETTINGS),
+            format!(
+                "format = 2
+
+[answers]
+provider = {{ name = \"Mine\", model = \"a-model\" }}
+
+[[provider]]
+name = \"Mine\"
+endpoint = \"https://{chosen}\"
+
+[[provider]]
+name = \"Theirs\"
+endpoint = \"https://{other}\"
+"
+            ),
+        )
+        .unwrap();
+        config
+    }
+
+    /// **The key is fetched from the person's own keyring, and only the
+    /// provider they chose is connected to.**
+    ///
+    /// A real `gnome-keyring-daemon` on a bus of the fixture's own holds a
+    /// synthetic key. The daemon reads the person's settings, asks that keyring
+    /// for `provider/Mine`, and opens a connection to the address they wrote
+    /// down — and to nothing else.
+    ///
+    /// # What this proves, and what it deliberately stops short of
+    ///
+    /// The endpoint is `https://` at this machine's own address rather than
+    /// loopback, because the production path allows nothing else: a loopback
+    /// provider makes `Provider::source` say *this machine*, and
+    /// `Asking::to_a_provider` refuses that outright as `Miswired::NotAProvider`
+    /// — a provider on this machine belongs to the `Served` door. And
+    /// `Provider::checked` refuses plain `http://` to anywhere that is not this
+    /// machine. Those two together mean **the only address the Provider door
+    /// will carry a key to is a real TLS endpoint.**
+    ///
+    /// The listener here speaks no TLS, so the handshake fails and no answer
+    /// comes back. **The connection is the assertion**, and it is enough for
+    /// what this test is about: nothing is connected to until a key has been
+    /// obtained, so a connection happening at all is the key having come out of
+    /// a real keyring. That the *bytes* carrying it are correct is asserted a
+    /// layer down, where `alo-asking` reads them off its own server.
+    ///
+    /// Reading them off **this** server needs a certificate the daemon trusts,
+    /// and it trusts the compiled-in Mozilla roots and nothing else — see
+    /// `docs/autonomy/updates/` for that, which is an owner's decision rather
+    /// than something a test may arrange.
+    #[test]
+    fn the_key_is_fetched_and_only_the_chosen_provider_is_connected_to() {
+        let keyring = AKeyringOfOurOwn::started("agentd-reaches");
+        stored_in(&keyring, "provider/Mine", A_SYNTHETIC_KEY);
+
+        let (chosen, connected) = a_listener_that_reports_connections();
+        let (other, nobody) = a_listener_that_reports_connections();
+        let config = a_person_who_chose("reaches", chosen, other);
+
+        let mut questions = Questions::of_a_session(
+            Some(config.into_os_string()),
+            None,
+            alo_models::Catalogue::built_in().unwrap(),
+            None,
+            WhoseKeyring::On(keyring.bus()),
+        );
+
+        let mut record = Record::default();
+        let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+            put_to_a_model(
+                "may the tenant sublet?",
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            )
+        });
+
+        assert!(
+            connected.join().unwrap(),
+            "the provider the person chose was never connected to, so the key never left the              keyring"
+        );
+        assert!(
+            !nobody.join().unwrap(),
+            "a provider the person did not choose was connected to"
+        );
+
+        // **And the key really was obtained.** The ask fails here because a
+        // plain socket speaks no TLS, which is expected — but it must not have
+        // failed for want of a credential, and those are four sentences this
+        // crate can name exactly.
+        let refusal = said.refusal().unwrap();
+        let strings = crate::testing::in_english();
+        for word in [
+            NO_KEYRING_FOR_A_PROVIDER,
+            THE_KEYRING_IS_LOCKED,
+            NO_KEY_FOR_THIS_PROVIDER,
+            THE_KEYRING_REFUSED_US,
+        ] {
+            assert_ne!(
+                refusal.text(),
+                strings.say(&word.key(), &Filling::nothing()).text(),
+                "the question was refused for want of a key, so nothing was proved about                  fetching one"
+            );
+        }
+    }
+
+    /// **Every way the store says no ends with nothing sent to any provider.**
+    ///
+    /// Each state is produced for real: no bus at all, a real keyring with no
+    /// such key, a real collection that is locked, and a running bus that
+    /// refuses to carry the message. None is injected, and the difference
+    /// matters — an injected transport failure would prove that a broken socket
+    /// sends nothing, which nobody doubted.
+    ///
+    /// The assertion is the same for all four and is the promise the four states
+    /// exist to keep: **the provider is never connected to, and nothing else
+    /// answers in its place.**
+    #[test]
+    fn no_store_refusal_reaches_a_provider_or_falls_back() {
+        let missing = AKeyringOfOurOwn::started("agentd-missing");
+
+        let locked = AKeyringOfOurOwn::started("agentd-locked");
+        stored_in(&locked, "provider/Mine", A_SYNTHETIC_KEY);
+        {
+            let connection =
+                zbus::blocking::connection::Builder::address(locked.address().as_str())
+                    .unwrap()
+                    .build()
+                    .unwrap();
+            let service = secret_service::blocking::SecretService::connect_with_existing(
+                secret_service::EncryptionType::Dh,
+                connection,
+            )
+            .unwrap();
+            service.get_default_collection().unwrap().lock().unwrap();
+        }
+
+        let denied = AKeyringOfOurOwn::started_where_the_bus_can_refuse("agentd-denied");
+        stored_in(&denied, "provider/Mine", A_SYNTHETIC_KEY);
+        denied.stop_letting_anyone_reach_the_keyring();
+
+        for (which, keyring) in [
+            ("no store at all", WhoseKeyring::Nobodys),
+            ("a store with no such key", WhoseKeyring::On(missing.bus())),
+            ("a locked store", WhoseKeyring::On(locked.bus())),
+            ("a store that refused us", WhoseKeyring::On(denied.bus())),
+        ] {
+            let (chosen, nobody) = a_listener_that_reports_connections();
+            let (other, also_nobody) = a_listener_that_reports_connections();
+            let config = a_person_who_chose(&format!("refused-{}", chosen.port()), chosen, other);
+
+            let mut questions = Questions::of_a_session(
+                Some(config.into_os_string()),
+                None,
+                alo_models::Catalogue::built_in().unwrap(),
+                None,
+                keyring,
+            );
+
+            let mut record = Record::default();
+            let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
+                put_to_a_model(
+                    "may the tenant sublet?",
+                    turning,
+                    &mut questions,
+                    strings,
+                    noon(),
+                )
+            });
+
+            assert!(
+                said.refusal().is_some(),
+                "{which} was not refused at all, so a question went out without a key"
+            );
+            let refusal = said.refusal().unwrap();
+            assert!(
+                !refusal.is_a_bug(),
+                "{which} was reported as a fault in alo OS: {refusal:?}"
+            );
+            assert!(
+                !nobody.join().unwrap(),
+                "{which}: the chosen provider was connected to without a key"
+            );
+            assert!(
+                !also_nobody.join().unwrap(),
+                "{which}: a provider nobody chose was connected to, which is a fallback"
+            );
         }
     }
 

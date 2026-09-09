@@ -108,6 +108,22 @@ alo-secrets = { path = "../alo-secrets" }
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-record = { path = "../alo-record" }
 
+# A **real** Secret Service to ask for a key, shared with `alo-secrets` so there
+# is one fixture rather than two drifting apart. Dev only, and
+# `alo-secrets/tests/nothing_ships_the_fixture.rs` is the check that it stays
+# that way: this crate is one of the two the image builds, so a fixture reaching
+# it would be a keyring daemon with a password in its source on a real machine.
+alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+
+# For putting a synthetic key **into** that keyring the way a settings panel
+# eventually will — through a client of its own, so a test never proves itself
+# by driving the object it is checking.
+secret-service = { version = "5.2", default-features = false, features = [
+  "crypto-rust",
+  "rt-async-io",
+] }
+zbus = { version = "5.19", default-features = false }
+
 # The service, as a machine really runs it. `src/lib.rs` is every decision and
 # this is the process that makes them in order — thin on purpose, because what a
 # process does is one sequence and one exit code, and everything it decides on
