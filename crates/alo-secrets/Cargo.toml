@@ -51,3 +51,12 @@ workspace = true
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 zbus = { version = "5.19", default-features = false }
 rustix = { workspace = true }
+
+# The real keyring these tests ask questions of, shared with `alo-agentd` so
+# that there is one fixture rather than two drifting apart. **Dev only**: it is
+# never published and a `--package` release build compiles none of it.
+alo-keyring-fixture = { path = "../alo-keyring-fixture" }
+secret-service = { version = "5.2", default-features = false, features = [
+  "crypto-rust",
+  "rt-async-io",
+] }

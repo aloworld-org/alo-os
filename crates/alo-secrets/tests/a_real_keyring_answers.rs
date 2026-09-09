@@ -10,9 +10,10 @@
 //! written or unlocked, and nothing is registered as the machine's own.
 
 #![cfg(target_os = "linux")]
+// `clippy::panic` is deliberately not expected here any more: the `panic!`s
+// were the fixture's, and the fixture is `alo-keyring-fixture` now.
 #![expect(
     clippy::expect_used,
-    clippy::panic,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
@@ -23,9 +24,7 @@ use alo_secrets::{NotStored, TheKeyring};
 use secret_service::EncryptionType;
 use secret_service::blocking::SecretService;
 
-mod a_keyring_of_our_own;
-
-use a_keyring_of_our_own::AKeyringOfOurOwn;
+use alo_keyring_fixture::AKeyringOfOurOwn;
 
 /// A key that is a credential to nothing.
 const A_SYNTHETIC_SECRET: &str = "sk-live-FIXTURE-ONLY-4b19c7";

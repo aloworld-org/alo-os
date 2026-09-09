@@ -1,0 +1,41 @@
+[package]
+name = "alo-keyring-fixture"
+version = "0.0.1"
+description = "A real Secret Service on a bus nobody else can reach, for tests that need one."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# **Never published, and never in the image.** This crate exists so that
+# `alo-secrets` and `alo-agentd` can each ask a real keyring questions without
+# writing the same fixture twice. It is reached only through `dev-dependencies`,
+# and `image/Containerfile` builds `--package alo-agentd --package alo-boundaryd`
+# — a `--package` release build compiles no dev-dependency, so nothing here can
+# reach a machine. `alo-secrets/tests/nothing_ships_the_fixture.rs` is that
+# sentence as a check rather than a claim.
+publish = false
+
+# It starts a `dbus-daemon` and a `gnome-keyring-daemon` and asks the kernel for
+# a uid, none of which exists anywhere else. On any other host it compiles to
+# nothing, as `alo-secrets` does and for the same reason.
+[target.'cfg(target_os = "linux")'.dependencies]
+# The bus this fixture made, handed back as the type the crate under test takes.
+# The fixture builds a `TheBus` through the **same** checked constructor
+# production uses, so a test cannot be handed a bus that production would refuse.
+alo-secrets = { path = "../alo-secrets" }
+
+# This process's uid, for the ownership check `TheBus::at` makes.
+rustix = { workspace = true }
+
+# Waiting until the keyring is ready to be *used* rather than merely to answer,
+# and adding a `<deny>` rule to a running bus. Both are questions asked over the
+# fixture's own connection, so both need the client and the bus protocol.
+secret-service = { version = "5.2", default-features = false, features = [
+  "crypto-rust",
+  "rt-async-io",
+] }
+zbus = { version = "5.19", default-features = false }
+
+[lints]
+workspace = true

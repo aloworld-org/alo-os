@@ -30,14 +30,28 @@
 //!   machine's normal keyring, which is exactly what it must not become.
 //! - **A synthetic password**, which unlocks nothing that exists anywhere else.
 //!
+//! # Who uses it, and why it is a crate
+//!
+//! Two crates need a real keyring to ask questions of: `alo-secrets`, which owns
+//! the store, and `alo-agentd`, which asks it for a provider's key. Writing this
+//! twice would mean two fixtures drifting apart, and the one that drifted would
+//! be the one whose tests still passed.
+//!
+//! It is reached **only through `dev-dependencies`** and is never published.
+//! `image/Containerfile` builds `--package alo-agentd --package alo-boundaryd`,
+//! and a `--package` release build compiles no dev-dependency, so nothing here
+//! reaches a machine.
+//!
 //! # What it cleans up
 //!
 //! The two processes it started and the directory it made. Nothing else — the
 //! packages stay installed, and `docs/autonomy/updates/` records what they are.
 
-#![allow(
-    dead_code,
-    reason = "each test binary uses the part of the fixture its own subject needs"
+#![cfg(target_os = "linux")]
+#![expect(
+    clippy::expect_used,
+    clippy::panic,
+    reason = "a fixture that cannot reach the state it promises must fail the test loudly,               and it is only ever linked into one"
 )]
 
 use std::io::Write as _;

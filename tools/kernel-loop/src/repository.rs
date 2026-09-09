@@ -62,7 +62,7 @@ pub fn on_main_and_clean_but_for(at: &Path, named: &[String]) -> Result<(), Stri
         .lines()
         .filter_map(|line| line.trim_start().split_once(' '))
         .map(|(_, path)| path.trim_start())
-        .filter(|path| !named.iter().any(|named| named == path))
+        .filter(|path| !accounted_for(path, named))
         .collect();
     if !unaccounted.is_empty() {
         return Err(format!(
@@ -71,6 +71,33 @@ pub fn on_main_and_clean_but_for(at: &Path, named: &[String]) -> Result<(), Stri
         ));
     }
     Ok(())
+}
+
+/// Whether a task named this changed path.
+///
+/// # Renames are two paths, and a task has to name both
+///
+/// Porcelain writes a rename as `old -> new` on one line, so the path this sees
+/// for a moved file is that whole pair and matches no single entry. Before this
+/// existed, **a task that moved a file could not publish at all** — the pair was
+/// reported as unaccounted for however carefully the task named its files, which
+/// is how moving one fixture into a crate of its own first failed.
+///
+/// Both halves must be named, which is the honest requirement rather than a
+/// convenience: a move deletes a path and creates another, a reader of the
+/// commit needs to see both, and naming only the new one would let a file
+/// disappear from a crate without the task that did it saying so.
+fn accounted_for(path: &str, named: &[String]) -> bool {
+    /// What porcelain puts between the two halves of a rename.
+    const MOVED_TO: &str = " -> ";
+
+    match path.split_once(MOVED_TO) {
+        Some((from, to)) => {
+            let named_it = |what: &str| named.iter().any(|named| named == what);
+            named_it(from) && named_it(to)
+        }
+        None => named.iter().any(|named| named == path),
+    }
 }
 
 /// Bring in whatever was published while the work was being done.
@@ -140,9 +167,38 @@ pub fn rebased_onto_origin(at: &Path) -> Result<(), String> {
 /// failure that names the path.
 pub fn staged(at: &Path, files: &[String]) -> Result<(), String> {
     for named in files {
-        git(at, &["add", "--", named])?;
+        // `--all`, so that a named path which is now a **deletion** stages as
+        // one. Still only the paths a task named: this is `--all` within one
+        // pathspec, never across the tree.
+        if let Err(why) = git(at, &["add", "--all", "--", named]) {
+            // A task that moved a file names both ends of the move, and `git
+            // mv` has **already recorded** the end it came from — so that path
+            // is in neither the worktree nor the index under its own name, and
+            // a pathspec matches nothing. That is staged, not missing.
+            //
+            // Asked of git rather than assumed from the error text, and only
+            // the *from* end of an actual staged rename is forgiven: a path
+            // nobody recorded is a real mistake and still stops the publish.
+            if moved_away_already(at, named)? {
+                continue;
+            }
+            return Err(why);
+        }
     }
     Ok(())
+}
+
+/// Whether this path is the end a staged rename moved **from**.
+///
+/// # Errors
+/// Whatever `git` said.
+fn moved_away_already(at: &Path, named: &str) -> Result<bool, String> {
+    let changed = git(at, &["status", "--porcelain"])?;
+    Ok(changed
+        .lines()
+        .filter_map(|line| line.trim_start().split_once(' '))
+        .filter_map(|(_, path)| path.trim_start().split_once(" -> "))
+        .any(|(from, _)| from == named))
 }
 
 /// Commit what is staged, with this message, as whoever the checkout is
@@ -179,4 +235,61 @@ fn tempting(at: &Path, message: &str) -> Result<String, String> {
 /// caller reads as *integrate and try again*.
 pub fn pushed(at: &Path) -> Result<(), String> {
     git(at, &["push", "origin", MAIN]).map(|_| ())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::accounted_for;
+
+    /// What porcelain writes for a file that moved.
+    const A_MOVE: &str = "crates/alo-secrets/tests/a_keyring_of_our_own/mod.rs -> crates/alo-keyring-fixture/src/lib.rs";
+
+    /// **A task that names both ends of a move has accounted for it.**
+    #[test]
+    fn a_rename_is_accounted_for_when_both_ends_are_named() {
+        let named = [
+            "crates/alo-secrets/tests/a_keyring_of_our_own/mod.rs".to_owned(),
+            "crates/alo-keyring-fixture/src/lib.rs".to_owned(),
+        ];
+        assert!(
+            accounted_for(A_MOVE, &named),
+            "a move whose two ends were both named was still reported as unaccounted for"
+        );
+    }
+
+    /// **Naming only where it went is not enough**, which is the point.
+    ///
+    /// A move deletes one path and creates another. A reader of the commit needs
+    /// to see both, and a task naming only the destination would let a file
+    /// disappear from a crate without saying so.
+    #[test]
+    fn a_rename_naming_only_one_end_is_refused() {
+        let only_the_new = ["crates/alo-keyring-fixture/src/lib.rs".to_owned()];
+        assert!(
+            !accounted_for(A_MOVE, &only_the_new),
+            "a move was published while the task named only where the file went"
+        );
+
+        let only_the_old = ["crates/alo-secrets/tests/a_keyring_of_our_own/mod.rs".to_owned()];
+        assert!(
+            !accounted_for(A_MOVE, &only_the_old),
+            "a move was published while the task named only where the file was"
+        );
+    }
+
+    /// **A path that merely contains the arrow is still one path.**
+    ///
+    /// Nothing in this repository is named like that, which is exactly why it is
+    /// worth pinning: the rule reads a rename out of porcelain's own spelling,
+    /// and a file whose name happened to contain ` -> ` must not be split into
+    /// two paths neither of which anybody named.
+    #[test]
+    fn an_ordinary_path_is_matched_whole() {
+        let named = ["docs/autonomy/updates/one-keyring-fixture-two-crates.md".to_owned()];
+        assert!(accounted_for(&named[0], &named));
+        assert!(
+            !accounted_for("docs/autonomy/updates/something-else.md", &named),
+            "a path nobody named was accounted for"
+        );
+    }
 }

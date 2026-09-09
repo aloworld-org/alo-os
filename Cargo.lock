@@ -238,6 +238,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-keyring-fixture"
+version = "0.0.1"
+dependencies = [
+ "alo-secrets",
+ "rustix 1.1.4",
+ "secret-service",
+ "zbus",
+]
+
+[[package]]
 name = "alo-models"
 version = "0.0.1"
 dependencies = [
@@ -306,6 +316,7 @@ dependencies = [
 name = "alo-secrets"
 version = "0.0.1"
 dependencies = [
+ "alo-keyring-fixture",
  "alo-models",
  "alo-strings",
  "rustix 1.1.4",
