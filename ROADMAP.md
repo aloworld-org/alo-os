@@ -1302,6 +1302,15 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native control scene composition (2026-09-09): nested submission and offscreen
+    preparation share client/popup, strip, complete label, cursor ordering. Stale
+    viewports, clipped labels and labels covering controls refuse before import.
+    One new geometry test and twelve complete real-client GLES frames pass, with
+    surface identity preservation, removal and refusal recovery. Affected checks
+    and rustdoc pass; independent supervisor gates pending. Host presentation
+    transactions, overlay input policy, alternate full-text access, navigation/
+    native cursor selection and direct integration remain. No feature tick.
+    Evidence: `docs/autonomy/updates/native-control-scene-composition.md`.
   - Nested native control event routing (2026-09-09): the seat pump now uses the
     published presentation and actual parent position through native grabs.
     Out-and-back motion and deactivation cancel execution; cancelled releases

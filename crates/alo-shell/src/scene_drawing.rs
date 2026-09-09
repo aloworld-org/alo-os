@@ -19,6 +19,7 @@ pub(crate) fn paint(
     popups: &[crate::Popup],
     cursor: &crate::Cursor,
     transform: Transform,
+    controls: Option<crate::WindowControlScene<'_>>,
 ) -> Result<drawing::Drawing, RenderError> {
     let extent = framebuffer.size();
     let size: smithay::utils::Size<i32, smithay::utils::Physical> = (extent.w, extent.h).into();
@@ -26,6 +27,9 @@ pub(crate) fn paint(
         return Err(RenderError::EmptySize);
     }
     let damage = Rectangle::from_size(size);
+    if let Some(controls) = controls {
+        controls.validate(size)?;
+    }
     let arrow = crate::default_cursor::pixels(cursor, damage)?;
     let mut drawing = drawing::Drawing {
         elements: Vec::new(),
@@ -36,17 +40,16 @@ pub(crate) fn paint(
         drawing.elements.append(&mut tree.elements);
         drawing.surfaces.append(&mut tree.surfaces);
     }
-    if let crate::Cursor::Surface { surface, location } = cursor {
-        let mut cursor_drawing = drawing::import_at(
+    let cursor_drawing = if let crate::Cursor::Surface { surface, location } = cursor {
+        Some(drawing::import_at(
             renderer,
             std::slice::from_ref(surface),
             damage,
             location.to_physical(1.0),
-        )?;
-        cursor_drawing.elements.append(&mut drawing.elements);
-        cursor_drawing.surfaces.append(&mut drawing.surfaces);
-        drawing = cursor_drawing;
-    }
+        )?)
+    } else {
+        None
+    };
     let mut frame = renderer
         .render(framebuffer, size, transform)
         .map_err(submission)?;
@@ -55,6 +58,16 @@ pub(crate) fn paint(
         .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
         .map_err(submission)?;
     draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage]).map_err(submission)?;
+    if let Some(controls) = controls {
+        controls.layout.paint(&mut frame, controls.scheme)?;
+        if let Some(label) = controls.label {
+            label.paint(&mut frame)?;
+        }
+    }
+    if let Some(cursor_drawing) = &cursor_drawing {
+        draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])
+            .map_err(submission)?;
+    }
     // Draw last so the owned arrow stays above every client tree. Damage is local
     // to each solid rectangle; these pixels own no Wayland identity or callbacks.
     for (pixel, color) in arrow {
@@ -63,6 +76,10 @@ pub(crate) fn paint(
             .map_err(submission)?;
     }
     let _sync = frame.finish().map_err(submission)?;
+    if let Some(mut cursor_drawing) = cursor_drawing {
+        cursor_drawing.surfaces.append(&mut drawing.surfaces);
+        drawing.surfaces = cursor_drawing.surfaces;
+    }
     Ok(drawing)
 }
 

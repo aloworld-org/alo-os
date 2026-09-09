@@ -240,6 +240,25 @@ impl FrameTarget for Nested {
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
     ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_control_scene(roots, popups, cursor, None)
+    }
+}
+
+impl Nested {
+    /// Submit clients, native strip/label, then cursor using the shared painter.
+    ///
+    /// This low-level call does not publish controls or send callbacks. The host
+    /// must own overlay input policy, refresh the live mapping without dispatch
+    /// during submission, publish only on success and retire on failure/removal.
+    /// Output mismatch, clipped labels and labels covering controls refuse before
+    /// painting. None removes native pixels; nothing is retained for next frame.
+    pub fn submit_control_scene(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        controls: Option<crate::WindowControlScene<'_>>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
         if self.closed {
             return Err(RenderError::Closed);
         }
@@ -257,6 +276,7 @@ impl FrameTarget for Nested {
                 popups,
                 cursor,
                 Transform::Flipped180,
+                controls,
             )?
         };
         self.backend.submit(Some(&[damage])).map_err(submission)?;

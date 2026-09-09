@@ -61,7 +61,27 @@ pub fn render_scanout(
     popups: &[Popup],
     cursor: &Cursor,
 ) -> Result<PreparedScanout, RenderError> {
+    render_control_scanout(renderer, size, roots, popups, cursor, None)
+}
+
+/// Prepare the shared client/native/cursor scene without publishing presentation.
+///
+/// Native content is above clients/popups and below either cursor kind. Invalid
+/// native geometry refuses before graphics allocation. All lifetime, callback and
+/// no-dispatch requirements of [`render_scanout`] apply. The host still owns label
+/// input policy; prepared pixels alone authorize no controls.
+pub fn render_control_scanout(
+    renderer: &mut GlesRenderer,
+    size: Size<i32, Physical>,
+    roots: &[WlSurface],
+    popups: &[Popup],
+    cursor: &Cursor,
+    controls: Option<crate::WindowControlScene<'_>>,
+) -> Result<PreparedScanout, RenderError> {
     validate_size(size)?;
+    if let Some(controls) = controls {
+        controls.validate(size)?;
+    }
     let mut buffer: GlesRenderbuffer = renderer
         .create_buffer(DrmFourcc::Abgr8888, (size.w, size.h).into())
         .map_err(|error| RenderError::Submission(format!("create offscreen target: {error}")))?;
@@ -75,6 +95,7 @@ pub fn render_scanout(
         popups,
         cursor,
         Transform::Normal,
+        controls,
     )?;
     let pixels = crate::readback_xrgb(renderer, &target, RowOrder::TopToBottom)?;
     Ok(PreparedScanout {

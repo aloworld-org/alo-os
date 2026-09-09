@@ -8,7 +8,8 @@ use smithay::{
 
 impl WindowControlLabel {
     /// Draw an opaque label after controls and before the pointer into a matching
-    /// normal-transform, scale-one frame. Every scanline clips to the viewport.
+    /// scale-one frame. GLES applies the backend's framebuffer transform and
+    /// every scanline clips to the viewport.
     /// The host owns submission and must discard a partially painted failed frame.
     /// This paints no accessibility protocol and intercepts no input; hosts must
     /// keep the box away from client input or explicitly own that presentation.

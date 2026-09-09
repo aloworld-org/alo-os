@@ -5,6 +5,27 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native control scene composition (2026-09-09):** shared nested/
+offscreen rendering now orders clients/popups, strip, complete label, cursor.
+Viewport mismatch, clipped labels and labels over controls refuse before import.
+One new geometry test, twelve complete real-client GLES frames, all 28 existing
+nested stages, Linux 157 unit/207 lifecycle/three socket/three doctests and affected
+checks pass. Report: `updates/native-control-scene-composition.md`. Supervisor
+gates pending. Next executable component: nested host composition transaction
+connecting fresh live snapshots to submission/publication and retirement, with
+label overlay input policy; alternate full-text access, navigation/native cursor
+selection and direct integration remain. Rendering complete, usable controls and
+the window-management feature unfinished.
+
+**Selected native control scene composition (2026-09-09):** complete shared GLES
+composition for nested submission and offscreen preparation: clients/popups, strip,
+complete label, then cursor. Refuse viewport mismatch, clipped labels and labels
+covering controls before drawing. Acceptance: geometry happy/refusal tests,
+real-client complete-frame GLES comparisons, cursor precedence, unchanged surface
+identities, removal and failure recovery; affected tests/clippy/fmt/rustdoc.
+Host presentation transactions, overlay input policy and alternate full-text access
+remain subsequent components; this step does not install interactive controls.
+
 **Completed nested native control event routing (2026-09-09):** `pump_seat` routes
 published native gestures through the new parent-position adapter. Out-and-back
 motion/deactivation cancel execution; releases drain while inactive or before

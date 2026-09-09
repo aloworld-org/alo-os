@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window controls and labels can now be composed with client windows.**
+  The shared nested/offscreen painter keeps both cursor types above native content,
+  refuses clipped or obstructing labels and stale output geometry, and removes
+  native pixels when omitted from the next frame. Twelve complete GLES frames
+  verify composition. Installing interactive controls remains unfinished. Evidence:
+  `docs/autonomy/updates/native-control-scene-composition.md`.
+
 - **The nested desktop routes pointer gestures through its published window controls.**
   It keeps the actual pointer position during a native gesture, cancels a drag
   that leaves its control, and consumes cancelled releases across deactivation.

@@ -22,7 +22,8 @@ impl WindowControlLayout {
     /// two-pixel inset border for an armed press; no terracotta is used. It does
     /// not render label text: the host must present `action().said(...)` through
     /// its label/accessible surface. No client callbacks or input are consumed.
-    /// The frame must have the viewport used at construction and normal transform.
+    /// The frame must have the viewport used at construction; coordinates are
+    /// output-local, with the backend's framebuffer transform applied by GLES.
     pub fn paint(&self, frame: &mut impl Frame, scheme: Scheme) -> Result<(), crate::RenderError> {
         for (rect, colour) in self.solids(scheme) {
             let color = Color32F::new(

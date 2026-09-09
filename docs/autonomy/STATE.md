@@ -14090,3 +14090,55 @@ Event adapter complete; usable controls/feature remain unfinished, no release ti
 Reports arriving during publication reconcile next iteration. No staging, commit,
 push, dev-loop edits, worker launch, private credential/identity access, other
 checkout edits or unrelated host changes.
+
+## 2026-09-09 - native control scene composition
+
+Started clean at 003c928; read required delivery/ownership/report guidance and
+relevant constitution, features, roadmap, ADRs and contracts. Every published task
+report already had a STATE reference. Selected shared scene composition and its
+acceptance in QUEUE before coding; reports arriving during publication reconcile
+next iteration.
+
+Added borrowed WindowControlScene, nested low-level submission and offscreen
+preparation using the same painter. Clients/popups precede strip and complete
+label; custom cursors and owned arrows remain above both. Cursor imports live
+through frame finish, native pixels add no surface identities/callbacks, and None
+removes native content. Mismatched viewports, clipped labels and labels covering
+controls refuse before client import (and before offscreen allocation). Uses
+existing vocabulary, fonts/tokens and ADRs 0002/0010; no agent/public wire change.
+Host authority, input policy and full-text alternatives are explicitly not supplied
+by these immutable pixels. Ordinary input routes remain unchanged.
+
+One focused unit test passed. Full Linux shell tests passed 157 unit, 207 lifecycle,
+three socket and three doctests; none ignored. Initial clippy conditional/module
+placement findings fixed without exemptions. Final affected clippy passed. Examples,
+Linux/Windows fmt, warnings-denied rustdoc and Windows affected clippy/tests passed
+(Windows has zero Linux-only shell tests). No full supervisor gates claimed.
+
+WSLg passes twelve new complete 57,600-pixel real-client composition frames:
+eight custom-cursor and four owned-arrow frames, with strip/label precedence,
+surface identity preservation, removal and refusal recovery. All 28 existing nested
+stages and label lifetime/input checks pass. First run's expected maximize-enabled
+mask was incorrect before output publication; fixed with an explicit OutputUnavailable
+assertion and disabled glyph expectation. No production policy/test weakened.
+Mesa and deliberate malformed-client/keymap/SHM diagnostics skipped no checks.
+Normal-transform offscreen readback is not nested flipped on-screen submission,
+actual parent event delivery, direct scanout or hardware evidence.
+
+Ubuntu Rust/graphics/input prerequisites and WSLg socket verified; no install,
+service/mount/session change, kernel mutation, outer lock, cleanup, WSL restart
+or helper. Fresh C: preflights all exceeded 12 GiB, minimum 60,159,377,408 bytes.
+Two unusually delayed tool calls were polled to completion, without replacement
+processes. Exact commands, first failures, decisions and remaining evidence:
+`docs/autonomy/updates/native-control-scene-composition.md`.
+
+Contract and four progress documents updated. Shared scene rendering component is
+complete; usable controls/window management are unfinished. Next: nested host
+composition transaction with live snapshot/submission/publication/retirement and
+label overlay input policy; alternate full-text access, native navigation/cursor
+selection and direct integration remain. Supervisor full Windows/Linux/rustdoc/BPF
+gates pending. No feature/release tick, staging, commit, push, dev-loop edit,
+worker launch, other-checkout edit, private credential/identity access or unrelated
+host changes.
+
+Final tracked and new-file diff reviewed; git diff --check passed.

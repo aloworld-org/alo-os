@@ -158,6 +158,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                     crate::tile_geometry_check::run(&mut server, renderer)?;
                 }
                 1 => {
+                    crate::window_control_scene_check::run(&server, renderer)?;
                     for size in [(0, 32), (32, 0), (i32::MAX, 1)] {
                         assert!(
                             render_scanout(renderer, size.into(), &roots, &popups, &cursor)

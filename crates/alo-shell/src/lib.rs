@@ -70,6 +70,7 @@ mod window_control_label_target;
 mod window_control_paint;
 mod window_control_presentation;
 mod window_control_routing;
+mod window_control_scene;
 mod window_control_snapshot;
 mod window_controls;
 mod window_maximize;
@@ -114,7 +115,7 @@ pub use keyboard::InputError;
 pub use nested::Nested;
 pub use nested_control_input::NestedControlInput;
 pub use nested_pointer::NestedPointerEvent;
-pub use offscreen::{PreparedScanout, render_scanout};
+pub use offscreen::{PreparedScanout, render_control_scanout, render_scanout};
 pub use output_metadata::OutputMetadata;
 pub use popups::Popup;
 pub use presentation::{FrameTarget, RenderError};
@@ -138,6 +139,7 @@ pub use window_control_label_target::{WindowControlLabelSelection, WindowControl
 pub use window_control_routing::{
     PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,
 };
+pub use window_control_scene::WindowControlScene;
 pub use window_control_snapshot::{WindowControlSnapshot, WindowControlSnapshotError};
 pub use window_controls::{
     WindowControl, WindowControlFeedback, WindowControlLayout, WindowControlLayoutError,

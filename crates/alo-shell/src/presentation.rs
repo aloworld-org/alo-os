@@ -11,6 +11,9 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// Native output geometry differs or its label is obscured/clipped.
+    #[error("native control scene requires matching geometry and an unobscured complete label")]
+    ControlScene,
     /// The target does not support explicit retirement.
     #[error("target does not support output retirement")]
     RetirementUnsupported,

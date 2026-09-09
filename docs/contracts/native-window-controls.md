@@ -393,3 +393,32 @@ Four real-client adapter tests and eight complete GLES label frames plus live
 minimization pass; synthetic adapter events do not prove actual parent-event
 delivery, on-screen interaction, direct scanout or hardware acceptance. Report:
 `docs/autonomy/updates/nested-native-control-event-routing.md`.
+
+## Native scene composition
+
+Additive trusted Rust APIs, 2026-09-09: `WindowControlScene` borrows a fresh strip,
+optional prepared label and existing appearance scheme. `render_control_scanout`
+prepares owned pixels; `Nested::submit_control_scene` submits through the same GLES
+painter. Existing no-control entry points delegate with None and retain their
+behavior. No native scene is cached between frames.
+
+Composition order is client roots/popups, native strip, label, then client cursor
+or compositor arrow. Cursor imports remain alive through frame finish. Native
+pixels add no Wayland identities or callbacks; drawn client identity order is
+preserved, including clients behind opaque native pixels. Preparation still sends
+no callbacks or output membership. Errors return no prepared/submitted frame.
+
+`RenderError::ControlScene` refuses output/layout/label viewport mismatch, any
+clipped label, and any label covering a control. Validation precedes client import
+(and offscreen allocation). A failed candidate is never silently replaced with
+cached native content. These are composition refusals, not an alternate full-text
+reader: the host must provide a larger label or another full-text presentation.
+
+This rendering boundary owns no window authority or input. The host must obtain
+fresh mapping-bound presentation without dispatch during submission, publish only
+after successful submission and retire on failure/removal. It must establish label
+overlay input policy before interactive use. Ordinary keyboard input is unchanged.
+Nested host transactions, overlay policy, full clipped-name access, navigation and
+native cursor selection remain integration work; direct installation also remains.
+No new vocabulary, agent surface, palette or ADR. Evidence and precise limits:
+`docs/autonomy/updates/native-control-scene-composition.md`.

@@ -70,7 +70,7 @@ pub fn run(
 }
 
 /// Independent row-span specification of the 12 by 18 pixel golden arrow.
-fn golden(x: f64, y: f64) -> Option<[u8; 4]> {
+pub(crate) fn golden(x: f64, y: f64) -> Option<[u8; 4]> {
     if !(0.0..12.0).contains(&x) || !(0.0..18.0).contains(&y) {
         return None;
     }
