@@ -61,6 +61,7 @@ mod surfaces;
 mod window_activation;
 mod window_close;
 mod window_command;
+mod window_control_feedback;
 mod window_control_input;
 mod window_control_paint;
 mod window_control_routing;
@@ -128,7 +129,9 @@ pub use window_control_routing::{
     PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,
 };
 pub use window_control_snapshot::{WindowControlSnapshot, WindowControlSnapshotError};
-pub use window_controls::{WindowControl, WindowControlLayout, WindowControlLayoutError};
+pub use window_controls::{
+    WindowControl, WindowControlFeedback, WindowControlLayout, WindowControlLayoutError,
+};
 
 pub use seat_input::{InputDispatchError, InputUpdate, SeatInput};
 pub use session_input::{SessionInput, SessionInputStatus};

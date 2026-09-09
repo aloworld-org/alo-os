@@ -3,6 +3,109 @@ use super::*;
 use alo_appearance::{Scheme, Token};
 
 #[test]
+fn pointer_feedback_uses_clipped_hits_and_clears_old_presentation()
+-> Result<(), WindowControlLayoutError> {
+    let base = WindowControlLayout::new((104, 32), (0, 0), [true, false, true], false)?;
+    for (position, pressed, expected) in [
+        (
+            Some((0.0, 0.0)),
+            false,
+            [
+                WindowControlFeedback::Hovered,
+                WindowControlFeedback::Idle,
+                WindowControlFeedback::Idle,
+            ],
+        ),
+        (
+            Some((103.999, 31.999)),
+            true,
+            [
+                WindowControlFeedback::Idle,
+                WindowControlFeedback::Idle,
+                WindowControlFeedback::Pressed,
+            ],
+        ),
+        (Some((36.0, 0.0)), true, [WindowControlFeedback::Idle; 3]),
+        (Some((32.0, 0.0)), false, [WindowControlFeedback::Idle; 3]),
+        (Some((104.0, 0.0)), true, [WindowControlFeedback::Idle; 3]),
+        (
+            Some((f64::INFINITY, 0.0)),
+            true,
+            [WindowControlFeedback::Idle; 3],
+        ),
+        (
+            Some((0.0, f64::NAN)),
+            false,
+            [WindowControlFeedback::Idle; 3],
+        ),
+        (None, true, [WindowControlFeedback::Idle; 3]),
+    ] {
+        let view = base
+            .clone()
+            .with_pointer_feedback(Some((0.0, 0.0)), true)
+            .with_pointer_feedback(position, pressed);
+        assert_eq!(view.controls().map(|c| c.feedback()), expected);
+        assert_eq!(
+            view.controls()
+                .map(|c| (c.bounds(), c.action(), c.enabled())),
+            base.controls()
+                .map(|c| (c.bounds(), c.action(), c.enabled()))
+        );
+    }
+    let clipped = WindowControlLayout::new((10, 10), (-20, -20), [true; 3], false)?;
+    assert_eq!(
+        clipped
+            .clone()
+            .with_pointer_feedback(Some((-1.0, 0.0)), true)
+            .controls()[0]
+            .feedback(),
+        WindowControlFeedback::Idle
+    );
+    assert_eq!(
+        clipped
+            .with_pointer_feedback(Some((0.0, 0.0)), true)
+            .controls()[0]
+            .feedback(),
+        WindowControlFeedback::Pressed
+    );
+    Ok(())
+}
+
+#[test]
+fn pointer_feedback_has_non_color_borders_and_disabled_paint_is_unchanged()
+-> Result<(), WindowControlLayoutError> {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let base = WindowControlLayout::new((104, 32), (0, 0), [true, false, true], false)?;
+        let hovered = base.clone().with_pointer_feedback(Some((1.0, 1.0)), false);
+        let pressed = base.clone().with_pointer_feedback(Some((1.0, 1.0)), true);
+        let colour_at = |view: &WindowControlLayout, point| {
+            view.solids(scheme)
+                .into_iter()
+                .rev()
+                .find(|(r, _)| r.contains(point))
+                .map(|(_, c)| c)
+        };
+        assert_ne!(colour_at(&hovered, (1, 5)), colour_at(&hovered, (2, 5)));
+        assert_eq!(colour_at(&pressed, (1, 5)), colour_at(&pressed, (2, 5)));
+        assert_ne!(colour_at(&pressed, (2, 5)), colour_at(&pressed, (3, 5)));
+        assert_eq!(
+            base.solids(scheme),
+            base.clone()
+                .with_pointer_feedback(Some((40.0, 5.0)), true)
+                .solids(scheme)
+        );
+        for view in [&hovered, &pressed] {
+            assert!(
+                view.solids(scheme)
+                    .iter()
+                    .all(|(_, c)| *c != Token::Terracotta.colour())
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn control_hit_and_paint_own_identical_pixels_with_transparent_gaps()
 -> Result<(), WindowControlLayoutError> {
     let layout = WindowControlLayout::new((120, 40), (3, 4), [true; 3], false)?;

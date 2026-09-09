@@ -27,6 +27,18 @@ pub(crate) struct Press {
 }
 
 impl Press {
+    /// Read-only presentation check; does not grant or retire transaction authority.
+    pub(crate) fn armed_at(
+        &self,
+        server: &Server,
+        surface: &WlSurface,
+        viewport: (i32, i32),
+        origin: (i32, i32),
+        position: (f64, f64),
+    ) -> bool {
+        self.armed && self.targets(surface) && self.matches(server, viewport, origin, position)
+    }
+
     /// Compare current presentation identity without exposing transaction authority.
     pub(crate) fn targets(&self, surface: &WlSurface) -> bool {
         self.surface == *surface
@@ -126,15 +138,7 @@ impl Server {
         let Some(control) = snapshot.layout().hit(position.0, position.1) else {
             return Ok(false);
         };
-        if self.surfaces.popup_grab.is_some()
-            || self.surfaces.window_move.is_some()
-            || self.surfaces.window_resize.is_some()
-            || self
-                .surfaces
-                .pointer
-                .as_ref()
-                .is_some_and(|p| !p.buttons.is_empty())
-        {
+        if self.window_control_input_busy() {
             return Err(WindowControlPressError::Busy);
         }
         let visibility = self
@@ -151,6 +155,18 @@ impl Server {
             armed: control.enabled(),
         });
         Ok(true)
+    }
+
+    /// Shared acquisition/presentation exclusion for ordinary client ownership.
+    pub(crate) fn window_control_input_busy(&self) -> bool {
+        self.surfaces.popup_grab.is_some()
+            || self.surfaces.window_move.is_some()
+            || self.surfaces.window_resize.is_some()
+            || self
+                .surfaces
+                .pointer
+                .as_ref()
+                .is_some_and(|p| !p.buttons.is_empty())
     }
 
     /// Disarm execution while retaining the matching primary release's ownership.

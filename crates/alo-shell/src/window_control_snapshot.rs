@@ -28,7 +28,7 @@ pub struct WindowControlSnapshot {
     /// Exact protocol identity, never a stack index or focused-window fallback.
     surface: WlSurface,
     /// Paint and hit geometry with availability captured from current policy.
-    layout: WindowControlLayout,
+    pub(crate) layout: WindowControlLayout,
     /// Diagnostic explanation of an unavailable maximize/restore operation.
     maximize_refusal: Option<WindowMaximizeError>,
 }

@@ -16,6 +16,16 @@ pub fn paint(
     layout: &WindowControlLayout,
     restoring: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    paint_feedback(renderer, layout, restoring, None)
+}
+
+/// Compare a live interaction snapshot to explicitly expected feedback.
+pub fn paint_feedback(
+    renderer: &mut GlesRenderer,
+    layout: &WindowControlLayout,
+    restoring: bool,
+    feedback: Option<(usize, bool)>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut buffer: GlesRenderbuffer =
         renderer.create_buffer(DrmFourcc::Abgr8888, (120, 48).into())?;
     let mut target = renderer.bind(&mut buffer)?;
@@ -35,13 +45,24 @@ pub fn paint(
         for (index, pixel) in rows.iter().enumerate() {
             let x = i32::try_from(index % 120)?;
             let y = i32::try_from(index / 120)?;
-            let expected = crate::window_controls_pixels::expected(
-                (x, y),
-                (3, 4),
-                scheme,
-                [true; 3],
-                restoring,
-            );
+            let expected = if feedback.is_none() {
+                crate::window_controls_pixels::expected(
+                    (x, y),
+                    (3, 4),
+                    scheme,
+                    [true; 3],
+                    restoring,
+                )
+            } else {
+                crate::window_controls_pixels::expected_feedback(
+                    (x, y),
+                    (3, 4),
+                    scheme,
+                    [true; 3],
+                    restoring,
+                    feedback,
+                )
+            };
             assert_eq!(*pixel, expected, "live control snapshot pixel {x},{y}");
             assert_eq!(
                 layout.hit(f64::from(x) + 0.5, f64::from(y) + 0.5).is_some(),

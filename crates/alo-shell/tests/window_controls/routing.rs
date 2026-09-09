@@ -13,7 +13,7 @@ use smithay::{
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-fn route(
+pub(super) fn route(
     f: &Fixture,
     root: Option<&WlSurface>,
     position: (f64, f64),
@@ -34,9 +34,9 @@ fn route(
     })
 }
 
-const DOWN: Event = Event::Button(0x110, ButtonState::Pressed);
-const UP: Event = Event::Button(0x110, ButtonState::Released);
-const CLOSE: (f64, f64) = (76.0, 5.0);
+pub(super) const DOWN: Event = Event::Button(0x110, ButtonState::Pressed);
+pub(super) const UP: Event = Event::Button(0x110, ButtonState::Released);
+pub(super) const CLOSE: (f64, f64) = (76.0, 5.0);
 
 #[test]
 fn window_controls_routing_consumes_native_gesture_and_preserves_client_input() -> Result {

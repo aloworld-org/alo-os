@@ -13779,3 +13779,59 @@ is complete; usable controls and window management remain unfinished. Reports
 arriving during publication reconcile next iteration. No staging, commit, push,
 dev-loop edits, other-checkout changes, credential/identity access or worker/loop
 launch. Release remains unverified.
+
+## 2026-09-09 - native control pointer feedback
+
+Started clean at `4323118`; read constitution, delivery/shared ownership rules,
+report guidance, current queue, journal tail and relevant feature/roadmap/ADR/
+contract sections. Selected the feedback component in QUEUE before implementation.
+Claude's workstream and checkout remain untouched.
+
+Reconciled `docs/autonomy/updates/one-keyring-fixture-two-crates.md`, the only
+published report not previously referenced here. Reviewed the dev-only fixture
+manifest, dependency/image guard tests and kernel-loop rename accounting locations.
+Contributor reports eight real-keyring and nine unit tests passing after moving
+the fixture; no exact commands are supplied. Two image/dependency guards and
+three rename-accounting tests were added; initial guard-test mistakes are retained
+in the source report. Credential/tooling checks were not independently rerun in
+this desktop task. Production architecture is unchanged; authenticated daemon
+HTTPS remains Claude's next task. No provider/keyring/feature box is moved.
+
+Added read-only live hover/pressed capture, sharing the existing hit geometry,
+mapping/intent predicate, input-busy check and availability planner. Frozen views
+cannot authorize execution or cancel input. Disabled, cancelled, client-owned,
+foreign and stale gestures cannot look armed. Existing tokens supply hover and
+pressed grounds; single/double borders distinguish the states without hue alone.
+No terracotta, new dependency, vocabulary, protocol or agent authority. Public
+rustdoc and the native-control contract document refresh and host routing duties.
+
+Two new unit and three real-client feedback tests. Focused lifecycle tests passed
+first run. Initial Linux all-target clippy found the old graphics baseline helper
+unused in the expanded nested fixture; restored its actual baseline use without
+an exemption. Final clippy passed. Full Linux shell tests passed 152 unit/195
+lifecycle/three socket tests and three doctests, none ignored. Examples, rustdoc
+with warnings denied and Linux fmt passed. Windows affected clippy/tests/fmt
+passed; Windows executes zero Linux-only shell tests. No test failure or weakened
+assertion. Existing malformed-client/keymap diagnostics are refusal fixtures.
+
+WSLg passed 896 full 5,760-pixel painter frames (128 idle plus hover/press across
+every slot, scheme, availability mask, glyph mode and clipping origin). All 28
+nested offscreen stages pass, retaining twelve snapshot frames and adding eight
+full frames for live hover, pressed and two cancelled states. Existing complete
+visible/minimized/restored 6,400-pixel scenes remain passing. Mesa fallback and
+deliberate malformed SHM diagnostics skipped no checks. On-screen mode/direct
+DRM/input and hardware acceptance are not claimed.
+
+Rust 1.98.0, eight graphics/input packages and WSLg socket verified. Every build/
+test/lint/format preflight exceeded 12 GiB; minimum 69,308,678,144 bytes. No cleanup,
+installation, shared maintenance or kernel mutation. Exact commands, decisions
+and scheduled machine limits: `docs/autonomy/updates/native-control-pointer-feedback.md`.
+Four progress documents updated; tracked diff and new files reviewed, whitespace
+clean. Independent supervisor workspace/rustdoc/BPF publication gates pending.
+
+Next: externalized native control labels with clipping, fallback and rendered
+text checks, then production nested/direct composition. Feedback is complete;
+usable controls and window management remain unfinished. Published reports
+arriving during publication reconcile next iteration; release remains unverified.
+No staging, commit, push, dev-loop edit, worker/loop launch, credential/identity
+access or other-checkout changes.

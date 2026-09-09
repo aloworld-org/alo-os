@@ -12,6 +12,18 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native window controls can now show hover and armed-press feedback.**
+  Distinct borders accompany the light/dark token colors; disabled, cancelled
+  and stale gestures cannot look armed. Reads preserve client typing and input
+  ownership. Real-client and complete-frame graphics checks pass. Native labels
+  and production composition remain integration work.
+  `docs/autonomy/updates/native-control-pointer-feedback.md`.
+
+- Development evidence reconciled from
+  `docs/autonomy/updates/one-keyring-fixture-two-crates.md`: a shared dev-only
+  keyring fixture, image/dependency guards and kernel-supervisor rename handling.
+  Production credentials are unchanged; this adds no usable-provider claim.
+
 - **Native window controls now have a pointer router that keeps owned clicks
   and drag motion out of client applications.** Replacing or removing a painted
   target cancels its held action without redirecting the release. Ordinary client

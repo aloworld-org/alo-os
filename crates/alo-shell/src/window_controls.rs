@@ -3,6 +3,18 @@
 use alo_shortcuts::Action;
 use smithay::utils::{Physical, Rectangle};
 
+/// Frozen visual feedback, never input ownership or permission to execute.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WindowControlFeedback {
+    /// No eligible pointer interaction, including cancelled gestures.
+    #[default]
+    Idle,
+    /// Pointer over an enabled control without a held native gesture.
+    Hovered,
+    /// Pointer over the original enabled control of an armed gesture.
+    Pressed,
+}
+
 /// One named control and its full, unclipped scale-one button bounds.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct WindowControl {
@@ -12,6 +24,8 @@ pub struct WindowControl {
     bounds: Rectangle<i32, Physical>,
     /// Supplied presentation state, not a cached permission to execute.
     enabled: bool,
+    /// Presentation only; disabled controls always remain idle.
+    feedback: WindowControlFeedback,
 }
 
 impl WindowControl {
@@ -30,6 +44,11 @@ impl WindowControl {
     /// Execution must revalidate live window state even when this is true.
     pub fn enabled(&self) -> bool {
         self.enabled
+    }
+
+    /// Pointer feedback at capture time, with no execution authority.
+    pub fn feedback(&self) -> WindowControlFeedback {
+        self.feedback
     }
 }
 
@@ -86,6 +105,7 @@ impl WindowControlLayout {
             action,
             bounds: Rectangle::new((origin.0 + offset, origin.1).into(), (32, 32).into()),
             enabled,
+            feedback: WindowControlFeedback::Idle,
         });
         Ok(Self {
             viewport: Rectangle::from_size(viewport.into()),
@@ -102,6 +122,29 @@ impl WindowControlLayout {
     /// Whether the captured latest maximize intent selects the restore glyph.
     pub fn restoring(&self) -> bool {
         self.restoring
+    }
+
+    /// Replace visual feedback using the same clipped hit geometry as painting.
+    /// None means no eligible pointer; disabled hits always stay idle. `pressed`
+    /// is synthetic presentation data, not a button event or execution token.
+    /// Live hosts should use `Server::window_control_feedback` instead, which
+    /// derives this data from the current mapping-bound transaction. Reapplying
+    /// this builder clears earlier feedback, without changing bounds or labels.
+    pub fn with_pointer_feedback(mut self, position: Option<(f64, f64)>, pressed: bool) -> Self {
+        let action = position
+            .and_then(|(x, y)| self.hit(x, y))
+            .filter(|control| control.enabled())
+            .map(WindowControl::action);
+        for control in &mut self.controls {
+            control.feedback = if Some(control.action) != action {
+                WindowControlFeedback::Idle
+            } else if pressed {
+                WindowControlFeedback::Pressed
+            } else {
+                WindowControlFeedback::Hovered
+            };
+        }
+        self
     }
 
     /// Hit the same half-open rectangles the painter uses. Non-finite and

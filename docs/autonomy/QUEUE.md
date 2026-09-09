@@ -5,6 +5,36 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native control pointer feedback (2026-09-09):** live hover and
+armed-press capture, shared hit geometry, token grounds and distinct borders
+are code-ready. Disabled, cancelled, client-owned, foreign and stale gestures
+do not show armed feedback. Two unit/three real-client tests added. Linux
+affected clippy, 152 unit/195 lifecycle/three socket tests and three doctests,
+rustdoc/examples/fmt and Windows affected checks pass. WSLg passes 896 complete
+painter frames and all 28 offscreen stages, adding eight live feedback frames
+to twelve existing snapshot frames. Initial unused example-helper lint fixed
+without exemptions. Report: `updates/native-control-pointer-feedback.md`.
+Full supervisor gates pending. Next executable component: externalized native
+control label presentation using the existing action vocabulary, with clipping,
+fallback and rendered text checks; then production nested/direct composition.
+Feedback is complete; usable controls and window management remain unfinished.
+
+**Selected native control pointer feedback (2026-09-09):** implement immutable
+hover/pressed presentation from the existing hit geometry and live mapping-bound
+transaction, with token colors and distinct non-color borders. Disabled, cancelled,
+foreign, stale and client-owned gestures must not show armed feedback. Acceptance:
+real-client happy/refusal and ordinary typing isolation, complete light/dark GLES
+frames including clipping, affected Rust tests/clippy/rustdoc and formatting.
+Native label presentation and production nested/direct composition follow; this
+component does not complete usable controls.
+
+Contributor reconciliation: `updates/one-keyring-fixture-two-crates.md` moves the
+private real-store fixture into a dev-only shared crate and adds image/dependency
+guards plus kernel-supervisor rename accounting. Contributor reports eight real
+keyring and nine unit tests passing; no exact commands are supplied. Initial guard
+test mistakes and unchanged production credential architecture are retained.
+Authenticated HTTPS through the daemon remains Claude's next task.
+
 **Completed native control pointer routing (2026-09-09):** combined primary/motion
 interception and client fallback are code-ready. Painted target replacement or
 removal permanently cancels native authority. Disabled hits and consumed failed

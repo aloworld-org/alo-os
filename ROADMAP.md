@@ -42,6 +42,15 @@ executed gate is claimed here. End-to-end daemon retrieval, authenticated HTTPS,
 lifetime/concurrency and logout remain open. No keyring or provider-completion
 checkbox is moved.
 
+Shared credential fixture report reconciled 2026-09-09:
+`docs/autonomy/updates/one-keyring-fixture-two-crates.md` moves the isolated
+real-store fixture into a dev-only crate and adds dependency/image guards and
+kernel-supervisor rename accounting. Contributor reports eight real-keyring and
+nine unit tests passing, without exact commands; initial guard mistakes are
+recorded in the report. No independent credential/tooling rerun is claimed here.
+Production credential architecture is unchanged. Authenticated daemon HTTPS
+remains Claude's next task; no feature or release checkbox changes.
+
 Credential reports reconciled 2026-09-08: ADR 0022 is accepted and amended to
 `secret-service` over explicitly addressed `zbus`; the old libsecret dependency
 and binding decision blockers are superseded. Synthetic endpoint routing,
@@ -1265,6 +1274,18 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native control pointer feedback (2026-09-09): immutable hover/armed-press
+    presentation shares live mapping, hit and availability checks. Disabled,
+    cancelled, foreign and stale gestures remain idle; client input is preserved.
+    Two unit/three real-client tests added. Linux affected clippy, 152 unit/195
+    lifecycle/three socket tests and three doctests, rustdoc/examples and fmt
+    pass; Windows affected clippy/tests/fmt pass (zero Linux-only tests).
+    WSLg passes 896 complete painter frames and 28 offscreen stages, including
+    eight new live feedback frames and the existing twelve snapshot frames.
+    Initial example dead-code lint corrected without exemptions. Native labels
+    and production nested/direct composition follow; no usable-control or feature
+    completion. Full supervisor gates pending. Evidence and machine limits:
+    `docs/autonomy/updates/native-control-pointer-feedback.md`.
   - Native control pointer routing (2026-09-09): one trusted entry point consumes
     native primary gestures and motion, with ordinary client fallback. Current
     painted target replacement/removal cancels even at unchanged geometry.

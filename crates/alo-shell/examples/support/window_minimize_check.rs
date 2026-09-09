@@ -36,8 +36,21 @@ pub fn run(
             };
             let down = Event::Button(0x110, ButtonState::Pressed);
             let up = Event::Button(0x110, ButtonState::Released);
+            let paint_feedback = |server: &Server, renderer: &mut GlesRenderer, expected| {
+                let snapshot =
+                    server.window_control_feedback(&root, (120, 48), (3, 4), Some((4.0, 5.0)))?;
+                crate::window_control_snapshot_check::paint_feedback(
+                    renderer,
+                    snapshot.layout(),
+                    false,
+                    expected,
+                )
+            };
+            paint_feedback(server, renderer, Some((0, false)))?;
             assert_eq!(route(server, (4.0, 5.0), down)?, Route::Consumed);
+            paint_feedback(server, renderer, Some((0, true)))?;
             server.cancel_window_control();
+            paint_feedback(server, renderer, None)?;
             assert_eq!(
                 route(server, (4.0, 5.0), up)?,
                 Route::Released(WindowControlRelease::Cancelled)
@@ -46,6 +59,7 @@ pub fn run(
             assert_eq!(route(server, (4.0, 5.0), down)?, Route::Consumed);
             assert_eq!(route(server, (35.0, 5.0), Event::Motion)?, Route::Consumed);
             assert_eq!(route(server, (4.0, 5.0), Event::Motion)?, Route::Consumed);
+            paint_feedback(server, renderer, None)?;
             assert_eq!(
                 route(server, (4.0, 5.0), up)?,
                 Route::Released(WindowControlRelease::Cancelled)

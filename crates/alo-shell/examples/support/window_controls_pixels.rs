@@ -55,6 +55,18 @@ pub fn expected(
     enabled: [bool; 3],
     restoring: bool,
 ) -> [u8; 4] {
+    expected_feedback(point, origin, scheme, enabled, restoring, None)
+}
+
+/// Expected active slot and pressed flag are fixture inputs, not painter state.
+pub fn expected_feedback(
+    point: (i32, i32),
+    origin: (i32, i32),
+    scheme: Scheme,
+    enabled: [bool; 3],
+    restoring: bool,
+    feedback: Option<(usize, bool)>,
+) -> [u8; 4] {
     let (x, y) = (point.0 - origin.0, point.1 - origin.1);
     let Some((slot, available)) = enabled.into_iter().enumerate().find(|(slot, _)| {
         let start = i32::try_from(*slot).map_or(-1000, |slot| slot * 36);
@@ -89,6 +101,32 @@ pub fn expected(
         };
     let marked = !available
         && ((in_glyph && gx + gy == 11) || ((6..26).contains(&local) && (26..28).contains(&y)));
+    if let Some((active, pressed)) = feedback
+        && active == slot
+        && available
+    {
+        let border = if pressed { 2 } else { 1 };
+        let ring = (1..31).contains(&local)
+            && (1..31).contains(&y)
+            && (local <= border || local >= 31 - border || y <= border || y >= 31 - border);
+        let (ground, ink, hover) = match scheme {
+            Scheme::Light => (
+                [0xf2, 0xf6, 0xf8, 0],
+                [0x43, 0x2a, 0x10, 0],
+                [0xec, 0xf1, 0xf4, 0],
+            ),
+            Scheme::Dark => (
+                [0x29, 0x25, 0x1f, 0],
+                [0xf2, 0xf6, 0xf8, 0],
+                [0x43, 0x2a, 0x10, 0],
+            ),
+        };
+        return match (pressed, glyph || ring) {
+            (true, true) => ground,
+            (true, false) | (false, true) => ink,
+            (false, false) => hover,
+        };
+    }
     match (scheme, glyph || marked, available) {
         (Scheme::Light, true, _) | (Scheme::Dark, false, false) => [0x43, 0x2a, 0x10, 0],
         (Scheme::Dark, true, _) | (Scheme::Light, false, true) => [0xf2, 0xf6, 0xf8, 0],

@@ -186,3 +186,50 @@ and production composition remain work to complete usable controls.
 Real-client routing tests: `tests/window_controls/routing.rs`. Graphical fixture:
 `examples/support/window_minimize_check.rs`. Exact executed evidence and limits:
 `docs/autonomy/updates/native-control-pointer-routing.md`.
+
+## Live pointer feedback
+
+Additive trusted Rust presentation API, 2026-09-09:
+`Server::window_control_feedback(surface, viewport, origin, position)` captures
+the existing live snapshot plus `WindowControl::feedback()`: `Idle`, `Hovered`
+or `Pressed`. Position is output-local; None means no eligible pointer after
+leave or input loss. The same clipped hit geometry, live availability planner
+and private press mapping/geometry/intent predicate are reused. There is no
+focus/stacking fallback. Invalid targets/layouts retain the snapshot refusals.
+
+Without a native press, an enabled hit is hovered unless client buttons or a
+popup/move/resize grab owns input. With a held press, only its original still
+armed and available hit may appear pressed. All other controls remain idle;
+cancelled/disabled/foreign/stale gestures cannot turn into hover or transfer
+their pressed appearance. A disabled-to-enabled transition cannot arm a held
+disabled press. Live unavailability removes pressed feedback without consuming
+ownership or changing the eventual typed release refusal.
+
+This method takes `&self`. Reads send no wire events, consume no input and do
+not cancel, rearm or execute anything. Route every pointer event first, use the
+existing leave/reset hooks and cancel removed presentation immediately. Reading
+an outside position is not a substitute for routing that motion. Capture again
+for every frame; old snapshots intentionally retain their old appearance.
+
+The immutable view also has `with_pointer_feedback(position, pressed)` for
+synthetic presentation and isolated painter fixtures. It clears previous
+feedback, uses the shared clipped hit test and leaves disabled hits idle. It
+owns no server/transaction and cannot grant execution authority; live hosts
+should use the server capture API. Bounds, labels and default idle paint remain
+unchanged. This extends the view rather than changing any agent/protocol format.
+
+Hover uses the existing disabled-ground token with a contrasting one-pixel
+border inset one pixel. An armed press swaps the ordinary ground/ink and uses
+a two-pixel border at the same inset. Border thickness distinguishes the states
+without hue alone; disabled strikes remain distinct and unchanged. All drawing
+clips to the shared viewport and leaves gaps transparent. No terracotta, new
+palette or hardcoded user-facing string is introduced (ADRs 0002/0010).
+
+Two unit and three real-client feedback tests cover geometry, state, refusal,
+frozen snapshots and ordinary input isolation. The standalone GLES fixture
+checks 896 complete frames; the nested fixture additionally paints live hovered,
+pressed, explicitly cancelled and out-and-back cancelled snapshots in both
+schemes. These are offscreen development checks. Native externalized label
+presentation and production nested/direct composition remain unfinished;
+this component completes feedback, not usable controls. Exact checks and limits:
+`docs/autonomy/updates/native-control-pointer-feedback.md`.

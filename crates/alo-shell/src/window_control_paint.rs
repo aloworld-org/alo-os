@@ -1,6 +1,6 @@
 //! Token-colored control glyphs and clipped GLES-compatible solid drawing.
 
-use crate::WindowControlLayout;
+use crate::{WindowControlFeedback, WindowControlLayout};
 use alo_appearance::{Colour, Scheme, Token};
 use alo_shortcuts::Action;
 use smithay::{
@@ -18,6 +18,8 @@ impl WindowControlLayout {
     ///
     /// Disabled glyphs have a diagonal strike as well as a different ground;
     /// availability is never communicated by color alone. This icon painter does
+    /// use a one-pixel inset border for hover, and an inverted ground plus a
+    /// two-pixel inset border for an armed press; no terracotta is used. It does
     /// not render label text: the host must present `action().said(...)` through
     /// its label/accessible surface. No client callbacks or input are consumed.
     /// The frame must have the viewport used at construction and normal transform.
@@ -47,11 +49,33 @@ impl WindowControlLayout {
         let mut solids = Vec::new();
         for control in self.controls() {
             let bounds = control.bounds();
+            let (background, foreground) = match control.feedback() {
+                WindowControlFeedback::Pressed => (ink, ground),
+                WindowControlFeedback::Hovered => (disabled, ink),
+                WindowControlFeedback::Idle if !control.enabled() => (disabled, ink),
+                WindowControlFeedback::Idle => (ground, ink),
+            };
             if let Some(clipped) = bounds.intersection(self.viewport) {
-                solids.push((
-                    clipped,
-                    if control.enabled() { ground } else { disabled }.colour(),
-                ));
+                solids.push((clipped, background.colour()));
+            }
+            let border = match control.feedback() {
+                WindowControlFeedback::Idle => 0,
+                WindowControlFeedback::Hovered => 1,
+                WindowControlFeedback::Pressed => 2,
+            };
+            if border != 0 {
+                for (x, y, w, h) in [
+                    (1, 1, 30, border),
+                    (1, 31 - border, 30, border),
+                    (1, 1 + border, border, 30 - 2 * border),
+                    (31 - border, 1 + border, border, 30 - 2 * border),
+                ] {
+                    let rect =
+                        Rectangle::new((bounds.loc.x + x, bounds.loc.y + y).into(), (w, h).into());
+                    if let Some(clipped) = rect.intersection(self.viewport) {
+                        solids.push((clipped, foreground.colour()));
+                    }
+                }
             }
             for y in 0..12 {
                 for x in 0..12 {
@@ -70,7 +94,7 @@ impl WindowControlLayout {
                             (1, 1).into(),
                         );
                         if let Some(clipped) = pixel.intersection(self.viewport) {
-                            solids.push((clipped, ink.colour()));
+                            solids.push((clipped, foreground.colour()));
                         }
                     }
                 }
@@ -81,7 +105,7 @@ impl WindowControlLayout {
                 let strike =
                     Rectangle::new((bounds.loc.x + 6, bounds.loc.y + 26).into(), (20, 2).into());
                 if let Some(clipped) = strike.intersection(self.viewport) {
-                    solids.push((clipped, ink.colour()));
+                    solids.push((clipped, foreground.colour()));
                 }
             }
         }
