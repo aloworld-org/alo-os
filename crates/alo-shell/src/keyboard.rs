@@ -50,6 +50,13 @@ pub(crate) struct Keyboard {
     pub(crate) popup_key: Option<(Serial, WlSurface)>,
 }
 
+impl Keyboard {
+    /// Whether a valid evdev key is already owned by ordinary client routing.
+    pub(crate) fn client_holds(&self, code: u32) -> bool {
+        self.handle.pressed_keys().contains(&(code + 8).into())
+    }
+}
+
 impl Server {
     /// Bind a display with a keyboard seat and an explicitly supplied XKB layout.
     ///

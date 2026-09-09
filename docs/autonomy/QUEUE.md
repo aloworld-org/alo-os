@@ -5,6 +5,29 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed mapping-bound reader key transactions (2026-09-09):** exact reader
+and page-visit identity protects release execution; repeats, replacement and
+cancelled keys cannot act. Owned releases drain and client-owned keys refuse
+acquisition. Four new private-client tests; Linux 165 unit/228 lifecycle/three
+socket/four doctests and affected clippy/rustdoc/Windows/format pass. Report:
+`updates/mapping-bound-reader-key-transactions.md`. Supervisor gates pending.
+Next executable component: pointer ownership and interaction feedback connected
+to transactional reader composition/submission/publication/retirement. Wire this
+key primitive into backend routing only after successful reader publication;
+then native navigation/cursor selection and direct integration. Explicit key
+transactions are complete; rendered reader input and window management are not.
+
+**Selected mapping-bound reader key transactions (2026-09-09):** implement the
+keyboard ownership component: trusted semantic previous/next/dismiss presses
+bind to an exact reader and page, execute once on matching release, suppress
+repeats, and drain cancelled releases across retirement/replacement. Unrecognized
+keys retain ordinary client routing. Acceptance: private-client happy, boundary,
+repeat, competing-key, cancellation, stale/foreign/replaced-reader checks and
+ordinary typing; affected Linux tests/clippy/rustdoc and format. This is an
+explicit host transaction primitive; backend key mapping and activation only
+after successful reader publication remain integration work alongside pointer
+ownership, feedback and composition. No full-reader feature completion.
+
 **Completed bounded native reader chrome rendering (2026-09-09):** four complete
 wording rows preserve translation/source marking and text scale, refusing overlap,
 output mismatch, invalid text/vocabulary/glyphs and any lost text/ink atomically.

@@ -687,3 +687,36 @@ navigation, interaction feedback and integrated reader publication remain owed.
 Existing full-label scene validation and normal keyboard routing are unchanged.
 
 Evidence: `docs/autonomy/updates/bounded-native-reader-chrome-rendering.md`.
+
+
+## Mapping-bound reader key transactions
+
+2026-09-09 additive trusted host primitive: `WindowControlReaderKeys::route`
+accepts a server, optional live reader, evdev code, KeyState and optional
+`ReaderKeyCommand` (Previous, Next, Dismiss). Opening a reader does not install
+a keyboard filter. The host must offer commands only after its reader frame has
+successfully published, route every owned release even when inactive, and call
+`cancel` on removal, failed submission, focus/seat/session loss or binding changes.
+Backend event-pump wiring and reader-frame publication remain subsequent work.
+
+A valid new press captures the exact reading session, page visit and command.
+A release executes at most once after live mapping validation. Two readers of the
+same strip are distinct; leaving a page and returning creates a new visit, so an
+old press cannot act on that later visit. Boundary requests consume without
+wrapping. Dismiss closes only the reader. Repeats consume without execution or
+rearming; another command held concurrently is consumed but never armed.
+Cancellation retains ownership until each release drains. Releases use the
+captured command even if the host's current semantic mapping has changed.
+
+Only valid evdev codes 1..=767 acquire ownership, bounding retained storage.
+Missing keyboard seats and keys already held by ordinary client routing refuse
+new acquisition. None commands and unknown releases return Forward; the host
+routes those through ordinary keyboard delivery once. Consumed, Changed and
+Dismissed must never be forwarded. Changed requests fresh reader composition;
+Dismissed requests pixel removal. No window operation, XKB state change, client
+focus change, configured binding or new user-facing string is introduced.
+
+This completes explicit keyboard transaction ownership, not automatically active
+reader keyboard UI. Pointer ownership, interaction feedback, transactional
+reader composition/publication/retirement and backend mapping remain required.
+Evidence: `docs/autonomy/updates/mapping-bound-reader-key-transactions.md`.

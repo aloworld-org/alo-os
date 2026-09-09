@@ -27,10 +27,14 @@ pub struct WindowControlReaderStyle {
 pub struct WindowControlReader {
     /// Opaque identity is unique across servers and strip publication lifetimes.
     binding: Option<Arc<()>>,
+    /// Distinguishes two readers opened on the same strip.
+    pub(crate) identity: Arc<()>,
     /// Complete name and every prepared page, never a partial preparation.
     pages: WindowControlLabelPages,
     /// Last accepted zero-based selection.
     selected: usize,
+    /// Renewed on page transitions, preventing away-and-back key activation.
+    pub(crate) selection: Arc<()>,
 }
 
 impl WindowControlReader {
@@ -90,8 +94,10 @@ impl Server {
         )?;
         Ok(Some(WindowControlReader {
             binding: Some(binding),
+            identity: Arc::new(()),
             pages,
             selected: 0,
+            selection: Arc::new(()),
         }))
     }
 
@@ -114,6 +120,9 @@ impl Server {
             return None;
         }
         let page = reader.pages.pages().get(index)?;
+        if reader.selected != index {
+            reader.selection = Arc::new(());
+        }
         reader.selected = index;
         Some(WindowControlReaderPage {
             said: reader.pages.said(),

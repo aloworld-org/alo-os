@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Reader navigation key transactions cannot act on a replacement reader.**
+  The native host component binds each press to its reader and page, executes
+  once on release, and drains cancelled keys without sending them to an app.
+  Ordinary typing and client-owned keys retain their existing route. Connecting
+  this component to published reader frames remains unfinished. Evidence:
+  `docs/autonomy/updates/mapping-bound-reader-key-transactions.md`.
+
 - **Long-name reader navigation can now be rendered without shortening its words.**
   The native preparer fits page position and previous/next/dismiss wording at the
   person's text scale, preserving individual translations and development source

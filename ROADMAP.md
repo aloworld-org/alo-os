@@ -1334,6 +1334,14 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Mapping-bound reader key transactions (2026-09-09): exact reader/page-visit
+    presses execute once on release; cancellation drains ownership, repeats and
+    replacement refuse, and ordinary client keys remain intact. Four new private
+    client tests; Linux 165 unit/228 lifecycle/three socket/four doctests and
+    affected clippy/rustdoc/Windows/format checks pass. Backend activation after
+    reader publication, pointer ownership, feedback and transactional reader
+    composition remain unfinished. Supervisor gates pending; no feature tick.
+    `docs/autonomy/updates/mapping-bound-reader-key-transactions.md`.
   - Bounded reader chrome rendering (2026-09-09): four complete wording rows
     retain translation/source marking and text scale; overlap, mismatched output,
     invalid wording, missing glyphs and lost text/ink refuse atomically. Three new

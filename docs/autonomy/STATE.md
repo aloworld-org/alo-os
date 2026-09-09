@@ -14581,3 +14581,41 @@ integration follow. Current evidence is wording raster preparation and GLES
 readback, not parent navigation input, on-screen reader UI, scanout or VM boot.
 Physical laptop/GPU workstation evidence remains owed during release validation.
 Reports arriving during publication reconcile next iteration.
+
+
+## 2026-09-09 - mapping-bound reader key transactions
+
+Started clean at b4cb63b; read required guidance and relevant feature/roadmap,
+ADRs and contracts. All published reports already referenced here; none needed
+reconciliation. Selected explicit keyboard transaction component in QUEUE first.
+
+New trusted host key transactions capture exact reader/page visit/semantic command
+and execute once on release. Boundaries consume, repeats cannot rearm, concurrent
+commands disarm, cancellation drains releases, replacement and away-and-back page
+visits refuse. Existing XKB client-held keys and missing seats refuse acquisition.
+Ordinary typing and client focus remain intact. No palette/string/binding change.
+
+Four new real private-client tests pass. Final Linux suite: 165 unit, 228 lifecycle,
+three socket and four compile-fail doctests, none ignored. Affected Linux clippy,
+rustdoc with warnings denied, Windows clippy/tests and fmt pass. Windows cases
+are zero for Linux-only shell code. Initial clippy's five missing private-item
+documentation errors were repaired and clippy rerun successfully; no exemptions.
+Full independent supervisor Windows/Linux/workspace/rustdoc/BPF gates pending.
+
+Ubuntu libraries, WSLg socket and existing bpffs checked. All command reserve
+preflights exceeded 12 GiB; minimum 54,526,406,656 bytes. No shared maintenance,
+cleanup, WSL restart/helper, kernel mutation or outer machine lock. Separate
+desktop target retained. No stage/commit/push, dev-loop edit, extra worker,
+other-checkout edit, credential/identity access or unrelated host change.
+
+Exact commands, development failure, logs and evidence limits:
+`docs/autonomy/updates/mapping-bound-reader-key-transactions.md`.
+Logs: `.git/alo-loop/mapping-bound-reader-key-transactions/`.
+All four progress documents and contract updated; source/new-file diff reviewed
+and git diff --check passes. Explicit key transactions complete; next is pointer
+ownership/feedback with transactional reader composition/publication/retirement,
+then backend key activation, native navigation/cursor selection and direct
+integration. New evidence is private-client semantic transactions, not parent
+key delivery, rendered reader UI, scanout or VM boot; no new GLES path or test.
+Physical laptop/GPU workstation evidence remains owed at release validation.
+No feature tick or release verdict; later reports reconcile next iteration.

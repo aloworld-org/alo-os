@@ -322,3 +322,5 @@ mod presentation;
 mod reader;
 mod reader_navigation;
 mod routing;
+
+mod reader_keys;
