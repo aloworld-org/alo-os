@@ -179,16 +179,18 @@ pub fn run(
         // Exercise the production wrapper and actual ordered parent event pump.
         // Parent activation is external; no synthetic key delivery is claimed.
         nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
-        let mut owned = server
-            .begin_window_control_reader(
+        assert!(server.focus_window_control(Some(Action::CloseWindow)));
+        let mut owned = nested
+            .open_control_reader(
+                server,
                 &mut labels,
                 &words,
-                Action::CloseWindow,
                 WindowControlReaderStyle {
                     size: (140, 28),
                     scheme,
                     scale: TextScale::ordinary(),
                 },
+                geometry,
             )?
             .ok_or("backend-owned reader refused")?;
         nested.render_reader(

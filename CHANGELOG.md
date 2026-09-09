@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **The native shell can open the full name selected on its control strip.**
+  An explicit reader request follows native focus or fresh pointer hover,
+  including disabled controls, without executing the control or stealing typing.
+  Every page's navigation must fit before opening, including longer page numbers.
+  Private-client and nested WSLg component evidence is recorded in
+  `docs/autonomy/updates/live-native-reader-selection.md`. User activation and
+  cursor integration remain unfinished.
+
 - **The nested name reader now receives keyboard and pointer input.** PageUp,
   PageDown and Escape navigate or dismiss the published reader, while ordinary
   typing remains available. Consumed motion retains the real pointer position;

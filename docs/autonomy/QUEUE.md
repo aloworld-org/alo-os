@@ -5,6 +5,26 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed live native reader selection (2026-09-10):** explicit full-name opening
+uses live native focus or fresh hover, including disabled names. All pages'
+navigation and hit geometry must fit before return. Four new private-client tests
+and affected tests/clippy/rustdoc pass; WSLg exercises selection-to-submission.
+Initial graphical deadline failure and traced upstream swap delays are retained
+without claiming a root cause. Exact evidence: `updates/live-native-reader-selection.md`.
+Independent supervisor gates pending. Next: connect explicit opening to a native
+activation gesture and automatic full-name fallback during strip presentation,
+then native cursor selection and direct integration. Explicit opening is complete;
+usable full-name access and window management remain unfinished.
+
+**Selected live native reader selection (2026-09-10):** open full-name readers
+from mapping-bound native focus or fresh hover, preserving disabled-name access.
+Validate every page's navigation capacity before returning a reader; refuse stale
+publication, competing input and invalid wording/geometry without executing a
+window command. Acceptance: private-client selection/refusal/typing tests,
+affected format/tests/clippy/rustdoc and WSLg selection-to-submission evidence.
+This completes the explicit opening component; user activation gesture, cursor
+selection and direct integration remain subsequent work.
+
 **Completed nested reader event routing (2026-09-10):** the ordered nested seat
 pump now routes PageUp/PageDown/Escape and pointer/axis events through the live
 publication coordinator. Actual parent position survives consumed motion;

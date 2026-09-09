@@ -86,6 +86,7 @@ mod window_control_reader_keys;
 mod window_control_reader_navigation;
 mod window_control_reader_pointer;
 mod window_control_reader_scene;
+mod window_control_reader_selection;
 pub mod window_control_reader_words;
 mod window_control_routing;
 mod window_control_scene;

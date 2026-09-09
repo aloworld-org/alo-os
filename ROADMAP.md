@@ -1334,6 +1334,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Live native reader selection (2026-09-10): explicit opening follows the live
+    strip's native focus or fresh hover, including disabled names; all pages'
+    complete chrome/hit geometry must fit before return. Four private-client
+    tests cover selection, typing and refusal, including page-ten overflow.
+    Affected tests/clippy/rustdoc and WSLg selection-to-submission checks pass;
+    initial graphical deadline failure and measured upstream swap delays remain
+    recorded without a root-cause claim. Evidence:
+    `docs/autonomy/updates/live-native-reader-selection.md`. Explicit opening
+    component complete; activation gesture/automatic full-name fallback, native
+    cursor and direct integration remain. No feature/release checkbox promoted;
+    independent supervisor gates pending.
   - Nested reader event routing (2026-09-10): ordered parent activation, reader
     PageUp/PageDown/Escape, motion/buttons/axes now use publication coordination;
     actual parent position and cancelled releases survive native interception,

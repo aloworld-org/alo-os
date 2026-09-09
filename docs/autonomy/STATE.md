@@ -14895,3 +14895,53 @@ Logs: `.git/alo-loop/nested-reader-event-routing/`.
 Contract and all four progress documents updated. No feature/release checkbox
 promoted. VM boot and physical laptop/GPU workstation evidence remain owed in
 their delivery phases. Reports arriving during publication reconcile next iteration.
+
+## 2026-09-10 - live native reader selection
+
+Started clean at 56add16. Read CLAUDE, DELIVERY, SHARED_MAIN, updates guidance,
+current QUEUE/STATE, relevant features/roadmap, ADRs 0002/0010 and native-control
+contract. No AGENTS.md found. All published reports already had STATE references
+at iteration start; no reconciliation due. Selected component and acceptance
+recorded in QUEUE before implementation. Desktop task ownership retained.
+
+Explicit full-name opening now follows live native focus or fresh hover, including
+disabled names. Every page's complete navigation and hit geometry must fit before
+return; selection starts at page zero and grants no input/publication authority.
+Failed preparation preserves an existing reader and ordinary typing. Nested uses
+its actual parent position. No window operation, new wording/palette or engine
+patch. Explicit opening component complete; user activation/automatic full-name
+fallback, native cursor and direct integration remain next. Full-name access and
+window management are unfinished.
+
+Four new private-client tests pass, including capacity fitting page one but failing
+at page ten. Final Linux: 168 unit, 250 lifecycle, three socket and four doctests,
+none ignored. Affected Linux/Windows tests/clippy, format, Linux example build and
+warnings-denied rustdoc pass; Windows Linux-only shell tests have zero cases.
+WSLg final normal reader/control regressions pass: twelve existing transactional
+reader frames plus two live-selected backend-owned readers, both schemes, and
+six-client lifecycle/refusal checks. Supervisor independent full gates pending.
+
+Preserved failures: incorrect test API calls fixed; unchecked test vector indexing
+replaced by checked destructuring. Initial graphical reader client deadline failed
+before reader submission markers; no surviving process or missing socket/mount.
+Existing tracing with controls/reader passes measured empty-scene upstream swaps
+at 8.575840773 s and 2.991342836 s after near-millisecond painting. Original failure
+cause/location remains unproven; intermittent submission delay is unresolved.
+Final normal graphical runs pass, not proof of an upstream repair. No assertion,
+timeout or gate weakened. Native statuses checked; PowerShell stderr wrapper
+batch-exit behavior is explained in the report.
+
+Exact commands, evidence and limits:
+`docs/autonomy/updates/live-native-reader-selection.md`.
+Logs: `.git/alo-loop/live-native-reader-selection/`.
+All observed disk preflights exceeded 53 billion bytes and the 12 GiB floor.
+Ubuntu graphics prerequisites, WSLg and existing bpffs checked; no installation,
+cleanup or shared maintenance. Private resources only, no kernel mutation or outer
+lock. Desktop target /root/alo-os-target retained. No staging/commit/push, dev-loop
+edit, second worker/loop, other checkout or credentials/identity access.
+
+Contract and all four progress documents updated. Evidence is private-client
+selection and explicit-native-focus WSLg submission, not parent event synthesis,
+submitted-frame readback, direct scanout, VM or physical hardware. Machine records
+remain owed in their delivery phases. No feature/release checkbox promoted;
+reports arriving during publication reconcile next iteration.

@@ -939,3 +939,35 @@ two backend-owned reader submissions and actual reader-pump calls, in addition
 to the existing twelve explicitly host-driven frames. They do not synthesize
 parent key/button events or read back those submitted frames. Exact evidence:
 `docs/autonomy/updates/nested-reader-event-routing.md`.
+
+## Live native reader selection
+
+2026-09-10 additive trusted API: `Server::open_presented_window_control_reader`
+opens the name selected by the live strip's explicit native focus, otherwise a
+fresh hover hit. It never infers selection from application keyboard focus or a
+retained action. Disabled names remain readable. No selection, stale publication,
+off-strip hover or competing input returns None. Invalid wording, page capacity,
+chrome capacity or interaction gutters returns the existing typed render error.
+
+Before returning, every page's complete position/previous/next/dismiss wording
+and interaction geometry is prepared and checked at the original text scale.
+This includes later page numbers that need more space. Temporary chrome rasters
+are dropped after each check; the existing 128-page reader budget remains.
+Success returns page zero with no input or submission authority. Preparation
+errors do not dismiss an already open reader or execute a window command.
+
+`Nested::open_control_reader` supplies its actual parent pointer position to the
+same selector. Pump first and call on an explicit host opening request. Keep the
+returned reader across navigation, use the same strings and chrome capacity for
+`render_reader`, and route through `pump_reader_seat` only under the existing
+successful-publication rules. Vocabulary or appearance changes require reopening.
+Rendering still independently validates every frame; this preflight is not proof
+of graphics submission. This API does not choose an activation key/gesture or
+automatically fall back from an oversized tooltip during ordinary strip drawing.
+
+Four private-client checks cover focus precedence, disabled hover, complete page
+traversal, typing, absent/stale/busy refusal, malformed capacity, missing wording,
+preservation of an existing reader, and capacity that fits page one but fails at
+page ten. WSLg selection-to-submission evidence uses explicit native focus, not
+synthetic parent input. User activation, native cursor selection and direct
+integration remain. Evidence: `docs/autonomy/updates/live-native-reader-selection.md`.
