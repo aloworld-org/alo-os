@@ -104,6 +104,7 @@ impl Server {
         labels: Option<WindowControlLabelFrame<'_>>,
         time: u32,
     ) -> Result<usize, RenderError> {
+        self.reader_presentation = None;
         let result = (|| {
             let Some(view) = controls else {
                 self.retire_window_controls();

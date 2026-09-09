@@ -35,6 +35,8 @@ pub struct WindowControlReader {
     selected: usize,
     /// Renewed on page transitions, preventing away-and-back key activation.
     pub(crate) selection: Arc<()>,
+    /// Keep page and navigation appearance identical for this reading session.
+    pub(crate) style: WindowControlReaderStyle,
 }
 
 impl WindowControlReader {
@@ -98,6 +100,7 @@ impl Server {
             pages,
             selected: 0,
             selection: Arc::new(()),
+            style,
         }))
     }
 

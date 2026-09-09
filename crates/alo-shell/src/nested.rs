@@ -214,6 +214,20 @@ impl Nested {
 }
 
 impl FrameTarget for Nested {
+    fn submit_reader(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        reader: &crate::WindowControlReaderScene<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_native_scene(
+            roots,
+            popups,
+            cursor,
+            Some(crate::scene_native::NativeScene::Reader(reader)),
+        )
+    }
     fn submit_controls(
         &mut self,
         roots: &[WlSurface],
@@ -271,6 +285,22 @@ impl Nested {
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
         controls: Option<crate::WindowControlScene<'_>>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_native_scene(
+            roots,
+            popups,
+            cursor,
+            controls.map(crate::scene_native::NativeScene::Controls),
+        )
+    }
+
+    /// One shared submission boundary for complete labels and paged readers.
+    fn submit_native_scene(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        controls: Option<crate::scene_native::NativeScene<'_>>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         if self.closed {
             return Err(RenderError::Closed);

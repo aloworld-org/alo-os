@@ -35,6 +35,9 @@ mod interactive_resize_check;
 #[path = "support/nested_control_frame_check.rs"]
 mod nested_control_frame_check;
 #[cfg(target_os = "linux")]
+#[path = "support/nested_reader_frame_check.rs"]
+mod nested_reader_frame_check;
+#[cfg(target_os = "linux")]
 #[path = "support/resize_geometry_check.rs"]
 mod resize_geometry_check;
 #[cfg(target_os = "linux")]
@@ -271,9 +274,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut rendered = 0;
     let controls_check = std::env::args().any(|arg| arg == "--controls");
     let mut controls_checked = false;
+    let reader_check = std::env::args().any(|arg| arg == "--reader");
+    let mut reader_checked = false;
+    let trace = std::env::args().any(|arg| arg == "--trace");
     while !client.is_finished() {
         if start.elapsed() > Duration::from_secs(10) {
             return Err("client deadline exceeded".into());
+        }
+        if trace {
+            eprintln!("Nested trace {:?}: before pump", start.elapsed());
         }
         if cursor_check {
             nested.pump()?;
@@ -281,7 +290,25 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         } else {
             nested.pump_seat(&mut server)?;
         }
+        if trace {
+            eprintln!("Nested trace {:?}: after pump", start.elapsed());
+        }
         server.dispatch()?;
+        if trace {
+            eprintln!(
+                "Nested trace {:?}: after dispatch, {} roots",
+                start.elapsed(),
+                server.mapped_surfaces().count()
+            );
+        }
+        if reader_check && !reader_checked && server.mapped_surfaces().next().is_some() {
+            nested_reader_frame_check::run(
+                &mut server,
+                &mut nested,
+                start.elapsed().as_millis() as u32,
+            )?;
+            reader_checked = true;
+        }
         if controls_check && !controls_checked && server.mapped_surfaces().next().is_some() {
             nested_control_frame_check::run(
                 &mut server,
@@ -291,6 +318,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             controls_checked = true;
         }
         rendered += server.render(&mut nested, start.elapsed().as_millis() as u32)?;
+        if trace {
+            eprintln!("Nested trace {:?}: after render", start.elapsed());
+        }
         thread::sleep(Duration::from_millis(4));
     }
     client.join().map_err(|_| "client assertion failed")?;
@@ -300,6 +330,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(server.render(&mut nested, 10000)?, 0);
     assert!(rendered > 0);
     assert!(!controls_check || controls_checked);
+    assert!(!reader_check || reader_checked);
     println!(
         "Nested GLES submissions included {rendered} client surfaces; unmap/remap, refusal and disconnect passed; physical display unverified"
     );

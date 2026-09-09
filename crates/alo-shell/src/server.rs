@@ -22,6 +22,8 @@ pub struct Server {
     pub(crate) control_press: Option<crate::window_control_input::Press>,
     /// Explicitly composed strip and mapping-bound native label focus.
     pub(crate) control_presentation: Option<crate::window_control_presentation::Presentation>,
+    /// Successfully submitted reader/page identity and exact hit bounds.
+    pub(crate) reader_presentation: Option<crate::window_control_reader_frame::ReaderPresentation>,
     /// The display is private so every inserted client has our client state.
     display: Display<Surfaces>,
     /// Protocol state and mapped toplevels.
@@ -53,6 +55,7 @@ impl Server {
             control_overlay: Default::default(),
             control_press: None,
             control_presentation: None,
+            reader_presentation: None,
             display,
             surfaces,
             socket,

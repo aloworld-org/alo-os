@@ -50,6 +50,7 @@ mod scanout_buffer;
 mod scanout_frame;
 mod scene;
 mod scene_drawing;
+mod scene_native;
 mod scene_replacement;
 mod scene_scanout;
 mod seat_input;
@@ -76,10 +77,12 @@ mod window_control_paint;
 mod window_control_presentation;
 mod window_control_reader;
 mod window_control_reader_chrome;
+mod window_control_reader_frame;
 mod window_control_reader_interaction;
 mod window_control_reader_keys;
 mod window_control_reader_navigation;
 mod window_control_reader_pointer;
+mod window_control_reader_scene;
 pub mod window_control_reader_words;
 mod window_control_routing;
 mod window_control_scene;
@@ -157,10 +160,12 @@ pub use window_control_reader::{
     WindowControlReader, WindowControlReaderPage, WindowControlReaderStyle,
 };
 pub use window_control_reader_chrome::PreparedWindowControlReaderChrome;
+pub use window_control_reader_frame::WindowControlReaderFrame;
 pub use window_control_reader_interaction::WindowControlReaderInteraction;
 pub use window_control_reader_navigation::{
     WindowControlReaderChrome, WindowControlReaderNavigation,
 };
+pub use window_control_reader_scene::WindowControlReaderScene;
 pub use window_control_routing::{
     PaintedWindowControls, WindowControlPointerEvent, WindowControlRoute, WindowControlRouteError,
 };

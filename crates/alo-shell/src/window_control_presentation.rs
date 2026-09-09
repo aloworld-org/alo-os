@@ -135,6 +135,7 @@ impl Server {
     /// Remove native presentation and focus without forwarding an owned release.
     /// Idempotent, including on seats lacking pointer or keyboard capability.
     pub fn retire_window_controls(&mut self) {
+        self.reader_presentation = None;
         self.control_overlay.bounds = None;
         self.control_presentation = None;
         self.cancel_window_control();

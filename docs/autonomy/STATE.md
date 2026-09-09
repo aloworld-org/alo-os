@@ -14722,3 +14722,63 @@ semantic routing and WSLg readback, not actual parent navigation, on-screen read
 publication, scanout or integrated VM boot. Physical laptop/GPU workstation
 records remain owed at release validation. No release verdict; reports arriving
 during publication reconcile next iteration.
+
+## 2026-09-10 - transactional native reader frames
+
+Started clean at 4477c1f. Read required delivery/ownership/report guidance and
+relevant features, roadmap, ADRs 0002/0010 and native-control contract. No
+AGENTS.md found; all published reports already had STATE references. Selected
+reader frame transaction acceptance in QUEUE before implementation.
+
+Added live reader preparation/submission/publication tying complete page/chrome,
+feedback and strip to the actual desktop frame. Only successful submission
+including the strip root publishes exact reader/page-visit identity and opaque
+hit bounds. Unsupported backends refuse explicitly. Invalid/stale/omitted/failed
+frames preserve pending callbacks, clear native authority and dismiss the reader.
+Identical refreshes preserve pointer presses; replaced geometry disarms them and
+owned releases still drain. Ordinary rendering/removal retires publication.
+Native scene dispatch, reader scene and transaction have separate source modules.
+No new palette, hardcoded production wording, agent verb, focus or engine change.
+
+Four new real-client tests pass. Final Linux suite: 168 unit, 238 lifecycle,
+three socket and four compile-fail doctests, none ignored. Affected Linux/Windows
+clippy/tests, Linux example builds, warnings-denied rustdoc and final format pass;
+Linux-only shell cases are zero on Windows. WSLg final normal reader check passes
+12 complete page/feedback EGL submissions in both schemes with semantic next/
+dismiss, removal and refusal/recovery. Final normal controls regression passes.
+Existing pressed-state readback passes 72 complete 307,200-pixel frames and hit
+checks across pages, translation/fallback, both schemes and four scales (13.71 s).
+Independent supervisor workspace/Windows/Linux/rustdoc/BPF gates remain pending.
+
+Preserved development failures: private-item documentation lint repaired; mock
+ordinary rendering lacked cursor support and now explicitly models it; reader
+fixture chrome overlapped the actual Close-anchored page and now fits below it.
+Measured page (75,40,140,28), original chrome (162,40,154,156), corrected chrome
+(162,74,154,126); collision/separation assertions retained. An initial existing
+controls run exceeded its ten-second client deadline. No surviving reader/test
+process was found. Optional tracing measured a later passing control's early
+empty-scene render from 17.573 ms to 7.524 s; original stall cause/location remains
+unknown. Traced reader and final normal reader/control runs pass. These passes
+do not establish the original timeout's cause. Every deadline/assertion remains.
+
+Ubuntu graphics libraries, WSLg socket and existing bpffs checked. All command
+reserve preflights exceeded 12 GiB; minimum observed 53,303,070,720 bytes. No
+cleanup, shared maintenance, WSL restart/helper, kernel mutation or outer lock.
+Desktop target remains /root/alo-os-target. No stage/commit/push, dev-loop edit,
+second worker/loop, other-checkout change or credential/identity access.
+
+Exact commands, decisions, failures and evidence limits:
+`docs/autonomy/updates/transactional-native-reader-frames.md`.
+Logs: `.git/alo-loop/transactional-native-reader-frames/`.
+Contract and all four progress documents updated; tracked/new source, tests and
+example reviewed; final fmt and git diff --check pass. No feature/release tick.
+
+Explicit frame transaction component complete. Next: coordinated backend key/
+pointer activation against successful reader publication, cancellation/draining
+on removal and input loss, then native reader selection/navigation/cursor selection
+and direct integration. Full-name access and window management remain unfinished.
+Evidence is private-client transactions and actual WSLg submission with explicit
+host semantic input, not automatic parent key/pointer delivery, physical scanout
+or integrated VM boot. Pixel readback covers the component painter, not the new
+nested submitted frames. Physical laptop/GPU workstation records remain owed at
+release validation. Reports arriving during publication reconcile next iteration.

@@ -5,6 +5,29 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed transactional native reader frames (2026-09-10):** complete live page,
+chrome, feedback and strip now share one desktop submission; exact reader/page-
+visit hits publish only after success including the root. Invalid/unsupported/
+omitted/failed frames retire authority and preserve callbacks; geometry changes
+disarm presses. Four new private-client tests pass; Linux 168 unit/238 lifecycle/
+three socket/four doctests, affected clippy/tests/rustdoc/fmt and example builds
+pass. WSLg: 12 reader EGL submissions, normal controls regression and 72 pressed
+pixel/hit frames pass. Original controls deadline failure remains unexplained;
+traced and final normal runs pass with deadlines unchanged. Exact diagnosis and
+limits: `updates/transactional-native-reader-frames.md`. Supervisor gates pending.
+Next executable component: coordinated backend key/pointer activation against
+successful reader publication, cancellation/draining on removal and input loss;
+then native reader selection/navigation/cursor selection and direct integration.
+Explicit frame transactions complete; full-name access/window management unfinished.
+
+**Selected transactional native reader frames (2026-09-10):** compose a fresh
+live page, externalized chrome and validated feedback with the strip/client scene;
+publish exact hits only after successful submission. Refuse unsupported targets,
+omitted roots, stale readers, output/geometry mismatches and submission failures;
+preserve pending callbacks and retire failed reader authority. Test real private
+clients, successful refresh/navigation/removal and ordinary typing, plus WSLg
+submission evidence. Backend event-pump activation remains the next component.
+
 **Completed native reader hit geometry and feedback rendering (2026-09-10):**
 opaque page/row/gutter hits now match feedback composition exactly, preserving
 fractional edges and every text pixel. Invalid geometry and disabled/inconsistent

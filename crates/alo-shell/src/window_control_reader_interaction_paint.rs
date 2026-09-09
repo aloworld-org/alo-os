@@ -46,7 +46,7 @@ impl WindowControlReaderInteraction<'_> {
     }
 
     /// Prevalidate semantic state and generate only bounded gutter rectangles.
-    pub(super) fn solids(
+    pub(crate) fn solids(
         &self,
         feedback: ReaderPointerFeedback,
     ) -> Result<Vec<Solid>, RenderError> {

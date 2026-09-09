@@ -19,7 +19,7 @@ pub(crate) fn paint(
     popups: &[crate::Popup],
     cursor: &crate::Cursor,
     transform: Transform,
-    controls: Option<crate::WindowControlScene<'_>>,
+    controls: Option<crate::scene_native::NativeScene<'_>>,
 ) -> Result<drawing::Drawing, RenderError> {
     let extent = framebuffer.size();
     let size: smithay::utils::Size<i32, smithay::utils::Physical> = (extent.w, extent.h).into();
@@ -59,10 +59,7 @@ pub(crate) fn paint(
         .map_err(submission)?;
     draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage]).map_err(submission)?;
     if let Some(controls) = controls {
-        controls.layout.paint(&mut frame, controls.scheme)?;
-        if let Some(label) = controls.label {
-            label.paint(&mut frame)?;
-        }
+        controls.paint(&mut frame)?;
     }
     if let Some(cursor_drawing) = &cursor_drawing {
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])

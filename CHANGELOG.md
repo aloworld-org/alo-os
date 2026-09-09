@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native name reader targets now follow successfully submitted pages.**
+  The host composes the complete page, navigation and feedback with the desktop
+  before publishing pointer targets. Stale pages, invalid geometry, unsupported
+  backends and failed submissions cannot leave active reader targets; pending
+  client callbacks survive refusal. Nested submission is implemented; coordinated
+  backend input activation remains next. Evidence:
+  `docs/autonomy/updates/transactional-native-reader-frames.md`.
+
 - **Native name readers have exact pointer targets and text-preserving feedback.**
   The renderer now composes complete reader pages and navigation with visible
   enabled, hovered and pressed states outside the wording. Invalid placement and

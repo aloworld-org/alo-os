@@ -1334,6 +1334,15 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Transactional native reader frames (2026-09-10): fresh complete page/chrome/
+    feedback and strip share one desktop submission. Exact reader/page-visit hits
+    publish only after success including the target root; failures retire authority
+    and preserve callbacks. Identical refreshes preserve presses; geometry changes
+    disarm them. Four real-client tests and WSLg reader submission evidence:
+    `docs/autonomy/updates/transactional-native-reader-frames.md`.
+    Composition/publication component complete; coordinated backend key/pointer
+    activation, native reader selection/navigation and direct integration remain.
+    Independent supervisor gates pending; no feature or release tick.
   - Native reader hit geometry and feedback (2026-09-10): exact fractional hits
     cover only opaque page/wording/gutter areas. Output/strip/page mismatch,
     collisions and inconsistent/disabled feedback refuse. Underline/outline

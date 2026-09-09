@@ -11,6 +11,9 @@ use smithay::{
 /// Backend failures are diagnostic data; native session entry must translate them.
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
+    /// Fresh reader wording, pagination or placement refused before submission.
+    #[error(transparent)]
+    ControlReader(#[from] crate::WindowControlPageError),
     /// Fresh native label selection or shaping refused before submission.
     #[error(transparent)]
     ControlLabel(#[from] crate::WindowControlLabelError),
@@ -74,6 +77,18 @@ pub enum RenderError {
 /// on import, draw or submit failure and must not dispatch client requests.
 /// No returned surface receives a presentation-time guarantee.
 pub trait FrameTarget {
+    /// Submit a complete reader with its strip, clients, popups and cursor.
+    /// Refuse unsupported content; never silently submit only the strip.
+    /// No dispatch or publication is allowed during this transaction.
+    fn submit_reader(
+        &mut self,
+        _roots: &[WlSurface],
+        _popups: &[crate::Popup],
+        _cursor: &crate::Cursor,
+        _reader: &crate::WindowControlReaderScene<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
+        Err(RenderError::ControlsUnsupported)
+    }
     /// Submit native controls in the same frame as clients, popups and cursor.
     /// Implementations must honor the supplied scene or refuse before submission.
     /// None removes native content. No dispatch or publication is allowed here.

@@ -806,3 +806,57 @@ page/translation/scheme/scale cases. Every interaction pixel and hit is compared
 idle also verifies that refused feedback leaves the framebuffer untouched.
 Exact commands/results and evidence limits:
 `docs/autonomy/updates/native-reader-hit-geometry-and-feedback.md`.
+
+## Transactional native reader frames
+
+2026-09-10 additive trusted host API: `Server::render_window_control_reader`
+accepts a live reader, actual `FrameTarget`, `WindowControlReaderFrame` and time.
+The frame supplies navigation vocabulary, a reusable shaper, explicit chrome
+capacity and the semantic pointer owner. The original reader's scheme and text
+scale apply to page, strip, chrome and feedback. The server validates the exact
+reader/page visit against its published strip, prepares all navigation wording,
+refreshes feedback and composes one borrowed `WindowControlReaderScene` without
+dispatching client requests. Callers cannot construct that scene from unrelated
+page and chrome rasters. Reopen the reading session on vocabulary/style changes.
+
+`FrameTarget::submit_reader` defaults to `ControlsUnsupported`; supporting only
+strips cannot silently count as reader submission. Supporting targets must paint
+the complete scene above client/popup trees and below either cursor, validate
+the actual extent before drawing, and report only successfully submitted surfaces.
+`Nested` implements this through its existing GLES swap boundary and shared
+native scene painter. Direct targets currently refuse readers. The existing
+complete-label and offscreen control APIs retain their signatures and behavior.
+
+Only successful submission including the strip's root publishes reader identity,
+page-visit identity and the exact opaque hit rectangles. Client callbacks and
+output publication use the existing transaction. Unsupported targets, omitted
+roots, invalid geometry/vocabulary, stale readers and rendering failures preserve
+pending callbacks, clear native publication, cancel pointer execution while
+retaining releases, and permanently dismiss the failed reader. Recovery requires
+an explicitly reopened reader. Failed submission does not prove removal of old
+pixels; the host must request a successful removal/recovery frame.
+
+`window_control_reader_presented` and `presented_window_control_reader_hit`
+revalidate the supplied live reader and exact page visit on every query. Mismatch
+conservatively clears the old publication, including querying another reader;
+away-and-back page navigation cannot revive it. Identical successful refreshes
+preserve pointer feedback/presses; replacement identity, page visit or hit geometry
+cancels them before composition. Ordinary strip/label rendering clears reader
+publication, while ordinary rendering and strip retirement clear both. Hit data
+retains fractional/nonfinite handling and covers only painted opaque areas.
+
+This is an explicit host composition/publication component, not an installed
+input filter. Before exposing the reader in a person's session, the host still
+must coordinate pointer/key routing with published identity, cancel both owners
+on removal/focus/seat/session loss or competing input, and drain owned releases
+while inactive. Parent key mapping/navigation, native reader selection and direct
+backend integration remain required. No agent verb, client focus change, new
+palette, hardcoded production wording or engine patch is introduced.
+
+Four real-client transaction tests cover exact publication, callbacks, refresh,
+navigation, removal, refusal and ordinary typing. `nested_check --reader` adds
+actual WSLg submission in both schemes with semantic pointer navigation and
+dismissal. It does not synthesize parent navigation events or certify scanout.
+`--trace` optionally reports event-loop timing without changing any deadline.
+Exact results, preserved failures and evidence limits:
+`docs/autonomy/updates/transactional-native-reader-frames.md`.

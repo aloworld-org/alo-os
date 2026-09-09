@@ -95,7 +95,7 @@ pub fn render_control_scanout(
         popups,
         cursor,
         Transform::Normal,
-        controls,
+        controls.map(crate::scene_native::NativeScene::Controls),
     )?;
     let pixels = crate::readback_xrgb(renderer, &target, RowOrder::TopToBottom)?;
     Ok(PreparedScanout {

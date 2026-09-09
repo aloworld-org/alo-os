@@ -78,6 +78,30 @@ impl<'a> WindowControlReaderInteraction<'a> {
     /// are preserved; nonfinite and outside positions return None, never clamped.
     /// Disabled commands remain command hits; live pointer policy consumes them.
     pub fn hit(&self, position: (f64, f64)) -> Option<ReaderPointerHit> {
+        self.hit_map().hit(position)
+    }
+
+    /// Copy only the exact painted bounds after successful frame submission.
+    pub(crate) fn hit_map(&self) -> ReaderHitMap {
+        ReaderHitMap {
+            page: self.page.bounds(),
+            rows: self.rows,
+        }
+    }
+}
+
+/// Bounded publication data, independent of temporary raster borrows.
+#[derive(PartialEq, Eq)]
+pub(crate) struct ReaderHitMap {
+    /// Complete page's opaque rectangle.
+    page: Rectangle<i32, Physical>,
+    /// Position and three command rectangles, including feedback gutters.
+    rows: [Rectangle<i32, Physical>; 4],
+}
+
+impl ReaderHitMap {
+    /// Exact half-open opaque coverage, preserving fractional coordinates.
+    pub(crate) fn hit(&self, position: (f64, f64)) -> Option<ReaderPointerHit> {
         let (x, y) = position;
         if !x.is_finite() || !y.is_finite() {
             return None;
@@ -88,7 +112,7 @@ impl<'a> WindowControlReaderInteraction<'a> {
                 && x < f64::from(bounds.loc.x + bounds.size.w)
                 && y < f64::from(bounds.loc.y + bounds.size.h)
         };
-        if contains(self.page.bounds()) {
+        if contains(self.page) {
             return Some(ReaderPointerHit::Content);
         }
         self.rows
