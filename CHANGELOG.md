@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native name readers have exact pointer targets and text-preserving feedback.**
+  The renderer now composes complete reader pages and navigation with visible
+  enabled, hovered and pressed states outside the wording. Invalid placement and
+  inconsistent feedback refuse; transparent gaps do not become click targets.
+  Transactional reader publication and backend activation remain unfinished.
+  Evidence: `docs/autonomy/updates/native-reader-hit-geometry-and-feedback.md`.
+
 - **Reader pointer presses cannot activate a different page or replacement reader.**
   The native host component cancels a click when it leaves its command, suppresses
   competing buttons and drains releases after dismissal. Disabled navigation and

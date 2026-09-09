@@ -15,6 +15,12 @@ use crate::{
 /// Frozen preparation only; neither page lifetime nor input authority is retained.
 /// The host must validate and submit the reader transaction before using its bounds.
 pub struct PreparedWindowControlReaderChrome {
+    /// Original page placement for later interaction geometry validation.
+    pub(crate) page_bounds: Rectangle<i32, Physical>,
+    /// Exact strip placement used to validate preparation.
+    pub(crate) strip_bounds: [Rectangle<i32, Physical>; 3],
+    /// Original appearance, shared with the interaction gutter painter.
+    pub(crate) scheme: Scheme,
     /// Full text, original per-string provenance, and complete opaque row rasters.
     rows: [WindowControlLabel; 4],
     /// Frozen navigation availability, never permission to execute a request.
@@ -115,6 +121,9 @@ impl WindowControlReaderChrome {
             used += height + 4;
         }
         Ok(PreparedWindowControlReaderChrome {
+            page_bounds: page.bounds(),
+            strip_bounds: layout.controls().map(|control| control.bounds()),
+            scheme,
             rows: rows
                 .try_into()
                 .map_err(|_| WindowControlLabelError::Geometry)?,

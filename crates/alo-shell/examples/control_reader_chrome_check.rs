@@ -1,5 +1,9 @@
 //! Full GLES readback of pages with complete native reader chrome, with explicit fonts.
 
+#[cfg(target_os = "linux")]
+#[path = "support/reader_interaction_pixels.rs"]
+mod reader_interaction_pixels;
+
 /// Propagate all graphical and pixel failures to the component gate.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     run()
@@ -14,6 +18,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 /// Compare complete page frames on the actual Wayland/GLES backend.
 #[cfg(target_os = "linux")]
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let started = std::time::Instant::now();
+    let mode = match std::env::args().skip(1).collect::<Vec<_>>().as_slice() {
+        [] => None,
+        [argument] if argument == "--idle" => Some(0),
+        [argument] if argument == "--hover" => Some(1),
+        [argument] if argument == "--pressed" => Some(2),
+        _ => return Err("expected no arguments, --idle, --hover, or --pressed".into()),
+    };
     use alo_appearance::{Scheme, TextScale};
     use alo_shell::window_control_reader_words::{
         READER_NEXT, READER_POSITION, declare_reader_words,
@@ -49,6 +61,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("requires a Wayland parent".into());
     }
     let (renderer, _) = backend.bind()?;
+    eprintln!("Reader GLES backend ready at {:?}", started.elapsed());
     let mut buffer: GlesRenderbuffer =
         renderer.create_buffer(DrmFourcc::Abgr8888, (640, 480).into())?;
     let mut target = renderer.bind(&mut buffer)?;
@@ -118,11 +131,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         LabelGeometry {
                             viewport: (640, 480),
                             origin: (260, 40),
-                            size: (380, 400),
+                            size: (if mode.is_some() { 376 } else { 380 }, 400),
                         },
                         scheme,
                         TextScale::percent(percent).map_err(|_| "fixture scale")?,
                     )?;
+                    if let Some(mode) = mode {
+                        reader_interaction_pixels::check(
+                            renderer,
+                            &mut target,
+                            page,
+                            &chrome,
+                            &layout,
+                            scheme,
+                            mode,
+                        )?;
+                        frames += 1;
+                        if frames % 12 == 0 {
+                            eprintln!(
+                                "Reader interaction mode {mode}: {frames} frames at {:?}",
+                                started.elapsed()
+                            );
+                        }
+                        continue;
+                    }
                     let mut frame =
                         renderer.render(&mut target, (640, 480).into(), Transform::Normal)?;
                     frame.clear(
@@ -159,7 +191,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     assert!(frames >= 64);
     println!(
-        "Native reader chrome: {frames} complete 307,200-pixel GLES frames, forward/reverse, translation/fallback, light/dark, four scales"
+        "Native reader chrome mode {mode:?}: {frames} complete 307,200-pixel GLES frames, forward/reverse, translation/fallback, light/dark, four scales, elapsed {:?}",
+        started.elapsed()
     );
     Ok(())
 }

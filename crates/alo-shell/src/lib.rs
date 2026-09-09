@@ -76,6 +76,7 @@ mod window_control_paint;
 mod window_control_presentation;
 mod window_control_reader;
 mod window_control_reader_chrome;
+mod window_control_reader_interaction;
 mod window_control_reader_keys;
 mod window_control_reader_navigation;
 mod window_control_reader_pointer;
@@ -156,6 +157,7 @@ pub use window_control_reader::{
     WindowControlReader, WindowControlReaderPage, WindowControlReaderStyle,
 };
 pub use window_control_reader_chrome::PreparedWindowControlReaderChrome;
+pub use window_control_reader_interaction::WindowControlReaderInteraction;
 pub use window_control_reader_navigation::{
     WindowControlReaderChrome, WindowControlReaderNavigation,
 };

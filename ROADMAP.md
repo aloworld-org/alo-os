@@ -1334,6 +1334,17 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native reader hit geometry and feedback (2026-09-10): exact fractional hits
+    cover only opaque page/wording/gutter areas. Output/strip/page mismatch,
+    collisions and inconsistent/disabled feedback refuse. Underline/outline
+    states preserve every text pixel and existing scheme tokens. Three new unit
+    tests and one real-client test cover geometry, navigation, retirement and
+    ordinary typing; affected checks and complete GLES readback are recorded in
+    `docs/autonomy/updates/native-reader-hit-geometry-and-feedback.md`.
+    This completes geometry and feedback composition. Transactional reader
+    submission/publication/retirement and coordinated backend activation remain
+    next; full-name access/window management stay unchecked. Independent
+    supervisor publication gates remain pending.
   - Mapping-bound reader pointer transactions (2026-09-09): primary release acts
     once on the exact reader/page visit/command. Leaving, competing buttons,
     cancellation and replacement disarm; disabled/content/non-primary presses

@@ -14665,3 +14665,60 @@ parent delivery, on-screen reader feedback, scanout or VM boot. No new graphical
 run claimed. Physical laptop/GPU workstation records remain owed during release
 validation. No feature tick or release verdict; later reports reconcile next
 iteration.
+
+## 2026-09-10 - native reader hit geometry and feedback rendering
+
+Started clean at 4c294a9. Read required guidance, relevant features/roadmap,
+ADRs 0002/0010 and native-control contract. No AGENTS.md found. Every published
+report already referenced in STATE; no reconciliation was pending at startup.
+Selected geometry/feedback acceptance in QUEUE before implementation.
+
+Added borrowed reader interaction geometry and a separate feedback painter.
+Original page/strip/output placement must match; two-pixel command gutters refuse
+output loss or collisions. Exact fractional hits cover only opaque page/row/gutter
+areas; nonfinite/outside positions refuse. Disabled commands consume through live
+pointer policy. Underline/one-pixel/two-pixel outline states preserve all wording
+and source marks with existing scheme tokens. Invalid/disabled feedback refuses
+before drawing. No agent, key binding, focus, palette, vocabulary or engine change.
+
+Three new unit tests and one real private-client test pass, including geometry-
+derived navigation, boundary/retirement refusals and normal typing. Final Linux:
+168 unit, 234 lifecycle, three socket and four doctests pass, none ignored.
+Affected Linux/Windows clippy/tests, Linux example builds/rustdoc and fmt pass;
+Windows shell cases are zero because this code is Linux-only. WSLg: 72 unchanged
+chrome frames and 216 complete interaction frames pass pixel/hit comparison;
+72 invalid-feedback frames stay byte-for-byte untouched. Nested controls regression
+also passes. Full independent supervisor workspace/Windows/Linux/rustdoc/BPF gates
+remain pending; no feature or release tick.
+
+Preserved failures: an incorrectly placed collision fixture was corrected to
+actually overlap the page, with its refusal assertion retained. The expanded
+single graphical run timed out at 30 seconds. Known-good nested controls passed;
+no surviving reader process. Instrumentation measured GLES ready at 106.5 ms and
+steady successful progress through 46 plain/138 interaction frames at 29.77 s
+before the same deadline. The original uninstrumented progress is unknown.
+Four explicit acceptance phases retain every case/assertion and the same
+30-second limit; final plain/idle/hover/pressed runs passed in 11.94/14.47/15.02/
+13.70 s. No timeout increase, diagnostic suppression or gate weakening.
+
+Ubuntu libraries, WSLg and existing bpffs checked. Every command reserve preflight
+exceeded 12 GiB; minimum 51,850,760,192 bytes. No shared maintenance, cleanup,
+WSL restart/helper, kernel mutation or outer machine lock. Separate desktop target
+retained. No stage/commit/push, dev-loop edits, second worker/loop, other-checkout
+edits, credential/identity access or unrelated host changes.
+
+Exact commands, decisions, failures, final checks and evidence limits:
+`docs/autonomy/updates/native-reader-hit-geometry-and-feedback.md`.
+Logs: `.git/alo-loop/native-reader-hit-geometry-and-feedback/`.
+All four shared progress documents and contract updated. Tracked/new source,
+tests and documentation reviewed; git diff --check passes.
+
+Geometry and feedback composition complete. Next: transactional reader composition/
+submission/publication/retirement binding exact hit boxes and feedback to the live
+reader/page visit; then coordinated backend key/pointer activation, native
+navigation/cursor selection and direct integration. Full-name access and usable
+window management remain unfinished. Evidence is native composition, private-client
+semantic routing and WSLg readback, not actual parent navigation, on-screen reader
+publication, scanout or integrated VM boot. Physical laptop/GPU workstation
+records remain owed at release validation. No release verdict; reports arriving
+during publication reconcile next iteration.

@@ -759,3 +759,50 @@ ordinary typing, existing client grabs and explicit host pointer routing. They d
 not prove parent pointer delivery, rendered interaction feedback or on-screen
 reader navigation. Evidence:
 `docs/autonomy/updates/mapping-bound-reader-pointer-transactions.md`.
+
+## Native reader hit geometry and feedback composition
+
+2026-09-10 additive trusted API: `WindowControlReaderInteraction::new` borrows
+one prepared page, complete chrome and strip layout. It checks the original
+page bounds, viewport and three strip rectangles, then reserves two pixels
+outside each previous/next/dismiss wording row. Every expanded box must remain
+on output and disjoint from the page, other rows and all strip controls. Position
+wording retains its original bounds. Invalid placement returns `ControlScene`
+before any rendering. Existing chrome preparation remains available without the
+additional gutter requirement; an interaction view needs the extra capacity.
+
+`hit((x, y))` uses those exact scale-one output-local rectangles, including opaque
+gutters. Page and position return `Content`; previous/next/dismiss return semantic
+commands even when unavailable, so the existing live pointer transaction can
+consume without acting. Fractional coordinates are not rounded or clamped.
+Left/top edges are inclusive, right/bottom exclusive; nonfinite values, unused
+capacity and transparent gaps return None. Hit geometry alone confers no authority.
+
+`paint(frame, feedback)` first rejects disabled hover/press and a pressed command
+that differs from hover. It then paints the complete page and wording, clears
+opaque gutters and paints feedback outside every text pixel. Enabled rows have
+a one-pixel underline, hover a one-pixel outline, and armed press a two-pixel
+outline; unavailable rows retain full wording without a command affordance.
+These shape differences use the original chrome scheme's Cream/Navy or
+Charcoal/Cream tokens; no terracotta, shrinking, clipping or recolouring of text.
+The bounded gutter painter allocates at most 24 solid primitives, no text copies.
+Bad feedback leaves the frame untouched; a renderer failure requires discarding
+the entire frame, as with existing label painting.
+
+This is frozen geometry and composition, not live page identity or publication.
+Matching bounds do not prove matching content, vocabulary or page visit. Hosts
+must prepare chrome from the current validated reader page, refresh semantic
+feedback, compose and submit transactionally, expose hits only after success,
+and retire/cancel ownership on failure or lifecycle changes. Transactional reader
+submission/publication/retirement and coordinated backend key/pointer activation
+remain the next component. No agent surface, focus change or configured shortcut.
+
+Tests cover exact painted coverage, fractional/nonfinite edges, geometry and
+feedback refusals, all text scales, source marking and live private-client
+navigation/retirement with normal typing. The GLES example has four explicit
+acceptance phases: no arguments for unchanged chrome, then `--idle`, `--hover`
+and `--pressed` for interaction. Each phase retains a 30-second deadline and all
+page/translation/scheme/scale cases. Every interaction pixel and hit is compared;
+idle also verifies that refused feedback leaves the framebuffer untouched.
+Exact commands/results and evidence limits:
+`docs/autonomy/updates/native-reader-hit-geometry-and-feedback.md`.

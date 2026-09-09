@@ -5,6 +5,32 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native reader hit geometry and feedback rendering (2026-09-10):**
+opaque page/row/gutter hits now match feedback composition exactly, preserving
+fractional edges and every text pixel. Invalid geometry and disabled/inconsistent
+feedback refuse. Three unit tests and one real-client test; Linux 168 unit/234
+lifecycle/three socket/four doctests, affected Windows/Linux clippy/tests/rustdoc
+and fmt pass. WSLg: 72 unchanged chrome plus 216 interaction frames, complete pixel
+and hit checks, and nested controls regression pass. The expanded single graphics
+run exceeded 30 seconds; instrumentation measured steady frame progress, and all
+four explicit acceptance phases now pass the unchanged per-command deadline.
+Exact diagnosis/evidence: `updates/native-reader-hit-geometry-and-feedback.md`.
+Independent supervisor gates pending. Next executable component: transactional
+reader composition/submission/publication/retirement tying these exact hit boxes
+and feedback to the live reader/page visit, then coordinated backend key/pointer
+activation, native navigation/cursor selection and direct integration. Geometry
+and feedback composition are complete; rendered reader interaction is unfinished.
+
+**Selected native reader hit geometry and feedback rendering (2026-09-10):**
+prepare one borrowed page/chrome interaction view with output-contained, disjoint
+hit boxes and opaque feedback gutters that preserve every text pixel. Match the
+original page/strip geometry; refuse overlap, mismatched geometry and inconsistent
+or disabled feedback before drawing. Test fractional/edge/nonfinite hits, complete
+light/dark/scale raster preservation, real-client pointer routing and GLES readback.
+This completes geometry and feedback composition only; transactional submission,
+publication/retirement and coordinated backend activation are subsequent work.
+
+
 **Completed mapping-bound reader pointer transactions (2026-09-09):** exact reader/
 page-visit/command presses execute once on primary release. Leaving, replacement,
 competing buttons and cancellation disarm permanently; owned releases drain even
