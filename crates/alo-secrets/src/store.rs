@@ -57,6 +57,18 @@ impl TheKeyring {
             .map_err(|_| NotStored::Unavailable)?
             .build()
             .map_err(|_| NotStored::Unavailable)?;
+
+        // **Asked before anything is attempted, and the reason is not tidiness.**
+        // A proxy can be built for a name nobody owns, and every call then waits
+        // out the D-Bus method timeout. On a machine whose image ships no Secret
+        // Service that is not a slow test — it is a person's daemon hanging for
+        // two minutes before it says there is no store. Measured at 125s in
+        // `a_real_bus_with_no_secret_service_on_it_is_unavailable` before this
+        // check existed.
+        if !anybody_is_serving(&connection) {
+            return Err(NotStored::Unavailable);
+        }
+
         let service = SecretService::connect_with_existing(EncryptionType::Dh, connection)
             .map_err(|_| NotStored::Unavailable)?;
 
@@ -108,6 +120,29 @@ impl TheKeyring {
         let said = std::str::from_utf8(&held).map_err(|_| NotStored::Missing)?;
         Secret::typed(said).map_err(|_| NotStored::Missing)
     }
+}
+
+/// Whether anything at all owns the Secret Service's name on this bus.
+///
+/// Asked of the bus itself, which answers immediately whatever else is or is not
+/// running — unlike the service, whose absence is only discoverable by waiting
+/// for a reply that never comes.
+///
+/// A `false` here is *nobody is serving*, and a bus that will not answer this
+/// question is treated the same way: either is [`NotStored::Unavailable`], and
+/// neither is worth waiting on.
+fn anybody_is_serving(connection: &zbus::blocking::Connection) -> bool {
+    connection
+        .call_method(
+            Some("org.freedesktop.DBus"),
+            "/org/freedesktop/DBus",
+            Some("org.freedesktop.DBus"),
+            "NameHasOwner",
+            &("org.freedesktop.secrets",),
+        )
+        .ok()
+        .and_then(|said| said.body().deserialize::<bool>().ok())
+        .unwrap_or(false)
 }
 
 /// What the service said, as one of the four — and **never carrying what it

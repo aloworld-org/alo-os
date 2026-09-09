@@ -265,20 +265,74 @@ fn a_denied_lookup_carries_neither_the_key_nor_what_the_bus_said() {
     );
 }
 
-// **Not here yet: a real bus with no Secret Service on it.**
-//
-// `bus::tests` proves `Unavailable` for a socket that is absent, is not a
-// socket, is not the person's, or could not be said as an address. The case
-// this file would add is a *real bus that answers* with no keyring on it — a
-// machine whose image ships none.
-//
-// It is not here because the fixture cannot yet stop only the keyring:
-// signalling the child this test started leaves something still serving
-// `org.freedesktop.secrets` on the bus, so the test asserted a state it had not
-// actually produced. A test whose fixture does not reach the state it names
-// proves nothing, and one that passed by accident would be worse.
-//
-// `TheKeyring::opened` does now ask the service for its collections before
-// answering, so a store that cannot answer is refused there rather than at the
-// first key somebody wanted — but **that path is unproven** until the fixture
-// can produce it. `docs/autonomy/updates/` carries it as open work.
+/// **A real bus with no Secret Service on it is `Unavailable`.**
+///
+/// This is the machine whose image ships no keyring, and it is the case
+/// `TheKeyring::opened` asks `get_all_collections` for: building the client is
+/// a proxy and a session handshake, which can succeed against a name nobody
+/// owns, so a store that cannot answer must be refused at opening rather than
+/// at the first key somebody wanted.
+///
+/// **The control matters more than the assertion here.** `bus::tests` already
+/// proves `Unavailable` for a socket that is absent, is not a socket, is not the
+/// person's, or cannot be said as an address. Without proving the bus is up and
+/// answering, this would be a fifth spelling of those and would pass just as
+/// well against a dead socket — so the bus is asked something first, and asked
+/// whether anybody owns the name.
+///
+/// It reaches the state by **not starting the keyring**, rather than by killing
+/// one. An earlier version tried to stop the daemon and something went on
+/// serving the name, so the test asserted a state it had not produced; it was
+/// withdrawn rather than left passing for the wrong reason.
+#[test]
+fn a_real_bus_with_no_secret_service_on_it_is_unavailable() {
+    let bare = AKeyringOfOurOwn::a_bus_with_no_keyring_on_it("bare");
+
+    // Control one: the bus is alive and answers its own calls.
+    let connection = zbus::blocking::connection::Builder::address(bare.address().as_str())
+        .expect("the fixture's address is an address")
+        .build()
+        .expect("the fixture's bus accepts a connection");
+    let names: Vec<String> = connection
+        .call_method(
+            Some("org.freedesktop.DBus"),
+            "/org/freedesktop/DBus",
+            Some("org.freedesktop.DBus"),
+            "ListNames",
+            &(),
+        )
+        .expect("a live bus answers ListNames")
+        .body()
+        .deserialize()
+        .expect("ListNames returns names");
+
+    // Control two: and nothing on it is the Secret Service.
+    assert!(
+        !names.iter().any(|name| name == "org.freedesktop.secrets"),
+        "something owns org.freedesktop.secrets on a bus that should have \
+         nothing on it, so this test would not prove what it says: {names:?}"
+    );
+
+    let began = std::time::Instant::now();
+    let answered = TheKeyring::opened(&bare.bus()).err();
+    let took = began.elapsed();
+
+    assert_eq!(
+        answered,
+        Some(NotStored::Unavailable),
+        "a live bus with no Secret Service on it was not reported as unavailable"
+    );
+
+    // **And it says so promptly**, which is a promise to a person and not a
+    // preference about test runtime. A proxy can be built for a name nobody
+    // owns and every call then waits out the D-Bus method timeout: this took
+    // **125 seconds** before `store.rs` asked the bus who owns the name, which
+    // on a machine shipping no keyring is a daemon that appears to have hung.
+    // The bound is loose because it guards against the timeout coming back, not
+    // against a slow machine.
+    assert!(
+        took < std::time::Duration::from_secs(10),
+        "opening a bus with no Secret Service took {took:?}, which means it is \
+         waiting out a method timeout again rather than asking who owns the name"
+    );
+}

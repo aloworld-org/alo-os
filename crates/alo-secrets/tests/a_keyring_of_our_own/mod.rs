@@ -81,7 +81,7 @@ impl AKeyringOfOurOwn {
     /// machine in the world, including the ones with no Secret Service at all.
     #[must_use]
     pub fn started(what: &str) -> Self {
-        Self::start(what, false)
+        Self::start(what, false, true)
     }
 
     /// One whose bus is started from a configuration file, so its policy can be
@@ -94,11 +94,28 @@ impl AKeyringOfOurOwn {
     /// As [`Self::started`].
     #[must_use]
     pub fn started_where_the_bus_can_refuse(what: &str) -> Self {
-        Self::start(what, true)
+        Self::start(what, true, true)
     }
 
-    /// The two of them, which differ only in how the bus is told where to listen.
-    fn start(what: &str, from_a_config: bool) -> Self {
+    /// A real bus with **no Secret Service on it at all**.
+    ///
+    /// This is the machine whose image ships no keyring: the bus is up and
+    /// answering, and nothing owns `org.freedesktop.secrets`. It is reached by
+    /// not starting the daemon rather than by stopping one — an earlier attempt
+    /// killed a running keyring and something went on serving the name, so the
+    /// test asserted a state it had not produced. A state you can decline to
+    /// create is never worth destroying.
+    ///
+    /// # Panics
+    /// When `dbus-daemon` is not installed, or its socket never appears.
+    #[must_use]
+    pub fn a_bus_with_no_keyring_on_it(what: &str) -> Self {
+        Self::start(what, false, false)
+    }
+
+    /// The three of them, which differ in how the bus is told where to listen
+    /// and whether anything is put on it.
+    fn start(what: &str, from_a_config: bool, serving: bool) -> Self {
         // Only characters a D-Bus address may carry unescaped: the socket
         // under this directory becomes one, and `(` from a thread id is exactly
         // what `dbus-daemon` refuses.
@@ -162,6 +179,11 @@ impl AKeyringOfOurOwn {
             config,
         };
         ours.wait_for(&at);
+        if !serving {
+            // Nothing is put on this bus, and nothing waits for a service that
+            // is never coming.
+            return ours;
+        }
 
         // `--unlock` reads the password from stdin, and is incompatible with
         // `--start` — measured, not supposed. `--replace` is deliberately absent.
