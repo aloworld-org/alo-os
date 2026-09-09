@@ -43,6 +43,7 @@ dependencies = [
  "alo-protocol",
  "alo-record",
  "alo-saying",
+ "alo-secrets",
  "alo-strings",
  "alo-turn",
  "rustix 1.1.4",

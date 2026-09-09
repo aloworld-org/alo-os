@@ -47,8 +47,13 @@ use alo_protocol::{FromAnAgent, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
 use alo_turn::{Answers, NoAnswer, Turning};
 
+use alo_secrets::NotStored;
+
 use crate::questions::{Questions, WhatAnswers};
-use crate::words::{NO_KEYRING_FOR_A_PROVIDER, NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED};
+use crate::words::{
+    NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER, NOTHING_ANSWERS_QUESTIONS,
+    NOTHING_WAS_ASKED, THE_KEYRING_IS_LOCKED, THE_KEYRING_REFUSED_US, Word,
+};
 
 /// Read one line as something an agent asked, and do it.
 ///
@@ -98,6 +103,21 @@ fn carried_out(
     }
 }
 
+/// Which sentence a refusal is, one per state.
+///
+/// A `match` with no wildcard, so a fifth state added to `alo_secrets` fails to
+/// compile here rather than quietly becoming whichever arm a catch-all named.
+/// `alo_secrets::NotStored` deliberately carries no words of its own — the four
+/// sentences belong beside the daemon that says them, which is here.
+const fn said_about(why: NotStored) -> Word {
+    match why {
+        NotStored::Unavailable => NO_KEYRING_FOR_A_PROVIDER,
+        NotStored::Locked => THE_KEYRING_IS_LOCKED,
+        NotStored::Missing => NO_KEY_FOR_THIS_PROVIDER,
+        NotStored::Denied => THE_KEYRING_REFUSED_US,
+    }
+}
+
 /// A question, put to whatever this person chose — or refused in one sentence.
 ///
 /// The three refusals are three different things to go and fix, and each is
@@ -113,6 +133,9 @@ fn put_to_a_model(
     strings: &Strings,
     now: SystemTime,
 ) -> ToAnAgent {
+    // Taken before the turn's answer borrows `questions`, and per question
+    // rather than at startup: somebody may sign in after this daemon did.
+    let keyring = questions.whose_keyring();
     match questions.what_answers() {
         WhatAnswers::Nothing => {
             ToAnAgent::refused(&strings.say(&NOTHING_ANSWERS_QUESTIONS.key(), &Filling::nothing()))
@@ -120,20 +143,37 @@ fn put_to_a_model(
         WhatAnswers::NotRunning => ToAnAgent::refused(&RuntimeError::Unreachable.said(strings)),
         WhatAnswers::NotSet(why) => ToAnAgent::refused(&why.said(strings)),
         // **The second of the three choices**, and alo's own service is this
-        // one too (ADR 0014). A provider that needs a credential cannot be
-        // asked from this machine yet — `alo_models::SecretRef` names where a
-        // key lives and nothing on this machine keeps one — so the question is
-        // not sent, and it is not sent anywhere else either.
+        // one too (ADR 0014). A provider that needs a credential is now asked
+        // for one: `alo_models::SecretRef` names where the key lives and
+        // `alo_secrets` is what that name refers to. When the store will not
+        // give it up the question is **not sent**, and it is not sent anywhere
+        // else either — each of the four refusals is its own sentence, because
+        // they are four different things for a person to go and do.
         WhatAnswers::FromAProvider {
             provider,
             model,
             places,
         } => {
-            if provider.key.is_some() {
-                return ToAnAgent::refused(
-                    &strings.say(&NO_KEYRING_FOR_A_PROVIDER.key(), &Filling::nothing()),
-                );
-            }
+            // Held out here because `Hosted::provider` borrows it, and it must
+            // outlive the ask. This is the only place in the daemon where a
+            // credential exists at all, and it lives no longer than the turn.
+            let held;
+            let key = match provider.key.as_ref() {
+                None => None,
+                Some(reference) => match Questions::a_key_from(&keyring, reference) {
+                    Ok(secret) => {
+                        held = secret;
+                        Some(&held)
+                    }
+                    // Nothing was sent, and `NotStored::nothing_was_sent` is
+                    // the type's own statement of that.
+                    Err(why) => {
+                        return ToAnAgent::refused(
+                            &strings.say(&said_about(why).key(), &Filling::nothing()),
+                        );
+                    }
+                },
+            };
             // The source is the provider's own, read off the provider the
             // person's list resolved — never assumed, and never `ThisMachine`
             // because the address happened to look local.
@@ -142,7 +182,7 @@ fn put_to_a_model(
                     question,
                     model,
                     permission,
-                    &Answers::Provider(Hosted::provider(provider, None)),
+                    &Answers::Provider(Hosted::provider(provider, key)),
                     &places,
                     now,
                 ) {
@@ -236,6 +276,10 @@ fn waiting_under(
 )]
 mod tests {
     use super::*;
+
+    // Named only here: the daemon itself never writes the type, it passes
+    // along whatever `Questions` was built with.
+    use crate::questions::WhoseKeyring;
     use crate::testing::{
         a_directory_of_our_own, a_message, a_runtime_saying, hour, noon, nothing_has_been_chosen,
         on_a_machine, on_a_machine_that_answers,
@@ -256,14 +300,68 @@ mod tests {
         }
     }
 
+    /// **Each way a key is not handed over is its own sentence**, and no two
+    /// are the same.
+    ///
+    /// The four states exist so that a person is sent to the right place: sign
+    /// in, unlock, add the key, or find out why the machine said no. Two of
+    /// them rendering the same sentence would put that right back, quietly, and
+    /// nothing else in the system would notice.
+    ///
+    /// Every state is checked because `said_about` matches without a wildcard:
+    /// this array and that `match` are the two halves of *no refusal falls
+    /// through to somebody else's words*.
+    #[test]
+    fn every_way_a_key_is_not_handed_over_is_a_different_sentence() {
+        let strings = crate::testing::in_english();
+        let every = [
+            NotStored::Unavailable,
+            NotStored::Locked,
+            NotStored::Missing,
+            NotStored::Denied,
+        ];
+
+        let said: Vec<(NotStored, String)> = every
+            .iter()
+            .map(|why| {
+                let sentence = strings
+                    .say(&said_about(*why).key(), &Filling::nothing())
+                    .text()
+                    .to_owned();
+                assert!(
+                    !sentence.is_empty(),
+                    "{why:?} renders nothing, so a person would be refused in silence"
+                );
+                // The claim the type exists to make, held up for every state
+                // rather than for the one that happened to be convenient.
+                assert!(why.nothing_was_sent(), "{why:?} claims something was sent");
+                (*why, sentence)
+            })
+            .collect();
+
+        for (one_why, one) in &said {
+            for (other_why, other) in &said {
+                assert!(
+                    one_why == other_why || one != other,
+                    "{one_why:?} and {other_why:?} say the same thing, so a person is                      sent to the wrong place for one of them: {one}"
+                );
+            }
+        }
+    }
+
     /// **A provider that needs a credential sends nothing at all**, and says
     /// why.
     ///
-    /// The second of the three model choices, on a machine with no credential
-    /// store: `alo_models::SecretRef` names where a key would live and nothing
-    /// on this machine keeps one. So the question is refused at the moment of
-    /// asking — **not sent without its key**, and not answered anywhere else
-    /// instead.
+    /// The second of the three model choices, on a machine with **no credential
+    /// store**: this `Questions` names `WhoseKeyring::Nobodys`, which is a
+    /// machine whose image ships no Secret Service, and no bus is opened at
+    /// all. So the question is refused at the moment of asking — **not sent
+    /// without its key**, and not answered anywhere else instead.
+    ///
+    /// The refusal is checked against the **vocabulary** rather than a phrase
+    /// typed here. An earlier version quoted the English, and reworking that
+    /// sentence broke a test whose subject had not changed — a test that
+    /// asserts wording is a test about the wording.
     ///
     /// The provider's address is a listener this test owns, on this machine's
     /// own interface rather than loopback, because a loopback address reports
@@ -309,6 +407,7 @@ endpoint = \"https://{at}\"
             None,
             alo_models::Catalogue::built_in().unwrap(),
             None,
+            WhoseKeyring::Nobodys,
         );
 
         let mut record = Record::default();
@@ -323,9 +422,12 @@ endpoint = \"https://{at}\"
         });
 
         let refusal = said.refusal().unwrap();
-        assert!(
-            refusal.text().contains("nowhere to keep one"),
-            "{refusal:?}"
+        assert_eq!(
+            refusal.text(),
+            crate::testing::in_english()
+                .say(&NO_KEYRING_FOR_A_PROVIDER.key(), &Filling::nothing())
+                .text(),
+            "the refusal was not the one for a machine with no store: {refusal:?}"
         );
         assert!(!refusal.is_a_bug(), "{refusal:?}");
 
@@ -620,6 +722,7 @@ endpoint = \"https://{at}\"
             None,
             alo_models::Catalogue::built_in().unwrap(),
             None,
+            WhoseKeyring::Nobodys,
         );
 
         let mut record = Record::default();

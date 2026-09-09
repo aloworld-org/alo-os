@@ -66,7 +66,7 @@ use alo_turn::{Machine, Turning};
 use crate::caller::{Caller, Uid};
 use crate::knocking::Knocking;
 use crate::place::Place;
-use crate::questions::Questions;
+use crate::questions::{Questions, WhoseKeyring};
 use crate::refusing::NotACaller;
 use crate::side::{Side, Sides};
 use crate::unix::{our_group, us};
@@ -387,7 +387,13 @@ impl ModelRuntime for Saying {
 
 /// A machine where nobody has chosen anything to answer questions.
 pub(crate) fn nothing_has_been_chosen() -> Questions {
-    Questions::of_a_session(None, None, Catalogue::built_in().unwrap(), None)
+    Questions::of_a_session(
+        None,
+        None,
+        Catalogue::built_in().unwrap(),
+        None,
+        WhoseKeyring::Nobodys,
+    )
 }
 
 #[derive(Debug)]

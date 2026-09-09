@@ -60,7 +60,10 @@
 use std::ffi::{OsStr, OsString};
 
 use alo_choosing::{CONFIG_HOME, Chosen, HOME, NotSet};
-use alo_models::{Catalogue, ModelRuntime, Provider, SourcePolicy, found_on_this_machine};
+use alo_models::{
+    Catalogue, ModelRuntime, Provider, Secret, SecretRef, SourcePolicy, found_on_this_machine,
+};
+use alo_secrets::{NotStored, TheBus, TheKeyring};
 use alo_turn::Places;
 
 use crate::settings::of_a_session;
@@ -85,6 +88,37 @@ pub struct Questions {
     catalogue: Catalogue,
     /// What this turn's first question found, or `None` before there was one.
     looked: Option<Looked>,
+    /// Whose keyring a provider's key is asked of.
+    keyring: WhoseKeyring,
+}
+
+/// Whose keyring a provider's key is asked of.
+///
+/// Three states rather than an `Option`, because *there is no keyring* and *find
+/// the one belonging to whoever this process is* are different instructions and
+/// only one of them opens anything. The default is the first, so a test that
+/// says nothing about credentials reaches no store at all — including the real
+/// one on the machine it runs on, which a `None` meaning *the usual place*
+/// would quietly have done.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum WhoseKeyring {
+    /// Nobody's. Every lookup is [`NotStored::Unavailable`] and no bus is
+    /// opened — which is also an honest machine: one whose image ships no
+    /// Secret Service behaves exactly like this.
+    #[default]
+    Nobodys,
+
+    /// The person this process runs as, found from the kernel's answer about
+    /// its own uid. **This is production**, and the only constructor that
+    /// selects it is [`Questions::of_this_process`].
+    ThisProcess,
+
+    /// One a caller named, which is a test with a keyring of its own.
+    ///
+    /// Naming a bus here is not a way to redirect the real lookup: production
+    /// never passes this, and `alo_secrets::TheBus::of_this_process` reads a
+    /// uid from the kernel rather than a name from anywhere.
+    On(TheBus),
 }
 
 /// What looking found, kept for the rest of the turn.
@@ -167,16 +201,25 @@ impl Questions {
             std::env::var_os(HOME),
             catalogue,
             bound,
+            WhoseKeyring::ThisProcess,
         )
     }
 
     /// The same, for a session named rather than inherited.
+    ///
+    /// `keyring` is `None` for the person this process runs as, and `Some` for
+    /// a bus a caller names — which is a test with a keyring of its own, and
+    /// nothing else. **Naming one is not a way to redirect the real lookup**:
+    /// production goes through [`Questions::of_this_process`], which passes
+    /// `None`, and `alo_secrets::TheBus::of_this_process` reads a uid from the
+    /// kernel rather than a name from anywhere.
     #[must_use]
     pub fn of_a_session(
         config_home: Option<OsString>,
         home: Option<OsString>,
         catalogue: Catalogue,
         bound: Option<SourcePolicy>,
+        keyring: WhoseKeyring,
     ) -> Self {
         Self {
             config_home,
@@ -184,7 +227,47 @@ impl Questions {
             bound,
             catalogue,
             looked: None,
+            keyring,
         }
+    }
+
+    /// Which keyring a key would be asked of, taken before a turn borrows this.
+    ///
+    /// `None` means *the person this process runs as*, which is production and
+    /// is resolved from the kernel at the moment a key is wanted.
+    #[must_use]
+    pub fn whose_keyring(&self) -> WhoseKeyring {
+        self.keyring.clone()
+    }
+
+    /// The key a provider's reference names, out of the keyring named.
+    ///
+    /// **The bus is found at the moment it is needed, never once at startup.**
+    /// `/run/user/<uid>` does not exist before somebody signs in, so a daemon
+    /// that resolved this when it started would go on telling a person who
+    /// signed in afterwards that their machine has no keyring, for as long as
+    /// it ran.
+    ///
+    /// An associated function rather than a method because the caller is
+    /// already holding this turn's answer, which borrows the [`Questions`] it
+    /// came out of — and a key is wanted in the middle of that.
+    ///
+    /// # Errors
+    /// The four of [`NotStored`], unchanged and un-worded — the sentence for
+    /// each is `crate::doing`'s, beside the refusal it becomes.
+    pub fn a_key_from(keyring: &WhoseKeyring, named: &SecretRef) -> Result<Secret, NotStored> {
+        let ours;
+        let bus = match keyring {
+            // Nothing is opened, and nothing is asked. A machine with no store
+            // and a caller who named none are the same refusal.
+            WhoseKeyring::Nobodys => return Err(NotStored::Unavailable),
+            WhoseKeyring::On(named) => named,
+            WhoseKeyring::ThisProcess => {
+                ours = TheBus::of_this_process()?;
+                &ours
+            }
+        };
+        TheKeyring::opened(bus)?.look_up(named)
     }
 
     /// Forget what the last turn found.
@@ -245,6 +328,7 @@ impl Questions {
             bound,
             catalogue: Catalogue { models: Vec::new() },
             looked: Some(Looked::OnThisMachine { chosen, runtime }),
+            keyring: WhoseKeyring::Nobodys,
         }
     }
 }
@@ -310,6 +394,7 @@ mod tests {
             None,
             Catalogue::built_in().unwrap(),
             None,
+            WhoseKeyring::Nobodys,
         )
     }
 
@@ -318,8 +403,13 @@ mod tests {
     /// named to open.
     #[test]
     fn a_person_who_has_chosen_nothing_has_nothing_answering() {
-        let mut questions =
-            Questions::of_a_session(None, None, Catalogue::built_in().unwrap(), None);
+        let mut questions = Questions::of_a_session(
+            None,
+            None,
+            Catalogue::built_in().unwrap(),
+            None,
+            WhoseKeyring::Nobodys,
+        );
 
         assert!(matches!(questions.what_answers(), WhatAnswers::Nothing));
     }
@@ -523,6 +613,7 @@ endpoint = \"https://api.mistral.ai\"
             Some(OsString::from("/home/ada")),
             Catalogue::built_in().unwrap(),
             None,
+            WhoseKeyring::Nobodys,
         );
 
         assert!(

@@ -95,6 +95,13 @@ alo-models = { path = "../alo-models" }
 alo-answering = { path = "../alo-answering" }
 alo-asking = { path = "../alo-asking" }
 
+# Where a provider's key actually is (ADR 0022). `alo-models` gives this crate a
+# `SecretRef`, which is a *name in a keyring and not a key*; this is the half
+# that turns one into an `alo_models::Secret`, over the person's own session bus
+# derived from this process's uid. `src/doing.rs` is the only file that names it,
+# and it is the only place in the daemon where a credential exists at all.
+alo-secrets = { path = "../alo-secrets" }
+
 # Somewhere for a test's machine to write what happened that is not a file on a
 # disk. The process writes to `alo-keeping`'s real one; a test wants to read the
 # entries back and count them, which is what `alo_record::Record` is.

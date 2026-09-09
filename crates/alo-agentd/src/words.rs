@@ -95,27 +95,79 @@ pub const NOTHING_WAS_ASKED: Word = Word::saying(
      apology.",
 );
 
-/// A provider was chosen and its credential cannot be reached on this machine.
+/// A provider was chosen and there is no credential store to ask.
+///
+/// `alo_secrets::NotStored::Unavailable`: nobody has signed in yet, or this
+/// machine's image ships no Secret Service.
 pub const NO_KEYRING_FOR_A_PROVIDER: Word = Word::saying(
     "agentd.no-keyring-for-a-provider",
-    "the provider you chose needs a key, and this alo OS has nowhere to keep one yet — nothing \
-     was sent",
+    "the provider you chose needs a key, and there is nowhere on this machine to ask for one — \
+     nothing was sent",
 )
 .noting(
-    "Said when somebody has chosen a provider that requires a credential: alo OS holds a \
-     *reference* to where a key lives and there is no store behind that reference on this machine \
-     yet. The question is not sent without the key, and no other place answers it in its stead. \
-     It names no provider deliberately — no sentence this service says has a gap in it, because a \
-     gap is the one road text somebody else wrote could take into a sentence a person reads.",
+    "Said when somebody has chosen a provider that requires a credential and no credential store \
+     answers: either nobody has signed in on this machine yet, or it was built without one. The \
+     question is not sent without the key, and no other place answers it in its stead. It names \
+     no provider deliberately — no sentence this service says has a gap in it, because a gap is \
+     the one road text somebody else wrote could take into a sentence a person reads.",
+);
+
+/// The store is there and will not open.
+///
+/// `alo_secrets::NotStored::Locked`. **Nothing here unlocks it**: that is a
+/// person answering a prompt and not a daemon deciding for them.
+pub const THE_KEYRING_IS_LOCKED: Word = Word::saying(
+    "agentd.the-keyring-is-locked",
+    "your keyring is locked, so the key for the provider you chose could not be read — unlock it \
+     and ask again; nothing was sent",
+)
+.noting(
+    "Said when the credential store is present but locked. This is usually the person's own doing \
+     and usually recent — they have not yet typed the password that unlocks it. alo OS does not \
+     unlock it for them, so the sentence asks them to. Deliberately not the same sentence as the \
+     key being absent, which would send somebody to add a key they already have.",
+);
+
+/// The store is open and this provider has no key in it.
+///
+/// `alo_secrets::NotStored::Missing`.
+pub const NO_KEY_FOR_THIS_PROVIDER: Word = Word::saying(
+    "agentd.no-key-for-this-provider",
+    "there is no key saved for the provider you chose — add one in settings and ask again; \
+     nothing was sent",
+)
+.noting(
+    "Said when the credential store is open and simply has nothing filed for this provider: the \
+     provider was added and its key never was, or it was saved under another name. Neither is a \
+     fault in the store. It names no provider deliberately, as the others do not.",
+);
+
+/// The store refused this caller.
+///
+/// `alo_secrets::NotStored::Denied`. **Never retried anywhere else.**
+pub const THE_KEYRING_REFUSED_US: Word = Word::saying(
+    "agentd.the-keyring-refused-us",
+    "this machine's keyring refused to hand over the key for the provider you chose — nothing was \
+     sent, and nowhere else was asked",
+)
+.noting(
+    "Said when the credential store is running and reachable and declines to give alo OS the key \
+     — a policy on the machine rather than anything the person did. Deliberately not the same \
+     sentence as there being no store at all, which would send somebody looking for a service \
+     that is running the whole time. The last clause is the promise that matters: no second store \
+     was tried and no other model answered in its stead.",
 );
 
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 5] = [
+pub const EVERY_WORD: [Word; 8] = [
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,
     NOTHING_WAS_ASKED,
     NO_KEYRING_FOR_A_PROVIDER,
+    THE_KEYRING_IS_LOCKED,
+    NO_KEY_FOR_THIS_PROVIDER,
+    THE_KEYRING_REFUSED_US,
 ];
 
 /// Why this crate's own list could not be declared.
