@@ -1,0 +1,21 @@
+[package]
+name = "alo-overlay"
+version = "0.0.1"
+description = "The agent overlay's summoning: one key, from anywhere — a surface request the compositor can honour or refuse, and a refusal a person can read when there is nowhere to show it."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The key half of the seam: the integration test presses the shipped chord and
+# follows it through `Action::TheAgent` into a summons, because the acceptance
+# is about one key and not about a state machine alone.
+alo-shortcuts = { path = "../alo-shortcuts" }
+
+[lints]
+workspace = true

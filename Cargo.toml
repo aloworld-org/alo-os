@@ -22,6 +22,7 @@ members = [
   "crates/alo-keyring-fixture",
   "crates/alo-keeping",
   "crates/alo-models",
+  "crates/alo-overlay",
   "crates/alo-protocol",
   "crates/alo-record",
   "crates/alo-saying",
