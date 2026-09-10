@@ -242,6 +242,11 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
     // it does neither.
     let mut given_up_on = std::collections::BTreeSet::new();
 
+    // Workers that died before they could attempt anything, in a row. Reset by
+    // any worker that actually ran, so a single hiccup does not accumulate
+    // across an evening of good work.
+    let mut cannot_run = 0_u32;
+
     let ending = loop {
         // Which task the iteration took up, so that a failure inside it can be
         // attributed to one and stepped over. Set by `one_iteration` through
@@ -250,6 +255,7 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
 
         match one_iteration(at, ours, &given_up_on, &mut holding) {
             Ok(journal::Went::Published(sha, task)) => {
+                cannot_run = 0;
                 journal::note(ours, &format!("published {sha} — {task}"));
                 if journal::was_asked_to_stop(ours) {
                     break "asked to stop after publishing".to_owned();
@@ -276,6 +282,26 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
                          depending on it still waits."
                     ),
                 );
+                if journal::was_asked_to_stop(ours) {
+                    break "asked to stop".to_owned();
+                }
+            }
+            Ok(journal::Went::TheWorkerCannotRun(why)) => {
+                // One is a hiccup and is tried again. Two in a row is the
+                // machine, and the tasks are left alone rather than consumed.
+                cannot_run += 1;
+                journal::note(
+                    ours,
+                    &format!("the worker did not start ({cannot_run} in a row): {why}"),
+                );
+                if worker::is_the_machine(cannot_run) {
+                    break format!(
+                        "the worker cannot run on this machine — {cannot_run} in a row died \
+                         before they could attempt anything. No task was given up and none was \
+                         marked: the plan is exactly as it was. What the last one said is in \
+                         .kernel-loop/worker.log. Last: {why}"
+                    );
+                }
                 if journal::was_asked_to_stop(ours) {
                     break "asked to stop".to_owned();
                 }
@@ -377,9 +403,18 @@ fn one_iteration(
     if worker::is_configured() && handoff::Handed::waiting(ours)?.is_none() {
         journal::note(ours, "launching one worker for it");
         match worker::ran_on(at, &chosen) {
-            Ok(()) => journal::note(ours, "the worker finished; inspecting what it left"),
-            Err(why) => {
+            Ok(_took) => journal::note(ours, "the worker finished; inspecting what it left"),
+            Err((why, took)) => {
                 journal::note(ours, &format!("the worker did not finish: {why}"));
+                // **A worker that died in seconds did not attempt the task.**
+                // Stepping over it would consume the plan at the speed of the
+                // failures — which is what happened the first night: three
+                // workers exited at once, every remaining task was marked given
+                // up inside ten seconds, and the run reported *no executable
+                // task left*, the sentence it uses for a finished workstream.
+                if worker::was_too_fast_to_have_tried(took) {
+                    return Ok(journal::Went::TheWorkerCannotRun(why));
+                }
                 return Ok(journal::Went::NobodyWroteIt(chosen.number, chosen.named));
             }
         }

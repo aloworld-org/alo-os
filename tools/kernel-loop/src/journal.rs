@@ -29,6 +29,15 @@ pub enum Went {
     /// has to say which one — by the thing the plan writes dependencies in.
     NobodyWroteIt(u32, String),
 
+    /// A worker died too fast to have attempted anything.
+    ///
+    /// **Not the task's failure, so not the task's to be stepped over.** The
+    /// command is missing, the account is out of quota, the machine is refusing
+    /// to run it — and consuming the plan one instant failure at a time is the
+    /// worst available response, because it ends by reporting the workstream
+    /// finished with nothing attempted.
+    TheWorkerCannotRun(String),
+
     /// Somebody asked it to stop.
     Stopped,
 }

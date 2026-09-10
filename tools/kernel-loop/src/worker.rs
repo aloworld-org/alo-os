@@ -69,20 +69,63 @@ pub fn is_configured() -> bool {
 /// # Errors
 /// A sentence when no worker is configured, when it could not be started, or
 /// when it was still running at its deadline.
-pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
-    let named = std::env::var(THE_WORKER)
-        .map_err(|_| format!("no worker is configured; set {THE_WORKER} to a command"))?;
-    let (program, args) = as_a_command(&named)
-        .ok_or_else(|| format!("{THE_WORKER} is set to nothing a program could be run from"))?;
+pub fn ran_on(at: &Path, task: &Task) -> Result<Duration, (String, Duration)> {
+    // How long it took is part of the answer, not a detail: a worker that fails
+    // in a second has not attempted the task, and the loop must not treat that
+    // as a task nobody can finish. Everything that goes wrong *before* the
+    // worker starts is `ZERO` and therefore counts as the machine, which is
+    // what a missing command or an unusable log genuinely is.
+    let nothing = Duration::ZERO;
+    let named = std::env::var(THE_WORKER).map_err(|_| {
+        (
+            format!("no worker is configured; set {THE_WORKER} to a command"),
+            nothing,
+        )
+    })?;
+    let (program, args) = as_a_command(&named).ok_or_else(|| {
+        (
+            format!("{THE_WORKER} is set to nothing a program could be run from"),
+            nothing,
+        )
+    })?;
+
+    // **Kept, not discarded.** Both of these were `Stdio::null()`, and the cost
+    // came due the first night: three workers across two loops exited with 1
+    // and there was no way to learn why — the supervisor had thrown away the
+    // only account of it. A worker's own words are not evidence of anything,
+    // which is why the loop still reads the tree and the handoff rather than
+    // this file; but *why a worker died* is not a claim about the work, it is
+    // the thing an operator needs at two in the morning.
+    let log = at.join(".kernel-loop").join("worker.log");
+    let keeping = std::fs::File::create(&log).map_err(|why| {
+        (
+            format!(
+                "the worker's log at {} could not be opened: {why}",
+                log.display()
+            ),
+            nothing,
+        )
+    })?;
+    let also = keeping.try_clone().map_err(|why| {
+        (
+            format!("the worker's log could not be shared with its error stream: {why}"),
+            nothing,
+        )
+    })?;
 
     let mut child = Command::new(&program)
         .args(&args)
         .current_dir(at)
         .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(Stdio::from(keeping))
+        .stderr(Stdio::from(also))
         .spawn()
-        .map_err(|why| format!("the worker `{program}` could not be started: {why}"))?;
+        .map_err(|why| {
+            (
+                format!("the worker `{program}` could not be started: {why}"),
+                nothing,
+            )
+        })?;
 
     // **The task goes in on stdin, not as an argument**, and it is not a style
     // choice. Since Rust 1.77 a `.cmd` or `.bat` — which is what an npm-shipped
@@ -97,39 +140,52 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<(), String> {
             if let Err(why) = asking.write_all(asked_of_it(task).as_bytes()) {
                 drop(child.kill());
                 drop(child.wait());
-                return Err(format!(
-                    "the worker `{program}` could not be told what to do: {why}"
+                return Err((
+                    format!("the worker `{program}` could not be told what to do: {why}"),
+                    nothing,
                 ));
             }
         }
         None => {
             drop(child.kill());
             drop(child.wait());
-            return Err(format!(
-                "the worker `{program}` has no stdin to be told anything on"
+            return Err((
+                format!("the worker `{program}` has no stdin to be told anything on"),
+                nothing,
             ));
         }
     }
 
-    let until = Instant::now() + AT_MOST;
+    let began = Instant::now();
+    let until = began + AT_MOST;
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
-                return whether_it_finished(&program, status.success(), status.code());
+                return whether_it_finished(&program, status.success(), status.code())
+                    .map(|()| began.elapsed())
+                    .map_err(|why| (why, began.elapsed()));
             }
             Ok(None) => {}
-            Err(why) => return Err(format!("the worker could not be waited on: {why}")),
+            Err(why) => {
+                return Err((
+                    format!("the worker could not be waited on: {why}"),
+                    began.elapsed(),
+                ));
+            }
         }
         if Instant::now() >= until {
             // Killed rather than left: it holds this checkout, and a second
             // iteration beside it would be two editors on one working tree.
             let _ = child.kill();
             let _ = child.wait();
-            return Err(format!(
-                "the worker `{program}` was still running after {} minutes and was stopped. \
-                 Whatever it had written is still in the working tree; nothing was published \
-                 and nothing was discarded.",
-                AT_MOST.as_secs() / 60
+            return Err((
+                format!(
+                    "the worker `{program}` was still running after {} minutes and was stopped. \
+                     Whatever it had written is still in the working tree; nothing was published \
+                     and nothing was discarded.",
+                    AT_MOST.as_secs() / 60
+                ),
+                began.elapsed(),
             ));
         }
         std::thread::sleep(LOOKING_EVERY);
@@ -180,8 +236,41 @@ fn whether_it_finished(named: &str, success: bool, code: Option<i32>) -> Result<
         |code| format!("it exited with {code}"),
     );
     Err(format!(
-        "the worker `{named}` did not finish successfully — {said}. Whatever it wrote is still          in the working tree; nothing was published and nothing was discarded. A task it could          not complete is a task nobody has done, even if it left a handoff behind."
+        "the worker `{named}` did not finish successfully — {said}. Whatever it wrote is still          in the working tree; nothing was published and nothing was discarded. A task it could          not complete is a task nobody has done, even if it left a handoff behind. What it          said is in .kernel-loop/worker.log."
     ))
+}
+
+/// How quickly a worker has to die for its death to be about the worker rather
+/// than about the task.
+///
+/// A worker that spends ten minutes and fails has attempted the task. One that
+/// exits inside this has not started it: the command is missing, the account is
+/// out of quota, the machine is refusing to run it. The two are indistinguishable
+/// from an exit code and are completely different situations.
+const TOO_FAST_TO_HAVE_TRIED: Duration = Duration::from_secs(60);
+
+/// How many workers may die that fast in a row before the run stops.
+///
+/// **The night this was written, three did.** Each was stepped over as a task
+/// nobody could finish, the loop consumed its whole plan in ten seconds, and
+/// reported *the plan has no executable task left* — the sentence it uses for a
+/// finished workstream. Every task was still there and nothing had been tried.
+///
+/// One fast failure is a hiccup and is stepped over. Two in a row is the
+/// environment, and stepping over tasks is the wrong response to it: they are
+/// left alone, unattempted, for whoever comes back.
+const BEFORE_IT_IS_THE_MACHINE: u32 = 2;
+
+/// Whether a worker died so fast, so often, that the machine is what is wrong.
+#[must_use]
+pub const fn is_the_machine(consecutive_fast_failures: u32) -> bool {
+    consecutive_fast_failures >= BEFORE_IT_IS_THE_MACHINE
+}
+
+/// Whether this attempt was too quick to have been an attempt.
+#[must_use]
+pub fn was_too_fast_to_have_tried(took: Duration) -> bool {
+    took < TOO_FAST_TO_HAVE_TRIED
 }
 
 /// What the worker is asked to do.
@@ -390,6 +479,32 @@ mod tests {
             asked.contains(&plan),
             "the worker was not told where its task is described: {asked}"
         );
+    }
+
+    /// **A worker that died in seconds did not attempt the task**, and two in a
+    /// row is the machine rather than the plan.
+    ///
+    /// The first night this loop ran unattended, three workers exited within
+    /// seconds of each other. Each was stepped over as *a task nobody could
+    /// finish*, the plan was consumed inside ten seconds, and the run reported
+    /// *no executable task left* — the sentence it uses for a **finished
+    /// workstream**. Every task was still there and not one had been attempted.
+    ///
+    /// So the two are told apart by how long it took, and the response differs:
+    /// a task that was tried and failed is stepped over; a worker that cannot
+    /// run stops the run with the plan untouched.
+    #[test]
+    fn a_worker_that_died_in_seconds_is_the_machine_and_not_the_task() {
+        assert!(was_too_fast_to_have_tried(Duration::from_secs(2)));
+        assert!(was_too_fast_to_have_tried(Duration::ZERO));
+        // Ten minutes of work that failed is an attempt, and belongs to the
+        // task rather than to the machine.
+        assert!(!was_too_fast_to_have_tried(Duration::from_secs(600)));
+
+        // One is a hiccup; the run tries the next task. Two in a row is not.
+        assert!(!is_the_machine(1));
+        assert!(is_the_machine(2));
+        assert!(is_the_machine(7));
     }
 
     /// **The setting carries the flags, not just the program**, because no
