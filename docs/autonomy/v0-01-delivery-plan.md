@@ -107,7 +107,9 @@ repository has and no screen has ever shown.
 
 ### 4. Accounts and session entry — the local account
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** lane B's — scheduled in `v0-01-lane-b-plan.md` as its task 1, and
+stepped over here so two loops never take up one task. Lane B's finishing
+handoff marks it done here. **Depends on:** nothing.
 
 Phase 4, and the half that needs no identity provider. v0.01's gate opens with
 *sign in*, and nothing in this repository signs anybody in. The local account
@@ -123,7 +125,8 @@ that needs no tenant is the smaller half and the one the gate actually requires.
 
 ### 5. The daemon's environment is the session's
 
-**Status:** ready. **Depends on:** 4.
+**Status:** lane B's — scheduled in `v0-01-lane-b-plan.md` as its task 2, and
+stepped over here for the same reason as task 4. **Depends on:** 4.
 
 `alo-agentd` runs as the signed-in person and finds their bus at
 `/run/user/<uid>`. That is measured (`a_session_that_really_ended.rs`) and it is

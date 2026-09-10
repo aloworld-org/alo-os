@@ -414,7 +414,11 @@ More prose.
     /// the other end.
     #[test]
     fn every_plan_this_repository_drives_holds_only_tasks() {
-        for named in [THE_PLAN, "docs/autonomy/v0-01-delivery-plan.md"] {
+        for named in [
+            THE_PLAN,
+            "docs/autonomy/v0-01-delivery-plan.md",
+            "docs/autonomy/v0-01-lane-b-plan.md",
+        ] {
             let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../..")
                 .join(named);
