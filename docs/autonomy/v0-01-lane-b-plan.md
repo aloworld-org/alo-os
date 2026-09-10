@@ -69,3 +69,47 @@ wired: nothing starts the daemon into a real session with the right environment.
   measured, reached from a sign-in rather than from a test harness.
 - **On finishing:** mark tasks 4 and 5 done in `v0-01-delivery-plan.md`, in the
   same handoff, so the image task there stops waiting on work that is done.
+
+**Done, 2026-09-10.** `crates/alo-entering` derives what a session hands a
+process — `/run/user/<uid>`, the bus address, and `user@<uid>.service` — from
+the `Session` task 1 opens, so the sign-in and the machine cannot spell it two
+ways. `image/usr/lib/systemd/system/alo-agentd.service` is wired to that
+session rather than to `multi-user.target`: pulled in by the person's own
+manager, `BindsTo=` it so signing out stops it, ordered after it, and given the
+two variables. `crates/alo-image` checks every one of those lines against the
+number the machine description names, and `crates/alo-agentd/src/session.rs`
+refuses at start-up an environment naming another login's session — it checks
+the variables and still never reads one to decide where to connect. The three
+states from a real sign-in are
+`crates/alo-entering/tests/a_daemon_in_the_persons_session.rs`, `#[ignore]`d for
+`a_session_that_really_ended.rs`'s reasons. Report:
+`docs/autonomy/updates/the-daemons-environment-is-the-sessions.md`. Task 3 below
+is the next task and was written in the same change.
+
+### 3. Where a machine keeps its grants between one sign-in and the next
+
+**Status:** ready. **Depends on:** 2.
+
+`docs/features.md` promises for v0.01: *Grants: pick a folder, see what is
+granted, revoke it, and it expires*. A person can now make one —
+`crates/alo-picking` — and `alo-agentd` honours the ones it is holding. **Nothing
+keeps them.** `crates/alo-agentd/src/starting.rs` says so in as many words: the
+service begins with no grants at all, because where a machine's grants live is a
+question nobody has answered, and a list read from a file would be a list nothing
+writes. So a grant made this morning is gone at the next sign-in, and *see what
+is granted* has nothing to show.
+
+This is lane B's because it is session-shaped rather than surface-shaped: a
+grant belongs to the person who made it, it is written under their own
+authority, and its life is measured from one sign-in to the next. The
+**surface** that lists and revokes them is the compositor lane's, as picking's
+was.
+
+- **Acceptance:** a grant a person made survives a restart of the daemon and is
+  honoured afterwards; a revoked grant does not come back; an expired one is
+  gone when it is read rather than being read and then filtered; the file is the
+  person's alone and a store somebody else could write is refused in words, as
+  `crates/alo-accounts`' store already is; and nothing an agent can send over the
+  socket writes a byte of it.
+- **Constraint:** no new surface, and nothing in `crates/alo-shell`. This is
+  where the list lives and what may write it.

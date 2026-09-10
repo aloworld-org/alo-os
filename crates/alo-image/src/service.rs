@@ -183,6 +183,27 @@ impl Service {
         self.unit.listed(UNIT, "After")
     }
 
+    /// The units this one's life is tied to: stopping one of them stops this.
+    ///
+    /// Different from [`Service::needs`] in the half that matters here.
+    /// `Requires=` says *do not start without it*; `BindsTo=` says *and stop
+    /// when it stops*, which is how a service started by signing in is a service
+    /// that ends when the last session does.
+    #[must_use]
+    pub fn bound_to(&self) -> Vec<&str> {
+        self.unit.listed(UNIT, "BindsTo")
+    }
+
+    /// Every `KEY=value` the unit puts in the service's environment.
+    ///
+    /// systemd separates several pairs on one line by spaces and accumulates
+    /// over repeated assignments, which is [`Unit::listed`] exactly — including
+    /// an empty assignment clearing what came before it.
+    #[must_use]
+    pub fn environment(&self) -> Vec<&str> {
+        self.unit.listed(SERVICE, "Environment")
+    }
+
     /// The units this one is started before.
     #[must_use]
     pub fn before(&self) -> Vec<&str> {
@@ -207,6 +228,7 @@ mod tests {
     /// A service unit with everything this file reads in it.
     const A_LOADER: &str = "\
 [Unit]
+BindsTo=user@1000.service
 Before=alo-agentd.service
 RequiresMountsFor=/sys/fs/bpf
 
@@ -242,7 +264,31 @@ WantedBy=multi-user.target
         assert_eq!(service.in_group(), Some("alo-agent"));
         assert_eq!(service.bounded_to(), vec!["CAP_BPF", "CAP_SYS_ADMIN"]);
         assert_eq!(service.before(), vec!["alo-agentd.service"]);
+        assert_eq!(service.bound_to(), vec!["user@1000.service"]);
         assert_eq!(service.wanted_by(), vec!["multi-user.target"]);
+    }
+
+    /// The environment a unit states comes back pair by pair, accumulated over
+    /// the repeated assignments systemd accumulates over.
+    #[test]
+    fn the_environment_is_every_pair_the_unit_states() {
+        let service = read(
+            "session.service",
+            "[Service]\nExecStart=/usr/bin/x\nEnvironment=XDG_RUNTIME_DIR=/run/user/1000\nEnvironment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus\n",
+        );
+
+        assert_eq!(
+            service.environment(),
+            vec![
+                "XDG_RUNTIME_DIR=/run/user/1000",
+                "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus",
+            ]
+        );
+        assert!(
+            read("bare.service", "[Service]\nExecStart=/usr/bin/x\n")
+                .environment()
+                .is_empty()
+        );
     }
 
     /// **A unit with no `[Service]` is refused**, because systemd would not

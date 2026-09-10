@@ -19,6 +19,27 @@ After=alo-boundaryd.service
 # there first.
 After=systemd-tmpfiles-setup.service
 
+# The person's session, and the whole of what this service's lifetime is.
+#
+# `user@1000.service` is the person's own systemd manager: logind starts it when
+# they sign in and stops it when their last session ends, which is exactly the
+# three states `crates/alo-secrets/tests/a_session_that_really_ended.rs`
+# measured and nothing was wired to. After=, so `/run/user/1000` and the bus in
+# it exist before this process does. BindsTo=, so signing out stops the agent
+# service rather than leaving a daemon holding somebody's door with nobody
+# signed in.
+#
+# This is also why [Install] below names that unit rather than multi-user.target:
+# a daemon started at boot is a daemon running before anybody has signed in,
+# with no session, no bus and no person — which is not what ADR 0001 §2 means by
+# running as the signed-in person.
+#
+# The number is the person's, for the reason RuntimeDirectory= gives below: %U
+# in a system unit is 0, not the person, and `crates/alo-image` is what holds
+# every one of these numbers to the one the machine description names.
+BindsTo=user@1000.service
+After=user@1000.service
+
 [Service]
 Type=exec
 ExecStart=/usr/bin/alo-agentd
@@ -57,6 +78,25 @@ Delegate=yes
 RuntimeDirectory=alo/1000
 RuntimeDirectoryMode=0750
 
+# The environment a process in the person's session has. A system unit inherits
+# none of it, so it is stated: without these two lines this service runs beside
+# the person's session rather than inside it.
+#
+# `crates/alo-entering` is where both strings are derived — from the session a
+# sign-in opened, whose uid cannot differ from the one the machine description
+# names — and `crates/alo-image` checks that these lines say what that crate
+# says for this machine's person.
+#
+# What reads them is worth being exact about, because it is not this daemon.
+# `alo-secrets` derives the bus from the daemon's own uid and has no parameter a
+# variable could arrive through; what alo-agentd does with these is *refuse*
+# them if they name another login's session (`session.rs`). They are here for
+# the person's session itself and for whatever alo OS later starts inside it —
+# and being checked rather than obeyed is what makes an edited line here a
+# service that stops instead of a daemon on somebody else's bus.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
 # Empty on purpose, and both of them. ADR 0018 moved the one privileged act out
 # of this service; these two lines are that decision written where a machine can
 # be held to it, rather than an absence somebody has to notice. Writing a grant
@@ -74,4 +114,8 @@ NoNewPrivileges=yes
 # one sentence saying which into five copies of it in a log.
 
 [Install]
-WantedBy=multi-user.target
+# Signing in is what starts it. `systemctl enable` writes this into
+# `user@1000.service.wants/`, so the person's manager pulls the agent service up
+# with the session and BindsTo= above takes it down with the session — one
+# decision, said from both ends.
+WantedBy=user@1000.service

@@ -159,6 +159,14 @@ environment.
   that session's bus, and stops when the session ends — the three states already
   measured, reached from a sign-in rather than from a test harness.
 
+**Done, 2026-09-10.** Lane B's task 2: `crates/alo-entering` derives the
+session's environment from the session a sign-in opens, the agent service is
+pulled in by `user@<uid>.service` and bound to it rather than started at boot,
+`crates/alo-image` holds those lines to the number the machine description
+names, and `alo-agentd` refuses an environment naming another login's session.
+Task 10 no longer waits on this. Report:
+`docs/autonomy/updates/the-daemons-environment-is-the-sessions.md`.
+
 ### 6. Native folder selection, so a grant can be made at all
 
 **Status:** ready. **Depends on:** 2.

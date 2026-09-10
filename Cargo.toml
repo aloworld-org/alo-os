@@ -19,6 +19,7 @@ members = [
   "crates/alo-dock",
   "crates/alo-driving",
   "crates/alo-egress",
+  "crates/alo-entering",
   "crates/alo-files",
   "crates/alo-image",
   "crates/alo-indicator",

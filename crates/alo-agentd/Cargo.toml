@@ -58,6 +58,12 @@ alo-egress = { path = "../alo-egress" }
 alo-files = { path = "../alo-files" }
 alo-saying = { path = "../alo-saying" }
 
+# What a session hands a process started inside it. `session.rs` is the only
+# file that names it, and it names it to *refuse* an environment rather than to
+# take one: where this daemon's bus is still comes from its own uid, through
+# `alo-secrets`, which has no parameter a variable could arrive through.
+alo-entering = { path = "../alo-entering" }
+
 # The boundary a turn's work runs inside, and the reason this crate is the one
 # that holds it: `alo-turn` says what a boundary has to do and is portable,
 # `alo-bounding` is a kernel and knows nothing about turns, and the daemon is

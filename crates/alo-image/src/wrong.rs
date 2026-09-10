@@ -227,6 +227,50 @@ pub enum Wrong {
         /// The mode the unit names, or `-` where it names none.
         mode: String,
     },
+    /// The agent's service would be started by booting rather than by signing
+    /// in.
+    #[error(
+        "{agent} is pulled in by `{wanted_by}` rather than by `{manager}` — a daemon started at \
+         boot is a daemon running before anybody has signed in, with no session, no bus and no \
+         person, which is not what ADR 0001 §2 means by running as the signed-in person"
+    )]
+    TheAgentIsNotStartedBySigningIn {
+        /// The agent's unit.
+        agent: String,
+        /// What pulls it in, or `-` where nothing does.
+        wanted_by: String,
+        /// The person's own systemd manager, which is their session.
+        manager: String,
+    },
+    /// The agent's service would outlive the session it belongs to.
+    #[error(
+        "{agent} is not bound to `{manager}` and ordered after it — signing out would leave the \
+         agent service holding somebody's door with nobody signed in, and starting it before \
+         their session would leave it beside the session rather than inside it"
+    )]
+    TheAgentDoesNotStopWithTheSession {
+        /// The agent's unit.
+        agent: String,
+        /// The person's own systemd manager.
+        manager: String,
+    },
+    /// The agent's service would run with an environment that is not the
+    /// person's session.
+    #[error(
+        "{agent} states `{variable}={named}`, and the session of the person this machine \
+         describes is `{variable}={theirs}` — a system unit inherits no session, so what this \
+         line says is the whole of what the service is told about one"
+    )]
+    TheAgentsEnvironmentIsNotTheSessions {
+        /// The agent's unit.
+        agent: String,
+        /// Which variable.
+        variable: String,
+        /// What the unit says, or `-` where it says nothing.
+        named: String,
+        /// What the person's session is.
+        theirs: String,
+    },
     /// A unit nothing pulls in at boot.
     #[error("nothing pulls {unit} in at boot — it has no [Install] section that wants it")]
     NothingPullsItIn {

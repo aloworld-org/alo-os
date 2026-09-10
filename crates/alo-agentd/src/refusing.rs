@@ -510,6 +510,25 @@ pub enum NotStarted {
         "alo-agentd is running as root, and it holds a person's authority rather than a machine's (ADR 0001 §2); start it as a user service of the signed-in person"
     )]
     AsRoot,
+    /// This process was started into somebody else's session.
+    ///
+    /// `crate::session` is the whole argument. The short of it: the daemon runs
+    /// as the person and the session it is given is meant to be theirs, so a
+    /// variable naming another login's runtime directory or bus is a machine
+    /// wired wrongly — and the one thing it must never do is go on and use it.
+    #[error(
+        "alo-agentd was started with {variable}={named}, which is not the session of user {person}, whose agent this service is — that session is at {theirs}; start it from the person's own user manager rather than pointing it at another login's session"
+    )]
+    NotThePersonsSession {
+        /// Which variable said it.
+        variable: &'static str,
+        /// What the variable said.
+        named: String,
+        /// Whose session this service is.
+        person: u32,
+        /// What the variable would have to say.
+        theirs: String,
+    },
     /// This machine's description was not believed.
     #[error("{0}")]
     NotDescribed(#[from] NotDescribed),

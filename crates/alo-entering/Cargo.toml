@@ -1,0 +1,26 @@
+[package]
+name = "alo-entering"
+version = "0.0.1"
+description = "What signing in hands the daemon: the session's runtime directory, its bus, and the manager that holds both."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The session a sign-in opens. This crate exists to derive one machine's
+# session environment from **that** value rather than from a number somebody
+# typed into a unit file, because `alo_accounts::Session` is the one type on
+# this machine that cannot carry a uid the machine description does not name.
+alo-accounts = { path = "../alo-accounts" }
+
+[lints]
+workspace = true
+
+# The other crate that derives where a bus is, and the reason there is a test
+# holding the two together rather than two spellings drifting apart.
+# `alo-secrets` is `cfg(target_os = "linux")` and compiles to nothing anywhere
+# else, so the agreement is asked on the host alo OS boots.
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+alo-secrets = { path = "../alo-secrets" }
+rustix = { workspace = true }

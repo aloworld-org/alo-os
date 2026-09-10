@@ -202,6 +202,8 @@ pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]
+pub mod session;
+#[cfg(target_os = "linux")]
 pub mod settings;
 #[cfg(target_os = "linux")]
 pub mod side;
@@ -253,6 +255,8 @@ pub use refusing::{
 };
 #[cfg(target_os = "linux")]
 pub use serving::{Served, Serving};
+#[cfg(target_os = "linux")]
+pub use session::in_the_persons_session;
 #[cfg(target_os = "linux")]
 pub use settings::{of_a_session, what_this_person_chose};
 #[cfg(target_os = "linux")]

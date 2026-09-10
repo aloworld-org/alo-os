@@ -31,7 +31,7 @@ mod running {
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking,
-        signalling, starting, unix,
+        session, signalling, starting, unix,
     };
     use alo_keeping::Writing;
 
@@ -85,6 +85,16 @@ mod running {
     /// is a line in the log rather than a different exit code, because a service
     /// that ran and then could not tidy up did run.
     ///
+    /// # And the session is checked as soon as there is a person to check it
+    /// against
+    ///
+    /// `alo_agentd::session` refuses an environment naming somebody else's
+    /// session, and it runs directly after the description because the
+    /// description is what says who the person is. Before the vocabulary,
+    /// before the record and before the socket: a machine wired into the wrong
+    /// session is one to stop on, and stopping is cheapest before anything has
+    /// been opened.
+    ///
     /// **What is not given back is the boundary**, since ADR 0018. This process
     /// did not load it — `alo-boundaryd` did, at boot — so a service stopping
     /// leaves the machine enforcing, which is the right way round for a service
@@ -94,6 +104,7 @@ mod running {
         starting::not_as_root(us)?;
 
         let described = Described::at(Path::new(THE_DESCRIPTION), us)?;
+        session::in_the_persons_session(described.sides().person())?;
 
         let saying = starting::what_this_machine_says()?;
         for line in saying.damage().lines() {

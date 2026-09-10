@@ -23,6 +23,7 @@
 
 use std::path::Path;
 
+use alo_entering::TheSessionsEnvironment;
 use alo_keeping::Keeping;
 
 use crate::image::Image;
@@ -67,7 +68,71 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_agent_can_make_what_it_is_not_given(image, &mut wrong);
     nobody_chose_a_retention(image, &mut wrong);
     both_units_are_pulled_in(image, &mut wrong);
+    the_agent_runs_inside_the_persons_session(image, &mut wrong);
     wrong
+}
+
+/// The daemon's environment is the session's: started by signing in, stopped by
+/// signing out, and told where that session is.
+///
+/// The three states `crates/alo-secrets/tests/a_session_that_really_ended.rs`
+/// measured and nothing was wired to. All three are decided in the unit file and
+/// none of them can be caught by building it — an image whose agent service is
+/// pulled in by `multi-user.target` boots perfectly and runs a daemon that has
+/// no session, no bus and nobody signed in.
+///
+/// What the two variables must say is `alo-entering`'s, derived from the number
+/// the machine description gives the person. That crate is also what the
+/// **session** derives them from at a sign-in, so the unit shipped here and the
+/// session a person really opens are held to one spelling rather than to two.
+fn the_agent_runs_inside_the_persons_session(image: &Image, wrong: &mut Vec<Wrong>) {
+    let agent = image.agent().called().to_owned();
+    let theirs = TheSessionsEnvironment::for_person(image.description().person());
+    let manager = theirs.their_manager();
+
+    if !image.agent().wanted_by().contains(&manager.as_str()) {
+        wrong.push(Wrong::TheAgentIsNotStartedBySigningIn {
+            agent: agent.clone(),
+            wanted_by: said(&image.agent().wanted_by()),
+            manager: manager.clone(),
+        });
+    }
+    if !image.agent().bound_to().contains(&manager.as_str())
+        || !image.agent().after().contains(&manager.as_str())
+    {
+        wrong.push(Wrong::TheAgentDoesNotStopWithTheSession {
+            agent: agent.clone(),
+            manager,
+        });
+    }
+
+    let stated = image.agent().environment();
+    for (variable, value) in theirs.variables() {
+        let named: Vec<&str> = stated
+            .iter()
+            .filter_map(|pair| pair.strip_prefix(variable))
+            .filter_map(|rest| rest.strip_prefix('='))
+            .collect();
+        // Exactly one assignment, and it is the person's session. Two would be
+        // a unit where the last one silently wins, and none is a service told
+        // nothing about the session it is supposed to be inside.
+        if named != vec![value.as_str()] {
+            wrong.push(Wrong::TheAgentsEnvironmentIsNotTheSessions {
+                agent: agent.clone(),
+                variable: variable.to_owned(),
+                named: said(&named),
+                theirs: value,
+            });
+        }
+    }
+}
+
+/// Whatever a unit named, as one sentence, or [`NOTHING`] where it named none.
+fn said(named: &[&str]) -> String {
+    if named.is_empty() {
+        return NOTHING.to_owned();
+    }
+    named.join(" ")
 }
 
 /// ADR 0018 and ADR 0015: the boundary is on the kernel before the agent's
@@ -715,6 +780,147 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::NothingPullsItIn { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An agent service started by booting rather than by signing in is
+    /// caught.** This is the state the image really shipped in until the session
+    /// was wired: a daemon pulled up by `multi-user.target`, running as the
+    /// person before anybody had signed in as them, with no session and no bus.
+    #[test]
+    fn an_agent_started_before_anybody_signs_in_is_caught() {
+        let root = a_copy_of_the_image("started-at-boot");
+        edited(
+            &root,
+            THE_AGENTS_UNIT,
+            "WantedBy=user@1000.service",
+            "WantedBy=multi-user.target",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheAgentIsNotStartedBySigningIn { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And one that would outlive the session is caught.** `Requires=` is not
+    /// `BindsTo=`: without the second, signing out leaves the agent service
+    /// holding the person's door with nobody signed in.
+    #[test]
+    fn an_agent_that_would_outlive_the_session_is_caught() {
+        let root = a_copy_of_the_image("outlives-the-session");
+        edited(&root, THE_AGENTS_UNIT, "BindsTo=user@1000.service", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheAgentDoesNotStopWithTheSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And one started before the person's session exists is caught too**,
+    /// which is the other half of the same line: `/run/user/1000` and the bus in
+    /// it are made by the manager this ordering waits for.
+    #[test]
+    fn an_agent_started_before_the_session_exists_is_caught() {
+        let root = a_copy_of_the_image("before-the-session");
+        edited(&root, THE_AGENTS_UNIT, "After=user@1000.service", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheAgentDoesNotStopWithTheSession { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An agent service told nothing about a session is caught.** A system
+    /// unit inherits none of the person's environment, so a missing line is a
+    /// service running beside their session rather than inside it.
+    #[test]
+    fn an_agent_told_nothing_about_the_session_is_caught() {
+        let root = a_copy_of_the_image("no-session-environment");
+        edited(
+            &root,
+            THE_AGENTS_UNIT,
+            "Environment=XDG_RUNTIME_DIR=/run/user/1000",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheAgentsEnvironmentIsNotTheSessions { variable, named, .. }
+                    if variable == "XDG_RUNTIME_DIR" && named == NOTHING
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And one pointed at somebody else's session is caught**, which is the
+    /// mistake that looks right: a number changed in one line of a unit file,
+    /// and a daemon that runs as the person on root's bus.
+    #[test]
+    fn an_agent_pointed_at_another_logins_session_is_caught() {
+        let root = a_copy_of_the_image("another-logins-session");
+        edited(
+            &root,
+            THE_AGENTS_UNIT,
+            "Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus",
+            "Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheAgentsEnvironmentIsNotTheSessions { variable, theirs, .. }
+                    if variable == "DBUS_SESSION_BUS_ADDRESS"
+                        && theirs == "unix:path=/run/user/1000/bus"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And a description that moves the person leaves the unit behind**, which
+    /// is what holds the two files to one number: every string here is derived
+    /// from `[logins].person`, so changing it alone is an image whose session
+    /// wiring names somebody who does not sign in.
+    #[test]
+    fn a_session_wired_for_a_person_the_description_no_longer_names_is_caught() {
+        let root = a_copy_of_the_image("moved-the-person");
+        edited(
+            &root,
+            THE_DESCRIPTION_FILE,
+            "person = 1000",
+            "person = 1001",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheAgentIsNotStartedBySigningIn { .. })),
+            "{wrong:?}"
+        );
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheAgentsEnvironmentIsNotTheSessions { .. })),
             "{wrong:?}"
         );
     }

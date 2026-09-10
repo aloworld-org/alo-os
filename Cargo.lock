@@ -52,6 +52,7 @@ dependencies = [
  "alo-choosing",
  "alo-context",
  "alo-egress",
+ "alo-entering",
  "alo-files",
  "alo-keeping",
  "alo-keyring-fixture",
@@ -233,6 +234,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-entering"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-secrets",
+ "rustix 1.1.4",
+]
+
+[[package]]
 name = "alo-files"
 version = "0.0.1"
 dependencies = [
@@ -255,6 +265,7 @@ dependencies = [
 name = "alo-image"
 version = "0.0.1"
 dependencies = [
+ "alo-entering",
  "alo-keeping",
  "serde",
  "thiserror 2.0.20",

@@ -19,5 +19,11 @@ thiserror = { workspace = true }
 # the same question in this crate.
 alo-keeping = { path = "../alo-keeping" }
 
+# What a session hands a daemon started inside it. The agent's unit states the
+# person's runtime directory and bus, and asking the crate that derives them
+# from a sign-in is one answer rather than a second spelling of `/run/user` in a
+# checker — which is exactly the drift this crate exists to catch elsewhere.
+alo-entering = { path = "../alo-entering" }
+
 [lints]
 workspace = true
