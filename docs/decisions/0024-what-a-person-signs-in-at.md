@@ -1,7 +1,10 @@
 # ADR 0024 — What a person signs in at, and what starts it
 
-**Status:** **PROPOSED, 2026-09-10.** Nothing in the image changes until this is
-accepted; `docs/autonomy/v0-01-delivery-plan.md` task 10 is blocked on it.
+**Status:** **ACCEPTED, 2026-09-11 — Option B**, after the measurement this ADR
+said it owed was taken and answered in its favour. See *The measurement, taken*
+at the end. Accepted under a standing delegation from the owner; everything
+below is left exactly as it was argued while unaccepted, so the reasoning can be
+checked against the outcome rather than rewritten to match it.
 **Date:** 2026-09-10
 **Proposed by:** the v0.01 delivery workstream
 **Context:** [ADR 0002](0002-the-shell-is-native.md) (the shell is native),
@@ -165,3 +168,45 @@ With it, two things that are not separable from it:
 - **More than one person on a machine.** `docs/features.md` puts that at v1,
   and nothing here forecloses it: the store already holds accounts rather than
   an account.
+
+## The measurement, taken
+
+**2026-09-11.** This ADR said it did not know whether `logind` would open a
+session for a caller that is not `pam_systemd`, and that finding out was the
+first thing the implementation owed rather than something to guess. It was
+measured before the decision was taken.
+
+Asked of `org.freedesktop.login1.Manager.CreateSession` directly:
+
+| Caller | What logind answered |
+|---|---|
+| root, well-formed arguments | `Invalid leader PID` |
+| uid 1000, the same call | `Access denied` |
+
+**`Invalid leader PID` is the finding.** It is not a refusal to let the caller
+in — it is logind having *accepted* the call and gone on to check its contents,
+then rejecting the leader PID offered (deliberately an implausible one, since
+what was wanted was the authorisation answer and not a real session). The method
+is on the interface, there is no policy rule against it, and the boundary that
+does exist is **privilege**, which the second row shows: the same call from an
+ordinary person is denied outright.
+
+So `logind` will open a session for a caller that is not `pam_systemd`, provided
+that caller is privileged. **Option B is buildable**, and the expensive
+alternative this ADR priced — `alo-accounts` becoming a PAM module, which is a C
+ABI, which is `unsafe`, which the workspace forbids — is not necessary. The
+exemption named as Option A's price does not have to be paid.
+
+**What it confirms rather than removes** is Option B's own price, which this ADR
+already stated honestly: the sign-in surface must be **privileged**. That is a
+second privileged component beside ADR 0018's loader, and it is held to the same
+terms — small enough to read in one sitting, and checked by `crates/alo-image`
+the way the loader is.
+
+**Where it was measured, and where it was not.** Ubuntu 26.04, systemd 259,
+under WSL2 — the development machine. The image ships a Fedora-derived base with
+its own `logind`. This is the same upstream D-Bus interface and the same
+authorisation model, so the answer is expected to hold; it is **not** measured on
+the pinned base, and the implementation owes that check on the image before any
+box is ticked. Recording it as measured here would be the guessing this
+paragraph exists to prevent.
