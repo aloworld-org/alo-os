@@ -276,7 +276,8 @@ the compositor's, and *On the machine* does not move.
 
 ### 10. The image carries the shell, the session and the daemon
 
-**Status:** ready. **Depends on:** 5, 9.
+**Status:** blocked — on ADR 0024 being accepted, and then on task 13.
+**Depends on:** 5, 9, 13.
 
 Phase 7. `image/` builds and boots in QEMU with the daemon running; it does not
 yet carry a shell to boot *to*, a session to sign in to, or the vocabulary and
@@ -286,9 +287,35 @@ palette the shell draws with.
   turn runs through approval, execution and its record, and an update rolls back
   cleanly. **A VM is not a machine** and no *On the machine* box moves.
 
+**Blocked, 2026-09-10.** Taken up and found unstartable, which is a finding
+rather than a failed attempt: **there is nothing to carry.**
+`crates/alo-shell` has no binary — no `src/main.rs`, no `[[bin]]` — so no image
+can install *the shell*; nothing in this repository authenticates anybody at a
+screen, so there is no session to sign in to; and what runs before anybody is
+signed in has never been decided. `docs/decisions/0024-what-a-person-signs-in-at.md`
+is that decision, written as this task: three options, a recommendation and the
+consequences of each, including the one it costs — a second privileged
+component beside ADR 0018's loader. **The code waits on it being accepted.**
+
+What was finishable without the decision was done in the same change, because
+it is the premise the recommendation rests on: **the image ships no accounts**,
+which is the state `alo-accounts` reads as first boot, and it is now a check in
+`crates/alo-image` with the fixture that breaks it — a store committed beside
+the machine description would look exactly like the file that belongs there and
+would hand every holder of the image a login on every machine built from it.
+`alo-accounts` grew `place.rs` so the path is readable off a machine as well as
+on one. Report: `docs/autonomy/updates/what-a-person-signs-in-at.md`.
+
 ### 11. Reconcile every v0.01 promise against executable evidence
 
-**Status:** ready. **Depends on:** 10.
+**Status:** ready. **Depends on:** nothing.
+
+**It depended on 10 and no longer does, 2026-09-10.** That was an ordering
+rather than a need: an audit of `docs/features.md` against the evidence in this
+repository reads code and reports, not a booted image, and a promise the image
+does not keep yet is exactly the kind of finding this task exists to write
+down. Left depending on a blocked task it would have made the plan read as
+*nothing left to do*, which the loop reports as the workstream being finished.
 
 Phase 8's first half, and the only half that can be done without hardware.
 `docs/features.md` is the definition; the roadmap's audit found six promises with
@@ -314,3 +341,26 @@ knows not to start.
 
 - **Acceptance:** `ROADMAP.md`'s v0.01 exit gate passes on a certified machine,
   and `docs/hardware.md`'s table names it, with a date and a person.
+
+### 13. A sign-in surface, and what starts it
+
+**Status:** blocked — on `docs/decisions/0024-what-a-person-signs-in-at.md`
+being accepted. A worker that started this before the answer would be choosing
+between the options rather than building one. **Depends on:** 2.
+**Owner:** the desktop worker — it is a binary in `crates/alo-shell`, which is
+that lane's, and it is written here so the lane finds it rather than so this
+one takes it.
+
+Written by task 10, which found it missing. The first screen a person ever sees
+and the only one that runs before anybody is signed in: the compositor started
+at boot, `alo-accounts` asked whether the password is right, and the person's
+own session opened when it is — the session `alo-agentd.service` is already
+bound to and that nothing on the image can currently cause.
+
+- **Acceptance:** a machine with no store shows *make an account* rather than a
+  sign-in; a correct password opens the session the machine description names,
+  and `alo-agentd` comes up inside it; a wrong one is refused in the words
+  `alo-accounts` already has, with no way to tell an unknown name from a wrong
+  password; whatever holds a privilege to open the session holds nothing else,
+  and says so in a `crates/alo-image` check beside the loader's; and every
+  string is in the vocabulary `alo-saying` collects.

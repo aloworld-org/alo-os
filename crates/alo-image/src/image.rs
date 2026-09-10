@@ -14,6 +14,7 @@
 
 use std::path::Path;
 
+use crate::accounts::TheStore;
 use crate::description::Description;
 use crate::logins::Declared;
 use crate::making::Made;
@@ -36,8 +37,14 @@ const TMPFILES: &str = "usr/lib/tmpfiles.d/alo.conf";
 /// Where the logins made at boot are declared.
 const SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
 
-/// Where the machine description goes.
-const DESCRIPTION: &str = "etc/alo/agentd.toml";
+/// Where the machine description goes, beneath the image's root.
+///
+/// Derived from the path a machine really has it at rather than written out
+/// again: `crate::accounts` holds the store to the same folder, and two
+/// spellings of `/etc/alo` in one crate is the drift this one exists to catch.
+fn description() -> &'static str {
+    crate::description::THE_DESCRIPTION.trim_start_matches('/')
+}
 
 /// What one image says about the machine it becomes.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,6 +59,9 @@ pub struct Image {
     declared: Vec<Declared>,
     /// What the machine says about itself.
     description: Description,
+    /// What it says about the accounts a person signs in with, which on a
+    /// correct image is that it ships none.
+    store: TheStore,
 }
 
 impl Image {
@@ -75,7 +85,7 @@ impl Image {
         let declared = crate::logins::every_login(&text(&at)?)
             .map_err(|why| NotAnImage::NotDeclared { at, why })?;
 
-        let at = root.join(DESCRIPTION);
+        let at = root.join(description());
         let description =
             Description::read(&text(&at)?).map_err(|why| NotAnImage::NotDescribed { at, why })?;
 
@@ -85,6 +95,7 @@ impl Image {
             made,
             declared,
             description,
+            store: TheStore::of(root),
         })
     }
 
@@ -134,6 +145,12 @@ impl Image {
     #[must_use]
     pub const fn description(&self) -> &Description {
         &self.description
+    }
+
+    /// What this image says about the accounts a person signs in with.
+    #[must_use]
+    pub const fn store(&self) -> &TheStore {
+        &self.store
     }
 }
 

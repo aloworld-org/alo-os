@@ -4,7 +4,8 @@
 //! and `image/` is what that image adds to a rented base: two binaries, two
 //! systemd units, two directories made at boot, the logins the machine has, and
 //! the description `alo-agentd` reads. This crate reads those five declarations
-//! and asks whether they can all be true at once.
+//! — and the accounts file the image is answerable for **not** shipping — and
+//! asks whether they can all be true at once.
 //!
 //! | | |
 //! |---|---|
@@ -13,6 +14,7 @@
 //! | [`Wrong`] | One thing they disagree about, and which decision it is about |
 //! | [`Unit`], [`Service`] | A systemd unit as text, and the seven settings alo OS asks about |
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
+//! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //!
 //! # Nothing on a machine ever reads this
 //!
@@ -20,10 +22,12 @@
 //! can produce a verb call, it is run by whoever adds a catalogue entry, and
 //! what ships is the grade they wrote down. This is run by whoever changes the
 //! image, and what ships is the image. There is no `Image` in a booted alo OS,
-//! nothing links against this, and `alo-keeping` is the only crate it reaches —
-//! for [`alo_keeping::Keeping`], because the one thing an image may say about
-//! retention is *everything*, and asking the crate that owns that rule is one
-//! answer rather than a second spelling of it here.
+//! nothing links against this. The crates it reaches are each reached for one
+//! answer it would otherwise spell out a second time: [`alo_keeping::Keeping`],
+//! because the one thing an image may say about retention is *everything*;
+//! `alo-entering`, because what a session hands a daemon is derived from a
+//! sign-in rather than written into a checker; and `alo-accounts`, for where a
+//! sign-in looks for the accounts this machine has.
 //!
 //! # What it is for, said plainly: a build cannot catch any of this
 //!
@@ -52,6 +56,7 @@
 //! `crate::description` says at length why it reads that file at all and what it
 //! leaves to `alo-agentd`.
 
+mod accounts;
 mod checking;
 mod description;
 mod image;
@@ -64,6 +69,7 @@ mod testing;
 mod unit;
 mod wrong;
 
+pub use accounts::{TheStore, where_a_sign_in_looks};
 pub use checking::{THE_DOOR, everything_wrong_with};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
 pub use image::{Image, THE_AGENT, THE_LOADER};

@@ -33,12 +33,6 @@ use std::path::{Path, PathBuf};
 use crate::refusing::NotKept;
 use crate::store::Accounts;
 
-/// Where the machine's accounts are.
-///
-/// Beside the machine description, because the two files together are what
-/// the machine says about who it belongs to.
-pub const THE_ACCOUNTS: &str = "/etc/alo/accounts.toml";
-
 /// The mode bits that let the group or the world write.
 const OTHERS_MAY_WRITE: u32 = 0o022;
 

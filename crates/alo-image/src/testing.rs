@@ -33,6 +33,13 @@ pub(crate) const THE_SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
 /// What the machine says about itself, beneath the image's root.
 pub(crate) const THE_DESCRIPTION_FILE: &str = "etc/alo/agentd.toml";
 
+/// Where the accounts a person signs in with would be, beneath the image's
+/// root — a file no correct image has, which is why it is only ever written by
+/// a fixture.
+pub(crate) fn the_store_file() -> &'static str {
+    alo_accounts::THE_ACCOUNTS.trim_start_matches('/')
+}
+
 /// The image at this root, read.
 pub(crate) fn image_at(root: &Path) -> Image {
     Image::at(root).unwrap()

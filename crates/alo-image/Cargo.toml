@@ -25,5 +25,12 @@ alo-keeping = { path = "../alo-keeping" }
 # checker — which is exactly the drift this crate exists to catch elsewhere.
 alo-entering = { path = "../alo-entering" }
 
+# Where a sign-in looks for the accounts this machine has. The one thing an
+# image is answerable for about that file is that it does **not** ship one, and
+# asking the crate that owns the path is one answer rather than a second
+# spelling of `/etc/alo/accounts.toml` in a checker — which is the drift this
+# crate exists to catch everywhere else.
+alo-accounts = { path = "../alo-accounts" }
+
 [lints]
 workspace = true

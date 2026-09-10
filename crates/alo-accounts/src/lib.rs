@@ -41,6 +41,7 @@
 //! | `hashing` | Argon2id, and the decoy that keeps an unknown name honest |
 //! | `store` | The accounts, creation, and the sign-in they answer |
 //! | `written` | The store as TOML, read back believed or refused |
+//! | `place` | Where the store is, which every host can read |
 //! | `keeping` | The file on the disk, and who may have written it |
 //! | `session` | Who signed in, and the uid agreement with the description |
 //! | `refusing` | Every refusal, and who each is written for |
@@ -50,6 +51,7 @@ mod account;
 mod hashing;
 #[cfg(unix)]
 mod keeping;
+mod place;
 mod refusing;
 mod session;
 mod store;
@@ -58,7 +60,8 @@ mod written;
 
 pub use account::Account;
 #[cfg(unix)]
-pub use keeping::{THE_ACCOUNTS, found, kept};
+pub use keeping::{found, kept};
+pub use place::THE_ACCOUNTS;
 pub use refusing::{CannotHash, NotCreated, NotKept, NotSignedIn};
 pub use session::{Session, SignedIn};
 pub use store::Accounts;

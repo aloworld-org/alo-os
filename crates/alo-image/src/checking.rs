@@ -69,7 +69,29 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     nobody_chose_a_retention(image, &mut wrong);
     both_units_are_pulled_in(image, &mut wrong);
     the_agent_runs_inside_the_persons_session(image, &mut wrong);
+    nobody_signs_in_with_an_account_the_image_shipped(image, &mut wrong);
     wrong
+}
+
+/// **The image ships no accounts**, which is the state `alo-accounts` reads as
+/// first boot.
+///
+/// The only thing an image is answerable for about the store a sign-in reads.
+/// A password is typed on a machine by the person who owns it, so a store that
+/// arrived in the image is a login every holder of that image can use — the
+/// oldest mistake in shipped systems, and one a build cannot see, because a
+/// file that is in the tree is a file that gets copied.
+///
+/// It is the one check here that passes by something being absent, and that is
+/// why it is a check rather than a habit: nothing else would ever notice a
+/// store committed beside the machine description, in the same folder, looking
+/// exactly like the file that belongs there.
+fn nobody_signs_in_with_an_account_the_image_shipped(image: &Image, wrong: &mut Vec<Wrong>) {
+    if image.store().is_shipped() {
+        wrong.push(Wrong::AnAccountShippedWithTheImage {
+            at: image.store().at().to_owned(),
+        });
+    }
 }
 
 /// The daemon's environment is the session's: started by signing in, stopped by
@@ -367,7 +389,7 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_DESCRIPTION_FILE, THE_LOADERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
-        a_copy_of_the_image, edited, image_at,
+        a_copy_of_the_image, edited, image_at, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -921,6 +943,33 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::TheAgentsEnvironmentIsNotTheSessions { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An image carrying the accounts a person signs in with is caught.**
+    /// The store goes in `/etc/alo` beside the machine description, so a store
+    /// committed into `image/` would look exactly like the file that belongs
+    /// there, would be copied by the same `COPY` line, and would hand every
+    /// holder of the image a login on every machine built from it.
+    #[test]
+    fn an_image_that_ships_an_account_is_caught() {
+        let root = a_copy_of_the_image("an-account");
+        let written = std::fs::write(
+            root.join(the_store_file()),
+            "format = 1\n\n[[account]]\nname = \"alo\"\n",
+        );
+        assert!(
+            written.is_ok(),
+            "the folder the description ships in is there: {written:?}"
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::AnAccountShippedWithTheImage { .. })),
             "{wrong:?}"
         );
     }

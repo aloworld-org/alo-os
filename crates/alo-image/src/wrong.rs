@@ -271,6 +271,17 @@ pub enum Wrong {
         /// What the person's session is.
         theirs: String,
     },
+    /// The image ships the accounts a person signs in with.
+    #[error(
+        "this image ships {at} — the accounts a person signs in with are the machine's, made on \
+         the machine, and an image that carried one would carry a login whose password is known \
+         to everybody who has the image; `alo-accounts` reads no store as first boot, which is \
+         the state an image ships in"
+    )]
+    AnAccountShippedWithTheImage {
+        /// Where it ships.
+        at: PathBuf,
+    },
     /// A unit nothing pulls in at boot.
     #[error("nothing pulls {unit} in at boot — it has no [Install] section that wants it")]
     NothingPullsItIn {
