@@ -216,6 +216,18 @@ which is a claim about a surface nobody can see yet.
   question is in flight; and it cannot be drawn from a value that was not a
   departure.
 
+**Done, 2026-09-10.** `crates/alo-indicator`: `Lamp` and `Drawn` are made from
+`&alo_egress::Indicator` and there is no other constructor — no count, no
+`From`, no deserialiser, and compile-fail examples that turn adding one into a
+failing build. `Indicating` keeps a compositor in step with the machine (one
+change, one redraw), and having nowhere to show it refuses in words rather than
+in silence, because a machine that cannot show what is leaving and says nothing
+looks exactly like a machine on which nothing is leaving. Four strings under a
+new `indicator` area, collected by `alo-saying`. Report:
+`docs/autonomy/updates/the-egress-indicator-on-a-screen.md`. The next task (10)
+was already written. No pixels are claimed and none are tested; drawing it is
+the compositor's, and *On the machine* does not move.
+
 ### 10. The image carries the shell, the session and the daemon
 
 **Status:** ready. **Depends on:** 5, 9.

@@ -28,6 +28,7 @@ alo-context = { path = "../alo-context" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }
 alo-files = { path = "../alo-files" }
+alo-indicator = { path = "../alo-indicator" }
 alo-keeping = { path = "../alo-keeping" }
 alo-models = { path = "../alo-models" }
 alo-overlay = { path = "../alo-overlay" }

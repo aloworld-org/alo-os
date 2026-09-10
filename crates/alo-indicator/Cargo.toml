@@ -1,0 +1,39 @@
+[package]
+name = "alo-indicator"
+version = "0.0.1"
+description = "The egress indicator, on a screen: dark while nothing is leaving and lit while something is, drawn from the machine's own indicator and from nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+# The one thing this crate is allowed to read. `alo-egress` decides what may
+# leave and puts it on a list *before* it hands back the permission to open a
+# connection, so a line on that list is something that really left. Everything
+# drawn here comes off it, and there is no second door — which is the plan's
+# acceptance for this task, held by the dependency list as well as by the
+# constructors.
+alo-egress = { path = "../alo-egress" }
+
+[dev-dependencies]
+# The two crates it takes to make a real departure: whose egress it is, and
+# where a question would be answered. Dev-only, because this crate never makes
+# one — it draws the ones a machine already permitted.
+alo-capability = { path = "../alo-capability" }
+alo-models = { path = "../alo-models" }
+
+# The machine's one vocabulary, which is what a shell really holds. This
+# crate's own tests are written against its own list; the integration test asks
+# the question that list cannot — whether what this crate says survives being
+# put beside everybody else's, and whether it is collected at all. A
+# dev-dependency and not a dependency, because the direction is the one every
+# crate here takes: a crate that says something is collected by `alo-saying`,
+# and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

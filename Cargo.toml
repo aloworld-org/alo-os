@@ -20,6 +20,7 @@ members = [
   "crates/alo-egress",
   "crates/alo-files",
   "crates/alo-image",
+  "crates/alo-indicator",
   "crates/alo-keyring-fixture",
   "crates/alo-keeping",
   "crates/alo-models",
