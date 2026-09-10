@@ -49,7 +49,24 @@ use crate::plan::Task;
 const THE_WORKER: &str = "ALO_KERNEL_LOOP_WORKER";
 
 /// How long one worker may take before it is stopped.
-const AT_MOST: Duration = Duration::from_secs(45 * 60);
+///
+/// **Ninety minutes, raised from forty-five after the first night.** The
+/// deadline exists so a worker that has stopped making progress cannot hold a
+/// checkout indefinitely, and forty-five served that — but it also killed a
+/// worker mid-sentence on the first task that genuinely needed longer, and a
+/// deadline that stops good work is one set for the supervisor's comfort rather
+/// than the work's.
+///
+/// The measurements it is set from: an overlay task finished in twenty-six
+/// minutes; wiring the daemon into a real session was still going at
+/// forty-five. Ninety leaves room for the second kind without letting a stuck
+/// worker sit for an afternoon.
+///
+/// It is **not** the answer to a task that is simply too big. That is the
+/// plan's job — *a task that cannot be finished inside the deadline is not a
+/// task, it is a phase* — and raising this again would be using it to avoid
+/// splitting one.
+const AT_MOST: Duration = Duration::from_secs(90 * 60);
 
 /// How often it is checked on.
 const LOOKING_EVERY: Duration = Duration::from_secs(5);
