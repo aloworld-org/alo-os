@@ -164,6 +164,16 @@ name = "alo-bounding-map"
 version = "0.0.1"
 
 [[package]]
+name = "alo-by-hand"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+ "alo-capability",
+ "alo-files",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-capability"
 version = "0.0.1"
 dependencies = [

@@ -408,3 +408,62 @@ this lane can close without a decision, a screen or a machine.
   carefully as the answer, including a verb added with nothing said about it.
 - **Constraint:** it says nothing to a person and declares no strings — it is a
   repository check like `alo-reconciling`, and `alo-saying` does not collect it.
+
+**Done, 2026-09-11.** `docs/by-hand.md` answers for all ten verbs and
+`crates/alo-by-hand` holds the document to them. The verbs come out of the
+`alo_capability::Verbs` a daemon enforces, so nothing here holds a verb's name —
+and because that alone would only see verbs in crates the check already knows,
+the workspace's own member list is walked too: **a crate that declares verbs in
+`src/verbs.rs` and was not handed in is a finding naming it**, which is the
+failure that really happened one floor down when `alo-overlay`'s nine strings
+reached nothing that collected them. An answer is a **promise in
+`docs/features.md`, quoted** — ADR 0009's rule is that no surface may be left out
+because an agent can do it instead, and the only place a surface is committed to
+is the definition — so the release that owns an answer is read off the line
+rather than asserted beside it. The second form, *owed at a release the
+definition actually ships*, is what one verb needs: nothing promises **making**
+an archive by hand, only opening one, and stretching the file-manager line to
+cover it would have been the check lying in the first change that used it.
+Eleven findings, each shown refusing against a fixture beside the real
+measurement. **What the document found and nobody had written down: six of the
+ten verbs ship at v0.01 and their plain way — file manager, search, text editor,
+terminal — arrives at v0.5**, so a v0.01 machine whose agent is unavailable can
+do none of the six by hand. That is a scope fact and the owner's to move, not
+this check's to refuse; it is written into `docs/by-hand.md` and
+`docs/autonomy/v0-01-evidence.md`, whose entry for this promise is no longer one
+of the six with no evidence at all. Rule 7 of *adding a verb* in
+`docs/contracts/agent-verbs.md` is where whoever adds the next one meets it.
+Report: `docs/autonomy/updates/every-verbs-by-hand-answer.md`. The next task (15)
+is written below. No strings are declared and `alo-saying` does not collect this
+crate.
+
+### 15. A machine that cannot reach a model says so once
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file and needs no screen.
+
+Written by task 14, from the audit's remaining findings. `docs/features.md`
+promises at v0.01: **and it never nags** — *a machine that cannot reach a model
+does not follow somebody around asking them to buy credit* — and ADR 0009 says
+what that means in full: *a machine that cannot reach a model says so once, where
+it happened, and continues.* It is one of the promises with no crate, no test and
+no line anywhere, and it is the last of them this lane can close without a
+screen, a decision or a machine.
+
+Everything it needs exists. `alo_asking::RanOut` and `alo_answering`'s failures
+are the six ways an agent becomes unavailable; `alo-turn` is where a turn ends.
+What does not exist is anything that remembers a person has already been told, so
+today every turn against an empty balance would produce the same sentence again —
+which is the greyed-out panel ADR 0009 refused, once per turn.
+
+- **Acceptance:** the same unavailability told once is told once, and telling it
+  again takes something changing — the source, the reason, or the person asking
+  again themselves; a *different* reason is a different telling and is not
+  suppressed, because a machine that swallowed the second failure would hide the
+  one that mattered; nothing is told at all until a turn actually failed, so
+  there is no reminder anybody can be followed around by; and every string is in
+  the vocabulary `alo-saying` collects.
+- **Constraint:** it never asks anybody to buy anything and it never chooses
+  another source — ADR 0008's *never a silent fallback* runs in both directions,
+  and *we spent your money elsewhere because the first place was empty* is the
+  worst available version of this. Nothing in `crates/alo-shell`.

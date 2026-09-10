@@ -1,0 +1,29 @@
+[package]
+name = "alo-by-hand"
+version = "0.0.1"
+description = "Every verb alo OS ships, held to naming how a person does the same thing without the agent."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The verbs themselves, read out of the registry the machine enforces rather
+# than out of a list written beside it. Nothing here declares a verb; this crate
+# is handed the same `Verbs` a daemon would be.
+alo-capability = { path = "../alo-capability" }
+# The findings are sentences whoever is adding a verb acts on, and each one
+# names the verb it is about. This crate says nothing to a person in their own
+# language — see `crate` documentation for why an author's English is right here
+# and `alo-strings` is not.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The two crates that declare the verbs alo OS ships. They are the measurement
+# rather than the method, so they are here and not above: this crate checks
+# whatever list it is handed, and the test is what hands it the real one.
+alo-applications = { path = "../alo-applications" }
+alo-files = { path = "../alo-files" }
+
+[lints]
+workspace = true

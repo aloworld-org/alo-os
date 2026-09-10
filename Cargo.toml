@@ -13,6 +13,7 @@ members = [
   "crates/alo-bounding",
   "crates/alo-bounding-map",
   "crates/alo-boundaryd",
+  "crates/alo-by-hand",
   "crates/alo-capability",
   "crates/alo-choosing",
   "crates/alo-context",

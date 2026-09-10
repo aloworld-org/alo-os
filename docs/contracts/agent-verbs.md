@@ -617,9 +617,32 @@ than formatting a line for somebody to match against.
    written reason in its ADR, and the reason is carried in the declaration
    rather than only in prose.
 6. It has a test for the refusal path, not only the happy one.
+7. **It names how a person does the same thing without the agent**, in
+   `docs/by-hand.md`, quoting the promise in `docs/features.md` that gives them
+   the surface — or it says what is owed and which release owns the answer.
+   ADR 0009: the agent is unavailable for six reasons and only one of them is a
+   choice, so a verb that is the only way to do something is a capability that
+   disappears when somebody's card is declined.
 
 Rules 1 to 5 are enforced where a verb is declared, in `alo-capability`: a
 declaration that breaks one of them is refused, and the registry has no way to
 hold a verb that was not checked. The one thing no check can reach is a verb's
 *implementation* passing an argument to an interpreter, which stays rule 1 and
 stays on whoever writes one.
+
+**Rule 7 is enforced too**, by `crates/alo-by-hand`: it is handed the same
+`alo_capability::Verbs` a daemon enforces, and a verb with no entry in
+`docs/by-hand.md` fails the gate in the change that adds it — which is the one
+moment anybody has the knowledge to answer it. A quotation the definition does
+not make, and a debt owed at a release nobody ships, are refused with it.
+
+### Where verbs are declared, which that check reads
+
+**A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
+puts them on somebody else's `Verbs`.** `alo-files` and `alo-applications` both
+do exactly that, and it is a rule rather than a habit because `alo-by-hand` walks
+this workspace's own member list for it: **a crate that declares verbs and was
+not handed to that check would make every verb in it invisible to rule 7**, and
+the check would go on passing in the same colour. An adapter outside this
+workspace keeps the same shape for the same reason — whoever assembles its list
+is who has to answer rule 7 for it.

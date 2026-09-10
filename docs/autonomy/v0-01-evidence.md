@@ -309,11 +309,19 @@ vocabulary they build.
 
 ### Anything an agent verb can do, a person can do by hand
 
-**Still owed:** this is a standing rule with nothing checking it. No test walks
-the verbs alo OS ships and asks, for each, which surface does the same thing by
-hand — and today the honest answer for most of them is *none, because there is
-no surface at all*. Whether that check is possible before the shell exists is
-itself the open question.
+**Shown by:** `crates/alo-by-hand/tests/every_verb_can_be_done_by_hand.rs`,
+`docs/autonomy/updates/every-verbs-by-hand-answer.md`
+
+**Still owed:** the check holds every verb to *naming* a plain way that the
+definition promises; it cannot hold one to a plain way that is **built**, and
+today none of them is. Six of the ten verbs ship at v0.01 and their surface —
+the file manager, the search, the text editor, the terminal — is v0.5, so a
+v0.01 machine whose agent is unavailable can do none of the six by hand;
+`docs/by-hand.md` says so in its own words and `ROADMAP.md`'s v0.5 exit gate is
+where it comes due. One verb, `archive_folder`, has no promised plain way at all
+and is recorded as owed: nothing in `docs/features.md` promises **making** an
+archive by hand, and the proposed line is in the report rather than added here,
+because the scope gate is the owner's.
 
 ### And it holds however the agent became unavailable
 
@@ -457,3 +465,17 @@ They are written down before anything else is done about them, which is this
 task's acceptance. What follows belongs to whoever owns the scope: four of them
 are work nobody has scheduled, one is a question only the owner can answer, and
 one is waiting for a machine.
+
+### One of the six closed, 2026-09-11
+
+*Anything an agent verb can do, a person can do by hand* now has a line, so the
+count above stands at **five with no evidence at all** and the standing rule is
+no longer one of them. `docs/by-hand.md` answers for each of the ten verbs alo OS
+declares and `crates/alo-by-hand` holds the document to them: a verb added with
+nothing said about it fails the gate in the change that adds it. The entry above
+carries what the check cannot reach, and it found one thing worth reading twice —
+**six of the ten verbs ship at v0.01 and their plain way arrives at v0.5.** Task
+14 of `docs/autonomy/v0-01-delivery-plan.md` and
+`docs/autonomy/updates/every-verbs-by-hand-answer.md` are the work; the paragraphs
+above are left as the audit wrote them, because a finding rewritten by whoever
+closed it is a finding nobody can check.
