@@ -296,6 +296,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-picking"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-saying",
+ "alo-strings",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-protocol"
 version = "0.0.1"
 dependencies = [
@@ -341,6 +352,7 @@ dependencies = [
  "alo-keeping",
  "alo-models",
  "alo-overlay",
+ "alo-picking",
  "alo-protocol",
  "alo-shortcuts",
  "alo-strings",

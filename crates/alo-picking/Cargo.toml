@@ -1,0 +1,37 @@
+[package]
+name = "alo-picking"
+version = "0.0.1"
+description = "Native folder selection: the one act on this machine that makes a grant — a person standing in a folder, picking it, and nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The grants themselves. This crate makes one and adds it to the list the
+# daemon asks; it never decides what a grant means, what it covers or when it
+# ends — `alo-capability` does all three, and a second opinion about any of
+# them would be a widening nobody asked for.
+alo-capability = { path = "../alo-capability" }
+
+# Everything a person reads here — what picking will do, and every way it can
+# be refused.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, and only for the error its own string list
+# can return to whoever is fixing that list.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the acceptance test asks the question that list cannot — whether
+# what this crate says survives being put beside everybody else's, and whether
+# it is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+# For showing that a pick that was cancelled left the grants byte for byte
+# where they were.
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

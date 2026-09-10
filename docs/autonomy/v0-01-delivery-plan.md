@@ -172,6 +172,15 @@ verb is refused, correctly, because nothing has been granted and nothing can be.
   daemon honours; picking nothing grants nothing; and the grant's scope is the
   folder picked rather than its parent.
 
+**Done, 2026-09-10.** `crates/alo-picking`: `Picker` walks a real disk through
+one port and can only ever stand somewhere it was shown, `Picked` is sealed so
+nothing but a person's pick can become a grant, and `Granting` hands
+`alo_capability::Grants` a grant the daemon's own `permits` honours — over the
+folder picked and not its parent, with the top of the disk refused in words
+(ADR 0001 §3). Eleven strings under the `picking` area, collected by
+`alo-saying`. Report: `docs/autonomy/updates/native-folder-selection.md`. The
+next task (7) was already written.
+
 ### 7. One approval, and the sentence a person approves
 
 **Status:** ready. **Depends on:** 3, 6.

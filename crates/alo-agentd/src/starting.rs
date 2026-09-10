@@ -69,6 +69,14 @@
 //! empty one — where a machine's grants are kept is a question for whoever
 //! writes the first one, and it is a queue item of its own.
 //!
+//! **A person can now make one**, which is `alo-picking`: a folder chooser
+//! whose one product is an `alo_capability::Grant`, added to the same `Grants`
+//! this file starts empty. What is still true is the sentence above it —
+//! nothing on **this socket** grants anything, and nothing yet carries a grant
+//! made in the shell into this process. Where the list lives between one
+//! sign-in and the next is exactly the question that crate refuses to answer
+//! on its own, and it is still owed.
+//!
 //! What that means while it is true is worth being plain about: every verb an
 //! agent asks for is refused, in the grants' own words, and every refusal is
 //! written down. That is the capability model running rather than the capability
