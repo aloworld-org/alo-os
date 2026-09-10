@@ -1,13 +1,12 @@
 # ADR 0021 — What a service on this machine vouches for
 
-**Status:** **PROPOSED — not accepted, and nothing in it is built.** It asks the
-repository owner one question and recommends an answer. No enforcement, promise
-or default changes until it is accepted.
-**Date:** 2026-09-08. Revised twice the same day: once for a third option, and
-once to align with the owner's model-choice clarification
-(`docs/autonomy/updates/owner-model-choice-direction.md`, `9707ad5`). **Nothing
-is approved.** The owner's support for model freedom is not approval of any
-enforcement policy here.
+**Status:** **ACCEPTED, 2026-09-10** — C1, Option B, and D1 with the setting's
+own wording corrected. See *The decision, taken* at the end.
+**Date:** 2026-09-08, accepted 2026-09-10. Revised twice on the 8th: once for a
+third option, and once to align with the owner's model-choice clarification
+(`docs/autonomy/updates/owner-model-choice-direction.md`, `9707ad5`). Everything
+below is left exactly as it was argued while unaccepted, so the reasoning can be
+checked against the outcome rather than rewritten to match it.
 **Proposed by:** the kernel-enforcement workstream
 **Context:** [ADR 0007](0007-the-cpu-is-the-default.md) (the CPU is the default),
 [ADR 0013](0013-the-grant-is-enforced-by-the-kernel.md),
@@ -535,3 +534,55 @@ nothing in this ADR brings a later-release feature forward.
 A third answer — *Option B without the wording change* — is available and this
 ADR argues against it, because that is the version where the promise stays as
 written and stops being true.
+
+## The decision, taken
+
+**2026-09-10. C1, Option B, and D1 with the setting's own wording corrected.**
+
+**How this was decided, stated plainly.** The owner gave a standing delegation on
+2026-09-10 — *"make decisions where needed"* — against the goal of an AI-native
+operating system that is the best in the world. They did not review these options
+one by one, and this ADR does not pretend otherwise. It is recorded here so that
+whoever reads it later knows exactly whose judgement it was and can overturn it
+with one line.
+
+**Why this and not Option A.** Filtering what the person's own processes send
+turns a machine they own into a managed device, cannot attribute a refusal to the
+turn that caused it, and drags in ADR 0015's unmade records question. A
+sovereignty product that polices its owner's processes has misunderstood which
+side it is on.
+
+**Why the wording change is the part that matters.** Everything else here is a
+gap that stays open either way. What changes is that alo OS stops **saying**
+something it cannot know. `Served::source()` answers *where was this processed*
+with a fact about *what address was contacted*, and those differ exactly when it
+matters — a proxy on loopback.
+
+For a product whose whole claim is sovereignty, **a label that is not true is
+worse than no label at all**. It is worse than the hole it papers over: the hole
+is a limitation shared with every operating system in existence, and the false
+label is a betrayal that would be found once and believed never again. Nobody
+buys this product for the feature list. They buy it because when it says a thing,
+the thing is so.
+
+That is the whole reason this is worth doing before anything more impressive.
+
+**What is built now:** C1 — a truthful, externalised sentence for a service the
+person configured at a loopback address, separate from the one the runtime alo OS
+ships earns. The distinction already exists in the types (`Answers::Runtime`
+against `Answers::Service`); only the words collapsed it.
+
+**What is permitted:** D1. A configured local service is permitted under *this
+machine only*, exactly as today — refusing it would break every honest vLLM user
+to inconvenience nobody, since no configuration is verifiable yet. **And the
+setting's own wording is corrected in the same change**, because D1 with the
+words left as written is the outcome this ADR argues against in every version.
+
+**What is not built, and is not promised:** an enforceable local-only guarantee.
+It is qualified by **supervision, not ownership**, it needs a mechanism that does
+not exist, and until it does, no configuration qualifies — alo OS's own included.
+D4's second setting is not offered, because offering an empty guarantee is the
+thing this ADR was written to prevent.
+
+**What would overturn this:** supervision existing. Then D4 becomes real and this
+ADR gets a successor, not an edit.

@@ -171,7 +171,10 @@ impl<'a> Asking<'a> {
             // show. Since item 18a there is a door that does answer it, and the
             // refusal names that one — never a provider, because the person
             // chose this machine.
-            InferenceSource::ThisMachine => {
+            // Either kind of local: this door cannot tell which of the two the
+            // person meant, only that they did not mean a provider, and the
+            // refusal names both doors for that reason.
+            InferenceSource::ThisMachine | InferenceSource::AServiceAtThisMachinesAddress => {
                 return Err(Miswired::NotAProvider.into());
             }
             // And nothing anywhere reaches a machine on this network yet.

@@ -212,6 +212,22 @@ pub enum Miswired {
          model wearing the same face"
     )]
     NotOnThisMachine,
+    /// The permission names a service the person runs, and the runtime alo OS
+    /// ships was asked instead.
+    ///
+    /// Newly possible since ADR 0021 gave the two kinds of local answer separate
+    /// sources. They are bounded identically, so this refuses nothing a person
+    /// would notice — what it prevents is an answer computed by the runtime
+    /// carrying the sentence belonging to a service, or the reverse. The whole
+    /// value of telling the two apart is that the provenance line is true, and
+    /// it stops being true the moment either door can answer for the other.
+    #[error(
+        "this question was permitted to be answered by a service at this machine's address, and \
+         the runtime alo OS ships was asked instead — put it to the service with \
+         `to_a_service_on_this_machine`, so that what a person reads about where their answer \
+         came from is about the thing that answered it"
+    )]
+    NotTheRuntime,
     /// The address given for a service on this machine is not on this machine.
     ///
     /// **The one refusal here that is not about a permission at all**, and the

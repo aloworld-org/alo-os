@@ -79,7 +79,13 @@ impl Offer {
     #[must_use]
     pub fn word(&self) -> words::Word {
         match self.source {
-            InferenceSource::ThisMachine => words::ASK_HERE_INSTEAD,
+            // *Ask here instead* is right for both kinds of local: an offer is
+            // about where a question would go next, and neither of these leaves
+            // the machine. ADR 0021's distinction is about what an answer's
+            // provenance may claim, and this is not that sentence.
+            InferenceSource::ThisMachine | InferenceSource::AServiceAtThisMachinesAddress => {
+                words::ASK_HERE_INSTEAD
+            }
             InferenceSource::PairedMachine { .. } => words::ASK_IN_THE_BUILDING_INSTEAD,
             InferenceSource::Hosted { .. } => words::ASK_OUTSIDE_INSTEAD,
         }

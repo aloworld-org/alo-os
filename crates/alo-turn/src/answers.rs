@@ -106,9 +106,16 @@ mod tests {
     use alo_asking::Question;
     use alo_models::Secret;
 
-    /// **The two on this machine say they are this machine**, and the one that
-    /// is somewhere else names the provider and the region it declared — which
-    /// is what a permission is made out of and what the indicator shows.
+    /// **The three doors report three different places**, and the one that is
+    /// somewhere else names the provider and the region it declared — which is
+    /// what a permission is made out of and what the indicator shows.
+    ///
+    /// The two local doors used to report the same place. ADR 0021 separated
+    /// them: the runtime alo OS ships and manages is *on this machine*, and a
+    /// service somebody else runs at a loopback address is *at this machine's
+    /// address* — the difference between where an answer was computed and where
+    /// it was collected from. `Answers` always knew which door it was; only the
+    /// source it reported collapsed the two.
     #[test]
     fn where_an_answer_would_come_from_is_read_off_the_place_that_would_answer() {
         let runtime = Stub::answering("no");
@@ -127,7 +134,7 @@ mod tests {
         let service = a_service("http://127.0.0.1:8000");
         assert_eq!(
             Answers::Service(Served::at(&service, None).unwrap()).source(),
-            InferenceSource::ThisMachine
+            InferenceSource::AServiceAtThisMachinesAddress
         );
     }
 

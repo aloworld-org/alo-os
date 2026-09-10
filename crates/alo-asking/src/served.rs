@@ -126,8 +126,17 @@ impl<'a> Served<'a> {
         Ok(Self { provider, key })
     }
 
-    /// Where an answer from this service says it came from, which is always
-    /// this machine.
+    /// Where an answer from this service says it came from: **this machine's
+    /// address**, which is not the same claim as *this machine*.
+    ///
+    /// ADR 0021, accepted. [`Served::at`] has already refused an address that is
+    /// not this machine's, so nothing leaves and no policy permitting the local
+    /// runtime refuses this. What it stops short of claiming is where the
+    /// question was *processed*: alo OS did not start this service, cannot see
+    /// what it does with a question, and a relay on loopback is
+    /// indistinguishable from vLLM at this level. The variant carries that limit
+    /// into the sentence a person reads, instead of leaving the operating system
+    /// to assert something it has no way to know.
     ///
     /// A method rather than a constant so that a caller building the
     /// `alo_answering::Answering` for this door reads it off the thing it is
@@ -135,7 +144,7 @@ impl<'a> Served<'a> {
     /// provider.
     #[must_use]
     pub fn source(&self) -> InferenceSource {
-        InferenceSource::ThisMachine
+        InferenceSource::AServiceAtThisMachinesAddress
     }
 
     /// Put the question, and read what comes back.
@@ -215,7 +224,11 @@ impl Asking<'_> {
     ) -> Result<Answer, NotAnswered> {
         let source = self.answering.source().clone();
         match &source {
-            InferenceSource::ThisMachine => {}
+            // Both kinds of local reach this door. The runtime alo OS ships
+            // arrives here when a person has pointed this door at it; a service
+            // they run themselves is the ordinary case. They are bounded
+            // identically and only the sentence differs (ADR 0021).
+            InferenceSource::ThisMachine | InferenceSource::AServiceAtThisMachinesAddress => {}
             // The person chose a provider. Answering them from something on
             // this machine would give them a different answer wearing the same
             // face, which is the half of ADR 0008 that runs the other way.
@@ -356,6 +369,13 @@ mod tests {
     /// And the addresses that really are this machine are, however they are
     /// written — so the refusal above is a refusal rather than a door nobody
     /// can open.
+    ///
+    /// **What each one opens onto is `AServiceAtThisMachinesAddress`, not
+    /// `ThisMachine`** (ADR 0021). Every address here is genuinely this
+    /// machine's — that is what `Served::at` checked — and that is precisely the
+    /// point: *contacted at this machine's address* is all a loopback address
+    /// can establish, and this door does not know what the process behind it
+    /// does with a question. The sentence a person reads says so.
     #[test]
     fn the_addresses_that_really_are_this_machine_open_the_door() {
         for endpoint in [
@@ -367,8 +387,66 @@ mod tests {
         ] {
             let provider = service(endpoint);
             let served = Served::at(&provider, None).unwrap();
-            assert_eq!(served.source(), InferenceSource::ThisMachine, "{endpoint}");
+            assert_eq!(
+                served.source(),
+                InferenceSource::AServiceAtThisMachinesAddress,
+                "{endpoint}"
+            );
+            // And it is still local in every way that bounds anything: nothing
+            // leaves, so no policy that permits the runtime refuses this.
+            assert!(!served.source().causes_egress(), "{endpoint}");
+            assert!(
+                SourcePolicy::ThisMachineOnly.permits(&served.source()),
+                "{endpoint}"
+            );
         }
+    }
+
+    /// **The two kinds of local say different things about themselves**, which
+    /// is the whole of ADR 0021's C1 — and they are bounded identically, which
+    /// is the whole of its D1.
+    ///
+    /// Asserted together, because either without the other is a different
+    /// decision: the same sentence for both is the untrue label the ADR exists
+    /// to remove, and a different *bound* would be the regression it argues
+    /// against.
+    #[test]
+    fn a_service_says_what_alo_can_vouch_for_and_is_bounded_like_the_runtime() {
+        let strings = in_english();
+        let runtime = InferenceSource::ThisMachine;
+        let service = InferenceSource::AServiceAtThisMachinesAddress;
+
+        assert_ne!(
+            runtime.said(&strings).text(),
+            service.said(&strings).text(),
+            "both kinds of local claim the same thing, so one of them is claiming more than alo \
+             OS can know"
+        );
+        assert_eq!(runtime.said(&strings).text(), "on this machine");
+        assert!(
+            service.said(&strings).text().contains("cannot verify"),
+            "the service's sentence does not say what alo OS cannot vouch for: {}",
+            service.said(&strings).text()
+        );
+
+        for policy in [
+            SourcePolicy::Anywhere,
+            SourcePolicy::InTheBuilding,
+            SourcePolicy::ThisMachineOnly,
+            SourcePolicy::InRegion("the EU".to_owned()),
+        ] {
+            assert_eq!(
+                policy.permits(&runtime),
+                policy.permits(&service),
+                "the two kinds of local are bounded differently under {policy:?}, which is a \
+                 stricter rule than ADR 0021 took"
+            );
+        }
+        assert_eq!(runtime.causes_egress(), service.causes_egress());
+        assert_eq!(
+            runtime.stays_in_the_building(),
+            service.stays_in_the_building()
+        );
     }
 
     /// **Zero inference egress, as far as a type can carry it.** An indicator

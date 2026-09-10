@@ -192,18 +192,22 @@ fn a_service_that_forwards_to(far: SocketAddr) -> (String, thread::JoinHandle<()
     (format!("http://{at}"), handle)
 }
 
-/// **A day answered by a service that forwards reads exactly like a day that
-/// never left.**
+/// **A day answered by a service that forwards no longer claims the answer
+/// stayed here — and everything else about it still looks local.**
 ///
-/// Every assertion here is copied from
-/// `a_day_that_never_left.rs::a_day_of_questions_answered_by_a_local_service_puts_no_egress_in_the_record`
-/// on purpose, and every one of them still passes — while the far service holds
-/// the person's question in its hands.
+/// This used to assert that every line a person reads was identical to the
+/// honest case, while the far service held their question in its hands. That
+/// was the gap, stated as a passing test. ADR 0021 was accepted on 2026-09-10
+/// and one of those lines changed: an answer's provenance now says alo OS
+/// **cannot verify** where the question was processed, because a loopback
+/// address establishes what was *contacted* and never what did the work.
 ///
-/// **This documents a gap.** The day it fails is the day somebody makes alo OS
-/// say something truthful here, and they should come to this file and say what.
+/// **The gap itself is not closed, and this still documents it.** The indicator
+/// is quiet and the record shows no egress — both truthful as far as anything
+/// alo OS can observe, since no socket left this machine. What changed is that
+/// the operating system stopped asserting the one thing it had no way to know.
 #[test]
-fn a_service_that_forwards_is_answered_as_though_it_never_left() {
+fn a_service_that_forwards_no_longer_claims_the_answer_stayed_here() {
     let (far, answering_far_away) = the_far_service();
     let (url, relaying) = a_service_that_forwards_to(far);
 
@@ -223,10 +227,24 @@ fn a_service_that_forwards_is_answered_as_though_it_never_left() {
         .expect("the service answered");
     record.keep(Entry::answered_here(&mail, noon()));
 
-    // What the person is told, and each line of it is what the honest case is
-    // told too.
-    assert_eq!(answer.source(), &InferenceSource::ThisMachine);
-    assert_eq!(answer.came_from(&strings()).text(), "on this machine");
+    // What the person is told. The provenance line is the one that is no longer
+    // the honest case's, and it is the only thing alo OS could truthfully
+    // change: it says what was contacted and admits what it cannot see.
+    assert_eq!(
+        answer.source(),
+        &InferenceSource::AServiceAtThisMachinesAddress
+    );
+    let told = answer.came_from(&strings()).text().to_owned();
+    assert!(
+        told.contains("cannot verify"),
+        "the answer still claims to know where it was processed: {told}"
+    );
+    assert_ne!(
+        told, "on this machine",
+        "a forwarding service is described exactly as the runtime alo OS ships would be"
+    );
+    // And the rest still reads local, truthfully: no socket left this machine,
+    // so there is nothing for either of these to have shown.
     assert!(indicator.is_quiet(), "the indicator showed something");
     assert_eq!(
         record
@@ -257,8 +275,15 @@ fn a_service_that_forwards_is_answered_as_though_it_never_left() {
 ///
 /// `a_day_that_never_left.rs::no_rule_can_stop_this_machine_answering_its_own_question`
 /// asserts the rule's behaviour for an honest service. This asserts it for one
-/// alo OS cannot verify, which is the case ADR 0021 asks the owner about and the
-/// one nobody has decided. **Documenting, not endorsing.**
+/// alo OS cannot verify.
+///
+/// **ADR 0021 took D1 on 2026-09-10 and this is it**: permitted, and labelled
+/// truthfully. Refusing instead would have broken every honest vLLM user to
+/// inconvenience nobody, since no configuration is verifiable today — the
+/// guarantee that would make refusal meaningful is qualified by supervision,
+/// and supervision does not exist yet. When it does, this is where D4's
+/// stricter setting parts company from this one, and whoever adds it should
+/// come here.
 #[test]
 fn this_machine_only_still_permits_a_service_that_cannot_be_verified() {
     let (far, answering_far_away) = the_far_service();
@@ -269,15 +294,30 @@ fn this_machine_only_still_permits_a_service_that_cannot_be_verified() {
         .expect("a service somebody runs here");
     let served = Served::at(&service, None).expect("its address is on this machine");
 
-    // The rule is asked, and permits it, because the source is `ThisMachine`
-    // and the source is decided by the address.
+    // The rule is asked and permits it: the source is local, and the source is
+    // decided by the address.
     let permitted = Answering::chosen(served.source(), &policy)
         .expect("`this machine only` permits a service whose address is this machine");
 
     let answer = Asking::by(&Grantee::named("@mail"), permitted, &[], &policy)
         .to_a_service_on_this_machine(&question(), &served, &resolved(&served))
         .expect("the service answered");
-    assert_eq!(answer.source(), &InferenceSource::ThisMachine);
+    // Permitted under the strictest rule there is — and told, in the same
+    // breath, that alo OS cannot vouch for where the work happened. The
+    // permission and the admission are the two halves of D1, and either
+    // without the other is a decision this repository did not take.
+    assert_eq!(
+        answer.source(),
+        &InferenceSource::AServiceAtThisMachinesAddress
+    );
+    assert!(
+        answer
+            .came_from(&strings())
+            .text()
+            .contains("cannot verify"),
+        "the strictest rule permitted it and said nothing about what it could not check: {}",
+        answer.came_from(&strings()).text()
+    );
 
     relaying.join().expect("the relay finished");
     assert!(

@@ -161,15 +161,24 @@ impl Destination {
     /// Where a question goes, when it is answered somewhere other than here.
     ///
     /// # Errors
-    /// [`DestinationError::NothingLeaves`] for
-    /// [`InferenceSource::ThisMachine`], because an answer given here never
-    /// departs and so has nothing to show. That is a refusal rather than a
-    /// silent empty destination: a caller building an egress for a local answer
-    /// has made a mistake, and the indicator would otherwise carry a line about
-    /// a departure that did not happen.
+    /// [`DestinationError::NothingLeaves`] for either kind of local answer,
+    /// because an answer given here never departs and so has nothing to show.
+    /// That is a refusal rather than a silent empty destination: a caller
+    /// building an egress for a local answer has made a mistake, and the
+    /// indicator would otherwise carry a line about a departure that did not
+    /// happen.
+    ///
+    /// **A service the person runs is local here too** (ADR 0021). Nothing
+    /// alo OS can observe leaves the machine, so there is no destination to
+    /// draw and the indicator stays quiet. What that ADR changes is the
+    /// sentence describing an answer, never whether something departed —
+    /// drawing a departure here would be this crate inventing an egress it
+    /// cannot name.
     pub fn of(source: &InferenceSource) -> Result<Self, DestinationError> {
         match source {
-            InferenceSource::ThisMachine => Err(DestinationError::NothingLeaves),
+            InferenceSource::ThisMachine | InferenceSource::AServiceAtThisMachinesAddress => {
+                Err(DestinationError::NothingLeaves)
+            }
             InferenceSource::PairedMachine { machine } => Self::paired(machine),
             InferenceSource::Hosted { provider, region } => {
                 Self::provider(provider, region.clone())

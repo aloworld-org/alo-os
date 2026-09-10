@@ -65,8 +65,30 @@ impl Region {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum InferenceSource {
-    /// The weights are on this machine. Nothing leaves.
+    /// The weights are on this machine, in the runtime alo OS ships and
+    /// manages. Nothing leaves, and alo OS is in a position to know it.
     ThisMachine,
+
+    /// A service the person runs themselves, reached at this machine's own
+    /// address — vLLM, llama.cpp's server, LM Studio, or a relay.
+    ///
+    /// **Bounded exactly like [`Self::ThisMachine`], described differently**
+    /// (ADR 0021). Nothing leaves as far as anything alo OS can see: no socket
+    /// leaves the machine, the indicator stays quiet, and every policy treats it
+    /// as local — which is right, because refusing it would break every honest
+    /// vLLM user to inconvenience nobody.
+    ///
+    /// What differs is the **sentence**. A loopback address establishes where a
+    /// service was *contacted*, never where it did the work; the process on the
+    /// other end can forward a question anywhere and alo OS would see no
+    /// difference. Collapsing this into `ThisMachine` made the operating system
+    /// answer *where was this processed* with a fact about *what was contacted*
+    /// — a category error that reads as a promise.
+    ///
+    /// A variant rather than a flag, because that is what makes the two
+    /// impossible to confuse at a call site: every `match` on a source has to
+    /// say which it means.
+    AServiceAtThisMachinesAddress,
     /// A machine on this network, paired deliberately (ADR 0003). The question
     /// leaves this machine and stays in the building.
     PairedMachine {
@@ -91,14 +113,20 @@ impl InferenceSource {
     /// than by staying silent.
     #[must_use]
     pub fn causes_egress(&self) -> bool {
-        !matches!(self, Self::ThisMachine)
+        !matches!(
+            self,
+            Self::ThisMachine | Self::AServiceAtThisMachinesAddress
+        )
     }
 
     /// Whether this source keeps the question inside the organisation's own
     /// building or network.
     #[must_use]
     pub fn stays_in_the_building(&self) -> bool {
-        matches!(self, Self::ThisMachine | Self::PairedMachine { .. })
+        matches!(
+            self,
+            Self::ThisMachine | Self::AServiceAtThisMachinesAddress | Self::PairedMachine { .. }
+        )
     }
 
     /// Whether this satisfies a policy naming a region.
@@ -110,7 +138,9 @@ impl InferenceSource {
     #[must_use]
     pub fn is_in(&self, region: &str) -> bool {
         match self {
-            Self::ThisMachine | Self::PairedMachine { .. } => true,
+            Self::ThisMachine
+            | Self::AServiceAtThisMachinesAddress
+            | Self::PairedMachine { .. } => true,
             Self::Hosted {
                 region: declared, ..
             } => declared.is(region),
@@ -122,6 +152,9 @@ impl InferenceSource {
     pub fn word(&self) -> words::Word {
         match self {
             Self::ThisMachine => words::ON_THIS_MACHINE,
+            // The one place the two kinds of local part company, and the whole
+            // of ADR 0021's C1.
+            Self::AServiceAtThisMachinesAddress => words::AT_THIS_MACHINES_ADDRESS,
             Self::PairedMachine { .. } => words::ON_A_PAIRED_MACHINE,
             Self::Hosted {
                 region: Region::Declared(_),
@@ -166,7 +199,7 @@ impl InferenceSource {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::ThisMachine => Filling::nothing(),
+            Self::ThisMachine | Self::AServiceAtThisMachinesAddress => Filling::nothing(),
             Self::PairedMachine { machine } => Filling::of("machine", machine.clone()),
             Self::Hosted { provider, region } => {
                 let named = Filling::of("provider", provider.clone());
@@ -210,7 +243,16 @@ impl SourcePolicy {
             Self::Anywhere => true,
             Self::InTheBuilding => source.stays_in_the_building(),
             Self::InRegion(region) => source.is_in(region),
-            Self::ThisMachineOnly => matches!(source, InferenceSource::ThisMachine),
+            // **A service the person runs is permitted here** — ADR 0021's D1.
+            // No configuration is verifiable today, so refusing it would break
+            // every honest vLLM user to inconvenience nobody; what changes
+            // instead is that the answer says truthfully what alo OS can vouch
+            // for. When supervision exists this is where D4's stricter setting
+            // would part company from this one.
+            Self::ThisMachineOnly => matches!(
+                source,
+                InferenceSource::ThisMachine | InferenceSource::AServiceAtThisMachinesAddress
+            ),
         }
     }
 

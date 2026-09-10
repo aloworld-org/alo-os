@@ -327,8 +327,24 @@ fn a_day_of_questions_answered_by_a_local_service_puts_no_egress_in_the_record()
             .expect("the service answered");
         server.join().expect("the stub finished");
 
-        assert_eq!(answer.source(), &InferenceSource::ThisMachine);
-        assert_eq!(answer.came_from(&strings()).text(), "on this machine");
+        // **The provenance line says what alo OS can vouch for** (ADR 0021).
+        // Every question in this day really was answered by a service at this
+        // machine's own address, nothing left, and the indicator below is quiet
+        // — and the sentence still stops short of claiming where the work was
+        // done, because a loopback address cannot establish that and this
+        // operating system does not assert what it cannot know.
+        assert_eq!(
+            answer.source(),
+            &InferenceSource::AServiceAtThisMachinesAddress
+        );
+        assert!(
+            answer
+                .came_from(&strings())
+                .text()
+                .contains("cannot verify"),
+            "the answer claimed more than its address establishes: {}",
+            answer.came_from(&strings()).text()
+        );
         record.keep(Entry::answered_here(
             &mail,
             noon() + Duration::from_secs(60 * 60 * hour),

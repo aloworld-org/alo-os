@@ -119,6 +119,13 @@ impl Asking<'_> {
         let source = self.answering.source().clone();
         match &source {
             InferenceSource::ThisMachine => {}
+            // A service the person runs is the *other* local door. Both are
+            // bounded identically, so this costs nobody anything — what it
+            // keeps true is that the sentence about where an answer came from
+            // is about the thing that actually answered it (ADR 0021).
+            InferenceSource::AServiceAtThisMachinesAddress => {
+                return Err(Miswired::NotTheRuntime.into());
+            }
             // The person chose a provider. Answering them from a model on this
             // machine would give them a different answer wearing the same face,
             // which is the half of ADR 0008 that was missing from it until

@@ -94,7 +94,37 @@ pub use alo_strings::Word;
 // ---------------------------------------------------------------------------
 
 /// The weights are here and nothing left.
+///
+/// Earned only by the runtime alo OS ships and manages, where *on this machine*
+/// is a fact about where the answer was computed rather than about which address
+/// was contacted. A service somebody else configured gets
+/// [`AT_THIS_MACHINES_ADDRESS`] instead, and ADR 0021 is why.
 pub const ON_THIS_MACHINE: Word = Word::saying("models.source.this-machine", "on this machine");
+
+/// A service the person configured, listening on this machine's own address.
+///
+/// **The sentence says what alo OS knows and stops there** (ADR 0021). A
+/// loopback address establishes where a service was *contacted*, never where it
+/// performed the work: the process on the other end may forward the question
+/// anywhere, and nothing alo OS can see would change. Saying *on this machine*
+/// here answers *where was this processed* with a fact about *what was
+/// contacted*, and those two differ in exactly the case that matters.
+///
+/// It is not a warning and it is not a scare. The ordinary reader of this
+/// sentence started vLLM or llama.cpp themselves and nothing left their desk;
+/// what they are owed is the truth about what alo OS can and cannot vouch for,
+/// in one line, where the answer appears.
+pub const AT_THIS_MACHINES_ADDRESS: Word = Word::saying(
+    "models.source.this-machines-address",
+    "by a service at this machine's address — alo cannot verify where it was processed",
+)
+.noting(
+    "Shown when a person has pointed alo OS at an inference service they run themselves, on a \
+     loopback address. \"alo cannot verify\" states the limit of what this operating system can \
+     see; it is not an accusation about the service, which alo OS did not install and cannot \
+     observe. Keep the distinction between *contacted here* and *processed here*, which is the \
+     whole point of the sentence.",
+);
 
 /// A machine somebody paired with, on their own network (ADR 0003).
 pub const ON_A_PAIRED_MACHINE: Word = Word::saying(
@@ -586,8 +616,9 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 40] = [
+pub const EVERY_WORD: [Word; 41] = [
     ON_THIS_MACHINE,
+    AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
     BY_A_PROVIDER,
     BY_A_PROVIDER_SOMEWHERE,
