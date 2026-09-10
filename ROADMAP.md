@@ -3,143 +3,65 @@
 **Execution resumed 2026-09-07.** The full v0.01 release is now pursued by the
 repository-owned Rust development loop (`tools/dev-loop`).
 
-Native reader state (2026-09-09): whole-name page selection is now bound to one
-live strip publication, with stale/foreign/retired readers refusing permanently.
-This is a complete reader-state component; externalized position wording, input
-navigation and transactional reader composition remain next. No feature tick.
-Evidence: `docs/autonomy/updates/mapping-bound-native-name-readers.md`.
+## Where we are
 
-Contributor reconciliation (2026-09-09): machine-description format 2 now loads
-inference policy and retains owner-based attribution, with invalid rules refusing
-startup. This supersedes the earlier production-no-bound limitation below.
-`docs/autonomy/updates/an-organisations-rule-off-a-disk.md` reports 134 passing
-workspace binaries and targeted mutations without exact commands. Startup's bound
-handoff remains inspection-only, person-owned disk evidence depends on runner UID,
-and alo-image still reads only unmanaged format 1. No broader policy/release tick.
-`docs/autonomy/updates/a-loop-that-chose-an-audit-heading.md` reports six selection
-tests: only headings inside Tasks count, and scheduled work is skipped. No ready
-backend plan entry is not a release-completion verdict.
+**Read this first.** Everything below is *what* gets built. This is *when*, and
+which of it is happening now.
 
-`docs/autonomy/DELIVERY.md` orders the Linux, compositor, session, agent and image
-work and the final physical acceptance. Each completed step is gated and pushed;
-these checkpoints do not reduce release scope or discharge hardware obligations.
-The owner's direct-to-main collaboration policy is in
-`docs/autonomy/SHARED_MAIN.md`: separate checkouts, pull before each task,
-integrate concurrent commits and recheck before pushing.
-Concurrent development approved 2026-09-09: desktop and Claude may work in
-separate checkouts at once; existing per-test kernel locks serialize shared
-kernel fixtures. This supersedes the temporary single-workstream restriction.
-A 12 GiB C: preflight reserve still guards new tasks and each gate phase.
-Repairable desktop worker/gate failures now enter bounded diagnosis and repair
-of the same unfinished task, then full verification again before publication.
-Safety/authority handoffs and exhausted recovery preserve work. Details:
-`docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`. Backend supervisor
-305cab1/6704741 also add live status, C: reserve and an OS-held Windows lock;
-these development safeguards do not move release requirements.
-Desktop recovery (2026-09-09): restored missing bpffs during a verified idle
-handoff and integrated the preserved label-rendering commit with current main.
-An owned WSL stdin lease now spans worker/Windows/Linux/publication phases;
-no automatic mount, service or WSL restart is introduced. Combined-tree recovery
-verification and clean-tree loop restart are tracked in
-`docs/autonomy/updates/keeping-ubuntu-active-through-desktop-verification.md`.
-Credential reports `connections-come-and-go.md` and
-`a-key-over-a-verified-connection.md` under `docs/autonomy/updates/` now establish
-fixture connection lifetime/concurrency and authenticated daemon HTTPS under
-test trust. Real-session logout remains session-integration work; no release
-checkbox moves. Subsequent `what-the-server-saw.md` (5e3a66b) supplies separate
-untrusted-issuer/identity rejection with server-side handshake/application-data
-instrumentation, a positive control and cross-thread test-trust isolation. This
-passed in the complete combined-tree recovery gates. All Windows/Linux workspace,
-rustdoc, BPF and label/control/nested graphical checks passed on 5e3a66b plus
-the preserved labels and lease fix; normal publication and clean-tree restart
-follow. No feature/release checkbox is promoted by that development evidence.
-Contributor reconciliation (2026-09-09): policy-before-credential ordering and
-explicit organisation/personal attribution are implemented; production supplied
-no bound at that checkpoint (superseded by format 2 loading above). Pre-turn
-refusal recording is now implemented, with persisted
-response/record agreement and write-failure tests; see
-`docs/autonomy/updates/recording-a-question-nobody-was-asked.md`. Contributor
-mutation evidence has no exact command/results listing; settings/release remain
-unchecked. `docs/autonomy/updates/an-administrator-set-that-rule.md`.
-Company-managed cleanup belongs to the company administrator. Details:
-`docs/autonomy/updates/storage-aware-desktop-loop.md`. Release scope is unchanged.
-Recovery verified (2026-09-09): C: had recovered to 82.3 GiB at restart review;
-the cause was not measured by this worker. The preserved painter, smaller build
-profiles and updated supervisor passed all combined-tree publication gates, the
-supervisor's 17 tests and full-frame graphical checks. Normal publication and
-clean-tree restart follow; no further cleanup is requested. Historical
-cleanup evidence: `docs/autonomy/updates/reclaiming-development-storage.md`.
-Current coordination: `docs/autonomy/updates/concurrent-development-with-shared-kernel-tests.md`.
-New work uses descriptive task names and individual reports. Only the integration
-owner consolidates those reports into this roadmap and the shared progress files;
-historical queue identifiers remain secondary cross-references.
+`docs/autonomy/DELIVERY.md` orders v0.01 into eight phases. They are the order
+the work actually happens in, and **the machine is the last of them** — every
+capability is built and tested on an ordinary development machine first, and the
+physical checks are gathered into one phase at the end rather than done a piece
+at a time.
 
-Credential continuation reconciled 2026-09-09 from `8096910` and
-`docs/autonomy/updates/a-real-keyring-answers.md`: an isolated Secret Service
-fixture demonstrates DH retrieval, Missing and schema isolation (also passed in
-combined-tree validation here). The later `9109875` and
-`docs/autonomy/updates/the-four-refusals-against-a-real-store.md` add real
-Locked/Denied evidence and correct Denied classification; its combined re-gate
-passed. `c4e20c7` and `docs/autonomy/updates/a-bus-with-nothing-on-it.md` subsequently
-add live empty-bus Unavailable evidence and avoid stacked absent-service timeouts;
-that combined re-gate passed. The report
-`docs/autonomy/updates/the-daemon-asks-for-the-key.md`, reconciled 2026-09-09,
-adds production daemon lookup, four distinct refusals and hermetic test defaults.
-It corrects the earlier environment assumption: a session keyring was activated
-on the build host. The report lists no exact commands/results, so no additional
-executed gate is claimed here. End-to-end daemon retrieval, authenticated HTTPS,
-lifetime/concurrency and logout remain open. No keyring or provider-completion
-checkbox is moved.
+| | Phase | State |
+|---|---|---|
+| 1 | Linux and graphical development gate | done |
+| 2 | Native compositor and input | **in progress** |
+| 3 | Window management, launcher, dock and shortcuts | started, inside phase 2's work |
+| 4 | Accounts and session entry | not started |
+| 5 | Model/provider selection and grants | code done; surfaces owed |
+| 6 | Agent interaction and application integration | code done; surfaces owed |
+| 7 | Desktop image integration | image builds and boots in a VM |
+| 8 | **Release coverage and physical acceptance** | **not started — needs a machine** |
 
-Shared credential fixture report reconciled 2026-09-09:
-`docs/autonomy/updates/one-keyring-fixture-two-crates.md` moves the isolated
-real-store fixture into a dev-only crate and adds dependency/image guards and
-kernel-supervisor rename accounting. Contributor reports eight real-keyring and
-nine unit tests passing, without exact commands; initial guard mistakes are
-recorded in the report. No independent credential/tooling rerun is claimed here.
-Production credential architecture is unchanged. Authenticated daemon HTTPS
-remains Claude's next task; no feature or release checkbox changes.
+**Phase 8 is the only one that cannot be done here.** It needs the two certified
+machines `docs/hardware.md` names — an ordinary business laptop first, then a GPU
+workstation — and no amount of work in the other seven substitutes for it.
 
-### Credential contributor reconciliation, 2026-09-09
+### What that means for the ticks below, and what it does not change
 
-`docs/autonomy/updates/the-daemon-fetches-and-connects.md` records real-keyring
-end-to-end daemon no-provider/no-fallback checks for four refusals and a connection
-to only the chosen provider after key retrieval. The report supplies no exact
-commands or numeric test results; these are contributor claims, not independent
-checks in the native-label task. Authenticated HTTPS key delivery is unproved,
-blocked on the report's trust-anchor decision. No machine-store or extra-root
-change is authorized by this reconciliation. Claude retains connection lifetime,
-concurrency/logout work; no provider/keyring or release acceptance box moves.
+**Law 3 is untouched.** *Done means the machine still works — on real hardware.*
+Gathering the physical checks into one phase changes **when** they happen, never
+whether they are required. Nothing here lets an item be called done without them,
+and a later edit that quietly does would be undoing the point of this file.
 
-Credential reports reconciled 2026-09-08: ADR 0022 is accepted and amended to
-`secret-service` over explicitly addressed `zbus`; the old libsecret dependency
-and binding decision blockers are superseded. Synthetic endpoint routing,
-no-connect refusal, settings redaction, eight bus/refusal tests, protocol shape
-and intended/decoy listener checks are contributor evidence, not rerun here.
-Real-store states, authenticated HTTPS through the daemon, connection lifetime,
-concurrency and logout remain unverified. Claude reports needing a running Secret
-Service fixture. Desktop sign-in/session integration and the image's Secret
-Service package/unit remain scheduled in phases 4/7, with configuration in phase
-5. Separate-user access still needs real login evidence; a compromised daemon
-can retrieve keys. ADR 0017 permits outbound bus access; ADR 0021 remains proposed.
-No store/portal tier is moved and no release gate closes. Exact source reports
-and superseded claims: `docs/autonomy/updates/interactive-window-movement.md`.
+So the two boxes stay exactly as they are:
 
-Three-primary-source direction reconciled 2026-09-08 from
-`docs/autonomy/updates/three-primary-model-choices.md`: Local models, Your own API
-provider and Alo form the main choices; no-agent opt-out remains and paired-machine
-placement is undecided. Advanced privacy settings are separate. Documentation-only
-diff-check evidence; no runtime verification, enforcement change, release tick or
-promotion of Alo hosting's later-release tier. ADR 0021 remains proposed.
+- **The code** ticks when that half is whole — the full path, tested, no stubs.
+  It is the half this repository can finish, and it is worth being able to see.
+- **On the machine** ticks only on a certified machine. **Every one of those
+  lines is phase 8's work list**, gathered by that phase rather than scattered
+  into eight separate trips to a laptop.
+- **The parent stays empty until both are done.** Half a capability is not a
+  capability.
 
-Model-choice gap coverage reconciled 2026-09-08:
-`docs/autonomy/updates/model-choice-and-what-alo-can-verify.md` records two
-production Service-path gap tests and contributor-reported Linux/BPF gates.
-The forwarding-service privacy gap remains open. ADR 0021 is still proposed;
-its D1/D4 recommendation is not acceptance. A future verifiable restriction
-requires runtime supervision regardless of ownership; that mechanism remains
-unimplemented. Paired-machine configuration is still unreachable, and no scope,
-runtime policy or release checkbox changes follow from this report.
+A page of ticked *code* boxes therefore means the work is ready for phase 8. It
+does not mean v0.01 is done, it must never be read that way, and the exit gate is
+what stops it being read that way.
+
+**What is new is only that you can see it.** The physical work was twenty *On the
+machine* lines spread through two thousand, with nothing saying they are one job,
+done once, at the end.
+
+### Why this file used to open with a hundred lines of notes
+
+It accumulated a reconciliation entry every time a contributor's report was
+integrated, each one true and each one pushed the roadmap's own first sentence
+further down the page. They are still here — *Reconciliation log*, at the end —
+because they record what was and was not verified, and that is exactly the sort
+of thing somebody deletes and then wishes they had not. They are simply no
+longer the first thing a person reads when they open the plan.
 
 The only order things get built in. Items are checked when they meet the
 definition of done in `CLAUDE.md` law 3 — the full path, on real hardware — and
@@ -2151,3 +2073,149 @@ arriving later, and a card is never what a person pays to get in. What Desktop
 adds is breadth — a compatibility list, fleet packaging, machine generations —
 and none of that is a different engine, a different agent or a different
 promise.
+
+## Reconciliation log
+
+Each entry records what a contributor's report claimed and what this file
+accepted from it — including, deliberately, what was *not* independently
+verified. They are newest first and they are not deleted: a note saying a
+claim was unverified is the note somebody most wants a year later.
+
+Native reader state (2026-09-09): whole-name page selection is now bound to one
+live strip publication, with stale/foreign/retired readers refusing permanently.
+This is a complete reader-state component; externalized position wording, input
+navigation and transactional reader composition remain next. No feature tick.
+Evidence: `docs/autonomy/updates/mapping-bound-native-name-readers.md`.
+
+Contributor reconciliation (2026-09-09): machine-description format 2 now loads
+inference policy and retains owner-based attribution, with invalid rules refusing
+startup. This supersedes the earlier production-no-bound limitation below.
+`docs/autonomy/updates/an-organisations-rule-off-a-disk.md` reports 134 passing
+workspace binaries and targeted mutations without exact commands. Startup's bound
+handoff remains inspection-only, person-owned disk evidence depends on runner UID,
+and alo-image still reads only unmanaged format 1. No broader policy/release tick.
+`docs/autonomy/updates/a-loop-that-chose-an-audit-heading.md` reports six selection
+tests: only headings inside Tasks count, and scheduled work is skipped. No ready
+backend plan entry is not a release-completion verdict.
+
+`docs/autonomy/DELIVERY.md` orders the Linux, compositor, session, agent and image
+work and the final physical acceptance. Each completed step is gated and pushed;
+these checkpoints do not reduce release scope or discharge hardware obligations.
+The owner's direct-to-main collaboration policy is in
+`docs/autonomy/SHARED_MAIN.md`: separate checkouts, pull before each task,
+integrate concurrent commits and recheck before pushing.
+Concurrent development approved 2026-09-09: desktop and Claude may work in
+separate checkouts at once; existing per-test kernel locks serialize shared
+kernel fixtures. This supersedes the temporary single-workstream restriction.
+A 12 GiB C: preflight reserve still guards new tasks and each gate phase.
+Repairable desktop worker/gate failures now enter bounded diagnosis and repair
+of the same unfinished task, then full verification again before publication.
+Safety/authority handoffs and exhausted recovery preserve work. Details:
+`docs/autonomy/updates/repairing-an-unfinished-desktop-task.md`. Backend supervisor
+305cab1/6704741 also add live status, C: reserve and an OS-held Windows lock;
+these development safeguards do not move release requirements.
+Desktop recovery (2026-09-09): restored missing bpffs during a verified idle
+handoff and integrated the preserved label-rendering commit with current main.
+An owned WSL stdin lease now spans worker/Windows/Linux/publication phases;
+no automatic mount, service or WSL restart is introduced. Combined-tree recovery
+verification and clean-tree loop restart are tracked in
+`docs/autonomy/updates/keeping-ubuntu-active-through-desktop-verification.md`.
+Credential reports `connections-come-and-go.md` and
+`a-key-over-a-verified-connection.md` under `docs/autonomy/updates/` now establish
+fixture connection lifetime/concurrency and authenticated daemon HTTPS under
+test trust. Real-session logout remains session-integration work; no release
+checkbox moves. Subsequent `what-the-server-saw.md` (5e3a66b) supplies separate
+untrusted-issuer/identity rejection with server-side handshake/application-data
+instrumentation, a positive control and cross-thread test-trust isolation. This
+passed in the complete combined-tree recovery gates. All Windows/Linux workspace,
+rustdoc, BPF and label/control/nested graphical checks passed on 5e3a66b plus
+the preserved labels and lease fix; normal publication and clean-tree restart
+follow. No feature/release checkbox is promoted by that development evidence.
+Contributor reconciliation (2026-09-09): policy-before-credential ordering and
+explicit organisation/personal attribution are implemented; production supplied
+no bound at that checkpoint (superseded by format 2 loading above). Pre-turn
+refusal recording is now implemented, with persisted
+response/record agreement and write-failure tests; see
+`docs/autonomy/updates/recording-a-question-nobody-was-asked.md`. Contributor
+mutation evidence has no exact command/results listing; settings/release remain
+unchecked. `docs/autonomy/updates/an-administrator-set-that-rule.md`.
+Company-managed cleanup belongs to the company administrator. Details:
+`docs/autonomy/updates/storage-aware-desktop-loop.md`. Release scope is unchanged.
+Recovery verified (2026-09-09): C: had recovered to 82.3 GiB at restart review;
+the cause was not measured by this worker. The preserved painter, smaller build
+profiles and updated supervisor passed all combined-tree publication gates, the
+supervisor's 17 tests and full-frame graphical checks. Normal publication and
+clean-tree restart follow; no further cleanup is requested. Historical
+cleanup evidence: `docs/autonomy/updates/reclaiming-development-storage.md`.
+Current coordination: `docs/autonomy/updates/concurrent-development-with-shared-kernel-tests.md`.
+New work uses descriptive task names and individual reports. Only the integration
+owner consolidates those reports into this roadmap and the shared progress files;
+historical queue identifiers remain secondary cross-references.
+
+Credential continuation reconciled 2026-09-09 from `8096910` and
+`docs/autonomy/updates/a-real-keyring-answers.md`: an isolated Secret Service
+fixture demonstrates DH retrieval, Missing and schema isolation (also passed in
+combined-tree validation here). The later `9109875` and
+`docs/autonomy/updates/the-four-refusals-against-a-real-store.md` add real
+Locked/Denied evidence and correct Denied classification; its combined re-gate
+passed. `c4e20c7` and `docs/autonomy/updates/a-bus-with-nothing-on-it.md` subsequently
+add live empty-bus Unavailable evidence and avoid stacked absent-service timeouts;
+that combined re-gate passed. The report
+`docs/autonomy/updates/the-daemon-asks-for-the-key.md`, reconciled 2026-09-09,
+adds production daemon lookup, four distinct refusals and hermetic test defaults.
+It corrects the earlier environment assumption: a session keyring was activated
+on the build host. The report lists no exact commands/results, so no additional
+executed gate is claimed here. End-to-end daemon retrieval, authenticated HTTPS,
+lifetime/concurrency and logout remain open. No keyring or provider-completion
+checkbox is moved.
+
+Shared credential fixture report reconciled 2026-09-09:
+`docs/autonomy/updates/one-keyring-fixture-two-crates.md` moves the isolated
+real-store fixture into a dev-only crate and adds dependency/image guards and
+kernel-supervisor rename accounting. Contributor reports eight real-keyring and
+nine unit tests passing, without exact commands; initial guard mistakes are
+recorded in the report. No independent credential/tooling rerun is claimed here.
+Production credential architecture is unchanged. Authenticated daemon HTTPS
+remains Claude's next task; no feature or release checkbox changes.
+
+### Credential contributor reconciliation, 2026-09-09
+
+`docs/autonomy/updates/the-daemon-fetches-and-connects.md` records real-keyring
+end-to-end daemon no-provider/no-fallback checks for four refusals and a connection
+to only the chosen provider after key retrieval. The report supplies no exact
+commands or numeric test results; these are contributor claims, not independent
+checks in the native-label task. Authenticated HTTPS key delivery is unproved,
+blocked on the report's trust-anchor decision. No machine-store or extra-root
+change is authorized by this reconciliation. Claude retains connection lifetime,
+concurrency/logout work; no provider/keyring or release acceptance box moves.
+
+Credential reports reconciled 2026-09-08: ADR 0022 is accepted and amended to
+`secret-service` over explicitly addressed `zbus`; the old libsecret dependency
+and binding decision blockers are superseded. Synthetic endpoint routing,
+no-connect refusal, settings redaction, eight bus/refusal tests, protocol shape
+and intended/decoy listener checks are contributor evidence, not rerun here.
+Real-store states, authenticated HTTPS through the daemon, connection lifetime,
+concurrency and logout remain unverified. Claude reports needing a running Secret
+Service fixture. Desktop sign-in/session integration and the image's Secret
+Service package/unit remain scheduled in phases 4/7, with configuration in phase
+5. Separate-user access still needs real login evidence; a compromised daemon
+can retrieve keys. ADR 0017 permits outbound bus access; ADR 0021 remains proposed.
+No store/portal tier is moved and no release gate closes. Exact source reports
+and superseded claims: `docs/autonomy/updates/interactive-window-movement.md`.
+
+Three-primary-source direction reconciled 2026-09-08 from
+`docs/autonomy/updates/three-primary-model-choices.md`: Local models, Your own API
+provider and Alo form the main choices; no-agent opt-out remains and paired-machine
+placement is undecided. Advanced privacy settings are separate. Documentation-only
+diff-check evidence; no runtime verification, enforcement change, release tick or
+promotion of Alo hosting's later-release tier. ADR 0021 remains proposed.
+
+Model-choice gap coverage reconciled 2026-09-08:
+`docs/autonomy/updates/model-choice-and-what-alo-can-verify.md` records two
+production Service-path gap tests and contributor-reported Linux/BPF gates.
+The forwarding-service privacy gap remains open. ADR 0021 is still proposed;
+its D1/D4 recommendation is not acceptance. A future verifiable restriction
+requires runtime supervision regardless of ownership; that mechanism remains
+unimplemented. Paired-machine configuration is still unreachable, and no scope,
+runtime policy or release checkbox changes follow from this report.
+
