@@ -144,6 +144,22 @@ pub fn pulled(at: &Path) -> Result<(), String> {
     if has_unpublished(at)? {
         return Ok(());
     }
+    // **And skipped when a task's work is sitting in the tree**, for the same
+    // reason one line up: git will not fast-forward over uncommitted files, and
+    // this is called with a finished task's work waiting to be gated. With one
+    // lane it never showed — nothing else published while a worker was writing.
+    // With two it is the ordinary case, and it cost lane B a finished task: the
+    // other lane published mid-write, the pull refused with *please commit your
+    // changes*, and work that had already been redone twice was parked a third
+    // time over a `git pull`.
+    //
+    // Nothing that matters is skipped. What arrived is integrated a few steps
+    // later by the publish path, which commits first and then **rebases** onto
+    // `origin/main` — the operation that works over a tree with changes in it,
+    // and the one that was always going to do the real integration.
+    if !git(at, &["status", "--porcelain", "--untracked-files=all"])?.is_empty() {
+        return Ok(());
+    }
     git(at, &["pull", "--ff-only", "origin", MAIN]).map(|_| ())
 }
 

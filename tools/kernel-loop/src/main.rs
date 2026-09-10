@@ -323,9 +323,10 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
                     Ok(branch) => journal::note(
                         ours,
                         &format!(
-                            "task {number} did not pass its gates, so its work is parked on \
-                             `{branch}` and pushed, and the run carries on. Nothing was \
-                             discarded. The gates said: {why}"
+                            "task {number} did not pass its gates, so its work is parked on the \
+                             local branch `{branch}` and the run carries on. Nothing was \
+                             discarded, and nothing was pushed — `main` is the only branch this \
+                             publishes. The gates said: {why}"
                         ),
                     ),
                     Err(refused) => {
