@@ -155,18 +155,54 @@ pub fn all_of_them(at: &Path) -> Result<Vec<String>, String> {
     the_machine_is_ready(at)?;
     let mut passed = Vec::new();
     for gate in EVERY_GATE {
-        let said = asking(gate, at)?
-            .output()
-            .map_err(|why| format!("`{}` could not be run: {why}", gate.named))?;
-        whether_it_passed(
-            gate.named,
-            said.status.success(),
-            &String::from_utf8_lossy(&said.stdout),
-            &String::from_utf8_lossy(&said.stderr),
-        )?;
-        passed.push(gate.named.to_owned());
+        // **A gate that fails is run once more before it is believed.**
+        //
+        // Two loops share this machine, and not every test is indifferent to
+        // how much of it it gets. `window_controls::name_fallback` failed in
+        // both lanes tonight and passed alone on the same commit, 262 of 262 —
+        // timing under contention rather than a defect. The cost of believing
+        // it was two tasks parked for a reason that had nothing to do with
+        // them, in a crate neither lane touches.
+        //
+        // **This does not make a failure ignorable.** A gate that fails twice
+        // fails, and the second run is the whole of the tolerance: a real break
+        // fails both times, and no flag anywhere turns a gate off. What it
+        // removes is the transient — the one kind of failure that says nothing
+        // about the work.
+        let mut refused = match ran(gate, at)? {
+            Ok(()) => {
+                passed.push(gate.named.to_owned());
+                continue;
+            }
+            Err(why) => why,
+        };
+        if ran(gate, at)?.is_ok() {
+            passed.push(format!("{} (on the second run)", gate.named));
+            continue;
+        }
+        refused.push_str(
+            "\n\nRun twice and refused both times, so this is the work rather than the machine.",
+        );
+        return Err(refused);
     }
     Ok(passed)
+}
+
+/// Run one gate, and say whether it passed without deciding what that means.
+///
+/// The outer `Result` is *the gate could not be run at all*, which is a
+/// different thing from *the gate ran and refused* — and is not retried,
+/// because a missing toolchain does not become present on a second attempt.
+fn ran(gate: &Gate, at: &Path) -> Result<Result<(), String>, String> {
+    let said = asking(gate, at)?
+        .output()
+        .map_err(|why| format!("`{}` could not be run: {why}", gate.named))?;
+    Ok(whether_it_passed(
+        gate.named,
+        said.status.success(),
+        &String::from_utf8_lossy(&said.stdout),
+        &String::from_utf8_lossy(&said.stderr),
+    ))
 }
 
 /// One gate's result, read.
