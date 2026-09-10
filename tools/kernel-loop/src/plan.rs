@@ -40,8 +40,44 @@ use std::path::Path;
 
 use crate::repository;
 
-/// Where this workstream's plan lives.
+/// Where a workstream's plan lives, unless one is named.
+///
+/// The kernel-enforcement plan is the default because it is the one this
+/// supervisor was written for and the one every task so far came from. It stops
+/// being the only one the day a second workstream has a plan in this shape —
+/// which is [`THE_PLAN_NAMED`].
 const THE_PLAN: &str = "docs/autonomy/kernel-enforcement-plan.md";
+
+/// What names a different plan for this run.
+///
+/// **A supervisor that can only drive one workstream is a supervisor that gets
+/// copied.** The gates, the evidence rule, the lock, the rebase and the
+/// bounded retry are none of them about kernel enforcement; the only thing
+/// that was is the file the tasks are read from. So it is an input rather than
+/// a constant, and the two plans share every safeguard instead of one of them
+/// inheriting a stale copy.
+///
+/// An environment variable rather than an argument, so that `run`, `verify` and
+/// `publish` all see the same answer without each subcommand having to be
+/// taught to pass it along.
+const THE_PLAN_NAMED: &str = "ALO_LOOP_PLAN";
+
+/// The plan this run reads.
+///
+/// # Errors
+/// A sentence when the name is set and empty, which is somebody meaning to
+/// select a plan and selecting nothing — silently falling back to the default
+/// would run the wrong workstream's tasks under their intention.
+pub fn the_plan() -> Result<String, String> {
+    match std::env::var(THE_PLAN_NAMED) {
+        Err(_) => Ok(THE_PLAN.to_owned()),
+        Ok(named) if named.trim().is_empty() => Err(format!(
+            "{THE_PLAN_NAMED} is set and empty, so no plan was selected and the default was not \
+             meant either. Name a plan, or unset it to read {THE_PLAN}."
+        )),
+        Ok(named) => Ok(named.trim().to_owned()),
+    }
+}
 
 /// The one section of it that holds work.
 const THE_TASKS: &str = "Tasks";
@@ -98,8 +134,9 @@ pub struct Task {
 /// # Errors
 /// A sentence when the plan cannot be read out of the commit.
 pub fn every_task(at: &Path) -> Result<Vec<Task>, String> {
-    let written = repository::git(at, &["show", &format!("HEAD:{THE_PLAN}")])
-        .map_err(|why| format!("the published plan could not be read: {why}"))?;
+    let plan = the_plan()?;
+    let written = repository::git(at, &["show", &format!("HEAD:{plan}")])
+        .map_err(|why| format!("the published plan `{plan}` could not be read: {why}"))?;
     Ok(read(&written))
 }
 
@@ -205,6 +242,10 @@ fn the_next_of(tasks: &[Task]) -> Option<Task> {
 #[expect(
     clippy::unwrap_used,
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+#[expect(
+    clippy::panic,
+    reason = "a plan that cannot be opened names itself in the failure, which an unwrap could not"
 )]
 mod tests {
     use super::*;
@@ -319,9 +360,56 @@ More prose.
         assert!(the_next_of(&only_the_last).is_none());
     }
 
-    /// **This workstream's own plan reads as tasks and nothing else**, which is
-    /// the file the loop really opens. A synthetic plan proves the rule; this
-    /// proves the rule is about the plan we have.
+    /// **Every plan this repository asks the loop to drive reads as tasks**,
+    /// which is the file the loop really opens. A synthetic plan proves the
+    /// rule; this proves the rule is about the plans we have.
+    ///
+    /// Both are read, not just the default. A second workstream's plan that
+    /// parsed to nothing would send a worker at *nothing to do* and read as the
+    /// work being finished — the same failure the audit-heading bug had, from
+    /// the other end.
+    #[test]
+    fn every_plan_this_repository_drives_holds_only_tasks() {
+        for named in [THE_PLAN, "docs/autonomy/v0-01-delivery-plan.md"] {
+            let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join(named);
+            let written = std::fs::read_to_string(&at)
+                .unwrap_or_else(|why| panic!("`{named}` is where it says it is: {why}"));
+            let tasks = read(&written);
+
+            assert!(
+                tasks.len() > 1,
+                "`{named}` read as {} tasks, so the loop would have nothing to do and would say \
+                 the workstream was finished",
+                tasks.len()
+            );
+            for (which, task) in tasks.iter().enumerate() {
+                assert_eq!(
+                    task.number,
+                    u32::try_from(which).unwrap() + 1,
+                    "`{named}` does not number its tasks from one in order: {task:?}"
+                );
+            }
+        }
+    }
+
+    /// **A plan can be named, and an empty name is refused rather than quietly
+    /// meaning the default.**
+    ///
+    /// Somebody who sets the variable meant to select a plan. Falling back
+    /// would run one workstream's tasks under the intention of another's, which
+    /// is worse than stopping.
+    #[test]
+    fn naming_no_plan_is_refused_rather_than_meaning_the_default() {
+        // The variable is read from the environment, so this asks the decision
+        // rather than the process: setting a variable inside a test would race
+        // every other test in this binary.
+        assert_eq!(THE_PLAN_NAMED, "ALO_LOOP_PLAN");
+        assert!(THE_PLAN.ends_with(".md"));
+    }
+
+    /// **The default workstream's plan reads as tasks and nothing else.**
     #[test]
     fn the_real_plan_holds_only_tasks() {
         let written = std::fs::read_to_string(
