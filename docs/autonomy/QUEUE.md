@@ -5,6 +5,25 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed automatic native name fallback (2026-09-10):** the live-name
+presenter submits a complete expanded label or automatically opens and submits
+a paged reader on capacity exhaustion. Invalid preparation, stale output and
+failed/omitted-root submissions retire authority. Four new private-client tests
+and affected Linux/Windows checks pass; WSLg submits two automatic twelve-page
+readers in both schemes with existing reader/control regressions intact. Exact
+checks and limits: `updates/automatic-native-name-fallback.md`. Supervisor gates
+pending. Next: attach explicit reader opening to a native activation gesture,
+then native cursor selection and direct integration. Automatic fallback is an
+opt-in host presenter; full-name access and window management remain unfinished.
+
+**Selected automatic native name fallback (2026-09-10):** render the live
+selected name as a complete expanded label, or automatically prepare and submit
+a paged reader when label capacity alone is exhausted. Preserve malformed-text,
+geometry, stale-publication and submission refusals. Acceptance: private-client
+label/fallback/navigation/typing and refusal checks, affected fmt/tests/clippy/
+rustdoc and WSLg automatic fallback submission. Retain the returned reader across
+input and frames. Activation gesture, cursor and direct integration remain next.
+
 **Completed live native reader selection (2026-09-10):** explicit full-name opening
 uses live native focus or fresh hover, including disabled names. All pages'
 navigation and hit geometry must fit before return. Four new private-client tests

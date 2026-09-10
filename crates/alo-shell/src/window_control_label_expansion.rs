@@ -25,6 +25,19 @@ impl WindowControlLabels {
         scheme: Scheme,
         scale: TextScale,
     ) -> Result<WindowControlLabel, RenderError> {
+        self.prepare_complete(selected, layout, strings, scheme, scale)?
+            .ok_or(RenderError::ControlScene)
+    }
+
+    /// Separate exhausted capacity from invalid preparation for paged fallback.
+    pub(crate) fn prepare_complete(
+        &mut self,
+        selected: WindowControlLabelTarget,
+        layout: &WindowControlLayout,
+        strings: &Strings,
+        scheme: Scheme,
+        scale: TextScale,
+    ) -> Result<Option<WindowControlLabel>, RenderError> {
         let viewport = (layout.viewport.size.w, layout.viewport.size.h);
         if selected.geometry.viewport != viewport
             || !layout.controls().iter().any(|control| {
@@ -46,7 +59,7 @@ impl WindowControlLabels {
         };
         let label = self.prepare(&selected.control, strings, selected.geometry, scheme, scale)?;
         if complete(&label) {
-            return Ok(label);
+            return Ok(Some(label));
         }
         // All controls occupy the same row. Four pixels keep labels separate.
         let row = selected.control.bounds();
@@ -73,9 +86,9 @@ impl WindowControlLabels {
                 scale,
             )?;
             if complete(&label) {
-                return Ok(label);
+                return Ok(Some(label));
             }
         }
-        Err(RenderError::ControlScene)
+        Ok(None)
     }
 }

@@ -74,6 +74,7 @@ mod window_control_label_page_raster;
 mod window_control_label_pages;
 mod window_control_label_paint;
 mod window_control_label_target;
+mod window_control_name_fallback;
 mod window_control_overlay;
 mod window_control_paint;
 mod window_control_presentation;

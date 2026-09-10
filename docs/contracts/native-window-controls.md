@@ -971,3 +971,35 @@ preservation of an existing reader, and capacity that fits page one but fails at
 page ten. WSLg selection-to-submission evidence uses explicit native focus, not
 synthetic parent input. User activation, native cursor selection and direct
 integration remain. Evidence: `docs/autonomy/updates/live-native-reader-selection.md`.
+
+## Automatic complete-name presentation
+
+2026-09-10 additive trusted API: `Server::render_presented_window_control_name`
+uses the live published strip, native focus or fresh hover and the supplied reader
+style. It prefers the complete preferred/expanded label; exhausted label capacity
+automatically opens, preflights and submits a paged reader. Invalid geometry,
+wording, fonts and glyphs remain errors, not overflow signals. Existing
+`prepare_expanded` behavior is unchanged; its private capacity-aware preparation
+distinguishes no fitting box from invalid preparation. Text scale and provenance
+are unchanged. Missing publication or a different target size refuses.
+
+The return value is `(submitted_surface_count, optional_reader)`. None means a
+complete label or a bare strip with no eligible name was submitted. Some contains
+page zero of an already successfully submitted reader. Every page's navigation
+capacity has been checked; subsequent frames still validate independently. Failure
+cancels pointer feedback, retires native authority and preserves owned releases
+and pending callbacks through the existing transactions. No window command runs.
+
+Pump before calling. Use this presenter only while no reading session is retained;
+keep a returned reader across navigation, redraw through the existing reader API
+and drain owned input across dismissal. The host decides when fresh hover/focus
+should resume name presentation after dismissal; calling the opener every frame
+would reset navigation. Vocabulary and appearance changes require reopening.
+The existing low-level labeled-strip API retains its refusal behavior.
+
+`Nested::render_control_name` supplies actual parent position and the same pointer
+owner used by `pump_reader_seat`/`render_reader`. This completes automatic fallback
+in the opt-in live-name presenter, not an installed desktop session policy or
+activation gesture. Direct backend attachment and native cursor selection remain.
+Private-client and nested EGL evidence and exact limits are recorded in
+`docs/autonomy/updates/automatic-native-name-fallback.md`.

@@ -1334,6 +1334,14 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Automatic native name fallback (2026-09-10): live selected names prefer complete
+    expanded labels and automatically submit a paged reader on capacity exhaustion.
+    Invalid preparation and failed/omitted-root submissions retire authority.
+    The returned reader remains bound to the live strip and existing navigation.
+    Evidence: `docs/autonomy/updates/automatic-native-name-fallback.md`.
+    Automatic fallback component complete; activation gesture, native cursor and
+    direct integration remain. No feature/release box promoted; supervisor gates
+    pending.
   - Live native reader selection (2026-09-10): explicit opening follows the live
     strip's native focus or fresh hover, including disabled names; all pages'
     complete chrome/hit geometry must fit before return. Four private-client

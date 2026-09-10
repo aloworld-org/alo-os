@@ -12,6 +12,13 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Long native control names can automatically open a paged reader.** The live
+  name presenter keeps a complete expanded label when it fits, otherwise submits
+  the full name as navigable pages without reducing text size. Invalid wording,
+  insufficient page space and failed submissions refuse safely. Component evidence:
+  `docs/autonomy/updates/automatic-native-name-fallback.md`. Activation gestures,
+  cursor selection and direct desktop integration remain unfinished.
+
 - **The native shell can open the full name selected on its control strip.**
   An explicit reader request follows native focus or fresh pointer hover,
   including disabled controls, without executing the control or stealing typing.

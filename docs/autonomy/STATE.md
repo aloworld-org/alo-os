@@ -14945,3 +14945,60 @@ selection and explicit-native-focus WSLg submission, not parent event synthesis,
 submitted-frame readback, direct scanout, VM or physical hardware. Machine records
 remain owed in their delivery phases. No feature/release checkbox promoted;
 reports arriving during publication reconcile next iteration.
+
+## 2026-09-10 - automatic native name fallback
+
+Started clean at a4ec1df. Read CLAUDE, DELIVERY, SHARED_MAIN, report guidance,
+current QUEUE/STATE, relevant v0.01 features/roadmap, ADRs 0002/0010 and the
+native-control contract. No AGENTS.md found. Every published report already had
+an entry in STATE at iteration start; no reconciliation due. Component and
+acceptance selected in QUEUE before implementation; desktop ownership retained.
+
+The live-name presenter now submits a complete preferred/expanded label or
+opens and submits a paged reader automatically when label capacity is exhausted.
+A private capacity result distinguishes overflow from invalid preparation;
+public expanded-label refusal behavior is unchanged. Live native focus/fresh
+hover and disabled-name access retain existing mapping checks. Target mismatch,
+invalid wording/geometry and failed/omitted-root submissions retire authority.
+The nested wrapper shares actual parent position and its reader input owner.
+Returned readers must be retained across navigation; the host controls when
+name presentation resumes after dismissal. No control command runs.
+
+Four new private-client tests pass, including preferred/expanded names, typing,
+focus/hover/disabled thirty-page fallback, publication-bound key navigation,
+every complete page, malformed preparation and failed/omitted-root submissions.
+Linux affected suite: 168 unit, 254 lifecycle, three socket and four compile-fail
+doctests pass, none ignored. Affected Linux/Windows clippy/tests, format, Linux
+check/example build and warnings-denied rustdoc pass. Windows shell tests have
+zero cases because the crate is Linux-only. WSLg reader and control regressions
+pass on their first run: two new automatic twelve-page submissions in both
+schemes, twelve existing reader feedback and two explicit backend-owned reader
+submissions, native pump calls and all original lifecycle/refusal checks.
+Independent supervisor full workspace/Windows/Linux/rustdoc/BPF gates pending.
+
+Initial affected clippy refused needless borrows and a Vec in new fixture text.
+Replaced them with arrays/direct generic arguments; final clippy and full tests
+pass. Original lint failure preserved in clippy.txt. No assertions, timeouts or
+gates weakened. No graphical failure this iteration; this does not establish a
+repair for earlier reports' intermittent upstream swap delays.
+
+Exact commands, evidence and limits:
+`docs/autonomy/updates/automatic-native-name-fallback.md`.
+Logs: `.git/alo-loop/automatic-native-name-fallback/`.
+C: checks preceded every build/test/lint/format/doc command, all above 53 billion
+bytes (minimum 53,318,434,816), above 12 GiB. Existing bpffs, WSLg socket and
+Ubuntu graphics prerequisites checked; no installation or shared maintenance.
+Private resources only, no kernel mutation or outer lock. Separate desktop
+target /root/alo-os-target retained. No cleanup, WSL restart/helper, second
+worker/loop, supervisor change, stage/commit/push, other checkout/repository or
+credentials/identity access. Native statuses checked despite PowerShell's stderr
+wrappers. Tracked/new diff inspected; git diff --check passes.
+
+Contract and all four shared progress documents updated. This completes the
+opt-in automatic fallback component. Next: native activation gesture for explicit
+opening, native cursor selection and direct integration. Full-name access and
+window management remain unfinished; no feature/release box promoted. Evidence
+is private-client input/publication and nested EGL submission, not submitted-frame
+readback, synthesized parent events, direct scanout, VM or physical hardware.
+VM and physical machine records remain owed in their delivery phases. Reports
+arriving during publication reconcile next iteration; no release certification.

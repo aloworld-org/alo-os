@@ -40,6 +40,43 @@ pub fn run(
     let mut submissions = 0;
     for scheme in [Scheme::Light, Scheme::Dark] {
         nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
+        // A name too tall for either expanded-label box must open by itself.
+        let mut fallback_vocabulary = shortcut_words()?;
+        alo_shell::window_control_reader_words::declare_reader_words(&mut fallback_vocabulary)?;
+        let fallback_language = Language::written("de")?;
+        let fallback_translation = fallback_vocabulary.check(
+            Translation::into_language(fallback_language.clone())
+                .says(Action::CloseWindow.word().key(), ["Line"; 12].join("\n")),
+        )?;
+        let mut fallback_words = Strings::of(fallback_vocabulary);
+        fallback_words.speaks(fallback_translation)?;
+        fallback_words.prefers(&[fallback_language]);
+        assert!(server.focus_window_control(Some(Action::CloseWindow)));
+        let (_, automatic) = nested.render_control_name(
+            server,
+            WindowControlReaderStyle {
+                size: (140, 28),
+                scheme,
+                scale: TextScale::ordinary(),
+            },
+            NestedReaderFrame {
+                strings: &fallback_words,
+                labels: &mut labels,
+                chrome: geometry,
+            },
+            time,
+        )?;
+        let mut automatic = automatic.ok_or("automatic fallback reader refused")?;
+        assert!(server.window_control_reader_presented(&mut automatic));
+        assert_eq!(
+            server
+                .read_window_control_page(&mut automatic, 0)
+                .ok_or("automatic page")?
+                .total,
+            12
+        );
+        automatic.dismiss();
+        nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
         let mut reader = server
             .begin_window_control_reader(
                 &mut labels,
@@ -210,7 +247,7 @@ pub fn run(
     }
     assert_eq!(submissions, 12);
     println!(
-        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes"
+        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes; two automatic 12-page fallback submissions"
     );
     Ok(())
 }
