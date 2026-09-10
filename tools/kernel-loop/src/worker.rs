@@ -327,6 +327,15 @@ fn asked_of_it(task: &Task) -> String {
          touched, and an `evidence` block. tools/kernel-loop/src/handoff.rs documents the\n\
          format.\n\
          \n\
+         RUN THE GATES BEFORE YOU HAND OVER, and fix what they say. From the checkout:\n\
+         `cargo fmt --all`, `cargo clippy --all-targets` with warnings denied, and\n\
+         `cargo test --workspace`. The supervisor runs them again and publishes nothing\n\
+         that fails, so a gate you did not run is a task you did not finish — and the\n\
+         commonest failure is not your logic but a registration you did not know about:\n\
+         a new crate that has words has to be collected, an image manifest has to agree,\n\
+         a rustdoc link has to resolve. The gates name every one of those in seconds. You\n\
+         are the only one who can fix them before an hour is spent.\n\
+         \n\
          IN THE SAME CHANGE, mark this task `**Done, <date>**` in the plan named above —\n\
          with the plan file among the files you list — and write the next task there if\n\
          the plan names none after it. The loop selects from the published plan: a task\n\
@@ -435,6 +444,17 @@ mod tests {
         assert!(
             asked.contains("mark this task `**Done, <date>**`"),
             "a worker not told to mark the plan leaves the task selectable forever: {asked}"
+        );
+        // A worker that does not run the gates hands over work whose mechanical
+        // faults nobody has seen yet. Task 7's approval sentences added words
+        // and left `alo-saying` collecting seventeen crates where eighteen were
+        // expected, which failed twenty-four image checks as well — every one
+        // of them named in seconds by a gate the worker never ran, and none of
+        // them anything to do with the approval logic it had written well.
+        assert!(
+            asked.contains("RUN THE GATES BEFORE YOU HAND OVER"),
+            "a worker not told to gate its own work discovers its mistakes an hour later, \
+             through somebody else: {asked}"
         );
     }
 
