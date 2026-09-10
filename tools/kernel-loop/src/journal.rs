@@ -24,7 +24,10 @@ pub enum Went {
     PlanIsFinished,
 
     /// A task was chosen and nobody produced its work in the time allowed.
-    NobodyWroteIt(String),
+    ///
+    /// Carries the number as well as the name, because the run steps over it and
+    /// has to say which one — by the thing the plan writes dependencies in.
+    NobodyWroteIt(u32, String),
 
     /// Somebody asked it to stop.
     Stopped,

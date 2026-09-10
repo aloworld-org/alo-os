@@ -234,8 +234,21 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
     journal::the_stop_is_cleared(ours);
     journal::note(ours, "the loop began");
 
+    // **Tasks this run has failed at, stepped over rather than retried forever.**
+    // A supervisor meant to be left alone for days cannot end its run because
+    // one task did not come off: nobody is waiting to be told, and every task it
+    // could have finished would sit untouched until somebody noticed. What it
+    // must not do instead is discard the work or pretend the task is done, and
+    // it does neither.
+    let mut given_up_on = std::collections::BTreeSet::new();
+
     let ending = loop {
-        match one_iteration(at, ours) {
+        // Which task the iteration took up, so that a failure inside it can be
+        // attributed to one and stepped over. Set by `one_iteration` through
+        // this, because the error it returns is a sentence rather than a task.
+        let mut holding = None;
+
+        match one_iteration(at, ours, &given_up_on, &mut holding) {
             Ok(journal::Went::Published(sha, task)) => {
                 journal::note(ours, &format!("published {sha} — {task}"));
                 if journal::was_asked_to_stop(ours) {
@@ -250,15 +263,65 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
                 break "the plan has no executable task left, which is a list being empty                        rather than a workstream being finished"
                     .to_owned();
             }
-            Ok(journal::Went::NobodyWroteIt(task)) => {
-                break format!("nobody handed over the work for `{task}`");
+            Ok(journal::Went::NobodyWroteIt(number, task)) => {
+                // **Not the end of the run.** A task one worker could not finish
+                // is not a reason to leave every other task untouched. Stepped
+                // over, loudly, and it stays unfinished in the plan.
+                given_up_on.insert(number);
+                journal::note(
+                    ours,
+                    &format!(
+                        "giving up on `{task}` for this run — nobody handed over its work. \
+                         Stepping over it: it is still unfinished in the plan, and anything \
+                         depending on it still waits."
+                    ),
+                );
+                if journal::was_asked_to_stop(ours) {
+                    break "asked to stop".to_owned();
+                }
             }
             Ok(journal::Went::Stopped) => break "asked to stop".to_owned(),
             Err(why) => {
-                journal::note(ours, &format!("STOPPED: {why}"));
-                eprintln!("alo-kernel-loop: {why}");
-                drop(held);
-                return ExitCode::FAILURE;
+                // A task that will not gate leaves its work in the tree, and
+                // nothing may be started on top of it. So it is parked on a
+                // branch of its own and pushed — nothing discarded, nothing
+                // reset — and the run carries on.
+                let Some(number) = holding else {
+                    journal::note(ours, &format!("STOPPED: {why}"));
+                    eprintln!("alo-kernel-loop: {why}");
+                    drop(held);
+                    return ExitCode::FAILURE;
+                };
+                given_up_on.insert(number);
+                match repository::parked(at, number, &why) {
+                    Ok(branch) => journal::note(
+                        ours,
+                        &format!(
+                            "task {number} did not pass its gates, so its work is parked on \
+                             `{branch}` and pushed, and the run carries on. Nothing was \
+                             discarded. The gates said: {why}"
+                        ),
+                    ),
+                    Err(refused) => {
+                        // The work could not be put anywhere safe, and starting
+                        // another task would build on top of it. The one failure
+                        // still worth stopping for.
+                        journal::note(
+                            ours,
+                            &format!(
+                                "STOPPED: task {number} did not gate and its work could not be \
+                                 parked, so nothing may be started on top of it. The work is \
+                                 still in the tree. Gates said: {why}. Parking said: {refused}"
+                            ),
+                        );
+                        eprintln!("alo-kernel-loop: {refused}");
+                        drop(held);
+                        return ExitCode::FAILURE;
+                    }
+                }
+                if journal::was_asked_to_stop(ours) {
+                    break "asked to stop".to_owned();
+                }
             }
         }
     };
@@ -287,14 +350,22 @@ const LOOKING_EVERY: Duration = Duration::from_secs(10);
 /// Every road out of this either published one task or explains why it did not.
 /// Nothing here removes a file, resets a branch or discards a change: a
 /// supervisor that tidied up would be one that can throw work away.
-fn one_iteration(at: &Path, ours: &Path) -> Result<journal::Went, String> {
+fn one_iteration(
+    at: &Path,
+    ours: &Path,
+    given_up_on: &std::collections::BTreeSet<u32>,
+    holding: &mut Option<u32>,
+) -> Result<journal::Went, String> {
     if journal::was_asked_to_stop(ours) {
         return Ok(journal::Went::Stopped);
     }
 
-    let Some(chosen) = plan::next_executable(at)? else {
+    let Some(chosen) = plan::next_executable(at, given_up_on)? else {
         return Ok(journal::Went::PlanIsFinished);
     };
+    // Whose failure it is, if this iteration fails. Set before anything can go
+    // wrong, so an error carries a task rather than only a sentence.
+    *holding = Some(chosen.number);
     journal::note(
         ours,
         &format!("next in the plan: {}. {}", chosen.number, chosen.named),
@@ -309,13 +380,13 @@ fn one_iteration(at: &Path, ours: &Path) -> Result<journal::Went, String> {
             Ok(()) => journal::note(ours, "the worker finished; inspecting what it left"),
             Err(why) => {
                 journal::note(ours, &format!("the worker did not finish: {why}"));
-                return Ok(journal::Went::NobodyWroteIt(chosen.named));
+                return Ok(journal::Went::NobodyWroteIt(chosen.number, chosen.named));
             }
         }
     }
 
     let Some(task) = waiting_for(ours, &chosen.named)? else {
-        return Ok(journal::Went::NobodyWroteIt(chosen.named));
+        return Ok(journal::Went::NobodyWroteIt(chosen.number, chosen.named));
     };
     journal::note(ours, &format!("taking up: {}", task.task));
 

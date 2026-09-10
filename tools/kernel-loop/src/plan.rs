@@ -36,6 +36,7 @@
 //! it, in the same change that did it, because *done* is a judgement about
 //! evidence and this program has no way to make one.
 
+use std::collections::BTreeSet;
 use std::path::Path;
 
 use crate::repository;
@@ -225,16 +226,28 @@ fn numbers_in(written: &str) -> Vec<u32> {
 ///
 /// # Errors
 /// A sentence when the plan cannot be read.
-pub fn next_executable(at: &Path) -> Result<Option<Task>, String> {
-    Ok(the_next_of(&every_task(at)?))
+/// `given_up_on` are tasks this run has already failed at. They are stepped
+/// over rather than chosen again, so one task nobody can finish does not stop
+/// every task somebody could.
+pub fn next_executable(at: &Path, given_up_on: &BTreeSet<u32>) -> Result<Option<Task>, String> {
+    Ok(the_next_of(&every_task(at)?, given_up_on))
 }
 
 /// The same choice, made from tasks already read.
-fn the_next_of(tasks: &[Task]) -> Option<Task> {
+///
+/// **A task given up on is not treated as done.** Its dependants stay unstartable
+/// — that is the point of a dependency, and a loop that pushed past one would
+/// build the second floor of a house whose first floor it had abandoned.
+fn the_next_of(tasks: &[Task], given_up_on: &BTreeSet<u32>) -> Option<Task> {
     let finished = |number: u32| tasks.iter().any(|task| task.number == number && task.done);
     tasks
         .iter()
-        .find(|task| !task.done && !task.blocked && task.after.iter().copied().all(finished))
+        .find(|task| {
+            !task.done
+                && !task.blocked
+                && !given_up_on.contains(&task.number)
+                && task.after.iter().copied().all(finished)
+        })
         .cloned()
 }
 
@@ -344,9 +357,40 @@ More prose.
     /// between rather than stopping at them.
     #[test]
     fn the_next_task_steps_over_what_is_waiting() {
-        let chosen = the_next_of(&read(A_PLAN)).unwrap();
+        let chosen = the_next_of(&read(A_PLAN), &BTreeSet::new()).unwrap();
         assert_eq!(chosen.number, 4);
         assert_eq!(chosen.named, "Something that can be worked on");
+    }
+
+    /// **A task this run has already failed at is stepped over**, so one task
+    /// nobody can finish does not stop every task somebody could.
+    ///
+    /// The whole point of an unattended run: without this the loop chose task
+    /// four, failed, and ended — and did so again on every restart, while tasks
+    /// it could have finished sat untouched.
+    #[test]
+    fn a_task_already_given_up_on_this_run_is_not_chosen_again() {
+        let tasks = read(A_PLAN);
+        let given_up_on = BTreeSet::from([4]);
+
+        // Four is the one it would otherwise take; five depends on four, which
+        // is not done, so there is nothing left after it.
+        assert!(the_next_of(&tasks, &given_up_on).is_none());
+    }
+
+    /// **Giving up on a task is not finishing it.** Its dependants stay
+    /// unstartable, because a loop that pushed past an abandoned dependency
+    /// would build on something nobody built.
+    #[test]
+    fn giving_up_on_a_task_does_not_release_what_waits_on_it() {
+        let tasks = read(A_PLAN);
+        let after_four = tasks.iter().find(|task| task.number == 5).unwrap();
+        assert_eq!(after_four.after, vec![4]);
+
+        // Even with four abandoned, five is not offered — it is waiting on work
+        // that never happened rather than on work that did.
+        let chosen = the_next_of(&tasks, &BTreeSet::from([4]));
+        assert!(chosen.is_none_or(|task| task.number != 5));
     }
 
     /// A task whose dependency is unfinished is not chosen, even when nothing
@@ -357,7 +401,7 @@ More prose.
             .into_iter()
             .filter(|task| task.number == 5)
             .collect();
-        assert!(the_next_of(&only_the_last).is_none());
+        assert!(the_next_of(&only_the_last, &BTreeSet::new()).is_none());
     }
 
     /// **Every plan this repository asks the loop to drive reads as tasks**,

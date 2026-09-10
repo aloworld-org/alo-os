@@ -237,6 +237,67 @@ pub fn pushed(at: &Path) -> Result<(), String> {
     git(at, &["push", "origin", MAIN]).map(|_| ())
 }
 
+/// Put a task's unfinished work on a branch of its own, push it, and leave
+/// `main` clean.
+///
+/// **The alternative to this is a loop that stops for days.** A task whose gates
+/// will not pass leaves its work in the tree; the next task cannot start,
+/// because starting one on top of somebody else's uncommitted work is exactly
+/// the ambiguous authorship this supervisor exists to prevent. So the run ended
+/// — and unattended, it ended in the first hour.
+///
+/// Nothing is discarded and nothing is reset. The work is committed to a branch
+/// named for the task, pushed so it exists somewhere other than this disk, and
+/// `main` returns to the commit it was already on. Whoever picks that task up
+/// finds every line of it.
+///
+/// Deliberately **not** a stash: a stash is invisible from any other machine and
+/// is the first thing lost when somebody tidies a checkout.
+///
+/// # Errors
+/// A sentence when git refuses a step, in which case the work is still in the
+/// tree — and the loop stops, which is the right answer for a repository that
+/// will not do as it is asked.
+pub fn parked(at: &Path, task: u32, why: &str) -> Result<String, String> {
+    let branch = format!("parked/task-{task}-{}", moment());
+    git(at, &["switch", "--create", &branch])?;
+
+    let put_away = git(at, &["add", "--all"])
+        .and_then(|_| {
+            git(
+                at,
+                &[
+                    "commit",
+                    "--message",
+                    &format!(
+                        "wip(parked): task {task} did not pass its gates\n\n{}\n\nParked by the \
+                         supervisor so the run could continue. Nothing here reached main, \
+                         nothing was discarded, and the gates that refused it are the gates it \
+                         still has to pass.",
+                        why.trim()
+                    ),
+                ],
+            )
+        })
+        .and_then(|_| git(at, &["push", "--set-upstream", "origin", &branch]));
+
+    // Back onto `main` whatever happened, so a push that failed does not also
+    // leave the checkout on a branch nobody is expecting.
+    git(at, &["switch", MAIN])?;
+    put_away?;
+    Ok(branch)
+}
+
+/// A moment, as something that can be part of a branch name.
+fn moment() -> String {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or_else(
+            |_| "unknown".to_owned(),
+            |since| since.as_secs().to_string(),
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::accounted_for;

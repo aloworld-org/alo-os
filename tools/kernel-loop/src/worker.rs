@@ -193,20 +193,27 @@ fn whether_it_finished(named: &str, success: bool, code: Option<i32>) -> Result<
 ///
 /// Written to the worker's standard input by [`ran_on`].
 fn asked_of_it(task: &Task) -> String {
+    // **The plan this run is driving, not a constant.** The prompt named the
+    // kernel-enforcement plan outright, so a worker on any other plan was sent
+    // to a file its task is not in — it would have found no such heading and
+    // built the task out of its title.
+    let plan = crate::plan::the_plan().unwrap_or_else(|_| "the workstream's plan".to_owned());
+
     format!(
-        "You are the kernel-enforcement workstream's development worker in this checkout.\n\
+        "You are a development worker in this checkout, building alo OS: a sovereign,\n\
+         AI-native operating system meant to be the best in the world and to run on the\n\
+         ordinary machines people already own. Build at that standard.\n\
          \n\
          Task {} — {}\n\
          \n\
-         It is described under that heading in docs/autonomy/kernel-enforcement-plan.md.\n\
+         It is described under that heading in {plan}.\n\
          Read CLAUDE.md, docs/autonomy/SHARED_MAIN.md, docs/autonomy/updates/README.md and\n\
          that plan before writing anything.\n\
          \n\
          Implement it completely, with tests that cover the refusal paths beside the\n\
-         legitimate ones. Do not weaken a gate, add an unsafe exemption, widen a grant, or\n\
-         mark unfinished work complete. Do not edit CHANGELOG.md, ROADMAP.md,\n\
-         docs/autonomy/QUEUE.md or docs/autonomy/STATE.md. Publish your own report under\n\
-         docs/autonomy/updates/ with a descriptive name.\n\
+         legitimate ones. Do not edit CHANGELOG.md, ROADMAP.md, docs/autonomy/QUEUE.md or\n\
+         docs/autonomy/STATE.md. Publish your own report under docs/autonomy/updates/ with\n\
+         a descriptive name.\n\
          \n\
          Do not commit and do not push: a supervisor gates and publishes this. When the\n\
          work is finished, write .kernel-loop/handoff.toml naming the task exactly as\n\
@@ -220,14 +227,33 @@ fn asked_of_it(task: &Task) -> String {
          among the files you list is refused: the existing suite passing is the state of\n\
          the repository, not proof of what you wrote.\n\
          \n\
-         If the task cannot be completed within the accepted decisions, write no handoff,\n\
-         leave your work in the tree, and say what decision is needed. A partial task with\n\
-         a handoff is worse than no handoff at all.",
+         DECIDE RATHER THAN STOP. Where the task leaves something open — a name, a shape,\n\
+         which of two reasonable designs — choose it the way a senior engineer would, and\n\
+         write what you chose and why in your report. Nobody is waiting to answer you, and\n\
+         a task handed back unstarted over a question you could have answered yourself is\n\
+         a day of the release lost.\n\
+         \n\
+         Three things you may never decide, and these are absolute:\n\
+         - Never weaken a gate, take an exemption, widen a grant, or add an unsafe block.\n\
+         - Never claim unfinished work is finished, and never write a handoff for a\n\
+           partial task. A partial task with a handoff is worse than no handoff at all.\n\
+         - Never quietly narrow a promise in docs/features.md, and never contradict an\n\
+           accepted ADR in docs/decisions/.\n\
+         \n\
+         If the only way forward runs through one of those three, then the decision itself\n\
+         is the work: write the ADR under docs/decisions/ with the options, a\n\
+         recommendation and the consequences, hand that over as this task, and say in the\n\
+         report that the code waits on it. That is a finished piece of work rather than a\n\
+         failure, and it is what the next worker needs in order to build.",
         task.number, task.named
     )
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
 mod tests {
     use super::*;
 
@@ -285,7 +311,70 @@ mod tests {
         assert!(asked.contains("Do not commit and do not push"), "{asked}");
         assert!(asked.contains(".kernel-loop/handoff.toml"), "{asked}");
         assert!(asked.contains("evidence"), "{asked}");
-        assert!(asked.contains("write no handoff"), "{asked}");
+        assert!(
+            asked.contains("never write a handoff for a"),
+            "a worker not told this hands over half a task: {asked}"
+        );
+    }
+
+    /// **The worker is told to decide rather than hand the task back**, and told
+    /// the three things it may never decide.
+    ///
+    /// The prompt used to end *write no handoff, leave your work in the tree,
+    /// and say what decision is needed*. On an unattended run there is nobody to
+    /// say it to: the task came back unstarted, the loop ended, and a day was
+    /// lost to a question the worker could have answered. Deciding is the
+    /// instruction now — with the three exceptions absolute, because a worker
+    /// that decided *those* for itself is the failure this whole supervisor
+    /// exists to prevent.
+    #[test]
+    fn a_worker_is_told_to_decide_and_what_it_may_never_decide() {
+        let asked = asked_of_it(&Task {
+            number: 2,
+            named: "The agent overlay: one key, from anywhere".to_owned(),
+            done: false,
+            blocked: false,
+            after: Vec::new(),
+        });
+
+        assert!(asked.contains("DECIDE RATHER THAN STOP"), "{asked}");
+        for absolute in [
+            "Never weaken a gate",
+            "Never claim unfinished work is finished",
+            "Never quietly narrow a promise",
+        ] {
+            assert!(
+                asked.contains(absolute),
+                "a worker told to decide and not told `{absolute}` is worse than one told to \
+                 stop: {asked}"
+            );
+        }
+        // And the way out that is still work rather than a refusal.
+        assert!(asked.contains("docs/decisions/"), "{asked}");
+    }
+
+    /// **The worker is sent to the plan this run is driving**, not to a
+    /// hard-coded one.
+    ///
+    /// The prompt named `docs/autonomy/kernel-enforcement-plan.md` outright. A
+    /// worker on any other plan was therefore sent to a file its task is not in
+    /// — it would have found no such heading and built the task out of its
+    /// title, which is the one way to get forty-five minutes of confident work
+    /// on the wrong thing.
+    #[test]
+    fn a_worker_is_sent_to_the_plan_this_run_is_driving() {
+        let asked = asked_of_it(&Task {
+            number: 1,
+            named: "Anything".to_owned(),
+            done: false,
+            blocked: false,
+            after: Vec::new(),
+        });
+        let plan = crate::plan::the_plan().unwrap();
+        assert!(
+            asked.contains(&plan),
+            "the worker was not told where its task is described: {asked}"
+        );
     }
 
     /// **The setting carries the flags, not just the program**, because no
