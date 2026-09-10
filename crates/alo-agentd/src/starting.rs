@@ -26,8 +26,14 @@
 //!    that had not loaded a vocabulary yet would have nothing to render them
 //!    with; see [`NotStarted::NoRecord`].
 //! 5. **The record**, which is the one thing a service refuses to run without.
-//! 6. **The stop, and the handler that causes one.** `crate::signalling`.
-//! 7. **The boundary** — the map `alo-boundaryd` pinned at boot, opened by
+//! 6. **Whatever this person granted before**, which `alo-remembering` kept
+//!    while nobody was signed in. After the record, so that a machine whose
+//!    grants will not read has somewhere to be refused into; before the
+//!    boundary and the socket, because a list of grants that cannot be believed
+//!    is a machine to stop on rather than one to open a door on. A machine that
+//!    has simply never been granted anything is not that machine, and starts.
+//! 7. **The stop, and the handler that causes one.** `crate::signalling`.
+//! 8. **The boundary** — the map `alo-boundaryd` pinned at boot, opened by
 //!    path, and this service's own control group subtree, `crate::bounding`.
 //!    Before the socket, because ADR 0015 says a turn that cannot be bounded
 //!    does not run and a service that cannot bound one has nothing to offer
@@ -35,10 +41,10 @@
 //!    machine that will not serve rather than one that cannot write down why.
 //!    Nothing here is privileged: ADR 0018 moved the loading out of this
 //!    process, so what this step needs is permission on a file.
-//! 8. **The person's door, and the socket in it** — last, because it is the
+//! 9. **The person's door, and the socket in it** — last, because it is the
 //!    only thing anybody else on the machine can see. Nothing knocks on a
 //!    service that is still deciding whether it can run.
-//! 9. **The machine, and the serving.** [`until_stopped`].
+//! 10. **The machine, and the serving.** [`until_stopped`].
 //!
 //! # What answers a question is not decided here either
 //!
@@ -62,29 +68,28 @@
 //! is the person's, in their own settings, and a bound refuses a choice without
 //! ever replacing one.
 //!
-//! # What is not read from anywhere, and is not a stub
+//! # The grants are handed in, and this file cannot reach the file they were in
 //!
-//! [`until_stopped`] begins with **no grants at all**, and that is the honest
-//! state of this machine rather than a gap. A grant is made by a person picking
-//! a folder (ADR 0001 §3), the surface they pick it in is the shell, and nothing
-//! on this socket can make one: `alo-protocol` has three requests from an agent
-//! and two from a person, and none of the five grants anything. So a list read
-//! from a file would be a list nothing writes, which is a worse answer than an
-//! empty one — where a machine's grants are kept is a question for whoever
-//! writes the first one, and it is a queue item of its own.
+//! [`until_stopped`] takes the grants rather than reading them. `src/main.rs`
+//! reads `alo_remembering::THE_GRANTS` before anything is opened and hands over
+//! an `alo_capability::Grants` — **a value, with no path in it** — and every
+//! step below this line has only that. So *nothing an agent can send over the
+//! socket writes a byte of the grants file* is the shape of this crate rather
+//! than a rule to keep: there is nothing here to write it with.
 //!
-//! **A person can now make one**, which is `alo-picking`: a folder chooser
-//! whose one product is an `alo_capability::Grant`, added to the same `Grants`
-//! this file starts empty. What is still true is the sentence above it —
-//! nothing on **this socket** grants anything, and nothing yet carries a grant
-//! made in the shell into this process. Where the list lives between one
-//! sign-in and the next is exactly the question that crate refuses to answer
-//! on its own, and it is still owed.
+//! This is where the sentence *it starts with no grants at all* used to be, and
+//! it was honest while it was true — nothing on this machine could make a
+//! grant, then nothing could keep one. `alo-picking` answered the first
+//! (ADR 0001 §3: a grant is made by a person picking a folder) and
+//! `alo-remembering` the second, so what a person granted yesterday is what
+//! this machine serves under today.
 //!
-//! What that means while it is true is worth being plain about: every verb an
-//! agent asks for is refused, in the grants' own words, and every refusal is
-//! written down. That is the capability model running rather than the capability
-//! model missing, and there is a test below that says so.
+//! What has **not** changed: nothing on this socket grants anything.
+//! `alo-protocol` has three requests from an agent and two from a person, and
+//! none of the five makes, widens or keeps a grant. A machine on which nobody
+//! has picked a folder still refuses every verb in the grants' own words and
+//! still writes every refusal down, which is the capability model running
+//! rather than missing, and there is a test below that says so.
 
 use alo_capability::Grants;
 use alo_egress::Indicator;
@@ -151,6 +156,12 @@ pub fn what_this_machine_says() -> Result<Loaded, NotStarted> {
 
 /// Assemble the machine every turn happens against, and serve until stopped.
 ///
+/// The grants are the caller's, for the reason the record is: `src/main.rs`
+/// reads the file this machine keeps them in, so that the order in that file
+/// stays the order in this file's header — and so that a test can hand this the
+/// same machine with a different list. Nothing below this line has a path to
+/// the file, which is the whole of what makes it unreachable from the socket.
+///
 /// The five things `alo_turn::Machine` is made of are made here and nowhere
 /// else, which is what `crate::serving` means by *the service is handed a
 /// machine rather than building one*: the verbs are the six this machine can
@@ -177,16 +188,13 @@ pub fn until_stopped(
     knocking: &dyn Knocking,
     waking: &Waking,
     strings: &Strings,
+    grants: &mut Grants,
     bounding: &mut dyn Bounding,
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
     let mut indicator = Indicator::default();
     let mut machine =
         Machine::carrying_out_file_verbs(strings, &OnThisMachine, bounding, &mut indicator, kept)?;
-    // Nothing has been granted on this machine, and nothing on this socket can
-    // grant anything; the header says what that means and why it is a state
-    // rather than a hole.
-    let mut grants = Grants::default();
     // Nothing is read or probed here: the environment is copied, and the first
     // question of the first turn is what opens the person's file.
     //
@@ -210,7 +218,7 @@ pub fn until_stopped(
         described.proposal().duration(),
         described.keeping(),
     )
-    .until_stopped(&mut machine, &mut grants, &mut questions)?)
+    .until_stopped(&mut machine, grants, &mut questions)?)
 }
 
 #[cfg(test)]
@@ -223,13 +231,17 @@ mod tests {
     use crate::lasting::Lasting;
     use crate::questions::TheBound;
     use crate::side::Side;
-    use crate::testing::{Pretending, a_folder_with_an_invoice, a_message, ourselves};
+    use crate::testing::{
+        Pretending, a_directory_of_our_own, a_folder_with_an_invoice, a_message, granting,
+        ourselves,
+    };
     use crate::words::A_TURN_IS_UNDER_WAY;
     use alo_keeping::Keeping;
     use alo_record::Record;
     use std::io::{BufRead as _, BufReader, Write as _};
     use std::os::unix::net::UnixStream;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
+    use std::time::SystemTime;
 
     /// A machine described the ordinary way, with the agent these tests use.
     fn an_ordinary_machine() -> Described {
@@ -347,6 +359,7 @@ mod tests {
             &knocking,
             &waking,
             &strings,
+            &mut Grants::default(),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )
@@ -361,5 +374,153 @@ mod tests {
             1,
             "a refusal on a machine that has granted nothing is still evidence"
         );
+    }
+
+    /// Where a test's own grants file goes: a directory of its own, never the
+    /// folder being granted — a file inside the grant would be a file the agent
+    /// can list, and these tests are about what it cannot touch.
+    fn a_grants_file_of_our_own(what: &str) -> PathBuf {
+        a_directory_of_our_own(what).join("grants.toml")
+    }
+
+    /// One agent connection, one message, and the answer it was given.
+    ///
+    /// The whole shape of the two tests below: a real socket, a real turn, and
+    /// a service that was handed the grants somebody else had already read off
+    /// a disk.
+    fn what_the_agent_is_told(
+        what: &str,
+        grants: &mut Grants,
+        asks: &[String],
+    ) -> (Vec<String>, usize) {
+        let described = an_ordinary_machine();
+        let said = what_this_machine_says().unwrap();
+        let strings = said.into_strings();
+        let (waking, stop) = Waking::made().unwrap();
+        let knocking = Pretending::handing_out(what, &[Some(Side::Agent)]);
+        let at = knocking.at();
+        let mut record = Record::default();
+        let asking = asks.to_vec();
+
+        let client = std::thread::spawn(move || {
+            let connection = UnixStream::connect(&at).unwrap();
+            let mut reading = BufReader::new(connection.try_clone().unwrap());
+            let mut writing = connection;
+            let mut answers = Vec::new();
+            for one in &asking {
+                writing.write_all(a_message(one).as_bytes()).unwrap();
+                writing.write_all(b"\n").unwrap();
+                let mut back = String::new();
+                reading.read_line(&mut back).unwrap();
+                answers.push(back);
+            }
+            stop.stop();
+            answers
+        });
+
+        until_stopped(
+            &described,
+            &knocking,
+            &waking,
+            &strings,
+            grants,
+            &mut crate::testing::NothingIsBounded,
+            &mut record,
+        )
+        .unwrap();
+        (client.join().unwrap(), record.len())
+    }
+
+    /// One read of a folder, as an agent asks for it.
+    fn listing(folder: &Path) -> String {
+        format!(
+            r#"{{"read":{{"verb":"list_folder","given":[{{"named":"folder","is":"{}"}}]}}}}"#,
+            folder.display()
+        )
+    }
+
+    /// **A grant a person made before this process existed is honoured by it.**
+    ///
+    /// The restart, end to end: a grant is kept on a disk, this process is
+    /// handed nothing but what `alo-remembering` read back out of that file,
+    /// and the verb the machine before it would have refused is carried out.
+    /// The same read on a machine that was handed no grants is the refusal
+    /// tested above, which is what makes this one about the file.
+    #[test]
+    fn a_grant_made_before_a_restart_is_honoured_after_one() {
+        let (folder, _invoice) = a_folder_with_an_invoice("kept-grants");
+        let at = a_grants_file_of_our_own("kept-grants-file");
+        // The real clock, because a running service reads one: a grant made at
+        // a fixed noon ran out decades ago.
+        let now = SystemTime::now();
+        alo_remembering::kept(&at, &granting(&folder, now), now).unwrap();
+
+        // Everything this machine knows about what is granted, and nothing else.
+        let mut grants = alo_remembering::remembered(&at, now).unwrap();
+        assert_eq!(grants.len(), 1, "the grant did not survive the disk");
+
+        let (answers, entries) =
+            what_the_agent_is_told("kept-grants", &mut grants, &[listing(&folder)]);
+
+        let back = answers.first().unwrap();
+        assert!(back.contains("listed"), "{back}");
+        assert!(!back.contains("refused"), "{back}");
+        assert_eq!(entries, 1, "what was carried out was not written down");
+    }
+
+    /// **Nothing an agent can send over the socket writes a byte of the file
+    /// the grants came out of.**
+    ///
+    /// Every request an agent has: a read it is permitted, a read it is not,
+    /// and a verb that does not exist. The file is compared byte for byte
+    /// afterwards, and so is the directory it is in — a service that had
+    /// written a new list, or left a staging file behind, would fail this even
+    /// if it had written the same grants back.
+    ///
+    /// It cannot be otherwise: `until_stopped` is handed an
+    /// `alo_capability::Grants` and there is no path anywhere below it. The
+    /// test is here because *there is no way to* is worth a measurement rather
+    /// than a comment somebody may one day be tempted to make untrue.
+    #[test]
+    fn nothing_an_agent_says_writes_a_byte_of_the_grants() {
+        let (folder, invoice) = a_folder_with_an_invoice("untouched-grants");
+        let at = a_grants_file_of_our_own("untouched-grants-file");
+        let now = SystemTime::now();
+        alo_remembering::kept(&at, &granting(&folder, now), now).unwrap();
+
+        let before = std::fs::read(&at).unwrap();
+        let mut grants = alo_remembering::remembered(&at, now).unwrap();
+
+        let (answers, _entries) = what_the_agent_is_told(
+            "untouched-grants",
+            &mut grants,
+            &[
+                listing(&folder),
+                listing(Path::new("/etc")),
+                format!(
+                    r#"{{"read":{{"verb":"read_file","given":[{{"named":"file","is":"{}"}}]}}}}"#,
+                    invoice.display()
+                ),
+                r#"{"read":{"verb":"grant_everything","given":[]}}"#.to_owned(),
+            ],
+        );
+        assert_eq!(
+            answers.len(),
+            4,
+            "the service stopped answering: {answers:?}"
+        );
+        assert!(answers.get(1).unwrap().contains("refused"), "{answers:?}");
+        assert!(answers.get(3).unwrap().contains("refused"), "{answers:?}");
+
+        assert_eq!(
+            std::fs::read(&at).unwrap(),
+            before,
+            "the grants file was written while the service was running"
+        );
+        let alongside: Vec<PathBuf> = std::fs::read_dir(at.parent().unwrap())
+            .unwrap()
+            .map(|one| one.unwrap().path())
+            .collect();
+        assert_eq!(alongside, vec![at], "something else was written beside it");
     }
 }

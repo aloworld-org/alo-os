@@ -135,11 +135,15 @@
 //! the person's (ADR 0008) rather than the description's — a queue item of its
 //! own.
 //!
-//! **It starts with no grants**, and [`starting`] is where that is argued: no
-//! request on this socket grants anything, so a list read from a file would be
-//! a list nothing writes. Every verb is refused in the grants' own words and
-//! every refusal is written down, which is the capability model running rather
-//! than missing.
+//! **It does not make, widen or keep a grant.** No request on this socket
+//! grants anything: `alo-protocol` has three requests from an agent and two
+//! from a person, and none of the five. What a person granted before is read
+//! once, in `src/main.rs`, out of the file `alo-remembering` keeps it in — and
+//! everything below that is handed an `alo_capability::Grants`, a value with no
+//! path in it, which is what makes the grants file unreachable from the socket.
+//! On a machine where nobody has picked a folder the list is empty, every verb
+//! is refused in the grants' own words and every refusal is written down, which
+//! is the capability model running rather than missing.
 //!
 //! **It decides nothing an agent asks for.** Every verb is
 //! `alo_capability::Verbs`', every grant question is `alo_capability::Grants`',

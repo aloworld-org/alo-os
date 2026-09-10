@@ -113,3 +113,60 @@ was.
   socket writes a byte of it.
 - **Constraint:** no new surface, and nothing in `crates/alo-shell`. This is
   where the list lives and what may write it.
+
+**Done, 2026-09-10.** `crates/alo-remembering`: `/var/lib/alo/grants.toml`, in
+the folder the image already makes `0700` for the person, believed under
+`alo-accounts`' three rules — not a link, root's or the person's, nobody else
+able to write it — and replaced whole or not at all. Every grant is built again
+by `alo_capability::Grant::checked` on the way in, so a file hand-edited into
+granting `/` is refused by the crate that owns that rule; an expired one is
+dropped before the list exists rather than filtered afterwards; and
+`alo_capability::Grants::remembered` refuses a file whose handles would collide,
+so a revoke cannot land on the wrong grant after a restart.
+`crates/alo-agentd/src/main.rs` reads it once, before the socket exists, and
+hands `starting::until_stopped` a value with no path in it — which is what makes
+*nothing an agent sends writes a byte of it* the shape of the crate rather than
+a rule. A file that is there and is not believable stops the service
+(`NotStarted::NoGrants`); a machine that has simply never been granted anything
+starts and refuses everything, as before. Measured in
+`crates/alo-remembering/tests/the_grants_a_machine_keeps.rs` and in
+`crates/alo-agentd/src/starting.rs`. Report:
+`docs/autonomy/updates/where-a-machine-keeps-its-grants.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 4
+below is the next task and was written in the same change.
+
+### 4. A grant made now reaches the daemon now
+
+**Status:** ready. **Depends on:** 3.
+
+Task 3 gave the machine somewhere to keep its grants, and `alo-agentd` reads
+them when it starts. What it cannot do is hear about one made **while it is
+running**: a person picks a folder at eleven, the file on the disk says so, and
+the service holding the turn is still serving under the list it read at sign-in.
+The gap is narrow and honest — the daemon is bound to the person's session, so
+the grant applies at the next sign-in — but `docs/features.md` promises *pick a
+folder*, and *pick a folder and sign out again* is not that promise.
+
+This is lane B's for task 3's reason: the message is the person's, made under
+their own authority on their own door, and its lifetime is the session's. The
+**surface** that lists and revokes is still the compositor lane's.
+
+The shape that keeps law 2 and ADR 0001 §5 true is a **knock rather than a
+payload**: the person's side says only *the grants have changed*, and the daemon
+re-reads its own file under the same believing rules. Nothing on the wire
+carries a grant, a path or a duration, so a request that arrived from anywhere
+else could still not widen anything — and the kernel already says which door a
+caller is on.
+
+- **Acceptance:** a grant made while the daemon is running is honoured in the
+  same session without a restart, and a revocation takes effect on the next
+  question asked; the request carries no grant, no path and no duration, so
+  re-reading the person's own file is the only thing it can cause; the same
+  request on the agent's door is refused in words and the refusal is written
+  down; and a grants file that has become unbelievable while the service is
+  running leaves the grants it already had rather than emptying them, with the
+  refusal in the record — a machine that forgot what was granted because
+  somebody chmodded a file is a machine that went silent.
+- **Constraint:** additive to `docs/contracts/daemon-protocol.md`, which is a
+  public surface (*contracts outlive code*); no new surface, and nothing in
+  `crates/alo-shell`.

@@ -555,6 +555,26 @@ pub enum NotStarted {
         /// What `alo-keeping` said, in the language this machine loaded.
         said: String,
     },
+    /// The grants this machine kept could not be believed.
+    ///
+    /// Not *there are no grants* — a machine nobody has picked a folder on yet
+    /// starts perfectly well and refuses everything an agent asks for, in the
+    /// grants' own words. This is a grants file that exists and is not one:
+    /// somebody else's, writable by somebody else, a link, or edited into a
+    /// shape `alo-capability` will not make a grant from.
+    ///
+    /// It stops the process for the reason a description that will not parse
+    /// does. Whoever can write that file says what this machine's agent may
+    /// reach, and a daemon that went on under an empty list would make
+    /// *somebody tampered with your grants* look exactly like *you have not
+    /// granted anything yet*.
+    #[error(
+        "the grants this machine kept could not be believed: {why}; alo-agentd will not serve under a list of grants it cannot read"
+    )]
+    NoGrants {
+        /// What `alo-remembering` said about the file.
+        why: String,
+    },
     /// The socket could not be put where it belongs.
     #[error("{0}")]
     NotBound(#[from] NotBound),

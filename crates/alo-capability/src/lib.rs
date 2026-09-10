@@ -172,7 +172,7 @@ pub use arg::{Arg, ArgError, Given, Takes, Value};
 pub use authorised::{Authorised, NotAuthorised, Refused};
 pub use call::{Call, CallError};
 pub use grant::{Grant, GrantError, Grantee};
-pub use grants::{GrantId, Grants, Held};
+pub use grants::{GrantId, Grants, Held, NotOneList};
 pub use offered::Offered;
 pub use proposal::{Proposal, ProposalError};
 pub use reach::{Ask, Reach};

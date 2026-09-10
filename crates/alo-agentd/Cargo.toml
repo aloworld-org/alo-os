@@ -108,6 +108,14 @@ alo-asking = { path = "../alo-asking" }
 # and it is the only place in the daemon where a credential exists at all.
 alo-secrets = { path = "../alo-secrets" }
 
+# Where this machine's grants were kept while nobody was signed in. `src/main.rs`
+# is the only file that names it, and it names it once: the grants are read
+# before the socket exists and everything downstream is handed a value. Nothing
+# a client can say reaches a path, which is what makes *nothing an agent sends
+# writes a byte of that file* a fact about the shape of this crate rather than a
+# rule somebody has to keep.
+alo-remembering = { path = "../alo-remembering" }
+
 # Somewhere for a test's machine to write what happened that is not a file on a
 # disk. The process writes to `alo-keeping`'s real one; a test wants to read the
 # entries back and count them, which is what `alo_record::Record` is.

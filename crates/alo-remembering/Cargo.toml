@@ -1,0 +1,44 @@
+[package]
+name = "alo-remembering"
+version = "0.0.1"
+description = "Where a machine keeps its grants between one sign-in and the next."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The grants themselves. This crate keeps a list it never decides anything
+# about: what a grant is, what it covers and when it ends are all
+# `alo-capability`'s, and every grant read back off the disk is built by
+# `Grant::checked` before there is a list at all — so a file edited into
+# granting the whole machine is refused by the crate that owns that rule.
+alo-capability = { path = "../alo-capability" }
+
+# The file itself: TOML, because `/etc/alo/agentd.toml` and
+# `/etc/alo/accounts.toml` are TOML, and a person who opens the file their
+# machine keeps its grants in should find one notation rather than three.
+serde = { workspace = true }
+toml = { workspace = true }
+
+# The refusals here are read out of a service log by whoever is looking at a
+# grants file somebody has edited, so they keep their English; this derives
+# their sentences.
+thiserror = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# Two questions the standard library will not answer: which user this process
+# runs as, and the numeric flag that refuses to open a symbolic link. Both are
+# asked through the crate the rest of the workspace already asks, and both are
+# `crate::keeping`'s alone.
+rustix = { workspace = true }
+
+[dev-dependencies]
+# The one act on this machine that makes a grant. The tests keep what a person
+# picked rather than what this crate could construct for itself, because the
+# thing being measured is a grant surviving a restart and there is only one way
+# to make one.
+alo-picking = { path = "../alo-picking" }
+
+[lints]
+workspace = true

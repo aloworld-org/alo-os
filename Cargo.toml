@@ -31,6 +31,7 @@ members = [
   "crates/alo-protocol",
   "crates/alo-record",
   "crates/alo-recounting",
+  "crates/alo-remembering",
   "crates/alo-saying",
   "crates/alo-shortcuts",
   "crates/alo-secrets",
@@ -63,7 +64,6 @@ serde_json = "1"
 # only from `unix.rs`; see that file for why it is a crate rather than lines of
 # `unsafe`.
 rustix = { version = "1.1", features = ["net", "process", "fs", "event"] }
-
 # A password is hashed and never kept, and the function that hashes it is
 # rented rather than written: Argon2id through RustCrypto's pure-Rust crate,
 # because a key derivation function this team wrote itself would be the
@@ -72,11 +72,9 @@ rustix = { version = "1.1", features = ["net", "process", "fs", "event"] }
 # keeps its own randomness out — every random byte comes through `getrandom`
 # below, so there is one door to the generator.
 argon2 = { version = "0.5", default-features = false, features = ["alloc", "password-hash"] }
-
 # The kernel's randomness, for the salt under a password hash and the decoy an
 # unknown name is verified against. One narrow call, no fallback generator.
 getrandom = "0.3"
-
 # The second thing the kernel will only be asked through somebody else's crate,
 # and for the same reason as the first: installing a signal handler is
 # `sigaction`, every spelling of it in Rust is `unsafe`, and `unsafe_code` is
@@ -85,10 +83,10 @@ getrandom = "0.3"
 # a handler that writes one byte to an already-open descriptor and does nothing
 # else. Reached only by `alo-agentd`, and only from `signalling.rs`.
 signal-hook = { version = "0.4", default-features = false }
-
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is
 # a rule that survives until the reviewer is busy.
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
@@ -101,7 +99,6 @@ todo = "deny"
 unimplemented = "deny"
 indexing_slicing = "deny"
 missing_docs_in_private_items = "warn"
-
 # The gate says rustdoc on public items and it says zero warnings, and for
 # thirteen of these it said both while neither was true: a `[`crate::frame`]`
 # from a public method to a private module drops the link rather than saying
@@ -115,12 +112,13 @@ missing_docs_in_private_items = "warn"
 # twenty-eight times about code that is correct; denying it would fail the gate
 # on the host for a fact about the platform. `docs/autonomy/LOOP.md` records
 # that beside the rule it belongs to.
+
 [workspace.lints.rustdoc]
 private_intra_doc_links = "deny"
-
 # Keep filename/line backtraces without embedding full type/variable debug data
 # in every development executable. Assertions, overflow checks, optimization and
 # panic behavior retain their defaults. The excluded BPF workspace is unchanged.
+
 [profile.dev]
 debug = "line-tables-only"
 

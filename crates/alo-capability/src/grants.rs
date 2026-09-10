@@ -24,6 +24,14 @@
 //! is no method that turns a refusal into a grant: making one is a person's
 //! act, and it happens in a file chooser rather than in this file.
 //!
+//! **The list outlives the process that holds it.** A machine keeps its grants
+//! between one sign-in and the next, and [`Grants::remembered`] is the one road
+//! back in from a disk — every grant on it built by [`Grant::checked`] first, so
+//! a file somebody edited into granting the whole machine is refused before
+//! there is a list at all. [`Grants::next_handle`] is the other half of it: a
+//! handle is never reused, and a list that came back without that number would
+//! start again from a handle somebody's settings panel is still showing.
+//!
 //! Expiry is not swept: a grant is expired when the time says so, whether or
 //! not anything has run since. [`Grants::forget_expired`] exists to keep the
 //! list short, and removing it would change nothing about what is permitted.
@@ -50,6 +58,49 @@ impl GrantId {
     pub fn as_u64(self) -> u64 {
         self.0
     }
+
+    /// The handle this number names, for a list read back off a disk.
+    ///
+    /// The one caller is whatever keeps the grants between one sign-in and the
+    /// next (`alo-remembering`), and it exists so that a handle written down is
+    /// the same handle when it is read: a person's list still revokes the grant
+    /// it says it does after the machine has been restarted. Everywhere else a
+    /// handle is handed out by [`Grants::grant`] and never made.
+    #[must_use]
+    pub const fn numbered(id: u64) -> Self {
+        Self(id)
+    }
+}
+
+/// Why a list read back off a disk was not believed.
+///
+/// English, and thereby unlike [`crate::GrantError`]: nobody using a machine
+/// ever sees one of these. They are read by whoever is looking at a grants file
+/// that has been hand-edited into a shape it cannot be — the reader of
+/// `alo-agentd`'s own refusals, one layer down.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum NotOneList {
+    /// Two grants under one handle.
+    ///
+    /// Revoking either would land on whichever came first, so a list that says
+    /// this is refused whole rather than read as half of itself.
+    #[error(
+        "two grants are kept under handle {}, and one handle is one grant",
+        .0.as_u64()
+    )]
+    TwoGrants(GrantId),
+
+    /// A handle already in use, named as the next one to hand out.
+    ///
+    /// A list read back this way would give a new grant the handle of one
+    /// already on it, and a revoke made from a list somebody was already
+    /// looking at would land on the wrong grant.
+    #[error(
+        "handle {} is on the list and is also the next one to hand out, and a handle is never \
+         reused",
+        .0.as_u64()
+    )]
+    Reused(GrantId),
 }
 
 /// A grant as the list holds it: the grant, and the handle it is revoked by.
@@ -75,6 +126,52 @@ pub struct Grants {
 }
 
 impl Grants {
+    /// The list a machine kept, with the handles it kept them under.
+    ///
+    /// The one caller is `alo-remembering`, which reads the file a machine
+    /// keeps its grants in. It is a constructor rather than a `Deserialize`
+    /// because of what this crate refuses to do: every [`Grant`] in `held` has
+    /// been built by [`Grant::checked`] on the way here, so a hand-edited file
+    /// granting `/`, or a grant with no end, was refused before this list
+    /// existed. A `serde` road in would be a list nothing had validated, which
+    /// is the argument [`crate`] already makes about calls and proposals.
+    ///
+    /// `next` is the handle to hand out after these, carried because it is not
+    /// derivable: the highest handle on the list may have expired and been
+    /// dropped, and starting again from what is left would hand a new grant a
+    /// handle somebody's list still shows.
+    ///
+    /// # Errors
+    ///
+    /// [`NotOneList`] — a handle on the list twice, or a handle that is on the
+    /// list and is also the next one to hand out. Both are lists in which
+    /// revoking the grant a person can see could take away a different one.
+    pub fn remembered(held: Vec<Held>, next: u64) -> Result<Self, NotOneList> {
+        for (already, one) in held.iter().enumerate() {
+            if held
+                .iter()
+                .take(already)
+                .any(|earlier| earlier.id == one.id)
+            {
+                return Err(NotOneList::TwoGrants(one.id));
+            }
+            if one.id.as_u64() >= next {
+                return Err(NotOneList::Reused(one.id));
+            }
+        }
+        Ok(Self { next, held })
+    }
+
+    /// The handle the next grant will be given.
+    ///
+    /// For whatever writes this list down: a handle is never reused, and a list
+    /// that came back from a disk without this number would begin handing out
+    /// handles it had already used.
+    #[must_use]
+    pub const fn next_handle(&self) -> GrantId {
+        GrantId(self.next)
+    }
+
     /// Add a grant, and return the handle it can be revoked by.
     ///
     /// If the same agent already holds the same reach, that entry is replaced
@@ -488,6 +585,77 @@ mod tests {
         let blender = Grantee::named("@blender");
         assert_eq!(grants.held_by(&blender, noon()).count(), 1);
         assert!(grants.permits(&blender, &Ask::application("org.blender.Blender"), noon()));
+    }
+
+    /// **A list kept between one sign-in and the next comes back with its
+    /// handles**, and goes on handing out new ones from where it left off —
+    /// which is what [`Grants::next_handle`] is written down for.
+    #[test]
+    fn a_list_read_back_keeps_its_handles_and_hands_out_the_next_one() {
+        let mut grants = one_grant();
+        let taxes = grants.grant(
+            Grant::checked(
+                "@files",
+                Reach::Folder(PathBuf::from("/home/anna/Taxes")),
+                noon(),
+                hour(),
+            )
+            .unwrap(),
+        );
+        let held: Vec<Held> = grants.active_at(noon()).cloned().collect();
+        let next = grants.next_handle();
+
+        let mut read = Grants::remembered(held, next.as_u64()).unwrap();
+        assert_eq!(read.permitting(&files(), &march(), noon()), Ok(GrantId(0)));
+        assert!(
+            read.revoke(taxes),
+            "the handle came back as another grant's"
+        );
+        assert_ne!(read.grant(granted_for(hour() * 2).unwrap()), taxes);
+    }
+
+    /// **A list naming one handle twice is refused whole**, because revoking
+    /// the grant a person can see would take away whichever of the two came
+    /// first.
+    #[test]
+    fn a_list_with_one_handle_on_it_twice_is_refused() {
+        let one = Held {
+            id: GrantId(4),
+            grant: granted_for(hour()).unwrap(),
+        };
+        let other = Held {
+            id: GrantId(4),
+            grant: Grant::checked(
+                "@files",
+                Reach::Folder(PathBuf::from("/home/anna/Taxes")),
+                noon(),
+                hour(),
+            )
+            .unwrap(),
+        };
+        assert_eq!(
+            Grants::remembered(vec![one, other], 5).unwrap_err(),
+            NotOneList::TwoGrants(GrantId(4))
+        );
+    }
+
+    /// **A list that would hand out a handle it is already using is refused**,
+    /// rather than quietly giving two grants one handle a moment later.
+    #[test]
+    fn a_list_that_would_reuse_a_handle_is_refused() {
+        let held = vec![Held {
+            id: GrantId(7),
+            grant: granted_for(hour()).unwrap(),
+        }];
+        assert_eq!(
+            Grants::remembered(held.clone(), 7).unwrap_err(),
+            NotOneList::Reused(GrantId(7))
+        );
+        assert_eq!(
+            Grants::remembered(held.clone(), 0).unwrap_err(),
+            NotOneList::Reused(GrantId(7))
+        );
+        assert!(Grants::remembered(held, 8).is_ok());
     }
 
     /// The list is written down and read back — a grant made on Monday is on

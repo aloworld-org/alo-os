@@ -28,12 +28,15 @@
 mod running {
     use std::path::Path;
     use std::process::ExitCode;
+    use std::time::SystemTime;
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking,
         session, signalling, starting, unix,
     };
+    use alo_capability::Grants;
     use alo_keeping::Writing;
+    use alo_remembering::{NotRemembered, THE_GRANTS};
 
     /// Serve until somebody asks the service to stop, and say what it did.
     ///
@@ -117,6 +120,8 @@ mod running {
                 said: why.said(&strings).text().to_owned(),
             })?;
 
+        let mut grants = whatever_was_granted()?;
+
         let (waking, stop) = Waking::made().map_err(|why| NotStarted::NoStop { why })?;
         signalling::on_sigterm(stop)?;
 
@@ -137,6 +142,7 @@ mod running {
                 &listening,
                 &waking,
                 &strings,
+                &mut grants,
                 &mut bounding,
                 &mut writing,
             ),
@@ -146,6 +152,41 @@ mod running {
             eprintln!("alo-agentd: the boundary could not be given back: {why}");
         }
         served
+    }
+
+    /// What this person had granted before this process existed.
+    ///
+    /// The one place in this service that names the file a machine keeps its
+    /// grants in. What comes back is a value; everything downstream of here has
+    /// only that, which is what makes the file unreachable from the socket.
+    ///
+    /// # A machine with nothing granted, and a machine whose grants will not
+    /// read, are two different machines
+    ///
+    /// No file at all is the ordinary first morning: nobody has picked a folder
+    /// yet, the list is empty, and every verb is refused in the grants' own
+    /// words. That is not an error and is not reported as one.
+    ///
+    /// A file that is **there** and is not believable stops the process, and
+    /// the reason is the one `alo_agentd::trusting` gives about the machine
+    /// description: whoever can write this file says what this machine's agent
+    /// may reach. A daemon that shrugged and served under an empty list would
+    /// be a machine where deleting somebody's grants and corrupting them look
+    /// the same from outside — and the person would find out by discovering
+    /// their agent can no longer read their invoices, which is exactly the
+    /// silence law 1 is about.
+    ///
+    /// The clock is read here, once, because expiry is measured from now: what
+    /// has already run out is dropped as the list is read rather than carried
+    /// into the service and filtered later.
+    fn whatever_was_granted() -> Result<Grants, NotStarted> {
+        match alo_remembering::remembered(Path::new(THE_GRANTS), SystemTime::now()) {
+            Ok(grants) => Ok(grants),
+            Err(NotRemembered::NotThere { .. }) => Ok(Grants::default()),
+            Err(why) => Err(NotStarted::NoGrants {
+                why: why.to_string(),
+            }),
+        }
     }
 }
 

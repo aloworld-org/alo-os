@@ -59,6 +59,7 @@ dependencies = [
  "alo-models",
  "alo-protocol",
  "alo-record",
+ "alo-remembering",
  "alo-saying",
  "alo-secrets",
  "alo-strings",
@@ -388,6 +389,18 @@ dependencies = [
  "alo-strings",
  "alo-turn",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-remembering"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-picking",
+ "rustix 1.1.4",
+ "serde",
+ "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
