@@ -19,10 +19,16 @@
 //!   it, because a key that silently does nothing is the worst outcome
 //!   available.
 //!
-//! What the overlay *shows* once it is open — what is granted, what model
-//! would answer, whether anything left the machine — is the next task in the
-//! plan and belongs in this crate when it comes. What the overlay *looks
-//! like* is the compositor's and is not modelled here at all.
+//! And what the overlay **shows** once it is open and before anybody has
+//! asked it anything:
+//!
+//! - [`AtRest`] — the whole of it, derived from what the machine holds: what
+//!   would answer, what the agent may reach, and what is leaving;
+//! - [`Standing`] — which of the three states that adds up to, with a
+//!   sentence for each and an instruction in the two a person can act on.
+//!
+//! What the overlay *looks like* is the compositor's and is not modelled here
+//! at all.
 //!
 //! ```
 //! use alo_overlay::{Compositor, Pressed, SurfaceRefused, SurfaceRequest, Summoning};
@@ -58,6 +64,11 @@
 //! | [`summoning`] | The key's half: one press, once only, and the answer |
 //! | [`surface`] | The compositor's half: the request, its refusal, the port |
 //! | [`refusing`] | What the person reads when the agent cannot appear |
+//! | [`resting`] | What it shows once it is up and nothing has been asked |
+//! | [`standing`] | Which of the three states that is, and the sentence for it |
+//! | [`answering`] | What would answer, if a question were asked now |
+//! | [`granted`] | How much the agent may reach at this moment |
+//! | [`quiet`] | Whether anything is leaving this machine at this moment |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //!
 //! # Three things this crate is deliberately not
@@ -75,6 +86,12 @@
 //! an invocation — it is a surface appearing. What the overlay offers when a
 //! question is actually asked is `alo-context`'s law, not this crate's.
 //!
+//! [`AtRest`] does not change that. What it reads is what the machine says
+//! about **itself** — what it would answer with, what it may reach, what is
+//! leaving it — which is nobody's content, and it reads it at the moment the
+//! key is pressed rather than continuously. A background reader keeping it
+//! fresh would be a bug in this product, not a feature request.
+//!
 //! **It is not a verb.** A person pressing a key on their own machine needs
 //! no grant and is never proposed for approval; there is no connection
 //! between this crate and `alo-capability`, and that is not an omission —
@@ -82,15 +99,21 @@
 //!
 //! # Nothing here says anything in English by itself
 //!
-//! Both sentences a person can be shown are declared in [`words`] and
-//! answered through [`NotSummoned::said`] in the language they read. The one
-//! exception is [`NotOpen`], which reports the shell wiring disagreeing with
-//! this model — alo OS's own bug, read by whoever is fixing it, in the same
-//! deliberate English as `alo_shortcuts::DefaultsError`.
+//! Every sentence a person can be shown is declared in [`words`] and answered
+//! through a `said` in the language they read — the two refusals, the three
+//! states, and the three readings under them. The one exception is
+//! [`NotOpen`], which reports the shell wiring disagreeing with this model —
+//! alo OS's own bug, read by whoever is fixing it, in the same deliberate
+//! English as `alo_shortcuts::DefaultsError`.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answering;
+pub mod granted;
+pub mod quiet;
 pub mod refusing;
+pub mod resting;
+pub mod standing;
 pub mod summoning;
 pub mod surface;
 pub mod words;
@@ -98,7 +121,12 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use answering::WouldAnswer;
+pub use granted::Granted;
+pub use quiet::Quiet;
 pub use refusing::NotSummoned;
+pub use resting::AtRest;
+pub use standing::Standing;
 pub use summoning::{NotOpen, Pressed, Summoning};
 pub use surface::{Compositor, SurfaceRefused, SurfaceRequest};
-pub use words::{Word, WordsError, declare_into, overlay_words};
+pub use words::{Counted, Word, WordsError, declare_into, overlay_words};

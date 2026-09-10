@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 16] = [
+pub const EVERY_LIST: [&str; 17] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -90,6 +90,7 @@ pub const EVERY_LIST: [&str; 16] = [
     "alo-files",
     "alo-keeping",
     "alo-models",
+    "alo-overlay",
     "alo-protocol",
     "alo-shortcuts",
     "alo-turn",
@@ -141,6 +142,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-files", alo_files::words::declare_into)?;
     declare(&mut vocabulary, "alo-keeping", alo_keeping::declare_into)?;
     declare(&mut vocabulary, "alo-models", alo_models::declare_into)?;
+    declare(&mut vocabulary, "alo-overlay", alo_overlay::declare_into)?;
     declare(&mut vocabulary, "alo-protocol", alo_protocol::declare_into)?;
     declare(
         &mut vocabulary,
@@ -180,7 +182,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 16] = [
+    const ONE_STRING_EACH: [(&str, &str); 17] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -194,6 +196,7 @@ mod tests {
         ("alo-files", "files.failed.not-a-file-verb"),
         ("alo-keeping", "keeping.forever"),
         ("alo-models", "models.source.this-machine"),
+        ("alo-overlay", "overlay.at-rest.nothing-chosen"),
         ("alo-protocol", "protocol.too-long"),
         ("alo-shortcuts", "shortcuts.action.the-agent"),
         ("alo-turn", "turn.closed"),
@@ -252,6 +255,7 @@ mod tests {
             alo_files::file_words().unwrap().how_many(),
             alo_keeping::keeping_words().unwrap().how_many(),
             alo_models::model_words().unwrap().how_many(),
+            alo_overlay::overlay_words().unwrap().how_many(),
             alo_protocol::protocol_words().unwrap().how_many(),
             alo_shortcuts::shortcut_words().unwrap().how_many(),
             alo_turn::turn_words().unwrap().how_many(),

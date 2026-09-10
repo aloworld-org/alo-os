@@ -9,21 +9,39 @@
 //! re-decided.
 //!
 //! Nothing here is compiled into the crate: it exists under `cfg(test)` only.
+//!
+//! # It is not only this crate's words any more
+//!
+//! What the overlay shows at rest puts *other crates'* clauses inside its own
+//! lines — `alo-models` words where a question would be answered, and this
+//! crate's line has a gap for it. A fixture holding only this crate's list
+//! would answer that clause with its own key in guillemets and every test
+//! below would still pass, which is a fixture proving the tests rather than
+//! the code. So [`its_own_and_what_it_quotes`] is the two lists, in the order
+//! `alo-saying` collects them into one vocabulary for the machine.
 
 #![expect(
     clippy::unwrap_used,
     reason = "in a fixture, a panic on an unexpected None or Err is the failure being reported"
 )]
 
-use alo_strings::{Language, Strings, Translation};
+use alo_strings::{Language, Strings, Translation, Vocabulary};
 
-use crate::words::{Word, overlay_words};
+use crate::words::{Word, declare_into};
+
+/// Everything this crate says, and everything it puts inside what it says.
+fn its_own_and_what_it_quotes() -> Vocabulary {
+    let mut vocabulary = Vocabulary::empty();
+    declare_into(&mut vocabulary).unwrap();
+    alo_models::declare_into(&mut vocabulary).unwrap();
+    vocabulary
+}
 
 /// This crate's own words, with nothing translated: what a machine that has
 /// no translations of them shows, which is what most of these tests are
 /// about.
 pub(crate) fn in_english() -> Strings {
-    Strings::of(overlay_words().unwrap())
+    Strings::of(its_own_and_what_it_quotes())
 }
 
 /// The same, with some of these words translated into German and German
@@ -31,7 +49,7 @@ pub(crate) fn in_english() -> Strings {
 /// tests translation with, so a translator's file exercised here looks like
 /// the one exercised everywhere else.
 pub(crate) fn translated(words: &[(Word, &str)]) -> Strings {
-    let vocabulary = overlay_words().unwrap();
+    let vocabulary = its_own_and_what_it_quotes();
     let mut german = Translation::into_language(german_language());
     for (word, says) in words {
         german = german.says(word.key(), *says);

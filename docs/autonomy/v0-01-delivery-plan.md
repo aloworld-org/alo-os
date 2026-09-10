@@ -112,6 +112,15 @@ repository has and no screen has ever shown.
   *ready*; every string externalised; and the *nothing chosen* case says what to
   do rather than being empty.
 
+**Done, 2026-09-10.** `crates/alo-overlay`: `AtRest` reads the person's own
+settings, the machine's grants and the machine's egress indicator, and
+`Standing` derives the three states from them with no constructor that can name
+one. Nine strings and two counted ones under the `overlay` area, and
+`alo-saying` now collects this crate — it did not, so every sentence task 2
+declared would have reached a real shell as a bug. Report:
+`docs/autonomy/updates/what-the-overlay-shows-at-rest.md`. The next task (4) was
+already written.
+
 ### 4. Accounts and session entry — the local account
 
 **Status:** lane B's — scheduled in `v0-01-lane-b-plan.md` as its task 1, and

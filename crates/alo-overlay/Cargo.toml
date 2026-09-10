@@ -11,11 +11,38 @@ repository.workspace = true
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
+# The three things the overlay shows before a question is asked, each read
+# from the crate that already decides it rather than from a number handed to
+# this one. `alo-capability` holds the grants and answers what is active right
+# now; `alo-choosing` holds what the person picked, and `alo-models` says where
+# a question put to that choice would be answered; `alo-egress` owns the
+# indicator, and `src/quiet.rs` is the only file that names it. These are the
+# same crates `alo-agentd` walks when a turn really asks something — which is
+# what makes the overlay's state derived from the daemon's own answers rather
+# than a second opinion beside them.
+alo-capability = { path = "../alo-capability" }
+alo-choosing = { path = "../alo-choosing" }
+alo-egress = { path = "../alo-egress" }
+alo-models = { path = "../alo-models" }
+
 [dev-dependencies]
 # The key half of the seam: the integration test presses the shipped chord and
 # follows it through `Action::TheAgent` into a summons, because the acceptance
 # is about one key and not about a state machine alone.
 alo-shortcuts = { path = "../alo-shortcuts" }
+
+# The machine's one vocabulary, which is what a shell really holds. This
+# crate's own tests are written against its own list; the integration test asks
+# the question that list cannot — whether what this crate says survives being
+# put beside everybody else's, and whether it is collected at all. A
+# dev-dependency and not a dependency, because the direction is the one every
+# crate here takes: a crate that says something is collected by `alo-saying`,
+# and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+# For reading a settings file back the way `alo-agentd` does, and for showing
+# that reading the grants never changes them.
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

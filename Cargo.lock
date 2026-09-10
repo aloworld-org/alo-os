@@ -284,8 +284,14 @@ dependencies = [
 name = "alo-overlay"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
+ "alo-choosing",
+ "alo-egress",
+ "alo-models",
+ "alo-saying",
  "alo-shortcuts",
  "alo-strings",
+ "serde_json",
  "thiserror 2.0.20",
 ]
 
@@ -334,6 +340,7 @@ dependencies = [
  "alo-files",
  "alo-keeping",
  "alo-models",
+ "alo-overlay",
  "alo-protocol",
  "alo-shortcuts",
  "alo-strings",
