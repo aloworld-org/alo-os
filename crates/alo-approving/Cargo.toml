@@ -1,0 +1,53 @@
+[package]
+name = "alo-approving"
+version = "0.0.1"
+description = "One approval, and the sentence a person approves: the change an agent proposed, put in front of somebody exactly as the turn worded it, answered once, and carried out."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The question itself. `alo-capability` decides what may be proposed, words it
+# from the validated arguments, and takes it off the list the moment it is
+# answered. Nothing here re-decides any of that: this crate carries a
+# `Waiting` to a screen and an answer back.
+alo-capability = { path = "../alo-capability" }
+
+# The turn the question was asked inside, and the one road to carrying it out.
+# A surface that executed anything itself would be a second executor with no
+# record behind it; every answer here goes through `Turning::approving` or
+# `Turning::declining`, which is where the record is written.
+alo-turn = { path = "../alo-turn" }
+
+# What comes back when a change was carried out, handed on whole rather than
+# summarised — a surface that described the outcome in its own words would be a
+# second account of a moment the machine already has one for.
+alo-files = { path = "../alo-files" }
+
+# Everything a person reads here: the two answers, and every way the question
+# cannot be put to them.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, and only for the error its own string list
+# can return to whoever is fixing that list.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# What it takes to stand a whole turn up in a test: the invocation, the
+# machine's indicator, and somewhere to keep the record — in memory for this
+# crate's own tests, on a real disk for the acceptance test, because a record
+# nothing can read afterwards answers no question anybody will ask of it.
+alo-context = { path = "../alo-context" }
+alo-egress = { path = "../alo-egress" }
+alo-keeping = { path = "../alo-keeping" }
+alo-record = { path = "../alo-record" }
+
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the acceptance test asks the question that list cannot — whether
+# what this crate says survives being put beside everybody else's, and whether
+# it is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

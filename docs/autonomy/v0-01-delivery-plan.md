@@ -192,6 +192,25 @@ The exit gate's middle: *approve the sentence, see it happen*. `alo-turn` and
   approved once, carried out, and refused after its proposal has expired — with
   the record carrying what was approved and by whom.
 
+**Done, 2026-09-10.** `crates/alo-approving`: `Asked` is made from an
+`alo_capability::Waiting` and from nothing else — no constructor from text, no
+public field, no `From`, no deserialiser, and compile-fail examples that turn
+adding one into a failing build — so what a compositor is handed is the sentence
+the machine generated from the arguments it validated. `Approving` takes the
+question off the surface before the turn is touched and every answer goes
+through `Turning::approving`, which is where the grants are asked again and the
+record is written: one approval carries one change out, a second answer runs
+nothing, and a question that stood too long is neither put up nor carried out —
+refused in `alo-capability`'s own words, quoting the change so it can be asked
+for again. Nowhere to put the question refuses in words rather than in silence.
+Five strings under a new `approving` area, collected by `alo-saying`.
+`alo-turn` gained two additive reads (`Turning::proposed`, `Turning::strings`)
+so a surface can tell *answered already* from *stood too long* and cannot word a
+change in a vocabulary of its own. Report:
+`docs/autonomy/updates/one-approval-and-the-sentence-a-person-approves.md`. The
+next task (8) was already written. No pixels are claimed and none are tested;
+drawing it is the compositor's, and *On the machine* does not move.
+
 ### 8. Afterwards, ask what it did
 
 **Status:** ready. **Depends on:** 7.

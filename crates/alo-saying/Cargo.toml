@@ -21,6 +21,7 @@ alo-accounts = { path = "../alo-accounts" }
 alo-answering = { path = "../alo-answering" }
 alo-appearance = { path = "../alo-appearance" }
 alo-applications = { path = "../alo-applications" }
+alo-approving = { path = "../alo-approving" }
 alo-asking = { path = "../alo-asking" }
 alo-capability = { path = "../alo-capability" }
 alo-choosing = { path = "../alo-choosing" }

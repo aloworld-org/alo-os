@@ -9,6 +9,7 @@ members = [
   "crates/alo-appearance",
   "crates/alo-asking",
   "crates/alo-applications",
+  "crates/alo-approving",
   "crates/alo-bounding",
   "crates/alo-bounding-map",
   "crates/alo-boundaryd",

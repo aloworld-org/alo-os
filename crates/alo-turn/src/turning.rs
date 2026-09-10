@@ -71,7 +71,7 @@ use alo_capability::{
 use alo_context::{Context, Turn};
 use alo_files::Answer;
 use alo_record::Entry;
-use alo_strings::Said;
+use alo_strings::{Said, Strings};
 
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
@@ -359,6 +359,40 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// to answer with and the sentence the person is being asked about.
     pub fn waiting_at(&self, now: SystemTime) -> impl Iterator<Item = &Waiting> {
         self.approvals.waiting_at(now)
+    }
+
+    /// One change this turn put to somebody, by the number it is answered by —
+    /// whether or not the question still stands.
+    ///
+    /// [`Turning::waiting_at`] is the list a shell draws; this is the one
+    /// question a surface has in front of it, and it deliberately answers for a
+    /// question that has lapsed as well as one that has not. A surface that
+    /// could only see the live ones would have one sentence for *that was
+    /// answered already* and *that stood too long* — two facts a person does
+    /// two different things about, and only one of which means asking the agent
+    /// for it again.
+    ///
+    /// [`None`] once it has been answered: answering takes a proposal off the
+    /// list in the same act, which is *one approval, one execution* at the
+    /// list's end.
+    #[must_use]
+    pub fn proposed(&self, id: ProposalId) -> Option<&Waiting> {
+        self.approvals.of(id)
+    }
+
+    /// The words the person in front of this machine reads.
+    ///
+    /// The machine's own vocabulary, lent out while a turn holds the machine, so
+    /// that whatever puts a proposal on a screen words it with the same strings
+    /// the record and the refusals are worded with. A surface that carried a
+    /// vocabulary of its own would be a machine able to describe one change two
+    /// ways, and the description a person read would be the one nothing checked.
+    ///
+    /// Answers for as long as the words themselves live rather than for as long
+    /// as this borrow does, exactly as `Machine::strings` does.
+    #[must_use]
+    pub fn strings(&self) -> &'m Strings {
+        self.machine.strings()
     }
 
     /// A question that was refused before it was put anywhere, written down.
