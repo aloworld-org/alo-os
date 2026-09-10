@@ -83,6 +83,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+mod believing;
 pub mod damage;
 pub mod failing;
 pub mod head;

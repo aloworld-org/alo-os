@@ -38,7 +38,7 @@ use alo_keeping::Writing;
 use alo_record::{Asking, Only};
 use alo_recounting::words::EVERY_WORD;
 use alo_recounting::{
-    Account, Compositor, NotRecounted, Outcome, Recounting, Recounts, SurfaceRefused, Told,
+    Account, AtMost, Compositor, NotRecounted, Outcome, Recounting, Recounts, SurfaceRefused, Told,
 };
 use alo_saying::everything_this_machine_can_say;
 use alo_strings::{Said, Strings};
@@ -153,7 +153,26 @@ fn a_turn_on_this_machine(places: &Places, body: impl FnOnce(&mut Turning<'_, '_
     body(&mut turning, &grants);
     assert!(!turning.is_closed(), "the machine stopped keeping evidence");
     let _ = turning.ending(&mut grants);
+    drop(machine);
+    ours_alone(&places.kept_at);
 }
+
+/// A record left readable and writable by nobody but its owner.
+///
+/// An account is read through `alo_keeping::Reading::believed_at`, which
+/// refuses a record somebody else could have written. What mode a file is
+/// created with depends on the umask of whoever is running the tests, and a
+/// suite that passed or failed on that would be measuring the shell rather than
+/// the code.
+#[cfg(unix)]
+fn ours_alone(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600)).unwrap();
+}
+
+/// The same, on a machine with no such question to be asked.
+#[cfg(not(unix))]
+fn ours_alone(_path: &Path) {}
 
 /// A machine with nothing in front of a turn, which is not a machine alo OS
 /// ships. `alo_turn::bounding` says why there is no such implementation in any
@@ -226,7 +245,9 @@ fn a_person_is_answered_from_the_record_on_the_disk() {
     // The session is over. Nothing but a path crosses this line.
     let strings = what_this_machine_says();
     let recounting = Recounting::kept_at(&places.kept_at);
-    let account = recounting.about(&Asking::anything()).unwrap();
+    let account = recounting
+        .about(&Asking::anything(), AtMost::ONE_SITTING)
+        .unwrap();
 
     assert_eq!(account.how_many(), 2);
     assert!(account.goes_all_the_way_back());
@@ -284,7 +305,10 @@ fn a_person_is_answered_from_the_record_on_the_disk() {
         .unwrap();
     drop(later);
     assert_eq!(
-        recounting.about(&Asking::anything()).unwrap().how_many(),
+        recounting
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
+            .unwrap()
+            .how_many(),
         3,
         "the answer came from memory of a session rather than from the file"
     );
@@ -330,11 +354,17 @@ fn a_record_that_is_not_there_is_refused_rather_than_answered_as_nothing() {
     });
 
     let recounting = Recounting::kept_at(&places.kept_at);
-    assert_eq!(recounting.about(&Asking::anything()).unwrap().how_many(), 1);
+    assert_eq!(
+        recounting
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
+            .unwrap()
+            .how_many(),
+        1
+    );
 
     // Somebody deletes the record. What happened did happen.
     fs::remove_file(&places.kept_at).unwrap();
-    let Err(why) = recounting.about(&Asking::anything()) else {
+    let Err(why) = recounting.about(&Asking::anything(), AtMost::ONE_SITTING) else {
         panic!("a machine whose record was deleted answered as though nothing had happened");
     };
     assert!(why.there_is_no_record());
@@ -347,7 +377,7 @@ fn a_record_that_is_not_there_is_refused_rather_than_answered_as_nothing() {
     // And with nowhere to show it, the answer is still a sentence rather than
     // an empty screen.
     assert_eq!(
-        recounting.show(None, &Asking::anything()),
+        recounting.show(None, &Asking::anything(), AtMost::ONE_SITTING),
         Recounts::Refused(NotRecounted::NoCompositor)
     );
 }
@@ -407,7 +437,7 @@ fn a_turn_that_was_refused_reads_back_as_refused() {
     });
 
     let account = Recounting::kept_at(&places.kept_at)
-        .about(&Asking::anything())
+        .about(&Asking::anything(), AtMost::ONE_SITTING)
         .unwrap();
     let outcomes: Vec<Outcome> = account.told().iter().map(Told::outcome).collect();
     assert_eq!(
@@ -444,13 +474,19 @@ fn a_turn_that_was_refused_reads_back_as_refused() {
     // crate does not get a second opinion about what counts as a refusal:
     // `alo_record::Only::Refusals` is the one definition.
     let refusals = Recounting::kept_at(&places.kept_at)
-        .about(&Asking::anything().only(Only::Refusals))
+        .about(
+            &Asking::anything().only(Only::Refusals),
+            AtMost::ONE_SITTING,
+        )
         .unwrap();
     assert_eq!(refusals.how_many(), 3);
     assert_eq!(refusals.how_many_in_the_record(), 3);
     assert!(
         Recounting::kept_at(&places.kept_at)
-            .about(&Asking::anything().only(Only::Executions))
+            .about(
+                &Asking::anything().only(Only::Executions),
+                AtMost::ONE_SITTING
+            )
             .unwrap()
             .is_empty(),
         "a refused afternoon answered a question about what ran"
@@ -508,7 +544,7 @@ fn nothing_in_the_answer_is_a_sentence_a_model_wrote() {
 
     let strings = what_this_machine_says();
     let account = Recounting::kept_at(&places.kept_at)
-        .about(&Asking::anything())
+        .about(&Asking::anything(), AtMost::ONE_SITTING)
         .unwrap();
     assert_eq!(account.how_many(), 2);
 
@@ -613,7 +649,9 @@ fn the_account_reaches_a_screen_whole() {
 
     let recounting = Recounting::kept_at(&places.kept_at);
     let mut screen = Screen::default();
-    let Recounts::Shown(account) = recounting.show(Some(&mut screen), &Asking::anything()) else {
+    let Recounts::Shown(account) =
+        recounting.show(Some(&mut screen), &Asking::anything(), AtMost::ONE_SITTING)
+    else {
         panic!("a record that was there was not put in front of anybody");
     };
     assert_eq!(screen.shown.len(), 1);
@@ -623,7 +661,7 @@ fn the_account_reaches_a_screen_whole() {
     // A question about what left this machine is answered with nothing, because
     // nothing did — the measurement law 1 promises rather than the promise.
     let left = recounting
-        .about(&Asking::anything().only(Only::Egress))
+        .about(&Asking::anything().only(Only::Egress), AtMost::ONE_SITTING)
         .unwrap();
     assert!(left.is_empty());
     let said = left.said(&what_this_machine_says());

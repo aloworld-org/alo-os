@@ -401,9 +401,63 @@ pub(crate) fn somewhere_of_our_own(what: &str) -> PathBuf {
 }
 
 /// A record on a real disk, holding these entries.
+///
+/// Left as a file this machine will believe: the account is read through
+/// `alo_keeping::Reading::believed_at`, which refuses a record somebody else
+/// could have written, and a fixture whose mode depended on the umask of
+/// whoever ran the tests would pass or fail for a reason that has nothing to do
+/// with the code.
 pub(crate) fn a_record_at(path: &Path, entries: &[Entry]) {
     let mut writing = Writing::opening(path).unwrap();
     for entry in entries {
         writing.keep(entry).unwrap();
     }
+    drop(writing);
+    ours_alone(path);
+}
+
+/// A file left readable and writable by nobody but its owner.
+#[cfg(unix)]
+pub(crate) fn ours_alone(path: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).unwrap();
+}
+
+/// The same, where the machine has no such question to be asked.
+#[cfg(not(unix))]
+pub(crate) fn ours_alone(_path: &Path) {}
+
+/// What a machine says about itself, as far as this crate reads it: a
+/// description on a real disk, in this shape, keeping its record there.
+///
+/// Only the two keys `where_it_is.rs` is answerable for are varied. The rest is
+/// written as `docs/contracts/machine-description.md` has it, so that a fixture
+/// this reader accepts is one the daemon would recognise.
+pub(crate) fn a_description_at(at: &Path, format: u32, record: &str) -> PathBuf {
+    std::fs::write(
+        at,
+        format!(
+            "format = {format}\n\n\
+             [logins]\nperson = 1000\nagent = 1001\ngroup = 1002\n\n\
+             [agent]\nname = \"@files\"\nturn-seconds = 900\nproposal-seconds = 120\n\n\
+             [record]\npath = \"{record}\"\nkeeping = \"forever\"\n"
+        ),
+    )
+    .unwrap();
+    at.to_path_buf()
+}
+
+/// An afternoon long enough to be bounded: this many things that happened, a
+/// minute apart, so that *the most recent* is a moment rather than a position.
+pub(crate) fn a_long_afternoon(how_many: usize) -> Vec<Entry> {
+    (0..how_many)
+        .map(|which| {
+            Entry::turned_away(
+                "tidy_everything",
+                "there is no verb called tidy_everything",
+                &files(),
+                noon() + Duration::from_secs(60 * which as u64),
+            )
+        })
+        .collect()
 }

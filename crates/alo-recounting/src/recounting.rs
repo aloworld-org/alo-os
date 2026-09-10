@@ -49,8 +49,10 @@ use alo_keeping::Reading;
 use alo_record::Asking;
 
 use crate::account::Account;
+use crate::bounding::AtMost;
 use crate::refusing::NotRecounted;
 use crate::surface::Compositor;
+use crate::where_it_is::{THE_DESCRIPTION, where_the_record_is};
 
 /// What one call to [`Recounting::show`] did.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,7 +75,7 @@ pub enum Recounts {
 /// ```
 /// use alo_keeping::Writing;
 /// use alo_record::{Asking, Entry, Only};
-/// use alo_recounting::{Outcome, Recounting};
+/// use alo_recounting::{AtMost, Outcome, Recounting};
 /// use alo_capability::Grantee;
 /// use std::time::{Duration, SystemTime};
 ///
@@ -88,10 +90,17 @@ pub enum Recounts {
 /// writing
 ///     .keep(&Entry::answered_here(&Grantee::named("@files"), now))
 ///     .expect("an answer given on this machine");
+/// drop(writing);
+/// # #[cfg(unix)]
+/// # {
+/// #     use std::os::unix::fs::PermissionsExt;
+/// #     let ours = std::fs::Permissions::from_mode(0o600);
+/// #     std::fs::set_permissions(&kept_at, ours).expect("a record of our own");
+/// # }
 ///
 /// // Afterwards, somebody asks what it did — and the answer comes off the disk.
 /// let recounting = Recounting::kept_at(&kept_at);
-/// let account = recounting.about(&Asking::anything()).expect("this machine's record");
+/// let account = recounting.about(&Asking::anything(), AtMost::ONE_SITTING).expect("this machine's record");
 /// assert_eq!(account.how_many(), 1);
 /// assert_eq!(
 ///     account.told().first().map(|told| told.outcome()),
@@ -102,7 +111,7 @@ pub enum Recounts {
 /// // Nothing was refused, so a question about refusals answers with nothing —
 /// // and says so, rather than being an empty screen.
 /// let refusals = recounting
-///     .about(&Asking::anything().only(Only::Refusals))
+///     .about(&Asking::anything().only(Only::Refusals), AtMost::ONE_SITTING)
 ///     .expect("this machine's record");
 /// assert!(refusals.is_empty());
 /// ```
@@ -124,6 +133,39 @@ impl Recounting {
         }
     }
 
+    /// The record this machine says it keeps.
+    ///
+    /// The door a surface on a running machine uses, and the one that makes an
+    /// account reachable at all: where the record is kept is
+    /// `docs/contracts/machine-description.md`'s `[record].path`, and until
+    /// something read it on the person's behalf the only caller that could name
+    /// the path was a test. `where_it_is.rs` is what is read and what is
+    /// deliberately ignored.
+    ///
+    /// # Errors
+    ///
+    /// [`NotRecounted::Nowhere`] when this machine cannot say where it keeps a
+    /// record — never *nothing happened*, which is a different sentence about a
+    /// different machine.
+    pub fn on_this_machine() -> Result<Self, NotRecounted> {
+        Self::described_at(Path::new(THE_DESCRIPTION))
+    }
+
+    /// The same, from a description somewhere else.
+    ///
+    /// What [`Recounting::on_this_machine`] is, with the path written down:
+    /// whoever stands a machine up, and this crate's own tests, are the two
+    /// callers that name one.
+    ///
+    /// # Errors
+    ///
+    /// [`NotRecounted::Nowhere`], as above.
+    pub fn described_at(description: &Path) -> Result<Self, NotRecounted> {
+        where_the_record_is(description)
+            .map(|kept_at| Self { kept_at })
+            .map_err(NotRecounted::Nowhere)
+    }
+
     /// Where the record is.
     #[must_use]
     pub fn where_it_is(&self) -> &Path {
@@ -137,16 +179,29 @@ impl Recounting {
     /// with a question language of its own would be answering by matching text
     /// against lines that were worded for somebody else.
     ///
+    /// **It is read through `alo_keeping::Reading::believed_at`**, which asks
+    /// who may have written the file before it reads a word of it — not a link,
+    /// root's or the person's own, and nobody else able to write it. A person
+    /// being shown an account of their own machine is being asked to believe a
+    /// file, and a record somebody else could have written is not evidence of
+    /// anything.
+    ///
+    /// **And it is bounded.** [`AtMost`] is not optional and there is no door
+    /// beside this one that answers with the whole record; what is kept is the
+    /// most recent of what answered, and [`Account::is_all_that_answered`] says
+    /// whether anything was left out.
+    ///
     /// # Errors
     ///
     /// [`NotRecounted::Record`] carrying `alo_keeping::NotKept`, worded by the
     /// crate that refused: there is no record there, what is there is not one,
-    /// it was written by a newer alo OS, or the machine would not read it. A
-    /// missing record is **not** an empty account, and
-    /// [`NotRecounted::there_is_no_record`] is how a caller tells them apart.
-    pub fn about(&self, asking: &Asking) -> Result<Account, NotRecounted> {
-        let reading = Reading::at(&self.kept_at).map_err(NotRecounted::Record)?;
-        Ok(Account::of(&reading, asking))
+    /// it was written by a newer alo OS, the file is one this machine will not
+    /// believe, or the machine would not read it. A missing record is **not** an
+    /// empty account, and [`NotRecounted::there_is_no_record`] is how a caller
+    /// tells them apart.
+    pub fn about(&self, asking: &Asking, most: AtMost) -> Result<Account, NotRecounted> {
+        let reading = Reading::believed_at(&self.kept_at).map_err(NotRecounted::Record)?;
+        Ok(Account::of(&reading, asking, most))
     }
 
     /// Ask, and put the answer in front of the person.
@@ -157,11 +212,16 @@ impl Recounting {
     /// in it — a person who asked what their machine did and was shown nothing
     /// has been told something about their machine, and on a machine whose
     /// record cannot be reached that something is false.
-    pub fn show(&self, compositor: Option<&mut dyn Compositor>, asking: &Asking) -> Recounts {
+    pub fn show(
+        &self,
+        compositor: Option<&mut dyn Compositor>,
+        asking: &Asking,
+        most: AtMost,
+    ) -> Recounts {
         let Some(compositor) = compositor else {
             return Recounts::Refused(NotRecounted::NoCompositor);
         };
-        let account = match self.about(asking) {
+        let account = match self.about(asking, most) {
             Ok(account) => account,
             Err(why) => return Recounts::Refused(why),
         };
@@ -227,14 +287,18 @@ mod tests {
         let recounting = Recounting::kept_at(&kept_at);
         assert_eq!(recounting.where_it_is(), kept_at.as_path());
 
-        let first = recounting.about(&Asking::anything()).unwrap();
+        let first = recounting
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
+            .unwrap();
         assert_eq!(first.how_many(), 1);
 
         // The machine keeps working while somebody is reading.
         let mut writing = Writing::opening(&kept_at).unwrap();
         writing.keep(&answered_here()).unwrap();
 
-        let again = recounting.about(&Asking::anything()).unwrap();
+        let again = recounting
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
+            .unwrap();
         assert_eq!(again.how_many(), 2, "the answer came from memory");
         assert_eq!(
             again.told().last().map(Told::outcome),
@@ -254,7 +318,7 @@ mod tests {
         let kept_at = somewhere_of_our_own("missing");
         let recounting = Recounting::kept_at(&kept_at);
 
-        let Err(why) = recounting.about(&Asking::anything()) else {
+        let Err(why) = recounting.about(&Asking::anything(), AtMost::ONE_SITTING) else {
             panic!("a machine with no record answered as though nothing had happened");
         };
         assert!(matches!(
@@ -267,11 +331,15 @@ mod tests {
         // And a record that was written and then deleted is the same refusal,
         // which is the case this rule exists for.
         a_record_at(&kept_at, &[archived()]);
-        assert!(recounting.about(&Asking::anything()).is_ok());
+        assert!(
+            recounting
+                .about(&Asking::anything(), AtMost::ONE_SITTING)
+                .is_ok()
+        );
         std::fs::remove_file(&kept_at).unwrap();
         assert!(
             recounting
-                .about(&Asking::anything())
+                .about(&Asking::anything(), AtMost::ONE_SITTING)
                 .is_err_and(|why| why.there_is_no_record())
         );
     }
@@ -284,7 +352,7 @@ mod tests {
         let notes = somewhere_of_our_own("notes");
         std::fs::write(&notes, "notes about the invoice\n").unwrap();
         let refused = Recounting::kept_at(&notes)
-            .about(&Asking::anything())
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
             .unwrap_err();
         assert!(matches!(
             refused,
@@ -295,7 +363,7 @@ mod tests {
         let newer = somewhere_of_our_own("newer");
         std::fs::write(&newer, "{\"format\":2}\n").unwrap();
         let refused = Recounting::kept_at(&newer)
-            .about(&Asking::anything())
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
             .unwrap_err();
         assert!(matches!(
             refused,
@@ -313,7 +381,8 @@ mod tests {
         let recounting = Recounting::kept_at(&kept_at);
         let mut screen = Screen::default();
 
-        let Recounts::Shown(account) = recounting.show(Some(&mut screen), &Asking::anything())
+        let Recounts::Shown(account) =
+            recounting.show(Some(&mut screen), &Asking::anything(), AtMost::ONE_SITTING)
         else {
             panic!("a record that was there was not put in front of anybody");
         };
@@ -332,14 +401,14 @@ mod tests {
 
         // Nothing is drawing a screen at all.
         assert_eq!(
-            recounting.show(None, &Asking::anything()),
+            recounting.show(None, &Asking::anything(), AtMost::ONE_SITTING),
             Recounts::Refused(NotRecounted::NoCompositor)
         );
 
         // Something is drawing, and there is no display to draw on.
         let mut nowhere = NoScreen::default();
         assert_eq!(
-            recounting.show(Some(&mut nowhere), &Asking::anything()),
+            recounting.show(Some(&mut nowhere), &Asking::anything(), AtMost::ONE_SITTING),
             Recounts::Refused(NotRecounted::Surface(SurfaceRefused::NothingToShowOn))
         );
         assert_eq!(nowhere.offered, 1);
@@ -356,7 +425,7 @@ mod tests {
         // still be shown the same record.
         let mut screen = Screen::default();
         assert!(matches!(
-            recounting.show(Some(&mut screen), &Asking::anything()),
+            recounting.show(Some(&mut screen), &Asking::anything(), AtMost::ONE_SITTING),
             Recounts::Shown(_)
         ));
     }
@@ -370,7 +439,7 @@ mod tests {
         // There is no record at all here, so a call that read the disk would
         // refuse with `NotThere` rather than with the missing compositor.
         assert_eq!(
-            recounting.show(None, &Asking::anything()),
+            recounting.show(None, &Asking::anything(), AtMost::ONE_SITTING),
             Recounts::Refused(NotRecounted::NoCompositor)
         );
     }
@@ -384,12 +453,17 @@ mod tests {
         a_record_at(&kept_at, &an_afternoon());
         let recounting = Recounting::kept_at(&kept_at);
 
-        let everything = recounting.about(&Asking::anything()).unwrap();
+        let everything = recounting
+            .about(&Asking::anything(), AtMost::ONE_SITTING)
+            .unwrap();
         let refusals = recounting
-            .about(&Asking::anything().only(Only::Refusals))
+            .about(
+                &Asking::anything().only(Only::Refusals),
+                AtMost::ONE_SITTING,
+            )
             .unwrap();
         let left = recounting
-            .about(&Asking::anything().only(Only::Egress))
+            .about(&Asking::anything().only(Only::Egress), AtMost::ONE_SITTING)
             .unwrap();
 
         assert_eq!(everything.how_many(), an_afternoon().len());

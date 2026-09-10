@@ -8,10 +8,11 @@
 //!
 //! This crate is that surface's model, and deliberately nothing more:
 //!
-//! - [`Recounting`] — the record on this machine, asked a question and answered
-//!   from the file every time;
+//! - [`Recounting`] — the record on this machine, found where the machine says
+//!   it keeps one, asked a question and answered from the file every time;
 //! - [`Account`] — what the record answers: the lines, and what the record says
 //!   about its own completeness;
+//! - [`AtMost`] — how much of it is answered at once, which is not optional;
 //! - [`Told`] and [`Outcome`] — one entry as a person reads it, made from an
 //!   entry that was written down and from nothing else;
 //! - [`Compositor`] — the port whatever owns the screen implements to be handed
@@ -24,7 +25,7 @@
 //! use alo_capability::Grantee;
 //! use alo_keeping::Writing;
 //! use alo_record::{Asking, Entry, Only};
-//! use alo_recounting::{Account, Compositor, NotRecounted, Outcome, Recounting, Recounts,
+//! use alo_recounting::{Account, AtMost, Compositor, NotRecounted, Outcome, Recounting, Recounts,
 //!     SurfaceRefused};
 //! use alo_saying::everything_this_machine_can_say;
 //! use alo_strings::Strings;
@@ -60,11 +61,19 @@
 //!         now,
 //!     ))
 //!     .expect("something the machine turned away");
+//! drop(writing);
+//! # #[cfg(unix)]
+//! # {
+//! #     use std::os::unix::fs::PermissionsExt;
+//! #     let ours = std::fs::Permissions::from_mode(0o600);
+//! #     std::fs::set_permissions(&kept_at, ours).expect("a record of our own");
+//! # }
 //!
 //! // Afterwards, somebody asks what it did.
 //! let recounting = Recounting::kept_at(&kept_at);
 //! let mut screen = Screen::default();
-//! let Recounts::Shown(account) = recounting.show(Some(&mut screen), &Asking::anything()) else {
+//! let asked = recounting.show(Some(&mut screen), &Asking::anything(), AtMost::ONE_SITTING);
+//! let Recounts::Shown(account) = asked else {
 //!     unreachable!("a record that was there was not put in front of anybody")
 //! };
 //!
@@ -81,7 +90,7 @@
 //!
 //! // With no compositor, the answer is a sentence rather than silence.
 //! assert_eq!(
-//!     recounting.show(None, &Asking::anything()),
+//!     recounting.show(None, &Asking::anything(), AtMost::ONE_SITTING),
 //!     Recounts::Refused(NotRecounted::NoCompositor),
 //! );
 //! ```
@@ -91,13 +100,15 @@
 //! | | |
 //! |---|---|
 //! | [`recounting`] | The record on this machine, asked — and read off the disk every time |
+//! | [`where_it_is`] | Where the machine says it keeps one, so a person can ask at all |
+//! | [`bounding`] | How much of a record one answer holds |
 //! | [`account`] | What it answers, and what it says about itself |
 //! | [`told`] | One entry as a person reads it, and what became of it |
 //! | [`surface`] | The compositor's half: what it is given, and how it refuses |
 //! | [`refusing`] | Every way the question goes unanswered, and the sentence for each |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //!
-//! # The three promises, and each is an absence rather than a rule
+//! # The four promises, and each is an absence rather than a rule
 //!
 //! **The answer comes off the disk.** [`Recounting`] holds a path and nothing
 //! else: no record, no entries, no answer from last time, and no constructor
@@ -106,6 +117,13 @@
 //! because the two things that would differ from the file are exactly the two
 //! that matter, an entry the daemon failed to write and a record somebody has
 //! since shortened.
+//!
+//! **The disk it comes off is one this machine will believe, and there is no
+//! more of it than a person can read.** [`Recounting::about`] reads through
+//! `alo_keeping::Reading::believed_at`, which asks who may have written the
+//! file before it reads a word of it, and it takes an [`AtMost`] that is not
+//! optional. Neither is a rule laid over the surface: there is no second door
+//! that reads an unbelieved file, and none that answers with a year.
 //!
 //! **A refusal reads back as a refusal.** All ten things that can happen have a
 //! clause of their own, derived from `alo_record::Happened` by an exhaustive
@@ -162,18 +180,22 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod account;
+pub mod bounding;
 pub mod recounting;
 pub mod refusing;
 pub mod surface;
 pub mod told;
+pub mod where_it_is;
 pub mod words;
 
 #[cfg(test)]
 mod testing;
 
 pub use account::Account;
+pub use bounding::AtMost;
 pub use recounting::{Recounting, Recounts};
 pub use refusing::NotRecounted;
 pub use surface::{Compositor, SurfaceRefused};
 pub use told::{Outcome, Told};
+pub use where_it_is::{NotSaid, THE_DESCRIPTION, where_the_record_is};
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, recounting_words};

@@ -67,6 +67,28 @@ impl Reading {
         Self::of(path, &text)
     }
 
+    /// Read the record at this path, having first asked who may have written
+    /// it.
+    ///
+    /// What a surface reads a record through. [`Reading::at`] answers from
+    /// whatever is at the path; this asks `believing.rs`' three
+    /// questions of the open file first — not a link, root's or ours, and
+    /// nobody else able to write it — because a person being shown an account
+    /// of their own machine is being asked to believe a file, and a file
+    /// somebody else could have written is not evidence of anything.
+    ///
+    /// # Errors
+    ///
+    /// Everything [`Reading::at`] refuses, and [`NotKept::ALink`],
+    /// [`NotKept::SomebodyElses`] and [`NotKept::WritableByOthers`] for a file
+    /// this machine will not read as its own record. In every one of them
+    /// nothing has been read, which is what keeps an unbelievable record from
+    /// being answered as an empty day.
+    pub fn believed_at(path: &Path) -> Result<Self, NotKept> {
+        let text = crate::believing::text_of(path)?;
+        Self::of(path, &text)
+    }
+
     /// The same, from what the file held.
     ///
     /// Split out so that every shape a damaged record can take is testable

@@ -217,3 +217,64 @@ compositor lane's, as picking's and the grants list's are.
 - **Constraint:** no new surface, and nothing in `crates/alo-shell`. Additive to
   `docs/contracts/record-file.md` only if something there moved, which it should
   not have to: this reads the shape that document already fixes.
+
+**Done, 2026-09-10.** The gap was narrower than the heading and worse than it
+looked: `alo-recounting` did read a file, but only one a caller already knew the
+path of, and on a running machine nothing knew it. `crates/alo-recounting/src/where_it_is.rs`
+reads `[record].path` out of the machine description — a third reader of that
+file, answerable for one key, refusing a shape it does not know and ignoring
+every section that is not its own — so `Recounting::on_this_machine` is a door
+a surface can open. The record itself is read through
+`alo_keeping::Reading::believed_at`, which asks `alo-accounts`' three questions
+of the open file before a word of it is parsed, so a record behind a link, one
+somebody else owns or one anybody could write is refused in `alo-keeping`'s own
+words rather than answered as an empty day; `Reading::at` is untouched, because
+the daemon holds its own record open and a service that stopped writing over a
+mode bit would go quiet about the afternoon somebody wanted. `AtMost` is not
+optional and there is no unbounded door beside it: an account keeps the **most
+recent** of what answered, still oldest first, and says in words when it is not
+all of it. Measured in `crates/alo-recounting/tests/what_this_machine_did.rs`
+and per-decision in `where_it_is.rs`, `account.rs` and `alo-keeping`'s
+`believing.rs`. Nothing moved in `docs/contracts/record-file.md`. Report:
+`docs/autonomy/updates/a-person-can-be-told-what-their-machine-did.md`. No task
+in `v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 6
+below is the next task and was written in the same change.
+
+### 6. The account a person asks for is the one their machine kept
+
+**Status:** ready. **Depends on:** 5.
+
+Task 5 gave the person's side a way to read the record their machine keeps, and
+it is read under rules about who may have written the file. What nothing on this
+machine can answer yet is the question underneath those rules: **is this the
+record this machine wrote, or a believable copy of one?** Every rule task 5 added
+is about the file's *place* — its owner, its mode, its not being a link — and all
+three are satisfied by a record written whole by whoever already owns the file.
+On a personal machine that is the person, and the person is not the threat; on a
+managed machine (ADR 0004) an administrator holds a recovery key, and *no
+administrator can act as a person* is a promise a record nobody can check makes
+thinner than it reads.
+
+The narrow, honest v0.01 shape is **not** a signature — signing needs a key this
+repository has nowhere to keep yet, and inventing one here would be the kind of
+decision ADR 0004 exists to have made deliberately. It is that the record says
+how long it has been going: `alo-keeping::Head` already carries `since` and
+`under`, and an entry carries the moment it happened. A file replaced whole by a
+plausible copy loses the one thing it cannot forge cheaply — the agreement
+between what the daemon has been appending and what the file's own beginning
+says.
+
+- **Acceptance:** a record whose entries and whose beginning disagree — an entry
+  older than the moment the head says the record starts at, or moments that run
+  backwards — is reported as *this record is not what it says it is*, in words,
+  alongside everything that could be read, as an unreadable line already is and
+  never as a refusal of the whole file; the disagreement is carried into the
+  account rather than being a flag on a struct a surface may forget to draw; a
+  record that was legitimately shortened is **not** reported, which is the case
+  this is easiest to get wrong; and the daemon's own writing and shortening still
+  produce a record this check is silent about, measured by writing one with
+  `alo_keeping::Writing` and reading it back.
+- **Constraint:** no new surface, nothing in `crates/alo-shell`, and nothing in
+  `docs/contracts/record-file.md` that is not additive — this reads a shape that
+  document already fixes, and what it adds is a reader's rule rather than a
+  field.

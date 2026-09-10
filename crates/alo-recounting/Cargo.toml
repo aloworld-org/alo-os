@@ -31,6 +31,12 @@ alo-strings = { path = "../alo-strings" }
 # can return to whoever is fixing that list.
 thiserror = { workspace = true }
 
+# Where this machine says it keeps its record. `where_it_is.rs` reads one key
+# out of `docs/contracts/machine-description.md`'s file and nothing else; these
+# two are how it is read, and they decide nothing.
+serde = { workspace = true }
+toml = { workspace = true }
+
 [dev-dependencies]
 # The calls, grants and approvals this crate's own tests make entries out of.
 # Nothing here decides anything about a capability.
@@ -46,6 +52,11 @@ alo-turn = { path = "../alo-turn" }
 # Where an answer came from, for the fixture departures this crate's own tests
 # read back. Nothing here decides anything about egress either.
 alo-models = { path = "../alo-models" }
+
+# Everything a client can put on the wire, so that *nothing an agent can send
+# reaches the record* is a test rather than a sentence. Nothing in this crate
+# speaks the protocol, and this is a dependency of the tests alone.
+alo-protocol = { path = "../alo-protocol" }
 
 # The machine's one vocabulary. This crate's own tests are written against its
 # own list; the acceptance test asks the question that list cannot — whether

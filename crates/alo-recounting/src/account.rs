@@ -7,10 +7,12 @@
 //! # The caveats are part of the answer, not a footnote under it
 //!
 //! An account of what a machine did is worth exactly what the record behind it
-//! is worth, and there are three ways for a record to be worth less than it
-//! looks: it can hold nothing that answers the question, it can no longer go
-//! all the way back, and part of it can be unreadable. [`Account::said`]
-//! answers with a sentence for each of those that is true, and the first two
+//! is worth, and there are four ways for an account to be worth less than it
+//! looks: the record can hold nothing that answers the question, it can no
+//! longer go all the way back, part of it can be unreadable, and the answer can
+//! have been longer than the bound the account was asked for.
+//! [`Account::said`] answers with a sentence for each of those that is true,
+//! and the first two of them
 //! are read together on purpose — *nothing in this machine's record answers
 //! that question* beside *this record does not go all the way back* is the
 //! difference between **the agent did nothing in March** and **this record does
@@ -36,6 +38,7 @@ use alo_keeping::{Damage, Head, Keeping, Reading};
 use alo_record::Asking;
 use alo_strings::{Filling, Said, Strings};
 
+use crate::bounding::AtMost;
 use crate::told::Told;
 use crate::words;
 
@@ -44,8 +47,11 @@ use crate::words;
 /// Made from a record that was read off a disk, and from nothing else.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Account {
-    /// What answered the question, in the order it happened.
+    /// What answered the question, in the order it happened — at most as many
+    /// as were asked for, and the most recent of them.
     told: Vec<Told>,
+    /// How many entries answered the question, before the bound narrowed it.
+    answered: usize,
     /// How many entries the record holds, before the question narrowed it.
     everything: usize,
     /// What the record says about where it begins.
@@ -61,9 +67,21 @@ impl Account {
     /// [`crate::Recounting`], which reads the file. That is what stops an
     /// account being assembled out of a record somebody had in memory, which is
     /// the one thing the plan's first acceptance rules out.
-    pub(crate) fn of(reading: &Reading, asking: &Asking) -> Self {
+    ///
+    /// **Bounded, and the bound keeps the newest.** A record is a year long on
+    /// a machine that has been working for a year; [`AtMost`] is why there is no
+    /// door here that answers with all of it, and why what is kept is the last
+    /// of what answered rather than the first.
+    pub(crate) fn of(reading: &Reading, asking: &Asking, most: AtMost) -> Self {
+        let answered = reading.record().answering(asking).count();
         Self {
-            told: reading.record().answering(asking).map(Told::of).collect(),
+            told: reading
+                .record()
+                .answering(asking)
+                .skip(answered.saturating_sub(most.how_many()))
+                .map(Told::of)
+                .collect(),
+            answered,
             everything: reading.record().len(),
             head: reading.head().clone(),
             damage: reading.damage().clone(),
@@ -77,10 +95,35 @@ impl Account {
         &self.told
     }
 
-    /// How many lines answered the question.
+    /// How many lines are in front of the person.
+    ///
+    /// Never more than the [`AtMost`] the account was made under. How many
+    /// answered the question altogether is [`Account::how_many_answered`], and
+    /// the two are read together wherever the difference matters.
     #[must_use]
     pub fn how_many(&self) -> usize {
         self.told.len()
+    }
+
+    /// How many entries answered the question, before the bound narrowed it.
+    ///
+    /// A number beside the account rather than inside a sentence, for
+    /// [`Account::how_many_in_the_record`]'s reason: how many is counted
+    /// differently in different languages.
+    #[must_use]
+    pub fn how_many_answered(&self) -> usize {
+        self.answered
+    }
+
+    /// Whether everything that answered the question is here.
+    ///
+    /// False where the bound kept the account short. **A surface must not draw
+    /// the lines without this**: an account bounded to a screenful and an
+    /// account of everything that happened look identical, and only one of them
+    /// is the whole answer. [`Account::said`] already puts it in words.
+    #[must_use]
+    pub fn is_all_that_answered(&self) -> bool {
+        self.told.len() == self.answered
     }
 
     /// Whether nothing in the record answers it.
@@ -135,7 +178,7 @@ impl Account {
         &self.damage
     }
 
-    /// Everything a person must read beside the lines: nought to three whole
+    /// Everything a person must read beside the lines: nought to four whole
     /// sentences, to be drawn one under another.
     ///
     /// Not one sentence with the others stuck on the end. `alo-shortcuts`
@@ -151,6 +194,9 @@ impl Account {
         if self.is_empty() {
             said.push(strings.say(&words::NOTHING_TO_TELL.key(), &Filling::nothing()));
         }
+        if !self.is_all_that_answered() {
+            said.push(strings.say(&words::ONLY_THE_MOST_RECENT.key(), &Filling::nothing()));
+        }
         said.push(self.head.said(strings));
         said.extend(self.damage.said(strings));
         said
@@ -165,7 +211,8 @@ impl Account {
 mod tests {
     use super::*;
     use crate::testing::{
-        a_record_at, an_afternoon, answered_here, archived, in_english, noon, somewhere_of_our_own,
+        a_long_afternoon, a_record_at, an_afternoon, answered_here, archived, in_english, noon,
+        somewhere_of_our_own,
     };
     use crate::told::Outcome;
     use alo_record::Only;
@@ -174,7 +221,7 @@ mod tests {
     fn an_account_of(what: &str, asking: &Asking) -> Account {
         let kept_at = somewhere_of_our_own(what);
         a_record_at(&kept_at, &an_afternoon());
-        Account::of(&Reading::at(&kept_at).unwrap(), asking)
+        Account::of(&Reading::at(&kept_at).unwrap(), asking, AtMost::ONE_SITTING)
     }
 
     /// Everything that happened, in the order it happened — which is the order
@@ -240,7 +287,11 @@ mod tests {
         let kept_at = somewhere_of_our_own("nothing");
         a_record_at(&kept_at, &[answered_here()]);
         let reading = Reading::at(&kept_at).unwrap();
-        let account = Account::of(&reading, &Asking::anything().by("@nobody"));
+        let account = Account::of(
+            &reading,
+            &Asking::anything().by("@nobody"),
+            AtMost::ONE_SITTING,
+        );
 
         assert!(account.is_empty());
         assert_eq!(account.how_many_in_the_record(), 1);
@@ -263,7 +314,11 @@ mod tests {
     fn an_account_that_answers_something_still_says_what_the_record_is() {
         let kept_at = somewhere_of_our_own("whole");
         a_record_at(&kept_at, &[archived()]);
-        let account = Account::of(&Reading::at(&kept_at).unwrap(), &Asking::anything());
+        let account = Account::of(
+            &Reading::at(&kept_at).unwrap(),
+            &Asking::anything(),
+            AtMost::ONE_SITTING,
+        );
         let said = account.said(&in_english());
         assert_eq!(said.len(), 1);
         assert!(
@@ -271,6 +326,68 @@ mod tests {
                 .is_some_and(|whole| whole.text().contains("nothing has been removed"))
         );
         assert_eq!(account.told().first().map(Told::at), Some(noon()));
+    }
+
+    /// **An account is bounded, and it keeps the most recent.** A machine that
+    /// has been working for a year holds a year of entries, and an account of
+    /// all of them is not an answer anybody reads — so the bound keeps the end
+    /// of the record, still oldest first, and says how many answered
+    /// altogether.
+    #[test]
+    fn an_account_holds_the_most_recent_of_what_answered_and_no_more() {
+        let kept_at = somewhere_of_our_own("bounded");
+        let afternoon = a_long_afternoon(50);
+        a_record_at(&kept_at, &afternoon);
+        let reading = Reading::at(&kept_at).unwrap();
+        let account = Account::of(&reading, &Asking::anything(), AtMost::entries(10).unwrap());
+
+        assert_eq!(account.how_many(), 10);
+        assert_eq!(account.how_many_answered(), 50);
+        assert_eq!(account.how_many_in_the_record(), 50);
+        assert!(!account.is_all_that_answered());
+        assert!(!account.is_empty());
+
+        // The last ten, in the order they happened: the newest is last, and the
+        // oldest of the ten is the forty-first thing that happened.
+        let moments: Vec<SystemTime> = account.told().iter().map(Told::at).collect();
+        let mut sorted = moments.clone();
+        sorted.sort_unstable();
+        assert_eq!(moments, sorted);
+        assert_eq!(
+            account.told().last().map(Told::at),
+            afternoon.last().map(alo_record::Entry::at)
+        );
+        assert_eq!(
+            account.told().first().map(Told::at),
+            afternoon.get(40).map(alo_record::Entry::at)
+        );
+    }
+
+    /// **A bound nobody was told about is a machine that looks idle.** An
+    /// account that left something out says so, above what the record says
+    /// about itself; one that did not, does not.
+    #[test]
+    fn an_account_that_left_something_out_says_so() {
+        let kept_at = somewhere_of_our_own("bounded-said");
+        a_record_at(&kept_at, &a_long_afternoon(4));
+        let reading = Reading::at(&kept_at).unwrap();
+        let strings = in_english();
+
+        let bounded = Account::of(&reading, &Asking::anything(), AtMost::entries(2).unwrap());
+        let said = bounded.said(&strings);
+        assert_eq!(said.len(), 2, "{said:?}");
+        assert!(
+            said.first()
+                .is_some_and(|most| most.text().contains("most recent part")),
+            "{said:?}"
+        );
+        assert!(said.first().is_some_and(|most| !most.is_a_bug()));
+
+        // The same record, asked for more than it holds, says nothing about it.
+        let whole = Account::of(&reading, &Asking::anything(), AtMost::entries(4).unwrap());
+        assert!(whole.is_all_that_answered());
+        assert_eq!(whole.said(&strings).len(), 1);
+        assert_eq!(whole.how_many(), whole.how_many_answered());
     }
 
     /// **A line that could not be read is part of the answer.** An account that
@@ -294,7 +411,11 @@ mod tests {
             .collect();
         std::fs::write(&kept_at, format!("{}\n", lines.join("\n"))).unwrap();
 
-        let account = Account::of(&Reading::at(&kept_at).unwrap(), &Asking::anything());
+        let account = Account::of(
+            &Reading::at(&kept_at).unwrap(),
+            &Asking::anything(),
+            AtMost::ONE_SITTING,
+        );
         assert_eq!(account.how_many(), an_afternoon().len() - 1);
         assert!(account.damage().must_be_looked_at());
 
@@ -320,7 +441,11 @@ mod tests {
         )
         .unwrap();
 
-        let account = Account::of(&Reading::at(&kept_at).unwrap(), &Asking::anything());
+        let account = Account::of(
+            &Reading::at(&kept_at).unwrap(),
+            &Asking::anything(),
+            AtMost::ONE_SITTING,
+        );
         assert!(!account.goes_all_the_way_back());
         assert_eq!(account.begins(), Some(noon()));
         assert_eq!(account.under(), Keeping::for_days(30).ok());
@@ -347,6 +472,7 @@ mod tests {
         let account = Account::of(
             &Reading::at(&kept_at).unwrap(),
             &Asking::anything().by("@no"),
+            AtMost::ONE_SITTING,
         );
         let strings = Strings::of(alo_strings::Vocabulary::empty());
         let said = account.said(&strings);

@@ -58,6 +58,33 @@ pub enum NotKept {
         path: String,
     },
 
+    /// What was named is a symbolic link, and a link was not followed.
+    ///
+    /// One of `believing.rs`' three, and read only through
+    /// [`crate::Reading::believed_at`]: a link is a name somebody can point at
+    /// a record of their own writing.
+    ALink {
+        /// What was named.
+        path: String,
+    },
+
+    /// The record belongs to somebody who is neither root nor the login
+    /// reading it.
+    SomebodyElses {
+        /// What was named.
+        path: String,
+        /// Who owns it.
+        owner: u32,
+    },
+
+    /// The record can be written by the group or by the world.
+    WritableByOthers {
+        /// What was named.
+        path: String,
+        /// The permissions it has.
+        mode: u32,
+    },
+
     /// The record could not be opened at all.
     NotOpened {
         /// What was named.
@@ -120,6 +147,17 @@ impl NotKept {
             Self::Damaged { path } => {
                 strings.say(&words::DAMAGED.key(), &Filling::of("path", path.clone()))
             }
+            Self::ALink { path } => {
+                strings.say(&words::A_LINK.key(), &Filling::of("path", path.clone()))
+            }
+            Self::SomebodyElses { path, owner: _ } => strings.say(
+                &words::SOMEBODY_ELSES.key(),
+                &Filling::of("path", path.clone()),
+            ),
+            Self::WritableByOthers { path, mode: _ } => strings.say(
+                &words::WRITABLE_BY_OTHERS.key(),
+                &Filling::of("path", path.clone()),
+            ),
             Self::NotOpened { path, why } => strings.say(
                 &words::NOT_OPENED.key(),
                 &Filling::of("path", path.clone()).and("why", why.clone()),
@@ -193,6 +231,13 @@ impl NotKept {
         Self::NotShortened {
             path: path.display().to_string(),
             why: why.to_owned(),
+        }
+    }
+
+    /// What was named is a link, and this crate does not follow one.
+    pub(crate) fn a_link(path: &Path) -> Self {
+        Self::ALink {
+            path: path.display().to_string(),
         }
     }
 

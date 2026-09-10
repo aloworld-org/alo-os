@@ -217,6 +217,44 @@ pub const DAMAGED: Word = Word::saying(
      something destructive, so it reads as a decision rather than as a failure.",
 );
 
+/// What was named is a link rather than a record.
+pub const A_LINK: Word = Word::saying(
+    "keeping.a-link",
+    "nothing was read from {path}, because it is a link to somewhere else rather than this \
+     machine's own record — what a record says is what everybody is told happened here, so it is \
+     read where it is kept and nowhere a link points",
+)
+.noting(
+    "{path} is a place on this machine's own disk and is never translated. A link here is a \
+     symbolic link, which is a name on a disk that stands for another name. Read by somebody who \
+     asked what their machine did and is being told why they are not being shown an answer.",
+);
+
+/// The record belongs to somebody else.
+pub const SOMEBODY_ELSES: Word = Word::saying(
+    "keeping.somebody-elses",
+    "nothing was read from {path}, because it belongs to somebody other than you and this machine \
+     — a record of what happened here is only worth reading while nobody else could have written it",
+)
+.noting(
+    "{path} is a place on this machine's own disk and is never translated. Who owns it is a number \
+     the machine keeps beside this sentence rather than inside it. \"This machine\" means the \
+     system itself, which is the other owner a record may have.",
+);
+
+/// The record can be written by somebody else.
+pub const WRITABLE_BY_OTHERS: Word = Word::saying(
+    "keeping.writable-by-others",
+    "nothing was read from {path}, because anybody signed in to this machine could write to it — a \
+     record of what happened here is only worth reading while nobody else could have written it",
+)
+.noting(
+    "{path} is a place on this machine's own disk and is never translated. Which permissions it \
+     has is kept beside this sentence rather than written into it. The second half is the same \
+     clause as the sentence about a record belonging to somebody else, deliberately: they are two \
+     ways of the same thing having gone wrong.",
+);
+
 /// The record could not be opened at all.
 pub const NOT_OPENED: Word = Word::saying(
     "keeping.could-not-be-opened",
@@ -268,7 +306,7 @@ pub const NOT_SHORTENED: Word = Word::saying(
 /// word declared above and left out here is a string nothing can look up. The
 /// one countable string is not here — it is declared beneath, because it is
 /// declared differently.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 17] = [
     FOREVER,
     NO_DAYS_AT_ALL,
     WHOLE,
@@ -279,6 +317,9 @@ pub const EVERY_WORD: [Word; 14] = [
     NOT_A_RECORD,
     FROM_A_NEWER_ALO,
     DAMAGED,
+    A_LINK,
+    SOMEBODY_ELSES,
+    WRITABLE_BY_OTHERS,
     NOT_OPENED,
     NOT_ADDED_TO,
     NOT_READ,
@@ -463,6 +504,9 @@ mod tests {
             NOT_A_RECORD,
             FROM_A_NEWER_ALO,
             DAMAGED,
+            A_LINK,
+            SOMEBODY_ELSES,
+            WRITABLE_BY_OTHERS,
             NOT_OPENED,
             NOT_ADDED_TO,
             NOT_READ,

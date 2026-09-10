@@ -98,6 +98,15 @@ pub(crate) fn every_way_it_can_fail() -> Vec<NotKept> {
             format: 9,
         },
         NotKept::Damaged { path: path.clone() },
+        NotKept::ALink { path: path.clone() },
+        NotKept::SomebodyElses {
+            path: path.clone(),
+            owner: 1001,
+        },
+        NotKept::WritableByOthers {
+            path: path.clone(),
+            mode: 0o666,
+        },
         NotKept::NotOpened {
             path: path.clone(),
             why: "permission denied".to_owned(),

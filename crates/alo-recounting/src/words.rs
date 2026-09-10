@@ -1,10 +1,12 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Thirteen, and they divide in three. Ten are **what became of one entry** —
+//! Eighteen, and they divide in three. Eleven are **what became of one entry** —
 //! the short clause read at the head of a line, before the sentence the machine
-//! generated when it happened. One is **the answer to a question nothing
-//! matches**. Two are **refusals**: the ways an account cannot be put in front
-//! of anybody.
+//! generated when it happened. Two are **remarks an account makes about
+//! itself**: that nothing in the record answers the question, and that what is
+//! shown is the most recent part of what does. Five are **refusals**: the ways
+//! an account cannot be put in front of anybody, and the three ways a machine
+//! cannot say where its own record is.
 //!
 //! The shape is `alo-approving`'s and is copied rather than re-decided:
 //! constants under one area, `alo_strings::Word` because these are literals in
@@ -203,6 +205,67 @@ pub const NOTHING_TO_TELL: Word = Word::saying(
      happened\" or \"the machine has been idle\".",
 );
 
+/// What an account bounded to a number of entries says about the rest.
+///
+/// Read where a longer list would have been. A bound nobody is told about is
+/// indistinguishable from a machine that did nothing else, which is this
+/// crate's one mistake wearing a different hat.
+pub const ONLY_THE_MOST_RECENT: Word = Word::saying(
+    "recounting.only-the-most-recent",
+    "this is the most recent part of what answers that question, and not all of it",
+)
+.noting(
+    "Read beneath a list of what happened on somebody's machine, when more of the record answered \
+     the question than is being shown. How many are shown and how many there are altogether are \
+     numbers shown beside this sentence rather than inside it. \"Most recent\" is about when \
+     things happened, not about which are important.",
+);
+
+// ---------------------------------------------------------------------------
+// Why this machine could not say where its record is — [`crate::NotSaid`].
+//
+// Read having asked what this machine did, on a machine that cannot find its
+// own record. None of them is *nothing happened*, and each says what to do,
+// because the person reading it can do nothing about a record they cannot
+// reach unless they are told which part of their machine is wrong.
+// ---------------------------------------------------------------------------
+
+/// There is no machine description at all.
+pub const NO_DESCRIPTION: Word = Word::saying(
+    "recounting.no-description",
+    "What this machine did cannot be shown to you: this machine does not say where it keeps a \
+     record of what its agent has done. Ask whoever set it up",
+)
+.noting(
+    "The agent is the assistant built into alo OS and is not a person. Read by somebody who asked \
+     what their machine has been doing. It does not say that nothing happened — it says the \
+     machine cannot be asked. Where it looked is shown beside this sentence rather than inside it.",
+);
+
+/// What is there does not describe a machine this alo OS knows.
+pub const NOT_A_DESCRIPTION: Word = Word::saying(
+    "recounting.not-a-description",
+    "What this machine did cannot be shown to you: what this machine says about itself cannot be \
+     read by this version of alo OS. Ask whoever set it up",
+)
+.noting(
+    "Read by somebody who asked what their machine has been doing. Two things reach it: a \
+     description that is not one, and a description written for a newer alo OS than the one \
+     running. Neither means anything about what the agent did.",
+);
+
+/// The machine would not read the description.
+pub const DESCRIPTION_NOT_READ: Word = Word::saying(
+    "recounting.description-not-read",
+    "What this machine did cannot be shown to you: what this machine says about itself could not \
+     be read. Ask whoever set it up",
+)
+.noting(
+    "Read by somebody who asked what their machine has been doing. What the operating system said \
+     is kept beside this sentence rather than written into it, because it arrives in whatever \
+     language it speaks and is not ours to translate.",
+);
+
 // ---------------------------------------------------------------------------
 // The two refusals — [`crate::NotRecounted`].
 //
@@ -240,7 +303,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 18] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -253,6 +316,10 @@ pub const EVERY_WORD: [Word; 14] = [
     HELD_BACK,
     LEFT_ON_ITS_OWN,
     NOTHING_TO_TELL,
+    ONLY_THE_MOST_RECENT,
+    NO_DESCRIPTION,
+    NOT_A_DESCRIPTION,
+    DESCRIPTION_NOT_READ,
     NO_COMPOSITOR,
     NOTHING_TO_SHOW_ON,
 ];
@@ -277,11 +344,17 @@ pub const EVERY_OUTCOME: [Word; 11] = [
 ];
 
 /// What an account says about itself, rather than about one entry.
-pub const EVERY_REMARK: [Word; 1] = [NOTHING_TO_TELL];
+pub const EVERY_REMARK: [Word; 2] = [NOTHING_TO_TELL, ONLY_THE_MOST_RECENT];
 
 /// Every way this crate refuses, each of which is read having just asked
 /// something.
-pub const EVERY_REFUSAL: [Word; 2] = [NO_COMPOSITOR, NOTHING_TO_SHOW_ON];
+pub const EVERY_REFUSAL: [Word; 5] = [
+    NO_DESCRIPTION,
+    NOT_A_DESCRIPTION,
+    DESCRIPTION_NOT_READ,
+    NO_COMPOSITOR,
+    NOTHING_TO_SHOW_ON,
+];
 
 /// Why this crate's own words could not be declared.
 ///
@@ -422,7 +495,13 @@ mod tests {
     /// Each is two clauses — what is so, and then the action.
     #[test]
     fn every_refusal_says_what_to_do() {
-        for (word, verb) in [(NO_COMPOSITOR, "Sign in"), (NOTHING_TO_SHOW_ON, "Connect")] {
+        for (word, verb) in [
+            (NO_COMPOSITOR, "Sign in"),
+            (NOTHING_TO_SHOW_ON, "Connect"),
+            (NO_DESCRIPTION, "Ask whoever set it up"),
+            (NOT_A_DESCRIPTION, "Ask whoever set it up"),
+            (DESCRIPTION_NOT_READ, "Ask whoever set it up"),
+        ] {
             assert!(
                 word.says().contains(verb),
                 "{} does not tell anybody to {verb}",
@@ -452,9 +531,11 @@ mod tests {
             );
             assert!(seen.insert(word.says()), "two outcomes say {}", word.says());
         }
-        // And the one remark is read where a list would have been, so it is a
-        // clause too rather than a heading.
-        assert!(!NOTHING_TO_TELL.says().ends_with('.'));
+        // And the remarks are read where a list would have been, or under one,
+        // so they are clauses too rather than headings.
+        for remark in EVERY_REMARK {
+            assert!(!remark.says().ends_with('.'), "{}", remark.named());
+        }
     }
 
     /// **Every word carries a note for the translator.** None of these can be

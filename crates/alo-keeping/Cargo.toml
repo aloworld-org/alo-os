@@ -17,6 +17,12 @@ serde = { workspace = true }
 # format other people's tools can read rather than one of ours.
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+# The two questions the standard library will not answer on a stable compiler
+# about a file this machine is about to believe: refuse a symbolic link while
+# opening it, and say which user this process is. Reached only by
+# `believing.rs`, and only on a host that has them.
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true }
 
 [dev-dependencies]
 # Only the tests make an entry, and making one needs the agent it was made

@@ -20,19 +20,24 @@
 //! nothing* — and a second wording of it here would be a machine able to
 //! describe one fact two ways, with the milder one on the screen.
 //!
-//! What is left is this crate's own two facts, and nobody else knows them:
-//! there was nowhere to put the account, and the compositor refused it.
+//! What is left is this crate's own, and nobody else knows them: there was
+//! nowhere to put the account, the compositor refused it, and this machine
+//! could not say where it keeps a record in the first place. The last three are
+//! `where_it_is.rs`' refusals, worded here because they are read by the person
+//! who asked the question rather than by whoever wrote the description.
 
 use alo_keeping::NotKept;
 use alo_strings::{Filling, Said, Strings};
 
 use crate::surface::SurfaceRefused;
+use crate::where_it_is::NotSaid;
 use crate::words;
 
 /// Why what the machine did was not put in front of the person.
 ///
-/// Three shapes of *not answered*: no compositor at all, a compositor that
-/// refused, and a record that could not be read. The first two are kept apart
+/// Four shapes of *not answered*: no compositor at all, a compositor that
+/// refused, a record that could not be read, and a machine that could not say
+/// where its record is. The first two are kept apart
 /// because the person is told different things — one is *the desktop is not
 /// running*, the other is a fact the compositor knows, like a machine with no
 /// screen — and because they are fixed by different actions.
@@ -46,6 +51,13 @@ pub enum NotRecounted {
     /// The record could not be read — `alo-keeping`'s own refusal, carried
     /// whole and worded by the crate that made it.
     Record(NotKept),
+    /// This machine could not say where it keeps a record at all, so nothing
+    /// was looked for.
+    ///
+    /// Apart from [`NotRecounted::Record`] because it is a different machine:
+    /// one has a record that could not be read, the other cannot say whether it
+    /// has one. Both are refusals, and neither is an empty day.
+    Nowhere(NotSaid),
 }
 
 impl NotRecounted {
@@ -65,6 +77,15 @@ impl NotRecounted {
                 strings.say(&words::NOTHING_TO_SHOW_ON.key(), &Filling::nothing())
             }
             Self::Record(why) => why.said(strings),
+            Self::Nowhere(NotSaid::NoDescription { .. }) => {
+                strings.say(&words::NO_DESCRIPTION.key(), &Filling::nothing())
+            }
+            Self::Nowhere(NotSaid::NotADescription { .. }) => {
+                strings.say(&words::NOT_A_DESCRIPTION.key(), &Filling::nothing())
+            }
+            Self::Nowhere(NotSaid::NotRead { .. }) => {
+                strings.say(&words::DESCRIPTION_NOT_READ.key(), &Filling::nothing())
+            }
         }
     }
 
@@ -121,6 +142,27 @@ mod tests {
                 path: "/var/lib/alo/record.jsonl".to_owned(),
                 why: "permission denied".to_owned(),
             }),
+            NotRecounted::Record(NotKept::ALink {
+                path: "/var/lib/alo/record.jsonl".to_owned(),
+            }),
+            NotRecounted::Record(NotKept::SomebodyElses {
+                path: "/var/lib/alo/record.jsonl".to_owned(),
+                owner: 1001,
+            }),
+            NotRecounted::Record(NotKept::WritableByOthers {
+                path: "/var/lib/alo/record.jsonl".to_owned(),
+                mode: 0o666,
+            }),
+            NotRecounted::Nowhere(NotSaid::NoDescription {
+                path: "/etc/alo/agentd.toml".to_owned(),
+            }),
+            NotRecounted::Nowhere(NotSaid::NotADescription {
+                path: "/etc/alo/agentd.toml".to_owned(),
+            }),
+            NotRecounted::Nowhere(NotSaid::NotRead {
+                path: "/etc/alo/agentd.toml".to_owned(),
+                why: "permission denied".to_owned(),
+            }),
         ]
     }
 
@@ -169,21 +211,48 @@ mod tests {
         assert!(NotRecounted::Surface(SurfaceRefused::NothingToShowOn).is_nowhere_to_show_it());
     }
 
-    /// **The only sentences this crate says of its own are its own two.** With
-    /// nothing but this crate's list loaded, the two that are ours read and
-    /// everything about the record is a key nothing declares — which is what
-    /// says the rest are somebody else's words rather than copies of them.
+    /// **Nothing about the record itself is worded here.** With nothing but
+    /// this crate's list loaded, the five that are ours read — the two about a
+    /// surface and the three about a machine that cannot say where its record
+    /// is — and every refusal `alo-keeping` made is a key nothing declares,
+    /// which is what says the rest are somebody else's words rather than copies
+    /// of them.
     #[test]
-    fn the_only_sentences_this_crate_says_of_its_own_are_its_own_two() {
+    fn the_only_sentences_this_crate_says_of_its_own_are_its_own() {
         let ours = Strings::of(crate::words::recounting_words().unwrap());
         let said_by_us = every_refusal()
             .iter()
             .filter(|refusal| !refusal.said(&ours).is_a_bug())
             .count();
         assert_eq!(
-            said_by_us, 2,
+            said_by_us, 5,
             "this surface has started saying something somebody else already says"
         );
+        for about_the_record in every_refusal()
+            .iter()
+            .filter(|refusal| matches!(refusal, NotRecounted::Record(_)))
+        {
+            assert!(
+                about_the_record.said(&ours).is_a_bug(),
+                "{about_the_record:?}"
+            );
+        }
+    }
+
+    /// **A machine that cannot say where its record is has not said nothing
+    /// happened.** It is refused apart from every refusal about a record,
+    /// because the two send somebody to different parts of their machine.
+    #[test]
+    fn a_machine_that_cannot_say_where_its_record_is_is_refused_apart() {
+        let nowhere = NotRecounted::Nowhere(NotSaid::NoDescription {
+            path: "/etc/alo/agentd.toml".to_owned(),
+        });
+        assert!(!nowhere.there_is_no_record());
+        assert!(!nowhere.is_nowhere_to_show_it());
+
+        let said = nowhere.said(&in_english());
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("does not say where"), "{said}");
     }
 
     /// **A refusal arrives in the language the person reads** when somebody has
