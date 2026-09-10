@@ -5,6 +5,23 @@
 //! `clean`, no `push --force` and no `rebase --skip`. A supervisor with any of
 //! those can throw away work that was never published anywhere, and no message
 //! it writes afterwards brings the work back.
+//!
+//! # `main` is the only branch this pushes. Ever.
+//!
+//! Every `push` in this file names [`MAIN`], and any future one must too. The
+//! repository has one branch and gets one branch: a reader looking at it sees
+//! what alo OS is, not a shelf of everything that was ever attempted.
+//!
+//! Parking makes a **local** branch and stops there. Parked work is by
+//! definition work that did not pass its gates, and pushing it put a permanent
+//! branch on the shared repository for every failed draft — seven in a single
+//! evening, each one a task that had already been redone properly and published
+//! to `main`. The drafts outnumbered the deliveries.
+//!
+//! The cost is stated rather than hidden: a parked branch lives on one disk, so
+//! losing the checkout loses it. That is the right trade for a draft. **Work
+//! worth keeping is work that passed its gates**, and the way to keep it is to
+//! finish the task — which is what the loop does next anyway.
 
 use std::path::Path;
 use std::process::Command;
@@ -311,7 +328,18 @@ pub fn parked(at: &Path, task: u32, why: &str) -> Result<String, String> {
                 Err(why)
             }
         })
-        .and_then(|_| git(at, &["push", "--set-upstream", "origin", &branch]));
+        // **Not pushed.** `main` is the only branch this supervisor publishes,
+        // and parked work is by definition work that did not pass its gates —
+        // pushing it put a permanent branch on the shared repository for every
+        // draft that failed, seven in one evening. The branch is local: nothing
+        // is discarded, the work is a `git switch` away for whoever wants it,
+        // and the repository stays one branch.
+        //
+        // What that costs is honest: parked work lives on this disk only, so a
+        // lost checkout loses it. That is the right trade for a draft. Work
+        // worth keeping is work that passes its gates, and the way to keep it
+        // is to finish the task.
+        ;
 
     // Back onto `main` whatever happened, so a push that failed does not also
     // leave the checkout on a branch nobody is expecting.
@@ -344,6 +372,40 @@ fn moment() -> String {
 
 #[cfg(test)]
 mod tests {
+    /// **`main` is the only branch this supervisor pushes**, and this reads the
+    /// file to say so rather than trusting anybody to remember.
+    ///
+    /// Parking used to push its branch, and one evening's failed drafts left
+    /// seven permanent branches on the shared repository — every one of them a
+    /// task that had since been redone properly and published to `main`. The
+    /// drafts outnumbered the deliveries.
+    ///
+    /// A comment saying *do not push anything else* would be a request. This is
+    /// the rule: every `push` in this file names `MAIN`, and a new one that does
+    /// not fails here.
+    #[test]
+    fn the_only_branch_this_pushes_is_main() {
+        let source = include_str!("repository.rs");
+        let pushes: Vec<&str> = source
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.starts_with("//") && !line.starts_with("///"))
+            .filter(|line| line.contains("\"push\""))
+            .collect();
+
+        assert!(
+            !pushes.is_empty(),
+            "no push at all — this test has stopped watching anything"
+        );
+        for pushing in pushes {
+            assert!(
+                pushing.contains("MAIN"),
+                "a push that does not name MAIN: {pushing}"
+            );
+            assert!(!pushing.contains("--force"), "a forced push: {pushing}");
+        }
+    }
+
     use super::accounted_for;
 
     /// What porcelain writes for a file that moved.
