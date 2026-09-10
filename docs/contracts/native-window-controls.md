@@ -940,6 +940,30 @@ to the existing twelve explicitly host-driven frames. They do not synthesize
 parent key/button events or read back those submitted frames. Exact evidence:
 `docs/autonomy/updates/nested-reader-event-routing.md`.
 
+## Native control focus traversal
+
+2026-09-10 additive trusted API: `Server::navigate_window_control` accepts
+`WindowControlFocus::{Next, Previous, First, Last}`. Traversal follows the
+published strip's visual order: minimise, maximise/restore, close. Next/Previous
+wrap and enter an unfocused strip at its first/last visible control respectively.
+First/Last select those endpoints directly. Disabled controls remain eligible
+for full-name access; fully clipped controls are excluded and partially visible
+controls retained. An empty candidate set returns None and clears native focus.
+
+The operation revalidates the publication's mapping and current geometry. Absent,
+retired or stale publication and competing pointer ownership refuse; ending a
+grab does not resurrect the previous focus. Identical frame refreshes preserve
+position. Every traversal renews selection identity, including a one-control
+wrap, so pending F1 opening cancels on its next ordered event. No client keyboard
+focus, key event or window command is changed. Selected names use the existing
+externalized label/reader presentation; the result is never execution authority.
+
+This completes trusted traversal only. The host must separately acquire/drain
+navigation keys and dispatch semantic traversal; while a reader owns the UI it
+must use reader navigation. Native cursor selection and direct integration also
+remain. Private-client and nested submission evidence, including exact limits:
+`docs/autonomy/updates/native-control-focus-traversal.md`.
+
 ## Native full-name keyboard activation
 
 2026-09-10 additive trusted API: `Nested::pump_reader_session` borrows a

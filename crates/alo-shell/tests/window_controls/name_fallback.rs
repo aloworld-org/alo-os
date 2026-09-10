@@ -155,14 +155,16 @@ fn name_fallback_publishes_all_pages_for_focus_hover_and_disabled_names() -> Res
     let mut app = mapped(&f);
     let root = f.root();
     present(&f, &root, (640, 480), (3, 4))?;
-    f.backend(|s| -> Result {
-        let strings = words(&["Line"; 30].join("\n"))?;
-        let mut target = Target::default();
-        for (focus, hover) in [
-            (Some(Action::CloseWindow), None),
-            (None, Some((76.0, 5.0))),
-            (None, Some((40.0, 5.0))),
-        ] {
+    let mut state = (words(&["Line"; 30].join("\n"))?, Target::default());
+    // Each independent selection is one bounded backend request. Preserve the
+    // same display, vocabulary and accumulated target across all three requests.
+    for (focus, hover) in [
+        (Some(Action::CloseWindow), None),
+        (None, Some((76.0, 5.0))),
+        (None, Some((40.0, 5.0))),
+    ] {
+        state = f.backend(move |s| -> Result<(Strings, Target)> {
+            let (strings, mut target) = state;
             s.focus_window_control(focus);
             let (count, reader) = draw(s, &mut target, &strings, hover, chrome())?;
             assert_eq!(count, 1);
@@ -197,10 +199,10 @@ fn name_fallback_publishes_all_pages_for_focus_hover_and_disabled_names() -> Res
             assert!(s.read_window_control_page(&mut reader, 30).is_none());
             assert_eq!(reader.selected(), 29);
             reader.dismiss();
-        }
-        assert_eq!((target.labels, target.readers), (0, 3));
-        Ok(())
-    })?;
+            Ok((strings, target))
+        })?;
+    }
+    assert_eq!((state.1.labels, state.1.readers), (0, 3));
     app.sync();
     assert_eq!(app.events.close_requests, 0);
     Ok(())

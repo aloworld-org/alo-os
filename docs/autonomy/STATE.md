@@ -15093,3 +15093,64 @@ client routing and nested EGL submission, not parent physical F1 delivery,
 frame readback, direct display, VM or hardware certification. Native focus
 navigation/cursor selection and direct integration remain next; release and
 window-management boxes stay unchecked.
+
+## 2026-09-10 - native control focus traversal
+
+Started clean at 4e2a78b. Read required guidance, current queue/state, relevant
+v0.01 features/roadmap, ADRs 0002/0010 and native-control contract. No AGENTS.md
+found. Every published report already referenced here; no reconciliation due.
+Selected component and acceptance in QUEUE before implementation.
+
+Trusted Next/Previous/First/Last traversal now uses live strip visual order,
+keeps disabled names accessible, skips fully clipped controls and preserves
+partially visible controls. Stale/absent publication and competing pointer
+ownership refuse and clear focus. Each traversal renews selection identity,
+including one-item wrap, cancelling pending F1 on its next ordered event.
+No client focus, key event or window command is changed. Four new private-client
+tests cover order, clipping, lifetime, competition, typing and F1 opening/cancel.
+
+Focused tests pass. Final Linux affected suite passes 168 unit, 262 lifecycle,
+three socket and four compile-fail doctests, none ignored. Linux all-target clippy,
+warning-denied rustdoc and example build pass. Windows affected clippy/tests and
+format pass (Windows shell has zero tests, crate is Linux-only). WSLg reader and
+controls pass first run with original deadlines: two traversal-selected F1 reader
+submissions in both schemes plus all existing reader/control checks. Independent
+supervisor workspace/Windows/Linux/rustdoc/BPF publication gates have not run.
+
+Initial clippy rejected unchecked indexing; checked access fixes it. Full Linux
+suite twice exposed a three-second reply timeout in the existing thirty-page
+fallback test, with 261 other lifecycle tests passing. Isolated temporary timing
+instrumentation measured the three independent draws cumulatively at 944.187 ms,
+1.809122 s and 2.666046 s; complete backend request 2.666255 s. Original slowdown
+cause remains unproven; post-failure process/memory checks do not prove conditions
+during failure. Removed diagnostic instrumentation. Repaired request orchestration:
+one complete selection/preflight per backend request, carrying the same vocabulary,
+target and server across all three. All assertions, page counts/ranges, refusal
+checks, aggregate target counts and three-second per-request deadlines retained.
+No suite concurrency or gate changes. Final full suite and clippy pass.
+
+Exact commands, original failures, diagnosis and limitations:
+`docs/autonomy/updates/native-control-focus-traversal.md`.
+Logs: `.git/alo-loop/native-control-focus-traversal/`; original `linux-tests.txt`
+and `linux-tests-final.txt`, diagnosis `fallback-diagnostic.txt`, passing repair
+`linux-tests-repaired.txt`, graphical `wslg-reader.txt` and `wslg-controls.txt`.
+
+C: preflight before every build/test/lint/format/doc command remained above 12 GiB
+(all above 53 billion bytes). Existing bpffs, WSLg and graphics prerequisites
+verified. Private display resources only; no kernel-mutating fixtures/outer lock.
+Desktop target /root/alo-os-target retained. No shared maintenance, install/cleanup,
+WSL restart/helper, second worker/loop, supervisor edits, staging/commit/push,
+other checkout/repository or credential/identity access. Initial PowerShell encoding
+rewrite of QUEUE corrected from HEAD bytes with only this task's entry retained;
+historical text unchanged in final diff. Contract and four progress documents updated.
+
+Next: navigation-key acquisition/release ownership and ordered traversal dispatch,
+then cursor selection and direct integration. This completes trusted traversal,
+not interactive focus navigation/full-name access/window management. Evidence is
+private client and nested submission, not parent navigation-key delivery, submitted
+frame readback, direct display, VM or physical certification. Remaining machine
+records belong to their delivery phases. Reports arriving during publication
+reconcile next iteration. No release box promoted.
+
+Final tracked/new diff inspected; cargo fmt --all --check and git diff --check
+pass. No staged files. Minimum observed C: preflight 53,245,390,848 bytes.

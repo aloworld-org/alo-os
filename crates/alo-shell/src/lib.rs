@@ -67,6 +67,7 @@ mod window_activation;
 mod window_close;
 mod window_command;
 mod window_control_feedback;
+mod window_control_focus;
 mod window_control_frame;
 mod window_control_input;
 mod window_control_label;
@@ -152,6 +153,7 @@ pub use session_device::SessionError;
 pub use shortcut_dispatch::ShortcutDispatchError;
 pub use socket::SocketError;
 pub use window_command::WindowCommandError;
+pub use window_control_focus::WindowControlFocus;
 pub use window_control_frame::WindowControlFrame;
 pub use window_control_frame::WindowControlLabelFrame;
 pub use window_control_input::{

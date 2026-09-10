@@ -12,6 +12,14 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native control focus can move through all visible control names**, including
+  disabled controls, in either direction. Traversal supports full-name opening
+  and cancels pending openings when selection changes. Private-client and WSLg
+  submission checks pass; navigation-key dispatch remains to be connected.
+  An existing fallback test now checks each independent selection within its
+  own unchanged fixture deadline, preserving all page and refusal assertions.
+  Evidence: `docs/autonomy/updates/native-control-focus-traversal.md`.
+
 - **Native control names can be opened with F1 when the control has native
   focus.** Opening occurs once on release and preserves application typing and
   F1 chords; changed focus or competing input cancels it safely. The nested

@@ -246,6 +246,26 @@ pub fn run(
         nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
         assert!(server.focus_window_control(Some(Action::CloseWindow)));
         let mut opening_input = alo_shell::NestedControlInput::default();
+        // Establish the opening selection by traversing the submitted strip.
+        assert!(!server.focus_window_control(None));
+        for expected in [
+            Action::MinimiseWindow,
+            Action::MaximiseWindow,
+            Action::CloseWindow,
+        ] {
+            assert_eq!(
+                server.navigate_window_control(alo_shell::WindowControlFocus::Next),
+                Some(expected)
+            );
+        }
+        assert_eq!(
+            server
+                .presented_window_control_label(None, (140, 28))?
+                .ok_or("traversed name")?
+                .control
+                .action(),
+            Action::CloseWindow
+        );
         let mut opened = None;
         let mut session = alo_shell::NestedReaderSession {
             reader: &mut opened,
@@ -287,7 +307,7 @@ pub fn run(
     }
     assert_eq!(submissions, 12);
     println!(
-        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes; two automatic 12-page fallback submissions; two F1 gesture-to-reader submissions and session pump passes"
+        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes; two automatic 12-page fallback submissions; two F1 gesture-to-reader submissions and session pump passes; native focus traversal selects both F1 names"
     );
     Ok(())
 }

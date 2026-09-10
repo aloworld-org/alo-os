@@ -5,6 +5,29 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Completed native control focus traversal (2026-09-10):** trusted traversal
+selects visible native names in both directions, including disabled controls,
+without client focus or operation changes. Four new private-client checks,
+affected Linux/Windows checks and WSLg traversal-to-F1-reader submissions pass.
+The full suite exposed a fallback fixture timeout: three independent selections
+now use separate bounded requests on the same display/target, retaining all
+assertions and the three-second per-request deadline. Final affected suite passes.
+Exact original failures, measured diagnosis and limits:
+`updates/native-control-focus-traversal.md`. Supervisor gates pending.
+Next: native navigation key acquisition/release ownership and ordered dispatch
+to this traversal; then native cursor selection and direct integration. Trusted
+traversal is complete; interactive focus navigation/window management is not.
+
+**Selected native control focus traversal (2026-09-10):** implement trusted
+forward/backward/first/last traversal over the live published strip, preserving
+disabled-name access and excluding fully clipped controls. Refuse absent/stale
+publication and competing pointer ownership; renew selection identity even on
+single-item wrap so pending name gestures cannot survive traversal. Acceptance:
+private-client order/clipping/lifetime/competition/typing and F1 cancellation
+checks, affected fmt/tests/clippy/rustdoc and WSLg traversal-to-reader submission.
+This completes the traversal component; keyboard acquisition/dispatch, cursor
+selection and direct integration remain subsequent components.
+
 **Native full-name keyboard activation ready for integration (2026-09-10):**
 implementation, four new private-client tests, affected Linux/Windows checks and
 WSLg reader submissions pass. Recovery controls protocol trace and final normal

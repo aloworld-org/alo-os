@@ -1334,6 +1334,15 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native control focus traversal (2026-09-10): trusted forward/backward and
+    endpoint selection follows live visual order, retaining disabled-name access
+    and refusing stale/clipped/competing targets. Selection identity cancels
+    pending F1 even on single-control wrap. Four new private-client tests and
+    WSLg traversal-to-reader submissions pass. Full affected tests pass after
+    measured fallback-fixture request repair; all assertions and per-request
+    deadlines retained. Evidence: `docs/autonomy/updates/native-control-focus-traversal.md`.
+    Navigation-key ownership/dispatch, cursor selection and direct integration
+    remain; no feature/release box promoted. Supervisor gates pending.
   - Native full-name keyboard activation (2026-09-10, ready for integration): F1
     opens the explicitly native-focused name once on release. Continuous focus
     identity, cancellation and owned-release draining preserve client typing.

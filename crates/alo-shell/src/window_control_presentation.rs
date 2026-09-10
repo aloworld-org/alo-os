@@ -52,6 +52,17 @@ impl Presentation {
 }
 
 impl Server {
+    /// Live traversal inputs; the shared focus setter applies ownership refusal.
+    pub(crate) fn control_focus_layout(
+        &mut self,
+    ) -> Option<(WindowControlSnapshot, Option<Action>)> {
+        let view = self.live_window_controls()?;
+        let snapshot = self
+            .window_control_snapshot(&view.surface, view.viewport, view.origin)
+            .ok()?;
+        Some((snapshot, view.focus))
+    }
+
     /// Native focus identity, distinct from client focus and hover selection.
     pub(crate) fn control_name_focus(&mut self) -> Option<(Action, Arc<()>)> {
         self.control_reader_binding()?;
