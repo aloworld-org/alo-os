@@ -272,6 +272,16 @@ pub fn parked(at: &Path, task: u32, why: &str) -> Result<String, String> {
     let branch = format!("parked/task-{task}-{}", moment());
     git(at, &["switch", "--create", &branch])?;
 
+    // **The handoff goes with it, and it has to be forced.** `.kernel-loop` is
+    // ignored, so `--all` walks straight past the one file that says which task
+    // this was, what evidence it claimed and which files it touched — the most
+    // useful thing in the branch to whoever picks the work up. Ignored is right
+    // for the loop's scratch directory and wrong for this.
+    drop(git(
+        at,
+        &["add", "--force", "--", ".kernel-loop/handoff.toml"],
+    ));
+
     let put_away = git(at, &["add", "--all"])
         .and_then(|_| {
             git(
@@ -289,12 +299,36 @@ pub fn parked(at: &Path, task: u32, why: &str) -> Result<String, String> {
                 ],
             )
         })
+        .or_else(|why| {
+            // **Nothing to park is not a failure to park.** A task can fail its
+            // gates having changed nothing in the tree — the refusal was about
+            // the handoff, or about the machine — and git calls an empty commit
+            // an error. Treating that as *the work could not be put anywhere
+            // safe* stopped a run dead with nothing whatsoever at risk.
+            if why.contains("nothing to commit") || why.contains("nothing added to commit") {
+                Ok(String::new())
+            } else {
+                Err(why)
+            }
+        })
         .and_then(|_| git(at, &["push", "--set-upstream", "origin", &branch]));
 
     // Back onto `main` whatever happened, so a push that failed does not also
     // leave the checkout on a branch nobody is expecting.
     git(at, &["switch", MAIN])?;
     put_away?;
+
+    // **And the handoff is taken off `main`.** It named the task being parked,
+    // and that task is no longer being pursued — leaving it behind poisons the
+    // next iteration, which selects a different task, finds a handoff for this
+    // one, and refuses because the two disagree. That happened: the run stopped
+    // dead one task after a successful park, and the stop said the handoff and
+    // the plan named different tasks. It is safe to remove because the branch
+    // above now carries it.
+    drop(std::fs::remove_file(
+        at.join(".kernel-loop").join("handoff.toml"),
+    ));
+
     Ok(branch)
 }
 
