@@ -91,6 +91,13 @@ Deliberately **not** the whole overlay. The first increment is the seam:
 - **Constraint:** nothing in `crates/alo-shell`'s window-control files, which are
   the desktop worker's live chain and a different overlay entirely.
 
+**Done, 2026-09-10** — `e728fa6`, `crates/alo-overlay`: `Summoning` holds
+one-press-one-request in the compiler, the integration test presses the shipped
+`Super+A` through `Action::TheAgent`, and nowhere-to-show refuses in words.
+Report: `docs/autonomy/updates/agent-overlay-summoning-seam.md`. *Marked done by
+the supervisor's operator rather than the worker's handoff — the omission that
+taught the prompt to demand it.*
+
 ### 3. What the overlay shows when the agent has nothing to say yet
 
 **Status:** ready. **Depends on:** 2.

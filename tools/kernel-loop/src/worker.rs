@@ -221,6 +221,12 @@ fn asked_of_it(task: &Task) -> String {
          touched, and an `evidence` block. tools/kernel-loop/src/handoff.rs documents the\n\
          format.\n\
          \n\
+         IN THE SAME CHANGE, mark this task `**Done, <date>**` in the plan named above —\n\
+         with the plan file among the files you list — and write the next task there if\n\
+         the plan names none after it. The loop selects from the published plan: a task\n\
+         finished and not marked is a task it selects again, and the next worker is sent\n\
+         at work that is already done.\n\
+         \n\
          The evidence is one line per acceptance criterion in the plan — the workspace\n\
          (`.` for the product's), the crate, the test target and the test's full name —\n\
          and each is run on its own before anything is published. A test whose file is not\n\
@@ -314,6 +320,15 @@ mod tests {
         assert!(
             asked.contains("never write a handoff for a"),
             "a worker not told this hands over half a task: {asked}"
+        );
+        // The loop selects from the published plan, so a finished task that is
+        // not marked done there is selected again and the next worker is sent
+        // at work that is already done. The first overlay worker did exactly
+        // that: it finished, its handoff never touched the plan, and the loop
+        // launched a second worker at the published task within a minute.
+        assert!(
+            asked.contains("mark this task `**Done, <date>**`"),
+            "a worker not told to mark the plan leaves the task selectable forever: {asked}"
         );
     }
 
