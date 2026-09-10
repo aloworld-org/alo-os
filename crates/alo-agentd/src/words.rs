@@ -6,25 +6,31 @@
 //! service log by whoever is standing the machine up. Those keep their English.
 //!
 //! What is new is that there is now somebody at the other end of a connection.
-//! Four things this service refuses are refusals **of a request**, and a
-//! request comes from an agent that will show its person what it was told, or
-//! from the person's own shell. `docs/contracts/daemon-protocol.md` says a
-//! message that is not acted on is refused in words and never dropped, and
-//! these are the four ways this crate can be the one refusing.
+//! Everything here is a refusal **of a request**, and a request comes from an
+//! agent that will show its person what it was told, or from the person's own
+//! shell. `docs/contracts/daemon-protocol.md` says a message that is not acted
+//! on is refused in words and never dropped, and these are the ways this crate
+//! can be the one refusing.
 //!
-//! # There are only four, because a turn words its own answers
+//! # There are few of them, because a turn words its own answers
 //!
 //! Everything that happens *inside* a turn — a verb that is not on the list,
 //! the grants at the moment of execution, a full disk, a change nobody
 //! answered — is `alo_turn::NotDone::said`, and this crate carries it rather
 //! than rewording it. That is item 9e's rule at the last boundary before a
-//! person reads the sentence, and it is why holding a turn adds four strings
-//! and not thirty.
+//! person reads the sentence, and it is why holding a turn adds a handful of
+//! strings and not thirty.
 //!
-//! The fourth arrived with item 21n and is the odd one: [`NOTHING_WAS_ASKED`]
-//! is about **this repository** disagreeing with itself, and it is here rather
-//! than in `crate::refusing`'s English because somebody at the other end of a
-//! connection is waiting for an answer to a question they asked.
+//! [`NOTHING_WAS_ASKED`] is the odd one: it is about **this repository**
+//! disagreeing with itself, and it is here rather than in `crate::refusing`'s
+//! English because somebody at the other end of a connection is waiting for an
+//! answer to a question they asked.
+//!
+//! [`WHAT_IS_GRANTED_WAS_NOT_READ_AGAIN`] is the other kind of odd one: the
+//! refusals underneath it *are* `crate::NotReadAgain`'s English, and are read by
+//! whoever goes and looks at the file. What crosses to the person is one
+//! sentence, because there is one thing for them to do about all of them —
+//! which is nothing, and being told so is the whole point.
 //!
 //! # None of them quotes anything a client sent
 //!
@@ -179,8 +185,41 @@ pub const AN_ADMINISTRATOR_SET_THAT_RULE: Word = Word::saying(
     "Said when the organisation's own policy refuses the place somebody chose for their question.      `{refusal}` is the rule's own sentence, rendered from this system's words and never anything      a client sent; keep it whole and put the rest of the sentence around it. It is said only on      a machine an organisation manages — a person who set a strict rule for their own machine is      told the rule and no administrator is mentioned, because there is none. Name no      administrator: this service knows the policy, not who wrote it.",
 );
 
+/// What is granted could not be read again, at the person's asking.
+///
+/// The one sentence for every way `crate::rereading::read_again` can fail,
+/// because there is one thing for the person to do about all of them: nothing
+/// was widened, nothing was forgotten, and what needs looking at is a file on
+/// their own machine. Which failure it was is `crate::NotReadAgain`'s English,
+/// for whoever goes and looks.
+///
+/// The second clause is the load-bearing one. A machine that quietly emptied
+/// its list would be a machine that went silent, and the person would find out
+/// by discovering their agent can no longer read their invoices.
+pub const WHAT_IS_GRANTED_WAS_NOT_READ_AGAIN: Word = Word::saying(
+    "agentd.what-is-granted-was-not-read-again",
+    "what you have granted could not be read again, so this machine is still using the list it      already had — nothing was widened and nothing was forgotten",
+)
+.noting(
+    "Said when somebody's side of the machine reports that what they granted has changed and the      machine cannot read its own list of grants. \"Granted\" is what a person does by picking a      folder for their agent to reach. The second half is the reassurance that matters and should      stay a plain statement: the agent can reach exactly what it could reach a moment ago, no more      and no less.",
+);
+
+/// An agent saying that what is granted has changed.
+///
+/// The knock is the person's: a grant is made by picking a folder (ADR 0001 §3)
+/// and revoked on the same side, so an agent asking for the list to be read
+/// again would be an agent choosing the moment its own reach is recalculated.
+/// `crate::rereading::an_agent_knocked` is what says this, and writes it down.
+pub const AN_AGENT_CANNOT_SAY_WHAT_IS_GRANTED: Word = Word::saying(
+    "agentd.an-agent-cannot-say-what-is-granted",
+    "what you have granted changes when you pick or revoke a folder, and an agent cannot say that      it has — nothing was read again",
+)
+.noting(
+    "Said to an agent that told alo OS what the person had granted had changed, which only the      person's own side of the machine may say, and shown to the person by whatever they were      talking to. It is addressed to them rather than to the agent: they are being told that their      agent asked for something it may not have, and that nothing came of it.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 9] = [
+pub const EVERY_WORD: [Word; 11] = [
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,
@@ -190,6 +229,8 @@ pub const EVERY_WORD: [Word; 9] = [
     NO_KEY_FOR_THIS_PROVIDER,
     THE_KEYRING_REFUSED_US,
     AN_ADMINISTRATOR_SET_THAT_RULE,
+    WHAT_IS_GRANTED_WAS_NOT_READ_AGAIN,
+    AN_AGENT_CANNOT_SAY_WHAT_IS_GRANTED,
 ];
 
 /// Why this crate's own list could not be declared.

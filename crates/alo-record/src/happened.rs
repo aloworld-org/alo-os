@@ -218,6 +218,34 @@ pub enum Happened {
         /// Why it went nowhere, in the words the person was shown.
         why: Line,
     },
+    /// This machine was asked to read again what the person has granted, and
+    /// did not.
+    ///
+    /// A grant is made and revoked on the person's side of the machine, and the
+    /// running service is told *what is granted has changed* rather than handed
+    /// a grant — so the only thing such a message can cause is the service
+    /// reading its own file again. This is that reading not happening, and the
+    /// service going on under the list it already had.
+    ///
+    /// **There is no agent here and no field for one**, which it shares with
+    /// [`Happened::LeftOnItsOwn`] and for a related reason: making, revoking and
+    /// re-reading a grant are the person's acts, and a name in this position
+    /// would be an authority the record invented. The one way an agent reaches
+    /// this at all is by sending the message on its own door, which is refused
+    /// before anything is read — and `why` is then the sentence saying so.
+    ///
+    /// **It holds nothing of a grant**: no path, no reach, no duration and no
+    /// handle. Nothing was read, so there is nothing read to keep, and a shape
+    /// with somewhere to put one would be a record of what a file said at a
+    /// moment nobody could believe it.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    GrantsNotReadAgain {
+        /// Why they were not, in the words the person was shown.
+        why: Line,
+    },
     /// Something left this machine (law 1).
     ///
     /// Made only from an [`alo_egress::Departing`], which the indicator is the
@@ -271,12 +299,13 @@ pub enum Happened {
 impl Happened {
     /// Whose authority this was — `None` when nobody's was.
     ///
-    /// The one entry with no answer here is [`Happened::LeftOnItsOwn`], and
-    /// `None` is that answer rather than a gap in it: nobody granted alo OS
-    /// permission to sign somebody in, so a name in this position would be an
-    /// authority the record invented. This module's documentation has the
-    /// whole of why, and it is the reason this answers an [`Option`] where it
-    /// used to answer a [`Line`].
+    /// Two entries have no answer here, and `None` is that answer rather than a
+    /// gap in it. Nobody granted alo OS permission to sign somebody in
+    /// ([`Happened::LeftOnItsOwn`]), and nobody granted it permission to read
+    /// the person's own list of grants ([`Happened::GrantsNotReadAgain`]) — so
+    /// a name in either position would be an authority the record invented.
+    /// This module's documentation has the whole of why, and it is the reason
+    /// this answers an [`Option`] where it used to answer a [`Line`].
     #[must_use]
     pub fn agent(&self) -> Option<&Line> {
         match self {
@@ -287,15 +316,19 @@ impl Happened {
             | Self::NeverPutAnywhere { agent, .. }
             | Self::Left { agent, .. }
             | Self::HeldBack { agent, .. } => Some(agent),
-            Self::LeftOnItsOwn { .. } => None,
+            Self::LeftOnItsOwn { .. } | Self::GrantsNotReadAgain { .. } => None,
         }
     }
 
     /// Which errand this was, when alo OS did it on its own.
     ///
-    /// `None` for everything an agent caused, which is the other half of
-    /// [`Happened::agent`]: exactly one of the two answers something, for every
-    /// entry there is.
+    /// `None` for everything an agent caused. It used to be the exact other
+    /// half of [`Happened::agent`] — one of the two answered something for
+    /// every entry there was — and [`Happened::GrantsNotReadAgain`] is the one
+    /// entry that answers neither: nobody's authority, and no errand either,
+    /// because nothing was reached for and nothing left. What caused it is a
+    /// person saying that what they granted had changed, which is not a thing
+    /// this list has a name for and should not gain one.
     #[must_use]
     pub fn errand(&self) -> Option<Errand> {
         match self {
@@ -305,6 +338,7 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
         }
@@ -327,23 +361,34 @@ impl Happened {
             Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
     }
 
-    /// Whether the agent was stopped.
+    /// Whether something was stopped.
     ///
-    /// All three refusals count, whether the call was well formed or not and
+    /// All four refusals count, whether the call was well formed or not and
     /// whether it was a call at all: a security review asking what was refused
-    /// wants the ones that never validated, and the egress the policy held
-    /// back, as much as the ones the grants turned down.
+    /// wants the ones that never validated, the egress the policy held back and
+    /// the re-reading of the grants that did not happen, as much as the ones
+    /// the grants turned down.
+    ///
+    /// It used to say *whether the agent was stopped*, and
+    /// [`Happened::GrantsNotReadAgain`] is why it no longer does: a machine that
+    /// went on serving under an older list than the person's own is exactly what
+    /// somebody reviewing a machine is looking for, and it happened with no
+    /// agent behind it.
     #[must_use]
     pub fn was_stopped(&self) -> bool {
         matches!(
             self,
-            Self::Stopped { .. } | Self::TurnedAway { .. } | Self::HeldBack { .. }
+            Self::Stopped { .. }
+                | Self::TurnedAway { .. }
+                | Self::HeldBack { .. }
+                | Self::GrantsNotReadAgain { .. }
         )
     }
 
@@ -365,6 +410,7 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -386,7 +432,8 @@ impl Happened {
             // for the sentence saying so.
             Self::TurnedAway { why, .. }
             | Self::HeldBack { refused: why, .. }
-            | Self::NeverPutAnywhere { why, .. } => Some(why),
+            | Self::NeverPutAnywhere { why, .. }
+            | Self::GrantsNotReadAgain { why } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
@@ -403,6 +450,7 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -418,6 +466,7 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => &[],
@@ -438,7 +487,8 @@ impl Happened {
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
-            | Self::NeverPutAnywhere { .. } => None,
+            | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. } => None,
         }
     }
 
@@ -459,6 +509,7 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
+            | Self::GrantsNotReadAgain { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
     }

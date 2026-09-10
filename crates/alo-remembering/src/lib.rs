@@ -45,13 +45,13 @@
 //! as the person (ADR 0001 §2). It is enforced by there being nothing on the
 //! agent's door that reaches this crate at all.
 //!
-//! **What it costs, said plainly:** a grant made while the daemon is running
-//! reaches the daemon when the daemon next starts, which on alo OS is the next
-//! sign-in — the service is bound to the person's session. Carrying a grant to
-//! a *running* daemon needs a request on the person's door, which is
-//! `alo-protocol`'s surface and the next task in
-//! `docs/autonomy/v0-01-lane-b-plan.md`. This crate is what makes that worth
-//! building: without somewhere to keep them, there was nothing to carry.
+//! **A running daemon hears about a change through a knock, not a payload.**
+//! `alo_protocol::FromAPerson::Granted` says only *what is granted has changed*
+//! and carries no grant, no path and no duration; the daemon answers it by
+//! reading this file again, under the three rules above. So the road from the
+//! socket to these grants is a road to **reading** them, and there is still no
+//! road at all to writing them — the writer is the person's own side of the
+//! machine, and this crate is reachable from it and from nowhere else.
 //!
 //! # Map
 //!

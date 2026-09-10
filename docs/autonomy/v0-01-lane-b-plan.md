@@ -170,3 +170,50 @@ caller is on.
 - **Constraint:** additive to `docs/contracts/daemon-protocol.md`, which is a
   public surface (*contracts outlive code*); no new surface, and nothing in
   `crates/alo-shell`.
+
+**Done, 2026-09-10.** `granted` on the person's door — a knock with no field for
+a grant, a path or a duration, so the only thing it can cause is
+`crates/alo-agentd/src/rereading.rs` reading the person's own file again under
+`alo-remembering`'s three rules. The list is replaced whole, because the file is
+what is granted and anything less would make revoking slower than granting; the
+one thing carried across is the grant a turn's own invocation made, under the
+handle the turn will end it by. A file that has stopped being believable leaves
+the grants where they were, says so in the person's language, and the refusal is
+written down as `alo_record::Happened::GrantsNotReadAgain` — a new kind of entry
+with **no agent field**, because making and revoking a grant is the person's
+act. The same request on the agent's door is refused in this crate's own words
+and is the one wrong-door message that leaves an entry. Measured end to end over
+a real socket in `crates/alo-agentd/src/serving.rs`, and per-decision in
+`rereading.rs`, `answering.rs` and `doing.rs`. Report:
+`docs/autonomy/updates/a-grant-made-now-reaches-the-daemon-now.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 5
+below is the next task and was written in the same change.
+
+### 5. A person can be told what their machine did
+
+**Status:** ready. **Depends on:** nothing in this lane; 4 is done.
+
+`docs/features.md` promises for v0.01: *A record of what the agent did, in
+words*. `crates/alo-record` writes it, `crates/alo-keeping` shortens it and
+`crates/alo-recounting` turns one entry into a clause a person reads — and
+**nothing reads the file back for them.** `alo-recounting` is handed entries by
+its caller, and on a running machine the only caller is a test: the record lives
+at the path the machine description names, and no part of this repository opens
+it on the person's behalf and answers *what happened, and when*.
+
+This is lane B's for task 3's reason: the record is the person's, it is written
+under their own authority, and the question *what did my machine do today* is one
+they ask about their own session. The **surface** that shows it is the
+compositor lane's, as picking's and the grants list's are.
+
+- **Acceptance:** an account of what happened on this machine is read back off
+  the real record file and answered as `alo_recounting::Told` values, oldest
+  first and bounded, with `alo_keeping`'s *this record does not go all the way
+  back* carried into the account rather than dropped; a record file that cannot
+  be believed is refused in words rather than answered as an empty day — an
+  empty account and a record nobody could read must not look the same; a
+  question about a span answers only that span; and nothing an agent can send
+  over the socket reaches any of it, as `alo-remembering`'s file is unreachable.
+- **Constraint:** no new surface, and nothing in `crates/alo-shell`. Additive to
+  `docs/contracts/record-file.md` only if something there moved, which it should
+  not have to: this reads the shape that document already fixes.

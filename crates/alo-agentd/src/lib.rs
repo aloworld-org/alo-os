@@ -136,11 +136,13 @@
 //! own.
 //!
 //! **It does not make, widen or keep a grant.** No request on this socket
-//! grants anything: `alo-protocol` has three requests from an agent and two
-//! from a person, and none of the five. What a person granted before is read
-//! once, in `src/main.rs`, out of the file `alo-remembering` keeps it in — and
-//! everything below that is handed an `alo_capability::Grants`, a value with no
-//! path in it, which is what makes the grants file unreachable from the socket.
+//! grants anything: `alo-protocol` has three requests from an agent and four
+//! from a person, and none of the seven. What a person granted is read out of
+//! the file `alo-remembering` keeps it in — once at start-up, and again
+//! whenever the person's own side says that what is granted has changed, which
+//! is a knock carrying no grant, no path and no duration ([`rereading`]). What
+//! travels below `src/main.rs` is that list and a way to **read** the file it
+//! came from; there is nothing anywhere under this crate that writes it.
 //! On a machine where nobody has picked a folder the list is empty, every verb
 //! is refused in the grants' own words and every refusal is written down, which
 //! is the capability model running rather than missing.
@@ -190,6 +192,8 @@ pub mod describing;
 #[cfg(target_os = "linux")]
 pub mod doing;
 #[cfg(target_os = "linux")]
+pub mod holding;
+#[cfg(target_os = "linux")]
 pub mod knocking;
 #[cfg(target_os = "linux")]
 pub mod lasting;
@@ -203,6 +207,8 @@ pub mod place;
 pub mod questions;
 #[cfg(target_os = "linux")]
 pub mod refusing;
+#[cfg(target_os = "linux")]
+pub mod rereading;
 #[cfg(target_os = "linux")]
 pub mod serving;
 #[cfg(target_os = "linux")]
@@ -242,6 +248,8 @@ pub use describing::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};
 #[cfg(target_os = "linux")]
 pub use doing::what_an_agent_said;
 #[cfg(target_os = "linux")]
+pub use holding::Holding;
+#[cfg(target_os = "linux")]
 pub use knocking::Knocking;
 #[cfg(target_os = "linux")]
 pub use lasting::Lasting;
@@ -255,8 +263,11 @@ pub use place::{Place, THE_ROOT};
 pub use questions::{Questions, TheBound, WhatAnswers};
 #[cfg(target_os = "linux")]
 pub use refusing::{
-    NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotServed, NotStarted, NotTwoSides,
+    NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotReadAgain, NotServed, NotStarted,
+    NotTwoSides,
 };
+#[cfg(target_os = "linux")]
+pub use rereading::{Remembering, ThePersonsFile, WhatIsGranted};
 #[cfg(target_os = "linux")]
 pub use serving::{Served, Serving};
 #[cfg(target_os = "linux")]

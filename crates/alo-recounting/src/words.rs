@@ -141,6 +141,15 @@ pub const NEVER_PUT_ANYWHERE: Word = Word::saying(
      words the person was shown at the time.",
 );
 
+/// The person's grants were not read again.
+pub const GRANTS_NOT_READ_AGAIN: Word = Word::saying(
+    "recounting.outcome.grants-not-read-again",
+    "what you have granted could not be read again, so this machine went on with the list it already had",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. Somebody's side of the      machine said that what they had granted had changed, and the machine could not read its own      list of grants — so nothing was widened and nothing was forgotten either. The reason is shown      after it in the words the person was shown at the time. \"Granted\" is what a person does by      picking a folder for their agent to reach.",
+);
+
 /// Something left this machine.
 pub const LEFT: Word = Word::saying("recounting.outcome.left", "something left this machine")
     .noting(
@@ -231,7 +240,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 13] = [
+pub const EVERY_WORD: [Word; 14] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -239,6 +248,7 @@ pub const EVERY_WORD: [Word; 13] = [
     NEVER_BECAME_A_CALL,
     ANSWERED_HERE,
     NEVER_PUT_ANYWHERE,
+    GRANTS_NOT_READ_AGAIN,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
@@ -252,7 +262,7 @@ pub const EVERY_WORD: [Word; 13] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 10] = [
+pub const EVERY_OUTCOME: [Word; 11] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -260,6 +270,7 @@ pub const EVERY_OUTCOME: [Word; 10] = [
     NEVER_BECAME_A_CALL,
     ANSWERED_HERE,
     NEVER_PUT_ANYWHERE,
+    GRANTS_NOT_READ_AGAIN,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,

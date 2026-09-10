@@ -31,8 +31,8 @@ mod running {
     use std::time::SystemTime;
 
     use alo_agentd::{
-        ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION, Waking,
-        session, signalling, starting, unix,
+        ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION,
+        ThePersonsFile, Waking, WhatIsGranted, session, signalling, starting, unix,
     };
     use alo_capability::Grants;
     use alo_keeping::Writing;
@@ -121,6 +121,11 @@ mod running {
             })?;
 
         let mut grants = whatever_was_granted()?;
+        // The same file, and the only way back to it once the service is
+        // running: a way to **read** it, handed in beside the list it was read
+        // into. `alo_agentd::rereading` has the argument, and the short of it is
+        // that nothing below this line can write a byte of it.
+        let remembering = ThePersonsFile::at(Path::new(THE_GRANTS));
 
         let (waking, stop) = Waking::made().map_err(|why| NotStarted::NoStop { why })?;
         signalling::on_sigterm(stop)?;
@@ -142,7 +147,7 @@ mod running {
                 &listening,
                 &waking,
                 &strings,
-                &mut grants,
+                &mut WhatIsGranted::of(&mut grants, &remembering),
                 &mut bounding,
                 &mut writing,
             ),

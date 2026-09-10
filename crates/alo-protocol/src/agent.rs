@@ -22,6 +22,14 @@
 //! and an agent asking for it is refused in the same words as one trying to
 //! approve something, because it is the same list.
 //!
+//! **Nothing says that what is granted has changed.** That request carries no
+//! grant and causes only the daemon re-reading the person's own file, so it
+//! could look harmless on this door — and it is still the person's. A grant is
+//! made by a person picking a folder (ADR 0001 §3), and an agent that could
+//! decide *when the machine reads what it may reach* would be an agent choosing
+//! the moment its own reach is recalculated. It is refused here in the same
+//! words as an approval, and `alo-agentd` writes the refusal down.
+//!
 //! **Nothing names a turn.** A number identifying which turn a request belongs
 //! to would be a number an agent could change, and there is no field for one:
 //! which turn a message is part of is answered by the connection it arrived on,
@@ -87,9 +95,10 @@ impl FromAnAgent {
             Asked::Read { verb, given } => Ok(Self::Read { verb, given }),
             Asked::Propose { verb, given } => Ok(Self::Propose { verb, given }),
             Asked::Ask { question } => Ok(Self::Ask { question }),
-            Asked::Approve { .. } | Asked::Decline { .. } | Asked::Waiting {} => {
-                Err(NotUnderstood::NotForAnAgent)
-            }
+            Asked::Approve { .. }
+            | Asked::Decline { .. }
+            | Asked::Waiting {}
+            | Asked::Granted {} => Err(NotUnderstood::NotForAnAgent),
         }
     }
 
@@ -198,16 +207,19 @@ mod tests {
         assert!(ask.given().is_empty());
     }
 
-    /// **An agent cannot approve its own change.** The most important refusal
-    /// in this crate: a socket where the side that proposed a change could also
-    /// answer it would make ADR 0001 §5 true of the capability model and false
-    /// of the door in front of it.
+    /// **An agent cannot approve its own change, and cannot say that what is
+    /// granted has changed.** The most important refusal in this crate: a socket
+    /// where the side that proposed a change could also answer it would make
+    /// ADR 0001 §5 true of the capability model and false of the door in front
+    /// of it. The fourth is the knock, which carries no grant and is still the
+    /// person's — see this file's header.
     #[test]
     fn an_agent_cannot_answer_a_question_that_was_put_to_a_person() {
         for message in [
             r#"{"format":1,"asks":{"approve":{"number":7}}}"#,
             r#"{"format":1,"asks":{"decline":{"number":7}}}"#,
             r#"{"format":1,"asks":{"waiting":{}}}"#,
+            r#"{"format":1,"asks":{"granted":{}}}"#,
         ] {
             assert_eq!(
                 FromAnAgent::read(message),

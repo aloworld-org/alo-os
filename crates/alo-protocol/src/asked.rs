@@ -1,6 +1,6 @@
 //! Everything that can arrive, in one closed list.
 //!
-//! Six requests, and there is no seventh. What makes this file worth having on
+//! Seven requests, and there is no eighth. What makes this file worth having on
 //! its own is that it is deliberately **not** public: the two types a caller of
 //! this crate ever holds are [`FromAnAgent`](crate::FromAnAgent) and
 //! [`FromAPerson`](crate::FromAPerson), and this is the list they are each cut
@@ -16,9 +16,9 @@
 //! two different types, and neither can produce the other's.
 //!
 //! Keeping the list itself in one place is what makes that a division rather
-//! than two lists that could drift: a seventh request has to be given to one
+//! than two lists that could drift: an eighth request has to be given to one
 //! door or the other before this crate will compile, and a request that is not
-//! one of the six is not a request at all.
+//! one of the seven is not a request at all.
 //!
 //! **Which side of a socket a caller is really on is not this crate's
 //! question.** That is peer credentials on a Unix socket, and it is
@@ -92,6 +92,21 @@ pub(crate) enum Asked {
     /// person*, and a field naming an agent, a number or a moment would be a
     /// way to ask about somebody else's.
     Waiting {},
+    /// What is granted has changed, and the daemon should read its own list
+    /// again.
+    ///
+    /// **A knock and not a payload**, which is the whole of why it is safe for
+    /// this to be on the wire at all. It carries no grant, no path, no reach and
+    /// no duration, so the only thing it can cause is the service re-reading the
+    /// file the person's own side has already written — under the same rules
+    /// about who may have written it that it reads at start-up. A request that
+    /// carried a grant would be a request that widened one, and ADR 0001 §3 says
+    /// a grant is made by a person picking a folder and by nothing else.
+    ///
+    /// It carries nothing on the way in for [`Asked::Waiting`]'s reason as well:
+    /// a field naming a path, an agent or a moment would be a way to say *read
+    /// this bit* or *as of then*, and neither is a thing anybody may ask for.
+    Granted {},
 }
 
 #[cfg(test)]
@@ -103,9 +118,9 @@ mod tests {
     use super::*;
     use alo_capability::Given;
 
-    /// The six, as they are written on the wire.
+    /// The seven, as they are written on the wire.
     #[test]
-    fn the_six_read_back_as_what_was_written() {
+    fn the_seven_read_back_as_what_was_written() {
         let read: Asked =
             serde_json::from_str(r#"{"read":{"verb":"list_folder","given":[]}}"#).unwrap();
         assert!(matches!(read, Asked::Read { .. }));
@@ -138,6 +153,26 @@ mod tests {
 
         let waiting: Asked = serde_json::from_str(r#"{"waiting":{}}"#).unwrap();
         assert_eq!(waiting, Asked::Waiting {});
+
+        let granted: Asked = serde_json::from_str(r#"{"granted":{}}"#).unwrap();
+        assert_eq!(granted, Asked::Granted {});
+    }
+
+    /// **Saying that what is granted has changed carries no grant.** It is a
+    /// knock rather than a payload: every one of these is a way of saying *and
+    /// here is what to grant*, and none of them is a request. What the daemon
+    /// does with the knock is read the person's own file again.
+    #[test]
+    fn saying_what_is_granted_changed_cannot_carry_a_grant() {
+        for message in [
+            r#"{"granted":{"folder":"/home/anna/Invoices"}}"#,
+            r#"{"granted":{"agent":"@files"}}"#,
+            r#"{"granted":{"seconds":3600}}"#,
+            r#"{"granted":{"revoke":7}}"#,
+            r#"{"granted":{"since":1760000000}}"#,
+        ] {
+            assert!(serde_json::from_str::<Asked>(message).is_err(), "{message}");
+        }
     }
 
     /// **Asking what is waiting asks about nothing but this turn.** A field
@@ -155,11 +190,11 @@ mod tests {
         }
     }
 
-    /// **There is no seventh.** A name that is not one of the six has nowhere
+    /// **There is no eighth.** A name that is not one of the seven has nowhere
     /// to land, which is the shape law 2 takes at this boundary: a caller
     /// cannot invent a request any more than it can invent a verb.
     #[test]
-    fn a_request_that_is_not_one_of_the_six_is_not_a_request() {
+    fn a_request_that_is_not_one_of_the_seven_is_not_a_request() {
         for message in [
             r#"{"run":{"command":"rm -rf /"}}"#,
             r#"{"exec":{"verb":"sh","given":[]}}"#,

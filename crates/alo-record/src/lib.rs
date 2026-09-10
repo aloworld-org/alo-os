@@ -9,8 +9,8 @@
 //!
 //! **The refusals are the point.** A record keeping only successes cannot
 //! answer what a security review actually asks, which is not *what did it do*
-//! but *what did it try*. So all seven things that can happen are kept, and
-//! three of them are ways of being stopped:
+//! but *what did it try*. So all nine things that can happen are kept, and
+//! four of them are ways of being stopped:
 //!
 //! | | |
 //! |---|---|
@@ -18,22 +18,31 @@
 //! | [`Happened::Stopped`] | A properly formed call that was refused — and [`Stopped`] says where in the journey |
 //! | [`Happened::TurnedAway`] | Something that never became a call at all |
 //! | [`Happened::AnsweredHere`] | A question answered on this machine ([ADR 0008](../../../docs/decisions/0008-where-inference-happens.md)) |
+//! | [`Happened::NeverPutAnywhere`] | A question a rule refused before it was put anywhere |
+//! | [`Happened::GrantsNotReadAgain`] | The person's grants were not read again, so the service went on under the list it had |
 //! | [`Happened::Left`] | Something left this machine (law 1) |
 //! | [`Happened::HeldBack`] | Something the egress policy refused to let leave |
 //! | [`Happened::LeftOnItsOwn`] | alo OS reached the network with nobody having asked (★ *no telemetry*) |
 //!
-//! # The seventh, and the one with nobody in it
+//! # The two with nobody in them
 //!
-//! Six of the seven are an agent's, and answer *whose authority was this
-//! under*. The seventh is the machine's own errand, and it has **no agent
-//! field** — [`Entry::agent`] answers `None` for it, because nobody granted alo
-//! OS permission to sign somebody in and a name in that position would be an
-//! authority the record invented. [`happened`] has the reasoning, and it is the
-//! answer `alo-egress` already gave one crate earlier.
+//! Seven of the nine are an agent's, and answer *whose authority was this
+//! under*. Two are nobody's and have **no agent field** — [`Entry::agent`]
+//! answers `None` for both, because nobody granted alo OS permission to sign
+//! somebody in, and nobody granted it permission to hold the person's own list
+//! of grants; a name in either position would be an authority the record
+//! invented. [`happened`] has the reasoning, and it is the answer `alo-egress`
+//! already gave one crate earlier.
 //!
-//! It is still a departure: [`Only::Egress`] finds it, so *what left this
-//! machine today* answers with everything that left. [`Only::OnItsOwn`] is the
-//! half of that nobody caused.
+//! They are not the same absence twice. The machine's own errand reached the
+//! network and says which of three reasons it was ([`Happened::errand`]); the
+//! grants not being read again reached nothing at all, and answers neither
+//! question. It is the person's act failing rather than the machine's
+//! succeeding.
+//!
+//! The errand is still a departure: [`Only::Egress`] finds it, so *what left
+//! this machine today* answers with everything that left. [`Only::OnItsOwn`] is
+//! the half of that nobody caused.
 //!
 //! It has the other half too, over the whole record rather than over the
 //! departures. [`Only::ByAnAgent`] finds everything **with** a name in that

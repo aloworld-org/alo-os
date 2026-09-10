@@ -68,6 +68,7 @@ use crate::knocking::Knocking;
 use crate::place::Place;
 use crate::questions::{Questions, TheBound, WhoseKeyring};
 use crate::refusing::NotACaller;
+use crate::rereading::Remembering;
 use crate::side::{Side, Sides};
 use crate::unix::{our_group, us};
 
@@ -207,7 +208,7 @@ fn everything_this_machine_says() -> Vocabulary {
 /// and AT-SPI, and there is no compositor here.
 pub(crate) fn on_a_machine<T>(
     what: &str,
-    doing: impl FnOnce(&mut Turning<'_, '_>, &Grants, &Strings, &Path, &Path) -> T,
+    doing: impl FnOnce(&mut Turning<'_, '_>, &mut Grants, &Strings, &Path, &Path) -> T,
 ) -> T {
     let strings = in_english();
     let (folder, invoice) = a_folder_with_an_invoice(what);
@@ -231,7 +232,57 @@ pub(crate) fn on_a_machine<T>(
         &mut machine,
     )
     .unwrap();
-    doing(&mut turning, &grants, &strings, &folder, &invoice)
+    doing(&mut turning, &mut grants, &strings, &folder, &invoice)
+}
+
+/// The same machine with **no turn under way**, which is what the person's
+/// shell talks to for all but a few seconds of a working day.
+///
+/// A turn is an agent's connection, and a person is signed in for as long as
+/// they are signed in — so every question on the person's door has to have an
+/// answer here as well, and the record has to be reachable without one.
+pub(crate) fn on_a_machine_with_no_turn<T>(
+    what: &str,
+    record: &mut dyn alo_turn::Shortening,
+    doing: impl FnOnce(&mut Machine<'_>, &mut Grants, &Strings, &Path, &Path) -> T,
+) -> T {
+    let strings = in_english();
+    let (folder, invoice) = a_folder_with_an_invoice(what);
+    let mut indicator = Indicator::default();
+    let mut bounding = NothingIsBounded;
+    let mut machine = Machine::carrying_out_file_verbs(
+        &strings,
+        &OnThisMachine,
+        &mut bounding,
+        &mut indicator,
+        record,
+    )
+    .unwrap();
+    let mut grants = granting(&folder, noon());
+    doing(&mut machine, &mut grants, &strings, &folder, &invoice)
+}
+
+/// A machine on which nobody has ever granted anything, and there is no file.
+///
+/// What the tests that are not about the grants file are handed: reading it
+/// again answers *nothing has been granted here*, which is what a machine on
+/// its first morning really says.
+#[derive(Debug)]
+pub(crate) struct NothingIsRemembered;
+
+impl Remembering for NothingIsRemembered {
+    fn read_again(&self, _now: SystemTime) -> Result<Grants, alo_remembering::NotRemembered> {
+        Err(alo_remembering::NotRemembered::NotThere {
+            at: PathBuf::from(alo_remembering::THE_GRANTS),
+        })
+    }
+}
+
+/// A grants file of a test's own, holding this list.
+pub(crate) fn a_file_holding(what: &str, grants: &Grants, at: SystemTime) -> crate::ThePersonsFile {
+    let path = a_directory_of_our_own(what).join("grants.toml");
+    alo_remembering::kept(&path, grants, at).unwrap();
+    crate::ThePersonsFile::at(&path)
 }
 
 /// A door that hands out real connections and is told which side each is on.

@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Six answers, and there is no seventh. It is [`crate::asked`]'s shape from
+//! Seven answers, and there is no eighth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -76,6 +76,19 @@ pub(crate) enum Told {
     /// whole answer, and a protocol with a field for a reason would be a
     /// protocol that asked for one.
     Declined {},
+    /// What is granted was read again, and this is how much of it there was.
+    ///
+    /// The answer to the person's knock. It carries a **count and no list**:
+    /// what is granted is drawn by the surface that lists it, out of the file
+    /// the person's own side wrote, and a list here would be a second copy of it
+    /// travelling back over a socket for nobody to check against. The count is
+    /// what a shell needs to know the knock arrived and was acted on.
+    ///
+    /// It is on the person's side only, like everything else about their list.
+    Granted {
+        /// How many grants were read back and are in force at that moment.
+        holding: u64,
+    },
     /// It did not happen, and this is what the person is told.
     Refused(Wording),
 }
@@ -110,16 +123,17 @@ mod tests {
                 changes: vec![standing],
             },
             Told::Declined {},
+            Told::Granted { holding: 2 },
             Told::Refused(Wording::of(
                 &in_english().say(&words::NOT_READABLE.key(), &Filling::nothing()),
             )),
         ]
     }
 
-    /// **The six read back as what was written**, so a shell and a daemon built
-    /// from this crate cannot disagree about what happened.
+    /// **The seven read back as what was written**, so a shell and a daemon
+    /// built from this crate cannot disagree about what happened.
     #[test]
-    fn the_six_read_back_as_what_was_written() {
+    fn the_seven_read_back_as_what_was_written() {
         for told in every_answer() {
             let written = serde_json::to_string(&told).unwrap();
             let back: Told = serde_json::from_str(&written).unwrap();
@@ -127,14 +141,15 @@ mod tests {
         }
     }
 
-    /// **There is no seventh.** An answer that is not one of the six has
+    /// **There is no eighth.** An answer that is not one of the seven has
     /// nowhere to land, which is what stops a daemon from being extended by
     /// whatever a client is willing to parse.
     #[test]
-    fn an_answer_that_is_not_one_of_the_six_is_not_an_answer() {
+    fn an_answer_that_is_not_one_of_the_seven_is_not_an_answer() {
         for message in [
             r#"{"ran":{"command":"rm -rf /"}}"#,
             r#"{"granted":{"path":"/"}}"#,
+            r#"{"granted":{"holding":1,"folder":"/"}}"#,
             r#"{"approved":{"number":7}}"#,
             r#"{"context":{"document":"/home/anna/a.pdf"}}"#,
             r#"{"declined":{"why":"no"}}"#,

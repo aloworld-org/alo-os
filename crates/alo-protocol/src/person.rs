@@ -1,6 +1,6 @@
 //! What a person's shell sends, on behalf of the person in front of it.
 //!
-//! Three requests. Two of them are the same act — answering a change that was
+//! Four requests. Two of them are the same act — answering a change that was
 //! put to them in one sentence — and ADR 0001 §5 says a person approves a
 //! sentence rather than a session, so there is nothing here that approves more
 //! than one thing, nothing that approves everything from an agent, and nothing
@@ -42,6 +42,23 @@
 //! It carries **nothing** on the way in: no agent, no number, no moment. What
 //! is waiting is what this turn has put to this person, and a field would be a
 //! way to ask about somebody else's.
+//!
+//! # `granted` is a knock, and it is the person's for the same reason
+//!
+//! A grant is made and revoked on the person's side of the machine — a folder
+//! picker, and the surface that lists what is granted — and until this request
+//! existed a grant made while the daemon was running reached it at the next
+//! sign-in. [`FromAPerson::Granted`] is how it reaches a running one, and what
+//! it carries is **nothing at all**: not the grant, not the folder, not how long
+//! it lasts, not which one was revoked.
+//!
+//! That is what keeps law 2 and ADR 0001 §5 true of this door. The daemon
+//! answers the knock by reading the person's own file again, under the same
+//! rules about who may have written it that it reads at start-up, so nothing on
+//! the wire has widened anything — a message that arrived from somewhere else
+//! could still cause only the re-reading of a file it cannot write. Which door a
+//! caller is on is `alo-agentd`'s, and an agent knocking here is refused in the
+//! same words as an agent trying to approve something.
 
 use crate::asked::Asked;
 use crate::frame;
@@ -65,8 +82,13 @@ pub enum FromAPerson {
     /// What is waiting for them to answer.
     ///
     /// A read of the turn rather than an answer to it — see this file's header
-    /// — and the one request on either door that carries nothing at all.
+    /// — and one of the two requests on either door that carry nothing at all.
     Waiting,
+    /// What is granted has changed, so read it again.
+    ///
+    /// The other request that carries nothing, and the one where that is the
+    /// whole design: a knock rather than a payload. See this file's header.
+    Granted,
 }
 
 impl FromAPerson {
@@ -81,6 +103,7 @@ impl FromAPerson {
             Asked::Approve { number } => Ok(Self::Approve { number }),
             Asked::Decline { number } => Ok(Self::Decline { number }),
             Asked::Waiting {} => Ok(Self::Waiting),
+            Asked::Granted {} => Ok(Self::Granted),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -105,7 +128,7 @@ impl FromAPerson {
     pub fn number(&self) -> Option<u64> {
         match self {
             Self::Approve { number } | Self::Decline { number } => Some(*number),
-            Self::Waiting => None,
+            Self::Waiting | Self::Granted => None,
         }
     }
 
@@ -118,8 +141,11 @@ impl FromAPerson {
     /// Whether this asks about the turn rather than answering something in it.
     ///
     /// A convenience for a daemon choosing what to do next: what is waiting is
-    /// read off the turn and changes nothing, so it is the one request on this
-    /// door that spends no approval.
+    /// read off the turn and changes nothing. It is not the only request on this
+    /// door that spends no approval — [`FromAPerson::Granted`] spends none
+    /// either — but it is the only one that is a **question about the turn**,
+    /// and the knock is deliberately not one: it is about the person's own list
+    /// of grants, which outlives every turn.
     #[must_use]
     pub fn is_a_question_about_the_turn(&self) -> bool {
         matches!(self, Self::Waiting)
@@ -132,6 +158,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::Approve { number } => Self::Approve { number },
             FromAPerson::Decline { number } => Self::Decline { number },
             FromAPerson::Waiting => Self::Waiting {},
+            FromAPerson::Granted => Self::Granted {},
         }
     }
 }
@@ -144,9 +171,9 @@ impl From<FromAPerson> for Asked {
 mod tests {
     use super::*;
 
-    /// The three, off the wire.
+    /// The four, off the wire.
     #[test]
-    fn the_three_a_persons_shell_may_send_read_back() {
+    fn the_four_a_persons_shell_may_send_read_back() {
         let yes = FromAPerson::read(r#"{"format":1,"asks":{"approve":{"number":7}}}"#).unwrap();
         assert_eq!(yes, FromAPerson::Approve { number: 7 });
         assert!(yes.is_yes());
@@ -162,6 +189,33 @@ mod tests {
         assert!(waiting.is_a_question_about_the_turn());
         assert_eq!(waiting.number(), None);
         assert!(!waiting.is_yes());
+
+        let granted = FromAPerson::read(r#"{"format":1,"asks":{"granted":{}}}"#).unwrap();
+        assert_eq!(granted, FromAPerson::Granted);
+        assert_eq!(granted.number(), None);
+        assert!(!granted.is_yes());
+        assert!(
+            !granted.is_a_question_about_the_turn(),
+            "saying what is granted has changed is not a question about the turn"
+        );
+    }
+
+    /// **Saying what is granted has changed answers no change and carries no
+    /// grant.** It spends no approval, so it must not look like one: a number
+    /// here would be a shell answering a question by saying something else.
+    #[test]
+    fn saying_what_is_granted_changed_answers_nothing_and_grants_nothing() {
+        for message in [
+            r#"{"format":1,"asks":{"granted":{"number":7}}}"#,
+            r#"{"format":1,"asks":{"granted":{"folder":"/home/anna/Invoices"}}}"#,
+            r#"{"format":1,"asks":{"granted":{"agent":"@files","seconds":3600}}}"#,
+        ] {
+            assert_eq!(
+                FromAPerson::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
+        }
     }
 
     /// **A person's side is not a way in for a verb.** The division goes both
@@ -220,6 +274,7 @@ mod tests {
             FromAPerson::Approve { number: 1 },
             FromAPerson::Decline { number: 2 },
             FromAPerson::Waiting,
+            FromAPerson::Granted,
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);

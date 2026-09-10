@@ -1,12 +1,14 @@
 //! Everything this crate refuses, and who reads it.
 //!
-//! Eight types, divided by what somebody has to do about them. [`NotDescribed`]
+//! Nine types, divided by what somebody has to do about them. [`NotDescribed`]
 //! is the file a machine is described by, [`NotTwoSides`] and [`NotAUser`] are
 //! a machine described wrongly, [`NotBound`] is a machine whose socket cannot be
 //! put where it belongs, [`NotACaller`] is one connection that will not be served,
-//! [`NotHeard`] is one connection that cannot go on being read, [`NotServed`]
-//! is the service itself stopping, and [`NotStarted`] is the process: the one
-//! that gathers the rest, because a process ends in exactly one of them.
+//! [`NotHeard`] is one connection that cannot go on being read,
+//! [`NotReadAgain`] is the person's grants not being read a second time,
+//! [`NotServed`] is the service itself stopping, and [`NotStarted`] is the
+//! process: the one that gathers the rest, because a process ends in exactly
+//! one of them.
 //!
 //! # The line between one connection and the service
 //!
@@ -481,6 +483,38 @@ pub enum NotServed {
         "a thread of this service went into a turn's boundary and could not be brought back out, so nothing further will be done; the reason is above, and alo-agentd has to be started again"
     )]
     AThreadIsInsideATurn,
+}
+
+/// Why what a person granted was not read again.
+///
+/// English, like everything else here, and for the same reason: the person in
+/// front of the machine is told **one** sentence
+/// (`crate::rereading::what_to_say`), because there is one thing for them to do
+/// about all of these — nothing. Which of them it was is read out of a service
+/// log by whoever goes and looks at the file, and both of these name it.
+///
+/// **The grants are untouched in both.** A refusal here leaves the service
+/// serving under exactly the list it already had, which is what stops a machine
+/// forgetting what was granted because somebody chmodded a file.
+#[derive(Debug, Error)]
+pub enum NotReadAgain {
+    /// The file is there and is not one to believe, or will not read.
+    ///
+    /// Carried whole from `alo-remembering` rather than reworded: that crate
+    /// already names the file and says what was wrong with it, and a second
+    /// sentence here would be a second account of one fact.
+    #[error("what is granted was not read again: {0}")]
+    NotBelievable(#[from] alo_remembering::NotRemembered),
+    /// The list read back holds the handle this turn's own grant is under.
+    ///
+    /// A grant an invocation made is not in the file and is carried across the
+    /// replacement under the handle it already has, so that the turn can give it
+    /// back. A file that has handed that handle to something else is refused
+    /// rather than merged — see `crate::rereading`.
+    #[error(
+        "what is granted was not read again: {0}; the list on the disk uses a handle this turn's own grant is under, so nothing was replaced"
+    )]
+    ATurnsOwnGrant(String),
 }
 
 /// Why there is no service on this machine.

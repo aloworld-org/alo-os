@@ -48,8 +48,8 @@ There are two kinds of caller and they do not share a list.
 **An agent, during a turn**, may ask for `read`, `propose` and `ask`, and is
 told `did`, `proposed`, `answered` and `refused`.
 
-**A person's shell** may send `approve`, `decline` and `waiting`, and is told
-`did`, `waiting`, `declined` and `refused`.
+**A person's shell** may send `approve`, `decline`, `waiting` and `granted`,
+and is told `did`, `waiting`, `declined`, `granted` and `refused`.
 
 If one door took both, the side that proposed a change could approve it, and
 ADR 0001 §5 — one approval, one execution, given by a person — would be true of
@@ -129,6 +129,36 @@ naming an agent, a number or a moment would be a way to ask about somebody
 else's. It is on this door because the list is the person's; an agent asking for
 it is refused in the same words as an agent trying to approve something.
 
+### `granted` — what is granted has changed, so read it again
+
+```json
+{"granted":{}}
+```
+
+**A knock, and never a payload.** It carries no grant, no folder, no reach, no
+duration and nothing naming which grant was revoked — there is no field for any
+of them, exactly as there is no field for a command. A grant is made by a person
+picking a folder (ADR 0001 §3), and the whole of what this message can cause is
+the daemon reading **its own file** again, under the same rules about who may
+have written it that it applies at start-up. So a message that arrived from
+anywhere at all could not widen anything, and there is nothing on the wire for
+it to widen anything with.
+
+It is on this door because making and revoking a grant is the person's act. An
+agent sending it is refused in words, and unlike every other message on the
+wrong door, **the refusal is written down** — an agent choosing the moment its
+own reach is recalculated is a thing somebody reviewing a machine wants to find,
+where a malformed message is noise.
+
+What comes back is `granted`, saying how many grants are in force after the
+reading. **If the file cannot be believed, the daemon keeps the grants it
+already had** and answers `refused`: a machine that emptied its list because
+somebody chmodded a file would go quiet about what its agent may reach, and the
+person would find out by discovering their agent can no longer read their
+invoices. A file that is simply *not there* is not that machine — it is a person
+who has granted nothing, or revoked the last thing they granted, and it reads as
+an empty list.
+
 ## What comes back
 
 ```json
@@ -141,6 +171,7 @@ it is refused in the same words as an agent trying to approve something.
 {"proposed":{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}}
 {"answered":{"text":"Three are unpaid.","came_from":{"text":"by Mistral, in the EU","came_from":"translation"},"model":"mistral-small-latest"}}
 {"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300}]}}
+{"granted":{"holding":2}}
 {"declined":{}}
 {"refused":{"text":"@files has not been granted the folder /home/anna/Secrets — grants are made by picking a folder, never by asking for one","came_from":"the-source"}}
 ```
@@ -161,6 +192,11 @@ the question has stopped standing.
 appears*, and this is the last boundary at which that could be lost.
 
 `declined` carries nothing about why, because nothing was asked.
+
+`granted` carries a **count and no list**. What is granted is drawn by the
+surface that lists it, out of the person's own file; a list here would be a
+second copy of it crossing a socket for nobody to check against. The count is
+what a shell needs in order to know the knock arrived and was acted on.
 
 ### Every sentence says whether anybody translated it
 
@@ -442,11 +478,17 @@ neither a model nor a provider, *the model runtime is not reachable* is a person
 who picked one and has nothing running, and a sentence naming their settings
 file is a file that does not hold.
 
-**Nothing has been granted, so every verb is refused.** A grant is made by a
-person picking a folder (ADR 0001 §3), no message on this socket makes one, and
-where a machine keeps them is a queue item of its own. Until then `read` and
-`propose` are answered by the capability model in its own words, which is the
-capability model running rather than missing.
+**No message on this socket makes a grant, and none ever will.** A grant is made
+by a person picking a folder (ADR 0001 §3). Where a machine keeps them is
+answered — `crates/alo-remembering`, one file the person's own side writes — and
+`granted` above is how a running daemon hears that the file has changed. On a
+machine where nobody has picked a folder, `read` and `propose` are answered by
+the capability model in its own words, which is the capability model running
+rather than missing.
+
+**What lists and revokes them is still owed.** *See what is granted* and *revoke
+it* are a surface rather than a message, and there is nothing here for a shell
+to draw that list from: `granted` answers with a count and no list, deliberately.
 
 **No organisation states a bound.** `docs/contracts/machine-description.md` has
 no `SourcePolicy` key, so what an organisation permits is `None` on every

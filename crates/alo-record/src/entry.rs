@@ -202,6 +202,28 @@ impl Entry {
         )
     }
 
+    /// This machine was asked to read the person's grants again, and did not.
+    ///
+    /// `why` is the sentence the person was shown, handed in already rendered
+    /// so that the record and the screen cannot become two accounts of one
+    /// moment — this does not word anything and has no `Strings` to word it
+    /// with, exactly as [`Entry::never_put_anywhere`] does not.
+    ///
+    /// **No agent is passed in and there is no field for one.** Making,
+    /// revoking and re-reading a grant are the person's acts; the one way an
+    /// agent reaches this is by sending the message on its own door, and that is
+    /// refused before anything is read. See [`Happened::GrantsNotReadAgain`].
+    ///
+    /// **Nothing of a grant is passed in either** — no path, no reach, no
+    /// duration, no handle. Nothing was read, so there is nothing read to keep.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision.
+    #[must_use]
+    pub fn the_grants_were_not_read_again(why: &str, at: SystemTime) -> Self {
+        Self::new(at, Happened::GrantsNotReadAgain { why: Line::of(why) })
+    }
+
     /// A properly formed call that was stopped somewhere.
     ///
     /// Private because *where* it was stopped is not a caller's choice to make

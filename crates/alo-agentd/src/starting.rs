@@ -72,10 +72,14 @@
 //!
 //! [`until_stopped`] takes the grants rather than reading them. `src/main.rs`
 //! reads `alo_remembering::THE_GRANTS` before anything is opened and hands over
-//! an `alo_capability::Grants` — **a value, with no path in it** — and every
-//! step below this line has only that. So *nothing an agent can send over the
-//! socket writes a byte of the grants file* is the shape of this crate rather
-//! than a rule to keep: there is nothing here to write it with.
+//! an `alo_capability::Grants` — **a value, with no path in it**.
+//!
+//! Since the person's door gained a way to say *what is granted has changed*, it
+//! also hands over a [`WhatIsGranted`] — the list, and a way to read that file
+//! **again**, and nothing else. There is still no way to write it anywhere below
+//! this line, and `crate::rereading` is where that is argued: what the socket can
+//! now reach is a road to reading the grants, and a message that arrived from
+//! anywhere at all could cause nothing more than the file being read a second time.
 //!
 //! This is where the sentence *it starts with no grants at all* used to be, and
 //! it was honest while it was true — nothing on this machine could make a
@@ -91,7 +95,6 @@
 //! still writes every refusal down, which is the capability model running
 //! rather than missing, and there is a test below that says so.
 
-use alo_capability::Grants;
 use alo_egress::Indicator;
 use alo_files::OnThisMachine;
 use alo_models::Catalogue;
@@ -104,6 +107,7 @@ use crate::described::Described;
 use crate::knocking::Knocking;
 use crate::questions::Questions;
 use crate::refusing::NotStarted;
+use crate::rereading::WhatIsGranted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
 use crate::words::declare_into;
@@ -188,7 +192,7 @@ pub fn until_stopped(
     knocking: &dyn Knocking,
     waking: &Waking,
     strings: &Strings,
-    grants: &mut Grants,
+    granted: &mut WhatIsGranted<'_>,
     bounding: &mut dyn Bounding,
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
@@ -218,7 +222,7 @@ pub fn until_stopped(
         described.proposal().duration(),
         described.keeping(),
     )
-    .until_stopped(&mut machine, grants, &mut questions)?)
+    .until_stopped(&mut machine, granted, &mut questions)?)
 }
 
 #[cfg(test)]
@@ -232,10 +236,11 @@ mod tests {
     use crate::questions::TheBound;
     use crate::side::Side;
     use crate::testing::{
-        Pretending, a_directory_of_our_own, a_folder_with_an_invoice, a_message, granting,
-        ourselves,
+        NothingIsRemembered, Pretending, a_directory_of_our_own, a_folder_with_an_invoice,
+        a_message, granting, ourselves,
     };
     use crate::words::A_TURN_IS_UNDER_WAY;
+    use alo_capability::Grants;
     use alo_keeping::Keeping;
     use alo_record::Record;
     use std::io::{BufRead as _, BufReader, Write as _};
@@ -359,7 +364,7 @@ mod tests {
             &knocking,
             &waking,
             &strings,
-            &mut Grants::default(),
+            &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )
@@ -423,7 +428,7 @@ mod tests {
             &knocking,
             &waking,
             &strings,
-            grants,
+            &mut WhatIsGranted::of(grants, &NothingIsRemembered),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )

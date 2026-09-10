@@ -50,6 +50,7 @@ use alo_turn::{Answers, NoAnswer, Turning};
 use alo_secrets::NotStored;
 
 use crate::questions::{Questions, WhatAnswers};
+use crate::rereading;
 use crate::words::{
     AN_ADMINISTRATOR_SET_THAT_RULE, NO_KEY_FOR_THIS_PROVIDER, NO_KEYRING_FOR_A_PROVIDER,
     NOTHING_ANSWERS_QUESTIONS, NOTHING_WAS_ASKED, THE_KEYRING_IS_LOCKED, THE_KEYRING_REFUSED_US,
@@ -73,7 +74,15 @@ pub fn what_an_agent_said(
 ) -> ToAnAgent {
     match FromAnAgent::read(line) {
         Ok(asked) => carried_out(&asked, turning, questions, grants, strings, standing, now),
-        Err(why) => ToAnAgent::refused(&why.said(strings)),
+        // **An agent reaching for the person's own list of grants is written
+        // down**, and it is the one refusal here that is: the rest of what
+        // `alo-protocol` turns away is a malformed message, which is noise, and
+        // this is an agent asking for the moment its own reach is recalculated.
+        // `crate::rereading` decides it, words it and keeps it, so that the one
+        // place that says whether the grants are read again is also the one
+        // place that says when they are not.
+        Err(why) => rereading::an_agent_knocked(line, turning, strings, now)
+            .unwrap_or_else(|| ToAnAgent::refused(&why.said(strings))),
     }
 }
 
@@ -2581,5 +2590,73 @@ endpoint = \"https://{at}\"
             assert_eq!(turning.waiting_at(noon()).count(), 0);
             assert!(!turning.is_closed());
         });
+    }
+
+    /// **An agent reaching for the person's own list is the one wrong-door
+    /// message this service writes down, and the others are not.**
+    ///
+    /// The line is deliberate rather than accidental. A malformed message, or
+    /// one meant for the person's door by a client that got its two doors the
+    /// wrong way round, is noise: it is refused in words and nothing happened.
+    /// Saying *what is granted has changed* is not noise — it is an agent asking
+    /// for the moment its own reach is recalculated — so it leaves an entry, and
+    /// the entry names no agent because nothing an agent may do took place.
+    #[test]
+    fn only_the_knock_on_the_agents_door_is_written_down() {
+        let strings = crate::testing::in_english();
+        let expected = strings
+            .say(
+                &crate::words::AN_AGENT_CANNOT_SAY_WHAT_IS_GRANTED.key(),
+                &Filling::nothing(),
+            )
+            .text()
+            .to_owned();
+
+        let mut record = Record::default();
+        let said = on_a_machine_that_answers(&mut record, |turning, grants, strings| {
+            what_an_agent_said(
+                &a_message(r#"{"granted":{}}"#),
+                turning,
+                &mut nothing_has_been_chosen(),
+                grants,
+                strings,
+                hour(),
+                noon(),
+            )
+        });
+        assert_eq!(said.refusal().unwrap().text(), expected);
+        assert_eq!(record.len(), 1, "the knock was not written down");
+        let only = record.everything().next().unwrap();
+        assert!(matches!(
+            only.happened(),
+            alo_record::Happened::GrantsNotReadAgain { .. }
+        ));
+        assert!(
+            only.agent().is_none(),
+            "an agent was named for something no agent was allowed to do"
+        );
+
+        // And the rest of the wrong door is answered with nothing written down.
+        let mut quiet = Record::default();
+        for message in [
+            r#"{"approve":{"number":7}}"#,
+            r#"{"waiting":{}}"#,
+            "not a message at all",
+        ] {
+            let said = on_a_machine_that_answers(&mut quiet, |turning, grants, strings| {
+                what_an_agent_said(
+                    &a_message(message),
+                    turning,
+                    &mut nothing_has_been_chosen(),
+                    grants,
+                    strings,
+                    hour(),
+                    noon(),
+                )
+            });
+            assert!(said.refusal().is_some(), "{message}");
+            assert_ne!(said.refusal().unwrap().text(), expected, "{message}");
+        }
+        assert_eq!(quiet.len(), 0, "a malformed message left an entry");
     }
 }

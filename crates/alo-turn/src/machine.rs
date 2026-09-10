@@ -65,7 +65,8 @@
 use alo_capability::Verbs;
 use alo_egress::Indicator;
 use alo_files::{Declaring, Resolving, file_verbs};
-use alo_strings::Strings;
+use alo_record::Entry;
+use alo_strings::{Said, Strings};
 
 use crate::bounding::Bounding;
 use crate::kept::Kept;
@@ -219,6 +220,36 @@ impl<'a> Machine<'a> {
     /// is handed can write an entry and has no way to remove one.
     pub(crate) fn kept(&mut self) -> &mut dyn Kept {
         self.kept
+    }
+
+    /// Write down that this machine was asked to read the person's grants
+    /// again and did not.
+    ///
+    /// Public, and the caller is the service that holds the machine
+    /// (`alo-agentd`) rather than anything inside a turn — a grant is made and
+    /// revoked on the person's side, and the message that says so may arrive
+    /// with no turn under way at all. [`crate::Turning`] has the same door for
+    /// the rounds where one is.
+    ///
+    /// **Nothing a caller passes in can name an authority.** The one argument is
+    /// the sentence the person was shown, already rendered, so what they read
+    /// and what is written down are one value; there is no agent, no verb, no
+    /// grant and no path, because none was involved. That is what makes a public
+    /// door onto the record safe here where a general one would not be — see
+    /// [`alo_record::Entry::the_grants_were_not_read_again`].
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written. A service
+    /// that meets this has stopped keeping evidence and stops, exactly as it
+    /// does for a turn that could not write one.
+    pub fn the_grants_were_not_read_again(
+        &mut self,
+        why: &Said,
+        now: std::time::SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.kept
+            .keep(Entry::the_grants_were_not_read_again(why.text(), now))
     }
 
     /// Shorten this machine's record under the rule it is kept by.

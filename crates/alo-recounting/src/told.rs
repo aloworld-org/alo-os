@@ -77,6 +77,9 @@ pub enum Outcome {
     AnsweredHere,
     /// A question a rule refused before it was put anywhere.
     NeverPutAnywhere,
+    /// The person's grants were not read again, so the service went on under
+    /// the list it already had.
+    GrantsNotReadAgain,
     /// Something left this machine (law 1).
     Left,
     /// Something the egress policy refused to let leave.
@@ -98,6 +101,7 @@ impl Outcome {
             Happened::TurnedAway { .. } => Self::NeverBecameACall,
             Happened::AnsweredHere { .. } => Self::AnsweredHere,
             Happened::NeverPutAnywhere { .. } => Self::NeverPutAnywhere,
+            Happened::GrantsNotReadAgain { .. } => Self::GrantsNotReadAgain,
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
@@ -116,6 +120,7 @@ impl Outcome {
             Self::NeverBecameACall => words::NEVER_BECAME_A_CALL,
             Self::AnsweredHere => words::ANSWERED_HERE,
             Self::NeverPutAnywhere => words::NEVER_PUT_ANYWHERE,
+            Self::GrantsNotReadAgain => words::GRANTS_NOT_READ_AGAIN,
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,

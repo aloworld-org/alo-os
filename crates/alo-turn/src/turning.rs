@@ -428,6 +428,40 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.writing_down(entry)
     }
 
+    /// The person's grants were not read again, written down.
+    ///
+    /// [`crate::Machine::the_grants_were_not_read_again`] for the rounds where a
+    /// turn holds the machine. A grant is made and revoked on the person's side
+    /// and the message saying so arrives whether or not an agent is in a turn,
+    /// so the same fact has to be writable from both — and while a turn is under
+    /// way there is nothing else that can reach the record.
+    ///
+    /// **It carries no agent, and takes none**, exactly as the machine's door
+    /// does: this entry is about the person's own list rather than about
+    /// anything an agent did, and the turn's grantee would be the wrong name
+    /// even though it is to hand.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`], and the turn is closed by it exactly as an
+    /// unwritable verb closes one — so a service that goes on to
+    /// [`Turning::is_closed`] finds it. It answers with what the record said
+    /// rather than with a [`NotDone`], for the same reason `keeping` does: the
+    /// caller is a service outside a turn's answer path, and
+    /// [`crate::Machine::the_grants_were_not_read_again`] is the same door with
+    /// no turn in front of it. A caller must answer with this rather than with
+    /// the refusal it was carrying: somebody told only that their grants could
+    /// not be read would believe the machine had behaved correctly, when it had
+    /// also failed to write down that it had not.
+    pub fn the_grants_were_not_read_again(
+        &mut self,
+        why: &Said,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        let entry = Entry::the_grants_were_not_read_again(why.text(), now);
+        self.keeping(entry)
+    }
+
     /// What is leaving this machine right now.
     ///
     /// The machine's indicator, lent out while a turn holds the machine — a

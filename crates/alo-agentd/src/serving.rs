@@ -80,7 +80,6 @@
 
 use std::time::{Duration, SystemTime};
 
-use alo_capability::Grants;
 use alo_context::Context;
 use alo_keeping::Keeping;
 use alo_protocol::{NotUnderstood, ToAPerson, ToAnAgent};
@@ -90,10 +89,12 @@ use alo_turn::{Machine, Shortened, Turning};
 use crate::ageing::Ageing;
 use crate::answering::what_a_person_said;
 use crate::doing::what_an_agent_said;
+use crate::holding::Holding;
 use crate::knocking::Knocking;
 use crate::lines::Line;
 use crate::questions::Questions;
 use crate::refusing::NotServed;
+use crate::rereading::WhatIsGranted;
 use crate::side::Side;
 use crate::stopping::Waking;
 use crate::unix::ready;
@@ -211,21 +212,6 @@ struct Held {
     person: Option<Line>,
 }
 
-/// The turn that is under way, and where a question inside it goes.
-///
-/// The two are one thing rather than two arguments, and that is not tidiness.
-/// They begin together — `crate::questions` is looked for once a turn — and
-/// they are absent together, so a round given one and not the other would be a
-/// state nothing can produce. Bundling them makes that impossible arm one arm
-/// instead of three, and keeps [`Serving::one_round`] under the number of
-/// arguments a reader can hold.
-struct Underway<'a, 'm, 't> {
-    /// The turn every request in this round is carried out against.
-    turning: &'a mut Turning<'m, 't>,
-    /// What a question in this turn is put to, found once and held.
-    questions: &'a mut Questions,
-}
-
 impl<'a> Serving<'a> {
     /// The service, told what this machine is.
     ///
@@ -271,7 +257,7 @@ impl<'a> Serving<'a> {
     pub fn until_stopped(
         &self,
         machine: &mut Machine<'_>,
-        grants: &mut Grants,
+        granted: &mut WhatIsGranted<'_>,
         questions: &mut Questions,
     ) -> Result<Served, NotServed> {
         let strings = machine.strings();
@@ -292,8 +278,8 @@ impl<'a> Serving<'a> {
                 }
                 if self.one_round(
                     &mut held,
-                    None,
-                    grants,
+                    &mut Holding::Nobody(machine),
+                    granted,
                     strings,
                     &mut served,
                     ageing.before(now),
@@ -313,7 +299,7 @@ impl<'a> Serving<'a> {
                 Context::at_invocation(this_moment()),
                 self.for_agent,
                 self.lasting,
-                grants,
+                granted.holding_mut(),
                 machine,
             )
             .map_err(|why| NotServed::NoTurn { why })?;
@@ -331,11 +317,11 @@ impl<'a> Serving<'a> {
                 // machine is held by the turn.
                 match self.one_round(
                     &mut held,
-                    Some(Underway {
+                    &mut Holding::ATurn {
                         turning: &mut turning,
-                        questions,
-                    }),
-                    grants,
+                        questions: &mut *questions,
+                    },
+                    granted,
                     strings,
                     &mut served,
                     None,
@@ -364,7 +350,7 @@ impl<'a> Serving<'a> {
                     break;
                 }
             }
-            let _gave_a_grant_back = turning.ending(grants);
+            let _gave_a_grant_back = turning.ending(granted.holding_mut());
             held.agent = None;
 
             if over? {
@@ -398,8 +384,8 @@ impl<'a> Serving<'a> {
     fn one_round(
         &self,
         held: &mut Held,
-        mut underway: Option<Underway<'_, '_, '_>>,
-        grants: &Grants,
+        holding: &mut Holding<'_, '_, '_>,
+        granted: &mut WhatIsGranted<'_>,
         strings: &Strings,
         served: &mut Served,
         for_at_most: Option<Duration>,
@@ -422,18 +408,27 @@ impl<'a> Serving<'a> {
         let now = this_moment();
 
         if person {
+            // A record that broke while the person was being answered ends the
+            // service rather than the connection, so it is carried out of the
+            // closure rather than turned into an answer: what is missing is
+            // evidence, and there is nothing to say to a caller about it.
+            let mut nothing_written_down = false;
             let answered = held.person.as_mut().map(|line| {
                 one_message(
                     line,
-                    |said| {
-                        let turning = underway.as_mut().map(|it| &mut *it.turning);
-                        what_a_person_said(said, turning, grants, strings, now)
-                            .written()
-                            .ok()
+                    |said| match what_a_person_said(said, holding, granted, strings, now) {
+                        Ok(told) => told.written().ok(),
+                        Err(_) => {
+                            nothing_written_down = true;
+                            None
+                        }
                     },
                     |why| ToAPerson::refused(&why.said(strings)).written().ok(),
                 )
             });
+            if nothing_written_down {
+                return Err(NotServed::NothingIsWrittenDown);
+            }
             if answered == Some(Message::Ended) {
                 held.person = None;
             }
@@ -443,7 +438,7 @@ impl<'a> Serving<'a> {
         }
 
         if agent {
-            let answered = match (held.agent.as_mut(), underway.as_mut()) {
+            let answered = match (held.agent.as_mut(), holding.underway()) {
                 // A connection with no turn behind it cannot be served and
                 // cannot be left waiting either: it would be ready for ever and
                 // read by nobody. It is the end of the connection, which for an
@@ -451,14 +446,14 @@ impl<'a> Serving<'a> {
                 // two loops above are the only callers, and answered here
                 // rather than assumed away.
                 (None, _) | (Some(_), None) => Message::Ended,
-                (Some(line), Some(underway)) => one_message(
+                (Some(line), Some((turning, questions))) => one_message(
                     line,
                     |said| {
                         what_an_agent_said(
                             said,
-                            underway.turning,
-                            underway.questions,
-                            grants,
+                            turning,
+                            questions,
+                            granted.holding(),
                             strings,
                             self.standing,
                             now,
@@ -481,7 +476,7 @@ impl<'a> Serving<'a> {
         if knocked {
             match self.knocking.next() {
                 Ok((side, connection)) => {
-                    self.let_in(held, side, connection, underway.is_some(), strings);
+                    self.let_in(held, side, connection, holding.turning().is_some(), strings);
                 }
                 Err(why) if why.is_only_this_connection() => {
                     served.strangers = served.strangers.saturating_add(1);
@@ -659,9 +654,10 @@ mod tests {
     use super::*;
     use crate::stopping::Stop;
     use crate::testing::{
-        Pretending, a_folder_with_an_invoice, a_message, granting, hour, in_english,
-        nothing_has_been_chosen,
+        NothingIsRemembered, Pretending, a_folder_with_an_invoice, a_message, granting, hour,
+        in_english, nothing_has_been_chosen,
     };
+    use alo_capability::Grants;
     use alo_egress::Indicator;
     use alo_files::OnThisMachine;
     use alo_protocol::Standing;
@@ -876,6 +872,39 @@ mod tests {
         kept: &mut dyn alo_turn::Shortening,
         talking: impl FnOnce(Told) + Send + 'static,
     ) -> Result<(Served, PathBuf), NotServed> {
+        while_it_runs_remembering(
+            agent,
+            keeping,
+            what,
+            sides,
+            kept,
+            &NothingIsRemembered,
+            granting,
+            talking,
+        )
+    }
+
+    /// The same again, on a machine whose grants file a test has written.
+    ///
+    /// The one thing the person's knock reaches, handed in rather than named
+    /// here for `crate::starting`'s reason: the file is `src/main.rs`'s, and a
+    /// service that could find it for itself would be a service with a road from
+    /// the socket to a path.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "a fixture standing a whole service up, and every one of these is a thing about \
+                  the machine a test has to be able to choose"
+    )]
+    fn while_it_runs_remembering(
+        agent: &str,
+        keeping: Keeping,
+        what: &str,
+        sides: &[Option<Side>],
+        kept: &mut dyn alo_turn::Shortening,
+        remembering: &dyn crate::rereading::Remembering,
+        starting: impl FnOnce(&Path, SystemTime) -> Grants,
+        talking: impl FnOnce(Told) + Send + 'static,
+    ) -> Result<(Served, PathBuf), NotServed> {
         let strings = in_english();
         let (folder, invoice) = a_folder_with_an_invoice(what);
         let (waking, stop) = Waking::made().unwrap();
@@ -896,13 +925,13 @@ mod tests {
             kept,
         )
         .unwrap();
-        let mut grants = granting(&folder, this_moment());
+        let mut grants = starting(&folder, this_moment());
 
         let client = std::thread::spawn(move || talking(told));
         let mut questions = nothing_has_been_chosen();
         let served = Serving::of(&knocking, &waking, agent, hour(), hour(), keeping).until_stopped(
             &mut machine,
-            &mut grants,
+            &mut WhatIsGranted::of(&mut grants, remembering),
             &mut questions,
         );
         client.join().unwrap();
@@ -1019,6 +1048,146 @@ mod tests {
         );
 
         assert!(invoice.is_file(), "an unanswered change ran anyway");
+    }
+
+    /// **A grant made while the service is running is honoured in the same
+    /// session, and a revocation takes effect on the next question asked.**
+    ///
+    /// The whole of task 4, over a real socket, with an agent's turn open the
+    /// entire time and nothing restarted. The person's side does what a folder
+    /// picker does — it writes the file and then knocks — and the read the agent
+    /// was refused a moment earlier is carried out. Then the same again in
+    /// reverse: the file is rewritten with nothing in it, the person knocks, and
+    /// the next question the agent asks is refused.
+    ///
+    /// The knock carries no grant, no path and no duration
+    /// (`alo_protocol::FromAPerson::Granted` has no field for one), so
+    /// re-reading the person's own file is the only thing it can cause.
+    #[test]
+    fn a_grant_made_while_the_service_runs_reaches_it_and_a_revocation_does_too() {
+        let at = crate::testing::a_directory_of_our_own("live-grants").join("grants.toml");
+        let file = crate::ThePersonsFile::at(&at);
+        let writing = at.clone();
+
+        let (served, _invoice) = while_it_runs_remembering(
+            "@files",
+            Keeping::Forever,
+            "live-grants-service",
+            &[Some(Side::Agent), Some(Side::Person)],
+            &mut Record::default(),
+            &file,
+            // The service signs in having been granted nothing, which is the
+            // machine this task is about: the folder is picked afterwards.
+            |_folder, _now| Grants::default(),
+            move |told| {
+                let folder = told.invoice.parent().unwrap().to_path_buf();
+                let mut agent = Talking::to(&told.at);
+                let mut person = Talking::to(&told.at);
+
+                let refused = agent.asking(&listing(&folder));
+                assert!(
+                    refused.contains("refused"),
+                    "something was granted before the person picked anything: {refused}"
+                );
+
+                // What a folder picker does: write the file, then knock.
+                alo_remembering::kept(&writing, &granting(&folder, this_moment()), this_moment())
+                    .unwrap();
+                let knocked = person.asking(r#"{"granted":{}}"#);
+                assert!(knocked.contains(r#""holding":1"#), "{knocked}");
+
+                let listed = agent.asking(&listing(&folder));
+                assert!(
+                    listed.contains("listed"),
+                    "the grant made while the service was running was not honoured: {listed}"
+                );
+
+                // And the other way: what the surface that revokes does.
+                alo_remembering::kept(&writing, &Grants::default(), this_moment()).unwrap();
+                let knocked = person.asking(r#"{"granted":{}}"#);
+                assert!(knocked.contains(r#""holding":0"#), "{knocked}");
+
+                let after = agent.asking(&listing(&folder));
+                assert!(
+                    after.contains("refused"),
+                    "a revoked grant was still honoured on the next question: {after}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+
+        assert_eq!(served.turns(), 1, "the turn was never interrupted");
+        assert_eq!(served.messages(), 5);
+    }
+
+    /// **An agent knocking is refused in words, and the person's list is not
+    /// read.** The same request as the test above, on the other door.
+    #[test]
+    fn the_same_request_on_the_agents_door_is_refused() {
+        let at = crate::testing::a_directory_of_our_own("agent-knock").join("grants.toml");
+        let file = crate::ThePersonsFile::at(&at);
+        let writing = at.clone();
+        let mut record = Record::default();
+
+        let (served, _invoice) = while_it_runs_remembering(
+            "@files",
+            Keeping::Forever,
+            "agent-knock-service",
+            &[Some(Side::Agent)],
+            &mut record,
+            &file,
+            |_folder, _now| Grants::default(),
+            move |told| {
+                let folder = told.invoice.parent().unwrap().to_path_buf();
+                // The file really does grant the folder, so a service that read
+                // it at the agent's asking would answer the read below.
+                alo_remembering::kept(&writing, &granting(&folder, this_moment()), this_moment())
+                    .unwrap();
+
+                let mut agent = Talking::to(&told.at);
+                let refused = agent.asking(r#"{"granted":{}}"#);
+                assert!(refused.contains("refused"), "{refused}");
+                assert!(
+                    refused.contains("an agent cannot say"),
+                    "the agent was refused in somebody else's words: {refused}"
+                );
+
+                let after = agent.asking(&listing(&folder));
+                assert!(
+                    after.contains("refused"),
+                    "an agent's knock made the service read the person's grants: {after}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+
+        assert_eq!(served.messages(), 2);
+        // Two entries: the knock refused, and the read the grants then refused
+        // — which is the second half of the claim, because a service that had
+        // read the file would have carried that read out.
+        assert_eq!(record.len(), 2, "the refusal was not written down");
+        let mut written = record.everything();
+        assert!(
+            matches!(
+                written.next().unwrap().happened(),
+                alo_record::Happened::GrantsNotReadAgain { .. }
+            ),
+            "the knock was written down as something else"
+        );
+        assert!(
+            written.next().unwrap().happened().was_stopped(),
+            "the read after the knock was not refused"
+        );
+    }
+
+    /// One read of a folder, as an agent asks for it.
+    fn listing(folder: &Path) -> String {
+        format!(
+            r#"{{"read":{{"verb":"list_folder","given":[{{"named":"folder","is":"{}"}}]}}}}"#,
+            folder.display()
+        )
     }
 
     /// **A stranger is told nothing and counted.** Item 21c decided the

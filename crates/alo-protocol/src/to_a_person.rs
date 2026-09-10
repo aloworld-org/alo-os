@@ -1,8 +1,9 @@
 //! What the daemon says back to the person's shell.
 //!
-//! Four answers to three requests: what a change did once they approved it,
+//! Five answers to four requests: what a change did once they approved it,
 //! that a change they declined is written down, everything still waiting for
-//! them, and — for any of the three — the refusal in the language they read.
+//! them, how much is granted after the machine read its list again, and — for
+//! any of the four — the refusal in the language they read.
 //!
 //! # A person is never handed a model's answer here
 //!
@@ -47,6 +48,16 @@ pub enum ToAPerson {
     },
     /// The change they declined is written down, and nothing ran.
     Declined,
+    /// What is granted was read again, and this is how many grants that came to.
+    ///
+    /// The answer to `granted` on this door. A count and no list — what is
+    /// granted is drawn by the surface that lists it, out of the person's own
+    /// file, and a list here would be a second copy of it crossing a socket for
+    /// nobody to check against.
+    Granted {
+        /// How many grants are in force after the reading.
+        holding: u64,
+    },
     /// It did not happen, and this is what to say about it.
     Refused(Wording),
 }
@@ -77,6 +88,12 @@ impl ToAPerson {
         }
     }
 
+    /// What is granted, read again, and how many grants that came to.
+    #[must_use]
+    pub const fn granted(holding: u64) -> Self {
+        Self::Granted { holding }
+    }
+
     /// It did not happen, in the words of whoever refused it.
     #[must_use]
     pub fn refused(said: &Said) -> Self {
@@ -94,6 +111,7 @@ impl ToAPerson {
             Told::Did(done) => Ok(Self::Did(done)),
             Told::Waiting { changes } => Ok(Self::Waiting { changes }),
             Told::Declined {} => Ok(Self::Declined),
+            Told::Granted { holding } => Ok(Self::Granted { holding }),
             Told::Refused(wording) => Ok(Self::Refused(wording)),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
@@ -114,6 +132,15 @@ impl ToAPerson {
     pub fn done(&self) -> Option<&Done> {
         match self {
             Self::Did(done) => Some(done),
+            _ => None,
+        }
+    }
+
+    /// How many grants are in force, when the machine has just read them again.
+    #[must_use]
+    pub const fn holding(&self) -> Option<u64> {
+        match self {
+            Self::Granted { holding } => Some(*holding),
             _ => None,
         }
     }
@@ -143,6 +170,7 @@ impl From<ToAPerson> for Told {
             ToAPerson::Did(done) => Self::Did(done),
             ToAPerson::Waiting { changes } => Self::Waiting { changes },
             ToAPerson::Declined => Self::Declined {},
+            ToAPerson::Granted { holding } => Self::Granted { holding },
             ToAPerson::Refused(wording) => Self::Refused(wording),
         }
     }
@@ -165,9 +193,9 @@ mod tests {
         in_english().say(&words::NOT_READABLE.key(), &Filling::nothing())
     }
 
-    /// The four, written and read back.
+    /// The five, written and read back.
     #[test]
-    fn the_four_a_person_is_told_read_back() {
+    fn the_five_a_person_is_told_read_back() {
         let (approvals, strings) = a_change_waiting();
         for told in [
             ToAPerson::did(&Answer::Renamed(
@@ -175,6 +203,7 @@ mod tests {
             )),
             ToAPerson::waiting(approvals.waiting_at(the_moment()), &strings, the_moment()),
             ToAPerson::Declined,
+            ToAPerson::granted(2),
             ToAPerson::refused(&a_sentence()),
         ] {
             let written = told.written().unwrap();
