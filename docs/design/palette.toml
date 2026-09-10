@@ -1,0 +1,77 @@
+# The colours alo OS is built out of — the source, in a form every language here
+# can read.
+#
+# ROADMAP.md, v0.01: *the colours come from a source this repository can read —
+# and that is not CSS.* alo's palette had been living in
+# `alo-workplace/web/src/ds/tokens.css`, 327 lines calling themselves "the single
+# source of visual truth", which a Rust compositor cannot read. A stylesheet is a
+# fact about a web application, never about an operating system, and ADR 0002
+# makes this shell native: there is no CSS in alo OS and there will not be.
+#
+# So the authority moves here. TOML because it is already the format this
+# repository types configuration in, because a person can edit it, and because
+# both a Rust crate and a web build can read it without either owning it.
+#
+# # This file is the source. Everything else is held to it.
+#
+# `crates/alo-appearance/src/token.rs` carries these six as Rust constants — it
+# must, since a compositor cannot parse a file at the moment it draws a frame —
+# and `a_palette_with_one_source.rs` reads this file and refuses to let the two
+# disagree. `docs/design/figma-brief.md` prints the same table for a designer to
+# read, and is held to this file by the same test.
+#
+# The point is to end CSS's authority over the palette, **not** to import it. A
+# value here is changed here, and everything that carries a copy is a copy that
+# is checked.
+#
+# # What is deliberately not in it
+#
+# **Anything that is not a colour.** Spacing, type scale, radii and motion are
+# not palette, and a file that grew to hold them would become the same
+# undifferentiated bucket `tokens.css` had become.
+#
+# **Light and dark variants of these six.** They are one palette used against two
+# grounds rather than two palettes; `crates/alo-appearance/src/scheme.rs` decides
+# which ground, and `contrast.rs` is what holds a pairing to being readable.
+#
+# **The five accents a person may choose** (ADR 0010, `accent.rs`). None of them
+# is in this list and that is the point: terracotta is the agent's and cannot be
+# adopted as somebody's accent, so the two sets are kept apart rather than
+# filtered apart.
+
+# Which shape this file is in. A reader that does not know this number refuses
+# the file rather than guessing at it — the same rule the record and the machine
+# description state.
+format = 1
+
+# Structure and text.
+[navy]
+hex = "#102A43"
+role = "structure, text"
+
+# The agent — present or acting, and nothing else. About five percent of any
+# screen, so a person can tell at a glance whether the machine is doing something
+# on their behalf. It is never an accent somebody may choose (ADR 0010).
+[terracotta]
+hex = "#E76F51"
+role = "the agent — about 5% of any screen"
+
+# The reading ground.
+[cream]
+hex = "#F8F6F2"
+role = "reading ground"
+
+# The workspace canvas.
+[porcelain]
+hex = "#F4F1EC"
+role = "workspace canvas"
+
+# The rail.
+[charcoal]
+hex = "#1F2529"
+role = "the rail"
+
+# Metadata.
+[warm-stone]
+hex = "#7A6F62"
+role = "metadata"
