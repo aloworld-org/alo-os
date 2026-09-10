@@ -111,6 +111,23 @@ impl Shown {
         }
         args.push("--".to_owned());
         args.push("--exact".to_owned());
+        // **Including the ignored ones**, which is not the loophole it looks
+        // like. This runs the one test `--exact` has already narrowed to, named
+        // deliberately by a person in a handoff, while the workspace gate keeps
+        // running *without* it — so an `#[ignore]`d test stays out of the suite
+        // exactly as its author intended.
+        //
+        // Without this, no `#[ignore]`d test could ever be evidence: run by name
+        // it selects nothing, reports zero passing, and is refused by the
+        // safeguard below. That would put a whole class of work — the tests
+        // needing a quiet machine, a real session, real hardware — permanently
+        // beyond publishing, which is the opposite of what the safeguard is for.
+        //
+        // The cost is real and worth writing down: naming such a test as
+        // evidence runs it, and some of them touch the machine. That is the
+        // author's decision to make in the handoff, and the plan is where a task
+        // says it needs a coordinated window.
+        args.push("--include-ignored".to_owned());
         args.push(self.named.clone());
         args
     }
@@ -243,6 +260,40 @@ mod tests {
         assert!(Shown::read("alo-agentd a_target it_answers").is_err());
         assert!(Shown::read(". alo-agentd a_target it_answers and_more").is_err());
         assert!(Shown::read("").is_err());
+    }
+
+    /// **A named test runs even when it is `#[ignore]`d**, and still only that
+    /// one.
+    ///
+    /// Evidence names a test deliberately; the workspace gate is what decides
+    /// whether the *suite* runs it. Without `--include-ignored` here, a test
+    /// that needs a quiet machine — a real session, real hardware — selects
+    /// nothing when run by name, reports zero passing, and is refused as
+    /// missing evidence. `--exact` beside it is what keeps this one test rather
+    /// than every ignored one.
+    #[test]
+    fn a_named_test_is_run_even_when_the_suite_skips_it() {
+        let ran = Shown {
+            at: ".".to_owned(),
+            within: "alo-secrets".to_owned(),
+            target: "a_session_that_really_ended".to_owned(),
+            named: "one_session_ended_takes_the_bus_with_it".to_owned(),
+        }
+        .as_arguments();
+
+        assert!(
+            ran.contains(&"--include-ignored".to_owned()),
+            "an ignored test named as evidence would select nothing: {ran:?}"
+        );
+        assert!(
+            ran.contains(&"--exact".to_owned()),
+            "without --exact this would run more than the test it names: {ran:?}"
+        );
+        // The name is the last word, so nothing is being matched by prefix.
+        assert_eq!(
+            ran.last().map(String::as_str),
+            Some("one_session_ended_takes_the_bus_with_it")
+        );
     }
 
     /// **A test target maps to the file a change has to contain**, which is

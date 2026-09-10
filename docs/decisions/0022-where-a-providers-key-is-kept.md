@@ -301,6 +301,39 @@ be open, or the user may be lingering — so a real machine can present a live b
 after somebody has logged out of one seat. **Real-session logout acceptance is
 outstanding and is not claimed here.**
 
+**Amendment, 2026-09-10 — real logout, measured.** The three cases the paragraph
+above guesses at have now been observed on a machine running `logind`. The
+guesses were right in outline, and one detail is worth having in writing.
+
+| What happened | `/run/user/<uid>` and the bus | `TheBus::found` |
+|---|---|---|
+| **One login, logged out**, no lingering | both gone | `Unavailable` |
+| **Logged out with `enable-linger` on** | both **survive with nobody signed in** | `Ok` |
+| **Two logins, one ended** | both stay; the other login holds them | `Ok` |
+
+So the fixture's stopped bus **is** representative of case 1 at the level the
+daemon branches on, and the caution about the other two was warranted: a live bus
+after a logout is a real state of a real machine rather than a hypothetical.
+
+**Lingering is a decision, not a finding.** With it on, the person's bus — and so
+their credential store — is reachable **while nobody is signed in at all**. That
+is what `enable-linger` is for, and it is an administrator's switch, so this ADR
+records it and does not resolve it: whether alo OS wants a credential reachable
+with nobody signed in is a policy question for the owner, and quietly "fixing" it
+would be this workstream deciding it.
+
+**What is still not claimed.** A keyring **handle held across** a real logout.
+Putting a Secret Service on the person's *session* bus needs a process running
+**as them** — root does not complete the D-Bus handshake there, measured — and
+such a process is itself killed by the logout being measured. The shape that
+needs is a helper reporting across the event, and it is outstanding.
+
+Evidence: `crates/alo-secrets/tests/a_session_that_really_ended.rs`, run
+deliberately (`-- --ignored --test-threads=1`) because it signs a person in and
+out of the machine it runs on. Every case checks the boot id either side of what
+it did: a restart removes `/run/user/<uid>` exactly as a logout does, and an
+earlier look at this was fooled by one.
+
 The **same-process** limitation recorded above is untouched and still true.
 
 Evidence: `crates/alo-secrets/tests/connections_come_and_go.rs` and

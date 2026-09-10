@@ -608,7 +608,31 @@ recommendation is explicitly not an approval.
 
 ### 10. What a credential does when a session really ends
 
-**Status:** scheduled. **Depends on:** the credential store — done.
+**Status:** the three cases are measured; the held-handle half below is
+scheduled. **Depends on:** the credential store — done.
+
+**Measured, 2026-09-10.** All three cases observed on this machine's `logind`,
+in `crates/alo-secrets/tests/a_session_that_really_ended.rs`: one login logged
+out takes `/run/user/<uid>` and the bus with it and `TheBus::found` is
+`Unavailable`; with `enable-linger` on both survive with nobody signed in and it
+is `Ok`; with two logins, ending one leaves both where they are. Report:
+`docs/autonomy/updates/a-session-that-really-ended.md`, and ADR 0022 carries the
+table.
+
+**Two premises in the text below turned out to be wrong**, and they are why this
+sat unscheduled. **There is no `sshd` on this machine** — the binary is absent
+and the unit is `not-found` — so every case as written was blocked on installing
+a network service; `su` reaches the same sessions through `pam_systemd` with no
+listener at all. And `loginctl terminate-user` is not a logout: it removes the
+user manager too, which is precisely what lingering exists to prevent, so using
+it would have answered case 2 by definition instead of measuring it.
+
+**What remains, and why it is still scheduled.** A keyring **handle held across**
+the logout. A Secret Service on the person's *session* bus needs a process
+running as them — root does not complete the D-Bus handshake there, measured —
+and such a process is killed by the logout being measured, so it needs a helper
+that reports across the event. That is a piece of work of its own, and it still
+wants a quiet machine.
 
 **A correction, because the line above used to say *blocked on a machine with
 `logind`*, and that was wrong.** It was written without looking. Asked directly,
