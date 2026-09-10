@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "crates/alo-shell",
   "tools/graphics-check",
+  "crates/alo-accounts",
   "crates/alo-agentd",
   "crates/alo-answering",
   "crates/alo-appearance",
@@ -57,6 +58,19 @@ serde_json = "1"
 # only from `unix.rs`; see that file for why it is a crate rather than lines of
 # `unsafe`.
 rustix = { version = "1.1", features = ["net", "process", "fs", "event"] }
+
+# A password is hashed and never kept, and the function that hashes it is
+# rented rather than written: Argon2id through RustCrypto's pure-Rust crate,
+# because a key derivation function this team wrote itself would be the
+# security bug the rest of this workspace is organised to avoid. Reached only
+# by `alo-accounts`, and only from `hashing.rs`. `default-features = false`
+# keeps its own randomness out — every random byte comes through `getrandom`
+# below, so there is one door to the generator.
+argon2 = { version = "0.5", default-features = false, features = ["alloc", "password-hash"] }
+
+# The kernel's randomness, for the salt under a password hash and the decoy an
+# unknown name is verified against. One narrow call, no fallback generator.
+getrandom = "0.3"
 
 # The second thing the kernel will only be asked through somebody else's crate,
 # and for the same reason as the first: installing a signal handler is

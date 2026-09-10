@@ -76,7 +76,8 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 15] = [
+pub const EVERY_LIST: [&str; 16] = [
+    "alo-accounts",
     "alo-answering",
     "alo-appearance",
     "alo-applications",
@@ -106,6 +107,7 @@ pub const EVERY_LIST: [&str; 15] = [
 /// happen on a machine that shipped: the test below runs it.
 pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     let mut vocabulary = Vocabulary::empty();
+    declare(&mut vocabulary, "alo-accounts", alo_accounts::declare_into)?;
     declare(
         &mut vocabulary,
         "alo-answering",
@@ -178,7 +180,8 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 15] = [
+    const ONE_STRING_EACH: [(&str, &str); 16] = [
+        ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
         ("alo-applications", "applications.not-installed"),
@@ -236,6 +239,7 @@ mod tests {
     #[test]
     fn the_machine_says_what_the_crates_say_between_them() {
         let each = [
+            alo_accounts::accounts_words().unwrap().how_many(),
             alo_answering::answering_words().unwrap().how_many(),
             alo_appearance::appearance_words().unwrap().how_many(),
             alo_applications::application_words().unwrap().how_many(),

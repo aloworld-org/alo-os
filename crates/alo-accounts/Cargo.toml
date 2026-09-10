@@ -1,0 +1,53 @@
+[package]
+name = "alo-accounts"
+version = "0.0.1"
+description = "The local account that needs no tenant, and the session a sign-in opens."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The password hash. Rented rather than written, deliberately, and this is the
+# one place in this repository where renting is the trustworthy choice: a key
+# derivation function this team wrote itself would be the security bug the rest
+# of the workspace is organised to avoid. Argon2id, pure Rust, no C library.
+# `default-features = false` keeps its own randomness out: every random byte
+# this crate uses comes through `getrandom` below, so there is one door.
+argon2 = { workspace = true }
+
+# The machine's randomness, for a salt and for the decoy password an unknown
+# name is verified against. The kernel's generator through one narrow call.
+getrandom = { workspace = true }
+
+# The store on the disk: TOML because `/etc/alo/agentd.toml` beside it is TOML,
+# and one machine should not need two notations for the two files that say who
+# it belongs to.
+serde = { workspace = true }
+toml = { workspace = true }
+
+# The refusals a person never reads keep their English for the service log;
+# this derives their sentences.
+thiserror = { workspace = true }
+
+# Every string a person does read, named rather than written in place.
+alo-strings = { path = "../alo-strings" }
+
+[target.'cfg(unix)'.dependencies]
+# Two questions the standard library will not answer: which user this process
+# runs as, and the numeric flag that refuses to open a symbolic link. Both are
+# asked through the crate the rest of the workspace already asks.
+rustix = { workspace = true }
+
+[dev-dependencies]
+# The shipped machine description, read by the reader the image is already held
+# to — so the uid the session carries is compared against the number
+# `alo-agentd` will really be told, not against a copy of it.
+alo-image = { path = "../alo-image" }
+
+# The whole machine's vocabulary, for the test that this crate's words survive
+# being put beside everybody else's.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

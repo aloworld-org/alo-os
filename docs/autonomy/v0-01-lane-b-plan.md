@@ -48,6 +48,14 @@ network. Those are the other half of phase 4 and are not this task.
 - **Constraint:** nothing in `crates/alo-shell` — the entry *surface* is the
   compositor lane's; this is the account and the authentication it will call.
 
+**Done, 2026-09-10.** `crates/alo-accounts`: the store at
+`/etc/alo/accounts.toml`, Argon2id behind one refusal that costs the same for
+a wrong password and an unknown name, and `Session::opened`, which cannot
+carry a uid the machine description does not name. Measured in
+`tests/a_person_signs_in.rs`; the report is
+`docs/autonomy/updates/the-local-account-that-needs-no-tenant.md`. Task 2 is
+the next task and was already written.
+
 ### 2. The daemon's environment is the session's
 
 **Status:** ready. **Depends on:** 1.

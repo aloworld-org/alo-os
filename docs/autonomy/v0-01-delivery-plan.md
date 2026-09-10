@@ -130,6 +130,12 @@ that needs no tenant is the smaller half and the one the gate actually requires.
 - **Constraint:** no identity provider, no tenant, no network. Those are the
   other half of phase 4 and are their own task.
 
+**Done, 2026-09-10.** Lane B's task 1: `crates/alo-accounts` — the store, the
+evenly-timed refusal, and the session that cannot disagree with the machine
+description. The entry surface stays with the compositor lane;
+`docs/autonomy/updates/the-local-account-that-needs-no-tenant.md` is the
+report.
+
 ### 5. The daemon's environment is the session's
 
 **Status:** lane B's — scheduled in `v0-01-lane-b-plan.md` as its task 2, and
