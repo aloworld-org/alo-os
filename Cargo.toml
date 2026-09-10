@@ -29,6 +29,7 @@ members = [
   "crates/alo-overlay",
   "crates/alo-picking",
   "crates/alo-protocol",
+  "crates/alo-reconciling",
   "crates/alo-record",
   "crates/alo-recounting",
   "crates/alo-remembering",

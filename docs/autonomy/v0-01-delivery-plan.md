@@ -326,6 +326,28 @@ found the last.
   report that shows it, or is named as owed. A promise with neither is the
   finding, and it is written down before anything else is.
 
+**Done, 2026-09-10.** `docs/autonomy/v0-01-evidence.md` is the ledger — all
+forty-one v0.01 promises, each naming the test or the report that shows it and
+what is still owed — and `crates/alo-reconciling` is what makes it true of
+`docs/features.md` rather than a list somebody wrote once: both documents are
+parsed, every promise must be answered exactly once, every entry must be about a
+promise the definition still makes, and evidence is a test that exists and holds
+a `#[test]` or a report under `docs/autonomy/updates/` — an ADR, `ROADMAP.md`
+and a file in another repository are each refused by name. **A promise added to
+`docs/features.md` and not reconciled now fails the gate in the change that adds
+it**, which is the only moment anybody has the knowledge to reconcile it. The
+audit's own finding: two promises are shown with nothing owed, thirty-three are
+shown in part, and **six have no evidence at all** — *copy, cut and paste*, *the
+GPU works on first boot* and *it never nags* have no line anywhere; *anything an
+agent verb can do, a person can do by hand* is a standing rule nothing checks;
+*the agents point at the local model by default* cannot get a line without a
+decision, because ADR 0016 refuses a default nobody chose; and *boots on one
+certified machine* is task 12. Report:
+`docs/autonomy/updates/every-v0-01-promise-against-evidence.md`. The next task
+(14) was written from those findings, because 12 and 13 are both unstartable and
+a plan whose remaining tasks are all blocked reads as the workstream being
+finished.
+
 ### 12. Physical acceptance on the two certified machines
 
 **Status:** scheduled — it needs a machine, and no work here substitutes for it.
@@ -364,3 +386,25 @@ bound to and that nothing on the image can currently cause.
   password; whatever holds a privilege to open the session holds nothing else,
   and says so in a `crates/alo-image` check beside the loader's; and every
   string is in the vocabulary `alo-saying` collects.
+
+### 14. Every verb's by-hand answer, and a check that it has one
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file.
+
+Written by task 11, which found it: `docs/features.md` promises at v0.01 that
+**anything an agent verb can do, a person can do by hand** (ADR 0009), and
+nothing in this repository checks it. It is the standing rule on every verb
+anybody proposes — a machine without a working agent loses *convenience* and
+never *capability* — and today it is a sentence in a document, so a verb with no
+by-hand answer would arrive and nothing would notice. The one promise of the six
+this lane can close without a decision, a screen or a machine.
+
+- **Acceptance:** every verb alo OS ships — read from the crates that declare
+  them rather than from a list kept beside them, so a verb added anywhere is a
+  verb this check sees — names how a person does the same thing without the
+  agent, or is named as owed with the release that owns the answer; a verb with
+  neither is refused in a sentence naming it; and the refusal is tested as
+  carefully as the answer, including a verb added with nothing said about it.
+- **Constraint:** it says nothing to a person and declares no strings — it is a
+  repository check like `alo-reconciling`, and `alo-saying` does not collect it.

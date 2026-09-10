@@ -1,0 +1,19 @@
+[package]
+name = "alo-reconciling"
+version = "0.0.1"
+description = "Every v0.01 promise in docs/features.md, held to the evidence in this repository or named as owed."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The findings are sentences whoever is reading the audit acts on, and each one
+# names the promise it is about. `thiserror` is how every other crate in this
+# workspace writes that, and this one says nothing to a person in their own
+# language — see `crate` documentation for why an auditor's English is right
+# here and `alo-strings` is not.
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
