@@ -30,6 +30,7 @@ members = [
   "crates/alo-picking",
   "crates/alo-protocol",
   "crates/alo-record",
+  "crates/alo-recounting",
   "crates/alo-saying",
   "crates/alo-shortcuts",
   "crates/alo-secrets",

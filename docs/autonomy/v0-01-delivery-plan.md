@@ -230,6 +230,25 @@ The exit gate's end: *ask what it did and get an answer from the record*.
   from memory of the session; a turn that was refused reads back as refused; and
   nothing in the answer is a sentence a model wrote.
 
+**Done, 2026-09-10.** `crates/alo-recounting`: `Recounting` holds a path and
+nothing else — no record, no entries, no answer from last time and no
+constructor that takes any of those — so every question re-reads the file
+through `alo_keeping::Reading`, and a record that is not there is refused in
+`alo-keeping`'s own words rather than drawn as an empty list. `Told` is made
+from an `alo_record::Entry` and from nothing else (no constructor from text, no
+public field, no `From`, no deserialiser, compile-fail examples), so what
+reaches a screen is the sentence the machine generated from validated
+arguments; a verb that never became a call has **no** sentence and its text
+comes back only from `asked_for`. `Outcome` derives all ten things that can
+happen from `alo_record::Happened` by an exhaustive match, keeping the three
+refusals three, and `Account` shows the record's own sentence about whether it
+goes all the way back beside every answer — so *nothing here* is never read as
+*nothing happened*. Thirteen strings under a new `recounting` area, collected
+by `alo-saying`. Report:
+`docs/autonomy/updates/afterwards-ask-what-it-did.md`. The next task (9) was
+already written. No pixels are claimed and none are tested; drawing it is the
+compositor's, and *On the machine* does not move.
+
 ### 9. The egress indicator, on a screen
 
 **Status:** ready. **Depends on:** 3.

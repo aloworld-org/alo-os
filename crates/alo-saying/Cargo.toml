@@ -35,6 +35,7 @@ alo-models = { path = "../alo-models" }
 alo-overlay = { path = "../alo-overlay" }
 alo-picking = { path = "../alo-picking" }
 alo-protocol = { path = "../alo-protocol" }
+alo-recounting = { path = "../alo-recounting" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-turn = { path = "../alo-turn" }
 
