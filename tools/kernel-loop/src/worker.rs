@@ -327,14 +327,20 @@ fn asked_of_it(task: &Task) -> String {
          touched, and an `evidence` block. tools/kernel-loop/src/handoff.rs documents the\n\
          format.\n\
          \n\
-         RUN THE GATES BEFORE YOU HAND OVER, and fix what they say. From the checkout:\n\
-         `cargo fmt --all`, `cargo clippy --all-targets` with warnings denied, and\n\
-         `cargo test --workspace`. The supervisor runs them again and publishes nothing\n\
-         that fails, so a gate you did not run is a task you did not finish — and the\n\
-         commonest failure is not your logic but a registration you did not know about:\n\
+         DO NOT WRITE THE HANDOFF UNTIL THE GATES PASS. Not *run them and hand over* —\n\
+         the handoff is your statement that the work is finished, and work that does not\n\
+         gate is not finished. From the checkout: `cargo fmt --all`, `cargo clippy\n\
+         --all-targets` with warnings denied, and `cargo test --workspace`. Fix what they\n\
+         say, run them again, and only then write the file.\n\
+         \n\
+         Two workers have handed over code that did not compile. Both had been told to\n\
+         run the gates; both wrote the handoff first and treated gating as a step after\n\
+         it. The supervisor caught them, parked the work and lost the hour — and the\n\
+         commonest cause is never the logic but a registration nobody could know about:\n\
          a new crate that has words has to be collected, an image manifest has to agree,\n\
-         a rustdoc link has to resolve. The gates name every one of those in seconds. You\n\
-         are the only one who can fix them before an hour is spent.\n\
+         a rustdoc link has to resolve, a test you wrote has to name a method that\n\
+         exists. The gates name every one in seconds, and you are the only one who can\n\
+         act on them — by the time the supervisor runs them you are gone.\n\
          \n\
          IN THE SAME CHANGE, mark this task `**Done, <date>**` in the plan named above —\n\
          with the plan file among the files you list — and write the next task there if\n\
@@ -452,7 +458,7 @@ mod tests {
         // of them named in seconds by a gate the worker never ran, and none of
         // them anything to do with the approval logic it had written well.
         assert!(
-            asked.contains("RUN THE GATES BEFORE YOU HAND OVER"),
+            asked.contains("DO NOT WRITE THE HANDOFF UNTIL THE GATES PASS"),
             "a worker not told to gate its own work discovers its mistakes an hour later, \
              through somebody else: {asked}"
         );
