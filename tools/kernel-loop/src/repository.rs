@@ -47,7 +47,15 @@ pub fn on_main_and_clean_but_for(at: &Path, named: &[String]) -> Result<(), Stri
             "the checkout is on `{branch}` and this workstream publishes to `{MAIN}`"
         ));
     }
-    let changed = git(at, &["status", "--porcelain"])?;
+    // `--untracked-files=all`, and it is the difference between a task that
+    // creates a crate publishing and being refused. Porcelain's default
+    // collapses a brand-new directory into one entry — `?? crates/alo-overlay/`
+    // — while a handoff names the files inside it, so the comparison could never
+    // match and **every task that created a directory was refused as
+    // unaccounted for**. The first task the v0.01 loop ever ran was parked by
+    // exactly this, with a handoff that had correctly named all ten of its
+    // files.
+    let changed = git(at, &["status", "--porcelain", "--untracked-files=all"])?;
     // **Not `line[3..]`, and not a bare `split_once`.** Porcelain writes two
     // status columns then a space, so counting three characters looks right —
     // but the whole output is trimmed by the time it arrives here, which eats
@@ -193,7 +201,9 @@ pub fn staged(at: &Path, files: &[String]) -> Result<(), String> {
 /// # Errors
 /// Whatever `git` said.
 fn moved_away_already(at: &Path, named: &str) -> Result<bool, String> {
-    let changed = git(at, &["status", "--porcelain"])?;
+    // `--untracked-files=all` for the same reason as the cleanliness check:
+    // one reading of the tree, not two that disagree about new directories.
+    let changed = git(at, &["status", "--porcelain", "--untracked-files=all"])?;
     Ok(changed
         .lines()
         .filter_map(|line| line.trim_start().split_once(' '))
