@@ -332,6 +332,7 @@ told so at first sign-in. There is no silent enrollment.
 - [v0.01] Boots on one certified machine, firmware to sign-in
 - [v0.01] Image built as an OCI container image — a **bootable container** (`bootc`) on a rented, unmodified Linux base (ADR 0011), so the operating system *is* the image rather than being installed by one. No third language enters the repository to build it
 - [v0.5] ★ Atomic updates with rollback — the previous deployment stays bootable, which a bootc image gives us rather than us building it (ADR 0011)
+- [v0.5] ★ **Installed from the machine it replaces** — download one program on the Windows machine alo OS is replacing; it checks the machine, says exactly what will happen, stages a minimal boot environment, and pulls the operating system itself — signed and versioned — from the same registry updates come from. Download, click, reboot, sign in: no USB stick, no ISO burning, no firmware ceremony. Secure Boot is respected through the signed shim, never something a person is told to switch off; anything destructive takes a typed consent naming what is destroyed, and Windows stays bootable until the one named point of no return (ADR 0023)
 - [v0.5] Printing. Unglamorous, and it decides public-sector deals
 - [v0.5] The documents people are actually sent open: `.docx`, `.xlsx`, `.pptx`
 - [v0.5] A web browser for the open web — a pinned upstream one, since our own engine is not scheduled
