@@ -38,6 +38,7 @@ members = [
   "crates/alo-shortcuts",
   "crates/alo-secrets",
   "crates/alo-strings",
+  "crates/alo-telling",
   "crates/alo-turn",
 ]
 exclude = [

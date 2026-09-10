@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 21] = [
+pub const EVERY_LIST: [&str; 22] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -97,6 +97,7 @@ pub const EVERY_LIST: [&str; 21] = [
     "alo-protocol",
     "alo-recounting",
     "alo-shortcuts",
+    "alo-telling",
     "alo-turn",
 ];
 
@@ -169,6 +170,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-shortcuts",
         alo_shortcuts::declare_into,
     )?;
+    declare(&mut vocabulary, "alo-telling", alo_telling::declare_into)?;
     declare(&mut vocabulary, "alo-turn", alo_turn::declare_into)?;
     Ok(vocabulary)
 }
@@ -202,7 +204,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 21] = [
+    const ONE_STRING_EACH: [(&str, &str); 22] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -223,6 +225,7 @@ mod tests {
         ("alo-protocol", "protocol.too-long"),
         ("alo-recounting", "recounting.nothing-to-tell"),
         ("alo-shortcuts", "shortcuts.action.the-agent"),
+        ("alo-telling", "telling.carry-on"),
         ("alo-turn", "turn.closed"),
     ];
 
@@ -286,6 +289,7 @@ mod tests {
             alo_protocol::protocol_words().unwrap().how_many(),
             alo_recounting::recounting_words().unwrap().how_many(),
             alo_shortcuts::shortcut_words().unwrap().how_many(),
+            alo_telling::telling_words().unwrap().how_many(),
             alo_turn::turn_words().unwrap().how_many(),
         ];
         assert_eq!(each.len(), EVERY_LIST.len());

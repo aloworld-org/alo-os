@@ -1,0 +1,36 @@
+[package]
+name = "alo-telling"
+version = "0.0.1"
+description = "A machine that cannot reach a model says so once, where it happened, and continues — the memory that keeps a failure from being said twice."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+# The one thing that can become a telling. `alo_answering::Failed` is made by
+# `Answering::did_not_answer` and by nothing else, so a telling cannot exist
+# until a question really was put somewhere and really was not answered — which
+# is the plan's *nothing is told at all until a turn actually failed*, held by
+# the dependency list as well as by the constructors.
+alo-answering = { path = "../alo-answering" }
+
+# Where a question was put, which is half of what makes one unavailability
+# different from another. Named and never reached: nothing here can ask
+# anywhere.
+alo-models = { path = "../alo-models" }
+
+[dev-dependencies]
+# The machine's one vocabulary, which is what a shell really holds. This
+# crate's own tests are written against its own list; the integration test asks
+# the question that list cannot — whether what this crate says is collected at
+# all. A dev-dependency and not a dependency, because the direction is the one
+# every crate here takes: a crate that says something is collected by
+# `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

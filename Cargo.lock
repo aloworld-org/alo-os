@@ -450,6 +450,7 @@ dependencies = [
  "alo-recounting",
  "alo-shortcuts",
  "alo-strings",
+ "alo-telling",
  "alo-turn",
  "serde",
  "thiserror 2.0.20",
@@ -502,6 +503,17 @@ version = "0.0.1"
 dependencies = [
  "serde",
  "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-telling"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-models",
+ "alo-saying",
+ "alo-strings",
  "thiserror 2.0.20",
 ]
 

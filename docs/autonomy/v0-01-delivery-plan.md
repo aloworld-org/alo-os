@@ -467,3 +467,66 @@ which is the greyed-out panel ADR 0009 refused, once per turn.
   another source — ADR 0008's *never a silent fallback* runs in both directions,
   and *we spent your money elsewhere because the first place was empty* is the
   worst available version of this. Nothing in `crates/alo-shell`.
+
+**Done, 2026-09-11.** `crates/alo-telling`: `Telling` is the memory a session
+holds, and `Telling::about` is the only door a failure can become something a
+person reads through — it **takes the failure by value**, so a repeat is not
+suppressed by convention but consumed and dropped, and there is no value left
+anywhere that a surface could word instead. That is the difference between a
+guarantee and a recommendation, and it is the whole of the design. `Unavailable`
+is the identity — where the question was put and what went wrong there, read off
+an `alo_answering::Failed` and buildable from nothing else — and it is
+deliberately unwordable: what is remembered has no `said`, so nothing this crate
+holds could be put back on a screen at a later moment, which is ADR 0009's *where
+it happened* as a shape rather than as an instruction. `WhoAsked` has no
+`Default`, because both possible defaults are wrong in the direction that
+matters: one turns every background retry into a telling and the other silences
+somebody who genuinely asked again. Two statuses from one service are two
+reasons, because the number is inside the sentence a person reads. The memory is
+bounded at sixty-four and forgets the **oldest** first, which is the only
+direction it may fail in — a bound may cost a repetition, it may never cost a
+telling. `ToldOnce` is four lines in the order they are read: the heading and the
+*carry on* are this crate's two strings under a new `telling` area collected by
+`alo-saying`, and the two in the middle are `alo-answering`'s own, unchanged,
+because a telling that reworded a failure would be a machine with two accounts of
+one moment. The offers travel with the telling, unranked and unchosen, so
+adopting this crate closes no door ADR 0008 leaves open. `docs/autonomy/v0-01-evidence.md`'s
+entry for *and it never nags* is no longer one of the six with no evidence at
+all; four are left, and none of them can be closed without a screen, a decision
+or a machine. Report:
+`docs/autonomy/updates/a-machine-that-cannot-reach-a-model-says-so-once.md`. The
+next task (16) is written below. No pixels are claimed and none are tested.
+
+### 16. A default nobody chose, or a promise that says so
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it is a decision and a document, and it touches no
+compositor file.
+
+Written by task 15, from the last of the audit's findings this lane can reach.
+`docs/features.md` promises at v0.01 that **the agents point at the local model
+by default**, and `docs/autonomy/v0-01-evidence.md` records that it *cannot get a
+line without a decision*: ADR 0016 says the organisation bounds and **the person
+chooses**, and refuses a default nobody chose. Those two sentences cannot both be
+kept. One of them is wrong, and no worker may quietly narrow the promise or
+contradict the ADR to make a test pass — which is why nothing has been built for
+it and why the audit has carried it, untouched, since it was written down.
+
+So the decision *is* the task, in the shape task 10 already used for ADR 0024:
+the options, a recommendation, and the consequences of each, written where a
+stranger can read the argument rather than infer it from code. The two obvious
+readings are not the only ones — *default* may mean **what a machine ships
+pointing at**, which is a fact about an image and not a choice made on anybody's
+behalf, and that reading may keep both sentences.
+
+- **Acceptance:** an ADR under `docs/decisions/`, numbered next, with the options
+  set out fairly, a recommendation, and what each would cost — including what it
+  costs `crates/alo-choosing`, `crates/alo-image` and the setup flow ADR 0009
+  gave a fourth answer to. `docs/autonomy/v0-01-evidence.md`'s entry for the
+  promise names it and says what is still owed, and the reconciling gate passes
+  on the change that adds it. **No code follows in the same change**, because
+  until it is accepted a worker writing code would be choosing between the
+  options rather than building one.
+- **Constraint:** it may not narrow `docs/features.md` and it may not contradict
+  ADR 0016. If the honest answer is that the definition is wrong, the ADR
+  recommends the change and the owner makes it; the plan does not.

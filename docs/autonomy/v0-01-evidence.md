@@ -338,16 +338,24 @@ never capability* has never been true of a screen.
 `crates/alo-answering/src/wrong.rs`,
 `crates/alo-asking/tests/a_key_reaches_one_provider_only.rs`
 
-**Still owed:** *it says it once, where it happened* is a property of a surface
-over time, and there is no surface — nothing has ever shown the sentence, once
-or otherwise.
+**Still owed:** *it says it once* is now a mechanism rather than a hope —
+`crates/alo-telling` is the memory, and a repeat of one unavailability produces
+no value a surface could word. What is owed is the surface itself: no screen has
+ever shown the sentence, once or otherwise.
 
 ### And it never nags
 
-**Still owed:** nothing implements or checks this. A promise about what a
-machine does *not* do repeatedly needs something that could repeat, and no
-surface exists yet — but it also means nothing will notice when one arrives and
-starts asking. This is the third promise this audit found with no line at all.
+**Shown by:**
+`crates/alo-telling/tests/a_machine_that_cannot_reach_a_model_says_so_once.rs`,
+`crates/alo-telling/src/telling.rs`,
+`docs/autonomy/updates/a-machine-that-cannot-reach-a-model-says-so-once.md`
+
+**Still owed:** the memory is a session's and nothing holds one yet, because
+nothing in this repository runs a session with an agent in it. So the promise is
+kept by the only thing that could break it — a shell adopting `alo-telling`
+cannot say the same thing twice unasked — and not yet by a machine anybody has
+watched all afternoon. The other half is a surface, which is task 3's overlay
+and does not exist.
 
 ### Or use an API instead
 
@@ -479,3 +487,22 @@ carries what the check cannot reach, and it found one thing worth reading twice 
 `docs/autonomy/updates/every-verbs-by-hand-answer.md` are the work; the paragraphs
 above are left as the audit wrote them, because a finding rewritten by whoever
 closed it is a finding nobody can check.
+
+### A second of the six closed, 2026-09-11
+
+*And it never nags* now has a line, so the count stands at **four with no
+evidence at all**, and it is the last of the six this lane could close without a
+screen, a decision or a machine. `crates/alo-telling` is the memory nothing had:
+the same unavailability told once is told once, and telling it again takes the
+source changing, the reason changing, or the person asking again themselves.
+Task 15 of `docs/autonomy/v0-01-delivery-plan.md` and
+`docs/autonomy/updates/a-machine-that-cannot-reach-a-model-says-so-once.md` are
+the work.
+
+What is left of the six is what nobody here can close alone: *copy, cut and
+paste* and *the GPU works on first boot* are unscheduled work, *the agents point
+at the local model by default* waits on a decision ADR 0016 will not let this
+lane make, and *boots on one certified machine* waits on a machine. The
+paragraphs above are left as the audit wrote them, for the reason the first
+closure gave: a finding rewritten by whoever closed it is a finding nobody can
+check.
