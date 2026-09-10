@@ -1334,6 +1334,16 @@ which made a completely consistent rule look like work being taken out of turn.
 - [ ] **The agent overlay**: one key, from anywhere
 
 - [ ] Launcher and window management: move, resize, snap, tile
+  - Native full-name keyboard activation (2026-09-10, ready for integration): F1
+    opens the explicitly native-focused name once on release. Continuous focus
+    identity, cancellation and owned-release draining preserve client typing.
+    Ordered nested session pumping retains the reader for frame/navigation use.
+    Four private-client tests and two WSLg gesture-to-reader submissions pass;
+    controls and reader graphical acceptance pass in recovery, deadlines unchanged.
+    Protocol tracing locates a parent callback wait; the earlier 17-second cause
+    remains unresolved. Independent supervisor gates pending. Native focus navigation, cursor
+    selection and direct integration remain; no feature/release box promoted.
+    `docs/autonomy/updates/native-full-name-keyboard-activation.md`.
   - Automatic native name fallback (2026-09-10): live selected names prefer complete
     expanded labels and automatically submit a paged reader on capacity exhaustion.
     Invalid preparation and failed/omitted-root submissions retire authority.

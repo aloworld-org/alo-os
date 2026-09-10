@@ -9,7 +9,7 @@ use smithay::backend::input::KeyState;
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-fn words() -> Result<Strings> {
+pub(super) fn words() -> Result<Strings> {
     let mut vocabulary = shortcut_words()?;
     alo_shell::window_control_reader_words::declare_reader_words(&mut vocabulary)?;
     let language = Language::written("de")?;
@@ -23,7 +23,7 @@ fn words() -> Result<Strings> {
     Ok(strings)
 }
 
-fn style() -> WindowControlReaderStyle {
+pub(super) fn style() -> WindowControlReaderStyle {
     WindowControlReaderStyle {
         size: (180, 28),
         scheme: Scheme::Light,
@@ -31,7 +31,7 @@ fn style() -> WindowControlReaderStyle {
     }
 }
 
-fn chrome() -> LabelGeometry {
+pub(super) fn chrome() -> LabelGeometry {
     LabelGeometry {
         viewport: (640, 480),
         origin: (264, 40),

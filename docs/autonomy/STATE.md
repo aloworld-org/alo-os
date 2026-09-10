@@ -14946,6 +14946,7 @@ submitted-frame readback, direct scanout, VM or physical hardware. Machine recor
 remain owed in their delivery phases. No feature/release checkbox promoted;
 reports arriving during publication reconcile next iteration.
 
+
 ## 2026-09-10 - automatic native name fallback
 
 Started clean at a4ec1df. Read CLAUDE, DELIVERY, SHARED_MAIN, report guidance,
@@ -15002,3 +15003,93 @@ is private-client input/publication and nested EGL submission, not submitted-fra
 readback, synthesized parent events, direct scanout, VM or physical hardware.
 VM and physical machine records remain owed in their delivery phases. Reports
 arriving during publication reconcile next iteration; no release certification.
+
+## 2026-09-10 - native full-name keyboard activation (blocked)
+
+Started clean at 1c629f0. Read required delivery/ownership/report guidance,
+current queue/state, relevant features/roadmap, ADRs 0002/0010 and native contract.
+No AGENTS.md found; every published report already referenced in STATE, so no
+reconciliation due. Component/acceptance selected in QUEUE before implementation.
+
+Implemented F1 full-name opening on explicit native focus, once on release,
+with atomic all-page preparation. Native selection identity prevents focus
+away-and-back reuse. Competing input, retirement, loss and pump-mode changes
+cancel while preserving releases. Client F1/modifier chords and ordinary typing
+retain delivery. Ordered nested session pump retains the optional reader for
+submission/navigation. Disabled names remain accessible; no window command runs.
+
+Four new private-client tests pass; full affected Linux suite passes 168 unit,
+258 lifecycle, three socket and four compile-fail doctests, none ignored.
+Affected clippy, rustdoc, check/example build, Windows tests/clippy and format
+pass; Windows Linux-only shell tests have zero cases. Initial clippy refused
+three undocumented private items; documented them and final clippy passes.
+A final configuration-obligation rustdoc clarification followed Linux checks.
+
+WSLg reader acceptance passes, including two new F1-to-EGL submissions and session
+pump calls in both schemes, all original reader and lifecycle/refusal checks.
+Controls acceptance fails before control markers in initial and final normal
+runs. Instrumented reproduction measures a zero-root upstream swap returning at
+17.010975888 s after painting at 2.542634 ms; the existing 10-second client gate
+then fails. No control or new gesture has executed. Baseline traced fixture
+passes. Cause of intermittent swap delay remains unknown; untraced failures'
+exact locations unproven. No surviving fixture process; WSLg socket and existing
+bpffs remain present. No engine change or justified source-level repair identified.
+No assertion, timeout or gate weakened. Recover this SAME task with dirty work
+preserved; not STEP DONE and not ready for independent publication gates.
+
+Exact evidence and recovery handoff:
+`docs/autonomy/updates/native-full-name-keyboard-activation.md`.
+Logs: `.git/alo-loop/native-full-name-keyboard-activation/`, especially
+`wslg-controls.txt`, `wslg-controls-trace.txt`, `wslg-baseline-trace.txt`,
+`wslg-controls-final.txt` and passing `wslg-reader.txt`.
+Independent supervisor workspace/Windows/Linux/rustdoc/BPF gates not run.
+
+Every command preflight exceeded 12 GiB C: (minimum 53,294,166,016 bytes).
+Ubuntu graphics prerequisites checked; no install/cleanup/shared maintenance,
+WSL restart/helper, kernel mutation/outer lock, second worker/loop, dev-loop edit,
+stage/commit/push, other checkout/repository or credential/identity access.
+Desktop target /root/alo-os-target retained. Tracked/new diff inspected and
+`git diff --check` passes. Contract and all four progress documents updated.
+
+This preserves the opening component; after recovery, native focus navigation,
+cursor selection and direct integration remain. Full-name access and window
+management unfinished. Private-client/nested submission evidence does not certify
+parent physical input, submitted-frame readback, direct scanout, VM or hardware.
+Machine evidence remains owed in its delivery phases. No release box promoted;
+reports arriving during publication reconcile next iteration.
+
+## 2026-09-10 - native full-name keyboard activation recovery
+
+Recovered the preserved task without changing executable code. Inspected original
+failure, dirty code/tests, Smithay submission implementation and parent protocol
+trace. No published task report lacked a STATE reference at recovery start.
+Protocol tracing shows the empty-scene swap waiting about 7.49 seconds until
+parent buffer release and Mesa frame-callback completion, then attaching and
+committing its next buffer. The reason the parent delayed and the original
+17.010975888-second failure remain unresolved; no source repair claimed.
+The traced controls run passes, followed by normal controls and reader acceptance
+with original 30-second outer/10-second internal deadlines and all assertions.
+
+Recovery commands: `nested_check --controls --trace` with per-process
+`WAYLAND_DEBUG=client ALO_NESTED_TRACE_SUBMISSION=1`; normal `nested_check --controls`
+and `--reader` under `timeout 30s`; Linux `cargo test -p alo-shell --locked --quiet`
+(168 unit/258 lifecycle/three socket/four doctests, none ignored),
+`cargo clippy -p alo-shell --all-targets --locked -- -D warnings`,
+`RUSTDOCFLAGS=-Dwarnings cargo doc -p alo-shell --no-deps --locked`;
+Windows `cargo fmt --all --check`; `git diff --check`. All pass.
+Graphical evidence includes complete controls refusal/recovery and two new
+F1-to-reader submissions with all existing reader checks, both schemes.
+
+Exact investigation, commands, logs and limits:
+`docs/autonomy/updates/native-full-name-keyboard-activation.md`, recovery section.
+Logs: `.git/alo-loop/native-full-name-keyboard-activation/recovery-*.txt`.
+Every C: preflight exceeded 12 GiB, minimum recovery 53,252,653,056 bytes.
+Existing bpffs, WSLg and graphics prerequisites verified; private fixtures only.
+No leftover nested-check processes, source/engine repair, gate weakening, shared
+maintenance, cleanup, second loop/worker, supervisor edits or staging/commit/push.
+Ready for independent supervisor gates, which have not run for this task.
+Contract and four shared progress documents updated. Evidence remains private
+client routing and nested EGL submission, not parent physical F1 delivery,
+frame readback, direct display, VM or hardware certification. Native focus
+navigation/cursor selection and direct integration remain next; release and
+window-management boxes stay unchecked.

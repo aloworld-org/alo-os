@@ -324,6 +324,7 @@ mod reader;
 mod reader_frame;
 mod reader_input;
 mod reader_navigation;
+mod reader_opening;
 mod reader_selection;
 mod routing;
 

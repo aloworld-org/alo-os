@@ -27,6 +27,8 @@ pub(crate) struct Presentation {
     restoring: bool,
     /// Explicit native label focus; no client keyboard authority.
     focus: Option<Action>,
+    /// Every explicit focus request retires pending name-opening gestures.
+    selection: Arc<()>,
 }
 
 impl Presentation {
@@ -50,6 +52,13 @@ impl Presentation {
 }
 
 impl Server {
+    /// Native focus identity, distinct from client focus and hover selection.
+    pub(crate) fn control_name_focus(&mut self) -> Option<(Action, Arc<()>)> {
+        self.control_reader_binding()?;
+        let view = self.control_presentation.as_ref()?;
+        Some((view.focus?, view.selection.clone()))
+    }
+
     /// Fresh explicit reader selection without changing native or client focus.
     pub(crate) fn control_reader_target(
         &mut self,
@@ -112,6 +121,7 @@ impl Server {
                 origin: view.origin,
                 restoring: snapshot.layout().restoring(),
                 focus: None,
+                selection: Arc::new(()),
             })
         })();
         let candidate = match candidate {
@@ -149,6 +159,7 @@ impl Server {
     pub fn focus_window_control(&mut self, action: Option<Action>) -> bool {
         if let Some(view) = &mut self.control_presentation {
             view.focus = None;
+            view.selection = Arc::new(());
         }
         let Some(view) = self.live_window_controls() else {
             return false;

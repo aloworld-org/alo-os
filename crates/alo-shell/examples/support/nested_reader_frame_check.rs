@@ -244,10 +244,50 @@ pub fn run(
         nested.pump_reader_seat(server, Some(&mut owned))?;
         nested.pump_reader_seat(server, None)?;
         nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
+        assert!(server.focus_window_control(Some(Action::CloseWindow)));
+        let mut opening_input = alo_shell::NestedControlInput::default();
+        let mut opened = None;
+        let mut session = alo_shell::NestedReaderSession {
+            reader: &mut opened,
+            strings: &words,
+            labels: &mut labels,
+            style: WindowControlReaderStyle {
+                size: (140, 28),
+                scheme,
+                scale: TextScale::ordinary(),
+            },
+            chrome: geometry,
+        };
+        for (state, expected) in [
+            (smithay::backend::input::KeyState::Pressed, Route::Consumed),
+            (smithay::backend::input::KeyState::Released, Route::Changed),
+        ] {
+            assert_eq!(
+                opening_input.reader_session_key(server, &mut session, true, (59, state, time))?,
+                expected
+            );
+        }
+        let opened = session.reader.as_mut().ok_or("F1 reader refused")?;
+        server.render_window_control_reader(
+            nested,
+            opened,
+            WindowControlReaderFrame {
+                strings: session.strings,
+                labels: session.labels,
+                chrome: session.chrome,
+                pointer: opening_input.reader_pointer(),
+            },
+            time,
+        )?;
+        assert!(server.window_control_reader_presented(opened));
+        // No held input crosses owners. Exercise the actual session pump without
+        // claiming synthesized parent F1 delivery.
+        nested.pump_reader_session(server, &mut session)?;
+        nested.render_window_controls(server, Some((&root, (3, 4))), scheme, time)?;
     }
     assert_eq!(submissions, 12);
     println!(
-        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes; two automatic 12-page fallback submissions"
+        "Nested reader transactions: 12 complete EGL page/feedback submissions, both schemes, publication-coordinated hit navigation/dismissal, two removals and geometry refusal/recovery sequences plus two backend-owned reader submissions and parent pump passes; two automatic 12-page fallback submissions; two F1 gesture-to-reader submissions and session pump passes"
     );
     Ok(())
 }

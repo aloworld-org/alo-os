@@ -51,6 +51,11 @@ pub(crate) struct Keyboard {
 }
 
 impl Keyboard {
+    /// Native name opening must not acquire application modifier chords.
+    pub(crate) fn has_pressed_keys(&self) -> bool {
+        !self.handle.pressed_keys().is_empty()
+    }
+
     /// Whether a valid evdev key is already owned by ordinary client routing.
     pub(crate) fn client_holds(&self, code: u32) -> bool {
         self.handle.pressed_keys().contains(&(code + 8).into())

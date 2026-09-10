@@ -13,6 +13,7 @@ impl NestedControlInput {
     /// Cancel input after backend failure without losing owned releases.
     pub fn cancel(&mut self, server: &mut Server) {
         self.position = None;
+        self.opening.cancel();
         self.reader.synchronize(server, None, false);
         server.clear_input();
     }
@@ -29,6 +30,11 @@ impl NestedControlInput {
     ) -> Result<crate::ReaderKeyRoute, InputError> {
         use crate::{ReaderKeyCommand as Command, ReaderKeyRoute as Route};
         let (code, state, time) = event;
+        // Existing pump modes disable opening but retain its release ownership.
+        self.opening.cancel();
+        if self.opening.drain(code, state) {
+            return Ok(Route::Consumed);
+        }
         let command = match code {
             104 => Some(Command::Previous),
             109 => Some(Command::Next),
@@ -60,6 +66,10 @@ impl NestedControlInput {
         event: Option<NestedPointerEvent>,
     ) -> Result<crate::ReaderKeyRoute, WindowControlRouteError> {
         use crate::ReaderKeyRoute as Route;
+        self.opening.synchronize(server, active);
+        if event.is_some() {
+            self.opening.cancel();
+        }
         self.reader
             .synchronize(server, reader.as_deref_mut(), active);
         if !active {

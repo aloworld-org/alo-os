@@ -105,7 +105,7 @@ impl Nested {
     /// explicit activation. Parent focus loss/close releases keys and clears focus.
     /// A keyboard-enabled server is required; pointer events remain unconnected.
     pub fn pump_keyboard(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
-        self.pump_input(server, false, None)
+        self.pump_input(server, false, None, None)
     }
 
     /// Route keyboard and pointer events after `Server::enable_pointer`.
@@ -116,7 +116,7 @@ impl Nested {
     /// Published native controls intercept primary gestures; absent presentation
     /// uses ordinary client routing. This method does not compose controls/labels.
     pub fn pump_seat(&mut self, server: &mut crate::Server) -> Result<(), RenderError> {
-        self.pump_input(server, true, None)
+        self.pump_input(server, true, None, None)
     }
 
     /// Route a published reader through the ordered parent seat events.
@@ -130,7 +130,20 @@ impl Nested {
         server: &mut crate::Server,
         reader: Option<&mut crate::WindowControlReader>,
     ) -> Result<(), RenderError> {
-        self.pump_input(server, true, reader)
+        self.pump_input(server, true, reader, None)
+    }
+
+    /// Pump a retained full-name session, opening native-focused names with F1.
+    /// Opening happens once on release, after complete preparation at press.
+    /// Render the resulting reader before its navigation can acquire input.
+    /// An already open reader uses PageUp/PageDown/Escape and ordinary typing.
+    /// Remove a dismissed reader from the slot after pumping and remove its pixels.
+    pub fn pump_reader_session(
+        &mut self,
+        server: &mut crate::Server,
+        session: &mut crate::NestedReaderSession<'_>,
+    ) -> Result<(), RenderError> {
+        self.pump_input(server, true, None, Some(session))
     }
 
     /// Share ordered parent activation handling across keyboard-only and full seats.
@@ -139,9 +152,13 @@ impl Nested {
         server: &mut crate::Server,
         pointer: bool,
         mut reader: Option<&mut crate::WindowControlReader>,
+        mut session: Option<&mut crate::NestedReaderSession<'_>>,
     ) -> Result<(), RenderError> {
         let mut failure = None;
         let mut control_input = std::mem::take(&mut self.control_input);
+        if session.is_none() {
+            control_input.opening.cancel();
+        }
         let result = self.pump_events(|event, focused| {
             if failure.is_some() {
                 return;
@@ -170,7 +187,15 @@ impl Nested {
                 };
                 if let Err(error) = translated.map_err(RenderError::Input).and_then(|event| {
                     control_input
-                        .route_reader(server, reader.as_deref_mut(), focused, event)
+                        .route_reader(
+                            server,
+                            session
+                                .as_mut()
+                                .and_then(|s| s.reader.as_mut())
+                                .or(reader.as_deref_mut()),
+                            focused,
+                            event,
+                        )
                         .map(|_| ())
                         .map_err(RenderError::WindowControl)
                 }) {
@@ -196,13 +221,16 @@ impl Nested {
             }
             if let Some(WinitEvent::Input(InputEvent::Keyboard { event })) = event {
                 let code = u32::from(event.key_code()).saturating_sub(8);
-                if let Err(error) = control_input.reader_key(
-                    server,
-                    reader.as_deref_mut(),
-                    focused,
-                    (code, event.state(), event.time_msec()),
-                ) {
-                    failure = Some(RenderError::Input(error));
+                let key = (code, event.state(), event.time_msec());
+                let routed = if let Some(session) = session.as_mut() {
+                    control_input.reader_session_key(server, session, focused, key)
+                } else {
+                    control_input
+                        .reader_key(server, reader.as_deref_mut(), focused, key)
+                        .map_err(RenderError::Input)
+                };
+                if let Err(error) = routed {
+                    failure = Some(error);
                 }
             }
         });

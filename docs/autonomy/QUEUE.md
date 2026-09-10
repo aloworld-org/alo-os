@@ -5,6 +5,27 @@ iteration can read the reasoning rather than guess at it.
 
 ## Current execution scope (2026-09-07)
 
+**Native full-name keyboard activation ready for integration (2026-09-10):**
+implementation, four new private-client tests, affected Linux/Windows checks and
+WSLg reader submissions pass. Recovery controls protocol trace and final normal
+controls/reader acceptance pass with unchanged deadlines and assertions. Protocol
+trace measures a 7.49-second wait ending in parent buffer release/frame callback;
+the original 17.010975888-second swap failure remains unresolved, not repaired.
+No source change justified by recovery; independent supervisor gates pending.
+Exact evidence: `updates/native-full-name-keyboard-activation.md`; local logs:
+`.git/alo-loop/native-full-name-keyboard-activation/`. After acceptance passes,
+next components are native focus navigation/cursor selection and direct integration.
+
+**Selected native full-name keyboard activation (2026-09-10):** F1 on an
+explicitly focused native control prepares its full-name reader and opens it once
+on matching release. Bind to continuous native focus/publication; cancel on
+competition, loss and replacement while retaining releases. Connect the ordered
+nested session pump with retained reader state. Acceptance: private-client happy/
+refusal/typing and publication-navigation tests, affected fmt/tests/clippy/rustdoc
+and WSLg gesture-to-reader submission. Native cursor and direct integration remain
+subsequent work; no window-management completion claim.
+
+
 **Completed automatic native name fallback (2026-09-10):** the live-name
 presenter submits a complete expanded label or automatically opens and submits
 a paged reader on capacity exhaustion. Invalid preparation, stale output and

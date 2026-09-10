@@ -940,6 +940,38 @@ to the existing twelve explicitly host-driven frames. They do not synthesize
 parent key/button events or read back those submitted frames. Exact evidence:
 `docs/autonomy/updates/nested-reader-event-routing.md`.
 
+## Native full-name keyboard activation
+
+2026-09-10 additive trusted API: `Nested::pump_reader_session` borrows a
+`NestedReaderSession` with a retained optional reader, strings, text shaper,
+appearance and chrome capacity. F1 (evdev 59) opens an explicitly native-focused
+control's complete name on release, including disabled controls. Hover alone
+does not acquire F1. With no native focus, an existing reader or any ordinary
+client key held, application routing retains the key. This local name-help
+gesture is separate from configurable desktop command dispatch.
+
+`NestedControlInput::reader_session_key` is the exact ordered key adapter.
+Preparation checks every page before returning from press; errors cancel input
+and retain the consumed release. Repeats never reopen. Opening returns `Changed`
+and installs an unpublished page-zero reader in the host's slot. Render it before
+navigation can acquire authority. Existing PageUp/PageDown/Escape routing remains;
+the host removes dismissed readers and their pixels after pumping.
+
+Every explicit native focus request renews a private selection identity. Focus
+away-and-back, strip retirement/republication, stale mapping, competing pointer
+events or keys, deactivation and backend errors disarm opening. Releases remain
+owned across cancellation and switching back to older pump modes. Identical strip
+frame refreshes preserve a gesture. No window command or client focus change is
+caused by name opening. Before changing vocabulary/appearance/capacity, retire
+controls, remove the old reader, then republish and refocus with the new values.
+
+The host must establish native focus; focus navigation, cursor selection and
+direct-backend integration remain separate components. Four private-client tests
+and two WSLg gesture-to-reader EGL submissions pass. Controls and reader graphical
+acceptance pass in recovery with unchanged deadlines. The earlier intermittent
+swap delay remains unresolved; independent publication gates are pending.
+Evidence and exact limits: `docs/autonomy/updates/native-full-name-keyboard-activation.md`.
+
 ## Live native reader selection
 
 2026-09-10 additive trusted API: `Server::open_presented_window_control_reader`

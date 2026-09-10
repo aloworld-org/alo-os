@@ -12,6 +12,15 @@ grant now takes effect immediately instead of at the next sign-in" is.
 
 ## Unreleased
 
+- **Native control names can be opened with F1 when the control has native
+  focus.** Opening occurs once on release and preserves application typing and
+  F1 chords; changed focus or competing input cancels it safely. The nested
+  session retains the reader for navigation. Implementation and private-client/
+  reader and controls submission checks pass. Recovery tracing located a parent
+  callback wait; the earlier intermittent deadline failure remains unexplained.
+  Independent publication gates are pending. Evidence:
+  `docs/autonomy/updates/native-full-name-keyboard-activation.md`.
+
 - **Long native control names can automatically open a paged reader.** The live
   name presenter keeps a complete expanded label when it fits, otherwise submits
   the full name as navigable pages without reducing text size. Invalid wording,

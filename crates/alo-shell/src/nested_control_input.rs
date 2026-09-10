@@ -16,6 +16,8 @@ pub struct NestedControlInput {
     pub(crate) position: Option<(f64, f64)>,
     /// Reader ownership survives removal, deactivation and routing failures.
     pub(crate) reader: crate::WindowControlReaderInput,
+    /// Pending native F1 opening, including cancelled release ownership.
+    pub(crate) opening: crate::nested_reader_session::NameOpening,
 }
 
 impl NestedControlInput {
