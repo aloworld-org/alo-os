@@ -199,6 +199,19 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
             passed.push(format!("{} (on the second run)", gate.named));
             continue;
         }
+        // **Twice is the work — unless what refused it was the machine.** A
+        // compiler that cannot allocate memory, or a distribution that did not
+        // answer, fails as reliably as a broken change and says nothing
+        // whatever about it. Reported as the work, it parks something finished
+        // under a sentence blaming it, which happened twice on 2026-09-11.
+        if let Some(why) = the_machine_rather_than_the_work(&refused) {
+            return Err(format!(
+                "this machine is not ready to be gated, so nothing was published: {why}. \
+                 The gate `{}` was not answering about the change. Nothing was staged, \
+                 committed or pushed, and the work is where it was. What it said:\n\n{refused}",
+                gate.named
+            ));
+        }
         refused.push_str(
             "\n\nRun twice and refused both times, so this is the work rather than the machine.",
         );
@@ -264,6 +277,53 @@ fn every_crate_among(touched: &[String]) -> Vec<String> {
         }
     }
     named
+}
+
+/// Whether a gate's refusal is about this machine rather than about the change.
+///
+/// **A refusal is not a verdict when the thing that refused was the ground.**
+/// Both of these were seen on 2026-09-11 and both were reported as *the work
+/// rather than the machine*, which is the sentence a person reads before they
+/// go looking for a defect that is not there:
+///
+/// - the compiler could not allocate memory. WSL is capped at 6 GB on this
+///   machine by `.wslconfig`, and a whole-workspace build with two lanes gating
+///   at once exceeds it: `failed to write to ...rmeta: Cannot allocate memory
+///   (os error 12)`. It fails twice as reliably as a broken change does.
+/// - the distribution did not answer at all —
+///   `Wsl/Service/0x8007274c`, a connection that timed out before `bash` ran.
+///
+/// Neither says anything about the change, and a second run cannot tell them
+/// apart from a real break, which is why the retry above is not enough on its
+/// own.
+///
+/// Deliberately narrow: it looks for the machine's own words and nothing
+/// resembling them. `no space left on device` is **not** here, because
+/// `crate::where_it_builds` measures that before a gate runs and says so in its
+/// own sentence.
+fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static str> {
+    const NOT_THE_WORK: [(&str, &str); 4] = [
+        (
+            "Cannot allocate memory",
+            "the compiler ran out of memory on this machine",
+        ),
+        (
+            "os error 12",
+            "the compiler ran out of memory on this machine",
+        ),
+        (
+            "Wsl/Service/",
+            "the distribution the gates run in did not answer",
+        ),
+        (
+            "memory allocation of",
+            "a process on this machine was refused the memory it asked for",
+        ),
+    ];
+    NOT_THE_WORK
+        .into_iter()
+        .find(|(said, _)| refused.contains(said))
+        .map(|(_, why)| why)
 }
 
 /// Run one gate, and say whether it passed without deciding what that means.
@@ -632,5 +692,46 @@ mod tests {
             ["alo-keeping"],
             "a handoff written on Windows names the same crate as one written              anywhere else"
         );
+    }
+
+    /// **A refusal that is the machine's is not a verdict on the change.**
+    ///
+    /// Both sentences below were seen on 2026-09-11 and both were reported as
+    /// *the work rather than the machine*, which sends somebody looking for a
+    /// defect that is not there. A second run cannot tell them from a real
+    /// break, because each fails as reliably as one.
+    #[test]
+    fn a_machines_own_refusal_is_not_read_as_the_works() {
+        let out_of_memory = "error: failed to write to `/mnt/c/dev/alo-os-b/target/debug/deps/                             rmetagke7R9/full.rmeta`: Cannot allocate memory (os error 12)";
+        assert_eq!(
+            the_machine_rather_than_the_work(out_of_memory),
+            Some("the compiler ran out of memory on this machine")
+        );
+
+        let no_distribution = "A connection attempt failed because the connected party did not                                properly respond after a period of time. Error code:                                Wsl/Service/0x8007274c";
+        assert_eq!(
+            the_machine_rather_than_the_work(no_distribution),
+            Some("the distribution the gates run in did not answer")
+        );
+    }
+
+    /// And the half that matters more: a real break is still a real break, so
+    /// this cannot become a way for a broken change to reach `main`.
+    #[test]
+    fn a_break_in_the_change_is_still_the_change() {
+        for said in [
+            "error[E0599]: no method named `numbers` found for struct `Accounts`",
+            "assertion `left == right` failed
+  left: 7
+ right: 5",
+            "error: unused variable: `person`",
+            "test result: FAILED. 1 passed; 2 failed",
+        ] {
+            assert_eq!(
+                the_machine_rather_than_the_work(said),
+                None,
+                "a refusal about the change was excused as the machine: {said}"
+            );
+        }
     }
 }

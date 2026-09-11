@@ -507,7 +507,8 @@ fn one_iteration(
         ours,
         &format!(
             "the gates refused task {}; its work is still in the tree, so one worker is \
-             launched on it again with what they said. This is the second and last attempt.",
+             launched on it again with what they said. This is the second and last attempt. \
+             They said:\n\n{said}",
             chosen.number
         ),
     );
