@@ -25,7 +25,7 @@ use std::collections::BTreeSet;
 
 use serde::Deserialize;
 
-use crate::{costing::GIGABYTE, driving::Driving};
+use crate::{costing::GIGABYTE, driving::Driving, requantised::Requantised};
 
 /// Bytes per parameter at which a stated size stops being a quantised
 /// artefact's and becomes a full-precision release's.
@@ -144,7 +144,15 @@ pub struct Licence {
 }
 
 /// One model a person may run.
+///
+/// **A field this shape does not know is refused rather than ignored.** The
+/// reason is [`requantised`](Model::requantised): a provenance block spelled
+/// `[model.requantized]` would be dropped in silence and the entry would load
+/// looking like a first-party artefact, which is the exact confusion ADR 0026
+/// exists to prevent. A misspelling anywhere else in an entry has the same
+/// shape — a claim a curator made and nothing read.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Model {
     /// Stable identifier, as passed to the runtime. Never reused for a
     /// different model.
@@ -179,6 +187,16 @@ pub struct Model {
     /// [`None`] only for an entry that claims no quantisation either.
     #[serde(default)]
     pub artefact: Option<String>,
+    /// **Whose artefact that is, when it is not the publisher's own** — rule 6
+    /// of `data/catalogue.toml` and
+    /// [ADR 0026](../../../docs/decisions/0026-whose-requantisation-this-catalogue-vouches-for.md).
+    ///
+    /// [`None`] on every entry whose publisher publishes the file it names, and
+    /// on every entry that names no file at all. [`Some`] is a deliberate act
+    /// with a name, a pin and a note attached, and [`Catalogue::parse`] refuses
+    /// it with any of the three missing — see [`crate::Requantised`].
+    #[serde(default)]
+    pub requantised: Option<Requantised>,
     /// Download size in bytes — what the disk actually loses, **for the
     /// artefact this entry names**.
     ///
@@ -253,6 +271,22 @@ impl Model {
     #[must_use]
     pub fn quantised_at(&self) -> Option<(&str, &str)> {
         Some((self.quantisation.as_deref()?, self.artefact.as_deref()?))
+    }
+
+    /// **Which file this entry's grade was earned against**, or [`None`] when
+    /// nobody has measured it.
+    ///
+    /// The reporting half of ADR 0026: a grade belongs to an artefact and never
+    /// to a model in general, so whatever shows [`drives_verbs`](Model::drives_verbs)
+    /// can show the file it is about beside it. [`Catalogue::parse`] refuses a
+    /// grade on an entry that names no artefact, so this answers [`Some`]
+    /// exactly when the entry has been measured.
+    #[must_use]
+    pub fn graded_against(&self) -> Option<&str> {
+        self.drives_verbs
+            .has_been_measured()
+            .then_some(self.artefact.as_deref())
+            .flatten()
     }
 
     /// **What one parameter costs in the artefact this entry states**, in bytes.
@@ -376,6 +410,25 @@ impl Catalogue {
                          of the pair a reader needs",
                     ));
                 }
+            }
+            // Rule 6: a grade belongs to the file it was earned against, so an
+            // entry that names no file may not carry one. `artefact` is what
+            // `ALO_DRIVING_MODEL` was set to, and a measurement with nothing
+            // behind it is a number about no weights in particular — which is
+            // the shape ADR 0007's "measured by us" breaks in if a grade can
+            // float free of what was measured.
+            if model.drives_verbs.has_been_measured() && model.quantised_at().is_none() {
+                return Err(invalid(
+                    "a grade on an entry that names no artefact: a measurement is earned against a \
+                     file, so name the one it was run against or state no grade",
+                ));
+            }
+            // And whose file that is, where it is not the publisher's own.
+            if let Some(requantised) = &model.requantised
+                && let Some(what) = requantised
+                    .what_is_wrong_with_it(&model.publisher, model.quantised_at().is_some())
+            {
+                return Err(invalid(what));
             }
             // Rule 5: the size belongs to the artefact the entry names. A
             // quantisation says which file, and this says the size beside it is

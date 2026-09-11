@@ -288,8 +288,11 @@ fn the_road_taken_is_written_into_the_catalogues_own_rules() {
         .collect::<Vec<_>>()
         .join("\n");
 
+    // The count moved to six when ADR 0026 answered what an entry may do
+    // *instead* of falling back to a publisher's release; rule 5 is still the
+    // fallback, and this test is still about it.
     assert!(
-        header.contains("Five rules") && header.contains("# 5. "),
+        header.contains("Six rules") && header.contains("# 5. "),
         "the catalogue's header does not carry a fifth rule, so the road this change took lives \
          only in a plan the next curator will not read"
     );

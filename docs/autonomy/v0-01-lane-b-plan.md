@@ -781,3 +781,79 @@ catalogue of open-weight models* quietly excludes every publisher who ships
   quantises the weights itself, say what that costs — a build step, an
   artefact we then host, and ADR 0005's doctrine that we never redistribute
   weights, which is the constraint that decision runs into.
+
+**Done, 2026-09-11.**
+`docs/decisions/0026-whose-requantisation-this-catalogue-vouches-for.md`, taken
+under the owner's standing delegation and saying so: **a third party's artefact
+may be named, and naming one costs three statements.** Refusing every
+requantisation sounds like caution and is really an eligibility rule that tracks
+whether a publisher has a distribution team — which is why the two entries this
+catalogue leads with are the two it can say least about — while naming one
+freely would put alo OS's authority behind a file nobody looked at. So an entry
+whose `artefact` its publisher did not publish states `by` (who made it, never
+the publisher), `sha256` (which file exactly, so a tag re-pointed after we
+measured it fails the fetch instead of changing the weights under the grade) and
+`note` (what a reader needs to know, which is the part somebody who has not
+looked at the file cannot write). What this catalogue borrows is a **file** and
+never a measurement: ADR 0007 is untouched and `drives_verbs` is still a grade we
+ran.
+
+Two halves of the same rule are arithmetic in `Catalogue::parse` rather than
+prose, because this file has already broken a prose rule twice: **a grade may
+not sit on an entry that names no artefact** — a measurement with no file behind
+it is a number about no weights in particular, and `Model::graded_against()` is
+the reporting side of it — and **a field the shape does not know fails to load**,
+so a block spelled `[model.requantized]` is refused rather than vanishing and
+leaving the entry looking first-party. Where the three statements cannot be
+produced, rule 5 stands and the entry is carried rather than omitted, which is
+where both European entries remain: **no entry was completed, no size moved and
+no grade moved in this change**, on purpose — choosing a requantiser is a
+curation act with a name on it and it is task 15, not a side effect of writing
+the rule. Rule 6 of `crates/alo-models/data/catalogue.toml` is the sentence a
+curator reads. Measured in
+`crates/alo-models/tests/whose_requantisation_this_catalogue_vouches_for.rs` and
+in `crates/alo-models/src/requantised.rs`. Report:
+`docs/autonomy/updates/whose-requantisation-this-catalogue-may-vouch-for.md`. No
+task in `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
+Task 15 below is the next task and was written in the same change.
+
+### 15. The file the two European entries mean
+
+**Status:** ready. **Depends on:** 14.
+
+Task 14 decided what naming a stranger's artefact costs; nobody has paid it.
+`eurollm-9b-instruct` and `teuken-7b-instruct` still claim no quantisation and
+still state their publishers' `bfloat16` releases — 18.30 GB and 14.91 GB,
+`on_cpu = "slow"` — which is the honest fallback and is not a model anybody can
+run. Rule 6 is now the road out, and walking it is curation rather than
+decision: read the uploads, choose one for each entry on stated grounds, and
+write down what rule 6 asks for.
+
+- **Acceptance:** each of the two entries either names a third party's artefact
+  with its `by`, its `sha256` and its `note` — the digest read off that
+  repository's own file list, the requantiser named as they publish, and the
+  note saying how the file was made where the uploader says so and what terms
+  its upload carries beyond the model's own — **or** records in the entry why no
+  upload could be vouched for, which is a finding rather than a failure; every
+  figure that moves with it moves in the same change, because rule 5's
+  arithmetic binds `download_bytes`, `min_vram_gb`, `min_ram_gb` and `on_cpu`
+  to the artefact now named; the licence line is read against **the uploader's**
+  repository as well as the publisher's, since a derivative may carry terms the
+  model does not; and `docs/quirks.md`'s carry-or-fetch table is brought back
+  into agreement, which
+  `crates/alo-models/tests/the_carry_or_fetch_measurement.rs` will insist on
+  rather than suggest.
+- **The consequence to state rather than discover:** a four-bit Teuken is
+  `workable` again on an ordinary laptop, so `Catalogue::to_choose_from_on_cpu(16.0)`
+  offers seven rather than six and
+  `crates/alo-driving/tests/from_a_prompt_to_what_a_machine_offers.rs` reads
+  seven. That is the entry returning to a list it left when it gave up a size
+  belonging to a file it did not claim, and it is expected.
+- **Constraint:** **no grade may be earned here** unless a run was actually
+  made, and task 9 measured that this lane's box cannot hold a 7B model at four
+  bits at any useful speed — so the honest outcome is `not-measured` with an
+  artefact now named, and the grade waits on a machine with room, which is an
+  owner's decision under `docs/autonomy/SHARED_MAIN.md`. Nothing in the prompt,
+  the scoring or the runtime's wait moves. No weights on the image, no setup
+  flow, and nothing in `crates/alo-shell`. An upload nobody can check the digest
+  of is not a candidate: rule 6 refuses it, and the entry says so instead.

@@ -2,7 +2,7 @@
 #
 # Data, not code: adding a model is a change to this file, never a release.
 #
-# Five rules for anyone editing it:
+# Six rules for anyone editing it:
 #
 # 1. **Verify the licence against upstream before adding an entry.** Model
 #    licences change between versions and families, and a catalogue that states
@@ -66,6 +66,54 @@
 #      beside fifteen gigabytes of weights is a figure somebody would check
 #      their laptop against and be wrong.
 #
+#    Rule 6 is what an entry may do **instead** of falling back to the
+#    publisher's own release, and the price of doing it.
+#
+# 6. **An artefact somebody other than the publisher made may be named, and
+#    naming one costs three statements.** ADR 0026 took this decision: refusing
+#    every third-party requantisation sounds like caution and is really an
+#    eligibility rule that tracks whether a publisher has a distribution team —
+#    it is why the two entries this catalogue leads with, `eurollm-9b-instruct`
+#    and `teuken-7b-instruct`, are the two it can say least about. What this
+#    catalogue borrows is a **file**, never a measurement: `drives_verbs` is
+#    still a grade we ran (rule 3, ADR 0007), and nothing a requantiser claims
+#    becomes one.
+#
+#    So an entry whose `artefact` its publisher did not publish states a
+#    `[model.requantised]` block, and the loader refuses it with any part
+#    missing:
+#
+#    - `by` — **who made it**, as they publish under, because a name read out of
+#      a URL is a name nobody wrote down and choosing whose requantisation this
+#      catalogue vouches for is a decision that carries one. Never the
+#      publisher: that is a first-party artefact and needs no block.
+#    - `sha256` — **which file exactly**, as its own repository publishes the
+#      digest, in sixty-four lowercase hexadecimal characters. A tag can be
+#      re-pointed after we measured it; a pin is what makes *the file we graded*
+#      and *the file a machine fetches* the same file or a failed fetch.
+#    - `note` — **what a reader needs to know**: how it was made where the
+#      uploader says so, and any terms the upload carries beyond the model's
+#      own. Rule 1's "say which conditions" one field over — and the part that
+#      cannot be written by somebody who has not looked at the file.
+#
+#    Two more halves of the same rule, both arithmetic in the loader:
+#
+#    - **A grade belongs to the artefact it was earned against**, so an entry
+#      that names no artefact may not carry one at all. A measurement with no
+#      file behind it is a number about no weights in particular.
+#    - **A field this file's shape does not know fails to load**, rather than
+#      being ignored. A block spelled `[model.requantized]` would otherwise
+#      vanish in silence and leave an entry looking first-party, which is the
+#      confusion this whole rule is about.
+#
+#    Where the three statements cannot be produced, rule 5 is the fallback and
+#    the entry is **carried rather than omitted**: no quantisation, the
+#    publisher's own release, `not-measured`. That is where both European
+#    entries stand as this rule is written — naming a file for either of them is
+#    a curation act with its own sizes and its own licence question, and it is
+#    somebody's to make on purpose rather than a side effect of writing the
+#    rule.
+#
 # Seven entries have been measured and seven have not, and the seven unmeasured
 # are the ones a 6 GB development box cannot hold: everything from seven billion
 # parameters upward wants ten gigabytes or more, and the machine every
@@ -120,6 +168,9 @@ parameters_b = 9.2
 # third party's requantisation (`bartowski`, `QuantFactory`, `lmstudio-community`
 # and others), read 2026-09-11, and this catalogue has chosen none of them. So
 # the entry claims no quantisation, and it cannot be graded until one is chosen.
+# Rule 6 says what choosing one would cost — a name, a pin and a note — and that
+# it is a deliberate act rather than a tidy-up, which is why this entry is still
+# where it was.
 #
 # The three numbers below are therefore the publisher's own release, under
 # rule 5, read off the file list of the `upstream` repository on 2026-09-11:
@@ -147,8 +198,8 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 # GGUF, which is the case rule 4 was written from: the entry said `Q4_K_M` and
 # no such artefact exists outside strangers' requantisations, so it now states
 # no quantisation and names no artefact, and a grade for it waits on somebody
-# choosing one rather than only on a machine with room. `docs/quirks.md` has
-# both findings.
+# choosing one rather than only on a machine with room — under rule 6, which
+# says what that choice costs. `docs/quirks.md` has both findings.
 #
 # Its four numbers are the commercial release's own, under rule 5, read off
 # that repository's file list on 2026-09-11: four `bfloat16` shards of
