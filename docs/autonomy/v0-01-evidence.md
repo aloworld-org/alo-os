@@ -263,14 +263,23 @@ the shape of the exchange rather than the thing working.
 
 ### model by default — sovereignty is the default configuration
 
-**Still owed:** this promise has no line, and it is the finding of this audit
-that needs a decision rather than code. `alo-choosing` is deliberately unable to
-produce a choice nobody made — a machine nobody has configured has no answer at
-all — because ADR 0016 settled that a default is a choice made by whoever set
-it. Either the promise means *setup offers the local model first*, which is a
-surface nobody has built, or it means a default in the settings, which ADR 0016
-refuses. Nothing in this repository may narrow the promise to fit, and nothing
-may contradict the ADR: the owner decides which it is.
+**Still owed:** all of it, and since 2026-09-11 the question has an argument
+written down rather than only a finding:
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` sets
+out the four things *by default* can mean, recommends that the default is what a
+machine **arrives able to do** rather than a value in anybody's settings, and
+asks the owner for one reworded line of the definition. It is **proposed and not
+accepted**, so nothing here is ticked by it and no code follows it yet.
+
+What is owed underneath the decision is the part the wording disguised.
+`alo-choosing` is deliberately unable to produce a choice nobody made — a machine
+nobody has configured has no answer at all — because ADR 0016 settled that a
+default is a choice made by whoever set it, and that is not the missing piece.
+**The missing piece is that the local model is not on the machine**:
+`image/Containerfile` adds two binaries, two units, two directories and one
+description to a pinned base and carries no model runtime and no weights, so
+there is nothing local for an agent to point at; and there is no setup flow, so
+none of the four configurations is offered to anybody at all.
 
 ### Add your own provider in Settings
 
@@ -506,3 +515,18 @@ lane make, and *boots on one certified machine* waits on a machine. The
 paragraphs above are left as the audit wrote them, for the reason the first
 closure gave: a finding rewritten by whoever closed it is a finding nobody can
 check.
+
+### The third is sent to a decision rather than closed, 2026-09-11
+
+**The count stands at four**, deliberately. *The agents point at the local model
+by default* now has
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` behind
+it — the options, a recommendation, and what each would cost `alo-choosing`,
+`alo-image` and the setup flow — and **a proposed decision is not evidence that
+anything was built**, which is what this crate refuses an ADR for in the first
+place. The entry above says what is owed under it, including the fact the wording
+had hidden from every reading until now: the image carries no model runtime and
+no weights, so the promise is unbuilt in `image/` rather than blocked on a
+settings key. Task 16 of `docs/autonomy/v0-01-delivery-plan.md` and
+`docs/autonomy/updates/a-default-nobody-chose.md` are the work. The entry closes
+when a machine arrives with a model on it, and not before.

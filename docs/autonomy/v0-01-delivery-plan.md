@@ -530,3 +530,73 @@ behalf, and that reading may keep both sentences.
 - **Constraint:** it may not narrow `docs/features.md` and it may not contradict
   ADR 0016. If the honest answer is that the definition is wrong, the ADR
   recommends the change and the owner makes it; the plan does not.
+
+**Done, 2026-09-11.**
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` is the
+decision, **proposed rather than accepted**, because its recommendation asks for
+one line of `docs/features.md` to be reworded and only the owner may move the
+definition. Four options, fairly: *unset means local*, which supersedes ADR 0016
+and is argued as such rather than worked around; *the image ships the person's
+choice*, which is us writing in the one file ADR 0016 keeps for them and is
+impossible anyway, since ADR 0024 ships no accounts and ADR 0007 makes the right
+model a function of the hardware; *setup pre-selects local*, which keeps ADR 0016
+literally and is persuasion by geometry, taking back the weight ADR 0009 gave the
+fourth choice; and the recommended one — **the default is what a machine arrives
+able to do**: the image carries the pinned runtime and a model sized for the
+machine, setup lists the four with local first and pre-selects nothing, and
+nothing is written into anybody's settings before they choose. Ordering is not
+weight, and that distinction is the whole of what makes both sentences keepable.
+
+**What the reading found, and nobody had written down: the promise is not blocked
+on a settings key at all.** `image/Containerfile` adds two binaries, two units,
+two directories and one description to a pinned base and carries **no model
+runtime and no weights**, so on the machine this repository builds there is
+nothing local to point at — the expensive half of *local by default* is a model
+on a disk, not a value in a file, and it is unbuilt in `image/`. The measurement
+the implementation owes is named rather than guessed, in ADR 0024's shape:
+whether the weights are carried on the certified image or fetched at setup, since
+a machine that fetches at setup is not local by default when it is offline at
+setup.
+
+`docs/autonomy/v0-01-evidence.md`'s entry names the decision and says what is
+owed underneath it, and the count of promises with no evidence at all **stays at
+four**: a proposed decision is not evidence that anything was built, which is
+what `alo-reconciling` refuses an ADR for in the first place. What is new there
+is a check rather than a promise —
+`a_promise_that_waits_on_a_decision_names_one_that_is_there` holds the ledger to
+the decision it points at, because the one kind of pointer this repository
+deliberately refuses as evidence was also the one kind nothing verified, and a
+ledger sending a reader to an ADR nobody wrote reads exactly like an answer.
+Report: `docs/autonomy/updates/a-default-nobody-chose.md`. The next task (17) is
+written below. **No code follows this decision**, per its own acceptance.
+
+### 17. Every crate that declares words, collected — and the one that is not, named
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 16, from a failure this repository has already had. `alo-saying`
+is the one vocabulary every word a person reads is collected into, and **what it
+collects is a hand-written list**: a `COLLECTED` constant and one `declare` call
+per crate, kept beside the crates rather than derived from them. A crate that
+declares words and is not on that list compiles, tests, ships — and says nothing
+to anybody in any language.
+
+That is not hypothetical. Task 3 records it happening: `alo-overlay` declared
+nine strings and `alo-saying` collected nothing, so every sentence task 2 had
+declared would have reached a real shell as a bug. It was found by a person
+reading, which is the same way `docs/features.md`'s six missing promises were
+found six times over — and `alo-by-hand` has already shown the answer's shape for
+verbs.
+
+- **Acceptance:** the crates that declare words are read from the workspace's own
+  member list rather than from a list kept beside them, so a crate added anywhere
+  is a crate this check sees; a crate that declares words and is not collected is
+  refused in a sentence naming it; a crate collected that no longer declares is a
+  finding too, because a dead entry is how the list stops meaning anything; and
+  the refusal is tested as carefully as the answer, including a crate added with
+  words nothing collects.
+- **Constraint:** it says nothing to a person and declares no strings — it is a
+  repository check like `alo-reconciling` and `alo-by-hand`, and `alo-saying`
+  does not collect it. Nothing in `crates/alo-shell`.

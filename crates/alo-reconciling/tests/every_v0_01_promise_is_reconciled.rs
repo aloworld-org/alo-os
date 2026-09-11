@@ -94,6 +94,119 @@ fn every_v0_01_promise_is_reconciled_against_evidence_that_runs() {
     }
 }
 
+/// Where the settled arguments live.
+const THE_DECISIONS: &str = "docs/decisions/";
+
+/// How a markdown document ends the name of one.
+const A_DOCUMENT: &str = ".md";
+
+/// Every decision a piece of text names, in the order it names them.
+///
+/// A ledger entry that cannot answer *shown by* sometimes answers *waiting on*,
+/// and what it waits on is an ADR. That is the one kind of pointer this crate
+/// deliberately refuses as **evidence** — a decision is where an argument was
+/// settled, not proof that anything was built — which is exactly why nothing
+/// checked it and why a promise could come to rest on a document nobody wrote.
+fn decisions_named_in(text: &str) -> Vec<String> {
+    text.split(|it: char| it.is_whitespace() || "`(),;:*".contains(it))
+        .filter(|word| word.starts_with(THE_DECISIONS) && word.ends_with(A_DOCUMENT))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The ones among them that are not on this disk.
+fn decisions_missing_from(named: &[String]) -> Vec<String> {
+    let here = the_repository();
+    named
+        .iter()
+        .filter(|at| !here.join(at).is_file())
+        .cloned()
+        .collect()
+}
+
+/// **A promise that waits on a decision names one that exists** — against this
+/// repository, on the disk it is checked out on.
+///
+/// The promise this was written for is *the agents point at the local model by
+/// default*, whose whole answer is an argument rather than a test: ADR 0016
+/// refuses a default nobody chose, the definition promises one, and only the
+/// owner can move either. An entry like that is a pointer, and a pointer at a
+/// file nobody wrote reads exactly like an answer — which is this crate's own
+/// first sentence about why the audit exists.
+#[test]
+fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
+    let ledger = reading(THE_LEDGER);
+    let named = decisions_named_in(&ledger);
+
+    assert!(
+        !named.is_empty(),
+        "{THE_LEDGER} names no decision at all, so this check would pass over a \
+         ledger that had stopped saying what its unanswerable promises wait on"
+    );
+    assert_eq!(
+        decisions_missing_from(&named),
+        Vec::<String>::new(),
+        "the ledger sends a reader to a decision that is not in this repository"
+    );
+
+    let default = alo_reconciling::entries_in(&ledger)
+        .into_iter()
+        .find(|entry| entry.promise().contains("model by default"))
+        .expect("the ledger still has an entry about the local model by default");
+    let owed = default
+        .owed()
+        .expect("the local-model default is owed rather than shown")
+        .sentence()
+        .to_owned();
+    assert!(
+        default.names().is_empty(),
+        "the local-model default was reconciled as shown by something, and \
+         nothing on this machine points at a local model yet"
+    );
+    assert!(
+        decisions_named_in(&owed).contains(&THE_REAL_DECISION.to_owned()),
+        "the entry no longer says which decision it waits on, so a promise the \
+         owner has to answer reads as a promise somebody forgot: {owed}"
+    );
+}
+
+/// And the refusal beside it: a ledger sending a reader to a decision nobody
+/// wrote.
+///
+/// The fixture is the shape the real entry has — an answer that is entirely
+/// *what this waits on* — because that is the entry where a dead pointer would
+/// be the whole of the answer rather than a detail beside one.
+#[test]
+fn a_ledger_naming_a_decision_nobody_wrote_is_a_finding() {
+    let dead = "**Still owed:** the owner decides, in \
+                `docs/decisions/0099-a-decision-nobody-wrote.md`.";
+    assert_eq!(
+        decisions_named_in(dead),
+        ["docs/decisions/0099-a-decision-nobody-wrote.md".to_owned()],
+        "a decision named in an entry was not read as one, so the check below \
+         would pass by finding nothing to check"
+    );
+    assert_eq!(
+        decisions_missing_from(&decisions_named_in(dead)),
+        ["docs/decisions/0099-a-decision-nobody-wrote.md".to_owned()],
+        "a decision that is not in this repository was accepted as somewhere a \
+         reader could go"
+    );
+
+    let alive = format!("**Still owed:** the owner decides, in `{THE_REAL_DECISION}`.");
+    assert_eq!(
+        decisions_missing_from(&decisions_named_in(&alive)),
+        Vec::<String>::new(),
+        "a decision that really is on this disk was reported missing, so the \
+         refusal above is about the checker rather than about the ledger"
+    );
+}
+
+/// The decision this promise waits on, named once so both tests above break
+/// together if it is ever renamed.
+const THE_REAL_DECISION: &str =
+    "docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md";
+
 /// A definition with three promises in it, written the way `docs/features.md`
 /// writes them.
 const A_DEFINITION: &str = "\
