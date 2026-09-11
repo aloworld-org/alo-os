@@ -42,6 +42,7 @@ members = [
   "crates/alo-saying",
   "crates/alo-shortcuts",
   "crates/alo-secrets",
+  "crates/alo-sessiond",
   "crates/alo-strings",
   "crates/alo-telling",
   "crates/alo-turn",

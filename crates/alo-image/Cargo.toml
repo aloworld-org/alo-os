@@ -32,5 +32,12 @@ alo-entering = { path = "../alo-entering" }
 # crate exists to catch everywhere else.
 alo-accounts = { path = "../alo-accounts" }
 
+# Where the one privileged thing that turns a password into a session opens its
+# door (ADR 0024). The unit's `RuntimeDirectory=` and the path `alo-sessiond`
+# binds are written in two files, and a service whose directory is not where its
+# own code looks is a door that is never opened — asking the crate that owns the
+# path is one answer rather than a second spelling of `/run/alo-sessiond` here.
+alo-sessiond = { path = "../alo-sessiond" }
+
 [lints]
 workspace = true

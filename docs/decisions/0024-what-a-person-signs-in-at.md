@@ -203,6 +203,17 @@ second privileged component beside ADR 0018's loader, and it is held to the same
 terms — small enough to read in one sitting, and checked by `crates/alo-image`
 the way the loader is.
 
+**Taken again on the pinned base, 2026-09-11.** The paragraph below said this
+check was owed before any box was ticked, and it has been taken: Fedora 42,
+systemd 257, running the alo OS image built from `quay.io/fedora/fedora-bootc:42`
+under `podman --systemd=always`. The answer holds — root is refused only on the
+leader PID, uid 1000 is refused outright — so **Option B is buildable on the
+machine alo OS actually ships.** Two differences that are not differences in the
+answer are recorded in `docs/quirks.md`: the sentence for the root case is
+reworded between systemd 257 and 259, and an unprivileged caller is sometimes
+turned away by the bus policy rather than by `logind`, under the same D-Bus error
+name. `crates/alo-sessiond` decides on the name and never on the wording.
+
 **Where it was measured, and where it was not.** Ubuntu 26.04, systemd 259,
 under WSL2 — the development machine. The image ships a Fedora-derived base with
 its own `logind`. This is the same upstream D-Bus interface and the same

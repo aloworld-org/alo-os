@@ -1,9 +1,10 @@
-//! What the image owes the two daemons, and whether the files it ships agree.
+//! What the image owes the three processes, and whether the files it ships
+//! agree.
 //!
 //! alo OS is an OCI image ([ADR 0011](../../../docs/decisions/0011-the-base-is-rented-and-the-image-is-a-container.md)),
-//! and `image/` is what that image adds to a rented base: two binaries of our
-//! own, two systemd units, two directories made at boot, the logins the machine
-//! has, the description `alo-agentd` reads, and — since
+//! and `image/` is what that image adds to a rented base: three binaries of our
+//! own, three systemd units, two directories made at boot, the logins the
+//! machine has, the description `alo-agentd` reads, and — since
 //! [ADR 0025](../../../docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md)
 //! — the pinned model runtime. This crate reads those declarations — and the
 //! accounts file the image is answerable for **not** shipping — and asks
@@ -14,7 +15,8 @@
 //! | [`Image`] | The image's files, read off a directory |
 //! | [`everything_wrong_with`] | Every promise in `docs/` they make to each other, checked |
 //! | [`Wrong`] | One thing they disagree about, and which decision it is about |
-//! | [`Unit`], [`Service`] | A systemd unit as text, and the seven settings alo OS asks about |
+//! | [`Unit`], [`Service`] | A systemd unit as text, and the settings alo OS asks about |
+//! | [`THE_LOADER`], [`THE_AGENT`], [`THE_OPENER`] | The three units a machine starts, as systemd names them |
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
@@ -30,8 +32,10 @@
 //! answer it would otherwise spell out a second time: [`alo_keeping::Keeping`],
 //! because the one thing an image may say about retention is *everything*;
 //! `alo-entering`, because what a session hands a daemon is derived from a
-//! sign-in rather than written into a checker; and `alo-accounts`, for where a
-//! sign-in looks for the accounts this machine has.
+//! sign-in rather than written into a checker; `alo-accounts`, for where a
+//! sign-in looks for the accounts this machine has; and `alo-sessiond`, for
+//! where the one thing that turns a correct password into a session opens its
+//! door.
 //!
 //! # What it is for, said plainly: a build cannot catch any of this
 //!
@@ -42,7 +46,11 @@
 //! work — which is
 //! [ADR 0018](../../../docs/decisions/0018-the-boundary-is-loaded-by-a-loader-not-by-the-agent.md)
 //! undone in one line, in the file nobody reviews, on a system whose whole claim
-//! is that the service talking to your agent holds nothing.
+//! is that the service talking to your agent holds nothing. It produces one
+//! whose sign-in opener has been given a capability, or whose door is handed to
+//! the agent's group — which is
+//! [ADR 0024](../../../docs/decisions/0024-what-a-person-signs-in-at.md)'s
+//! price for a second privileged component quietly stopping being paid.
 //!
 //! Every one of those is a green build and a machine that is wrong. They are
 //! tests here, which is `CLAUDE.md`'s rule about promises in `docs/` applied to
@@ -83,7 +91,7 @@ pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
 pub use disk::{NO_PARTITIONER, THE_ONLY_TOOL, TheDisk};
-pub use image::{Image, THE_AGENT, THE_LOADER};
+pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER};
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, Made, everything_made};
 pub use refusing::{NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade};

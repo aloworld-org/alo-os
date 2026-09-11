@@ -39,6 +39,7 @@ alo-overlay = { path = "../alo-overlay" }
 alo-picking = { path = "../alo-picking" }
 alo-protocol = { path = "../alo-protocol" }
 alo-recounting = { path = "../alo-recounting" }
+alo-sessiond = { path = "../alo-sessiond" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-telling = { path = "../alo-telling" }
 alo-turn = { path = "../alo-turn" }

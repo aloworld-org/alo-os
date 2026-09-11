@@ -51,6 +51,11 @@ const THE_PERSONS_DOORS_MODE: &str = "0750";
 /// one privileged component acceptable.
 const WHAT_THE_LOADER_MAY_HOLD: [&str; 2] = ["CAP_BPF", "CAP_SYS_ADMIN"];
 
+/// The mode the opener's door directory is made with: the greeter's group, and
+/// nobody else (ADR 0024). The door itself is `0660` inside it, which
+/// `alo-sessiond` sets and tests.
+const THE_SIGN_IN_DOORS_MODE: &str = "0750";
+
 /// What a unit says where it says nothing, in a sentence somebody reads.
 const NOTHING: &str = "-";
 
@@ -93,6 +98,8 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     let mut wrong = Vec::new();
     the_loader_runs_first(image, &mut wrong);
     the_loader_holds_two_things(image, &mut wrong);
+    the_opener_holds_nothing_at_all(image, &mut wrong);
+    the_opener_can_be_knocked_on_by_the_greeter_alone(image, &mut wrong);
     the_agent_holds_nothing(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
@@ -401,6 +408,106 @@ fn the_loader_holds_two_things(image: &Image, wrong: &mut Vec<Wrong>) {
     }
 }
 
+/// **ADR 0024: the second privileged component holds no capability at all.**
+///
+/// It is root, because that is what `systemd-logind` decides `CreateSession`
+/// on — measured on two systemds and written into `docs/quirks.md` — and it
+/// holds nothing, because a uid is not a capability. That is the whole price of
+/// the second privileged component this repository has, and this is the check
+/// that keeps it at that price rather than at whatever somebody added to make
+/// something work.
+///
+/// It is deliberately the *stronger* of the two forms `crate::Service` can ask
+/// about: [`Service::holds_nothing`](crate::Service::holds_nothing) wants both
+/// lines present and both empty, so a unit that merely stopped mentioning
+/// capabilities is caught too. A service running as root with no
+/// `CapabilityBoundingSet=` keeps every capability there is.
+fn the_opener_holds_nothing_at_all(image: &Image, wrong: &mut Vec<Wrong>) {
+    let opener = image.opener().called().to_owned();
+
+    if image.opener().as_login() != Some(ROOT) {
+        wrong.push(Wrong::TheOpenerIsNotRoot {
+            opener: opener.clone(),
+            as_login: image.opener().as_login().unwrap_or(NOTHING).to_owned(),
+        });
+    }
+
+    if !image.opener().holds_nothing() {
+        wrong.push(Wrong::TheOpenerHoldsSomething {
+            opener,
+            bounded: image
+                .opener()
+                .bounded_to()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            given: image
+                .opener()
+                .given()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        });
+    }
+}
+
+/// **ADR 0024: the sign-in door is the greeter's, and the greeter is a login of
+/// its own.**
+///
+/// `alo-sessiond` hands its door to whatever group it is running in and then
+/// refuses every caller the kernel says is in another one, so the `Group=` line
+/// is the whole of who may ask this machine for a session. Four ways that goes
+/// wrong and none of them is visible at a build: a group the image does not
+/// make, a group that is the person's or the agent's, a runtime directory that
+/// is not where the code looks, and one open wider than the group.
+fn the_opener_can_be_knocked_on_by_the_greeter_alone(image: &Image, wrong: &mut Vec<Wrong>) {
+    let opener = image.opener().called().to_owned();
+
+    let group = image.opener().in_group().unwrap_or(NOTHING);
+    match image.group_called(group) {
+        None => wrong.push(Wrong::TheOpenerIsNotInTheGreetersGroup {
+            opener: opener.clone(),
+            group: group.to_owned(),
+        }),
+        Some(greeter) => {
+            for (number, whose) in [
+                (image.description().person(), "the person"),
+                (image.description().agent(), "the agent"),
+                (image.description().group(), "the agent's group"),
+            ] {
+                if greeter == number {
+                    wrong.push(Wrong::TheGreeterIsSomebodyElse {
+                        greeter,
+                        whose: whose.to_owned(),
+                    });
+                }
+            }
+        }
+    }
+
+    let looks = alo_sessiond::THE_DOORS_DIRECTORY;
+    let made = image.opener().runtime_directories();
+    if !made.iter().any(|it| looks == format!("{THE_RUN}/{it}")) {
+        wrong.push(Wrong::TheOpenersDoorIsNotWhereItLooks {
+            opener: opener.clone(),
+            made: (*made.first().unwrap_or(&NOTHING)).to_owned(),
+            looks: looks.to_owned(),
+        });
+    }
+
+    if image.opener().runtime_directory_mode() != Some(THE_SIGN_IN_DOORS_MODE) {
+        wrong.push(Wrong::TheOpenersDoorIsNotShut {
+            opener,
+            mode: image
+                .opener()
+                .runtime_directory_mode()
+                .unwrap_or(NOTHING)
+                .to_owned(),
+            wanted: THE_SIGN_IN_DOORS_MODE.to_owned(),
+        });
+    }
+}
+
 /// ADR 0001 §2 and ADR 0018: the service that talks to the agent holds nothing,
 /// and says so.
 fn the_agent_holds_nothing(image: &Image, wrong: &mut Vec<Wrong>) {
@@ -566,7 +673,7 @@ fn nobody_chose_a_retention(image: &Image, wrong: &mut Vec<Wrong>) {
 
 /// A unit nothing pulls in at boot is a unit that is shipped and never runs.
 fn both_units_are_pulled_in(image: &Image, wrong: &mut Vec<Wrong>) {
-    for service in [image.loader(), image.agent()] {
+    for service in [image.loader(), image.agent(), image.opener()] {
         if service.wanted_by().is_empty() {
             wrong.push(Wrong::NothingPullsItIn {
                 unit: service.called().to_owned(),
@@ -580,8 +687,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_LOADERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image, edited, image_at,
-        the_store_file,
+        THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image,
+        edited, image_at, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -666,6 +773,167 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::TheLoaderHoldsSomethingElse { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An opener that is not root is caught.** `systemd-logind` answers an
+    /// unprivileged caller `Access denied`, measured on two systemds, so an
+    /// opener running as anybody else is a machine nobody can sign in to — and
+    /// that arrives as a screen that does nothing rather than as an error.
+    #[test]
+    fn an_opener_that_is_not_root_is_caught() {
+        let root = a_copy_of_the_image("opener-not-root");
+        edited(&root, THE_OPENERS_UNIT, "User=root", "User=alo-greeter");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheOpenerIsNotRoot { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An opener given a capability is caught.** This is the line ADR 0024's
+    /// price is written on: the loader holds two capabilities and argues for
+    /// them, and the second privileged component holds none — because what
+    /// `logind` decides on is a uid.
+    #[test]
+    fn an_opener_given_a_capability_is_caught() {
+        let root = a_copy_of_the_image("opener-a-capability");
+        edited(
+            &root,
+            THE_OPENERS_UNIT,
+            "AmbientCapabilities=",
+            "AmbientCapabilities=CAP_SYS_ADMIN",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheOpenerHoldsSomething { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And an opener that merely stops saying it holds nothing is caught
+    /// too.** A root process keeps every capability there is unless its unit
+    /// says otherwise, so the two empty lines are the claim and deleting one is
+    /// deleting it.
+    #[test]
+    fn an_opener_that_stops_saying_it_holds_nothing_is_caught() {
+        let root = a_copy_of_the_image("opener-says-nothing");
+        edited(
+            &root,
+            THE_OPENERS_UNIT,
+            "CapabilityBoundingSet=",
+            "# said nothing",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheOpenerHoldsSomething { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An opener in a group this image does not make is caught.** Its door is
+    /// handed to whatever group it is in, so a name nothing creates is a
+    /// service that will not start — and the failure arrives at a person's
+    /// first sign-in rather than at a build.
+    #[test]
+    fn an_opener_in_a_group_this_image_does_not_make_is_caught() {
+        let root = a_copy_of_the_image("opener-no-group");
+        edited(
+            &root,
+            THE_OPENERS_UNIT,
+            "Group=alo-greeter",
+            "Group=alo-somebody",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheOpenerIsNotInTheGreetersGroup { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A greeter that is the agent's group is caught.** The sign-in door
+    /// would then be reachable by the agent's own service, which is ADR 0001
+    /// §2's whole subject arriving through a `Group=` line.
+    #[test]
+    fn a_greeter_that_is_the_agents_group_is_caught() {
+        let root = a_copy_of_the_image("greeter-is-the-agent");
+        edited(
+            &root,
+            THE_OPENERS_UNIT,
+            "Group=alo-greeter",
+            "Group=alo-agent",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheGreeterIsSomebodyElse { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A runtime directory that is not where `alo-sessiond` binds is
+    /// caught.** The two are written in two files and nothing but this reads
+    /// both; a door that is never opened is a machine that boots to a sign-in
+    /// screen nothing answers.
+    #[test]
+    fn an_opener_whose_directory_is_not_where_its_door_goes_is_caught() {
+        let root = a_copy_of_the_image("opener-elsewhere");
+        edited(
+            &root,
+            THE_OPENERS_UNIT,
+            "RuntimeDirectory=alo-sessiond",
+            "RuntimeDirectory=alo-signing-in",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheOpenersDoorIsNotWhereItLooks { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A sign-in door left open to everybody is caught.** The mode on the
+    /// directory is the half the kernel enforces before anything in
+    /// `alo-sessiond` is reached.
+    #[test]
+    fn an_opener_whose_directory_lets_everybody_in_is_caught() {
+        let root = a_copy_of_the_image("opener-open");
+        edited(
+            &root,
+            THE_OPENERS_UNIT,
+            "RuntimeDirectoryMode=0750",
+            "RuntimeDirectoryMode=0755",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheOpenersDoorIsNotShut { .. })),
             "{wrong:?}"
         );
     }

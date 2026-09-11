@@ -322,6 +322,114 @@ pub enum Wrong {
         /// The digest the recipe names, or `-` where it names none.
         digest: String,
     },
+    /// The opener would run as somebody `logind` will not open a session for.
+    ///
+    /// ADR 0024 measured it twice, on two systemds: `CreateSession` answers
+    /// root with *Leader PID is not valid* — the call authorised and only its
+    /// contents refused — and an unprivileged caller with *Access denied*. So
+    /// an opener that is not root is a machine nobody can sign in to, and the
+    /// failure arrives as a screen that does nothing.
+    #[error(
+        "{opener} runs as {as_login} and systemd-logind opens a session only for a privileged \
+         caller (ADR 0024, and the measurement in docs/quirks.md) — a machine whose opener is not \
+         root is a machine nobody can sign in to"
+    )]
+    TheOpenerIsNotRoot {
+        /// The opener's unit.
+        opener: String,
+        /// Who it says it runs as, or `-` where it says nothing.
+        as_login: String,
+    },
+
+    /// The opener holds a capability.
+    ///
+    /// **The line this whole component's acceptability rests on.** ADR 0018
+    /// gives the loader two capabilities and argues at length for them; ADR
+    /// 0024 adds a second privileged component and its price is that this one
+    /// holds *none* — what it needs is a uid, which is what `logind` decides
+    /// on. A capability added here is that argument undone in one line, in the
+    /// file nobody reviews.
+    #[error(
+        "{opener} holds capabilities (bounded to {bounded:?}, given {given:?}) — the second \
+         privileged component alo OS has holds none at all, because what systemd-logind decides \
+         CreateSession on is a uid; both lines exist and are empty, or this is no longer the \
+         component ADR 0024 accepted"
+    )]
+    TheOpenerHoldsSomething {
+        /// The opener's unit.
+        opener: String,
+        /// The most it may ever hold, as the unit says.
+        bounded: Vec<String>,
+        /// What it is given to start with.
+        given: Vec<String>,
+    },
+
+    /// The opener is not in the group its door is handed to.
+    ///
+    /// The door is handed to whatever group the process is in, and that is the
+    /// whole of who may ask for a session. A group this image does not make is
+    /// a service that will not start; root's group is a door the sign-in
+    /// surface can never reach.
+    #[error(
+        "{opener} runs in group `{group}`, which is not a login group this image makes — its door \
+         is handed to whatever group it is in, so a group that is not the greeter's is either a \
+         service that will not start or a door nobody can knock on"
+    )]
+    TheOpenerIsNotInTheGreetersGroup {
+        /// The opener's unit.
+        opener: String,
+        /// The group it says it runs in, or `-` where it says nothing.
+        group: String,
+    },
+
+    /// The greeter is one of the two logins that already exist.
+    ///
+    /// A greeter that is the person would mean anything running as the person
+    /// could ask for a session; a greeter that is the agent would put the
+    /// sign-in door inside the reach of the thing ADR 0001 §2 spends its length
+    /// keeping authority away from.
+    #[error(
+        "this image's greeter is login {greeter}, which is also {whose} — the sign-in surface is a \
+         login of its own (ADR 0024), because a door handed to the person's group or the agent's \
+         is a door those can knock on"
+    )]
+    TheGreeterIsSomebodyElse {
+        /// The number the greeter's group has.
+        greeter: u32,
+        /// Who else has it.
+        whose: String,
+    },
+
+    /// The opener's door is not in the directory the opener looks in.
+    #[error(
+        "{opener} makes /run/{made} and alo-sessiond opens its door in {looks} — a service whose \
+         runtime directory is not where its own code binds is a door that is never opened, and \
+         nothing but this notices"
+    )]
+    TheOpenersDoorIsNotWhereItLooks {
+        /// The opener's unit.
+        opener: String,
+        /// What the unit makes, relative to `/run`, or `-` where it makes
+        /// nothing.
+        made: String,
+        /// Where the code opens its door.
+        looks: String,
+    },
+
+    /// The opener's door directory is open to more than the greeter.
+    #[error(
+        "{opener} makes its runtime directory `{mode}` — the sign-in door goes in it, and \
+         `{wanted}` is the mode that lets the greeter's group in and nobody else"
+    )]
+    TheOpenersDoorIsNotShut {
+        /// The opener's unit.
+        opener: String,
+        /// The mode it says, or `-` where it says nothing.
+        mode: String,
+        /// The mode that was decided.
+        wanted: String,
+    },
+
     /// The recipe does not say what disk this image becomes.
     #[error(
         "this image's recipe does not say `{label}` — an image is not a disk, and the three \

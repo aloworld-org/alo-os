@@ -331,6 +331,7 @@ dependencies = [
  "alo-accounts",
  "alo-entering",
  "alo-keeping",
+ "alo-sessiond",
  "serde",
  "thiserror 2.0.20",
  "toml",
@@ -503,6 +504,7 @@ dependencies = [
  "alo-picking",
  "alo-protocol",
  "alo-recounting",
+ "alo-sessiond",
  "alo-shortcuts",
  "alo-strings",
  "alo-telling",
@@ -521,6 +523,18 @@ dependencies = [
  "alo-strings",
  "rustix 1.1.4",
  "secret-service",
+ "zbus",
+]
+
+[[package]]
+name = "alo-sessiond"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-saying",
+ "alo-strings",
+ "rustix 1.1.4",
+ "thiserror 2.0.20",
  "zbus",
 ]
 

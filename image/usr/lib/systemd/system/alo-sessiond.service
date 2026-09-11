@@ -1,0 +1,56 @@
+[Unit]
+# The second privileged thing alo OS does, and the whole of what it does is
+# turn a number somebody has already authenticated into a session. ADR 0024:
+# alo-accounts authenticates, systemd-logind opens sessions and will only do it
+# for a privileged caller, and alo-agentd.service is bound to a session nothing
+# on this image could otherwise cause. This stands in that gap and nowhere else.
+Description=alo OS sign-in: the one thing that turns a correct password into a session
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0024-what-a-person-signs-in-at.md
+
+# There is nothing to ask before logind is answering. It is socket-activated on
+# any ordinary machine, so this is an ordering rather than a requirement: a
+# machine where logind never came up is one where the first knock is refused in
+# words, which is the honest failure and is not this unit's to prevent.
+After=systemd-logind.service
+
+[Service]
+# It stays, and the session stays with it. Unlike alo-boundaryd — which loads a
+# boundary the kernel then holds — this process *is* what holds the session:
+# logind hands back a descriptor and the session lasts while somebody keeps it.
+# A oneshot would take the person's session away a fraction of a second after
+# opening it.
+Type=exec
+
+# Root, because that is what logind decides CreateSession on. The measurement is
+# in ADR 0024 and in docs/quirks.md, taken twice: root is answered "Leader PID is
+# not valid" — the call authorised and only its contents refused — and uid 1000
+# is answered "Access denied".
+#
+# And the greeter's group, because the door is handed to whatever group this
+# process is in. That is how the sign-in surface, which holds nothing and is
+# nobody in particular, is let in to knock at all. A Group= line naming root
+# would open a door only root could reach — a machine nobody can sign in to —
+# and the process refuses to start rather than make one.
+User=root
+Group=alo-greeter
+
+# **Both lines, both empty, and it still works.** The loader holds two
+# capabilities; this holds none, because what it needs is a uid rather than a
+# capability. This is the line where "the second privileged component is smaller
+# than the first" either is true or is prose, and crates/alo-image is what holds
+# it to being true.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# The door goes in a directory of its own, made by systemd and taken away when
+# this service stops. Not under /run/alo: that is every *person's* door
+# (ADR 0017) and this one is open before anybody is signed in and belongs to no
+# person. 0750 root:alo-greeter — the sign-in surface, and nobody else.
+RuntimeDirectory=alo-sessiond
+RuntimeDirectoryMode=0750
+
+ExecStart=/usr/libexec/alo-sessiond
+
+[Install]
+WantedBy=multi-user.target

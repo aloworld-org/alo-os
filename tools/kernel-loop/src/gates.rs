@@ -32,6 +32,28 @@
 //!
 //! `CARGO_TARGET_DIR` is set to this checkout's own, which is what keeps two
 //! contributors compiling the same workspace from writing into one directory.
+//!
+//! # A compile error a gate reports is not always in the change
+//!
+//! Task 26 was refused twice by `the workspace's tests` for a method that was
+//! in the tree: `no method named numbers found for struct Accounts`, raised
+//! while compiling the crate that calls it. It was not the worker's code. In
+//! the same target directory, `cargo check --workspace --all-targets`, `cargo
+//! clippy --all-targets` and `cargo test -p <crate>` all passed on the same
+//! tree, and only `cargo build --workspace` and `cargo test --workspace`
+//! failed — a **cached unit of the callee that Cargo considered fresh and
+//! which predated the method**. `cargo clean -p alo-accounts` and the same
+//! command passed. Why the fingerprint stayed fresh across a `/mnt/c` source
+//! edit is not established here and is not claimed.
+//!
+//! What follows from it, and it is the reason this is written in the file that
+//! prints the refusal: the second run of a gate does nothing about a stale
+//! artefact, so *refused twice* does not mean *the work rather than the
+//! machine*. A worker handed a compile error naming something their own
+//! `-p` gates compile happily should `cargo clean -p` the crate that owns the
+//! missing item and run the whole-workspace **build** before concluding
+//! anything about the source. Nothing here is weakened for it: the gate is
+//! right to refuse a tree it cannot build, whoever broke it.
 
 use std::path::Path;
 use std::process::Command;

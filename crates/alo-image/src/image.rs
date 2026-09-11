@@ -31,6 +31,10 @@ pub const THE_LOADER: &str = "alo-boundaryd.service";
 /// The unit that serves the agent, as systemd names it.
 pub const THE_AGENT: &str = "alo-agentd.service";
 
+/// The unit that turns an authenticated number into a session, as systemd names
+/// it (ADR 0024).
+pub const THE_OPENER: &str = "alo-sessiond.service";
+
 /// Where a unit file goes, beneath the image's root.
 const UNITS: &str = "usr/lib/systemd/system";
 
@@ -71,6 +75,8 @@ pub struct Image {
     loader: Service,
     /// The service that serves the agent.
     agent: Service,
+    /// The service that opens a session when somebody signs in.
+    opener: Service,
     /// The directories made at boot.
     made: Vec<Made>,
     /// The logins and groups made at boot.
@@ -100,6 +106,7 @@ impl Image {
     pub fn at(root: &Path) -> Result<Self, NotAnImage> {
         let loader = service(root, THE_LOADER)?;
         let agent = service(root, THE_AGENT)?;
+        let opener = service(root, THE_OPENER)?;
 
         let at = root.join(TMPFILES);
         let made = crate::making::everything_made(&text(&at)?)
@@ -124,6 +131,7 @@ impl Image {
         Ok(Self {
             loader,
             agent,
+            opener,
             made,
             declared,
             description,
@@ -144,6 +152,12 @@ impl Image {
     #[must_use]
     pub const fn agent(&self) -> &Service {
         &self.agent
+    }
+
+    /// The service that opens a session when somebody signs in.
+    #[must_use]
+    pub const fn opener(&self) -> &Service {
+        &self.opener
     }
 
     /// The directory this image makes at this path, if it makes one.
@@ -242,6 +256,8 @@ mod tests {
 
         assert_eq!(image.loader().called(), THE_LOADER);
         assert_eq!(image.agent().called(), THE_AGENT);
+        assert_eq!(image.opener().called(), THE_OPENER);
+        assert_eq!(image.group_called("alo-greeter"), Some(60990));
         assert!(image.directory_at(Path::new("/run/alo")).is_some());
         assert!(image.directory_at(Path::new("/var/lib/alo")).is_some());
         assert_eq!(image.login_called("alo"), Some(1000));
@@ -300,5 +316,6 @@ mod tests {
     fn the_units_are_named_once() {
         assert_eq!(THE_LOADER, "alo-boundaryd.service");
         assert_eq!(THE_AGENT, "alo-agentd.service");
+        assert_eq!(THE_OPENER, "alo-sessiond.service");
     }
 }

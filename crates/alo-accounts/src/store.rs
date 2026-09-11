@@ -134,6 +134,25 @@ impl Accounts {
         self.everybody.len()
     }
 
+    /// Whether an account here has this number.
+    ///
+    /// A number in and a yes or no out, and **no name in either direction**.
+    /// It is asked by the one privileged thing on this machine
+    /// (`crates/alo-sessiond`, ADR 0024), which is handed a number by a surface
+    /// that has already authenticated somebody and has to know whether this
+    /// machine has anybody with it. That component may not learn who is here
+    /// and may not verify a password, so this is the whole of what the store
+    /// will tell it.
+    ///
+    /// It is not an enumeration door in the way [`Accounts::signs_in`] would be
+    /// if it told a name from a password: the numbers a machine's accounts have
+    /// are `/etc/passwd`'s numbers, which every process on a Unix can already
+    /// read.
+    #[must_use]
+    pub fn numbers(&self, uid: u32) -> bool {
+        self.everybody.iter().any(|one| one.uid() == uid)
+    }
+
     /// The accounts, for `written.rs` to write down.
     pub(crate) fn everybody(&self) -> &[Account] {
         &self.everybody
@@ -237,5 +256,25 @@ mod tests {
                 name: "ada".to_owned()
             })
         );
+    }
+
+    /// **The store says whether it has a number, and nothing more.** It is the
+    /// one question `alo-sessiond` is allowed to ask it, and the answer for
+    /// somebody who is here is yes.
+    #[test]
+    fn a_number_this_machine_has_an_account_for_is_numbered() {
+        assert!(a_machine_with_ada().numbers(1000));
+    }
+
+    /// **And every other number is not**, including root's and including a
+    /// machine with nobody on it at all — which is the state every alo OS
+    /// arrives in, because the image ships no store.
+    #[test]
+    fn every_number_this_machine_has_no_account_for_is_not() {
+        let store = a_machine_with_ada();
+        for nobody in [0, 1, 999, 1001, 60989, u32::MAX] {
+            assert!(!store.numbers(nobody), "{nobody}");
+        }
+        assert!(!Accounts::none().unwrap().numbers(1000));
     }
 }

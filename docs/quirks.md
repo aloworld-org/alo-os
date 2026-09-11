@@ -411,6 +411,57 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### `logind` will open a session for something that is not `pam_systemd`, and the refusal for anybody else has two different wordings
+**Version:** measured three ways. `systemd` 257 (257.13-1.fc42) on **the pinned
+base** — `quay.io/fedora/fedora-bootc:42`, run as the alo OS image built from it
+under `podman --systemd=always` — on 2026-09-11; `systemd` 259 on Ubuntu 26.04
+under WSL2 on 2026-09-10 (the measurement at the foot of ADR 0024) and again on
+2026-09-11 through `alo-sessiond`'s own call rather than through `busctl`.
+
+**Behaviour:** ADR 0024 turns on whether `org.freedesktop.login1.Manager.CreateSession`
+can be called by something that is not `pam_systemd`. It can, and the boundary is
+privilege:
+
+| Caller | What came back |
+|---|---|
+| root, well-formed arguments, an implausible leader PID | `Leader PID is not valid` (Fedora 42 / systemd 257); `Invalid leader PID` (Ubuntu / systemd 259) |
+| uid 1000, the same call | `Access denied` |
+
+The first row is the finding: the call was **authorised** and only its contents
+were rejected, on both systemds. The method is on the interface, there is no
+policy rule against a privileged caller, and `CreateSessionWithPIDFD` is on the
+pinned base's interface too (`uhsssssussbssta(sv)`), so there is a newer spelling
+to move to without a decision to retake.
+
+Two things differ between the two machines and neither is a difference in the
+answer:
+
+- **The sentence for the root case is not the same string.** systemd 257 says
+  `Leader PID is not valid` and systemd 259 says `Invalid leader PID`. Anything
+  that recognised the *wording* would be reading prose that upstream rewords.
+- **The refusal for an unprivileged caller does not always come from `logind`.**
+  Asked from uid 1000 with `busctl` on Fedora, `logind` itself answers `Access
+  denied`. Asked from uid 65534 on Ubuntu through `alo-sessiond`, the **bus
+  policy** refuses the call before `logind` sees it, and the message is
+  `Rejected send message, 2 matched rules; type="method_call" …`. Completely
+  different sentences, and the same D-Bus error name in both cases:
+  `org.freedesktop.DBus.Error.AccessDenied`. `busctl` prints the name's friendly
+  form, which is what made the two look alike in the first measurement.
+
+**Our response:** `crates/alo-sessiond` carries the D-Bus **error name** beside
+the sentence (`NotOpened::Refused { named, why }`) and decides on the name;
+the sentence is for whoever is reading a service log. Its test
+(`logind_answers_the_way_the_adr_measured`) asserts the name and never the
+wording. Nothing here matches on the root case's message at all: the opener
+passes its own real process id, so *leader PID is not valid* is a refusal only
+the measurement ever sees.
+
+The privileged half is deliberately **not** run by `cargo test`. A test that
+were root would not be refused — it would open a real session on whoever's
+machine was running the suite, with the test process as its leader — so it skips
+itself and says so, and the privileged answer stays this by-hand measurement.
+**Date:** 2026-09-11
+
 ### A service that runs as a person cannot make a control group of its own, and `%U` in a system unit is 0
 **Version:** `systemd` 259 on Ubuntu 26.04, kernel `6.18.33.2`, measured
 2026-09-04 by starting `alo-agentd.service` under a real systemd. The same two

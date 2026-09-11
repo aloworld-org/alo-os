@@ -1,0 +1,75 @@
+[package]
+name = "alo-sessiond"
+version = "0.0.1"
+description = "The opener: it turns a number alo-accounts has already authenticated into the session alo-agentd.service is bound to, and it can do nothing else."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The accounts this machine has — read for one question and never for a
+# password: whether there is an account with the number a knock names. It is
+# the same file the surface authenticated against, so the set of numbers this
+# component will open a session for is exactly the set somebody could have
+# signed in as. `alo-accounts` is where every rule about that file lives, and a
+# second reader of it would be a second opinion about who exists here.
+alo-accounts = { path = "../alo-accounts" }
+
+# Everything a knock is refused in. What crosses the wire is a key in the one
+# vocabulary, never a sentence, so the surface renders the refusal in the
+# person's own language rather than in this process's.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, for its refusals and its own list's error.
+thiserror = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# Who is at the other end of a connection, and which group this process is in.
+# `SO_PEERCRED` and `getegid` have no safe spelling in `std` on a stable
+# compiler, `CLAUDE.md` forbids unsafe, and `src/unix.rs` is the only file here
+# that names this crate — the rule `alo-agentd`'s own `unix.rs` set.
+rustix = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# `systemd-logind`, spoken to over the system bus. ADR 0024's measurement is of
+# exactly one method on exactly one interface, and this is the crate this
+# workspace already speaks D-Bus with (`alo-secrets`, `alo-agentd`). Engines are
+# configured, never written: a hand-rolled D-Bus client on the one privileged
+# path in this repository would be the opposite of what ADR 0018 asks for.
+#
+# `async-io` rather than `tokio`, and named here rather than inherited: zbus has
+# no runtime of its own and will not build without one being chosen, and a crate
+# that compiled only because something else in the workspace happened to choose
+# the same one is a crate `cargo test -p alo-sessiond` cannot build. It is the
+# runtime `alo-secrets` and `alo-agentd` already use, so the workspace still
+# builds one of them and not two.
+# `blocking-api` because this process has one thing to do and does it one caller
+# at a time: an executor here would be a privileged component carrying a
+# scheduler for a call it makes at most once.
+zbus = { version = "5.19", default-features = false, features = [
+  "async-io",
+  "blocking-api",
+] }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+# Whether this test process is root, which decides whether the privileged half
+# of ADR 0024's measurement may be taken inside a test at all. The same crate
+# `src/unix.rs` names, reached here because a test is not that file.
+rustix = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the acceptance test asks the question that list cannot — whether
+# what this crate says is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+# The opener, as a machine really runs it: root, holding no capability, with one
+# door. `src/lib.rs` is every decision and this is the process that makes them in
+# order.
+[[bin]]
+name = "alo-sessiond"
+path = "src/main.rs"
+
+[lints]
+workspace = true

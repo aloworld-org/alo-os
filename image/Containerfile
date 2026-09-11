@@ -2,7 +2,7 @@
 #
 # ADR 0011: the operating system *is* an OCI image — a bootable container
 # (`bootc`) on a rented, unmodified Fedora-derived base. Nothing below patches
-# that base. What this file adds is two binaries of our own, two units, two
+# that base. What this file adds is three binaries of our own, three units, two
 # directories, one description — the smallest image that boots and starts the
 # agent service (queue item 28) — and, since ADR 0025, the pinned model runtime,
 # because the local model is what the machine arrives ready to run. There is no
@@ -93,11 +93,11 @@ RUN cargo install bpf-linker --version ${THE_LINKER} --locked \
 COPY . /alo-os
 WORKDIR /alo-os
 
-# The two processes this repository has, and nothing else: the rest of the
+# The three processes this repository has, and nothing else: the rest of the
 # workspace is libraries they reach, and a `--workspace` build here would
 # compile every test target into an image that runs none of them.
 RUN cargo build --release --target ${THE_TARGET} \
-      --package alo-agentd --package alo-boundaryd
+      --package alo-agentd --package alo-boundaryd --package alo-sessiond
 
 # ---------------------------------------------------------------------------
 # The model runtime, fetched pinned and checked before it is trusted
@@ -142,6 +142,12 @@ ARG THE_TARGET
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-boundaryd /usr/libexec/alo-boundaryd
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-agentd
 
+# The opener is in libexec beside the loader, and for the same reason: nobody
+# runs it by hand. It is started once by systemd, it opens one door, and a person
+# who found it on their PATH would have found the thing that turns a number into
+# a session (ADR 0024).
+COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-sessiond /usr/libexec/alo-sessiond
+
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
 # out. **No weights, no unit and nothing that starts it** — a runtime alone
@@ -181,14 +187,16 @@ COPY image/etc/alo/ /etc/alo/
 # The description in particular is checked by `alo-agentd` before it is parsed:
 # a group-writable one is a description the group writes this machine with, and
 # the service refuses to start rather than believe it.
-RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/bin/alo-agentd /usr/bin/ollama \
+RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
+               /usr/bin/alo-agentd /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
+               /usr/lib/systemd/system/alo-sessiond.service \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
- && systemctl enable alo-boundaryd.service alo-agentd.service \
+ && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
@@ -207,4 +215,6 @@ RUN systemd-sysusers \
  && test "$(id -u alo)" = 1000 \
  && test "$(id -u alo-agent)" = 60989 \
  && test "$(getent group alo-agent | cut -d: -f3)" = 60989 \
+ && test "$(id -u alo-greeter)" = 60990 \
+ && test "$(getent group alo-greeter | cut -d: -f3)" = 60990 \
  && id -nG alo | tr ' ' '\n' | grep -qx alo-agent

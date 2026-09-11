@@ -1245,3 +1245,90 @@ thing and to hold it to the terms ADR 0018's loader is held to.
   component argument thrown away. If the pinned base answers differently from the
   development machine, that finding is the deliverable and an ADR is how it is
   recorded — never a workaround.
+
+**Done, 2026-09-11.** `crates/alo-sessiond` is the opener, and **the price ADR
+0024 priced came in lower than it was quoted: the second privileged component
+holds no capability at all.** The loader holds two and argues for them; this
+holds none, because what `logind` decides `CreateSession` on is a **uid**, and
+`User=root` with both capability lines present and empty is a process that can
+open a session and cannot do the things capabilities buy. Even the one
+filesystem thing it does — handing its door to the greeter's group — needs no
+`CAP_CHOWN`, because the group it changes to is the group its own unit put it
+in. That is a `crates/alo-image` check beside the loader's, with a twin per
+promise: seven of them, breaking one line each.
+
+**The measurement was taken again on the pinned base and it found something.**
+Fedora 42, systemd 257, the alo OS image itself under `podman --systemd=always`:
+root is refused only on the leader PID and uid 1000 is refused outright, so
+Option B is buildable on the machine alo OS ships. What was new is that the two
+machines *word* it differently — `Leader PID is not valid` against `Invalid
+leader PID`, and an unprivileged caller turned away by the **bus policy** rather
+than by `logind`, with a completely different sentence and the same D-Bus error
+name. So the crate carries the error **name** beside the sentence and decides on
+the name; the sentence is for a service log. `docs/quirks.md` has all three
+measurements and ADR 0024 records that the check it said it owed is paid.
+
+**What makes *it cannot be asked to open a session for a uid the caller has not
+authenticated* true across a process boundary** is that the number on the wire
+is checked against the accounts file the surface authenticated against, before
+anything else is asked — so the set of numbers this component will ever open a
+session for is exactly the set of people this machine has, and a knock from
+anything but the greeter's group is refused before even that. No password
+reaches it, no name and no path: `Knock` holds one `u32` and a line with a
+second thing on it is refused rather than read leniently, which is a test rather
+than a rule somebody keeps. The wire is this crate's own and deliberately not
+`alo-protocol` — a sign-in on the agent's door would put every message an agent
+can send inside a privileged process's parser.
+
+Four strings under a new `signing-in.*` area, collected by `alo-saying`
+(twenty-six collected, twenty-seven declaring). The image gains the unit, the
+binary in `libexec` beside the loader, and the greeter login the door is handed
+to — the surface that will run as it is task 13's, and nothing here draws.
+Report:
+`docs/autonomy/updates/the-one-privileged-thing-that-opens-a-session.md`.
+The next task (27) is written below.
+
+**Refused once before it was published, and not for anything in it.** The
+whole-workspace gate reported `no method named numbers found for struct
+Accounts` for a method that was in the tree, twice; the same tree checked,
+linted and per-crate tested clean. It was a cached `alo-accounts` unit that
+Cargo held to be fresh and that predated the method, and `cargo clean -p
+alo-accounts` was the whole of the repair — no line of the component changed.
+The account of it, and what it means for reading a refusal that arrives twice,
+is `docs/autonomy/updates/a-gate-refusal-that-was-not-in-the-change.md` and a
+paragraph in `tools/kernel-loop/src/gates.rs`, which is the file that prints
+the message.
+
+### 27. The sign-in surface's half of the door
+
+**Status:** ready. **Depends on:** task 26, which is done. Not on task 13: what
+is described here is what a screen calls, not the screen.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 26, which built the privileged half and found the other half
+unowned — the same shape task 22 found for the grants and task 23 closed one
+file over. `/run/alo-sessiond/sign-in.sock` is open, `alo_sessiond::Knock` and
+`Answered` are the line, `alo-accounts` decides who is here, and **nothing in
+this repository composes them.** A surface has to authenticate, then knock, then
+render what comes back — which is order-sensitive glue of exactly the kind this
+repository turns into a tested value, and a surface that authenticated and
+forgot to knock is a screen that takes a correct password and does nothing.
+
+- **Acceptance:** one value composes the person's half: an
+  `alo_accounts::Session` — which cannot exist unless a password verified *and*
+  the machine description agreed about the number — becomes exactly one knock,
+  and a knock cannot be made from anything else, held by shape rather than by
+  comment; what comes back is a session or one of `alo-saying`'s sentences,
+  looked up and rendered in the person's own language rather than handed on as a
+  key; **every way the conversation can fail to happen** — no service listening,
+  a connection that drops, an answer that never comes, an answer that is not one
+  — is told in words rather than as silence, because somebody standing at a
+  sign-in that did nothing cannot tell a refusal from a machine that is not
+  running; and the refusals are tested beside the answer, over a real socket.
+- **Constraint:** nothing in `crates/alo-shell` — the drawing is task 13's and
+  the desktop lane's, and this must not draw. No second authenticator and no
+  second reader of the wire: `alo-accounts` decides who is here and
+  `alo-sessiond` declares the line. Additive only — no new message and no field
+  added to `Knock`, which is the whole of what keeps a password off that wire.
+  Every string a person reads is in the vocabulary `alo-saying` collects.

@@ -16,7 +16,7 @@ use std::path::Path;
 
 use alo_image::{
     Image, NO_PARTITIONER, ROOT, THE_AGENT, THE_DOOR, THE_IMAGE, THE_LOADER, THE_ONLY_TOOL,
-    everything_wrong_with,
+    THE_OPENER, everything_wrong_with,
 };
 
 /// The image this repository ships.
@@ -217,6 +217,58 @@ fn the_units_start_the_binaries_the_image_installs() {
 
     assert_eq!(image.loader().runs(), "/usr/libexec/alo-boundaryd");
     assert_eq!(image.agent().runs(), "/usr/bin/alo-agentd");
+    assert_eq!(image.opener().runs(), "/usr/libexec/alo-sessiond");
+}
+
+/// **The second privileged component alo OS has holds no capability at all.**
+///
+/// ADR 0024 accepted a second privileged component beside ADR 0018's loader,
+/// and priced it honestly: it takes a number that has already been
+/// authenticated, asks `systemd-logind` to open that person's session, and can
+/// do nothing else. This is what that costs the machine, read off the unit —
+/// root, because `logind` decides `CreateSession` on a uid and the measurement
+/// in `docs/quirks.md` says so on two systemds; the greeter's group, because
+/// the door is handed to whatever group it is in; and both capability lines
+/// present and empty, because a root process that never mentions capabilities
+/// keeps every one of them.
+#[test]
+fn the_opener_is_root_and_holds_nothing_at_all() {
+    let image = the_image();
+
+    assert_eq!(image.opener().called(), THE_OPENER);
+    assert_eq!(image.opener().as_login(), Some(ROOT));
+    assert_eq!(image.opener().in_group(), Some("alo-greeter"));
+    assert!(
+        image.opener().holds_nothing(),
+        "the opener holds {:?} and is given {:?}",
+        image.opener().bounded_to(),
+        image.opener().given()
+    );
+}
+
+/// **The sign-in door is the greeter's, and the greeter is nobody else.**
+///
+/// `alo-sessiond` hands its door to its own group and refuses every caller the
+/// kernel says is in another one, so this `Group=` line is the whole of who may
+/// ask this machine for a session. A greeter that were the person or the agent
+/// would be a door those could knock on, and the image makes the login rather
+/// than leaving it to whatever a surface is configured with later.
+#[test]
+fn the_greeter_is_a_login_of_its_own_and_the_door_is_its_group() {
+    let image = the_image();
+    let greeter = image.group_called("alo-greeter");
+
+    assert_eq!(greeter, Some(60990));
+    assert_eq!(image.login_called("alo-greeter"), Some(60990));
+    assert_ne!(greeter, Some(image.description().person()));
+    assert_ne!(greeter, Some(image.description().agent()));
+    assert_ne!(greeter, Some(image.description().group()));
+    assert_eq!(
+        image.opener().runtime_directories(),
+        vec!["alo-sessiond"],
+        "the unit makes a directory that is not where alo-sessiond opens its door"
+    );
+    assert_eq!(image.opener().runtime_directory_mode(), Some("0750"));
 }
 
 /// **The model runtime the machine arrives with is aboard, pinned and
