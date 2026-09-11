@@ -1398,3 +1398,34 @@ a plan, the evidence ledger — apply that task's **diff** rather than its
   reset, clean or check out the whole tree: that is the defect, and a
   `git checkout -- .` anywhere in the implementation is the thing the test
   should refuse.
+
+### 29. The gates build where there is room, not where there is none
+
+**Status:** ready. **Depends on:** nothing.
+
+Every gate builds into `target/` beside the checkout, which is on the **C: drive
+of a Windows host that is 98% full**, while the WSL filesystem the gates actually
+run in has **868 GB free and holds almost nothing** (measured 2026-09-11: 4.8 GB
+in one lane's `target/`, 7.2 GB in the other's, and 32 MB in the WSL-side
+directories). So two lanes compete for the scarcest resource on the machine,
+for no reason.
+
+It has cost real work. The gates refuse below 12 GiB free — correctly, because a
+linker that cannot open a file reads like a broken change and is not one — and
+that refusal parked a finished task today. The answer has been to clean a
+lane's build directory by hand, which trades an hour of recompilation for space
+that was never scarce where the build was running.
+
+- **Acceptance:** the gates build under a directory on the distribution's own
+  filesystem, one per checkout so two lanes never share a `target` (sharing is a
+  lock, and a lock is a lane waiting); the supervisor says where it is building
+  the first time a run starts, because a build directory nobody can find is one
+  nobody cleans; the free-space check measures **the filesystem the build will
+  actually use** rather than the one the checkout is on, and its sentence names
+  that filesystem; and a machine where that directory cannot be made falls back
+  to today's behaviour with a line saying so rather than failing.
+- **Constraint:** nothing about what the gates *are* changes — same gates, same
+  order, same refusals. It may not delete anybody's build directory, including
+  the old ones: a supervisor that tidied up could throw away an afternoon of
+  compilation belonging to a lane that is merely idle. Say where the old ones
+  are and let a person decide.
