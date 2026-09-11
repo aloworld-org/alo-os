@@ -360,17 +360,21 @@ fn asked_of_it(task: &Task) -> String {
          DO NOT WRITE THE HANDOFF UNTIL THE GATES PASS. Not *run them and hand over* —\n\
          the handoff is your statement that the work is finished, and work that does not\n\
          gate is not finished. From the checkout: `cargo fmt --all`, `cargo clippy\n\
-         --all-targets` with warnings denied, and `cargo test --workspace`. Fix what they\n\
-         say, run them again, and only then write the file.\n\
+         --all-targets` with warnings denied, and `cargo test -p <crate>` for every\n\
+         crate you touched. Fix what they say, run them again, and only then write\n\
+         the file.\n\
          \n\
-         Two workers have handed over code that did not compile. Both had been told to\n\
-         run the gates; both wrote the handoff first and treated gating as a step after\n\
-         it. The supervisor caught them, parked the work and lost the hour — and the\n\
-         commonest cause is never the logic but a registration nobody could know about:\n\
-         a new crate that has words has to be collected, an image manifest has to agree,\n\
-         a rustdoc link has to resolve, a test you wrote has to name a method that\n\
-         exists. The gates name every one in seconds, and you are the only one who can\n\
-         act on them — by the time the supervisor runs them you are gone.\n\
+         DO NOT run the full workspace suite yourself. It takes the better part of an\n\
+         hour on this machine and two finished tasks have died at the 90-minute deadline\n\
+         waiting on it. The supervisor runs it after you regardless, and a cross-crate\n\
+         break it finds comes straight back to a worker holding the exact error —\n\
+         cheaper than the hour, and not your job to pre-empt.\n\
+         \n\
+         Workers have handed over code that did not compile, and the commonest cause is\n\
+         never the logic but a registration nobody could know about: a new crate that\n\
+         has words has to be collected, an image manifest has to agree, a rustdoc link\n\
+         has to resolve, a test you wrote has to name a method that exists. Your own\n\
+         crates' gates name every one of those in seconds.\n\
          \n\
          IN THE SAME CHANGE, mark this task `**Done, <date>**` in the plan named above —\n\
          with the plan file among the files you list — and write the next task there if\n\
@@ -434,8 +438,9 @@ fn asked_to_repair(task: &Task, said: &str) -> String {
          a test naming something that does not exist usually means the thing was meant to\n\
          exist and was not written.\n\
          \n\
-         Then run the gates yourself — `cargo fmt --all`, `cargo clippy --all-targets`\n\
-         with warnings denied, `cargo test --workspace` — and only once they pass, rewrite\n\
+         Then run your gates — `cargo fmt --all`, `cargo clippy --all-targets` with\n\
+         warnings denied, and `cargo test -p <crate>` for every crate the diff\n\
+         touches, never the full workspace suite — and only once they pass, rewrite\n\
          .kernel-loop/handoff.toml in full: the file list must name every file now\n\
          changed against `main`, including the earlier worker's, not only yours.\n\
          \n\
