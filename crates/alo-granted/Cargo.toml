@@ -1,0 +1,37 @@
+[package]
+name = "alo-granted"
+version = "0.0.1"
+description = "The grants a person can see: the list a surface would show, derived from the machine's own kept grants, and revocation through the one mechanism the daemon already enforces."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The grants themselves. This crate reads the list the daemon asks and revokes
+# through that list's own `revoke`; it never decides what a grant means, what
+# it covers or when it ends — `alo-capability` does all three, and a second
+# mechanism for any of them could disagree with the first.
+alo-capability = { path = "../alo-capability" }
+
+# Everything a person reads here — the row, the empty list's sentence, and
+# both ways a revocation comes back.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, and only for the error its own string list
+# can return to whoever is fixing that list.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the acceptance test asks the question that list cannot — whether
+# what this crate says survives being put beside everybody else's, and whether
+# it is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+# For showing that reading the list a hundred times leaves the grants byte for
+# byte where they were, and that a refused revocation changed nothing.
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

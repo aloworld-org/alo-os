@@ -30,6 +30,7 @@ alo-context = { path = "../alo-context" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }
 alo-files = { path = "../alo-files" }
+alo-granted = { path = "../alo-granted" }
 alo-indicator = { path = "../alo-indicator" }
 alo-keeping = { path = "../alo-keeping" }
 alo-models = { path = "../alo-models" }

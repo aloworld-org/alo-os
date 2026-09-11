@@ -967,3 +967,60 @@ that could disagree with the first.
   goes and is the desktop lane's. No pixels are claimed and none are tested,
   and no verb is added — a person looking at their own grants is not an agent
   doing something.
+
+**Done, 2026-09-11.** `crates/alo-granted`: `Listing::of` takes the machine's
+own `alo_capability::Grants` — the value the daemon's `permits` answers from,
+whether granted this session or read back through `Grants::remembered` — and
+there is no other door: `Seen` has no public field, no `From`, no
+deserialiser and no constructor from text, with compile-fail examples that
+turn adding one into a failing build. **Revoking a row is
+`alo_capability::Grants::revoke` with the row's own handle and nothing beside
+it** — not a second mechanism that could disagree with the first — shown
+taking effect on the daemon's own `permits` at the same instant and on a real
+verb refused through `Authorised::read`; a row from a list the machine has
+moved past lands on nothing, changes nothing byte for byte, and says the list
+was out of date. An expired grant cannot become a row at all (`Seen::of` goes
+through `Grant::expires_in`), measured with the grant still on the stored
+list and the daemon refusing it. *Nothing granted* is a declared sentence
+that deliberately reports rather than instructs — the list is where checking
+and taking away happen, and a machine asking to be granted things is not this
+surface. Four strings under a new `granted` area, collected by `alo-saying`
+(twenty-four collected, twenty-five declaring). Times are exposed as values,
+for `alo-capability`'s own reason: formatting an expiry hardcodes a calendar
+as well as a language. Report:
+`docs/autonomy/updates/the-grants-a-person-can-see.md`. The next task (23) is
+written below. No pixels are claimed and none are tested; drawing it is the
+compositor's, and *On the machine* does not move.
+
+### 23. A person's change to the grants reaches the file the daemon re-reads
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 22, which found the gap while showing revocation immediate.
+The daemon's half of *a change reaches the running daemon* exists and is
+tested: `alo-agentd/src/rereading.rs` answers a knock
+(`alo_protocol::FromAPerson::Granted`, which deliberately carries nothing) by
+re-reading `/var/lib/alo/grants.toml` whole, so a grant missing from the file
+is a grant revoked. The **person's half has no owner**: nothing outside test
+fixtures ever calls `alo_remembering::kept`, so a grant made through
+`alo-picking` or a revocation made through `alo-granted` changes a `Grants`
+in one process's memory and reaches no daemon and no next sign-in until a
+surface hand-writes the composition — write the file, then knock — which is
+order-sensitive glue (a knock sent before the write re-reads the old list)
+of exactly the kind this repository turns into tested values.
+
+- **Acceptance:** one value composes the person's half: after a grant or a
+  revocation made through it, `alo_remembering::remembered` reads the change
+  back off the disk, and the knock is sent exactly once, **after** the write
+  — with the order held by shape or by test, not by comment; a write that
+  fails leaves the file as it was, sends no knock, and is told in words; a
+  machine with no daemon to knock is not an error — the change stands and
+  applies at the next sign-in, which is the state this repository shipped
+  with; and nothing new can write the grants from an agent's door, shown the
+  way `rereading.rs` already shows it.
+- **Constraint:** additive protocol only — `FromAPerson::Granted` exists and
+  is the knock; no new message, no payload added to it. Nothing in
+  `crates/alo-shell`, and every string a person reads is in the vocabulary
+  `alo-saying` collects.

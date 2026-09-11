@@ -235,12 +235,17 @@ a real open document, because no surface has ever invoked a turn.
 **Shown by:** `crates/alo-picking/tests/a_person_picks_a_folder.rs`,
 `crates/alo-remembering/tests/the_grants_a_machine_keeps.rs`,
 `crates/alo-capability/tests/what_this_crate_says.rs`,
+`crates/alo-granted/tests/the_grants_a_person_can_see.rs`,
 `docs/autonomy/updates/native-folder-selection.md`,
-`docs/autonomy/updates/a-grant-made-now-reaches-the-daemon-now.md`
+`docs/autonomy/updates/a-grant-made-now-reaches-the-daemon-now.md`,
+`docs/autonomy/updates/the-grants-a-person-can-see.md`
 
-**Still owed:** *see what is granted* has no surface. A grant can be made, kept
-across a sign-out, reached by the daemon and expired, and there is nowhere a
-person can look at the list or revoke one by hand.
+**Still owed:** the list has never been drawn. `crates/alo-granted` is *see
+what is granted* and *revoke it by hand* as a value — derived from the
+machine's own kept grants, with revocation through the same
+`alo_capability::Grants::revoke` the daemon enforces, an expired grant never
+shown as live, and *nothing granted* a sentence — and putting it on a screen
+is the compositor's, in `crates/alo-shell`, which no machine has displayed.
 
 ### Every execution recorded with its origin, approval and grant
 
