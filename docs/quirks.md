@@ -629,7 +629,7 @@ kernel-side filter on the service's own control group and is what makes *it
 reaches nothing off this machine* enforced rather than asserted.
 `crates/alo-image` checks each of those and deliberately does not check who may
 connect, saying so beside the check.
-`docs/decisions/0026-who-may-ask-the-model-anything.md` is where the gap is
+`docs/decisions/0027-who-may-ask-the-model-anything.md` is where the gap is
 argued and what closing it would cost is priced: a door of ours in front of the
 runtime, a shared network namespace, or a rule in the boundary the machine
 already loads. **No engine was patched to add a Unix socket** — that would be a

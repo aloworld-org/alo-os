@@ -400,7 +400,7 @@ every entry anybody has measured is graded *rarely*, so what a machine arrives
 able to do is load and answer with a local model rather than be handed an agent
 turn. And **who on the machine may ask the model anything is not decided**: a
 loopback TCP port has no owner and no mode, so no line in any unit gates it, and
-`docs/decisions/0026-who-may-ask-the-model-anything.md` is where that is argued
+`docs/decisions/0027-who-may-ask-the-model-anything.md` is where that is argued
 and priced. That last one does not block this promise — it is about v0.5's
 sandbox — and it is written here so the next reader inherits the reasoning
 rather than the port. This entry stays owed until a machine boots with the

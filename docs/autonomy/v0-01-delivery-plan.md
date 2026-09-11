@@ -1682,7 +1682,7 @@ check written as though it did would be a green test standing where a boundary i
 not. The unit decides everything a unit can decide and each of those is checked;
 `docs/quirks.md` carries the finding so nobody reads that line as the sentence
 the other two are; and
-`docs/decisions/0026-who-may-ask-the-model-anything.md` is the decision,
+`docs/decisions/0027-who-may-ask-the-model-anything.md` is the decision,
 **proposed** — what is at stake (not a grant boundary, since no verb touches the
 runtime; not an egress, since nothing leaves; the owner's compute today and, at
 v0.5, an ADR 0005 sandboxed application reaching the model around the portal by

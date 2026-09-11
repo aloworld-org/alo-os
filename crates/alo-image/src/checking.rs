@@ -448,7 +448,7 @@ fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wro
 /// owner and no mode: every login on the machine can reach it, and no line in
 /// any unit file changes that. `Group=` above says who **answers**, never who may
 /// **ask**, and the two are not the same question —
-/// [ADR 0026](../../../docs/decisions/0026-who-may-ask-the-model-anything.md) is
+/// [ADR 0027](../../../docs/decisions/0027-who-may-ask-the-model-anything.md) is
 /// where the difference is argued and what it would take is priced. Nothing here
 /// may be read as having answered it.
 fn the_model_is_served_by_a_login_of_its_own(image: &Image, wrong: &mut Vec<Wrong>) {

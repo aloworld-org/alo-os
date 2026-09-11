@@ -122,7 +122,7 @@ What was done instead:
 - **`docs/quirks.md`** carries the finding, in the section for engines behaving
   unlike their manuals, so the next person to read `Group=alo-model` does not
   read it as the sentence the other two units' `Group=` lines are.
-- **`docs/decisions/0026-who-may-ask-the-model-anything.md`** is the decision,
+- **`docs/decisions/0027-who-may-ask-the-model-anything.md`** is the decision,
   **proposed**. It sets out what is actually at stake — not a grant boundary (no
   verb touches the runtime), not an egress (nothing leaves), but the owner's
   compute today and, at v0.5, an ADR 0005 sandboxed application reaching the
@@ -142,7 +142,7 @@ What was done instead:
   not touched**: only the owner moves the definition.
 
 `crates/alo-image` says in as many words, beside the check, that it does not
-answer who may connect, and points at ADR 0026. Nothing here may be read as
+answer who may connect, and points at ADR 0027. Nothing here may be read as
 having answered it.
 
 ## Which of the two the egress claim is
@@ -201,7 +201,7 @@ the decisions it is about rather than a process anybody has watched start.
 
 - *Arrives ready to run* stays owed. No machine has booted this image; no
   catalogued model clears the verb-driving bar, this one included.
-- Who on this machine may ask the model anything is undecided and is ADR 0026's.
+- Who on this machine may ask the model anything is undecided and is ADR 0027's.
   It is not a v0.01 exposure and it is named as v0.5's.
 - The egress claim is a setting, not a measurement.
 
@@ -233,7 +233,7 @@ it.
 - `crates/alo-image/src/wrong.rs`
 - `crates/alo-image/src/testing.rs`
 - `crates/alo-image/tests/what_the_image_owes_the_daemons.rs`
-- `docs/decisions/0026-who-may-ask-the-model-anything.md` (new)
+- `docs/decisions/0027-who-may-ask-the-model-anything.md` (new)
 - `docs/quirks.md`
 - `docs/autonomy/v0-01-evidence.md`
 - `docs/autonomy/v0-01-delivery-plan.md`

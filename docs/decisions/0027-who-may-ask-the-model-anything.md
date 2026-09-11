@@ -1,4 +1,4 @@
-# ADR 0026 — Who on this machine may ask the model anything
+# ADR 0027 — Who on this machine may ask the model anything
 
 **Status:** **PROPOSED.** The recommendation is to accept the machine as it is
 today and to close the gap when the thing that makes it matter arrives, which is
