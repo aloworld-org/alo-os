@@ -16,6 +16,7 @@ members = [
   "crates/alo-by-hand",
   "crates/alo-capability",
   "crates/alo-choosing",
+  "crates/alo-collected",
   "crates/alo-context",
   "crates/alo-dock",
   "crates/alo-driving",

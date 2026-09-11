@@ -36,7 +36,12 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 
 use alo_capability::Grantee;
-use alo_keeping::{NotKept, Writing};
+use alo_keeping::Writing;
+// The refusals a record's own file can produce are asked about on Unix only —
+// the questions are a file's owner and its mode — so on any other host this name
+// is unused and `-D warnings` is right to say so.
+#[cfg(unix)]
+use alo_keeping::NotKept;
 use alo_record::{Asking, Entry};
 use alo_recounting::{AtMost, NotRecounted, NotSaid, Outcome, Recounting, Told};
 use alo_saying::everything_this_machine_can_say;

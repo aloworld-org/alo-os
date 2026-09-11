@@ -600,3 +600,72 @@ verbs.
 - **Constraint:** it says nothing to a person and declares no strings — it is a
   repository check like `alo-reconciling` and `alo-by-hand`, and `alo-saying`
   does not collect it. Nothing in `crates/alo-shell`.
+
+**Done, 2026-09-11.** `crates/alo-collected`: the crates that declare words are
+read out of the workspace's own member list — `src/words.rs` with a `pub fn
+declare_into`, which twenty-three crates already follow — and **nothing in the
+crate holds a crate's name**, neither the twenty-two collected nor the one that
+is not. All three directions are held: a crate that declares words and nothing
+collects is the finding this exists for, a name on the list that no longer
+declares anything is a finding too, and a crate on both lists or twice on one is
+refused because either would make the counts add up while the workspace does
+not. The measurement against this repository is `declaring == collected +
+apart`, on the disk the test runs on: twenty-three, twenty-two and one.
+
+**What the shape decides, and it is the half no count carries:** the exception
+is held to an *argument*, not to a name. `alo_saying::DELIBERATELY_APART` is a
+new additive surface pairing the one crate outside the vocabulary — `alo-agentd`,
+which is Linux and would make a vocabulary three strings shorter on a host with
+no daemon, so one host would refuse a translation file the other accepted — with
+the reason, and a name with a shrug beside it is refused at the same forty
+characters `alo-by-hand` and `alo-reconciling` use. A standing permission to say
+nothing is indistinguishable from the bug this check is for; the sentence is the
+whole difference. An exception nobody needs any more is refused as well, because
+it would still be standing on the day a crate of that name has words. Every
+refusal is shown against a fixture, and one of them is shown against **this
+repository** with a real crate taken off the real list, because a check could
+pass its fixtures and never look at the disk. `docs/contracts/translations.md`
+is where whoever adds the next crate meets the convention, which this makes
+load-bearing rather than tidy. Two pre-existing **Windows** clippy failures
+(`alo-keeping`, `alo-recounting`) were repaired in the same change because a gate
+red for somebody else's reason still stops publication; six pre-existing
+Windows-only `alo-recounting` test failures are named in the report and
+deliberately not cut to green. Report:
+`docs/autonomy/updates/every-crate-that-declares-words-collected.md`. The next
+task (18) is written below. No strings are declared and `alo-saying` does not
+collect this crate.
+
+### 18. Every decision this repository points at, and the ones nobody can find
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 17, from the failure that family of checks keeps finding in a
+new costume. `CLAUDE.md` makes the ADRs binding — *read the ADR before proposing
+an alternative* — and this repository points at them constantly: `ADR 0001 §3`
+in a crate's documentation, `ADR 0009` in a finding's own sentence, `ADR 0016` in
+a promise's evidence. **Nothing checks that any of those pointers lands.**
+
+Task 16 already met one edge of this and fixed exactly one pointer:
+`a_promise_that_waits_on_a_decision_names_one_that_is_there` holds
+`docs/autonomy/v0-01-evidence.md` to the decision it names, because *waits on a
+decision* sending a reader to an ADR nobody wrote reads exactly like an answer.
+Every other citation in the repository is unchecked — and an ADR reference is the
+one kind of pointer a reader believes without opening, because the number looks
+like a fact.
+
+- **Acceptance:** every ADR reference in the repository's Rust and Markdown —
+  read as citations rather than from a list kept beside them, so a reference
+  added anywhere is one this check sees — names a decision that exists under
+  `docs/decisions/`; a number with no file is refused in a sentence naming the
+  citation and where it is; two files claiming one number is a finding, and so is
+  a decision whose own file does not say what its status is, because an ADR
+  nobody recorded as accepted or proposed is one every reader will read as
+  settled; and the refusal is tested as carefully as the answer, including a
+  citation of a decision nobody wrote.
+- **Constraint:** it judges the *pointer*, never the argument — whether an ADR
+  says what a citation claims is a reader's job and nothing mechanical reaches
+  it. It says nothing to a person and declares no strings; it is a repository
+  check like `alo-reconciling`, `alo-by-hand` and `alo-collected`, and
+  `alo-saying` does not collect it. Nothing in `crates/alo-shell`.

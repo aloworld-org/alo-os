@@ -101,6 +101,29 @@ pub const EVERY_LIST: [&str; 22] = [
     "alo-turn",
 ];
 
+/// Every crate that declares words and is deliberately **not** collected here,
+/// with the reason it is not.
+///
+/// One, and it is `alo-agentd` — the argument is in this file's own
+/// documentation and is restated here because this is the list a check can read.
+/// An exception with no reason beside it is indistinguishable from the failure
+/// the check exists for, which is a crate whose words nothing collects: the
+/// difference between a documented exception and silence is entirely the
+/// sentence.
+///
+/// `crates/alo-collected` holds both lists to this workspace's own member list:
+/// a crate that declares words and is on neither of them is a finding naming it,
+/// and so is a name on either of them that no longer declares anything.
+pub const DELIBERATELY_APART: [(&str, &str); 1] = [(
+    "alo-agentd",
+    "it is Linux, and every module in it is compiled out anywhere else, so a \
+     vocabulary assembled here would hold three fewer strings on a host with no \
+     daemon than on a machine with one — and one host would then refuse a \
+     translation file the other accepted. It declares its own three on top of \
+     this one, which is the rule docs/contracts/translations.md states for \
+     anything that assembles a vocabulary.",
+)];
+
 /// Everything alo OS can say, in one vocabulary.
 ///
 /// What a process adds to this is whatever it says that the rest of the machine

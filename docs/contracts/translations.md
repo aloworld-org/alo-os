@@ -78,6 +78,21 @@ one file.
 in the code, with its English and a note to the translator beside it; the part
 before the first dot says which part of the system it comes from.
 
+**Where the code declares them, which is why a translator can rely on that
+sentence.** A crate declares its own strings in `src/words.rs`, through a `pub
+fn declare_into` that puts them onto a vocabulary somebody else is building, and
+`crates/alo-saying` is the one place that calls all of them. Both halves are
+load-bearing rather than tidy: a crate that declared words and was collected
+nowhere would compile, test and ship, and every sentence in it would reach a
+person as a bare key — in English and in every language somebody had translated.
+That happened once, to `crates/alo-overlay`, and was caught by somebody reading.
+`crates/alo-collected` is what catches the next one: it walks this workspace's
+own member list, and a crate that declares words and is not collected fails the
+build in the change that adds it. A crate that cannot be collected — today only
+the agent service, which is Linux and would make the vocabulary shorter on one
+host than another — is named there with the reason, and a name with no reason
+beside it is refused as well.
+
 **A gap is `{name}` and it may be moved but not removed.** `{path}`, `{bytes}`,
 `{how_many}` are where a file name or a number goes. A sentence that drops one
 would reach somebody as *your file is too big* with no size in it, in their own

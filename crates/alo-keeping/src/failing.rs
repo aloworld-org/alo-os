@@ -235,6 +235,13 @@ impl NotKept {
     }
 
     /// What was named is a link, and this crate does not follow one.
+    ///
+    /// Unix only, because asking is: `O_NOFOLLOW` is what answers the question
+    /// and [`crate::believing`] only asks it on a host that has it. The variant
+    /// itself is not `cfg`'d — a refusal this machine can word is part of what
+    /// the crate says everywhere — but a constructor nothing can reach on
+    /// Windows is dead code there, and `-D warnings` is right to say so.
+    #[cfg(unix)]
     pub(crate) fn a_link(path: &Path) -> Self {
         Self::ALink {
             path: path.display().to_string(),

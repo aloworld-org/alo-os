@@ -197,6 +197,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-collected"
+version = "0.0.1"
+dependencies = [
+ "alo-by-hand",
+ "alo-saying",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-context"
 version = "0.0.1"
 dependencies = [

@@ -1,0 +1,33 @@
+[package]
+name = "alo-collected"
+version = "0.0.1"
+description = "Every crate of this workspace that declares words, held to being collected into the one vocabulary — or named, with a reason, as deliberately apart."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The workspace's own member list, parsed once in this repository rather than
+# twice. `alo-by-hand` does the same walk for the crates that declare *verbs*,
+# and a second copy of that parser would be a second thing to fix the day the
+# manifest changes shape — which is exactly what CLAUDE.md law 4 means by one
+# reason to change. What is this crate's own is the convention it looks for:
+# `src/words.rs`, and a `pub fn declare_into` in it.
+alo-by-hand = { path = "../alo-by-hand" }
+# The findings are sentences whoever is adding a crate acts on, and each one
+# names the crate it is about. This crate says nothing to a person in their own
+# language — see `crate` documentation for why an author's English is right here
+# and `alo-strings` is not.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The one vocabulary, and the two lists this check holds it to. They are the
+# measurement rather than the method, so they are here and not above: the crate
+# checks whatever lists it is handed, and the test is what hands it the real
+# ones. It is also what keeps `alo-saying` free of a dependency on its own
+# check.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

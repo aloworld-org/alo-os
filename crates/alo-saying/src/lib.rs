@@ -134,7 +134,9 @@ pub mod rented;
 mod testing;
 
 pub use arriving::THE_FORMAT;
-pub use collecting::{EVERY_LIST, NotCollected, everything_this_machine_can_say};
+pub use collecting::{
+    DELIBERATELY_APART, EVERY_LIST, NotCollected, everything_this_machine_can_say,
+};
 pub use damage::Damage;
 pub use failing::{LeftOut, NotSpoken};
 pub use loading::Loaded;
