@@ -1089,3 +1089,45 @@ it does not land at all.
   reading how `alo-agentd` actually takes its settings, and the answer is
   written in the report rather than assumed either way. Nothing in
   `crates/alo-shell`.
+
+### 25. The image becomes a disk a machine can actually boot
+
+**Status:** ready. **Depends on:** nothing in this lane.
+
+Every promise in `docs/autonomy/v0-01-evidence.md` that says *still owed: no
+machine has ever* waits on one missing step, and it is not a machine. It is that
+**nothing turns the image into something a machine boots.** `image/Containerfile`
+builds a bootc OCI image (ADR 0011) and `crates/alo-image` holds it to every
+promise it makes, but there is no path from that image to a disk, so the only
+thing anybody has ever seen is a test saying the recipe is right.
+
+The owner's machine is a Windows 11 Pro host with Hyper-V, and the certified
+laptop has not been bought. A virtual machine is **not** the hardware acceptance
+in phase 8 and this task may not claim to be: a virtual GPU is not *the GPU works
+on first boot*, and tame virtual firmware is not *firmware to sign-in*. What it
+is, is the difference between a repository that believes it boots and one that
+has watched it — and that is worth having before a laptop is bought rather than
+after.
+
+- **Acceptance:** one documented command turns the built image into a bootable
+  disk image, and `docs/booting.md` says what it produces, what it needs
+  installed, and how to attach it to a Hyper-V generation-2 virtual machine;
+  the disk is built by a pinned upstream tool the way the runtime is (`bootc
+  install to-disk` or `bootc-image-builder` — whichever the pinned base
+  supports, named with its version and the reason), never a hand-rolled
+  partitioner; `crates/alo-image` holds the recipe's boot-relevant promises the
+  way it holds the rest — a check per promise and a twin that breaks one line,
+  including that the disk's firmware mode matches what the document tells a
+  person to select; and what the disk **cannot** show is written in the same
+  document, by name, so nobody quotes a virtual machine as hardware acceptance.
+- **Constraint:** no second image recipe — the disk is built from the image
+  `image/Containerfile` already produces, and a divergence between them is the
+  defect this task exists to prevent. Nothing in `crates/alo-shell`; there is
+  still nothing to draw and the machine boots to a text console, which is the
+  honest state and is what the document says it will look like. If the pinned
+  base cannot produce a disk without an engine change, that is an ADR handed
+  over as this task, in the shape ADR 0024 and ADR 0025 used — never a patched
+  engine.
+- **Owner:** Claude — it touches no compositor file and needs no hardware. The
+  *running* of it on the owner's Hyper-V is the owner's, with the document this
+  task writes in hand.
