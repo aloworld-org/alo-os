@@ -1332,3 +1332,69 @@ forgot to knock is a screen that takes a correct password and does nothing.
   `alo-sessiond` declares the line. Additive only — no new message and no field
   added to `Knock`, which is the whole of what keeps a password off that wire.
   Every string a person reads is in the vocabulary `alo-saying` collects.
+
+### 27. What the greeter does, before there is anything to draw
+
+**Status:** ready. **Depends on:** 26.
+
+Task 26 built the door and nothing knocks at it. Task 13 is the screen and it is
+the desktop lane's, because drawing is theirs. **Between them is everything the
+greeter does that is not drawing**, and this is that: read a name and a password
+somebody typed, ask `alo-accounts` whether it is right, and on yes knock at
+`alo-sessiond` for that person's uid. It is the same split task 26 used, and for
+the same reason — the lane that draws is away until the 16th, and the logic
+underneath does not need pixels to be finished or to be tested.
+
+It is a value with no surface, in the shape `crates/alo-approving` and
+`crates/alo-overlay` took theirs: what a greeter *is* asked, what it answers,
+and every refusal decided — so that when the screen arrives it draws a thing
+that already works rather than growing the logic inside a paint routine.
+
+- **Acceptance:** a name and password that match an account produce a knock for
+  that account's uid and nothing else; a wrong password and an unknown name are
+  refused **identically**, in the words `alo-accounts` already has and in the
+  same time, so neither the text nor the clock says which it was; a machine with
+  no store answers *make an account* rather than a sign-in, which is ADR 0024's
+  first-boot sentence; nothing anywhere in it holds, logs or returns the
+  password, tested by a check that reads the crate for it the way
+  `alo-saying`'s rented check reads for names; and every string a person would
+  read is in the vocabulary `alo-saying` collects.
+- **Constraint:** nothing in `crates/alo-shell` and no pixels — no window, no
+  font, no layout, and no guess about what the screen looks like. It opens no
+  session itself: it knocks, and `alo-sessiond` decides, because a greeter that
+  could open one would be the second privileged component growing a third job.
+  It authenticates nothing itself either — `alo-accounts` does that and already
+  does it.
+
+### 28. Recovering a parked task, as a command rather than as a memory
+
+**Status:** ready. **Depends on:** nothing.
+
+Parking works: a task that fails its gates goes to a branch, nothing is
+discarded, and the run carries on. **Picking one back up does not**, and on
+2026-09-11 that cost more than the parking saved. Recovering a task by hand with
+`git restore --source=<branch> -- .` reverts the *whole tree* to that branch,
+which silently undid two published tasks the first time and would have undone
+two more the second. Both times the supervisor's *these are changed and no task
+named them* check caught it before anything reached `main`; neither time did
+anything in this repository stop the mistake being made again ten minutes later.
+
+The right recovery is knowable and mechanical: restore the files the parked
+task's own handoff names, and for a file another task has since changed —
+a plan, the evidence ledger — apply that task's **diff** rather than its
+**version**.
+
+- **Acceptance:** one subcommand takes a parked branch and leaves the working
+  tree holding exactly that task's work on top of today's `main`, with its
+  handoff back in place ready to publish; a file the task named and nobody else
+  has touched comes back whole; a file both touched is merged by applying the
+  task's own diff, and a conflict is **reported and left** rather than resolved
+  by preference; a branch whose handoff names files the task did not change, or
+  that is not a parked branch at all, is refused in words; and the refusals are
+  tested beside the recoveries.
+- **Constraint:** it restores and never publishes — gating stays where it is, and
+  a recovery that published would be a road around the gates. It deletes no
+  branch, so a recovery that goes wrong can be done again. Nothing in it may
+  reset, clean or check out the whole tree: that is the defect, and a
+  `git checkout -- .` anywhere in the implementation is the thing the test
+  should refuse.
