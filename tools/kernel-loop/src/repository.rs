@@ -302,6 +302,18 @@ pub fn pushed(at: &Path) -> Result<(), String> {
 /// tree — and the loop stops, which is the right answer for a repository that
 /// will not do as it is asked.
 pub fn parked(at: &Path, task: u32, why: &str) -> Result<String, String> {
+    // **A stopped rebase is abandoned before anything else**, because parking
+    // is exactly what happens after one: publishing rebases the combined tree,
+    // a conflict leaves the rebase where it stopped, and `git switch --create`
+    // refuses to move while it stands — which is how a conflicted task 21
+    // stopped a whole run on 2026-09-11 with the one failure this function
+    // exists to make survivable. `--quit` keeps the working tree exactly as it
+    // is, conflict markers and all — they are part of what a person picking
+    // the branch up needs to see — and `main`'s own ref was never moved by the
+    // rebase, so nothing is lost by walking away from it. When no rebase is in
+    // progress the command refuses and the refusal is the no-op it sounds like.
+    drop(git(at, &["rebase", "--quit"]));
+
     let branch = format!("parked/task-{task}-{}", moment());
     git(at, &["switch", "--create", &branch])?;
 
@@ -399,6 +411,39 @@ mod tests {
     /// A comment saying *do not push anything else* would be a request. This is
     /// the rule: every `push` in this file names `MAIN`, and a new one that does
     /// not fails here.
+    /// **Parking abandons a stopped rebase before it makes its branch.**
+    ///
+    /// The order is the whole point: publishing rebases the combined tree, a
+    /// conflict leaves that rebase standing, and `git switch --create` refuses
+    /// to move while it stands. On 2026-09-11 that stopped an entire run —
+    /// parking existed precisely so a failed task could not do that, and the
+    /// one road that leads to parking most often was the one it could not
+    /// survive. Held on the source the way the push rule below is, because the
+    /// defect was an ordering in this file and a fixture rebase would test git
+    /// rather than the order.
+    #[test]
+    fn parking_abandons_a_stopped_rebase_before_it_switches() {
+        let source = include_str!("repository.rs");
+        let body = source.split("pub fn parked").nth(1).unwrap_or("");
+        assert!(!body.is_empty(), "parked() is no longer in this file");
+        assert!(
+            body.contains("\"rebase\""),
+            "parked() no longer abandons a stopped rebase"
+        );
+        assert!(
+            body.contains("\"switch\""),
+            "parked() no longer creates its branch with switch"
+        );
+        // A missing find cannot be reached past the asserts above; the
+        // defaults exist only so no unwrap appears in this file.
+        let quits = body.find("\"rebase\"").unwrap_or(usize::MAX);
+        let switches = body.find("\"switch\"").unwrap_or(0);
+        assert!(
+            quits < switches,
+            "parked() switches branches before abandoning a stopped rebase, so a              conflicted publish stops the run again"
+        );
+    }
+
     #[test]
     fn the_only_branch_this_pushes_is_main() {
         let source = include_str!("repository.rs");
