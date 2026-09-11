@@ -131,7 +131,28 @@ pub struct Model {
     pub parameters_b: f32,
     /// The quantisation these weights are in, which is why "it worked for me"
     /// is not a useful bug report without it.
-    pub quantisation: String,
+    ///
+    /// **Optional, and paired with [`artefact`](Model::artefact).** A
+    /// quantisation is the name of a file somebody can fetch, and this field
+    /// used to be a bare string that nothing anchored: `teuken-7b-instruct`
+    /// said `Q4_K_M` while openGPT-X publishes no GGUF of Teuken at all, so the
+    /// entry named an artefact that exists only as strangers' requantisations.
+    /// An entry now either says which artefact it means or claims no
+    /// quantisation, and [`Catalogue::parse`] refuses the half-statement.
+    #[serde(default)]
+    pub quantisation: Option<String>,
+    /// **The artefact that quantisation names** — what a machine actually
+    /// fetches, as the pinned model runtime (ADR 0006) spells it, or a
+    /// publisher's own repository where the runtime's library has no entry.
+    ///
+    /// It is also what a measurement is run against: `ALO_DRIVING_MODEL` takes
+    /// this value, and until it existed the mapping from a catalogue `id` to
+    /// the name a runtime answers to lived in whoever last ran the
+    /// measurement's head.
+    ///
+    /// [`None`] only for an entry that claims no quantisation either.
+    #[serde(default)]
+    pub artefact: Option<String>,
     /// Download size in bytes — what the disk actually loses.
     pub download_bytes: u64,
     /// The video memory this needs to run at a useful speed on a graphics card.
@@ -176,6 +197,18 @@ impl Model {
     #[must_use]
     pub fn can_be_the_agent(&self) -> bool {
         self.drives_verbs.clears_the_bar()
+    }
+
+    /// **The quantisation and the artefact it names, or neither.**
+    ///
+    /// The road to either half, so that nothing reads a quantisation without
+    /// the file it refers to — the shape [`crate::Weights::lines`] uses for the
+    /// same kind of reason. [`Catalogue::parse`] already refuses the
+    /// half-statement, so this answers [`Some`] exactly when the entry claims a
+    /// quantisation at all.
+    #[must_use]
+    pub fn quantised_at(&self) -> Option<(&str, &str)> {
+        Some((self.quantisation.as_deref()?, self.artefact.as_deref()?))
     }
 }
 
@@ -229,6 +262,26 @@ impl Catalogue {
             }
             if model.min_vram_gb <= 0.0 {
                 return Err(invalid("required video memory must be stated"));
+            }
+            let stated = |it: &Option<String>| {
+                it.as_ref()
+                    .map(|value| value.trim().to_owned())
+                    .filter(|value| !value.is_empty())
+            };
+            match (stated(&model.quantisation), stated(&model.artefact)) {
+                (Some(_), Some(_)) | (None, None) => {}
+                (Some(_), None) => {
+                    return Err(invalid(
+                        "a quantisation nobody can point at: name the artefact this entry means, \
+                         or claim no quantisation",
+                    ));
+                }
+                (None, Some(_)) => {
+                    return Err(invalid(
+                        "an artefact whose quantisation the entry does not say, which is the half \
+                         of the pair a reader needs",
+                    ));
+                }
             }
             if model.licence.name.trim().is_empty() {
                 return Err(invalid("every model states its licence"));
@@ -356,6 +409,7 @@ name = "One"
 publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
+artefact = "runtime:tag-q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
@@ -370,6 +424,7 @@ name = "Two"
 publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
+artefact = "runtime:tag-q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
@@ -396,6 +451,7 @@ name = "Vague"
 publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
+artefact = "runtime:tag-q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
@@ -410,6 +466,76 @@ licence = { name = "Custom Community Licence", commercial_use = "with-conditions
         ));
     }
 
+    /// **A quantisation nobody can point at is refused**, which is rule 4 and
+    /// the bug that wrote it: `teuken-7b-instruct` claimed `Q4_K_M` of a model
+    /// whose publisher ships no GGUF, so the catalogue named a file it had
+    /// never chosen. Both halves of the pair are refused alone — an artefact
+    /// with no quantisation beside it is the same claim missing its other half,
+    /// and a reader of one without the other learns something untrue.
+    ///
+    /// Whitespace counts as absent, for [`Model::name`]'s reason one field
+    /// over: a field that is there and says nothing is not a statement.
+    #[test]
+    fn a_quantisation_with_no_artefact_and_an_artefact_with_no_quantisation_are_both_refused() {
+        let entry = |lines: &str| {
+            format!(
+                r#"
+[[model]]
+id = "pointed"
+name = "Pointed"
+publisher = "p"
+parameters_b = 1.7
+{lines}
+download_bytes = 1
+min_vram_gb = 2.0
+min_ram_gb = 3.0
+on_cpu = "comfortable"
+drives_verbs = "not-measured"
+upstream = "https://example.test/pointed"
+licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }}
+"#
+            )
+        };
+
+        // Both halves, and neither half: the two shapes an entry may take.
+        for stated in [
+            "quantisation = \"Q4_K_M\"\nartefact = \"runtime:pointed-q4_K_M\"",
+            "",
+        ] {
+            let catalogue = Catalogue::parse(&entry(stated)).unwrap();
+            let model = catalogue.models.first().unwrap();
+            assert_eq!(model.quantised_at().is_some(), !stated.is_empty());
+        }
+
+        for half in [
+            "quantisation = \"Q4_K_M\"",
+            "artefact = \"runtime:pointed-q4_K_M\"",
+            "quantisation = \"Q4_K_M\"\nartefact = \"   \"",
+            "quantisation = \"  \"\nartefact = \"runtime:pointed-q4_K_M\"",
+        ] {
+            let refused = Catalogue::parse(&entry(half)).unwrap_err();
+            assert!(
+                matches!(&refused, CatalogueError::Invalid { id, .. } if id == "pointed"),
+                "{half} was accepted: {refused}"
+            );
+        }
+    }
+
+    /// **Every entry that claims a quantisation says which artefact it is**,
+    /// asked of the catalogue we ship rather than of a fixture — the shape
+    /// [`Catalogue::parse`] guarantees, checked where a curator would break it.
+    #[test]
+    fn the_catalogue_we_ship_points_at_every_quantisation_it_claims() {
+        for m in Catalogue::built_in().unwrap().models {
+            assert_eq!(
+                m.quantised_at().is_some(),
+                m.quantisation.is_some(),
+                "{} states a quantisation with no artefact behind it",
+                m.id
+            );
+        }
+    }
+
     #[test]
     fn a_model_with_no_upstream_is_refused_because_we_never_redistribute_weights() {
         let nowhere = r#"
@@ -419,6 +545,7 @@ name = "Nowhere"
 publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
+artefact = "runtime:tag-q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
@@ -511,6 +638,7 @@ name = "Silent"
 publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
+artefact = "runtime:tag-q4_K_M"
 download_bytes = 1
 min_vram_gb = 8.0
 min_ram_gb = 10.0
@@ -559,23 +687,30 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     /// grades were the loop's own. A name here is a measurement somebody ran,
     /// not a measurement somebody read about.
     ///
-    /// **The list is still five, and that is not for want of trying.** A 7B
-    /// entry was fetched and put to `alo-driving` on 2026-09-11 and the box
-    /// could not carry it: the model loads more slowly than `alo_models` waits
-    /// for an answer, and the guest went down under it. So the run produced no
-    /// grade and no name was added — which is what this test is for.
-    /// `crates/alo-models/tests/the_grade_the_weights_wait_on.rs` holds that
-    /// finding to the catalogue, and `docs/quirks.md` has the numbers.
+    /// **The list stuck at five for a reason, and then grew for a better
+    /// one.** A 7B entry was fetched and put to `alo-driving` on 2026-09-11 and
+    /// the box could not carry it: the model loads more slowly than
+    /// `alo_models` waits for an answer, and the guest went down under it. So
+    /// that run produced no grade and no name was added, which is what this
+    /// test is for. The two names after it are the opposite case —
+    /// `qwen3-1.7b` and `granite-3.2-2b-instruct`, added the same day, chosen
+    /// because their publishers train them for tool calls and constrained
+    /// output, and measured here because they fit. Both earned `Rarely`.
+    /// `crates/alo-models/tests/the_grade_the_weights_wait_on.rs` and
+    /// `crates/alo-models/tests/candidates_the_box_can_hold.rs` hold both
+    /// findings to the catalogue, and `docs/quirks.md` has the numbers.
     #[test]
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it
         /// earned.
-        const MEASURED: [(&str, Driving); 5] = [
+        const MEASURED: [(&str, Driving); 7] = [
             ("phi-3-mini-instruct", Driving::Rarely),
             ("llama-3.2-3b-instruct", Driving::Rarely),
             ("qwen2.5-3b-instruct", Driving::Rarely),
             ("gemma-2-2b-instruct", Driving::Rarely),
             ("smollm2-1.7b-instruct", Driving::Rarely),
+            ("qwen3-1.7b", Driving::Rarely),
+            ("granite-3.2-2b-instruct", Driving::Rarely),
         ];
         for m in Catalogue::built_in().unwrap().models {
             let ran = MEASURED.iter().find(|(id, _)| *id == m.id);

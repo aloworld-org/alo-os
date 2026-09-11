@@ -2,7 +2,7 @@
 #
 # Data, not code: adding a model is a change to this file, never a release.
 #
-# Three rules for anyone editing it:
+# Four rules for anyone editing it:
 #
 # 1. **Verify the licence against upstream before adding an entry.** Model
 #    licences change between versions and families, and a catalogue that states
@@ -19,9 +19,28 @@
 #    one thing this field exists to stop: it is the only property here that
 #    decides whether a machine hands somebody's files to a model, and ADR 0007
 #    says it is measured by us and never claimed by the publisher.
+# 4. **A stated `quantisation` names an artefact, in `artefact`, or the entry
+#    states no quantisation.** The two fields are one claim and the loader
+#    refuses half of it. `upstream` says where a model comes from; `artefact`
+#    says *which file* — what the pinned runtime (ADR 0006) fetches, spelled the
+#    way it spells it, or a publisher's own repository where the runtime's
+#    library has no entry. It is also what `ALO_DRIVING_MODEL` is set to, so the
+#    grade in `drives_verbs` and the artefact it was earned against are written
+#    in the same place instead of in the head of whoever last ran it.
 #
-# Five entries have been measured and seven have not, and the seven are the
-# ones a 6 GB development box cannot hold: everything from seven billion
+#    The rule exists because this file broke it. `teuken-7b-instruct` said
+#    `Q4_K_M` and openGPT-X publishes no GGUF of Teuken at all — every Q4_K_M of
+#    it is a stranger's requantisation — so the entry named a file this
+#    catalogue had never chosen and could not have measured without silently
+#    borrowing somebody else's. A third party's artefact is allowed here, but it
+#    is **named**, never implied; an entry that can point at nothing claims no
+#    quantisation, which is what `teuken-7b-instruct` and `eurollm-9b-instruct`
+#    now do. Their `download_bytes` is still the four-bit figure they were added
+#    with, and with no artefact behind it that number has nothing to check it
+#    against — a gap this file records rather than hides.
+#
+# Seven entries have been measured and seven have not, and the seven unmeasured
+# are the ones a 6 GB development box cannot hold: everything from seven billion
 # parameters upward wants ten gigabytes or more, and the machine every
 # measurement here was run on has six. That is a fact about the measuring
 # machine rather than about the models, which is why they say "not-measured"
@@ -37,6 +56,15 @@
 # a number out of it, so the three 7B entries still say "not-measured" — which
 # is the true sentence: nobody has run the measurement, and this box cannot.
 # `docs/quirks.md` has the numbers.
+#
+# On the same day, two entries were **added** and measured: `qwen3-1.7b` and
+# `granite-3.2-2b-instruct`, chosen because their publishers train them for tool
+# calls and constrained output rather than because they are small, and both
+# small enough for the box that measured them. Both graded "rarely". So the
+# catalogue is two entries longer and no entry nearer the bar, which is a
+# stronger sentence about small models than the five before them were: it is not
+# only that small chat models lose the shape, it is that training for the shape
+# does not recover it at this size.
 #
 # A machine reading this catalogue still offers no local model the agent — but
 # it says so for the reason that is true of it, which is that what was measured
@@ -59,7 +87,12 @@ id = "eurollm-9b-instruct"
 name = "EuroLLM 9B Instruct"
 publisher = "EuroLLM (EU Horizon project)"
 parameters_b = 9.2
-quantisation = "Q4_K_M"
+# No `quantisation` and no `artefact`, under rule 4: utter-project publishes
+# EuroLLM as safetensors and no GGUF of its own, and the pinned runtime's
+# library has no `eurollm` at all. Every Q4_K_M of it on Hugging Face is a
+# third party's requantisation (`bartowski`, `QuantFactory`, `lmstudio-community`
+# and others), read 2026-09-11, and this catalogue has chosen none of them. So
+# the entry claims no quantisation, and it cannot be graded until one is chosen.
 download_bytes = 5_600_000_000
 min_vram_gb = 8.0
 min_ram_gb = 12.0
@@ -75,17 +108,17 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 # organisation told it may rely commercially on a release licensed for
 # research. Corrected on 2026-09-11 by naming the release the licence line was
 # always true of; the size is unchanged, because the two differ in their
-# licence rather than in their weights. `docs/quirks.md` also records that
-# neither release ships a first-party GGUF, so `quantisation` below names an
-# artefact the publisher does not publish — which is why a grade for this entry
-# waits on a decision about whose requantisation it would mean, and not only on
-# a machine with room.
+# licence rather than in their weights. Neither release ships a first-party
+# GGUF, which is the case rule 4 was written from: the entry said `Q4_K_M` and
+# no such artefact exists outside strangers' requantisations, so it now states
+# no quantisation and names no artefact, and a grade for it waits on somebody
+# choosing one rather than only on a machine with room. `docs/quirks.md` has
+# both findings.
 [[model]]
 id = "teuken-7b-instruct"
 name = "Teuken 7B Instruct"
 publisher = "OpenGPT-X"
 parameters_b = 7.0
-quantisation = "Q4_K_M"
 download_bytes = 4_600_000_000
 min_vram_gb = 6.0
 min_ram_gb = 10.0
@@ -100,6 +133,7 @@ name = "Mistral 7B Instruct"
 publisher = "Mistral AI"
 parameters_b = 7.2
 quantisation = "Q4_K_M"
+artefact = "mistral:7b-instruct-v0.3-q4_K_M"
 download_bytes = 4_370_000_000
 min_vram_gb = 6.0
 min_ram_gb = 10.0
@@ -114,6 +148,7 @@ name = "Mixtral 8x7B Instruct"
 publisher = "Mistral AI"
 parameters_b = 46.7
 quantisation = "Q4_K_M"
+artefact = "mixtral:8x7b-instruct-v0.1-q4_K_M"
 download_bytes = 26_400_000_000
 min_vram_gb = 28.0
 min_ram_gb = 48.0
@@ -130,6 +165,7 @@ name = "Qwen2.5 7B Instruct"
 publisher = "Alibaba Cloud"
 parameters_b = 7.6
 quantisation = "Q4_K_M"
+artefact = "qwen2.5:7b-instruct-q4_K_M"
 download_bytes = 4_680_000_000
 min_vram_gb = 6.0
 min_ram_gb = 10.0
@@ -155,6 +191,7 @@ name = "Phi-3 Mini Instruct"
 publisher = "Microsoft"
 parameters_b = 3.8
 quantisation = "Q4_K_M"
+artefact = "phi3:3.8b-mini-4k-instruct-q4_K_M"
 download_bytes = 2_400_000_000
 min_vram_gb = 4.0
 min_ram_gb = 6.0
@@ -169,6 +206,7 @@ name = "Llama 3.1 8B Instruct"
 publisher = "Meta"
 parameters_b = 8.0
 quantisation = "Q4_K_M"
+artefact = "llama3.1:8b-instruct-q4_K_M"
 download_bytes = 4_920_000_000
 min_vram_gb = 6.5
 min_ram_gb = 10.0
@@ -191,6 +229,7 @@ name = "Gemma 2 9B Instruct"
 publisher = "Google"
 parameters_b = 9.2
 quantisation = "Q4_K_M"
+artefact = "gemma2:9b-instruct-q4_K_M"
 download_bytes = 5_760_000_000
 min_vram_gb = 8.0
 min_ram_gb = 12.0
@@ -241,6 +280,7 @@ name = "Llama 3.2 3B Instruct"
 publisher = "Meta"
 parameters_b = 3.2
 quantisation = "Q4_K_M"
+artefact = "llama3.2:3b-instruct-q4_K_M"
 download_bytes = 2_020_000_000
 min_vram_gb = 3.0
 min_ram_gb = 5.0
@@ -259,6 +299,7 @@ name = "Qwen2.5 3B Instruct"
 publisher = "Alibaba Cloud"
 parameters_b = 3.1
 quantisation = "Q4_K_M"
+artefact = "qwen2.5:3b-instruct-q4_K_M"
 download_bytes = 1_930_000_000
 min_vram_gb = 3.0
 min_ram_gb = 5.0
@@ -277,6 +318,7 @@ name = "Gemma 2 2B Instruct"
 publisher = "Google"
 parameters_b = 2.6
 quantisation = "Q4_K_M"
+artefact = "gemma2:2b-instruct-q4_K_M"
 download_bytes = 1_710_000_000
 min_vram_gb = 2.5
 min_ram_gb = 4.0
@@ -295,10 +337,58 @@ name = "SmolLM2 1.7B Instruct"
 publisher = "Hugging Face"
 parameters_b = 1.7
 quantisation = "Q4_K_M"
+artefact = "smollm2:1.7b-instruct-q4_K_M"
 download_bytes = 1_060_000_000
 min_vram_gb = 2.0
 min_ram_gb = 3.0
 on_cpu = "comfortable"
 drives_verbs = "rarely"
 upstream = "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+# ── trained for tool calls, rather than chosen for being small ──────────────
+#
+# The five above are general chat models, and all five failed at the **shape**
+# rather than at the reasoning: the envelope right and the argument list wrong,
+# a fence round the answer, the prompt's own placeholders copied back. Models
+# whose publishers train them for tool calling and constrained output are a
+# different population, and on 2026-09-11 two of them were put to the same fixed
+# ten on the same box — chosen for that training, and only then filtered to what
+# 5,926 MB can load.
+#
+# **Both graded `rarely`**, which is the finding rather than a disappointment:
+# `qwen3:1.7b` drove 3 of 20 and `granite3.2:2b` drove 1 of 20, and neither is
+# close to nine in ten. Training for tool calls did not carry a model of this
+# size over the bar, so the gap task 10 waits on is not one more curated small
+# entry. `docs/quirks.md` has what each of them wrote, which is the part a grade
+# cannot carry.
+
+[[model]]
+id = "qwen3-1.7b"
+name = "Qwen3 1.7B"
+publisher = "Alibaba Cloud"
+parameters_b = 1.7
+quantisation = "Q4_K_M"
+artefact = "qwen3:1.7b"
+download_bytes = 1_359_279_776
+min_vram_gb = 2.5
+min_ram_gb = 4.0
+on_cpu = "comfortable"
+drives_verbs = "rarely"
+upstream = "https://huggingface.co/Qwen/Qwen3-1.7B"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[[model]]
+id = "granite-3.2-2b-instruct"
+name = "Granite 3.2 2B Instruct"
+publisher = "IBM"
+parameters_b = 2.5
+quantisation = "Q4_K_M"
+artefact = "granite3.2:2b"
+download_bytes = 1_545_296_256
+min_vram_gb = 2.5
+min_ram_gb = 4.0
+on_cpu = "comfortable"
+drives_verbs = "rarely"
+upstream = "https://huggingface.co/ibm-granite/granite-3.2-2b-instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }

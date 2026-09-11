@@ -116,6 +116,7 @@ fn catalogue_of(grade: &str) -> Catalogue {
          publisher = \"p\"\n\
          parameters_b = 3.0\n\
          quantisation = \"Q4_K_M\"\n\
+         artefact = \"runtime:measured-one-q4_K_M\"\n\
          download_bytes = 2_000_000_000\n\
          min_vram_gb = 3.0\n\
          min_ram_gb = 5.0\n\
@@ -234,6 +235,14 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// The two counts are asserted rather than matched loosely, because they are
 /// what a person is shown beside the sentence and a refusal that quietly
 /// stopped counting the unmeasured three would be a different claim.
+///
+/// **Lane B's task 12 moved both counts by two**, and this time the arithmetic
+/// is the plain kind: `qwen3-1.7b` and `granite-3.2-2b-instruct` were added on
+/// 2026-09-11 and measured the same day, and both are Apache-2.0 and run on a
+/// machine with no card — so both join the shorter list *and* the measured
+/// count. They graded `rarely` like the five before them, which is why the
+/// sentence a person is shown is the same one: seven models to choose between,
+/// four of them measured, and none of the four good enough.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -241,8 +250,8 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         refused,
         NoAgentHere::NoneClearsTheBar {
-            to_choose_from: 5,
-            measured: 2,
+            to_choose_from: 7,
+            measured: 4,
         }
     );
 
@@ -266,6 +275,8 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
             "qwen2.5-3b-instruct",
             "gemma-2-2b-instruct",
             "smollm2-1.7b-instruct",
+            "qwen3-1.7b",
+            "granite-3.2-2b-instruct",
         ]
     );
     let here: Vec<&str> = shipped

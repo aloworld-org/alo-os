@@ -217,6 +217,7 @@ mod tests {
             text.push_str(&format!(
                 "[[model]]\nid = \"{id}\"\nname = \"{id}\"\npublisher = \"p\"\n\
                  parameters_b = {parameters_b}\nquantisation = \"Q4_K_M\"\n\
+                 artefact = \"runtime:{id}-q4_K_M\"\n\
                  download_bytes = 1\nmin_vram_gb = 2.0\nmin_ram_gb = 4.0\n\
                  on_cpu = \"{on_cpu}\"\ndrives_verbs = \"{driving}\"\n\
                  upstream = \"https://example.test/{id}\"\n\

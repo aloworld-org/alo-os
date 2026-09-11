@@ -604,6 +604,32 @@ because a runtime alo OS ships is not an address anybody typed.
 **Upstream:** not reported; both are documented behaviour.
 **Date:** 2026-09-03
 
+### Ollama 0.33.3 — one library model's manifest cannot be pulled, and the error is `EOF`
+**Version:** Ollama 0.33.3, the runtime installed on the box every grade in
+`data/catalogue.toml` was made on. The image pins 0.34.0
+(`image/Containerfile`), which this was not tried against.
+**Behaviour:** `ollama pull granite3.3:2b` prints `pulling manifest` and then
+fails with `Error: EOF`, repeatably, on a machine whose network is fine —
+`granite3.2:2b`, `qwen3:1.7b` and `hermes3:3b` all pulled from the same registry
+minutes either side of it. Asking for the explicit tag
+`granite3.3:2b-instruct-q4_K_M` answers `file does not exist`, so the failure is
+not a typo in the name. Fetched by hand, `granite3.3:2b`'s manifest differs from
+its neighbours' in one visible way: its model layer carries a `"from"` key
+naming a path on the machine that published it
+(`/Users/ollama/.ollama/models/blobs/…`), which the others do not. That is a
+plausible cause and **not a confirmed one** — nothing here read the client's
+source.
+**Our response:** the candidate this was wanted for was catalogued at
+`granite3.2:2b` instead, which is the IBM release before it and pulls normally.
+That is a smaller change than it looks: the entry names the artefact it was
+measured against (`artefact` in `data/catalogue.toml`), so what a machine
+fetches and what earned the grade cannot drift apart. **No client was patched
+and no version was moved** — engines are configured, never patched, and a
+runtime that will not serve one model is a reason to measure another rather
+than a reason to fork Ollama.
+**Upstream:** not reported.
+**Date:** 2026-09-11
+
 <!--
 ### <Engine> <version> — <one-line summary>
 **Behaviour:** what it does, versus what is documented
@@ -1223,6 +1249,78 @@ wrong language. Where a model in the catalogue misbehaves in a way that affects
 the agents, record it here with the exact model and quantisation — "it was fine
 for me" is usually a different quantisation.
 
+### Two models trained for tool calls, put to the same ten requests
+**Version:** `qwen3:1.7b` (Qwen3 1.7B, Q4_K_M, 1,359,279,776 bytes) and
+`granite3.2:2b` (IBM Granite 3.2 2B Instruct, Q4_K_M, 1,545,296,256 bytes),
+served by Ollama 0.33.3 on the 5,926 MB WSL2 guest with four CPUs — the box
+every other grade here was made on. Two rounds of `alo_driving::THE_SET`,
+twenty attempts each, 2026-09-11. They are `data/catalogue.toml`'s
+`qwen3-1.7b` and `granite-3.2-2b-instruct`, and each entry names the artefact
+above as the one its grade was earned against.
+**Behaviour:** the five entries measured on 2026-09-04 are general chat models,
+and all five failed at the *shape*. These two were chosen for the opposite
+property: both publishers train them for **tool calls and structured output**,
+Qwen3 with an agentic/function-calling mode and Granite with function calling
+among its stated core capabilities. That is the hypothesis this run tested, and
+**it did not hold at this size.**
+
+| | `qwen3:1.7b` | `granite3.2:2b` |
+|---|---|---|
+| Drove | **3** of 20 | **1** of 20 |
+| The door would not read it | 14 | 15 |
+| A change through the read door | 2 | 2 |
+| A verb nothing declares | 1 (`READ`) | 0 |
+| A format alo OS does not have | 0 | 2 (`"format":2`) |
+| Grade | `rarely` | `rarely` |
+
+**They fail in different ways, and neither way is reasoning.** Qwen3 is the
+only model measured here that has ever driven `list` twice and `read` once —
+those three are the whole of its score — and the other seventeen are one of
+three mistakes. It **drops the door**: `{"format":1,"asks":{"open_application":
+{"application":"org.alo.Writer"}}}` puts the verb where `read` or `propose`
+belongs, which is well-formed JSON that is not a message. It **shouts the
+names**: `{"verb":"READ","given":[{"named":"FILE",…}]}` is the right shape with
+the registry's identifiers upper-cased, and `alo-capability` matches exactly, so
+it is `NoSuchVerb`. And once it **leaked a token of another language into the
+structure** — `…"march.pdf"}]}}特に}` — which is a multilingual model's own
+sampling arriving inside somebody's file operation.
+
+Granite's single success is `find` in round two. Its failures are almost all
+**punctuation**: braces one over or one short, a stray `"` after the closing
+brace, `"given"` written as an object where the protocol has a list. Twice it
+invented **`"format":2`** and wrote a message from a version of alo OS that does
+not exist — `alo-protocol` answers `FromANewerAloOs { format: 2 }`, which is the
+reader refusing a future it was told about rather than guessing, and it is the
+first time any measured model has reached that branch.
+
+**A third was measured and is deliberately not catalogued.** `hermes3:3b` —
+Nous Research's Hermes 3 on Llama 3.2 3B, 2,019,373,888 bytes, whose Hugging
+Face tags literally include *function calling* and *json mode*, which makes it
+the strongest case for the hypothesis this run tested. It drove **0 of 20**,
+inventing a field at every turn: `"reads":"folder"` beside `asks`,
+`"parameters"` where the protocol has `given`, `"propose"` hoisted out of `asks`
+to sit next to `format`, and a nested `""invoices.zip""`. It is left out of
+`data/catalogue.toml` on rule 1 rather than on its grade: the publisher's own
+metadata says `license: llama3` while the model's stated base is Llama **3.2**,
+and those are two different Meta community licences with different version
+lines. This catalogue states a licence read off the publisher, and the publisher
+contradicts itself — so the entry cannot be written honestly, and picking the
+licence we think they meant is exactly the harm rule 1 names. The grade is
+recorded here so the run is not lost; the entry waits on Nous.
+
+**Our response:** the two whose licences are unambiguous are catalogued, both
+say `rarely`, and neither can be the agent. **Nothing in the method moved**: the prompt is the registry's as
+`alo-driving` builds it, the scoring is `alo-protocol`'s reader and
+`alo-capability`'s validation, the runtime's context window is the pinned
+runtime's default, and the five-minute wait is `alo_models`'
+`WHILE_A_MODEL_THINKS`. Qwen3 answers with its thinking enabled, which is what
+the artefact does by default and therefore what a machine would get; turning it
+off would have measured a different model. What the run settles is the useful
+half: **the bar is not being missed for want of tool-call training**, so the
+model task 10 waits on is not one more curated small entry, and the next
+measurement worth making is a larger one on a machine with room.
+**Date:** 2026-09-11.
+
 ### A 7B-class entry cannot be measured on the box every grade here was made on
 **Version:** `mistral:7b-instruct-v0.3-q4_K_M` — Mistral AI's
 Mistral-7B-Instruct-v0.3 at the quantisation `data/catalogue.toml` states, 4.4 GB
@@ -1313,8 +1411,9 @@ be measured on any machine, however much memory it has.
 **Date:** 2026-09-11.
 
 ### The carry-or-fetch measurement ADR 0025 owes: the catalogue has nothing to weigh
-**Version:** `data/catalogue.toml` as of 2026-09-11 — twelve entries, five
-measured by `alo-driving` on 2026-09-04, seven `not-measured` — against the bar
+**Version:** `data/catalogue.toml` as of 2026-09-11 — fourteen entries, five
+measured by `alo-driving` on 2026-09-04 and two more later the same day, seven
+`not-measured` — against the bar
 `alo_driving::measured::RELIABLY` writes down and
 `alo_models::Driving::clears_the_bar` enforces.
 **Behaviour:** ADR 0025 recommends carrying the weights on the certified image
@@ -1339,11 +1438,17 @@ memory:
 | `qwen2.5-3b-instruct` | 1_930_000_000 | `rarely` |
 | `gemma-2-2b-instruct` | 1_710_000_000 | `rarely` |
 | `smollm2-1.7b-instruct` | 1_060_000_000 | `rarely` |
+| `qwen3-1.7b` | 1_359_279_776 | `rarely` |
+| `granite-3.2-2b-instruct` | 1_545_296_256 | `rarely` |
 
-The five that were measured all graded `rarely` — three driven calls in a
-hundred attempts, and the two entries below carry what each model actually
-wrote. The seven that were not measured are not candidates: ADR 0007 says the
-grade is measured by us and never claimed by the publisher, and
+**Fourteen entries as of 2026-09-11, seven measured and all seven `rarely`.**
+The table above was twelve rows and five grades when this measurement was
+first made; the two entries at its foot were added later the same day, chosen
+because their publishers train them for tool calls and constrained output, and
+they graded the same as the five general chat models before them. That does not
+move the verdict — it strengthens it, because the obvious next candidate class
+has now been tried. The seven that were not measured are not candidates: ADR
+0007 says the grade is measured by us and never claimed by the publisher, and
 `Driving::NotMeasured` refuses the bar on purpose. An unmeasured entry is a gap
 the ledger already carries, not a model that is probably fine — and the gap has
 a shape: everything unmeasured wants ten gigabytes of system memory or more,

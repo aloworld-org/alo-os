@@ -588,3 +588,69 @@ publisher's to claim.
   `C:\Users\SBW\.wslconfig`, which `docs/autonomy/SHARED_MAIN.md` puts behind
   an idle handoff from both loops. Trying harder on this box is what task 9
   already did.
+
+**Done, 2026-09-11.** Two entries added and both measured here:
+`qwen3-1.7b` (`qwen3:1.7b`, Q4_K_M, 1,359,279,776 bytes, Apache-2.0) and
+`granite-3.2-2b-instruct` (`granite3.2:2b`, Q4_K_M, 1,545,296,256 bytes,
+Apache-2.0), chosen because Qwen and IBM train them for tool calls and
+constrained output and only then filtered to what 5,926 MB can load. Both
+licences were read off the publishers' own Hugging Face metadata and both sizes
+are the artefact's own manifest rather than a round number. **Both graded
+`rarely`** — `qwen3:1.7b` drove 3 of 20 and `granite3.2:2b` drove 1 of 20 —
+which is this task's finding: *the bar is not being missed for want of tool-call
+training*, so task 10's blocker is a size question rather than a curation one.
+Nothing in the prompt, the scoring, the runtime's context or the five-minute
+wait moved, and no grade cleared the bar, so task 8's carry-or-fetch sentence
+stands and only its table grew two rows.
+
+**The Teuken question is answered in the file's own rules.** `quantisation` is
+now paired with a new `artefact` field naming what the pinned runtime fetches at
+it; `Catalogue::parse` refuses either half alone, so *a quantisation nobody can
+point at* cannot be written down again. Ten entries gained the runtime tag they
+were always measured or fetched by; `teuken-7b-instruct` and
+`eurollm-9b-instruct` state no quantisation, because neither publisher ships a
+GGUF and this catalogue has chosen no stranger's requantisation. Their
+`download_bytes` is left where it was and is now a number with no artefact
+behind it — recorded in rule 4 and written up as task 13 rather than silently
+corrected. A third finding is in `docs/quirks.md` under *Pinned engines*:
+Ollama 0.33.3 cannot pull `granite3.3:2b` at all, which is why the entry names
+the 3.2 release. Measured in
+`crates/alo-models/tests/candidates_the_box_can_hold.rs` and in
+`crates/alo-models/src/catalogue.rs`. Report:
+`docs/autonomy/updates/candidates-the-measuring-box-can-hold.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 13
+below is the next task and was written in the same change.
+
+### 13. The two sizes rule 4 left without an artefact
+
+**Status:** ready. **Depends on:** 12.
+
+Task 12 made `quantisation` a claim an entry has to be able to point at, and two
+entries could point at nothing: `teuken-7b-instruct` and `eurollm-9b-instruct`
+name publishers who ship no GGUF, so both now state no quantisation. Their
+`download_bytes` was not touched, and that is the loose end: 4.6 GB and 5.6 GB
+are four-bit figures for artefacts neither entry any longer claims. Rule 2 of
+`data/catalogue.toml` says a size is *what the disk and the card actually lose,
+for the quantisation named* — and there is no longer a quantisation named, so
+those two numbers now answer a question the entry does not ask. `min_vram_gb`
+and `min_ram_gb` were set from the same four-bit assumption and have the same
+problem.
+
+It is a small task and deliberately separate: correcting a size changes the
+carry-or-fetch table task 8 holds to the catalogue, and doing it inside the
+measurement run would have mixed a curation fix into a grade.
+
+- **Acceptance:** each of the two entries states a size, a video-memory figure
+  and a system-memory figure that a reader can check against something that
+  exists — the publisher's own release, or a named third-party artefact the
+  catalogue chooses on purpose and records why; `docs/quirks.md`'s
+  carry-or-fetch table is brought back into agreement in the same change, which
+  `crates/alo-models/tests/the_carry_or_fetch_measurement.rs` will insist on
+  rather than suggest; and whichever road is taken is written into the
+  catalogue's own rules beside rule 4, because the next curator reads those.
+- **Constraint:** no grade moves — neither entry has been measured and neither
+  may be, and a size is not a measurement of driving. No weights on the image,
+  no setup flow, and nothing in `crates/alo-shell`. If the honest answer is that
+  a catalogue entry must name a third party's requantisation to be complete,
+  that is a decision about what this catalogue vouches for and belongs in an
+  ADR, handed over as this task in the shape ADR 0024 and ADR 0025 used.
