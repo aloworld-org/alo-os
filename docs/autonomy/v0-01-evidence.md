@@ -314,34 +314,39 @@ with the reading behind it is what this entry is for.
 service on any machine — the tests put its own protocol to a socket, which is
 the shape of the exchange rather than the thing working.
 
-### model by default — sovereignty is the default configuration
+### The local model is what the machine arrives ready to run
 
-**Still owed:** all of it, and since 2026-09-11 the question has an argument
-written down rather than only a finding:
-`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` sets
-out the four things *by default* can mean, recommends that the default is what a
-machine **arrives able to do** rather than a value in anybody's settings, and
-asks the owner for one reworded line of the definition. It is **proposed and not
-accepted**, so nothing here is ticked by it and no code follows it yet.
+**Still owed:** the expensive half, and the promise now says so instead of
+disguising it. This is the entry that used to read *model by default —
+sovereignty is the default configuration*;
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` set out
+the four things *by default* could mean, and on 2026-09-11 it was **accepted as
+Option D** under the owner's standing delegation, with the definition reworded in
+the same change. What the promise gave up is the claim that a value sits in a
+settings file before a person has touched one — unbuildable here on purpose,
+since ADR 0016 keeps that file for the person and ADR 0024 ships no accounts to
+write it into. What it took on is heavier: **a model on the disk of every machine
+we ship, sized for that machine** (ADR 0007).
 
-What is owed underneath the decision is the part the wording disguised.
-`alo-choosing` is deliberately unable to produce a choice nobody made — a machine
-nobody has configured has no answer at all — because ADR 0016 settled that a
-default is a choice made by whoever set it, and that is not the missing piece.
-**The missing piece is that the local model is not on the machine**:
+So what is owed is exactly what was owed before, stated without the disguise.
 `image/Containerfile` adds two binaries, two units, two directories and one
-description to a pinned base and carries no model runtime and no weights, so
-there is nothing local for an agent to point at; and there is no setup flow, so
-none of the four configurations is offered to anybody at all.
+description to a pinned base and carries **no model runtime and no weights**, so
+no machine this repository builds arrives ready to run anything; and there is no
+setup flow, so none of the four configurations (ADR 0009's *not at all* among
+them, first-listed local among them, nothing pre-selected) is offered to anybody.
+The open question the ADR left — whether the weights ride on the certified image
+or are fetched at setup — is a decision inside the work, not a blocker in front
+of it.
 
-**Read again on 2026-09-11, and the reading did not move it.** The decision is
-still proposed rather than accepted, and its recommendation asks for one line of
-`docs/features.md` to be reworded, which is the owner's and nobody else's. A
-worker starting the code before the answer would be choosing between the four
-options rather than building one, and the expensive half — a model runtime and
-weights on the image — waits on the same decision's open measurement, whether the
-weights are carried on the certified image or fetched at setup. **Not reachable
-by this lane**, and the thing it waits on is a person rather than a task.
+**Reachable now.** What stood in front of this entry was a person's answer, and
+the answer is on the record; what stands in front of it now is work — the pinned
+runtime on the image, weights sized by `Catalogue::agent_for_cpu`'s honesty
+rather than a publisher's claim, and a setup flow for the four choices. The
+`nothing is chosen on their behalf` half is already held by
+`crates/alo-choosing/tests/the_three_choices.rs` (`Settings::untouched` is a
+person who has not chosen, and no constructor invents a choice); the
+`arrives ready to run` half has no test until the image carries a model, and this
+entry stays owed until one boots with it.
 
 ### Add your own provider in Settings
 

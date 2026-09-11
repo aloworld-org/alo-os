@@ -127,12 +127,14 @@ fn decisions_missing_from(named: &[String]) -> Vec<String> {
 /// **A promise that waits on a decision names one that exists** — against this
 /// repository, on the disk it is checked out on.
 ///
-/// The promise this was written for is *the agents point at the local model by
-/// default*, whose whole answer is an argument rather than a test: ADR 0016
-/// refuses a default nobody chose, the definition promises one, and only the
-/// owner can move either. An entry like that is a pointer, and a pointer at a
-/// file nobody wrote reads exactly like an answer — which is this crate's own
-/// first sentence about why the audit exists.
+/// The promise this was written for is *the local model is what the machine
+/// arrives ready to run* — before ADR 0025 was accepted on 2026-09-11 it read
+/// *the agents point at the local model by default*, and its whole answer was
+/// an argument rather than a test. The decision is taken now, so what the
+/// entry points at is no longer a question waiting on the owner but the record
+/// of the answer — and a pointer at a file nobody wrote would still read
+/// exactly like an answer, which is this crate's own first sentence about why
+/// the audit exists.
 #[test]
 fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
     let ledger = reading(THE_LEDGER);
@@ -151,22 +153,23 @@ fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
 
     let default = alo_reconciling::entries_in(&ledger)
         .into_iter()
-        .find(|entry| entry.promise().contains("model by default"))
-        .expect("the ledger still has an entry about the local model by default");
+        .find(|entry| entry.promise().contains("arrives ready to run"))
+        .expect("the ledger still has an entry about the local model the machine arrives with");
     let owed = default
         .owed()
-        .expect("the local-model default is owed rather than shown")
+        .expect("the machine-arrives-ready promise is owed rather than shown")
         .sentence()
         .to_owned();
     assert!(
         default.names().is_empty(),
-        "the local-model default was reconciled as shown by something, and \
-         nothing on this machine points at a local model yet"
+        "the machine-arrives-ready promise was reconciled as shown by something, \
+         and no image this repository builds carries a model runtime or weights yet"
     );
     assert!(
         decisions_named_in(&owed).contains(&THE_REAL_DECISION.to_owned()),
-        "the entry no longer says which decision it waits on, so a promise the \
-         owner has to answer reads as a promise somebody forgot: {owed}"
+        "the entry no longer names the accepted decision the reworded promise \
+         rests on, so a reader cannot get from the ledger to why the wording \
+         changed: {owed}"
     );
 }
 
