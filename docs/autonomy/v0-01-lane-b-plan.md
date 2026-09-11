@@ -328,3 +328,62 @@ source tree in this repository.
   `crates/alo-shell`. If the runtime's licence or its packaging forces a decision
   this repository has not taken, that decision is an ADR handed over as this
   task, in the shape ADR 0024 and ADR 0025 used.
+
+### 9. A model on the disk, sized for the machine it lands on
+
+**Status:** blocked. **Depends on:** 8, and on the catalogue having an entry that
+clears the verb-driving bar.
+
+Task 8 took the measurement ADR 0025 owed and the first number did not exist:
+every catalogued entry anybody has run `alo-driving` against grades `rarely`,
+and the rest are `not-measured`, which is refused as a candidate on purpose. So
+**the weights half of *the machine arrives ready to run* cannot be built yet**,
+and this task is written down rather than started so that the thing it waits on
+is named rather than forgotten.
+
+What unblocks it is not infrastructure and not a decision. It is a catalogued
+model that drives the verbs — measured by us, the way `docs/features.md` already
+promises the catalogue is measured rather than claimed. Until one exists, a
+worker taking this task would be choosing which model to ship by wishing.
+
+- **Acceptance, when it is unblocked:** the image carries weights for the entry
+  `Catalogue::agent_for_cpu` recommends on the certified machine's class, pinned
+  and digest-checked the way the runtime is; `crates/alo-image` holds it with a
+  check per promise and a twin that breaks one line; a machine whose class has
+  no entry that clears the bar ships **no** weights and says so through the
+  answer `alo-telling` already gives, rather than shipping a model that cannot
+  drive anything; and the image's size is stated in `docs/quirks.md` beside the
+  measurement task 8 wrote.
+- **Constraint:** nothing here chooses for a person (ADR 0016, ADR 0025) — what
+  the machine arrives *able* to do is not a value in anybody's settings file.
+  Nothing in `crates/alo-shell`.
+
+### 10. What a person is asked at setup, before there is anywhere to ask it
+
+**Status:** ready. **Depends on:** nothing in this lane.
+
+ADR 0009 gave setup a fourth choice — no model, no provider, no agent — with the
+same weight as the other three and no persuasion attached, and ADR 0025 settled
+that the local one is listed first because it is what the machine can already
+do, with **nothing pre-selected**. Neither has anywhere to happen: there is no
+setup flow in this repository at all, which the evidence ledger records against
+three separate promises.
+
+This is the flow as a value, in the shape `crates/alo-approving` and
+`crates/alo-overlay` took their surfaces — decided without drawing one, so that
+the drawing is the compositor lane's and the rules are testable now.
+
+- **Acceptance:** the four choices are one enumerated value, ordered with the
+  local one first and **nothing selected** until a person selects it; a setup
+  that has not been answered is distinguishable from one answered *not at all*,
+  and the second is a finished setup rather than a skipped one; choosing writes
+  through `alo-choosing`'s own shapes into the person's own file and nowhere
+  else; declining writes the same way and leaves a machine whose agent surfaces
+  are absent rather than greyed out; and every string a person reads is in the
+  vocabulary `alo-saying` collects, with a test that none of them asks anybody
+  to buy anything or nudges toward a source.
+- **Constraint:** no pixels and nothing in `crates/alo-shell`. It does not
+  install a model, does not test a provider, and does not decide what the
+  machine arrives carrying — that is task 9's, and this one only offers what is
+  there. A choice pre-selected for the person, however reasonable, contradicts
+  ADR 0016 and ADR 0025 and is the one thing this task may not do.
