@@ -430,8 +430,52 @@ fn one_iteration(
     repository::pulled(at)?;
 
     let mut steps = publishing::OnThisMachine::publishing(at, ours, &task);
+    let said = match publishing::gated_and_pushed(&mut steps) {
+        Ok(sha) => return Ok(journal::Went::Published(sha, task.task.clone())),
+        Err(said) => said,
+    };
+
+    // **A failed gate is the most actionable sentence in the run, and until now
+    // nobody read it back to anybody.** Three workers in a row handed over code
+    // that did not compile; the instruction not to was written, strengthened and
+    // ignored each time. So the lever is not the sentence — it is this: one more
+    // worker, on the same task, holding what the gates said, over work that is
+    // still in the tree. Parking spends a finished afternoon to punish a missing
+    // `cargo test`; this spends a few minutes to collect it.
+    //
+    // Once, never twice. A second failure is the work rather than an oversight,
+    // and parking is what that is for.
+    if !worker::is_configured() {
+        return Err(said);
+    }
+    journal::note(
+        ours,
+        &format!(
+            "the gates refused task {}; its work is still in the tree, so one worker is \
+             launched on it again with what they said. This is the second and last attempt.",
+            chosen.number
+        ),
+    );
+    handoff::Handed::put_aside(ours)?;
+    match worker::repairing(at, &chosen, &said) {
+        Ok(_took) => journal::note(ours, "the second worker finished; inspecting what it left"),
+        Err((why, _took)) => {
+            // The repair never ran, so what stands is the original refusal —
+            // that is what the work has to answer for, not a worker that died.
+            journal::note(ours, &format!("the second worker did not finish: {why}"));
+            return Err(said);
+        }
+    }
+
+    let Some(again) = waiting_for(ours, &chosen.named)? else {
+        return Err(said);
+    };
+    journal::note(ours, &format!("taking up again: {}", again.task));
+    repository::on_main_and_clean_but_for(at, &again.files)?;
+
+    let mut steps = publishing::OnThisMachine::publishing(at, ours, &again);
     publishing::gated_and_pushed(&mut steps)
-        .map(|sha| journal::Went::Published(sha, task.task.clone()))
+        .map(|sha| journal::Went::Published(sha, again.task.clone()))
 }
 
 /// Gate and publish whatever handoff is waiting, choosing no task and launching

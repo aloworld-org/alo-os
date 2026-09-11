@@ -105,6 +105,29 @@ impl Handed {
             .map_err(|why| format!("the handoff could not be put away: {why}"))
     }
 
+    /// Move a refused handoff out of the way so a second worker can write its
+    /// own, keeping it under the refusal it earned.
+    ///
+    /// **Kept, like every other one**, and for a sharper reason: it is the only
+    /// account of what the first worker believed it had finished, and the pair
+    /// of it and the repaired one is how anybody later sees what the gates
+    /// actually caught. Nothing here deletes a file.
+    ///
+    /// # Errors
+    /// Whatever the machine said. A handoff left in place would be read as the
+    /// second worker's own, and the loop would gate the same refused work twice
+    /// and call it an answer.
+    pub fn put_aside(ours: &Path) -> Result<(), String> {
+        let refused = ours.join("refused");
+        std::fs::create_dir_all(&refused)
+            .map_err(|why| format!("{} could not be made: {why}", refused.display()))?;
+        let when = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |since| since.as_secs());
+        std::fs::rename(ours.join(THE_HANDOFF), refused.join(format!("{when}.toml")))
+            .map_err(|why| format!("the refused handoff could not be put aside: {why}"))
+    }
+
     /// The file, read.
     fn read(written: &str) -> Result<Self, String> {
         let mut task = String::new();

@@ -87,6 +87,36 @@ pub fn is_configured() -> bool {
 /// A sentence when no worker is configured, when it could not be started, or
 /// when it was still running at its deadline.
 pub fn ran_on(at: &Path, task: &Task) -> Result<Duration, (String, Duration)> {
+    told(at, &asked_of_it(task))
+}
+
+/// Run one worker on a task whose work is **already in the tree and failed the
+/// gates**, handing it what the gates said.
+///
+/// The instruction not to hand over before gating was written, strengthened, and
+/// ignored by three workers in a row. That is a worker that cannot be made to
+/// gate by being told to, and the lever was never the sentence — it is what the
+/// loop does with a failure. Parking spent an hour of finished work to punish a
+/// missing `cargo test`; this spends one more worker to collect it, because the
+/// gate output is the most actionable thing in the whole run and nobody was
+/// reading it back to anyone.
+///
+/// One attempt, never a loop: a second failure is the work rather than an
+/// oversight, and that is what parking is for.
+///
+/// # Errors
+/// As [`ran_on`].
+pub fn repairing(at: &Path, task: &Task, said: &str) -> Result<Duration, (String, Duration)> {
+    told(at, &asked_to_repair(task, said))
+}
+
+/// Start a worker, tell it one thing on stdin, and wait for it to finish or run
+/// out of time.
+///
+/// Shared by [`ran_on`] and [`repairing`], which differ only in what is said:
+/// everything about starting a process, keeping its log and bounding its life is
+/// the same work, and two copies of it would be two things to fix.
+fn told(at: &Path, saying: &str) -> Result<Duration, (String, Duration)> {
     // How long it took is part of the answer, not a detail: a worker that fails
     // in a second has not attempted the task, and the loop must not treat that
     // as a task nobody can finish. Everything that goes wrong *before* the
@@ -154,7 +184,7 @@ pub fn ran_on(at: &Path, task: &Task) -> Result<Duration, (String, Duration)> {
     // write to again is a worker that runs until its deadline.
     match child.stdin.take() {
         Some(mut asking) => {
-            if let Err(why) = asking.write_all(asked_of_it(task).as_bytes()) {
+            if let Err(why) = asking.write_all(saying.as_bytes()) {
                 drop(child.kill());
                 drop(child.wait());
                 return Err((
@@ -376,6 +406,46 @@ fn asked_of_it(task: &Task) -> String {
     )
 }
 
+/// The same task, plus the gates' own words about the work already in the tree.
+///
+/// **The work is not lost and is not to be started again.** A worker handed this
+/// is finishing somebody's afternoon, not repeating it, and the commonest thing
+/// it finds is a test naming a method nobody wrote or a registration nobody knew
+/// about — minutes of work standing between a parked branch and a published one.
+fn asked_to_repair(task: &Task, said: &str) -> String {
+    format!(
+        "{}\n\
+         \n\
+         ---\n\
+         \n\
+         READ THIS FIRST. THE WORK FOR THIS TASK IS ALREADY IN THIS CHECKOUT. A worker\n\
+         before you implemented it and handed it over, and the supervisor's gates refused\n\
+         it. Nothing was discarded and nothing was reset: their files are in the tree as\n\
+         they left them, and your job is to finish that work rather than to start it\n\
+         again. Read the diff against `main` before you change anything.\n\
+         \n\
+         This is what the gates said, verbatim:\n\
+         \n\
+         {said}\n\
+         \n\
+         Fix exactly that, and prefer the smallest change that makes it true — a missing\n\
+         method somebody's test names, a crate that has to be registered, a rustdoc link\n\
+         that does not resolve. If the fix is to delete a test, stop and think again:\n\
+         a test naming something that does not exist usually means the thing was meant to\n\
+         exist and was not written.\n\
+         \n\
+         Then run the gates yourself — `cargo fmt --all`, `cargo clippy --all-targets`\n\
+         with warnings denied, `cargo test --workspace` — and only once they pass, rewrite\n\
+         .kernel-loop/handoff.toml in full: the file list must name every file now\n\
+         changed against `main`, including the earlier worker's, not only yours.\n\
+         \n\
+         You are the second and last worker on this task. If it does not gate after you,\n\
+         the work is parked for a person to look at, so a handoff you are not certain of\n\
+         is worse than none.",
+        asked_of_it(task)
+    )
+}
+
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -410,6 +480,43 @@ mod tests {
     #[test]
     fn a_worker_that_finished_is_not_by_itself_evidence_of_anything() {
         assert_eq!(whether_it_finished("claude", true, Some(0)), Ok(()));
+    }
+
+    /// **A second worker is finishing an afternoon, not repeating one**, and the
+    /// two things it cannot be left to guess are that the work is already in the
+    /// tree and what exactly the gates refused.
+    ///
+    /// Everything the first worker was told still applies — the absolutes, the
+    /// plan mark, the evidence — so the repair prompt carries the whole of it
+    /// rather than a second, drifting summary of it.
+    #[test]
+    fn a_second_worker_is_told_the_work_is_there_and_what_the_gates_said() {
+        let task = Task {
+            number: 6,
+            named: "The account a person asks for is the one their machine kept".to_owned(),
+            done: false,
+            blocked: false,
+            after: Vec::new(),
+        };
+        let said = "no method named `disagreement` found for struct `alo_keeping::Reading`";
+        let asked = asked_to_repair(&task, said);
+
+        assert!(
+            asked.contains("ALREADY IN THIS CHECKOUT"),
+            "a worker that thinks the tree is empty starts the task again: {asked}"
+        );
+        assert!(
+            asked.contains(said),
+            "the gate's own words are the whole point of the second attempt: {asked}"
+        );
+        assert!(
+            asked.contains("second and last worker"),
+            "a worker that expects another attempt hands over work it is unsure of: {asked}"
+        );
+        assert!(
+            asked.contains(&asked_of_it(&task)),
+            "the absolutes, the plan mark and the evidence rule all still hold: {asked}"
+        );
     }
 
     /// **The task a worker is given names the task and demands a handoff.**
