@@ -184,6 +184,21 @@ pub const SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE: Word = Word::saying(
      from before they existed.",
 );
 
+/// An answered setup recorded in a file that says it is an older shape.
+pub const SETTINGS_SETUP_NEEDS_A_NEWER_SHAPE: Word = Word::saying(
+    "choosing.settings.setup-needs-a-newer-shape",
+    "your settings at {path} say you have been asked what this machine should do, which settings \
+     must say format {reads} to record, and they say format {format} — so nothing in the file has \
+     been used",
+)
+.noting(
+    "{path} is the file, {format} what it says it is, {reads} what it must say. Numbers and a \
+     path, none of them translated. The sibling of \
+     `choosing.settings.provider-needs-a-newer-shape`, about the key that records whether the \
+     person has been taken through first-time setup. \"this machine should do\" is about where \
+     questions are answered, which is what setup asks.",
+);
+
 // ---------------------------------------------------------------------------
 // A change to the file that was not made — [`crate::NotWritten`].
 //
@@ -247,7 +262,7 @@ pub const CHANGE_NOT_KEPT: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 15] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -258,6 +273,7 @@ pub const EVERY_WORD: [Word; 14] = [
     SETTINGS_NOT_BROUGHT,
     SETTINGS_NO_SUCH_PROVIDER,
     SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE,
+    SETTINGS_SETUP_NEEDS_A_NEWER_SHAPE,
     CHANGE_NOT_BROUGHT,
     CHANGE_NO_SUCH_PROVIDER,
     CHANGE_NOT_EXPRESSIBLE,

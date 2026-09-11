@@ -1,0 +1,39 @@
+[package]
+name = "alo-setting-up"
+version = "0.0.1"
+description = "What a person is asked the first time their machine starts: four configurations, the local one first, nothing pre-selected, and the answer written into their own settings."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The person's own settings, and the only thing in this workspace that writes
+# them. Every answer given here goes out through `alo_choosing::Choosing`, so
+# there is no second writer of the one file ADR 0016 keeps for the person and
+# no shape of that file declared twice.
+alo-choosing = { path = "../alo-choosing" }
+
+# A provider is `alo_models::Provider`, checked by the crate that owns what a
+# provider is — an address that is not one, or a key that would travel in
+# clear, is refused before one of these exists and is never re-decided here.
+alo-models = { path = "../alo-models" }
+
+# Everything a person reads: the four choices, the line beside each, and every
+# way an answer goes nowhere.
+alo-strings = { path = "../alo-strings" }
+
+# One type only: `WordsError`, which is alo OS's own list contradicting itself
+# and keeps its English for whoever is fixing the list. Nothing a person reads
+# has a `Display` in this crate.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the integration tests ask the question that list cannot — whether
+# what this crate says survives being put beside everybody else's, and whether
+# it is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

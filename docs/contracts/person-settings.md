@@ -4,8 +4,9 @@
 deprecation period. See `CLAUDE.md`, "Contracts outlive code".
 
 This is the file that says which model answers a person's questions, which
-weights they brought to the machine themselves, and which language they read. It
-is written by a settings panel, or typed by the person whose machine it is, and
+weights they brought to the machine themselves, which language they read, and
+whether they have been asked at setup and answered. It is written by a settings
+panel or by setup, or typed by the person whose machine it is, and
 it is read by whatever puts a question to a model. Nothing else in alo OS writes
 it, and there is no value in it that alo OS chooses on somebody's behalf.
 
@@ -20,7 +21,8 @@ person, which ADR 0004 forbids.
 
 `crates/alo-choosing` is what reads it, and since 2026-09-11 what writes it:
 `alo_choosing::Settings::at` is the way in and `alo_choosing::Choosing` is the
-way out. See "Writing it" below.
+way out. `crates/alo-setting-up` is the first-time flow and writes through that
+same way out and no other. See "Writing it" below.
 
 ## Where it is
 
@@ -68,10 +70,13 @@ typed by a person as often as it is written by a panel, and a comment is how
 the person after them finds out why they picked what they picked.
 
 ```toml
-format = 1
+format = 3
 
 [answers]
 catalogue = "mistral-small"
+
+[setup]
+answered = true
 
 [reading]
 languages = ["de", "en"]
@@ -87,7 +92,8 @@ drives-verbs = "reliably"
 with no `[answers]` is a person who has not chosen what answers their
 questions. A file with no `[reading]` is a person who has not said what they
 read. A file with no `[[brought]]` is a person who has brought no weights of
-their own. None of the three is a mistake, and none is filled in for them.
+their own. A file with no `[setup]` is a person nobody has asked. None of the
+four is a mistake, and none is filled in for them.
 
 **There is no address for a runtime on this machine, and there will not be
 one.** Where it is, is the adapter's own knowledge and nothing else's —
@@ -113,16 +119,20 @@ what says so is `format`, and a typo is not an addition.
 
 | Field | Meaning |
 |---|---|
-| `format` | Which shape these settings are in. Required. `2` today; `1` is still read. |
+| `format` | Which shape these settings are in. Required. `3` today; `2` and `1` are still read. |
 
-**`2` since providers**, and **`1` is read exactly as it always was** — a machine
-configured before providers existed keeps working, nothing rewrites its file and
-nobody is asked to. That is expand, then migrate, then contract, and nothing here
-is the contract yet.
+**`2` since providers and `3` since `[setup]`**, and **both older shapes are read
+exactly as they always were** — a machine configured before either existed keeps
+working, nothing rewrites its file and nobody is asked to. That is expand, then
+migrate, then contract, and nothing here is the contract yet.
 
 A file that says `1` and contains a provider — chosen or listed — is **refused**,
-naming the number it needs. Its keys parse either way, and honouring them would
-be this machine believing whichever half of a disagreement it preferred.
+naming the number it needs. So is a file that says `1` or `2` and contains
+`[setup]`. Their keys parse either way, and honouring them would be this machine
+believing whichever half of a disagreement it preferred — and in `[setup]`'s case
+it would tell the machine that somebody had answered a question this alo OS could
+not have put to them, so setup would never be shown to a person who has never
+seen it.
 
 Settings that say a shape this alo OS does not read are **refused rather than
 guessed at**, and the refusal names both numbers. It is answered before any other value in the
@@ -240,7 +250,7 @@ refused naming it — the person is told, rather than left with a credential on
 their disk that alo OS quietly read.
 
 ```toml
-format = 2
+format = 3
 
 [answers]
 provider = { name = "Mistral", model = "mistral-small-latest" }
@@ -263,6 +273,44 @@ place answering in its stead.
 a reference to where a key lives and there is no store behind that reference,
 so such a choice is read, kept, and refused at the moment of asking — never sent
 without its key.
+
+## `[setup]` — whether this person has been asked, and answered
+
+Format 3. One key, and it records **one bit**: the question was put to this
+person and they answered it.
+
+| Key | Meaning |
+|---|---|
+| `answered` | Whether setup was put to this person and answered by them. `true`, or absent. `false` says what absent says and is read as such — there is no reading of it under which anybody was asked. |
+
+**It is not a second copy of the choice.** What was answered is `[answers]`, and
+nothing here can disagree with it: `[setup] answered = true` with no `[answers]`
+is [ADR 0009](../decisions/0009-a-good-computer-without-the-agent.md)'s fourth
+choice — *no model, no provider, no agent* — and `[setup] answered = true` beside
+an `[answers]` is a person who chose a source. There is no rule keeping the two
+in step because there is nothing to keep in step.
+
+**It exists because two states of this file would otherwise be one file.** A
+machine nobody has configured and a machine whose owner said *not at all* both
+have nothing answering questions. They are different machines: one is waiting to
+be asked and the other is finished. Without this key, setup would be shown again
+to every person who declined it, which is ADR 0009's *no nagging* broken by the
+one mechanism guaranteed to meet all of them.
+
+**Nothing but the person writes it.** It is absent on a machine nobody has
+configured, absent in every file alo OS writes for somebody who has not answered,
+and set only by `alo_setting_up::SettingUp::answer` — through
+`alo_choosing::Choosing::setting_up`, which is the door
+[ADR 0016](../decisions/0016-the-organisation-bounds-and-the-person-chooses.md)
+keeps for them. An image that shipped with this set would be
+[ADR 0025](../decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md)'s
+rejected Option B with the mechanism moved somewhere nobody would look for it.
+
+**Changing what answers your questions afterwards does not change it.** A person
+who chose at setup and later clears the setting in Settings has answered setup
+and has nothing answering questions; a person who typed their own settings file
+and never saw setup has something answering questions and has not been asked.
+Both are true sentences about a machine, and both are expressible here.
 
 ## `[reading]` — what this person reads
 
@@ -310,8 +358,8 @@ settings that do not hold is refused, naming the file — because a surface that
 read a typo as *nothing chosen* and then saved would take away the keystroke
 that was about to fix it.
 
-**What is written is the `format` this alo OS writes**, which is `2`. A file
-saying `1` is read exactly as it always was and nothing rewrites it unasked; a
+**What is written is the `format` this alo OS writes**, which is `3`. A file
+saying `1` or `2` is read exactly as it always was and nothing rewrites it unasked; a
 file this alo OS writes says the shape this alo OS writes, because a writer
 choosing among past shapes would grow one branch per format for ever. Going
 backwards after a change costs a person their settings rather than their choice,
@@ -368,7 +416,18 @@ a meaning changed, a default introduced — is a new `format`, and settings with
 number this alo OS does not read are refused.
 
 `[[brought]]` arrived that way and is what the rule looks like in practice: it
-is a new key, `format` stays `1`, and an older alo OS meeting it refuses the
+is a new key, `format` stayed `1`, and an older alo OS meeting it refuses the
 file. Going backwards costs a person their settings rather than their choice,
 which is the direction this file has always failed in — nothing is honoured
 part-way, and they are told.
+
+**`[[provider]]` and `[setup]` are what the other half looks like.** Each is a
+new key that changes what an older alo OS would *do*, so each took a number:
+`2` and `3`. The test is not whether the key is new, it is whether an alo OS
+that ignored it would still honour the same choice. Ignoring `[[provider]]`
+would answer somebody's question in a place they did not pick. Ignoring
+`[setup]` would tell a machine that a person who declined an agent had never
+been asked, and put setup in front of them again at every sign-in. Neither is a
+key an older release may quietly not know about, so neither is additive in the
+sense above — and both older shapes are still read, which is what the rule is
+really protecting.

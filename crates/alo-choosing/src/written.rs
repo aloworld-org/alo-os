@@ -70,31 +70,45 @@ use alo_models::{
 use crate::chosen::{Chosen, Picked, Which};
 use crate::refusing::NotSet;
 use crate::settings::{Settings, Unresolved};
+use crate::setup::Setup;
 use crate::unreadable::NotToml;
 
 /// The shape of settings this alo OS writes, and the newest it reads.
 ///
-/// **`2` since providers.** A file may still say `1` and be read exactly as it
-/// always was — that is [`ALSO_READ`], and it is why a machine that has been
-/// configured for a year keeps working. What `2` buys is the other direction:
-/// an alo OS from before providers, handed a file that chooses one, refuses it
-/// as *a shape I do not read* rather than as *a key I have not heard of*, which
-/// is the difference between a person being told to upgrade and a person
+/// **`3` since `[setup]`**, and `2` and `1` are still read exactly as they
+/// always were — that is [`ALSO_READ`], and it is why a machine that has been
+/// configured for a year keeps working. What each number buys is the other
+/// direction: an alo OS from before a key, handed a file that uses it, refuses
+/// it as *a shape I do not read* rather than as *a key I have not heard of*,
+/// which is the difference between a person being told to upgrade and a person
 /// hunting for a typo.
-pub const THE_FORMAT: u32 = 2;
+pub const THE_FORMAT: u32 = 3;
 
 /// Every shape this alo OS still reads, oldest first.
 ///
 /// Expand, migrate, contract — `CLAUDE.md`'s rule for a schema, and this is the
 /// expand. A file written before providers existed says `1`, has no provider in
-/// it, and means exactly what it meant; nothing rewrites it and nothing asks
-/// the person to.
-pub const ALSO_READ: [u32; 1] = [1];
+/// it, and means exactly what it meant; a file written before setup was
+/// recorded says `2`, has no `[setup]` in it, and reads as a person nobody has
+/// asked — which is the true sentence about a machine configured by hand.
+/// Nothing rewrites either and nothing asks the person to.
+pub const ALSO_READ: [u32; 2] = [1, 2];
+
+/// The shape a provider may first be chosen or listed in.
+///
+/// Named rather than written as [`THE_FORMAT`] at the one place it is asked,
+/// because it stopped being the newest shape the moment `[setup]` arrived — and
+/// a check spelled *anything older than the newest* would refuse a format 2
+/// file for having exactly the key format 2 was introduced for.
+const PROVIDERS_ARRIVED_IN: u32 = 2;
+
+/// The shape an answered setup may first be recorded in.
+const SETUP_ARRIVED_IN: u32 = 3;
 
 /// Whether this alo OS reads a file that says it is this shape.
 #[must_use]
 pub const fn is_a_shape_we_read(format: u32) -> bool {
-    format == THE_FORMAT || format == ALSO_READ[0]
+    format == THE_FORMAT || format == ALSO_READ[0] || format == ALSO_READ[1]
 }
 
 /// Which shape of settings this is, and nothing else.
@@ -142,6 +156,30 @@ pub(crate) struct AsWritten {
     /// What they read, where they have said.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) reading: Option<TheReading>,
+    /// Whether they have answered setup, where they have.
+    ///
+    /// Absent on a machine nobody has taken through it, which is the ordinary
+    /// state and the one every file older than format 3 is in. `crate::setup`
+    /// says why the bit is here at all and why it is not a second copy of the
+    /// choice.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) setup: Option<TheSetup>,
+}
+
+/// Whether setup was answered.
+///
+/// A section with one key rather than a bare `setup = true`, so that what setup
+/// records can grow — the moment it was answered, which of the four was put
+/// first — without the key that exists today changing shape.
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct TheSetup {
+    /// Whether the question was put to this person and answered by them.
+    ///
+    /// `false` says what an absent section says, and is read as such rather
+    /// than refused: a person may write it down to mean *ask me again*, and
+    /// there is no reading of it under which they were asked.
+    pub(crate) answered: bool,
 }
 
 /// One set of weights on the person's own list, exactly as they were written.
@@ -374,9 +412,15 @@ impl AsWritten {
                 .map_err(|why| not_a_provider(at, why))?;
         }
 
+        // Absent, and `answered = false`, are one state: nobody has been asked.
+        let setup = match self.setup {
+            Some(TheSetup { answered: true }) => Setup::Answered,
+            Some(TheSetup { answered: false }) | None => Setup::NotAnswered,
+        };
+
         // Last, because it is the only question that needs two halves of the
         // file: a choice into a list has to name something on that list.
-        Settings::of(chosen, brought, providers, languages).map_err(|why| match why {
+        Settings::of(chosen, brought, providers, languages, setup).map_err(|why| match why {
             Unresolved::Weights(model) => NotSet::NotBrought {
                 at: at.to_owned(),
                 model,
@@ -422,13 +466,24 @@ pub(crate) fn read(said: &str, at: &std::path::Path) -> Result<Settings, NotSet>
     // A file from before providers existed cannot choose or list one. The keys
     // parse — they are the same shape either way — and honouring them would be
     // this machine believing the half of a disagreement it preferred.
-    if which.format < THE_FORMAT
+    if which.format < PROVIDERS_ARRIVED_IN
         && (written.provider.is_some() || matches!(written.answers, Some(TheAnswers::Provider(_))))
     {
         return Err(NotSet::ProviderNeedsANewerShape {
             at: at.to_owned(),
             format: which.format,
-            reads: THE_FORMAT,
+            reads: PROVIDERS_ARRIVED_IN,
+        });
+    }
+    // And the same rule one key later. A file that says it is older than
+    // `[setup]` and records an answered setup is one somebody edited from a
+    // newer example; reading it would tell a machine that a person had been
+    // asked a question that alo OS could not have put to them.
+    if which.format < SETUP_ARRIVED_IN && written.setup.is_some() {
+        return Err(NotSet::SetupNeedsANewerShape {
+            at: at.to_owned(),
+            format: which.format,
+            reads: SETUP_ARRIVED_IN,
         });
     }
     written.checked(at)
@@ -755,14 +810,74 @@ drives-verbs = "reliably"
     /// the refusal says both numbers.
     #[test]
     fn settings_from_a_newer_alo_os_are_refused() {
-        let said = as_the_contract_writes_them().replace("format = 1", "format = 3");
+        let said = as_the_contract_writes_them().replace("format = 1", "format = 4");
         assert!(matches!(
             read(&said, somewhere()).unwrap_err(),
             NotSet::AnotherFormat {
-                format: 3,
-                reads: 2,
+                format: 4,
+                reads: 3,
                 ..
             }
+        ));
+    }
+
+    /// **A file with no `[setup]` is a person nobody has asked**, which is every
+    /// machine configured before the key existed and every one configured by
+    /// hand since.
+    #[test]
+    fn a_file_that_says_nothing_about_setup_is_a_person_nobody_has_asked() {
+        let settings = read(&as_the_contract_writes_them(), somewhere()).unwrap();
+        assert_eq!(settings.setup(), Setup::NotAnswered);
+    }
+
+    /// **An answered setup with nothing chosen is ADR 0009's fourth choice**,
+    /// and it reads back as a finished setup on a machine where nothing answers
+    /// questions — which is the state this key exists to make sayable.
+    #[test]
+    fn an_answered_setup_with_nothing_chosen_is_a_finished_setup() {
+        let settings = read("format = 3\n\n[setup]\nanswered = true\n", somewhere()).unwrap();
+        assert!(settings.setup().is_answered());
+        assert!(settings.chosen().is_none());
+    }
+
+    /// **`answered = false` is what an absent section says**, read rather than
+    /// refused: there is no reading of it under which anybody was asked.
+    #[test]
+    fn a_setup_written_as_unanswered_is_a_person_nobody_has_asked() {
+        let settings = read("format = 3\n\n[setup]\nanswered = false\n", somewhere()).unwrap();
+        assert_eq!(settings.setup(), Setup::NotAnswered);
+    }
+
+    /// **A setup recorded in a file that says it is older than the key is
+    /// refused**, naming the number it needs — the rule `[[provider]]` is held
+    /// to, one key later. A file whose number says one shape and whose keys say
+    /// another is one somebody edited from a newer example, and honouring the
+    /// keys would tell this machine that a person had answered a question it
+    /// could not have put to them.
+    #[test]
+    fn an_answered_setup_in_an_older_shape_is_refused_as_the_older_shape() {
+        for older in [1, 2] {
+            let said = format!("format = {older}\n\n[setup]\nanswered = true\n");
+            let refused = read(&said, somewhere()).unwrap_err();
+            assert!(
+                matches!(
+                    refused,
+                    NotSet::SetupNeedsANewerShape { format, reads: 3, .. } if format == older
+                ),
+                "{refused:?}"
+            );
+        }
+    }
+
+    /// **A `[setup]` with a key nobody declared is refused**, so a later key is
+    /// an addition with a number behind it rather than something a typo can
+    /// imitate.
+    #[test]
+    fn a_setup_key_nobody_declared_is_refused() {
+        let said = "format = 3\n\n[setup]\nanswered = true\nby = \"someone\"\n";
+        assert!(matches!(
+            read(said, somewhere()).unwrap_err(),
+            NotSet::NotUnderstood { .. }
         ));
     }
 
@@ -842,12 +957,13 @@ drives-verbs = "reliably"
     /// it is one string in one place.
     #[test]
     fn the_shape_is_numbered_once() {
-        assert_eq!(THE_FORMAT, 2);
-        // And the one before it is still read, which is what makes a machine
+        assert_eq!(THE_FORMAT, 3);
+        // And the ones before it are still read, which is what makes a machine
         // configured a year ago keep working. Expand, then migrate, then
         // contract — and nothing here is the contract.
-        assert_eq!(ALSO_READ, [1]);
-        assert!(is_a_shape_we_read(1) && is_a_shape_we_read(2));
-        assert!(!is_a_shape_we_read(3));
+        assert_eq!(ALSO_READ, [1, 2]);
+        assert!(is_a_shape_we_read(1) && is_a_shape_we_read(2) && is_a_shape_we_read(3));
+        assert!(!is_a_shape_we_read(4));
+        assert!(!is_a_shape_we_read(0));
     }
 }

@@ -46,6 +46,7 @@ use alo_strings::Language;
 
 use crate::chosen::{Picked, Which};
 use crate::refusing::NotSet;
+use crate::setup::Setup;
 use crate::written::read;
 
 /// A choice naming weights this person's own list does not have.
@@ -93,6 +94,14 @@ pub struct Settings {
     providers: Providers,
     /// The languages they read, best first.
     languages: Vec<Language>,
+    /// Whether they have been asked what their machine should do, and answered.
+    ///
+    /// **Not a second copy of the choice** — `crate::setup` has the argument.
+    /// It says the question was put and answered; what was answered is
+    /// [`Settings::chosen`], and [`None`] there beside
+    /// [`Setup::Answered`] is ADR 0009's fourth choice rather than a person
+    /// nobody has asked yet.
+    setup: Setup,
 }
 
 impl Settings {
@@ -108,6 +117,7 @@ impl Settings {
         brought: Brought,
         providers: Providers,
         languages: Vec<Language>,
+        setup: Setup,
     ) -> Result<Self, Unresolved> {
         match &chosen {
             Some(Picked::OnThisMachine(local))
@@ -128,6 +138,7 @@ impl Settings {
             brought,
             providers,
             languages,
+            setup,
         })
     }
 
@@ -143,7 +154,20 @@ impl Settings {
             brought: Brought::default(),
             providers: Providers::default(),
             languages: Vec::new(),
+            setup: Setup::NotAnswered,
         }
+    }
+
+    /// Whether this person has answered setup.
+    ///
+    /// [`Setup::NotAnswered`] on a machine nobody has configured, and on every
+    /// machine configured before this key existed. It is deliberately separate
+    /// from [`Settings::chosen`]: a person who answered *not at all* has chosen
+    /// nothing and has finished setup, and a machine that read those two states
+    /// as one would put the question to somebody who has already declined it.
+    #[must_use]
+    pub const fn setup(&self) -> Setup {
+        self.setup
     }
 
     /// The providers this person added themselves.
@@ -288,6 +312,26 @@ mod tests {
         assert!(settings.languages().is_empty());
         assert!(settings.brought().weights.is_empty());
         assert!(settings.weights().is_none());
+        assert_eq!(settings.setup(), Setup::NotAnswered);
+    }
+
+    /// **A person who declined and a person nobody has asked are two different
+    /// machines**, and the difference is the only thing `setup` records: both
+    /// have chosen nothing, and only one of them is finished.
+    #[test]
+    fn a_declined_setup_is_not_a_machine_nobody_has_asked() {
+        let declined = Settings::of(
+            None,
+            Brought::default(),
+            Providers::default(),
+            Vec::new(),
+            Setup::Answered,
+        )
+        .unwrap();
+
+        assert!(declined.chosen().is_none());
+        assert!(declined.setup().is_answered());
+        assert_ne!(declined, Settings::untouched());
     }
 
     /// What went in comes back out, which is what the daemon is handed.
@@ -300,6 +344,7 @@ mod tests {
             theirs("my-finetune"),
             Providers::default(),
             vec![Language::written("pt-BR").unwrap()],
+            Setup::NotAnswered,
         )
         .unwrap();
         assert_eq!(settings.chosen().unwrap().model(), "my-finetune");
@@ -334,6 +379,7 @@ mod tests {
             theirs("my-finetune"),
             Providers::default(),
             Vec::new(),
+            Setup::NotAnswered,
         )
         .unwrap();
         let weights = settings.weights().unwrap();
@@ -353,6 +399,7 @@ mod tests {
             theirs("something-else"),
             Providers::default(),
             Vec::new(),
+            Setup::NotAnswered,
         )
         .unwrap_err();
         assert_eq!(refused.named(), "my-finetune");
@@ -367,6 +414,7 @@ mod tests {
                 Brought::default(),
                 Providers::default(),
                 Vec::new(),
+                Setup::NotAnswered,
             )
             .is_err()
         );
@@ -387,6 +435,7 @@ mod tests {
             theirs("my-finetune"),
             Providers::default(),
             Vec::new(),
+            Setup::NotAnswered,
         )
         .unwrap();
         assert_eq!(

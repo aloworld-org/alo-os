@@ -79,6 +79,7 @@ use crate::chosen::Picked;
 use crate::keeping::kept;
 use crate::refusing::NotSet;
 use crate::settings::{Settings, Unresolved};
+use crate::setup::Setup;
 use crate::unwritten::NotWritten;
 use crate::writing::written;
 
@@ -155,6 +156,7 @@ impl Choosing {
             self.settings.brought().clone(),
             self.settings.providers().clone(),
             self.settings.languages().to_vec(),
+            self.settings.setup(),
         )?;
         self.apply(changed)
     }
@@ -182,6 +184,7 @@ impl Choosing {
             brought,
             self.settings.providers().clone(),
             self.settings.languages().to_vec(),
+            self.settings.setup(),
         )?;
         self.apply(changed)
     }
@@ -218,6 +221,7 @@ impl Choosing {
             self.settings.brought().clone(),
             providers,
             self.settings.languages().to_vec(),
+            self.settings.setup(),
         )?;
         self.apply(changed)
     }
@@ -241,6 +245,49 @@ impl Choosing {
             self.settings.brought().clone(),
             self.settings.providers().clone(),
             languages,
+            self.settings.setup(),
+        )?;
+        self.apply(changed)
+    }
+
+    /// **The answer this person gave at setup**, written once and whole.
+    ///
+    /// [`Some`] is one of the sources setup offered; [`None`] is ADR 0009's
+    /// fourth choice — *no model, no provider, no agent* — which is an answer
+    /// rather than a skip, and the file says so afterwards.
+    ///
+    /// It is a door of its own rather than [`Choosing::answered_by`] with a
+    /// flag, because the two say different things about the machine.
+    /// `answered_by` is a person changing their mind in Settings and leaves
+    /// `crate::Settings::setup` exactly as it was; this one says the question
+    /// was put to them and answered. A machine that could not tell those apart
+    /// would either put setup in front of somebody who declined it, or count a
+    /// person who cleared a field in Settings as having been asked.
+    ///
+    /// **The provider case takes two writes and that is deliberate.** A choice
+    /// naming a provider is a reference into the person's own list, so the
+    /// provider is added through [`Choosing::adding`] first and chosen here
+    /// second. Each write is whole or not at all; what a refusal here leaves
+    /// behind is a provider on their list and an unanswered setup, which is
+    /// true of the machine and is the state they can act on. The alternative —
+    /// one door taking a provider and a choice together — would put the list's
+    /// own rule and setup's in one call, and a person who mistyped an address
+    /// would be told their setup failed rather than that their provider did.
+    ///
+    /// # Errors
+    ///
+    /// [`NotWritten::NotBrought`] and [`NotWritten::NoSuchProvider`] when the
+    /// answer names a list this person keeps and nothing on it answers to the
+    /// name, and the two ways the file itself does not happen. **Setup is not
+    /// recorded as answered in any of them** — the settings are exactly as they
+    /// were, and the question is still waiting.
+    pub fn setting_up(&mut self, answered: Option<Picked>) -> Result<(), NotWritten> {
+        let changed = self.with(
+            answered,
+            self.settings.brought().clone(),
+            self.settings.providers().clone(),
+            self.settings.languages().to_vec(),
+            Setup::Answered,
         )?;
         self.apply(changed)
     }
@@ -256,8 +303,9 @@ impl Choosing {
         brought: Brought,
         providers: Providers,
         languages: Vec<Language>,
+        setup: Setup,
     ) -> Result<Settings, NotWritten> {
-        Settings::of(chosen, brought, providers, languages).map_err(|why| match why {
+        Settings::of(chosen, brought, providers, languages, setup).map_err(|why| match why {
             Unresolved::Weights(model) => NotWritten::NotBrought {
                 at: self.at.clone(),
                 model,
@@ -665,6 +713,102 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["fr"]
         );
+    }
+
+    /// **An answered setup and a machine nobody has asked are two different
+    /// files**, and the difference survives the disk: a person who declined has
+    /// chosen nothing and is finished, which is the state ADR 0009's fourth
+    /// choice needs in order to exist at all.
+    #[test]
+    fn declining_at_setup_is_a_finished_setup_rather_than_a_skipped_one() {
+        let at = a_machine_nobody_has_configured("declined");
+        let mut choosing = Choosing::at(&at).unwrap();
+        assert_eq!(choosing.settings().setup(), Setup::NotAnswered);
+
+        choosing.setting_up(None).unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        assert!(read.chosen().is_none());
+        assert!(read.setup().is_answered());
+        assert_ne!(read, Settings::untouched());
+        assert_eq!(*choosing.settings(), read);
+    }
+
+    /// **A source chosen at setup is both the choice and the answer**, read
+    /// back through the door a daemon reads settings through.
+    #[test]
+    fn a_source_chosen_at_setup_is_written_as_the_choice_and_as_an_answer() {
+        let at = a_machine_nobody_has_configured("chose-at-setup");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing
+            .setting_up(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )))
+            .unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        assert_eq!(read.chosen().unwrap().model(), "mistral-small");
+        assert!(read.setup().is_answered());
+    }
+
+    /// **Changing your mind in Settings afterwards is not being asked again**,
+    /// and un-choosing does not un-answer: the person was asked, they answered,
+    /// and a machine that forgot would show them setup a second time.
+    #[test]
+    fn a_later_change_in_settings_leaves_the_answer_where_it_was() {
+        let at = a_machine_nobody_has_configured("still-answered");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing
+            .setting_up(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )))
+            .unwrap();
+
+        choosing.answered_by(None).unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        assert!(read.chosen().is_none());
+        assert!(read.setup().is_answered());
+    }
+
+    /// **And a change made in Settings by somebody nobody ever asked does not
+    /// count as an answer.** The other direction of the same rule: a person who
+    /// typed their own settings file has configured their machine and has still
+    /// not been through setup.
+    #[test]
+    fn choosing_in_settings_is_not_an_answer_to_a_question_nobody_asked() {
+        let at = a_machine_nobody_has_configured("never-asked");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing
+            .answered_by(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )))
+            .unwrap();
+
+        assert_eq!(Settings::at(&at).unwrap().setup(), Setup::NotAnswered);
+    }
+
+    /// **An answer that is refused does not record a setup**, so the question
+    /// is still waiting rather than answered by a write that never happened.
+    #[test]
+    fn an_answer_that_is_refused_leaves_setup_unanswered() {
+        let at = a_machine_nobody_has_configured("refused-answer");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        let refused = choosing
+            .setting_up(Some(
+                Picked::from_a_provider("Mistral", "mistral-small-latest").unwrap(),
+            ))
+            .unwrap_err();
+
+        assert!(
+            matches!(&refused, NotWritten::NoSuchProvider { provider, .. } if provider == "Mistral"),
+            "{refused:?}"
+        );
+        assert!(!at.exists(), "a refused answer wrote a file");
+        assert_eq!(choosing.settings().setup(), Setup::NotAnswered);
     }
 
     /// **Where the settings are is the path it was made with**, which is what

@@ -132,7 +132,7 @@ impl WouldAnswer {
 mod tests {
     use super::*;
     use crate::testing::{in_english, translated};
-    use alo_choosing::{Chosen, Picked, Which};
+    use alo_choosing::{Chosen, Picked, Setup, Which};
     use alo_models::{Brought, Provider, Providers, Region};
 
     /// A settings file holding this local choice and nothing else.
@@ -144,6 +144,7 @@ mod tests {
             Brought::default(),
             Providers::default(),
             Vec::new(),
+            Setup::NotAnswered,
         )
         .unwrap()
     }
@@ -160,6 +161,7 @@ mod tests {
             Brought::default(),
             providers,
             Vec::new(),
+            Setup::NotAnswered,
         )
         .unwrap()
     }

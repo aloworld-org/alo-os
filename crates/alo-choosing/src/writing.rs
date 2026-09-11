@@ -45,9 +45,10 @@ use alo_strings::Language;
 
 use crate::chosen::{Picked, Which};
 use crate::settings::Settings;
+use crate::setup::Setup;
 use crate::unwritten::NotWritten;
 use crate::written::{
-    AsWritten, ProviderAsWritten, ProviderChosen, THE_FORMAT, TheAnswers, TheReading,
+    AsWritten, ProviderAsWritten, ProviderChosen, THE_FORMAT, TheAnswers, TheReading, TheSetup,
     WeightsAsWritten, read,
 };
 
@@ -115,6 +116,14 @@ fn as_written(settings: &Settings) -> AsWritten {
                 .collect(),
         )
         .map(|languages| TheReading { languages }),
+        // Absent on a machine nobody has taken through setup, so settings
+        // nobody has touched stay a `format` line and nothing else — a section
+        // written to say *and nobody has been asked* would be alo OS putting a
+        // value in the one file ADR 0016 keeps for the person.
+        setup: match settings.setup() {
+            Setup::Answered => Some(TheSetup { answered: true }),
+            Setup::NotAnswered => None,
+        },
     }
 }
 
@@ -203,7 +212,7 @@ mod tests {
         providers: Providers,
         languages: Vec<Language>,
     ) -> Settings {
-        Settings::of(chosen, brought, providers, languages).unwrap()
+        Settings::of(chosen, brought, providers, languages, Setup::NotAnswered).unwrap()
     }
 
     /// One set of weights on somebody's own list.
@@ -298,6 +307,35 @@ mod tests {
         assert!(!text.contains("provider"), "{text}");
         assert!(!text.contains("reading"), "{text}");
         assert!(!text.contains("answers"), "{text}");
+        assert!(!text.contains("setup"), "{text}");
+    }
+
+    /// **An answered setup survives being written and read again**, in both of
+    /// the two shapes it arrives in: a person who chose a source, and a person
+    /// who declined. The second is the one that would otherwise be lost — its
+    /// settings are a `format` line and a `[setup]` section, and without the
+    /// section it is indistinguishable from a machine nobody has asked.
+    #[test]
+    fn an_answered_setup_comes_back_the_same_whether_or_not_anything_was_chosen() {
+        for chosen in [
+            None,
+            Some(Picked::OnThisMachine(
+                Chosen::of(Which::Catalogue, "mistral-small").unwrap(),
+            )),
+        ] {
+            let theirs = Settings::of(
+                chosen,
+                Brought::default(),
+                Providers::default(),
+                Vec::new(),
+                Setup::Answered,
+            )
+            .unwrap();
+
+            let text = written(&theirs, &somewhere()).unwrap();
+            assert!(text.contains("answered = true"), "{text}");
+            assert_eq!(read(&text, &somewhere()).unwrap(), theirs, "{text}");
+        }
     }
 
     /// **Whether a provider is asked for a key is written out either way.** The

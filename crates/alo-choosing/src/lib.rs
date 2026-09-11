@@ -112,6 +112,7 @@ mod keeping;
 mod place;
 mod refusing;
 mod settings;
+mod setup;
 #[cfg(test)]
 mod testing;
 mod unreadable;
@@ -125,6 +126,7 @@ pub use chosen::{Chosen, NoModel, NoProvider, Picked, Which};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is};
 pub use refusing::NotSet;
 pub use settings::{Settings, Unresolved};
+pub use setup::Setup;
 pub use unreadable::{At, NotToml};
 pub use unwritten::NotWritten;
 pub use words::{EVERY_WORD, Word, WordsError, choosing_words, declare_into};

@@ -542,6 +542,42 @@ the drawing is the compositor lane's and the rules are testable now.
   there. A choice pre-selected for the person, however reasonable, contradicts
   ADR 0016 and ADR 0025 and is the one thing this task may not do.
 
+**Done, 2026-09-11.** `crates/alo-setting-up`: `THE_FOUR`, ordered with the
+local one first, and `SettingUp` — which has no constructor taking a selection,
+so *nothing is pre-selected* is a property of the type rather than an initial
+value somebody may improve later, and pressing on without choosing is
+`NotSetUp::NothingSelected` rather than a default quietly taken. The four are
+`docs/features.md`'s own four; alo's own service has no variant, because ADR
+0014 makes it one more provider. Answering with a machine on this network is
+refused in words — this machine keeps no list of paired ones — and that refusal
+is the honest form of a choice alo OS offers and cannot yet carry out.
+
+**The state that made this possible is a bit in the person's own file.** A
+machine nobody has configured and one whose owner said *not at all* both have
+nothing answering questions, so without somewhere to record *and they were
+asked*, setup would be shown again to everybody who declined — ADR 0009's *no
+nagging* broken by the one mechanism guaranteed to meet all of them. So
+`alo-choosing` grew `Setup`, a `[setup] answered` section, `THE_FORMAT = 3` with
+`1` and `2` still read, and one door: `Choosing::setting_up`. It is **not** a
+second copy of the choice — what was answered is `[answers]`, so there is
+nothing for the two to disagree about — and `alo-setting-up` writes through that
+door and no other, which `tests/nothing_here_writes_anywhere_else.rs` reads off
+the manifest and the source rather than promising.
+
+Every string is in `alo-saying`'s one vocabulary, and `crate::nudging` is the
+*no persuasion attached* half that no structural rule could see: sixteen words
+that would turn one of the four into the answer — a ranking, or money — walked
+over this crate's sentences **and its translator notes**, because a translator
+told which one is sensible writes that into twenty-four languages no test here
+can read. Measured in `crates/alo-setting-up/tests/what_a_person_is_asked_at_setup.rs`,
+`crates/alo-setting-up/tests/nothing_here_writes_anywhere_else.rs` and
+per-decision in each of the crate's own files, and in `alo-choosing`'s
+`choosing.rs`, `written.rs` and `writing.rs`.
+`docs/contracts/person-settings.md` gained `[setup]` and format 3 additively.
+Report: `docs/autonomy/updates/what-a-person-is-asked-at-setup.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 12
+below was already written and is the next task.
+
 ### 12. Candidates the measuring box can actually hold
 
 **Status:** ready. **Depends on:** 9.

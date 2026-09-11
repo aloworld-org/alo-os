@@ -264,7 +264,7 @@ fn everything_the_writer_says_is_something_the_machine_can_say() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 14);
+    assert_eq!(EVERY_WORD.len(), 15);
 }
 
 /// **What a person reads is theirs to read in their own language**, and the
@@ -274,8 +274,15 @@ fn everything_the_writer_says_is_something_the_machine_can_say() {
 fn a_change_that_was_not_made_is_read_in_the_readers_own_language() {
     let vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
     let german = Language::written("de").unwrap();
+    // Named rather than indexed: a word added to the list used to move this
+    // one, and a test that follows an index measures whichever sentence
+    // happened to land there.
+    let not_kept = EVERY_WORD
+        .iter()
+        .find(|word| word.named() == "choosing.change.not-kept")
+        .expect("the sentence said when a disk will not take the file");
     let translation = alo_strings::Translation::into_language(german.clone()).says(
-        EVERY_WORD[13].key(),
+        not_kept.key(),
         "Ihre Einstellungen in {path} konnten nicht geschrieben werden, es wurde nichts geändert",
     );
     let speaking = vocabulary.check(translation).unwrap();

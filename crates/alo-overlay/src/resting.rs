@@ -152,7 +152,7 @@ mod tests {
     use super::*;
     use crate::testing::in_english;
     use alo_capability::{Grant, Reach};
-    use alo_choosing::{Chosen, Picked, Which};
+    use alo_choosing::{Chosen, Picked, Setup, Which};
     use alo_egress::{Destination, EgressPolicy, Leaving, Why};
     use alo_models::{Brought, InferenceSource, Providers};
     use std::path::PathBuf;
@@ -175,6 +175,7 @@ mod tests {
             Brought::default(),
             Providers::default(),
             Vec::new(),
+            Setup::NotAnswered,
         )
         .unwrap()
     }

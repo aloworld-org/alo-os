@@ -518,6 +518,7 @@ dependencies = [
  "alo-protocol",
  "alo-recounting",
  "alo-sessiond",
+ "alo-setting-up",
  "alo-shortcuts",
  "alo-strings",
  "alo-telling",
@@ -549,6 +550,17 @@ dependencies = [
  "rustix 1.1.4",
  "thiserror 2.0.20",
  "zbus",
+]
+
+[[package]]
+name = "alo-setting-up"
+version = "0.0.1"
+dependencies = [
+ "alo-choosing",
+ "alo-models",
+ "alo-saying",
+ "alo-strings",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

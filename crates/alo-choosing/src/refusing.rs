@@ -149,6 +149,21 @@ pub enum NotSet {
         /// What it has to say to choose a provider.
         reads: u32,
     },
+    /// An answered setup was recorded in a file that says it is the shape from
+    /// before setup was recorded at all.
+    ///
+    /// [`Self::ProviderNeedsANewerShape`]'s rule, one key later, and the harm
+    /// is sharper: honouring it would tell this machine that a person had been
+    /// asked a question this alo OS could not have put to them, and setup would
+    /// never be shown to somebody who has never seen it.
+    SetupNeedsANewerShape {
+        /// Where it is.
+        at: PathBuf,
+        /// What the file says it is.
+        format: u32,
+        /// What it has to say to record an answered setup.
+        reads: u32,
+    },
 }
 
 impl NotSet {
@@ -166,7 +181,8 @@ impl NotSet {
             | Self::NotBrought { at, .. }
             | Self::NotAProvider { at, .. }
             | Self::NoSuchProvider { at, .. }
-            | Self::ProviderNeedsANewerShape { at, .. } => at,
+            | Self::ProviderNeedsANewerShape { at, .. }
+            | Self::SetupNeedsANewerShape { at, .. } => at,
         }
     }
 
@@ -188,6 +204,7 @@ impl NotSet {
             Self::NotAProvider { why, .. } => why.word(),
             Self::NoSuchProvider { .. } => words::SETTINGS_NO_SUCH_PROVIDER,
             Self::ProviderNeedsANewerShape { .. } => words::SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE,
+            Self::SetupNeedsANewerShape { .. } => words::SETTINGS_SETUP_NEEDS_A_NEWER_SHAPE,
         }
     }
 
@@ -224,7 +241,8 @@ impl NotSet {
                 | alo_models::ProviderError::NotAnAddress
                 | alo_models::ProviderError::InsecureEndpoint => filling,
             },
-            Self::ProviderNeedsANewerShape { format, reads, .. } => filling
+            Self::ProviderNeedsANewerShape { format, reads, .. }
+            | Self::SetupNeedsANewerShape { format, reads, .. } => filling
                 .and("format", format.to_string())
                 .and("reads", reads.to_string()),
             Self::NotRead { .. }
