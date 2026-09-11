@@ -113,6 +113,35 @@ test passes; this is Unix-socket development evidence, not physical input testin
 
 ## Hardware and firmware
 
+### Hyper-V refuses to start a machine rather than start it small, and the figure it refuses at is the host's, not the guest's
+**Version:** Hyper-V on Windows 11 Pro 10.0.26200, a 15.5 GB host, measured
+2026-09-11 starting the `alo-os` generation-2 machine `docs/booting.md`
+describes.
+**Behaviour:** with a browser, an editor, WSL and two build loops holding the
+host's memory — about 1.1 GB *available* — `Start-VM` refused **4096 MB, then
+1024 MB, then 768 MB** in turn: *Not enough memory in the system to start the
+virtual machine*. It reserves overhead beyond the machine's own allocation and
+refuses rather than starting with less. Nothing in that sentence is about the
+disk. Once the browser was closed (2 GB available), the same 768 MB startup
+with dynamic memory — 512 MB floor, 2 GB ceiling — booted to the text console,
+and the guest's heartbeat came up at 92 seconds.
+**What we do:** `docs/booting.md` says 8192 MB *if the host has it to give*
+and says what refusal looks like. A person who cannot start the machine closes
+what holds the memory; nothing in the image can be changed to help, because the
+refusal happens before the image runs.
+
+### Fedora's shim passes Hyper-V Secure Boot under the Microsoft UEFI Certificate Authority template
+**Version:** the image built from `quay.io/fedora/fedora-bootc:42` at the
+digest `image/Containerfile` pins, on Hyper-V (Windows 11 Pro 10.0.26200),
+2026-09-11.
+**Behaviour:** a generation-2 machine with Secure Boot **on** and the template
+set to *Microsoft UEFI Certificate Authority* boots the disk; the default
+template (*Microsoft Windows*) trusts only Windows' own signer. This was the one
+step in `docs/booting.md` written before anybody had watched it, and it holds.
+**What we do:** the document tells a person to pick that template rather than
+to turn Secure Boot off. Turning it off would have been the softer test, and a
+certified laptop ships with it on.
+
 ### `struct file`'s `f_path` is inside an anonymous union, and a search over named members does not find it
 **Version:** `6.18.33.2-microsoft-standard-WSL2`, measured 2026-09-04 by reading
 `/sys/kernel/btf/vmlinux` on the machine the boundary would not load on.

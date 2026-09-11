@@ -127,6 +127,25 @@ What you should see is a text console and a login prompt. There is no
 compositor on this image, nothing to draw and nowhere to sign in graphically;
 that is the honest state of v0.01 and not a machine that came up wrong.
 
+**What was seen, 2026-09-11.** The first run of this document, on the owner's
+15.5 GB Windows 11 Pro host, watched by the owner:
+
+- **It boots.** Generation 2, Secure Boot **on** under the *Microsoft UEFI
+  Certificate Authority* template — the step above that nobody had yet watched.
+  Fedora's shim passed it. The guest reported a heartbeat through the
+  integration services at 92 seconds with the processor idle, and the console
+  showed the text login this section promises.
+- **768 MB was enough to boot to that console** — dynamic memory, 512 MB floor,
+  2 GB ceiling — after the host had refused 4096, 1024 and 768 MB while a
+  browser held the memory. The 8192 MB above is for *answering*, not for
+  arriving at a prompt, and the two are different numbers.
+- **No address came up on the Default Switch.** Expected: nothing on this image
+  configures a network yet, and step 3 says to leave it out for the first boot
+  anyway. It is noted so nobody reads a blank address as a broken machine.
+- **The disk that booted was built from a six-day-old image**, before the
+  weights and the serving unit were added; the current image was built the same
+  evening and has not been booted yet. That is the next run of this document.
+
 ## What a virtual machine cannot show
 
 This is not the hardware acceptance in phase 8 of
