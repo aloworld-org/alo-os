@@ -276,8 +276,9 @@ the compositor's, and *On the machine* does not move.
 
 ### 10. The image carries the shell, the session and the daemon
 
-**Status:** blocked — on ADR 0024 being accepted, and then on task 13.
-**Depends on:** 5, 9, 13.
+**Status:** blocked — on task 13 alone now. ADR 0024 was accepted on
+2026-09-11, so what this waits on is the surface itself rather than the
+decision about it. **Depends on:** 5, 9, 13.
 
 Phase 7. `image/` builds and boots in QEMU with the daemon running; it does not
 yet carry a shell to boot *to*, a session to sign in to, or the vocabulary and
@@ -366,9 +367,15 @@ knows not to start.
 
 ### 13. A sign-in surface, and what starts it
 
-**Status:** blocked — on `docs/decisions/0024-what-a-person-signs-in-at.md`
-being accepted. A worker that started this before the answer would be choosing
-between the options rather than building one. **Depends on:** 2.
+**Status:** ready — **unblocked 2026-09-11**, when
+`docs/decisions/0024-what-a-person-signs-in-at.md` was accepted as Option B
+after the measurement it owed was taken: `logind` opens a session for a
+privileged caller that is not `pam_systemd` (`Invalid leader PID` from root is
+the call being *authorised* and only its contents refused; `Access denied` from
+uid 1000 is the boundary). So alo OS has its own sign-in surface, and
+`alo-accounts` is the authenticator rather than a PAM module — the exemption
+from `unsafe_code = "forbid"` that Option A would have cost is not owed.
+**Depends on:** 2.
 **Owner:** the desktop worker — it is a binary in `crates/alo-shell`, which is
 that lane's, and it is written here so the lane finds it rather than so this
 one takes it.
@@ -1131,3 +1138,39 @@ after.
 - **Owner:** Claude — it touches no compositor file and needs no hardware. The
   *running* of it on the owner's Hyper-V is the owner's, with the document this
   task writes in hand.
+
+### 26. The one privileged thing that turns a correct password into a session
+
+**Status:** ready. **Depends on:** nothing — ADR 0024's measurement is taken.
+
+Task 13 is the first screen, and it is the desktop lane's because it is drawing.
+**This is the half of it that is not drawing**, separated out so the critical
+path does not wait for a lane that is away: the small privileged component
+ADR 0024 priced and accepted, which takes a uid that `alo-accounts` has
+*already* authenticated and asks `systemd-logind` to open that person's session —
+the session `alo-agentd.service` is bound to and that nothing on the image can
+currently cause.
+
+The measurement is done and is in the ADR: `CreateSession` answers root with
+`Invalid leader PID` — the call authorised, only its contents refused — and
+uid 1000 with `Access denied`. So the boundary is privilege, not `pam_systemd`,
+and no PAM module and no `unsafe` exemption is owed. What remains is to build the
+thing and to hold it to the terms ADR 0018's loader is held to.
+
+- **Acceptance:** it opens a session for a uid and can do **nothing else** — no
+  password reaches it, no name, no path, and it cannot be asked to open a session
+  for a uid the caller has not authenticated; its capability set is a
+  `crates/alo-image` check beside the loader's, with a twin that breaks one line;
+  a request it refuses is refused in words `alo-saying` collects; and the
+  measurement is taken **again on the pinned Fedora base** rather than on the
+  development machine's Ubuntu, with the answer written into `docs/quirks.md` —
+  ADR 0024 says in as many words that this check is owed before any box is
+  ticked, and recording the WSL answer as the image's would be the guessing that
+  paragraph exists to prevent.
+- **Constraint:** nothing in `crates/alo-shell` — that is task 13's and the
+  desktop lane's, and this must not draw, start a compositor, or decide what a
+  person sees. It does not authenticate: `alo-accounts` does that and already
+  does it, and a component that could do both would be ADR 0018's one privileged
+  component argument thrown away. If the pinned base answers differently from the
+  development machine, that finding is the deliverable and an ADR is how it is
+  recorded — never a workaround.
