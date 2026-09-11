@@ -1,20 +1,23 @@
 //! What the image owes the two daemons, and whether the files it ships agree.
 //!
 //! alo OS is an OCI image ([ADR 0011](../../../docs/decisions/0011-the-base-is-rented-and-the-image-is-a-container.md)),
-//! and `image/` is what that image adds to a rented base: two binaries, two
-//! systemd units, two directories made at boot, the logins the machine has, and
-//! the description `alo-agentd` reads. This crate reads those five declarations
-//! — and the accounts file the image is answerable for **not** shipping — and
-//! asks whether they can all be true at once.
+//! and `image/` is what that image adds to a rented base: two binaries of our
+//! own, two systemd units, two directories made at boot, the logins the machine
+//! has, the description `alo-agentd` reads, and — since
+//! [ADR 0025](../../../docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md)
+//! — the pinned model runtime. This crate reads those declarations — and the
+//! accounts file the image is answerable for **not** shipping — and asks
+//! whether they can all be true at once.
 //!
 //! | | |
 //! |---|---|
-//! | [`Image`] | The five files, read off a directory |
+//! | [`Image`] | The image's files, read off a directory |
 //! | [`everything_wrong_with`] | Every promise in `docs/` they make to each other, checked |
 //! | [`Wrong`] | One thing they disagree about, and which decision it is about |
 //! | [`Unit`], [`Service`] | A systemd unit as text, and the seven settings alo OS asks about |
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
+//! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
 //!
 //! # Nothing on a machine ever reads this
 //!
@@ -63,6 +66,7 @@ mod image;
 mod logins;
 mod making;
 mod refusing;
+mod runtime;
 mod service;
 #[cfg(test)]
 mod testing;
@@ -76,6 +80,7 @@ pub use image::{Image, THE_AGENT, THE_LOADER};
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, Made, everything_made};
 pub use refusing::{NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade};
+pub use runtime::{THE_RUNTIMES_BINARY, THE_RUNTIMES_LIBRARIES, TheRuntime};
 pub use service::{ROOT, Service};
 pub use unit::Unit;
 pub use wrong::Wrong;

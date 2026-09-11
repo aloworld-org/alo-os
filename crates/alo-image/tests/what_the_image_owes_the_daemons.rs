@@ -215,3 +215,31 @@ fn the_units_start_the_binaries_the_image_installs() {
     assert_eq!(image.loader().runs(), "/usr/libexec/alo-boundaryd");
     assert_eq!(image.agent().runs(), "/usr/bin/alo-agentd");
 }
+
+/// **The model runtime the machine arrives with is aboard, pinned and
+/// verified.** ADR 0025 made *the local model is what the machine arrives
+/// ready to run* the promise, and ADR 0006 said how the runtime gets there: a
+/// pinned upstream artefact, its version written where the other pins are.
+/// This is that, read off the recipe rather than off an ADR — and no weights,
+/// no unit and nothing that starts it, because a runtime alone answers
+/// nothing (ADR 0019) and the weights are their own task.
+#[test]
+fn the_model_runtime_is_aboard_pinned_and_verified() {
+    let image = the_image();
+    let runtime = image.runtime();
+
+    assert!(
+        runtime.lands_its_binary() && runtime.lands_its_libraries(),
+        "the recipe does not land the runtime: {runtime:?}"
+    );
+    assert!(
+        runtime.is_pinned(),
+        "the runtime's version floats: {:?}",
+        runtime.version()
+    );
+    assert!(
+        runtime.is_verified(),
+        "the runtime's artefact is not held to a digest the build checks: {:?}",
+        runtime.digest()
+    );
+}

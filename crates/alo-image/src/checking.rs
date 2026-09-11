@@ -70,7 +70,46 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     both_units_are_pulled_in(image, &mut wrong);
     the_agent_runs_inside_the_persons_session(image, &mut wrong);
     nobody_signs_in_with_an_account_the_image_shipped(image, &mut wrong);
+    the_model_runtime_is_aboard_and_pinned(image, &mut wrong);
     wrong
+}
+
+/// **The model runtime is on the image, pinned and verified.**
+///
+/// ADR 0025: the local model is what the machine arrives ready to run, and the
+/// expensive half of that promise is an artefact on the disk. ADR 0006: it
+/// arrives pinned. Neither can be caught by a build — a Containerfile that
+/// dropped the runtime, floated its version to `latest`, or stopped checking
+/// the digest builds green and ships a machine whose first promise is untrue.
+///
+/// Three separate disagreements rather than one, because they are fixed in
+/// three different places and the person reading them is looking at a diff.
+/// What is deliberately **not** here: no weights, and no unit that starts the
+/// runtime — a runtime alone answers nothing (ADR 0019), and both halves
+/// belong to the task that puts weights on the disk.
+fn the_model_runtime_is_aboard_and_pinned(image: &Image, wrong: &mut Vec<Wrong>) {
+    let runtime = image.runtime();
+
+    if !runtime.lands_its_binary() {
+        wrong.push(Wrong::TheRuntimeIsNotOnTheImage {
+            at: Path::new(crate::THE_RUNTIMES_BINARY).to_owned(),
+        });
+    }
+    if !runtime.lands_its_libraries() {
+        wrong.push(Wrong::TheRuntimeIsNotOnTheImage {
+            at: Path::new(crate::THE_RUNTIMES_LIBRARIES).to_owned(),
+        });
+    }
+    if !runtime.is_pinned() {
+        wrong.push(Wrong::TheRuntimesVersionIsNotPinned {
+            version: runtime.version().unwrap_or(NOTHING).to_owned(),
+        });
+    }
+    if !runtime.is_verified() {
+        wrong.push(Wrong::TheRuntimeArrivesUnverified {
+            digest: runtime.digest().unwrap_or(NOTHING).to_owned(),
+        });
+    }
 }
 
 /// **The image ships no accounts**, which is the state `alo-accounts` reads as
@@ -388,8 +427,8 @@ fn both_units_are_pulled_in(image: &Image, wrong: &mut Vec<Wrong>) {
 mod tests {
     use super::*;
     use crate::testing::{
-        THE_AGENTS_UNIT, THE_DESCRIPTION_FILE, THE_LOADERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
-        a_copy_of_the_image, edited, image_at, the_store_file,
+        THE_AGENTS_UNIT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE, THE_LOADERS_UNIT, THE_SYSUSERS,
+        THE_TMPFILES, a_copy_of_the_image, edited, image_at, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -970,6 +1009,98 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::AnAccountShippedWithTheImage { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An image that dropped the model runtime is caught.** The line is one
+    /// `COPY` in a recipe nobody reviews twice, the build stays green, and the
+    /// machine that ships is one whose sovereignty is an option to find — the
+    /// exact sentence ADR 0025 was accepted to make false.
+    #[test]
+    fn an_image_that_dropped_the_runtime_is_caught() {
+        let root = a_copy_of_the_image("no-runtime");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "COPY --from=runtime /runtime/bin/ollama /usr/bin/ollama",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheRuntimeIsNotOnTheImage { at }
+                    if at == Path::new(crate::THE_RUNTIMES_BINARY)
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And one that dropped only the runtime's libraries is caught too**,
+    /// which is the mistake that looks harmless: the binary is there, and it
+    /// loads nothing.
+    #[test]
+    fn an_image_that_dropped_the_runtimes_libraries_is_caught() {
+        let root = a_copy_of_the_image("no-runtime-libraries");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "COPY --from=runtime /runtime/lib/ollama/ /usr/lib/ollama/",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheRuntimeIsNotOnTheImage { at }
+                    if at == Path::new(crate::THE_RUNTIMES_LIBRARIES)
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A runtime left floating is caught, in words that say why.** `latest`
+    /// is the version somebody writes to get a build going, and it is a
+    /// different runtime on two builds of one image.
+    #[test]
+    fn a_runtime_left_floating_is_caught() {
+        let root = a_copy_of_the_image("floating-runtime");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_RUNTIME=0.34.0",
+            "ARG THE_RUNTIME=latest",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheRuntimesVersionIsNotPinned { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("latest"), "{said}");
+        assert!(said.contains("ADR 0006"), "{said}");
+    }
+
+    /// **A digest the build stopped checking is caught.** The `ARG` is still
+    /// there, every grep for the pin still finds it, and it verifies nothing.
+    #[test]
+    fn a_runtime_arriving_unchecked_is_caught() {
+        let root = a_copy_of_the_image("unchecked-runtime");
+        edited(&root, THE_CONTAINERFILE, "sha256sum --check -", "true");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheRuntimeArrivesUnverified { .. })),
             "{wrong:?}"
         );
     }

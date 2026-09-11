@@ -110,6 +110,11 @@ const DEFAULT_KEEP_ALIVE: &str = "30m";
 /// it is the daemon's *nothing on this machine has been chosen to answer
 /// questions*.
 ///
+/// **A runtime holding no weights is nothing found too.** The image carries
+/// the pinned runtime on every machine (ADR 0025), so a socket answering at
+/// the known address stopped meaning a model is on the disk — and this door
+/// opens onto what answers questions, which a runtime alone is not.
+///
 /// **Ask it each time rather than once.** It is one request to a socket on this
 /// machine, refused immediately when nothing is listening, so a runtime started
 /// after the service was is found the next time somebody asks — and one that has
@@ -137,7 +142,19 @@ fn found_at(endpoint: &str, catalogue: Catalogue) -> Option<Ollama> {
     // something this cannot read, which is nothing found rather than a runtime
     // that will fail on the first real question — ADR 0019 refuses discovery by
     // asking what happens to answer.
-    runtime.installed().ok().map(|_| runtime)
+    //
+    // And a runtime holding **no weights** is nothing found too. Since ADR
+    // 0025 the image carries the runtime on every machine we build, so *the
+    // runtime answered* stopped implying anybody put a model on the disk — and
+    // what this door opens onto is a thing that answers questions, which an
+    // empty runtime is not. A runtime alone must not read as a model: until
+    // there are weights, discovery keeps giving ADR 0019's found-nothing
+    // answer, and the machine keeps saying nothing here answers questions.
+    runtime
+        .installed()
+        .ok()
+        .filter(|weights| !weights.is_empty())
+        .map(|_| runtime)
 }
 
 /// Ollama, reached over its HTTP API.
@@ -543,6 +560,21 @@ mod tests {
         // the caller's — two calls, in that order.
         assert!(asked[0].starts_with("GET /api/tags "), "{}", asked[0]);
         assert!(asked[1].starts_with("POST /api/chat "), "{}", asked[1]);
+    }
+
+    /// **A runtime with no weights on its disk is nothing found.** ADR 0025
+    /// put the pinned runtime on every image this repository builds, without
+    /// the weights — so on every shipped machine, something now answers at
+    /// the one address this file knows, holding nothing that could answer a
+    /// question. A runtime alone must not read as a model: discovery keeps
+    /// giving ADR 0019's found-nothing answer until there are weights, and a
+    /// machine in that state keeps saying nothing on it answers questions
+    /// rather than routing somebody's question to an empty runtime.
+    #[test]
+    fn a_runtime_with_no_weights_is_nothing_found() {
+        let (url, server) = serving(r#"{"models":[]}"#, 200);
+        assert!(found_at(&url, catalogue()).is_none());
+        server.join().unwrap();
     }
 
     /// **Something else listening is not a runtime found.** ADR 0019 refuses

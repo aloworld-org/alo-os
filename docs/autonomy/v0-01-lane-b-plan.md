@@ -309,3 +309,61 @@ source tree in this repository.
   `crates/alo-shell`. If the runtime's licence or its packaging forces a decision
   this repository has not taken, that decision is an ADR handed over as this
   task, in the shape ADR 0024 and ADR 0025 used.
+
+**Done, 2026-09-11.** `image/Containerfile` carries the runtime the way it
+carries everything else: `THE_RUNTIME=0.34.0` and the artefact's own sha256
+written where the other pins are, fetched in a stage of its own and refused
+unless the digest matches before a byte of it is unpacked, landing
+`/usr/bin/ollama` and `/usr/lib/ollama/` — no weights, no unit and nothing that
+starts it, because a runtime alone answers nothing and both belong to the
+weights work. `crates/alo-image` grew `runtime.rs`, a reader of the recipe held
+apart from ADR 0006's one-file rule on purpose (that rule is about how the
+runtime is spoken to; where its files land is the image's own fact), and three
+disagreements with twins: dropped from the image, version floating — refused in
+words that say why `latest` cannot ship — and a digest the build stopped
+checking. `alo_models::found_at` now answers ADR 0019's found-nothing for a
+runtime holding no weights, so the artefact arriving on every machine cannot
+read as a model on any of them; and `crates/alo-saying` pins that the runtime's
+name stays on the rented list and still reaches nobody. Measured in
+`crates/alo-image/src/checking.rs`, `crates/alo-models/src/ollama.rs` and
+`crates/alo-saying/src/rented.rs`. Report:
+`docs/autonomy/updates/the-pinned-model-runtime-is-on-the-image.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 8
+below is the next task and was written in the same change.
+
+### 8. The carry-or-fetch measurement ADR 0025 owes
+
+**Status:** ready. **Depends on:** 7.
+
+ADR 0025 recommends carrying the weights on the certified image and fetching
+only where an image cannot — and says in as many words that this is *a
+recommendation with a measurement owed*, and that this measurement is **the
+first thing the implementation owes**. Task 7 put the runtime aboard; nobody
+may put weights aboard on a recommendation whose numbers nobody has.
+
+The measurement is two numbers and a sentence. **The model:** the smallest
+catalogued entry that clears the verb-driving bar on the certified machine's
+shape (ADR 0007 makes the CPU the default; `crates/alo-driving` owns the bar and
+the catalogue records the grades — an entry that is unmeasured is not a
+candidate, it is a gap the ledger already carries). **The channel:** what the
+image and its update stream can honestly carry, which is a question about the
+update channel's own constraints (ADR 0011's bootc image, `docs/features.md`'s
+promise that an upgrade cannot break a working stack), not about what a
+developer's connection tolerates. **The sentence:** carried, or fetched at
+setup where an image cannot — remembering ADR 0025's own caution that a machine
+which fetches at setup is not local by default when it is offline at setup.
+
+- **Acceptance:** the smallest catalogued model that clears the verb-driving
+  bar is named, with its size in bytes and the grade that clears the bar, off
+  the catalogue rather than from memory; what the update channel can carry is
+  stated with its reasoning, honestly bounded where it cannot yet be measured
+  on real infrastructure; the answer — carry, or fetch, or carry-here and
+  fetch-there — is written in `docs/quirks.md` beside the numbers, which is
+  where ADR 0025 says it goes; and the weights task that builds on the answer
+  is written as the next task in this plan, in the same change.
+- **Constraint:** a measurement, not an implementation — no weights on the
+  image, no setup flow, no catalogue regrade and nothing in `crates/alo-shell`.
+  If the honest answer is that the bar clears on no catalogued entry for the
+  certified machine, that finding **is** the deliverable, written where the
+  ledger can carry it, and the weights task waits on the catalogue rather than
+  on wishes.

@@ -562,4 +562,36 @@ mod tests {
     fn a_vocabulary_that_says_nothing_names_nothing() {
         assert!(what_a_person_would_have_to_learn(&Vocabulary::empty()).is_empty());
     }
+
+    /// **The model runtime the image now carries is a name a person never
+    /// meets.** Since ADR 0025 the pinned runtime is an artefact on every
+    /// machine this repository builds, which is exactly when its name starts
+    /// wanting to appear in sentences — *X is not running* is the message
+    /// somebody writes the day a machine arrives with X on it. So this pins
+    /// two things at once: the runtime stays on [`EVERYTHING_WE_RENT`] with
+    /// ADR 0006 as the reason, and everything this machine can say still
+    /// names nothing rented — putting the artefact on the image added no
+    /// word a person would have to learn.
+    #[test]
+    fn the_runtime_the_image_carries_is_a_name_a_person_never_meets() {
+        assert!(
+            EVERYTHING_WE_RENT
+                .iter()
+                .any(|rented| rented.name() == "Ollama" && rented.why().contains("ADR 0006")),
+            "the runtime the image carries is not on the rented list, so a sentence naming it \
+             would go uncaught"
+        );
+
+        let vocabulary = everything_this_machine_can_say().unwrap();
+        let overheard = what_a_person_would_have_to_learn(&vocabulary);
+        assert!(
+            overheard.is_empty(),
+            "{}",
+            overheard
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+    }
 }

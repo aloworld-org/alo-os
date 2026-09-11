@@ -288,6 +288,40 @@ pub enum Wrong {
         /// The unit.
         unit: String,
     },
+    /// The image does not land the model runtime where it belongs.
+    #[error(
+        "this image does not land the model runtime at {at}, copied out of a build stage that \
+         fetched it — ADR 0025 promises the local model is what the machine arrives ready to \
+         run, and ADR 0006 says the runtime arrives as a pinned upstream artefact, never as a \
+         source tree or a binary committed here; an image without it is a machine whose \
+         sovereignty is an option to find"
+    )]
+    TheRuntimeIsNotOnTheImage {
+        /// Where the artefact should land, and does not.
+        at: PathBuf,
+    },
+    /// The model runtime's version floats.
+    #[error(
+        "the model runtime's version is `{version}`, which is not one exact release — ADR 0006 \
+         pins the runtime in the image, and a floating or partial version is a different \
+         runtime on two builds of one image, moved by nobody and tested beside nothing; write \
+         it `major.minor.patch`, the way every other pin in the Containerfile is written"
+    )]
+    TheRuntimesVersionIsNotPinned {
+        /// What the recipe says, or `-` where it says nothing.
+        version: String,
+    },
+    /// The model runtime's artefact is not held to a digest the build checks.
+    #[error(
+        "the model runtime arrives unverified (digest: {digest}) — the version says what was \
+         asked for, and only a whole sha256 that the build checks before unpacking says what \
+         arrived; without it, a release published again under the same number becomes a \
+         different runtime on a certified machine, and ADR 0006's pin is prose"
+    )]
+    TheRuntimeArrivesUnverified {
+        /// The digest the recipe names, or `-` where it names none.
+        digest: String,
+    },
 }
 
 #[cfg(test)]
@@ -316,6 +350,30 @@ mod tests {
             .to_string()
             .contains("ADR 0017")
         );
+    }
+
+    /// A version that floats is refused **in words that say why**: the reader
+    /// is somebody who wrote `latest` to get a build going, and the sentence
+    /// has to give them the reason it cannot ship, not only the rule.
+    #[test]
+    fn a_floating_version_is_refused_in_words_that_say_why() {
+        let said = Wrong::TheRuntimesVersionIsNotPinned {
+            version: "latest".to_owned(),
+        }
+        .to_string();
+        assert!(said.contains("latest"), "{said}");
+        assert!(said.contains("ADR 0006"), "{said}");
+        assert!(
+            said.contains("a different runtime on two builds of one image"),
+            "{said}"
+        );
+
+        let said = Wrong::TheRuntimeArrivesUnverified {
+            digest: "-".to_owned(),
+        }
+        .to_string();
+        assert!(said.contains("what arrived"), "{said}");
+        assert!(said.contains("ADR 0006"), "{said}");
     }
 
     /// A mode is said the way somebody wrote it, in octal with its leading zero,

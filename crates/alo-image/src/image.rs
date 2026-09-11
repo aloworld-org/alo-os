@@ -19,6 +19,7 @@ use crate::description::Description;
 use crate::logins::Declared;
 use crate::making::Made;
 use crate::refusing::NotAnImage;
+use crate::runtime::TheRuntime;
 use crate::service::Service;
 use crate::unit::Unit;
 
@@ -36,6 +37,13 @@ const TMPFILES: &str = "usr/lib/tmpfiles.d/alo.conf";
 
 /// Where the logins made at boot are declared.
 const SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
+
+/// The recipe the image is built from, beneath the image's directory.
+///
+/// Not a file the machine ships — it is what decides which files the machine
+/// ships, and it is read for the one thing no shipped file can say: whether
+/// the model runtime is aboard, and pinned (ADR 0006, ADR 0025).
+const CONTAINERFILE: &str = "Containerfile";
 
 /// Where the machine description goes, beneath the image's root.
 ///
@@ -62,6 +70,8 @@ pub struct Image {
     /// What it says about the accounts a person signs in with, which on a
     /// correct image is that it ships none.
     store: TheStore,
+    /// What its recipe says about the model runtime it carries.
+    runtime: TheRuntime,
 }
 
 impl Image {
@@ -89,6 +99,11 @@ impl Image {
         let description =
             Description::read(&text(&at)?).map_err(|why| NotAnImage::NotDescribed { at, why })?;
 
+        // Read leniently on purpose: a recipe with no runtime in it is an
+        // image `crate::checking` has sentences about, not a directory that
+        // is no image at all.
+        let runtime = TheRuntime::read(&text(&root.join(CONTAINERFILE))?);
+
         Ok(Self {
             loader,
             agent,
@@ -96,6 +111,7 @@ impl Image {
             declared,
             description,
             store: TheStore::of(root),
+            runtime,
         })
     }
 
@@ -152,6 +168,12 @@ impl Image {
     pub const fn store(&self) -> &TheStore {
         &self.store
     }
+
+    /// What this image's recipe says about the model runtime it carries.
+    #[must_use]
+    pub const fn runtime(&self) -> &TheRuntime {
+        &self.runtime
+    }
 }
 
 /// One unit file, read as a service.
@@ -194,6 +216,10 @@ mod tests {
         assert_eq!(image.login_called("alo"), Some(1000));
         assert_eq!(image.group_called("alo-agent"), Some(60989));
         assert!(image.puts("alo", "alo-agent"));
+        assert!(
+            image.runtime().version().is_some(),
+            "the recipe read, and named no runtime version at all"
+        );
     }
 
     /// **A missing file is a missing file**, named, rather than an image that

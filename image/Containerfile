@@ -2,10 +2,11 @@
 #
 # ADR 0011: the operating system *is* an OCI image — a bootable container
 # (`bootc`) on a rented, unmodified Fedora-derived base. Nothing below patches
-# that base. What this file adds is two binaries, two units, two directories and
-# one description, which is queue item 28's whole scope: the smallest image that
-# boots and starts the agent service. There is no compositor in it, no desktop,
-# no wallpaper and nothing to sign in at.
+# that base. What this file adds is two binaries of our own, two units, two
+# directories, one description — the smallest image that boots and starts the
+# agent service (queue item 28) — and, since ADR 0025, the pinned model runtime,
+# because the local model is what the machine arrives ready to run. There is no
+# compositor in it, no desktop, no wallpaper and nothing to sign in at.
 #
 # Build it from the root of the repository:
 #
@@ -25,6 +26,13 @@ ARG THE_NIGHTLY=nightly-2026-06-01
 ARG THE_LLVM=22
 ARG THE_LINKER=0.11.0
 ARG THE_TARGET=x86_64-unknown-linux-musl
+# The model runtime (ADR 0006), as one exact version and the digest of the one
+# artefact that version published. The version says what was asked for; the
+# digest, checked below before anything is unpacked, says what arrived — a
+# release published again under the same number becomes a failed build here,
+# never a different runtime on a certified machine.
+ARG THE_RUNTIME=0.34.0
+ARG THE_RUNTIME_SHA256=cf95886728959aa09910bb34de5cca1cc5a8f68003b5597197d3f2c2d57c0804
 
 # ---------------------------------------------------------------------------
 # What compiles alo OS, which is not what runs it
@@ -92,6 +100,36 @@ RUN cargo build --release --target ${THE_TARGET} \
       --package alo-agentd --package alo-boundaryd
 
 # ---------------------------------------------------------------------------
+# The model runtime, fetched pinned and checked before it is trusted
+# ---------------------------------------------------------------------------
+#
+# Engines are configured, never patched: the runtime goes onto the image as a
+# pinned upstream artefact, not as a source tree in this repository. A stage of
+# its own rather than a line in the build stage, because compiling alo OS and
+# fetching what it rents are different reasons to change — and a separate stage
+# is cached separately, so bumping the runtime does not recompile the world.
+#
+# What is fetched is upstream's own release artefact for this architecture, and
+# it is refused unless its sha256 is the one pinned above. The URL names the
+# exact version; the digest is what makes the pin real.
+FROM ${THE_BUILDER} AS runtime
+
+ARG THE_RUNTIME
+ARG THE_RUNTIME_SHA256
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends ca-certificates curl zstd \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
+      --output /ollama-linux-amd64.tar.zst \
+      https://github.com/ollama/ollama/releases/download/v${THE_RUNTIME}/ollama-linux-amd64.tar.zst \
+ && echo "${THE_RUNTIME_SHA256}  /ollama-linux-amd64.tar.zst" | sha256sum --check - \
+ && mkdir /runtime \
+ && zstd --decompress --stdout /ollama-linux-amd64.tar.zst | tar --extract --directory /runtime
+
+# ---------------------------------------------------------------------------
 # The machine
 # ---------------------------------------------------------------------------
 FROM ${THE_BASE}
@@ -104,6 +142,17 @@ ARG THE_TARGET
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-boundaryd /usr/libexec/alo-boundaryd
 COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-agentd
 
+# The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
+# all): the binary and the libraries it loads, exactly as upstream lays them
+# out. **No weights, no unit and nothing that starts it** — a runtime alone
+# answers nothing (ADR 0019), and the weights are the next task's, with the
+# sizing question (ADR 0007) and ADR 0025's carry-or-fetch measurement inside
+# it. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
+# alone; where its files land is this image's own fact, and
+# `crates/alo-image` checks it beside everything else here.
+COPY --from=runtime /runtime/bin/ollama /usr/bin/ollama
+COPY --from=runtime /runtime/lib/ollama/ /usr/lib/ollama/
+
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
@@ -115,7 +164,7 @@ COPY image/etc/alo/ /etc/alo/
 # The description in particular is checked by `alo-agentd` before it is parsed:
 # a group-writable one is a description the group writes this machine with, and
 # the service refuses to start rather than believe it.
-RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/bin/alo-agentd \
+RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/bin/alo-agentd /usr/bin/ollama \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
                /usr/lib/sysusers.d/alo.conf \
