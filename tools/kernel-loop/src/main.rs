@@ -710,9 +710,11 @@ fn waiting_for(ours: &Path, chosen: &str) -> Result<Option<handoff::Handed>, Str
     let until = Instant::now() + WAITING_AT_MOST;
     let mut said_so = false;
     loop {
-        if journal::was_asked_to_stop(ours) {
-            return Ok(None);
-        }
+        // **Look before honouring a stop.** A stop asked for while a worker is
+        // running means *finish what is in hand and begin nothing new* — not
+        // *discard what the worker just finished*. With this check first, the
+        // loop answered "nobody handed over its work" 23 seconds after a valid
+        // handoff was written, because the stop file was older than both.
         if let Some(handed) = handoff::Handed::waiting(ours)? {
             if handed.task != chosen {
                 return Err(format!(
@@ -723,6 +725,9 @@ fn waiting_for(ours: &Path, chosen: &str) -> Result<Option<handoff::Handed>, Str
                 ));
             }
             return Ok(Some(handed));
+        }
+        if journal::was_asked_to_stop(ours) {
+            return Ok(None);
         }
         if !said_so {
             journal::note(ours, "waiting for its work to be handed over");
@@ -737,6 +742,8 @@ fn waiting_for(ours: &Path, chosen: &str) -> Result<Option<handoff::Handed>, Str
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     /// **Everything that runs the gates says where it is building, first.**
     ///
     /// A build directory nobody can name is one nobody cleans, and the answer to
@@ -766,5 +773,79 @@ mod tests {
                 "`{command}` runs the gates without saying where it builds"
             );
         }
+    }
+
+    /// A scratch `.kernel-loop` of this test's own, gone when the test is.
+    struct Ours(std::path::PathBuf);
+    impl Ours {
+        fn made(called: &str) -> Self {
+            let at = std::env::temp_dir()
+                .join(format!("alo-kernel-loop-{called}-{}", std::process::id()));
+            drop(std::fs::remove_dir_all(&at));
+            assert!(
+                std::fs::create_dir_all(&at).is_ok(),
+                "scratch dir could not be made"
+            );
+            Self(at)
+        }
+    }
+    impl Drop for Ours {
+        fn drop(&mut self) {
+            drop(std::fs::remove_dir_all(&self.0));
+        }
+    }
+
+    /// The smallest handoff `handoff::Handed::read` accepts, for one task:
+    /// every key it insists on, one file, one piece of evidence.
+    fn a_handoff_for(task: &str) -> String {
+        [
+            &format!("task = {task}"),
+            "report = docs/autonomy/updates/x.md",
+            "subject = feat(x): x",
+            "evidence =",
+            "  . alo-x a_target a_test",
+            "files =",
+            "  docs/autonomy/updates/x.md",
+            "body =",
+            "  Body.",
+            "",
+        ]
+        .join(
+            "
+",
+        )
+    }
+
+    /// **A stop asked for while a worker ran does not discard the handoff that
+    /// worker finished.** On 2026-09-11 the stop file was older than the
+    /// handoff, the loop checked the stop first, and it answered *nobody
+    /// handed over its work* 23 seconds after a valid handoff was written.
+    #[test]
+    fn a_handoff_already_waiting_is_taken_even_when_a_stop_was_asked_for() {
+        let ours = Ours::made("stop-then-handoff");
+        assert!(journal::asked_to_stop(&ours.0).is_ok());
+        assert!(std::fs::write(ours.0.join("handoff.toml"), a_handoff_for("The task")).is_ok());
+
+        let found = waiting_for(&ours.0, "The task");
+        assert!(
+            matches!(&found, Ok(Some(handed)) if handed.task == "The task"),
+            "a stop was honoured before the handoff was looked for: {found:?}"
+        );
+    }
+
+    /// And a stop with nothing waiting is still a stop — answered now, not
+    /// after an hour of looking every ten seconds.
+    #[test]
+    fn a_stop_with_nothing_waiting_is_answered_at_once() {
+        let ours = Ours::made("stop-alone");
+        assert!(journal::asked_to_stop(&ours.0).is_ok());
+
+        let began = Instant::now();
+        let found = waiting_for(&ours.0, "The task");
+        assert!(matches!(found, Ok(None)), "{found:?}");
+        assert!(
+            began.elapsed() < LOOKING_EVERY,
+            "a stop with nothing waiting slept before answering"
+        );
     }
 }
