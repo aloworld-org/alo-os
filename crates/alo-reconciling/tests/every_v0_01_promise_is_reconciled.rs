@@ -217,16 +217,23 @@ const THE_REAL_DECISION: &str =
 /// pointer lands** — against this repository, on the disk it is checked out on.
 ///
 /// This is the measurement task 19 of the delivery plan was written to take.
-/// Four v0.01 promises have nothing behind them, and for those the sentence in
+/// Three v0.01 promises have nothing behind them, and for those the sentence in
 /// the ledger is the whole of what the next person inherits: a promise recorded
 /// as missing and pointing nowhere is one whose reasoning gets derived again
 /// from scratch, which is the seven-times-over reading this ledger exists to
 /// end.
 ///
-/// The count is asserted rather than described. If a fifth promise falls to
-/// nothing, or one of the four is closed, this fails and whoever moved it writes
-/// down which — a ledger whose own summary drifts is a ledger that reads as an
-/// answer.
+/// The count is asserted rather than described. If a fourth promise falls to
+/// nothing, or one of the three is closed, this fails and whoever moved it
+/// writes down which — a ledger whose own summary drifts is a ledger that reads
+/// as an answer.
+///
+/// **It was four until 2026-09-11**, when task 20 of the delivery plan closed
+/// *copy, cut and paste* — the one task 19 found in the wrong pile, sorted into
+/// *needs a machine* by an audit that was finding six things at once.
+/// `crates/alo-clipboard` is the work and the ledger's entry for it says what is
+/// still owed underneath, which is the compositor wiring rather than the
+/// selection.
 #[test]
 fn each_promise_with_no_evidence_names_where_the_work_is() {
     let here = the_repository();
@@ -237,8 +244,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        4,
-        "the ledger's own account of itself says four v0.01 promises have no \
+        3,
+        "the ledger's own account of itself says three v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -261,8 +268,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        4,
-        "the entries with no evidence are not the four the count says: \
+        3,
+        "the entries with no evidence are not the three the count says: \
          {owed_and_pointing:?}"
     );
     for (promise, waits) in &owed_and_pointing {

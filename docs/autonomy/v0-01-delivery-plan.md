@@ -832,3 +832,81 @@ decided before anybody can see them.
   is where the wiring goes. No pixels are claimed and none are tested, and **no
   verb is added** — copy and paste is a person moving their own text between
   their own windows, and law 2's enumerated verbs are not where it belongs.
+
+**Done, 2026-09-11.** `crates/alo-clipboard`: the broker holds **the offer and
+the way back to its owner, and nothing else** — there is nowhere in it to put
+anybody's data, so *what is pasted is what was copied* is not a promise kept
+carefully but the only thing the crate can do. **Retiring is ownership rather
+than a flag**: taking the selection drops the previous owner's `Gives`, so a
+transfer against a stale handle moves nothing because there is nobody left to
+ask. And a selection is named by a **serial rather than by what it looks like**,
+because two identical offers from two applications are two selections and a
+clipboard that matched by resemblance would serve the new owner's data to
+somebody who asked the old one — a leak between two applications that reads to
+everybody involved exactly like a paste. That case is measured with two offers
+identical in every visible way.
+
+Text, images and files are **one door**: a form is a media type, an offer is a
+list of them, and nothing anywhere switches on which of the three is moving —
+`text/uri-list` is read before the `text/` family because it is the one media
+type whose own family says the wrong thing. Cut is that door with a flag and **a
+cut moves once**, the offer being retired by the transfer that completes it; an
+editor's cut is a copy here and the file says why, because treating it otherwise
+would make cut text unpastable a second time. The five ways a paste does not
+happen are five sentences, not one: *nothing has been copied* and *something
+else has been copied since* send a person to two different places, and eight
+strings under a new `clipboard` area are collected by `alo-saying`. **Nothing
+quotes what was copied** — no preview, no count, no history, and a hand-written
+`Debug` that prints the offer and never the bytes — because a clipboard is where
+a password manager puts a password.
+
+**What it had to show it does not do is shown twice.** A whole turn runs over a
+real context while a password manager owns the selection and the owner is never
+asked: that is today. What stops tomorrow is that **neither crate can name the
+other** — the test reads both manifests off the disk, and holds this crate to
+depending on no daemon, no turn, no record and no grants either. A turn cannot
+reach a clipboard because there is no clipboard in scope to reach (ADR 0001 §4).
+No verb was added. `docs/autonomy/v0-01-evidence.md` now stands at **three**
+promises with no evidence at all, and none of the three can be closed by this
+lane: two need a machine and the third needs the owner. Report:
+`docs/autonomy/updates/the-clipboard-before-there-is-anything-to-draw.md`. The
+next task (21) is written below. No pixels are claimed and none are tested;
+drawing it is the compositor's, and *On the machine* does not move.
+
+### 21. A translator's line, held to the rule the English is held to
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 20, out of the one still-owed half in
+`docs/autonomy/v0-01-evidence.md` that needs no screen, no decision and no
+machine. `docs/features.md` promises at v0.01 that **a person never learns the
+name of anything we rented** — *they install an application, not a Flatpak; they
+run a model, not Ollama* — and, in the line under it, that **it is enforced
+rather than remembered**: no sentence in the one vocabulary may contain the name
+of a rented component.
+
+`crates/alo-saying/src/rented.rs` enforces it, and the ledger records exactly
+what it does not reach: **a translation passes through nothing.** The check reads
+the English declarations and the vocabulary they build, and a translator's file
+is neither. That gap is the worse half of the promise rather than the smaller
+one: `docs/contracts/translations.md` says a translation is the only file **a
+person outside the organisation that owns the machine** types, it arrives in the
+image, and it is checked when a process starts — so *Das Flatpak konnte nicht
+installiert werden* would reach a person's screen today, in their own language,
+past a rule written to stop exactly that sentence.
+
+- **Acceptance:** a translated line naming a rented component is refused with
+  the same list and the same argument the English is held to, and the refusal
+  names the key and the language so whoever fixes it can find the line; what
+  happens to the **rest of the file** is decided and written down, because a
+  translation is somebody's donated work and throwing all of it away over one
+  line is a different promise being broken; a line that is fine is unaffected,
+  measured against a real translation rather than only against a fixture; and
+  the refusal is tested as carefully as the answer, including a rented name that
+  arrives only in the translation and not in the English beside it.
+- **Constraint:** it may not narrow `docs/features.md` and it may not weaken
+  `rented.rs`'s existing list to make anything pass. It says nothing new to a
+  person unless the decision above needs it to, and where it does, the string is
+  declared and collected like any other. Nothing in `crates/alo-shell`.

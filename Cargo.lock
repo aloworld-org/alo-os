@@ -204,6 +204,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-clipboard"
+version = "0.0.1"
+dependencies = [
+ "alo-capability",
+ "alo-context",
+ "alo-saying",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-collected"
 version = "0.0.1"
 dependencies = [
@@ -453,6 +464,7 @@ dependencies = [
  "alo-asking",
  "alo-capability",
  "alo-choosing",
+ "alo-clipboard",
  "alo-context",
  "alo-dock",
  "alo-egress",

@@ -17,6 +17,7 @@ members = [
   "crates/alo-capability",
   "crates/alo-choosing",
   "crates/alo-citing",
+  "crates/alo-clipboard",
   "crates/alo-collected",
   "crates/alo-context",
   "crates/alo-dock",

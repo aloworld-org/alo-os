@@ -104,10 +104,29 @@ starts one from a person's own choice rather than from a verb.
 
 ### Copy, cut and paste
 
-**Still owed:** all of it. Nothing in this repository implements a clipboard —
-no crate, no Wayland data-device handling in `alo-shell`, no test. This is a
-promise with no line at all, and it is the seventh of the kind the roadmap's
-audit kept finding one at a time.
+**Shown by:**
+`crates/alo-clipboard/tests/copy_cut_and_paste_across_applications.rs`,
+`crates/alo-clipboard/tests/the_clipboard_is_not_a_turns_context.rs`,
+`docs/autonomy/updates/the-clipboard-before-there-is-anything-to-draw.md`
+
+**Still owed:** the compositor. `crates/alo-clipboard` is the selection — an
+owner, the forms it offers, and a transfer somebody asked for, with every
+refusal decided — and **nothing wires it to `wl_data_device`**, so no two
+applications on a real machine have ever moved anything between them through it.
+That wiring is `crates/alo-shell`'s and is the desktop lane's, and until it
+exists images and files are offered forms measured against a fixture rather than
+against a drawing program and a file manager. The three v0.5 lines around this
+one — the clipboard portal for sandboxed applications, screenshots to the
+clipboard — stay where the definition puts them, and *clipboard history* stays
+at v1, which is why nothing here remembers anything.
+
+The paragraphs below are the audit's own, left as it wrote them: a finding
+rewritten by whoever closed it is a finding nobody can check.
+
+**Was owed, 2026-09-11, before task 20:** all of it. Nothing in this repository
+implemented a clipboard — no crate, no Wayland data-device handling in
+`alo-shell`, no test. This was a promise with no line at all, and it was the
+seventh of the kind the roadmap's audit kept finding one at a time.
 
 **Read against the repository, 2026-09-11: this one needs no screen, no decision
 and no machine, and the increment is task 20 of
@@ -639,3 +658,31 @@ owed is not the finding; being owed and pointing nowhere is, because that is the
 entry whose reasoning is derived again from scratch every time somebody opens
 this file — which is the seven-times-over reading this ledger exists to end,
 arriving from the other end.
+
+### The mis-sorted one is closed, and three are left, 2026-09-11
+
+*Copy, cut and paste* now has a line, so the count stands at **three with no
+evidence at all** — and it is the one the previous reading found in the wrong
+pile rather than one anybody had scheduled. `crates/alo-clipboard` is the
+selection this repository never had: an owner says which forms it can give,
+somebody asks for one of them, and the broker holds the offer and the way back
+to the owner and holds nothing else. Task 20 of
+`docs/autonomy/v0-01-delivery-plan.md` and
+`docs/autonomy/updates/the-clipboard-before-there-is-anything-to-draw.md` are the
+work.
+
+**What the increment does not close is written into the entry above**, so nobody
+reads a crate as the promise: no two applications on a machine have moved
+anything through it, because the `wl_data_device` wiring is `crates/alo-shell`'s
+and is the desktop lane's.
+
+The three that are left are the three the previous reading said were genuinely
+waiting, and nothing about them has changed: *the GPU works on first boot* waits
+on a machine with a card **and** on an image carrying something to accelerate,
+*the agents point at the local model by default* waits on the owner accepting
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md`, and
+*boots on one certified machine* waits on both a machine and
+`docs/decisions/0024-what-a-person-signs-in-at.md`. **None of the three can be
+closed by this lane**, which is a fact about scope rather than about effort: two
+need hardware nobody here can plug in, and the third needs a decision only the
+owner can make.

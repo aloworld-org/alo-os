@@ -25,6 +25,7 @@ alo-approving = { path = "../alo-approving" }
 alo-asking = { path = "../alo-asking" }
 alo-capability = { path = "../alo-capability" }
 alo-choosing = { path = "../alo-choosing" }
+alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }
 alo-dock = { path = "../alo-dock" }
 alo-egress = { path = "../alo-egress" }

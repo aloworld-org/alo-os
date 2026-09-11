@@ -24,7 +24,7 @@
 //! [`whoever_declares_words`] walks this workspace's own member list and reads
 //! each member's `src/words.rs`, so a crate added anywhere is a crate this check
 //! sees, with nothing to update. **Nothing here holds a crate's name** — not the
-//! twenty-three that declare words and not the one that stands apart. Comparing
+//! twenty-four that declare words and not the one that stands apart. Comparing
 //! two lists written by hand would only ever prove that two lists agree.
 //!
 //! # Three directions, because a list rots in more than one

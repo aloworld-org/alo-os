@@ -1,0 +1,38 @@
+[package]
+name = "alo-clipboard"
+version = "0.0.1"
+description = "Copy, cut and paste across applications: one owner, the forms it can give, and a transfer somebody asked for — the selection decided before there is anything to draw."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# There is deliberately no serde here, for `alo-context`'s reason one step
+# further on: a selection that could be read back off a disk would be a
+# clipboard that holds something nobody copied, and the whole of what this crate
+# guarantees is that what is pasted is what an owner offered. See `lib.rs`.
+[dependencies]
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, which is what a shell really holds. This
+# crate's own tests are written against its own list; the integration test asks
+# the question that list cannot — whether what this crate says is collected at
+# all. A dev-dependency and not a dependency, because the direction is the one
+# every crate here takes: a crate that says something is collected by
+# `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
+# What a turn is offered at the moment an agent is invoked, and the grants it
+# makes. **Dev-only, and the fact that it is dev-only is the guarantee**: ADR
+# 0001 §4 offers the focused window, the selection and the open document, and
+# what a person has copied is none of the three. A dependency here in either
+# direction would be the background reader that ADR calls a bug, so
+# `tests/the_clipboard_is_not_a_turns_context.rs` reads both manifests and says
+# so.
+alo-context = { path = "../alo-context" }
+alo-capability = { path = "../alo-capability" }
+
+[lints]
+workspace = true
