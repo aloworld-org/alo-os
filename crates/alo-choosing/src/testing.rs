@@ -6,15 +6,21 @@
 //! what stops three files inventing three vocabularies that resemble the real
 //! one.
 //!
-//! # It holds this crate's list and nothing else
+//! # It holds this crate's list and `alo-models`'
 //!
-//! Which is only right while no sentence here has somebody else's sentence
-//! inside it, and today none does: what a rule refused is said in
-//! `alo_models::NotAllowed`'s own words by whoever shows it, and this crate
-//! adds nothing around it — `crate::bound` has the argument. The day a sentence
-//! here fills a gap with another crate's, this fixture gains that crate's list,
-//! because a fixture that answered half a sentence with a key would be a test
-//! of a vocabulary alo OS does not have.
+//! **It used to hold this crate's alone**, on the argument that no sentence
+//! here has somebody else's sentence inside it. That stopped being true with
+//! `crate::NotWritten`: two of its six reasons are about the two **lists** a
+//! settings file holds, those lists are `alo-models`', and their refusals are
+//! carried in `alo-models`' own words rather than reworded — for the reason
+//! `crate::NotSet::NotAProvider` already carries one, which is that two
+//! accounts of one moment is one account too many.
+//!
+//! So the fixture gains that crate's list, because a fixture that answered half
+//! of what this crate can say with a key would be a test of a vocabulary alo OS
+//! does not have. It does not gain anything else: what a rule refused is said
+//! in `alo_models::NotAllowed`'s own words by whoever shows it and this crate
+//! adds nothing around it — `crate::bound` has the argument.
 //!
 //! Nothing here is compiled into the crate: it exists under `cfg(test)` only.
 
@@ -51,12 +57,33 @@ pub(crate) fn translated(words: &[(Word, &str)]) -> Strings {
     strings
 }
 
-/// This crate's list, which is everything its own sentences need.
+/// This crate's list and `alo-models`', which is everything this crate's own
+/// sentences need.
 fn everything_these_tests_need() -> Vocabulary {
-    choosing_words().unwrap()
+    let mut vocabulary = choosing_words().unwrap();
+    alo_models::declare_into(&mut vocabulary).unwrap();
+    vocabulary
 }
 
 /// German, as `alo-strings` names a language.
 pub(crate) fn german_language() -> Language {
     Language::written("de").unwrap()
+}
+
+/// A folder on this machine's own disk that only this test uses.
+///
+/// The settings this crate writes are a real file, so the tests that write one
+/// need somewhere real to put it. Named after what the test is about rather
+/// than after a clock, so a failure leaves something a person can go and look
+/// at — and made fresh each run, because a test that inherited the last run's
+/// file would be measuring that instead.
+pub(crate) fn a_folder_of_our_own(what: &str) -> std::path::PathBuf {
+    let folder = std::env::temp_dir().join(format!("alo-choosing-{what}"));
+    // Whatever a previous run left is gone, so what a test measures is what it
+    // wrote.
+    if folder.exists() {
+        std::fs::remove_dir_all(&folder).unwrap();
+    }
+    std::fs::create_dir_all(&folder).unwrap();
+    folder
 }

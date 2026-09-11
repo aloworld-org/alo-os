@@ -1097,6 +1097,68 @@ it does not land at all.
   written in the report rather than assumed either way. Nothing in
   `crates/alo-shell`.
 
+**Done, 2026-09-11.** `alo_choosing::Choosing` is the written change, and it is
+in `alo-choosing` rather than in a crate of its own **because the shape on the
+disk must be declared once**: `crate::written`'s types now carry both
+directions, so a key renamed is renamed for the reader and the writer in one
+keystroke and there is no second declaration for a release to move one of. That
+is what *no second parser* comes to when it is a shape rather than a rule
+somebody keeps.
+
+**What the shape decides, and it is the half a round of care would not have
+bought: nothing is written that this alo OS does not read back as the same
+settings.** `crate::writing` serialises, parses its own output through its own
+reader, and refuses unless what comes back is what went in — before a byte
+reaches the disk. It exists for a quiet failure rather than a loud one:
+`alo_models::Provider` has public fields and this file has nowhere for two of
+them, so a writer that simply dropped the list of model names a provider offers,
+or a credential kept anywhere but the derived `provider/<name>`, would hand a
+settings panel an `Ok(())` for a provider the machine afterwards describes
+differently and nobody would ever be told. Both are measured refusing. It costs
+one parse of a few hundred bytes at the moment somebody clicks something, and it
+makes *reads back through `Settings::at`* a property of the code rather than of
+the tests somebody happened to write.
+
+Every door takes a value another crate has already checked and **there is no
+door that takes text**; the one rule needing two halves of a file at once —
+`Settings::of`'s, that a choice into a list this person keeps must name
+something on it — is asked at the moment somebody clicks, so the two ways a
+settings file can contradict itself are refused naming what was named rather
+than becoming a file the same machine refuses whole at the next question.
+Opening settings **writes nothing** — not a file, not a folder, not a `format`
+line — which is ADR 0016 and ADR 0025's reading kept where it is easiest to
+lose; and settings that are there and do not read are **refused rather than
+replaced**, because a surface that read a typo as *nothing chosen* and then
+saved would take away the keystroke about to fix it. The folder **is** made
+here, unlike `alo-remembering`'s, and the file says why: `/var/lib/alo` is the
+image's, `$XDG_CONFIG_HOME/alo` is the person's and the first choice anybody
+makes is exactly the moment it does not exist.
+
+**The knock question is answered by reading the daemon, and the answer is that
+there is nothing to knock about.** `alo-agentd` reads this file *once a turn, at
+the first question of that turn* — `Questions::a_new_turn` forgets,
+`what_answers` looks — which it measures itself in
+`a_new_turn_reads_the_file_the_person_has_just_written`, so a change written
+here is in force for the next question anybody asks. That is the opposite of the
+grants, which a daemon holds from start-up and must be told about; a knock here
+would be a message telling a service to do what it already does. What this crate
+is held to instead is that it *could not* knock, and that the daemon cannot
+write: no wire words, no daemon, no turn, no record in the manifest, and
+`crates/alo-agentd/src` read off the disk and shown to name `Choosing` nowhere.
+
+Four strings under a new `choosing.change.*` family, collected by `alo-saying`,
+and they end in a clause the ten before them deliberately do not: *nothing in
+your settings has been changed*, rather than *nothing in the file has been
+used*. A person who had just clicked something and read the second would
+reasonably conclude their machine had forgotten what they chose last month. Two
+of the six refusals are `alo-models`' own, carried rather than reworded, because
+the two lists a settings file holds are that crate's and two accounts of one
+moment is one too many. No verb was added and none could be. The evidence
+ledger's *add your own provider in Settings* no longer owes *added by hand*;
+what it owes is a surface. Report:
+`docs/autonomy/updates/a-persons-choice-written-where-the-machine-reads-it.md`.
+The next task (25) was already written below.
+
 ### 25. The image becomes a disk a machine can actually boot
 
 **Status:** ready. **Depends on:** nothing in this lane.

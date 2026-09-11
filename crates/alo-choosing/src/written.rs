@@ -49,8 +49,19 @@
 //! What is **not** restated is the rule underneath it: `drives-verbs` has no
 //! serde default here for the same reason it has none there, which is that an
 //! entry saying nothing about the measurement would read as *probably fine*.
+//!
+//! # The shape is declared once and travels both ways
+//!
+//! Since [`crate::Choosing`] these types are written as well as read, and they
+//! are the **same** types in both directions rather than a reader here and a
+//! writer beside it. That is the whole of why `crate::writing` holds no shape
+//! of its own: a key renamed in this file is renamed for both directions in the
+//! same keystroke, and there is no second declaration for a release to move one
+//! of. A file this alo OS wrote that this alo OS could not read back would be
+//! the defect, and it is refused before the disk is touched — `crate::writing`
+//! has that argument.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use alo_models::{
     Brought, Driving, Provider, ProviderError, Providers, Region, SecretRef, Weights, WeightsError,
@@ -100,48 +111,56 @@ struct WhichFormat {
 }
 
 /// A person's settings exactly as they were typed.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct AsWritten {
+pub(crate) struct AsWritten {
     /// Which shape of settings this is.
     ///
-    /// Declared and never read: [`read`] has already answered it through
+    /// Never read on the way **in**: [`read`] has already answered it through
     /// [`WhichFormat`], before this shape was asked for at all. It is here
     /// because `deny_unknown_fields` would otherwise refuse the one key every
-    /// settings file has, and it is named with an underscore rather than
-    /// checked a second time — a rule stated twice is a rule two readers can
-    /// disagree about, and the second statement is the one no test can reach.
-    #[serde(rename = "format")]
-    _format: u32,
+    /// settings file has, and it is not checked a second time — a rule stated
+    /// twice is a rule two readers can disagree about, and the second statement
+    /// is the one no test can reach.
+    ///
+    /// On the way **out** it is the one field `crate::writing` decides rather
+    /// than copies, and what it decides is [`THE_FORMAT`]: this alo OS writes
+    /// the shape it writes. [`ALSO_READ`] exists so a file configured a year
+    /// ago keeps working, not so a file written today can be made to look old.
+    pub(crate) format: u32,
     /// What answers this person's questions, where they have chosen.
-    answers: Option<TheAnswers>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) answers: Option<TheAnswers>,
     /// The weights they brought to this machine themselves, where they have
     /// brought any. An array of tables, so a file that has none simply has no
     /// `[[brought]]` in it.
-    brought: Option<Vec<WeightsAsWritten>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) brought: Option<Vec<WeightsAsWritten>>,
     /// The providers they added themselves, where they have added any.
-    provider: Option<Vec<ProviderAsWritten>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) provider: Option<Vec<ProviderAsWritten>>,
     /// What they read, where they have said.
-    reading: Option<TheReading>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) reading: Option<TheReading>,
 }
 
 /// One set of weights on the person's own list, exactly as they were written.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-struct WeightsAsWritten {
+pub(crate) struct WeightsAsWritten {
     /// What the model runtime on this machine answers to. Matched exactly,
     /// which is `alo_models::Brought`'s rule and item 1's before it.
-    id: String,
+    pub(crate) id: String,
     /// What the weights take on this machine's disk, as the runtime reported
     /// it.
-    bytes_on_disk: u64,
+    pub(crate) bytes_on_disk: u64,
     /// The quantisation the runtime reports, where it says. The one key here
     /// that may be absent, because a runtime does not always say.
-    #[serde(default)]
-    quantisation: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) quantisation: Option<String>,
     /// What a measurement of these weights earned. No serde default, so an
     /// entry that says nothing about it fails to read.
-    drives_verbs: Driving,
+    pub(crate) drives_verbs: Driving,
 }
 
 impl WeightsAsWritten {
@@ -181,9 +200,9 @@ fn not_weights(at: &std::path::Path, why: WeightsError) -> NotSet {
 /// entry*, and for a provider it is *which provider* and *which of its models*.
 /// A shape with one name for both would have to guess which question it was
 /// answering.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-enum TheAnswers {
+pub(crate) enum TheAnswers {
     /// A model in the catalogue alo OS ships.
     Catalogue(String),
     /// Weights somebody brought themselves.
@@ -193,13 +212,13 @@ enum TheAnswers {
 }
 
 /// Which provider, and which of its models.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct ProviderChosen {
+pub(crate) struct ProviderChosen {
     /// The person's own name for it, matched against their `[[provider]]` list.
-    name: String,
+    pub(crate) name: String,
     /// What that provider is asked for, exactly as they wrote it.
-    model: String,
+    pub(crate) model: String,
 }
 
 /// One provider on the person's own list, exactly as it was written.
@@ -216,32 +235,47 @@ struct ProviderChosen {
 ///
 /// `alo_models::SecretRef` is the handle, `alo_models::Secret` is the
 /// credential, and nothing in this crate ever holds the second.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields)]
-struct ProviderAsWritten {
+pub(crate) struct ProviderAsWritten {
     /// What the person calls it, and what an answer says it came from.
-    name: String,
+    pub(crate) name: String,
     /// Where it is. `https://` unless it is on this machine, which
     /// `alo_models::Provider::checked` is what decides.
-    endpoint: String,
+    pub(crate) endpoint: String,
     /// Where it runs, as **stated** by whoever added it. Absent is
     /// `Region::Unknown`, which is honest: a region inferred from a domain name
     /// would be a reassuring label over a breach.
-    #[serde(default)]
-    region: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) region: Option<String>,
     /// Whether this provider is asked for a credential at all.
     ///
     /// `true` and absent both mean *it needs one*, because almost every hosted
     /// API does and the safe default is the common one. A compatible service
     /// that takes no credential says `needs-a-key = false`, and then nothing is
     /// looked up and nothing is sent.
+    ///
+    /// Written out either way rather than left to the default, because a person
+    /// reading their own file should not have to know which way an absent key
+    /// falls — and because the one value that matters to them is the one the
+    /// default does not cover.
     #[serde(default = "needs_a_key")]
-    needs_a_key: bool,
+    pub(crate) needs_a_key: bool,
 }
 
 /// What a provider that says nothing about a credential is taken to need.
 const fn needs_a_key() -> bool {
     true
+}
+
+/// Where a provider of this name keeps its credential.
+///
+/// **Derived, never read from the file and never written to it.** It is the one
+/// answer both directions ask — the way in builds a provider with it, and
+/// `crate::writing` is held to reproducing exactly it — so a release that
+/// changed where keys live changes it here and nowhere else.
+pub(crate) fn a_key_for(name: &str) -> SecretRef {
+    SecretRef::named(&format!("provider/{}", name.trim()))
 }
 
 impl ProviderAsWritten {
@@ -251,9 +285,7 @@ impl ProviderAsWritten {
         // Derived, never read from the file: `provider/<their own name for it>`
         // is where this provider's credential lives, and the file has nowhere
         // to say otherwise.
-        let key = self
-            .needs_a_key
-            .then(|| SecretRef::named(&format!("provider/{}", self.name.trim())));
+        let key = self.needs_a_key.then(|| a_key_for(&self.name));
         Provider::checked(&self.name, &self.endpoint, region, key)
     }
 }
@@ -271,16 +303,16 @@ fn not_a_provider(at: &std::path::Path, why: ProviderError) -> NotSet {
 }
 
 /// What this person reads.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct TheReading {
+pub(crate) struct TheReading {
     /// The languages they read, best first, as tags: `["de", "en"]`.
     ///
     /// A list rather than one, because `alo-strings` says a person names their
     /// own second language and nothing infers one from a first. The broader
     /// form of each — `pt` behind `pt-BR` — is `alo_strings::Strings`' own
     /// arithmetic and is deliberately not written out here.
-    languages: Vec<String>,
+    pub(crate) languages: Vec<String>,
 }
 
 impl AsWritten {

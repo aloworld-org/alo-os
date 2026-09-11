@@ -21,6 +21,21 @@
 //! every one of them because it is the thing a person needs in order to act,
 //! and *your settings* is not that thing on a machine with several logins.
 //!
+//! # And four about a change that was not made
+//!
+//! Since [`crate::Choosing`] this crate writes the file as well as reading it,
+//! and a change refused is not a file refused. `crate::unwritten` has the whole
+//! argument; what it comes to here is one clause. The ten above end *nothing in
+//! the file has been used* or *nothing has been chosen to answer questions* —
+//! the machine is running on no choice at all. The four below end **nothing in
+//! your settings has been changed**, which says the opposite: whatever was
+//! chosen is still in force and the thing that failed was the change.
+//!
+//! **Still nothing here says anything about a choice being wrong**, which is
+//! the absence the paragraph above is about. Two of the four are about the two
+//! halves of a settings file disagreeing, one is about a disk, and one is about
+//! a defect in alo OS.
+//!
 //! # Nothing here counts anything
 //!
 //! `alo-models`' rule from item 9f, kept: there is no
@@ -169,8 +184,70 @@ pub const SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE: Word = Word::saying(
      from before they existed.",
 );
 
+// ---------------------------------------------------------------------------
+// A change to the file that was not made — [`crate::NotWritten`].
+//
+// Four sentences, and what makes them four rather than more is that the two
+// reasons about a **list** are `alo-models`' own and are carried rather than
+// reworded. What makes them separate from the ten above is the clause they all
+// end with: those say the machine is running on no choice at all, and these say
+// the choice it is running on is the one it had a moment ago.
+// ---------------------------------------------------------------------------
+
+/// A change would have chosen weights the person's own list does not have.
+pub const CHANGE_NOT_BROUGHT: Word = Word::saying(
+    "choosing.change.not-brought",
+    "your settings at {path} would say {model} answers your questions and would list no weights of \
+     that name, so nothing in your settings has been changed",
+)
+.noting(
+    "{path} and {model} are both data and are never translated — {path} is a file on this machine \
+     and {model} is the name a model runtime answers to. Said when somebody picks weights of their \
+     own and this machine has no record of those weights: the two halves of the settings would \
+     have disagreed, so the change was refused rather than written. The last clause is the one \
+     they act on — what they chose last month is still what answers their questions.",
+);
+
+/// A change would have chosen a provider the person's own list does not have.
+pub const CHANGE_NO_SUCH_PROVIDER: Word = Word::saying(
+    "choosing.change.no-such-provider",
+    "your settings at {path} would say {provider} answers your questions and would list no \
+     provider of that name, so nothing in your settings has been changed",
+)
+.noting(
+    "The provider half of `choosing.change.not-brought`. {path} and {provider} are both data and \
+     are never translated — {provider} is the person's own name for a service they added \
+     themselves. Said when a provider is chosen before it is added.",
+);
+
+/// The changed settings could not be written as a file this alo OS reads back.
+pub const CHANGE_NOT_EXPRESSIBLE: Word = Word::saying(
+    "choosing.change.not-expressible",
+    "this alo OS could not write that choice into settings at {path} it can read back again, so \
+     nothing in your settings has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. \"alo OS\" is the product's name \
+     and is never translated either. This is a fault in alo OS rather than anything the person \
+     typed, and it is said plainly rather than dressed up: the change was refused before the file \
+     was touched, precisely so that what the machine reports and what it would afterwards do \
+     cannot differ.",
+);
+
+/// The disk would not take the changed settings.
+pub const CHANGE_NOT_KEPT: Word = Word::saying(
+    "choosing.change.not-kept",
+    "your settings at {path} could not be written, so nothing in your settings has been changed",
+)
+.noting(
+    "{path} is a file on this machine and is never translated. A disk or a permission rather than \
+     anything a person typed — a full disk, or a home directory they cannot write. The second \
+     clause is what they act on: the file is exactly as it was, and the choice they made before \
+     this one is still in force.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 10] = [
+pub const EVERY_WORD: [Word; 14] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -181,6 +258,10 @@ pub const EVERY_WORD: [Word; 10] = [
     SETTINGS_NOT_BROUGHT,
     SETTINGS_NO_SUCH_PROVIDER,
     SETTINGS_PROVIDER_NEEDS_A_NEWER_SHAPE,
+    CHANGE_NOT_BROUGHT,
+    CHANGE_NO_SUCH_PROVIDER,
+    CHANGE_NOT_EXPRESSIBLE,
+    CHANGE_NOT_KEPT,
 ];
 
 /// Why this crate's own list could not be declared.
@@ -307,7 +388,11 @@ mod tests {
     /// nobody can search their settings for.
     #[test]
     fn every_sentence_that_quotes_a_name_tells_a_translator_it_is_not_a_word() {
-        for word in [SETTINGS_WEIGHTS_TWICE, SETTINGS_NOT_BROUGHT] {
+        for word in [
+            SETTINGS_WEIGHTS_TWICE,
+            SETTINGS_NOT_BROUGHT,
+            CHANGE_NOT_BROUGHT,
+        ] {
             assert!(word.says().contains("{model}"), "{}", word.named());
             assert!(
                 word.note()
@@ -327,11 +412,18 @@ mod tests {
     /// The two consequences are spelled one way each rather than matched
     /// loosely, because a test that accepted any sentence with *used* in it
     /// would pass on a string that had stopped saying this at all.
+    /// The third arrived with [`crate::NotWritten`] and is a different fact
+    /// rather than a softer wording of the first two: those say the machine is
+    /// running on no choice at all, and this says the choice it is running on
+    /// is the one it had a moment ago. A person who had just clicked something
+    /// and read *nothing in the file has been used* would reasonably conclude
+    /// their machine had forgotten what they chose last month.
     #[test]
     fn every_sentence_says_what_the_machine_did_about_it() {
-        const WHAT_THE_MACHINE_DID: [&str; 2] = [
+        const WHAT_THE_MACHINE_DID: [&str; 3] = [
             "nothing has been chosen to answer questions",
             "nothing in the file has been used",
+            "nothing in your settings has been changed",
         ];
         for word in EVERY_WORD {
             assert!(

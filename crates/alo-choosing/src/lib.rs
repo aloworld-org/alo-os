@@ -16,6 +16,22 @@
 //! — [`Chosen::asking`], which is the only door in it that produces an
 //! `alo_answering::Answering`.
 //!
+//! # It reads the file, and since [`Choosing`] it writes it
+//!
+//! [`Settings::at`] is the way in and [`Choosing`] is the way out: a model
+//! chosen, weights brought, a provider added or a language picked, written to
+//! the person's own file whole or not at all. Until it existed **every choice
+//! ADR 0016 gives the person was one nothing could carry out** — the file was
+//! read by a daemon and written by nobody, so a settings surface would have had
+//! to compose somebody's settings as text by hand.
+//!
+//! Nothing about that widens what a settings file can say. The doors take
+//! values their own crates have already checked, the shape on the disk is
+//! declared once and travels both ways, and **nothing is written that this
+//! alo OS does not read back as the same settings** — `crate::writing` has that
+//! argument, and it is why a provider carrying something this file cannot hold
+//! is a refusal rather than a silent trim.
+//!
 //! # A choice outside the bound is refused out loud
 //!
 //! Never quietly replaced with a permitted one, which is the comfortable
@@ -90,20 +106,26 @@
 //! either.
 
 mod bound;
+mod choosing;
 mod chosen;
+mod keeping;
 mod place;
 mod refusing;
 mod settings;
 #[cfg(test)]
 mod testing;
 mod unreadable;
+mod unwritten;
 mod words;
+mod writing;
 mod written;
 
+pub use choosing::Choosing;
 pub use chosen::{Chosen, NoModel, NoProvider, Picked, Which};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is};
 pub use refusing::NotSet;
 pub use settings::{Settings, Unresolved};
 pub use unreadable::{At, NotToml};
+pub use unwritten::NotWritten;
 pub use words::{EVERY_WORD, Word, WordsError, choosing_words, declare_into};
 pub use written::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};

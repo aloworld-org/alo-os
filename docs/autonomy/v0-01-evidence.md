@@ -382,13 +382,27 @@ entry stays owed until one boots with it.
 ### Add your own provider in Settings
 
 **Shown by:** `crates/alo-choosing/tests/the_three_choices.rs`,
+`crates/alo-choosing/tests/a_persons_choice_reaches_the_machine.rs`,
 `crates/alo-models/src/secret.rs`,
 `crates/alo-secrets/tests/a_real_keyring_answers.rs`,
-`crates/alo-asking/tests/a_key_reaches_one_provider_only.rs`
+`crates/alo-asking/tests/a_key_reaches_one_provider_only.rs`,
+`docs/autonomy/updates/a-persons-choice-written-where-the-machine-reads-it.md`
 
-**Still owed:** the Settings surface. A provider is added by writing the
-person's own settings file by hand, and the promise is about a place in the
-shell where a name, an address and a key are typed.
+**Still owed:** the Settings surface — the place in the shell where a name, an
+address and a key are typed, which is the compositor lane's and has no pixels
+anywhere yet.
+
+**No longer owed, 2026-09-11: adding one by hand.** This entry used to read *a
+provider is added by writing the person's own settings file by hand*, and that
+was the true state of the repository: `alo-choosing` read the file and nothing
+wrote it, so every choice ADR 0016 gives the person was one no surface could
+carry out. `alo_choosing::Choosing` is the written change — a provider added, a
+model chosen, weights brought, a language picked — landing in the person's own
+file whole or not at all, and read back through the door `alo-agentd` reads it
+through. What a surface has left to do is show it. The key is still the
+keyring's and is still not in the file: there is nowhere in the shape to put one
+and the writer cannot invent one, which
+`crates/alo-choosing/src/writing.rs`'s round trip refuses by name.
 
 ### Setup's fourth choice
 

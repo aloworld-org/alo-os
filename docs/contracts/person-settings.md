@@ -18,7 +18,9 @@ a bound — which places a question may be answered at all — and a person make
 choice inside it. An organisation setting the choice would be acting as the
 person, which ADR 0004 forbids.
 
-`crates/alo-choosing` is what reads it.
+`crates/alo-choosing` is what reads it, and since 2026-09-11 what writes it:
+`alo_choosing::Settings::at` is the way in and `alo_choosing::Choosing` is the
+way out. See "Writing it" below.
 
 ## Where it is
 
@@ -279,6 +281,60 @@ be in the language the refusal is about: the person's language lives in the file
 that did not load, so what they read it in is whatever the machine was already
 showing. It is stated rather than solved, because the alternative is a machine
 guessing at a language from a file it has just refused to believe.
+
+## Writing it
+
+A settings panel does not compose this file as text. `alo_choosing::Choosing`
+takes a path, holds what the file at it says, and has one door per thing
+ADR 0016 gives the person: what answers their questions, weights they brought, a
+provider they added, and the languages they read. Every door takes a value some
+crate has already checked — there is no door that takes text, and none that
+takes a fragment of this file.
+
+**Whole or not at all.** The change is applied to a copy of the settings, the
+copy is written to a sibling file and renamed over the real one, and only then
+does it become what the machine will read. A change refused therefore leaves
+this file byte for byte as it was, and the choice made before it is still in
+force. What a person is told says exactly that, and it is a different sentence
+from the one said about a file that would not read: *nothing in your settings has
+been changed*, rather than *nothing in the file has been used*.
+
+**A file that is not there is written.** The first choice somebody makes on a
+machine is made when neither this file nor the directory around it exists, so
+the directory is created (`0700` on a machine with modes) and the file goes down
+`0600`. That is the opposite of `/var/lib/alo`, which belongs to the image and is
+never created by anything that writes into it.
+
+**A file that is there and does not read is never written over.** Opening
+settings that do not hold is refused, naming the file — because a surface that
+read a typo as *nothing chosen* and then saved would take away the keystroke
+that was about to fix it.
+
+**What is written is the `format` this alo OS writes**, which is `2`. A file
+saying `1` is read exactly as it always was and nothing rewrites it unasked; a
+file this alo OS writes says the shape this alo OS writes, because a writer
+choosing among past shapes would grow one branch per format for ever. Going
+backwards after a change costs a person their settings rather than their choice,
+which is the direction this file has always failed in.
+
+**Nothing is written that cannot be read back as the same settings.** The change
+is serialised, parsed again by this file's own reader, and refused unless what
+comes back is what went in. Two things a caller can hold and this file cannot
+say are refused by it rather than dropped: the list of model names a provider
+offers, and a credential kept under a name other than the derived
+`provider/<name>`. A change reported as made and afterwards described
+differently by the machine that made it is the defect that check exists for.
+
+**Nothing is chosen for anybody.** Opening a person's settings writes nothing —
+not a file, not a directory, not a `format` line. The first byte is written by
+the first choice somebody makes.
+
+**A running daemon is not told, because it does not need to be.** `alo-agentd`
+reads this file once a turn, at the first question of that turn, so a change
+written here is in force for the next question anybody asks. There is no knock
+and no message: that is the opposite answer from `/var/lib/alo/grants.toml`,
+which a daemon holds from start-up and is told about through
+`alo_protocol::FromAPerson::Granted`.
 
 ## When the choice is outside what the organisation permits
 
