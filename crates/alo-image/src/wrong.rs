@@ -322,6 +322,130 @@ pub enum Wrong {
         /// The digest the recipe names, or `-` where it names none.
         digest: String,
     },
+    /// The image carries no weights, so the runtime aboard it has nothing to
+    /// load.
+    #[error(
+        "this image does not land any weights at {at}, copied out of a build stage that fetched \
+         and checked them — ADR 0025 promises the local model is what the machine arrives ready \
+         to run, and a model runtime with nothing to load answers exactly as little as no runtime \
+         at all; a machine that has to fetch a model before it can do anything is a machine whose \
+         sovereignty is a download"
+    )]
+    TheWeightsAreNotOnTheImage {
+        /// Where the weights should land, and do not.
+        at: PathBuf,
+    },
+    /// The weights are fetched from a name that means something else tomorrow.
+    #[error(
+        "the weights are fetched from `{from}`, which is a moving name rather than one exact \
+         revision — ADR 0006's pin said about a file: a branch is a different artefact on two \
+         builds of one image, and the digest beside it turns that into a release that stopped \
+         building rather than a mistake anybody caught"
+    )]
+    TheWeightsAreNotPinned {
+        /// Where the recipe fetches them from, or `-` where it says nothing.
+        from: String,
+    },
+    /// The weights are not held to a digest checked before anything reads them.
+    #[error(
+        "the weights arrive unverified (digest: {digest}) — only a whole sha256, checked before \
+         any other step reads the file, says what arrived; weights are imported by the runtime \
+         rather than unpacked, so a recipe that checked afterwards would have built its model \
+         store out of whatever the network gave it and gone red with those bytes already in a \
+         layer"
+    )]
+    TheWeightsArriveUnverified {
+        /// The digest the recipe names, or `-` where it names none.
+        digest: String,
+    },
+    /// The recipe carries weights without saying which catalogue entry they are.
+    #[error(
+        "this image carries weights and does not say which model they are — the catalogue is what \
+         states a model's licence, its cost and whether anybody measured it (docs/features.md), \
+         and weights nothing can look up are weights nobody can answer a question about"
+    )]
+    TheImageDoesNotSayWhichModelItCarries,
+    /// The recipe names a model the catalogue does not have.
+    #[error(
+        "this image carries `{model}`, which `crates/alo-models/data/catalogue.toml` does not \
+         have — a model on the disk of every machine we ship is one whose licence, cost and \
+         measurement a person can read, and an entry that exists only in a build argument is none \
+         of those"
+    )]
+    TheWeightsNameAModelTheCatalogueDoesNotHave {
+        /// What the recipe names.
+        model: String,
+    },
+    /// The recipe names a model nobody has measured driving the verbs.
+    #[error(
+        "this image carries `{model}`, which nobody has put to `alo-driving` — `docs/features.md` \
+         promises a catalogue measured by us rather than claimed by the publisher, and the one \
+         model every machine arrives with is the last place to take a publisher's word for it \
+         (ADR 0007)"
+    )]
+    TheWeightsWereNeverMeasured {
+        /// What the recipe names.
+        model: String,
+    },
+    /// The recipe's quantisation and artefact are not the ones the catalogue
+    /// states for that model.
+    #[error(
+        "this image carries `{model}` as `{said}`, and the catalogue states `{catalogue}` — the \
+         entry a person reads and the name their machine answers to are one string or they are \
+         two models, and \"it worked for me\" is not a useful report without the quantisation"
+    )]
+    TheWeightsAreNotTheArtefactTheCatalogueNames {
+        /// What the recipe names.
+        model: String,
+        /// The quantisation and artefact the recipe says, or `-` where it says
+        /// nothing.
+        said: String,
+        /// What the catalogue says, or `-` where it states none.
+        catalogue: String,
+    },
+    /// The model the image carries is more than the machine it ships on can
+    /// run.
+    #[error(
+        "this image carries `{model}`, which the catalogue says needs {needs_gb} GB and runs \
+         `{on_cpu}` — the machine that decides whether this product has a market is an ordinary \
+         business laptop with {machine_gb} GB and no card (docs/hardware.md, ADR 0007), and a \
+         model it cannot drive is a machine that arrives ready to wait"
+    )]
+    TheWeightsAreMoreThanTheMachineCanDrive {
+        /// What the recipe names.
+        model: String,
+        /// What the catalogue says it needs, in gigabytes.
+        needs_gb: String,
+        /// How it behaves with no graphics card, as the catalogue grades it.
+        on_cpu: String,
+        /// What the certified laptop has, in gigabytes.
+        machine_gb: String,
+    },
+    /// The image would redistribute weights under a licence that is not ours to
+    /// hand on.
+    #[error(
+        "this image carries `{model}`, whose licence `{licence}` does not permit commercial use \
+         outright — carrying weights in an image *is* redistribution, so its terms would travel \
+         with every copy of alo OS and bind everybody who received one; the catalogue may offer \
+         such a model, and the machine may not arrive with it"
+    )]
+    TheWeightsCarryALicenceThatWasNotOursToHandOn {
+        /// What the recipe names.
+        model: String,
+        /// The licence the catalogue states.
+        licence: String,
+    },
+    /// The catalogue itself would not read, so nothing here can be checked
+    /// against it.
+    #[error(
+        "the catalogue this system ships did not read ({why}) — nothing about the weights this \
+         image carries can be checked against it, and a check that quietly passed when it could \
+         not look would be worse than no check"
+    )]
+    TheCatalogueDidNotRead {
+        /// What `alo_models::Catalogue` said.
+        why: String,
+    },
     /// The opener would run as somebody `logind` will not open a session for.
     ///
     /// ADR 0024 measured it twice, on two systemds: `CreateSession` answers

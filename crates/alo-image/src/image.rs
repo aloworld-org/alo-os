@@ -24,6 +24,7 @@ use crate::refusing::NotAnImage;
 use crate::runtime::TheRuntime;
 use crate::service::Service;
 use crate::unit::Unit;
+use crate::weights::TheWeights;
 
 /// The unit that loads the boundary, as systemd names it.
 pub const THE_LOADER: &str = "alo-boundaryd.service";
@@ -88,6 +89,8 @@ pub struct Image {
     store: TheStore,
     /// What its recipe says about the model runtime it carries.
     runtime: TheRuntime,
+    /// What its recipe says about the weights a machine arrives with.
+    weights: TheWeights,
     /// What its recipe says about the disk a machine boots from.
     disk: TheDisk,
     /// What the document beside it tells a person to do with that disk.
@@ -125,6 +128,7 @@ impl Image {
         // is no image at all.
         let recipe = text(&root.join(CONTAINERFILE))?;
         let runtime = TheRuntime::read(&recipe);
+        let weights = TheWeights::read(&recipe);
         let disk = TheDisk::read(&recipe);
         let document = TheDocument::read(&text(&root.join(THE_DOCUMENT))?);
 
@@ -137,6 +141,7 @@ impl Image {
             description,
             store: TheStore::of(root),
             runtime,
+            weights,
             disk,
             document,
         })
@@ -206,6 +211,12 @@ impl Image {
     #[must_use]
     pub const fn runtime(&self) -> &TheRuntime {
         &self.runtime
+    }
+
+    /// What this image's recipe says about the weights a machine arrives with.
+    #[must_use]
+    pub const fn weights(&self) -> &TheWeights {
+        &self.weights
     }
 
     /// What this image's recipe says about the disk a machine boots from.

@@ -39,5 +39,14 @@ alo-accounts = { path = "../alo-accounts" }
 # path is one answer rather than a second spelling of `/run/alo-sessiond` here.
 alo-sessiond = { path = "../alo-sessiond" }
 
+# The catalogue, for the one question the recipe cannot answer about itself:
+# whether the model it carries is one somebody measured. `docs/features.md`
+# promises a catalogue *measured by us, not claimed by the publisher*, so a
+# recipe naming a model the catalogue never heard of — or one nobody put to
+# `alo-driving` — is that promise broken in a build argument. Reading the
+# catalogue is one answer rather than a list of model names copied into a
+# checker, which is the drift this crate exists to catch.
+alo-models = { path = "../alo-models" }
+
 [lints]
 workspace = true

@@ -16,8 +16,9 @@ use std::path::Path;
 
 use alo_image::{
     Image, NO_PARTITIONER, ROOT, THE_AGENT, THE_DOOR, THE_IMAGE, THE_LOADER, THE_ONLY_TOOL,
-    THE_OPENER, everything_wrong_with,
+    THE_OPENER, THE_WEIGHTS, everything_wrong_with,
 };
+use alo_models::{Catalogue, OnCpu};
 
 /// The image this repository ships.
 ///
@@ -275,9 +276,10 @@ fn the_greeter_is_a_login_of_its_own_and_the_door_is_its_group() {
 /// verified.** ADR 0025 made *the local model is what the machine arrives
 /// ready to run* the promise, and ADR 0006 said how the runtime gets there: a
 /// pinned upstream artefact, its version written where the other pins are.
-/// This is that, read off the recipe rather than off an ADR — and no weights,
-/// no unit and nothing that starts it, because a runtime alone answers
-/// nothing (ADR 0019) and the weights are their own task.
+/// This is that, read off the recipe rather than off an ADR. The weights it
+/// loads are the test below; what is still not here is a unit that starts it,
+/// because who that process runs as and what it may reach are a decision of
+/// their own (ADR 0019).
 #[test]
 fn the_model_runtime_is_aboard_pinned_and_verified() {
     let image = the_image();
@@ -296,6 +298,82 @@ fn the_model_runtime_is_aboard_pinned_and_verified() {
         runtime.is_verified(),
         "the runtime's artefact is not held to a digest the build checks: {:?}",
         runtime.digest()
+    );
+}
+
+/// **The weights a machine arrives with are aboard, pinned, checked before
+/// anything reads them, and a model somebody measured.**
+///
+/// ADR 0025's expensive half: a model on the disk of every machine we ship,
+/// sized for that machine (ADR 0007). It is carried on the image rather than
+/// fetched at setup, because a machine that fetches at setup has not arrived
+/// ready when it is offline at setup.
+///
+/// The catalogue is the authority for which model, and this test reads both:
+/// the entry has been measured by `alo-driving`, its quantisation and artefact
+/// are the ones the recipe fetches and imports, it fits the ordinary business
+/// laptop `docs/hardware.md` certifies, and its licence permits commercial use
+/// outright — which matters here and nowhere else, because carrying weights in
+/// an image is redistributing them.
+///
+/// **It does not say the machine can be given the agent.** Nothing in the
+/// catalogue clears `Driving::Reliably` yet, this entry included; what is shown
+/// is a machine that arrives with a model on its disk rather than one that
+/// arrives with an agent that works.
+#[test]
+fn the_weights_a_machine_arrives_with_are_aboard_pinned_and_measured() {
+    let image = the_image();
+    let weights = image.weights();
+
+    assert!(
+        weights.land(),
+        "the recipe lands no weights at {THE_WEIGHTS}: {weights:?}"
+    );
+    assert!(
+        weights.is_pinned(),
+        "the weights are fetched from a moving name: {:?}",
+        weights.from()
+    );
+    assert!(
+        weights.is_verified(),
+        "the weights are not held to a digest checked before anything reads them: {:?}",
+        weights.digest()
+    );
+
+    let named = match weights.model() {
+        Some(model) => model,
+        None => panic!("the recipe carries weights and does not say which model: {weights:?}"),
+    };
+    let catalogue = match Catalogue::built_in() {
+        Ok(catalogue) => catalogue,
+        Err(why) => panic!("the catalogue this system ships did not read: {why}"),
+    };
+    let entry = match catalogue.get(named) {
+        Some(entry) => entry,
+        None => panic!("the image carries `{named}`, which the catalogue does not have"),
+    };
+
+    assert!(
+        entry.drives_verbs.has_been_measured(),
+        "`{named}` was never put to alo-driving"
+    );
+    assert_eq!(
+        entry.quantised_at(),
+        weights.quantisation().zip(weights.artefact()),
+        "`{named}` is carried as something the catalogue does not state"
+    );
+    assert!(
+        entry.min_ram_gb <= 16.0 && entry.on_cpu != OnCpu::Slow,
+        "`{named}` needs {} GB and is graded {:?} with no card, and the machine this image is \
+         sized for has 16 GB and no card",
+        entry.min_ram_gb,
+        entry.on_cpu
+    );
+    assert!(
+        entry.safe_default_for_business(),
+        "`{named}` is under `{}`, and an image carrying weights hands their terms to everybody \
+         who receives it",
+        entry.licence.name
     );
 }
 

@@ -135,6 +135,14 @@ fn decisions_missing_from(named: &[String]) -> Vec<String> {
 /// of the answer — and a pointer at a file nobody wrote would still read
 /// exactly like an answer, which is this crate's own first sentence about why
 /// the audit exists.
+///
+/// **What that entry is has changed once since, on 2026-09-11**, and this test
+/// changed with it: the image now declares the weights a machine arrives with,
+/// so the entry names evidence as well as owing something. What is asked of it
+/// here is what was asked before — that a reader can get from the ledger to the
+/// decision the reworded promise rests on — plus the half that used to be the
+/// whole of it, now stated the other way round: an entry that named nothing
+/// would be a promise whose implementation nobody can find.
 #[test]
 fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
     let ledger = reading(THE_LEDGER);
@@ -161,9 +169,11 @@ fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
         .sentence()
         .to_owned();
     assert!(
-        default.names().is_empty(),
-        "the machine-arrives-ready promise was reconciled as shown by something, \
-         and no image this repository builds carries a model runtime or weights yet"
+        !default.names().is_empty(),
+        "the machine-arrives-ready promise names nothing that shows it, and the \
+         image declares the weights it carries — an entry that named nothing \
+         would send a reader looking for the implementation of a promise this \
+         repository has half built"
     );
     assert!(
         decisions_named_in(&owed).contains(&THE_REAL_DECISION.to_owned()),
@@ -217,16 +227,16 @@ const THE_REAL_DECISION: &str =
 /// pointer lands** — against this repository, on the disk it is checked out on.
 ///
 /// This is the measurement task 19 of the delivery plan was written to take.
-/// Three v0.01 promises have nothing behind them, and for those the sentence in
+/// Two v0.01 promises have nothing behind them, and for those the sentence in
 /// the ledger is the whole of what the next person inherits: a promise recorded
 /// as missing and pointing nowhere is one whose reasoning gets derived again
 /// from scratch, which is the seven-times-over reading this ledger exists to
 /// end.
 ///
-/// The count is asserted rather than described. If a fourth promise falls to
-/// nothing, or one of the three is closed, this fails and whoever moved it
-/// writes down which — a ledger whose own summary drifts is a ledger that reads
-/// as an answer.
+/// The count is asserted rather than described. If another promise falls to
+/// nothing, or one of the two is closed, this fails and whoever moved it writes
+/// down which — a ledger whose own summary drifts is a ledger that reads as an
+/// answer.
 ///
 /// **It was four until 2026-09-11**, when task 20 of the delivery plan closed
 /// *copy, cut and paste* — the one task 19 found in the wrong pile, sorted into
@@ -234,6 +244,13 @@ const THE_REAL_DECISION: &str =
 /// `crates/alo-clipboard` is the work and the ledger's entry for it says what is
 /// still owed underneath, which is the compositor wiring rather than the
 /// selection.
+///
+/// **And three until later the same day**, when task 31 closed *the local model
+/// is what the machine arrives ready to run* far enough to name evidence: the
+/// image declares the weights a machine arrives with, and `crates/alo-image`
+/// refuses a recipe that carries none. That entry still owes the sentence it is
+/// named for — no machine has booted with them — so it moved from *no evidence*
+/// to *partly owed* rather than off this list into a tick.
 #[test]
 fn each_promise_with_no_evidence_names_where_the_work_is() {
     let here = the_repository();
@@ -244,8 +261,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
         .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
     assert_eq!(
         reconciled.wholly_owed(),
-        3,
-        "the ledger's own account of itself says three v0.01 promises have no \
+        2,
+        "the ledger's own account of itself says two v0.01 promises have no \
          evidence at all; the audit counted {}. Whichever moved, say so under \
          the promise it is about",
         reconciled.wholly_owed()
@@ -268,8 +285,8 @@ fn each_promise_with_no_evidence_names_where_the_work_is() {
 
     assert_eq!(
         owed_and_pointing.len(),
-        3,
-        "the entries with no evidence are not the three the count says: \
+        2,
+        "the entries with no evidence are not the two the count says: \
          {owed_and_pointing:?}"
     );
     for (promise, waits) in &owed_and_pointing {

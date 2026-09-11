@@ -4,9 +4,10 @@
 # (`bootc`) on a rented, unmodified Fedora-derived base. Nothing below patches
 # that base. What this file adds is three binaries of our own, three units, two
 # directories, one description — the smallest image that boots and starts the
-# agent service (queue item 28) — and, since ADR 0025, the pinned model runtime,
-# because the local model is what the machine arrives ready to run. There is no
-# compositor in it, no desktop, no wallpaper and nothing to sign in at.
+# agent service (queue item 28) — and, since ADR 0025, the pinned model runtime
+# and the weights a machine arrives with, because the local model is what the
+# machine arrives ready to run. There is no compositor in it, no desktop, no
+# wallpaper and nothing to sign in at.
 #
 # Build it from the root of the repository:
 #
@@ -33,6 +34,35 @@ ARG THE_TARGET=x86_64-unknown-linux-musl
 # never a different runtime on a certified machine.
 ARG THE_RUNTIME=0.34.0
 ARG THE_RUNTIME_SHA256=cf95886728959aa09910bb34de5cca1cc5a8f68003b5597197d3f2c2d57c0804
+# The weights a machine arrives with (ADR 0025, ADR 0007), declared here because
+# **they ride on the image** rather than being fetched when somebody sets the
+# machine up: a machine that fetches at setup has not arrived ready when it is
+# offline at setup, and *the local model is what the machine arrives ready to
+# run* is a promise about the box rather than about the network it is unpacked
+# next to. What that costs is the image, and it is paid in one place: 2.23 GiB
+# of weights, carried once, in a layer that changes only when this pin does.
+#
+# Which model is not a preference either. It is the largest entry
+# `crates/alo-models/data/catalogue.toml` has that (a) somebody has actually put
+# to `alo-driving` on a machine, (b) a certified ordinary business laptop — 16 GB,
+# no card — can run comfortably, and (c) is under a licence that is ours to hand
+# on, which matters more here than anywhere else in this repository: carrying
+# weights in an image **is** redistribution, and a licence with conditions would
+# attach those conditions to every holder of alo OS. `crates/alo-image` checks all
+# three against the catalogue, so a model swapped in here that nobody measured
+# fails a test rather than shipping.
+#
+# `THE_MODEL` is the catalogue's own id; `THE_MODELS_ARTEFACT` is what the
+# runtime on the machine answers to, which is the catalogue's `artefact` field,
+# so the entry a person reads and the name their machine knows are one string.
+# The weights themselves come from the publisher's own GGUF rather than from the
+# runtime's registry, because a registry tag is not a digest and this pin has to
+# say what arrived.
+ARG THE_MODEL=phi-3-mini-instruct
+ARG THE_MODELS_QUANTISATION=Q4_K_M
+ARG THE_MODELS_ARTEFACT=phi3:3.8b-mini-4k-instruct-q4_K_M
+ARG THE_MODELS_WEIGHTS=https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/a64113399c2f6b8ad3e11c394733a2ddadaa7f33/Phi-3-mini-4k-instruct-q4.gguf
+ARG THE_MODELS_SHA256=8a83c7fb9049a9b2e92266fa7ad04933bb53aa1e85136b7b30f1b8000ff2edef
 
 # ---------------------------------------------------------------------------
 # What compiles alo OS, which is not what runs it
@@ -130,6 +160,72 @@ RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
  && zstd --decompress --stdout /ollama-linux-amd64.tar.zst | tar --extract --directory /runtime
 
 # ---------------------------------------------------------------------------
+# The weights, fetched pinned, checked before anything reads them, and imported
+# into the runtime's own store
+# ---------------------------------------------------------------------------
+#
+# A stage of its own for the runtime stage's reason, one step further on: 2.28
+# GiB that changes only when the pin above changes has no business being rebuilt
+# because a Rust file did.
+#
+# The import is done **here**, with the pinned runtime itself, rather than on the
+# machine at first boot. A machine that imported its own weights the first time
+# somebody signed in would be a machine whose first minutes are spent doing
+# something that could have been done once, in a build, where a failure is a red
+# build rather than a person watching a progress bar on a laptop. What lands on
+# the image is therefore the runtime's model store, which the runtime reads and
+# nothing here writes.
+#
+# The template is the publisher's own, from the same repository as the weights
+# and under the same MIT licence: without it the runtime has no way to know where
+# this model's turns begin and end, and *engines are configured, never patched*
+# is exactly what a Modelfile is.
+FROM ${THE_BUILDER} AS weights
+
+ARG THE_MODELS_ARTEFACT
+ARG THE_MODELS_WEIGHTS
+ARG THE_MODELS_SHA256
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install --yes --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=runtime /runtime /runtime
+
+# Two steps rather than one, and in this order on purpose: **nothing reads the
+# file until its digest has been checked.** A fetch and an import in one command
+# would be a machine that imported whatever arrived and verified it afterwards.
+RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
+      --output /weights.gguf "${THE_MODELS_WEIGHTS}" \
+ && echo "${THE_MODELS_SHA256}  /weights.gguf" | sha256sum --check -
+
+ENV LD_LIBRARY_PATH=/runtime/lib/ollama
+ENV OLLAMA_MODELS=/models
+RUN set -eu; \
+    printf '%s\n' \
+      'FROM /weights.gguf' \
+      'TEMPLATE """<s>{{ if .Prompt }}<|user|>' \
+      '{{ .Prompt }}<|end|>' \
+      '{{ end }}<|assistant|>' \
+      '{{ .Response }}<|end|>"""' \
+      'PARAMETER stop <|endoftext|>' \
+      'PARAMETER stop <|assistant|>' \
+      'PARAMETER stop <|end|>' \
+      'PARAMETER num_ctx 4096' \
+      > /Modelfile; \
+    /runtime/bin/ollama serve & \
+    served=$!; \
+    for _ in $(seq 1 60); do \
+      /runtime/bin/ollama list >/dev/null 2>&1 && break; \
+      sleep 1; \
+    done; \
+    /runtime/bin/ollama list >/dev/null; \
+    /runtime/bin/ollama create "${THE_MODELS_ARTEFACT}" -f /Modelfile; \
+    kill "${served}"; \
+    test -d /models
+
+# ---------------------------------------------------------------------------
 # The machine
 # ---------------------------------------------------------------------------
 FROM ${THE_BASE}
@@ -150,14 +246,29 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-sessiond /usr/libexec
 
 # The model runtime (ADR 0006, pinned above; ADR 0025 is why it is aboard at
 # all): the binary and the libraries it loads, exactly as upstream lays them
-# out. **No weights, no unit and nothing that starts it** — a runtime alone
-# answers nothing (ADR 0019), and the weights are the next task's, with the
-# sizing question (ADR 0007) and ADR 0025's carry-or-fetch measurement inside
-# it. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
+# out. How the runtime is spoken to stays `crates/alo-models/src/ollama.rs`'s
 # alone; where its files land is this image's own fact, and
 # `crates/alo-image` checks it beside everything else here.
 COPY --from=runtime /runtime/bin/ollama /usr/bin/ollama
 COPY --from=runtime /runtime/lib/ollama/ /usr/lib/ollama/
+
+# The weights, as the runtime's own store, already imported (ADR 0025, ADR
+# 0007). This is the half that makes *the local model is what the machine
+# arrives ready to run* about a disk rather than about a download.
+#
+# **Still no unit and nothing that starts it.** A runtime alone answers nothing
+# (ADR 0019) and a runtime with weights on the disk answers nothing either until
+# something starts it — which login it runs as, which group may reach its socket
+# and what it may reach off this machine are a decision of their own, and this
+# image does not smuggle them in beside a `COPY`.
+#
+# The modes are the store's own, made by root in the stage above with the
+# build's umask: readable by everybody, written by nobody. They are not chmod'ed
+# here the way the binaries below are, and that is deliberate — a recursive
+# chmod over 2.23 GiB writes a second copy of every one of those bytes into
+# another layer, and nothing about a `COPY` out of a build stage carries the
+# Windows checkout's invented permission bits that the chmod exists for.
+COPY --from=weights /models/ /usr/share/alo/models/
 
 # How this image becomes a disk a machine boots, said by the image itself.
 #

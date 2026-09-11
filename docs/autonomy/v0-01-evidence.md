@@ -346,38 +346,48 @@ the shape of the exchange rather than the thing working.
 
 ### The local model is what the machine arrives ready to run
 
-**Still owed:** the expensive half, and the promise now says so instead of
-disguising it. This is the entry that used to read *model by default —
-sovereignty is the default configuration*;
-`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` set out
-the four things *by default* could mean, and on 2026-09-11 it was **accepted as
-Option D** under the owner's standing delegation, with the definition reworded in
-the same change. What the promise gave up is the claim that a value sits in a
-settings file before a person has touched one — unbuildable here on purpose,
-since ADR 0016 keeps that file for the person and ADR 0024 ships no accounts to
-write it into. What it took on is heavier: **a model on the disk of every machine
-we ship, sized for that machine** (ADR 0007).
+**Shown by:** `crates/alo-image/src/weights.rs`,
+`crates/alo-image/src/checking.rs`,
+`crates/alo-image/tests/what_the_image_owes_the_daemons.rs`,
+`crates/alo-choosing/tests/the_three_choices.rs`,
+`docs/autonomy/updates/the-weights-a-machine-arrives-with.md`
 
-So what is owed is exactly what was owed before, stated without the disguise.
-`image/Containerfile` adds two binaries, two units, two directories and one
-description to a pinned base and carries **no model runtime and no weights**, so
-no machine this repository builds arrives ready to run anything; and there is no
-setup flow, so none of the four configurations (ADR 0009's *not at all* among
-them, first-listed local among them, nothing pre-selected) is offered to anybody.
-The open question the ADR left — whether the weights ride on the certified image
-or are fetched at setup — is a decision inside the work, not a blocker in front
-of it. It is not a free one either way: a machine that fetches at setup has
-not arrived ready when it is offline at setup.
+The promise this entry is about was reworded on 2026-09-11, when
+ADR 0025 was accepted as Option D under the owner's standing delegation. It used
+to read *model by default — sovereignty is the default configuration*, and what
+it gave up is the claim that a value sits in a settings file before a person has
+touched one: unbuildable here on purpose, since ADR 0016 keeps that file for the
+person and ADR 0024 ships no accounts to write it into. What it took on is
+heavier — **a model on the disk of every machine we ship, sized for that
+machine** (ADR 0007) — and that is what the image now declares.
 
-**Reachable now.** What stood in front of this entry was a person's answer, and
-the answer is on the record; what stands in front of it now is work — the pinned
-runtime on the image, weights sized by `Catalogue::agent_for_cpu`'s honesty
-rather than a publisher's claim, and a setup flow for the four choices. The
-`nothing is chosen on their behalf` half is already held by
-`crates/alo-choosing/tests/the_three_choices.rs` (`Settings::untouched` is a
-person who has not chosen, and no constructor invents a choice); the
-`arrives ready to run` half has no test until the image carries a model, and this
-entry stays owed until one boots with it.
+The recipe says **which weights a certified machine arrives with**:
+phi-3-mini-instruct, Q4\_K\_M, the publisher's own GGUF at one pinned revision,
+held to a sha256 that is checked before any other step reads the file. The open
+question ADR 0025 left is **decided — the weights ride on the image** — because a
+machine that fetches at setup has not arrived ready when it is offline at setup;
+docs/quirks.md carries what that costs and what the other answer would have cost.
+Which model is not a preference either: it is the largest catalogue entry
+somebody has actually put to alo-driving, that fits the 16 GB laptop
+docs/hardware.md certifies first, and whose licence is ours to hand on — the last
+of which matters because carrying weights in an image is redistributing them.
+Seven refusals hold each of those, each a disagreement naming the decision it
+breaks. The four setup choices, local first and nothing pre-selected, are the
+crate added for them and the settings nothing writes on a person's behalf.
+
+**Still owed:** *arrives ready to run*, which is the sentence in the promise.
+Three things stand in front of it. **No machine has booted this image** — no
+container build of the recipe has been run in this lane, so the import step is a
+recipe rather than a measurement. **Nothing starts the runtime**: the image
+carries a runtime and weights and no unit that serves them, and who that process
+runs as and what it may reach off the machine are a decision of their own, taken
+in a task rather than smuggled in beside a COPY line. And **no catalogued model
+clears the verb-driving bar**, this one included — every entry anybody has
+measured is graded *rarely*, so what a machine arrives able to do is load and
+answer with a local model rather than be handed an agent turn. This entry stays
+owed until a machine boots with the weights on it, and
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` is
+where the wording it is held to was settled.
 
 ### Add your own provider in Settings
 

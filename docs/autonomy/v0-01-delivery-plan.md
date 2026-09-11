@@ -1580,3 +1580,69 @@ the runtime is.
   above this one in `docs/features.md`. And it downloads nothing during a gate:
   what is tested is the declaration and its refusals, not a multi-gigabyte fetch
   on a build machine.
+
+**Done, 2026-09-11.** The recipe says which model a machine arrives with —
+`phi-3-mini-instruct`, `Q4_K_M`, the publisher's own GGUF at one pinned revision,
+a whole sha256 checked in a step of its own **before anything reads the file**,
+and the runtime's model store imported at build time and landed at
+`/usr/share/alo/models/`. `crates/alo-image/src/weights.rs` reads that
+declaration as `runtime.rs` reads the runtime's, on a Containerfile reader both
+of them now share (`recipe.rs`), and `everything_wrong_with` refuses eight ways
+it can go wrong: weights absent, fetched from a name that moves, unverified or
+verified too late, unnamed, a model the catalogue has never heard of, one nobody
+put to `alo-driving`, an artefact the catalogue does not state, one larger than
+the 16 GB laptop `docs/hardware.md` certifies first, and one whose licence was
+not ours to hand on — because **carrying weights in an image is redistributing
+them**, which is why the model is MIT and why a conditioned licence is now a
+refusal rather than a habit. The carry-or-fetch question ADR 0025 left open is
+**decided: carried**, since a machine that fetches at setup has not arrived ready
+when it is offline at setup; `docs/quirks.md` has that measurement, including the
+half of it that came out negative — *the smallest catalogued model that clears
+the verb-driving bar* does not exist, every measured entry is graded `rarely`, so
+what a machine arrives able to do is load and answer with a local model rather
+than be handed an agent turn. The evidence entry is rewritten to say exactly
+that, and *arrives ready to run* stays owed: no machine has booted this image and
+nothing yet starts the runtime. Report:
+`docs/autonomy/updates/the-weights-a-machine-arrives-with.md`. The next task (32)
+is written below.
+
+### 32. The one thing that serves the model, and what it may reach
+
+**Status:** ready. **Depends on:** nothing.
+
+The image now carries a model runtime and the weights it would load, and
+**nothing starts either of them**. A machine built from this recipe boots with
+2.23 GiB of model on its disk and no process serving it, so `alo-models` reaches
+`http://127.0.0.1:11434` and finds nothing there — which is the same answer a
+machine with no model at all gives, and *the local model is what the machine
+arrives ready to run* cannot be shown by a disk.
+
+It was left out of task 31 deliberately and the reason is the shape of this one:
+a unit is not a `COPY` line's worth of decision. **Which login it runs as** —
+not the person, whose session comes and goes, and not the agent, which ADR 0001
+§2 spends its length keeping authority away from. **Which group may reach its
+socket**, which is the whole of who on the machine may ask a model anything.
+**What it may reach off the machine**, which is law 1: a model runtime that
+fetches a model is an egress an agent caused, and one that phones home on start
+is an egress nobody asked for on a machine sold on sovereignty. And **what it is
+pointed at**, since the weights are in a directory of ours rather than the
+runtime's default.
+
+- **Acceptance:** the image starts the model runtime as a login of its own that
+  the image makes, holding no capability and saying so in both lines the way
+  `alo-agentd.service` does; its store is the directory the weights landed in and
+  nothing else; it answers on the loopback address `alo-models` already spells
+  and is reachable by exactly one group, which is neither the person's nor the
+  agent's; **it makes no network connection of its own at start** — no update
+  check, no telemetry, no registry — and the unit says so in settings a person
+  can read rather than in a comment; and `crates/alo-image` checks every one of
+  those beside the others, each as a `Wrong` naming the decision it breaks, with
+  the twin that breaks one line of a copy of the image and is caught.
+- **Constraint:** it may not tick *arrives ready to run* either — that still
+  waits on a machine, and this lane has none. It may not give the runtime a
+  capability or root to make something work; if the pinned runtime needs one, the
+  decision is an ADR rather than a line in a unit. It configures the engine and
+  never patches it (ADR 0011): every setting is an environment variable or a
+  flag upstream documents. And the egress claim is **tested, not asserted** — a
+  unit that merely names a restriction is not the same as a machine that was
+  watched making no connection, so say in the report which of the two this is.

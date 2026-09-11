@@ -20,6 +20,7 @@
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
+//! | [`TheWeights`] | The weights a machine arrives with, and whether the catalogue measured them |
 //! | [`TheDisk`], [`TheDocument`] | The disk a machine boots from, as the recipe declares it and as `docs/booting.md` tells a person to make it |
 //!
 //! # Nothing on a machine ever reads this
@@ -78,12 +79,14 @@ mod disk;
 mod image;
 mod logins;
 mod making;
+mod recipe;
 mod refusing;
 mod runtime;
 mod service;
 #[cfg(test)]
 mod testing;
 mod unit;
+mod weights;
 mod wrong;
 
 pub use accounts::{TheStore, where_a_sign_in_looks};
@@ -98,6 +101,7 @@ pub use refusing::{NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed,
 pub use runtime::{THE_RUNTIMES_BINARY, THE_RUNTIMES_LIBRARIES, TheRuntime};
 pub use service::{ROOT, Service};
 pub use unit::Unit;
+pub use weights::{THE_WEIGHTS, TheWeights};
 pub use wrong::Wrong;
 
 /// Where alo OS's own image is, in this repository.

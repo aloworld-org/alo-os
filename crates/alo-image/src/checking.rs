@@ -25,6 +25,7 @@ use std::path::Path;
 
 use alo_entering::TheSessionsEnvironment;
 use alo_keeping::Keeping;
+use alo_models::{Catalogue, OnCpu};
 
 use crate::image::Image;
 use crate::service::ROOT;
@@ -58,6 +59,16 @@ const THE_SIGN_IN_DOORS_MODE: &str = "0750";
 
 /// What a unit says where it says nothing, in a sentence somebody reads.
 const NOTHING: &str = "-";
+
+/// The memory of the machine the weights on this image are sized for.
+///
+/// `docs/hardware.md` certifies two machines and says which of them matters
+/// more: *an ordinary business laptop — no discrete graphics, 16 GB of memory*,
+/// because the Windows 10 fleet this product exists to catch has almost no
+/// discrete GPUs in it. One image is built, so the model it carries is sized for
+/// that machine rather than for the workstation; a GPU workstation runs the same
+/// weights and can fetch something larger, which is a choice its owner makes.
+const THE_CERTIFIED_LAPTOP_GB: f32 = 16.0;
 
 /// The four questions `docs/booting.md` is answerable for, as its headings.
 ///
@@ -109,6 +120,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_agent_runs_inside_the_persons_session(image, &mut wrong);
     nobody_signs_in_with_an_account_the_image_shipped(image, &mut wrong);
     the_model_runtime_is_aboard_and_pinned(image, &mut wrong);
+    the_weights_are_aboard_pinned_and_measured(image, &mut wrong);
     the_image_becomes_a_disk(image, &mut wrong);
     the_document_says_what_the_recipe_does(image, &mut wrong);
     wrong
@@ -243,9 +255,11 @@ fn the_document_says_what_the_recipe_does(image: &Image, wrong: &mut Vec<Wrong>)
 ///
 /// Three separate disagreements rather than one, because they are fixed in
 /// three different places and the person reading them is looking at a diff.
-/// What is deliberately **not** here: no weights, and no unit that starts the
-/// runtime — a runtime alone answers nothing (ADR 0019), and both halves
-/// belong to the task that puts weights on the disk.
+/// The weights are [`the_weights_are_aboard_pinned_and_measured`] beside this,
+/// a promise of their own. What is still deliberately **not** here is the unit
+/// that starts the runtime: which login it runs as, which group may reach its
+/// socket and what it may reach off this machine are a decision of their own,
+/// and a check written before that decision would be the decision.
 fn the_model_runtime_is_aboard_and_pinned(image: &Image, wrong: &mut Vec<Wrong>) {
     let runtime = image.runtime();
 
@@ -267,6 +281,107 @@ fn the_model_runtime_is_aboard_and_pinned(image: &Image, wrong: &mut Vec<Wrong>)
     if !runtime.is_verified() {
         wrong.push(Wrong::TheRuntimeArrivesUnverified {
             digest: runtime.digest().unwrap_or(NOTHING).to_owned(),
+        });
+    }
+}
+
+/// **The weights are aboard, pinned, checked before anything reads them, and a
+/// model somebody actually measured.**
+///
+/// ADR 0025's expensive half: a model on the disk of every machine we ship,
+/// sized for that machine (ADR 0007). A runtime with nothing to load answers
+/// exactly as little as no runtime at all, and none of the ways this goes wrong
+/// is visible at a build — a recipe that dropped the `COPY`, floated the fetch
+/// to a branch, checked the digest after importing, or named a model nobody
+/// measured all build green and all ship a machine whose first promise is
+/// untrue.
+///
+/// **The catalogue is the authority for the last four**, rather than a list of
+/// model names in a checker. `docs/features.md` promises entries *measured by
+/// us, not claimed by the publisher* one line above the promise this function is
+/// about, so the recipe's model is looked up and held to what
+/// [`alo_models::Catalogue`] says: that somebody ran `alo-driving` against it,
+/// that the quantisation and artefact are the entry's own, that it fits the
+/// machine this product exists to reach, and that its licence was ours to hand
+/// on at all.
+///
+/// That last one is not a formality. Carrying weights in an image **is**
+/// redistribution: a licence with conditions would attach those conditions to
+/// every holder of alo OS, which is a thing to do deliberately in an ADR and
+/// never a thing to do by changing a build argument.
+fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wrong>) {
+    let weights = image.weights();
+
+    if !weights.land() {
+        wrong.push(Wrong::TheWeightsAreNotOnTheImage {
+            at: Path::new(crate::THE_WEIGHTS).to_owned(),
+        });
+    }
+    if !weights.is_pinned() {
+        wrong.push(Wrong::TheWeightsAreNotPinned {
+            from: weights.from().unwrap_or(NOTHING).to_owned(),
+        });
+    }
+    if !weights.is_verified() {
+        wrong.push(Wrong::TheWeightsArriveUnverified {
+            digest: weights.digest().unwrap_or(NOTHING).to_owned(),
+        });
+    }
+
+    let Some(model) = weights.model() else {
+        wrong.push(Wrong::TheImageDoesNotSayWhichModelItCarries);
+        return;
+    };
+    let catalogue = match Catalogue::built_in() {
+        Ok(catalogue) => catalogue,
+        Err(why) => {
+            wrong.push(Wrong::TheCatalogueDidNotRead {
+                why: why.to_string(),
+            });
+            return;
+        }
+    };
+    let Some(entry) = catalogue.get(model) else {
+        wrong.push(Wrong::TheWeightsNameAModelTheCatalogueDoesNotHave {
+            model: model.to_owned(),
+        });
+        return;
+    };
+
+    if !entry.drives_verbs.has_been_measured() {
+        wrong.push(Wrong::TheWeightsWereNeverMeasured {
+            model: model.to_owned(),
+        });
+    }
+
+    let said = weights
+        .quantisation()
+        .zip(weights.artefact())
+        .map(|(quantisation, artefact)| format!("{quantisation} / {artefact}"));
+    let stated = entry
+        .quantised_at()
+        .map(|(quantisation, artefact)| format!("{quantisation} / {artefact}"));
+    if said != stated {
+        wrong.push(Wrong::TheWeightsAreNotTheArtefactTheCatalogueNames {
+            model: model.to_owned(),
+            said: said.unwrap_or_else(|| NOTHING.to_owned()),
+            catalogue: stated.unwrap_or_else(|| NOTHING.to_owned()),
+        });
+    }
+
+    if entry.min_ram_gb > THE_CERTIFIED_LAPTOP_GB || entry.on_cpu == OnCpu::Slow {
+        wrong.push(Wrong::TheWeightsAreMoreThanTheMachineCanDrive {
+            model: model.to_owned(),
+            needs_gb: entry.min_ram_gb.to_string(),
+            on_cpu: format!("{:?}", entry.on_cpu).to_lowercase(),
+            machine_gb: THE_CERTIFIED_LAPTOP_GB.to_string(),
+        });
+    }
+
+    if !entry.safe_default_for_business() {
+        wrong.push(Wrong::TheWeightsCarryALicenceThatWasNotOursToHandOn {
+            model: model.to_owned(),
+            licence: entry.licence.name.clone(),
         });
     }
 }
@@ -1524,6 +1639,231 @@ mod tests {
                 .any(|it| matches!(it, Wrong::TheRuntimeArrivesUnverified { .. })),
             "{wrong:?}"
         );
+    }
+
+    /// **An image that carries no weights is caught.** This is the state the
+    /// image really shipped in until this check existed: the runtime aboard,
+    /// pinned and verified, and nothing at all for it to load — which reads
+    /// like a machine ready to run a model and is a machine that has to fetch
+    /// one first.
+    #[test]
+    fn an_image_that_carries_no_weights_is_caught() {
+        let root = a_copy_of_the_image("no-weights");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "COPY --from=weights /models/ /usr/share/alo/models/",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheWeightsAreNotOnTheImage { at } if at == Path::new(crate::THE_WEIGHTS)
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **Weights fetched from a branch are caught.** A revision is one file
+    /// forever and a branch is whatever the publisher pushed this morning; with
+    /// a digest beside it, that is a release that stopped building rather than
+    /// a mistake anybody noticed.
+    #[test]
+    fn weights_fetched_from_a_name_that_moves_are_caught() {
+        let root = a_copy_of_the_image("moving-weights");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "resolve/a64113399c2f6b8ad3e11c394733a2ddadaa7f33/",
+            "resolve/main/",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheWeightsAreNotPinned { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("moving name"), "{said}");
+    }
+
+    /// **Weights nothing checks are caught.** The `ARG` is still there and
+    /// every grep for the pin still finds it — and what the image would carry
+    /// is whatever the network handed the build machine.
+    #[test]
+    fn weights_arriving_unchecked_are_caught() {
+        let root = a_copy_of_the_image("unchecked-weights");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check -",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheWeightsArriveUnverified { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model the catalogue does not have is caught.** Weights nothing can
+    /// look up are weights nobody can be told the licence, the cost or the
+    /// measurement of, and the catalogue is where all three live.
+    #[test]
+    fn weights_naming_a_model_the_catalogue_never_heard_of_are_caught() {
+        let root = a_copy_of_the_image("uncatalogued-weights");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=something-somebody-liked",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheWeightsNameAModelTheCatalogueDoesNotHave { model }
+                    if model == "something-somebody-liked"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And a recipe that carries weights without saying which model they are
+    /// is caught too**, which is the same mistake with the argument left blank
+    /// rather than filled in wrongly.
+    #[test]
+    fn weights_that_do_not_say_which_model_they_are_are_caught() {
+        let root = a_copy_of_the_image("unnamed-weights");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheImageDoesNotSayWhichModelItCarries)),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model nobody measured is caught.** `docs/features.md` promises a
+    /// catalogue measured by us rather than claimed by the publisher, and the
+    /// one model every machine arrives with is the last place to take a
+    /// publisher's word for it — `mistral-7b-instruct` is catalogued, runs on
+    /// the certified laptop, and nobody has put it to `alo-driving`.
+    #[test]
+    fn weights_naming_a_model_nobody_measured_are_caught() {
+        let root = a_copy_of_the_image("unmeasured-weights");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=mistral-7b-instruct",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheWeightsWereNeverMeasured { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("alo-driving"), "{said}");
+    }
+
+    /// **A quantisation the catalogue does not state is caught.** The entry a
+    /// person reads and the name their machine answers to are one string or
+    /// they are two different models, and nothing but this reads both.
+    #[test]
+    fn weights_that_are_not_the_artefact_the_catalogue_names_are_caught() {
+        let root = a_copy_of_the_image("another-quantisation");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODELS_QUANTISATION=Q4_K_M",
+            "ARG THE_MODELS_QUANTISATION=Q8_0",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheWeightsAreNotTheArtefactTheCatalogueNames { said, .. }
+                    if said.contains("Q8_0")
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model larger than the machine it ships on is caught.** One image is
+    /// built and `docs/hardware.md` says which machine decides whether this
+    /// product has a market: 16 GB and no card. `mixtral-8x7b-instruct` needs
+    /// 48 GB and is graded `slow` without one, which is a machine that arrives
+    /// ready to wait.
+    #[test]
+    fn weights_larger_than_the_certified_laptop_are_caught() {
+        let root = a_copy_of_the_image("weights-too-large");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=mixtral-8x7b-instruct",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheWeightsAreMoreThanTheMachineCanDrive { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("48"), "{said}");
+    }
+
+    /// **A licence that was not ours to hand on is caught**, and it is the
+    /// refusal that looks most like success: `llama-3.2-3b-instruct` is
+    /// catalogued, measured, small enough and comfortable on a laptop — and its
+    /// licence attaches conditions to everybody the weights are passed on to.
+    /// Carrying weights in an image *is* passing them on, so the catalogue may
+    /// offer that model and the machine may not arrive with it.
+    #[test]
+    fn weights_under_a_licence_that_was_not_ours_to_hand_on_are_caught() {
+        let root = a_copy_of_the_image("a-licence-with-conditions");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "ARG THE_MODEL=phi-3-mini-instruct",
+            "ARG THE_MODEL=llama-3.2-3b-instruct",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong.iter().find(|it| {
+            matches!(
+                it,
+                Wrong::TheWeightsCarryALicenceThatWasNotOursToHandOn { .. }
+            )
+        });
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("redistribution"), "{said}");
     }
 
     /// **An image that stopped saying what disk it becomes is caught.** The

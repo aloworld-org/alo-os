@@ -1249,6 +1249,47 @@ wrong language. Where a model in the catalogue misbehaves in a way that affects
 the agents, record it here with the exact model and quantisation — "it was fine
 for me" is usually a different quantisation.
 
+### The weights a machine arrives with: carried, not fetched (2026-09-11)
+**Version:** `image/Containerfile` as of 2026-09-11, against
+`crates/alo-models/data/catalogue.toml` of the same day and the certified
+machines in `docs/hardware.md`. The artefact is
+`Phi-3-mini-4k-instruct-q4.gguf` from `microsoft/Phi-3-mini-4k-instruct-gguf` at
+revision `a64113399c2f6b8ad3e11c394733a2ddadaa7f33`, **2,393,231,072 bytes**,
+sha256 `8a83c7fb9049a9b2e92266fa7ad04933bb53aa1e85136b7b30f1b8000ff2edef`.
+**Behaviour:** ADR 0025 left one thing open and asked for the answer here —
+*whether the image carries the weights or fetches them at setup*. What decides
+it is not a preference: **a machine that fetches at setup has not arrived ready
+when it is offline at setup**, and the promise the ADR took on is about what is
+in the box. The measurement that was owed beside it was *the smallest catalogued
+model that clears the verb-driving bar*, and the honest answer is that **there is
+no such model**: every entry anybody has put to `alo-driving` is graded `rarely`,
+this one included, so no size of carried model makes the agent work today. What
+carrying does buy is a machine that can load and answer with a model on its own
+disk, offline, on arrival — which is the promise as written — and it buys it for
+2.23 GiB of image and an update channel that moves those bytes whenever the pin
+moves. The other answer costs the same bytes, paid by a person on their first
+morning, in a place where nobody here can help them.
+
+Which model is then decided by three catalogue facts and not by a preference:
+measured by `alo-driving` at all, small enough for the ordinary business laptop
+`docs/hardware.md` certifies first (16 GB, no card), and under a licence that
+permits commercial use outright. That last one is easy to miss and is the sharp
+one: **carrying weights in an image is redistributing them**, so a licence with
+conditions — Gemma's terms, the Llama community licences — would attach those
+conditions to everybody who receives a copy of alo OS. `phi-3-mini-instruct` is
+MIT, and it is the largest entry that satisfies all three.
+**Our response:** the recipe declares the model, the quantisation, the artefact,
+the revision and the digest; the digest is checked in a step of its own **before
+anything reads the file**, because weights are imported by the runtime rather
+than unpacked by `tar` and a check afterwards would leave the wrong bytes in a
+layer. `crates/alo-image/src/weights.rs` reads the declaration and
+`everything_wrong_with` refuses each of those going wrong — including a model the
+catalogue never heard of, one nobody measured, and one whose licence was not ours
+to hand on. **Nothing here has been built**: no `docker build` of this recipe has
+been run in this lane, and the import step in particular is a recipe rather than
+a measurement until somebody builds it.
+**Date:** 2026-09-11
+
 ### Two models trained for tool calls, put to the same ten requests
 **Version:** `qwen3:1.7b` (Qwen3 1.7B, Q4_K_M, 1,359,279,776 bytes) and
 `granite3.2:2b` (IBM Granite 3.2 2B Instruct, Q4_K_M, 1,545,296,256 bytes),

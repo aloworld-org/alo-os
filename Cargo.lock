@@ -343,6 +343,7 @@ dependencies = [
  "alo-accounts",
  "alo-entering",
  "alo-keeping",
+ "alo-models",
  "alo-sessiond",
  "serde",
  "thiserror 2.0.20",

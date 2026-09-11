@@ -28,6 +28,8 @@
 //! breaks. That is `crate::accounts`' shape — the interesting states are the
 //! wrong ones, and a reader that refused them could never report them.
 
+use crate::recipe::copies_from_a_stage_to;
+
 /// Where the runtime's binary lands on the machine.
 pub const THE_RUNTIMES_BINARY: &str = "/usr/bin/ollama";
 
@@ -46,9 +48,6 @@ const THE_DIGEST_NAME: &str = "THE_RUNTIME_SHA256";
 
 /// What the checking of a digest looks like in a build step.
 const A_DIGEST_CHECKED: &str = "sha256sum --check";
-
-/// How many hexadecimal characters a sha256 digest has.
-const A_WHOLE_DIGEST: usize = 64;
 
 /// What the image's recipe says about the model runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,11 +83,11 @@ impl TheRuntime {
             if line.starts_with('#') {
                 continue;
             }
-            if let Some(named) = line.strip_prefix(THE_VERSION_ARG) {
-                version = Some(named.trim().to_owned());
+            if let Some(named) = crate::recipe::argument(line, THE_VERSION_ARG) {
+                version = Some(named.to_owned());
             }
-            if let Some(named) = line.strip_prefix(THE_DIGEST_ARG) {
-                digest = Some(named.trim().to_owned());
+            if let Some(named) = crate::recipe::argument(line, THE_DIGEST_ARG) {
+                digest = Some(named.to_owned());
             }
             if line.contains(THE_DIGEST_NAME) && line.contains(A_DIGEST_CHECKED) {
                 checked = true;
@@ -160,24 +159,8 @@ impl TheRuntime {
     /// prose.
     #[must_use]
     pub fn is_verified(&self) -> bool {
-        self.checked
-            && self.digest().is_some_and(|digest| {
-                digest.len() == A_WHOLE_DIGEST && digest.bytes().all(|b| b.is_ascii_hexdigit())
-            })
+        self.checked && self.digest().is_some_and(crate::recipe::is_a_whole_digest)
     }
-}
-
-/// Whether this line copies something out of another build stage to exactly
-/// this place on the machine.
-///
-/// `--from=` is part of the question on purpose: an artefact copied out of the
-/// build context would be a runtime committed into this repository, which is
-/// the *source tree* shape ADR 0006 refuses — pinned upstream artefacts arrive
-/// through a stage that fetched and checked them.
-fn copies_from_a_stage_to(line: &str, landing: &str) -> bool {
-    line.starts_with("COPY")
-        && line.contains("--from=")
-        && line.split_whitespace().next_back() == Some(landing)
 }
 
 #[cfg(test)]
