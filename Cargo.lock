@@ -325,6 +325,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-greeting"
+version = "0.0.1"
+dependencies = [
+ "alo-accounts",
+ "alo-image",
+ "alo-saying",
+ "alo-sessiond",
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-image"
 version = "0.0.1"
 dependencies = [
@@ -497,6 +509,7 @@ dependencies = [
  "alo-egress",
  "alo-files",
  "alo-granted",
+ "alo-greeting",
  "alo-indicator",
  "alo-keeping",
  "alo-models",

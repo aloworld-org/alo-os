@@ -1,0 +1,46 @@
+[package]
+name = "alo-greeting"
+version = "0.0.1"
+description = "Everything the greeter does that is not drawing: a name and a password checked against this machine's own accounts, and — only then — one knock at the door that opens a session."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Who is here, and whether this password is theirs. It is the **only**
+# authenticator on this machine and this crate does not become a second one:
+# nothing here hashes anything, compares anything, or reads the accounts file
+# — `alo_accounts::Accounts` answers, and its refusal is carried rather than
+# reworded.
+alo-accounts = { path = "../alo-accounts" }
+
+# The door a session is asked for at, and the line spoken through it.
+# `alo_sessiond::Knock` and `Answered` are that wire's declaration, taken as
+# they are: a second reader of the same line is two accounts of one
+# conversation, and this one is a privileged process's.
+alo-sessiond = { path = "../alo-sessiond" }
+
+# Everything a person reads here, named rather than written in place — and the
+# lookup that turns what comes back off the wire into a sentence in their own
+# language.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, for the ways a conversation fails to happen
+# and for its own string list's error.
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The shipped machine description, read by the reader the image is held to, so
+# the number a greeting is built against is the number `alo-agentd` is really
+# told rather than a copy of it.
+alo-image = { path = "../alo-image" }
+
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; `what_this_crate_says.rs` asks the question that list cannot —
+# whether what this crate says is collected at all, and whether it reaches a
+# reader in their own language.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

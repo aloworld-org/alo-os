@@ -27,6 +27,7 @@ members = [
   "crates/alo-entering",
   "crates/alo-files",
   "crates/alo-granted",
+  "crates/alo-greeting",
   "crates/alo-image",
   "crates/alo-indicator",
   "crates/alo-keyring-fixture",

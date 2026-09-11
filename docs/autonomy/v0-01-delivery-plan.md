@@ -1333,6 +1333,22 @@ forgot to knock is a screen that takes a correct password and does nothing.
   added to `Knock`, which is the whole of what keeps a password off that wire.
   Every string a person reads is in the vocabulary `alo-saying` collects.
 
+**Done, 2026-09-11 — this is the same seam as task 28 and was built with it.**
+Task 26's report wrote this task; a later change wrote task 28 for the same
+work under the name the loop then sent a worker at, and for a day this plan
+had **two sections numbered 27**, which is a plan
+`tools/kernel-loop/src/plan.rs` refuses to read as tasks numbered from one in
+order. The numbering is repaired here — this is 27, the greeter is 28, and
+recovering a parked task is 29 — and the two sections are answered by one
+crate rather than pretended to be two pieces of work. `crates/alo-greeting`
+keeps every line of the acceptance above: `Greeting::signs_in` is the one
+composition, the one call to `Knock::on_behalf_of` is a private function
+taking an `alo_accounts::Session`, what comes back off the wire is looked up
+in the reader's own language, and the four ways the conversation can fail to
+happen are four values, two sentences and no silence — measured over a real
+socket with `alo-sessiond`'s own `Listening` on the far side of it. Report:
+`docs/autonomy/updates/what-the-greeter-does.md`.
+
 ### 28. What the greeter does, before there is anything to draw
 
 **Status:** ready. **Depends on:** 26.
@@ -1365,6 +1381,47 @@ that already works rather than growing the logic inside a paint routine.
   could open one would be the second privileged component growing a third job.
   It authenticates nothing itself either — `alo-accounts` does that and already
   does it.
+
+**Done, 2026-09-11.** `crates/alo-greeting`: `Greeting` is everything the
+greeter does that is not drawing, and **the order is held by shape** —
+`signs_in` is the only door into the crate, the only place `alo-accounts` is
+asked anything, and the only place a door is reached; the one call to
+`alo_sessiond::Knock::on_behalf_of` anywhere here is inside a private
+`for_whom(session: &Session)`, so a knock cannot be made from a number,
+from text, or from a name that did not verify. There is no method that
+knocks without authenticating and none that authenticates and forgets to
+knock, which is the failure the task exists to prevent: a screen that takes
+a correct password and does nothing.
+
+**A wrong password and an unknown name are refused identically, and the
+composition is where that promise would have been lost.** Both return
+`alo-accounts`' own one refusal, carried rather than reworded, before
+anything touches a socket — so neither costs a connection the other does
+not, and the timing is measured here as well as one crate down, because
+knocking for a known name and not for an unknown one would enumerate this
+machine's accounts over a wire whatever the sentence said. A real socket is
+shown untouched for a wrong password.
+
+**Nothing anywhere in it holds, logs or returns the password**, and that is
+read out of the crate rather than asserted: comments and string literals are
+taken out, and in what is left the identifier appears exactly twice — the
+parameter of the one method that takes one, and the line that hands it to
+`alo-accounts`. Every field the crate declares is held to a list of five,
+because a field called `secret` would pass an identifier check and be the
+same bug; `Greeting`'s `Debug` is hand-written so a panic on a sign-in
+screen cannot print the stored hashes. **A machine with no store answers
+*make an account*** (ADR 0024's first-boot sentence), while a store that is
+there and will not be believed is neither state but a refusal, because a
+password box on that machine asks for a keystroke nothing can check. Four
+strings under a new `greeting` area, collected by `alo-saying`
+(twenty-seven collected, twenty-eight declaring); everything a person reads
+about *who they are* is `alo-accounts`' and `alo-sessiond`'s own, looked up
+here in the reader's language because a greeter with its own wording for a
+refused sign-in is a machine with two accounts of one moment. Task 27 above
+is the same seam and is marked done with this, and the duplicate numbering
+that made this plan unreadable to its own loop is repaired. Report:
+`docs/autonomy/updates/what-the-greeter-does.md`. The next task (29) was
+already written below. No pixels are claimed and none are tested.
 
 ### 29. Recovering a parked task, as a command rather than as a memory
 
