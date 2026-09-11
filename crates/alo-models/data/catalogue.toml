@@ -27,6 +27,17 @@
 # machine rather than about the models, which is why they say "not-measured"
 # and not something worse.
 #
+# On 2026-09-11 that fact was tested rather than assumed. `mistral-7b-instruct`
+# was fetched at the quantisation stated below and put to `alo-driving` on that
+# box twice: the model loads, and loading alone takes longer than the five
+# minutes `alo_models` waits for an answer; loaded, it is 5.0 GB inside a 5.9 GB
+# guest and runs against swap at a quarter of a token a second, so the first
+# exercise's 715-token prompt passed the wait with three tokens written. The
+# guest itself went down between the two attempts. Nothing was loosened to get
+# a number out of it, so the three 7B entries still say "not-measured" — which
+# is the true sentence: nobody has run the measurement, and this box cannot.
+# `docs/quirks.md` has the numbers.
+#
 # A machine reading this catalogue still offers no local model the agent — but
 # it says so for the reason that is true of it, which is that what was measured
 # did not clear the bar rather than that nobody has measured anything. Those are
@@ -57,6 +68,18 @@ drives_verbs = "not-measured"
 upstream = "https://huggingface.co/utter-project/EuroLLM-9B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
+# openGPT-X publishes this model twice, under two different licences: the
+# `-research-v0.4` release is `license: other` and the `-commercial-v0.4`
+# release is Apache-2.0. This entry named the research one and stated
+# Apache-2.0 with commercial use permitted, which is rule 1's harm exactly — an
+# organisation told it may rely commercially on a release licensed for
+# research. Corrected on 2026-09-11 by naming the release the licence line was
+# always true of; the size is unchanged, because the two differ in their
+# licence rather than in their weights. `docs/quirks.md` also records that
+# neither release ships a first-party GGUF, so `quantisation` below names an
+# artefact the publisher does not publish — which is why a grade for this entry
+# waits on a decision about whose requantisation it would mean, and not only on
+# a machine with room.
 [[model]]
 id = "teuken-7b-instruct"
 name = "Teuken 7B Instruct"
@@ -68,7 +91,7 @@ min_vram_gb = 6.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "not-measured"
-upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-research-v0.4"
+upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-commercial-v0.4"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
 [[model]]

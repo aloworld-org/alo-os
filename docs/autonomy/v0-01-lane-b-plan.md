@@ -446,6 +446,43 @@ measurement can say which.
   without the memory for a run does not guess; it leaves `not-measured`
   standing, which is the true sentence about it.
 
+**Done, 2026-09-11.** The run was made and **no grade was earned**, which is
+this task's finding rather than its failure: the memory question was answered
+about the wrong machine. The 15.5 GB is the Windows host's; the pinned runtime
+and every grade in the catalogue live inside a WSL guest that
+`C:\Users\SBW\.wslconfig` caps at 6 GB and four cores, for a reason its own
+comment gives — a 15.5 GB host that already pages cannot lend more.
+`mistral:7b-instruct-v0.3-q4_K_M` was fetched at the quantisation the entry
+states and put to `alo-driving` there twice. It loads, and the load alone takes
+284–447 s against the five minutes `alo_models::WHILE_A_MODEL_THINKS` waits, so
+the first run failed at the harness's own warm-up. Pre-loaded outside the
+harness, it is 5.0 GB inside a 5.9 GB guest and runs against swap at **0.25
+tokens per second**: the twelve-token warm-up took 101.7 s, and the `list`
+exercise's 715-token prompt passed five minutes with three tokens written —
+`TookTooLong`, the run stopped, and the harness graded nothing, which is what
+it is built to do rather than blame a model for a machine. Between the two
+attempts the guest itself went down. Nothing was loosened to get a number:
+not the prompt, not the scoring, not the runtime's context window, not the
+wait. So **`teuken-7b-instruct`, `mistral-7b-instruct` and
+`qwen2.5-7b-instruct` stay `not-measured`**, task 10 stays blocked, and task 8's
+carry-or-fetch entry stands unchanged because no grade moved.
+
+Two things were found that outlive this box. **openGPT-X publishes Teuken
+twice** — a research release (`license: other`) and a commercial one
+(Apache-2.0) — and the entry named the research release while stating the
+commercial licence, which is `data/catalogue.toml`'s first rule broken by the
+catalogue itself; `upstream` now names the release the licence was always true
+of, and a test refuses any entry that permits commercial use while naming a
+research release. **And neither Teuken release ships a first-party GGUF**, so
+its stated `Q4_K_M` names an artefact the publisher does not publish and a
+grade for it waits on a decision about whose requantisation the entry means —
+not only on a machine with room. The numbers, the three rejected ways round
+the box, and both findings are in `docs/quirks.md`; the finding is held to the
+catalogue by `crates/alo-models/tests/the_grade_the_weights_wait_on.rs`.
+Report: `docs/autonomy/updates/the-grade-the-weights-wait-on.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 12
+below is written from this outcome and was written in the same change.
+
 ### 10. A model on the disk, sized for the machine it lands on
 
 **Status:** blocked. **Depends on:** 9, and on the catalogue having an entry that
@@ -504,3 +541,50 @@ the drawing is the compositor lane's and the rules are testable now.
   machine arrives carrying — that is task 9's, and this one only offers what is
   there. A choice pre-selected for the person, however reasonable, contradicts
   ADR 0016 and ADR 0025 and is the one thing this task may not do.
+
+### 12. Candidates the measuring box can actually hold
+
+**Status:** ready. **Depends on:** 9.
+
+Task 9 found that the catalogue's unmeasured half is exactly the half this
+lane's box cannot load, and that trying anyway takes the guest down. So the
+route to a grade is not a bigger model run harder: it is **entries small enough
+to be measured here that have a reason to clear the bar**. The five that were
+measured are general chat models between 1.7B and 3.8B, and all five failed at
+the *shape* rather than at the reasoning — the envelope right and the argument
+list wrong, a fence round the answer, the prompt's own placeholders copied
+back. Models trained for tool calls and constrained output are a different
+population, and nobody here has put one to the fixed set.
+
+This is lane B's because it is the catalogue's, and the catalogue is where
+task 10's blocker lives. It is a curation task with a measurement in it, not a
+decision: ADR 0007 already says the grade is ours to run and never the
+publisher's to claim.
+
+- **Acceptance:** at least two new catalogued entries whose weights fit the
+  memory the measuring box has, chosen because they are trained for structured
+  output or tool use rather than because they are small; each entry's licence
+  read against the publisher's own metadata rather than from memory, stated
+  with its conditions, and its size what the artefact actually is; each one
+  measured with `alo-driving` against the pinned runtime in the same change and
+  graded from the run it earned — `not-measured` with the reason where a run
+  could not be made, never a grade from a parameter count; what each model
+  wrote in `docs/quirks.md` beside the earlier runs; and if any grade clears
+  the bar, task 8's carry-or-fetch entry revisited in the same change, which
+  `crates/alo-models/tests/the_carry_or_fetch_measurement.rs` will insist on
+  rather than suggest.
+- **And the question Teuken raised, answered in words:** `data/catalogue.toml`
+  states a `quantisation` for every entry, and for Teuken the publisher ships
+  no such artefact at all — every Q4_K_M of it is a stranger's requantisation.
+  Either an entry names the artefact it means, or it does not claim a
+  quantisation nobody can point at. Whichever is chosen goes in the file's own
+  rules, because the next curator reads those and not this plan.
+- **Constraint:** grades come only from runs actually made, and nothing in the
+  prompt, the scoring or the runtime's wait moves to help a model. No weights
+  on the image, no setup flow, and nothing in `crates/alo-shell`. **A model the
+  box cannot hold is not a candidate for this task**: the three 7B entries wait
+  on a machine with room — 16 GB to the runtime and more than four cores — and
+  getting one is an owner's decision about hardware or about
+  `C:\Users\SBW\.wslconfig`, which `docs/autonomy/SHARED_MAIN.md` puts behind
+  an idle handoff from both loops. Trying harder on this box is what task 9
+  already did.

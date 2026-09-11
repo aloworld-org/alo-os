@@ -558,6 +558,14 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     /// test held them out of a release until the run was made again and the
     /// grades were the loop's own. A name here is a measurement somebody ran,
     /// not a measurement somebody read about.
+    ///
+    /// **The list is still five, and that is not for want of trying.** A 7B
+    /// entry was fetched and put to `alo-driving` on 2026-09-11 and the box
+    /// could not carry it: the model loads more slowly than `alo_models` waits
+    /// for an answer, and the guest went down under it. So the run produced no
+    /// grade and no name was added — which is what this test is for.
+    /// `crates/alo-models/tests/the_grade_the_weights_wait_on.rs` holds that
+    /// finding to the catalogue, and `docs/quirks.md` has the numbers.
     #[test]
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it

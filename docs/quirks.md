@@ -1172,6 +1172,95 @@ wrong language. Where a model in the catalogue misbehaves in a way that affects
 the agents, record it here with the exact model and quantisation — "it was fine
 for me" is usually a different quantisation.
 
+### A 7B-class entry cannot be measured on the box every grade here was made on
+**Version:** `mistral:7b-instruct-v0.3-q4_K_M` — Mistral AI's
+Mistral-7B-Instruct-v0.3 at the quantisation `data/catalogue.toml` states, 4.4 GB
+— served by Ollama 0.33.3 on the development box this lane runs on: a WSL2
+Ubuntu guest of **4 CPUs and 5,926 MB of memory with 4 GB of swap**, which is
+what `C:\Users\SBW\.wslconfig` gives it (`memory=6GB`, `processors=4`) on a
+15.5 GB Windows host. 2026-09-11.
+**Behaviour:** the plan that asked for this grade said the memory question was
+answered — the host has 15.5 GB, so a 7B entry is runnable here. **It is not,
+and the 15.5 GB is the wrong machine's number.** Every grade in the catalogue
+was made inside the WSL guest, because that is where the pinned runtime is, and
+the guest is capped at 6 GB by a configuration whose own comment says why: the
+host pages about 20 GB as it stands, and WSL does not hand memory back. The
+model was fetched and run there anyway, twice, and what happened is arithmetic
+rather than bad luck:
+
+- **It loads, and the load alone outlasts the wait.** 284.7 s the first time,
+  447 s the second — against `alo_models`' `WHILE_A_MODEL_THINKS`, which is five
+  minutes. So `alo-driving`'s own warm-up question fails with
+  `RuntimeError::TookTooLong` before an exercise is ever put, which is the first
+  run's whole result.
+- **Loaded, it is 5.0 GB in a guest of 5.9 GB**, so it runs against swap:
+  `llama-server` held 4.3 GB resident with 1.25 GB paged out and 464 MB of the
+  guest left, and took 1.5 of the 4 cores because it was waiting on paging
+  rather than on arithmetic.
+- **At that speed the fixed set cannot be put.** With the model already warm,
+  the harness's twelve-token warm-up took **101.7 s** — 0.41 tokens per second
+  reading it, **0.25 tokens per second writing** twenty-one tokens back. The
+  first exercise's prompt is **715 tokens** (2,607 characters, the ten verbs as
+  the registry declares them); its first 512-token chunk took **138.32 s** at
+  3.70 tokens per second, and the call passed five minutes with three tokens
+  written. `TookTooLong` again, on the `list` exercise, and the run stopped.
+- **And the run cost the machine the guest.** Between the two attempts the WSL
+  VM went down — `uptime` back to zero, the runtime gone with it — while the
+  host had about 700 MB of physical memory free. A measurement that can take a
+  shared checkout's build down with it is not a measurement this box can be
+  asked for.
+
+**Our response:** `teuken-7b-instruct`, `mistral-7b-instruct` and
+`qwen2.5-7b-instruct` stay `not-measured`, which is the true sentence about
+them: nobody has run the measurement, and this box cannot. Nothing was
+loosened to get a number out of it — not the prompt, not the scoring, not the
+runtime's context window, and not the five-minute wait, which is the constant
+that keeps a slow machine from being reported as a model that cannot answer.
+Three ways out were considered and rejected, and they are written down because
+the next worker will reach them too: **raising the guest's memory** needs
+`wsl --shutdown`, which `docs/autonomy/SHARED_MAIN.md` forbids without an idle
+handoff from both loops, and a 15.5 GB host that already pages cannot afford
+12 GB inside a VM; **the runtime on the Windows side** is a package install on
+a shared machine, a second 4.4 GB copy of the weights against a C: drive with
+12.4 GB free and a 12 GiB floor, and a host with 700 MB of memory to spare; and
+**a smaller quantisation than the entry states** would be a measurement of
+different weights. What would settle it is a machine with room — 16 GB to the
+runtime and more than four cores — and the run is a download and an hour, not a
+purchase, once there is one.
+**Date:** 2026-09-11.
+
+### Teuken has no first-party Q4_K_M, and the entry named the research release
+**Version:** `data/catalogue.toml`'s `teuken-7b-instruct` as of 2026-09-11,
+against what openGPT-X publishes on Hugging Face that day.
+**Behaviour:** two things, found while looking for the weights this entry's
+`upstream` names. **openGPT-X publishes the model twice** —
+`Teuken-7B-instruct-research-v0.4` and `Teuken-7B-instruct-commercial-v0.4` —
+and the two are published under different licences: the Hugging Face metadata
+for the research release says `license: other`, and only the commercial release
+says `license: apache-2.0`. The catalogue's entry named the **research** release
+and stated `Apache-2.0`, `commercial_use = "permitted"` — so a business reading
+this catalogue would have been told it may use commercially a release whose
+publisher licensed it for research. That is the harm the file's own first rule
+names: a licence stated wrongly is worse than a model omitted. **And neither
+release has a first-party GGUF**: there is no `teuken` in the pinned runtime's
+library at all, and every Q4_K_M of it is a third party's requantisation
+(`mradermacher`, `KnutJaegersberg`, `bartowski` and others). So the entry's
+`quantisation = "Q4_K_M"` names an artefact its `upstream` does not publish, and
+measuring one would be measuring somebody else's requantisation while reporting
+it as this entry's.
+**Our response:** `upstream` now names the commercial release, which is the one
+whose licence the entry already states, and the licence line is unchanged
+because it was true of that release all along. The size is unchanged: it is the
+same model at the same quantisation, and the two releases differ in their
+licence rather than in their weights. The second half is **not** worked around:
+nothing in this repository says which artefact an entry means when its publisher
+ships none at the quantisation stated, and a grade measured against a stranger's
+requantisation would carry this catalogue's authority for a file this catalogue
+never chose. That question is written into the lane's plan as part of the task
+that widens the catalogue, and until it is answered `teuken-7b-instruct` cannot
+be measured on any machine, however much memory it has.
+**Date:** 2026-09-11.
+
 ### The carry-or-fetch measurement ADR 0025 owes: the catalogue has nothing to weigh
 **Version:** `data/catalogue.toml` as of 2026-09-11 — twelve entries, five
 measured by `alo-driving` on 2026-09-04, seven `not-measured` — against the bar
