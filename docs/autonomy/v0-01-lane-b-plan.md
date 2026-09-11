@@ -278,3 +278,34 @@ says.
   `docs/contracts/record-file.md` that is not additive — this reads a shape that
   document already fixes, and what it adds is a reader's rule rather than a
   field.
+
+### 7. The pinned model runtime is on the image
+
+**Status:** ready. **Depends on:** nothing in this lane.
+
+ADR 0025 was accepted on 2026-09-11 and the definition now promises that **the
+local model is what the machine arrives ready to run**. The ledger's entry for it
+(`docs/autonomy/v0-01-evidence.md`) is reachable by work for the first time, and
+this task is the first half of that work: the runtime, without the weights. The
+weights are a separate task because they carry the sizing question (ADR 0007) and
+the carry-or-fetch question ADR 0025 left open inside the work; a runtime with no
+model is inert and safe to ship first.
+
+ADR 0006 pinned the runtime and ADR 0019 settled that it is found rather than
+configured. Engines are configured, never patched: the runtime goes onto the
+image the way everything else got there — a pinned upstream artefact added by
+`image/Containerfile`, with its version written where the other pins are, not a
+source tree in this repository.
+
+- **Acceptance:** the image carries the pinned model-runtime artefact, and
+  `crates/alo-image` holds it the way it holds everything else — a check that
+  names it and a twin that breaks one line; the check also holds the pin: an
+  unpinned or floating version is refused in words that say why; discovery on a
+  machine with the runtime present but no weights still answers with ADR 0019's
+  found-nothing answer — a runtime alone must not read as a model; and no rented
+  name reaches a person through any string this adds (`alo-saying`'s `rented`
+  check stays green).
+- **Constraint:** no weights, no catalogue change, no setup flow, and nothing in
+  `crates/alo-shell`. If the runtime's licence or its packaging forces a decision
+  this repository has not taken, that decision is an ADR handed over as this
+  task, in the shape ADR 0024 and ADR 0025 used.
