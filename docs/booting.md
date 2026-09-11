@@ -52,7 +52,9 @@ Build the image first, from the root of the repository:
 
     podman build -f image/Containerfile -t alo-os:dev .
 
-Then the one command that turns it into a disk:
+Make the file the disk goes into, and then write it:
+
+    truncate -s 20G alo-os.raw
 
     podman run --rm --privileged --pid=host \
       --security-opt label=type:unconfined_t \
@@ -61,6 +63,14 @@ Then the one command that turns it into a disk:
       localhost/alo-os:dev \
       bootc install to-disk --via-loopback --wipe \
         --filesystem ext4 /output/alo-os.raw
+
+**The `truncate` is not optional**, and this document said nothing about it
+until somebody ran the command: `--via-loopback` attaches a loop device to a
+file that is already there and does **not** create one, so without it the whole
+thing stops on its first line with `Querying /output/alo-os.raw: No such file
+or directory`. Twenty gigabytes is the size the disk is laid out for; the file
+is sparse, so what it costs on the host is what the install actually writes,
+which measured 2.0 GB on 2026-09-11.
 
 `--via-loopback` is what makes a *file* an acceptable target; without it the
 tool expects a block device, which on a workstation means somebody's disk.
@@ -74,17 +84,35 @@ And for Hyper-V, one conversion:
 
 ## Attaching it to Hyper-V
 
-alo OS is installed for UEFI, so it is a **generation 2** virtual machine.
-Generation 1 is the BIOS one and is not a shape this repository tests or
-supports; a generation-1 machine pointed at this disk will not find anything to
-boot.
+alo OS is installed for UEFI, so it is a **generation 2** virtual machine, and
+generation 2 is the only shape this repository tests or supports.
+
+It is worth being exact about why, because this document first said a
+generation-1 machine *would not find anything to boot*, and that is untrue. The
+disk written on 2026-09-11 carries a 1 MB BIOS boot partition beside its 512 MB
+EFI system partition, its master boot record holds the `55aa` signature and the
+string `GRUB`, and that BIOS partition holds GRUB's core image — so a BIOS
+machine would find a bootloader. **Generation 2 is a choice, not a necessity:**
+it is how a certified laptop boots, so it is what gets tested, and a
+generation-1 boot is simply a path nobody here has walked.
 
 In Hyper-V Manager, on a Windows 11 Pro host:
 
 1. **New → Virtual Machine**, generation **2**.
-2. Memory: 8192 MB or more. The model runtime is on the image
+2. Memory: 8192 MB or more, **if the host has it to give**. The model runtime
+   is on the image
    ([ADR 0025](decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md)),
    and a machine that swaps while it answers tells you nothing useful.
+
+   On a host that does not, Hyper-V refuses rather than starting something
+   small: on 2026-09-11 a 15.5 GB development machine running a browser, an
+   editor, WSL and two build loops had about 1.1 GB it could offer, and
+   Hyper-V turned down 4096 MB, then 1024 MB, then 768 MB in turn — *not
+   enough memory in the system*, which is a sentence about the host and not
+   about this disk. Close what is holding the memory before starting the
+   machine. The same shortage is why no local model has been graded yet
+   (`quirks.md`), and it is the clearest argument in this repository for the
+   certified machine having real memory in it.
 3. Networking: leave it disconnected for the first boot. Nothing on this image
    needs the network to start, and a machine sold on
    [nothing leaving silently](../CLAUDE.md) is one whose first boot is worth
