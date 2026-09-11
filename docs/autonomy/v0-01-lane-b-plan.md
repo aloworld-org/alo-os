@@ -279,6 +279,25 @@ says.
   document already fixes, and what it adds is a reader's rule rather than a
   field.
 
+**Done, 2026-09-11.** `crates/alo-keeping/src/disagreeing.rs`: two
+disagreements a believable copy cannot avoid — an entry from before the moment
+the head says the record starts at, and moments that run backwards — noticed
+while `Reading` walks the file, so there is no reading without the check and no
+second door that skips it. Both are sentences opening *this record is not what
+it says it is*, drawn beside everything that could be read exactly as
+`Damage`'s are, never a refusal; which lines disagree are numbers beside the
+sentences. The boundary is legitimate on purpose: an entry **at** `since` is
+kept by a shortening, two entries in one moment are a busy second, and a record
+`Writing` wrote and pruned reads back silent — measured round-trip. `Account`
+carries the disagreement into `said()`, so a surface drawing the sentences
+shows it without knowing the check exists. `docs/contracts/record-file.md`
+gained the reader's rule additively; not a byte of the shape moved. Measured in
+`crates/alo-recounting/tests/a_record_that_is_not_what_it_says.rs` and
+per-decision in `disagreeing.rs`. Report:
+`docs/autonomy/updates/a-record-that-is-not-what-it-says-it-is.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 7
+below is the next task and was already written.
+
 ### 7. The pinned model runtime is on the image
 
 **Status:** ready. **Depends on:** nothing in this lane.
@@ -309,115 +328,3 @@ source tree in this repository.
   `crates/alo-shell`. If the runtime's licence or its packaging forces a decision
   this repository has not taken, that decision is an ADR handed over as this
   task, in the shape ADR 0024 and ADR 0025 used.
-
-**Done, 2026-09-11.** `image/Containerfile` carries the runtime the way it
-carries everything else: `THE_RUNTIME=0.34.0` and the artefact's own sha256
-written where the other pins are, fetched in a stage of its own and refused
-unless the digest matches before a byte of it is unpacked, landing
-`/usr/bin/ollama` and `/usr/lib/ollama/` — no weights, no unit and nothing that
-starts it, because a runtime alone answers nothing and both belong to the
-weights work. `crates/alo-image` grew `runtime.rs`, a reader of the recipe held
-apart from ADR 0006's one-file rule on purpose (that rule is about how the
-runtime is spoken to; where its files land is the image's own fact), and three
-disagreements with twins: dropped from the image, version floating — refused in
-words that say why `latest` cannot ship — and a digest the build stopped
-checking. `alo_models::found_at` now answers ADR 0019's found-nothing for a
-runtime holding no weights, so the artefact arriving on every machine cannot
-read as a model on any of them; and `crates/alo-saying` pins that the runtime's
-name stays on the rented list and still reaches nobody. Measured in
-`crates/alo-image/src/checking.rs`, `crates/alo-models/src/ollama.rs` and
-`crates/alo-saying/src/rented.rs`. Report:
-`docs/autonomy/updates/the-pinned-model-runtime-is-on-the-image.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 8
-below is the next task and was written in the same change.
-
-### 8. The carry-or-fetch measurement ADR 0025 owes
-
-**Status:** ready. **Depends on:** 7.
-
-ADR 0025 recommends carrying the weights on the certified image and fetching
-only where an image cannot — and says in as many words that this is *a
-recommendation with a measurement owed*, and that this measurement is **the
-first thing the implementation owes**. Task 7 put the runtime aboard; nobody
-may put weights aboard on a recommendation whose numbers nobody has.
-
-The measurement is two numbers and a sentence. **The model:** the smallest
-catalogued entry that clears the verb-driving bar on the certified machine's
-shape (ADR 0007 makes the CPU the default; `crates/alo-driving` owns the bar and
-the catalogue records the grades — an entry that is unmeasured is not a
-candidate, it is a gap the ledger already carries). **The channel:** what the
-image and its update stream can honestly carry, which is a question about the
-update channel's own constraints (ADR 0011's bootc image, `docs/features.md`'s
-promise that an upgrade cannot break a working stack), not about what a
-developer's connection tolerates. **The sentence:** carried, or fetched at
-setup where an image cannot — remembering ADR 0025's own caution that a machine
-which fetches at setup is not local by default when it is offline at setup.
-
-- **Acceptance:** the smallest catalogued model that clears the verb-driving
-  bar is named, with its size in bytes and the grade that clears the bar, off
-  the catalogue rather than from memory; what the update channel can carry is
-  stated with its reasoning, honestly bounded where it cannot yet be measured
-  on real infrastructure; the answer — carry, or fetch, or carry-here and
-  fetch-there — is written in `docs/quirks.md` beside the numbers, which is
-  where ADR 0025 says it goes; and the weights task that builds on the answer
-  is written as the next task in this plan, in the same change.
-- **Constraint:** a measurement, not an implementation — no weights on the
-  image, no setup flow, no catalogue regrade and nothing in `crates/alo-shell`.
-  If the honest answer is that the bar clears on no catalogued entry for the
-  certified machine, that finding **is** the deliverable, written where the
-  ledger can carry it, and the weights task waits on the catalogue rather than
-  on wishes.
-
-**Done, 2026-09-11.** The first number does not exist, and that finding is the
-measurement: the five catalogued entries anybody has measured all grade
-`rarely`, the seven others say `not-measured`, and an unmeasured entry does not
-clear the bar on purpose — so the smallest catalogued model that clears the
-verb-driving bar is no model at all, and **no weights go aboard**, carried or
-fetched, on a recommendation with nothing to weigh. The channel half is
-answered as far as it honestly can be: a bootc image's content-addressed layers
-move weights once per weights *change* rather than once per update, a carried
-layer rides inside the atomic deployment `bootc rollback` restores where a
-setup-time fetch sits outside it, and the sizes in question (1.06–4.9 GB) are
-the order of what the image already moves — with our registry, mirrors and the
-certified machine's network unmeasured and said so. The numbers, the reasoning
-and the sentence are in `docs/quirks.md` under *The carry-or-fetch measurement
-ADR 0025 owes*, where the ADR says the answer goes, and
-`crates/alo-models/tests/the_carry_or_fetch_measurement.rs` holds the entry to
-`data/catalogue.toml`: every size and grade is compared against the catalogue,
-and the day an entry clears the bar the test fails and sends whoever sees it
-back to make the measurement again. Report:
-`docs/autonomy/updates/the-carry-or-fetch-measurement.md`. No task in
-`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 9
-below is the next task and was written in the same change.
-
-### 9. The grade the weights wait on
-
-**Status:** ready — and it needs a machine with room: every unmeasured entry
-wants ten gigabytes of system memory or more, and the box every existing grade
-was made on has six. **Depends on:** 8.
-
-Task 8 measured what there is and found the honest answer: no catalogued entry
-clears the verb-driving bar, so the weights task waits on the catalogue rather
-than on wishes. What unblocks it is a grade — a 7B-class entry measured
-`reliably`, or the finding that this catalogue is not enough and needs entries
-nobody has curated yet. Either answer is the deliverable; only running the
-measurement can say which.
-
-- **Acceptance:** the smallest unmeasured entries an ordinary business laptop
-  could run — `mistral-7b-instruct`, `teuken-7b-instruct` and
-  `qwen2.5-7b-instruct`, each `on_cpu = "workable"` with `min_ram_gb = 10` and
-  an unconditional licence — are measured with `alo-driving` against the
-  pinned runtime holding the weights each entry's `upstream` names at the
-  quantisation it states; the grade each run earned is written into
-  `data/catalogue.toml` and into `catalogue.rs`'s `MEASURED` list, exactly as
-  the five before them were; what each model wrote goes into `docs/quirks.md`'s
-  models section beside the earlier runs; and the next task is written from
-  the outcome — the weights-aboard task if a grade clears the bar (task 8's
-  test will insist the carry-or-fetch entry is revisited in the same change),
-  or widening the catalogue if none does, with the finding stated rather than
-  softened.
-- **Constraint:** grades come only from runs actually made — no regrade from
-  memory, no prompt or scoring loosened until a model passes; no weights on
-  the image, no setup flow, and nothing in `crates/alo-shell`. A machine
-  without the memory for a run does not guess; it leaves `not-measured`
-  standing, which is the true sentence about it.

@@ -1,9 +1,11 @@
 //! Reading a record back off a disk.
 //!
-//! What comes back is three things, and a caller gets all three: where the
-//! record starts ([`crate::Head`]), what happened ([`Record`]), and what could
-//! not be read ([`crate::Damage`]). None of them is optional, because each of
-//! them is a way a short record can be short.
+//! What comes back is four things, and a caller gets all four: where the
+//! record starts ([`crate::Head`]), what happened ([`Record`]), what could
+//! not be read ([`crate::Damage`]), and where the record and its own beginning
+//! disagree ([`crate::Disagreement`]). None of them is optional: the first
+//! three are each a way a short record can be short, and the fourth is the way
+//! a believable file can still not be this machine's record.
 //!
 //! # A file that is not there is not an empty record
 //!
@@ -33,6 +35,7 @@ use std::path::Path;
 use alo_record::{Entry, Record};
 
 use crate::damage::Damage;
+use crate::disagreeing::{Disagreement, Noticing};
 use crate::failing::NotKept;
 use crate::head::{Head, THE_FORMAT};
 
@@ -45,6 +48,8 @@ pub struct Reading {
     record: Record,
     /// What could not be read.
     damage: Damage,
+    /// Where the record and its own beginning disagree.
+    disagreement: Disagreement,
 }
 
 impl Reading {
@@ -120,13 +125,17 @@ impl Reading {
 
         let mut record = Record::default();
         let mut damage = Damage::none();
+        let mut noticing = Noticing::under(&head);
         let mut lines = lines.peekable();
         // The head is line one, so the first entry is line two.
         let mut at_line = 1_u64;
         while let Some(line) = lines.next() {
             at_line += 1;
             match serde_json::from_str::<Entry>(line) {
-                Ok(entry) => record.keep(entry),
+                Ok(entry) => {
+                    noticing.entry(entry.at(), at_line);
+                    record.keep(entry);
+                }
                 Err(_) if lines.peek().is_none() && !ends_with_a_newline => {
                     // The last line, with nothing after it: a write the machine
                     // interrupted. Ordinary, and not the same as a line that
@@ -141,6 +150,7 @@ impl Reading {
             head,
             record,
             damage,
+            disagreement: noticing.done(),
         })
     }
 
@@ -160,6 +170,18 @@ impl Reading {
     #[must_use]
     pub fn damage(&self) -> &Damage {
         &self.damage
+    }
+
+    /// Where the record and its own beginning disagree — which is what a
+    /// record replaced whole by a believable copy looks like, and empty for
+    /// every record this crate wrote and shortened itself.
+    ///
+    /// Never a refusal: everything that could be read is in
+    /// [`Reading::record`] beside it, because a reader that threw the file
+    /// away would make being unreadable the better forgery.
+    #[must_use]
+    pub fn disagreement(&self) -> &Disagreement {
+        &self.disagreement
     }
 
     /// Where a record starts, without reading the rest of it.

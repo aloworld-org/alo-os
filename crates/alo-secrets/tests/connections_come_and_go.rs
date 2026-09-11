@@ -115,6 +115,30 @@ fn settles_at(watching: &zbus::blocking::Connection, expected: usize) -> usize {
     last
 }
 
+/// The count once the bus has gone quiet: the same answer for a whole second.
+///
+/// A beginning is only worth measuring against if it has stopped moving. The
+/// fixture's readiness probe closes its own connection as `started` returns,
+/// and the bus goes on listing a closed connection until it notices — so a
+/// count taken immediately can include one already on its way out, and every
+/// later count would be compared against a beginning that no longer exists.
+fn once_it_is_quiet(watching: &zbus::blocking::Connection) -> usize {
+    let until = Instant::now() + Duration::from_secs(10);
+    let mut last = connections(watching);
+    let mut unchanged_since = Instant::now();
+    while Instant::now() < until {
+        std::thread::sleep(Duration::from_millis(50));
+        let now = connections(watching);
+        if now != last {
+            last = now;
+            unchanged_since = Instant::now();
+        } else if unchanged_since.elapsed() >= Duration::from_secs(1) {
+            break;
+        }
+    }
+    last
+}
+
 /// **Each keyring is a connection of its own, and giving one up closes it.**
 ///
 /// This is the measurement ADR 0022 asked for, and the answer is **not**
@@ -126,7 +150,7 @@ fn settles_at(watching: &zbus::blocking::Connection, expected: usize) -> usize {
 fn each_keyring_is_a_connection_of_its_own_and_giving_it_up_closes_it() {
     let fixture = AKeyringOfOurOwn::started("lifetime");
     let watching = a_watcher(&fixture);
-    let before = connections(&watching);
+    let before = once_it_is_quiet(&watching);
 
     let opened: Vec<TheKeyring> = (0..4)
         .map(|_| TheKeyring::opened(&fixture.bus()).expect("the keyring opens"))

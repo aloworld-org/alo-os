@@ -21,6 +21,7 @@
 //! | [`Reading`] | A record read back: where it starts, what happened, and what could not be read |
 //! | [`Head`] | The first line: what shape the file is in, and where the record now begins |
 //! | [`Damage`] | What could not be read, which is never stepped over |
+//! | [`Disagreement`] | Where a record and its own beginning disagree — what a believable copy looks like |
 //! | [`Pruned`] | What a shortening did |
 //! | [`NotKept`] | Why what happened is not being written down |
 //!
@@ -85,6 +86,7 @@
 
 mod believing;
 pub mod damage;
+pub mod disagreeing;
 pub mod failing;
 pub mod head;
 pub mod keeping;
@@ -97,6 +99,7 @@ pub mod writing;
 mod testing;
 
 pub use damage::Damage;
+pub use disagreeing::Disagreement;
 pub use failing::NotKept;
 pub use head::{Head, THE_FORMAT};
 pub use keeping::{Keeping, KeepingError};

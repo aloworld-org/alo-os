@@ -14,8 +14,10 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 
+use alo_capability::Grantee;
 use alo_keeping::words::{self, EVERY_WORD, FOR_DAYS};
-use alo_keeping::{Damage, Keeping, NotKept, Reading, declare_into, keeping_words};
+use alo_keeping::{Damage, Keeping, NotKept, Reading, Writing, declare_into, keeping_words};
+use alo_record::Entry;
 use alo_strings::cldr::{form_for, knows};
 use alo_strings::{CameFrom, Form, Language, Said, Strings, Translation, Vocabulary};
 
@@ -55,6 +57,45 @@ fn a_shortened_record() -> Reading {
     Reading::at(&path).unwrap()
 }
 
+/// A record whose beginning and entries disagree: written by this crate, then
+/// its first line replaced by a head claiming the record starts after both of
+/// its entries — which also puts the two entries out of order with each other,
+/// so both of the crate's disagreement sentences have something to say.
+fn a_disagreeing_record() -> Reading {
+    static NEXT: AtomicU32 = AtomicU32::new(0);
+    let folder = std::env::temp_dir().join(format!(
+        "alo-keeping-disagrees-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&folder).unwrap();
+    let path = folder.join("record.jsonl");
+    let _ = std::fs::remove_file(&path);
+    let mut writing = Writing::opening(&path).unwrap();
+    for secs in [1_760_000_100_u64, 1_760_000_000] {
+        writing
+            .keep(&Entry::turned_away(
+                "run",
+                "there is no verb called run",
+                &Grantee::named("@mail"),
+                SystemTime::UNIX_EPOCH + Duration::from_secs(secs),
+            ))
+            .unwrap();
+    }
+    drop(writing);
+    let text = std::fs::read_to_string(&path).unwrap();
+    let entries = text.split_once('\n').unwrap().1;
+    std::fs::write(
+        &path,
+        format!(
+            "{{\"format\":1,\"since\":{{\"secs_since_epoch\":1760000200,\
+             \"nanos_since_epoch\":0}},\"under\":{{\"for-days\":30}}}}\n{entries}"
+        ),
+    )
+    .unwrap();
+    Reading::at(&path).unwrap()
+}
+
 /// **Every string this crate can say is in one list**, and the list goes into a
 /// shell's one vocabulary beside every other crate's.
 #[test]
@@ -85,6 +126,7 @@ fn every_sentence_this_crate_can_show_comes_from_the_lookup() {
     ];
     let mut damage = Damage::default();
     every_said.extend(damage.said(&strings));
+    every_said.extend(a_disagreeing_record().disagreement().said(&strings));
     every_said.push(
         NotKept::NotThere {
             path: "/var/lib/alo/record.jsonl".to_owned(),
@@ -253,6 +295,13 @@ fn nothing_is_declared_that_this_crate_never_says() {
     .damage()
     .clone();
     shown.extend(damage.said(&strings).into_iter().map(Said::into_text));
+    shown.extend(
+        a_disagreeing_record()
+            .disagreement()
+            .said(&strings)
+            .into_iter()
+            .map(Said::into_text),
+    );
 
     for failure in every_failure() {
         shown.push(failure.said(&strings).into_text());

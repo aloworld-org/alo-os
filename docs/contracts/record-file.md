@@ -126,6 +126,16 @@ entry by corrupting one line. So:
 - **A missing file is not an empty record.** A machine that has done nothing and
   a machine whose record was deleted are not the same thing, and a reader that
   answered *nothing happened* for both would be believed.
+- **A record whose entries deny its own first line is reported as not being
+  what it says it is** — alongside everything that could be read, with the line
+  numbers, and never as a refusal of the whole file. Two things count: an entry
+  from before the moment `since` names, which no shortening leaves behind, and
+  an entry from an earlier moment than the entry before it, which appending as
+  things happen never writes. An entry *at* `since` is legitimate — a
+  shortening keeps the entry at its own boundary — and two entries in one
+  moment are ordinary. This is a **reader's rule, not a field**: nothing about
+  the shape above changes, and a file alo OS wrote and shortened itself is one
+  this rule is silent about.
 
 ## Shortening it
 

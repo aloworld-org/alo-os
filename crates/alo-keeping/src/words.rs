@@ -168,6 +168,40 @@ pub const UNFINISHED: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// Where a record and its own beginning disagree — [`crate::Disagreement`].
+//
+// Nought, one or two whole sentences, drawn one under another beside the
+// damage, and both open with the same claim: this record is not what it says
+// it is. Read by somebody deciding whether a file is evidence.
+// ---------------------------------------------------------------------------
+
+/// An entry from before the moment the record says it starts at.
+pub const BEFORE_IT_BEGINS: Word = Word::saying(
+    "keeping.disagreement.before-it-begins",
+    "this record is not what it says it is — something in it happened before the moment it says \
+     it starts at, and a shortening never leaves anything from before where it cut",
+)
+.noting(
+    "Read by somebody deciding whether a record file is evidence, most often on a managed \
+     machine. It means the file's first line and its entries tell two different stories, which is \
+     what a record replaced whole by a plausible copy looks like. Which lines disagree are \
+     numbers shown beside it. The second half explains the first and should keep its plainness: \
+     it is a fact about how this machine shortens records, not a reassurance.",
+);
+
+/// Moments that run backwards.
+pub const RUNS_BACKWARDS: Word = Word::saying(
+    "keeping.disagreement.runs-backwards",
+    "this record is not what it says it is — what is written in it does not run in the order it \
+     happened, and this machine only ever writes down what happened next",
+)
+.noting(
+    "Read beside the sentence about a record starting later than its entries, or alone. It means \
+     an entry in the file is from an earlier moment than the entry before it, which appending as \
+     things happen cannot produce. Which lines are out of order are numbers shown beside it.",
+);
+
+// ---------------------------------------------------------------------------
 // Why there is no record to write to, or to read — [`crate::NotKept`].
 //
 // Every one of these is read by somebody holding a machine that is not keeping
@@ -306,13 +340,15 @@ pub const NOT_SHORTENED: Word = Word::saying(
 /// word declared above and left out here is a string nothing can look up. The
 /// one countable string is not here — it is declared beneath, because it is
 /// declared differently.
-pub const EVERY_WORD: [Word; 17] = [
+pub const EVERY_WORD: [Word; 19] = [
     FOREVER,
     NO_DAYS_AT_ALL,
     WHOLE,
     SHORTENED,
     UNREADABLE,
     UNFINISHED,
+    BEFORE_IT_BEGINS,
+    RUNS_BACKWARDS,
     NOT_THERE,
     NOT_A_RECORD,
     FROM_A_NEWER_ALO,

@@ -7,10 +7,12 @@
 //! # The caveats are part of the answer, not a footnote under it
 //!
 //! An account of what a machine did is worth exactly what the record behind it
-//! is worth, and there are four ways for an account to be worth less than it
+//! is worth, and there are five ways for an account to be worth less than it
 //! looks: the record can hold nothing that answers the question, it can no
-//! longer go all the way back, part of it can be unreadable, and the answer can
-//! have been longer than the bound the account was asked for.
+//! longer go all the way back, it can disagree with its own beginning — which
+//! is what a record replaced whole by a believable copy looks like — part of
+//! it can be unreadable, and the answer can have been longer than the bound
+//! the account was asked for.
 //! [`Account::said`] answers with a sentence for each of those that is true,
 //! and the first two of them
 //! are read together on purpose — *nothing in this machine's record answers
@@ -20,8 +22,9 @@
 //! conclusion from.
 //!
 //! **The record's own sentences, not this crate's.** Whether a record is whole
-//! is `alo_keeping::Head`'s to say and what could not be read is
-//! `alo_keeping::Damage`'s, and both already have the words for it. Only
+//! is `alo_keeping::Head`'s to say, whether it is what it says it is is
+//! `alo_keeping::Disagreement`'s, and what could not be read is
+//! `alo_keeping::Damage`'s — and all three already have the words for it. Only
 //! *nothing here answers that* is this crate's, because only this crate knows
 //! that a question was asked and matched nothing.
 //!
@@ -34,7 +37,7 @@
 
 use std::time::SystemTime;
 
-use alo_keeping::{Damage, Head, Keeping, Reading};
+use alo_keeping::{Damage, Disagreement, Head, Keeping, Reading};
 use alo_record::Asking;
 use alo_strings::{Filling, Said, Strings};
 
@@ -58,6 +61,8 @@ pub struct Account {
     head: Head,
     /// What could not be read out of it.
     damage: Damage,
+    /// Where the record and its own beginning disagree.
+    disagreement: Disagreement,
 }
 
 impl Account {
@@ -85,6 +90,7 @@ impl Account {
             everything: reading.record().len(),
             head: reading.head().clone(),
             damage: reading.damage().clone(),
+            disagreement: reading.disagreement().clone(),
         }
     }
 
@@ -178,6 +184,30 @@ impl Account {
         &self.damage
     }
 
+    /// Whether this record is what it says it is.
+    ///
+    /// False where its entries and its own beginning disagree — an entry from
+    /// before the moment the head says the record starts at, or moments that
+    /// run backwards — which is what a record replaced whole by a believable
+    /// copy looks like. A record the daemon wrote and shortened itself is
+    /// always what it says it is.
+    ///
+    /// **Never a reason the account is missing**: everything that could be
+    /// read is in [`Account::told`] beside it, and [`Account::said`] already
+    /// puts the disagreement in words, so a surface drawing the sentences
+    /// cannot leave it out.
+    #[must_use]
+    pub fn is_what_it_says_it_is(&self) -> bool {
+        self.disagreement.agrees()
+    }
+
+    /// Where the record and its own beginning disagree, with which lines as
+    /// numbers beside the sentences [`Account::said`] answers.
+    #[must_use]
+    pub fn disagreement(&self) -> &Disagreement {
+        &self.disagreement
+    }
+
     /// Everything a person must read beside the lines: nought to four whole
     /// sentences, to be drawn one under another.
     ///
@@ -187,7 +217,8 @@ impl Account {
     /// not know.
     ///
     /// The order is the order they are read in: what this record answered,
-    /// then what the record is, then what could not be read out of it.
+    /// then what the record is, then whether it is what it says it is, then
+    /// what could not be read out of it.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Vec<Said> {
         let mut said = Vec::new();
@@ -198,6 +229,7 @@ impl Account {
             said.push(strings.say(&words::ONLY_THE_MOST_RECENT.key(), &Filling::nothing()));
         }
         said.push(self.head.said(strings));
+        said.extend(self.disagreement.said(strings));
         said.extend(self.damage.said(strings));
         said
     }
