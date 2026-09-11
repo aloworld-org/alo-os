@@ -126,6 +126,42 @@ pub enum Finding {
         said: String,
     },
 
+    /// A promise with no evidence at all, and nothing saying where the work is.
+    ///
+    /// Being owed is not the finding — four v0.01 promises are, honestly. The
+    /// finding is being owed with nowhere for the next reader to go: a decision
+    /// to make, or a task in a plan. Without one of those the sentence is a
+    /// verdict, and whoever inherits it starts the reading again.
+    #[error(
+        "the ledger's entry for `{promise}` names no test and no report, and does not say where \
+         the work is. A promise with no evidence at all names the decision it waits on under \
+         docs/decisions/, or the task that is the increment — as `task <n> of \
+         `docs/autonomy/<plan>.md``, with the plan beside the number. A promise that is missing \
+         and points nowhere is one the next reader derives again from scratch"
+    )]
+    APromiseOwedWithNowhereToGo {
+        /// The phrase the entry quotes.
+        promise: String,
+    },
+
+    /// A promise waiting on something nobody can find.
+    ///
+    /// The one kind of pointer a reader believes without opening, because the
+    /// number looks like a fact — the argument `alo-citing` makes about ADR
+    /// citations, about the place a promise with nothing behind it comes to rest.
+    #[error(
+        "the ledger's entry for `{promise}` says it waits on `{waiting}`, and {why}. A promise \
+         sent somewhere nobody can follow reads exactly like a promise somebody answered"
+    )]
+    AWaitNobodyCanFollow {
+        /// The phrase the entry quotes.
+        promise: String,
+        /// The pointer, as the entry wrote it.
+        waiting: String,
+        /// Which of the three ways it cannot be followed.
+        why: crate::waiting::NoSuchWait,
+    },
+
     /// A ledger with nothing in it, against a definition that promises things.
     ///
     /// Everything else here is about one promise. This is the failure that would

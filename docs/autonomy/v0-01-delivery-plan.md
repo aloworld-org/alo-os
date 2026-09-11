@@ -746,3 +746,89 @@ before it is a screen, and nothing in this repository has looked.
   genuinely blocked, saying so with the evidence is the finished work — and the
   plan then says what this lane does next rather than leaving the loop to read a
   blocked list as *nothing left to do*.
+
+**Done, 2026-09-11.** The four were read one at a time against the crates, the
+contracts and the decisions, and the reading is written under each promise in
+`docs/autonomy/v0-01-evidence.md` rather than as a verdict beside it. **The count
+stays at four** — nothing was closed and nothing was ticked — and **one of them
+was in the wrong pile.**
+
+*Copy, cut and paste* needs no screen, no machine and no decision. It was sorted
+into *needs a machine* by the audit that found it, in the same pass that found
+five other things, and nothing had looked since. A clipboard is a **protocol
+before it is a surface**: an owner, the types it offers, and a transfer somebody
+asks for — every value of which is decidable with no pixels, exactly as
+`alo-overlay`, `alo-approving`, `alo-indicator` and `alo-recounting` decided
+theirs. Nothing gates it either: **no agent verb touches the clipboard** (the ten
+in `docs/contracts/agent-verbs.md` are six about files and four about
+applications), so ADR 0001's grant model is not in its way, and ADR 0005's portal
+is the sandboxed application's route to the same thing, which `docs/features.md`
+puts at v0.5. It is task 20 below.
+
+The other three are genuinely waiting, and each says what on: *the GPU works on
+first boot* on a machine with a card **and** on an image with something to
+accelerate — `docs/hardware.md` defines the promise in four clauses, three of
+which only a machine answers, and `image/Containerfile` carries no model runtime
+and no weights at all; *the agents point at the local model by default* on the
+owner accepting
+`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md`, whose
+recommendation asks for one line of the definition to be reworded; and *boots on
+one certified machine* on both a machine and
+`docs/decisions/0024-what-a-person-signs-in-at.md`, because `crates/alo-shell`
+still has no binary to boot to.
+
+**What the shape decides:** the ledger is now held to *saying where the work is*.
+`crates/alo-reconciling/src/waiting.rs` reads what a promise waits on — a
+decision under `docs/decisions/`, or a task cited **with the plan beside the
+number** — and follows it to a file on the disk; a promise with no evidence at
+all and no such pointer is refused, and a promise shown in part is not, because
+the code it already has is where the next reader goes. The plan is required
+beside the number for the reason `alo-citing` requires a filename: this
+repository drives three plans, all numbered from one, and *task 12 of the
+delivery plan* matches something in every one of them. A task pointer is read
+only under a plan's `## Tasks`, which is how `tools/kernel-loop` reads one — it
+learnt that by launching a worker at an audit section called *Implemented and
+verified*. Every refusal is shown against a fixture, and the measurement is taken
+against this repository: four promises with no evidence, each pointing somewhere
+that exists. Report:
+`docs/autonomy/updates/the-four-promises-with-no-evidence.md`. The next task (20)
+is written below.
+
+### 20. The clipboard, before there is anything to draw
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 19, which found this promise in the wrong pile. `docs/features.md`
+promises at v0.01: **copy, cut and paste — text, images and files, across
+applications**, and it is the last of the six missing promises with a route that
+does not run through a screen, a decision or a machine.
+
+The seam is the selection itself, and deliberately **not** the compositor wiring:
+one client owns the selection and says which types it can give; another asks for
+one of those types; the broker holds the offer and nothing else. `smithay` 0.7
+already carries the protocol, and putting it into `crates/alo-shell` is the
+desktop lane's — this is the value that lane would wire to, with its refusals
+decided before anybody can see them.
+
+- **Acceptance:** what is pasted is what was copied, in a type the copier
+  offered, and a type that was never offered is refused in words rather than
+  converted into something the copier did not say it could give; taking the
+  selection **retires the previous owner's offer at once**, so a transfer against
+  a stale one moves nothing — a clipboard that quietly serves the last owner's
+  data is a leak between two applications and reads to everybody like a paste;
+  pasting when nothing has been copied is *nothing to copy from* rather than the
+  thing before; text, images and files are **offered types rather than three
+  mechanisms**, so the promise's three are one shape; and every string is in the
+  vocabulary `alo-saying` collects.
+- **And one thing it must show it does not do:** the clipboard is not
+  `alo-context`'s selection. ADR 0001 §4 offers the focused window, the
+  highlighted text and the open document **at the moment of invocation and for
+  that turn**; what a person has copied is neither, and a turn that read it would
+  be the background reader that ADR calls a bug. A test shows a turn reaching
+  nothing here.
+- **Constraint:** nothing in `crates/alo-shell`, which is the desktop lane's and
+  is where the wiring goes. No pixels are claimed and none are tested, and **no
+  verb is added** — copy and paste is a person moving their own text between
+  their own windows, and law 2's enumerated verbs are not where it belongs.

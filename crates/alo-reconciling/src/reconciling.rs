@@ -17,7 +17,9 @@ use crate::{
     evidence::Evidence,
     finding::Finding,
     ledger::{THE_ENTRIES, entries_in},
+    owed::Owed,
     promise::{Promise, promises_in},
+    waiting::Waiting,
 };
 
 /// What the release's promises add up to, once everything has been reconciled.
@@ -203,12 +205,43 @@ fn whether_it_answers(
         (true, None) => {}
     }
 
-    if let Some(owed) = entry.owed()
-        && !owed.is_an_answer()
-    {
-        findings.push(Finding::AShrugRatherThanAnAnswer {
+    if let Some(owed) = entry.owed() {
+        if !owed.is_an_answer() {
+            findings.push(Finding::AShrugRatherThanAnAnswer {
+                promise: entry.promise().to_owned(),
+                said: owed.sentence().to_owned(),
+            });
+        }
+        where_the_work_is(entry, owed, reading, findings);
+    }
+}
+
+/// Whether what a promise waits on is somewhere a reader can go.
+///
+/// Two rules, and they are deliberately not the same rule. **Every** pointer in
+/// what is owed is followed, wherever the entry sits, because a dead one reads
+/// exactly like an answer. And a promise with **no evidence at all** must carry
+/// at least one: a promise shown in part leaves the reader the code it already
+/// has, and a promise shown by nothing leaves them the sentence and nothing else.
+fn where_the_work_is(
+    entry: &Entry,
+    owed: &Owed,
+    reading: &dyn Fn(&str) -> Option<String>,
+    findings: &mut Vec<Finding>,
+) {
+    let waits = Waiting::named_in(owed.sentence());
+    if waits.is_empty() && entry.names().is_empty() {
+        findings.push(Finding::APromiseOwedWithNowhereToGo {
             promise: entry.promise().to_owned(),
-            said: owed.sentence().to_owned(),
         });
+    }
+    for waiting in waits {
+        if let Err(why) = waiting.whether_it_is_there(reading) {
+            findings.push(Finding::AWaitNobodyCanFollow {
+                promise: entry.promise().to_owned(),
+                waiting: waiting.said(),
+                why,
+            });
+        }
     }
 }

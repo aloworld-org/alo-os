@@ -41,6 +41,13 @@
 //! [`owed::AN_ANSWER`]. A promise with neither is this audit's finding, and
 //! naming it is the point of the exercise rather than a failure of it.
 //!
+//! **And a promise with no evidence at all has to say where the work is** — the
+//! decision it waits on, or the task that is the increment — which [`waiting`]
+//! follows to a file on the disk. Being owed is not the finding; being owed with
+//! nowhere for the next reader to go is, because that is the entry whose
+//! reasoning gets derived again from scratch every time somebody opens the
+//! ledger.
+//!
 //! # It says nothing to a person
 //!
 //! Nothing here reaches a screen. The reader of a [`Finding`] is whoever is
@@ -64,6 +71,7 @@ pub mod ledger;
 pub mod owed;
 pub mod promise;
 pub mod reconciling;
+pub mod waiting;
 
 pub use entry::Entry;
 pub use evidence::Evidence;
@@ -71,3 +79,4 @@ pub use finding::Finding;
 pub use ledger::entries_in;
 pub use promise::{Promise, promises_in};
 pub use reconciling::{Reconciled, reconcile};
+pub use waiting::Waiting;

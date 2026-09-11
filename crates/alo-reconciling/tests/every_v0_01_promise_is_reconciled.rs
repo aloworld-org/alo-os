@@ -210,6 +210,140 @@ fn a_ledger_naming_a_decision_nobody_wrote_is_a_finding() {
 const THE_REAL_DECISION: &str =
     "docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md";
 
+/// **Every promise with no evidence at all says where the work is, and the
+/// pointer lands** — against this repository, on the disk it is checked out on.
+///
+/// This is the measurement task 19 of the delivery plan was written to take.
+/// Four v0.01 promises have nothing behind them, and for those the sentence in
+/// the ledger is the whole of what the next person inherits: a promise recorded
+/// as missing and pointing nowhere is one whose reasoning gets derived again
+/// from scratch, which is the seven-times-over reading this ledger exists to
+/// end.
+///
+/// The count is asserted rather than described. If a fifth promise falls to
+/// nothing, or one of the four is closed, this fails and whoever moved it writes
+/// down which — a ledger whose own summary drifts is a ledger that reads as an
+/// answer.
+#[test]
+fn each_promise_with_no_evidence_names_where_the_work_is() {
+    let here = the_repository();
+    let off_the_disk = move |named: &str| fs::read_to_string(here.join(named)).ok();
+    let ledger = reading(THE_LEDGER);
+
+    let reconciled = reconcile(&reading(THE_DEFINITION), &ledger, &off_the_disk)
+        .unwrap_or_else(|findings| panic!("the ledger does not add up: {findings:?}"));
+    assert_eq!(
+        reconciled.wholly_owed(),
+        4,
+        "the ledger's own account of itself says four v0.01 promises have no \
+         evidence at all; the audit counted {}. Whichever moved, say so under \
+         the promise it is about",
+        reconciled.wholly_owed()
+    );
+
+    let owed_and_pointing: Vec<(String, Vec<String>)> = alo_reconciling::entries_in(&ledger)
+        .into_iter()
+        .filter(|entry| entry.names().is_empty())
+        .map(|entry| {
+            let said = entry.owed().map(|owed| owed.sentence().to_owned());
+            let waits = said.map(|said| {
+                alo_reconciling::Waiting::named_in(&said)
+                    .iter()
+                    .map(alo_reconciling::Waiting::said)
+                    .collect()
+            });
+            (entry.promise().to_owned(), waits.unwrap_or_default())
+        })
+        .collect();
+
+    assert_eq!(
+        owed_and_pointing.len(),
+        4,
+        "the entries with no evidence are not the four the count says: \
+         {owed_and_pointing:?}"
+    );
+    for (promise, waits) in &owed_and_pointing {
+        assert!(
+            !waits.is_empty(),
+            "`{promise}` has no evidence and says nothing about where the work \
+             is, so whoever reads it next starts the reading again"
+        );
+    }
+}
+
+/// And the refusal beside it: a promise with nothing behind it and nowhere to
+/// send anybody.
+#[test]
+fn a_promise_with_no_evidence_and_nowhere_to_go_is_refused() {
+    let nowhere = a_sound_ledger().replace(
+        "; task 20 of `docs/autonomy/a-plan.md` is the increment",
+        ", and nobody has scheduled anything about it",
+    );
+    let findings = auditing(&nowhere).expect_err("a promise owed with nowhere to go was accepted");
+    assert!(
+        findings.iter().any(|finding| matches!(
+            finding,
+            Finding::APromiseOwedWithNowhereToGo { promise } if promise.contains("Copy, cut and paste")
+        )),
+        "a promise with no evidence and no decision or task behind it was \
+         reconciled: {findings:?}"
+    );
+
+    // And a promise shown *in part* is not held to the same rule: the code it
+    // already has is where the next reader goes. The sound ledger's file-verbs
+    // entry is owed a certified machine and names no task, and it reconciles.
+    let file_verbs = alo_reconciling::entries_in(&a_sound_ledger())
+        .into_iter()
+        .find(|entry| entry.promise().contains("File verbs"))
+        .expect("the fixture still has an entry about the file verbs");
+    assert!(!file_verbs.names().is_empty() && file_verbs.owed().is_some());
+    assert!(
+        auditing(&a_sound_ledger()).is_ok(),
+        "a promise shown by a test was required to name a task as well"
+    );
+}
+
+/// A promise waiting on a task nobody wrote, and on a plan nobody wrote.
+///
+/// The number is the pointer a reader believes without opening, because it looks
+/// like a fact — and a plan's tasks are numbered from one, so a number that
+/// matches nothing here matches something in every other plan.
+#[test]
+fn a_promise_waiting_on_a_task_nobody_wrote_is_refused() {
+    let unwritten = a_sound_ledger().replace("task 20 of", "task 44 of");
+    assert!(
+        auditing(&unwritten)
+            .expect_err("a promise sent to a task number the plan does not have was accepted")
+            .iter()
+            .any(|finding| matches!(
+                finding,
+                Finding::AWaitNobodyCanFollow {
+                    why: alo_reconciling::waiting::NoSuchWait::NoSuchTask,
+                    ..
+                }
+            )),
+        "a task number that is in no plan was accepted as where the work is"
+    );
+
+    let elsewhere = a_sound_ledger().replace(
+        "`docs/autonomy/a-plan.md`",
+        "`docs/autonomy/a-plan-nobody-wrote.md`",
+    );
+    assert!(
+        auditing(&elsewhere)
+            .expect_err("a promise sent to a plan that is not there was accepted")
+            .iter()
+            .any(|finding| matches!(
+                finding,
+                Finding::AWaitNobodyCanFollow {
+                    why: alo_reconciling::waiting::NoSuchWait::NoSuchPlan,
+                    ..
+                }
+            )),
+        "a plan nobody wrote was accepted as where the work is"
+    );
+}
+
 /// A definition with three promises in it, written the way `docs/features.md`
 /// writes them.
 const A_DEFINITION: &str = "\
@@ -239,7 +373,7 @@ half of law 3 only hardware gives.
 ### Copy, cut and paste
 
 **Still owed:** nothing in this repository implements a clipboard — no crate, no
-protocol and no test.
+protocol and no test; task 20 of `docs/autonomy/a-plan.md` is the increment.
 
 ### No telemetry
 
@@ -247,6 +381,18 @@ protocol and no test.
 "
     )
 }
+
+/// The plan those entries send a reader to, in the shape both of this
+/// repository's plans are written in.
+const A_PLAN: &str = "\
+# A plan
+
+## Tasks
+
+### 19. Something finished
+
+### 20. The clipboard, before any screen
+";
 
 /// The repository those entries are about.
 fn a_repository(named: &str) -> Option<String> {
@@ -256,6 +402,7 @@ fn a_repository(named: &str) -> Option<String> {
         "docs/autonomy/updates/network-egress-enforcement.md" => {
             Some("# What left the machine".to_owned())
         }
+        "docs/autonomy/a-plan.md" => Some(A_PLAN.to_owned()),
         _ => None,
     }
 }
@@ -306,7 +453,7 @@ fn a_promise_the_ledger_says_nothing_about_is_the_finding() {
 #[test]
 fn a_promise_with_no_evidence_and_nothing_owed_is_refused() {
     let empty = a_sound_ledger().replace(
-        "**Still owed:** nothing in this repository implements a clipboard — no crate, no\nprotocol and no test.",
+        "**Still owed:** nothing in this repository implements a clipboard — no crate, no\nprotocol and no test; task 20 of `docs/autonomy/a-plan.md` is the increment.",
         "It is being thought about.",
     );
     let findings = auditing(&empty).expect_err("a promise with neither was accepted");
@@ -416,7 +563,7 @@ fn a_promise_answered_twice_is_refused() {
 #[test]
 fn a_shrug_is_not_what_is_still_owed() {
     let shrug = a_sound_ledger().replace(
-        "nothing in this repository implements a clipboard — no crate, no\nprotocol and no test.",
+        "nothing in this repository implements a clipboard — no crate, no\nprotocol and no test; task 20 of `docs/autonomy/a-plan.md` is the increment.",
         "not yet.",
     );
     assert!(

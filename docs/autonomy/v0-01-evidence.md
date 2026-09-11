@@ -109,6 +109,38 @@ no crate, no Wayland data-device handling in `alo-shell`, no test. This is a
 promise with no line at all, and it is the seventh of the kind the roadmap's
 audit kept finding one at a time.
 
+**Read against the repository, 2026-09-11: this one needs no screen, no decision
+and no machine, and the increment is task 20 of
+`docs/autonomy/v0-01-delivery-plan.md`.** The audit that found it sorted it with
+*the GPU works on first boot* and *boots on one certified machine* into work
+waiting on hardware, in one pass while it was finding six things at once, and
+that sorting was never examined. It is wrong. A clipboard is a **protocol before
+it is a surface**: one client owns the selection and says which types it can
+give; another asks for one of those types and is handed a pipe; the compositor
+brokers and holds nothing of its own. Every one of those is a value, and every
+refusal in it — a type that was never offered, an offer left over from an owner
+who has since given the selection up, a paste with nothing behind it — is
+decidable with no pixels, exactly as `crates/alo-overlay`, `crates/alo-approving`,
+`crates/alo-indicator` and `crates/alo-recounting` decided their surfaces without
+drawing one.
+
+Nothing gates it either. **No agent verb touches the clipboard**: the ten in
+`docs/contracts/agent-verbs.md` and `docs/by-hand.md` are six about files and
+four about applications, so ADR 0001's grant model is not in this promise's way —
+copy and paste is a person moving their own text between their own windows. ADR
+0005's portal is the *sandboxed application's* route to the same thing and
+`docs/features.md` schedules it at v0.5, so what v0.01 promises is the native
+Wayland selection between clients of our own compositor. `smithay` 0.7 already
+carries the protocol the compositor half would wire in, and `crates/alo-shell`
+enables the `wayland_frontend` feature that holds it.
+
+What is **not** closed by the increment, and is named so nobody reads task 20 as
+the promise: the compositor wiring is `crates/alo-shell`'s and that crate is the
+desktop lane's; images and files as offered types will be measured against real
+clients rather than a fixture; and the three v0.5 lines around this one — the
+clipboard portal, screenshots to the clipboard — stay where the definition puts
+them.
+
 ### Keyboard shortcuts, and a person can change them
 
 **Shown by:** `crates/alo-shortcuts/src/changes.rs`,
@@ -252,6 +284,27 @@ stack, no test asks a machine what card it has, and no machine with a card has
 booted this image. It is a v0.01 promise with no line anywhere in the
 repository, and it is the second such finding of this audit.
 
+**Read against the repository, 2026-09-11: it waits on a machine, and on an
+image that carries a stack to accelerate.** `docs/hardware.md` already defines
+the promise in four clauses — the display comes up at native resolution with no
+configuration, the card is available to the model runtime with no driver
+installation and no CUDA or ROCm archaeology, a model runs in one command, and an
+upgrade cannot break that stack because the runtime is versioned with the drivers
+it needs. Three of the four are answers a machine gives and nothing else does;
+the fourth is about what an image contains, and `image/Containerfile` adds two
+binaries, two units, two directories and one description to a pinned base and
+**carries no model runtime and no weights at all**
+(`docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` found
+the same gap from the other side). So there is nothing on this image for a card
+to accelerate, and a check that the image names a driver stack would be a check
+with nothing to hold: which stack is pinned for the certified workstation is an
+engine decision under ADR 0011's *configured, never patched*, and the certified
+workstation itself is `docs/hardware.md`'s *24 GB VRAM or more* with no model
+named in the table. The machine is task 12 of
+`docs/autonomy/v0-01-delivery-plan.md`, which is scheduled and needs hardware
+nobody has plugged in. **Nothing here is reachable by this lane**, and saying so
+with the reading behind it is what this entry is for.
+
 ### A model runs in one command
 
 **Shown by:** `crates/alo-models/src/runtime.rs`,
@@ -280,6 +333,15 @@ default is a choice made by whoever set it, and that is not the missing piece.
 description to a pinned base and carries no model runtime and no weights, so
 there is nothing local for an agent to point at; and there is no setup flow, so
 none of the four configurations is offered to anybody at all.
+
+**Read again on 2026-09-11, and the reading did not move it.** The decision is
+still proposed rather than accepted, and its recommendation asks for one line of
+`docs/features.md` to be reworded, which is the owner's and nobody else's. A
+worker starting the code before the answer would be choosing between the four
+options rather than building one, and the expensive half — a model runtime and
+weights on the image — waits on the same decision's open measurement, whether the
+weights are carried on the certified image or fetched at setup. **Not reachable
+by this lane**, and the thing it waits on is a person rather than a task.
 
 ### Add your own provider in Settings
 
@@ -446,9 +508,20 @@ machine that has run a working day. No machine has.
 ### Boots on one certified machine, firmware to sign-in
 
 **Still owed:** all of it, and it is scheduled rather than missing — task 12 of
-the delivery plan, which needs a machine nobody has plugged in. *To sign-in* is
-owed twice over: there is nothing to sign in at until ADR 0024 is accepted and
-task 13 is built.
+`docs/autonomy/v0-01-delivery-plan.md`, which needs a machine nobody has plugged
+in. *To sign-in* is owed twice over: there is nothing to sign in at until
+`docs/decisions/0024-what-a-person-signs-in-at.md` is accepted and task 13 of
+`docs/autonomy/v0-01-delivery-plan.md` is built.
+
+**Read against the repository, 2026-09-11: not reachable, and it is the one of
+the four that is honestly waiting rather than unexamined.** Both halves were
+checked again. The firmware half is a machine: `crates/alo-image` holds what the
+image owes the daemons and `image/Containerfile`'s own first paragraph says an
+image that builds is not an image that boots. The sign-in half is a binary that
+does not exist — `crates/alo-shell` has no `src/main.rs` and no `[[bin]]`, which
+is the finding task 10 stopped on — and building one means choosing between the
+options ADR 0024 sets out. So this promise waits on a machine **and** on a
+decision, and no increment in between is available to this lane.
 
 ### Image built as an OCI container image
 
@@ -530,3 +603,34 @@ no weights, so the promise is unbuilt in `image/` rather than blocked on a
 settings key. Task 16 of `docs/autonomy/v0-01-delivery-plan.md` and
 `docs/autonomy/updates/a-default-nobody-chose.md` are the work. The entry closes
 when a machine arrives with a model on it, and not before.
+
+### The four were read one at a time, and one of them was mis-sorted, 2026-09-11
+
+**The count stays at four.** Nothing was closed here and nothing was ticked; what
+changed is that each of the four now carries the reading behind its verdict,
+under the promise it is about, so the next person inherits an argument rather
+than a sorting. Task 19 of `docs/autonomy/v0-01-delivery-plan.md` is the work and
+`docs/autonomy/updates/the-four-promises-with-no-evidence.md` is the report.
+
+**One of the four was in the wrong pile.** *Copy, cut and paste* was sorted into
+*needs a machine* by the audit that found it, in the same pass that found five
+other things, and the sorting was carried unexamined ever since. A clipboard is a
+protocol before it is a surface — an owner, the types it offers, and a transfer
+somebody asks for — and every refusal in it is decidable with no screen, no
+machine and no decision. It is now task 20 of
+`docs/autonomy/v0-01-delivery-plan.md`, with its own acceptance. The other three
+are genuinely waiting: *the GPU works on first boot* on a machine with a card and
+on an image that carries something for it to accelerate, *the agents point at the
+local model by default* on the owner accepting a proposed decision, and *boots on
+one certified machine* on both a machine and a decision.
+
+**And the ledger is now held to saying where the work is.** A promise with no
+evidence at all must name the decision it waits on or the task that is the
+increment — with the plan beside the number, because three plans in this
+repository number their tasks from one — and the pointer is followed to a file on
+the disk. `crates/alo-reconciling/src/waiting.rs` is the rule and
+`a_promise_with_no_evidence_and_nowhere_to_go_is_refused` is it refusing. Being
+owed is not the finding; being owed and pointing nowhere is, because that is the
+entry whose reasoning is derived again from scratch every time somebody opens
+this file — which is the seven-times-over reading this ledger exists to end,
+arriving from the other end.
