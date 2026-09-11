@@ -2,7 +2,7 @@
 
 **Status:** accepted — answers what
 [`docs/autonomy/QUEUE.md`](../autonomy/QUEUE.md) item 21k could not build
-without, and keeps [ADR 0006](0006-ollama-is-the-pinned-model-runtime.md)'s
+without, and keeps [ADR 0006](0006-the-pinned-model-runtime.md)'s
 one-file rule and [ADR 0016](0016-the-organisation-bounds-and-the-person-chooses.md)'s
 bound-versus-choice line intact
 **Date:** 2026-09-05

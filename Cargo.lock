@@ -197,6 +197,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-citing"
+version = "0.0.1"
+dependencies = [
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-collected"
 version = "0.0.1"
 dependencies = [

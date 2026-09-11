@@ -1,0 +1,18 @@
+[package]
+name = "alo-citing"
+version = "0.0.1"
+description = "Every ADR this repository points at, held to being a decision somebody actually wrote — and every decision held to saying what its status is."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The findings are sentences whoever wrote the citation acts on, and each one
+# names the citation and where it is. This crate says nothing to a person in
+# their own language — see `crate` documentation for why an author's English is
+# right here and `alo-strings` is not.
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

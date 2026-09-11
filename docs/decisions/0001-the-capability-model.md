@@ -77,7 +77,7 @@ privacy policy.
 
 ### 5. Reads answer; changes wait for one approval
 
-Unchanged from the workspace's ADR 0047 and ADR 0057, because a person should
+Unchanged from `alo-workplace`'s ADR 0047 and ADR 0057, because a person should
 not have to learn two rules.
 
 A **read** executes inside the turn, under the run's budget. Asking what is in a

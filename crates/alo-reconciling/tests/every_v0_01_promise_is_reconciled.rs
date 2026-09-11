@@ -178,17 +178,20 @@ fn a_promise_that_waits_on_a_decision_names_one_that_is_there() {
 /// be the whole of the answer rather than a detail beside one.
 #[test]
 fn a_ledger_naming_a_decision_nobody_wrote_is_a_finding() {
-    let dead = "**Still owed:** the owner decides, in \
-                `docs/decisions/0099-a-decision-nobody-wrote.md`.";
+    // Assembled rather than written out, because `alo-citing` reads this file
+    // too: a pointer at a decision nobody wrote, spelled out here, would be a
+    // dead pointer this repository really carries and a reader could follow.
+    let nowhere = format!("docs/decisions/{}-a-decision-nobody-wrote.md", "0099");
+    let dead = format!("**Still owed:** the owner decides, in `{nowhere}`.");
     assert_eq!(
-        decisions_named_in(dead),
-        ["docs/decisions/0099-a-decision-nobody-wrote.md".to_owned()],
+        decisions_named_in(&dead),
+        std::slice::from_ref(&nowhere),
         "a decision named in an entry was not read as one, so the check below \
          would pass by finding nothing to check"
     );
     assert_eq!(
-        decisions_missing_from(&decisions_named_in(dead)),
-        ["docs/decisions/0099-a-decision-nobody-wrote.md".to_owned()],
+        decisions_missing_from(&decisions_named_in(&dead)),
+        [nowhere],
         "a decision that is not in this repository was accepted as somewhere a \
          reader could go"
     );
@@ -350,7 +353,7 @@ fn evidence_that_cannot_be_run_is_refused() {
 fn something_that_is_not_evidence_is_refused() {
     let settled = a_sound_ledger().replace(
         "`crates/alo-files/tests/doing.rs`",
-        "`docs/decisions/0001-the-agent-boundary.md`",
+        "`docs/decisions/0001-the-capability-model.md`",
     );
     assert!(
         auditing(&settled)

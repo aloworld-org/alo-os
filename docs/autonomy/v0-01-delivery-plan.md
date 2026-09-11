@@ -669,3 +669,80 @@ like a fact.
   it. It says nothing to a person and declares no strings; it is a repository
   check like `alo-reconciling`, `alo-by-hand` and `alo-collected`, and
   `alo-saying` does not collect it. Nothing in `crates/alo-shell`.
+
+**Done, 2026-09-11.** `crates/alo-citing`: the citations are read out of this
+repository's own Rust and Markdown rather than a list kept beside the decisions,
+so **nothing in the crate holds a decision's number or a file's name**. The
+measurement on the disk the test runs on: twenty-five decisions, **1,926
+references by number** and **195 by filename**, all landing. Both forms are read,
+because a filename is the pointer a reader is least likely to check and the only
+one that rots on its own.
+
+**Two real pointers did not land, and both were written by people right about
+the argument and wrong about the address.** ADR 0019's own `**Status:**` line
+linked to a filename carrying ADR 0006's title from before it was renamed — a
+true sentence with a dead address, which is the whole argument for this check in
+one line. And ADR 0001 line 80 cited two of `alo-workplace`'s decisions as bare
+numbers, which nothing here answers for and which a reader would look for here.
+Both repaired without touching either decision's argument.
+
+**What the shape decides:** a citation is read as *this* repository's unless the
+line names the repository it points into, **before** the number — so a
+neighbour's decision is named rather than excused, and the list of neighbours is
+held the way `alo-collected` holds its exceptions, with one nothing cites refused
+as a place a typo could hide. The unit is the line, which makes the rule
+checkable and makes the same demand on writing that a reader makes: keep the name
+with the number, because nobody skimming can scroll up for it. Writing
+`docs/decisions/README.md` broke that rule in its first draft and was refused by
+the check, ten minutes after the check existed. A **section** is deliberately not
+resolved — ADR 0019 numbers its headings, ADR 0020 is cited by section and has
+none, and `alo-models` cites `ADR 0004 §policy` — because resolving it would mean
+imposing a convention this task had no standing to decide or producing findings
+nobody could act on. And a pointer **in an example is still a pointer**: a
+citation of a decision nobody wrote is refused wherever it is written, including
+in a test about dead pointers, so those are assembled from a constant rather than
+spelled out; this crate's own tests and three fixtures in `alo-reconciling` do
+exactly that, each saying why beside it. Every refusal is shown against a
+fixture, and one against **this repository**, with a real decision taken off the
+real list. `docs/decisions/README.md` is where whoever writes the next decision or
+the next citation meets the convention. Six pre-existing Windows-only
+`alo-recounting` test failures are named in the report and deliberately not cut
+to green. Report:
+`docs/autonomy/updates/every-decision-this-repository-points-at.md`. The next
+task (19) is written below. No strings are declared and `alo-saying` does not
+collect this crate.
+
+### 19. The four promises with no evidence, and which of them a lane can still reach
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it reads code and reports, and touches no compositor file.
+
+Written by task 18, and it is the first task in this lane's recent run that is
+not another repository check. The family is finished: `alo-reconciling` holds the
+promises to evidence, `alo-by-hand` holds the verbs to a plain way,
+`alo-collected` holds the words to one vocabulary, and `alo-citing` holds the
+citations to decisions that exist. What none of them answers is the finding task
+11 left standing and tasks 14 and 15 halved: **`docs/autonomy/v0-01-evidence.md`
+records four v0.01 promises with no evidence at all**, and the ledger says each
+of them needs a screen, a decision or a machine.
+
+That sentence has been carried unexamined since it was written. Three of the four
+— *copy, cut and paste*, *the GPU works on first boot*, *boots on one certified
+machine* — were sorted into *needs a machine* by the audit that found them, in
+one pass, while it was finding six things at once. One of them may not need one:
+a promise about text moving between applications is a protocol and a clipboard
+before it is a screen, and nothing in this repository has looked.
+
+- **Acceptance:** each of the four promises is read against what this repository
+  actually has — the crates, the contracts and the ADRs, named — and is written
+  down as either *reachable without a screen, a decision or a machine, and here
+  is the increment*, or *not, and here is precisely what it waits on*. The
+  finding goes in `docs/autonomy/v0-01-evidence.md` under the promise it is
+  about, so the next reader inherits the reasoning rather than the verdict; the
+  reconciling gate passes on the change; and **where one is reachable, the next
+  task in this plan is the increment**, written with its own acceptance.
+- **Constraint:** it may not narrow `docs/features.md`, it may not contradict an
+  accepted ADR, and it may not tick a promise it has not shown. If all four are
+  genuinely blocked, saying so with the evidence is the finished work — and the
+  plan then says what this lane does next rather than leaving the loop to read a
+  blocked list as *nothing left to do*.

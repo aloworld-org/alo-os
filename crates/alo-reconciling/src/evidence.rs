@@ -125,7 +125,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            Evidence::named("docs/decisions/0001-the-agent-boundary.md"),
+            Evidence::named("docs/decisions/0001-the-capability-model.md"),
             None,
             "a decision is where an argument was settled, not evidence that \
              anything was built"
