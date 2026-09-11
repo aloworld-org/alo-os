@@ -26,7 +26,10 @@
 //!   does, and what they write from it is read in every language alo OS is
 //!   translated into. A name here is a name in twenty-four sentences that no
 //!   test in this repository can see, because those sentences are files rather
-//!   than code. So the leak is checked where it can still be caught.
+//!   than code. So the leak is checked where it can still be caught — and the
+//!   files themselves are checked at the one moment this repository holds one,
+//!   when a machine loads it: [`crate::translated`] asks this module's question
+//!   of every translated line, against the same list.
 //! - **The key.** `alo_strings::CameFrom::NoPhrase` is "the one case where a
 //!   person is shown a key": the code asked for something nothing declares and
 //!   there is no honest sentence to show. A key with a rented name in it would
@@ -290,7 +293,10 @@ fn look(overheard: &mut Vec<Overheard>, key: &Key, found: Where) {
 /// works around rather than reads. An English plural is not a longer word, so a
 /// trailing `s` is allowed through: *the Flatpaks could not be installed* is the
 /// same sentence with the same problem in it.
-fn names(text: &str, name: &str) -> bool {
+///
+/// Crate-visible because [`crate::translated`] asks the same question of a
+/// translator's line — one matcher, so the two checks cannot drift apart.
+pub(crate) fn names(text: &str, name: &str) -> bool {
     let text = text.to_ascii_lowercase();
     let name = name.to_ascii_lowercase();
     let bytes = text.as_bytes();

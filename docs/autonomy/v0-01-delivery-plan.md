@@ -910,3 +910,60 @@ past a rule written to stop exactly that sentence.
   `rented.rs`'s existing list to make anything pass. It says nothing new to a
   person unless the decision above needs it to, and where it does, the string is
   declared and collected like any other. Nothing in `crates/alo-shell`.
+
+**Done, 2026-09-11.** `crates/alo-saying/src/translated.rs`: the same question
+the English is asked, asked of every translated line at the one moment this
+repository holds the file — when a machine loads it. Same list, same matcher
+(`rented::names`, made crate-visible so the two checks cannot drift apart), and
+the same argument: a finding is *what a person reading it would have to learn*,
+never a banned word, and it names the file, the key and the language so whoever
+fixes it can find the line. **What happens to the rest of the file is decided
+and written down**: the line is left out and the language is kept, deliberately
+the same rule a dropped gap is held to and no harsher, because a translation is
+somebody's donated work and refusing a language over a sentence would keep one
+promise by breaking another — `docs/contracts/translations.md` now says so
+where it used to say *nothing here can check it*. The check runs before the
+vocabulary check, so a line wrong in both ways is refused for the reason that
+matters more; only the translated text is read, because the keys are the
+vocabulary's and are held to the rule where they are declared. A rented name
+arriving **only** in the translation — the English beside it proven clean in
+the same test — is refused, which is the case the whole task is about; a real
+translation of real keys from the machine's own vocabulary, on a real disk,
+loses nothing. No new string: the refusal travels in `Damage`, which gained the
+third kind, and keeps its English for `failing.rs`'s standing reason. The
+still-owed half in `docs/autonomy/v0-01-evidence.md` is closed and what remains
+owed is named. Report:
+`docs/autonomy/updates/a-translators-line-held-to-the-same-rule.md`. The next
+task (22) is written below.
+
+### 22. The grants a person can see, before there is anywhere to show them
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 21, from the evidence ledger's entry for *Grants: pick a
+folder, see what is granted, revoke it, and it expires*: a grant can be made
+(task 6), kept across a sign-out, reached by the daemon and expired — and
+***see what is granted* has no surface**, so there is nowhere a person can
+look at the list or revoke one by hand. ADR 0001 makes visibility part of the
+grant model itself: a grant a person cannot find is a grant they cannot revoke.
+
+The seam is the value, exactly as the overlay at rest (task 3), the sentence
+(task 7) and the clipboard (task 20) decided theirs: what a surface would show
+is derived from the grants the machine actually keeps, and revoking through it
+is the same revocation the daemon already enforces — not a second mechanism
+that could disagree with the first.
+
+- **Acceptance:** the list a surface would show is derived from the machine's
+  own kept grants and from nothing else — no constructor from text, so nothing
+  can show a grant the machine does not hold; revoking through it is the
+  revocation `alo-capability` already enforces, shown taking effect on the
+  daemon's own `permits` immediately, with the verb refused afterwards; an
+  expired grant is never shown as live; *nothing granted* is a sentence rather
+  than an empty list; and every string is in the vocabulary `alo-saying`
+  collects, with the refusals tested beside the answers.
+- **Constraint:** nothing in `crates/alo-shell`, which is where the drawing
+  goes and is the desktop lane's. No pixels are claimed and none are tested,
+  and no verb is added — a person looking at their own grants is not an agent
+  doing something.

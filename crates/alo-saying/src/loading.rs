@@ -2,8 +2,8 @@
 //!
 //! # Nothing about a translation can stop this machine speaking
 //!
-//! [`Loaded::at`] has no error. Not because nothing can go wrong — six things
-//! can, and [`crate::Damage`] holds every one of them — but because of what the
+//! [`Loaded::at`] has no error. Not because nothing can go wrong — plenty
+//! can, and [`crate::Damage`] holds all of it — but because of what the
 //! alternative would be: a machine that refused to start over a translation
 //! could not tell anybody why, since the sentence explaining it is in the file
 //! that did not load. So a translations directory that is missing, unreadable,
@@ -33,6 +33,10 @@
 //! declared by the daemon, and a shell that loads the same German file leaves
 //! those three lines out rather than refusing German.
 //!
+//! A line that names something alo OS rents is left out under the same rule
+//! and before the vocabulary is asked — [`crate::translated`] is that check,
+//! and the whole of why it is a line's cost rather than a file's.
+//!
 //! # The order files are read in is the order they are named
 //!
 //! A directory comes back in whatever order the filesystem kept it, and two
@@ -57,6 +61,7 @@ use crate::arriving::as_written;
 use crate::damage::Damage;
 use crate::failing::{LeftOut, NotSpoken};
 use crate::place::is_a_translation;
+use crate::translated::{Taught, what_a_translation_would_teach};
 
 /// What this machine can say, and everything that was meant to help it and did
 /// not.
@@ -144,6 +149,24 @@ impl Loaded {
             return;
         }
 
+        // A translator's line is held to the rule the English is held to
+        // (`docs/features.md`: no sentence names anything alo OS rents), and it
+        // is asked first because a line that fails both this and the vocabulary
+        // check is refused for the reason that matters more. The line is left
+        // out and the rest of the file is kept — `crate::translated` is why the
+        // rule is the same one a dropped gap is held to, and no harsher.
+        let taught = what_a_translation_would_teach(&file, &translation);
+        let translation = if taught.is_empty() {
+            translation
+        } else {
+            let overheard: Vec<&Key> = taught.iter().map(Taught::key).collect();
+            let kept = without(&translation, &overheard);
+            for one in taught {
+                self.damage.taught(one);
+            }
+            kept
+        };
+
         let (speaking, left_out) =
             everything_that_can_be_shown(self.strings.vocabulary(), translation);
         let Some(speaking) = speaking else {
@@ -230,7 +253,12 @@ fn everything_that_can_be_shown(
         Ok(speaking) => return (Some(speaking), None),
         Err(wrongs) => wrongs,
     };
-    let left_in = without(&translation, &wrongs);
+    let taken_out: Vec<&Key> = wrongs
+        .wrongs()
+        .iter()
+        .map(alo_strings::Wrong::key)
+        .collect();
+    let left_in = without(&translation, &taken_out);
     match vocabulary.check(left_in) {
         Ok(speaking) => (Some(speaking), Some(wrongs)),
         // Unreachable: what is checked here is what the check above did not
@@ -239,13 +267,9 @@ fn everything_that_can_be_shown(
     }
 }
 
-/// The same translation without the strings a check refused.
-fn without(translation: &Translation, wrongs: &Wrongs) -> Translation {
-    let taken_out: Vec<&Key> = wrongs
-        .wrongs()
-        .iter()
-        .map(alo_strings::Wrong::key)
-        .collect();
+/// The same translation without these strings — the ones a check refused, or
+/// the ones that named something rented.
+fn without(translation: &Translation, taken_out: &[&Key]) -> Translation {
     let mut left_in = Translation::into_language(translation.language().clone());
     for (key, text) in translation.texts() {
         if !taken_out.contains(&key) {
@@ -262,6 +286,7 @@ fn without(translation: &Translation, wrongs: &Wrongs) -> Translation {
 )]
 mod tests {
     use super::*;
+    use crate::rented::what_a_person_would_have_to_learn;
     use crate::testing::{a_folder_of_our_own, a_small_machine, german, in_english, wrote};
     use alo_strings::Filling;
 
@@ -384,6 +409,118 @@ mod tests {
         );
         assert!(!too_big.is_translated());
         assert!(too_big.text().contains("/home/ada/notes"));
+    }
+
+    /// **A translated line naming a rented component is left out, and the rest
+    /// of the language shows.** The refusal costs the line and never the file,
+    /// because a translation is somebody's donated work and throwing all of it
+    /// away over one sentence would be a different promise being broken — the
+    /// same rule a dropped gap is held to, deliberately no harsher.
+    #[test]
+    fn a_line_naming_a_rented_component_is_left_out_and_the_rest_shows() {
+        let folder = a_folder_of_our_own("a-rented-name");
+        wrote(
+            &folder,
+            "de.toml",
+            "format = 1\nlanguage = \"de\"\n\n[says]\n\"files.gone\" = \"Es ist nicht mehr da\"\n\"files.too-big\" = \"{path} ist zu groß, sagt Flatpak\"\n",
+        );
+
+        let loaded = Loaded::at(a_small_machine(), &folder);
+        assert_eq!(loaded.spoken().count(), 1);
+        assert_eq!(loaded.damage().taught_of().len(), 1);
+        assert!(loaded.damage().left_out_of().is_empty());
+        assert!(loaded.damage().not_spoken_of().is_empty());
+
+        // The refusal names the key and the language, so whoever fixes it can
+        // find the line — and it makes the same argument the English is held
+        // to, from the same list.
+        let line = loaded.damage().lines().first().unwrap().clone();
+        assert!(line.contains("files.too-big"), "{line}");
+        assert!(line.contains("de"), "{line}");
+        assert!(
+            line.contains("would have to learn what Flatpak is"),
+            "{line}"
+        );
+
+        let mut strings = loaded.into_strings();
+        strings.prefers(&[Language::written("de").unwrap()]);
+        assert_eq!(
+            strings.say(&gone(), &Filling::nothing()).text(),
+            "Es ist nicht mehr da"
+        );
+        // The line that named it is English, marked as English.
+        let too_big = strings.say(
+            &Key::named("files.too-big").unwrap(),
+            &Filling::of("path", "/home/ada/notes"),
+        );
+        assert!(!too_big.is_translated());
+        assert!(!too_big.text().contains("Flatpak"), "{}", too_big.text());
+    }
+
+    /// **A rented name that arrives only in the translation is still refused.**
+    /// The English beside this key names nothing rented — the CI check on the
+    /// declarations proves that — so the name arrived in the translator's line
+    /// alone, which is exactly the sentence the rule was written to stop and
+    /// exactly the road nothing used to watch.
+    #[test]
+    fn a_rented_name_that_arrives_only_in_the_translation_is_refused() {
+        // The English this file translates is clean: the whole fixture passes
+        // the same check the machine's real vocabulary passes in CI.
+        assert!(what_a_person_would_have_to_learn(&a_small_machine()).is_empty());
+
+        let folder = a_folder_of_our_own("only-in-the-translation");
+        wrote(
+            &folder,
+            "de.toml",
+            "format = 1\nlanguage = \"de\"\n\n[says]\n\"files.gone\" = \"Ollama sagt, es ist weg\"\n",
+        );
+
+        let loaded = Loaded::at(a_small_machine(), &folder);
+        assert_eq!(loaded.damage().taught_of().len(), 1);
+        let taught = loaded.damage().taught_of().first().unwrap();
+        assert_eq!(taught.rented().name(), "Ollama");
+        assert_eq!(taught.key().as_str(), "files.gone");
+        assert_eq!(taught.language().tag(), "de");
+        assert_eq!(taught.file(), "de.toml");
+
+        // The language arrived with nothing else in it, so it stands empty and
+        // the machine says the English — never the line that named the thing.
+        let mut strings = loaded.into_strings();
+        strings.prefers(&[Language::written("de").unwrap()]);
+        let said = strings.say(&gone(), &Filling::nothing());
+        assert!(!said.is_translated());
+        assert_eq!(said.text(), "It is not there any more");
+    }
+
+    /// **A line that is fine is unaffected, measured against a real
+    /// translation** — real keys from the machine's own vocabulary, written to
+    /// a real disk and loaded the way an image's translations are, not a
+    /// three-string fixture. Nothing is left out and every line shows.
+    #[test]
+    fn a_real_translation_with_nothing_rented_loses_nothing() {
+        let folder = a_folder_of_our_own("a-real-translation");
+        wrote(
+            &folder,
+            "de.toml",
+            "format = 1\nlanguage = \"de\"\n\n[says]\n\"clipboard.nothing-copied\" = \"Es gibt nichts einzufügen: bisher wurde nichts kopiert\"\n\"clipboard.not-that-form\" = \"Das kann nicht als {as_what} eingefügt werden: die Anwendung, aus der es kopiert wurde, bietet diese Form nicht an\"\n\"clipboard.form.text\" = \"Text\"\n",
+        );
+
+        let vocabulary = crate::everything_this_machine_can_say().unwrap();
+        let loaded = Loaded::at(vocabulary, &folder);
+        assert!(loaded.damage().is_none(), "{:?}", loaded.damage().lines());
+        assert_eq!(loaded.spoken().count(), 1);
+
+        let mut strings = loaded.into_strings();
+        strings.prefers(&[Language::written("de").unwrap()]);
+        let said = strings.say(
+            &Key::named("clipboard.nothing-copied").unwrap(),
+            &Filling::nothing(),
+        );
+        assert!(said.is_translated());
+        assert_eq!(
+            said.text(),
+            "Es gibt nichts einzufügen: bisher wurde nichts kopiert"
+        );
     }
 
     /// **Two files for one language: the first by name is read and the second

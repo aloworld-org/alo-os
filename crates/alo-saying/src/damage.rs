@@ -23,8 +23,19 @@
 //! that is not the daemon. It is reported anyway, because the same shape covers
 //! a string a release renamed, and telling those two apart is a person's job
 //! rather than this crate's.
+//!
+//! # And one that is always something to fix
+//!
+//! A line left out because it named something alo OS rents ([`crate::Taught`])
+//! is never ordinary: the file was translated against an English that does not
+//! name the thing, so the name arrived in the translation alone, and the
+//! promise it breaks is `docs/features.md`'s rather than a formatting rule.
+//! It travels separately from [`crate::LeftOut`] because the reader's job is
+//! different — a dropped gap is fixed by putting the gap back, this is fixed by
+//! finding a sentence that does not teach anybody a component's name.
 
 use crate::failing::{LeftOut, NotSpoken};
+use crate::translated::Taught;
 
 /// What did not become part of what this machine can say.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -34,6 +45,9 @@ pub struct Damage {
     /// Lines left out of files that gave something, in the order they were
     /// read.
     left_out: Vec<LeftOut>,
+    /// Lines left out because they named something alo OS rents, in the order
+    /// they were read.
+    taught: Vec<Taught>,
 }
 
 impl Damage {
@@ -52,10 +66,15 @@ impl Damage {
         self.left_out.push(what);
     }
 
+    /// Note a line left out because it named something alo OS rents.
+    pub(crate) fn taught(&mut self, what: Taught) {
+        self.taught.push(what);
+    }
+
     /// Whether everything that was meant to load loaded.
     #[must_use]
     pub fn is_none(&self) -> bool {
-        self.not_spoken.is_empty() && self.left_out.is_empty()
+        self.not_spoken.is_empty() && self.left_out.is_empty() && self.taught.is_empty()
     }
 
     /// The translations that gave nothing.
@@ -68,6 +87,12 @@ impl Damage {
     #[must_use]
     pub fn left_out_of(&self) -> &[LeftOut] {
         &self.left_out
+    }
+
+    /// The lines left out because they named something alo OS rents.
+    #[must_use]
+    pub fn taught_of(&self) -> &[Taught] {
+        &self.taught
     }
 
     /// Everything wrong, one line each, in the order it was found.
@@ -90,13 +115,17 @@ impl Damage {
                 .collect::<Vec<&str>>()
                 .join(" ")
         }));
+        lines.extend(self.taught.iter().map(ToString::to_string));
         lines
     }
 
     /// How many things went wrong.
     #[must_use]
     pub fn how_many(&self) -> usize {
-        self.not_spoken.len().saturating_add(self.left_out.len())
+        self.not_spoken
+            .len()
+            .saturating_add(self.left_out.len())
+            .saturating_add(self.taught.len())
     }
 }
 
@@ -155,6 +184,33 @@ mod tests {
         }
         assert!(lines.iter().any(|line| line.contains("de.toml")));
         assert!(lines.iter().any(|line| line.contains("fr.toml")));
+    }
+
+    /// **The third kind is counted and reported beside the other two.** A line
+    /// that named a rented component is damage like the rest — one line in the
+    /// log, counted, and never mistaken for a machine where everything loaded.
+    #[test]
+    fn a_line_that_taught_a_rented_name_is_reported_beside_the_other_two() {
+        let mut damage = Damage::none();
+        let taught = crate::translated::what_a_translation_would_teach(
+            "de.toml",
+            &Translation::into_language(Language::written("de").unwrap()).says(
+                Key::named("applications.not-installed").unwrap(),
+                "Das Flatpak konnte nicht installiert werden",
+            ),
+        );
+        for one in taught {
+            damage.taught(one);
+        }
+
+        assert!(!damage.is_none());
+        assert_eq!(damage.how_many(), 1);
+        assert_eq!(damage.taught_of().len(), 1);
+        let lines = damage.lines();
+        assert_eq!(lines.len(), 1);
+        let line = lines.first().unwrap();
+        assert!(line.contains("Flatpak"), "{line}");
+        assert!(!line.contains('\n'), "{line}");
     }
 
     /// Something a vocabulary really refused, so the test is about the sentence

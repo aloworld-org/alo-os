@@ -18,6 +18,7 @@
 //! | [`NotSpoken`], [`LeftOut`] | A file that gave nothing, and a line left out of one that gave something |
 //! | [`THE_TRANSLATIONS`] | Where a machine keeps them |
 //! | [`what_a_person_would_have_to_learn`] | Every rented name in what a vocabulary says |
+//! | [`what_a_translation_would_teach`], [`Taught`] | Every rented name in a translator's file, left out when it loads |
 //!
 //! ```
 //! use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
@@ -119,6 +120,15 @@
 //! It answers with nothing today, which is the point: it costs nothing now and
 //! catches the first one later. [`rented`] is what is on the list, what is
 //! deliberately not, and why a note and a key are read as well as a sentence.
+//!
+//! And a **translator's line is held to the same rule**, at the one moment
+//! this repository holds the file: when a machine loads it.
+//! [`what_a_translation_would_teach`] asks the same question of every
+//! translated line with the same list and the same matcher, [`loading`] leaves
+//! a line that names one out — the rest of the file is kept, because a
+//! translation is somebody's donated work and one line may never cost a
+//! language — and the refusal travels in [`Damage`], naming the file, the key
+//! and the language. [`translated`] is that argument in full.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
@@ -129,6 +139,7 @@ pub mod failing;
 pub mod loading;
 pub mod place;
 pub mod rented;
+pub mod translated;
 
 #[cfg(test)]
 mod testing;
@@ -142,3 +153,4 @@ pub use failing::{LeftOut, NotSpoken};
 pub use loading::Loaded;
 pub use place::{THE_TRANSLATIONS, is_a_translation, the_translations};
 pub use rented::{EVERYTHING_WE_RENT, Overheard, Rented, Where, what_a_person_would_have_to_learn};
+pub use translated::{Taught, what_a_translation_would_teach};

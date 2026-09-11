@@ -118,9 +118,14 @@ those is something the person who bought the machine chose, and *the Flatpak
 could not be installed* asks them to go and learn what a Flatpak is before they
 can understand why their application is not there. The English is checked
 against that list in CI, and the notes with it, because a note is what a
-translator writes from. **A translation is held to the same rule and nothing
-here can check it**, so it is written down: if the English does not name one,
-yours should not either.
+translator writes from. **A translation is held to the same rule, and it is
+checked when the file loads** — the one moment this repository holds it,
+against the same list, with the same matching. A line that names one is left
+out and the rest of the file is shown, exactly as a dropped gap costs a line
+and never a language; what was left out is written into the service log naming
+the file, the key and the language, so whoever fixes it can find the line. If
+the English does not name one, yours should not either — and if yours does
+where the English did not, that line is not shown in any language.
 
 What that rule is *not* about: a format or a protocol that describes the
 person's own thing. `.zip` is the ending their archive has to have, `https` is
@@ -137,11 +142,13 @@ over a translation could not say why: the sentence explaining it would be in the
 file that did not load.
 
 **A line is left out; a language is never thrown away.** A key nothing says any
-more, a dropped gap, an invented gap, a form the language does not use — each of
-those costs that line and nothing else. This is deliberately more forgiving than
-the check a contribution is held to, and for a reason: a string renamed in a
-release would otherwise turn a person's language off, on every machine at once,
-in the release that renamed it.
+more, a dropped gap, an invented gap, a form the language does not use, a line
+naming something alo OS rents — each of those costs that line and nothing else.
+This is deliberately more forgiving than the check a contribution is held to,
+and for a reason: a string renamed in a release would otherwise turn a person's
+language off, on every machine at once, in the release that renamed it. And a
+translation is somebody's donated work — throwing all of it away over one line
+would keep one promise by breaking another.
 
 **A key a particular process does not say is an ordinary line to leave out.**
 One machine has one vocabulary, and a process may say less than the machine

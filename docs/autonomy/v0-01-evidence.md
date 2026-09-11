@@ -355,7 +355,8 @@ setup flow, so none of the four configurations (ADR 0009's *not at all* among
 them, first-listed local among them, nothing pre-selected) is offered to anybody.
 The open question the ADR left — whether the weights ride on the certified image
 or are fetched at setup — is a decision inside the work, not a blocker in front
-of it.
+of it. It is not a free one either way: a machine that fetches at setup has
+not arrived ready when it is offline at setup.
 
 **Reachable now.** What stood in front of this entry was a person's answer, and
 the answer is on the record; what stands in front of it now is work — the pinned
@@ -390,16 +391,24 @@ at once, nothing further recorded — rather than the moment of choosing.
 ### A person never learns the name of anything we rented
 
 **Shown by:** `crates/alo-saying/src/rented.rs`,
-`crates/alo-saying/tests/what_this_machine_can_say.rs`
+`crates/alo-saying/src/translated.rs`,
+`crates/alo-saying/tests/what_this_machine_can_say.rs`,
+`docs/autonomy/updates/a-translators-line-held-to-the-same-rule.md`
 
-**Still owed:** only what a crate declares is held to this. A surface that
-composed a sentence of its own, or a translator's line in another language,
-passes through nothing — the check reads the English declarations and the
-vocabulary they build.
+**Still owed:** a surface that composed a sentence of its own would pass
+through nothing — the checks read the English declarations, the vocabulary
+they build, and, since 2026-09-11, every translated line at the moment a
+machine loads the file: a line naming a rented component is left out with the
+same list and the same argument, the rest of the file is kept, and the refusal
+names the file, the key and the language. What keeps a surface from composing
+is construction rather than a check — every surface crate's sentence types are
+sealed against being made from text — and nothing verifies that mechanically
+across the workspace.
 
 ### And it is enforced rather than remembered
 
 **Shown by:** `crates/alo-saying/src/rented.rs`,
+`crates/alo-saying/src/translated.rs`,
 `crates/alo-saying/tests/what_this_machine_can_say.rs`
 
 ### Anything an agent verb can do, a person can do by hand
