@@ -322,6 +322,109 @@ pub enum Wrong {
         /// The digest the recipe names, or `-` where it names none.
         digest: String,
     },
+    /// The recipe does not say what disk this image becomes.
+    #[error(
+        "this image's recipe does not say `{label}` — an image is not a disk, and the three \
+         `alo.disk.*` labels are where it says which tool writes one, which firmware that disk is \
+         installed for, and what the file is called; without them `docs/booting.md` is a document \
+         held to nothing"
+    )]
+    TheImageDoesNotSayWhatDiskItBecomes {
+        /// The label that is missing.
+        label: String,
+    },
+    /// The disk would be written by something other than the pinned base's own
+    /// tool.
+    #[error(
+        "this image's disk would be written by `{tool}` out of a base pinned `{pinned}` — the disk \
+         is written by `bootc install to-disk` run out of the base image, so that base's digest is \
+         the version of the tool (ADR 0011 rents the base rather than trusting what a tag meant \
+         this morning); anything else is a partitioner of ours, laying out a disk nobody upstream \
+         ever tested"
+    )]
+    TheDiskIsNotWrittenByThePinnedBase {
+        /// The tool the recipe names, or `-` where it names none.
+        tool: String,
+        /// Whether the base the tool comes out of is pinned by content.
+        pinned: bool,
+    },
+    /// A disk somebody lays out by hand.
+    #[error(
+        "{at} names `{by}` — a disk this repository ships is written by the upstream tool the base \
+         carries, never assembled here; `CLAUDE.md` says engines are configured and never written \
+         in, and a partition table of our own is that rule broken in the one file whose mistakes \
+         only appear on somebody's machine"
+    )]
+    TheDiskWouldBeLaidOutByHand {
+        /// Where the partitioner is named.
+        at: String,
+        /// What is named.
+        by: String,
+    },
+    /// The document tells a person something the recipe does not say.
+    #[error(
+        "`docs/booting.md` says `{fact}: {said}` and the image's recipe says `{recipe}` — the disk \
+         is declared in two places, and the one a person reads is the one nothing would have \
+         caught; a document that drifted from the recipe is somebody following it to a machine \
+         that does not boot"
+    )]
+    TheDocumentDoesNotSayWhatTheRecipeDoes {
+        /// Which fact.
+        fact: String,
+        /// What the document says, or `-` where it says nothing.
+        said: String,
+        /// What the recipe says, or `-` where it says nothing.
+        recipe: String,
+    },
+    /// The firmware the disk is installed for is not the one the document tells
+    /// a person to select.
+    #[error(
+        "this image's disk is installed for `{firmware}` and `docs/booting.md` tells a person to \
+         select a generation {generation} virtual machine, which is the {other} one — a person \
+         follows the document, and the two are one line apart in two files that nothing else reads \
+         together"
+    )]
+    TheFirmwareIsNotWhatAPersonIsToldToSelect {
+        /// The firmware the recipe names, or `-` where it names none.
+        firmware: String,
+        /// The generation the document names, or `-` where it names none.
+        generation: String,
+        /// The firmware that generation really is.
+        other: String,
+    },
+    /// The document does not carry the command it exists to carry.
+    #[error(
+        "`docs/booting.md` never runs `{tool}` — naming a tool is not telling anybody how to use \
+         it, and one documented command turning the image into a disk is the whole of what that \
+         document is for"
+    )]
+    TheDocumentDoesNotGiveTheCommand {
+        /// The tool the recipe names.
+        tool: String,
+    },
+    /// The document is missing a section it is answerable for.
+    #[error(
+        "`docs/booting.md` has no section `{heading}` — a person doing this once needs what it \
+         produces, what they must install, what to attach it to, and what it cannot show, and a \
+         document missing one of those is a document that answers a question it was not asked"
+    )]
+    TheDocumentIsMissingASection {
+        /// The heading that is missing.
+        heading: String,
+    },
+    /// The document does not say what a virtual machine cannot show.
+    #[error(
+        "`docs/booting.md` does not say, under `{heading}`, what a virtual machine cannot show \
+         about `{about}` — a virtual GPU is not the GPU working on first boot and tame virtual \
+         firmware is not a certified machine's, so this section is what stops somebody quoting a \
+         virtual machine as the hardware acceptance in phase 8"
+    )]
+    TheDocumentDoesNotSayWhatADiskCannotShow {
+        /// The heading it should be under.
+        heading: String,
+        /// What it does not name.
+        about: String,
+    },
 }
 
 #[cfg(test)]

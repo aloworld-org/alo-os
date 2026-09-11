@@ -1139,6 +1139,15 @@ after.
   *running* of it on the owner's Hyper-V is the owner's, with the document this
   task writes in hand.
 
+**Done, 2026-09-11.** `docs/booting.md`, the three `alo.disk.*` labels in
+`image/Containerfile`, and `crates/alo-image`'s `disk.rs` and `booting.rs`. The
+tool is the pinned base's own `bootc install to-disk`, so the version of the
+partitioner is `THE_BASE`'s digest and there is no second thing to pin;
+`crates/alo-image` holds the document and the recipe to each other, firmware
+against the generation a person is told to select included. Nobody has run it
+yet: the disk is a document and a check, not a machine anybody has watched.
+`docs/autonomy/updates/the-image-becomes-a-bootable-disk.md`.
+
 ### 26. The one privileged thing that turns a correct password into a session
 
 **Status:** ready. **Depends on:** nothing — ADR 0024's measurement is taken.

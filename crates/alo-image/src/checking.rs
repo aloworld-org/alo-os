@@ -29,6 +29,7 @@ use alo_keeping::Keeping;
 use crate::image::Image;
 use crate::service::ROOT;
 use crate::wrong::Wrong;
+use crate::{booting, disk};
 
 /// The directory every person's door goes in (ADR 0017).
 pub const THE_DOOR: &str = "/run/alo";
@@ -53,6 +54,36 @@ const WHAT_THE_LOADER_MAY_HOLD: [&str; 2] = ["CAP_BPF", "CAP_SYS_ADMIN"];
 /// What a unit says where it says nothing, in a sentence somebody reads.
 const NOTHING: &str = "-";
 
+/// The four questions `docs/booting.md` is answerable for, as its headings.
+///
+/// Somebody does this once, on a machine that has never run alo OS, and the
+/// document is the whole of what they have.
+const WHAT_THE_DOCUMENT_ANSWERS: [&str; 4] = [
+    "What this produces",
+    "What you need installed",
+    "Attaching it to Hyper-V",
+    "What a virtual machine cannot show",
+];
+
+/// The heading the limits go under, which is the last of the four.
+const WHAT_IT_CANNOT_SHOW: &str = WHAT_THE_DOCUMENT_ANSWERS[3];
+
+/// What that section has to name, by subject.
+///
+/// Each is a thing somebody could otherwise watch a virtual machine do and
+/// believe they had watched a certified one do it. The plan this task came from
+/// names the first two in as many words — *a virtual GPU is not the GPU works on
+/// first boot*, and *tame virtual firmware is not firmware to sign-in* — and the
+/// third is the sentence that keeps a `ROADMAP.md` line from being ticked.
+const WHAT_A_VIRTUAL_MACHINE_CANNOT_SHOW: [&str; 3] = ["GPU", "firmware", "hardware acceptance"];
+
+/// Which Hyper-V generation is which firmware.
+///
+/// The two are not a preference: a generation 2 machine is the UEFI one and a
+/// generation 1 machine is the BIOS one, and a person pointing the wrong one at
+/// this disk finds nothing to boot.
+const THE_GENERATIONS: [(&str, &str); 2] = [("1", "bios"), ("2", "uefi")];
+
 /// Everything this image's files disagree with each other about.
 ///
 /// An empty answer is an image whose five files say one thing. It is not a
@@ -71,7 +102,128 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_agent_runs_inside_the_persons_session(image, &mut wrong);
     nobody_signs_in_with_an_account_the_image_shipped(image, &mut wrong);
     the_model_runtime_is_aboard_and_pinned(image, &mut wrong);
+    the_image_becomes_a_disk(image, &mut wrong);
+    the_document_says_what_the_recipe_does(image, &mut wrong);
     wrong
+}
+
+/// **The image says what disk it becomes, and it is written by the base's own
+/// tool.**
+///
+/// An image is not a disk, and until `docs/booting.md` existed nothing here
+/// turned one into the other — so every promise that waited on *no machine has
+/// ever* waited on this. The three `alo.disk.*` labels are where the recipe says
+/// which tool writes the disk, which firmware it is installed for and what the
+/// file is called, and they are in the recipe rather than beside it because a
+/// second file would be the second recipe this task exists to prevent.
+///
+/// The tool is not pinned separately because it is already pinned: `bootc
+/// install to-disk` is run out of the base image, so `THE_BASE`'s digest is the
+/// version of the partitioner, and an unpinned base is an unpinned one.
+fn the_image_becomes_a_disk(image: &Image, wrong: &mut Vec<Wrong>) {
+    let declared = image.disk();
+
+    for (label, said) in [
+        (disk::THE_TOOL, declared.tool()),
+        (disk::THE_FIRMWARE, declared.firmware()),
+        (disk::THE_FILE, declared.file()),
+    ] {
+        if said.unwrap_or_default().is_empty() {
+            wrong.push(Wrong::TheImageDoesNotSayWhatDiskItBecomes {
+                label: label.to_owned(),
+            });
+        }
+    }
+
+    if !declared.written_by_the_base() {
+        wrong.push(Wrong::TheDiskIsNotWrittenByThePinnedBase {
+            tool: declared.tool().unwrap_or(NOTHING).to_owned(),
+            pinned: declared.on_a_pinned_base(),
+        });
+    }
+
+    if let Some(by) = declared.laid_out_by_hand() {
+        wrong.push(Wrong::TheDiskWouldBeLaidOutByHand {
+            at: "the image's recipe".to_owned(),
+            by: by.to_owned(),
+        });
+    }
+    for by in disk::NO_PARTITIONER {
+        if image.document().names(by) {
+            wrong.push(Wrong::TheDiskWouldBeLaidOutByHand {
+                at: "`docs/booting.md`".to_owned(),
+                by: by.to_owned(),
+            });
+        }
+    }
+}
+
+/// **The document a person follows says what the recipe says.**
+///
+/// The disk is declared twice — once as labels a tool is given, once as a
+/// sentence somebody reads before selecting a firmware in a dialog box — and the
+/// second is the one nothing would otherwise catch. The way this document goes
+/// wrong is not that somebody deletes it: it is that the image moves and the
+/// document stays where it was, and the person following it reaches a machine
+/// that does not boot and a repository that believed it did.
+///
+/// The firmware is the sharp one. A generation 2 virtual machine is the UEFI
+/// one; a generation 1 machine pointed at a UEFI disk finds nothing to boot at
+/// all, and the difference between those two is one digit in one line of prose.
+fn the_document_says_what_the_recipe_does(image: &Image, wrong: &mut Vec<Wrong>) {
+    let declared = image.disk();
+    let document = image.document();
+
+    for (fact, recipe) in [
+        (booting::THE_TOOL, declared.tool()),
+        (booting::THE_FIRMWARE, declared.firmware()),
+        (booting::THE_DISK, declared.file()),
+    ] {
+        let said = document.says(fact);
+        if said != recipe {
+            wrong.push(Wrong::TheDocumentDoesNotSayWhatTheRecipeDoes {
+                fact: fact.to_owned(),
+                said: said.unwrap_or(NOTHING).to_owned(),
+                recipe: recipe.unwrap_or(NOTHING).to_owned(),
+            });
+        }
+    }
+
+    let generation = document.says(booting::THE_GENERATION);
+    let really = THE_GENERATIONS
+        .into_iter()
+        .find_map(|(number, firmware)| (Some(number) == generation).then_some(firmware));
+    if really != declared.firmware() {
+        wrong.push(Wrong::TheFirmwareIsNotWhatAPersonIsToldToSelect {
+            firmware: declared.firmware().unwrap_or(NOTHING).to_owned(),
+            generation: generation.unwrap_or(NOTHING).to_owned(),
+            other: really.unwrap_or(NOTHING).to_owned(),
+        });
+    }
+
+    if let Some(tool) = declared.tool()
+        && !document.gives_the_command(tool)
+    {
+        wrong.push(Wrong::TheDocumentDoesNotGiveTheCommand {
+            tool: tool.to_owned(),
+        });
+    }
+
+    for heading in WHAT_THE_DOCUMENT_ANSWERS {
+        if !document.has_a_section(heading) {
+            wrong.push(Wrong::TheDocumentIsMissingASection {
+                heading: heading.to_owned(),
+            });
+        }
+    }
+    for about in WHAT_A_VIRTUAL_MACHINE_CANNOT_SHOW {
+        if !document.names_under(WHAT_IT_CANNOT_SHOW, about) {
+            wrong.push(Wrong::TheDocumentDoesNotSayWhatADiskCannotShow {
+                heading: WHAT_IT_CANNOT_SHOW.to_owned(),
+                about: about.to_owned(),
+            });
+        }
+    }
 }
 
 /// **The model runtime is on the image, pinned and verified.**
@@ -427,8 +579,9 @@ fn both_units_are_pulled_in(image: &Image, wrong: &mut Vec<Wrong>) {
 mod tests {
     use super::*;
     use crate::testing::{
-        THE_AGENTS_UNIT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE, THE_LOADERS_UNIT, THE_SYSUSERS,
-        THE_TMPFILES, a_copy_of_the_image, edited, image_at, the_store_file,
+        THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
+        THE_LOADERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image, edited, image_at,
+        the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1101,6 +1254,221 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::TheRuntimeArrivesUnverified { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **An image that stopped saying what disk it becomes is caught.** The
+    /// label is one line in a recipe nobody reviews twice, and without it
+    /// `docs/booting.md` is a document held to nothing.
+    #[test]
+    fn an_image_that_declares_no_disk_is_caught() {
+        let root = a_copy_of_the_image("no-disk-declared");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "LABEL alo.disk.file=\"alo-os.raw\"",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheImageDoesNotSayWhatDiskItBecomes { label }
+                    if label == crate::disk::THE_FILE
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A disk written by something other than the base's own tool is caught**,
+    /// and that is the promise rather than a preference: a partitioner of ours
+    /// lays out a disk nobody upstream ever tested, on the one part of the
+    /// system whose mistakes appear only on somebody else's machine.
+    #[test]
+    fn a_disk_written_by_a_partitioner_of_ours_is_caught() {
+        let root = a_copy_of_the_image("a-partitioner");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "LABEL alo.disk.tool=\"bootc install to-disk\"",
+            "LABEL alo.disk.tool=\"sfdisk\"",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDiskIsNotWrittenByThePinnedBase { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A base that stopped being pinned is caught, as the disk's problem.**
+    /// The tool comes out of the base, so a tag that moved is a partitioner
+    /// nobody chose writing the disk a machine boots from.
+    #[test]
+    fn a_base_on_a_tag_that_moves_is_caught_as_an_unpinned_tool() {
+        let root = a_copy_of_the_image("unpinned-base");
+        edited(&root, THE_CONTAINERFILE, "@sha256:", "@nothing:");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheDiskIsNotWrittenByThePinnedBase { pinned: false, .. }
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A partitioner that arrives in the document is caught too.** It is the
+    /// likelier half: not a second recipe, one helpful extra step added to the
+    /// page somebody follows.
+    #[test]
+    fn a_partitioner_in_the_document_is_caught() {
+        let root = a_copy_of_the_image("a-documented-partitioner");
+        edited(
+            &root,
+            THE_BOOTING_DOCUMENT,
+            "## What you need installed",
+            "## What you need installed\n\nThen run `mkfs.ext4` on the second partition.\n",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(
+                |it| matches!(it, Wrong::TheDiskWouldBeLaidOutByHand { by, .. } if by == "mkfs")
+            ),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A document that names a different firmware from the recipe is caught.**
+    /// The person follows the document; nothing else in this repository reads
+    /// the two together.
+    #[test]
+    fn a_document_naming_a_firmware_the_image_is_not_installed_for_is_caught() {
+        let root = a_copy_of_the_image("another-firmware");
+        edited(
+            &root,
+            THE_BOOTING_DOCUMENT,
+            "firmware: uefi",
+            "firmware: bios",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheDocumentDoesNotSayWhatTheRecipeDoes { fact, said, .. }
+                    if fact == "firmware" && said == "bios"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And a document telling somebody to select the other generation is
+    /// caught**, which is the mistake that is one digit wide: a generation 1
+    /// machine is the BIOS one, and pointed at this disk it finds nothing to
+    /// boot at all.
+    #[test]
+    fn a_document_telling_somebody_the_wrong_generation_is_caught() {
+        let root = a_copy_of_the_image("another-generation");
+        edited(
+            &root,
+            THE_BOOTING_DOCUMENT,
+            "generation: 2",
+            "generation: 1",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheFirmwareIsNotWhatAPersonIsToldToSelect { generation, other, .. }
+                    if generation == "1" && other == "bios"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A document that names the tool and never runs it is caught.** One
+    /// documented command turning the image into a disk is the whole of what
+    /// that document is for.
+    #[test]
+    fn a_document_that_gives_no_command_is_caught() {
+        let root = a_copy_of_the_image("no-command");
+        edited(
+            &root,
+            THE_BOOTING_DOCUMENT,
+            "      bootc install to-disk --via-loopback --wipe \\",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheDocumentDoesNotGiveTheCommand { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A document missing one of its four answers is caught.** Somebody does
+    /// this once, on a machine that has never run alo OS, and the document is
+    /// the whole of what they have.
+    #[test]
+    fn a_document_missing_a_section_is_caught() {
+        let root = a_copy_of_the_image("no-section");
+        edited(
+            &root,
+            THE_BOOTING_DOCUMENT,
+            "## What you need installed",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheDocumentIsMissingASection { heading }
+                    if heading == "What you need installed"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A document that stopped saying what a virtual machine cannot show is
+    /// caught.** That paragraph is what stands between a virtual machine and
+    /// somebody quoting it as the hardware acceptance in phase 8 — and the way
+    /// it goes is one bullet at a time.
+    #[test]
+    fn a_document_that_stopped_naming_what_a_disk_cannot_show_is_caught() {
+        let root = a_copy_of_the_image("no-limits");
+        edited(
+            &root,
+            THE_BOOTING_DOCUMENT,
+            "- **The GPU.** A virtual display adapter is not *the GPU works on first boot*.",
+            "- **The display.** It is a synthetic adapter.",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheDocumentDoesNotSayWhatADiskCannotShow { about, .. } if about == "GPU"
+            )),
             "{wrong:?}"
         );
     }

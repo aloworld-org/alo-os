@@ -183,6 +183,8 @@ cannot demonstrate.
 - `docs/contracts/` — the agent verbs and the adapter SDK: what other
   people build against.
 - `docs/hardware.md` — the certified list, honestly maintained.
+- `docs/booting.md` — how the image becomes a disk a machine boots from,
+  and what a virtual machine can never show about one.
 - `docs/quirks.md` — where reality and the specification disagree:
   driver behaviour, application automation, firmware.
 - `SECURITY.md` — how to report something, and what is in scope.

@@ -18,6 +18,7 @@
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
+//! | [`TheDisk`], [`TheDocument`] | The disk a machine boots from, as the recipe declares it and as `docs/booting.md` tells a person to make it |
 //!
 //! # Nothing on a machine ever reads this
 //!
@@ -53,15 +54,19 @@
 //! `ROADMAP.md`'s image line, it needs a machine this repository does not have,
 //! and *an image that builds is not an image that boots* is the sentence the
 //! whole item was written around. Nothing here may ever be read as having
-//! answered it.
+//! answered it — and that is true of [`TheDisk`] too: a recipe that declares
+//! how it becomes a disk, and a document that says how to write one, are not a
+//! disk anybody has watched come up.
 //!
 //! It is also **not a second reader of the machine description**'s rules;
 //! `crate::description` says at length why it reads that file at all and what it
 //! leaves to `alo-agentd`.
 
 mod accounts;
+mod booting;
 mod checking;
 mod description;
+mod disk;
 mod image;
 mod logins;
 mod making;
@@ -74,8 +79,10 @@ mod unit;
 mod wrong;
 
 pub use accounts::{TheStore, where_a_sign_in_looks};
+pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
+pub use disk::{NO_PARTITIONER, THE_ONLY_TOOL, TheDisk};
 pub use image::{Image, THE_AGENT, THE_LOADER};
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, Made, everything_made};

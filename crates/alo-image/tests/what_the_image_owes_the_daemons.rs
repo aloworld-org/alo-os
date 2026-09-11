@@ -14,7 +14,10 @@
 
 use std::path::Path;
 
-use alo_image::{Image, ROOT, THE_AGENT, THE_DOOR, THE_IMAGE, THE_LOADER, everything_wrong_with};
+use alo_image::{
+    Image, NO_PARTITIONER, ROOT, THE_AGENT, THE_DOOR, THE_IMAGE, THE_LOADER, THE_ONLY_TOOL,
+    everything_wrong_with,
+};
 
 /// The image this repository ships.
 ///
@@ -242,4 +245,81 @@ fn the_model_runtime_is_aboard_pinned_and_verified() {
         "the runtime's artefact is not held to a digest the build checks: {:?}",
         runtime.digest()
     );
+}
+
+/// **This image says what disk a machine boots from, and it is written by the
+/// base's own tool.** An image is not a disk, and every promise in
+/// `docs/autonomy/v0-01-evidence.md` that said *no machine has ever* was
+/// waiting on nothing more exotic than that. The tool is not pinned separately
+/// because it is already pinned: `bootc install to-disk` is run out of the base
+/// image, so `THE_BASE`'s digest is the version of the partitioner.
+#[test]
+fn the_image_says_what_disk_it_becomes() {
+    let image = the_image();
+    let disk = image.disk();
+
+    assert_eq!(disk.tool(), Some(THE_ONLY_TOOL));
+    assert_eq!(disk.firmware(), Some("uefi"));
+    assert_eq!(disk.file(), Some("alo-os.raw"));
+    assert!(
+        disk.on_a_pinned_base(),
+        "the tool comes out of the base, so a base on a tag that moves is a partitioner nobody \
+         chose"
+    );
+    assert!(disk.written_by_the_base());
+    assert_eq!(
+        disk.laid_out_by_hand(),
+        None,
+        "engines are configured and never written in, and a partition table of our own is that \
+         rule broken where only somebody else's machine would find out"
+    );
+}
+
+/// **The document a person follows says what the recipe says**, including the
+/// firmware — which is the sharp one, because a Hyper-V generation 1 machine
+/// pointed at a UEFI disk finds nothing at all to boot, and the difference is
+/// one digit in one line of prose.
+#[test]
+fn the_document_tells_a_person_the_disk_this_image_really_makes() {
+    let image = the_image();
+    let document = image.document();
+
+    assert_eq!(document.says("tool"), image.disk().tool());
+    assert_eq!(document.says("firmware"), image.disk().firmware());
+    assert_eq!(document.says("disk"), image.disk().file());
+    assert_eq!(
+        document.says("generation"),
+        Some("2"),
+        "generation 2 is the UEFI one; generation 1 is the BIOS one"
+    );
+    assert!(
+        document.gives_the_command(THE_ONLY_TOOL),
+        "naming a tool is not telling anybody how to run it, and one documented command is what \
+         that document is for"
+    );
+    for by in NO_PARTITIONER {
+        assert!(
+            !document.names(by),
+            "the document tells somebody to run {by}"
+        );
+    }
+}
+
+/// **And it says what a virtual machine cannot show.** A virtual GPU is not
+/// *the GPU works on first boot* and tame virtual firmware is not a certified
+/// machine's, so this paragraph is what stands between a disk booting in
+/// Hyper-V and somebody quoting that as the hardware acceptance in phase 8.
+#[test]
+fn the_document_says_what_a_virtual_machine_cannot_show() {
+    let image = the_image();
+    let document = image.document();
+    let heading = "What a virtual machine cannot show";
+
+    assert!(document.has_a_section(heading));
+    for about in ["GPU", "firmware", "hardware acceptance"] {
+        assert!(
+            document.names_under(heading, about),
+            "the document does not say what a virtual machine cannot show about {about}"
+        );
+    }
 }

@@ -15,7 +15,9 @@
 use std::path::Path;
 
 use crate::accounts::TheStore;
+use crate::booting::TheDocument;
 use crate::description::Description;
+use crate::disk::TheDisk;
 use crate::logins::Declared;
 use crate::making::Made;
 use crate::refusing::NotAnImage;
@@ -45,6 +47,14 @@ const SYSUSERS: &str = "usr/lib/sysusers.d/alo.conf";
 /// the model runtime is aboard, and pinned (ADR 0006, ADR 0025).
 const CONTAINERFILE: &str = "Containerfile";
 
+/// The document that turns this image into a disk, from the image's directory.
+///
+/// Not a file the machine ships either, and read for the same reason the recipe
+/// is: the disk is declared in two places — the labels the tool is given, and
+/// the sentence a person reads before selecting a firmware in a dialog box — and
+/// the only thing that keeps those two together is something reading both.
+const THE_DOCUMENT: &str = "../docs/booting.md";
+
 /// Where the machine description goes, beneath the image's root.
 ///
 /// Derived from the path a machine really has it at rather than written out
@@ -72,6 +82,10 @@ pub struct Image {
     store: TheStore,
     /// What its recipe says about the model runtime it carries.
     runtime: TheRuntime,
+    /// What its recipe says about the disk a machine boots from.
+    disk: TheDisk,
+    /// What the document beside it tells a person to do with that disk.
+    document: TheDocument,
 }
 
 impl Image {
@@ -102,7 +116,10 @@ impl Image {
         // Read leniently on purpose: a recipe with no runtime in it is an
         // image `crate::checking` has sentences about, not a directory that
         // is no image at all.
-        let runtime = TheRuntime::read(&text(&root.join(CONTAINERFILE))?);
+        let recipe = text(&root.join(CONTAINERFILE))?;
+        let runtime = TheRuntime::read(&recipe);
+        let disk = TheDisk::read(&recipe);
+        let document = TheDocument::read(&text(&root.join(THE_DOCUMENT))?);
 
         Ok(Self {
             loader,
@@ -112,6 +129,8 @@ impl Image {
             description,
             store: TheStore::of(root),
             runtime,
+            disk,
+            document,
         })
     }
 
@@ -173,6 +192,18 @@ impl Image {
     #[must_use]
     pub const fn runtime(&self) -> &TheRuntime {
         &self.runtime
+    }
+
+    /// What this image's recipe says about the disk a machine boots from.
+    #[must_use]
+    pub const fn disk(&self) -> &TheDisk {
+        &self.disk
+    }
+
+    /// What the document beside this image tells a person to do with that disk.
+    #[must_use]
+    pub const fn document(&self) -> &TheDocument {
+        &self.document
     }
 }
 

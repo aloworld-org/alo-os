@@ -153,6 +153,23 @@ COPY --from=built /alo-os/target/${THE_TARGET}/release/alo-agentd /usr/bin/alo-a
 COPY --from=runtime /runtime/bin/ollama /usr/bin/ollama
 COPY --from=runtime /runtime/lib/ollama/ /usr/lib/ollama/
 
+# How this image becomes a disk a machine boots, said by the image itself.
+#
+# There is no second recipe and no partitioner of ours: the disk is written by
+# the `bootc` **inside the base pinned above**, so the version of the tool is
+# `THE_BASE`'s digest and there is nothing else to pin. `docs/booting.md` is the
+# command a person types, and `crates/alo-image` holds that document and these
+# three lines to each other — a document that tells somebody to select the
+# firmware this image is not installed for is a machine that does not boot and a
+# repository that believed it did.
+#
+# They are labels rather than a file beside this one because they travel with
+# the image: somebody holding only the image can ask it what disk it expects,
+# and an image and its disk declaration cannot be separated to drift apart.
+LABEL alo.disk.tool="bootc install to-disk"
+LABEL alo.disk.firmware="uefi"
+LABEL alo.disk.file="alo-os.raw"
+
 COPY image/usr/lib/systemd/system/ /usr/lib/systemd/system/
 COPY image/usr/lib/sysusers.d/ /usr/lib/sysusers.d/
 COPY image/usr/lib/tmpfiles.d/ /usr/lib/tmpfiles.d/
