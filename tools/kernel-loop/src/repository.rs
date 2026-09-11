@@ -49,6 +49,27 @@ pub fn git(at: &Path, args: &[&str]) -> Result<String, String> {
     Err(format!("`git {}` refused: {err}{out}", args.join(" ")))
 }
 
+/// Run one `git` and hand back exactly what it wrote, byte for byte.
+///
+/// [`git`] trims, which is right for a branch name and wrong for a patch: a
+/// diff that has lost its trailing newline is one `git apply` refuses with
+/// *corrupt patch at line N*.
+///
+/// # Errors
+/// A sentence naming the command and what it printed.
+fn git_bytes(at: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
+    let said = Command::new("git")
+        .current_dir(at)
+        .args(args)
+        .output()
+        .map_err(|why| format!("git could not be run: {why}"))?;
+    if said.status.success() {
+        return Ok(said.stdout);
+    }
+    let err = String::from_utf8_lossy(&said.stderr).trim().to_owned();
+    Err(format!("`git {}` refused: {err}", args.join(" ")))
+}
+
 /// That this is `main`, and that nothing is changed except what a task named.
 ///
 /// The second half is what stops a task publishing somebody else's work by
@@ -396,6 +417,139 @@ fn moment() -> String {
             |_| "unknown".to_owned(),
             |since| since.as_secs().to_string(),
         )
+}
+
+/// Whether this checkout has a local branch by that name.
+///
+/// Answered rather than assumed, so that recovering from a name nobody parked
+/// says *there is no such branch* instead of failing four commands later with
+/// something about an ambiguous revision.
+pub fn is_a_branch(at: &Path, branch: &str) -> bool {
+    git(at, &["rev-parse", "--verify", "--quiet", &heads(branch)]).is_ok()
+}
+
+/// A branch's full ref, so `rev-parse` cannot be answered by a tag or a file.
+fn heads(branch: &str) -> String {
+    format!("refs/heads/{branch}")
+}
+
+/// The commit this checkout and that branch last had in common.
+///
+/// For a parked branch that is the `main` the park was made from, which is the
+/// only base from which *what the task changed* is a meaningful question.
+///
+/// # Errors
+/// Whatever `git` said, which for two histories with nothing in common is a
+/// sentence saying so.
+pub fn where_they_parted(at: &Path, branch: &str) -> Result<String, String> {
+    git(at, &["merge-base", "HEAD", branch])
+}
+
+/// What a branch changed since then, as `name-status` lines.
+///
+/// `--no-renames` on purpose: a handoff names both ends of a move, and a rename
+/// reported as one line names neither of them the way the handoff does.
+///
+/// # Errors
+/// Whatever `git` said.
+pub fn what_a_branch_changed(at: &Path, from: &str, branch: &str) -> Result<String, String> {
+    git(at, &["diff", "--name-status", "--no-renames", from, branch])
+}
+
+/// Whether anything has happened to one path on this checkout since then.
+///
+/// This is the question that decides between putting a file back whole and
+/// merging the task's own change into it: a file nobody else touched can come
+/// back as it was, and a file somebody published over cannot.
+///
+/// # Errors
+/// Whatever `git` said.
+pub fn changed_here_since(at: &Path, from: &str, path: &str) -> Result<bool, String> {
+    let changed = git(at, &["diff", "--name-only", from, "HEAD", "--", path])?;
+    Ok(!changed.trim().is_empty())
+}
+
+/// One file, as a branch has it.
+///
+/// # Errors
+/// Whatever `git` said, which for a path the branch does not have is a sentence
+/// naming it.
+pub fn one_file_as(at: &Path, branch: &str, path: &str) -> Result<String, String> {
+    let shown = git_bytes(at, &["show", &format!("{branch}:{path}")])?;
+    Ok(String::from_utf8_lossy(&shown).into_owned())
+}
+
+/// Put **one named path** back as a branch has it.
+///
+/// One path, never a pathspec that stands for many. `git restore --source=<b>
+/// -- .` is the defect this whole recovery exists to replace: it reverts every
+/// file in the tree to that branch, including files published by tasks the
+/// branch has never heard of.
+///
+/// A path the branch does not have is removed from the working tree, which is
+/// what restoring a task that deleted a file means.
+///
+/// # Errors
+/// Whatever `git` said.
+pub fn restored_one_file_from(at: &Path, branch: &str, path: &str) -> Result<(), String> {
+    git(
+        at,
+        &["restore", "--source", branch, "--worktree", "--", path],
+    )
+    .map(|_| ())
+}
+
+/// The diff of **one named path** between two commits.
+///
+/// # Errors
+/// Whatever `git` said.
+pub fn one_files_diff(at: &Path, from: &str, to: &str, path: &str) -> Result<Vec<u8>, String> {
+    git_bytes(
+        at,
+        &["diff", "--no-renames", "--binary", from, to, "--", path],
+    )
+}
+
+/// How a three-way apply went.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Applied {
+    /// The task's change went in over what was published.
+    Cleanly,
+
+    /// Both sides changed the same lines. The markers are in the file and
+    /// nothing has been chosen between them.
+    WithAConflict,
+}
+
+/// Apply a patch over what is in the tree, three-way, leaving a conflict where
+/// it falls.
+///
+/// **Nothing here resolves anything.** A conflict between a parked task and a
+/// published one is two people's work disagreeing, and a supervisor that picked
+/// a side would be choosing on their behalf silently. The markers are left, the
+/// path is reported, and a person reads it.
+///
+/// # Errors
+/// Whatever `git` said, for a patch that did not apply at all — which is a
+/// different thing from one that applied with a conflict.
+pub fn applied_over(at: &Path, patch: &Path, path: &str) -> Result<Applied, String> {
+    let patching = patch.to_string_lossy().into_owned();
+    match git(at, &["apply", "--3way", "--", &patching]) {
+        Ok(_) => Ok(Applied::Cleanly),
+        Err(why) => {
+            // **Asked of git, not read out of the message.** `git apply` exits
+            // the same way for *this conflicts* and for *this is not a patch*,
+            // and only one of those leaves the work in the tree. An unmerged
+            // index entry for the path is the difference, and it is a fact
+            // rather than a wording.
+            let unmerged = git(at, &["ls-files", "--unmerged", "--", path])?;
+            if unmerged.trim().is_empty() {
+                Err(why)
+            } else {
+                Ok(Applied::WithAConflict)
+            }
+        }
+    }
 }
 
 #[cfg(test)]

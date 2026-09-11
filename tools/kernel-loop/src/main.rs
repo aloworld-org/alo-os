@@ -55,6 +55,17 @@
 //! somebody stops it. A task the plan marks **blocked** is stepped over, so one
 //! question awaiting an answer does not hold up work that has none.
 //!
+//! # Parking, and picking one back up
+//!
+//! A task whose gates refuse it is committed to a local branch of its own and
+//! the run carries on. `recover <branch>` is the other half of that: it puts
+//! **exactly the files that task's handoff names** back on top of today's
+//! `main` — whole where nobody else has touched them, by applying the task's own
+//! diff where somebody has — and leaves its handoff waiting. It publishes
+//! nothing, and it deletes no branch. See `crate::recovering` for what it
+//! replaces, which was somebody remembering a command that reverted the whole
+//! tree.
+//!
 //! # Stopping
 //!
 //! `stop` writes a file. The loop finishes what it is doing — it never abandons
@@ -70,6 +81,7 @@ mod keeping_ubuntu_up;
 mod lock;
 mod plan;
 mod publishing;
+mod recovering;
 mod repository;
 mod worker;
 
@@ -98,6 +110,9 @@ enum Asked {
     /// Run every gate and every piece of the waiting handoff's evidence, and
     /// publish nothing.
     Verify,
+
+    /// Put a parked task's work back in the tree, on top of today's `main`.
+    Recover(String),
 }
 
 impl Asked {
@@ -110,6 +125,7 @@ impl Asked {
             Some("stop") => Some(Self::Stop),
             Some("publish") => Some(Self::Publish),
             Some("verify") => Some(Self::Verify),
+            Some("recover") => args.next().map(Self::Recover),
             _ => None,
         }
     }
@@ -125,7 +141,10 @@ fn main() -> ExitCode {
              \x20 alo-kernel-loop status   what is happening, and what happened last\n\
              \x20 alo-kernel-loop stop     finish the current task and begin no other\n\
              \x20 alo-kernel-loop verify   run every gate and the waiting handoff's evidence\n\
-             \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n"
+             \x20 alo-kernel-loop publish  gate, commit, integrate and push the waiting handoff\n\
+             \x20 alo-kernel-loop recover <branch>\n\
+             \x20\x20\x20\x20\x20\x20\x20\x20\x20 put a parked task's work back in the tree, on \
+             top of today's main\n"
         );
         return ExitCode::FAILURE;
     };
@@ -143,6 +162,7 @@ fn main() -> ExitCode {
         Asked::Run => run(&at, &ours),
         Asked::Publish => publish(&at, &ours),
         Asked::Verify => verify(&at, &ours),
+        Asked::Recover(branch) => recover(&at, &ours, &branch),
         Asked::Status => {
             // **Whether anything is running, before what last happened.** A
             // journal's last line reads exactly the same whether the loop is
@@ -579,6 +599,64 @@ fn verify(at: &Path, ours: &Path) -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// Put a parked task's work back in the tree, and stop there.
+///
+/// **The other half of parking, and until now it was a thing people
+/// remembered.** What they remembered on 2026-09-11 was `git restore
+/// --source=<branch> -- .`, which reverts the whole tree to that branch and so
+/// undid two published tasks the first time and would have undone two more the
+/// second. Both times something else caught it; neither time did anything here
+/// stop it happening again.
+///
+/// This restores and never publishes. The gates stay where they are, `verify`
+/// and `publish` are what run them, and a recovery that published would be a
+/// road around the thing this program is. It deletes no branch either, so a
+/// recovery that goes wrong is a recovery that can be done again.
+fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
+    let back = match recovering::recover(at, ours, branch) {
+        Ok(back) => back,
+        Err(why) => {
+            eprintln!("alo-kernel-loop: nothing was restored. {why}");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    println!("alo-kernel-loop: `{}` is back in the tree.", back.task);
+    for (what, these) in [
+        ("came back whole", &back.whole),
+        ("merged by applying this task's own diff", &back.merged),
+        (
+            "changed on that branch and named by no task",
+            &back.left_alone,
+        ),
+    ] {
+        if !these.is_empty() {
+            println!("  {what}: {}", these.join(", "));
+        }
+    }
+    journal::note(
+        ours,
+        &format!("recovered `{}` from {}", back.task, back.branch),
+    );
+
+    if back.is_ready_to_gate() {
+        println!(
+            "Its handoff is waiting again. Nothing was gated and nothing was published — \
+             `verify` looks, `publish` publishes. `{}` is still there.",
+            back.branch
+        );
+        return ExitCode::SUCCESS;
+    }
+    eprintln!(
+        "These were changed both by this task and on `main` since, and the two disagree line for \
+         line: {}\nThe markers are in the files and no side was chosen. Resolve them by hand, \
+         then `verify`. `{}` still has the task exactly as it was parked.",
+        back.conflicted.join(", "),
+        back.branch
+    );
+    ExitCode::FAILURE
 }
 
 /// The handoff for the task that was chosen, once somebody writes it.

@@ -88,6 +88,16 @@ impl Handed {
         Self::read(&written).map(Some)
     }
 
+    /// Where a handoff waits.
+    ///
+    /// One name, in one place, so that recovering a parked task puts its
+    /// handoff back exactly where the loop looks for one rather than somewhere
+    /// that reads the same.
+    #[must_use]
+    pub fn where_one_waits(ours: &Path) -> std::path::PathBuf {
+        ours.join(THE_HANDOFF)
+    }
+
     /// Move the handoff aside, so the next iteration does not publish it again.
     ///
     /// Kept rather than deleted: it is the record of what a commit was made
@@ -129,7 +139,10 @@ impl Handed {
     }
 
     /// The file, read.
-    fn read(written: &str) -> Result<Self, String> {
+    ///
+    /// # Errors
+    /// A sentence naming what a commit needs and the text does not say.
+    pub fn read(written: &str) -> Result<Self, String> {
         let mut task = String::new();
         let mut report = String::new();
         let mut subject = String::new();

@@ -1333,7 +1333,7 @@ forgot to knock is a screen that takes a correct password and does nothing.
   added to `Knock`, which is the whole of what keeps a password off that wire.
   Every string a person reads is in the vocabulary `alo-saying` collects.
 
-### 27. What the greeter does, before there is anything to draw
+### 28. What the greeter does, before there is anything to draw
 
 **Status:** ready. **Depends on:** 26.
 
@@ -1366,7 +1366,7 @@ that already works rather than growing the logic inside a paint routine.
   It authenticates nothing itself either — `alo-accounts` does that and already
   does it.
 
-### 28. Recovering a parked task, as a command rather than as a memory
+### 29. Recovering a parked task, as a command rather than as a memory
 
 **Status:** ready. **Depends on:** nothing.
 
@@ -1399,7 +1399,37 @@ a plan, the evidence ledger — apply that task's **diff** rather than its
   `git checkout -- .` anywhere in the implementation is the thing the test
   should refuse.
 
-### 29. The gates build where there is room, not where there is none
+**Done, 2026-09-11.** `alo-kernel-loop recover <branch>`, in
+`tools/kernel-loop/src/recovering.rs`, with the git it needs added to
+`repository.rs` — which is where every git this loop can run already lives, so
+that what it can do to a checkout stays one readable list. It reads the parked
+branch's **own handoff** to know what to bring back, restores a file nobody has
+published over whole, applies the task's **diff** to a file somebody has, leaves
+a conflict with its markers in it and says which file, and puts the handoff back
+where the loop looks for one. It refuses a branch that is not a parked branch,
+a parked name nobody has, a handoff already waiting that it would write over, a
+branch with nothing on it, and a handoff naming files its own branch never
+changed. Seven of the ten tests build a real repository, park a real task,
+publish a real commit over it and read the tree back; the defect's own signature
+— *another task's published file is still there afterwards* — is an assertion
+rather than a comment. Report:
+`docs/autonomy/updates/recovering-a-parked-task.md`. The next task (30) is
+written below.
+
+**Renumbered from 28 in the same change, and the plan was failing a test.** Two
+sections were numbered 27 — the sign-in surface's half of the door, and the
+greeter's logic — so `plan::tests::every_plan_this_repository_drives_holds_only_tasks`,
+which holds every plan this repository drives to *numbered from one, in order*,
+had been red since the second of them was written, and with it the whole of
+`cargo test -p alo-kernel-loop`. The greeter is 28 and this is 29. No task's
+title, dependency, status or content moved, and the loop selects by title, so
+nothing already handed over means anything different. *The gates build where
+there is room* arrived on `main` while this was being written, numbered 29 on
+the assumption that this task was 28; it is 30 below, for the same reason and by
+the same one-line change. This task writes no task after it, because the plan
+already names one.
+
+### 30. The gates build where there is room, not where there is none
 
 **Status:** ready. **Depends on:** nothing.
 
