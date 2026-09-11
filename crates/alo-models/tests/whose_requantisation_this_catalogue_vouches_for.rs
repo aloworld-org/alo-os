@@ -22,8 +22,11 @@
 //!   named without being vouched for, in front of the loader.
 //! - **A grade belongs to the artefact it was earned against**, and an entry
 //!   that names no file cannot carry one.
-//! - **Nothing moved that this decision may not move**: no grade, no size, and
-//!   the two entries it is about are where task 13 left them.
+//! - **Nothing moved that this decision may not move**: no grade came with a
+//!   borrowed file, and the two entries it is about carry none. Task 15 then
+//!   chose an upload for each of them, which is why the last two tests here ask
+//!   what survives any particular choice rather than asserting that none was
+//!   made — that part is the history's to hold, not a test's.
 //!
 //! It needs no model, no runtime and no socket: it reads this repository's own
 //! files and the catalogue compiled into this crate.
@@ -398,34 +401,76 @@ fn a_grade_names_the_file_it_was_earned_against() {
     }
 }
 
-/// **Nothing this decision may not move has moved.**
+/// **Every borrowed file in the catalogue we ship is one the price was paid
+/// for**, and no grade came with it.
 ///
-/// It is a decision, not a curation: no entry names a third party's artefact
-/// yet, no grade changed, and the two entries the question is about are where
-/// task 13 left them — the publisher's own release, no quantisation,
-/// `not-measured`.
+/// This decision moved nothing when it was taken: it named no artefact for
+/// anybody, because choosing whose file an entry means is a curation act with a
+/// name on it and it was left to task 15. That task then paid the price for
+/// both European entries, so the assertion worth keeping is no longer *nothing
+/// was chosen* — the history holds that — but the one that outlives any
+/// particular choice: **whatever is chosen, it is stated in full, and it brings
+/// no measurement with it.**
+///
+/// The loader refuses a half-stated block, which the test above shows happening
+/// on fixtures. This asks the same question of the data actually shipped, where
+/// a curator in a hurry is the one who would answer it wrongly, and adds the
+/// rule no loader can check for them: a borrowed file may never arrive carrying
+/// a grade nobody here ran (ADR 0007, rule 3).
 #[test]
-fn no_entry_was_completed_and_no_grade_moved_in_the_change_that_decided_this() {
+fn every_borrowed_file_the_catalogue_ships_is_stated_and_brings_no_grade_with_it() {
     let catalogue = Catalogue::built_in().expect("the built-in catalogue loads");
+    let measured = measured_entries();
     for model in &catalogue.models {
+        let Some(borrowed) = &model.requantised else {
+            continue;
+        };
         assert!(
-            model.requantised.is_none(),
-            "`{}` names somebody else's artefact, which is a curation act this change may not \
-             make: the decision and the choosing are separate tasks on purpose",
+            model.quantised_at().is_some(),
+            "`{}` says whose artefact it names and names none",
+            model.id
+        );
+        assert!(
+            !borrowed.by.trim().is_empty()
+                && !borrowed.note.trim().is_empty()
+                && borrowed.sha256.len() == 64,
+            "`{}` states a requantisation block that does not say all three things",
+            model.id
+        );
+        assert!(
+            !borrowed
+                .by
+                .trim()
+                .eq_ignore_ascii_case(model.publisher.trim()),
+            "`{}` describes its own publisher's artefact as a stranger's",
+            model.id
+        );
+        assert!(
+            !model.drives_verbs.has_been_measured() || measured.contains(&model.id.as_str()),
+            "`{}` carries a grade against somebody else's file and is not on the list of entries \
+             this repository has actually run `alo-driving` against. A borrowed file is a file, \
+             never a measurement",
             model.id
         );
     }
+}
+
+/// **And the two entries the question was about still claim no grade.**
+///
+/// Task 15 gave each of them an artefact; what it could not give either is a
+/// measurement, because this lane's box cannot hold a 7B model at four bits. So
+/// the honest state is an entry that names a file and says nobody has run it,
+/// and that is the state this asserts — separately from the choosing, so that a
+/// future change which measures one of them fails here and is read rather than
+/// waved through.
+#[test]
+fn neither_european_entry_gained_a_grade_when_it_gained_a_file() {
     for id in THE_TWO {
         let model = the_entry(id);
-        assert!(
-            model.quantised_at().is_none(),
-            "`{id}` claims a quantisation now; deciding what a borrowed file costs is not the \
-             same act as choosing one"
-        );
         assert_eq!(
             model.drives_verbs,
             Driving::NotMeasured,
-            "`{id}` gained a grade in a change that ran no measurement"
+            "`{id}` gained a grade; was `alo-driving` run against the artefact it names?"
         );
         assert_eq!(
             model.graded_against(),
@@ -433,4 +478,23 @@ fn no_entry_was_completed_and_no_grade_moved_in_the_change_that_decided_this() {
             "`{id}` reports a file a grade was earned against, and it has no grade"
         );
     }
+}
+
+/// Every entry this repository has run `alo-driving` against, as
+/// `crates/alo-models/src/catalogue.rs`'s own list keeps it.
+///
+/// Duplicated here rather than shared on purpose: that list is a unit test's
+/// constant, and a borrowed file arriving with a grade is exactly the case
+/// where a shared constant would be updated to match the data instead of the
+/// other way round.
+fn measured_entries() -> [&'static str; 7] {
+    [
+        "phi-3-mini-instruct",
+        "llama-3.2-3b-instruct",
+        "qwen2.5-3b-instruct",
+        "gemma-2-2b-instruct",
+        "smollm2-1.7b-instruct",
+        "qwen3-1.7b",
+        "granite-3.2-2b-instruct",
+    ]
 }

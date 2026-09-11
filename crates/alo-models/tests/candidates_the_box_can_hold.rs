@@ -290,14 +290,25 @@ fn the_rule_a_quantisation_is_paired_with_its_artefact_is_in_the_catalogue_s_own
         );
     }
     let entries = Catalogue::built_in().expect("the built-in catalogue loads");
+    let teuken = entries
+        .get("teuken-7b-instruct")
+        .expect("the catalogue still offers the entry this rule was written from");
+    // It claimed `Q4_K_M` and could point at nothing, then claimed nothing at
+    // all, and since task 15 it points at `mradermacher`'s upload. Whichever of
+    // the three it is on any given day, the rule is the same one: the
+    // quantisation and the artefact are a single claim, and where the file is
+    // not the publisher's the entry says whose it is.
+    assert_eq!(
+        teuken.quantised_at().is_some(),
+        teuken.quantisation.is_some(),
+        "`teuken-7b-instruct` claims a quantisation with nothing behind it, which is the state \
+         rule 4 was written from"
+    );
     assert!(
-        entries
-            .models
-            .iter()
-            .any(|m| m.id == "teuken-7b-instruct" && m.quantised_at().is_none()),
-        "`teuken-7b-instruct` still claims a quantisation. Its publisher ships no GGUF, so every \
-         Q4_K_M of it is a stranger's requantisation and the entry is the one the rule was \
-         written from"
+        teuken.quantised_at().is_none() || teuken.requantised.is_some(),
+        "`teuken-7b-instruct` names an artefact as though openGPT-X published it. Its publisher \
+         ships no GGUF, so every Q4_K_M of it is a stranger's requantisation and rule 6 says the \
+         entry names whose"
     );
 }
 

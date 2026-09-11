@@ -1530,6 +1530,48 @@ large, slow and out of reach of an ordinary laptop, which is the true sentence
 about a model nobody has quantised for us.
 **Date:** 2026-09-11.
 
+### The two best-known requantisers of Teuken took the release nobody may rely on
+**Version:** the Hugging Face uploads of `openGPT-X/Teuken-7B-instruct-*-v0.4`
+and `utter-project/EuroLLM-9B-Instruct`, read 2026-09-11, against
+`data/catalogue.toml`'s rule 6.
+**Behaviour:** ADR 0026 decided that a third party's artefact may be named if
+the entry says whose it is, which file exactly, and what a reader needs to know.
+Paying that for the two European entries turned out to be a licence question
+before it was a quality one. **openGPT-X publishes Teuken twice** — a research
+release under `license: other` and a commercial one under Apache-2.0 — and the
+requantisers split across the two. `bartowski` and `QuantFactory`, the two names
+a person would reach for first, both published the **research** release
+(733 and 544 downloads); the commercial release is requantised by
+`mradermacher` (932 downloads, plus a weighted set at `-i1-GGUF`),
+`KnutJaegersberg`, `tensorblock` and a handful of individuals. This entry's
+licence line says Apache-2.0 with commercial use permitted, so naming the
+popular upload would have put a research-licensed artefact behind a commercial
+claim — the same harm the entry two above records, arriving through the new
+door instead of the old one. It is a harm nothing mechanical here would have
+caught: `Requantised` checks that a digest is a digest and that the requantiser
+is not the publisher, and a research requantisation passes both.
+
+The second finding is smaller and in the same direction. Of the four uploads of
+a Q4_K_M of EuroLLM, three are near-identical in size —
+5_582_838_496, 5_582_838_208 and 5_582_838_112 bytes — and differ in every byte
+of their digests, because they are three separate conversion runs of the same
+weights. There is no "the" Q4_K_M of a model, only somebody's, which is the
+whole reason rule 6 asks for a name and a pin rather than a quantisation label.
+**Our response:** `eurollm-9b-instruct` names `bartowski`'s upload and
+`teuken-7b-instruct` names `mradermacher`'s, each with the `sha256` its own
+repository publishes and a note saying how it was made. The grounds are stated
+in the entries rather than implied: for Teuken it is the licence, and for
+EuroLLM — where all four uploads carry the model's own Apache-2.0 — it is that
+`bartowski` states the fullest recipe, naming the llama.cpp release and
+publishing the importance-matrix calibration set the others do not describe. The
+licence on each **uploader's** repository was read as well as the publisher's,
+which is what surfaced the split. Rule 6 gained both lessons for the next
+curator. **No grade moved:** this lane's box cannot hold a 7B model at four bits
+(the entry above has the numbers), so both entries stay `not-measured` with an
+artefact now named — which is the honest state, and a smaller distance from a
+grade than they were at this morning.
+**Date:** 2026-09-11.
+
 ### The carry-or-fetch measurement ADR 0025 owes: the catalogue has nothing to weigh
 **Version:** `data/catalogue.toml` as of 2026-09-11 — fourteen entries, five
 measured by `alo-driving` on 2026-09-04 and two more later the same day, seven
@@ -1546,8 +1588,8 @@ memory:
 
 | Entry | Download bytes | Drives the verbs |
 |---|---|---|
-| `eurollm-9b-instruct` | 18_304_683_360 | `not-measured` |
-| `teuken-7b-instruct` | 14_905_484_192 | `not-measured` |
+| `eurollm-9b-instruct` | 5_582_838_496 | `not-measured` |
+| `teuken-7b-instruct` | 5_018_868_512 | `not-measured` |
 | `mistral-7b-instruct` | 4_370_000_000 | `not-measured` |
 | `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
 | `qwen2.5-7b-instruct` | 4_680_000_000 | `not-measured` |
@@ -1574,17 +1616,18 @@ the ledger already carries, not a model that is probably fine — and the gap ha
 a shape: everything unmeasured wants ten gigabytes of system memory or more,
 and the box every existing grade was made on has six.
 
-**Two of those rows grew on 2026-09-11, and the growth is a correction rather
-than a change of model.** `eurollm-9b-instruct` and `teuken-7b-instruct` claim
-no quantisation — neither publisher ships a GGUF, and this catalogue has chosen
-no stranger's requantisation — and both had kept the four-bit `download_bytes`
-they were added with, 5.6 GB and 4.6 GB, which are sizes of artefacts the
-entries no longer name. Under the catalogue's new rule 5 they state their
-publishers' own releases instead, read off those repositories' own file lists:
-18.30 GB and 14.91 GB of `bfloat16` safetensors. The verdict is untouched —
-neither entry was ever a candidate, because neither is measured — but the
-channel half below now has two entries of a different order in it, and that is
-why correcting them mattered rather than leaving a comfortable number standing.
+**Two of those rows moved twice on 2026-09-11, and both moves are corrections
+rather than changes of model.** `eurollm-9b-instruct` and `teuken-7b-instruct`
+had kept the four-bit `download_bytes` they were added with, 5.6 GB and 4.6 GB,
+after rule 4 had taken away the quantisation those figures belonged to. Under
+rule 5 they first became their publishers' own `bfloat16` releases, 18.30 GB and
+14.91 GB — honest, and out of reach of any laptop. Then rule 6 was paid for both
+and each entry named the upload it means: 5_582_838_496 bytes of `bartowski`'s
+imatrix Q4_K_M and 5_018_868_512 of `mradermacher`'s static one, each pinned by
+the digest its repository publishes. So the rows are four-bit figures again, and
+for the first time they are four-bit figures for a file this catalogue chose
+rather than for one it had merely assumed. The verdict is untouched: neither
+entry is measured, so neither was ever a candidate.
 
 **The channel:** what the image and its update stream can honestly carry.
 ADR 0011 makes the OS a bootable container image pulled from a registry we
@@ -1598,14 +1641,16 @@ atomic deployment with rollback, and a carried layer rides inside what
 `bootc rollback` restores where a setup-time fetch sits outside it — which is
 an argument for carrying, not only a cost. On size: the CPU-class entries the
 certified laptop would carry are 1.06–2.4 GB and the 7B class that names a
-four-bit artefact is 4.4–4.9 GB, the same order as the pinned base and the
+four-bit artefact is 4.4–5.6 GB, the same order as the pinned base and the
 runtime artefact the image already moves, so a carried layer of that kind is
-not structurally beyond this channel. **The two entries that name no artefact
-are a different order and say something the four-bit rows hide:** at 14.91 and
-18.30 GB, a model nobody has quantised for us is not a layer this channel
-carries comfortably, so the day either of them matters the question is which
-quantised artefact this catalogue chooses, not whether the stream can move
-`bfloat16`. What is
+not structurally beyond this channel. **The two European entries used to be a
+different order, and are no longer:** while they named no artefact they stated
+14.91 and 18.30 GB of `bfloat16`, which is not a layer this channel carries
+comfortably; naming a requantisation apiece brought them to 5.02 and 5.58 GB,
+inside the same band as every other four-bit row. That is a consequence of a
+curation act rather than of anything the channel learned, and it is worth
+saying plainly: the question *can the stream move this* was answered by
+choosing a smaller file, not by measuring the stream. What is
 honestly bounded: no registry of ours, no update stream and no mirror is
 running yet, so transfer time on the certified machine's network, hosting
 cost, and how the registry behaves when a five-gigabyte layer changes have

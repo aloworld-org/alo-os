@@ -19,13 +19,17 @@
 //! name on it. `docs/quirks.md` has the reasoning under *Two entries kept a
 //! four-bit size after they stopped claiming a four-bit file*.
 //!
+//! **Task 15 then paid rule 6's price for both entries**, so neither falls back
+//! to a publisher's release any longer: each names a third party's Q4_K_M with a
+//! digest behind it, and the figures a reader checks are that artefact's.
+//! `the_file_the_two_european_entries_mean.rs` holds them to the uploads they
+//! now name, which is where the *state your publisher's release* assertions went
+//! — the fallback this task chose is still the shape an entry takes on its way
+//! in, and every refusal below is still the rule that makes it one.
+//!
 //! What this file holds, one test per acceptance criterion in
 //! `docs/autonomy/v0-01-lane-b-plan.md`'s task 13:
 //!
-//! - **The two entries state figures a reader can check**, against numbers this
-//!   file writes down off those publishers' manifests rather than against the
-//!   catalogue's own arithmetic — a check that only compared the catalogue with
-//!   itself would pass on any pair of self-consistent inventions.
 //! - **The carry-or-fetch table agrees**, because correcting a size moves the
 //!   measurement ADR 0025 owes, and a table left behind would say the weights
 //!   question is smaller than it is.
@@ -47,47 +51,11 @@
 
 use std::{fs, path::Path};
 
-use alo_models::{Catalogue, Driving, Model, OnCpu};
+use alo_models::{Catalogue, Driving, Model};
 
-/// One entry that names no quantised artefact, and the release it states
-/// instead — as its publisher's own repository lists it.
-///
-/// The shard sizes and the parameter count are copied off the Hugging Face file
-/// list of each entry's `upstream` on 2026-09-11. They are here so that this
-/// test compares the catalogue with something outside it: `download_bytes`
-/// divided by `parameters_b` would be 2.0 for any invented pair of numbers at
-/// `bfloat16`, and 2.0 is not evidence that either number is this model's.
-struct Published {
-    /// The catalogue id.
-    id: &'static str,
-    /// The safetensors shards the publisher lists, in bytes.
-    shards: &'static [u64],
-    /// The parameter count the repository's own index states.
-    parameters: u64,
-}
-
-/// What the two entries' publishers publish.
-const THE_TWO: [Published; 2] = [
-    Published {
-        id: "eurollm-9b-instruct",
-        shards: &[4_991_396_632, 4_983_059_672, 4_999_836_776, 3_330_390_280],
-        parameters: 9_152_319_488,
-    },
-    Published {
-        id: "teuken-7b-instruct",
-        shards: &[4_936_228_560, 4_929_565_048, 4_929_565_072, 110_125_512],
-        parameters: 7_452_725_248,
-    },
-];
-
-/// Bytes per parameter at which `Catalogue::parse` separates a quantised
-/// artefact's size from a full-precision release's.
-///
-/// The loader's own constant is private, which is right — it is a rule about
-/// loading rather than a number anybody else should reason with — so this is
-/// the figure the catalogue's rule 5 states in words, checked against the
-/// behaviour rather than shared with it.
-const THE_PRECISION_LINE: f64 = 1.5;
+/// The two entries this task's correction was about, by the ids the catalogue
+/// uses.
+const THE_TWO: [&str; 2] = ["eurollm-9b-instruct", "teuken-7b-instruct"];
 
 /// Where the carry-or-fetch measurement lives.
 const THE_MEASUREMENT: &str = "docs/quirks.md";
@@ -139,87 +107,19 @@ fn an_entry(parameters_b: f32, bytes: u64, vram: f32, ram: f32, quantised: bool)
     )
 }
 
-/// **Each of the two entries states a size, a video-memory figure and a
-/// system-memory figure a reader can check against something that exists.**
-///
-/// The something is each publisher's own release: the shards it lists add to
-/// the size the entry states, to the byte, and the parameter count in its index
-/// is the one the entry rounds. The two memory figures are then held to the
-/// only floor that means anything — a machine that cannot hold the weights
-/// cannot run them — and to the headroom the entry claims above it.
-#[test]
-fn the_two_entries_that_name_no_artefact_state_their_publishers_own_release() {
-    for published in &THE_TWO {
-        let model = the_entry(published.id);
-        assert!(
-            model.quantised_at().is_none(),
-            "`{}` claims a quantisation now; this test is about the entries that cannot, and \
-             whichever artefact was chosen is the size to state",
-            published.id
-        );
-
-        let weights: u64 = published.shards.iter().sum();
-        assert_eq!(
-            model.download_bytes, weights,
-            "`{}` states a size its publisher's own file list does not add up to",
-            published.id
-        );
-
-        // The parameter count is the manifest's, to the tenth of a billion the
-        // field carries. Teuken's was the publisher's product name — 7.0 beside
-        // 7.45 billion parameters — which made every ratio below meaningless.
-        let billions = published.parameters as f64 / 1e9;
-        assert!(
-            (f64::from(model.parameters_b) - billions).abs() < 0.05,
-            "`{}` says {} billion parameters and its publisher's index says {billions:.2}",
-            published.id,
-            model.parameters_b
-        );
-
-        // Two bytes each, because that is what `bfloat16` costs. This is the
-        // arithmetic rule 5 refuses a four-bit leftover with, asked of the
-        // corrected entry.
-        assert!(
-            model.bytes_per_parameter() > THE_PRECISION_LINE,
-            "`{}` still states {:.2} bytes per parameter, which is a quantised artefact's figure \
-             on an entry that names no artefact",
-            published.id,
-            model.bytes_per_parameter()
-        );
-
-        let weights_gb = model.weights_gb();
-        assert!(
-            f64::from(model.min_ram_gb) >= weights_gb && f64::from(model.min_vram_gb) >= weights_gb,
-            "`{}` asks for {} GB of memory and {} GB of video memory beside {weights_gb:.2} GB of \
-             weights, which is a figure somebody would size a machine against and be wrong",
-            published.id,
-            model.min_ram_gb,
-            model.min_vram_gb
-        );
-
-        // And the consequence is stated rather than softened: a model nobody
-        // has quantised for us is not one an ordinary laptop runs, and the
-        // catalogue says so where a person reads it.
-        assert_eq!(
-            model.on_cpu,
-            OnCpu::Slow,
-            "`{}` offers weights of {weights_gb:.2} GB as something a processor handles",
-            published.id
-        );
-    }
-}
-
 /// **No grade moved.** A size is not a measurement of driving, and neither
 /// entry has been measured — the constraint the task is bounded by, as a test
 /// rather than as an intention.
+///
+/// Still true after task 15 named an artefact for each of them, and for a
+/// stronger reason than it was here: naming a file is not running one either.
 #[test]
 fn correcting_a_size_moved_no_grade() {
-    for published in &THE_TWO {
+    for id in THE_TWO {
         assert_eq!(
-            the_entry(published.id).drives_verbs,
+            the_entry(id).drives_verbs,
             Driving::NotMeasured,
-            "`{}` gained a grade in a change that ran no measurement",
-            published.id
+            "`{id}` gained a grade in a change that ran no measurement"
         );
     }
 }
@@ -235,11 +135,10 @@ fn correcting_a_size_moved_no_grade() {
 #[test]
 fn the_carry_or_fetch_table_carries_the_two_corrected_sizes() {
     let measurement = reading(THE_MEASUREMENT);
-    for published in &THE_TWO {
-        let model = the_entry(published.id);
+    for id in THE_TWO {
+        let model = the_entry(id);
         let row = format!(
-            "| `{}` | {} | `not-measured` |",
-            published.id,
+            "| `{id}` | {} | `not-measured` |",
             with_underscores(model.download_bytes)
         );
         assert!(
@@ -249,11 +148,20 @@ fn the_carry_or_fetch_table_carries_the_two_corrected_sizes() {
              is"
         );
     }
-    for stale in ["5_600_000_000", "4_600_000_000"] {
+    // The two four-bit leftovers this task replaced, and the two publishers'
+    // releases task 15 replaced in turn: a table row carrying any of the four
+    // is a row about a file no entry names.
+    for stale in [
+        "5_600_000_000",
+        "4_600_000_000",
+        "18_304_683_360",
+        "14_905_484_192",
+    ] {
         assert!(
             !measurement.contains(&format!("| {stale} |")),
-            "{THE_MEASUREMENT} still carries {stale} as a table row: that is one of the two \
-             four-bit figures this change replaced"
+            "{THE_MEASUREMENT} still carries {stale} as a table row: that is a size one of \
+             these two entries has stopped stating, so the table is answering for a file the \
+             catalogue does not name"
         );
     }
 }

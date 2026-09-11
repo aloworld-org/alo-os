@@ -36,8 +36,9 @@
 #    catalogue had never chosen and could not have measured without silently
 #    borrowing somebody else's. A third party's artefact is allowed here, but it
 #    is **named**, never implied; an entry that can point at nothing claims no
-#    quantisation, which is what `teuken-7b-instruct` and `eurollm-9b-instruct`
-#    now do.
+#    quantisation. `teuken-7b-instruct` and `eurollm-9b-instruct` did exactly
+#    that until 2026-09-11, when rule 6's price was paid for both and each of
+#    them named the upload it means.
 #
 # 5. **A size, a `min_vram_gb` and a `min_ram_gb` belong to an artefact this
 #    entry names.** Rule 4 made the quantisation point at a file and left the
@@ -67,7 +68,10 @@
 #      their laptop against and be wrong.
 #
 #    Rule 6 is what an entry may do **instead** of falling back to the
-#    publisher's own release, and the price of doing it.
+#    publisher's own release, and the price of doing it. Both entries that were
+#    written from this rule have since paid it, so the fallback above is now the
+#    shape an entry takes on its way in rather than one anything here stands in
+#    — which is the right place for it, and not a reason to soften it.
 #
 # 6. **An artefact somebody other than the publisher made may be named, and
 #    naming one costs three statements.** ADR 0026 took this decision: refusing
@@ -109,10 +113,21 @@
 #    Where the three statements cannot be produced, rule 5 is the fallback and
 #    the entry is **carried rather than omitted**: no quantisation, the
 #    publisher's own release, `not-measured`. That is where both European
-#    entries stand as this rule is written — naming a file for either of them is
-#    a curation act with its own sizes and its own licence question, and it is
-#    somebody's to make on purpose rather than a side effect of writing the
-#    rule.
+#    entries stood when this rule was written, and on 2026-09-11 the price was
+#    paid for both: `eurollm-9b-instruct` names `bartowski`'s upload and
+#    `teuken-7b-instruct` names `mradermacher`'s, each with the digest off that
+#    repository's own file list and a note saying how it was made. Two things
+#    that choosing taught, for the curator who does it next:
+#
+#    - **Read the licence against the uploader's repository too**, not only the
+#      publisher's. Teuken is published twice under two licences, and its two
+#      best-known requantisers took the **research** release — so the popular
+#      upload would have put a research artefact behind an Apache-2.0 entry,
+#      which is rule 1's harm arriving through rule 6's door.
+#    - **The grounds go in the note.** Four people had quantised EuroLLM and
+#      the one named is the one whose repository states the fullest recipe;
+#      that is a judgement, and a judgement nobody wrote down reads a year
+#      later as a coin toss.
 #
 # Seven entries have been measured and seven have not, and the seven unmeasured
 # are the ones a 6 GB development box cannot hold: everything from seven billion
@@ -157,35 +172,50 @@
 # anywhere else would omit them, and somebody in Europe looking for a model
 # trained on their own languages should not have to go hunting.
 
+# utter-project publishes EuroLLM as safetensors and no GGUF of its own, and
+# the pinned runtime's library has no `eurollm` at all, so every Q4_K_M of it is
+# a third party's requantisation. Under rule 4 this entry therefore claimed no
+# quantisation at all, and under rule 5 it stated the publisher's own `bfloat16`
+# release — 18_304_683_360 bytes over 9_152_319_488 parameters, 20.5 GB of video
+# memory and 24.0 GB of system memory — which was honest and was not a model
+# anybody runs.
+#
+# **Rule 6 is now paid, on 2026-09-11.** Four uploads of a Q4_K_M exist
+# (`bartowski`, `lmstudio-community`, `QuantFactory` and `NikolayKozloff`'s Q8
+# only); the one named is `bartowski`'s, chosen because its repository states
+# the most complete recipe of them — the llama.cpp release it was built with and
+# the calibration dataset the importance matrix came from — and because its own
+# metadata carries the model's licence and no other. The `sha256` is that file's
+# own, off the repository's file list the same day; the size, the card and the
+# memory are that artefact's rather than the release it came from.
 [[model]]
 id = "eurollm-9b-instruct"
 name = "EuroLLM 9B Instruct"
 publisher = "EuroLLM (EU Horizon project)"
 parameters_b = 9.2
-# No `quantisation` and no `artefact`, under rule 4: utter-project publishes
-# EuroLLM as safetensors and no GGUF of its own, and the pinned runtime's
-# library has no `eurollm` at all. Every Q4_K_M of it on Hugging Face is a
-# third party's requantisation (`bartowski`, `QuantFactory`, `lmstudio-community`
-# and others), read 2026-09-11, and this catalogue has chosen none of them. So
-# the entry claims no quantisation, and it cannot be graded until one is chosen.
-# Rule 6 says what choosing one would cost — a name, a pin and a note — and that
-# it is a deliberate act rather than a tidy-up, which is why this entry is still
-# where it was.
-#
-# The three numbers below are therefore the publisher's own release, under
-# rule 5, read off the file list of the `upstream` repository on 2026-09-11:
-# four `bfloat16` safetensors shards of 4_991_396_632, 4_983_059_672,
-# 4_999_836_776 and 3_330_390_280 bytes over 9_152_319_488 parameters — two
-# bytes each, as `bfloat16` is. They were 5_600_000_000, 8.0 and 12.0, which is
-# a four-bit download this entry no longer names. `on_cpu` was already "slow"
-# and is more so.
-download_bytes = 18_304_683_360
-min_vram_gb = 20.5
-min_ram_gb = 24.0
+quantisation = "Q4_K_M"
+artefact = "hf.co/bartowski/EuroLLM-9B-Instruct-GGUF:Q4_K_M"
+download_bytes = 5_582_838_496
+min_vram_gb = 8.0
+min_ram_gb = 12.0
+# Nine billion parameters at four bits is what `gemma-2-9b-instruct` is, and
+# that entry is "slow" for the same reason: the weights fit an ordinary laptop's
+# memory and the arithmetic does not fit its processor at a speed anybody wants
+# across the four model calls a turn makes.
 on_cpu = "slow"
 drives_verbs = "not-measured"
 upstream = "https://huggingface.co/utter-project/EuroLLM-9B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.requantised]
+by = "bartowski"
+sha256 = "785a3b2883532381704ef74f866f822f179a931801d1ed1cf12e6deeb838806b"
+note = """An importance-matrix quantisation, made with llama.cpp release b4240 \
+from utter-project/EuroLLM-9B-Instruct, with the calibration dataset published \
+as a gist the repository links — the fullest recipe of the four uploads of this \
+model, which is why it is the one named. The upload's own Hugging Face metadata \
+states `license: apache-2.0`, the model's own licence, and attaches no terms \
+beyond it. Read 2026-09-11."""
 
 # openGPT-X publishes this model twice, under two different licences: the
 # `-research-v0.4` release is `license: other` and the `-commercial-v0.4`
@@ -201,29 +231,51 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 # choosing one rather than only on a machine with room — under rule 6, which
 # says what that choice costs. `docs/quirks.md` has both findings.
 #
-# Its four numbers are the commercial release's own, under rule 5, read off
-# that repository's file list on 2026-09-11: four `bfloat16` shards of
-# 4_936_228_560, 4_929_565_048, 4_929_565_072 and 110_125_512 bytes over
-# 7_452_725_248 parameters. `parameters_b` was 7.0 — the publisher's product
-# name rather than the count in its own manifest, which is what every other
-# entry here states — and the size, the card and the memory were 4_600_000_000,
-# 6.0 and 10.0: four-bit figures for the artefact this entry stopped claiming.
-# `on_cpu` moves with them. Fifteen gigabytes of `bfloat16` weights on a
-# processor is not "workable" by the definition `OnCpu` gives, and the word had
-# been true of a four-bit download rather than of this one. No grade moved:
-# `drives_verbs` is measured by `alo-driving` and nothing here measures driving.
+# Its `parameters_b` was 7.0 — the publisher's product name rather than the
+# count in its own manifest, which is what every other entry here states — and
+# is 7_452_725_248 rounded. It then stated the commercial release's own
+# `bfloat16` shards, 14_905_484_192 bytes with 17.0 and 21.0 beside them, under
+# rule 5.
+#
+# **Rule 6 is now paid, on 2026-09-11**, and the choice turns on the licence
+# rather than on popularity. openGPT-X's two releases are requantised by
+# different people: `bartowski` and `QuantFactory` publish the **research**
+# release, which is `license: other`, and naming either would put a research
+# artefact behind this entry's Apache-2.0 line — rule 1's harm returning by the
+# other door. `mradermacher` publishes the commercial release, states how
+# (static quants, no importance matrix, with its conversion type and quantize
+# version written down) and carries the model's own licence. So the artefact is
+# that one, and the size, the card and the memory are its. `on_cpu` returns to
+# "workable": five gigabytes of four-bit weights is what that word was always
+# true of, and it was "slow" for as long as this entry could name no such file.
+# No grade moved — `drives_verbs` is measured by `alo-driving`, this box cannot
+# hold a 7B model at four bits, and naming a file is not running one.
 [[model]]
 id = "teuken-7b-instruct"
 name = "Teuken 7B Instruct"
 publisher = "OpenGPT-X"
 parameters_b = 7.5
-download_bytes = 14_905_484_192
-min_vram_gb = 17.0
-min_ram_gb = 21.0
-on_cpu = "slow"
+quantisation = "Q4_K_M"
+artefact = "hf.co/mradermacher/Teuken-7B-instruct-commercial-v0.4-GGUF:Q4_K_M"
+download_bytes = 5_018_868_512
+min_vram_gb = 6.5
+min_ram_gb = 10.0
+on_cpu = "workable"
 drives_verbs = "not-measured"
 upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-commercial-v0.4"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.requantised]
+by = "mradermacher"
+sha256 = "03fd13daafb6f20c1c5f4b908d163841cdd96803a6f5a7c0c39dd236a2b1630b"
+note = """A static quantisation — no importance matrix — of \
+openGPT-X/Teuken-7B-instruct-commercial-v0.4, the one of that model's two \
+releases this entry's Apache-2.0 line is true of; the uploader states the \
+conversion type and quantize version rather than a llama.cpp release, and \
+publishes the whole quant ladder from the one run. A weighted set of the same \
+release exists at `-i1-GGUF` and is deliberately not what this entry names. The \
+upload's own Hugging Face metadata states `license: apache-2.0`, the model's \
+own licence, and attaches no terms beyond it. Read 2026-09-11."""
 
 [[model]]
 id = "mistral-7b-instruct"

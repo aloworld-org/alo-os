@@ -255,6 +255,18 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// point of the correction: it was in the list because of a size belonging to a
 /// file the entry does not claim. So the shorter list is six, the measured count
 /// is untouched at four, and the sentence a person reads is the same again.
+///
+/// **And lane B's task 15 put it back, which is the same arithmetic run
+/// forwards.** Under ADR 0026 an entry may name a third party's requantisation
+/// if it says whose it is, pins it and describes it, and `teuken-7b-instruct`
+/// now names `mradermacher`'s Q4_K_M of the commercial release: 5.02 GB, 10 GB
+/// of system memory, `on_cpu` back to `workable` because that word was always
+/// true of a four-bit download. So the shorter list is seven again. It is worth
+/// being clear about what that movement is and is not — the entry left the list
+/// when it stopped claiming a file it could not point at, and rejoined it when
+/// it named one it can. The **measured** count does not move either way, and
+/// that is the one a person's answer turns on: naming a file is not running it,
+/// and nobody has run this one.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -262,7 +274,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         refused,
         NoAgentHere::NoneClearsTheBar {
-            to_choose_from: 6,
+            to_choose_from: 7,
             measured: 4,
         }
     );

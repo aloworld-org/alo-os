@@ -857,3 +857,95 @@ write down what rule 6 asks for.
   the scoring or the runtime's wait moves. No weights on the image, no setup
   flow, and nothing in `crates/alo-shell`. An upload nobody can check the digest
   of is not a candidate: rule 6 refuses it, and the entry says so instead.
+
+**Done, 2026-09-11.** Both entries name an upload and both are complete.
+`eurollm-9b-instruct` names `hf.co/bartowski/EuroLLM-9B-Instruct-GGUF:Q4_K_M`
+(5_582_838_496 bytes, `sha256` `785a3b28…`, 8.0 and 12.0 GB, still `on_cpu =
+"slow"` because nine billion parameters on a processor is what
+`gemma-2-9b-instruct` is), and `teuken-7b-instruct` names
+`hf.co/mradermacher/Teuken-7B-instruct-commercial-v0.4-GGUF:Q4_K_M`
+(5_018_868_512 bytes, `sha256` `03fd13da…`, 6.5 and 10.0 GB, `on_cpu` back to
+`workable`). Each digest is the one its repository's own file list publishes,
+read 2026-09-11, and each note says how the file was made where the uploader
+says so and that the upload carries the model's licence and no other.
+
+**The grounds are different for the two, and the Teuken one is a finding.**
+EuroLLM has four uploads all carrying Apache-2.0, so the choice is quality of
+provenance: `bartowski` names the llama.cpp release and publishes the
+importance-matrix calibration set, which none of the others describe. Teuken's
+choice is a **licence** question that nearly went the wrong way. openGPT-X
+publishes the model twice — research under `license: other`, commercial under
+Apache-2.0 — and the two names a person reaches for first, `bartowski` and
+`QuantFactory`, both requantised the **research** release. Naming either would
+have put a research-licensed artefact behind this entry's commercial claim,
+which is rule 1's harm arriving through rule 6's door, and **no loader check can
+see it**: a research requantisation has a name, a digest and a note like any
+other. So `mradermacher`'s commercial set is what the entry names, and the rule
+that catches the general case —
+*an entry that borrows a file names a requantisation of the release its own
+`upstream` names* — is a test over the catalogue rather than a refusal in
+`Catalogue::parse`, because a first-party artefact is spelled the way the
+runtime's library spells it and carries no release name to compare.
+
+**No grade moved and none could:** task 9 measured that this lane's box cannot
+hold a 7B model at four bits at any useful speed, so both entries are
+`not-measured` with an artefact now named, which is a shorter distance from a
+grade than they stood at. The stated consequence happened exactly as written —
+`Catalogue::to_choose_from_on_cpu(16.0)` offers seven again, and
+`crates/alo-driving/tests/from_a_prompt_to_what_a_machine_offers.rs` reads
+seven — while EuroLLM stays out of that list, which is the half worth checking:
+it returned to a four-bit size without returning to a laptop. `docs/quirks.md`
+carries both findings and its carry-or-fetch table carries both new sizes, and
+rule 6 of `data/catalogue.toml` gained the two sentences a curator needs. Two
+tests written from earlier tasks were repointed rather than deleted, and the
+report says exactly what moved in each. Measured in
+`crates/alo-models/tests/the_file_the_two_european_entries_mean.rs` and in this
+crate's existing suites. Report:
+`docs/autonomy/updates/the-file-the-two-european-entries-mean.md`. No task in
+`v0-01-delivery-plan.md` matched this one — its task 31 is the weights-aboard
+work, which is lane B's task 10 and still blocked — so nothing was marked there.
+Task 16 below is the next task and was written in the same change.
+
+### 16. The pin an entry states, and what the machine actually got
+
+**Status:** ready. **Depends on:** 15.
+
+Task 15 wrote two `sha256` figures into `data/catalogue.toml` and **nothing in
+this repository checks either of them.** `Requantised` refuses a digest that is
+not shaped like one; no code compares it with anything. So the sentence rule 6
+sells — *the file we graded and the file a machine fetches are the same file or
+the fetch fails* — is, today, a promise about a field nobody reads. A tag
+re-pointed at a different upload is exactly the case the pin exists for, and it
+would pass in silence.
+
+ADR 0026 said this belonged with the weights work, and that was right when the
+weights work looked near. It is not: task 10 is blocked on a catalogue entry that
+clears the verb-driving bar, no entry does, and the pin would sit unchecked for
+as long as that lasts. The obligation is separable because the fetch it is about
+is `crates/alo-models`' own — a person asking for a model in one command, which
+`docs/features.md` promises for v0.01 — rather than the image's.
+
+- **Acceptance:** a fetch of an entry that states a `[model.requantised]` block
+  ends with the machine holding the file that entry pinned, or ends in a refusal
+  in words that names what was expected and what arrived; the refusal is
+  measured, not only the success, because a pin nobody has seen fail is a pin
+  nobody should believe; an entry with no such block is unaffected, and a fetch
+  of one is neither slowed nor newly able to fail; and nothing an agent can send
+  over the daemon's socket reaches any of it — a fetch is a person's act, as
+  `alo-remembering`'s file is a person's file.
+- **And the honest outcome if the runtime will not answer:** the pinned runtime
+  stores what it pulls under digests of its own, and whether the one it exposes
+  for a model pulled from `hf.co/...` is the `sha256` of that GGUF file is a
+  question nobody here has asked it. **Find out against the real runtime**, and
+  if the answer is that it cannot be compared, *that* is the deliverable: the
+  finding written in `docs/quirks.md` beside the other Ollama entries, rule 6
+  amended to say what a pin can and cannot promise until something else carries
+  it, and the check written where it can be made — which may be a fetch this
+  repository performs rather than one it delegates, and that is a decision with
+  a size to it, so write the ADR rather than the code.
+- **Constraint:** engines are configured, never patched (ADR 0006): whatever is
+  done happens through the runtime's own interface or beside it, never inside
+  it. No weights on the image, no setup flow, no grade moves, and nothing in
+  `crates/alo-shell`. A check that downloads five gigabytes in a unit test is
+  not a check; the measurement against a real runtime is an integration test,
+  `#[ignore]`d for the reasons the existing ones are.

@@ -21,6 +21,16 @@
 //! measurement — ADR 0007 is untouched, and [`crate::Driving`] is still a grade
 //! `alo-driving` earned on a machine we ran it on.
 //!
+//! Both of those entries paid the price on 2026-09-11 and name an upload each.
+//! One thing that choosing taught, and it is not in this type: openGPT-X
+//! publishes Teuken under two licences, and the two most-downloaded
+//! requantisations of it are of the release licensed for research. Nothing here
+//! can see that — a research requantisation has a name, a digest and a note like
+//! any other — so the catalogue checks it one level up, in
+//! `tests/the_file_the_two_european_entries_mean.rs`, and rule 6 tells the next
+//! curator to read the licence on the uploader's repository as well as the
+//! publisher's.
+//!
 //! # Why each of the three is refused rather than encouraged
 //!
 //! - **The requantiser**, because a name read out of a URL is a name nobody
