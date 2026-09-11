@@ -17,6 +17,42 @@ mitigation there is; if it slips, that risk is unmitigated.
 **Nothing is certified yet.** alo OS is pre-v0.01 and this table is the shape
 the answer will take, not an answer.
 
+## What to buy first
+
+The owner is buying the first certified machine second-hand (decided
+2026-09-11). This is the specification, and each line has a measurement behind
+it rather than a preference — most of them taken on the development PC that
+day, which is the machine this one exists to stop relying on.
+
+| | Buy | Because |
+|---|---|---|
+| **Memory** | **32 GB** | A 7B model at four bits is ~5 GB of weights and needs the OS, the agent and a browser beside it. On a 15.5 GB machine the same model ran against swap at a quarter of a token a second and the guest went down under it (`docs/quirks.md`, 2026-09-11). |
+| **Storage** | **1 TB NVMe** | The image, its weights, a built disk and a VM disk together passed 20 GB in one afternoon; the development drive hit 98 % and the gates refused to build. |
+| **Processor** | Intel 8th generation or newer, or Ryzen 3000 or newer | AVX2 is where CPU inference lives; older parts run the model slowly enough to mislead a measurement. |
+| **Graphics** | **Integrated only** — Intel or AMD | This document's first certified machine has no discrete GPU on purpose: it decides whether there is a market. The GPU workstation is the second machine. |
+| **Firmware** | UEFI, Secure Boot, TPM 2.0 | The disk boots generation-2 with Secure Boot **on** under the *Microsoft UEFI Certificate Authority*, which Fedora's shim is signed by (`docs/booting.md`). Every business laptop of this generation has all three. |
+| **Wireless** | Intel | Broadcom and Realtek are where the Linux wireless quirks are, and *the GPU works on first boot* has a sibling nobody wants to write about Wi-Fi. |
+| **Arrives with** | Windows 10 or 11 installed | ADR 0023: alo OS is installed *from the machine it replaces*. A machine that already runs Windows is the real test of that promise, not an obstacle to it. |
+
+**The model to look for:** a Lenovo ThinkPad T14 (Gen 1 or Gen 2, Intel), with
+the listing stating 32 GB — many T14s have memory soldered, so it cannot be
+added later. The T490 and T480 are older, cheaper and take memory upgrades; the
+Dell Latitude 5410/7410 and HP EliteBook 840 G6/G7 are the same class. What
+matters more than the brand is the standard at the top of this document:
+**bought twice and working completely**, so pick a model that is plentiful
+second-hand rather than a good one that is rare.
+
+**Not:** a Surface (firmware of its own), a consumer laptop with an Nvidia chip
+(that is the second machine's problem, and driver work on the first would hide
+whether the product works without it), anything without NVMe, anything that
+cannot be found again.
+
+**What happens when it arrives:** the exact disk that booted in a VM on
+2026-09-11 (`docs/booting.md`) is written to it, and the two promises in
+`docs/autonomy/v0-01-evidence.md` that no VM can evidence — *the GPU works on
+first boot* and *boots on one certified machine, firmware to sign-in* — are
+measured on it. Then its row goes in the table above.
+
 ## Certified
 
 A machine is **certified** when everything in `docs/features.md` for the current
