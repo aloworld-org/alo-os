@@ -1024,3 +1024,68 @@ of exactly the kind this repository turns into tested values.
   is the knock; no new message, no payload added to it. Nothing in
   `crates/alo-shell`, and every string a person reads is in the vocabulary
   `alo-saying` collects.
+
+**Done, 2026-09-11.** `crates/alo-changing`: `Changing` is the composition as
+one value, and **the order is held by shape** — both doors end in one private
+function, that function is the only caller of `Knocking::knock` in the crate,
+and the knock stands on the far side of `alo_remembering::kept`'s `?`, so a
+knock cannot overtake the write it announces. It is measured anyway, twice: a
+door of the tests' own reads the file at the moment it is knocked on, and over
+a real Unix socket a thread standing where the daemon stands re-reads the file
+before it answers. The change is applied to a **copy** of the list, the copy
+is written whole, and only then does it replace the list the caller holds — so
+a refused write leaves all three places a grant lives exactly as they were,
+knocks nobody, and is told in one declared sentence whose point is that
+nothing moved in either direction. A machine with no daemon is not an error:
+every way the conversation at the door can fail to happen is *at the next
+sign-in*, because the change already stands on the disk — except a daemon that
+answered and could not read its list again, which is the one case with
+something left to look at and is carried in the daemon's own sentence rather
+than dressed up as either of the others. What the crate cannot do is by
+construction: a grant arrives only as a sealed `alo_picking::Chosen`, a
+revocation only as an `alo_granted::Seen`, and the agent's side cannot reach
+any of it — `alo-agentd` does not name this crate and this crate names no
+daemon, no turn and no record, held by manifest tests the way `alo-clipboard`
+holds a turn out of the clipboard. No protocol change: the knock is
+`FromAPerson::Granted` as it stands, and a test holds it to carrying nothing.
+Two strings under a new `changing` area, collected by `alo-saying`
+(twenty-five collected, twenty-six declaring). Report:
+`docs/autonomy/updates/a-persons-change-reaches-the-file-the-daemon-re-reads.md`.
+The next task (24) is written below.
+
+### 24. A person's choice about their model, written where the machine reads it
+
+**Status:** ready. **Depends on:** nothing.
+**Owner:** Claude — it touches no compositor file, needs no screen and no
+machine.
+
+Written by task 23, which closed the same gap for the grants and found the
+settings standing in it. `crates/alo-choosing` is the person's half of
+ADR 0016 — which model answers, the weights they brought, the providers they
+added, the language they read — and it **only reads**: `Settings::at` reads
+the file under `$XDG_CONFIG_HOME/alo`, and nothing in this repository writes
+it. The evidence ledger has said so in as many words since task 11: *a
+provider is added by writing the person's own settings file by hand*. So every
+choice ADR 0016 gives the person is one no surface could carry out — the same
+shape task 23 started from, one file over.
+
+The seam is the written change, deliberately not a Settings screen: a change
+lands in the person's own file whole, through `alo-choosing`'s own shapes, or
+it does not land at all.
+
+- **Acceptance:** a change made through the one new value — a model chosen, a
+  provider added, a language picked — reads back through `Settings::at` from
+  the person's own file; what can be written is only what `alo-choosing`
+  already validates, with no second parser and no constructor from text; a
+  write that fails leaves the file as it was and is told in words; a file that
+  is not there yet is the first choice's ordinary morning, not an error; and
+  every string a person reads is in the vocabulary `alo-saying` collects, with
+  the refusals tested beside the answers.
+- **Constraint:** it chooses nothing for anybody — ADR 0016 stands and
+  ADR 0025's reading stands: no default is written that a person did not
+  choose, and nothing pre-selects. It does not touch the organisation's bound
+  in `/etc/alo/agentd.toml`, which is ADR 0004's and has an owner. Whether a
+  running daemon must also be *told* — the knock question — is answered by
+  reading how `alo-agentd` actually takes its settings, and the answer is
+  written in the report rather than assumed either way. Nothing in
+  `crates/alo-shell`.

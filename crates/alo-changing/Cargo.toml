@@ -1,0 +1,54 @@
+[package]
+name = "alo-changing"
+version = "0.0.1"
+description = "The person's half of a change to the grants: written whole to the file the daemon re-reads, and then — only then — the knock that says to read it again."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The grants themselves. This crate carries a change to the list the daemon
+# asks; it never decides what a grant means, what it covers or when it ends —
+# `alo-capability` does all three, and a second opinion about any of them
+# would be a widening nobody asked for.
+alo-capability = { path = "../alo-capability" }
+
+# Revocation arrives as a row a person saw. `alo_granted::Seen` is the one
+# shape that cannot name a grant the machine does not hold, so taking it here
+# is what keeps this crate from being a second door to revoking by number.
+alo-granted = { path = "../alo-granted" }
+
+# A grant arrives as a pick. `alo_picking::Chosen` is sealed, so a grant made
+# through this crate is a folder a person really stood in and picked — there
+# is no shape here in which anything else could become one.
+alo-picking = { path = "../alo-picking" }
+
+# The file itself: `kept` writes it whole or not at all, which is what makes
+# *a write that fails leaves the file as it was* this crate's to promise
+# rather than to hope.
+alo-remembering = { path = "../alo-remembering" }
+
+# Everything a person reads here — the write that failed, and the change that
+# stands for the next sign-in.
+alo-strings = { path = "../alo-strings" }
+
+# The one derive this crate rents, and only for its refusal and its own
+# string list's error.
+thiserror = { workspace = true }
+
+[target.'cfg(unix)'.dependencies]
+# The knock, in the one vocabulary the daemon reads. Only the real socket
+# client (`door.rs`) speaks it, and the socket is a Unix socket — so the wire
+# words are needed exactly where the wire is.
+alo-protocol = { path = "../alo-protocol" }
+
+[dev-dependencies]
+# The machine's one vocabulary. This crate's own tests are written against its
+# own list; the acceptance test asks the question that list cannot — whether
+# what this crate says survives being put beside everybody else's, and whether
+# it is collected at all.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

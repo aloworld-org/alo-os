@@ -24,6 +24,7 @@ alo-applications = { path = "../alo-applications" }
 alo-approving = { path = "../alo-approving" }
 alo-asking = { path = "../alo-asking" }
 alo-capability = { path = "../alo-capability" }
+alo-changing = { path = "../alo-changing" }
 alo-choosing = { path = "../alo-choosing" }
 alo-clipboard = { path = "../alo-clipboard" }
 alo-context = { path = "../alo-context" }

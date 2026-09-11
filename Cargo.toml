@@ -15,6 +15,7 @@ members = [
   "crates/alo-boundaryd",
   "crates/alo-by-hand",
   "crates/alo-capability",
+  "crates/alo-changing",
   "crates/alo-choosing",
   "crates/alo-citing",
   "crates/alo-clipboard",
