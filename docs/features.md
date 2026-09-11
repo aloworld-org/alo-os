@@ -231,7 +231,7 @@ a machine with the agent off is never talked into turning it on.
 - [v0.01] **A machine is only offered agent work it can actually do.** Where nothing catalogued clears the bar on a given machine, the honest answers are the ones already on offer — a paired machine, or a provider — shown as a choice and never substituted silently
 - [v0.01] ★ **The GPU works on first boot**, where there is one — no driver installation, no CUDA archaeology. Acceleration, not an entry price
 - [v0.01] ★ **A model runs in one command**, from a curated catalogue of open-weight models with their licences stated
-- [v0.01] ★ The agents point at the **local** model by default — sovereignty is the default configuration, not an option to find
+- [v0.01] ★ **The local model is what the machine arrives ready to run** — sovereignty is what a machine can do out of the box, not an option to find. Every other source is something a person adds; nothing is chosen on their behalf, and until somebody chooses, nothing answers (ADR 0025, ADR 0016)
 - [v0.01] ★ **Add your own provider in Settings** — a name, an address, and a key: Mistral, your own endpoint, or whatever you already pay for. The key goes to the keyring, never into a settings file, so it cannot leak through a backup or a support bundle. You say where the provider runs; nothing is guessed from its address
 - [v0.5] An address that is not https is refused rather than warned about, unless it is a service on this machine — "it is only our internal network" is how a key ends up on the wire in clear
 - [v0.5] Test a provider before saving it, so a mistyped key is found now rather than in the middle of a question

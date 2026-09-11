@@ -1,8 +1,12 @@
 # ADR 0025 — The default is what a machine arrives able to do, and nobody chooses for the person
 
-**Status:** proposed — the owner decides, because the recommendation asks for one
-line of `docs/features.md` to be reworded and only the owner may move the
-definition
+**Status:** **ACCEPTED, 2026-09-11 — Option D**, with the proposed wording taken
+as written. Accepted under the same standing delegation from the owner that
+[ADR 0024](0024-what-a-person-signs-in-at.md) was accepted under, and recorded
+here rather than assumed. Everything below is left exactly as it was argued while
+unaccepted, so the reasoning can be checked against the outcome rather than
+rewritten to match it. `docs/features.md` was reworded in the same change; what
+that cost and what it added is set out in *What accepting it changed* at the end.
 **Date:** 2026-09-11
 **Proposed by:** the v0.01 delivery workstream, as task 16 of
 `docs/autonomy/v0-01-delivery-plan.md`
@@ -243,3 +247,34 @@ single machine more sovereign.
 worker writing code would be choosing between the options rather than building
 one — which is the failure ADR 0024 was written to avoid, and the reason this
 promise has been carried untouched rather than quietly satisfied.
+
+## What accepting it changed
+
+**2026-09-11.** The definition in `docs/features.md` now reads:
+
+> - [v0.01] ★ **The local model is what the machine arrives ready to run** —
+>   sovereignty is what a machine can do out of the box, not an option to find.
+>   Every other source is something a person adds; nothing is chosen on their
+>   behalf, and until somebody chooses, nothing answers (ADR 0025, ADR 0016).
+
+**What it gives up** is one claim: that a value sits in a person's settings file
+before they have touched one. That claim was already unbuildable here — ADR 0016
+keeps that file for the person, `alo-choosing` cannot invent an entry in it on
+purpose, and ADR 0024 ships no accounts, so at image-build time there is no home
+directory to write into. Giving it up costs no machine any sovereignty, because
+no machine was ever going to have it.
+
+**What it adds** is heavier than what it gives up, and this is why the change is
+not a narrowing: the new line demands **a model on the disk of every machine we
+ship, sized for that machine** (ADR 0007), and that is a promise this repository
+did not previously make and has not yet built. It is now a v0.01 promise with a
+named owner, and the audit carries it as unevidenced until a machine boots with
+one on it — the honest position, and the opposite of the one the old line let us
+occupy, where a sentence about a settings key stood in for a capability nobody
+had shipped.
+
+**The four choices at setup keep the weight ADR 0009 gave them.** The local one
+is listed first because it is the one the machine can already do; nothing is
+pre-selected, and ordering is not weight. That distinction is the whole of what
+makes both sentences keepable at once, and a test that pre-selects anything is a
+test that contradicts this ADR rather than one that passes it.
