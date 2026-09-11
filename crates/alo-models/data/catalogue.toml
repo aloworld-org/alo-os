@@ -2,7 +2,7 @@
 #
 # Data, not code: adding a model is a change to this file, never a release.
 #
-# Four rules for anyone editing it:
+# Five rules for anyone editing it:
 #
 # 1. **Verify the licence against upstream before adding an entry.** Model
 #    licences change between versions and families, and a catalogue that states
@@ -10,8 +10,10 @@
 #    organisation into a breach while showing them a tidy licence name. Where
 #    commercial use carries conditions, write them down; the loader refuses an
 #    entry that says "conditions apply" without saying which.
-# 2. **Sizes are what the disk and the card actually lose**, for the
-#    quantisation named. "It worked for me" is not a useful report without one.
+# 2. **Sizes are what the disk and the card actually lose**, for the artefact
+#    named. "It worked for me" is not a useful report without one. Rule 5 says
+#    what an entry that names no artefact states instead, and the loader checks
+#    both.
 # 3. **`drives_verbs` is a measurement you ran, or it is "not-measured".**
 #    Run `alo-driving` against the model — a fixed set of requests, scored
 #    through the daemon's own door and the same validation a real turn does —
@@ -35,9 +37,34 @@
 #    borrowing somebody else's. A third party's artefact is allowed here, but it
 #    is **named**, never implied; an entry that can point at nothing claims no
 #    quantisation, which is what `teuken-7b-instruct` and `eurollm-9b-instruct`
-#    now do. Their `download_bytes` is still the four-bit figure they were added
-#    with, and with no artefact behind it that number has nothing to check it
-#    against — a gap this file records rather than hides.
+#    now do.
+#
+# 5. **A size, a `min_vram_gb` and a `min_ram_gb` belong to an artefact this
+#    entry names.** Rule 4 made the quantisation point at a file and left the
+#    numbers beside it pointing at nothing: both entries above kept the four-bit
+#    `download_bytes` they were added with after they had stopped claiming any
+#    four-bit artefact, so those figures answered a question the entry no longer
+#    asked. **The road this catalogue took is the publisher's own release**, not
+#    a stranger's requantisation: where no first-party quantised artefact
+#    exists, the entry states the weights its publisher actually publishes —
+#    read off that repository's own file list — because that is the one thing
+#    left that a reader can go and check, and because choosing whose
+#    requantisation this catalogue vouches for is a decision with nobody's name
+#    on it. The consequence is honest and visible: such an entry is large,
+#    `on_cpu = "slow"`, and needs a machine most people do not have. That is the
+#    true sentence about a model nobody has quantised for us.
+#
+#    Both halves are arithmetic and the loader refuses them:
+#
+#    - `download_bytes ÷ parameters_b` lands near 0.6 bytes per parameter for a
+#      four-bit artefact and at 2.0 for a `bfloat16` release, and an entry
+#      whose size sits on the wrong side of 1.5 for what it claims fails to
+#      load. So a four-bit figure cannot be left behind on an entry that has
+#      given up its quantisation, which is exactly what happened here.
+#    - `min_vram_gb` and `min_ram_gb` are never below the size: a machine that
+#      cannot hold the weights cannot run them at any speed, and ten gigabytes
+#      beside fifteen gigabytes of weights is a figure somebody would check
+#      their laptop against and be wrong.
 #
 # Seven entries have been measured and seven have not, and the seven unmeasured
 # are the ones a 6 GB development box cannot hold: everything from seven billion
@@ -93,9 +120,17 @@ parameters_b = 9.2
 # third party's requantisation (`bartowski`, `QuantFactory`, `lmstudio-community`
 # and others), read 2026-09-11, and this catalogue has chosen none of them. So
 # the entry claims no quantisation, and it cannot be graded until one is chosen.
-download_bytes = 5_600_000_000
-min_vram_gb = 8.0
-min_ram_gb = 12.0
+#
+# The three numbers below are therefore the publisher's own release, under
+# rule 5, read off the file list of the `upstream` repository on 2026-09-11:
+# four `bfloat16` safetensors shards of 4_991_396_632, 4_983_059_672,
+# 4_999_836_776 and 3_330_390_280 bytes over 9_152_319_488 parameters — two
+# bytes each, as `bfloat16` is. They were 5_600_000_000, 8.0 and 12.0, which is
+# a four-bit download this entry no longer names. `on_cpu` was already "slow"
+# and is more so.
+download_bytes = 18_304_683_360
+min_vram_gb = 20.5
+min_ram_gb = 24.0
 on_cpu = "slow"
 drives_verbs = "not-measured"
 upstream = "https://huggingface.co/utter-project/EuroLLM-9B-Instruct"
@@ -114,15 +149,27 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 # no quantisation and names no artefact, and a grade for it waits on somebody
 # choosing one rather than only on a machine with room. `docs/quirks.md` has
 # both findings.
+#
+# Its four numbers are the commercial release's own, under rule 5, read off
+# that repository's file list on 2026-09-11: four `bfloat16` shards of
+# 4_936_228_560, 4_929_565_048, 4_929_565_072 and 110_125_512 bytes over
+# 7_452_725_248 parameters. `parameters_b` was 7.0 — the publisher's product
+# name rather than the count in its own manifest, which is what every other
+# entry here states — and the size, the card and the memory were 4_600_000_000,
+# 6.0 and 10.0: four-bit figures for the artefact this entry stopped claiming.
+# `on_cpu` moves with them. Fifteen gigabytes of `bfloat16` weights on a
+# processor is not "workable" by the definition `OnCpu` gives, and the word had
+# been true of a four-bit download rather than of this one. No grade moved:
+# `drives_verbs` is measured by `alo-driving` and nothing here measures driving.
 [[model]]
 id = "teuken-7b-instruct"
 name = "Teuken 7B Instruct"
 publisher = "OpenGPT-X"
-parameters_b = 7.0
-download_bytes = 4_600_000_000
-min_vram_gb = 6.0
-min_ram_gb = 10.0
-on_cpu = "workable"
+parameters_b = 7.5
+download_bytes = 14_905_484_192
+min_vram_gb = 17.0
+min_ram_gb = 21.0
+on_cpu = "slow"
 drives_verbs = "not-measured"
 upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-commercial-v0.4"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }

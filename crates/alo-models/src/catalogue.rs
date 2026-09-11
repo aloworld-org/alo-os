@@ -25,7 +25,33 @@ use std::collections::BTreeSet;
 
 use serde::Deserialize;
 
-use crate::driving::Driving;
+use crate::{costing::GIGABYTE, driving::Driving};
+
+/// Bytes per parameter at which a stated size stops being a quantised
+/// artefact's and becomes a full-precision release's.
+///
+/// Rule 5 of `data/catalogue.toml`, as arithmetic. A four-bit artefact costs
+/// between half a byte and a little over three-quarters of one per parameter —
+/// every quantised entry in the catalogue we ship is between 0.56 and 0.80 —
+/// and a `bfloat16` release costs two. Nothing anybody publishes sits at 1.5,
+/// so the line separates the two claims without being near either.
+///
+/// It exists because a size and a quantisation are one claim and the size half
+/// had nothing checking it: `teuken-7b-instruct` stated 4.6 GB after it had
+/// stopped claiming any quantisation at all, which is a four-bit figure for an
+/// artefact the entry no longer names.
+const THE_PRECISION_LINE: f64 = 1.5;
+
+/// Below this many bytes per parameter, a size is not any artefact's.
+///
+/// Two-bit quantisations are the smallest anybody serves, at roughly a third of
+/// a byte. A figure under that is a placeholder somebody left in rather than a
+/// download anybody will make.
+const NO_ARTEFACT_IS_THIS_SMALL: f64 = 0.35;
+
+/// Above this many bytes per parameter, a size is larger than the weights can
+/// be: `float32` is four bytes per parameter and nothing is published above it.
+const NOTHING_IS_THIS_LARGE: f64 = 4.5;
 
 /// The catalogue shipped with the system.
 ///
@@ -153,14 +179,32 @@ pub struct Model {
     /// [`None`] only for an entry that claims no quantisation either.
     #[serde(default)]
     pub artefact: Option<String>,
-    /// Download size in bytes — what the disk actually loses.
+    /// Download size in bytes — what the disk actually loses, **for the
+    /// artefact this entry names**.
+    ///
+    /// The second half of that sentence is rule 5 of `data/catalogue.toml`, and
+    /// it is checked rather than trusted: [`Catalogue::parse`] divides this by
+    /// [`parameters_b`](Model::parameters_b) and refuses a figure that belongs
+    /// to a precision the entry does not claim. An entry that names a quantised
+    /// [`artefact`](Model::artefact) states that artefact's size; an entry that
+    /// claims no quantisation states its publisher's own release, which is the
+    /// only thing left that a reader can go and check.
     pub download_bytes: u64,
     /// The video memory this needs to run at a useful speed on a graphics card.
     /// A model above a machine's card is offered with its cost visible rather
     /// than hidden.
+    ///
+    /// Never below [`download_bytes`](Model::download_bytes): a card that
+    /// cannot hold the weights cannot run them at any speed, and
+    /// [`Catalogue::parse`] refuses the pair.
     pub min_vram_gb: f32,
     /// The system memory this needs to run on the CPU — the question that
     /// decides whether an ordinary laptop can use it at all (ADR 0007).
+    ///
+    /// Never below [`download_bytes`](Model::download_bytes), for
+    /// [`min_vram_gb`](Model::min_vram_gb)'s reason. This is the check that
+    /// would have caught `teuken-7b-instruct` stating ten gigabytes beside
+    /// weights that are fifteen.
     pub min_ram_gb: f32,
     /// How it behaves with no graphics card.
     pub on_cpu: OnCpu,
@@ -209,6 +253,44 @@ impl Model {
     #[must_use]
     pub fn quantised_at(&self) -> Option<(&str, &str)> {
         Some((self.quantisation.as_deref()?, self.artefact.as_deref()?))
+    }
+
+    /// **What one parameter costs in the artefact this entry states**, in bytes.
+    ///
+    /// The arithmetic rule 5 is made of: a four-bit artefact lands near 0.6, a
+    /// `bfloat16` release lands at 2.0, and an entry whose size and
+    /// quantisation disagree lands on the wrong side of the line between them
+    /// (`THE_PRECISION_LINE`). [`Catalogue::parse`] refuses that entry, so
+    /// every model in a loaded catalogue answers this consistently with what it
+    /// claims.
+    ///
+    /// [`f64`] rather than [`f32`] because the sizes are ten significant
+    /// figures and the parameter counts are two: rounding the dividend to
+    /// `f32` would move the last four digits of a size a curator copied off a
+    /// publisher's manifest.
+    #[must_use]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a download size is far below f64's exact-integer range"
+    )]
+    pub fn bytes_per_parameter(&self) -> f64 {
+        self.download_bytes as f64 / (f64::from(self.parameters_b) * 1e9)
+    }
+
+    /// **What the weights alone occupy**, in the decimal gigabytes the rest of
+    /// this crate counts in ([`crate::costing::GIGABYTE`]).
+    ///
+    /// The floor under [`min_vram_gb`](Model::min_vram_gb) and
+    /// [`min_ram_gb`](Model::min_ram_gb), rather than an estimate of what
+    /// running costs — [`crate::Cost`] says why nothing here multiplies a
+    /// weights size by a number somebody guessed.
+    #[must_use]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "a download size is far below f64's exact-integer range"
+    )]
+    pub fn weights_gb(&self) -> f64 {
+        self.download_bytes as f64 / GIGABYTE as f64
     }
 }
 
@@ -260,8 +342,20 @@ impl Catalogue {
             if model.download_bytes == 0 {
                 return Err(invalid("download size must say what the disk will lose"));
             }
+            if !model.parameters_b.is_finite() || model.parameters_b <= 0.0 {
+                return Err(invalid(
+                    "a parameter count must be stated, or the size beside it can be checked \
+                     against nothing",
+                ));
+            }
             if model.min_vram_gb <= 0.0 {
                 return Err(invalid("required video memory must be stated"));
+            }
+            if model.min_ram_gb <= 0.0 {
+                return Err(invalid(
+                    "required system memory must be stated: it is the question that decides \
+                     whether an ordinary laptop can run this at all",
+                ));
             }
             let stated = |it: &Option<String>| {
                 it.as_ref()
@@ -282,6 +376,56 @@ impl Catalogue {
                          of the pair a reader needs",
                     ));
                 }
+            }
+            // Rule 5: the size belongs to the artefact the entry names. A
+            // quantisation says which file, and this says the size beside it is
+            // that file's — the half of the same claim that had nothing
+            // checking it until two entries stopped claiming a quantisation and
+            // kept its size.
+            let per_parameter = model.bytes_per_parameter();
+            if per_parameter < NO_ARTEFACT_IS_THIS_SMALL {
+                return Err(invalid(
+                    "a size far smaller than any artefact of this many parameters could be: the \
+                     bytes and the parameter count are not about the same model",
+                ));
+            }
+            if per_parameter > NOTHING_IS_THIS_LARGE {
+                return Err(invalid(
+                    "a size larger than this many parameters can be at full precision, so it is \
+                     not the weights alone that were measured",
+                ));
+            }
+            match (
+                model.quantised_at().is_some(),
+                per_parameter < THE_PRECISION_LINE,
+            ) {
+                (true, true) | (false, false) => {}
+                (true, false) => {
+                    return Err(invalid(
+                        "a full-precision size on an entry that names a quantised artefact: the \
+                         size is what that artefact costs, not what the release it came from does",
+                    ));
+                }
+                (false, true) => {
+                    return Err(invalid(
+                        "a quantised size on an entry that claims no quantisation, which is a \
+                         figure for a file this catalogue never chose: state the publisher's own \
+                         release, or name the artefact the size belongs to",
+                    ));
+                }
+            }
+            let weights_gb = model.weights_gb();
+            if f64::from(model.min_vram_gb) < weights_gb {
+                return Err(invalid(
+                    "a card too small to hold the weights this entry states, which cannot run \
+                     them at any speed",
+                ));
+            }
+            if f64::from(model.min_ram_gb) < weights_gb {
+                return Err(invalid(
+                    "system memory too small to hold the weights this entry states, which is the \
+                     figure a person checks their laptop against",
+                ));
             }
             if model.licence.name.trim().is_empty() {
                 return Err(invalid("every model states its licence"));
@@ -410,7 +554,7 @@ publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
 artefact = "runtime:tag-q4_K_M"
-download_bytes = 1
+download_bytes = 4_370_000_000
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
@@ -425,7 +569,7 @@ publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
 artefact = "runtime:tag-q4_K_M"
-download_bytes = 1
+download_bytes = 4_370_000_000
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
@@ -452,7 +596,7 @@ publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
 artefact = "runtime:tag-q4_K_M"
-download_bytes = 1
+download_bytes = 4_370_000_000
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
@@ -477,7 +621,10 @@ licence = { name = "Custom Community Licence", commercial_use = "with-conditions
     /// over: a field that is there and says nothing is not a statement.
     #[test]
     fn a_quantisation_with_no_artefact_and_an_artefact_with_no_quantisation_are_both_refused() {
-        let entry = |lines: &str| {
+        // Rule 5 binds the size to the claim, so the size travels with it: a
+        // four-bit figure for 1.7 billion parameters, and the `bfloat16`
+        // release for the shape that claims no quantisation at all.
+        let entry = |lines: &str, bytes: u64| {
             format!(
                 r#"
 [[model]]
@@ -486,9 +633,9 @@ name = "Pointed"
 publisher = "p"
 parameters_b = 1.7
 {lines}
-download_bytes = 1
-min_vram_gb = 2.0
-min_ram_gb = 3.0
+download_bytes = {bytes}
+min_vram_gb = 4.0
+min_ram_gb = 6.0
 on_cpu = "comfortable"
 drives_verbs = "not-measured"
 upstream = "https://example.test/pointed"
@@ -496,13 +643,18 @@ licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitt
 "#
             )
         };
+        let four_bit = 1_060_000_000;
+        let full_precision = 3_400_000_000;
 
         // Both halves, and neither half: the two shapes an entry may take.
-        for stated in [
-            "quantisation = \"Q4_K_M\"\nartefact = \"runtime:pointed-q4_K_M\"",
-            "",
+        for (stated, bytes) in [
+            (
+                "quantisation = \"Q4_K_M\"\nartefact = \"runtime:pointed-q4_K_M\"",
+                four_bit,
+            ),
+            ("", full_precision),
         ] {
-            let catalogue = Catalogue::parse(&entry(stated)).unwrap();
+            let catalogue = Catalogue::parse(&entry(stated, bytes)).unwrap();
             let model = catalogue.models.first().unwrap();
             assert_eq!(model.quantised_at().is_some(), !stated.is_empty());
         }
@@ -513,7 +665,7 @@ licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitt
             "quantisation = \"Q4_K_M\"\nartefact = \"   \"",
             "quantisation = \"  \"\nartefact = \"runtime:pointed-q4_K_M\"",
         ] {
-            let refused = Catalogue::parse(&entry(half)).unwrap_err();
+            let refused = Catalogue::parse(&entry(half, four_bit)).unwrap_err();
             assert!(
                 matches!(&refused, CatalogueError::Invalid { id, .. } if id == "pointed"),
                 "{half} was accepted: {refused}"
@@ -536,6 +688,34 @@ licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitt
         }
     }
 
+    /// **Every size in the catalogue we ship belongs to the artefact its entry
+    /// names**, which is rule 5 asked of the data rather than of a fixture.
+    ///
+    /// The companion to the test above, one field on: rule 4 made the
+    /// quantisation point at a file, and this is the size beside it doing the
+    /// same. `crates/alo-models/tests/sizes_an_entry_can_point_at.rs` holds the
+    /// two entries that have no artefact to a publisher's own manifest, and
+    /// puts each refusal in front of the loader.
+    #[test]
+    fn the_catalogue_we_ship_states_no_size_from_a_precision_it_does_not_claim() {
+        for m in Catalogue::built_in().unwrap().models {
+            let per_parameter = m.bytes_per_parameter();
+            assert_eq!(
+                m.quantised_at().is_some(),
+                per_parameter < THE_PRECISION_LINE,
+                "{} states {per_parameter:.2} bytes per parameter, which is not what the artefact \
+                 it names costs",
+                m.id
+            );
+            assert!(
+                f64::from(m.min_ram_gb) >= m.weights_gb()
+                    && f64::from(m.min_vram_gb) >= m.weights_gb(),
+                "{} asks for less memory than its own weights occupy",
+                m.id
+            );
+        }
+    }
+
     #[test]
     fn a_model_with_no_upstream_is_refused_because_we_never_redistribute_weights() {
         let nowhere = r#"
@@ -546,7 +726,7 @@ publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
 artefact = "runtime:tag-q4_K_M"
-download_bytes = 1
+download_bytes = 4_370_000_000
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
@@ -639,7 +819,7 @@ publisher = "p"
 parameters_b = 7.0
 quantisation = "Q4_K_M"
 artefact = "runtime:tag-q4_K_M"
-download_bytes = 1
+download_bytes = 4_370_000_000
 min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"

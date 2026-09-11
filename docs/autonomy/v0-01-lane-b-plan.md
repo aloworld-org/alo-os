@@ -690,3 +690,94 @@ measurement run would have mixed a curation fix into a grade.
   a catalogue entry must name a third party's requantisation to be complete,
   that is a decision about what this catalogue vouches for and belongs in an
   ADR, handed over as this task in the shape ADR 0024 and ADR 0025 used.
+
+**Done, 2026-09-11.** **The road taken is the publisher's own release**, which
+needed no ADR: where no first-party quantised artefact exists, an entry states
+the weights its publisher actually publishes, read off that repository's own
+file list. `eurollm-9b-instruct` is now 18_304_683_360 bytes — four `bfloat16`
+shards over 9_152_319_488 parameters — with 20.5 GB of video memory and 24.0 GB
+of system memory; `teuken-7b-instruct` is 14_905_484_192 over 7_452_725_248,
+with 17.0 and 21.0. Two things moved with them and are recorded rather than
+slipped in: Teuken's `parameters_b` was 7.0, the publisher's product name rather
+than the count in its own manifest, and is now 7.5; and its `on_cpu` moves from
+`workable` to `slow`, because that word had been true of a four-bit download and
+is not true of fifteen gigabytes on a processor. **No grade moved** — a size is
+not a measurement of driving, and both entries stay `not-measured`.
+
+Naming a stranger's requantisation was the other road and was refused, for the
+reason `docs/quirks.md` already gave about Teuken: this catalogue would be
+putting its authority behind a file it never chose, and choosing whose is a
+decision with nobody's name on it. That decision is now task 14 below, because
+refusing it has a visible cost — the two European entries can never be graded
+until somebody takes it.
+
+**The rule is arithmetic, so it cannot rot the same way again.** Rule 5 of
+`data/catalogue.toml` is enforced by `Catalogue::parse`: `download_bytes ÷
+parameters_b` lands near 0.6 bytes per parameter for a four-bit artefact and at
+2.0 for `bfloat16`, and an entry whose size sits on the wrong side of 1.5 for
+what it claims fails to load — so a four-bit figure cannot be left behind on an
+entry that has given up its quantisation, which is exactly what happened here.
+`min_vram_gb` and `min_ram_gb` are refused below the size, which is the check
+that would have caught Teuken asking for ten gigabytes beside fifteen. Six
+fixtures across `catalogue.rs`, `choosing.rs` and this crate's tests said
+`download_bytes = 1` and now state sizes that hold together.
+
+The consequence outside this crate is one count:
+`Catalogue::to_choose_from_on_cpu(16.0)` no longer offers Teuken, so
+`crates/alo-driving/tests/from_a_prompt_to_what_a_machine_offers.rs` reads six
+rather than seven — the entry was in that list because of a size belonging to a
+file it does not claim. `docs/quirks.md`'s carry-or-fetch table carries both new
+numbers and a paragraph saying what they change about the channel half; the
+verdict is untouched, because neither entry was ever a candidate. Measured in
+`crates/alo-models/tests/sizes_an_entry_can_point_at.rs` and in
+`crates/alo-models/src/catalogue.rs`. Report:
+`docs/autonomy/updates/the-two-sizes-rule-4-left-without-an-artefact.md`. No
+task in `v0-01-delivery-plan.md` matched this one, so nothing was marked there.
+Task 14 below is the next task and was written in the same change.
+
+### 14. Whose requantisation this catalogue may vouch for
+
+**Status:** ready. **Depends on:** 13.
+
+Task 12 refused a quantisation nobody can point at, task 13 refused a size
+belonging to a file the entry does not claim, and both refusals land on the same
+two entries: `eurollm-9b-instruct` and `teuken-7b-instruct` are the only
+catalogued models whose publishers ship no quantised artefact at all. After
+task 13 they state their publishers' `bfloat16` releases honestly — 18.30 GB and
+14.91 GB, `on_cpu = "slow"`, out of reach of an ordinary laptop — and the
+honesty has a price this lane should now pay attention to rather than admire:
+**they are the two European entries, and neither can ever be graded.** The
+catalogue leads with them *because nobody else lists them*, and as things stand
+the two models it went out of its way to carry are the two it can say least
+about.
+
+The question is not which file to fetch. It is what this catalogue is claiming
+when it names one: `mradermacher`, `bartowski`, `QuantFactory` and
+`lmstudio-community` all publish Q4_K_M of both models, none of them is the
+publisher, and rule 1 of `data/catalogue.toml` exists because a catalogue that
+states something wrongly is worse than one that omits the model. A grade earned
+against a stranger's requantisation carries alo OS's authority for weights alo
+OS never chose — and yet refusing every one of them means the promise *a curated
+catalogue of open-weight models* quietly excludes every publisher who ships
+`safetensors` and nothing else, which is most European ones.
+
+- **Acceptance:** an ADR under `docs/decisions/`, in the shape ADR 0024 and
+  ADR 0025 used — the question, the options with what each costs, a
+  recommendation, and the consequences stated including the ones we would
+  rather not have. It answers at least: whether a catalogue entry may name a
+  third party's artefact at all; if so, what makes one nameable (a
+  reproducible recipe, a checksum, a named requantiser, our own requantisation
+  run, or nothing more than being stated); how a grade earned against it is
+  reported so that nobody reads it as the publisher's; and what happens to an
+  entry when the answer is no — omitted, or carried unmeasurable as these two
+  now are. Whichever it recommends is written into `data/catalogue.toml`'s own
+  rules as the sentence a curator reads, in the same change as the ADR, since
+  rules 4 and 5 already send them there.
+- **Constraint:** a decision, not an implementation — no new catalogue entry,
+  no requantisation run, no grade, no weights on the image, no setup flow and
+  nothing in `crates/alo-shell`. The ADR may not weaken ADR 0007: a grade is
+  measured by us and never claimed by a publisher, and nothing here makes a
+  stranger's number into a measurement. If the recommendation is that alo OS
+  quantises the weights itself, say what that costs — a build step, an
+  artefact we then host, and ADR 0005's doctrine that we never redistribute
+  weights, which is the constraint that decision runs into.

@@ -1410,6 +1410,51 @@ that widens the catalogue, and until it is answered `teuken-7b-instruct` cannot
 be measured on any machine, however much memory it has.
 **Date:** 2026-09-11.
 
+### Two entries kept a four-bit size after they stopped claiming a four-bit file
+**Version:** `data/catalogue.toml`'s `eurollm-9b-instruct` and
+`teuken-7b-instruct` as of 2026-09-11, against the file lists their `upstream`
+repositories publish that day.
+**Behaviour:** rule 4 made `quantisation` a claim an entry has to be able to
+point at, and these two could point at nothing, so both now state none. Their
+sizes were left where they were, and that is a worse state than the one rule 4
+fixed. `eurollm-9b-instruct` said 5.6 GB and `teuken-7b-instruct` said 4.6 GB —
+0.61 and 0.66 bytes per parameter, which is what a four-bit GGUF costs and
+nothing else does. `min_vram_gb` and `min_ram_gb` came from the same assumption:
+Teuken said ten gigabytes of system memory beside weights that are fifteen. So
+the entries read as small models an ordinary laptop could hold, and what they
+name — the only thing either publisher actually publishes — is nearly four times
+the size. A person sizing a machine off `min_ram_gb` would have bought the wrong
+one, and rule 2's *sizes are what the disk and the card actually lose* was being
+honoured for a file neither entry claimed.
+
+It is worth saying what it is **not**. Neither figure was invented: both were
+true of the entries as they were first written, when each claimed `Q4_K_M`. What
+happened is that one half of a pair was corrected and the other half was left,
+which is the ordinary way a data file goes wrong — and why the fix is a rule
+with arithmetic under it rather than two better numbers.
+**Our response:** rule 5, and the publisher's own release as the road. Where no
+first-party quantised artefact exists, an entry states the weights its publisher
+publishes, read off that repository's file list: EuroLLM is four `bfloat16`
+shards totalling 18_304_683_360 bytes over 9_152_319_488 parameters, Teuken is
+four totalling 14_905_484_192 over 7_452_725_248. The alternative — naming a
+stranger's requantisation — was refused for the reason the entry above gives:
+this catalogue would be vouching for a file it never chose, and choosing one is
+a decision with nobody's name on it. Teuken's `parameters_b` was 7.0, the
+publisher's product name rather than the count in its own manifest, and is now
+7.5; its `on_cpu` moves from `workable` to `slow`, which was true of the
+four-bit download and is not true of this one. **No grade moved**: a size is not
+a measurement of driving, and both entries stay `not-measured`.
+
+The rule is arithmetic so that it cannot rot the same way again.
+`Catalogue::parse` divides `download_bytes` by `parameters_b` and refuses an
+entry whose answer sits on the wrong side of 1.5 bytes per parameter for what it
+claims — every four-bit entry in the catalogue lands between 0.56 and 0.80, and
+`bfloat16` lands at 2.0 — and refuses a `min_vram_gb` or `min_ram_gb` below the
+size. The consequence is visible rather than hidden: these two entries are now
+large, slow and out of reach of an ordinary laptop, which is the true sentence
+about a model nobody has quantised for us.
+**Date:** 2026-09-11.
+
 ### The carry-or-fetch measurement ADR 0025 owes: the catalogue has nothing to weigh
 **Version:** `data/catalogue.toml` as of 2026-09-11 — fourteen entries, five
 measured by `alo-driving` on 2026-09-04 and two more later the same day, seven
@@ -1426,8 +1471,8 @@ memory:
 
 | Entry | Download bytes | Drives the verbs |
 |---|---|---|
-| `eurollm-9b-instruct` | 5_600_000_000 | `not-measured` |
-| `teuken-7b-instruct` | 4_600_000_000 | `not-measured` |
+| `eurollm-9b-instruct` | 18_304_683_360 | `not-measured` |
+| `teuken-7b-instruct` | 14_905_484_192 | `not-measured` |
 | `mistral-7b-instruct` | 4_370_000_000 | `not-measured` |
 | `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
 | `qwen2.5-7b-instruct` | 4_680_000_000 | `not-measured` |
@@ -1454,6 +1499,18 @@ the ledger already carries, not a model that is probably fine — and the gap ha
 a shape: everything unmeasured wants ten gigabytes of system memory or more,
 and the box every existing grade was made on has six.
 
+**Two of those rows grew on 2026-09-11, and the growth is a correction rather
+than a change of model.** `eurollm-9b-instruct` and `teuken-7b-instruct` claim
+no quantisation — neither publisher ships a GGUF, and this catalogue has chosen
+no stranger's requantisation — and both had kept the four-bit `download_bytes`
+they were added with, 5.6 GB and 4.6 GB, which are sizes of artefacts the
+entries no longer name. Under the catalogue's new rule 5 they state their
+publishers' own releases instead, read off those repositories' own file lists:
+18.30 GB and 14.91 GB of `bfloat16` safetensors. The verdict is untouched —
+neither entry was ever a candidate, because neither is measured — but the
+channel half below now has two entries of a different order in it, and that is
+why correcting them mattered rather than leaving a comfortable number standing.
+
 **The channel:** what the image and its update stream can honestly carry.
 ADR 0011 makes the OS a bootable container image pulled from a registry we
 operate, and its layers are content-addressed: a weights layer travels only
@@ -1465,9 +1522,15 @@ version in `image/Containerfile` does, not with every rebase of the base.
 atomic deployment with rollback, and a carried layer rides inside what
 `bootc rollback` restores where a setup-time fetch sits outside it — which is
 an argument for carrying, not only a cost. On size: the CPU-class entries the
-certified laptop would carry are 1.06–2.4 GB and the 7B class is 4.4–4.9 GB,
-the same order as the pinned base and the runtime artefact the image already
-moves, so a carried layer is not structurally beyond this channel. What is
+certified laptop would carry are 1.06–2.4 GB and the 7B class that names a
+four-bit artefact is 4.4–4.9 GB, the same order as the pinned base and the
+runtime artefact the image already moves, so a carried layer of that kind is
+not structurally beyond this channel. **The two entries that name no artefact
+are a different order and say something the four-bit rows hide:** at 14.91 and
+18.30 GB, a model nobody has quantised for us is not a layer this channel
+carries comfortably, so the day either of them matters the question is which
+quantised artefact this catalogue chooses, not whether the stream can move
+`bfloat16`. What is
 honestly bounded: no registry of ours, no update stream and no mirror is
 running yet, so transfer time on the certified machine's network, hosting
 cost, and how the registry behaves when a five-gigabyte layer changes have

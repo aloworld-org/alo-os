@@ -243,6 +243,18 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// count. They graded `rarely` like the five before them, which is why the
 /// sentence a person is shown is the same one: seven models to choose between,
 /// four of them measured, and none of the four good enough.
+///
+/// **Lane B's task 13 then moved the first count down by one, and no
+/// measurement was involved.** `teuken-7b-instruct` names no quantised artefact
+/// — openGPT-X publishes no GGUF — so under the catalogue's rule 5 it states
+/// its publisher's own `bfloat16` release instead of the four-bit figures it had
+/// been left with: 14.91 GB of weights, 21 GB of system memory, and `on_cpu`
+/// moved to `slow` because fifteen gigabytes on a processor is not the word
+/// `workable` means. Both of those take it out of
+/// [`Catalogue::to_choose_from_on_cpu`] at 16 GB, which is right and is the
+/// point of the correction: it was in the list because of a size belonging to a
+/// file the entry does not claim. So the shorter list is six, the measured count
+/// is untouched at four, and the sentence a person reads is the same again.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -250,7 +262,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         refused,
         NoAgentHere::NoneClearsTheBar {
-            to_choose_from: 7,
+            to_choose_from: 6,
             measured: 4,
         }
     );

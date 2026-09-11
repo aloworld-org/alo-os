@@ -211,14 +211,29 @@ mod tests {
 
     /// A catalogue written for one question, so what each entry answers is
     /// visible in the test that reads it.
+    ///
+    /// The sizes are derived from the parameter count rather than written down:
+    /// the catalogue's rule 5 refuses a size that belongs to no artefact of
+    /// this many parameters, so a fixture with a token `download_bytes = 1` no
+    /// longer loads — and a fixture that cannot load would be testing the
+    /// loader instead of the choice. 0.62 bytes per parameter is what the
+    /// four-bit entries in `data/catalogue.toml` actually cost; the memory
+    /// figures carry the headroom those entries carry, which keeps every model
+    /// here inside the 16 GB the tests below ask about.
     fn catalogue(entries: &[(&str, f32, &str, &str, &str)]) -> Catalogue {
         let mut text = String::new();
         for (id, parameters_b, on_cpu, commercial, driving) in entries {
+            let gigabytes = f64::from(*parameters_b) * 0.62;
+            let (bytes, vram, ram) = (
+                format!("{:.0}", gigabytes * 1e9),
+                gigabytes + 2.0,
+                gigabytes + 4.0,
+            );
             text.push_str(&format!(
                 "[[model]]\nid = \"{id}\"\nname = \"{id}\"\npublisher = \"p\"\n\
                  parameters_b = {parameters_b}\nquantisation = \"Q4_K_M\"\n\
                  artefact = \"runtime:{id}-q4_K_M\"\n\
-                 download_bytes = 1\nmin_vram_gb = 2.0\nmin_ram_gb = 4.0\n\
+                 download_bytes = {bytes}\nmin_vram_gb = {vram:.2}\nmin_ram_gb = {ram:.2}\n\
                  on_cpu = \"{on_cpu}\"\ndrives_verbs = \"{driving}\"\n\
                  upstream = \"https://example.test/{id}\"\n\
                  licence = {{ name = \"L\", commercial_use = \"{commercial}\", \
