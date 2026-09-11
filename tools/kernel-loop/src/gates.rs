@@ -32,6 +32,9 @@
 //!
 //! `CARGO_TARGET_DIR` is set to this checkout's own, which is what keeps two
 //! contributors compiling the same workspace from writing into one directory.
+//! Which directory that is, and how much room is in it, belong to
+//! [`crate::where_it_builds`] — the gates ask it once and are handed the same
+//! answer for the whole of a run.
 //!
 //! # A compile error a gate reports is not always in the change
 //!
@@ -58,14 +61,7 @@
 use std::path::Path;
 use std::process::Command;
 
-/// Where this checkout's Linux builds go, kept apart from any other checkout's.
-///
-/// Named rather than inherited: the environment a Windows process hands to
-/// `wsl` is not the environment the gates need, and a shared target directory
-/// is two workers overwriting each other's artefacts while both watch a build
-/// that should not be rebuilding.
-#[cfg(windows)]
-const ITS_OWN_TARGET: &str = "$HOME/target-claude";
+use crate::where_it_builds;
 
 /// One check, and what it is called in a report.
 pub struct Gate {
@@ -312,9 +308,13 @@ fn whether_it_passed(named: &str, ok: bool, out: &str, err: &str) -> Result<(), 
 /// That this machine can run the gates at all, before it spends four minutes
 /// discovering that it cannot.
 ///
-/// Three preconditions, and every one of them is a thing that makes the gates
+/// Four preconditions, and every one of them is a thing that makes the gates
 /// fail for a reason that has nothing to do with the change:
 ///
+/// - **Room to build in, on the filesystem the build will actually use.** That
+///   is [`where_it_builds::there_is_room`], and it is asked first because it is
+///   the cheapest and because it is the one that used to be asked about the
+///   wrong filesystem.
 /// - **A BPF filesystem mounted at `/sys/fs/bpf`.** Every test that loads the
 ///   boundary pins to it, and WSL forgets the mount across a restart — so the
 ///   symptom is a kernel test panicking about a directory, three gates and
@@ -336,6 +336,7 @@ fn whether_it_passed(named: &str, ok: bool, out: &str, err: &str) -> Result<(), 
 /// # Errors
 /// A sentence naming what is missing and the command that fixes it.
 fn the_machine_is_ready(at: &Path) -> Result<(), String> {
+    where_it_builds::there_is_room(at)?;
     for (check, why) in READY {
         let said = asking(check, at)?.output().map_err(|it| {
             format!(
@@ -352,36 +353,14 @@ fn the_machine_is_ready(at: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// The disk a build needs before it starts, in bytes.
-///
-/// Twelve gibibytes. A full workspace build with the graphics crates in it takes
-/// several, and a build that runs out partway does not fail as a build: it fails
-/// as a linker that could not open a file, which reads like a broken change and
-/// is not one. That happened on 2026-09-09 and cost an afternoon of looking in
-/// the wrong place.
-const THE_RESERVE: &str = "12884901888";
-
 /// What has to be true before a gate run means anything, and what to say when
 /// it is not.
+///
+/// Room on the disk is **not** in this list, because it is not a constant: it
+/// depends on where this checkout builds, and asking it of the wrong filesystem
+/// is what parked a finished task on 2026-09-11.
+/// [`where_it_builds::there_is_room`] owns both halves of that question.
 const READY: &[(Gate, &str)] = &[
-    (
-        Gate {
-            named: "room on the disk to build in",
-            // Asked of the filesystem the checkout is on, which is the one that
-            // fills: `df` in bytes, the last line, against the reserve. One
-            // mechanism on both hosts, because the gates already run through a
-            // shell that has `df`.
-            program: "test",
-            args: &["$(df -B1 --output=avail . | tail -n1)", "-ge", THE_RESERVE],
-            within: ".",
-        },
-        "there is less than 12 GiB free on the disk this checkout is on, and a build needs more \
-         than that. Nothing was staged, committed or pushed. A build started here would not fail \
-         as a build — it fails as a linker that cannot open a file, which reads like a broken \
-         change and is not one. **Do not delete anything shared to get past this.** Caches, \
-         another worker's build directory and anything under a system folder belong to whoever \
-         owns them; ask for space to be made.",
-    ),
     (
         Gate {
             named: "/sys/fs/bpf",
@@ -440,16 +419,55 @@ fn asking(gate: &Gate, at: &Path) -> Result<Command, String> {
 ///
 /// # Errors
 /// A sentence when a Windows checkout is somewhere `wsl` cannot see.
-#[cfg(windows)]
 pub fn running(at: &Path, within: &str, program: &str, args: &[String]) -> Result<Command, String> {
+    let building_in = where_it_builds::chosen(at).directory.clone();
+    bridged(at, within, program, args, building_in.as_deref())
+}
+
+/// The same, with no build directory named at all.
+///
+/// For the two questions that have to be asked **before** there is an answer
+/// about where this checkout builds — whether that directory can be made, and
+/// how much room is on the filesystem it would be on. Handing them a target
+/// directory would be asking [`where_it_builds::chosen`] for the answer it is
+/// in the middle of working out.
+///
+/// # Errors
+/// Whatever [`running`] answers with.
+pub fn without_a_target_directory(
+    at: &Path,
+    within: &str,
+    program: &str,
+    args: &[String],
+) -> Result<Command, String> {
+    bridged(at, within, program, args, None)
+}
+
+/// One command, as this host runs it, building where it is told to.
+///
+/// # Errors
+/// A sentence when a Windows checkout is somewhere `wsl` cannot see.
+#[cfg(windows)]
+fn bridged(
+    at: &Path,
+    within: &str,
+    program: &str,
+    args: &[String],
+    building_in: Option<&str>,
+) -> Result<Command, String> {
     let within = as_wsl_sees_it(&at.join(within))?;
+    // Unquoted on purpose where it is absent, so that a command with no build
+    // directory carries no empty variable either. `where_it_builds` guarantees
+    // the path has nothing in it a shell would have to be protected from.
+    let target = building_in.map_or_else(String::new, |directory| {
+        format!("export CARGO_TARGET_DIR=\"{directory}\"; ")
+    });
     let mut asking = Command::new("wsl");
     asking
         .args(["-d", "Ubuntu", "--", "bash", "-lc"])
         .arg(format!(
             "export PATH=\"$HOME/.cargo/bin:$PATH\"; \
-         export CARGO_TARGET_DIR=\"{ITS_OWN_TARGET}\"; \
-         export RUSTDOCFLAGS=\"-D warnings\"; \
+         {target}export RUSTDOCFLAGS=\"-D warnings\"; \
          cd {within} && {program} {}",
             args.join(" ")
         ));
@@ -480,12 +498,21 @@ fn as_wsl_sees_it(path: &Path) -> Result<String, String> {
 /// None on a Linux host; the signature matches the Windows half so the caller
 /// has one shape.
 #[cfg(not(windows))]
-pub fn running(at: &Path, within: &str, program: &str, args: &[String]) -> Result<Command, String> {
+fn bridged(
+    at: &Path,
+    within: &str,
+    program: &str,
+    args: &[String],
+    building_in: Option<&str>,
+) -> Result<Command, String> {
     let mut asking = Command::new(program);
     asking
         .current_dir(at.join(within))
         .args(args)
         .env("RUSTDOCFLAGS", "-D warnings");
+    if let Some(directory) = building_in {
+        asking.env("CARGO_TARGET_DIR", directory);
+    }
     Ok(asking)
 }
 
@@ -548,6 +575,24 @@ mod tests {
             READY.iter().any(|(check, _)| check.named == "/sys/fs/bpf"),
             "the precondition this machine actually loses is not checked"
         );
+    }
+
+    /// **No readiness check measures the filesystem the checkout is on.**
+    ///
+    /// That is the defect this list used to carry: a `df` of `.` refusing a run
+    /// over a shortage on a drive the build never wrote to. The room a build
+    /// needs is asked of the directory the build uses, in
+    /// [`crate::where_it_builds`], and a shell `df` reappearing here would be
+    /// the same mistake made again.
+    #[test]
+    fn no_readiness_check_asks_this_drive_how_much_room_a_build_has() {
+        for (check, _) in READY {
+            assert!(
+                !check.program.contains("df") && !check.args.iter().any(|arg| arg.contains("df ")),
+                "`{}` measures a filesystem the build may not be using",
+                check.named
+            );
+        }
     }
 
     /// **The crates a change touched are the ones whose builds are dropped** —

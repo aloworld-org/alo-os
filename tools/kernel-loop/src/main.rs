@@ -83,6 +83,7 @@ mod plan;
 mod publishing;
 mod recovering;
 mod repository;
+mod where_it_builds;
 mod worker;
 
 use std::path::Path;
@@ -248,6 +249,11 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
     // nothing, restarts nothing, and changes no shared service.
     let _ubuntu = keeping_ubuntu_up::Awake::started();
 
+    // **Where it builds, said once and written down.** A build directory
+    // nobody can find is one nobody cleans, and this run is about to put
+    // several gigabytes in one.
+    said_where_it_builds(at, ours);
+
     // A stop asked for before this run began is not this run's to obey — it
     // belonged to the loop that has already finished. Cleared here so that
     // `stop` always means *the loop that is running now*.
@@ -377,6 +383,35 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
     println!("alo-kernel-loop: {ending}.");
     drop(held);
     ExitCode::SUCCESS
+}
+
+/// Say where this checkout builds, and where the build directories from before
+/// it are.
+///
+/// Once, at the start of anything that runs the gates. Two things belong in it
+/// and neither is decoration: **where it builds**, because a directory holding
+/// several gigabytes that nobody can name is one nobody ever cleans; and
+/// **which older ones are still here**, because the answer to a full disk has
+/// been to delete a build directory by hand and the person doing it deserves to
+/// know which ones exist. Nothing here removes any of them: one of them may be
+/// an afternoon of compilation belonging to a lane that is merely idle.
+fn said_where_it_builds(at: &Path, ours: &Path) {
+    // Through the journal rather than around it: `note` already says a line on
+    // the way past, and a run's own log is where somebody looks a week later to
+    // find out which directory filled up.
+    journal::note(ours, &where_it_builds::chosen(at).because);
+
+    let old = where_it_builds::the_old_ones(at);
+    if old.is_empty() {
+        return;
+    }
+    let said = format!(
+        "build directories from before this one are still here, and nothing in this loop removes \
+         them: {}. `du -sh` says how much each holds, and whether any of them goes is a person's \
+         decision — one of them may belong to a lane that is merely idle.",
+        old.join(", ")
+    );
+    journal::note(ours, &said);
 }
 
 /// How long the loop waits for a selected task's work before it stops.
@@ -518,6 +553,7 @@ fn publish(at: &Path, ours: &Path) -> ExitCode {
     // `/sys/fs/bpf` went away between one command and the next. It happened
     // twice in a row before this line existed.
     let _ubuntu = keeping_ubuntu_up::Awake::started();
+    said_where_it_builds(at, ours);
     let waiting = match handoff::Handed::waiting(ours) {
         Ok(Some(waiting)) => waiting,
         Ok(None) => {
@@ -568,6 +604,7 @@ fn verify(at: &Path, ours: &Path) -> ExitCode {
     // As `publish`: the gates take minutes and the distribution they run in
     // stops when nothing is using it.
     let _ubuntu = keeping_ubuntu_up::Awake::started();
+    said_where_it_builds(at, ours);
     let waiting = match handoff::Handed::waiting(ours) {
         Ok(waiting) => waiting,
         Err(why) => {
@@ -694,5 +731,39 @@ fn waiting_for(ours: &Path, chosen: &str) -> Result<Option<handoff::Handed>, Str
             return Ok(None);
         }
         std::thread::sleep(LOOKING_EVERY);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// **Everything that runs the gates says where it is building, first.**
+    ///
+    /// A build directory nobody can name is one nobody cleans, and the answer to
+    /// a full disk on this machine has been to delete one by hand. So the three
+    /// commands that compile anything — `run`, `publish` and `verify` — each say
+    /// which directory they are about to put several gigabytes in, before they
+    /// put any there.
+    ///
+    /// Held on the source because there is nothing else to hold it on: the
+    /// saying is a line on a terminal and in a log, and a command that quietly
+    /// stopped saying it would pass every other test in this crate.
+    #[test]
+    fn every_command_that_builds_says_where_it_builds_before_it_does() {
+        let whole = include_str!("main.rs");
+        for command in ["fn run(", "fn publish(", "fn verify("] {
+            let body = whole
+                .split(command)
+                .nth(1)
+                .and_then(|rest| rest.split("\n}\n").next())
+                .unwrap_or_default();
+            assert!(
+                !body.is_empty(),
+                "`{command}` is no longer in this file, so this test reads nothing"
+            );
+            assert!(
+                body.contains("said_where_it_builds("),
+                "`{command}` runs the gates without saying where it builds"
+            );
+        }
     }
 }

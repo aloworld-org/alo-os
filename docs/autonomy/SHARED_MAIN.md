@@ -21,10 +21,20 @@ task. No feature branch or pull request is required by this workflow.
 
 Owner-approved 2026-09-09: both loops may implement, compile and run isolated tests
 concurrently. This replaces the temporary single-workstream disk-space rule.
-Keep the desktop target at `/root/alo-os-target` and Claude's at
-`/root/target-claude`; never clean or reuse the other worker's target. Keep the
-12 GiB Windows C: preflight before each build/test phase. Separate targets prevent
-artifact collisions, not memory pressure or exhaustion during a running command.
+Keep the desktop target at `/root/alo-os-target`; never clean or reuse the other
+worker's target. Claude's supervisor no longer uses a fixed
+`/root/target-claude`: since 2026-09-11 `alo-kernel-loop` chooses
+`$HOME/alo-builds/<checkout name>-<fingerprint of its path>`, one per checkout,
+and says which it is in the first line of every run and in `.kernel-loop/loop.log`
+(`tools/kernel-loop/src/where_it_builds.rs`). `/root/target-claude` is left where
+it is and nothing removes it; whether it goes is the owner's decision.
+
+The 12 GiB reserve before each build/test phase is unchanged. What changed is
+where it is measured: the kernel-loop supervisor measures the filesystem its own
+build directory is on, which is the one the build writes to, and its refusal names
+that filesystem. The desktop lane's Windows C: preflight is unchanged. Separate
+targets prevent artifact collisions, not memory pressure or exhaustion during a
+running command.
 
 Tests that attach BPF programs or manipulate kernel-global state must take
 `alo_bounding::Waited::on_this_kernel()` for the entire fixture lifetime. Both

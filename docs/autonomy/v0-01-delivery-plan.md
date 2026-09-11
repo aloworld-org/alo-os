@@ -1516,3 +1516,67 @@ that was never scarce where the build was running.
   the old ones: a supervisor that tidied up could throw away an afternoon of
   compilation belonging to a lane that is merely idle. Say where the old ones
   are and let a person decide.
+
+**Done, 2026-09-11.** `tools/kernel-loop/src/where_it_builds.rs` owns both halves
+of the question — *which directory* and *how much room is in it* — because they
+were only ever one question answered in two places. Each checkout builds in
+`$HOME/alo-builds/<its name>-<fingerprint of its path>`, made once per run and
+handed to every gate after that, so two lanes on one machine cannot land on the
+same `target` however alike their checkouts are named. The reserve is then asked
+of **that** directory rather than of `.`, and its refusal names the filesystem it
+measured: on this machine the answer went from *4 GB free on a Windows drive the
+build never writes to* to *935 GB free on `/`*, which is the refusal that parked
+a finished task. A reading it cannot understand is still a refusal, because a
+reserve that passed whenever it failed to measure anything would not be one. A
+machine where the directory cannot be made falls back to Cargo's own `target/`
+and says so in a line rather than failing. Nothing removes a build directory:
+the old ones — `target`, `$HOME/target-claude`, `$HOME/alo-os-target` — are named
+when a run starts, with `du -sh` and the sentence that whether any of them goes is
+a person's decision, and `nothing_here_can_remove_a_build_directory` reads the
+source to keep it that way. The cost paid knowingly is one cold rebuild, because
+the directory this lane had was named for the lane rather than for the checkout.
+Report: `docs/autonomy/updates/the-gates-build-where-there-is-room.md`. The next
+task (31) is written below.
+
+### 31. The weights a machine arrives with
+
+**Status:** ready. **Depends on:** nothing.
+
+ADR 0025 was accepted as Option D on 2026-09-11, and what it took on is heavier
+than what it gave up: **a model on the disk of every machine we ship, sized for
+that machine** (ADR 0007). Two of the three things that stood in front of that
+are now built. The pinned model runtime is on the image — `THE_RUNTIME`, its
+digest checked before anything is unpacked, read back by
+`alo_image::TheRuntime` — and the setup flow is `crates/alo-setting-up`, four
+choices with the local one first and nothing pre-selected. The third is
+untouched: `image/Containerfile` carries **no weights at all**, so no machine
+this repository builds arrives able to run anything, and
+`docs/autonomy/v0-01-evidence.md` records that against *the local model is what
+the machine arrives ready to run*.
+
+The open question ADR 0025 left is a decision inside this work rather than a
+blocker in front of it: whether the weights ride on the certified image or are
+fetched at setup. It is not free either way — a machine that fetches at setup
+has not arrived ready when it is offline at setup — and whichever is chosen, the
+recipe has to say *which model*, for *which machine*, pinned by digest exactly as
+the runtime is.
+
+- **Acceptance:** the recipe declares the weights a certified machine arrives
+  with — the model, the quantisation and the digest — sized by what
+  `alo_models::Catalogue`'s own measurement says a machine of that class can
+  actually drive rather than by a publisher's claim; `alo-image` reads that
+  declaration as it reads the runtime's, and `everything_wrong_with` refuses a
+  recipe whose weights are absent, unpinned, unchecked before unpacking, or name
+  a model the catalogue holds no measurement for, each as a `Wrong` naming the
+  decision it breaks; the choice between riding on the image and being fetched at
+  setup is **made**, in the recipe and in a sentence in the report saying what it
+  costs the other way; and the entry in `docs/autonomy/v0-01-evidence.md` is
+  rewritten to say exactly what is now shown and what still waits.
+- **Constraint:** it may not tick *arrives ready to run* — that waits on an image
+  that boots with the weights on a machine, and this lane has no machine. It may
+  not patch the runtime or the base (ADR 0011): a model is configuration here,
+  never a source change. It may not name a model `alo-driving` has no grade for,
+  because *measured by us, not claimed by the publisher* is the promise directly
+  above this one in `docs/features.md`. And it downloads nothing during a gate:
+  what is tested is the declaration and its refusals, not a multi-gigabyte fetch
+  on a build machine.
