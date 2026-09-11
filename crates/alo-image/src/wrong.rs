@@ -446,6 +446,122 @@ pub enum Wrong {
         /// What `alo_models::Catalogue` said.
         why: String,
     },
+
+    /// The model service would run as a login this image never creates.
+    #[error(
+        "{server} runs as `{as_login}`, which this image does not make — the one thing that serves \
+         the model runs as a login of its own (ADR 0025), and a name nothing creates is a service \
+         that will not start on a machine that otherwise boots perfectly"
+    )]
+    TheServerIsNotALoginThisImageMakes {
+        /// The model service's unit.
+        server: String,
+        /// The login it names, or `-` where it names none.
+        as_login: String,
+    },
+    /// The model service would run as the person or as the agent.
+    #[error(
+        "{server} runs as `{as_login}`, which is {whose} own login — the process that serves the \
+         model is up before anybody signs in and reads every question put to this machine, and \
+         ADR 0001 §2 and §5 are the division it would be standing inside rather than outside"
+    )]
+    TheServerIsSomebodyElse {
+        /// The model service's unit.
+        server: String,
+        /// The login it names.
+        as_login: String,
+        /// Whose login that is.
+        whose: String,
+    },
+    /// The model service is in a group this image does not make.
+    #[error(
+        "{server} runs in group `{group}`, which this image does not make — the model service is a \
+         login and a group of its own (ADR 0025), and a group nothing creates is a service that \
+         will not start"
+    )]
+    TheServerIsNotInAGroupOfItsOwn {
+        /// The model service's unit.
+        server: String,
+        /// The group it names, or `-` where it names none.
+        group: String,
+    },
+    /// The model service shares a group with the person, the agent or the
+    /// greeter.
+    #[error(
+        "{server} runs in group `{group}`, which is {whose} — on a machine where what a file is \
+         reachable by is a group, the service that holds the model may not be inside the division \
+         ADR 0001 §5 draws around the agent"
+    )]
+    TheServerSharesItsGroup {
+        /// The model service's unit.
+        server: String,
+        /// The group it names.
+        group: String,
+        /// Whose group that is.
+        whose: String,
+    },
+    /// The model service holds a capability, or does not say it holds none.
+    #[error(
+        "{server} does not say it holds nothing (bounded to {bounded:?}, given {given:?}) — \
+         serving a model needs no privilege at all, and ADR 0018's argument is that the one \
+         privileged component is acceptable because of how little it is trusted with; a capability \
+         added here to make something work is that argument quietly stopping being true"
+    )]
+    TheServerHoldsSomething {
+        /// The model service's unit.
+        server: String,
+        /// What the unit bounds it to.
+        bounded: Vec<String>,
+        /// What the unit gives it.
+        given: Vec<String>,
+    },
+    /// The model service looks for the model somewhere the weights did not land.
+    #[error(
+        "{server} is pointed at `{store}` and the weights land in `{weights}` — the runtime's own \
+         default is a home directory this image does not make, so a machine carrying 2.23 GiB of \
+         model would serve nothing and report nothing installed, which looks from the outside \
+         exactly like a machine nobody put a model on (ADR 0025)"
+    )]
+    TheServersStoreIsNotTheWeights {
+        /// The model service's unit.
+        server: String,
+        /// What the unit points it at, or `-` where it points it nowhere.
+        store: String,
+        /// Where the weights land.
+        weights: String,
+    },
+    /// The model service answers somewhere this machine does not look — or
+    /// somewhere the network can reach.
+    #[error(
+        "{server} answers at `{address}` and this machine looks at `{looks}` (ADR 0019) — an \
+         address naming anything but the loopback interface offers this machine's model to the \
+         network it is plugged into, with no grant, no record and nothing on the egress indicator, \
+         because nothing left"
+    )]
+    TheServerIsNotWhereTheMachineLooks {
+        /// The model service's unit.
+        server: String,
+        /// What the unit says, or `-` where it says nothing.
+        address: String,
+        /// Where `alo-models` knocks.
+        looks: String,
+    },
+    /// The model service may make connections of its own.
+    #[error(
+        "{server} may reach `{allowed}` and is denied `{denied}` — law 1 says a working day with a \
+         local model produces zero inference egress, and the one process holding the model is the \
+         one that has to be silent for that to be true; an update check, a telemetry call or a \
+         registry pull must not fail politely, it must not leave, which takes both an allow list \
+         naming this machine alone and a deny of everywhere under it"
+    )]
+    TheServerMayReachTheNetwork {
+        /// The model service's unit.
+        server: String,
+        /// What the unit allows, or `-` where it allows nothing.
+        allowed: String,
+        /// What it denies, or `-` where it denies nothing.
+        denied: String,
+    },
     /// The opener would run as somebody `logind` will not open a session for.
     ///
     /// ADR 0024 measured it twice, on two systemds: `CreateSession` answers

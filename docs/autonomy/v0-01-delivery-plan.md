@@ -1646,3 +1646,92 @@ runtime's default.
   flag upstream documents. And the egress claim is **tested, not asserted** — a
   unit that merely names a restriction is not the same as a machine that was
   watched making no connection, so say in the report which of the two this is.
+
+**Done, 2026-09-11.** `image/usr/lib/systemd/system/alo-modeld.service` is the
+one thing that serves the model, named for what it does rather than for what we
+rented to do it. A login and a group of its own — `alo-model`, 60991, asserted in
+the build the way the other four numbers are — which is **not the person**, whose
+session comes and goes, and **not the agent**, which ADR 0001 §2 and §5 keep
+authority and identity away from and which is the last login to lend anything to
+a process that reads every question put to this machine. It holds nothing and
+both lines say so, because serving a model needs no privilege at all and ADR
+0018's argument has to be said in every unit or it is said in none. Its store is
+the directory the weights landed in, which matters more than it reads: the
+runtime's default is a home directory this image does not make, so a unit that
+said nothing would serve nothing off a machine carrying 2.23 GiB of model and
+look from the outside exactly like a machine nobody put one on. It answers at the
+one address `alo-models` knocks at, **read off `alo_models::ollama::DEFAULT_ENDPOINT`
+rather than spelled twice** (ADR 0019), and it reaches nothing off this machine
+— `IPAddressDeny=any` under an allow list naming this machine alone, which is a
+kernel-side filter on its own control group rather than a comment. Eleven tests,
+ten of them breaking one line of a copy of the real image; the two worth naming
+are `User=alo`, the edit that looks like tidying up, and one word in
+`OLLAMA_HOST` that would offer this machine's model to whatever network it is
+plugged into with a dark egress indicator, because nothing left.
+
+**What the acceptance asked for and the kernel cannot give, and that is the half
+worth reading.** *Reachable by exactly one group* is not a property a loopback
+TCP port can have. Every door alo OS has decided who may knock at so far is a
+Unix socket — `/run/alo/<uid>` (ADR 0017), `/run/alo-sessiond` (ADR 0024) — and
+both are decided by a `Group=` line and a mode because the filesystem carries an
+owner and a mode for a socket and the kernel checks them on `connect(2)`. **A TCP
+socket carries neither**, no systemd directive gates a listening port by uid, and
+the pinned runtime offers no Unix socket that ADR 0011 would let us add. So
+`Group=alo-model` says who **answers** and cannot say who may **ask**, and a
+check written as though it did would be a green test standing where a boundary is
+not. The unit decides everything a unit can decide and each of those is checked;
+`docs/quirks.md` carries the finding so nobody reads that line as the sentence
+the other two are; and
+`docs/decisions/0026-who-may-ask-the-model-anything.md` is the decision,
+**proposed** — what is at stake (not a grant boundary, since no verb touches the
+runtime; not an egress, since nothing leaves; the owner's compute today and, at
+v0.5, an ADR 0005 sandboxed application reaching the model around the portal by
+opening a socket to 127.0.0.1), with a door of ours rejected as a component in
+the hottest path bought for an obstacle, a shared network namespace rejected
+because whoever joins it has only it and the process that would join is the one
+that talks to hosted providers, and a rule in the boundary this machine already
+loads named as the real answer and as a second programme on the one privileged
+component, so its own ADR at its own time. **The egress claim is a setting read,
+not a machine watched** — nothing in this lane has booted this image — and
+*arrives ready to run* does not move. `docs/features.md` was not touched. Report:
+`docs/autonomy/updates/the-one-thing-that-serves-the-model.md`. The next task
+(33) is written below.
+
+### 33. A machine that was watched, rather than a recipe that was read
+
+**Status:** ready. **Depends on:** nothing, on a machine with a container
+runtime. **Owner:** Claude — it touches no compositor file and needs no screen.
+
+Written by task 32, from the sentence every image task since 27 has had to write
+at the end of its report: **nothing in this lane has ever built this image.**
+`crates/alo-image` reads `image/`'s declarations and holds them to every promise
+in `docs/` — four units, five logins, two directories, a pinned runtime, pinned
+weights, a disk declaration and a document — and every one of those is a
+*declaration*. `docs/booting.md` says how the image becomes a disk and
+`ROADMAP.md` keeps that half of the line empty, correctly, because *an image that
+builds is not an image that boots*.
+
+But there is a step between *nobody read it wrong* and *a machine came up*, and
+this lane has never taken it: **`docker build -f image/Containerfile` has not
+been run since the weights and the serving unit were added.** The recipe now
+fetches 2.23 GiB, runs the pinned runtime inside a build stage to import it, and
+asserts five login numbers against a base that allocates downward — three things
+that cannot be checked by reading and that fail as a red build rather than as a
+machine anybody has to debug. The first one of those already went wrong once:
+`systemd-sysusers` quietly put alo OS's agent in the resolver's group, and it was
+found by building.
+
+- **Acceptance:** the recipe is built, from this repository, and the result is
+  reported honestly — the build's own assertions passing (the five numbers,
+  `bootc container lint`, the model store existing), what it cost in time and
+  bytes, and what went wrong. **A failure is the finished work**, written into
+  `docs/quirks.md` with the version and the date if it is an engine behaving
+  unlike its manual, and into the plan as the next task if it is ours. It may
+  not be claimed as a boot: the machine half of `ROADMAP.md`'s image line stays
+  empty either way, and **no *On the machine* box moves.**
+- **Constraint:** it changes no decision to make a build pass. A recipe that
+  fails because a promise in `docs/` is expensive is a finding to write down, not
+  a line to soften — and if the only way through is an unpinned artefact, a
+  capability, a widened grant or a patched engine, the ADR is the work and the
+  build waits on it. It downloads what the recipe downloads and nothing else.
+  Nothing in `crates/alo-shell`.

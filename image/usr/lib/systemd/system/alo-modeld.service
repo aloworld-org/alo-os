@@ -1,0 +1,103 @@
+[Unit]
+# The one thing on this machine that serves the model it arrived with.
+#
+# ADR 0025 put a pinned runtime and 2.23 GiB of weights on the disk of every
+# machine we build, and until this unit existed nothing started either of them:
+# `alo-models` knocked at the loopback address a runtime listens on and found
+# nothing there, which is the same answer a machine with no model at all gives.
+# This is the whole of the difference between those two machines.
+#
+# It is named for what it does rather than for what it is. A person types
+# `systemctl status alo-modeld` and learns that their machine serves a model;
+# what we rented to do that is ours to change and never theirs to learn
+# (docs/features.md — *a person never learns the name of anything we rented*).
+Description=alo OS model service: the local model this machine arrived with
+Documentation=https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md
+
+# The weights are under /usr and the state directory below is not, so the one
+# thing to wait for is the filesystem work systemd does before ordinary services
+# start. There is nothing else: this service needs no boundary, no session and
+# nobody signed in, which is the point of it being a machine service at all.
+After=systemd-tmpfiles-setup.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/ollama serve
+
+# A login of its own, and a group of its own, and that is a decision rather than
+# tidiness. Not the person: this process is up before anybody signs in and stays
+# up after they sign out, and a model service running as them would hold a
+# process in their name through a session they ended. Not the agent either —
+# ADR 0001 §2 spends its length keeping authority away from that login, and a
+# service that can read every question put to this machine is the last place to
+# lend it any.
+#
+# The numbers are 60991, beside the agent's 60989 and the greeter's 60990, in
+# the range systemd's own uid document leaves allocated by nothing: Fedora
+# allocates system logins downward from 999, so every number in the ordinary
+# system range is one a base update can take under us (docs/quirks.md).
+User=alo-model
+Group=alo-model
+
+# **Both lines, both empty.** Serving a model needs no privilege at all: it
+# reads weights the image installed, it binds a port above 1024, and it answers.
+# ADR 0018's argument said in the third place it has to be said — the one
+# privileged component is privileged because of how little it is trusted with,
+# and a capability added here to make something work would be that argument
+# quietly stopping being true.
+CapabilityBoundingSet=
+AmbientCapabilities=
+NoNewPrivileges=yes
+
+# Where it looks for the model, which is where the weights landed and nowhere
+# else. The runtime's own default is a home directory belonging to a login this
+# image does not make, so without this line a machine carrying 2.23 GiB of model
+# would serve nothing and say it had nothing installed.
+Environment=OLLAMA_MODELS=/usr/share/alo/models
+
+# **The address is the one `crates/alo-models` knocks at, and it is loopback.**
+# The single most expensive thing that can go wrong in this file is one word:
+# an address bound to every interface would offer this machine's model to the
+# network it is plugged into, to anybody, with no grant, no record and nothing
+# on the egress indicator — because nothing left. `crates/alo-image` holds this
+# line to the address that crate spells, so the two cannot drift apart.
+Environment=OLLAMA_HOST=http://127.0.0.1:11434
+
+# It reaches nothing off this machine, and this is where that is enforced
+# rather than asserted. systemd's IP access list is a kernel-side filter on this
+# service's own control group, so an update check, a telemetry call or a pull
+# from a model registry does not fail politely — it does not leave. Law 1: on a
+# machine sold on sovereignty, a working day produces zero inference egress, and
+# the one process holding the model is the one that has to be silent for that
+# sentence to be true.
+#
+# `localhost` is both directions: it is how this service is reached and the
+# whole of what it may reach.
+IPAddressAllow=localhost
+IPAddressDeny=any
+
+# And a second line saying the same thing from the other end, because the first
+# is a filter and this is a refusal. Nothing here speaks any protocol family but
+# the two the loopback interface uses and the one systemd needs to start it.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+# Somewhere of its own to write, made and owned by systemd before the process
+# starts. The runtime expects a writable home; /usr/share/alo/models is on the
+# read-only half of a bootc machine and is not it. 0700, because nothing else on
+# this machine has any business in it.
+StateDirectory=alo-model
+StateDirectoryMode=0700
+Environment=HOME=/var/lib/alo-model
+
+# Deliberately not restarted, for `alo-agentd.service`'s reason: every road out
+# of this service's start-up is a machine that is wrong in a way that will not
+# fix itself — no weights, no store, an address that will not bind — and a
+# supervisor trying again five times turns one sentence saying which into five
+# copies of it in a log. A machine whose model service is down is a machine
+# `alo-models` finds nothing on, which is an answer this repository already has.
+
+[Install]
+# Started at boot, not at a sign-in. *The local model is what the machine
+# arrives ready to run* is a promise about the machine rather than about
+# whoever happens to be signed in to it, and this service belongs to no person.
+WantedBy=multi-user.target

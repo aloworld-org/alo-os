@@ -2,12 +2,12 @@
 #
 # ADR 0011: the operating system *is* an OCI image — a bootable container
 # (`bootc`) on a rented, unmodified Fedora-derived base. Nothing below patches
-# that base. What this file adds is three binaries of our own, three units, two
+# that base. What this file adds is three binaries of our own, four units, two
 # directories, one description — the smallest image that boots and starts the
-# agent service (queue item 28) — and, since ADR 0025, the pinned model runtime
-# and the weights a machine arrives with, because the local model is what the
-# machine arrives ready to run. There is no compositor in it, no desktop, no
-# wallpaper and nothing to sign in at.
+# agent service (queue item 28) — and, since ADR 0025, the pinned model runtime,
+# the weights a machine arrives with and the one unit that serves them, because
+# the local model is what the machine arrives ready to run. There is no
+# compositor in it, no desktop, no wallpaper and nothing to sign in at.
 #
 # Build it from the root of the repository:
 #
@@ -256,11 +256,12 @@ COPY --from=runtime /runtime/lib/ollama/ /usr/lib/ollama/
 # 0007). This is the half that makes *the local model is what the machine
 # arrives ready to run* about a disk rather than about a download.
 #
-# **Still no unit and nothing that starts it.** A runtime alone answers nothing
-# (ADR 0019) and a runtime with weights on the disk answers nothing either until
-# something starts it — which login it runs as, which group may reach its socket
-# and what it may reach off this machine are a decision of their own, and this
-# image does not smuggle them in beside a `COPY`.
+# What starts it is `alo-modeld.service`, beside the other three units below. A
+# runtime alone answers nothing (ADR 0019) and a runtime with weights on the disk
+# answers nothing either until something serves them; which login that process
+# runs as, where it looks for the model and what it may reach off this machine
+# are decided in that unit, in settings a person can read, and held to those
+# decisions by `crates/alo-image`.
 #
 # The modes are the store's own, made by root in the stage above with the
 # build's umask: readable by everybody, written by nobody. They are not chmod'ed
@@ -303,11 +304,13 @@ RUN chmod 0755 /usr/libexec/alo-boundaryd /usr/libexec/alo-sessiond \
  && chmod 0644 /usr/lib/systemd/system/alo-boundaryd.service \
                /usr/lib/systemd/system/alo-agentd.service \
                /usr/lib/systemd/system/alo-sessiond.service \
+               /usr/lib/systemd/system/alo-modeld.service \
                /usr/lib/sysusers.d/alo.conf \
                /usr/lib/tmpfiles.d/alo.conf \
                /etc/alo/agentd.toml \
  && chown root:root /etc/alo/agentd.toml \
  && systemctl enable alo-boundaryd.service alo-agentd.service alo-sessiond.service \
+                     alo-modeld.service \
  && bootc container lint
 
 # The logins, made here rather than only at boot — and then checked, which is
@@ -328,4 +331,6 @@ RUN systemd-sysusers \
  && test "$(getent group alo-agent | cut -d: -f3)" = 60989 \
  && test "$(id -u alo-greeter)" = 60990 \
  && test "$(getent group alo-greeter | cut -d: -f3)" = 60990 \
+ && test "$(id -u alo-model)" = 60991 \
+ && test "$(getent group alo-model | cut -d: -f3)" = 60991 \
  && id -nG alo | tr ' ' '\n' | grep -qx alo-agent

@@ -60,6 +60,24 @@ const THE_SIGN_IN_DOORS_MODE: &str = "0750";
 /// What a unit says where it says nothing, in a sentence somebody reads.
 const NOTHING: &str = "-";
 
+/// The variable the model runtime reads its store from.
+///
+/// The rented runtime's own spelling, which the image has to write to put the
+/// weights anywhere but that runtime's default — a home directory belonging to a
+/// login this image does not make. ADR 0006's one-file rule is about how the
+/// runtime is *spoken to*; where its files are is the image's own fact, and
+/// `crate::runtime` says the same thing at more length.
+const THE_STORE: &str = "OLLAMA_MODELS";
+
+/// The variable it reads its address from.
+const THE_ADDRESS: &str = "OLLAMA_HOST";
+
+/// What an IP access list says to mean *this machine, and nothing else*.
+const ONLY_THIS_MACHINE: &str = "localhost";
+
+/// What it says to mean *everywhere*.
+const ANYWHERE: &str = "any";
+
 /// The memory of the machine the weights on this image are sized for.
 ///
 /// `docs/hardware.md` certifies two machines and says which of them matters
@@ -121,6 +139,8 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     nobody_signs_in_with_an_account_the_image_shipped(image, &mut wrong);
     the_model_runtime_is_aboard_and_pinned(image, &mut wrong);
     the_weights_are_aboard_pinned_and_measured(image, &mut wrong);
+    the_model_is_served_by_a_login_of_its_own(image, &mut wrong);
+    the_server_reaches_nothing_off_this_machine(image, &mut wrong);
     the_image_becomes_a_disk(image, &mut wrong);
     the_document_says_what_the_recipe_does(image, &mut wrong);
     wrong
@@ -384,6 +404,185 @@ fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wro
             licence: entry.licence.name.clone(),
         });
     }
+}
+
+/// **The one thing that serves the model is a login of its own, holds nothing,
+/// and is pointed at the weights and at the address this machine looks for a
+/// runtime at.**
+///
+/// ADR 0025 put a runtime and 2.23 GiB of weights on every machine we build, and
+/// until `alo-modeld.service` existed nothing started either of them — so
+/// `alo-models` knocked at the loopback address and found what a machine with no
+/// model at all would have offered it. A unit is not a `COPY` line's worth of
+/// decision, and each of the four this function reads is one a build cannot see.
+///
+/// **Which login.** Not the person, whose session comes and goes and who would
+/// otherwise have a process in their name running through a session they ended;
+/// not the agent, which ADR 0001 §2 spends its length keeping authority away
+/// from, and which is the last login to lend anything to a process that reads
+/// every question put to this machine. A login of its own, made by the image, or
+/// the `User=` line names somebody who cannot be told apart from one of those
+/// two by the kernel.
+///
+/// **Which group**, for the same reason and with a second one: the group is who
+/// this process *is* on a machine where files have groups, and a service sharing
+/// the agent's would be inside ADR 0001 §5's division rather than outside it.
+///
+/// **Which store.** The runtime's own default is a home directory belonging to a
+/// login this image does not make, so a unit that said nothing would serve
+/// nothing off a machine carrying the model — the emptiest possible version of
+/// this promise, and one that looks from the outside exactly like a machine
+/// nobody put a model on.
+///
+/// **Which address**, which is the expensive one. `alo-models` knocks at exactly
+/// one place (ADR 0019), and a `OLLAMA_HOST` that named every interface rather
+/// than the loopback one would hand this machine's model to whatever network it
+/// is plugged into — with no grant, no record and nothing on the egress
+/// indicator, because nothing left. The address is read off
+/// [`alo_models::ollama::DEFAULT_ENDPOINT`] rather than spelled here, so a
+/// runtime that moves moves in one file.
+///
+/// # What this deliberately does not check, and what waits on a decision
+///
+/// *Who on this machine may ask the model anything.* A loopback TCP port has no
+/// owner and no mode: every login on the machine can reach it, and no line in
+/// any unit file changes that. `Group=` above says who **answers**, never who may
+/// **ask**, and the two are not the same question —
+/// [ADR 0026](../../../docs/decisions/0026-who-may-ask-the-model-anything.md) is
+/// where the difference is argued and what it would take is priced. Nothing here
+/// may be read as having answered it.
+fn the_model_is_served_by_a_login_of_its_own(image: &Image, wrong: &mut Vec<Wrong>) {
+    let server = image.server().called().to_owned();
+
+    let as_login = image.server().as_login().unwrap_or(NOTHING);
+    match image.login_called(as_login) {
+        None => wrong.push(Wrong::TheServerIsNotALoginThisImageMakes {
+            server: server.clone(),
+            as_login: as_login.to_owned(),
+        }),
+        Some(number) => {
+            for (theirs, whose) in [
+                (image.description().person(), "the person"),
+                (image.description().agent(), "the agent"),
+            ] {
+                if number == theirs {
+                    wrong.push(Wrong::TheServerIsSomebodyElse {
+                        server: server.clone(),
+                        as_login: as_login.to_owned(),
+                        whose: whose.to_owned(),
+                    });
+                }
+            }
+        }
+    }
+
+    let group = image.server().in_group().unwrap_or(NOTHING);
+    if image.group_called(group).is_none() {
+        wrong.push(Wrong::TheServerIsNotInAGroupOfItsOwn {
+            server: server.clone(),
+            group: group.to_owned(),
+        });
+    }
+    for (theirs, whose) in [
+        (image.agent().in_group(), "the person's"),
+        (image.loader().in_group(), "the agent's"),
+        (image.opener().in_group(), "the greeter's"),
+    ] {
+        if theirs == Some(group) {
+            wrong.push(Wrong::TheServerSharesItsGroup {
+                server: server.clone(),
+                group: group.to_owned(),
+                whose: whose.to_owned(),
+            });
+        }
+    }
+
+    if !image.server().holds_nothing() {
+        wrong.push(Wrong::TheServerHoldsSomething {
+            server: server.clone(),
+            bounded: image
+                .server()
+                .bounded_to()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            given: image
+                .server()
+                .given()
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+        });
+    }
+
+    let stated = image.server().environment();
+
+    let store = assigned(&stated, THE_STORE);
+    let weights = crate::THE_WEIGHTS.trim_end_matches('/');
+    if store.len() != 1 || store.first().map(|it| it.trim_end_matches('/')) != Some(weights) {
+        wrong.push(Wrong::TheServersStoreIsNotTheWeights {
+            server: server.clone(),
+            store: said(&store),
+            weights: weights.to_owned(),
+        });
+    }
+
+    let looks = alo_models::ollama::DEFAULT_ENDPOINT;
+    let address = assigned(&stated, THE_ADDRESS);
+    if address != vec![looks] {
+        wrong.push(Wrong::TheServerIsNotWhereTheMachineLooks {
+            server,
+            address: said(&address),
+            looks: looks.to_owned(),
+        });
+    }
+}
+
+/// **And it makes no connection of its own — not an update check, not
+/// telemetry, not a model registry.**
+///
+/// Law 1, said about the one process on the machine that holds the model: with a
+/// local model a working day produces **zero** inference egress, measured at the
+/// network boundary. A runtime that phoned home on start would be an egress
+/// nobody asked for, on a machine sold on sovereignty, from the process whose
+/// silence the whole claim rests on.
+///
+/// It is two lines rather than a comment because a comment is not a filter.
+/// systemd's IP access list is applied in the kernel to this unit's own control
+/// group, so a build of the runtime that grew an update check does not fail
+/// politely — it does not leave. `IPAddressAllow=` without the deny beside it
+/// filters nothing at all, which is why both are read and why an allow list
+/// naming anything but this machine is a finding.
+///
+/// **This is a setting read, not a machine watched.** Nothing in this repository
+/// has yet booted the image and put a packet counter beside it; what is checked
+/// here is that the unit says it, in the one place where saying it is enforcing
+/// it.
+fn the_server_reaches_nothing_off_this_machine(image: &Image, wrong: &mut Vec<Wrong>) {
+    let allowed = image.server().may_reach();
+    let denied = image.server().may_not_reach();
+
+    if allowed != vec![ONLY_THIS_MACHINE] || !denied.contains(&ANYWHERE) {
+        wrong.push(Wrong::TheServerMayReachTheNetwork {
+            server: image.server().called().to_owned(),
+            allowed: said(&allowed),
+            denied: said(&denied),
+        });
+    }
+}
+
+/// Every value a unit's environment gives this variable, in the order it gives
+/// them.
+///
+/// A list rather than the last one, because *exactly one assignment* is the
+/// question everywhere this is used: two would be a unit where the second
+/// silently wins and a reader believes the first.
+fn assigned<'a>(stated: &[&'a str], variable: &str) -> Vec<&'a str> {
+    stated
+        .iter()
+        .filter_map(|pair| pair.strip_prefix(variable))
+        .filter_map(|rest| rest.strip_prefix('='))
+        .collect()
 }
 
 /// **The image ships no accounts**, which is the state `alo-accounts` reads as
@@ -788,7 +987,12 @@ fn nobody_chose_a_retention(image: &Image, wrong: &mut Vec<Wrong>) {
 
 /// A unit nothing pulls in at boot is a unit that is shipped and never runs.
 fn both_units_are_pulled_in(image: &Image, wrong: &mut Vec<Wrong>) {
-    for service in [image.loader(), image.agent(), image.opener()] {
+    for service in [
+        image.loader(),
+        image.agent(),
+        image.opener(),
+        image.server(),
+    ] {
         if service.wanted_by().is_empty() {
             wrong.push(Wrong::NothingPullsItIn {
                 unit: service.called().to_owned(),
@@ -802,8 +1006,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         THE_AGENTS_UNIT, THE_BOOTING_DOCUMENT, THE_CONTAINERFILE, THE_DESCRIPTION_FILE,
-        THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SYSUSERS, THE_TMPFILES, a_copy_of_the_image,
-        edited, image_at, the_store_file,
+        THE_LOADERS_UNIT, THE_OPENERS_UNIT, THE_SERVERS_UNIT, THE_SYSUSERS, THE_TMPFILES,
+        a_copy_of_the_image, edited, image_at, the_store_file,
     };
 
     /// **The image this repository ships says one thing.** Everything below
@@ -1120,6 +1324,12 @@ mod tests {
     /// **And a description whose agent number nothing makes is caught**, which
     /// is ADR 0001 §5: the agent is a login of its own, and SO_PEERCRED is the
     /// whole of the division between the socket's two doors.
+    ///
+    /// The number is one no login on this image has, and that has to be chosen
+    /// rather than picked: 60991 used to be free and is the model service's, and
+    /// a description naming *it* is caught by a different sentence —
+    /// [`Wrong::TheServerIsSomebodyElse`], which says the truer thing, that the
+    /// process holding the model would be the agent.
     #[test]
     fn a_description_whose_agent_is_no_login_is_caught() {
         let root = a_copy_of_the_image("no-agent-login");
@@ -1127,7 +1337,7 @@ mod tests {
             &root,
             THE_DESCRIPTION_FILE,
             "agent = 60989",
-            "agent = 60991",
+            "agent = 60992",
         );
 
         let wrong = everything_wrong_with(&image_at(&root));
@@ -1864,6 +2074,266 @@ mod tests {
         assert!(found.is_some(), "{wrong:?}");
         let said = found.map(ToString::to_string).unwrap_or_default();
         assert!(said.contains("redistribution"), "{said}");
+    }
+
+    /// **A model service running as the person is caught.** It is up before
+    /// anybody signs in and stays up after they sign out, so a process in their
+    /// name outlives the session they ended — and on the machine that ships,
+    /// `User=alo` is the one edit that would look like tidying up.
+    #[test]
+    fn a_model_service_running_as_the_person_is_caught() {
+        let root = a_copy_of_the_image("server-is-the-person");
+        edited(&root, THE_SERVERS_UNIT, "User=alo-model", "User=alo");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheServerIsSomebodyElse { whose, .. } if whose == "the person"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And one running as a login this image never makes is caught**, which
+    /// is the likelier half: a name somebody typed, a service that will not
+    /// start, and a machine that otherwise boots perfectly.
+    #[test]
+    fn a_model_service_running_as_nobody_this_image_makes_is_caught() {
+        let root = a_copy_of_the_image("server-is-nobody");
+        edited(&root, THE_SERVERS_UNIT, "User=alo-model", "User=ollama");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServerIsNotALoginThisImageMakes { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model service in the agent's group is caught.** ADR 0001 §5 draws a
+    /// division around that login, and a `Group=` line is all it takes to put
+    /// the process holding the model inside it.
+    #[test]
+    fn a_model_service_in_the_agents_group_is_caught() {
+        let root = a_copy_of_the_image("server-in-the-agents-group");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "Group=alo-model",
+            "Group=alo-agent",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheServerSharesItsGroup { whose, .. } if whose == "the agent's"
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And a group this image does not make is caught too**, for the reason
+    /// the opener's own group is: a service whose group does not exist is one
+    /// that never starts.
+    #[test]
+    fn a_model_service_in_a_group_this_image_does_not_make_is_caught() {
+        let root = a_copy_of_the_image("server-no-group");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "Group=alo-model",
+            "Group=alo-somebody",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServerIsNotInAGroupOfItsOwn { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model service given a capability is caught**, and it is ADR 0018's
+    /// shape a third time: not a privileged daemon, a directive added to an
+    /// ordinary one to make something work.
+    #[test]
+    fn a_model_service_given_a_capability_is_caught() {
+        let root = a_copy_of_the_image("server-a-capability");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "AmbientCapabilities=",
+            "AmbientCapabilities=CAP_SYS_NICE",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServerHoldsSomething { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model service told nothing about where the weights are is caught.**
+    /// Without the line the runtime uses its own default — a home directory
+    /// this image does not make — and a machine carrying 2.23 GiB of model
+    /// reports nothing installed.
+    #[test]
+    fn a_model_service_pointed_at_no_store_is_caught() {
+        let root = a_copy_of_the_image("server-no-store");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "Environment=OLLAMA_MODELS=/usr/share/alo/models",
+            "",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::TheServersStoreIsNotTheWeights { store, .. } if store == NOTHING
+            )),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And one pointed somewhere the weights did not land is caught too**,
+    /// which is the same mistake with the path changed rather than deleted.
+    #[test]
+    fn a_model_service_pointed_at_the_wrong_store_is_caught() {
+        let root = a_copy_of_the_image("server-elsewhere");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "OLLAMA_MODELS=/usr/share/alo/models",
+            "OLLAMA_MODELS=/var/lib/alo-model/models",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServersStoreIsNotTheWeights { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model service bound to every interface is caught, and it is the most
+    /// expensive line in the file.** One word: the machine's own model, offered
+    /// to whatever network it is plugged into, to anybody, with no grant, no
+    /// record and a dark egress indicator — because nothing left.
+    #[test]
+    fn a_model_service_bound_to_every_interface_is_caught() {
+        let root = a_copy_of_the_image("server-on-the-network");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "OLLAMA_HOST=http://127.0.0.1:11434",
+            "OLLAMA_HOST=http://0.0.0.0:11434",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::TheServerIsNotWhereTheMachineLooks { .. }));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("0.0.0.0"), "{said}");
+    }
+
+    /// **And a model service at an address this machine does not knock at is
+    /// caught**, which is the quieter half of the same line: the runtime is
+    /// serving, `alo-models` finds nothing, and the machine says no model is
+    /// installed on a machine that shipped with one.
+    #[test]
+    fn a_model_service_at_a_port_nothing_knocks_at_is_caught() {
+        let root = a_copy_of_the_image("server-another-port");
+        edited(&root, THE_SERVERS_UNIT, ":11434", ":11435");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServerIsNotWhereTheMachineLooks { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model service that may reach the network is caught.** Law 1: a
+    /// working day with a local model produces zero inference egress, and the
+    /// one process holding the model is the one that has to be silent for that
+    /// sentence to be true. Deleting the deny leaves the allow list filtering
+    /// nothing at all, which is the mistake that looks like a tidy-up.
+    #[test]
+    fn a_model_service_that_may_reach_the_network_is_caught() {
+        let root = a_copy_of_the_image("server-may-leave");
+        edited(&root, THE_SERVERS_UNIT, "IPAddressDeny=any", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServerMayReachTheNetwork { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **And an allow list widened past this machine is caught too**, which is
+    /// how an update check really arrives: not by deleting a line, by adding a
+    /// name to one.
+    #[test]
+    fn a_model_service_allowed_somewhere_beyond_this_machine_is_caught() {
+        let root = a_copy_of_the_image("server-allowed-out");
+        edited(
+            &root,
+            THE_SERVERS_UNIT,
+            "IPAddressAllow=localhost",
+            "IPAddressAllow=localhost\nIPAddressAllow=any",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheServerMayReachTheNetwork { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A model service nothing pulls in is caught**, which is this task's own
+    /// failure mode: the unit is in the image, `systemctl cat` shows it, and a
+    /// machine boots with 2.23 GiB of model and nothing serving it — the exact
+    /// state the image really shipped in until this unit existed.
+    #[test]
+    fn a_model_service_nothing_starts_is_caught() {
+        let root = a_copy_of_the_image("server-never-started");
+        edited(&root, THE_SERVERS_UNIT, "WantedBy=multi-user.target", "");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(
+                |it| matches!(it, Wrong::NothingPullsItIn { unit } if unit == crate::THE_SERVER)
+            ),
+            "{wrong:?}"
+        );
     }
 
     /// **An image that stopped saying what disk it becomes is caught.** The

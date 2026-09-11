@@ -16,7 +16,7 @@ use std::path::Path;
 
 use alo_image::{
     Image, NO_PARTITIONER, ROOT, THE_AGENT, THE_DOOR, THE_IMAGE, THE_LOADER, THE_ONLY_TOOL,
-    THE_OPENER, THE_WEIGHTS, everything_wrong_with,
+    THE_OPENER, THE_RUNTIMES_BINARY, THE_SERVER, THE_WEIGHTS, everything_wrong_with,
 };
 use alo_models::{Catalogue, OnCpu};
 
@@ -210,8 +210,13 @@ fn both_units_are_started_by_something() {
     assert!(!image.agent().wanted_by().is_empty());
 }
 
-/// The two processes the units start are the two binaries this repository
-/// builds, at the paths the Containerfile installs them to.
+/// The processes the units start are the binaries the image installs, at the
+/// paths the Containerfile installs them to.
+///
+/// Three of them are built here and the fourth is the pinned runtime the recipe
+/// fetches (ADR 0006, ADR 0025) — which is why the fourth is checked against
+/// where `crate::runtime` says that artefact lands rather than against a fifth
+/// spelling of it.
 #[test]
 fn the_units_start_the_binaries_the_image_installs() {
     let image = the_image();
@@ -219,6 +224,11 @@ fn the_units_start_the_binaries_the_image_installs() {
     assert_eq!(image.loader().runs(), "/usr/libexec/alo-boundaryd");
     assert_eq!(image.agent().runs(), "/usr/bin/alo-agentd");
     assert_eq!(image.opener().runs(), "/usr/libexec/alo-sessiond");
+    assert!(
+        image.server().runs().starts_with(THE_RUNTIMES_BINARY),
+        "{THE_SERVER} starts `{}`, which is not the runtime this image carries",
+        image.server().runs()
+    );
 }
 
 /// **The second privileged component alo OS has holds no capability at all.**
@@ -375,6 +385,131 @@ fn the_weights_a_machine_arrives_with_are_aboard_pinned_and_measured() {
          who receives it",
         entry.licence.name
     );
+}
+
+/// **Something on this machine serves the model it arrived with, and it is a
+/// login of its own that holds nothing.**
+///
+/// Until this unit existed the image carried a runtime and 2.23 GiB of weights
+/// and started neither, so `alo-models` knocked at the loopback address and got
+/// the answer a machine with no model at all gives. The four decisions in the
+/// unit are read back here off the real file.
+///
+/// Not the person, whose session comes and goes; not the agent, which ADR 0001
+/// §2 and §5 keep authority and identity away from; and no capability, because
+/// serving a model needs none — ADR 0018's argument said in the third place it
+/// has to be said.
+#[test]
+fn the_model_is_served_by_a_login_of_its_own_that_holds_nothing() {
+    let image = the_image();
+    let server = image.server();
+
+    let as_login = match server.as_login() {
+        Some(login) => login,
+        None => panic!("{THE_SERVER} does not say which login it runs as"),
+    };
+    let number = match image.login_called(as_login) {
+        Some(number) => number,
+        None => panic!("{THE_SERVER} runs as `{as_login}`, which this image does not make"),
+    };
+    assert_ne!(number, image.description().person());
+    assert_ne!(number, image.description().agent());
+
+    let group = match server.in_group() {
+        Some(group) => group,
+        None => panic!("{THE_SERVER} does not say which group it runs in"),
+    };
+    assert!(
+        image.group_called(group).is_some(),
+        "{THE_SERVER} runs in `{group}`, which this image does not make"
+    );
+    assert_ne!(Some(group), image.loader().in_group(), "the agent's group");
+    assert_ne!(Some(group), image.agent().in_group(), "the person's group");
+    assert_ne!(
+        Some(group),
+        image.opener().in_group(),
+        "the greeter's group"
+    );
+
+    assert!(
+        server.holds_nothing(),
+        "serving a model needs no capability, and both lines have to say so: {server:?}"
+    );
+    assert!(
+        server.wanted_by().contains(&"multi-user.target"),
+        "nothing starts {THE_SERVER}, which is the state the image shipped in until it existed"
+    );
+}
+
+/// **It looks for the model where the weights landed, and answers where this
+/// machine knocks.**
+///
+/// Two `Environment=` lines and each is a different kind of wrong. The store is
+/// the quiet one: the runtime's own default is a home directory this image does
+/// not make, so a machine carrying the model would report nothing installed and
+/// look from the outside exactly like a machine nobody put a model on.
+///
+/// The address is the expensive one. `alo-models` knocks at exactly one place
+/// (ADR 0019) and the address is read from that crate rather than spelled here,
+/// so the unit and the knock cannot drift apart — and an address naming every
+/// interface rather than the loopback one would offer this machine's model to
+/// whatever network it is plugged into, with nothing on the egress indicator,
+/// because nothing left.
+#[test]
+fn the_model_service_is_pointed_at_the_weights_and_at_the_loopback_address() {
+    let image = the_image();
+    let stated = image.server().environment();
+
+    let store: Vec<&str> = assigned(&stated, "OLLAMA_MODELS");
+    assert_eq!(
+        store,
+        vec![THE_WEIGHTS.trim_end_matches('/')],
+        "the model service is not pointed at the directory the weights landed in"
+    );
+
+    let address: Vec<&str> = assigned(&stated, "OLLAMA_HOST");
+    assert_eq!(
+        address,
+        vec![alo_models::ollama::DEFAULT_ENDPOINT],
+        "the model service does not answer where this machine looks for a runtime"
+    );
+}
+
+/// **And it reaches nothing off this machine — enforced, not asserted.**
+///
+/// Law 1: with a local model a working day produces zero inference egress,
+/// measured at the network boundary, and the one process holding the model is
+/// the one that has to be silent for that sentence to be true. systemd's IP
+/// access list is a kernel-side filter on this unit's own control group, so an
+/// update check, a telemetry call or a registry pull does not fail politely; it
+/// does not leave.
+///
+/// **This reads a setting. It is not a machine anybody watched.** No packet
+/// counter has been put beside this image, because nothing in this lane has
+/// booted it — `docs/autonomy/v0-01-evidence.md` is where that stays owed.
+#[test]
+fn the_model_service_may_reach_nothing_off_this_machine() {
+    let image = the_image();
+
+    assert_eq!(
+        image.server().may_reach(),
+        vec!["localhost"],
+        "the model service is allowed somewhere beyond this machine"
+    );
+    assert!(
+        image.server().may_not_reach().contains(&"any"),
+        "an allow list with no deny under it filters nothing at all"
+    );
+}
+
+/// Every value a unit's environment gives this variable, in the order it gives
+/// them — a list, because *exactly one assignment* is the question.
+fn assigned<'a>(stated: &[&'a str], variable: &str) -> Vec<&'a str> {
+    stated
+        .iter()
+        .filter_map(|pair| pair.strip_prefix(variable))
+        .filter_map(|rest| rest.strip_prefix('='))
+        .collect()
 }
 
 /// **This image says what disk a machine boots from, and it is written by the

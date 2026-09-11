@@ -27,6 +27,9 @@ pub(crate) const THE_AGENTS_UNIT: &str = "usr/lib/systemd/system/alo-agentd.serv
 /// The opener's unit, beneath the image's root.
 pub(crate) const THE_OPENERS_UNIT: &str = "usr/lib/systemd/system/alo-sessiond.service";
 
+/// The model service's unit, beneath the image's root.
+pub(crate) const THE_SERVERS_UNIT: &str = "usr/lib/systemd/system/alo-modeld.service";
+
 /// What the image makes at boot, beneath the image's root.
 pub(crate) const THE_TMPFILES: &str = "usr/lib/tmpfiles.d/alo.conf";
 

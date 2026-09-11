@@ -204,6 +204,24 @@ impl Service {
         self.unit.listed(SERVICE, "Environment")
     }
 
+    /// The addresses this service may reach, and be reached from.
+    ///
+    /// systemd's IP access list is a filter on this unit's own control group,
+    /// applied in the kernel in both directions. It is the one setting in a unit
+    /// file that makes *it makes no connection of its own* enforced rather than
+    /// asserted — a service under `IPAddressDeny=any` does not fail politely at
+    /// an update check, it does not leave the machine.
+    #[must_use]
+    pub fn may_reach(&self) -> Vec<&str> {
+        self.unit.listed(SERVICE, "IPAddressAllow")
+    }
+
+    /// The addresses it may not.
+    #[must_use]
+    pub fn may_not_reach(&self) -> Vec<&str> {
+        self.unit.listed(SERVICE, "IPAddressDeny")
+    }
+
     /// The units this one is started before.
     #[must_use]
     pub fn before(&self) -> Vec<&str> {
@@ -266,6 +284,24 @@ WantedBy=multi-user.target
         assert_eq!(service.before(), vec!["alo-agentd.service"]);
         assert_eq!(service.bound_to(), vec!["user@1000.service"]);
         assert_eq!(service.wanted_by(), vec!["multi-user.target"]);
+    }
+
+    /// **An IP access list is read as two lists, and a unit that says nothing
+    /// has neither.** The difference between them is the whole of what makes a
+    /// silent service silent: an allow list with no `IPAddressDeny=any` under it
+    /// filters nothing at all.
+    #[test]
+    fn what_a_service_may_reach_is_what_its_unit_says() {
+        let bounded = read(
+            "bounded.service",
+            "[Service]\nExecStart=/usr/bin/x\nIPAddressAllow=localhost\nIPAddressDeny=any\n",
+        );
+        let open = read("open.service", "[Service]\nExecStart=/usr/bin/x\n");
+
+        assert_eq!(bounded.may_reach(), vec!["localhost"]);
+        assert_eq!(bounded.may_not_reach(), vec!["any"]);
+        assert!(open.may_reach().is_empty());
+        assert!(open.may_not_reach().is_empty());
     }
 
     /// The environment a unit states comes back pair by pair, accumulated over

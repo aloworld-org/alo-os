@@ -604,6 +604,40 @@ because a runtime alo OS ships is not an address anybody typed.
 **Upstream:** not reported; both are documented behaviour.
 **Date:** 2026-09-03
 
+### A model runtime's door is a TCP port, and a TCP port has no owner and no mode
+**Version:** Ollama 0.34.0, the runtime `image/Containerfile` pins; systemd 257
+(257.13-1.fc42) on the pinned base.
+**Behaviour:** every door alo OS had decided who may knock at before this one was
+a Unix socket — `/run/alo/<uid>/…` is 0750 and the agent's group (ADR 0017),
+`/run/alo-sessiond` is 0750 and the greeter's (ADR 0024) — and both are decided
+by a `Group=` line and a mode, because the filesystem carries an owner and a mode
+for a socket and the kernel checks them on `connect(2)`. The model runtime's door
+is not a Unix socket: `OLLAMA_HOST` is a host and a port and the server listens
+with `net.Listen("tcp", …)`, so **there is nothing to own and nothing to chmod**.
+No directive in a systemd unit restricts which local uids may connect to a
+listening TCP port; `IPAddressAllow=`/`IPAddressDeny=` filter by address, and
+every process on the machine connects from the same one.
+
+The mistake this is written down to prevent is reading `Group=alo-model` in
+`alo-modeld.service` as the sentence the other two units' `Group=` lines are.
+It says who **answers**. It does not say, and cannot say, who may **ask**.
+**Our response:** the unit decides everything a unit can decide — a login and a
+group of its own, no capability and both lines saying so, the store the weights
+landed in, the one loopback address `crates/alo-models` knocks at, and
+`IPAddressDeny=any` under an allow list naming this machine alone, which is a
+kernel-side filter on the service's own control group and is what makes *it
+reaches nothing off this machine* enforced rather than asserted.
+`crates/alo-image` checks each of those and deliberately does not check who may
+connect, saying so beside the check.
+`docs/decisions/0026-who-may-ask-the-model-anything.md` is where the gap is
+argued and what closing it would cost is priced: a door of ours in front of the
+runtime, a shared network namespace, or a rule in the boundary the machine
+already loads. **No engine was patched to add a Unix socket** — that would be a
+source change to a rented component, which ADR 0011 refuses without an ADR of
+its own, and it is not the cheapest of the three anyway.
+**Upstream:** not reported; TCP-only serving is documented behaviour.
+**Date:** 2026-09-11
+
 ### Ollama 0.33.3 — one library model's manifest cannot be pulled, and the error is `EOF`
 **Version:** Ollama 0.33.3, the runtime installed on the box every grade in
 `data/catalogue.toml` was made on. The image pins 0.34.0

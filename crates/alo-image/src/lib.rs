@@ -3,10 +3,11 @@
 //!
 //! alo OS is an OCI image ([ADR 0011](../../../docs/decisions/0011-the-base-is-rented-and-the-image-is-a-container.md)),
 //! and `image/` is what that image adds to a rented base: three binaries of our
-//! own, three systemd units, two directories made at boot, the logins the
+//! own, four systemd units, two directories made at boot, the logins the
 //! machine has, the description `alo-agentd` reads, and — since
 //! [ADR 0025](../../../docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md)
-//! — the pinned model runtime. This crate reads those declarations — and the
+//! — the pinned model runtime, the weights and the one unit that serves them.
+//! This crate reads those declarations — and the
 //! accounts file the image is answerable for **not** shipping — and asks
 //! whether they can all be true at once.
 //!
@@ -16,7 +17,7 @@
 //! | [`everything_wrong_with`] | Every promise in `docs/` they make to each other, checked |
 //! | [`Wrong`] | One thing they disagree about, and which decision it is about |
 //! | [`Unit`], [`Service`] | A systemd unit as text, and the settings alo OS asks about |
-//! | [`THE_LOADER`], [`THE_AGENT`], [`THE_OPENER`] | The three units a machine starts, as systemd names them |
+//! | [`THE_LOADER`], [`THE_AGENT`], [`THE_OPENER`], [`THE_SERVER`] | The four units a machine starts, as systemd names them |
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
@@ -34,9 +35,13 @@
 //! because the one thing an image may say about retention is *everything*;
 //! `alo-entering`, because what a session hands a daemon is derived from a
 //! sign-in rather than written into a checker; `alo-accounts`, for where a
-//! sign-in looks for the accounts this machine has; and `alo-sessiond`, for
+//! sign-in looks for the accounts this machine has; `alo-sessiond`, for
 //! where the one thing that turns a correct password into a session opens its
-//! door.
+//! door; and `alo-models`, for the catalogue's own measurement of the weights
+//! and for the address a machine looks for a runtime at — which
+//! [ADR 0019](../../../docs/decisions/0019-a-runtime-is-found-not-configured.md)
+//! keeps in one file, so a checker holding a unit to it asks that file rather
+//! than spelling a second copy.
 //!
 //! # What it is for, said plainly: a build cannot catch any of this
 //!
@@ -94,7 +99,7 @@ pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};
 pub use disk::{NO_PARTITIONER, THE_ONLY_TOOL, TheDisk};
-pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER};
+pub use image::{Image, THE_AGENT, THE_LOADER, THE_OPENER, THE_SERVER};
 pub use logins::{Declared, every_login};
 pub use making::{A_DIRECTORY, Made, everything_made};
 pub use refusing::{NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed, NotMade};

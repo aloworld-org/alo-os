@@ -350,7 +350,8 @@ the shape of the exchange rather than the thing working.
 `crates/alo-image/src/checking.rs`,
 `crates/alo-image/tests/what_the_image_owes_the_daemons.rs`,
 `crates/alo-choosing/tests/the_three_choices.rs`,
-`docs/autonomy/updates/the-weights-a-machine-arrives-with.md`
+`docs/autonomy/updates/the-weights-a-machine-arrives-with.md`,
+`docs/autonomy/updates/the-one-thing-that-serves-the-model.md`
 
 The promise this entry is about was reworded on 2026-09-11, when
 ADR 0025 was accepted as Option D under the owner's standing delegation. It used
@@ -375,17 +376,35 @@ Seven refusals hold each of those, each a disagreement naming the decision it
 breaks. The four setup choices, local first and nothing pre-selected, are the
 crate added for them and the settings nothing writes on a person's behalf.
 
+**Something now serves them, 2026-09-11.** image/usr/lib/systemd/system/alo-modeld.service
+is the one thing on the machine that serves the model it arrived with, and until
+it existed a machine built from this recipe booted with 2.23 GiB of model on its
+disk and no process serving it — which is the answer a machine with no model at
+all gives. It runs as alo-model (60991), a login and a group of its own that is
+neither the person's nor the agent's; it holds no capability and both lines say
+so; its store is the directory the weights landed in; it answers at the one
+loopback address alo-models knocks at, read off that crate rather than
+spelled twice; and it reaches nothing off this machine — an IP deny of everywhere
+under an allow list naming this machine alone, which is a kernel-side filter on
+its own control group rather than a comment. alo-image holds each of
+those, with a twin that breaks one line of a copy of the image and is caught.
+
 **Still owed:** *arrives ready to run*, which is the sentence in the promise.
-Three things stand in front of it. **No machine has booted this image** — no
-container build of the recipe has been run in this lane, so the import step is a
-recipe rather than a measurement. **Nothing starts the runtime**: the image
-carries a runtime and weights and no unit that serves them, and who that process
-runs as and what it may reach off the machine are a decision of their own, taken
-in a task rather than smuggled in beside a COPY line. And **no catalogued model
-clears the verb-driving bar**, this one included — every entry anybody has
-measured is graded *rarely*, so what a machine arrives able to do is load and
-answer with a local model rather than be handed an agent turn. This entry stays
-owed until a machine boots with the weights on it, and
+Three things stand in front of it, and one of them is smaller than it was.
+**No machine has booted this image** — no container build of the recipe has been
+run in this lane, so the import step and the serving unit are both a recipe
+rather than a measurement, and the egress claim above is **a setting read rather
+than a machine watched**: nothing has yet put a packet counter beside a booted
+image. **No catalogued model clears the verb-driving bar**, this one included —
+every entry anybody has measured is graded *rarely*, so what a machine arrives
+able to do is load and answer with a local model rather than be handed an agent
+turn. And **who on the machine may ask the model anything is not decided**: a
+loopback TCP port has no owner and no mode, so no line in any unit gates it, and
+`docs/decisions/0026-who-may-ask-the-model-anything.md` is where that is argued
+and priced. That last one does not block this promise — it is about v0.5's
+sandbox — and it is written here so the next reader inherits the reasoning
+rather than the port. This entry stays owed until a machine boots with the
+weights on it, and
 `docs/decisions/0025-the-default-is-what-a-machine-arrives-able-to-do.md` is
 where the wording it is held to was settled.
 

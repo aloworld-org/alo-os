@@ -36,6 +36,14 @@ pub const THE_AGENT: &str = "alo-agentd.service";
 /// it (ADR 0024).
 pub const THE_OPENER: &str = "alo-sessiond.service";
 
+/// The unit that serves the model the machine arrived with, as systemd names it
+/// (ADR 0025).
+///
+/// Named for what it does rather than for what it is. `docs/features.md`
+/// promises that a person never learns the name of anything we rented, and
+/// `systemctl status` is a place a person reads.
+pub const THE_SERVER: &str = "alo-modeld.service";
+
 /// Where a unit file goes, beneath the image's root.
 const UNITS: &str = "usr/lib/systemd/system";
 
@@ -78,6 +86,8 @@ pub struct Image {
     agent: Service,
     /// The service that opens a session when somebody signs in.
     opener: Service,
+    /// The service that serves the model the machine arrived with.
+    server: Service,
     /// The directories made at boot.
     made: Vec<Made>,
     /// The logins and groups made at boot.
@@ -110,6 +120,7 @@ impl Image {
         let loader = service(root, THE_LOADER)?;
         let agent = service(root, THE_AGENT)?;
         let opener = service(root, THE_OPENER)?;
+        let server = service(root, THE_SERVER)?;
 
         let at = root.join(TMPFILES);
         let made = crate::making::everything_made(&text(&at)?)
@@ -136,6 +147,7 @@ impl Image {
             loader,
             agent,
             opener,
+            server,
             made,
             declared,
             description,
@@ -163,6 +175,12 @@ impl Image {
     #[must_use]
     pub const fn opener(&self) -> &Service {
         &self.opener
+    }
+
+    /// The service that serves the model the machine arrived with.
+    #[must_use]
+    pub const fn server(&self) -> &Service {
+        &self.server
     }
 
     /// The directory this image makes at this path, if it makes one.
@@ -268,7 +286,9 @@ mod tests {
         assert_eq!(image.loader().called(), THE_LOADER);
         assert_eq!(image.agent().called(), THE_AGENT);
         assert_eq!(image.opener().called(), THE_OPENER);
+        assert_eq!(image.server().called(), THE_SERVER);
         assert_eq!(image.group_called("alo-greeter"), Some(60990));
+        assert_eq!(image.login_called("alo-model"), Some(60991));
         assert!(image.directory_at(Path::new("/run/alo")).is_some());
         assert!(image.directory_at(Path::new("/var/lib/alo")).is_some());
         assert_eq!(image.login_called("alo"), Some(1000));
@@ -321,12 +341,13 @@ mod tests {
         );
     }
 
-    /// The two unit names are what systemd calls them, and they are one string
-    /// here rather than repeated into every check that names one.
+    /// The unit names are what systemd calls them, and each is one string here
+    /// rather than repeated into every check that names one.
     #[test]
     fn the_units_are_named_once() {
         assert_eq!(THE_LOADER, "alo-boundaryd.service");
         assert_eq!(THE_AGENT, "alo-agentd.service");
         assert_eq!(THE_OPENER, "alo-sessiond.service");
+        assert_eq!(THE_SERVER, "alo-modeld.service");
     }
 }
