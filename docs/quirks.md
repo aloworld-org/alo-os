@@ -1172,6 +1172,83 @@ wrong language. Where a model in the catalogue misbehaves in a way that affects
 the agents, record it here with the exact model and quantisation — "it was fine
 for me" is usually a different quantisation.
 
+### The carry-or-fetch measurement ADR 0025 owes: the catalogue has nothing to weigh
+**Version:** `data/catalogue.toml` as of 2026-09-11 — twelve entries, five
+measured by `alo-driving` on 2026-09-04, seven `not-measured` — against the bar
+`alo_driving::measured::RELIABLY` writes down and
+`alo_models::Driving::clears_the_bar` enforces.
+**Behaviour:** ADR 0025 recommends carrying the weights on the certified image
+and fetching only where an image cannot, and says in as many words that this is
+a recommendation with a measurement owed — two numbers and a sentence, owed
+before anybody puts weights aboard. The first number does not exist: **the
+smallest catalogued model that clears the verb-driving bar is no model at all —
+none of them clears the bar.** Every entry, off the catalogue rather than from
+memory:
+
+| Entry | Download bytes | Drives the verbs |
+|---|---|---|
+| `eurollm-9b-instruct` | 5_600_000_000 | `not-measured` |
+| `teuken-7b-instruct` | 4_600_000_000 | `not-measured` |
+| `mistral-7b-instruct` | 4_370_000_000 | `not-measured` |
+| `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
+| `qwen2.5-7b-instruct` | 4_680_000_000 | `not-measured` |
+| `phi-3-mini-instruct` | 2_400_000_000 | `rarely` |
+| `llama-3.1-8b-instruct` | 4_920_000_000 | `not-measured` |
+| `gemma-2-9b-instruct` | 5_760_000_000 | `not-measured` |
+| `llama-3.2-3b-instruct` | 2_020_000_000 | `rarely` |
+| `qwen2.5-3b-instruct` | 1_930_000_000 | `rarely` |
+| `gemma-2-2b-instruct` | 1_710_000_000 | `rarely` |
+| `smollm2-1.7b-instruct` | 1_060_000_000 | `rarely` |
+
+The five that were measured all graded `rarely` — three driven calls in a
+hundred attempts, and the two entries below carry what each model actually
+wrote. The seven that were not measured are not candidates: ADR 0007 says the
+grade is measured by us and never claimed by the publisher, and
+`Driving::NotMeasured` refuses the bar on purpose. An unmeasured entry is a gap
+the ledger already carries, not a model that is probably fine — and the gap has
+a shape: everything unmeasured wants ten gigabytes of system memory or more,
+and the box every existing grade was made on has six.
+
+**The channel:** what the image and its update stream can honestly carry.
+ADR 0011 makes the OS a bootable container image pulled from a registry we
+operate, and its layers are content-addressed: a weights layer travels only
+when its digest changes, and two deployments that share it store it once. So
+carrying weights costs the channel one transfer per weights **change**, not one
+per update — and a pinned model changes by a decision, the way the runtime's
+version in `image/Containerfile` does, not with every rebase of the base.
+`docs/features.md`'s *an upgrade cannot break a working stack* is bootc's
+atomic deployment with rollback, and a carried layer rides inside what
+`bootc rollback` restores where a setup-time fetch sits outside it — which is
+an argument for carrying, not only a cost. On size: the CPU-class entries the
+certified laptop would carry are 1.06–2.4 GB and the 7B class is 4.4–4.9 GB,
+the same order as the pinned base and the runtime artefact the image already
+moves, so a carried layer is not structurally beyond this channel. What is
+honestly bounded: no registry of ours, no update stream and no mirror is
+running yet, so transfer time on the certified machine's network, hosting
+cost, and how the registry behaves when a five-gigabyte layer changes have
+not been measured on real infrastructure. The structural argument above is
+the whole of what can be stated today, and it is stated as reasoning rather
+than as a measurement.
+
+**The sentence:** today, **no weights go aboard** — neither carried nor
+fetched — because there is nothing to carry: the promise is a model that can
+drive the verbs, and no catalogued entry is measured doing it. When one is,
+the answer the channel half supports is ADR 0025's own recommendation —
+carried on the certified image, fetched at setup only where an image cannot —
+remembering the ADR's caution that a machine which fetches at setup is not
+local by default when it is offline at setup. The weights task therefore waits
+on the catalogue rather than on wishes, and the plan's next task is the grade
+it waits on.
+
+**Our response:** the numbers above are held to `data/catalogue.toml` by
+`crates/alo-models/tests/the_carry_or_fetch_measurement.rs`: a table row that
+disagrees with the catalogue fails, an entry missing from the table fails, and
+the day a catalogued model clears the bar while this entry still says none of
+them does, the test fails and sends whoever sees it back here — to name the
+model, its size and its grade, and to turn the sentence into carry or fetch
+for real.
+**Date:** 2026-09-11.
+
 ### Phi-3 Mini gets the envelope right and loses the argument list
 **Version:** `phi3:3.8b-mini-4k-instruct-q4_K_M` — Microsoft's Phi-3-mini-4k-
 instruct at the quantisation `data/catalogue.toml` states — served by Ollama

@@ -367,3 +367,57 @@ which fetches at setup is not local by default when it is offline at setup.
   certified machine, that finding **is** the deliverable, written where the
   ledger can carry it, and the weights task waits on the catalogue rather than
   on wishes.
+
+**Done, 2026-09-11.** The first number does not exist, and that finding is the
+measurement: the five catalogued entries anybody has measured all grade
+`rarely`, the seven others say `not-measured`, and an unmeasured entry does not
+clear the bar on purpose — so the smallest catalogued model that clears the
+verb-driving bar is no model at all, and **no weights go aboard**, carried or
+fetched, on a recommendation with nothing to weigh. The channel half is
+answered as far as it honestly can be: a bootc image's content-addressed layers
+move weights once per weights *change* rather than once per update, a carried
+layer rides inside the atomic deployment `bootc rollback` restores where a
+setup-time fetch sits outside it, and the sizes in question (1.06–4.9 GB) are
+the order of what the image already moves — with our registry, mirrors and the
+certified machine's network unmeasured and said so. The numbers, the reasoning
+and the sentence are in `docs/quirks.md` under *The carry-or-fetch measurement
+ADR 0025 owes*, where the ADR says the answer goes, and
+`crates/alo-models/tests/the_carry_or_fetch_measurement.rs` holds the entry to
+`data/catalogue.toml`: every size and grade is compared against the catalogue,
+and the day an entry clears the bar the test fails and sends whoever sees it
+back to make the measurement again. Report:
+`docs/autonomy/updates/the-carry-or-fetch-measurement.md`. No task in
+`v0-01-delivery-plan.md` matched this one, so nothing was marked there. Task 9
+below is the next task and was written in the same change.
+
+### 9. The grade the weights wait on
+
+**Status:** ready — and it needs a machine with room: every unmeasured entry
+wants ten gigabytes of system memory or more, and the box every existing grade
+was made on has six. **Depends on:** 8.
+
+Task 8 measured what there is and found the honest answer: no catalogued entry
+clears the verb-driving bar, so the weights task waits on the catalogue rather
+than on wishes. What unblocks it is a grade — a 7B-class entry measured
+`reliably`, or the finding that this catalogue is not enough and needs entries
+nobody has curated yet. Either answer is the deliverable; only running the
+measurement can say which.
+
+- **Acceptance:** the smallest unmeasured entries an ordinary business laptop
+  could run — `mistral-7b-instruct`, `teuken-7b-instruct` and
+  `qwen2.5-7b-instruct`, each `on_cpu = "workable"` with `min_ram_gb = 10` and
+  an unconditional licence — are measured with `alo-driving` against the
+  pinned runtime holding the weights each entry's `upstream` names at the
+  quantisation it states; the grade each run earned is written into
+  `data/catalogue.toml` and into `catalogue.rs`'s `MEASURED` list, exactly as
+  the five before them were; what each model wrote goes into `docs/quirks.md`'s
+  models section beside the earlier runs; and the next task is written from
+  the outcome — the weights-aboard task if a grade clears the bar (task 8's
+  test will insist the carry-or-fetch entry is revisited in the same change),
+  or widening the catalogue if none does, with the finding stated rather than
+  softened.
+- **Constraint:** grades come only from runs actually made — no regrade from
+  memory, no prompt or scoring loosened until a model passes; no weights on
+  the image, no setup flow, and nothing in `crates/alo-shell`. A machine
+  without the memory for a run does not guess; it leaves `not-measured`
+  standing, which is the true sentence about it.
