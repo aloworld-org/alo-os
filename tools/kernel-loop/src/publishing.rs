@@ -202,7 +202,7 @@ impl Steps for OnThisMachine<'_> {
             self.ours,
             &format!("checking {which}; the report is {}", self.task.report),
         );
-        let passed = gates::all_of_them(self.at)?;
+        let passed = gates::all_of_them(self.at, &self.task.files)?;
         journal::note(self.ours, &format!("{which} passed: {}", passed.join("; ")));
         let stood = evidence::stands_up(self.at, &self.task.files, &self.task.evidence)?;
         journal::note(

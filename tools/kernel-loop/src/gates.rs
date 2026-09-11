@@ -173,8 +173,9 @@ pub const EVERY_GATE: &[Gate] = &[
 /// A sentence naming the gate and the last of what it printed. Stopping at the
 /// first is deliberate: the others' output would be noise around the one thing
 /// that has to be fixed.
-pub fn all_of_them(at: &Path) -> Result<Vec<String>, String> {
+pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String> {
     the_machine_is_ready(at)?;
+    forget_what_was_built_of(at, touched);
     let mut passed = Vec::new();
     for gate in EVERY_GATE {
         // **A gate that fails is run once more before it is believed.**
@@ -208,6 +209,65 @@ pub fn all_of_them(at: &Path) -> Result<Vec<String>, String> {
         return Err(refused);
     }
     Ok(passed)
+}
+
+/// Drop what was built of the crates this change touched, before anything is
+/// gated.
+///
+/// **Four refusals in one day were this and not the work.** A gate reported
+/// `no method named numbers found for struct Accounts` while the method was in
+/// the tree and had been for half an hour; `cargo check -p`, `cargo clippy` and
+/// `cargo test -p` all passed on the same files, and only the whole-workspace
+/// build failed. `cargo build --workspace -v` named it: the crate was handed a
+/// cached `.rmeta` from before the method existed, and Cargo held that unit
+/// fresh, so no `rustc` ran for it at all. Twice that parked finished work, and
+/// once it stopped a run.
+///
+/// A whole-workspace build resolves features differently from `cargo build -p`,
+/// so the two are **different units of the same crate** — which is exactly why
+/// a worker's own per-crate gates cannot see this and the supervisor's
+/// whole-workspace gate can. The checkout also lives on `/mnt/c`, where every
+/// source mtime crosses drvfs from Windows and Cargo's freshness test is known
+/// to be delicate.
+///
+/// So the units for the crates a task actually changed are dropped, and only
+/// those: a whole `cargo clean` would throw away an afternoon of compilation
+/// belonging to forty crates nobody touched, and the tax it is paying off is
+/// seconds per task.
+///
+/// **Best effort on purpose.** A clean that cannot run is not a reason to
+/// refuse to gate — the gates are the check, this is only an attempt to make
+/// their answer be about the work. Whatever it says is dropped.
+fn forget_what_was_built_of(at: &Path, touched: &[String]) {
+    for crate_named in every_crate_among(touched) {
+        let args = ["clean".to_owned(), "-p".to_owned(), crate_named];
+        if let Ok(mut asking) = running(at, ".", "cargo", &args) {
+            drop(asking.output());
+        }
+    }
+}
+
+/// The crates a list of changed files belongs to, each named once.
+///
+/// A path is a crate's when it begins `crates/<name>/`; everything else — a
+/// document, an image file, a plan — belongs to no crate and is skipped. The
+/// directory name is the crate name in this repository, which `Cargo.toml`'s
+/// `members` glob is what makes true.
+fn every_crate_among(touched: &[String]) -> Vec<String> {
+    let mut named: Vec<String> = Vec::new();
+    for path in touched {
+        let path = path.replace('\\', "/");
+        let Some(rest) = path.strip_prefix("crates/") else {
+            continue;
+        };
+        let Some((crate_named, _)) = rest.split_once('/') else {
+            continue;
+        };
+        if !crate_named.is_empty() && !named.iter().any(|already| already == crate_named) {
+            named.push(crate_named.to_owned());
+        }
+    }
+    named
 }
 
 /// Run one gate, and say whether it passed without deciding what that means.
@@ -487,6 +547,45 @@ mod tests {
         assert!(
             READY.iter().any(|(check, _)| check.named == "/sys/fs/bpf"),
             "the precondition this machine actually loses is not checked"
+        );
+    }
+
+    /// **The crates a change touched are the ones whose builds are dropped** —
+    /// and nothing else is, because a whole `cargo clean` would throw away an
+    /// afternoon of compilation belonging to crates nobody edited.
+    #[test]
+    fn only_the_crates_a_change_touched_are_forgotten() {
+        let touched = vec![
+            "crates/alo-accounts/src/store.rs".to_owned(),
+            "crates/alo-accounts/tests/a_person_signs_in.rs".to_owned(),
+            "crates/alo-sessiond/src/machine.rs".to_owned(),
+            "docs/autonomy/updates/something.md".to_owned(),
+            "ROADMAP.md".to_owned(),
+            "tools/kernel-loop/src/gates.rs".to_owned(),
+        ];
+
+        assert_eq!(
+            every_crate_among(&touched),
+            ["alo-accounts", "alo-sessiond"],
+            "a crate is named once however many of its files changed, and a              path outside crates/ belongs to no crate"
+        );
+    }
+
+    /// And the shapes that are not a crate path, which must not produce one:
+    /// an empty list, a bare directory, and Windows' own separator, which is
+    /// what a handoff written on this machine can carry.
+    #[test]
+    fn a_path_that_names_no_crate_produces_no_crate() {
+        assert!(every_crate_among(&[]).is_empty());
+        assert!(every_crate_among(&["crates/".to_owned()]).is_empty());
+        assert!(
+            every_crate_among(&["crates/alo-keeping".to_owned()]).is_empty(),
+            "a directory with nothing under it does not name a crate to clean"
+        );
+        assert_eq!(
+            every_crate_among(&[r"crates\alo-keeping\src\lib.rs".to_owned()]),
+            ["alo-keeping"],
+            "a handoff written on Windows names the same crate as one written              anywhere else"
         );
     }
 }
