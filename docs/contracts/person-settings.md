@@ -239,7 +239,7 @@ Format 2. An array of tables, so a person who has added none simply has no
 |---|---|
 | `name` | What they call it, and what an answer says it came from. Matched case-insensitively against `[answers] provider.name`; two providers of one name is refused, because *answered by Mistral* would not say which. |
 | `endpoint` | Where it is. `https://` unless it is on this machine — a key over plain `http://` to anywhere else is refused, and "it is only our internal network" is how that gets shipped. |
-| `region` | Where it runs, **as stated by whoever added it**. Optional; absent is *unknown*. Never inferred from the address: `api.example.fr` is not evidence of anything, and a guess here would hand somebody a reassuring label while putting them in breach. |
+| `region` | Where it runs, **as stated by whoever added it**. Optional; absent is *unknown*. Never inferred from the address: `api.example.fr` is not evidence of anything, and a guess here would hand somebody a reassuring label while putting them in breach. Unknown is a value of its own and never satisfies a bound naming a region: such a bound refuses the provider with a sentence saying it has not said where it runs — never that it runs elsewhere — and a machine with no bound is unaffected. |
 | `needs-a-key` | Whether it is asked for a credential. Optional, and **absent means yes**, because almost every hosted API needs one. A compatible service that takes none says `false`, and then nothing is looked up and nothing is sent. |
 
 **There is no `key`, and that is the protection rather than an omission.** The

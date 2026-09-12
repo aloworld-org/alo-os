@@ -259,6 +259,13 @@ impl SourcePolicy {
     /// Why a source is not permitted — the rule that refused it and the place
     /// it refused, as a value.
     ///
+    /// The rule naming a region answers two different values for two
+    /// different providers: one that **said** it runs somewhere else is
+    /// [`NotAllowed::OutsideTheRegion`], and one that has **not said** is
+    /// [`NotAllowed::RegionUnstated`]. Nothing here infers the second into the
+    /// first — a provider that will not say where it runs is unknown, and
+    /// unknown is reported as unknown.
+    ///
     /// **Not a sentence** (item 9f). Wording it here would mean handing this
     /// type a `Strings`, and then whether a question may be asked somewhere
     /// would depend on somebody having loaded a vocabulary. [`NotAllowed::said`]
@@ -278,9 +285,25 @@ impl SourcePolicy {
             Self::InTheBuilding => Some(NotAllowed::OutsideTheBuilding {
                 source: source.clone(),
             }),
-            Self::InRegion(region) => Some(NotAllowed::OutsideTheRegion {
-                region: region.clone(),
-                source: source.clone(),
+            Self::InRegion(region) => Some(match source {
+                InferenceSource::Hosted {
+                    provider,
+                    region: Region::Unknown,
+                } => NotAllowed::RegionUnstated {
+                    region: region.clone(),
+                    provider: provider.clone(),
+                    source: source.clone(),
+                },
+                InferenceSource::ThisMachine
+                | InferenceSource::AServiceAtThisMachinesAddress
+                | InferenceSource::PairedMachine { .. }
+                | InferenceSource::Hosted {
+                    region: Region::Declared(_),
+                    ..
+                } => NotAllowed::OutsideTheRegion {
+                    region: region.clone(),
+                    source: source.clone(),
+                },
             }),
             Self::ThisMachineOnly => Some(NotAllowed::NotThisMachine {
                 source: source.clone(),
@@ -428,16 +451,78 @@ mod tests {
     /// refused.
     #[test]
     fn a_refusal_names_the_rule_and_carries_what_was_asked_for() {
-        let somewhere = hosted("someone", Region::Unknown);
-        let refusal = SourcePolicy::InRegion("the EU".to_owned()).refusal(&somewhere);
+        let elsewhere = hosted("someone", Region::Declared("the United States".to_owned()));
+        let refusal = SourcePolicy::InRegion("the EU".to_owned()).refusal(&elsewhere);
         assert_eq!(
             refusal,
             Some(NotAllowed::OutsideTheRegion {
                 region: "the EU".to_owned(),
+                source: elsewhere.clone(),
+            })
+        );
+        assert_eq!(SourcePolicy::Anywhere.refusal(&elsewhere), None);
+    }
+
+    /// **A provider that has not said where it runs is refused as unknown**, a
+    /// value of its own, and never as a provider running outside the region —
+    /// which is a claim nobody is in a position to make. The declared provider
+    /// beside it is the acceptance: taken at its word, and refused as what it
+    /// said.
+    #[test]
+    fn a_provider_that_has_not_said_is_refused_as_unknown_and_never_as_elsewhere() {
+        let rule = SourcePolicy::InRegion("the EU".to_owned());
+        let somewhere = hosted("someone", Region::Unknown);
+        assert_eq!(
+            rule.refusal(&somewhere),
+            Some(NotAllowed::RegionUnstated {
+                region: "the EU".to_owned(),
+                provider: "someone".to_owned(),
                 source: somewhere.clone(),
             })
         );
+        assert!(!rule.permits(&somewhere));
+
+        // Declared elsewhere: refused as elsewhere. Declared here: permitted.
+        assert!(matches!(
+            rule.refusal(&hosted("someone", Region::Declared("Singapore".to_owned()))),
+            Some(NotAllowed::OutsideTheRegion { .. })
+        ));
+        assert_eq!(rule.refusal(&hosted("alo", eu())), None);
+    }
+
+    /// **A machine with no bound is not affected.** Unknown is honest rather
+    /// than forbidden: the default rule permits a provider that has not said
+    /// where it runs, and produces no refusal for it — so nothing about a
+    /// personal machine changes because a provider was silent about its
+    /// region.
+    #[test]
+    fn a_machine_with_no_bound_is_not_affected_by_a_provider_that_has_not_said() {
+        let somewhere = hosted("someone", Region::Unknown);
+        assert!(SourcePolicy::default().permits(&somewhere));
+        assert_eq!(SourcePolicy::default().refusal(&somewhere), None);
         assert_eq!(SourcePolicy::Anywhere.refusal(&somewhere), None);
+    }
+
+    /// **Unknown is never a default region.** It is its own value: not equal
+    /// to any declared region, not even one somebody spelled "unknown", and
+    /// satisfying no rule that names one. A declared region is compared by
+    /// its name; unknown is compared to nothing.
+    #[test]
+    fn unknown_is_a_value_of_its_own_and_not_a_region() {
+        assert_ne!(Region::Unknown, Region::Declared("unknown".to_owned()));
+        assert_ne!(Region::Unknown, Region::Declared(String::new()));
+        for named in ["unknown", "Unknown", "", "the EU"] {
+            assert!(!Region::Unknown.is(named), "{named:?}");
+            assert!(
+                !hosted("someone", Region::Unknown).is_in(named),
+                "{named:?}"
+            );
+            assert!(
+                !SourcePolicy::InRegion(named.to_owned())
+                    .permits(&hosted("someone", Region::Unknown)),
+                "{named:?}"
+            );
+        }
     }
 
     /// Where an answer came from outlives the answer, so a source has to

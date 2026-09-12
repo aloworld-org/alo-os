@@ -11,7 +11,7 @@
 //!
 //! # Two of these are read while somebody decides whether to paste a contract
 //!
-//! [`crate::InferenceSource`]'s four strings and the policy's three are not
+//! [`crate::InferenceSource`]'s four strings and the policy's four are not
 //! refusals of something already typed. They are what a person reads *before*
 //! they ask a question — *by Mistral, in the EU*, or *by someone, which has not
 //! said where it runs* — and ADR 0008 puts them where the answer appears rather
@@ -184,6 +184,27 @@ pub const OUTSIDE_THE_REGION: Word = Word::saying(
 .noting(
     "{region} is the region the organisation named, in their own words, and is never translated. \
      {source} arrives already in the reader's language. \"Inference\" is where a model answers.",
+);
+
+/// A question that would go to a provider that has not said where it runs,
+/// on a machine that requires a named region.
+///
+/// **Not [`OUTSIDE_THE_REGION`] worded differently.** That sentence is for a
+/// provider that said where it runs and it is somewhere else; this one is for
+/// a provider that said nothing, and `docs/features.md` is explicit that the
+/// two are told apart: *reported as unknown, never assumed to be nearby*. A
+/// refusal that told somebody their provider runs outside the region would be
+/// inventing the one fact nobody has.
+pub const REGION_UNSTATED: Word = Word::saying(
+    "models.policy.region-unstated",
+    "this machine is set to use inference in {region} only, and {provider} has not said where it \
+     runs — unknown does not count as there",
+)
+.noting(
+    "{region} is the region the organisation named, in their own words, and {provider} is the name \
+     a person gave the provider; neither is translated. The sentence must say that the provider \
+     has *not said* where it runs — never that it runs elsewhere, which nobody knows. \
+     \"Inference\" is where a model answers.",
 );
 
 /// A question that would leave this machine at all.
@@ -616,7 +637,7 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 41] = [
+pub const EVERY_WORD: [Word; 42] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -624,6 +645,7 @@ pub const EVERY_WORD: [Word; 41] = [
     BY_A_PROVIDER_SOMEWHERE,
     OUTSIDE_THE_BUILDING,
     OUTSIDE_THE_REGION,
+    REGION_UNSTATED,
     NOT_ON_THIS_MACHINE,
     NOTHING_TO_CHOOSE_FROM,
     NONE_MEASURED,
@@ -778,6 +800,7 @@ mod tests {
             BY_A_PROVIDER_SOMEWHERE,
             OUTSIDE_THE_BUILDING,
             OUTSIDE_THE_REGION,
+            REGION_UNSTATED,
             NOT_ON_THIS_MACHINE,
             PROVIDER_ALREADY_ADDED,
             WEIGHTS_ALREADY_BROUGHT,

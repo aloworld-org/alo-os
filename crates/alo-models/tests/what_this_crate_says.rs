@@ -113,10 +113,7 @@ fn a_person_is_told_no_in_the_language_they_read() {
             "dieser Rechner ist auf Inferenz nur in {region} eingestellt, und {source} erfüllt \
              das nicht",
         ),
-        (
-            words::BY_A_PROVIDER_SOMEWHERE,
-            "von {provider}, der nicht gesagt hat, wo er läuft",
-        ),
+        (words::BY_A_PROVIDER, "von {provider}, in {region}"),
         (
             words::INSECURE_ENDPOINT,
             "diese Adresse ist nicht https, daher würden Ihr Schlüssel und Ihre Fragen \
@@ -129,15 +126,21 @@ fn a_person_is_told_no_in_the_language_they_read() {
         ),
     ]);
 
-    // The rule, and the place it refused, in one language.
+    // The rule, and the place it refused, in one language. A provider that
+    // said where it runs, because the one that has not is refused by a
+    // sentence of its own — the test after this one.
+    let elsewhere = InferenceSource::Hosted {
+        provider: "someone".to_owned(),
+        region: Region::Declared("Singapore".to_owned()),
+    };
     let refusal = SourcePolicy::InRegion("the EU".to_owned())
-        .refusal(&somewhere())
+        .refusal(&elsewhere)
         .unwrap();
     let said = refusal.said(&strings);
     assert!(said.is_translated());
     assert!(said.text().contains("nur in the EU"), "{said}");
-    assert!(said.text().contains("nicht gesagt hat"), "{said}");
-    assert!(!said.text().contains("has not said"), "{said}");
+    assert!(said.text().contains("von someone, in Singapore"), "{said}");
+    assert!(!said.text().contains("by someone"), "{said}");
 
     // A test that never happened carries that refusal whole, so it says the
     // same thing in the same language rather than a summary of it.
@@ -157,6 +160,73 @@ fn a_person_is_told_no_in_the_language_they_read() {
     let key = Secret::typed("sk-live\r\nx-something: else").unwrap_err();
     assert_eq!(key, SecretError::NotSendable);
     assert!(key.said(&strings).text().starts_with("dieser Schlüssel"));
+}
+
+/// **A provider that has not said where it runs is refused as unknown, in the
+/// language the person reads** — and the sentence says the provider did not
+/// say, never that it runs elsewhere. A declared provider under the same rule
+/// is the acceptance beside it.
+#[test]
+fn a_provider_that_has_not_said_where_it_runs_is_refused_as_unknown_in_the_language_they_read() {
+    let strings = speaking_german(&[
+        (
+            words::REGION_UNSTATED,
+            "dieser Rechner ist auf Inferenz nur in {region} eingestellt, und {provider} hat \
+             nicht gesagt, wo er läuft — unbekannt zählt nicht als dort",
+        ),
+        (
+            words::OUTSIDE_THE_REGION,
+            "dieser Rechner ist auf Inferenz nur in {region} eingestellt, und {source} erfüllt \
+             das nicht",
+        ),
+        (words::BY_A_PROVIDER, "von {provider}, in {region}"),
+    ]);
+    let rule = SourcePolicy::InRegion("der EU".to_owned());
+
+    let unstated = rule.refusal(&somewhere()).unwrap();
+    assert!(matches!(
+        unstated,
+        alo_models::NotAllowed::RegionUnstated { .. }
+    ));
+    let said = unstated.said(&strings);
+    assert!(said.is_translated(), "{said}");
+    assert!(said.text().contains("someone hat nicht gesagt"), "{said}");
+    assert!(said.text().contains("unbekannt"), "{said}");
+    assert!(!said.text().contains("erfüllt das nicht"), "{said}");
+
+    let elsewhere = InferenceSource::Hosted {
+        provider: "someone".to_owned(),
+        region: Region::Declared("Singapore".to_owned()),
+    };
+    let stated = rule.refusal(&elsewhere).unwrap();
+    assert!(matches!(
+        stated,
+        alo_models::NotAllowed::OutsideTheRegion { .. }
+    ));
+    let said = stated.said(&strings);
+    assert!(said.is_translated(), "{said}");
+    assert!(said.text().contains("in Singapore"), "{said}");
+    assert!(!said.text().contains("nicht gesagt"), "{said}");
+
+    // And with no rule at all, neither is refused.
+    assert_eq!(SourcePolicy::Anywhere.refusal(&somewhere()), None);
+}
+
+/// **A translation that drops the provider from the unknown-region refusal is
+/// refused**, for the same reason one that drops `{source}` is: a sentence
+/// saying the machine has a rule and not what it stopped would leave nothing
+/// anywhere saying which provider never said where it runs.
+#[test]
+fn a_translation_that_drops_the_provider_that_never_said_is_refused() {
+    let vocabulary = model_words().unwrap();
+    let wrongs = vocabulary
+        .check(Translation::into_language(german()).says(
+            words::REGION_UNSTATED.key(),
+            "dieser Rechner ist auf Inferenz nur in {region} eingestellt",
+        ))
+        .unwrap_err();
+    assert_eq!(wrongs.how_many(), 1);
+    assert!(wrongs.to_string().contains("provider"), "{wrongs}");
 }
 
 /// **Somebody who brings their own weights is told two things in their own

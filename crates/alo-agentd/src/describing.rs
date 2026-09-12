@@ -695,6 +695,50 @@ keeping = "forever"
         );
     }
 
+    /// **The bound read here refuses a provider that has not said where it
+    /// runs as unknown** — a value of its own, never *outside the region* —
+    /// and the acceptance stands beside it: a provider that said it runs in
+    /// the region is permitted, and a machine with no `[questions]` at all
+    /// permits the silent one too, because unknown is honest rather than
+    /// forbidden.
+    #[test]
+    fn a_bound_by_region_read_here_refuses_a_provider_that_has_not_said_as_unknown() {
+        let silent = alo_models::InferenceSource::Hosted {
+            provider: "someone".to_owned(),
+            region: alo_models::Region::Unknown,
+        };
+        let declared = alo_models::InferenceSource::Hosted {
+            provider: "alo".to_owned(),
+            region: alo_models::Region::Declared("the EU".to_owned()),
+        };
+
+        let said = a_machine_bounded_by("may-go = \"in-a-region\"\nregion = \"the EU\"");
+        let bounded = an_administrator_wrote(&said).unwrap();
+        let refusal = bounded.questions().policy().refusal(&silent);
+        assert!(
+            matches!(
+                refusal,
+                Some(alo_models::NotAllowed::RegionUnstated {
+                    ref region,
+                    ref provider,
+                    ..
+                }) if region == "the EU" && provider == "someone"
+            ),
+            "{refusal:?}"
+        );
+        assert!(
+            !matches!(
+                refusal,
+                Some(alo_models::NotAllowed::OutsideTheRegion { .. })
+            ),
+            "a provider that never said where it runs was reported as outside the region"
+        );
+        assert_eq!(bounded.questions().policy().refusal(&declared), None);
+
+        let unmanaged = an_administrator_wrote(&an_ordinary_machine()).unwrap();
+        assert_eq!(unmanaged.questions().policy().refusal(&silent), None);
+    }
+
     /// **A bound this alo OS cannot read is refused, never treated as
     /// unrestricted.** An organisation that wrote a policy and got no policy,
     /// with nothing saying so, is the one failure this section exists to

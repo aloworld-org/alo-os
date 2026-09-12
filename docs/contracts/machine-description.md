@@ -158,7 +158,7 @@ bound, which the organisation sets and the person chooses within.
 | Field | Meaning |
 |---|---|
 | `may-go` | `"anywhere"`, `"in-the-building"`, `"this-machine-only"`, or `"in-a-region"`. Required when the section is present. |
-| `region` | Which region, and **only** when `may-go` is `"in-a-region"`. |
+| `region` | Which region, and **only** when `may-go` is `"in-a-region"`. A provider that has not stated where it runs never satisfies it, and is refused as *unknown* — the sentence says the provider did not say, never that it runs outside the region. |
 
 **The section is optional and its absence is the common case.** A machine no
 organisation manages has no policy at all — *not empty, not permissive by

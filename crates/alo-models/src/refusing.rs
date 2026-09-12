@@ -17,7 +17,7 @@
 //! person is looking at and the record `alo-record` keeps render **the same
 //! value**, so one of them cannot be English while the other is Latvian.
 //!
-//! # Three rules, three sentences, and no fourth
+//! # Three rules, four sentences, and no fifth
 //!
 //! [`SourcePolicy::Anywhere`](crate::SourcePolicy::Anywhere) permits
 //! everything, so it has no variant here. That is worth saying because the
@@ -26,6 +26,16 @@
 //! forbids `unreachable!()` had written *"no policy forbids this"* to fill the
 //! hole. There is now no hole: a policy that refuses nothing produces no
 //! refusal, and the type says so.
+//!
+//! The rule naming a region has **two** sentences, because it refuses two
+//! different things. A provider that said where it runs, and it is somewhere
+//! else, is [`NotAllowed::OutsideTheRegion`]. A provider that has not said is
+//! [`NotAllowed::RegionUnstated`], and its sentence says exactly that — never
+//! that the provider runs elsewhere, which is the one thing nobody knows.
+//! `docs/features.md` promises *reported as unknown, never assumed to be
+//! nearby*, and a refusal that folded the two together would have the record
+//! claiming a provider was outside a region when all that was true is that it
+//! never said.
 
 use alo_strings::{Filling, Said, Strings};
 
@@ -43,11 +53,31 @@ pub enum NotAllowed {
         /// Where the answer would have come from.
         source: InferenceSource,
     },
-    /// The machine requires a named region, and this does not meet it.
+    /// The machine requires a named region, and this provider **said** it
+    /// runs somewhere else.
     OutsideTheRegion {
         /// The region the organisation named, in their own words.
         region: String,
         /// Where the answer would have come from.
+        source: InferenceSource,
+    },
+    /// The machine requires a named region, and this provider has **not said**
+    /// where it runs.
+    ///
+    /// A value of its own rather than [`Self::OutsideTheRegion`] with a note,
+    /// because the two are different facts and a record keeps whichever it is
+    /// handed: *outside the region* is a claim about where the provider runs,
+    /// and for this provider no such claim can be made. Unknown never
+    /// satisfies a policy naming a region, and it is never reported as
+    /// anything but unknown.
+    RegionUnstated {
+        /// The region the organisation named, in their own words.
+        region: String,
+        /// The provider, as the person named it — what the sentence names,
+        /// since there is no place to name.
+        provider: String,
+        /// Where the answer would have come from: a hosted source whose region
+        /// is [`crate::Region::Unknown`].
         source: InferenceSource,
     },
     /// The machine answers only on itself.
@@ -64,6 +94,7 @@ impl NotAllowed {
         match self {
             Self::OutsideTheBuilding { .. } => words::OUTSIDE_THE_BUILDING,
             Self::OutsideTheRegion { .. } => words::OUTSIDE_THE_REGION,
+            Self::RegionUnstated { .. } => words::REGION_UNSTATED,
             Self::NotThisMachine { .. } => words::NOT_ON_THIS_MACHINE,
         }
     }
@@ -74,6 +105,7 @@ impl NotAllowed {
         match self {
             Self::OutsideTheBuilding { source, .. }
             | Self::OutsideTheRegion { source, .. }
+            | Self::RegionUnstated { source, .. }
             | Self::NotThisMachine { source } => source,
         }
     }
@@ -91,12 +123,24 @@ impl NotAllowed {
     /// refusal somebody translated with an English clause still inside it is
     /// not reported as translated. That is item 11a's rule, and this sentence
     /// was written before there was a door for it.
+    ///
+    /// [`Self::RegionUnstated`] names the provider rather than the place,
+    /// because there is no place: its clause would only say again that the
+    /// provider has not said where it runs, and the sentence already does.
+    /// A provider's name is data, never translated, so that sentence is as
+    /// translated as its own words are.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
-        let filling = Filling::nothing().and_said("source", &self.source().said(strings));
         let filling = match self {
-            Self::OutsideTheRegion { region, .. } => filling.and("region", region.clone()),
-            Self::OutsideTheBuilding { .. } | Self::NotThisMachine { .. } => filling,
+            Self::RegionUnstated {
+                region, provider, ..
+            } => Filling::of("region", region.clone()).and("provider", provider.clone()),
+            Self::OutsideTheRegion { region, .. } => Filling::nothing()
+                .and_said("source", &self.source().said(strings))
+                .and("region", region.clone()),
+            Self::OutsideTheBuilding { .. } | Self::NotThisMachine { .. } => {
+                Filling::nothing().and_said("source", &self.source().said(strings))
+            }
         };
         strings.say(&self.word().key(), &filling)
     }
@@ -130,6 +174,93 @@ mod tests {
             .said(&strings);
         assert!(said.text().contains("inference in the EU only"), "{said}");
         assert!(said.text().contains("someone"), "{said}");
+    }
+
+    /// A provider that said it runs somewhere else.
+    fn elsewhere() -> InferenceSource {
+        InferenceSource::Hosted {
+            provider: "someone".to_owned(),
+            region: Region::Declared("the United States".to_owned()),
+        }
+    }
+
+    /// **A provider that has not said where it runs is refused as unknown,
+    /// and the sentence says so — not that it runs elsewhere.**
+    ///
+    /// The refusal path and the acceptance side by side: the same rule, one
+    /// provider that said *the United States* and one that said nothing, and
+    /// two different values with two different sentences. The one for the
+    /// provider that said nothing names the provider and the region and says
+    /// *has not said*; nothing in it claims to know where the provider is.
+    #[test]
+    fn a_provider_that_has_not_said_where_it_runs_is_refused_as_unknown_not_as_elsewhere() {
+        let strings = in_english();
+        let rule = SourcePolicy::InRegion("the EU".to_owned());
+
+        let unstated = rule.refusal(&somewhere()).unwrap();
+        assert_eq!(
+            unstated,
+            NotAllowed::RegionUnstated {
+                region: "the EU".to_owned(),
+                provider: "someone".to_owned(),
+                source: somewhere(),
+            }
+        );
+        let said = unstated.said(&strings);
+        assert!(said.text().contains("inference in the EU only"), "{said}");
+        assert!(
+            said.text().contains("someone has not said where it runs"),
+            "{said}"
+        );
+        assert!(said.text().contains("unknown"), "{said}");
+        assert!(!said.text().contains("does not meet"), "{said}");
+        assert!(!said.text().contains("outside"), "{said}");
+        assert!(!said.text().contains("United States"), "{said}");
+
+        // And the provider that did say is refused as what it said.
+        let stated = rule.refusal(&elsewhere()).unwrap();
+        assert!(
+            matches!(stated, NotAllowed::OutsideTheRegion { .. }),
+            "{stated:?}"
+        );
+        let said = stated.said(&strings);
+        assert!(said.text().contains("in the United States"), "{said}");
+        assert!(!said.text().contains("has not said"), "{said}");
+    }
+
+    /// **Unknown is a value of its own and never a region.** A rule naming a
+    /// region literally called "unknown" — or nothing, or spaces — still refuses
+    /// a provider that has not said, because [`Region::Unknown`] is not a
+    /// region that happens to be spelled that way.
+    #[test]
+    fn unknown_is_not_a_region_that_happens_to_be_called_unknown() {
+        for named in ["unknown", "Unknown", "", "  "] {
+            let refusal = SourcePolicy::InRegion(named.to_owned()).refusal(&somewhere());
+            assert!(
+                matches!(refusal, Some(NotAllowed::RegionUnstated { .. })),
+                "{named:?}: {refusal:?}"
+            );
+        }
+    }
+
+    /// **The sentence for a provider that has not said is read whole in the
+    /// reader's language**, with the provider's name and the organisation's
+    /// region carried as they were written.
+    #[test]
+    fn the_unstated_refusal_is_translated_whole_and_carries_the_names() {
+        let strings = translated(&[(
+            words::REGION_UNSTATED,
+            "dieser Rechner ist auf Inferenz nur in {region} eingestellt, und {provider} hat \
+             nicht gesagt, wo er läuft — unbekannt zählt nicht als dort",
+        )]);
+        let said = SourcePolicy::InRegion("der EU".to_owned())
+            .refusal(&somewhere())
+            .unwrap()
+            .said(&strings);
+        assert!(said.is_translated(), "{said}");
+        assert!(said.text().contains("nur in der EU"), "{said}");
+        assert!(said.text().contains("someone hat nicht gesagt"), "{said}");
+        assert!(!said.text().contains("has not said"), "{said}");
     }
 
     /// **A refusal and the place named inside it are in one language.** The

@@ -1423,6 +1423,135 @@ endpoint = \"https://{other}\"
         assert!(!elsewhere, "a provider nobody chose was connected to");
     }
 
+    /// **A rule naming a region refuses a provider that has not said where it
+    /// runs, and the daemon's sentence says the provider did not say** — never
+    /// that it runs elsewhere. `a_person_who_chose` writes `Mine` with no
+    /// region, which is exactly the provider `docs/features.md` is about.
+    ///
+    /// Rendered from the vocabulary the way `crate::doing` renders it, so this
+    /// asserts *the daemon says what the rule declares*; and the sentence for
+    /// a provider that said it runs elsewhere is shown not to be inside it.
+    #[test]
+    fn a_rule_naming_a_region_refuses_a_provider_that_has_not_said_where_it_runs_as_unknown() {
+        let (refusal, reached, elsewhere) = asked_under(
+            "region-unstated",
+            TheBound::AnOrganisations(SourcePolicy::InRegion("the EU".to_owned())),
+            WhoseKeyring::Nobodys,
+        );
+
+        let strings = crate::testing::in_english();
+        let source = alo_models::InferenceSource::Hosted {
+            provider: "Mine".to_owned(),
+            region: alo_models::Region::Unknown,
+        };
+        let by_the_rule = NotAllowed::RegionUnstated {
+            region: "the EU".to_owned(),
+            provider: "Mine".to_owned(),
+            source: source.clone(),
+        };
+        let expected = strings
+            .say(
+                &AN_ADMINISTRATOR_SET_THAT_RULE.key(),
+                &Filling::nothing().and_said("refusal", &by_the_rule.said(&strings)),
+            )
+            .text()
+            .to_owned();
+        assert_eq!(
+            refusal.as_deref(),
+            Some(expected.as_str()),
+            "a region-bound machine did not refuse the silent provider as unknown"
+        );
+        assert!(
+            expected.contains("Mine has not said where it runs"),
+            "{expected}"
+        );
+        let as_if_elsewhere = NotAllowed::OutsideTheRegion {
+            region: "the EU".to_owned(),
+            source,
+        }
+        .said(&strings);
+        assert!(
+            !expected.contains(as_if_elsewhere.text()),
+            "the silent provider was reported as running outside the region: {expected}"
+        );
+        assert!(!reached, "the provider was connected to despite the rule");
+        assert!(!elsewhere, "a provider nobody chose was connected to");
+    }
+
+    /// **The same rule the person set for themselves refuses the same way, in
+    /// the rule's own words**, and names no administrator.
+    #[test]
+    fn a_persons_own_region_rule_refuses_the_silent_provider_as_unknown_too() {
+        let (refusal, reached, _) = asked_under(
+            "personal-region-unstated",
+            TheBound::ThePersons(SourcePolicy::InRegion("Switzerland".to_owned())),
+            WhoseKeyring::Nobodys,
+        );
+        let strings = crate::testing::in_english();
+        let by_the_rule = NotAllowed::RegionUnstated {
+            region: "Switzerland".to_owned(),
+            provider: "Mine".to_owned(),
+            source: alo_models::InferenceSource::Hosted {
+                provider: "Mine".to_owned(),
+                region: alo_models::Region::Unknown,
+            },
+        };
+        assert_eq!(
+            refusal.as_deref(),
+            Some(by_the_rule.said(&strings).text()),
+            "a personal region rule did not refuse in the rule's own words"
+        );
+        assert!(!reached, "the provider was connected to despite the rule");
+    }
+
+    /// **A machine with no bound is not affected**: the silent provider is
+    /// not refused by any rule. What stops the question on this fixture is
+    /// that no keyring holds its key — a different sentence, and the one that
+    /// proves the rule never spoke.
+    #[test]
+    fn a_machine_with_no_bound_does_not_refuse_the_silent_provider() {
+        let (refusal, _, elsewhere) = asked_under(
+            "unbounded-unstated",
+            TheBound::Nobodys,
+            WhoseKeyring::Nobodys,
+        );
+        let said = refusal.unwrap_or_default();
+        assert!(
+            !said.contains("has not said where it runs"),
+            "a machine with no bound refused a provider for not saying where it runs: {said}"
+        );
+        assert!(!said.contains("an administrator set that rule"), "{said}");
+        assert!(!elsewhere, "a provider nobody chose was connected to");
+    }
+
+    /// **The egress indicator's wording carries *unknown* for such a source,
+    /// not a guessed place.** The line the indicator shows is worded by
+    /// `alo-egress` from the same `InferenceSource`; for a provider that has not
+    /// said, it names the provider and says so, and names no region — while
+    /// the same provider with a declared region is shown with it.
+    #[test]
+    fn the_indicator_names_no_place_for_a_provider_that_has_not_said_where_it_runs() {
+        let strings = crate::testing::in_english();
+        let silent = alo_egress::Destination::of(&alo_models::InferenceSource::Hosted {
+            provider: "Mine".to_owned(),
+            region: alo_models::Region::Unknown,
+        })
+        .unwrap()
+        .shown(&strings);
+        assert!(silent.contains("Mine"), "{silent}");
+        assert!(silent.contains("has not said where it runs"), "{silent}");
+        assert!(!silent.contains(", in "), "{silent}");
+
+        let declared = alo_egress::Destination::of(&alo_models::InferenceSource::Hosted {
+            provider: "Mine".to_owned(),
+            region: alo_models::Region::Declared("the EU".to_owned()),
+        })
+        .unwrap()
+        .shown(&strings);
+        assert!(declared.contains("Mine, in the EU"), "{declared}");
+        assert_ne!(silent, declared);
+    }
+
     /// **A rule that permits the place somebody chose does not refuse it**, and
     /// all three model choices survive this change.
     ///

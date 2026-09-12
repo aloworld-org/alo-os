@@ -91,7 +91,15 @@ address goes to the file.
 
 ### 3. A provider that will not say where it runs is unknown, and unknown never satisfies a policy
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
+
+**Done, 2026-09-12.** Report:
+[`updates/a-provider-that-will-not-say-where-it-runs-is-unknown.md`](updates/a-provider-that-will-not-say-where-it-runs-is-unknown.md).
+The value existed (`alo_models::Region::Unknown`, refused by every rule that
+names a region); what was missing was the refusal being *its own* — it was
+`NotAllowed::OutsideTheRegion`, a claim about where the provider runs — and
+the tests on the two read paths. It is now `NotAllowed::RegionUnstated`, with
+a sentence that says the provider has not said.
 
 *A provider that will not say where it runs is reported as **unknown**, never
 assumed to be nearby — and unknown never satisfies a policy naming a region.*
