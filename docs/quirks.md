@@ -659,16 +659,27 @@ recipe's own comment says *2.23 GiB, carried once*.
 It cannot be cleaned up afterwards on a machine. The store lands under `/usr`,
 which is read-only on a bootc system (ADR 0011), so the runtime's own pruning —
 whatever it would do — can never reach it.
-**Our response:** **written down, not worked around.** The build that found it
-passed, and task 33's rule is that it changes no decision to make a build pass;
-what to do about it is task 34 in `docs/autonomy/v0-01-delivery-plan.md`, where
-the choice between removing the source blob in the weights stage after the
-import, importing another way, and carrying it deliberately is somebody's to
-make with the sizes in front of them. **No client was patched**: engines are
-configured, never patched, and a store laid out by the runtime is the runtime's
-own business.
+**Our response:** written down on 2026-09-11 and not worked around, because the
+build that found it passed and task 33 changed no decision to make one pass.
+**Decided on 2026-09-12 (task 34): the source blob is removed in the weights
+stage, after the import.** Of the three ways out, importing another way would
+mean writing the runtime's store layout by hand, which is a second
+implementation of a rented engine's format and exactly the drift ADR 0011
+exists to refuse; carrying it deliberately costs 2.23 GiB on every machine and
+across every network it is installed over, for a file nothing will ever open.
+Removing a file the runtime wrote is the image's business and changes nothing
+the runtime does — and the runtime agrees the blob is unused: **at every start
+it tries to delete it itself** (`total unused blobs removed: 1`, and on a
+machine `couldn't remove file … permission denied` against `/usr`). The digest
+check is untouched, since it ran on the file before the import read it. Three
+things are asserted before the store leaves the stage: the runtime can still
+`show` the model off what is left, there is exactly one manifest, and every
+blob in the store is named by it. `crates/alo-image` reads both lines
+(`TheWeights::drops_the_source`, `TheWeights::holds_the_store_to_its_manifest`)
+and refuses a recipe without either. The rebuild is measured in
+`docs/autonomy/updates/the-weights-carried-once-and-a-runtime-that-does-not-call-home.md`.
 **Upstream:** not reported.
-**Date:** 2026-09-11
+**Date:** 2026-09-11, decided 2026-09-12
 
 ### Ollama 0.34.0 — the runtime asks its publisher two questions before anybody asks it anything
 **Version:** Ollama 0.34.0, the runtime `image/Containerfile` pins, started out
@@ -703,15 +714,47 @@ so these two requests do not fail politely on a machine — they do not leave. T
 is the design task 32 argued for; what this entry adds is that **the thing it was
 guarding against has now been watched happening**, rather than supposed.
 
-Two honest limits. The filter itself is **not** what refused the requests in this
-measurement — `--network=none` on a container was — because nothing in this lane
-has started that unit under systemd. And the runtime's own switch,
-`OLLAMA_NO_CLOUD`, is a documented setting the unit does not yet set; adding it is
-configuration rather than a patch, and it is in task 34 beside the counter,
-because a second lock is a decision about defence in depth rather than a line
-somebody adds while reporting a build.
+Two honest limits, as written on 2026-09-11: the filter itself was **not** what
+refused the requests in that measurement — `--network=none` on a container was
+— and the runtime's own switch, `OLLAMA_NO_CLOUD`, was a documented setting the
+unit did not set.
+
+**Both closed on 2026-09-12 (task 34).** The unit was started by the image's
+own systemd — under a container, not at a boot; the entry below says exactly
+what that took — with the image's own store and a working network, and the
+filter was watched at two counters. Inside the container, an `nftables` rule on
+the output hook counted **16 packets** to port 443 from uid 60991, the model
+service's login: the two requests, and the kernel's SYN retries, over the three
+seconds the runtime waits. On the host side of the container's bridge, a rule on
+the forward hook counted **0** packets from the container to port 443 in the same
+window. A control request from an unfiltered process in the same container —
+`curl https://quay.io/`, a host the build already talks to — put 19 packets
+through the same host counter and was answered `200`. So the requests were made,
+the network was there, and nothing left: that is `IPAddressDeny=any` refusing,
+not an absent network. What the runtime logs in that state is worth knowing,
+because it is not what a refused connection usually reads like:
+
+```
+"model show cloud cache hydration failed"
+  error="Get \"https://ollama.com:443/api/tags?ts=…\": context deadline exceeded"
+```
+
+A cgroup egress filter drops the packet after the socket has sent it, so the
+connect does not fail — it times out. `context deadline exceeded` from this unit
+is the filter working, and `lookup ollama.com: Temporary failure in name
+resolution` (which the same measurement produced first, with a resolver the
+filter also refused) is the filter working one step earlier.
+
+And `OLLAMA_NO_CLOUD=1` is now set in the unit, as a second lock beside the
+filter rather than instead of it. Measured on the same container: with it the
+runtime logs `Ollama cloud disabled: true`, makes **neither** request, schedules
+no retry (`consecutive_failures=0` with nothing attempted), and the journal
+carries no line naming the publisher. `crates/alo-image` holds the line beside
+the two filter lines and refuses a unit that dropped it or set it to anything
+but `1`. Still not a boot; `docs/autonomy/v0-01-evidence.md` keeps *arrives
+ready to run* owed.
 **Upstream:** not reported.
-**Date:** 2026-09-11
+**Date:** 2026-09-11, measured under systemd 2026-09-12
 
 ### A bootc image inspected as a container has no `/root`, and the error says `file exists`
 **Version:** `quay.io/fedora/fedora-bootc:42`, the base `image/Containerfile`
@@ -736,6 +779,54 @@ written down because the failure costs twenty minutes and points at the wrong
 file, and because inspecting the image under `podman run` is what anybody will do
 next.
 **Date:** 2026-09-11
+
+### The image's own systemd starts under podman, and what it takes to start a `User=` service there is what a machine's init already has
+**Version:** podman 5.7.0 on Ubuntu 26.04 under WSL2 (kernel
+6.18.33.2-microsoft-standard-WSL2), running the built alo OS image
+(`quay.io/fedora/fedora-bootc:42`, systemd 257) with `/sbin/init` as its
+process; measured 2026-09-12 while watching `alo-modeld.service`'s filter.
+**Behaviour:** `podman run --systemd=always … /sbin/init` boots the image's own
+systemd in a container without `--privileged`: every unit of ours is enabled and
+attempted, and the machine reads `degraded` only because `alo-boundaryd` finds no
+`/sys/fs/bpf` to pin to, which is the expected answer for a container. But the
+model service — `User=alo-model`, an empty `CapabilityBoundingSet=`, no
+capability asked for anywhere — **fails before it runs**:
+
+```
+alo-modeld.service: Failed to keep CAP_SYS_ADMIN: Operation not permitted
+alo-modeld.service: Failed at step USER spawning /usr/bin/ollama: Operation not permitted
+```
+
+That is not the unit wanting a capability. It is systemd's own bookkeeping while
+it changes user and applies the unit's sandbox, which needs the *init* to hold
+`CAP_SYS_ADMIN` for the moment before it drops everything for the child — and
+podman's default container init holds only the eleven capabilities an ordinary
+container gets, none of which is that one. Three additions to the container's
+init — `--cap-add=SYS_ADMIN,BPF,NET_ADMIN`, the first for the user switch, the
+other two for `IPAddressDeny=` to attach its BPF programme to the unit's control
+group — and the service starts as `alo-model` with `CapEff`, `CapBnd` and
+`CapAmb` all `0000000000000000` and `NoNewPrivs: 1`, exactly as the unit says.
+On a machine, PID 1 holds every capability, so what the container's init was
+given is a strict subset of what a booted image's init already has; **the unit
+was not changed and holds nothing.** Two smaller things cost time on the way:
+`systemd-resolved` runs inside the container and podman writes the host's
+resolver into `/etc/resolv.conf` rather than the stub, so a `User=` service
+under `IPAddressAllow=localhost` cannot resolve anything — `--dns=127.0.0.53`
+plus `resolvectl dns eth0 <upstream>` and `resolvectl default-route eth0 yes`
+gives the container the shape a machine has, where the filtered process asks
+the stub on loopback and `resolved` does the upstream query from its own
+control group. And name resolution from the runtime then leaves no packet at
+all from the unit's login: glibc's `nss-resolve` talks to `resolved` over a
+Unix socket, which is why a counter on loopback for that uid reads zero while
+the name resolved perfectly.
+**Our response:** used as the measurement rig, and reported for what it is —
+the image's own systemd, its own units, its own store and its own logins,
+**not a boot**: no firmware, no disk, no `bootc install`. It is enough to watch a
+unit's filter refuse a request and not enough to tick anything under *On the
+machine*. Nothing in the image changed to make it start.
+**Upstream:** not reported; podman's default capability set and systemd's need
+for `CAP_SYS_ADMIN` around a user switch are both documented behaviour.
+**Date:** 2026-09-12
 
 ### A model runtime's door is a TCP port, and a TCP port has no owner and no mode
 **Version:** Ollama 0.34.0, the runtime `image/Containerfile` pins; systemd 257

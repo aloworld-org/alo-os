@@ -1821,6 +1821,32 @@ stops it* is exactly the kind of sentence task 33 was written to stop trusting.
   to run `systemd` is not evidence about a machine — say so and measure what can
   honestly be measured rather than quietly running it as root.
 
+**Done, 2026-09-12.** **Carried once**: the weights stage removes the runtime's
+copy of the checked file after the import — the runtime itself tries to delete
+that blob at every start and, on a machine, fails against `/usr` — and asserts
+three things before the store leaves the stage: the runtime can still `show` the
+model off what is left, there is one manifest, and every blob in the store is
+named by it. The digest check before the import is untouched. The other two ways
+out are priced in `docs/quirks.md`: importing by hand is a second implementation
+of a rented store format, carrying it deliberately is 2.23 GiB on every machine
+for a file nothing opens. `crates/alo-image` reads both new lines and refuses a
+recipe without either, with the twin tests that break a copy. **The runtime does
+not call home**: `OLLAMA_NO_CLOUD=1` is set in the unit as a second lock beside
+the filter — measured, it makes neither request — and checked. **And the filter
+was watched rather than read**: the unit started by the image's own systemd,
+under a container whose init was given three capabilities a machine's init
+already holds (the unit unchanged, its process with every capability set empty),
+with the image's own store and a working network. Sixteen packets to the
+publisher's port 443 attempted by the unit's login, counted inside; **zero** at
+the host side of the bridge; a control request from an unfiltered process in the
+same container answered `200`. What the runtime logs in that state is
+`context deadline exceeded`, which is what a dropped SYN reads like, and the
+entry in `docs/quirks.md` says so. **Not a boot** — no firmware, no disk, and no
+*On the machine* box moves. The rebuild's size against 9,000,704,537 bytes is in
+the report. Report:
+`docs/autonomy/updates/the-weights-carried-once-and-a-runtime-that-does-not-call-home.md`.
+Task 35 was already written below.
+
 ### 35. Recovering a parked task whose worker never wrote a handoff
 
 **Status:** ready. **Depends on:** nothing.

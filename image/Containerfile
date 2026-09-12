@@ -41,6 +41,9 @@ ARG THE_RUNTIME_SHA256=cf95886728959aa09910bb34de5cca1cc5a8f68003b5597197d3f2c2d
 # run* is a promise about the box rather than about the network it is unpacked
 # next to. What that costs is the image, and it is paid in one place: 2.23 GiB
 # of weights, carried once, in a layer that changes only when this pin does.
+# *Once* is asserted rather than assumed: the first build of this recipe carried
+# them twice (docs/quirks.md, 2026-09-11), and the weights stage now holds every
+# blob in the store to the manifest that names it.
 #
 # Which model is not a preference either. It is the largest entry
 # `crates/alo-models/data/catalogue.toml` has that (a) somebody has actually put
@@ -180,6 +183,21 @@ RUN curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location \
 # and under the same MIT licence: without it the runtime has no way to know where
 # this model's turns begin and end, and *engines are configured, never patched*
 # is exactly what a Modelfile is.
+#
+# **Carried once, and held to it.** Building this recipe the first time measured
+# what the import really does (docs/quirks.md, 2026-09-11): the runtime copies
+# the checked file into its store under the file's own digest, then writes a
+# second blob of the same length under another, and its manifest names only the
+# second — so a store left as the runtime left it is 4.5 GiB for 2.23 GiB of
+# model, on the read-only half of every machine we ship, where nothing can ever
+# prune it. The runtime itself agrees the first blob is unused: at every start it
+# tries to delete it and, on a machine, fails against /usr. So the source blob is
+# removed **here**, after the import and after its digest did its work, and three
+# things are asserted before the store leaves this stage: the runtime can still
+# show the model off what is left, which is what would fail if a future runtime
+# referenced the source directly; there is exactly one manifest; and every blob
+# in the store is named by it. The digest check above is untouched — a cheaper
+# import that dropped it would not be cheaper.
 FROM ${THE_BUILDER} AS weights
 
 ARG THE_MODELS_ARTEFACT
@@ -222,8 +240,16 @@ RUN set -eu; \
     done; \
     /runtime/bin/ollama list >/dev/null; \
     /runtime/bin/ollama create "${THE_MODELS_ARTEFACT}" -f /Modelfile; \
+    rm -f "/models/blobs/sha256-${THE_MODELS_SHA256}"; \
+    /runtime/bin/ollama show "${THE_MODELS_ARTEFACT}" >/dev/null; \
     kill "${served}"; \
-    test -d /models
+    test -d /models; \
+    manifest="$(find /models/manifests -type f)"; \
+    test "$(printf '%s\n' "${manifest}" | wc -l)" = 1; \
+    for blob in /models/blobs/*; do \
+      grep -q "sha256:${blob##*/sha256-}" "${manifest}" \
+        || { echo "${blob} is referenced by nothing"; exit 1; }; \
+    done
 
 # ---------------------------------------------------------------------------
 # The machine

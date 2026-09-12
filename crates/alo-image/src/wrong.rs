@@ -400,6 +400,23 @@ pub enum Wrong {
         /// The digest the recipe names, or `-` where it names none.
         digest: String,
     },
+    /// The recipe leaves the runtime's copy of the checked file in the store
+    /// beside the blob the manifest names.
+    #[error(
+        "the weights stage leaves the runtime's copy of the checked file in the store after the \
+         import — measured on 2026-09-11 (docs/quirks.md), the runtime writes a second blob of \
+         the same length and names only that one, so a store left as the runtime left it is \
+         4.5 GiB for 2.23 GiB of model on the read-only half of every machine we ship, where \
+         nothing can ever prune it; the cost ADR 0025 accepted was the weights carried once"
+    )]
+    TheWeightsAreCarriedTwice,
+    /// Nothing holds the store to its manifest before it leaves the stage.
+    #[error(
+        "the weights stage does not hold every blob in the store to the manifest that names it — \
+         *carried once* is the recipe's own comment, and a comment is not a build that goes red \
+         the morning a runtime update leaves a second copy behind under some other name"
+    )]
+    TheStoreIsHeldToNothing,
     /// The recipe carries weights without saying which catalogue entry they are.
     #[error(
         "this image carries weights and does not say which model they are — the catalogue is what \
@@ -603,6 +620,26 @@ pub enum Wrong {
         allowed: String,
         /// What it denies, or `-` where it denies nothing.
         denied: String,
+    },
+    /// The model service does not set the runtime's own switch beside the
+    /// filter.
+    ///
+    /// Two locks in two places. The IP filter is what keeps the runtime's two
+    /// start-up requests from leaving; this is what keeps them from being made,
+    /// in the engine's own documented setting, so that a machine's journal
+    /// carries no line naming the publisher and no retry every five minutes.
+    #[error(
+        "{server} does not set `OLLAMA_NO_CLOUD=1` (it says {said}) — measured on 2026-09-12 \
+         (docs/quirks.md), the pinned runtime asks its publisher two questions at every start and \
+         again every five minutes while they fail unless its own switch is set; the IP filter is \
+         what keeps them from leaving, and this is the second lock that keeps them from being \
+         asked, which is configuration and not a patch (ADR 0011)"
+    )]
+    TheServerStillAsksItsPublisher {
+        /// The model service's unit.
+        server: String,
+        /// What the unit sets the switch to, or `-` where it sets nothing.
+        said: String,
     },
     /// The opener would run as somebody `logind` will not open a session for.
     ///

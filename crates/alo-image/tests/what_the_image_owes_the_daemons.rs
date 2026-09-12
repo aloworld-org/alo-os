@@ -438,6 +438,33 @@ fn the_weights_a_machine_arrives_with_are_aboard_pinned_and_measured() {
     );
 }
 
+/// **The store the image carries is the weights once, and the recipe holds it
+/// there.** The first build of this recipe carried them twice — the runtime's
+/// copy of the checked file left beside the blob its manifest names, 2.23 GiB
+/// referenced by nothing on a read-only `/usr` — and the cost ADR 0025 accepted
+/// was *carried once*. So the weights stage drops the source blob after the
+/// import, with the digest check before it untouched, and holds every blob left
+/// in the store to the manifest before the store leaves the stage. This reads
+/// both lines off the real recipe.
+#[test]
+fn the_store_the_image_carries_is_the_weights_once() {
+    let image = the_image();
+    let weights = image.weights();
+
+    assert!(
+        weights.is_verified(),
+        "dropping the source blob is only cheaper if the digest check before it stayed"
+    );
+    assert!(
+        weights.drops_the_source(),
+        "the weights stage leaves the runtime's copy of the checked file in the store"
+    );
+    assert!(
+        weights.holds_the_store_to_its_manifest(),
+        "nothing holds every blob in the store to the manifest that names it"
+    );
+}
+
 /// **Something on this machine serves the model it arrived with, and it is a
 /// login of its own that holds nothing.**
 ///
@@ -535,9 +562,13 @@ fn the_model_service_is_pointed_at_the_weights_and_at_the_loopback_address() {
 /// update check, a telemetry call or a registry pull does not fail politely; it
 /// does not leave.
 ///
-/// **This reads a setting. It is not a machine anybody watched.** No packet
-/// counter has been put beside this image, because nothing in this lane has
-/// booted it — `docs/autonomy/v0-01-evidence.md` is where that stays owed.
+/// **This reads a setting, and the setting has been watched working — once,
+/// under the image's own systemd in a container, not at a boot.** On
+/// 2026-09-12 the login this unit runs as attempted sixteen packets to its
+/// publisher's port 443 and none reached the host side of the container's
+/// bridge, while an unfiltered process in the same container was answered
+/// (`docs/quirks.md`). A boot is still owed, and
+/// `docs/autonomy/v0-01-evidence.md` is where that stays.
 #[test]
 fn the_model_service_may_reach_nothing_off_this_machine() {
     let image = the_image();
@@ -550,6 +581,26 @@ fn the_model_service_may_reach_nothing_off_this_machine() {
     assert!(
         image.server().may_not_reach().contains(&"any"),
         "an allow list with no deny under it filters nothing at all"
+    );
+}
+
+/// **And it does not ask its publisher in the first place.** The filter above
+/// is the lock that cannot be switched off by a runtime update; this is the
+/// runtime's own, measured on 2026-09-12 to stop both start-up requests from
+/// being made at all — so a machine's journal carries no line naming the
+/// publisher and no retry every five minutes. Configuration, never a patch
+/// (ADR 0011), and exactly one assignment, because two would be a unit where
+/// the second silently wins.
+#[test]
+fn the_model_service_does_not_ask_its_publisher() {
+    let image = the_image();
+    let stated = image.server().environment();
+
+    let switched: Vec<&str> = assigned(&stated, "OLLAMA_NO_CLOUD");
+    assert_eq!(
+        switched,
+        vec!["1"],
+        "the model service does not set the runtime's own switch beside the filter"
     );
 }
 

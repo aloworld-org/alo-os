@@ -397,15 +397,21 @@ Three things stand in front of it, and one of them is smaller than it was.
 `bootc container lint` passing 13 of its 14 checks — so the import step is now a
 measurement rather than a recipe, and the runtime started out of the image it
 produced lists the model the machine arrived with. **A build is not a boot**, and
-two things the build measured are owed work rather than evidence: the store
-carries the weights **twice**, because `ollama create` leaves the source GGUF
-beside the blob its manifest names, and the pinned runtime makes **two requests
-to `ollama.com` within eight milliseconds of starting**, before anything is asked
-of it. The second is why the egress claim above stays **a setting read rather
-than a machine watched**: what the unit forbids has now been watched being
-attempted, and nothing has yet watched `IPAddressDeny=` refuse it, or put a
-packet counter beside a booted image. Both are task 34 of the delivery plan, and
-`docs/quirks.md` carries them with versions and dates. **No catalogued model clears the verb-driving bar**, this one included —
+two things the first build measured were owed work rather than evidence, and
+were done on 2026-09-12 (task 34): the store carried the weights **twice**,
+because `ollama create` leaves the source GGUF beside the blob its manifest
+names — the weights stage now removes it after the import and holds every blob
+left to the manifest, and the rebuilt image is measured in
+`docs/autonomy/updates/the-weights-carried-once-and-a-runtime-that-does-not-call-home.md`;
+and the pinned runtime made **two requests to `ollama.com` within eight
+milliseconds of starting** — the unit now sets the runtime's own switch beside
+the filter, and with it the runtime asks neither. The egress claim above is
+**a setting read and, once, watched working — not at a boot**: the unit was
+started by the image's own systemd under a container, sixteen packets to the
+publisher's port were attempted by its login and none reached the host side of
+the bridge while an unfiltered process in the same container was answered.
+`docs/quirks.md` carries all of it with versions and dates. A packet counter
+beside a *booted* image is still owed, with the boot. **No catalogued model clears the verb-driving bar**, this one included —
 every entry anybody has measured is graded *rarely*, so what a machine arrives
 able to do is load and answer with a local model rather than be handed an agent
 turn. And **who on the machine may ask the model anything is not decided**: a

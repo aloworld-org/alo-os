@@ -24,6 +24,21 @@
 //! price is paid by a person on their first morning, in a place where we cannot
 //! help them. `docs/quirks.md` carries the measurement.
 //!
+//! # Carried once — asserted, because the first build carried them twice
+//!
+//! Building the recipe measured what the runtime's import really does
+//! (`docs/quirks.md`, 2026-09-11): it copies the checked file into its store
+//! under that file's own digest, writes a second blob of the same length under
+//! another, and names only the second in its manifest. A store left as the
+//! runtime left it is 4.5 GiB for 2.23 GiB of model, on the read-only half of
+//! every machine we ship, where nothing can ever prune it. So the weights stage
+//! removes the source blob **after** the import — the digest check has done its
+//! work by then and is untouched — and holds every blob left in the store to the
+//! manifest before the store leaves the stage. [`TheWeights::drops_the_source`]
+//! and [`TheWeights::holds_the_store_to_its_manifest`] read those two lines, so
+//! a recipe that quietly went back to carrying the weights twice is a red test
+//! rather than an image 2.23 GiB larger than its own comment.
+//!
 //! # It is not enough for the recipe to name *a* model
 //!
 //! `docs/features.md` promises a catalogue *measured by us, not claimed by the
@@ -76,6 +91,31 @@ const A_DIGEST_CHECKED: &str = "sha256sum --check";
 /// How a fetch says where it is putting what it fetched.
 const FETCHED_TO: &str = "--output";
 
+/// How the weights are imported into the runtime's store, which is the line the
+/// store exists after and the line the source blob may only be removed after.
+const IMPORTED: &str = "ollama create";
+
+/// The blob the runtime leaves the checked file under: the file's own digest,
+/// in the store, named by no manifest once the import has written the blob it
+/// names instead.
+const THE_SOURCE_BLOB: &str = "blobs/sha256-${THE_MODELS_SHA256}";
+
+/// How a line removes something.
+const REMOVED: &str = "rm ";
+
+/// How the stage walks the store, which is where holding every blob in it to
+/// the manifest begins.
+const EVERY_BLOB: &str = "for blob in /models/blobs/*";
+
+/// How a blob is looked for in the manifest.
+const LOOKED_UP: &str = "grep";
+
+/// What it is looked for in.
+const THE_MANIFEST: &str = "manifest";
+
+/// What a blob the manifest does not name does to the build.
+const REFUSED: &str = "exit 1";
+
 /// Names that mean *whatever is there today*.
 ///
 /// A digest says what arrived and this says what was asked for, and the two are
@@ -101,6 +141,11 @@ pub struct TheWeights {
     checked_first: bool,
     /// Whether the weights are copied onto the machine.
     lands: bool,
+    /// Whether the blob the runtime left the checked file under is removed
+    /// after the import.
+    source_dropped: bool,
+    /// Whether every blob left in the store is held to the manifest.
+    held_to_manifest: bool,
 }
 
 impl TheWeights {
@@ -119,6 +164,8 @@ impl TheWeights {
             digest: None,
             checked_first: false,
             lands: false,
+            source_dropped: false,
+            held_to_manifest: false,
         };
 
         for line in containerfile.lines() {
@@ -143,7 +190,34 @@ impl TheWeights {
         }
 
         weights.checked_first = checked_before_anything_read_it(containerfile);
+        let (source_dropped, held_to_manifest) = carried_once(containerfile);
+        weights.source_dropped = source_dropped;
+        weights.held_to_manifest = held_to_manifest;
         weights
+    }
+
+    /// Whether the stage removes the blob the runtime left the checked file
+    /// under, **after** the import.
+    ///
+    /// After, because before it there is nothing to import from; and the digest
+    /// check is not this line's business — it ran on the file before the import
+    /// read it, and removing the runtime's copy of that file afterwards changes
+    /// nothing about what was checked.
+    #[must_use]
+    pub const fn drops_the_source(&self) -> bool {
+        self.source_dropped
+    }
+
+    /// Whether every blob left in the store is held to the manifest that names
+    /// it before the store leaves the stage.
+    ///
+    /// This is the line that makes *carried once* a build that goes red rather
+    /// than a comment: a runtime update that left a second copy behind under
+    /// some other name would be caught here, where [`Self::drops_the_source`]
+    /// would not see it.
+    #[must_use]
+    pub const fn holds_the_store_to_its_manifest(&self) -> bool {
+        self.held_to_manifest
     }
 
     /// The catalogue entry the recipe names, or [`None`] where it names none.
@@ -244,6 +318,44 @@ fn checked_before_anything_read_it(containerfile: &str) -> bool {
     checked
 }
 
+/// Whether the weights stage, after the import, removes the source blob and
+/// holds every blob left in the store to the manifest — as two answers, because
+/// they are two lines that go wrong separately.
+///
+/// Read off the text the way the rest of this crate reads a recipe: a line that
+/// removes the source blob is one naming `rm` and the blob by the pinned
+/// digest's own argument; the store is held when the stage walks every blob,
+/// looks each up in the manifest, and refuses the build for one it does not
+/// find. Order is part of the question — a removal before the import would
+/// remove nothing and then import nothing — so it is asked inside the stage,
+/// after the line that imports.
+fn carried_once(containerfile: &str) -> (bool, bool) {
+    let lines = in_stage(containerfile, THE_STAGE);
+    let Some(imported) = lines.iter().position(|line| line.contains(IMPORTED)) else {
+        return (false, false);
+    };
+    let after: Vec<&str> = lines.into_iter().skip(imported + 1).collect();
+
+    let dropped = after
+        .iter()
+        .any(|line| line.contains(REMOVED) && line.contains(THE_SOURCE_BLOB));
+
+    // Three lines in order: the walk, the lookup, the refusal. Each is looked
+    // for after the one before it, by skipping rather than slicing.
+    let walked = after.iter().position(|line| line.contains(EVERY_BLOB));
+    let looked = walked.and_then(|walked| {
+        after
+            .iter()
+            .skip(walked + 1)
+            .position(|line| line.contains(LOOKED_UP) && line.contains(THE_MANIFEST))
+            .map(|looked| walked + 1 + looked)
+    });
+    let held =
+        looked.is_some_and(|looked| after.iter().skip(looked).any(|line| line.contains(REFUSED)));
+
+    (dropped, held)
+}
+
 /// Where this line puts what it fetched, where it is a fetch.
 fn fetched_to(line: &str) -> Option<&str> {
     let mut words = line.split_whitespace();
@@ -276,7 +388,11 @@ mod tests {
             "FROM builder AS weights".to_owned(),
             "RUN curl --output /weights.gguf \"${THE_MODELS_WEIGHTS}\" \\".to_owned(),
             " && echo \"${THE_MODELS_SHA256}  /weights.gguf\" | sha256sum --check -".to_owned(),
-            "RUN ollama create it -f /weights.gguf".to_owned(),
+            "RUN ollama create it -f /weights.gguf \\".to_owned(),
+            " && rm -f /models/blobs/sha256-${THE_MODELS_SHA256} \\".to_owned(),
+            " && for blob in /models/blobs/*; do \\".to_owned(),
+            "      grep -q \"sha256:${blob##*/sha256-}\" \"${manifest}\" || exit 1; \\".to_owned(),
+            "    done".to_owned(),
             "FROM base".to_owned(),
             "COPY --from=weights /models/ /usr/share/alo/models/".to_owned(),
         ]
@@ -305,6 +421,62 @@ mod tests {
         assert!(read.land());
         assert!(read.is_pinned());
         assert!(read.is_verified());
+        assert!(read.drops_the_source());
+        assert!(read.holds_the_store_to_its_manifest());
+    }
+
+    /// **A stage that leaves the runtime's copy of the checked file in the
+    /// store reads as carrying the weights twice**, which is exactly what the
+    /// first build of the real recipe did — and the store is still held to its
+    /// manifest, because the two lines are two answers.
+    #[test]
+    fn a_stage_that_leaves_the_source_blob_reads_as_carrying_the_weights_twice() {
+        let left = with(
+            " && rm -f /models/blobs/sha256-${THE_MODELS_SHA256} \\",
+            " && true \\",
+        );
+
+        assert!(!left.drops_the_source());
+        assert!(left.holds_the_store_to_its_manifest());
+    }
+
+    /// **A store nothing holds to its manifest reads as held to nothing**, and
+    /// dropping the source blob does not stand in for it: a runtime update
+    /// leaving a second copy under some other name is caught by the walk, never
+    /// by the removal.
+    #[test]
+    fn a_store_nothing_holds_to_its_manifest_reads_as_held_to_nothing() {
+        let unwalked = with("for blob in /models/blobs/*", "for blob in /nowhere/*");
+        assert!(unwalked.drops_the_source());
+        assert!(!unwalked.holds_the_store_to_its_manifest());
+
+        let unrefused = with("|| exit 1", "|| true");
+        assert!(!unrefused.holds_the_store_to_its_manifest());
+
+        let unlooked = with("grep -q", "test -f");
+        assert!(!unlooked.holds_the_store_to_its_manifest());
+    }
+
+    /// **A removal before the import removes nothing**, because there is
+    /// nothing in the store yet — and a reader that swept the stage for an `rm`
+    /// would have counted it.
+    #[test]
+    fn a_removal_before_the_import_does_not_count() {
+        let early = saying(&[
+            &format!("ARG THE_MODELS_SHA256={}", "ab".repeat(32)),
+            "FROM builder AS weights",
+            "RUN curl --output /weights.gguf https://example.test/resolve/a64113/it.gguf",
+            "RUN rm -f /models/blobs/sha256-${THE_MODELS_SHA256}",
+            "RUN ollama create it -f /weights.gguf",
+        ]);
+        assert!(!early.drops_the_source());
+
+        let never_imported = saying(&[
+            "FROM builder AS weights",
+            "RUN rm -f /models/blobs/sha256-${THE_MODELS_SHA256}",
+        ]);
+        assert!(!never_imported.drops_the_source());
+        assert!(!never_imported.holds_the_store_to_its_manifest());
     }
 
     /// **A recipe that says nothing reads as one that carries nothing**, rather

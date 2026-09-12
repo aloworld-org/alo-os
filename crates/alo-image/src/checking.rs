@@ -72,6 +72,20 @@ const THE_STORE: &str = "OLLAMA_MODELS";
 /// The variable it reads its address from.
 const THE_ADDRESS: &str = "OLLAMA_HOST";
 
+/// The runtime's own switch for the two questions it asks its publisher at
+/// every start, and what it is set to when they are not asked.
+///
+/// Measured on 2026-09-12 (`docs/quirks.md`): with it set the runtime says
+/// *cloud disabled: true* and makes neither request; without it, both, and a
+/// retry every five minutes for as long as they fail. A second lock beside the
+/// IP filter rather than instead of it — the filter is the kernel's and cannot
+/// be switched off by a runtime update; this is the engine's, and is what keeps
+/// a machine's journal free of lines naming the publisher.
+const THE_RUNTIMES_OWN_SWITCH: &str = "OLLAMA_NO_CLOUD";
+
+/// What that switch says when the questions are not asked.
+const NOT_ASKED: &str = "1";
+
 /// What an IP access list says to mean *this machine, and nothing else*.
 const ONLY_THIS_MACHINE: &str = "localhost";
 
@@ -348,6 +362,12 @@ fn the_weights_are_aboard_pinned_and_measured(image: &Image, wrong: &mut Vec<Wro
             digest: weights.digest().unwrap_or(NOTHING).to_owned(),
         });
     }
+    if !weights.drops_the_source() {
+        wrong.push(Wrong::TheWeightsAreCarriedTwice);
+    }
+    if !weights.holds_the_store_to_its_manifest() {
+        wrong.push(Wrong::TheStoreIsHeldToNothing);
+    }
 
     let Some(model) = weights.model() else {
         wrong.push(Wrong::TheImageDoesNotSayWhichModelItCarries);
@@ -555,19 +575,41 @@ fn the_model_is_served_by_a_login_of_its_own(image: &Image, wrong: &mut Vec<Wron
 /// filters nothing at all, which is why both are read and why an allow list
 /// naming anything but this machine is a finding.
 ///
-/// **This is a setting read, not a machine watched.** Nothing in this repository
-/// has yet booted the image and put a packet counter beside it; what is checked
-/// here is that the unit says it, in the one place where saying it is enforcing
-/// it.
+/// **And the runtime's own switch beside it**, as a second lock. Measured on
+/// 2026-09-12 (`docs/quirks.md`): unset, the runtime asks its publisher two
+/// questions at every start and retries every five minutes while they fail;
+/// set, it says *cloud disabled: true* and asks neither. The filter is what
+/// makes *nothing leaves* true; the switch is what keeps the journal free of a
+/// line naming the publisher, and it is the engine's own documented setting, so
+/// it is configuration rather than a patch (ADR 0011).
+///
+/// **What was watched, and what was not.** On 2026-09-12 this unit was started
+/// by the image's own systemd, under a container whose init held the three
+/// capabilities a machine's init holds anyway, with the image's own store and a
+/// network: the login attempted sixteen packets to the publisher's port 443 and
+/// none reached the host side of the container's bridge, while a request from
+/// an unfiltered process in the same container went out and was answered
+/// (`docs/quirks.md`). That is the filter refusing, watched at a boundary. It is
+/// not a boot — nothing in this repository has yet booted the image — and
+/// `docs/autonomy/v0-01-evidence.md` is where that stays owed.
 fn the_server_reaches_nothing_off_this_machine(image: &Image, wrong: &mut Vec<Wrong>) {
+    let server = image.server().called().to_owned();
     let allowed = image.server().may_reach();
     let denied = image.server().may_not_reach();
 
     if allowed != vec![ONLY_THIS_MACHINE] || !denied.contains(&ANYWHERE) {
         wrong.push(Wrong::TheServerMayReachTheNetwork {
-            server: image.server().called().to_owned(),
+            server: server.clone(),
             allowed: said(&allowed),
             denied: said(&denied),
+        });
+    }
+
+    let switched = assigned(&image.server().environment(), THE_RUNTIMES_OWN_SWITCH);
+    if switched != vec![NOT_ASKED] {
+        wrong.push(Wrong::TheServerStillAsksItsPublisher {
+            server,
+            said: said(&switched),
         });
     }
 }
@@ -2053,6 +2095,67 @@ mod tests {
         );
     }
 
+    /// **Weights carried twice are caught.** This is what the first build of
+    /// the real recipe shipped: the runtime's copy of the checked file left in
+    /// the store beside the blob the manifest names, 2.23 GiB referenced by
+    /// nothing on a read-only `/usr`. The edit that brings it back is the
+    /// removal turned into a no-op, which is what a tidy-up of a shell line
+    /// looks like.
+    #[test]
+    fn weights_carried_twice_are_caught() {
+        let root = a_copy_of_the_image("weights-twice");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "rm -f \"/models/blobs/sha256-${THE_MODELS_SHA256}\"",
+            "true",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheWeightsAreCarriedTwice)),
+            "{wrong:?}"
+        );
+        assert!(
+            !wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheStoreIsHeldToNothing)),
+            "the store is still held to its manifest, and that is a separate finding: {wrong:?}"
+        );
+    }
+
+    /// **A store held to nothing is caught**, separately: the removal above
+    /// catches today's second copy, and only the walk over the store catches
+    /// the one a runtime update leaves under a name nobody wrote down.
+    #[test]
+    fn a_store_held_to_nothing_is_caught() {
+        let root = a_copy_of_the_image("store-unheld");
+        edited(
+            &root,
+            THE_CONTAINERFILE,
+            "for blob in /models/blobs/*",
+            "for blob in /nowhere/*",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheStoreIsHeldToNothing)),
+            "{wrong:?}"
+        );
+        assert!(
+            !wrong
+                .iter()
+                .any(|it| matches!(it, Wrong::TheWeightsAreCarriedTwice)),
+            "the source is still dropped, and that is a separate finding: {wrong:?}"
+        );
+    }
+
     /// **A model the catalogue does not have is caught.** Weights nothing can
     /// look up are weights nobody can be told the licence, the cost or the
     /// measurement of, and the catalogue is where all three live.
@@ -2444,6 +2547,34 @@ mod tests {
                 .any(|it| matches!(it, Wrong::TheServerMayReachTheNetwork { .. })),
             "{wrong:?}"
         );
+    }
+
+    /// **A model service that still asks its publisher is caught.** The
+    /// filter keeps the two start-up requests from leaving; the runtime's own
+    /// switch keeps them from being made, and a unit that dropped it would be
+    /// a machine whose journal names the publisher every five minutes for as
+    /// long as it is up. Deleted, and set to the wrong value: both are the
+    /// same finding.
+    #[test]
+    fn a_model_service_that_still_asks_its_publisher_is_caught() {
+        for (what, to) in [
+            ("deleted", ""),
+            ("left on", "Environment=OLLAMA_NO_CLOUD=0"),
+        ] {
+            let root = a_copy_of_the_image(&format!("server-asks-{}", what.replace(' ', "-")));
+            edited(&root, THE_SERVERS_UNIT, "Environment=OLLAMA_NO_CLOUD=1", to);
+
+            let wrong = everything_wrong_with(&image_at(&root));
+
+            assert!(
+                wrong.iter().any(|it| matches!(
+                    it,
+                    Wrong::TheServerStillAsksItsPublisher { server, .. }
+                        if server == crate::THE_SERVER
+                )),
+                "the switch {what}: {wrong:?}"
+            );
+        }
     }
 
     /// **A model service nothing pulls in is caught**, which is this task's own

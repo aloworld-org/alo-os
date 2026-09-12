@@ -76,6 +76,18 @@ Environment=OLLAMA_HOST=http://127.0.0.1:11434
 IPAddressAllow=localhost
 IPAddressDeny=any
 
+# And the runtime's own switch, as a second lock rather than instead of the
+# first. Measured on 2026-09-12 (docs/quirks.md): without it the pinned runtime
+# asks its publisher two questions in its first ten milliseconds and again every
+# five minutes for as long as they fail; with it, it does not ask. The filter
+# above is what makes *nothing leaves* true — a kernel-side drop on this control
+# group that no runtime update can switch off — and this line is what makes the
+# journal of a machine carry no line naming the publisher, and the runtime spend
+# no cycle retrying a request that will never leave. Two locks in two places, one
+# of them the engine's own documented setting, which is configuration and not a
+# patch (ADR 0011). `crates/alo-image` holds this line beside the two above.
+Environment=OLLAMA_NO_CLOUD=1
+
 # And a second line saying the same thing from the other end, because the first
 # is a filter and this is a refusal. Nothing here speaks any protocol family but
 # the two the loopback interface uses and the one systemd needs to start it.
