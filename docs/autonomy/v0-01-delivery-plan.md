@@ -1820,3 +1820,33 @@ stops it* is exactly the kind of sentence task 33 was written to stop trusting.
   needs privilege a machine would not need — a container that must be privileged
   to run `systemd` is not evidence about a machine — say so and measure what can
   honestly be measured rather than quietly running it as root.
+
+### 35. Recovering a parked task whose worker never wrote a handoff
+
+**Status:** ready. **Depends on:** nothing.
+
+`recover <branch>` was used on real parked work three times on 2026-09-11 and
+refused twice — both times honestly, both times for the same reason: **the
+parked branch had no handoff.** Parking force-adds `.kernel-loop/handoff.toml`
+onto the branch, but on both occasions the gates had refused a first worker,
+the repair path had moved that handoff to `.kernel-loop/refused/`, and the
+second worker was killed at the 90-minute deadline before writing one. So the
+branch held every line of the work and the command could not touch it, and the
+recovery was done by hand — the branch's own diff applied onto `main`, and the
+handoff copied back out of `refused/`. That is knowable and mechanical, which
+is the same argument task 29 made for the command existing at all.
+
+- **Acceptance:** a parked branch with no handoff is recovered from what it
+  does have — the file list read off the branch's own commit (its diff against
+  its parent), and the handoff taken from the newest `.kernel-loop/refused/`
+  entry whose `task` matches the task the branch was parked for; both are
+  reported as such, so a person knows the handoff was reconstructed rather than
+  restored; a branch with neither a handoff nor a matching refused one is
+  refused in words that say what was looked for; the existing behaviour for a
+  branch that *has* a handoff is unchanged; and the refusals are tested beside
+  the recoveries, on branches made the way parking makes them.
+- **Constraint:** it never derives a file list from `git status` or from
+  guesswork — only from the branch's own commit — and it still restores and
+  never publishes, deletes no branch, and touches nothing outside the paths it
+  names. `git checkout -- .` and `git restore -- .` remain the thing the test
+  refuses.
