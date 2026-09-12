@@ -13,7 +13,7 @@
 //! something would reasonably conclude their machine had just forgotten what
 //! they chose last month.
 //!
-//! # Six reasons, and two of them are somebody else's sentence
+//! # Seven reasons, and two of them are somebody else's sentence
 //!
 //! The two lists a settings file holds are `alo-models`', and so are the
 //! refusals about them: the same weights twice, a provider name already taken,
@@ -24,9 +24,15 @@
 //! one this crate wrote would be the one nobody kept up to date.
 //!
 //! **They are therefore the two that do not name the file**, because a refusal
-//! about a list has no file in it. The four this crate says itself all do, for
+//! about a list has no file in it. The five this crate says itself all do, for
 //! `crate::refusing`'s reason: on a machine with several logins *your settings*
 //! is not a thing anybody can act on.
+//!
+//! [`NotWritten::NotAProvider`] is also where an address that is not https
+//! arrives, whichever door it came through: `crate::holding` asks
+//! `alo_models::Provider::checked`'s rule again at the one place a provider is
+//! written, and what it refuses is carried here in that crate's sentence —
+//! *use https, or a service on this machine.*
 
 use std::path::{Path, PathBuf};
 
@@ -75,12 +81,30 @@ pub enum NotWritten {
         /// What the list refused, kept as the fact it is.
         why: WeightsError,
     },
-    /// The list of providers would not take this one.
+    /// The list of providers would not take this one, or a provider on it is
+    /// not one `alo_models::Provider::checked` would have made.
+    ///
+    /// The second is how an address that is not https is refused at the write:
+    /// `alo_models::Provider` has public fields, so a value can arrive that
+    /// nothing has judged, and `crate::holding` judges it again in the one
+    /// function every door writes through.
     NotAProvider {
         /// Where the settings are.
         at: PathBuf,
-        /// What the list refused, kept as the fact it is.
+        /// What was refused, kept as the fact it is.
         why: ProviderError,
+    },
+    /// The change would have replaced a provider on this person's list, and
+    /// the list has none of that name.
+    ///
+    /// Refused rather than added, because *change* and *add* are two different
+    /// things a person did: a surface that changed a provider it did not have
+    /// would be adding one under a button that said something else.
+    NothingToChange {
+        /// Where the settings are.
+        at: PathBuf,
+        /// What the change named, exactly as it was given.
+        provider: String,
     },
     /// This alo OS could not turn the changed settings into a file it reads
     /// back as the same settings.
@@ -117,6 +141,7 @@ impl NotWritten {
             | Self::NoSuchProvider { at, .. }
             | Self::NotWeights { at, .. }
             | Self::NotAProvider { at, .. }
+            | Self::NothingToChange { at, .. }
             | Self::NotExpressible { at, .. }
             | Self::NotKept { at, .. } => at,
         }
@@ -134,6 +159,7 @@ impl NotWritten {
             Self::NoSuchProvider { .. } => words::CHANGE_NO_SUCH_PROVIDER,
             Self::NotWeights { why, .. } => why.word(),
             Self::NotAProvider { why, .. } => why.word(),
+            Self::NothingToChange { .. } => words::CHANGE_NOTHING_TO_CHANGE,
             Self::NotExpressible { .. } => words::CHANGE_NOT_EXPRESSIBLE,
             Self::NotKept { .. } => words::CHANGE_NOT_KEPT,
         }
@@ -153,6 +179,7 @@ impl NotWritten {
             Self::NotAProvider { why, .. } => return why.said(strings),
             Self::NotBrought { .. }
             | Self::NoSuchProvider { .. }
+            | Self::NothingToChange { .. }
             | Self::NotExpressible { .. }
             | Self::NotKept { .. } => {}
         }
@@ -162,7 +189,9 @@ impl NotWritten {
             // is never translated — the rule a filename is held to in
             // `alo-files` and a path in `crate::refusing`.
             Self::NotBrought { model, .. } => filling.and("model", model.clone()),
-            Self::NoSuchProvider { provider, .. } => filling.and("provider", provider.clone()),
+            Self::NoSuchProvider { provider, .. } | Self::NothingToChange { provider, .. } => {
+                filling.and("provider", provider.clone())
+            }
             Self::NotWeights { .. }
             | Self::NotAProvider { .. }
             | Self::NotExpressible { .. }
@@ -202,6 +231,10 @@ mod tests {
                 at: somewhere(),
                 why: ProviderError::AlreadyAdded("Mistral".to_owned()),
             },
+            NotWritten::NothingToChange {
+                at: somewhere(),
+                provider: "Mistral".to_owned(),
+            },
             NotWritten::NotExpressible {
                 at: somewhere(),
                 why: "a provider carried a list of models this file cannot hold".to_owned(),
@@ -218,6 +251,7 @@ mod tests {
         match reason {
             NotWritten::NotBrought { .. }
             | NotWritten::NoSuchProvider { .. }
+            | NotWritten::NothingToChange { .. }
             | NotWritten::NotExpressible { .. }
             | NotWritten::NotKept { .. } => true,
             NotWritten::NotWeights { .. } | NotWritten::NotAProvider { .. } => false,
@@ -245,7 +279,7 @@ mod tests {
         }
     }
 
-    /// **The four sentences this crate says name the file somebody has to
+    /// **The five sentences this crate says name the file somebody has to
     /// open.** The other two are `alo-models`' own, are about a list rather
     /// than a file, and have no path to name — which is stated here rather than
     /// noticed later, because it is the one place this crate's refusals are not
@@ -263,7 +297,7 @@ mod tests {
         }
     }
 
-    /// **Six reasons, six sentences.** A machine that said the same thing about
+    /// **Seven reasons, seven sentences.** A machine that said the same thing about
     /// a disk that would not take the file and a choice naming weights nobody
     /// brought would be sending somebody to the wrong place.
     #[test]
@@ -277,7 +311,7 @@ mod tests {
         said.sort();
         said.dedup();
         assert_eq!(said.len(), reasons.len());
-        assert_eq!(said.len(), 6);
+        assert_eq!(said.len(), 7);
     }
 
     /// **A name is quoted back exactly as it was given**, which is what lets
@@ -303,6 +337,32 @@ mod tests {
             .text()
             .contains("Mistral")
         );
+        assert!(
+            NotWritten::NothingToChange {
+                at: somewhere(),
+                provider: "Mistral".to_owned(),
+            }
+            .said(&strings)
+            .text()
+            .contains("Mistral")
+        );
+    }
+
+    /// **An address that is not https is said in `alo-models`' words**, which
+    /// tell the person what to do rather than that alo OS has a fault: the
+    /// refusal carried here is that crate's own, and its sentence names https
+    /// and the one exception.
+    #[test]
+    fn an_address_that_is_not_https_is_said_as_what_to_do() {
+        let said = NotWritten::NotAProvider {
+            at: somewhere(),
+            why: ProviderError::InsecureEndpoint,
+        }
+        .said(&in_english());
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("https"), "{said}");
+        assert!(said.text().contains("this machine"), "{said}");
+        assert!(!said.text().contains("alo OS could not"), "{said}");
     }
 
     /// **Nothing a maintainer is told reaches the person.** What the disk said

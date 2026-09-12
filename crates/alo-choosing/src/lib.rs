@@ -32,6 +32,13 @@
 //! argument, and it is why a provider carrying something this file cannot hold
 //! is a refusal rather than a silent trim.
 //!
+//! **And a provider's address is judged again on the way out.** Its type has
+//! public fields, so *already checked* is a name rather than a promise, and
+//! `crate::holding` asks `alo_models::Provider::checked`'s rule once more at
+//! the one function every door writes through: an address that is not https
+//! is refused before a byte is written unless it is a service on this machine,
+//! in that crate's own words, whichever door it arrived at.
+//!
 //! # A choice outside the bound is refused out loud
 //!
 //! Never quietly replaced with a permitted one, which is the comfortable
@@ -108,6 +115,7 @@
 mod bound;
 mod choosing;
 mod chosen;
+mod holding;
 mod keeping;
 mod place;
 mod refusing;

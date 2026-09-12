@@ -22,7 +22,9 @@ numbers are a shared space.
 
 ### 1. An address that is not https is refused, unless it is a service on this machine
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-12.** Report:
+[`updates/an-address-that-is-not-https-is-refused-at-the-write.md`](updates/an-address-that-is-not-https-is-refused-at-the-write.md).
+**Depends on:** nothing.
 
 `docs/features.md`, v0.5: *an address that is not https is refused rather than
 warned about, unless it is a service on this machine — "it is only our internal

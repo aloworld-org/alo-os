@@ -250,10 +250,10 @@ fn a_file_the_machine_refuses_is_not_replaced_by_a_change() {
 }
 
 /// **Every string this crate can say is in the machine's one vocabulary**,
-/// including the four that arrived with the writer. A word declared here and
-/// left out of `alo-saying`'s list is a sentence that reaches a person as a
-/// key — the failure task 17 built a check for, met here for the words this
-/// change adds.
+/// including the four that arrived with the writer and the one that arrived
+/// with `Choosing::changing`. A word declared here and left out of
+/// `alo-saying`'s list is a sentence that reaches a person as a key — the
+/// failure task 17 built a check for, met here for the words this change adds.
 #[test]
 fn everything_the_writer_says_is_something_the_machine_can_say() {
     let vocabulary = alo_saying::everything_this_machine_can_say().unwrap();
@@ -264,7 +264,7 @@ fn everything_the_writer_says_is_something_the_machine_can_say() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 15);
+    assert_eq!(EVERY_WORD.len(), 16);
 }
 
 /// **What a person reads is theirs to read in their own language**, and the

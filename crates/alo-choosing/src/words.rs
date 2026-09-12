@@ -21,20 +21,23 @@
 //! every one of them because it is the thing a person needs in order to act,
 //! and *your settings* is not that thing on a machine with several logins.
 //!
-//! # And four about a change that was not made
+//! # And five about a change that was not made
 //!
 //! Since [`crate::Choosing`] this crate writes the file as well as reading it,
 //! and a change refused is not a file refused. `crate::unwritten` has the whole
 //! argument; what it comes to here is one clause. The ten above end *nothing in
 //! the file has been used* or *nothing has been chosen to answer questions* —
-//! the machine is running on no choice at all. The four below end **nothing in
+//! the machine is running on no choice at all. The five below end **nothing in
 //! your settings has been changed**, which says the opposite: whatever was
 //! chosen is still in force and the thing that failed was the change.
 //!
 //! **Still nothing here says anything about a choice being wrong**, which is
-//! the absence the paragraph above is about. Two of the four are about the two
-//! halves of a settings file disagreeing, one is about a disk, and one is about
-//! a defect in alo OS.
+//! the absence the paragraph above is about. Two of the five are about the two
+//! halves of a settings file disagreeing, one is about a change to a provider
+//! the list does not have, one is about a disk, and one is about a defect in
+//! alo OS. An address that is not https is refused at the write too, and is
+//! not here either: it is `alo-models`' rule and `alo-models`' sentence,
+//! carried by `crate::NotWritten::NotAProvider`.
 //!
 //! # Nothing here counts anything
 //!
@@ -202,7 +205,7 @@ pub const SETTINGS_SETUP_NEEDS_A_NEWER_SHAPE: Word = Word::saying(
 // ---------------------------------------------------------------------------
 // A change to the file that was not made — [`crate::NotWritten`].
 //
-// Four sentences, and what makes them four rather than more is that the two
+// Five sentences, and what makes them five rather than more is that the two
 // reasons about a **list** are `alo-models`' own and are carried rather than
 // reworded. What makes them separate from the ten above is the clause they all
 // end with: those say the machine is running on no choice at all, and these say
@@ -235,6 +238,19 @@ pub const CHANGE_NO_SUCH_PROVIDER: Word = Word::saying(
      themselves. Said when a provider is chosen before it is added.",
 );
 
+/// A change to a provider the person's own list does not have.
+pub const CHANGE_NOTHING_TO_CHANGE: Word = Word::saying(
+    "choosing.change.nothing-to-change",
+    "your settings at {path} list no provider called {provider} to change, so nothing in your \
+     settings has been changed",
+)
+.noting(
+    "{path} and {provider} are both data and are never translated — {provider} is the person's \
+     own name for a service they added themselves. Said when a provider is changed by name and \
+     the list has none of that name: it was not added instead, because a change and an addition \
+     are two different things the person did.",
+);
+
 /// The changed settings could not be written as a file this alo OS reads back.
 pub const CHANGE_NOT_EXPRESSIBLE: Word = Word::saying(
     "choosing.change.not-expressible",
@@ -262,7 +278,7 @@ pub const CHANGE_NOT_KEPT: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 15] = [
+pub const EVERY_WORD: [Word; 16] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -276,6 +292,7 @@ pub const EVERY_WORD: [Word; 15] = [
     SETTINGS_SETUP_NEEDS_A_NEWER_SHAPE,
     CHANGE_NOT_BROUGHT,
     CHANGE_NO_SUCH_PROVIDER,
+    CHANGE_NOTHING_TO_CHANGE,
     CHANGE_NOT_EXPRESSIBLE,
     CHANGE_NOT_KEPT,
 ];

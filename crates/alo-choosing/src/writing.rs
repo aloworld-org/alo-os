@@ -28,6 +28,19 @@
 //! `Settings::at`* is a property of the code rather than of the tests that
 //! happened to be written.
 //!
+//! # And every provider is held to its own crate's rule first
+//!
+//! `alo_models::Provider` has public fields, so a value can reach [`written`]
+//! that `alo_models::Provider::checked` never made — an address over `http://`
+//! to somewhere on the person's own network, most often. The round trip would
+//! refuse it, because the reader will not take it; but the round trip's
+//! sentence is *a defect in alo OS*, and this is a person who typed `http`.
+//! So `crate::holding` asks `alo-models`' rule again, here, before the text is
+//! made, and the refusal is [`NotWritten::NotAProvider`] in that crate's own
+//! words: *use https, or a service on this machine.* It is asked here rather
+//! than at `crate::Choosing`'s doors because this is the one function every
+//! door goes through, so there is no second path to the file.
+//!
 //! # The format written is this alo OS's own
 //!
 //! [`crate::THE_FORMAT`], always. `crate::ALSO_READ` is there so a machine
@@ -44,6 +57,7 @@ use alo_models::{Provider, Region, Weights};
 use alo_strings::Language;
 
 use crate::chosen::{Picked, Which};
+use crate::holding::every_provider_holds;
 use crate::settings::Settings;
 use crate::setup::Setup;
 use crate::unwritten::NotWritten;
@@ -60,9 +74,17 @@ use crate::written::{
 ///
 /// # Errors
 ///
-/// [`NotWritten::NotExpressible`] when the text this produced is not text this
-/// alo OS reads back as the same settings. The file has not been touched.
+/// [`NotWritten::NotAProvider`] when a provider on the list is one
+/// `alo_models::Provider::checked` would have refused — an address that is not
+/// `https://` and is not a service on this machine, before anything else —
+/// and [`NotWritten::NotExpressible`] when the text this produced is not text
+/// this alo OS reads back as the same settings. The file has not been touched
+/// in either.
 pub(crate) fn written(settings: &Settings, at: &Path) -> Result<String, NotWritten> {
+    every_provider_holds(settings).map_err(|why| NotWritten::NotAProvider {
+        at: at.to_owned(),
+        why,
+    })?;
     let unreadable = |why: String| NotWritten::NotExpressible {
         at: at.to_owned(),
         why,
@@ -416,6 +438,43 @@ mod tests {
             .unwrap_err(),
             NotWritten::NotExpressible { .. }
         ));
+    }
+
+    /// **A provider whose address is not https is refused as what it is**,
+    /// in `alo-models`' words, rather than as a defect in alo OS — the round
+    /// trip would have caught it too, and said the wrong thing.
+    #[test]
+    fn a_provider_whose_address_is_not_https_is_refused_as_a_provider_rather_than_as_a_defect() {
+        let mut providers = Providers::default();
+        providers
+            .add(Provider {
+                name: "Somewhere".to_owned(),
+                endpoint: "http://192.168.1.10:11434".to_owned(),
+                region: Region::Unknown,
+                key: Some(crate::written::a_key_for("Somewhere")),
+                models: Vec::new(),
+            })
+            .unwrap();
+
+        let refused = written(
+            &settings(None, Brought::default(), providers, Vec::new()),
+            &somewhere(),
+        )
+        .unwrap_err();
+
+        assert!(
+            matches!(
+                refused,
+                NotWritten::NotAProvider {
+                    why: alo_models::ProviderError::InsecureEndpoint,
+                    ..
+                }
+            ),
+            "{refused:?}"
+        );
+        let said = refused.said(&crate::testing::in_english());
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("https"), "{said}");
     }
 
     /// **A name with space around it is refused rather than quietly trimmed.**

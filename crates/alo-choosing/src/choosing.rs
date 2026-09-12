@@ -27,6 +27,15 @@
 //! file the same machine refuses whole the next time anybody asks it a
 //! question.
 //!
+//! **One value is judged again on the way out**, because its type does not
+//! promise what its name says. `alo_models::Provider` has public fields, so a
+//! surface can hand [`Choosing::adding`] or [`Choosing::changing`] a provider
+//! that `Provider::checked` never made — an address over `http://` to somewhere
+//! on the person's own network, most often. `crate::holding` asks that crate's
+//! rule again in `crate::writing`, which every door here goes through, so an
+//! address that is not https is refused before a byte is written and in
+//! `alo-models`' own words, whichever door it arrived at.
+//!
 //! # A change is applied to a copy
 //!
 //! Every door builds the changed settings, writes **those** whole, and only
@@ -216,6 +225,54 @@ impl Choosing {
                 at: self.at.clone(),
                 why,
             })?;
+        let changed = self.with(
+            self.settings.chosen().cloned(),
+            self.settings.brought().clone(),
+            providers,
+            self.settings.languages().to_vec(),
+            self.settings.setup(),
+        )?;
+        self.apply(changed)
+    }
+
+    /// **A provider this person already has, replaced by this one.**
+    ///
+    /// Matched by name, the way the list matches it — case does not count —
+    /// and replaced where it stands rather than removed and added, so the order
+    /// a person added their providers in is still the order of their file. A
+    /// choice naming this provider still names it afterwards, because the name
+    /// is what a choice holds.
+    ///
+    /// **A provider the list does not have is refused, not added.** *Change*
+    /// and *add* are two different things a person did, and a surface that
+    /// quietly added under a button that said *change* would be this crate
+    /// deciding what they meant.
+    ///
+    /// What the address may be is `alo_models::Provider::checked`'s rule, and
+    /// it is asked again on the way to the disk (`crate::holding`): a change
+    /// that turned an https address into an http one to anywhere but this
+    /// machine is refused in that crate's words, and the file is byte for byte
+    /// what it was.
+    ///
+    /// # Errors
+    ///
+    /// [`NotWritten::NothingToChange`] when the list has no provider of that
+    /// name; [`NotWritten::NotAProvider`] when the provider is one
+    /// `alo-models` would not have made; and the three the other doors share.
+    pub fn changing(&mut self, provider: Provider) -> Result<(), NotWritten> {
+        let mut providers = self.settings.providers().clone();
+        let named = provider.name.trim();
+        let Some(slot) = providers
+            .configured
+            .iter_mut()
+            .find(|had| had.name.eq_ignore_ascii_case(named))
+        else {
+            return Err(NotWritten::NothingToChange {
+                at: self.at.clone(),
+                provider: provider.name,
+            });
+        };
+        *slot = provider;
         let changed = self.with(
             self.settings.chosen().cloned(),
             self.settings.brought().clone(),
@@ -559,6 +616,218 @@ mod tests {
         );
         assert_eq!(std::fs::read_to_string(&at).unwrap(), before);
         assert_eq!(choosing.settings().brought().weights.len(), 1);
+    }
+
+    /// A provider built the way nothing should build one: by hand, from the
+    /// public fields, with an address `Provider::checked` never saw.
+    fn by_hand(name: &str, endpoint: &str) -> Provider {
+        Provider {
+            name: name.to_owned(),
+            endpoint: endpoint.to_owned(),
+            region: Region::Unknown,
+            key: Some(crate::written::a_key_for(name)),
+            models: Vec::new(),
+        }
+    }
+
+    /// **A provider whose address is not https is refused before anything is
+    /// written**, on a machine with no file yet — the first thing a person
+    /// adds — and the refusal is `alo-models`' own sentence rather than a
+    /// fault in alo OS. The value went past `Provider::checked`, which is the
+    /// case the round trip used to catch with the wrong words.
+    #[test]
+    fn adding_a_provider_whose_address_is_not_https_writes_nothing() {
+        let at = a_machine_nobody_has_configured("not-https");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        let refused = choosing
+            .adding(by_hand("Somewhere", "http://api.example.com"))
+            .unwrap_err();
+
+        assert!(
+            matches!(
+                refused,
+                NotWritten::NotAProvider {
+                    why: alo_models::ProviderError::InsecureEndpoint,
+                    ..
+                }
+            ),
+            "{refused:?}"
+        );
+        assert!(!at.exists(), "a refused provider wrote a file");
+        assert!(choosing.settings().providers().configured.is_empty());
+        let said = refused.said(&crate::testing::in_english());
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("https"), "{said}");
+    }
+
+    /// **And on a machine with settings already, the file is byte for byte
+    /// what it was** — the provider that was there is still the only one, and
+    /// the choice made before is still in force.
+    #[test]
+    fn adding_a_provider_whose_address_is_not_https_leaves_the_file_byte_for_byte() {
+        let at = a_machine_nobody_has_configured("not-https-kept");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing.adding(a_provider("Mistral")).unwrap();
+        choosing
+            .answered_by(Some(
+                Picked::from_a_provider("Mistral", "mistral-small-latest").unwrap(),
+            ))
+            .unwrap();
+        let before = std::fs::read_to_string(&at).unwrap();
+
+        for endpoint in [
+            "http://192.168.1.10:11434",
+            "http://10.0.0.5/v1",
+            "http://nas.local:8080",
+            "ftp://api.example.com",
+            "api.example.com",
+        ] {
+            let refused = choosing.adding(by_hand("Somewhere", endpoint)).unwrap_err();
+            assert!(
+                matches!(refused, NotWritten::NotAProvider { .. }),
+                "{endpoint}: {refused:?}"
+            );
+            assert_eq!(std::fs::read_to_string(&at).unwrap(), before, "{endpoint}");
+        }
+        assert_eq!(choosing.settings().providers().configured.len(), 1);
+        assert_eq!(
+            choosing.settings().chosen().unwrap().provider(),
+            Some("Mistral")
+        );
+    }
+
+    /// **A service on this machine is accepted on any scheme**, which is the
+    /// one exception and is ADR 0021's own case: nothing travels a wire.
+    #[test]
+    fn a_service_on_this_machine_is_accepted_on_any_scheme() {
+        let at = a_machine_nobody_has_configured("loopback");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        for (name, endpoint) in [
+            ("Four", "http://127.0.0.1:11434"),
+            ("Six", "http://[::1]:8080"),
+            ("Named", "http://localhost:8000/v1"),
+            ("Secure", "https://localhost:8443"),
+        ] {
+            choosing
+                .adding(Provider::checked(name, endpoint, Region::Unknown, None).unwrap())
+                .unwrap();
+        }
+
+        let read = Settings::at(&at).unwrap();
+        assert_eq!(read.providers().configured.len(), 4);
+        assert_eq!(
+            read.providers().get("Named").unwrap().endpoint,
+            "http://localhost:8000/v1"
+        );
+    }
+
+    /// **A provider changed to an address that is not https is refused the
+    /// same way**, and the provider keeps the address it had. This is the
+    /// case the sentence in `docs/features.md` is written against: somebody
+    /// editing a working provider to point at *only our internal network*.
+    #[test]
+    fn changing_a_provider_to_an_address_that_is_not_https_leaves_it_as_it_was() {
+        let at = a_machine_nobody_has_configured("changed-to-http");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing.adding(a_provider("Mistral")).unwrap();
+        let before = std::fs::read_to_string(&at).unwrap();
+
+        let refused = choosing
+            .changing(by_hand("Mistral", "http://192.168.1.10:8080"))
+            .unwrap_err();
+
+        assert!(
+            matches!(
+                refused,
+                NotWritten::NotAProvider {
+                    why: alo_models::ProviderError::InsecureEndpoint,
+                    ..
+                }
+            ),
+            "{refused:?}"
+        );
+        assert_eq!(std::fs::read_to_string(&at).unwrap(), before);
+        assert_eq!(
+            choosing
+                .settings()
+                .providers()
+                .get("Mistral")
+                .unwrap()
+                .endpoint,
+            "https://api.mistral.ai"
+        );
+    }
+
+    /// **A provider changed reads back changed, where it stood**, and a choice
+    /// naming it still does.
+    #[test]
+    fn a_provider_changed_reads_back_changed_where_it_stood() {
+        let at = a_machine_nobody_has_configured("changed");
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing.adding(a_provider("First")).unwrap();
+        choosing.adding(a_provider("Mistral")).unwrap();
+        choosing.adding(a_provider("Last")).unwrap();
+        choosing
+            .answered_by(Some(
+                Picked::from_a_provider("Mistral", "mistral-small-latest").unwrap(),
+            ))
+            .unwrap();
+
+        choosing
+            .changing(
+                Provider::checked(
+                    "mistral",
+                    "https://api.example.fr/v1",
+                    Region::Declared("France".to_owned()),
+                    Some(crate::written::a_key_for("mistral")),
+                )
+                .unwrap(),
+            )
+            .unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        let names: Vec<&str> = read
+            .providers()
+            .configured
+            .iter()
+            .map(|provider| provider.name.as_str())
+            .collect();
+        assert_eq!(names, ["First", "mistral", "Last"]);
+        assert_eq!(
+            read.provider().unwrap().endpoint,
+            "https://api.example.fr/v1"
+        );
+        assert_eq!(
+            read.provider().unwrap().region,
+            Region::Declared("France".to_owned())
+        );
+        assert_eq!(*choosing.settings(), read);
+    }
+
+    /// **Changing a provider the list does not have is refused rather than
+    /// added**, and nothing is written.
+    #[test]
+    fn changing_a_provider_nobody_added_is_refused_rather_than_added() {
+        let at = a_machine_nobody_has_configured("nothing-to-change");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        let refused = choosing.changing(a_provider("Mistral")).unwrap_err();
+
+        assert!(
+            matches!(&refused, NotWritten::NothingToChange { provider, .. } if provider == "Mistral"),
+            "{refused:?}"
+        );
+        assert!(!at.exists(), "a refused change wrote a file");
+        let said = refused.said(&crate::testing::in_english());
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("Mistral"), "{said}");
+        assert!(
+            said.text()
+                .contains("nothing in your settings has been changed"),
+            "{said}"
+        );
     }
 
     /// **The same provider name twice is refused**, for the reason an answer

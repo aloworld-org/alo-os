@@ -335,9 +335,29 @@ guessing at a language from a file it has just refused to believe.
 A settings panel does not compose this file as text. `alo_choosing::Choosing`
 takes a path, holds what the file at it says, and has one door per thing
 ADR 0016 gives the person: what answers their questions, weights they brought, a
-provider they added, and the languages they read. Every door takes a value some
-crate has already checked — there is no door that takes text, and none that
-takes a fragment of this file.
+provider they added, a provider they changed, and the languages they read. Every
+door takes a value some crate has already checked — there is no door that takes
+text, and none that takes a fragment of this file.
+
+**A provider's address is judged again at the write, whichever door it came
+through.** `alo_models::Provider` has public fields, so a surface can hold one
+that `Provider::checked` never made — most often a working provider whose
+address somebody edited to `http://` on their own network. The writer asks
+`alo-models`' rule again before a byte is written: an address that is not
+`https://` is refused unless it is a service on this machine (`127.0.0.1`,
+`::1`, `localhost` — the one exception, on any scheme), and the person reads
+that crate's own sentence, *use https, or a service on this machine*. An
+address on the machine's own network is not an exception; *it is only our
+internal network* is the sentence the rule is written against. There is no
+list of permitted hostnames and no environment variable that turns it off. A
+file written before this rule is read exactly as it always was and is never
+rewritten behind the person; the refusal is at the next write.
+
+**Changing a provider replaces it where it stands.** It is matched by name, the
+way the list matches — case does not count — and keeps its place in the file,
+so the order providers were added in is still the order of `[[provider]]`. A
+provider the list does not have is refused rather than added, because *change*
+and *add* are two different things a person did.
 
 **Whole or not at all.** The change is applied to a copy of the settings, the
 copy is written to a sibling file and renamed over the real one, and only then
