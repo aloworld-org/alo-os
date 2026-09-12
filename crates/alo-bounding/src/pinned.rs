@@ -16,7 +16,8 @@
 //!   ├─ inode_unlink          0600 root:root                 what it removes
 //!   ├─ inode_link            0600 root:root                 what it links
 //!   ├─ socket_connect        0600 root:root                 where it connects
-//!   └─ socket_sendmsg        0600 root:root                 what it sends
+//!   ├─ socket_sendmsg        0600 root:root                 what it sends
+//!   └─ file_permission       0600 root:root                 what it reads and writes
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -34,11 +35,11 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! The six named after kernel functions are the pinned links, and they are what
-//! keeps the programme attached after the loader has exited. Removing one
-//! detaches that hook; nothing else does. There are six because the programme
-//! sits on six hooks — what a turn opens, moves, removes, links, connects to
-//! and sends — and each attach is its own link.
+//! The seven named after kernel functions are the pinned links, and they are
+//! what keeps the programme attached after the loader has exited. Removing one
+//! detaches that hook; nothing else does. There are seven because the
+//! programme sits on seven hooks — what a turn opens, moves, removes, links,
+//! connects to, sends, and reads and writes — and each attach is its own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
 //!
@@ -95,6 +96,9 @@ const THE_DEPARTURE_HOOK: &str = "socket_connect";
 /// The pinned link for the hook every message goes through.
 const THE_MESSAGE_HOOK: &str = "socket_sendmsg";
 
+/// The pinned link for the hook every read and every write goes through.
+const THE_USE_HOOK: &str = "file_permission";
+
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
 
@@ -133,6 +137,9 @@ pub struct Pinned {
 
     /// The link that holds it on `socket_sendmsg`.
     message_hook: PathBuf,
+
+    /// The link that holds it on `file_permission`.
+    use_hook: PathBuf,
 }
 
 impl Pinned {
@@ -144,7 +151,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is nine paths joined, and every other
+    /// Nothing is made or looked at: this is ten paths joined, and every other
     /// method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -158,6 +165,7 @@ impl Pinned {
             link_hook: root.join(THE_LINK_HOOK),
             departure_hook: root.join(THE_DEPARTURE_HOOK),
             message_hook: root.join(THE_MESSAGE_HOOK),
+            use_hook: root.join(THE_USE_HOOK),
         }
     }
 
@@ -215,6 +223,13 @@ impl Pinned {
         &self.message_hook
     }
 
+    /// The link for the hook every read and every write goes
+    /// through.
+    #[must_use]
+    pub fn use_hook(&self) -> &Path {
+        &self.use_hook
+    }
+
     /// Every pinned link, in the order the hooks are attached.
     ///
     /// One list so that attaching, refusing over leftovers and taking a
@@ -222,7 +237,7 @@ impl Pinned {
     /// pin was left out of one of those three would be a hook that stayed
     /// attached after the boundary was removed.
     #[must_use]
-    pub fn every_hook(&self) -> [&Path; 6] {
+    pub fn every_hook(&self) -> [&Path; 7] {
         [
             &self.hook,
             &self.rename_hook,
@@ -230,6 +245,7 @@ impl Pinned {
             &self.link_hook,
             &self.departure_hook,
             &self.message_hook,
+            &self.use_hook,
         ]
     }
 
@@ -398,11 +414,15 @@ mod tests {
             pinned.message_hook(),
             Path::new("/sys/fs/bpf/alo/socket_sendmsg")
         );
+        assert_eq!(
+            pinned.use_hook(),
+            Path::new("/sys/fs/bpf/alo/file_permission")
+        );
         // Every hook has a pin of its own, and the list is what the loader
         // attaches in the order of: a hook missing from it would be attached
         // and never pinned, which is a hook detached the moment the loader
         // exits.
-        assert_eq!(pinned.every_hook().len(), 6);
+        assert_eq!(pinned.every_hook().len(), 7);
     }
 
     /// The directory is made shut: root owns it, the agent's group may enter

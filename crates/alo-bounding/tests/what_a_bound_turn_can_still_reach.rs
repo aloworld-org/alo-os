@@ -330,9 +330,12 @@ fn next_line_from(saying: &mut BufReader<std::process::ChildStdout>) -> String {
 /// connection, because that happened outside the turn, and heard nothing.
 ///
 /// Until 2026-09-12 this asserted the opposite, and it was the network's
-/// version of the already-open-descriptor gap. A file descriptor opened before
-/// a turn began is still inside no boundary; a socket no longer is, because a
-/// message has a destination and a read has none.
+/// version of the already-open-descriptor gap. A socket was the first of the
+/// two to be closed, because a message has a destination and a read has none;
+/// a file descriptor opened before a turn began followed the same day, decided
+/// by `file_permission` on every use — `what_a_turn_inherits.rs` holds that
+/// half, and this file holds the sockets: `a socket already connected` is the
+/// row of that table that lives here.
 #[test]
 fn a_connection_made_before_the_boundary_is_refused_inside_it() {
     let (server, listening) = a_server_at(our_own_address());

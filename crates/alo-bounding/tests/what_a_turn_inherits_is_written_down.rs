@@ -6,34 +6,40 @@
 //! somebody auditing the boundary can find the account, and that the account is
 //! still true of the machine.
 //!
-//! # Why a documented limit needs a test at all
+//! # Why a closed gap needs a test at all
 //!
-//! `the_unwatched_mutations_are_written_down.rs` makes the argument and it is
-//! the same one here: a gap that is written down stops being a gap when somebody
-//! closes it, and nothing about closing it makes the paragraph change.
-//! Documentation of a security limit rots in the direction of understating the
-//! protection, which is the direction nobody checks.
+//! `the_unwatched_mutations_are_written_down.rs` makes the argument for a gap
+//! that is open: documentation of a security limit rots in the direction of
+//! understating the protection, which is the direction nobody checks. A gap
+//! that has been **closed** rots the other way, and it is worse. The entry says
+//! the kernel decides about every read and write; if the hook that makes that
+//! true ever leaves the programme — a merge, a rename, a loader built from an
+//! older source — the entry goes on saying it, and what is left is a document
+//! telling the next person that contents cannot leave a grant when they can.
 //!
-//! This one rots in a second direction as well, and it is worse. The entry says
-//! **what would close this and why neither half is a patch** — a hook on every
-//! read, or a turn that is a process of its own. If either arrives and the entry
-//! does not move, what is left is a document telling the next person that a
-//! decision is still open when it has been taken.
+//! And the entry names the one thing the closure leaves open, a mapping, with
+//! the hook that would close it. If that hook arrives and the entry does not
+//! move, the document understates the boundary again.
 //!
 //! So the table in `docs/quirks.md` is parsed rather than admired, and held to
-//! five things:
+//! six things:
 //!
-//! - **Neither hook that would close this is on the programme.** They are read
-//!   out of `crates/alo-bounding-kernel/src/kernel.rs`, where hooks are declared.
-//! - **The entry names both of them**, because *what would close it* is the half
-//!   of a documented limit that turns it into work rather than a shrug.
-//! - **Every row says what the inherited thing does not permit.** A row that only
-//!   said what a turn can do would be a list of holes with no floor under it, and
-//!   the floor is what makes this a gap rather than an absence of a boundary.
+//! - **The hook that decides about a descriptor is on the programme.** Read
+//!   out of `crates/alo-bounding-kernel/src/kernel.rs`, where hooks are
+//!   declared, and the entry names it.
+//! - **The hook that would close what is left is not on the programme**, and
+//!   the entry names it too, because *what would close it* is the half of a
+//!   documented limit that turns it into work rather than a shrug.
+//! - **Every row says what the boundary refuses the inherited thing**, at
+//!   length. A row that only said what a turn can still do would be a list
+//!   with no boundary in it.
+//! - **Every row says what it still permits**, because a hook that refused
+//!   every descriptor would pass every refusal in the other file and break
+//!   the daemon, and the permitted half is what says it does not.
 //! - **Every row names a release `docs/features.md` knows.**
 //! - **Every row is reproduced**, in the file the row itself names, against a
-//!   running kernel. A row nothing reproduces is a claim about a machine nobody
-//!   asked.
+//!   running kernel. A row nothing reproduces is a claim about a machine
+//!   nobody asked.
 //!
 //! # It needs no kernel
 //!
@@ -54,7 +60,7 @@ use std::{
 };
 
 /// The heading of the entry in `docs/quirks.md` that carries the account.
-const THE_ENTRY: &str = "### A descriptor opened before a turn began is inside no boundary";
+const THE_ENTRY: &str = "### A descriptor opened before a turn began is decided about on every use";
 
 /// The phrase the two files somebody auditing this boundary's code reads must
 /// carry, so the account cannot live only in a document they are not reading.
@@ -78,15 +84,22 @@ const WHERE_IT_ALSO_BELONGS: &[&str] = &[
     "crates/alo-bounding/src/lib.rs",
 ];
 
-/// The hooks that decide about a descriptor rather than about an open, which
-/// are the two that would close this gap in the kernel.
+/// The hook that decides about a descriptor rather than about an open, which
+/// is the one that closed this gap and has to stay on the programme for the
+/// entry to be true.
 ///
-/// `file_permission` fires on every read and every write; `file_receive` fires
-/// when a descriptor arrives from somewhere else. Written out rather than
-/// counted, for the reason `the_boundary_decides_and_forgets` names its two
-/// maps: either of these arriving is a change to what this boundary *is*, and it
-/// should arrive with somebody looking at it.
-const WOULD_CLOSE_IT: &[&str] = &["file_permission", "file_receive"];
+/// `file_permission` fires on every read and every write. Written out rather
+/// than counted, for the reason `the_boundary_decides_and_forgets` names its
+/// two maps: this hook leaving is a change to what the boundary *is*, and it
+/// should leave with somebody looking at it.
+const DECIDES_IT: &str = "file_permission";
+
+/// The hook that would close what the closure leaves open: a mapping of a
+/// file, which is read by the processor rather than by a syscall.
+///
+/// Not on the programme, and the entry has to say why. If it arrives, the
+/// entry has to move with it.
+const STILL_OPEN: &str = "mmap_file";
 
 /// What a turn inherits on this machine, as an exact list.
 ///
@@ -95,15 +108,18 @@ const WOULD_CLOSE_IT: &[&str] = &["file_permission", "file_receive"];
 /// green over an account it had stopped checking, and a row somebody removed is
 /// a claim about the daemon that should arrive with a person looking at it.
 ///
-/// `a socket already connected` was the fifth row until 2026-09-12, when
-/// `socket_sendmsg` closed it: a socket inherited into a turn is decided about
-/// on every message, so it is no longer something a turn inherits the use of.
-/// It left this list with a person looking at it, which is what the list is
-/// for.
+/// `a socket already connected` left this list on 2026-09-12 when
+/// `socket_sendmsg` decided about it, and came back the same day when
+/// `file_permission` closed the rest: the table is now what the boundary says
+/// about each inherited thing rather than what it does not, and a socket is
+/// the one it says something different about.
 const EVERY_ROW: &[&str] = &[
     "a file open for reading",
+    "a file open for writing",
     "a file open for appending",
     "a directory descriptor",
+    "a socket already connected",
+    "a pipe",
     "the way out of a turn",
 ];
 
@@ -113,16 +129,16 @@ struct Inherited {
     /// What it is.
     what: String,
 
-    /// What it permits inside the boundary.
+    /// What the boundary refuses it now.
+    refuses: String,
+
+    /// What it still permits, which is the half that keeps the daemon working.
     permits: String,
 
-    /// What it still does not permit, which is the floor under the gap.
-    does_not: String,
-
-    /// The test file that reproduces it against a running kernel.
+    /// The test file that reproduces both against a running kernel.
     reproduced_in: String,
 
-    /// The release that owns closing it.
+    /// The release that owns it.
     release: String,
 }
 
@@ -186,7 +202,7 @@ fn the_table_in(section: &str) -> Vec<Inherited> {
             .split('|')
             .map(str::trim)
             .collect();
-        let [what, permits, does_not, reproduced_in, release] = cells.as_slice() else {
+        let [what, refuses, permits, reproduced_in, release] = cells.as_slice() else {
             continue;
         };
         let Some(what) = what.strip_prefix('`').and_then(|it| it.strip_suffix('`')) else {
@@ -194,8 +210,8 @@ fn the_table_in(section: &str) -> Vec<Inherited> {
         };
         rows.push(Inherited {
             what: what.to_owned(),
+            refuses: (*refuses).to_owned(),
             permits: (*permits).to_owned(),
-            does_not: (*does_not).to_owned(),
             reproduced_in: reproduced_in.trim_matches('`').to_owned(),
             release: (*release).to_owned(),
         });
@@ -203,9 +219,10 @@ fn the_table_in(section: &str) -> Vec<Inherited> {
     rows
 }
 
-/// How much of an answer *what this still does not permit* has to be.
+/// How much of an answer *what the boundary refuses it* and *what it still
+/// permits* each have to be.
 ///
-/// A row saying `nothing much` would pass every other check here. This is not a
+/// A row saying `everything` would pass every other check here. This is not a
 /// judge of the sentence — nothing mechanical can be — it is the floor beneath
 /// one, and the reader of the table is the real check.
 const AN_ANSWER: usize = 60;
@@ -236,37 +253,56 @@ fn whether_it_is_written_down(
         ));
     }
 
-    for hook in WOULD_CLOSE_IT {
-        if watched.contains(*hook) {
-            return Err(format!(
-                "the programme now has a hook `{hook}`, and {THE_ACCOUNT} still says a descriptor \
-                 opened before a turn began is inside no boundary. Come to that entry: say what \
-                 the hook decides, move the rows it closes out of the table, and change the \
-                 reproductions that assert today's behaviour"
-            ));
-        }
-        if !entry.contains(*hook) {
-            return Err(format!(
-                "the entry does not name `{hook}`, which is one of the two hooks that would close \
-                 this. What would close a documented limit is the half that turns it into work \
-                 rather than a shrug"
-            ));
-        }
+    if !watched.contains(DECIDES_IT) {
+        return Err(format!(
+            "the programme no longer has a hook `{DECIDES_IT}`, and {THE_ACCOUNT} still says a \
+             descriptor opened before a turn began is decided about on every use. That hook is \
+             what stops contents leaving a grant through a descriptor that already existed; if \
+             it went on purpose, come to that entry and say what decides now"
+        ));
+    }
+    if !entry.contains(DECIDES_IT) {
+        return Err(format!(
+            "the entry does not name `{DECIDES_IT}`, which is the hook that decides about a \
+             descriptor after it is opened. An account of a closed gap has to say what closed it"
+        ));
+    }
+    if watched.contains(STILL_OPEN) {
+        return Err(format!(
+            "the programme now has a hook `{STILL_OPEN}`, and {THE_ACCOUNT} still says a mapping \
+             of a file is not decided about. Come to that entry: say what the hook decides, and \
+             reproduce it — by hand if the suite still cannot"
+        ));
+    }
+    if !entry.contains(STILL_OPEN) {
+        return Err(format!(
+            "the entry does not name `{STILL_OPEN}`, which is what this closure leaves open. What \
+             would close a documented limit is the half that turns it into work rather than a \
+             shrug"
+        ));
     }
 
     for row in rows {
-        if row.permits.is_empty() || row.does_not.len() < AN_ANSWER {
+        if row.refuses.len() < AN_ANSWER {
             return Err(format!(
-                "`{}` is listed without saying what it still does not permit. That sentence is \
-                 the floor under the gap, and a list of holes with no floor under it is not an \
-                 account of a boundary",
+                "`{}` is listed without saying what the boundary refuses it. That sentence is \
+                 the boundary, and a list of inherited things with no refusal beside them is not \
+                 an account of one",
+                row.what
+            ));
+        }
+        if row.permits.len() < AN_ANSWER {
+            return Err(format!(
+                "`{}` is listed without saying what it still permits. A hook that refused every \
+                 descriptor would pass every refusal and break the daemon; the permitted half is \
+                 what says it does not",
                 row.what
             ));
         }
         if !releases.contains(&format!("[{}]", row.release)) {
             return Err(format!(
                 "`{}` names the release `{}`, and {THE_RELEASES} has no such tier. Which release \
-                 owns closing a limit is what makes it work rather than a shrug",
+                 owns a boundary is what makes it a promise rather than a change",
                 row.what, row.release
             ));
         }
@@ -292,8 +328,8 @@ fn whether_it_is_written_down(
 /// **The account is still true, complete, and somewhere an auditor will find
 /// it.**
 ///
-/// Everything this repository says about what a turn inherits, read out of the
-/// files that say it and compared against the programme that decides.
+/// Everything this repository says about what a turn inherits, read out of
+/// the files that say it and compared against the programme that decides.
 #[test]
 fn what_a_turn_inherits_is_written_down_where_an_auditor_will_find_it() {
     let watched = hooks_declared_in(&reading(THE_PROGRAMME));
@@ -324,11 +360,17 @@ fn what_a_turn_inherits_is_written_down_where_an_auditor_will_find_it() {
     );
 
     for named in WHERE_IT_ALSO_BELONGS {
+        let text = reading(named);
         assert!(
-            reading(named).contains(THE_SUBJECT),
+            text.contains(THE_SUBJECT),
             "{named} does not mention what a turn inherits, and it is one of the two files \
              somebody auditing this boundary's code reads. An account that lives only in \
              {THE_ACCOUNT} is an account the person reading the crate never sees"
+        );
+        assert!(
+            text.contains(DECIDES_IT) && text.contains(STILL_OPEN),
+            "{named} does not name both `{DECIDES_IT}` and `{STILL_OPEN}`, and somebody reading \
+             the code is owed what decides about a descriptor and what still does not"
         );
     }
 }
@@ -341,17 +383,22 @@ fn what_a_turn_inherits_is_written_down_where_an_auditor_will_find_it() {
 /// put in front of it here.
 #[test]
 fn the_check_catches_an_account_that_has_stopped_being_true() {
-    let watched: BTreeSet<String> = ["file_open".to_owned()].into_iter().collect();
+    let watched: BTreeSet<String> = ["file_open", "file_permission"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
     let sound = |what: &str| Inherited {
         what: what.to_owned(),
-        permits: "every byte of it".to_owned(),
-        does_not: "it cannot be reopened by name, and the name the kernel gives it does not turn \
-                   it back into an open"
+        refuses: "the first byte, with EACCES, and nothing of the file reaches the folder the \
+                  turn was granted"
+            .to_owned(),
+        permits: "the descriptor stays valid, and the same descriptor to a file inside the grant \
+                  is read through as it always was"
             .to_owned(),
         reproduced_in: "what_a_turn_inherits.rs".to_owned(),
         release: "v0.5".to_owned(),
     };
-    let entry = "file_permission fires on every read and file_receive on a descriptor arriving";
+    let entry = "file_permission decides on every read and write; mmap_file is not hooked";
     let releases = "**[v0.01]** = it boots · **[v0.5]** = a person can work on it";
     let reproducing = |named: &str| {
         (named == "what_a_turn_inherits.rs")
@@ -370,51 +417,85 @@ fn the_check_catches_an_account_that_has_stopped_being_true() {
         "a sound account was refused, so the refusals below say nothing"
     );
 
-    // The one this test exists for: a hook that decides about a descriptor
-    // landed, and the entry still says none has.
-    let closed: BTreeSet<String> = ["file_open", "file_permission"]
-        .into_iter()
-        .map(str::to_owned)
-        .collect();
+    // The one this test exists for: the hook that decides about a descriptor
+    // is gone, and the entry still says it decides.
+    let unhooked: BTreeSet<String> = ["file_open".to_owned()].into_iter().collect();
     assert!(
         whether_it_is_written_down(
-            &closed,
+            &unhooked,
             &[sound("a file open for reading")],
             entry,
             releases,
             &reproducing
         )
-        .is_err_and(|why| why.contains("still says")),
-        "a programme that watches a descriptor after it is opened was accepted while the account \
-         said nothing does"
+        .is_err_and(|why| why.contains("no longer has")),
+        "a programme with no hook on reads and writes was accepted while the account said the \
+         kernel decides about every one"
     );
 
-    // An entry that no longer says what would close it, which is how a limit
-    // stops being work and becomes a shrug.
+    // The other direction: the hook that would close what is left arrived,
+    // and the entry still calls a mapping unwatched.
+    let mapped: BTreeSet<String> = ["file_open", "file_permission", "mmap_file"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+    assert!(
+        whether_it_is_written_down(
+            &mapped,
+            &[sound("a file open for reading")],
+            entry,
+            releases,
+            &reproducing
+        )
+        .is_err_and(|why| why.contains("now has a hook")),
+        "a programme that decides about a mapping was accepted while the account said none does"
+    );
+
+    // An entry that no longer says what decides, or what is left.
     assert!(
         whether_it_is_written_down(
             &watched,
             &[sound("a file open for reading")],
-            "there is no hook named here at all",
+            "mmap_file is not hooked, and nothing is said about what is",
             releases,
             &reproducing
         )
-        .is_err_and(|why| why.contains("would close this")),
-        "an entry that names neither hook that would close this was accepted"
+        .is_err_and(|why| why.contains("does not name `file_permission`")),
+        "an entry that does not say what closed the gap was accepted"
+    );
+    assert!(
+        whether_it_is_written_down(
+            &watched,
+            &[sound("a file open for reading")],
+            "file_permission decides, and nothing is said about what it leaves",
+            releases,
+            &reproducing
+        )
+        .is_err_and(|why| why.contains("does not name `mmap_file`")),
+        "an entry that does not say what the closure leaves open was accepted"
     );
 
-    // A row with no floor under it.
-    let vague = Inherited {
-        does_not: "nothing much".to_owned(),
+    // A row with no boundary in it, and one with no daemon left.
+    let toothless = Inherited {
+        refuses: "nothing much".to_owned(),
         ..sound("a file open for reading")
     };
     assert!(
-        whether_it_is_written_down(&watched, &[vague], entry, releases, &reproducing)
-            .is_err_and(|why| why.contains("does not permit")),
-        "a row that does not say what the inherited descriptor still cannot do was accepted"
+        whether_it_is_written_down(&watched, &[toothless], entry, releases, &reproducing)
+            .is_err_and(|why| why.contains("refuses it")),
+        "a row that does not say what the boundary refuses was accepted"
+    );
+    let total = Inherited {
+        permits: "nothing".to_owned(),
+        ..sound("a file open for reading")
+    };
+    assert!(
+        whether_it_is_written_down(&watched, &[total], entry, releases, &reproducing)
+            .is_err_and(|why| why.contains("still permits")),
+        "a row that does not say what the inherited descriptor can still do was accepted"
     );
 
-    // A release nobody has heard of, which is a limit nobody owns.
+    // A release nobody has heard of, which is a boundary nobody owns.
     let someday = Inherited {
         release: "later".to_owned(),
         ..sound("a file open for reading")
@@ -469,10 +550,10 @@ fn the_table_is_the_one_under_that_heading_and_no_other() {
 ## Filesystems and paths
 
 {THE_ENTRY}
-| What a turn inherits | What it permits | What it does not permit | Reproduced in | Release |
+| What a turn inherits | What the boundary refuses it now | What it still permits | Reproduced in | Release |
 |---|---|---|---|---|
-| `a file open for reading` | every byte | it cannot be reopened | `what_a_turn_inherits.rs` | v0.5 |
-| `a directory descriptor` | the handle stays valid | openat is still an open | `what_a_turn_inherits.rs` | v0.5 |
+| `a file open for reading` | the first byte | a descriptor inside the grant | `what_a_turn_inherits.rs` | v0.5 |
+| `a directory descriptor` | its listing | the handle stays valid | `what_a_turn_inherits.rs` | v0.5 |
 
 ### Something else entirely
 | `a file open for appending` | watched since tomorrow | never | `nowhere.rs` | v9 |
@@ -484,6 +565,11 @@ fn the_table_is_the_one_under_that_heading_and_no_other() {
         rows.iter().map(|row| row.what.as_str()).collect::<Vec<_>>(),
         ["a file open for reading", "a directory descriptor"],
         "the parser read a table that is not the account, or stopped reading part way through one"
+    );
+    assert_eq!(
+        rows.first().map(|row| row.refuses.as_str()),
+        Some("the first byte"),
+        "the refusal cell is not where the parser thinks it is"
     );
     assert_eq!(
         rows.first().map(|row| row.reproduced_in.as_str()),
@@ -507,21 +593,21 @@ fn the_table_is_the_one_under_that_heading_and_no_other() {
 
 /// And the hooks are read from the declaration rather than from a sentence
 /// about one — which matters more here than anywhere, because this entry's own
-/// prose names both hooks it is asserting the absence of.
+/// prose names the hook it asserts the absence of.
 #[test]
 fn the_hooks_are_read_from_where_they_are_declared() {
     let source = "\
-/// The hook is `file_permission` in a sentence, and this is not a declaration.
+/// The hook is `mmap_file` in a sentence, and this is not a declaration.
 #[lsm(hook = \"file_open\")]
 fn file_open(file: *const c_void) -> i32 {
-#[lsm(hook = \"socket_connect\")]
+#[lsm(hook = \"file_permission\")]
 ";
     assert_eq!(
         hooks_declared_in(source),
-        ["file_open".to_owned(), "socket_connect".to_owned()]
+        ["file_open".to_owned(), "file_permission".to_owned()]
             .into_iter()
             .collect::<BTreeSet<String>>(),
         "a hook named in prose was taken for one the programme has, which would make this test \
-         fail on the entry's own explanation of what would close it"
+         fail on the entry's own explanation of what is left open"
     );
 }

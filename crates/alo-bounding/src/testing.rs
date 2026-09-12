@@ -5,7 +5,7 @@
 //! machine, and a test that read the real one would pass or fail for reasons
 //! belonging to whoever built the kernel rather than to this repository.
 //!
-//! So this builds a small one — the structures with the thirteen members the
+//! So this builds a small one — the structures with the fourteen members the
 //! program looks for, in a layout chosen to be *wrong* in the ways a real
 //! kernel is inconvenient: a device number reached through two names before it
 //! is an integer, a member that is a structure rather than a pointer to one, a
@@ -69,9 +69,10 @@ enum Kernel {
 fn written(kernel: Kernel) -> Vec<u8> {
     let mut writing = Writing::new();
 
-    // Two integers, and the two names a device number hides behind.
+    // Three integers, and the two names a device number hides behind.
     let unsigned_int = writing.integer("unsigned int", 4);
     let unsigned_long = writing.integer("unsigned long", 8);
+    let unsigned_short = writing.integer("unsigned short", 2);
     let kernel_dev_t = writing.name_for("__kernel_dev_t", unsigned_int);
     let dev_t = writing.name_for("dev_t", kernel_dev_t);
 
@@ -106,7 +107,9 @@ fn written(kernel: Kernel) -> Vec<u8> {
         inode,
         "inode",
         600,
-        &[("i_mode", unsigned_int, 0), ("i_ino", inode_number, 32)],
+        // `i_mode` is `umode_t`, an `unsigned short`, and it opens the
+        // structure on a real kernel as it does here.
+        &[("i_mode", unsigned_short, 0), ("i_ino", inode_number, 32)],
     );
     writing.structure(
         super_block,
@@ -155,7 +158,6 @@ fn written(kernel: Kernel) -> Vec<u8> {
     // has. The fixture puts `__sk_common` eight bytes in rather than first,
     // where the real kernel keeps it, so that a path through a named member is
     // measured as a sum rather than passing because every part of it was zero.
-    let unsigned_short = writing.integer("unsigned short", 2);
     let be16 = writing.name_for("__be16", unsigned_short);
     let be32 = writing.name_for("__be32", unsigned_int);
     let void_pointer = writing.pointer_to(0);

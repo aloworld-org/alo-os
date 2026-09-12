@@ -68,29 +68,33 @@ fn the_kernel_half() -> &'static [u8] {
 /// The hooks the programme sits on, each called the same inside the compiled
 /// object as the kernel function it stands in front of.
 ///
-/// **Six of them**, and each was added because the ones before it were not
-/// enough on their own: `file_open` is what a turn *reads*, `inode_rename` what
-/// it *moves*, `inode_unlink` what it *removes*, `inode_link` what it gives a
-/// *second name*, `socket_connect` where it *goes*, and `socket_sendmsg` what
-/// it *sends* — on every message, because a socket joined before the turn
-/// began and a datagram sent without joining anything never pass a hook on
-/// the joining. A boundary watching only reads lets a file nobody granted be
-/// renamed or linked into a granted folder and read from there, with no step
-/// anything to complain about; a boundary watching only files lets everything
-/// it protected leave over a socket; a boundary watching only the joining lets
-/// it leave over a socket that was already joined. ADR 0015 named this shape
-/// in its own mechanism.
+/// **Seven of them**, and each was added because the ones before it were not
+/// enough on their own: `file_open` is what a turn *opens*, `inode_rename`
+/// what it *moves*, `inode_unlink` what it *removes*, `inode_link` what it
+/// gives a *second name*, `socket_connect` where it *goes*, `socket_sendmsg`
+/// what it *sends* — on every message, because a socket joined before the
+/// turn began and a datagram sent without joining anything never pass a hook
+/// on the joining — and `file_permission` what it *reads and writes*, on every
+/// use, because a descriptor opened before the turn began never passes a hook
+/// on the opening. A boundary watching only opens lets a file nobody granted
+/// be renamed or linked into a granted folder and read from there, with no
+/// step anything to complain about; a boundary watching only files lets
+/// everything it protected leave over a socket; a boundary watching only the
+/// joining lets it leave over a socket that was already joined; and a boundary
+/// watching only the opening lets a file that was already open be read whole.
+/// ADR 0015 named this shape in its own mechanism.
 ///
 /// The order is the order [`Pinned::every_hook`] gives their pins in, and that
 /// is not decoration: they are zipped together below, so a hook added to one
 /// list and not the other does not compile.
-const THE_HOOKS: [&str; 6] = [
+const THE_HOOKS: [&str; 7] = [
     "file_open",
     "inode_rename",
     "inode_unlink",
     "inode_link",
     "socket_connect",
     "socket_sendmsg",
+    "file_permission",
 ];
 
 /// The map of turns to the places each may reach.
@@ -176,7 +180,7 @@ impl Imposed {
 
     /// The fields this kernel was given, as the kernel now has them.
     ///
-    /// Every slot the map has rather than the thirteen that were filled, because
+    /// Every slot the map has rather than the fourteen that were filled, because
     /// the spare ones are exactly where a counter would sit: a programme that
     /// began keeping a tally of what it had seen would need somewhere to keep
     /// it, and an array it can already reach is the nearest somewhere there is.

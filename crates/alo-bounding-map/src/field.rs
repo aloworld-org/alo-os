@@ -1,8 +1,9 @@
 //! Where in the kernel's own structures the program has to look.
 //!
-//! A BPF program on `file_open` is handed a `struct file *` and nothing else.
-//! Everything the decision needs — which inode, on which filesystem, inside
-//! which directory — is reached by stepping through kernel structures whose
+//! A BPF program on `file_open` or `file_permission` is handed a
+//! `struct file *` and nothing else. Everything the decision needs — which
+//! inode, on which filesystem, inside which directory, and whether the file is
+//! a socket at all — is reached by stepping through kernel structures whose
 //! layout is decided when that kernel is compiled and is not the same on the
 //! next one. The program on `socket_sendmsg` is in the same position with a
 //! `struct socket *` and a `struct msghdr *`: who a socket is joined to sits
@@ -31,7 +32,9 @@
 /// The order is the order of the walk: from the file handed to the hook, down
 /// to the directory entry, and from there upwards and sideways into the inode
 /// and the filesystem. After those come the six the message hook reads, from
-/// the socket it was handed to the address of whoever is on the other end.
+/// the socket it was handed to the address of whoever is on the other end —
+/// and last the one field the read-and-write hook needs that the walk does
+/// not, which is what kind of file it was handed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
     /// `struct file`'s `f_path` — where the open's own path begins.
@@ -86,6 +89,16 @@ pub enum Field {
     /// `struct msghdr`'s `msg_name` — the address a message names, or null for
     /// a message that goes wherever the socket is already joined.
     MessageName,
+
+    /// `struct inode`'s `i_mode` — what kind of file this is, in the top four
+    /// bits, and its permission bits below them.
+    ///
+    /// Read by the hook on every read and write, and for one reason: a socket
+    /// is a file too, and a write on one is decided by `socket_sendmsg`, which
+    /// reads where the bytes are going. The read-and-write hook has to know
+    /// which kind it was handed so as to leave a socket to the hook that can
+    /// decide about it, and the kind is in the mode.
+    InodeMode,
 }
 
 impl Field {
@@ -93,7 +106,7 @@ impl Field {
     ///
     /// The loader walks this, so a field added here is a field looked up rather
     /// than a field silently left at zero.
-    pub const ALL: [Self; 13] = [
+    pub const ALL: [Self; 14] = [
         Self::FilePath,
         Self::PathDentry,
         Self::DentryParent,
@@ -107,6 +120,7 @@ impl Field {
         Self::SockAddress,
         Self::SockAddress6,
         Self::MessageName,
+        Self::InodeMode,
     ];
 
     /// The slot in the map this field's offset is written into and read out of.
@@ -126,6 +140,7 @@ impl Field {
             Self::SockAddress => 10,
             Self::SockAddress6 => 11,
             Self::MessageName => 12,
+            Self::InodeMode => 13,
         }
     }
 
@@ -136,7 +151,7 @@ impl Field {
             Self::FilePath => "file",
             Self::PathDentry => "path",
             Self::DentryParent | Self::DentryInode | Self::DentrySuper => "dentry",
-            Self::InodeNumber => "inode",
+            Self::InodeNumber | Self::InodeMode => "inode",
             Self::SuperDevice => "super_block",
             Self::SocketSock => "socket",
             Self::SockFamily | Self::SockPort | Self::SockAddress | Self::SockAddress6 => "sock",
@@ -170,6 +185,7 @@ impl Field {
             Self::SockAddress => "__sk_common.skc_daddr",
             Self::SockAddress6 => "__sk_common.skc_v6_daddr",
             Self::MessageName => "msg_name",
+            Self::InodeMode => "i_mode",
         }
     }
 
@@ -197,8 +213,9 @@ impl Field {
             // `dev_t`, which is thirty-two bits and has been since 2.6.
             Self::SuperDevice => 4,
             // A family and a port are both sixteen bits, in every `sockaddr`
-            // there is and in the socket that remembers them.
-            Self::SockFamily | Self::SockPort => 2,
+            // there is and in the socket that remembers them — and so is a
+            // mode, which is `umode_t`, an `unsigned short`.
+            Self::SockFamily | Self::SockPort | Self::InodeMode => 2,
             // A `__be32`, and a `struct in6_addr`.
             Self::SockAddress => 4,
             Self::SockAddress6 => 16,
@@ -215,7 +232,7 @@ mod tests {
     /// step through the beginning of a `struct file` and refuse everything.
     #[test]
     fn every_field_is_in_the_list_exactly_once() {
-        assert_eq!(Field::ALL.len(), 13);
+        assert_eq!(Field::ALL.len(), 14);
         for (slot, field) in Field::ALL.iter().enumerate() {
             assert_eq!(field.index() as usize, slot);
         }

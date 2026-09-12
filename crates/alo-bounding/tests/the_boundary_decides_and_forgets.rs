@@ -52,6 +52,7 @@
 
 use std::{
     env, fs,
+    io::{Read as _, Write as _},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -295,7 +296,21 @@ fn opening_everything_in(folder: &Path) -> usize {
     let mut opened = 0;
     for entry in fs::read_dir(folder).expect("the ordinary folder is there") {
         let entry = entry.expect("a directory entry can be read").path();
-        drop(fs::File::open(&entry).expect("an ordinary program can open its own files"));
+        // Opened, read and written, because since `file_permission` the
+        // programme runs on every read and write on the machine as well as on
+        // every open — and the day it kept a tally of any of them, this is
+        // where the tally would come from.
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .append(true)
+            .open(&entry)
+            .expect("an ordinary program can open its own files");
+        let mut held = String::new();
+        file.read_to_string(&mut held)
+            .expect("an ordinary program can read its own files");
+        file.write_all(b".")
+            .expect("an ordinary program can write its own files");
+        drop(file);
         opened += 1;
     }
     opened

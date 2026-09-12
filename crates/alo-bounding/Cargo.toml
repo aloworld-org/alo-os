@@ -26,12 +26,18 @@ thiserror = { workspace = true }
 # embeds.
 alo-bounding-map = { path = "../alo-bounding-map" }
 
-# Only for a test, and only to ask this kernel questions `std` has no spelling
-# for: what an `O_PATH` handle is to this boundary, which is what decided
-# whether `alo-files` could take one (queue item 6c). The crate itself uses none
-# of it, and the answer is in `docs/quirks.md` rather than only in the test.
+# One question `std` has no spelling for: which thread this is, as the kernel
+# numbers it. `inside.rs` needs it once per turn, because since `file_permission`
+# a turn's thread cannot write itself out of its boundary — a thread of the
+# service does it for it, and has to be told which thread to bring home.
+rustix = { workspace = true, features = ["thread"] }
+
+# The tests ask this kernel more questions `std` has no spelling for: what an
+# `O_PATH` handle is to this boundary (queue item 6c), and what reading a
+# directory through a descriptor that already existed comes to. The answers
+# are in `docs/quirks.md` rather than only in the tests.
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-rustix = { workspace = true }
+rustix = { workspace = true, features = ["thread"] }
 
 [lints]
 workspace = true

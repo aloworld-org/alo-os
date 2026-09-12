@@ -1,12 +1,27 @@
-//! What a turn inherits from the process it is a thread of, measured rather
-//! than assumed.
+//! What a turn inherits from the process it is a thread of, and what the
+//! boundary says about each of those things now — measured rather than
+//! assumed, and measured in the other direction until 2026-09-12.
 //!
 //! `what_a_bound_turn_can_still_change.rs` is the list of filesystem mutations
 //! no hook watches, and `what_a_bound_turn_can_still_reach.rs` is the network's.
-//! **This is the third list and it is not made of hooks at all**: a boundary on
-//! `file_open` decides at the moment of opening and says nothing afterwards, so
-//! every descriptor that existed before a turn began is a descriptor the
-//! boundary was never asked about.
+//! **This is the third list and it was not made of hooks at all**: a boundary
+//! on `file_open` decides at the moment of opening and says nothing afterwards,
+//! so every descriptor that existed before a turn began was a descriptor the
+//! boundary was never asked about. This file reproduced that — the same thread
+//! refused `open` on a private key and reading every byte of it through a
+//! descriptor that already existed, then writing what it read into the folder
+//! it *was* granted — and it was the one gap in this crate that moved contents
+//! past a grant.
+//!
+//! **Since 2026-09-12 the boundary is asked on every use.** `file_permission`
+//! runs on every read and write on the machine, asks whose thread is reading,
+//! and walks up from the file's own directory entry exactly as an open would;
+//! `crates/alo-bounding-kernel/src/deciding.rs` has the whole of it. So every
+//! assertion below that used to say *reaches* now says *refused*, with the
+//! number the kernel gave, and beside each of them is the use the same hook
+//! must not break: a descriptor to a file inside the grant, a listing of a
+//! folder inside it, and a socket, which is left to the hook that can read
+//! where its bytes are going.
 //!
 //! # Why this file uses the real door and not a child process
 //!
@@ -25,53 +40,65 @@
 //!
 //! # The rows this file reproduces, in the words the table uses
 //!
-//! - `a file open for reading` — every byte of it stays readable inside a turn
-//!   that is refused the same file by name, **and what it reads can be written
-//!   into the folder the turn was granted.** That is contents leaving a grant,
-//!   which is the one thing nothing on the unwatched-mutations list can do.
-//! - `a file open for appending` — the shape of the machine's own record, which
-//!   `alo_keeping::Writing` holds open for the life of the daemon. A turn can add
-//!   a line to it and cannot reopen it.
-//! - `a directory descriptor` — `openat` relative to one is still an open, so a
-//!   folder handle is not a key to what is in it.
-//! - `the way out of a turn` — `Turns::back` is `home/cgroup.threads`, opened
-//!   before the first turn ever ran because opening it from inside is an open the
-//!   boundary correctly refuses. This is not only a gap: it is the reason closing
-//!   the others is a decision rather than a patch, since a boundary that
-//!   re-decided about a descriptor at the moment it was *used* would refuse a
-//!   turn its own way out.
+//! - `a file open for reading` — refused the first byte, and nothing of it
+//!   reaches the folder the turn was granted. This is the row that moved
+//!   contents past a grant, and the one the hook exists for.
+//! - `a file open for writing` — refused, and the file is as it was.
+//! - `a file open for appending` — the shape of the machine's own record,
+//!   which `alo_keeping::Writing` holds open for the life of the daemon. A turn
+//!   used to be able to add a line to it; now it cannot, and it still cannot
+//!   reopen it.
+//! - `a directory descriptor` — `openat` relative to one is still an open and
+//!   still refused, and now listing it is refused too, while a descriptor to
+//!   a folder *inside* the grant lists as it always did.
+//! - `the way out of a turn` — `home/cgroup.threads`, which used to be written
+//!   by the turn's own thread through a descriptor opened before the first
+//!   turn ever ran. That write is refused now, and the turn ends anyway,
+//!   because a thread of the service that is not in a turn brings it home;
+//!   `crates/alo-bounding/src/inside.rs` has the arrangement. A verb with a
+//!   bug in it can no longer end its own boundary early.
+//! - `a socket already connected` — reproduced in
+//!   `what_a_bound_turn_can_still_reach.rs`, where `socket_sendmsg` closed it
+//!   first. What this file adds is the carve-out on the file hook: a write on
+//!   a Unix socket the daemon inherited is allowed *here*, so that the hook
+//!   that reads where a message is going is the one that decides about it.
+//! - `a pipe` — left alone, for the reason a Unix socket is: it holds no
+//!   contents of its own. Every sibling of this file that binds a child
+//!   process talks to it over one from inside the turn, which is how the
+//!   refusal of a pipe was found on the day the hook landed.
 //!
-//! The table used to have a fifth row, `a socket already connected`, reproduced
-//! in `what_a_bound_turn_can_still_reach.rs`. It is gone since 2026-09-12: a
-//! message has a destination where a read has none, so `socket_sendmsg` decides
-//! about an inherited socket on every write, and that file now holds the
-//! refusal where it held the gap.
+//! One thing measured here is not a row at all, because it was always a
+//! refusal: **the name the kernel gives a descriptor.** `/proc/self/fd/<n>` is
+//! how a descriptor becomes a path again, and an open through one is watched
+//! like any other — with the *granted* file reopened the same way as its
+//! control, because a boundary that refused everything under `/proc` would look
+//! identical and mean nothing.
 //!
-//! One thing measured here is not a row at all, because it is a refusal rather
-//! than a gap: **the name the kernel gives a descriptor.** `/proc/self/fd/<n>`
-//! is how a descriptor becomes a path again, and an open through one is watched
-//! like any other — with the *granted* file reopened the same way as its control,
-//! because a boundary that refused everything under `/proc` would look identical
-//! and mean nothing.
-//!
-//! `docs/quirks.md` carries the account with the release that owns closing each
-//! row, and `what_a_turn_inherits_is_written_down.rs` holds that table to this
-//! file and to the programme.
+//! And one thing is deliberately **not** measured here, because it cannot be
+//! honestly: a mapping. `mmap` of a file is `mmap_file`, not a read, and it is
+//! not hooked — but there is no safe spelling of `mmap` in Rust and `unsafe` is
+//! forbidden outside `alo-bounding-kernel`'s one file, so the committed suite
+//! cannot reproduce it. `docs/quirks.md` says so beside the table, and
+//! `what_a_turn_inherits_is_written_down.rs` holds that table to this file and
+//! to the programme.
 //!
 //! # The control comes first, and the legitimate open beside it
 //!
-//! A turn that read something proves nothing if the boundary was never applied.
-//! So every run below opens the file nobody granted — which must be refused with
-//! `EACCES` — and the file somebody did — which must be allowed — and no result
-//! is believed unless both happened.
+//! A turn that was refused something proves nothing if the boundary was
+//! refusing everything, and a turn that was allowed something proves nothing if
+//! the boundary was never applied. So every run below opens the file nobody
+//! granted — which must be refused with `EACCES` — and the file somebody did —
+//! which must be allowed — and no result is believed unless both happened.
 //!
 //! # Nothing is asserted from inside a turn
 //!
-//! `a_turn_is_this_thread.rs`'s rule, for the same reason: a failing assertion
-//! inside the boundary panics, a panic prints a backtrace, and a backtrace opens
-//! `/proc/self/maps` — an open outside the grant, refused, in the middle of
-//! reporting why something else went wrong. Everything here is gathered inside
-//! and judged outside.
+//! `a_turn_is_this_thread.rs`'s rule, for the same reason and one more: a
+//! failing assertion inside the boundary panics, a panic prints a backtrace, and
+//! a backtrace opens `/proc/self/maps` — an open outside the grant, refused, in
+//! the middle of reporting why something else went wrong. And since the kernel
+//! decides about descriptors too, the panic's own message to the terminal this
+//! test inherited is refused as well. Everything here is gathered inside and
+//! judged outside.
 //!
 //! # It needs root, a BPF filesystem, and a kernel that started the BPF LSM
 //!
@@ -88,7 +115,7 @@
 use std::{
     fs::{self, File, OpenOptions},
     io::{Read as _, Write as _},
-    os::fd::AsRawFd as _,
+    os::{fd::AsRawFd as _, unix::net::UnixStream},
     path::{Path, PathBuf},
 };
 
@@ -101,14 +128,33 @@ use on_this_kernel::AsAMachineHasIt;
 /// What is in the file nobody granted.
 const A_KEY: &str = "not a real key";
 
+/// What is in the file somebody did.
+const AN_INVOICE: &str = "an invoice";
+
 /// What the daemon had already written into the record.
 const A_LINE_THE_DAEMON_WROTE: &str = "{\"kept\":\"an execution nobody disputes\"}\n";
 
-/// What a turn adds to it through a descriptor nobody asked it about.
+/// What a turn tries to add to it through a descriptor nobody asked it about.
 const A_LINE_NO_VERB_WROTE: &str = "{\"kept\":\"an execution that never happened\"}\n";
+
+/// What a turn tries to put in a file it was never granted.
+const A_REPLACEMENT: &str = "a key somebody else chose";
+
+/// What a turn adds to the file it was granted, through a descriptor it
+/// inherited.
+const A_NOTE: &str = " — paid";
+
+/// What a turn says to the person, on the socket the daemon inherited.
+const AN_ANSWER: &[u8] = b"{\"answered\":\"from inside the turn\"}";
+
+/// What a bound child says to the test that is waiting for it.
+const A_WORD: &[u8] = b"alo: refused 13\n";
 
 /// The file a thread joins or leaves a control group by writing into.
 const THE_THREADS: &str = "cgroup.threads";
+
+/// `EACCES`, as every Unix numbers it.
+const REFUSED: i32 = 13;
 
 /// What one attempt came to.
 #[derive(Debug, PartialEq, Eq)]
@@ -133,6 +179,23 @@ fn opening(what: &Path) -> Outcome {
     went(File::open(what).map(drop))
 }
 
+/// Reads the first entry of a folder through a descriptor that already
+/// existed, and says what the machine made of it.
+///
+/// `getdents` and nothing else: [`rustix::fs::Dir::new`] takes the descriptor
+/// itself rather than reopening the folder through it, so the only thing the
+/// kernel is asked about is the read. A reopen would be an `open`, which is
+/// the sibling test's subject and not this one's.
+fn listing(folder: File) -> Outcome {
+    match rustix::fs::Dir::new(folder) {
+        Err(why) => Outcome::Refused(why.raw_os_error()),
+        Ok(mut entries) => match entries.next() {
+            Some(Err(why)) => Outcome::Refused(why.raw_os_error()),
+            Some(Ok(_)) | None => Outcome::Allowed,
+        },
+    }
+}
+
 /// What every run reports: the two that say the boundary was in force, and the
 /// two the test is actually about.
 #[derive(Debug)]
@@ -146,7 +209,7 @@ struct Went {
     /// What the inherited descriptor itself did.
     subject: Outcome,
 
-    /// What that descriptor could not be turned into.
+    /// What the same run measured beside it.
     after: Outcome,
 }
 
@@ -184,7 +247,7 @@ impl AMachine {
         let invoice = root.join("Invoices/march.pdf");
         let key = root.join("Private/id_ed25519");
         let record = root.join("record.jsonl");
-        fs::write(&invoice, b"an invoice").expect("a file can be written");
+        fs::write(&invoice, AN_INVOICE).expect("a file can be written");
         fs::write(&key, A_KEY).expect("a file can be written");
         fs::write(&record, A_LINE_THE_DAEMON_WROTE).expect("a file can be written");
         Self {
@@ -213,9 +276,9 @@ fn only(folder: &Path) -> Bounds {
 ///
 /// `beforehand` runs **outside** any boundary and produces whatever the turn
 /// will inherit; `inside` runs on this thread with the kernel deciding every
-/// open it makes, and answers with the two outcomes this test is about. The two
-/// that say the boundary was in force are taken here so that no test can forget
-/// them.
+/// open, read and write it makes, and answers with the two outcomes this test
+/// is about. The two that say the boundary was in force are taken here so that
+/// no test can forget them.
 ///
 /// The service's subtree is given back and its control group removed before this
 /// returns, whatever the test found: a run that left this process inside a
@@ -255,8 +318,8 @@ fn a_turn_that_inherited<T>(
             },
         )
         .expect(
-            "the turn can be bounded, and left again through the descriptor opened before it \
-             began — see the way-out test in this file",
+            "the turn can be bounded, and brought home again by a thread of the service that \
+             was never in it — see the way-out test in this file",
         );
 
     drop(held);
@@ -275,7 +338,7 @@ fn a_turn_that_inherited<T>(
 fn the_boundary_was_in_force(went: &Went) {
     assert_eq!(
         went.control,
-        Outcome::Refused(13),
+        Outcome::Refused(REFUSED),
         "the boundary was not in force, so nothing this turn did means anything"
     );
     assert_eq!(
@@ -292,29 +355,26 @@ fn holds(path: &Path) -> String {
         .unwrap_or_else(|why| panic!("{} is not readable: {why}", path.display()))
 }
 
-/// **A file opened before the turn began is readable inside it, whole — and
-/// what it reads can be written where the grant allows.**
+/// **A file opened before the turn began is refused inside it, at the first
+/// byte — and nothing of it reaches the folder the turn was granted.**
 ///
-/// The gap at its simplest, and then the thing that makes it matter. The same
-/// thread, in the same instant, is refused `open` on the private key with
-/// `EACCES` and reads every byte of it through a descriptor that already
-/// existed. `file_open` decided once, before there was a turn to decide about,
-/// and there is no second hook that asks again.
+/// The gap at its simplest, closed. Until 2026-09-12 this test asserted the
+/// opposite: the same thread, in the same instant, refused `open` on the
+/// private key with `EACCES` and reading every byte of it through a descriptor
+/// that already existed, then writing the key into the folder it *was* granted
+/// — where a `move_file` or an `archive_folder` could carry it onwards and
+/// where the record would name only a granted path. That was contents leaving
+/// a grant, the one thing nothing on the unwatched-mutations list can do, and
+/// the reason this was its own piece of work.
 ///
-/// **So an inherited descriptor is a way for contents to leave a grant**, which
-/// is the one property every unwatched filesystem mutation was measured against
-/// and found not to have. The turn writes the key into the folder it *was*
-/// granted, where a `move_file` or an `archive_folder` could carry it onwards
-/// and where the record would name only a granted path. Nothing in the list in
-/// `what_a_bound_turn_can_still_change.rs` does that; this does, and it is the
-/// reason this is its own piece of work rather than a row in that table.
-///
-/// Nothing alo OS ships hands a verb a descriptor — the six verbs take paths,
-/// and `alo-files` opens what it opens from inside the boundary. This is the
-/// floor under a verb with a bug in it, which is what ADR 0013 says the boundary
-/// is for, and the floor has a hole in it of exactly this shape.
+/// `file_permission` decides now, on the read, asked of the thread reading:
+/// the key's descriptor is walked up from the key's own directory entry, meets
+/// no granted place, and the read fails with `EACCES` before a byte has
+/// moved. The write into the granted folder is still allowed — it is the
+/// legitimate half, and what `archive_folder` does — and what it writes is
+/// nothing, because nothing was read.
 #[test]
-fn a_file_opened_before_the_turn_began_is_still_readable_inside_it() {
+fn a_file_opened_before_the_turn_began_is_refused_inside_it() {
     let machine = AMachine::with_something_worth_protecting("read");
     let copied = machine.granted.join("copied.txt");
     let mut said = String::new();
@@ -324,7 +384,8 @@ fn a_file_opened_before_the_turn_began_is_still_readable_inside_it() {
         |_, machine| File::open(&machine.key).expect("the key opens outside any turn"),
         |held, _| {
             let read = went(held.read_to_string(&mut said).map(drop));
-            // And out again, into the folder this turn really was granted.
+            // And whatever was read goes into the folder this turn really was
+            // granted, which is the write a verb legitimately makes.
             let out = went(fs::write(&copied, said.as_bytes()));
             (read, out)
         },
@@ -333,49 +394,154 @@ fn a_file_opened_before_the_turn_began_is_still_readable_inside_it() {
 
     assert_eq!(
         went.subject,
-        Outcome::Allowed,
-        "a read through an inherited descriptor was refused, which means something now decides \
-         about a descriptor after it is opened — say so in crates/alo-bounding/src/lib.rs and in \
-         the table in docs/quirks.md, and turn this into the refusal it should be"
+        Outcome::Refused(REFUSED),
+        "a turn read a file nobody granted through a descriptor that existed before the turn \
+         began, so the boundary decides only about opens again and contents can leave a grant \
+         — `file_permission` in crates/alo-bounding-kernel/src/kernel.rs is what stops it"
     );
     assert_eq!(
-        said, A_KEY,
-        "the read was allowed and produced something other than the file's contents, so this \
-         test is measuring something it is not named after"
+        said, "",
+        "the read was refused and still produced bytes, so a byte moved before the refusal"
     );
     assert_eq!(
         went.after,
         Outcome::Allowed,
         "a turn was refused a write inside the folder it was granted, which is what \
-         `archive_folder` does — a regression rather than a gap being reproduced"
+         `archive_folder` does — the hook is refusing the legitimate half as well"
     );
     assert_eq!(
         holds(&copied),
+        "",
+        "the contents of a file nobody granted reached the folder somebody did"
+    );
+    assert_eq!(holds(&machine.key), A_KEY, "the key was disturbed");
+
+    machine.taken_away();
+}
+
+/// **A file opened for writing before the turn began is refused a write inside
+/// it, and is as it was afterwards.**
+///
+/// The other direction of the same descriptor: a verb with a bug in it holding
+/// a writable handle to a file nobody granted could replace what is in it, and
+/// the record would say nothing. The write is refused with `EACCES`, the
+/// handle itself is still a handle — `fstat` asks no hook, and it is measured
+/// so that the refusal cannot be a descriptor that had gone stale — and the
+/// file still says what it said.
+#[test]
+fn a_file_opened_for_writing_before_the_turn_began_is_refused_inside_it() {
+    let machine = AMachine::with_something_worth_protecting("write");
+    let went = a_turn_that_inherited(
+        "write",
+        &machine,
+        |_, machine| {
+            OpenOptions::new()
+                .write(true)
+                .open(&machine.key)
+                .expect("the key opens for writing outside any turn")
+        },
+        |held, _| {
+            let wrote = went(
+                held.write_all(A_REPLACEMENT.as_bytes())
+                    .and_then(|()| held.flush()),
+            );
+            let still_there = went(held.metadata().map(drop));
+            (wrote, still_there)
+        },
+    );
+    the_boundary_was_in_force(&went);
+
+    assert_eq!(
+        went.subject,
+        Outcome::Refused(REFUSED),
+        "a turn wrote into a file nobody granted through a descriptor that existed before the \
+         turn began, so a verb with a bug in it can replace what is in a file outside its grant"
+    );
+    assert_eq!(
+        went.after,
+        Outcome::Allowed,
+        "the inherited descriptor was not usable at all, so the refusal above may be about a \
+         broken descriptor rather than about the boundary"
+    );
+    assert_eq!(
+        holds(&machine.key),
         A_KEY,
-        "the contents of a file nobody granted did not reach the folder somebody did, so this \
-         test proves nothing about contents leaving a grant"
+        "the write was refused and the file changed anyway"
     );
 
     machine.taken_away();
 }
 
-/// **A file opened for appending before the turn began can be appended to
+/// **A descriptor to a file inside the grant is untouched**: read through and
+/// written through inside the turn exactly as it would be outside one.
+///
+/// The test that keeps the one above from being a boundary that refuses every
+/// descriptor and looks like it works. The invoice is inside the granted
+/// folder, so the walk from its directory entry meets the grant on the first
+/// step up, and the hook's answer is the same as `file_open`'s would be for
+/// the same file by name.
+#[test]
+fn a_descriptor_to_a_file_inside_the_grant_is_untouched() {
+    let machine = AMachine::with_something_worth_protecting("granted");
+    let mut said = String::new();
+    let went = a_turn_that_inherited(
+        "granted",
+        &machine,
+        |_, machine| {
+            OpenOptions::new()
+                .read(true)
+                .append(true)
+                .open(&machine.invoice)
+                .expect("the invoice opens outside any turn")
+        },
+        |held, _| {
+            let read = went(held.read_to_string(&mut said).map(drop));
+            let wrote = went(
+                held.write_all(A_NOTE.as_bytes())
+                    .and_then(|()| held.flush()),
+            );
+            (read, wrote)
+        },
+    );
+    the_boundary_was_in_force(&went);
+
+    assert_eq!(
+        went.subject,
+        Outcome::Allowed,
+        "a turn was refused a read through a descriptor to a file inside its own grant, so the \
+         hook on reads and writes is not walking to the grant the way the hook on opens does"
+    );
+    assert_eq!(
+        said, AN_INVOICE,
+        "the read was allowed and produced something else"
+    );
+    assert_eq!(
+        went.after,
+        Outcome::Allowed,
+        "a turn was refused a write through a descriptor to a file inside its own grant"
+    );
+    assert_eq!(
+        holds(&machine.invoice),
+        format!("{AN_INVOICE}{A_NOTE}"),
+        "the write inside the grant was allowed and did not land"
+    );
+
+    machine.taken_away();
+}
+
+/// **A file opened for appending before the turn began is refused a line
 /// inside it — and this is the record's own shape.**
 ///
 /// `alo_keeping::Writing` opens the machine's record with `append(true)` when
 /// the daemon starts and holds it for the life of the process. A turn is a
-/// thread of that process, so that descriptor is in the turn's table for as long
-/// as the turn runs, and no hook of this boundary is consulted about a write.
-///
-/// What that permits is a line in the record that no execution caused. What it
-/// does **not** permit is anything else about the record: `O_APPEND` puts every
-/// write at the end, so nothing already written can be altered, and opening the
-/// record by name — to read it, to truncate it, to open it a second time without
-/// `O_APPEND` — is an open outside the bound and is refused. Both halves are
-/// measured here, and the second is what keeps this a gap in *addition* rather
-/// than a way to rewrite history.
+/// thread of that process, so that descriptor is in the turn's table for as
+/// long as the turn runs, and until 2026-09-12 a turn could add a line to the
+/// record that no execution caused. It cannot now: the append is refused at
+/// the write, the record is as the daemon left it, and opening the record by
+/// name is refused as it always was. The record is written by the service,
+/// outside the turn, which is where `alo-turn`'s `carrying.rs` always wrote it.
 #[test]
-fn a_record_opened_before_the_turn_began_is_still_appendable_inside_it() {
+fn a_record_opened_before_the_turn_began_is_refused_a_line_inside_it() {
     let machine = AMachine::with_something_worth_protecting("append");
     let went = a_turn_that_inherited(
         "append",
@@ -398,23 +564,21 @@ fn a_record_opened_before_the_turn_began_is_still_appendable_inside_it() {
 
     assert_eq!(
         went.subject,
-        Outcome::Allowed,
-        "an append through the descriptor the daemon holds the record open with was refused, \
-         which means something now decides about a write — say so in \
-         crates/alo-bounding/src/lib.rs and in the table in docs/quirks.md"
+        Outcome::Refused(REFUSED),
+        "a turn added a line to the machine's record through the descriptor the daemon holds \
+         it open with, so an execution that never happened can be written into the record from \
+         inside a boundary"
     );
     assert_eq!(
         went.after,
-        Outcome::Refused(13),
+        Outcome::Refused(REFUSED),
         "a bound turn opened the machine's record by name, so it could read or replace the \
-         record rather than only add to it — that is a wider hole than the one this test is \
-         named after"
+         record rather than only add to it"
     );
     assert_eq!(
         holds(&machine.record),
-        format!("{A_LINE_THE_DAEMON_WROTE}{A_LINE_NO_VERB_WROTE}"),
-        "the line a turn wrote is not at the end of the record with the daemon's line still \
-         whole in front of it, so this measured something other than an append"
+        A_LINE_THE_DAEMON_WROTE,
+        "the append was refused and the record changed anyway"
     );
 
     machine.taken_away();
@@ -458,7 +622,7 @@ fn an_inherited_descriptor_cannot_be_reopened_through_the_name_the_kernel_gives_
 
     assert_eq!(
         went.subject,
-        Outcome::Refused(13),
+        Outcome::Refused(REFUSED),
         "a bound turn reopened a file nobody granted it through the name the kernel gives its \
          descriptor, which would make every inherited descriptor a way to open its file afresh \
          — with truncation, and outside the record of what the turn was allowed to reach"
@@ -514,7 +678,7 @@ fn a_directory_opened_before_the_turn_began_is_not_a_key_to_what_is_in_it() {
 
     assert_eq!(
         went.subject,
-        Outcome::Refused(13),
+        Outcome::Refused(REFUSED),
         "a bound turn opened a file nobody granted it by naming it relative to a folder handle \
          it inherited, which would make one directory descriptor a grant over everything \
          beneath it"
@@ -529,26 +693,185 @@ fn a_directory_opened_before_the_turn_began_is_not_a_key_to_what_is_in_it() {
     machine.taken_away();
 }
 
-/// **The way out of a turn is itself a descriptor opened before the turn
-/// began**, which is why closing this gap is a decision rather than a patch.
+/// **A directory opened before the turn began cannot be listed inside it
+/// either — and one inside the grant still can.**
 ///
-/// `Turns::back` is `home/cgroup.threads`, opened when the service started and
-/// held for the life of the daemon, and leaving a boundary is a write to it.
-/// That arrangement exists because the alternative does not work: opening that
-/// file from inside is an open outside the grant, and this test measures the
-/// kernel refusing exactly that, with `EACCES`, while the turn is running.
-///
-/// **The turn nevertheless left**, which is what reaching these assertions
-/// proves — `a_turn_that_inherited` expects `doing` to return, and `doing`
-/// returns only after `Inside::leaving` has written a byte through that
-/// descriptor and the service has been put back where it was.
-///
-/// So a boundary that re-decided about a descriptor at the moment it was used
-/// would refuse a turn its own way out, and the fix is not "check on every
-/// write". `docs/quirks.md` and this workstream's report say what the real
-/// answers are and which of them needs an ADR.
+/// Reading a folder's entries is `getdents`, which is a read and passes
+/// `file_permission` like one. The names of what is in a private folder are
+/// not its contents, but they are something a person did not grant, and the
+/// hook does not distinguish: the walk from the folder's own entry meets no
+/// granted place and the listing is refused. The granted folder's descriptor,
+/// walked the same way, meets the grant at once and lists — which is what
+/// `list_folder` does on a folder handle, and is the half that must not break.
 #[test]
-fn the_way_out_of_a_turn_is_a_descriptor_the_boundary_would_refuse_to_open() {
+fn a_directory_opened_before_the_turn_began_cannot_be_listed_inside_it() {
+    let machine = AMachine::with_something_worth_protecting("listing");
+    let went = a_turn_that_inherited(
+        "listing",
+        &machine,
+        |_, machine| {
+            (
+                Some(File::open(&machine.private).expect("the folder opens outside any turn")),
+                Some(File::open(&machine.granted).expect("the folder opens outside any turn")),
+            )
+        },
+        |held, _| {
+            let (private, granted) = held;
+            (
+                listing(
+                    private
+                        .take()
+                        .expect("the private folder was opened beforehand"),
+                ),
+                listing(
+                    granted
+                        .take()
+                        .expect("the granted folder was opened beforehand"),
+                ),
+            )
+        },
+    );
+    the_boundary_was_in_force(&went);
+
+    assert_eq!(
+        went.subject,
+        Outcome::Refused(REFUSED),
+        "a bound turn listed a folder nobody granted through a descriptor it inherited, so the \
+         hook on reads is not asked about a directory's entries"
+    );
+    assert_eq!(
+        went.after,
+        Outcome::Allowed,
+        "a bound turn was refused the listing of a folder inside its own grant, through a \
+         descriptor to that folder — the hook is refusing the legitimate half as well"
+    );
+
+    machine.taken_away();
+}
+
+/// **A socket the daemon inherited is left to the hook that can decide about
+/// it**: a write on a Unix socket inside a turn is allowed by the hook on
+/// reads and writes, and so is the read on the other end.
+///
+/// The carve-out, measured. A socket is a file too, and a walk from a socket's
+/// directory entry meets no granted place — so a hook that treated it like any
+/// other file would refuse the daemon its answer to the person and a question
+/// its provider. `file_permission` reads the kind from the inode's mode and
+/// steps aside for a socket; `socket_sendmsg` then decides about the message by
+/// where its bytes are going, and a Unix socket is not egress.
+/// `what_a_bound_turn_can_still_reach.rs` holds that hook's half of the
+/// arrangement; this holds the file hook's.
+#[test]
+fn a_socket_opened_before_the_turn_began_is_left_to_the_hook_that_decides_messages() {
+    let machine = AMachine::with_something_worth_protecting("socket");
+    let mut heard = Vec::new();
+    let went = a_turn_that_inherited(
+        "socket",
+        &machine,
+        |_, _| UnixStream::pair().expect("a pair of Unix sockets can be made outside any turn"),
+        |held, _| {
+            let (daemon, person) = held;
+            let answered = went(daemon.write_all(AN_ANSWER).and_then(|()| daemon.flush()));
+            let mut listened = vec![0; AN_ANSWER.len()];
+            let heard_back = went(person.read_exact(&mut listened));
+            heard = listened;
+            (answered, heard_back)
+        },
+    );
+    the_boundary_was_in_force(&went);
+
+    assert_eq!(
+        went.subject,
+        Outcome::Allowed,
+        "a bound turn was refused a write on a Unix socket the daemon inherited, so the daemon \
+         cannot answer the person from inside a turn — the hook on reads and writes is deciding \
+         about a socket by its place in the filesystem rather than leaving it to socket_sendmsg"
+    );
+    assert_eq!(
+        went.after,
+        Outcome::Allowed,
+        "a bound turn was refused a read on a Unix socket it inherited"
+    );
+    assert_eq!(
+        heard, AN_ANSWER,
+        "what was written on the socket is not what arrived"
+    );
+
+    machine.taken_away();
+}
+
+/// **A pipe opened before the turn began carries on inside it**, in both
+/// directions.
+///
+/// The other half of the carve-out, and it was found rather than designed:
+/// the day `file_permission` landed refusing everything but a socket, every
+/// sibling of this file that binds a child process stopped hearing from it,
+/// because a child bound into a turn says what it found over the pipe its
+/// parent gave it. A pipe holds no contents of its own — what comes through
+/// it a process outside the boundary put there, and what goes into it reaches
+/// a process this service already talks to — so it is not a file at rest and
+/// not a place a grant is over, which is the same reasoning as a Unix socket.
+#[test]
+fn a_pipe_opened_before_the_turn_began_carries_on_inside_it() {
+    let machine = AMachine::with_something_worth_protecting("pipe");
+    let mut heard = Vec::new();
+    let went = a_turn_that_inherited(
+        "pipe",
+        &machine,
+        |_, _| std::io::pipe().expect("a pipe can be made outside any turn"),
+        |held, _| {
+            let (reading, writing) = held;
+            let said = went(writing.write_all(A_WORD).and_then(|()| writing.flush()));
+            let mut listened = vec![0; A_WORD.len()];
+            let heard_back = went(reading.read_exact(&mut listened));
+            heard = listened;
+            (said, heard_back)
+        },
+    );
+    the_boundary_was_in_force(&went);
+
+    assert_eq!(
+        went.subject,
+        Outcome::Allowed,
+        "a bound turn was refused a write on a pipe it inherited, so a child bound into a turn \
+         cannot tell its parent what it found — the hook on reads and writes is deciding about \
+         a pipe by its place in the filesystem"
+    );
+    assert_eq!(
+        went.after,
+        Outcome::Allowed,
+        "a bound turn was refused a read on a pipe it inherited"
+    );
+    assert_eq!(
+        heard, A_WORD,
+        "what was written into the pipe is not what came out"
+    );
+
+    machine.taken_away();
+}
+
+/// **The way out of a turn is refused to the turn itself — and the turn ends
+/// anyway.**
+///
+/// `home/cgroup.threads` is what a thread writes into to leave a boundary, and
+/// until 2026-09-12 the turn's own thread wrote it, through a descriptor
+/// `Turns::under` had opened before the first turn ever ran, because opening
+/// it from inside is refused. That arrangement was the fourth row of the
+/// table this file reproduces: a verb with a bug in it could have ended its
+/// own boundary early through the same descriptor.
+///
+/// This test opens that file before the turn, exactly as the service does, and
+/// writes the same byte through it from inside. **It is refused with
+/// `EACCES`**: the cgroup filesystem is not a place any grant is over, so the
+/// walk meets nothing, and a turn cannot write itself out. The turn's own
+/// `cgroup.threads` by name is refused as it always was. **And the turn
+/// ended**, which is what reaching these assertions proves —
+/// `a_turn_that_inherited` expects `doing` to return, and since the same day
+/// `doing` returns only after a thread of the service that was never in the
+/// turn has written this thread's number into `home/cgroup.threads` on its
+/// behalf. `crates/alo-bounding/src/inside.rs` has the arrangement.
+#[test]
+fn the_way_out_of_a_turn_is_refused_to_the_turn_and_the_turn_ends_anyway() {
     let machine = AMachine::with_something_worth_protecting("way-out");
     let went = a_turn_that_inherited(
         "way-out",
@@ -560,16 +883,21 @@ fn the_way_out_of_a_turn_is_a_descriptor_the_boundary_would_refuse_to_open() {
                 .expect("home is a folder inside the service's own control group")
                 .to_path_buf();
             (
-                home.join(THE_THREADS),
+                OpenOptions::new()
+                    .write(true)
+                    .open(home.join(THE_THREADS))
+                    .expect("the way out opens outside any turn, as the service opens it"),
                 root.join("turn-way-out").join(THE_THREADS),
             )
         },
-        |back, _| {
-            let (home, own) = back;
+        |held, _| {
+            let (back, own) = held;
             (
-                went(OpenOptions::new().write(true).open(&*home).map(drop)),
-                // And the turn's own, for the same reason: a turn that could
-                // open one of these could put itself anywhere in the hierarchy.
+                // The byte the way out used to be: this thread, into `home`.
+                went(back.write_all(b"0").and_then(|()| back.flush())),
+                // And the turn's own, by name, for the same reason: a turn that
+                // could open one of these could put itself anywhere in the
+                // hierarchy.
                 went(OpenOptions::new().write(true).open(&*own).map(drop)),
             )
         },
@@ -578,14 +906,14 @@ fn the_way_out_of_a_turn_is_a_descriptor_the_boundary_would_refuse_to_open() {
 
     assert_eq!(
         went.subject,
-        Outcome::Refused(13),
-        "a bound turn opened the file threads leave a boundary through, which would let a verb \
-         with a bug in it put itself back among the daemon's own threads and finish its work \
-         outside every grant"
+        Outcome::Refused(REFUSED),
+        "a bound turn wrote itself out of its boundary through the descriptor the service holds \
+         `home/cgroup.threads` open with, which would let a verb with a bug in it put itself \
+         back among the daemon's own threads and finish its work outside every grant"
     );
     assert_eq!(
         went.after,
-        Outcome::Refused(13),
+        Outcome::Refused(REFUSED),
         "a bound turn opened its own control group's `cgroup.threads`, so it could move itself \
          out of the boundary it is in without any descriptor being inherited at all"
     );

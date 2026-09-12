@@ -49,6 +49,9 @@
 //!               not a turn  -> allowed, and nothing is remembered
 //!               a turn      -> walk up from the file; a granted place, or EACCES
 //!
+//! every read    the same programme on file_permission, the same walk — on a
+//! and write     descriptor opened inside the turn or before it began alike
+//!
 //! turn ends     the entry is removed, and the authority is gone
 //! ```
 //!
@@ -133,16 +136,17 @@
 //!
 //! # What this boundary watches on a filesystem, and what it does not
 //!
-//! Four hooks decide about files — `file_open`, `inode_rename`, `inode_unlink`
-//! and `inode_link` — and two about the network: `socket_connect`, where a
-//! turn joins a socket to, and `socket_sendmsg`, where every message it sends
-//! is going. A filesystem has more verbs than four, and somebody auditing this
-//! crate is owed the list of the ones nothing here decides about rather than
-//! the count of the ones it does.
+//! Five hooks decide about files — `file_open`, `file_permission`,
+//! `inode_rename`, `inode_unlink` and `inode_link` — and two about the
+//! network: `socket_connect`, where a turn joins a socket to, and
+//! `socket_sendmsg`, where every message it sends is going. A filesystem has
+//! more verbs than five, and somebody auditing this crate is owed the list of
+//! the ones nothing here decides about rather than the count of the ones it
+//! does.
 //!
-//! **The promise these four keep is narrower than *a turn cannot change
-//! anything outside its bound*, and reading the second where the first is
-//! written is the mistake this section exists to prevent.** What they keep is
+//! **The promise these keep is narrower than *a turn cannot change anything
+//! outside its bound*, and reading the second where the first is written is
+//! the mistake this section exists to prevent.** What they keep is
 //! this: **no mutation left unwatched moves a byte of somebody's file past a
 //! grant.** A turn can still make a symbolic link (`inode_symlink`) in a folder
 //! somebody granted that leads to a file nobody did — and reading through it is
@@ -164,7 +168,8 @@
 //! measurement and says why it is the one item not in the committed suite.
 //!
 //! Two things sit beside the list rather than in it. **A descriptor opened
-//! before a turn began** stays usable inside it, which is its own section below.
+//! before a turn began** is decided about on every use since 2026-09-12, which
+//! is its own section below, and what that section leaves open is a mapping.
 //! And **starting a program is not a way round any of this**: `execve` opens the
 //! file it runs, so a turn asking for a program outside its bound is refused like
 //! any other file.
@@ -178,55 +183,61 @@
 //! `tests/the_unwatched_mutations_are_written_down.rs` fails the day one of them
 //! lands while the documents still call it unwatched.
 //!
-//! # What a turn inherits, and why it is not on that list
+//! # What a turn inherits, and what the boundary now says about it
 //!
-//! The four file hooks decide at the moment something is *done to a name*. None
-//! of them decides about a descriptor that already exists, and there is no hook
-//! here on a read, on a write to a file, or on a descriptor arriving from
-//! somewhere else. **So any file open when a turn begins stays fully usable
-//! inside it**, and the boundary is never asked.
+//! [`Turns::doing`] puts **one thread** of `alo-agentd` into a control group —
+//! the argument is in `turns.rs` and it is law 2's — and a thread shares its
+//! process's whole descriptor table, so a descriptor opened before a turn began
+//! is in the turn's table too. What is in that table on this machine
+//! today is the record `alo_keeping::Writing` holds open for appending, the
+//! socket the daemon is listening on and the caller it is answering, standard
+//! output and error, and the descriptor a turn is brought home through. Until
+//! 2026-09-12 the four file hooks decided only at the moment something was
+//! *done to a name*, so every one of those stayed fully usable inside a turn,
+//! and the boundary was never asked. **That was the one gap in this crate that
+//! moved contents past a grant**: a turn read a file nobody granted through a
+//! descriptor opened before it began and wrote what it read into the folder
+//! somebody did, and it was measured doing so.
 //!
-//! That is not a corner of the design, it is most of the daemon. [`Turns::doing`]
-//! puts **one thread** of `alo-agentd` into a control group — the argument is in
-//! `turns.rs` and it is law 2's — and a thread shares its process's whole
-//! descriptor table. What is in that table on this machine today is the record
-//! `alo_keeping::Writing` holds open for appending, the socket the daemon is
-//! listening on and the caller it is answering, standard output and error, and
-//! [`Turns::doing`]'s own way out of a turn.
+//! **It is closed by `file_permission`, which decides about every read and
+//! write on every descriptor**, asked of the thread doing the reading — so a
+//! descriptor the daemon opened outside any turn is the turn's to answer for
+//! the moment the turn uses it. The walk is the one an open takes, from the
+//! file's own directory entry; a descriptor to a place inside the grant is
+//! untouched, and one to anywhere else is refused with `EACCES` before a byte
+//! has moved. A socket is left to `socket_sendmsg`, which decides about every
+//! message on one by where the bytes are going — the daemon's Unix socket to
+//! the person is not egress, so answering them from inside a turn is untouched,
+//! and a socket joined before the turn began to a destination nobody showed
+//! is refused the moment the turn writes on it. A pipe is left alone for the
+//! same reason a Unix socket is: it holds no contents of its own, so nothing
+//! of a person's file is in it that a process outside the boundary did not
+//! put there.
+//! `tests/what_a_turn_inherits.rs` measures every one of these — the record
+//! refused a line, a private key refused a byte, a folder handle refused its
+//! listing, `home/cgroup.threads` refused the write that used to end a turn
+//! — each beside the use inside the grant that must not break, and
+//! `tests/what_a_bound_turn_can_still_reach.rs` holds the socket half.
 //!
-//! **A socket is the exception, since 2026-09-12.** A message has a destination
-//! where a read has none, so `socket_sendmsg` decides about every message a
-//! turn sends — on the socket it inherited as much as on one it opened — by
-//! asking the sending thread's control group and reading where the bytes are
-//! going. A socket joined before the turn began to a destination nobody showed
-//! is refused the moment the turn writes on it; the daemon's Unix socket to the
-//! person is not a network address and is not egress, so answering them is
-//! untouched. `tests/what_a_bound_turn_can_still_reach.rs` holds both.
+//! **What it cost the turn is its own way out.** Leaving a boundary was a
+//! write into `home/cgroup.threads` through a descriptor opened before the
+//! turn began — the same property as the gap, used on purpose — and that
+//! write is now refused like any other. So a turn's thread cannot end its own
+//! boundary, which was the fourth row of the gap's table and is now a refusal,
+//! and it is brought home instead by a thread of the service that was never in
+//! a turn; `inside.rs` has the arrangement.
 //!
-//! **A descriptor opened before a turn began is the one gap in this crate that
-//! moves contents past a grant.** The list above was measured against exactly
-//! that promise and every item keeps it; this does not. A turn reads a file
-//! nobody granted through an inherited descriptor and writes what it read into
-//! the folder somebody did, where a `move_file` or an `archive_folder` carries it
-//! onwards and where the record names only a granted path. It is why this is its
-//! own piece of work rather than a seventh row.
-//!
-//! What it does **not** permit is measured beside it and is the floor under it: a
-//! descriptor cannot be reopened by name, `/proc/self/fd/<n>` does not turn one
-//! back into an open — the walk starts at the file the open really reached — and
-//! `openat` relative to an inherited folder is an open like any other, so a
-//! directory handle is not a key to what is under it.
-//!
-//! **Closing it is a decision rather than a patch, and this crate has not taken
-//! it.** The kernel's answer would be `file_permission` — a hook on every read
-//! and write on the machine, which is the opposite direction from *decides and
-//! forgets* — and it would refuse a turn its own way out, because leaving one is
-//! a write to a descriptor opened before it began. The other answer is to make a
-//! turn a process of its own, which is a change to what a turn *is* and belongs
-//! in an ADR. `docs/quirks.md` carries the account, every row of it is reproduced
-//! in `tests/what_a_turn_inherits.rs` against the real loaded programme, and
-//! `tests/what_a_turn_inherits_is_written_down.rs` fails the day either hook
-//! lands while the documents still say neither has.
+//! **What it does not close is a mapping.** `mmap` of a file is `mmap_file`,
+//! not a read: a file mapped into memory is read by the processor rather than
+//! by a syscall, so a mapping of an inherited descriptor made inside a turn is
+//! a way to its contents this boundary does not see. It is not hooked and not
+//! reproduced in the committed suite, and the reason is a rule rather than an
+//! oversight — there is no safe spelling of `mmap` in Rust and `unsafe` is
+//! forbidden outside `alo-bounding-kernel`'s one file. `docs/quirks.md`
+//! carries the account, and `tests/what_a_turn_inherits_is_written_down.rs`
+//! holds that account to the programme: it fails the day `file_permission`
+//! leaves the programme, `mmap_file` arrives while the entry still calls a
+//! mapping unwatched, or a row loses its reproduction.
 //!
 //! # What this boundary can decide about the network, and what it cannot
 //!

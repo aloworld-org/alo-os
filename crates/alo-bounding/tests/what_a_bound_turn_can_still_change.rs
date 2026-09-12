@@ -12,9 +12,10 @@
 //!
 //! # The list, and the property they all share
 //!
-//! Six hooks exist — `file_open`, `inode_rename`, `inode_unlink`, `inode_link`,
-//! `socket_connect` and `socket_sendmsg` — and a filesystem has more verbs than
-//! the four of those that are about one. Unwatched:
+//! Seven hooks exist — `file_open`, `file_permission`, `inode_rename`,
+//! `inode_unlink`, `inode_link`, `socket_connect` and `socket_sendmsg` — and a
+//! filesystem has more verbs than the five of those that are about one.
+//! Unwatched:
 //! making a **symbolic link**, making a **file** — with an open or without one —
 //! making and removing a **directory**, and changing a file's **mode, owner,
 //! times or extended attributes**. `docs/quirks.md` carries the list with the

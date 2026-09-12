@@ -79,7 +79,7 @@ static BOUNDS: HashMap<u64, [u64; WORDS]> = HashMap::with_max_entries(1024, 0);
 /// attached, so nothing here is compiled against a kernel version. `Field` is
 /// the agreement about which slot is which.
 ///
-/// Sixteen slots for thirteen fields. The spare ones are read back by
+/// Sixteen slots for fourteen fields. The spare ones are read back by
 /// `the_boundary_decides_and_forgets` and held at zero, because an array this
 /// program can already reach is exactly where a counter would sit.
 #[map(name = "FIELDS")]
@@ -220,6 +220,36 @@ pub fn socket_sendmsg(ctx: LsmContext) -> i32 {
         return already;
     }
     deciding::decide_message(socket, message)
+}
+
+/// Every read and every write of every file, on this machine, until the
+/// program is detached.
+///
+/// `file_permission(struct file *file, int mask)` — two arguments, so the
+/// previous module's decision is the third. The mask is not read: a read and
+/// a write through a descriptor outside the bound are refused alike, and the
+/// two kinds of file that hold no contents of their own — a socket, whose
+/// writes another hook decides, and a pipe — are told apart by what they
+/// *are* rather than by what is being done to them.
+///
+/// The seventh hook, and the one that reaches a descriptor the six before it
+/// never could. `file_open` decides when a file is *opened*, so a descriptor
+/// opened before the turn began was never asked about: the daemon's own
+/// record, its way out of a turn, and whatever else it had open. This runs on
+/// the use, which is the moment the bytes move — every `read`, `write`,
+/// `sendfile`, `splice` and `getdents` on the machine — and it is asked of
+/// the **reading or writing thread's** control group, so a descriptor the
+/// daemon opened outside any turn is the turn's to answer for the moment the
+/// turn reads or writes through it. [`crate::deciding::decide_use`] says what
+/// may be decided here and what may not.
+#[lsm(hook = "file_permission")]
+pub fn file_permission(ctx: LsmContext) -> i32 {
+    let file: u64 = ctx.arg(0);
+    let already: i32 = ctx.arg(2);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_use(file)
 }
 
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.

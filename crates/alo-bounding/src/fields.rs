@@ -1,6 +1,6 @@
-//! The thirteen offsets, found in this kernel and checked before they are used.
+//! The fourteen offsets, found in this kernel and checked before they are used.
 //!
-//! [`Field`] says which thirteen and how wide each should be; `btf.rs` says where
+//! [`Field`] says which fourteen and how wide each should be; `btf.rs` says where
 //! this kernel keeps them. This file is the meeting of the two, and the two
 //! refusals that come out of it.
 //!
@@ -75,12 +75,12 @@ mod tests {
     use super::*;
     use crate::testing;
 
-    /// The ordinary case, against the fixture: thirteen fields, each at the offset
+    /// The ordinary case, against the fixture: fourteen fields, each at the offset
     /// the type information gives.
     #[test]
     fn every_field_is_found_where_this_kernel_keeps_it() {
         let types = Types::read(testing::some_type_information()).expect("the fixture reads");
-        let offsets = Offsets::found(&types).expect("the fixture has all thirteen");
+        let offsets = Offsets::found(&types).expect("the fixture has all fourteen");
         assert_eq!(offsets.at(Field::FilePath), 16);
         assert_eq!(offsets.at(Field::PathDentry), 8);
         assert_eq!(offsets.at(Field::DentryParent), 24);
@@ -97,6 +97,10 @@ mod tests {
         assert_eq!(offsets.at(Field::SockAddress), 8);
         assert_eq!(offsets.at(Field::SockAddress6), 64);
         assert_eq!(offsets.at(Field::MessageName), 0);
+        // The one the read-and-write hook needs: the kind of file. It opens
+        // an inode on the real kernel as it does here, so zero once more —
+        // and two bytes wide, which the width check holds it to.
+        assert_eq!(offsets.at(Field::InodeMode), 0);
         assert_eq!(offsets.each().count(), Field::ALL.len());
     }
 

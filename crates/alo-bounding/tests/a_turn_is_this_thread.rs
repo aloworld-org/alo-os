@@ -18,9 +18,11 @@
 //!   same service, opens the same file at the same moment — because a boundary
 //!   that caught the whole process would catch the record, the socket and the
 //!   person's own door along with the verb.
-//! - **A thread can leave**, and can do it again. Leaving is a write to a
-//!   descriptor opened before the thread went in, because *opening* the way out
-//!   while inside is an open the boundary correctly refuses.
+//! - **A thread can leave**, and can do it again. Leaving is a write another
+//!   thread of the service makes on its behalf, through a descriptor opened
+//!   before any turn began, because *opening* the way out while inside is an
+//!   open the boundary correctly refuses — and since `file_permission`, so is
+//!   writing it from inside.
 //!
 //! # It needs root, a BPF filesystem, and a kernel that started the BPF LSM
 //!

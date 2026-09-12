@@ -967,20 +967,22 @@ the kernel and never an egress event — and on the production path a refused
 message reaches the record through the same `ureq` error the refused connect
 does, in the same words; `alo-asking`'s `openai.rs` holds that.
 
-**What this does not close:** a file descriptor opened before a turn began,
-which is the entry below and needs a decision this hook does not take; and the
-loopback proxy, which is ADR 0021's. WSL is development evidence and never
-certified-hardware acceptance.
+**What this does not close:** the loopback proxy, which is ADR 0021's. A file
+descriptor opened before a turn began was the other half of the same fact and
+was closed the same day by `file_permission`, the entry *A descriptor opened
+before a turn began is decided about on every use* below. WSL is development
+evidence and never certified-hardware acceptance.
 **Date:** 2026-09-12
 
 ### Four hooks are not a filesystem: what a bound turn can still change
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
-**Behaviour:** the boundary watches six hooks — `file_open`, `inode_rename`,
-`inode_unlink`, `inode_link`, `socket_connect` and `socket_sendmsg` — and a
-filesystem has more verbs than the four of those that are about one. The four filesystem hooks were chosen for one property: **none
-of the mutations they leave unwatched moves a byte of somebody's file past a
-grant.** That is a narrower promise than *a turn cannot change anything outside
+**Behaviour:** the boundary watches seven hooks — `file_open`,
+`file_permission`, `inode_rename`, `inode_unlink`, `inode_link`,
+`socket_connect` and `socket_sendmsg` — and a filesystem has more verbs than
+the five of those that are about one. The filesystem hooks were chosen for one
+property: **none of the mutations they leave unwatched moves a byte of
+somebody's file past a grant.** That is a narrower promise than *a turn cannot change anything outside
 its bound*, and reading the second where the first is written is how somebody
 audits this boundary and comes away believing more than it does.
 
@@ -998,11 +1000,13 @@ refused open beside it proving the boundary was in force:
 | `inode_setxattr` | set an extended attribute on a file nobody granted | an attribute is somewhere to put bytes that is not the file's contents, and filling it needs bytes the turn cannot read | v0.5 |
 
 Two things are **not** on that list and belong beside it. **What is inside a
-file already open** is not a hook at all: `file_open` decides at the moment of
-opening and says nothing afterwards, so a file descriptor that existed before
-the turn began stays usable inside it. That is its own piece of work, the entry
-below; the socket half of it was closed on 2026-09-12 by `socket_sendmsg`, the
-entry above. And
+file already open** was not a hook at all until 2026-09-12: `file_open` decides
+at the moment of opening and says nothing afterwards, so a file descriptor that
+existed before the turn began stayed usable inside it. `file_permission` now
+decides on every read and write — the entry *A descriptor opened before a turn
+began is decided about on every use* below has the measurement, and what it
+leaves is a mapping, which that entry names. The socket half was closed the
+same day by `socket_sendmsg`, the entry above. And
 **starting a program** is not a way round any of this: `execve` opens the file it
 runs, `file_open` is watched, and a bound turn asking for `/bin/true` is refused
 with `EACCES` like any other file outside its bound. That is a floor under law 2
@@ -1049,89 +1053,122 @@ make these changes to files that person may already change. The boundary is a
 floor under the ordinary bits and never a replacement for them.
 **Date:** 2026-09-08
 
-### A descriptor opened before a turn began is inside no boundary
-**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
+### A descriptor opened before a turn began is decided about on every use
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
 `crates/alo-bounding/tests/what_a_turn_inherits.rs`
-**Behaviour:** `file_open` decides at the moment of opening and says nothing
-afterwards. There is no hook here on a read, on a write to a file, or on a
-descriptor arriving from somewhere else — so **every file already open when a
-turn starts stays fully usable inside it**, and the boundary is never asked. A
-socket already open is the exception since 2026-09-12: a message has a
-destination where a read has none, and `socket_sendmsg` decides about it on
-every write — the entry *A socket already open, and a datagram sent without
-connecting, are inside the boundary* above has the measurement, and the row this
-table carried for it is gone.
+**Behaviour:** until 2026-09-12 this entry was *A descriptor opened before a
+turn began is inside no boundary*, and it was true. `file_open` decides at the
+moment of opening and says nothing afterwards, and there was no hook on a read
+or a write, so every file already open when a turn started stayed fully usable
+inside it. A turn is one thread of `alo-agentd` and not a process of its own
+(law 2 — `crates/alo-bounding/src/turns.rs` has the argument), so that meant the
+daemon's whole descriptor table: the record `alo_keeping::Writing` holds open
+for appending, the way out of a turn, the door and whoever is at it, standard
+output and error. It was the one gap in this crate that moved contents past a
+grant, and it was measured doing so: the same thread refused `open` on a
+private key with `EACCES` and reading every byte of it through a descriptor
+opened a moment earlier, then writing what it read into the folder somebody
+*did* grant, where an `archive_folder` or a `move_file` would carry it onwards
+and where the record would name only a granted path.
 
-That is not a corner of the design; it is most of the daemon. A turn is **one
-thread of `alo-agentd`** and not a process of its own (law 2 —
-`crates/alo-bounding/src/turns.rs` has the argument), so a turn shares the whole
-process's descriptor table for as long as it runs. What is in that table on this
-machine today:
+**Our response:** a seventh hook, `file_permission`, which runs on every read
+and write on the machine — `read`, `write`, `sendfile`, `splice`, `getdents` —
+and decides about the descriptor at the moment it is used. Four things about it
+are worth an afternoon to whoever reads the code next:
 
-- **the machine's record.** `alo_keeping::Writing` opens it with `append(true)`
-  when the daemon starts and holds it for the life of the process;
-- **the way out of a turn.** `Turns::back` is `home/cgroup.threads`, opened
-  before the first turn ever ran, because opening it from *inside* is an open the
-  boundary refuses;
-- **the door and whoever is at it** — the `UnixListener` `alo-agentd` binds and
-  the `UnixStream` it is answering a caller on. Both are sockets, so
-  `socket_sendmsg` is asked about every write on them, and both are Unix
-  sockets, so its answer is that they are not egress — which is the right
-  answer and leaves them exactly as usable as they were;
-- **standard output and error**, and whatever else started the service left open.
+- **It is asked of the thread doing the reading**, not of whoever opened the
+  descriptor. That is what closes the inherited case rather than restating it,
+  and it is the same reasoning `socket_sendmsg` uses one entry up: a descriptor
+  the daemon opened outside any turn is, at the moment a turn reads through it,
+  being used by the turn.
+- **The walk is the one an open takes.** From the file's own directory entry
+  upwards until a granted place is met or the top of the filesystem is, so a
+  descriptor to a file *inside* the grant is untouched — read through, written
+  through, listed through — and one to anywhere else is refused with `EACCES`
+  before a byte has moved. A pipe, a terminal, a device, the cgroup filesystem
+  and the record are all *anywhere else*: none is a place a grant is over, which
+  is what `file_open` already answered for the same things opened by name.
+- **A socket is left to the hook that can decide about it, and a pipe is left
+  alone.** A socket is a file too and its directory entry meets no grant, so a
+  hook that refused it by its place would refuse the daemon its answer to the
+  person and a question its provider (ADR 0020). The hook reads the file's
+  kind from the inode's mode — one more offset, `i_mode`, fourteen in the map
+  now — and steps aside for a socket; `socket_sendmsg` then decides by where
+  the bytes are going, and a Unix socket is not egress. A pipe is stepped
+  aside from for the same reason: it holds no contents of its own, so nothing
+  of a person's file is in it that a process outside the boundary did not put
+  there. A terminal, a device and the cgroup filesystem are not stepped aside
+  from, and are refused as they are by name.
+- **It cost the turn its own way out, and that was the point.** Leaving a
+  boundary was the turn's own write into `home/cgroup.threads` through a
+  descriptor opened before the first turn ever ran — the gap, used on purpose.
+  That write is refused now like any other, so a turn's thread cannot end its
+  own boundary at all, and it is brought home by a thread of the service that
+  was never in a turn, started beside it before it went in;
+  `crates/alo-bounding/src/inside.rs` has the arrangement. Nothing is started:
+  a thread is not a program, and `a_turn_is_this_thread.rs` still reads the
+  crate's source and says so.
 
-No verb hands a model a descriptor: the six verbs take paths, and `alo-files`
-opens what it opens from inside the boundary. So nothing here is reachable
-through the capability model, and all of it is reachable by a verb with a bug in
-it — which is precisely what ADR 0013 says the kernel boundary is the floor
-under.
+**Landlock was considered and is not the mechanism**, and the reason belongs
+here because ADR 0013 names it as the filesystem primitive. Landlock decides at
+`open`, as this boundary already did — its filesystem hooks are the open, the
+path operations and truncation, and there is none on a read or a write — so a
+descriptor opened before the restriction is exactly as usable after it, which
+is the gap restated. And a Landlock ruleset is irrevocable for the thread it is
+applied to, so a turn that is a thread of the daemon could never be released
+from one: closing this with Landlock would have meant a turn that is a process,
+which is a change to what a turn *is* and belongs in an ADR. The BPF LSM is
+ADR 0015's mechanism, and it needed one hook more.
 
-| What a turn inherits | What it permits inside the boundary | What it does not permit | Reproduced in | Release |
+| What a turn inherits | What the boundary refuses it now | What it still permits | Reproduced in | Release |
 |---|---|---|---|---|
-| `a file open for reading` | every byte, while the same thread is refused `open` on the same file by name — **and the bytes written into a folder the turn was granted**, which is contents leaving a grant | it cannot be reopened by name, and `/proc/self/fd/<n>` does not turn it back into an open: the walk starts at the file the open really reached, so the reopen is refused exactly as the name is | `what_a_turn_inherits.rs` | v0.5 |
-| `a file open for appending` | a line added to the machine's own record, caused by no execution and refused by nothing | `O_APPEND` puts every write at the end, so nothing already written can be altered, and opening the record by name — to read it, replace it or truncate it — is refused | `what_a_turn_inherits.rs` | v0.5 |
-| `a directory descriptor` | the handle stays valid and keeps naming the folder it was opened for | `openat` relative to it is still an open, and the hook is handed the file that was opened rather than the base — so a folder handle is not a key to anything under it | `what_a_turn_inherits.rs` | v0.5 |
-| `the way out of a turn` | a write of `0` into `home/cgroup.threads`, which is how `Inside::leaving` ends every turn — and would let a verb with a bug in it end its own boundary early | opening any `cgroup.threads` by name is refused, the service's and the turn's own alike, so this needs the descriptor and cannot be obtained from inside | `what_a_turn_inherits.rs` | v0.5 |
+| `a file open for reading` | the first byte: `read` fails with `EACCES` and nothing of the file reaches the folder the turn was granted, where a write is still allowed and writes nothing | the descriptor stays valid, and the same descriptor to a file **inside** the grant is read through exactly as it always was | `what_a_turn_inherits.rs` | v0.5 |
+| `a file open for writing` | the write, before a byte lands: `EACCES`, and the file still says what it said | `fstat` on the descriptor, which asks no hook — measured so that the refusal cannot be a stale handle — and a write through a descriptor to a file inside the grant, which lands | `what_a_turn_inherits.rs` | v0.5 |
+| `a file open for appending` | a line in the machine's own record from inside a turn, which no execution caused; the record is as the daemon left it, and opening it by name is refused as it always was | nothing about the record from inside a turn, and that is right: the service writes the record outside the turn, which is where `alo-turn`'s `carrying.rs` always wrote it | `what_a_turn_inherits.rs` | v0.5 |
+| `a directory descriptor` | `openat` relative to it, which is an open and always was refused; and now `getdents` through it, so the names in a folder nobody granted are refused as well as its files | the handle stays valid, and a descriptor to a folder **inside** the grant lists as it always did — which is what a folder handle is for | `what_a_turn_inherits.rs` | v0.5 |
+| `a socket already connected` | a message to a destination nobody showed, decided by `socket_sendmsg` on every write, as the entry above measures | a write or a read on a Unix socket — the daemon's door, and whoever is at it — which the read-and-write hook steps aside from by the file's kind, so answering the person from inside a turn is untouched | `what_a_bound_turn_can_still_reach.rs` | v0.5 |
+| `a pipe` | nothing at the pipe itself, and on purpose: a pipe holds no contents of its own, so what comes through it a process outside the boundary put there, and what goes into it reaches a process this service already talks to — a Unix socket's reasoning, and it was found rather than designed, when every child-process test stopped hearing from its child | the read and the write, in both directions, measured with a pipe made before the turn began | `what_a_turn_inherits.rs` | v0.5 |
+| `the way out of a turn` | the write of `0` into `home/cgroup.threads` through the descriptor the service holds it open with, so a verb with a bug in it cannot end its own boundary early; opening any `cgroup.threads` by name is refused as it always was | the turn still ends: a thread of the service that is not in a turn writes the turn's thread number into that file on its behalf, and `Turns::doing` returns | `what_a_turn_inherits.rs` | v0.5 |
 
-**The first row is the sharp one, and it is sharper than anything in *Four hooks
-are not a filesystem*.** Every mutation on that list was measured against one
-promise — *no unwatched mutation moves a byte of somebody's file past a grant* —
-and each of them keeps it. An inherited read descriptor does not: the turn reads
-a file nobody granted and writes what it read into the folder somebody did,
-where an `archive_folder` or a `move_file` carries it onwards and where the
-record names only a granted path. That is the whole of what the boundary exists
-to prevent, and it is why this is its own piece of work rather than a row in that
-table.
+**What this does not close, and why it is not in the committed suite.** A
+mapping. `mmap` of a file is `mmap_file`, not a read: a file mapped into memory
+is read by the processor rather than by a syscall, so a mapping of an inherited
+descriptor made inside a turn is a way to its contents that `file_permission`
+does not see. It is not hooked, and it is the one thing in this entry **not
+reproduced**: `std` has no `mmap`, `rustix`'s is `unsafe`, so is every crate's
+that wraps it, and `unsafe` is forbidden outside `alo-bounding-kernel`'s one
+file — a rule rather than an oversight, the same one that keeps `truncate(2)`
+out of the suite one entry up. A hook nobody can show refusing is a hook nobody
+can show working, so it was not added on belief. Whoever closes `mmap_file`
+will have to measure it the way the truncation was measured, by hand and with
+the measurement written here; the walk is the one `decide_use` already makes,
+and the only new thing is the argument that an anonymous mapping — `file` is
+null, and every allocation inside a turn is one — is not a file at all.
 
-**What would close it, and why none of it is a patch.** The hooks that decide
-about a descriptor rather than about an open are `file_permission`, which fires
-on every read and write, and `file_receive`, which fires when a descriptor
-arrives from somewhere else. Neither is in
-`crates/alo-bounding-kernel/src/kernel.rs` and adding one is not a small change:
-`file_permission` is the hottest hook in the kernel and putting a walk on it
-would mean this boundary decided about every read on the machine, which is the
-opposite direction from *the LSM decides and forgets*. **And it would break the
-turn itself** — measured here: the way out of a turn is a write to an inherited
-descriptor, so a boundary that re-decided at the moment of use would refuse a
-turn its own way out.
-
-The other answer is the one the plan names: **make a turn a process of its own**,
-with a descriptor table it did not inherit. That is a change to what a turn *is*,
-it collides with law 2's *nothing is started*, and it belongs in an ADR rather
-than in a commit. **This workstream has not taken that decision and has not
-implemented either half.**
-
-**Our response:** documented and reproduced, not closed.
-`crates/alo-bounding/tests/what_a_turn_inherits.rs` runs every row above against
-the real loaded programme, each with a refused open proving the boundary was in
-force and a legitimate open inside the grant proving it was not simply refusing
-everything, and
+Measured on this kernel, every one through `Turns::doing` on the thread the
+assertions are made from, with a refused open proving the boundary was in force
+and an allowed open inside the grant proving it was not refusing everything:
+the key refused at the read and nothing copied; a writable descriptor to the
+key refused and the key undisturbed; the invoice's descriptor read and written
+through inside the grant; the record refused a line and unchanged; the private
+folder refused its listing and the granted folder listing; `/proc/self/fd/<n>`
+refused for the key and allowed for the invoice; a pair of Unix sockets written
+and read across from inside; `home/cgroup.threads` refused the byte that used
+to end a turn, and the turn ending anyway.
+`the_boundary_decides_and_forgets.rs` reads and writes its ordinary files
+outside a turn beside its opens and still finds nothing written down. On the
+production path a refusal here reaches the record through the same
+`std::io::Error` a refused open does, in the same words — `alo-files`'
+`failed.rs` holds that. `alo-boundaryd`'s capability set is unchanged and
+`crates/alo-image` still holds it to two.
 `crates/alo-bounding/tests/what_a_turn_inherits_is_written_down.rs` holds this
-table to the programme: the day `file_permission` or `file_receive` appears in
-`kernel.rs` while this entry still says they do not, that test fails and names
-this row. Every row is **v0.5**, with ADR 0013's other primitives. Nothing here
-ticks anything.
-**Date:** 2026-09-08
+entry to the programme: it fails the day `file_permission` leaves `kernel.rs`,
+the day `mmap_file` arrives while this entry still calls a mapping unwatched,
+and the day a row loses its reproduction. Every row is **v0.5**, where
+`docs/features.md` puts *for the length of one turn, everything outside the
+grant is unreachable*; this is that sentence becoming true of a descriptor.
+WSL is development evidence and never certified-hardware acceptance.
+**Date:** 2026-09-12
 
 ### The device number `stat` reports is not the one the kernel keeps
 **Version:** Linux, any; found 2026-09-04 while writing `crates/alo-bounding`.

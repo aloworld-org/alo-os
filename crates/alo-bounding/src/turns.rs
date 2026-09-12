@@ -24,28 +24,31 @@
 //! record, the socket and the person's own door inside the agent's boundary; one
 //! thread puts the verb inside it and leaves the service outside.
 //!
-//! # The way out is a descriptor opened before the way in was taken
+//! # The way out is a thread that never went in
 //!
 //! A thread leaves a cgroup by writing into another cgroup's `cgroup.threads`,
 //! and *opening* that file while the boundary is in force is an open outside the
 //! grant — which our own program in the kernel refuses, with `EACCES`, correctly.
-//! A turn that could be entered and not left would be a service that stops
-//! working the first time it worked.
+//! Since 2026-09-12 so is *writing* it through a descriptor that already
+//! existed: the kernel decides about every read and write a turn makes, on a
+//! descriptor opened before a turn began as much as on one opened inside it,
+//! so a turn's thread cannot write itself out of its boundary at all. A turn
+//! that could be entered and not left would be a service that stops working
+//! the first time it worked.
 //!
 //! So [`Turns::under`] opens `home/cgroup.threads` **before** this service is
-//! ever in a turn and holds it for the life of the daemon. Leaving is a write to
-//! a descriptor that already exists, and a write is not an open.
+//! ever in a turn and holds it for the life of the daemon, and [`Turns::doing`]
+//! has a thread of this service that is **not** in the turn write the turn's
+//! thread number into it when the work is over — `inside.rs` has the
+//! arrangement. What this file keeps is the descriptor, opened once at start
+//! rather than by that thread each time, because the fewer opens a service
+//! makes while a turn is running the fewer there are to get wrong.
 //!
-//! **That is the same property as the gap this crate documents**, used on
-//! purpose. A file descriptor opened before a turn began is inside no boundary,
-//! which is why the daemon's record stays reachable from inside one — and why a
-//! boundary that re-decided about a file descriptor at the moment it was *used*
-//! would refuse a turn its own way out. A socket is decided about on every
-//! message since `socket_sendmsg`, and the daemon's own socket to the person is
-//! a Unix socket, which that hook does not call egress; the way out is a file,
-//! and stays the shape this file describes. `crates/alo-bounding/src/lib.rs`
-//! has the account and `tests/what_a_turn_inherits.rs` measures both halves of
-//! it, this one included.
+//! **That the turn's own write is refused is measured, not assumed.**
+//! `tests/what_a_turn_inherits.rs` opens `home/cgroup.threads` before a turn,
+//! writes into it from inside, is refused, and the turn ends anyway — which is
+//! the fourth row of the table the descriptor gap was written up in, closed.
+//! `crates/alo-bounding/src/lib.rs` has the account.
 //!
 //! # The shape on the machine
 //!
@@ -96,8 +99,9 @@ pub struct Turns {
 
     /// `home/cgroup.threads`, open since before the first turn began.
     ///
-    /// The only reason this is a field rather than a path: leaving a turn must
-    /// not open anything. See this file's own documentation.
+    /// The only reason this is a field rather than a path: bringing a thread
+    /// home must not open anything while a turn is running, and the thread
+    /// that writes into it is never in one. See this file's own documentation.
     back: File,
 
     /// The cgroup this process was in before it moved into `home`.
@@ -124,8 +128,9 @@ impl Turns {
         }
 
         // Before anything is in it, and before any turn exists. This descriptor
-        // is the only way back out of a boundary, and opening it later would be
-        // opening a file the boundary refuses.
+        // is the way back out of a boundary, written into by a thread that is
+        // never inside one; opening it from inside would be refused, and so
+        // would writing it from inside.
         let back = match OpenOptions::new().write(true).open(home.threads()) {
             Ok(back) => back,
             Err(why) => {
@@ -192,7 +197,7 @@ impl Turns {
         &self.home
     }
 
-    /// The descriptor a thread leaves a turn through.
+    /// The descriptor a thread is brought home from a turn through.
     pub(crate) const fn the_way_back(&self) -> &File {
         &self.back
     }

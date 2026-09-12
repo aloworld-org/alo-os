@@ -31,10 +31,11 @@
 
 //! # What is watched, and what is not
 //!
-//! Four hooks on the filesystem — `file_open`, `inode_rename`, `inode_unlink`
-//! and `inode_link` — which is what a turn **opens**, **moves**, **removes**,
-//! and gives a **second name**. That is not the whole of a filesystem and this
-//! file does not pretend it is. Nothing here watches:
+//! Five hooks on the filesystem — `file_open`, `file_permission`,
+//! `inode_rename`, `inode_unlink` and `inode_link` — which is what a turn
+//! **opens**, **reads and writes**, **moves**, **removes**, and gives a
+//! **second name**. That is not the whole of a filesystem and this file does
+//! not pretend it is. Nothing here watches:
 //!
 //! - **symbolic links** (`inode_symlink`) — a turn can make one pointing
 //!   anywhere. It is not a way out on its own: following it to read something
@@ -54,19 +55,17 @@
 //!   `inode_setattr` without an open, so a turn can empty a file it cannot
 //!   read — which moves no contents anywhere and destroys them where they are.
 //!   It is the sharpest thing on this list and `docs/quirks.md` says so;
-//! - **what is inside a file already open** — a boundary on `file_open`
-//!   decides at the moment of opening and says nothing afterwards. **A file
-//!   descriptor opened before a turn began** is therefore inside no boundary,
-//!   and since a turn is one thread of `alo-agentd` that means the daemon's
-//!   record and its own way out of a turn. It is the one gap here that moves
-//!   contents past a grant, and closing it in the kernel would mean
-//!   `file_permission` — a walk on every read and write on the machine — or
-//!   `file_receive`. Neither is declared in `kernel.rs`; `docs/quirks.md` has
-//!   the account, `alo-bounding/tests/what_a_turn_inherits.rs` reproduces it,
-//!   and the decision it needs belongs in an ADR rather than in a commit. **A
-//!   socket is the exception, and it is closed**: `socket_sendmsg` decides on
-//!   every message, so a socket opened before the turn began is asked about the
-//!   moment the turn writes on it — [`decide_message`] has the whole of it;
+//! - **a mapping of a file** (`mmap_file`) — a file mapped into memory is read
+//!   by the processor rather than by a syscall, so a mapping is the one way
+//!   left to the contents of a descriptor that was **opened before a turn
+//!   began**: every read and write through such a descriptor is decided by
+//!   `file_permission` since 2026-09-12 — [`decide_use`] has the whole of it,
+//!   and `alo-bounding/tests/what_a_turn_inherits.rs` measures each refusal
+//!   beside the use inside the grant it must not break — but a mapping of
+//!   one made inside the turn asks no hook this program has. It is named in
+//!   `docs/quirks.md` with the reason it is not reproduced in the committed
+//!   suite: there is no safe spelling of `mmap` in Rust, and `unsafe` is
+//!   forbidden outside this package's one file;
 //! - **signals and memory**, and everything else that is not a filesystem. What
 //!   a turn connects to *is* watched, by `socket_connect`, and what it sends by
 //!   `socket_sendmsg`; [`decide_departure`] and [`decide_message`] say what
@@ -74,9 +73,10 @@
 //!
 //! Each of those is a real gap and each is written down rather than left to be
 //! discovered. What they have in common — size aside, which is named above
-//! rather than filed under it — is that none of them moves a byte of somebody's
-//! file to somewhere they did not approve, which is the property the four hooks
-//! that exist were chosen for.
+//! rather than filed under it, and a mapping aside, which is the remainder of
+//! a gap that was closed rather than one that was chosen — is that none of
+//! them moves a byte of somebody's file to somewhere they did not approve,
+//! which is the property the hooks that exist were chosen for.
 //!
 //! **All of them are reproduced** against this programme on a running kernel, in
 //! `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`, each with a
@@ -117,6 +117,113 @@ pub fn decide(file: u64) -> i32 {
     } else {
         REFUSED
     }
+}
+
+/// The bits of a mode that say what kind of file it is: `S_IFMT`.
+const A_KIND: u16 = 0o170_000;
+
+/// The kind that is a socket: `S_IFSOCK`.
+const A_SOCKET: u16 = 0o140_000;
+
+/// The kind that is a pipe: `S_IFIFO`.
+const A_PIPE: u16 = 0o010_000;
+
+/// Whether this read or write may go ahead.
+///
+/// # A descriptor is asked about every time it is used
+///
+/// `file_open` decides once, when a file is opened, and a descriptor
+/// opened before a turn began was never opened inside it — so the record
+/// the daemon holds open, the way out of a turn, and any file a verb with a
+/// bug in it was handed were all readable and writable past the grant, and
+/// were measured being so. This runs on every `read`, `write`, `sendfile`,
+/// `splice` and `getdents` on the machine, and for every process that is not
+/// a turn it is one hash lookup and a return — the price the six hooks before
+/// it charge and for the same reason. Inside a turn it reads the file's kind
+/// and walks up from its directory entry exactly as an open would; it reads
+/// none of the bytes, and it writes nothing down.
+///
+/// # What is asked, and of whom
+///
+/// The control group is the **current** thread's, which is what closes the
+/// inherited case rather than restating it: a descriptor the daemon opened
+/// outside any turn is, at the moment a turn reads through it, being used by
+/// the turn, and the turn is what is asked. [`decide_message`] gives the same
+/// reason for a socket, and this is the file half of the same fact — the
+/// moment that matters is when the bytes move, not when the handle was made.
+///
+/// # The answers
+///
+/// - **Not a turn** — allowed, and nothing is remembered.
+/// - **A socket** — allowed here, because [`decide_message`] decides about
+///   every message on one by reading where the bytes are going, and a hook
+///   that refused a socket by its place in the filesystem would refuse the
+///   daemon its answer to the person and a question its provider. The kind
+///   is read from the inode's mode; a mode that cannot be read is a file
+///   that cannot be checked, and is refused.
+/// - **A pipe** — allowed, for the reason a Unix socket is: it holds no
+///   contents of its own. What comes through it, a process outside the
+///   boundary put there, and what goes into it reaches a process this service
+///   already talks to; neither is a file at rest, and neither is a place a
+///   grant is over. A test that binds a child process talks to it over one
+///   from inside the turn, and so could a service.
+/// - **Anything else** — a granted place is met walking up from the file's
+///   own directory entry, or `EACCES` before a byte has moved. A terminal, a
+///   device, the cgroup filesystem and the record are all *anything else*:
+///   none is a place a grant is over, so none is reachable from inside a turn,
+///   which is what `file_open` already answered for the same things opened by
+///   name.
+///
+/// # What that costs the turn, and how it is paid
+///
+/// Leaving a boundary used to be the turn's own write into `cgroup.threads`
+/// through a descriptor opened before it began — the same property as the gap,
+/// used on purpose. That write is now refused like any other, so a turn's
+/// thread cannot end its own boundary at all, and it is brought home by a
+/// thread of the service that is not in one. `alo-bounding`'s `inside.rs` has
+/// the arrangement; `what_a_turn_inherits.rs` measures both the refusal and
+/// the turn still ending.
+///
+/// # What this does not decide
+///
+/// A mapping. `mmap` of a file is `mmap_file`, not a read, and it is not
+/// hooked: a file mapped into memory is read by the processor rather than by
+/// a syscall, so a mapping of an inherited descriptor made inside a turn is a
+/// way to its contents this hook does not see. `docs/quirks.md` names it
+/// beside what closed here, and why the committed suite cannot reproduce it.
+pub fn decide_use(file: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every read and write on the machine.
+        return ALLOWED;
+    };
+    match kind_of(file) {
+        Some(A_SOCKET | A_PIPE) => ALLOWED,
+        Some(_) if inside(file, granted) => ALLOWED,
+        _ => REFUSED,
+    }
+}
+
+/// What kind of file this is — the `S_IFMT` bits of its inode's mode — or
+/// [`None`] if the kernel would not say.
+///
+/// # Why this fetches its own offsets rather than using [`Fields`]
+///
+/// The verifier's stack. A BPF program has 512 bytes of stack across every
+/// call it makes at once; a bound is 128 of them, the walk's fields 64, and
+/// reading the kind inside the walk's frame was measured putting this program
+/// 64 bytes over, so the kernel refused to load it. Reading it first, in a
+/// frame of its own that has returned before the walk begins, costs three more
+/// reads of kernel memory per use inside a turn and keeps the walk exactly the
+/// shape [`decide`] has already verified.
+fn kind_of(file: u64) -> Option<u16> {
+    let file_path = kernel::offset(Field::FilePath)?;
+    let path_dentry = kernel::offset(Field::PathDentry)?;
+    let dentry_inode = kernel::offset(Field::DentryInode)?;
+    let inode_mode = kernel::offset(Field::InodeMode)?;
+    let entry = kernel::word_at(file.wrapping_add(file_path).wrapping_add(path_dentry))?;
+    let inode = kernel::word_at(entry.wrapping_add(dentry_inode))?;
+    let mode = kernel::quarter_word_at(inode.wrapping_add(inode_mode))?;
+    Some(mode & A_KIND)
 }
 
 /// Whether this rename may go ahead.
@@ -512,14 +619,23 @@ fn inside(file: u64, granted: Bounds) -> bool {
     let Some(fields) = Fields::found() else {
         return false;
     };
+    let Some(entry) = entry_of(file, &fields) else {
+        return false;
+    };
+    upwards_from(entry, &fields, granted)
+}
+
+/// The directory entry a `struct file` was opened through, or [`None`] if it
+/// cannot be read.
+///
+/// One fetch for the two hooks that are handed a file, so that an open and a
+/// use of the same descriptor cannot start their walks from different places.
+fn entry_of(file: u64, fields: &Fields) -> Option<u64> {
     // `f_path` is embedded in `struct file` rather than pointed at, so its
     // offset gives the address of the `struct path` itself, and the entry is
     // one step further in.
     let path = file.wrapping_add(fields.file_path);
-    let Some(entry) = kernel::word_at(path.wrapping_add(fields.path_dentry)) else {
-        return false;
-    };
-    upwards_from(entry, &fields, granted)
+    kernel::word_at(path.wrapping_add(fields.path_dentry))
 }
 
 /// Whether a granted place is met walking up from this directory entry.

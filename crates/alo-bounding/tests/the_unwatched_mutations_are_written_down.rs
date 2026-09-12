@@ -77,6 +77,7 @@ const WHERE_IT_ALSO_BELONGS: &[&str] = &[
 /// at it rather than as a test that still passes.
 const EVERY_HOOK: &[&str] = &[
     "file_open",
+    "file_permission",
     "inode_link",
     "inode_rename",
     "inode_unlink",

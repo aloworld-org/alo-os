@@ -317,6 +317,46 @@ mod tests {
         assert!(denied.contains("nothing else was attempted"), "{denied}");
     }
 
+    /// **A read the kernel refused is the sentence a refused open is.** The
+    /// boundary refuses an `open` outside the grant with `EACCES`, and since
+    /// `file_permission` it refuses a *read* or a *write* on a descriptor the
+    /// same way — one that existed before the turn began, or one a verb with a
+    /// bug in it was handed. Both arrive here as the same `std::io::Error`,
+    /// through the same door, and both have to be the same words in the
+    /// record: a person reading *what did the agent do* is owed one sentence
+    /// for *the machine refused this*, not one per hook — and never *it went
+    /// away*, which is the answer a missing file gets and a refused one must
+    /// not.
+    #[test]
+    fn a_read_the_kernel_refused_is_the_sentence_a_refused_open_is() {
+        // `EACCES`, as the kernel gives it at an open and at a read alike; the
+        // words are the machine's own and arrive in whatever language it
+        // speaks, so they are spelled here rather than asked of this host.
+        let key = Path::new("/home/anna/Private/id_ed25519");
+        let eacces = || Error::new(ErrorKind::PermissionDenied, "permission denied");
+        let refused_at_open = Failed::machine(key, "read", &eacces());
+        let refused_at_read = Failed::machine(key, "read", &eacces());
+        let refused_at_write = Failed::machine(key, "written", &eacces());
+
+        assert!(
+            matches!(refused_at_read, Failed::TheMachineSaidNo { .. }),
+            "a refused read is not the machine saying no"
+        );
+        assert_eq!(
+            refused_at_read, refused_at_open,
+            "a refused read and a refused open are different sentences"
+        );
+        let read = said(&refused_at_read);
+        assert!(read.contains("permission denied"), "{read}");
+        assert!(read.contains("read"), "{read}");
+        assert!(read.contains("nothing else was attempted"), "{read}");
+        let written = said(&refused_at_write);
+        assert!(
+            written.contains("permission denied") && written.contains("written"),
+            "{written}"
+        );
+    }
+
     /// Every message says what to do about it. A refusal a person cannot act on
     /// is a refusal they will ask somebody else about.
     #[test]

@@ -55,9 +55,9 @@ between them says which report moved it.
 Evidence means a test that runs against the **real loaded BPF LSM** on a running
 kernel, not a mock and not compilation.
 
-**Six hooks exist:** `file_open`, `inode_rename`, `inode_unlink`, `inode_link`,
-`socket_connect`, `socket_sendmsg`. The programme has exactly two maps and
-writes nothing down.
+**Seven hooks exist:** `file_open`, `file_permission`, `inode_rename`,
+`inode_unlink`, `inode_link`, `socket_connect`, `socket_sendmsg`. The programme
+has exactly two maps and writes nothing down.
 
 | Requirement | Evidence |
 |---|---|
@@ -84,6 +84,12 @@ writes nothing down.
 | **A datagram sent without connecting is refused** — and one to a shown destination goes, one to loopback goes unshown, and a process that is not a turn sends it | same file, `an_unconnected_datagram_is_refused_inside_a_bound_turn` and two siblings |
 | The message hook, outside a turn, leaves no trace | `the_boundary_decides_and_forgets.rs`, datagrams beside the opens |
 | A refused message and a refused connection are one sentence in the record | `alo-asking` `a_message_the_kernel_refused_is_the_sentence_a_refused_connection_is` |
+| **A descriptor opened before the turn began is refused at the first byte** — read, write, append and listing, with nothing moved and the file undisturbed | `what_a_turn_inherits.rs`, six refusals through `Turns::doing` on the asserting thread |
+| **A descriptor to a file inside the grant is untouched** — read through, written through, listed through; and a Unix socket is left to the message hook | same file, `a_descriptor_to_a_file_inside_the_grant_is_untouched` and two siblings |
+| **A turn cannot write itself out of its boundary, and ends anyway** — a thread of the service that was never in it brings it home | same file, `the_way_out_of_a_turn_is_refused_to_the_turn_and_the_turn_ends_anyway` |
+| The read-and-write hook, outside a turn, leaves no trace | `the_boundary_decides_and_forgets.rs`, reads and writes beside the opens |
+| A refused read and a refused open are one sentence in the record | `alo-files` `a_read_the_kernel_refused_is_the_sentence_a_refused_open_is` |
+| The account of what a turn inherits is held to the programme | `what_a_turn_inherits_is_written_down.rs` |
 | Loader: a leftover pin on any hook is refused over and not removed | `alo-boundaryd` `a_machine_that_already_has_a_boundary_keeps_it`, per hook |
 | Loader: taking a boundary away leaves no hook attached | `taking_a_boundary_away_leaves_none_of_its_hooks_attached` |
 | Loader: the boundary outlives the loader; a second loader refuses | `the_boundary_outlives_the_loader.rs` |
@@ -116,7 +122,8 @@ Each is documented, most are reproduced, and none is scheduled here.
 
 | Gap | Release | State |
 |---|---|---|
-| **A descriptor opened before the turn began** | v0.5 | **Reproduced, and the only gap in this crate that moves contents past a grant**: the same thread is refused `open` on a private key and reads every byte of it through a descriptor that already existed. `what_a_turn_inherits.rs`. **Needs a decision** — options in `docs/autonomy/updates/network-boundary-decisions-proposed.md` |
+| ~~A descriptor opened before the turn began~~ | v0.5 | **Closed, task 12, 2026-09-12** — `file_permission` decides on every read and write, asked of the using thread's cgroup; the turn is brought home by a thread that was never in it. Moved to section 1 |
+| **A mapping of a file opened before the turn began** | v0.5 | `mmap_file` is not hooked: a file mapped into memory is read by the processor, so a mapping of an inherited descriptor made inside the turn reaches its contents past `file_permission`. **Not reproduced** — there is no safe `mmap` in Rust and `unsafe` is forbidden outside the kernel package's one file; the same rule that keeps `truncate(2)` out of the suite. `docs/quirks.md` names it beside what closed |
 | ~~A socket already open or inherited~~ | v0.5 | **Closed, task 13, 2026-09-12** — `socket_sendmsg` decides on every message, asked of the sending thread's cgroup. Moved to section 1 |
 | ~~A datagram sent without connecting~~ | v0.5 | **Closed, task 13, 2026-09-12** — the same hook reads the address a message names. Moved to section 1 |
 | ~~A connection reused after its destination is withdrawn~~ | v0.5 | **Closed, task 13, 2026-09-12** — the message hook reads the map on every message, so a withdrawn destination is refused on the next write. ADR 0020's per-request client had already closed it on the production path |
@@ -800,6 +807,37 @@ untrue of an inherited descriptor.
   mechanism is Landlock (ADR 0013's file primitive) rather than another hook on
   the BPF LSM, that is this task's finding and its report says which and why;
   it does not add a second privileged component to do it.
+
+**Done, 2026-09-12.** A seventh hook, `file_permission`, in
+`crates/alo-bounding-kernel/src/deciding.rs` as `decide_use`. It runs on every
+read and write on the machine, asks the **using thread's** control group, reads
+the file's kind from `i_mode` — the fourteenth offset in `FIELDS`, and the two
+maps are still the two — and steps aside for a socket, which `socket_sendmsg`
+decides about by destination; for anything else it walks up from the file's own
+directory entry exactly as an open does, so a descriptor to a place inside the
+grant is untouched and one to anywhere else is refused with `EACCES` before a
+byte has moved. Every reproduction in `what_a_turn_inherits.rs` flipped from
+*reaches* to *refused* in the same file, each beside the use inside the grant it
+must not break: the invoice's descriptor read and written through, the granted
+folder listed through a handle, a pair of Unix sockets written across from
+inside. **The way out of a turn is the fourth row closed rather than
+exempted**: a turn's thread can no longer write itself out through the
+inherited `home/cgroup.threads`, so `inside.rs` starts a thread of the service
+beside the turn — in `home`, before the turn's thread goes in — that writes the
+turn's thread number on its behalf when the work is over; nothing is started
+and `a_turn_is_this_thread.rs` still holds the crate to law 2. **Landlock is
+not the mechanism** and the report says why: it decides at open, which is the
+hook this crate already had, and a ruleset is irrevocable for the thread it is
+applied to, which a turn that is a thread cannot afford. **Not closed, and
+named**: `mmap_file` — a mapping of an inherited descriptor made inside the
+turn — because there is no safe `mmap` in Rust, so the committed suite cannot
+reproduce it, and a hook nobody can show refusing was not added on belief; the
+quirks entry and the hardening table above say so. The loader's capability set
+is unchanged and `crates/alo-image` still holds it to two. `alo-files` holds
+that a refusal at read is the record's sentence for a refusal at open, and
+`the_boundary_decides_and_forgets.rs` reads and writes outside a turn beside its
+opens and still finds nothing written down. Report:
+`docs/autonomy/updates/descriptors-inside-the-boundary.md`.
 
 ### 13. A socket already open, and a datagram sent without connecting, are inside the boundary
 
