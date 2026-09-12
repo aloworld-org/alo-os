@@ -141,6 +141,48 @@ pub enum Wrong {
         /// The number the description says the agent is.
         agent: u32,
     },
+    /// A login the image makes is one the build never holds to its number.
+    #[error(
+        "this image declares login `{login}` as {declared} and the build asserts {asserted} — \
+         `systemd-sysusers` does not fail on a number somebody else has, it takes a different one \
+         and says so in a line of a build log (docs/quirks.md), so a number no `test` holds it to \
+         is a number a base update can take from under a machine that ships"
+    )]
+    ALoginTheBuildDoesNotAssert {
+        /// The login the image declares.
+        login: String,
+        /// The number it declares for it.
+        declared: u32,
+        /// What the build insists on, or `nothing` where it insists on nothing.
+        asserted: String,
+    },
+    /// A group the image makes is one the build never holds to its number.
+    #[error(
+        "this image declares group `{group}` as {declared} and the build asserts {asserted} — a \
+         group is the whole of who may knock at a door on this machine, and `systemd-sysusers` \
+         answers a taken number by putting the login in the group that has it (docs/quirks.md), \
+         which is a green build and a machine handing a socket to somebody else"
+    )]
+    AGroupTheBuildDoesNotAssert {
+        /// The group the image declares.
+        group: String,
+        /// The number it declares for it.
+        declared: u32,
+        /// What the build insists on, or `nothing` where it insists on nothing.
+        asserted: String,
+    },
+    /// A membership the image declares is one the build never checks.
+    #[error(
+        "this image puts login `{login}` in group `{group}` and the build never checks that it is \
+         in it — the membership is what lets a socket be handed over at all, and a `m` line that \
+         silently did nothing is a daemon that binds a door it cannot give away"
+    )]
+    AMembershipTheBuildDoesNotAssert {
+        /// The login the image puts into a group.
+        login: String,
+        /// The group.
+        group: String,
+    },
     /// A directory the daemon refuses to make is one nothing makes.
     #[error(
         "nothing in this image makes {at} at boot, and `alo-agentd` refuses to make it — the \

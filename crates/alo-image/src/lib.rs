@@ -19,6 +19,7 @@
 //! | [`Unit`], [`Service`] | A systemd unit as text, and the settings alo OS asks about |
 //! | [`THE_LOADER`], [`THE_AGENT`], [`THE_OPENER`], [`THE_SERVER`] | The four units a machine starts, as systemd names them |
 //! | [`Made`], [`Declared`], [`Description`] | What is made at boot, who the machine's logins are, and what it says about itself |
+//! | [`Asserted`] | The numbers the build itself checks once those logins have been made |
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
 //! | [`TheWeights`] | The weights a machine arrives with, and whether the catalogue measured them |
@@ -77,6 +78,7 @@
 //! leaves to `alo-agentd`.
 
 mod accounts;
+mod asserted;
 mod booting;
 mod checking;
 mod description;
@@ -95,6 +97,7 @@ mod weights;
 mod wrong;
 
 pub use accounts::{TheStore, where_a_sign_in_looks};
+pub use asserted::Asserted;
 pub use booting::TheDocument;
 pub use checking::{THE_DOOR, everything_wrong_with};
 pub use description::{Description, THE_DESCRIPTION, THE_FORMAT};

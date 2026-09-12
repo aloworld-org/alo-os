@@ -633,6 +633,110 @@ because a runtime alo OS ships is not an address anybody typed.
 **Upstream:** not reported; both are documented behaviour.
 **Date:** 2026-09-03
 
+### Ollama 0.34.0 — `ollama create` leaves the source weights in the store, and nothing references them
+**Version:** Ollama 0.34.0, the runtime `image/Containerfile` pins, run inside
+the image's own weights stage; measured 2026-09-11 by building the recipe and
+reading the store on the image it produced.
+**Behaviour:** `ollama create NAME -f Modelfile` with `FROM /weights.gguf` does
+two things where the documentation describes one. It copies the source file into
+the blob store under that file's own sha256 — the log says
+`copying file sha256:8a83c7fb…` — and then, under `parsing GGUF` and
+`verifying conversion`, it writes a **second** blob of exactly the same length
+and a different digest. The manifest it writes names only the second:
+
+```
+layers: [ {model,  sha256:01ec9e67…, 2393231072},
+          {template, sha256:79bcc381…, 94},
+          {params,   sha256:901ce025…, 98} ]
+```
+
+`sha256-8a83c7fb…` — 2,393,231,072 bytes, the artefact `THE_MODELS_SHA256` pins
+and the recipe verifies before anything reads it — stays in `blobs/`, referenced
+by no manifest. So a store built this way is **twice the size of the model in
+it**: 4.5 GiB for 2.23 GiB of weights, and the image is 8.38 GiB where the
+recipe's own comment says *2.23 GiB, carried once*.
+
+It cannot be cleaned up afterwards on a machine. The store lands under `/usr`,
+which is read-only on a bootc system (ADR 0011), so the runtime's own pruning —
+whatever it would do — can never reach it.
+**Our response:** **written down, not worked around.** The build that found it
+passed, and task 33's rule is that it changes no decision to make a build pass;
+what to do about it is task 34 in `docs/autonomy/v0-01-delivery-plan.md`, where
+the choice between removing the source blob in the weights stage after the
+import, importing another way, and carrying it deliberately is somebody's to
+make with the sizes in front of them. **No client was patched**: engines are
+configured, never patched, and a store laid out by the runtime is the runtime's
+own business.
+**Upstream:** not reported.
+**Date:** 2026-09-11
+
+### Ollama 0.34.0 — the runtime asks its publisher two questions before anybody asks it anything
+**Version:** Ollama 0.34.0, the runtime `image/Containerfile` pins, started out
+of the built alo OS image as `alo-model` with the image's own store; measured
+2026-09-11, once with an ordinary network and once with none.
+**Behaviour:** within eight milliseconds of starting, with no request made of it
+and no model loaded, the runtime makes **two outbound HTTPS requests to
+`ollama.com`**:
+
+```
+WARN model_show_cache.go:142 "model show cloud cache hydration failed"
+  error="Get \"https://ollama.com:443/api/tags?ts=…\": …"
+WARN model_recommendations.go:168 "model recommendations refresh failed"
+  error="Get \"https://ollama.com/api/experimental/model-recommendations?ts=…\": …"
+INFO model_recommendations.go:177 "model recommendations cache sleep scheduled"
+  wait=4m37s consecutive_failures=1
+```
+
+and it keeps trying for as long as it is up — every ~4m37s while they fail, and
+on a long schedule once one succeeds. Its own defaults name the destination:
+`OLLAMA_REMOTES:[ollama.com]`, `OLLAMA_NO_CLOUD:false`. None of this is in the
+serving documentation, and none of it is an inference call: it is a list and a
+recommendations feed.
+
+On a machine sold on the sentence *a working day produces zero inference egress,
+measured at the network boundary*, the process holding the model reaching its
+publisher on every start is the thing that sentence is about.
+**Our response:** `alo-modeld.service` already refuses it, and this measurement
+is why that line is not decoration. `IPAddressAllow=localhost` under
+`IPAddressDeny=any` is a kernel-side filter on the service's own control group,
+so these two requests do not fail politely on a machine — they do not leave. That
+is the design task 32 argued for; what this entry adds is that **the thing it was
+guarding against has now been watched happening**, rather than supposed.
+
+Two honest limits. The filter itself is **not** what refused the requests in this
+measurement — `--network=none` on a container was — because nothing in this lane
+has started that unit under systemd. And the runtime's own switch,
+`OLLAMA_NO_CLOUD`, is a documented setting the unit does not yet set; adding it is
+configuration rather than a patch, and it is in task 34 beside the counter,
+because a second lock is a decision about defence in depth rather than a line
+somebody adds while reporting a build.
+**Upstream:** not reported.
+**Date:** 2026-09-11
+
+### A bootc image inspected as a container has no `/root`, and the error says `file exists`
+**Version:** `quay.io/fedora/fedora-bootc:42`, the base `image/Containerfile`
+pins; found 2026-09-11 running the built alo OS image under `podman run`.
+**Behaviour:** `/root` on an ostree-derived base is a **symbolic link to
+`var/roothome`**, and `/var/roothome` does not exist until a machine boots and
+`tmpfiles` makes it. A program that creates its own state directory under `$HOME`
+therefore walks into a dangling link, and Go's `MkdirAll` reports it as:
+
+```
+Error: could not create directory mkdir /root: file exists
+```
+
+which reads like a permissions bug in the program, or like an image that shipped
+something where a directory should be. It is neither, and it happens only when
+the image is inspected as a container rather than booted.
+**Our response:** nothing in the image changes. `alo-modeld.service` never goes
+near it — `User=alo-model` with `StateDirectory=alo-model` and
+`HOME=/var/lib/alo-model` — and started that way inside the image, as that login,
+the same runtime comes up and lists the model the machine arrived with. This is
+written down because the failure costs twenty minutes and points at the wrong
+file, and because inspecting the image under `podman run` is what anybody will do
+next.
+**Date:** 2026-09-11
+
 ### A model runtime's door is a TCP port, and a TCP port has no owner and no mode
 **Version:** Ollama 0.34.0, the runtime `image/Containerfile` pins; systemd 257
 (257.13-1.fc42) on the pinned base.

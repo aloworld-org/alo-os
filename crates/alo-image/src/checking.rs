@@ -131,6 +131,7 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_opener_can_be_knocked_on_by_the_greeter_alone(image, &mut wrong);
     the_agent_holds_nothing(image, &mut wrong);
     the_logins_are_the_ones_this_image_makes(image, &mut wrong);
+    the_build_holds_every_login_to_its_number(image, &mut wrong);
     the_directories_are_made(image, &mut wrong);
     the_agent_can_make_what_it_is_not_given(image, &mut wrong);
     nobody_chose_a_retention(image, &mut wrong);
@@ -881,6 +882,65 @@ fn the_logins_are_the_ones_this_image_makes(image: &Image, wrong: &mut Vec<Wrong
     }
 }
 
+/// **Every number this image declares is one its own build asserts.**
+///
+/// This is the one check here that is about the build rather than about the
+/// machine, and it is here because of what building the image measured. A
+/// `sysusers.d` line is a **request**: on the pinned base `systemd-sysusers`
+/// answers a number somebody else has by taking a different one, or by putting
+/// the login into the group that already holds it — which is how alo OS's agent
+/// was put into `systemd-resolve`'s group the first time this recipe was built,
+/// with a green build and one line in a log (`docs/quirks.md`). The `test` lines
+/// at the foot of `image/Containerfile` are the only place a request becomes a
+/// fact, and nothing until now held the two files to each other: a sixth login
+/// added to `sysusers.d` is asserted by nobody, and the failure it prevents is
+/// silent by construction.
+///
+/// A number asserted as something **other** than what is declared is the same
+/// finding and is worth as much: two files that disagree here are a build that
+/// fails for a reason nobody can read, or worse, a machine description naming a
+/// login the machine gave a different number to.
+fn the_build_holds_every_login_to_its_number(image: &Image, wrong: &mut Vec<Wrong>) {
+    for declared in image.declares() {
+        match declared {
+            crate::logins::Declared::Login { name, id, .. } => {
+                let asserted = image.asserted().login_called(name);
+                if asserted != Some(*id) {
+                    wrong.push(Wrong::ALoginTheBuildDoesNotAssert {
+                        login: name.clone(),
+                        declared: *id,
+                        asserted: said_number(asserted),
+                    });
+                }
+            }
+            crate::logins::Declared::Group { name, id } => {
+                let asserted = image.asserted().group_called(name);
+                if asserted != Some(*id) {
+                    wrong.push(Wrong::AGroupTheBuildDoesNotAssert {
+                        group: name.clone(),
+                        declared: *id,
+                        asserted: said_number(asserted),
+                    });
+                }
+            }
+            crate::logins::Declared::Member { login, group } => {
+                if !image.asserted().puts(login, group) {
+                    wrong.push(Wrong::AMembershipTheBuildDoesNotAssert {
+                        login: login.clone(),
+                        group: group.clone(),
+                    });
+                }
+            }
+        }
+    }
+}
+
+/// A number the build insists on, in a sentence somebody reads — or the word
+/// for a build that insists on nothing at all.
+fn said_number(asserted: Option<u32>) -> String {
+    asserted.map_or_else(|| "nothing".to_owned(), |number| number.to_string())
+}
+
 /// ADR 0017 and the machine description: the two directories `alo-agentd`
 /// refuses to make are made by something.
 fn the_directories_are_made(image: &Image, wrong: &mut Vec<Wrong>) {
@@ -1381,6 +1441,75 @@ mod tests {
             wrong
                 .iter()
                 .any(|it| matches!(it, Wrong::ThePersonIsNotInTheGroup { .. })),
+            "{wrong:?}"
+        );
+    }
+
+    /// **A sixth login nobody asserts is caught**, which is the mistake this
+    /// check was written for: `sysusers.d` is edited, the build is green, and
+    /// the machine has a login whose number is whatever was free on the base
+    /// that day. Nothing about either file on its own is wrong.
+    #[test]
+    fn a_login_the_build_never_holds_to_its_number_is_caught() {
+        let root = a_copy_of_the_image("unasserted-login");
+        edited(
+            &root,
+            THE_SYSUSERS,
+            "g alo-model 60991",
+            "g alo-model 60991\nu alo-printing 60992 \"alo OS printing\" /var/lib/alo-printing /usr/sbin/nologin",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::ALoginTheBuildDoesNotAssert { login, .. } if login == "alo-printing"));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("nothing"), "{said}");
+    }
+
+    /// **A number the two files no longer agree on is caught.** The declaration
+    /// moves, the assertion stays, and what fails is a build nobody can read —
+    /// or, if the assertion is the one that moved, a machine whose description
+    /// names a number the login does not have.
+    #[test]
+    fn a_number_the_build_asserts_and_the_image_does_not_declare_is_caught() {
+        let root = a_copy_of_the_image("drifted-number");
+        edited(
+            &root,
+            THE_SYSUSERS,
+            "g alo-model 60991",
+            "g alo-model 60891",
+        );
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        let found = wrong
+            .iter()
+            .find(|it| matches!(it, Wrong::AGroupTheBuildDoesNotAssert { group, .. } if group == "alo-model"));
+        assert!(found.is_some(), "{wrong:?}");
+        let said = found.map(ToString::to_string).unwrap_or_default();
+        assert!(said.contains("60991"), "{said}");
+    }
+
+    /// **A membership the build stopped checking is caught**, and this is the
+    /// one that really happened: the first build of this image put alo OS's
+    /// agent into `systemd-resolve`'s group, and the line that would have found
+    /// it is the one deleted here.
+    #[test]
+    fn a_membership_the_build_stopped_checking_is_caught() {
+        let root = a_copy_of_the_image("unasserted-membership");
+        edited(&root, THE_CONTAINERFILE, "| grep -qx alo-agent", "| cat");
+
+        let wrong = everything_wrong_with(&image_at(&root));
+
+        assert!(
+            wrong.iter().any(|it| matches!(
+                it,
+                Wrong::AMembershipTheBuildDoesNotAssert { login, group }
+                    if login == "alo" && group == "alo-agent"
+            )),
             "{wrong:?}"
         );
     }

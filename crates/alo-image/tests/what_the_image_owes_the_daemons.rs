@@ -127,6 +127,57 @@ fn the_agents_login_cannot_be_taken_by_the_base() {
     );
 }
 
+/// **Every login and group this image declares is one its own build asserts.**
+///
+/// The number in a `sysusers.d` line is a request rather than a declaration: on
+/// the pinned base `systemd-sysusers` answers a number somebody else has by
+/// taking a different one, or by putting the login into the group that already
+/// holds it — which is how alo OS's agent was put into `systemd-resolve`'s group
+/// the first time this recipe was built (`docs/quirks.md`). The `test` lines at
+/// the foot of `image/Containerfile` are where a request becomes a fact, and
+/// this is what keeps the two files from drifting apart: a login added here and
+/// asserted nowhere is one whose number the machine may not have.
+///
+/// Written after building the recipe, because building it is what shows that
+/// those assertions are the only thing standing between a green build and a
+/// machine whose description names a number a login does not hold.
+#[test]
+fn the_build_holds_every_login_to_the_number_the_image_declares() {
+    let image = the_image();
+    let asserted = image.asserted();
+
+    for (login, number) in [
+        ("alo", 1000),
+        ("alo-agent", 60989),
+        ("alo-greeter", 60990),
+        ("alo-model", 60991),
+    ] {
+        assert_eq!(image.login_called(login), Some(number));
+        assert_eq!(
+            asserted.login_called(login),
+            Some(number),
+            "the recipe does not hold `{login}` to {number} after `systemd-sysusers` has run"
+        );
+    }
+    for (group, number) in [
+        ("alo-agent", 60989),
+        ("alo-greeter", 60990),
+        ("alo-model", 60991),
+    ] {
+        assert_eq!(image.group_called(group), Some(number));
+        assert_eq!(
+            asserted.group_called(group),
+            Some(number),
+            "the recipe does not hold group `{group}` to {number}"
+        );
+    }
+    assert!(
+        asserted.puts("alo", "alo-agent"),
+        "the membership is what lets the socket be handed over at all, and it is the one the \
+         first build of this image got silently wrong"
+    );
+}
+
 /// **ADR 0017's directory is made by the image and is what the ADR says.**
 /// `alo-agentd` refuses to make it, and every person's door goes in it — so its
 /// mode is not one person's service's to choose.

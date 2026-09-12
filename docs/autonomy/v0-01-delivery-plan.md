@@ -1735,3 +1735,88 @@ found by building.
   capability, a widened grant or a patched engine, the ADR is the work and the
   build waits on it. It downloads what the recipe downloads and nothing else.
   Nothing in `crates/alo-shell`.
+
+**Done, 2026-09-11.** The recipe was built — `podman build -f
+image/Containerfile -t alo-os:dev .`, the command `docs/booting.md` gives, on
+Ubuntu 26.04 under WSL2 with nothing of ours cached — and it **succeeded**: 27
+minutes 29 seconds, 8.38 GiB of image, ≈23 GiB of disk, 2.28 GiB of weights
+fetched and held to their digest. The assertion the plan worried most about is
+the one that came out cleanest: all five numbers were created exactly as asked,
+with no `Suggested user ID … already used` line anywhere, so the move to 60989+
+after the resolver-group incident **holds on this base**. `bootc container lint`
+said `Checks passed: 13` — and `Checks skipped: 1`, which bootc 1.15.1 will not
+name, so the report quotes both counts rather than the flattering one. The model
+store is on the image, and the runtime started out of it as `alo-model` lists
+`phi3:3.8b-mini-4k-instruct-q4_K_M` off it.
+
+**Two findings, and the second is the one worth the day.** The image carries the
+weights **twice** — `ollama create` copies the source GGUF into the store under
+its own digest and then writes a second blob of the same length that the manifest
+actually names, so 2.23 GiB of the 8.38 GiB is referenced by nothing and sits on
+a read-only `/usr` where nothing can ever prune it. And the pinned runtime
+**phones home**: two HTTPS requests to `ollama.com` within eight milliseconds of
+starting, before anybody asks it anything, retried for as long as it is up. Task
+32 wrote `IPAddressDeny=any` on that suspicion; it is now a measurement rather
+than a suspicion, and the report says plainly that one of those requests was
+*answered* during an inspection run with a network, which is an egress this lane
+caused and had said it would not. Both are in `docs/quirks.md` with versions and
+dates, with a third — `/root` on an ostree base is a symlink to a `var/roothome`
+that does not exist until a boot, so inspecting this image under `podman run`
+fails with a sentence that points at the wrong file.
+
+Neither finding was fixed, because the build passed and this task changes no
+decision to make one pass: they are task 34. What did change is
+`crates/alo-image`, which now holds the recipe's own build-time assertions to the
+logins the image declares — building it is what showed those seven `test` lines
+are the only thing standing between `systemd-sysusers` taking a different number
+and a machine whose description names a login it does not have, and that nothing
+held them to the file they are about. **No *On the machine* box moved**,
+`ROADMAP.md`'s machine half stays empty and `docs/features.md` was not touched.
+Report: `docs/autonomy/updates/the-recipe-built-rather-than-read.md`. The next
+task (34) is written below.
+
+### 34. Half an image of dead weight, and a runtime that calls home
+
+**Status:** ready. **Depends on:** nothing, on a machine with a container
+runtime. **Owner:** Claude — it touches no compositor file and needs no screen.
+
+Written by task 33, out of the two things building the image measured. Both are
+about the same file and both are the shape this plan keeps producing: a promise
+in `docs/` that a rented engine quietly makes untrue.
+
+**The weights are carried twice.** `ollama create` leaves the source GGUF in the
+store under its own digest and writes a second blob the manifest names instead —
+same length, different digest — so `/usr/share/alo/models` is 4.5 GiB for 2.23
+GiB of model, the image is 8.38 GiB where the recipe's comment says *2.23 GiB,
+carried once*, and `/usr` is read-only on a bootc machine so nothing can ever
+prune it. Every machine we ship carries it, over every network it is installed
+across.
+
+**And the runtime calls home.** Two HTTPS requests to `ollama.com` in the first
+eight milliseconds, with nothing asked of it, retried while the machine is up.
+`alo-modeld.service`'s `IPAddressDeny=any` refuses them on a machine — but
+nothing in this lane has ever started that unit under systemd, so *the filter
+stops it* is exactly the kind of sentence task 33 was written to stop trusting.
+
+- **Acceptance:** the image carries the weights **once** — whichever way is
+  chosen, with the cost of the other written down, and with the pinned digest
+  still checked before anything reads the file (the check is the pin; a cheaper
+  import that dropped it is not cheaper); the recipe's own comment and
+  `crates/alo-image` agree with the store that is actually on the image, held
+  there by a test rather than by prose; the runtime's own `OLLAMA_NO_CLOUD` is
+  **decided** — set in the unit as a second lock or deliberately not set, argued
+  either way in one sentence and checked by `crates/alo-image` if it is set; and
+  **the unit's filter is watched rather than read**: `alo-modeld.service` started
+  by a real `systemd` with the image's own store, and the two requests above
+  refused by `IPAddressDeny=` rather than by an absent network, with what was
+  seen quoted. A rebuild measures the new image against 9,000,704,537 bytes and
+  says what it now is.
+- **Constraint:** it may not tick *arrives ready to run* — that waits on a
+  machine, and this lane still has none, so **no *On the machine* box moves**. It
+  configures the engine and never patches it (ADR 0011): removing a file the
+  runtime wrote is the image's business, changing what the runtime writes is not.
+  It may not weaken the digest check, widen what the unit may reach, or give it a
+  capability to make systemd start it under a container. And if starting the unit
+  needs privilege a machine would not need — a container that must be privileged
+  to run `systemd` is not evidence about a machine — say so and measure what can
+  honestly be measured rather than quietly running it as root.

@@ -15,6 +15,7 @@
 use std::path::Path;
 
 use crate::accounts::TheStore;
+use crate::asserted::Asserted;
 use crate::booting::TheDocument;
 use crate::description::Description;
 use crate::disk::TheDisk;
@@ -92,6 +93,8 @@ pub struct Image {
     made: Vec<Made>,
     /// The logins and groups made at boot.
     declared: Vec<Declared>,
+    /// The numbers the build itself asserts once they have been made.
+    asserted: Asserted,
     /// What the machine says about itself.
     description: Description,
     /// What it says about the accounts a person signs in with, which on a
@@ -138,6 +141,7 @@ impl Image {
         // image `crate::checking` has sentences about, not a directory that
         // is no image at all.
         let recipe = text(&root.join(CONTAINERFILE))?;
+        let asserted = Asserted::read(&recipe);
         let runtime = TheRuntime::read(&recipe);
         let weights = TheWeights::read(&recipe);
         let disk = TheDisk::read(&recipe);
@@ -150,6 +154,7 @@ impl Image {
             server,
             made,
             declared,
+            asserted,
             description,
             store: TheStore::of(root),
             runtime,
@@ -205,6 +210,25 @@ impl Image {
     #[must_use]
     pub fn puts(&self, login: &str, into: &str) -> bool {
         self.declared.iter().any(|it| it.puts(login, into))
+    }
+
+    /// Every login, group and membership this image declares, in the order the
+    /// file has them.
+    ///
+    /// The lookups above answer about a name somebody already knows; this is
+    /// for the question that has no name in it — *is every one of these a
+    /// number the build checks* — which cannot be asked one known name at a
+    /// time, because the login nobody remembered to assert is exactly the one
+    /// nobody would think to ask about.
+    #[must_use]
+    pub fn declares(&self) -> &[Declared] {
+        &self.declared
+    }
+
+    /// What the recipe asserts about those logins once they have been made.
+    #[must_use]
+    pub const fn asserted(&self) -> &Asserted {
+        &self.asserted
     }
 
     /// Whether this image makes any login with this number.

@@ -351,7 +351,8 @@ the shape of the exchange rather than the thing working.
 `crates/alo-image/tests/what_the_image_owes_the_daemons.rs`,
 `crates/alo-choosing/tests/the_three_choices.rs`,
 `docs/autonomy/updates/the-weights-a-machine-arrives-with.md`,
-`docs/autonomy/updates/the-one-thing-that-serves-the-model.md`
+`docs/autonomy/updates/the-one-thing-that-serves-the-model.md`,
+`docs/autonomy/updates/the-recipe-built-rather-than-read.md`
 
 The promise this entry is about was reworded on 2026-09-11, when
 ADR 0025 was accepted as Option D under the owner's standing delegation. It used
@@ -391,11 +392,20 @@ those, with a twin that breaks one line of a copy of the image and is caught.
 
 **Still owed:** *arrives ready to run*, which is the sentence in the promise.
 Three things stand in front of it, and one of them is smaller than it was.
-**No machine has booted this image** — no container build of the recipe has been
-run in this lane, so the import step and the serving unit are both a recipe
-rather than a measurement, and the egress claim above is **a setting read rather
-than a machine watched**: nothing has yet put a packet counter beside a booted
-image. **No catalogued model clears the verb-driving bar**, this one included —
+**No machine has booted this image.** The recipe itself was built on 2026-09-11
+— 27 minutes, 8.38 GiB, every login number created exactly as asked and
+`bootc container lint` passing 13 of its 14 checks — so the import step is now a
+measurement rather than a recipe, and the runtime started out of the image it
+produced lists the model the machine arrived with. **A build is not a boot**, and
+two things the build measured are owed work rather than evidence: the store
+carries the weights **twice**, because `ollama create` leaves the source GGUF
+beside the blob its manifest names, and the pinned runtime makes **two requests
+to `ollama.com` within eight milliseconds of starting**, before anything is asked
+of it. The second is why the egress claim above stays **a setting read rather
+than a machine watched**: what the unit forbids has now been watched being
+attempted, and nothing has yet watched `IPAddressDeny=` refuse it, or put a
+packet counter beside a booted image. Both are task 34 of the delivery plan, and
+`docs/quirks.md` carries them with versions and dates. **No catalogued model clears the verb-driving bar**, this one included —
 every entry anybody has measured is graded *rarely*, so what a machine arrives
 able to do is load and answer with a local model rather than be handed an agent
 turn. And **who on the machine may ask the model anything is not decided**: a
