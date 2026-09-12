@@ -66,6 +66,13 @@
 //! replaces, which was somebody remembering a command that reverted the whole
 //! tree.
 //!
+//! A parked branch with **no handoff on it** — the gates refused a first worker,
+//! the repair path put that handoff in `.kernel-loop/refused/`, and the second
+//! worker was stopped before writing its own — is recovered from what it does
+//! have: the file list off its own commit, and the newest refused handoff for
+//! the same task. Both are reported as reconstructed, and the differences
+//! between that handoff and the branch are listed for a person to settle.
+//!
 //! # Stopping
 //!
 //! `stop` writes a file. The loop finishes what it is doing — it never abandons
@@ -674,9 +681,45 @@ fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
             println!("  {what}: {}", these.join(", "));
         }
     }
+    if let recovering::Handoff::Reconstructed {
+        from,
+        named_but_unchanged,
+        changed_but_unnamed,
+    } = &back.handoff
+    {
+        println!(
+            "  `{}` carried no handoff, so the file list is the branch's own commit and the \
+             handoff waiting is the newest refused one for the task, reconstructed from {}.",
+            back.branch,
+            from.display()
+        );
+        for (what, these) in [
+            (
+                "it names these and the branch never changed them; take them out",
+                named_but_unchanged,
+            ),
+            (
+                "the branch changed these and it does not name them; add them",
+                changed_but_unnamed,
+            ),
+        ] {
+            if !these.is_empty() {
+                println!("  {what}: {}", these.join(", "));
+            }
+        }
+    }
     journal::note(
         ours,
-        &format!("recovered `{}` from {}", back.task, back.branch),
+        &format!(
+            "recovered `{}` from {}{}",
+            back.task,
+            back.branch,
+            match &back.handoff {
+                recovering::Handoff::OnTheBranch => String::new(),
+                recovering::Handoff::Reconstructed { from, .. } =>
+                    format!(", with its handoff reconstructed from {}", from.display()),
+            }
+        ),
     );
 
     if back.is_ready_to_gate() {
@@ -687,11 +730,23 @@ fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
         );
         return ExitCode::SUCCESS;
     }
+    if !back.conflicted.is_empty() {
+        eprintln!(
+            "These were changed both by this task and on `main` since, and the two disagree line \
+             for line: {}\nThe markers are in the files and no side was chosen. Resolve them by \
+             hand, then `verify`.",
+            back.conflicted.join(", ")
+        );
+    }
+    if !back.handoff.describes_the_branch() {
+        eprintln!(
+            "The reconstructed handoff does not describe what is on the branch — the \
+             differences are listed above. Make .kernel-loop/handoff.toml say what the branch \
+             says, then `verify`."
+        );
+    }
     eprintln!(
-        "These were changed both by this task and on `main` since, and the two disagree line for \
-         line: {}\nThe markers are in the files and no side was chosen. Resolve them by hand, \
-         then `verify`. `{}` still has the task exactly as it was parked.",
-        back.conflicted.join(", "),
+        "`{}` still has the task exactly as it was parked.",
         back.branch
     );
     ExitCode::FAILURE

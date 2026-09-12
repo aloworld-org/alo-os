@@ -34,7 +34,7 @@
 //! is small enough that the parser below is shorter than the argument for
 //! renting one.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// What the loop was handed.
 #[derive(Debug)]
@@ -70,6 +70,27 @@ const THE_HANDOFF: &str = "handoff.toml";
 
 /// Where a finished handoff is kept, so a task is never published twice.
 const ALREADY_DONE: &str = "published";
+
+/// Where a refused handoff is kept, under the moment it was refused.
+const REFUSED: &str = "refused";
+
+/// A handoff the gates refused, found again for the task it was written for.
+///
+/// Both the text and the reading of it: the text is what goes back into place
+/// byte for byte when a parked task is recovered from it, and the reading is
+/// what says which task and which files that text claims.
+#[derive(Debug)]
+pub struct Refused {
+    /// The file it was found in, so a person can be told where the handoff
+    /// they are holding came from.
+    pub at: PathBuf,
+
+    /// The file's text, exactly.
+    pub written: String,
+
+    /// The file, read.
+    pub handed: Handed,
+}
 
 impl Handed {
     /// Whatever is waiting, or [`None`] if nothing is.
@@ -128,7 +149,7 @@ impl Handed {
     /// second worker's own, and the loop would gate the same refused work twice
     /// and call it an answer.
     pub fn put_aside(ours: &Path) -> Result<(), String> {
-        let refused = ours.join("refused");
+        let refused = ours.join(REFUSED);
         std::fs::create_dir_all(&refused)
             .map_err(|why| format!("{} could not be made: {why}", refused.display()))?;
         let when = std::time::SystemTime::now()
@@ -136,6 +157,76 @@ impl Handed {
             .map_or(0, |since| since.as_secs());
         std::fs::rename(ours.join(THE_HANDOFF), refused.join(format!("{when}.toml")))
             .map_err(|why| format!("the refused handoff could not be put aside: {why}"))
+    }
+
+    /// Where refused handoffs are kept, so a refusal can name it.
+    #[must_use]
+    pub fn where_refused_ones_are(ours: &Path) -> PathBuf {
+        ours.join(REFUSED)
+    }
+
+    /// The newest refused handoff for this task, or [`None`] when there is
+    /// none.
+    ///
+    /// **Newest by the name [`Self::put_aside`] gave it**, which is the second
+    /// the refusal happened, rather than by a modification time: a checkout
+    /// copied or restored from somewhere gets new times on every file and
+    /// keeps every name. A file in the directory whose name is not a number is
+    /// treated as older than every one that is — it was not put there by this
+    /// program, and the order this program wrote is the order that means
+    /// something.
+    ///
+    /// **An entry that does not read is passed over rather than reported.**
+    /// Everything [`Self::put_aside`] moves here was read successfully first —
+    /// the loop gated it — so an unreadable file in this directory is not a
+    /// refused handoff, whatever else it is.
+    ///
+    /// # Errors
+    /// A sentence when the directory is there and cannot be listed. A directory
+    /// that is not there is not an error: it means no handoff has ever been
+    /// refused on this checkout, and the answer is [`None`].
+    pub fn newest_refused_for(ours: &Path, task: &str) -> Result<Option<Refused>, String> {
+        let refused = Self::where_refused_ones_are(ours);
+        let listed = match std::fs::read_dir(&refused) {
+            Ok(listed) => listed,
+            Err(why) if why.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(why) => {
+                return Err(format!("{} could not be listed: {why}", refused.display()));
+            }
+        };
+        let mut entries: Vec<(u64, PathBuf)> = Vec::new();
+        for entry in listed {
+            let path = entry
+                .map_err(|why| format!("{} could not be listed: {why}", refused.display()))?
+                .path();
+            if path.extension().is_none_or(|ext| ext != "toml") {
+                continue;
+            }
+            let moment = path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .and_then(|stem| stem.parse::<u64>().ok())
+                .unwrap_or(0);
+            entries.push((moment, path));
+        }
+        entries.sort_by(|a, b| b.cmp(a));
+
+        for (_, at) in entries {
+            let Ok(written) = std::fs::read_to_string(&at) else {
+                continue;
+            };
+            let Ok(handed) = Self::read(&written) else {
+                continue;
+            };
+            if handed.task == task {
+                return Ok(Some(Refused {
+                    at,
+                    written,
+                    handed,
+                }));
+            }
+        }
+        Ok(None)
     }
 
     /// The file, read.
@@ -289,6 +380,93 @@ mod tests {
             "
 ",
         )
+    }
+
+    /// A loop directory of this test's own, with these refused entries in it.
+    fn a_refused_directory(called: &str, entries: &[(&str, &str)]) -> std::path::PathBuf {
+        let ours = std::env::temp_dir().join(format!(
+            "alo-handoff-refused-{}-{called}",
+            std::process::id()
+        ));
+        drop(std::fs::remove_dir_all(&ours));
+        let refused = Handed::where_refused_ones_are(&ours);
+        std::fs::create_dir_all(&refused).expect("a refused directory");
+        for (named, written) in entries {
+            std::fs::write(refused.join(named), written).expect("an entry to be written");
+        }
+        ours
+    }
+
+    /// The whole handoff, for a different task.
+    fn whole_for(task: &str) -> String {
+        whole().replace("Auditing what a bound turn can still reach", task)
+    }
+
+    /// **The newest refused handoff for a task is found by the moment in its
+    /// name**, past newer ones for other tasks and older ones for the same.
+    #[test]
+    fn the_newest_refused_handoff_for_a_task_is_found_by_its_moment() {
+        let ours = a_refused_directory(
+            "newest",
+            &[
+                ("100.toml", &whole_for("This one")),
+                ("300.toml", &whole_for("Another")),
+                (
+                    "200.toml",
+                    &whole_for("This one").replace("What it says.", "The newer."),
+                ),
+                ("notes.txt", "not a handoff"),
+            ],
+        );
+        let found = Handed::newest_refused_for(&ours, "This one")
+            .expect("the directory to be read")
+            .expect("a refused handoff to be found");
+        assert!(found.at.ends_with("200.toml"), "{:?}", found.at);
+        assert_eq!(found.handed.body, "The newer.");
+        assert!(found.written.contains("The newer."));
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **No refused handoff for the task means [`None`]**, both when the
+    /// directory holds only other tasks' and when it was never made.
+    #[test]
+    fn no_refused_handoff_for_the_task_is_none() {
+        let ours = a_refused_directory("none", &[("100.toml", &whole_for("Another"))]);
+        assert!(
+            Handed::newest_refused_for(&ours, "This one")
+                .expect("the directory to be read")
+                .is_none()
+        );
+        drop(std::fs::remove_dir_all(&ours));
+
+        let never = std::env::temp_dir().join(format!(
+            "alo-handoff-refused-{}-never-made",
+            std::process::id()
+        ));
+        drop(std::fs::remove_dir_all(&never));
+        assert!(
+            Handed::newest_refused_for(&never, "This one")
+                .expect("a missing directory to be no refused handoffs")
+                .is_none()
+        );
+    }
+
+    /// **An entry that does not read is passed over**, rather than stopping
+    /// the search or being taken for the task's.
+    #[test]
+    fn a_refused_entry_that_does_not_read_is_passed_over() {
+        let ours = a_refused_directory(
+            "unreadable",
+            &[
+                ("100.toml", &whole_for("This one")),
+                ("200.toml", "task = This one\n"),
+            ],
+        );
+        let found = Handed::newest_refused_for(&ours, "This one")
+            .expect("the directory to be read")
+            .expect("the readable one to be found");
+        assert!(found.at.ends_with("100.toml"), "{:?}", found.at);
+        drop(std::fs::remove_dir_all(&ours));
     }
 
     /// **A whole handoff reads**, so that the refusals below are about what is

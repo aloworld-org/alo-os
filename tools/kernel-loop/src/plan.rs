@@ -141,6 +141,21 @@ pub fn every_task(at: &Path) -> Result<Vec<Task>, String> {
     Ok(read(&written))
 }
 
+/// The task the plan numbers so, or [`None`] when it numbers none that way.
+///
+/// For the one place a number is all there is to go on: a parked branch is
+/// named for its task's **number**, and a handoff for its **name**, and
+/// recovering a branch that carries no handoff has to get from the first to
+/// the second. The plan is the only thing that knows both.
+///
+/// # Errors
+/// A sentence when the plan cannot be read.
+pub fn numbered(at: &Path, number: u32) -> Result<Option<Task>, String> {
+    Ok(every_task(at)?
+        .into_iter()
+        .find(|task| task.number == number))
+}
+
 /// Every task in a plan that has already been read.
 ///
 /// Separated from the commit it comes out of so that what this program believes

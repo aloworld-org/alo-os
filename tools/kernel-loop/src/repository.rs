@@ -469,6 +469,17 @@ pub fn changed_here_since(at: &Path, from: &str, path: &str) -> Result<bool, Str
     Ok(!changed.trim().is_empty())
 }
 
+/// Whether a branch has this one file at all.
+///
+/// Asked before reading, because [`one_file_as`] answers *not there* and
+/// *git could not be run* with the same kind of sentence, and recovering a
+/// parked branch has to tell them apart: a branch with no handoff is one to
+/// reconstruct from, and a git that will not answer is one to stop at.
+#[must_use]
+pub fn has_a_file(at: &Path, branch: &str, path: &str) -> bool {
+    git(at, &["cat-file", "-e", &format!("{branch}:{path}")]).is_ok()
+}
+
 /// One file, as a branch has it.
 ///
 /// # Errors

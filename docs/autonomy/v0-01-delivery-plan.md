@@ -1876,3 +1876,56 @@ is the same argument task 29 made for the command existing at all.
   never publishes, deletes no branch, and touches nothing outside the paths it
   names. `git checkout -- .` and `git restore -- .` remain the thing the test
   refuses.
+
+**Done, 2026-09-12.** `recover <branch>` now asks the branch whether it carries
+`.kernel-loop/handoff.toml` before reading it. When it does, nothing changed:
+the handoff is the file list, and a handoff that does not describe its branch
+is still refused before anything is written. When it does not, the file list
+is **the branch's own commit** — its diff against the `main` it was parked
+from, read with the same `git diff --name-status` the existing path uses, never
+`git status` — and the handoff is **the newest refused one for the task**:
+the number out of the branch's name, the plan asked which task that is, and
+`.kernel-loop/refused/` read newest-first by the moment in each file's name for
+a handoff naming it. Both are reported as reconstructed, on the terminal and in
+the journal, with the file it was taken from; and because a first worker's
+handoff does not describe what a second worker left, the recovery lists the
+files it names that the branch never changed and the files the branch changed
+that it does not name, and is not ready to gate until a person has made the
+handoff say what the branch says. A branch with neither is refused naming the
+directory, the number and the task looked for; a number the plan does not know
+is refused naming the plan. Seven new tests in `recovering.rs` park real
+branches the way the supervisor parks them — one by the exact road, with the
+real `put_aside` and a second worker that wrote more and no handoff — an eighth
+reads the number out of a parked name, and three in `handoff.rs` hold the
+newest-by-moment lookup. The whole-tree
+commands are still what the source-reading test refuses. Report:
+`docs/autonomy/updates/recovering-a-parked-task-without-its-handoff.md`. The
+next task (36) is written below.
+
+### 36. A parked branch carries the handoff its gates refused
+
+**Status:** ready. **Depends on:** 35.
+
+Task 35 reconstructs a handoff-less branch from `.kernel-loop/refused/`, which
+works on the checkout that parked it and nowhere else: the refused directory is
+ignored by git, so a parked branch copied to another checkout — which is the
+one reason parked branches exist as branches rather than as stashes — carries
+every line of the work and no way to name it. The upstream cause is that
+parking force-adds `.kernel-loop/handoff.toml` and nothing else, and on the road
+that produces most parks the repair path has already moved that file aside.
+
+- **Acceptance:** when parking finds no handoff waiting and the newest refused
+  handoff for the task being parked exists, it force-adds that entry onto the
+  branch as `.kernel-loop/refused-handoff.toml` — a distinct name, so nothing
+  can mistake it for a handoff the parked worker wrote; `recover` prefers, in
+  order, the branch's own handoff, a refused one carried on the branch, and
+  the checkout's `.kernel-loop/refused/`, and reports which it used; the two
+  reconstructed cases are reported exactly as task 35 reports one, differences
+  and all; parking with neither still parks (a branch with the work and no
+  handoff is still better than no branch); and the refusals are tested beside
+  the recoveries, on branches made by the real `parked`.
+- **Constraint:** parking still pushes nothing and still never writes
+  `.kernel-loop/handoff.toml` itself; the carried file is never written back as
+  the task's own handoff without being reported as reconstructed; the file list
+  still comes from the branch's own commit and never from `git status`; and
+  `git checkout -- .` and `git restore -- .` remain the thing the test refuses.
