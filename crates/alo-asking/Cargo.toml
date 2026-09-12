@@ -43,5 +43,22 @@ ureq = { workspace = true }
 # to prove the handing back is enough.
 alo-record = { path = "../alo-record" }
 
+# The person's settings, which this crate never writes. `Vetting` tests a
+# provider and saves nothing; the integration test walks from the test to the
+# one door that does save — `alo_choosing::Choosing::adding`, unchanged — to
+# prove that a provider which did not work writes nothing, and that a person
+# may still save it if they say so. A dev-dependency and not a dependency
+# because the direction matters: a crate that puts questions on a socket has no
+# business holding a door to somebody's settings file.
+alo-choosing = { path = "../alo-choosing" }
+
+# The machine's one vocabulary, which is what a process really holds. This
+# crate's own tests are written against its own list and its neighbours'; the
+# integration test asks the question those cannot — whether every sentence a
+# provider test can produce is one the whole machine can say. A dev-dependency
+# for the direction every crate here takes: a crate that says something is
+# collected by `alo-saying`, and never reaches for it.
+alo-saying = { path = "../alo-saying" }
+
 [lints]
 workspace = true

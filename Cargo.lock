@@ -130,9 +130,11 @@ version = "0.0.1"
 dependencies = [
  "alo-answering",
  "alo-capability",
+ "alo-choosing",
  "alo-egress",
  "alo-models",
  "alo-record",
+ "alo-saying",
  "alo-strings",
  "serde",
  "serde_json",

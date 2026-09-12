@@ -353,6 +353,22 @@ list of permitted hostnames and no environment variable that turns it off. A
 file written before this rule is read exactly as it always was and is never
 rewritten behind the person; the refusal is at the next write.
 
+**A provider can be tested before it is saved, and the writer does not know
+it.** `alo_asking::Vetting` makes one request for the provider's model list with
+the key the person has just typed — before the key goes to a keyring and before
+the address goes to this file — on the egress indicator and under the
+organisation's rule, and comes back with one of exactly three things: it
+answered, it refused the key, or no working provider could be reached at that
+address. A provider that answered is saved through `Choosing::adding` as it
+always was; one that did not has written nothing, because nothing in the
+testing crate can reach this file, and is saved through the same door only if
+the person says so — a provider that is down today is not a wrong provider. A
+provider `alo-asking` does not know how to reach is not guessed at: the honest
+answer is *this cannot be tested from here*, and the save proceeds exactly as
+it does today, including this file's own judgement of the address. The test is
+one request, never retried, and waits no longer than a person sits at a
+dialogue.
+
 **Changing a provider replaces it where it stands.** It is matched by name, the
 way the list matches — case does not count — and keeps its place in the file,
 so the order providers were added in is still the order of `[[provider]]`. A

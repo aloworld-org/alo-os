@@ -96,6 +96,19 @@
 //! a silent fallback* all have to be true at once. Building the harder-to-run
 //! path first is how a method ends up shaped around the case nobody tested.
 //!
+//! # And one door that puts no question
+//!
+//! [`Vetting`] tests a provider before it is saved — one request for its model
+//! list, with the key the person has just typed — so a mistyped key is found
+//! now rather than in the middle of a question. The wire is `alo-models`'
+//! (`alo_models::Trying`); what this crate adds is law 1: the request goes
+//! through `alo-egress`' accounting and the indicator shows it, because a test
+//! request is an egress somebody asked for. What it found is one of exactly
+//! three things ([`Found`]), and when no request was made the reason says so
+//! ([`NotVetted`]). Nothing here saves anything: a provider that did not work
+//! writes nothing, and whether it is saved anyway is the person's to say at
+//! `alo_choosing::Choosing::adding`, the same door as before.
+//!
 //! # What is here
 //!
 //! | | |
@@ -108,6 +121,10 @@
 //! | [`NotAsked`] | The four things a provider can come back with instead, and what to do about each |
 //! | [`NotAnswered`] | The two this machine can, which is that list without law 1's half of it |
 //! | [`Answer`] | What came back, and — always — where it came from |
+//! | [`Vetting`] | A provider tested before it is saved, on the indicator while it is |
+//! | [`Vetted`] | What the test found, and the departure it was found with |
+//! | [`Found`] | The three things a test can find, and what to do about each |
+//! | [`NotVetted`] | The four reasons no request was made |
 //!
 //! # Three things that are not here
 //!
@@ -132,6 +149,7 @@
 pub mod answer;
 pub mod asked;
 pub mod asking;
+pub mod found;
 pub mod hosted;
 pub mod locally;
 // The wire, and nothing in it is anybody else's to call: a public function that
@@ -151,6 +169,8 @@ mod ran_out;
 pub mod refusing;
 pub mod served;
 pub mod unanswered;
+pub mod vetted;
+pub mod vetting;
 pub mod words;
 
 #[cfg(test)]
@@ -159,9 +179,12 @@ mod testing;
 pub use answer::Answer;
 pub use asked::Asked;
 pub use asking::Asking;
+pub use found::{Found, NotVetted};
 pub use hosted::Hosted;
 pub use question::{NotAQuestion, Question};
 pub use refusing::{Miswired, NotAnswered, NotAsked};
 pub use served::Served;
 pub use unanswered::DidNotAnswer;
+pub use vetted::Vetted;
+pub use vetting::Vetting;
 pub use words::{EVERY_WORD, Word, WordsError, asking_words, declare_into};

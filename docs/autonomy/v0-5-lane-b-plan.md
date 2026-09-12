@@ -56,7 +56,17 @@ their key travels in clear the first time they ask a question.
 
 ### 2. Test a provider before saving it
 
-**Status:** ready. **Depends on:** 1.
+**Status:** done. **Depends on:** 1.
+
+**Done, 2026-09-12.** Report:
+[`updates/a-provider-is-tested-before-it-is-saved.md`](updates/a-provider-is-tested-before-it-is-saved.md).
+The door is `alo_asking::Vetting`, because the indicator is `alo-egress`' and
+that crate is lane A's (ADR 0028): the test is expressed with the indicator's
+existing shapes — a `Leaving` that is *fetching something from* the provider,
+under the authority the calling surface names — and the wire stays
+`alo_models::Trying`. The saving door is `alo_choosing::Choosing::adding`,
+unchanged, because `alo-choosing`'s own manifest test forbids it a road to
+`alo-asking`.
 
 *Test a provider before saving it, so a mistyped key is found now rather than
 in the middle of a question.* The test is one request to the provider with the

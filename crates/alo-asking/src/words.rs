@@ -6,7 +6,7 @@
 //!
 //! # It is the shortest list in this workspace, and that is the design
 //!
-//! Two strings, in the crate that talks to the network more than any other.
+//! Three strings, in the crate that talks to the network more than any other.
 //! Everything a person reads around a question was already somebody else's to
 //! say, and this crate deliberately does not say any of it a second time:
 //!
@@ -29,6 +29,12 @@
 //! `alo-answering`'s, and the refusals [`crate::Miswired`] makes are read by
 //! whoever wired the door rather than by anybody using the machine. A list that
 //! grew with every path would be a list that had started saying things twice.
+//!
+//! **Testing a provider before it is saved added one.** What the test found is
+//! `alo-models`' to say — it read the wire — and why a rule refused it is the
+//! rule's. The one thing nobody else knows is that *this* crate does not know
+//! how to reach a provider at all, which is [`CANNOT_BE_TESTED_FROM_HERE`]
+//! and is said instead of guessing an endpoint.
 //!
 //! # Nothing here counts, and nothing here quotes
 //!
@@ -74,11 +80,32 @@ pub const NO_MODEL_NAMED: Word = Word::saying(
      in this sentence.",
 );
 
+// ---------------------------------------------------------------------------
+// A provider that could not be tested — [`crate::NotVetted`].
+//
+// Read beside the provider somebody has just typed in, at the moment they
+// pressed *Test*. It is not a refusal to save and must not sound like one.
+// ---------------------------------------------------------------------------
+
+/// This crate does not know how to reach the provider, so it did not guess.
+pub const CANNOT_BE_TESTED_FROM_HERE: Word = Word::saying(
+    "asking.vetting.cannot-be-tested-from-here",
+    "this provider cannot be tested from here, so nothing was sent — save it if you are sure of \
+     it, and the first question put to it will say whether it answers",
+)
+.noting(
+    "Said when alo OS has no way of asking this provider what it offers — an address with no \
+     host in it, or one of a kind alo OS does not open — so it made no request rather than \
+     guessing one. \"From here\" is from this machine, by this alo OS. It is not a fault in the \
+     key and not a refusal to save: the person may save the provider exactly as they could \
+     before, and the second half says so.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 2] = [NOTHING_TO_ASK, NO_MODEL_NAMED];
+pub const EVERY_WORD: [Word; 3] = [NOTHING_TO_ASK, NO_MODEL_NAMED, CANNOT_BE_TESTED_FROM_HERE];
 
 /// Why this crate's own list could not be declared.
 ///
@@ -183,13 +210,13 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
-    /// **Neither sentence has a gap in it**, and that is the strong form of
-    /// this crate's rule about what it holds: a question and an answer are the
-    /// two things it carries and the two things no sentence of its own can be
-    /// handed, so a translation cannot invent a gap to put either into —
+    /// **No sentence has a gap in it**, and that is the strong form of this
+    /// crate's rule about what it holds: a question, an answer and a key are
+    /// the things it carries and the things no sentence of its own can be
+    /// handed, so a translation cannot invent a gap to put any of them into —
     /// `alo-strings` refuses a gap the source does not have.
     #[test]
-    fn neither_sentence_has_a_gap_for_anything_to_be_put_into() {
+    fn no_sentence_has_a_gap_for_anything_to_be_put_into() {
         for word in EVERY_WORD {
             assert!(!word.says().contains('{'), "{}", word.named());
         }
@@ -204,13 +231,32 @@ mod tests {
         assert_eq!(counting.counted().count(), 0);
     }
 
-    /// Both carry a note. Neither is a sentence a translator can work out from
-    /// its own words: one is read beside an empty box and must not sound like
-    /// a failure, and the other is about a name that is never translated.
+    /// All three carry a note. None is a sentence a translator can work out
+    /// from its own words: one is read beside an empty box and must not sound
+    /// like a failure, one is about a name that is never translated, and one
+    /// must not sound like a refusal to save.
     #[test]
-    fn both_of_them_carry_a_note() {
+    fn every_one_of_them_carries_a_note() {
         for word in EVERY_WORD {
             assert!(word.note().is_some(), "{}", word.named());
         }
+    }
+
+    /// **The one sentence about a test that did not happen says the save is
+    /// still theirs**, because a person reading only *cannot be tested* would
+    /// take it for a door closing — and the note tells a translator so.
+    #[test]
+    fn a_provider_that_cannot_be_tested_is_told_it_can_still_be_saved() {
+        assert!(CANNOT_BE_TESTED_FROM_HERE.says().contains("save it"));
+        assert!(
+            CANNOT_BE_TESTED_FROM_HERE
+                .says()
+                .contains("nothing was sent")
+        );
+        assert!(
+            CANNOT_BE_TESTED_FROM_HERE
+                .note()
+                .is_some_and(|note| note.contains("not a refusal to save"))
+        );
     }
 }

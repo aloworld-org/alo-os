@@ -41,12 +41,20 @@
 //!
 //! **What this is not.** A person pressing *Test* in Settings is not an agent
 //! doing something, so there is no verb, no grant and no proposal here — the
-//! same reasoning as `alo-shortcuts` and `alo-appearance`. It is also why this
-//! egress is not on the indicator: the indicator answers *what is my machine
-//! sending that I did not ask for*, and the answer to a button somebody has
-//! just pressed, on the screen they pressed it, is that they asked for it. Any
-//! egress an **agent** causes — a question put to this provider once it is
-//! saved — goes through `alo-egress` and is shown, as it does today.
+//! same reasoning as `alo-shortcuts` and `alo-appearance`.
+//!
+//! **And what this is not the whole of.** This file is the wire and nothing
+//! else: it cannot put the request on the indicator, because `alo-egress`
+//! depends on this crate and not the other way round. It used to argue that a
+//! test request belonged off the indicator — *they asked for it* — and v0.5's
+//! plan decided otherwise: a test request is an egress somebody asked for, a
+//! key travels with it, and the indicator says so. The door that does that is
+//! `alo_asking::Vetting`, which obtains an `alo_egress::Departing` before it
+//! reaches [`Trying`] and hands the departure back so what left can be
+//! recorded. [`Trying`] is public because that door needs it; a test in
+//! `alo-asking` reads the workspace to make sure nothing else that ships
+//! reaches it, because anything that did would have stepped around the
+//! indicator.
 
 use std::time::Duration;
 
