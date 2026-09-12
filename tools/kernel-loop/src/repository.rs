@@ -342,11 +342,13 @@ pub fn parked(at: &Path, task: u32, why: &str) -> Result<String, String> {
     // ignored, so `--all` walks straight past the one file that says which task
     // this was, what evidence it claimed and which files it touched — the most
     // useful thing in the branch to whoever picks the work up. Ignored is right
-    // for the loop's scratch directory and wrong for this.
-    drop(git(
-        at,
-        &["add", "--force", "--", ".kernel-loop/handoff.toml"],
-    ));
+    // for the loop's scratch directory and wrong for this. The second name is
+    // the refused handoff `crate::parking` copies there when the worker left
+    // none; whichever of the two is there goes, and one that is not is not an
+    // error.
+    for carrying in crate::handoff::Handed::what_parking_carries() {
+        drop(git(at, &["add", "--force", "--", &carrying]));
+    }
 
     let put_away = git(at, &["add", "--all"])
         .and_then(|_| {

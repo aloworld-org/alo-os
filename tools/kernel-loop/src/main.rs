@@ -73,6 +73,13 @@
 //! the same task. Both are reported as reconstructed, and the differences
 //! between that handoff and the branch are listed for a person to settle.
 //!
+//! And because `.kernel-loop/refused/` exists only on the checkout that parked
+//! the branch — the directory is ignored, and a copy of the branch does not
+//! bring it — parking **carries** the newest refused handoff for the task onto
+//! the branch as `.kernel-loop/refused-handoff.toml` when the worker left none.
+//! `recover` prefers the branch's own handoff, then the one it carries, then
+//! this checkout's `refused/`, and says which it used. See `crate::parking`.
+//!
 //! # Stopping
 //!
 //! `stop` writes a file. The loop finishes what it is doing — it never abandons
@@ -86,6 +93,7 @@ mod handoff;
 mod journal;
 mod keeping_ubuntu_up;
 mod lock;
+mod parking;
 mod plan;
 mod publishing;
 mod recovering;
@@ -345,21 +353,32 @@ fn run(at: &Path, ours: &Path) -> ExitCode {
                 // nothing may be started on top of it. So it is parked on a
                 // branch of its own and pushed — nothing discarded, nothing
                 // reset — and the run carries on.
-                let Some(number) = holding else {
+                let Some(task) = holding else {
                     journal::note(ours, &format!("STOPPED: {why}"));
                     eprintln!("alo-kernel-loop: {why}");
                     drop(held);
                     return ExitCode::FAILURE;
                 };
+                let number = task.number;
                 given_up_on.insert(number);
-                match repository::parked(at, number, &why) {
-                    Ok(branch) => journal::note(
+                match parking::parked(at, ours, number, &task.named, &why) {
+                    Ok(parked) => journal::note(
                         ours,
                         &format!(
                             "task {number} did not pass its gates, so its work is parked on the \
-                             local branch `{branch}` and the run carries on. Nothing was \
-                             discarded, and nothing was pushed — `main` is the only branch this \
-                             publishes. The gates said: {why}"
+                             local branch `{}` and the run carries on. Nothing was discarded, \
+                             and nothing was pushed — `main` is the only branch this \
+                             publishes.{} The gates said: {why}",
+                            parked.branch,
+                            match &parked.carried {
+                                Some(from) => format!(
+                                    " The worker left no handoff, so the branch carries the \
+                                     refused one from {} as .kernel-loop/refused-handoff.toml, \
+                                     for `recover` to reconstruct from on any checkout.",
+                                    from.display()
+                                ),
+                                None => String::new(),
+                            }
                         ),
                     ),
                     Err(refused) => {
@@ -443,7 +462,7 @@ fn one_iteration(
     at: &Path,
     ours: &Path,
     given_up_on: &std::collections::BTreeSet<u32>,
-    holding: &mut Option<u32>,
+    holding: &mut Option<plan::Task>,
 ) -> Result<journal::Went, String> {
     if journal::was_asked_to_stop(ours) {
         return Ok(journal::Went::Stopped);
@@ -454,7 +473,7 @@ fn one_iteration(
     };
     // Whose failure it is, if this iteration fails. Set before anything can go
     // wrong, so an error carries a task rather than only a sentence.
-    *holding = Some(chosen.number);
+    *holding = Some(chosen.clone());
     journal::note(
         ours,
         &format!("next in the plan: {}. {}", chosen.number, chosen.named),
@@ -689,9 +708,8 @@ fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
     {
         println!(
             "  `{}` carried no handoff, so the file list is the branch's own commit and the \
-             handoff waiting is the newest refused one for the task, reconstructed from {}.",
+             handoff waiting is reconstructed from {from}.",
             back.branch,
-            from.display()
         );
         for (what, these) in [
             (
@@ -717,7 +735,7 @@ fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
             match &back.handoff {
                 recovering::Handoff::OnTheBranch => String::new(),
                 recovering::Handoff::Reconstructed { from, .. } =>
-                    format!(", with its handoff reconstructed from {}", from.display()),
+                    format!(", with its handoff reconstructed from {from}"),
             }
         ),
     );

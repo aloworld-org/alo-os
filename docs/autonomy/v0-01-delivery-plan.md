@@ -1929,3 +1929,50 @@ that produces most parks the repair path has already moved that file aside.
   the task's own handoff without being reported as reconstructed; the file list
   still comes from the branch's own commit and never from `git status`; and
   `git checkout -- .` and `git restore -- .` remain the thing the test refuses.
+
+**Done, 2026-09-12.** `tools/kernel-loop/src/parking.rs` is the step before and
+after the git of parking: when no handoff is waiting and the newest refused one
+for the task exists, it copies that entry to `.kernel-loop/refused-handoff.toml`,
+and `repository::parked` force-adds it beside the handoff's own name — one list,
+`Handed::what_parking_carries`, so what parking adds and what recovery looks for
+cannot drift. Parking with neither still parks, still pushes nothing, and still
+writes no `handoff.toml`; the copy is taken back whether the park succeeded or
+not. `recover` prefers the branch's own handoff, then the one it carries, then
+this checkout's `refused/`, and says which — `TakenFrom` on the reconstructed
+account, on the terminal and in the journal — with the carried case reported
+exactly as task 35 reports the directory one, differences and all. The loop's
+own files are never brought back into the tree: the carried handoff stays on
+the branch and is listed as left alone. A carried handoff that does not read is
+refused naming the file rather than passed over for the directory, because
+parking copied it from a handoff the gates had read and one that no longer
+reads has been changed since. Ten new tests: four in `handoff.rs` on the copy
+and six in `recovering.rs` on branches made by the real `parked` — one of them
+cloning the repository into a second checkout with no `refused/` at all, which
+is the case this task exists for. Two task-35 tests now park before any handoff
+is refused, so that the directory road is still the one they walk. Report:
+`docs/autonomy/updates/a-parked-branch-carries-its-refused-handoff.md`. The
+next task (37) is written below.
+
+### 37. Recovering a parked task from another checkout, as a command
+
+**Status:** ready. **Depends on:** 36.
+
+Task 36 made a parked branch say what it is wherever it goes. Getting it there
+is still a memory: two checkouts share this repository (`SHARED_MAIN.md`),
+parked branches are local by decision, and the way one crosses today is
+`git fetch <path> <branch>:<branch>` typed by hand — a step with no test, no
+refusal, and a refspec a person can get wrong in the direction that overwrites
+a branch already here.
+
+- **Acceptance:** `recover <branch> --from <checkout>` fetches exactly that
+  branch, by name, from the other checkout's path into this one and then
+  recovers it as `recover <branch>` does; it refuses a `--from` that is not a
+  git repository, a branch the other checkout does not have, and a branch this
+  checkout already has — never overwriting a local branch, even one of the same
+  name; the fetch is written in the journal with where it came from; and the
+  refusals are tested beside the recovery, on two real repositories.
+- **Constraint:** it fetches and never pushes — the other checkout is read and
+  not written, and `the_only_branch_this_pushes_is_main` stays true; the fetched
+  branch is a local branch here like any parked one, and nothing deletes it;
+  the recovery after the fetch is the existing one, unchanged; and
+  `git checkout -- .` and `git restore -- .` remain the thing the test refuses.

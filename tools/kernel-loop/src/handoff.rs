@@ -74,6 +74,17 @@ const ALREADY_DONE: &str = "published";
 /// Where a refused handoff is kept, under the moment it was refused.
 const REFUSED: &str = "refused";
 
+/// What a refused handoff is called when parking carries it onto a branch.
+///
+/// **A distinct name, on purpose.** A parked branch with a handoff on it is a
+/// branch whose worker said what it did; one with this on it is a branch whose
+/// worker never did, carrying the last thing the gates refused for the same
+/// task so that a copy of the branch on another checkout — where
+/// `.kernel-loop/refused/` does not exist, the directory being ignored — can
+/// still be named. Nothing may mistake the second for the first, so they do
+/// not share a name.
+const CARRIED: &str = "refused-handoff.toml";
+
 /// A handoff the gates refused, found again for the task it was written for.
 ///
 /// Both the text and the reading of it: the text is what goes back into place
@@ -163,6 +174,82 @@ impl Handed {
     #[must_use]
     pub fn where_refused_ones_are(ours: &Path) -> PathBuf {
         ours.join(REFUSED)
+    }
+
+    /// Where a refused handoff is copied for parking to carry onto a branch.
+    #[must_use]
+    pub fn where_a_carried_one_goes(ours: &Path) -> PathBuf {
+        ours.join(CARRIED)
+    }
+
+    /// The two files parking force-adds onto a branch, as paths from the
+    /// checkout, in the order it prefers them: the task's own handoff, and
+    /// the refused one carried in its place.
+    ///
+    /// One list, here, so that what parking adds and what recovery looks for
+    /// cannot drift apart — the directory is ignored by git, and a name that
+    /// differed by a letter between the two would be a branch carrying a file
+    /// nothing reads.
+    #[must_use]
+    pub fn what_parking_carries() -> [String; 2] {
+        [
+            format!("{}/{THE_HANDOFF}", crate::ITS_OWN),
+            format!("{}/{CARRIED}", crate::ITS_OWN),
+        ]
+    }
+
+    /// Copy the newest refused handoff for this task to where parking carries
+    /// it, when there is no handoff waiting to carry instead.
+    ///
+    /// The road that produces most parks is the one where nothing else names
+    /// the work: the gates refused a first worker, [`Self::put_aside`] moved
+    /// that handoff into `refused/`, and the second worker was stopped before
+    /// writing its own. The branch then holds the work and no way to say
+    /// whose it is on any checkout but this one — and the one reason parked
+    /// work is a branch rather than a stash is that a branch can be copied.
+    ///
+    /// **Never the task's own handoff.** This writes [`CARRIED`] and nothing
+    /// else, and writes it only when [`THE_HANDOFF`] is not there: a handoff
+    /// waiting is the worker's own statement and goes onto the branch as
+    /// itself. Writing `handoff.toml` here would be parking inventing a
+    /// worker's word, which is what the distinct name exists to prevent.
+    ///
+    /// Returns which refused entry was copied, or [`None`] when nothing was:
+    /// a handoff is waiting, or no refused handoff names the task. A branch
+    /// with the work and no handoff is still better than no branch, so
+    /// neither of those stops a park.
+    ///
+    /// # Errors
+    /// A sentence when the refused directory cannot be listed or the copy
+    /// cannot be written.
+    pub fn carried_for_parking(ours: &Path, task: &str) -> Result<Option<PathBuf>, String> {
+        if ours.join(THE_HANDOFF).exists() {
+            return Ok(None);
+        }
+        let Some(refused) = Self::newest_refused_for(ours, task)? else {
+            return Ok(None);
+        };
+        let carrying = Self::where_a_carried_one_goes(ours);
+        std::fs::write(&carrying, &refused.written).map_err(|why| {
+            format!(
+                "the refused handoff {} could not be copied to {} for the branch to carry: {why}",
+                refused.at.display(),
+                carrying.display()
+            )
+        })?;
+        Ok(Some(refused.at))
+    }
+
+    /// Take the carried copy back out of the loop's directory, once the branch
+    /// has it or parking has failed.
+    ///
+    /// Git removes it from the working tree itself when the checkout switches
+    /// back to `main`, because the branch tracks it and `main` does not; this
+    /// is for the park that failed before that switch, so a copy is never left
+    /// lying where the next park would carry it for the wrong task. A copy
+    /// that is already gone is not an error.
+    pub fn the_carried_copy_is_taken_back(ours: &Path) {
+        drop(std::fs::remove_file(Self::where_a_carried_one_goes(ours)));
     }
 
     /// The newest refused handoff for this task, or [`None`] when there is
@@ -467,6 +554,104 @@ mod tests {
             .expect("the readable one to be found");
         assert!(found.at.ends_with("100.toml"), "{:?}", found.at);
         drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **The newest refused handoff for the task is copied for the branch to
+    /// carry**, byte for byte, under the carried name and never the handoff's
+    /// own — and the refused entry stays where it was.
+    #[test]
+    fn the_newest_refused_handoff_is_copied_for_parking_to_carry() {
+        let ours = a_refused_directory(
+            "carried",
+            &[
+                ("100.toml", &whole_for("This one")),
+                (
+                    "200.toml",
+                    &whole_for("This one").replace("What it says.", "The newer."),
+                ),
+                ("300.toml", &whole_for("Another")),
+            ],
+        );
+        let from = Handed::carried_for_parking(&ours, "This one")
+            .expect("the copy to be made")
+            .expect("a refused handoff to be carried");
+        assert!(from.ends_with("200.toml"), "{from:?}");
+        let carried = std::fs::read_to_string(Handed::where_a_carried_one_goes(&ours))
+            .expect("the carried copy to be there");
+        assert_eq!(
+            carried,
+            whole_for("This one").replace("What it says.", "The newer.")
+        );
+        assert!(
+            from.exists(),
+            "carrying moved the refused entry rather than copying it"
+        );
+        assert!(
+            Handed::waiting(&ours)
+                .expect("the handoff to read")
+                .is_none(),
+            "carrying wrote the task's own handoff, which is parking inventing a worker's word"
+        );
+        Handed::the_carried_copy_is_taken_back(&ours);
+        assert!(!Handed::where_a_carried_one_goes(&ours).exists());
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **A handoff waiting is carried as itself**, so nothing is copied beside
+    /// it: a branch with both would have two files naming the task, and one
+    /// of them would be the wrong worker's.
+    #[test]
+    fn nothing_is_copied_when_a_handoff_is_waiting() {
+        let ours = a_refused_directory("waiting", &[("100.toml", &whole_for("This one"))]);
+        std::fs::write(Handed::where_one_waits(&ours), whole_for("This one"))
+            .expect("a handoff to be waiting");
+        assert!(
+            Handed::carried_for_parking(&ours, "This one")
+                .expect("the directory to be read")
+                .is_none()
+        );
+        assert!(
+            !Handed::where_a_carried_one_goes(&ours).exists(),
+            "a refused handoff was copied beside the worker's own"
+        );
+        drop(std::fs::remove_dir_all(&ours));
+    }
+
+    /// **No refused handoff for the task means nothing to carry**, both when
+    /// the directory holds only other tasks' and when it was never made — and
+    /// neither is an error, because parking with nothing to carry still parks.
+    #[test]
+    fn nothing_is_copied_when_no_refused_handoff_names_the_task() {
+        let ours = a_refused_directory("nocarry", &[("100.toml", &whole_for("Another"))]);
+        assert!(
+            Handed::carried_for_parking(&ours, "This one")
+                .expect("the directory to be read")
+                .is_none()
+        );
+        assert!(!Handed::where_a_carried_one_goes(&ours).exists());
+        drop(std::fs::remove_dir_all(&ours));
+
+        let never = std::env::temp_dir().join(format!(
+            "alo-handoff-refused-{}-never-carried",
+            std::process::id()
+        ));
+        drop(std::fs::remove_dir_all(&never));
+        assert!(
+            Handed::carried_for_parking(&never, "This one")
+                .expect("a missing directory to be nothing to carry")
+                .is_none()
+        );
+    }
+
+    /// **The two names parking carries are the loop's own files**, the handoff
+    /// first, and they differ — a shared name would let a refused handoff be
+    /// taken for the worker's own.
+    #[test]
+    fn what_parking_carries_is_the_handoff_and_the_refused_one_under_different_names() {
+        let [own, carried] = Handed::what_parking_carries();
+        assert_eq!(own, format!("{}/handoff.toml", crate::ITS_OWN));
+        assert_eq!(carried, format!("{}/refused-handoff.toml", crate::ITS_OWN));
+        assert_ne!(own, carried);
     }
 
     /// **A whole handoff reads**, so that the refusals below are about what is

@@ -66,6 +66,28 @@
 //! handoff say what the branch says. A branch with neither a handoff nor a
 //! refused one is refused in words that say where this looked and for what.
 //!
+//! # The refused handoff the branch carries
+//!
+//! `.kernel-loop/refused/` is inside the ignored directory, so it exists on
+//! the checkout that parked the branch and nowhere else — and the one reason
+//! parked work is a branch rather than a stash is that a branch can be copied.
+//! So parking (`crate::parking`) carries the newest refused handoff for the
+//! task **onto the branch**, as `.kernel-loop/refused-handoff.toml`, when the
+//! worker left none. A distinct name, so nothing reads it as the worker's own.
+//!
+//! Recovery therefore looks in three places, in order, and says which it used:
+//!
+//! 1. the branch's own `.kernel-loop/handoff.toml` — the worker's word, and
+//!    the file list is its;
+//! 2. the `.kernel-loop/refused-handoff.toml` the branch carries;
+//! 3. this checkout's `.kernel-loop/refused/`, newest first.
+//!
+//! The second and third are both **reconstructions**, reported the same way,
+//! differences and all. A carried file that does not read is refused rather
+//! than passed over for the third: parking copied it from a handoff the gates
+//! had read, so one that no longer reads has been changed since, and a
+//! recovery that quietly used a different source would hide that.
+//!
 //! # It restores; it never publishes
 //!
 //! Recovery ends with work in the tree and nothing else. The gates are where
@@ -116,9 +138,10 @@ pub struct Recovered {
     /// the task never claimed, and restoring it would be this command making
     /// the same mistake in smaller print.
     ///
-    /// Empty when the handoff was reconstructed: with no handoff to say what
-    /// the task claimed, the branch's own commit is the list, and every path
-    /// on it comes back.
+    /// When the handoff was reconstructed, with no handoff to say what the
+    /// task claimed, the branch's own commit is the list and every path on it
+    /// comes back — except the loop's own files, which are parking's and not
+    /// the task's: the refused handoff the branch carries stays on the branch.
     pub left_alone: Vec<String>,
 
     /// Where the handoff now waiting came from.
@@ -134,10 +157,10 @@ pub enum Handoff {
     OnTheBranch,
 
     /// The branch had none. The file list is the branch's own commit, and the
-    /// handoff is the newest refused one for the same task.
+    /// handoff is a refused one for the same task.
     Reconstructed {
-        /// The refused entry it was taken from.
-        from: PathBuf,
+        /// Where the refused handoff was taken from.
+        from: TakenFrom,
 
         /// Files that handoff names and the branch never changed. A person
         /// takes them out, or the loop will stage what is not there.
@@ -147,6 +170,35 @@ pub enum Handoff {
         /// adds them, or the loop will refuse the tree as changed by nobody.
         changed_but_unnamed: Vec<String>,
     },
+}
+
+/// Where a reconstructed handoff was taken from, in the order recovery prefers
+/// them once the branch's own is not there.
+#[derive(Debug, PartialEq, Eq)]
+pub enum TakenFrom {
+    /// The branch itself, which carries it as `.kernel-loop/refused-handoff.toml`
+    /// because parking put it there when the worker left none. It goes with
+    /// the branch to any checkout.
+    TheBranch,
+
+    /// This checkout's `.kernel-loop/refused/`, at this path — which exists
+    /// only on the checkout that parked the branch.
+    TheRefusedDirectory(PathBuf),
+}
+
+impl std::fmt::Display for TakenFrom {
+    fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TheBranch => write!(
+                out,
+                "the refused handoff the branch carries as {}",
+                the_carried_handoff_on_the_branch()
+            ),
+            Self::TheRefusedDirectory(at) => {
+                write!(out, "the refused handoff at {}", at.display())
+            }
+        }
+    }
 }
 
 impl Handoff {
@@ -217,7 +269,16 @@ pub fn recover(at: &Path, ours: &Path, branch: &str) -> Result<Recovered, String
     let from = repository::where_they_parted(at, branch)?;
     let changed = repository::what_a_branch_changed(at, &from, branch)?;
     let changed: Vec<&str> = what_it_changed(&changed).collect();
-    if changed.is_empty() {
+    // **The work is what the task changed, and the loop's own files are not
+    // that.** Parking force-adds the handoff, or the refused one it carries in
+    // the handoff's place; both are parking's, and neither is a file to bring
+    // back into a tree whose `.kernel-loop` is its own.
+    let work: Vec<&str> = changed
+        .iter()
+        .copied()
+        .filter(|path| !is_the_loops_own(path))
+        .collect();
+    if work.is_empty() {
         return Err(format!(
             "`{branch}` changes nothing against the `main` it was parked from, so there is no \
              work on it to restore. A task can fail its gates having written nothing, and \
@@ -229,7 +290,7 @@ pub fn recover(at: &Path, ours: &Path, branch: &str) -> Result<Recovered, String
         if repository::has_a_file(at, branch, &the_handoff_on_the_branch()) {
             let written = repository::one_file_as(at, branch, &the_handoff_on_the_branch())?;
             let handed = Handed::read(&written)?;
-            let missing = named_but_unchanged(&handed.files, &changed);
+            let missing = named_but_unchanged(&handed.files, &work);
             if !missing.is_empty() {
                 return Err(format!(
                     "`{branch}` carries a handoff for `{}` naming files that branch never \
@@ -243,19 +304,18 @@ pub fn recover(at: &Path, ours: &Path, branch: &str) -> Result<Recovered, String
             let bringing_back = handed.files.clone();
             (written, handed, Handoff::OnTheBranch, bringing_back)
         } else {
-            let refused = the_refused_handoff_for(at, ours, branch)?;
-            let bringing_back: Vec<String> =
-                changed.iter().map(|path| (*path).to_owned()).collect();
+            let (written, handed, taken) = the_refused_handoff_for(at, ours, branch)?;
+            let bringing_back: Vec<String> = work.iter().map(|path| (*path).to_owned()).collect();
             let handoff = Handoff::Reconstructed {
-                from: refused.at,
-                named_but_unchanged: named_but_unchanged(&refused.handed.files, &changed),
+                from: taken,
+                named_but_unchanged: named_but_unchanged(&handed.files, &work),
                 changed_but_unnamed: bringing_back
                     .iter()
-                    .filter(|path| !refused.handed.files.contains(*path))
+                    .filter(|path| !handed.files.contains(*path))
                     .cloned()
                     .collect(),
             };
-            (refused.written, refused.handed, handoff, bringing_back)
+            (written, handed, handoff, bringing_back)
         };
 
     let mut recovered = Recovered {
@@ -329,47 +389,93 @@ fn merged_into_the_tree(
 
 /// Where parking puts the handoff it force-adds.
 fn the_handoff_on_the_branch() -> String {
-    format!("{}/handoff.toml", crate::ITS_OWN)
+    let [own, _] = Handed::what_parking_carries();
+    own
 }
 
-/// The handoff to reconstruct a branch's from, when the branch carries none.
+/// Where parking puts the refused handoff it carries when the worker left none.
+fn the_carried_handoff_on_the_branch() -> String {
+    let [_, carried] = Handed::what_parking_carries();
+    carried
+}
+
+/// Whether a path on the branch is one of the loop's own rather than the
+/// task's: anything under `.kernel-loop/`, which is ignored on `main` and on
+/// a branch only because parking forced it there.
+fn is_the_loops_own(path: &str) -> bool {
+    path.strip_prefix(crate::ITS_OWN)
+        .is_some_and(|rest| rest.starts_with('/'))
+}
+
+/// The handoff to reconstruct a branch's from, when the branch carries none of
+/// its own: its text, its reading, and where it was taken from.
 ///
-/// The number is in the branch's name — parking writes it there — and the plan
-/// turns a number into the name a handoff carries. Then the newest refused
-/// handoff for that name is the one the repair path put aside before launching
-/// the worker that never wrote its own.
+/// **The one the branch carries first.** Parking copies the newest refused
+/// handoff for the task onto the branch, and that copy goes wherever the
+/// branch goes — which this checkout's `refused/` does not. Only a branch
+/// that carries none — parked before parking carried one, or parked with
+/// nothing to carry — is reconstructed from the directory: the number is in
+/// the branch's name, the plan turns a number into the name a handoff
+/// carries, and the newest refused handoff for that name is the one the
+/// repair path put aside before launching the worker that never wrote its own.
 ///
 /// # Errors
-/// A sentence when the plan does not number a task so, or when nothing in
-/// `.kernel-loop/refused/` is a handoff for it; each says what was looked for
-/// and where, because the next thing a person does is look there themselves.
+/// A sentence when the carried handoff does not read, when the plan does not
+/// number a task so, or when nothing in `.kernel-loop/refused/` is a handoff
+/// for it; each says what was looked for and where, because the next thing a
+/// person does is look there themselves.
 fn the_refused_handoff_for(
     at: &Path,
     ours: &Path,
     branch: &str,
-) -> Result<crate::handoff::Refused, String> {
+) -> Result<(String, Handed, TakenFrom), String> {
+    let carried = the_carried_handoff_on_the_branch();
+    if repository::has_a_file(at, branch, &carried) {
+        let written = repository::one_file_as(at, branch, &carried)?;
+        // Not passed over for the directory. Parking copied this from a
+        // handoff the gates had read, so one that does not read now has been
+        // changed since, and a recovery that quietly took a different source
+        // would be hiding that.
+        let handed = Handed::read(&written).map_err(|why| {
+            format!(
+                "`{branch}` carries no handoff, and the refused one it carries as {carried} does \
+                 not read: {why}. Nothing was restored. Parking copied that file from a handoff \
+                 the gates had read, so it has been changed since; `git show {branch}:{carried}` \
+                 is what is there."
+            )
+        })?;
+        return Ok((written, handed, TakenFrom::TheBranch));
+    }
+
     let number = the_number_in(branch).ok_or_else(|| {
         format!("`{branch}` is a parked name and carries no task number, which cannot happen")
     })?;
     let plan_named = plan::the_plan()?;
     let Some(task) = plan::numbered(at, number)? else {
         return Err(format!(
-            "`{branch}` carries no handoff, and the plan `{plan_named}` names no task {number}, \
-             so there is no task to look for a refused handoff for. Nothing was restored. If \
-             the branch was parked from another plan, name it with ALO_LOOP_PLAN and ask again."
+            "`{branch}` carries neither a handoff nor a refused one, and the plan \
+             `{plan_named}` names no task {number}, so there is no task to look for a refused \
+             handoff for. Nothing was restored. If the branch was parked from another plan, \
+             name it with ALO_LOOP_PLAN and ask again."
         ));
     };
     let looked_in = Handed::where_refused_ones_are(ours);
-    Handed::newest_refused_for(ours, &task.named)?.ok_or_else(|| {
+    let refused = Handed::newest_refused_for(ours, &task.named)?.ok_or_else(|| {
         format!(
-            "`{branch}` carries no handoff, and nothing in {} is a refused handoff for task \
-             {number}, `{}`. Nothing was restored. The branch holds the work — `git diff \
-             {branch}~1 {branch} --stat` is the list of files — and recovering it needs a \
-             handoff for that task to be written by hand, or one found and put there.",
+            "`{branch}` carries neither a handoff nor a refused one as {carried}, and nothing in \
+             {} is a refused handoff for task {number}, `{}`. Nothing was restored. The branch \
+             holds the work — `git diff {branch}~1 {branch} --stat` is the list of files — and \
+             recovering it needs a handoff for that task to be written by hand, or one found \
+             and put there.",
             looked_in.display(),
             task.named
         )
-    })
+    })?;
+    Ok((
+        refused.written,
+        refused.handed,
+        TakenFrom::TheRefusedDirectory(refused.at),
+    ))
 }
 
 /// The task number in a parked name, which [`is_a_parked_name`] has already
@@ -535,9 +641,49 @@ mod tests {
             );
         }
 
-        /// Park whatever is in the tree, as the supervisor does.
-        fn parking(&self, task: u32) -> String {
-            repository::parked(&self.at, task, "the gates said no").expect("the work to be parked")
+        /// Park whatever is in the tree, as the supervisor does — the real
+        /// `parking::parked`, which carries the newest refused handoff for the
+        /// task when no handoff is waiting.
+        fn parking(&self, number: u32, named: &str) -> crate::parking::Parked {
+            crate::parking::parked(&self.at, &self.ours(), number, named, "the gates said no")
+                .expect("the work to be parked")
+        }
+
+        /// What a file on a branch says, or [`None`] when the branch does not
+        /// have it.
+        fn on_the_branch(&self, branch: &str, path: &str) -> Option<String> {
+            repository::has_a_file(&self.at, branch, path)
+                .then(|| repository::one_file_as(&self.at, branch, path))
+                .transpose()
+                .expect("a file the branch has to be readable")
+        }
+
+        /// A second checkout of this repository, with the parked branch
+        /// fetched into it — which is the one reason parked work is a branch
+        /// rather than a stash, and the case `.kernel-loop/refused/` can never
+        /// serve, being ignored and so never cloned.
+        fn cloned_with(&self, branch: &str, called: &str) -> Self {
+            let at = std::env::temp_dir()
+                .join(format!("alo-recovering-{}-{called}", std::process::id()));
+            drop(std::fs::remove_dir_all(&at));
+            let from = self.at.to_string_lossy().into_owned();
+            let to = at.to_string_lossy().into_owned();
+            self.git(&[
+                "-c",
+                "core.autocrlf=false",
+                "clone",
+                "--quiet",
+                "--branch",
+                "main",
+                &from,
+                &to,
+            ]);
+            let other = Self { at };
+            other.git(&["config", "user.email", "loop@example.invalid"]);
+            other.git(&["config", "user.name", "another checkout"]);
+            other.git(&["config", "core.autocrlf", "false"]);
+            other.git(&["fetch", "--quiet", "origin", &format!("{branch}:{branch}")]);
+            other
         }
 
         /// Commit something on `main`, as another task publishing would.
@@ -565,7 +711,7 @@ mod tests {
 
     /// The parts of a reconstructed handoff's account, or [`None`] when the
     /// recovery said the handoff was on the branch.
-    fn reconstructed(back: &Recovered) -> Option<(&Path, &[String], &[String])> {
+    fn reconstructed(back: &Recovered) -> Option<(&TakenFrom, &[String], &[String])> {
         match &back.handoff {
             Handoff::OnTheBranch => None,
             Handoff::Reconstructed {
@@ -615,7 +761,7 @@ mod tests {
         Handed::put_aside(&it.ours()).expect("the refused handoff to be put aside");
         it.write("src/work.rs", "what the second worker made of it\n");
         it.write("src/second.rs", "what only the second worker wrote\n");
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
         assert!(
             !repository::has_a_file(&it.at, &branch, &the_handoff_on_the_branch()),
             "the fixture is wrong: the branch carries a handoff after all"
@@ -640,15 +786,21 @@ mod tests {
             Some("published while it was parked\n"),
             "recovery undid a task published while this one was parked"
         );
+        assert_eq!(
+            back.left_alone,
+            vec![the_carried_handoff_on_the_branch()],
+            "with the branch's commit as the list, only the carried handoff is parking's: {back:?}"
+        );
         assert!(
-            back.left_alone.is_empty(),
-            "with the branch's commit as the list, something was still left: {back:?}"
+            !it.ours().join("refused-handoff.toml").exists(),
+            "the carried handoff was written into this checkout's own directory"
         );
         let (from, named_but_unchanged, changed_but_unnamed) =
             reconstructed(&back).expect("the handoff to be reported as reconstructed");
-        assert!(
-            from.starts_with(Handed::where_refused_ones_are(&it.ours())),
-            "the handoff was said to come from somewhere other than refused/: {from:?}"
+        assert_eq!(
+            from,
+            &TakenFrom::TheBranch,
+            "the branch carried the refused handoff and it was taken from somewhere else"
         );
         assert_eq!(named_but_unchanged, &["src/dropped.rs".to_owned()]);
         assert_eq!(changed_but_unnamed, &["src/second.rs".to_owned()]);
@@ -676,7 +828,7 @@ mod tests {
         it.write("src/work.rs", "what the task wrote\n");
         it.write(A_REPORT, "the task's report\n");
         it.refused(100, "Doing the thing", &["src/work.rs", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         let back = it.recovering(&branch).expect("the task to come back");
         assert!(back.is_ready_to_gate(), "{back:?}");
@@ -689,6 +841,10 @@ mod tests {
 
     /// **The newest refused handoff for the task is the one taken**, by the
     /// moment in its name, and one for another task is not taken however new.
+    ///
+    /// The branch is parked before any handoff is refused, so it carries none
+    /// — which is every branch parked before parking carried one — and the
+    /// directory is the only source left.
     #[test]
     fn the_newest_refused_handoff_for_the_task_is_the_one_taken() {
         let it = ARepository::made("newest");
@@ -696,6 +852,7 @@ mod tests {
         it.write("src/work.rs", "what the task wrote\n");
         it.write("src/later.rs", "what a later worker wrote\n");
         it.write(A_REPORT, "the task's report\n");
+        let branch = it.parking(28, "Doing the thing").branch;
         it.refused(100, "Doing the thing", &["src/work.rs", A_REPORT]);
         it.refused(
             200,
@@ -703,13 +860,12 @@ mod tests {
             &["src/work.rs", "src/later.rs", A_REPORT],
         );
         it.refused(300, "Some other task", &["src/other.rs", A_REPORT]);
-        let branch = it.parking(28);
 
         let back = it.recovering(&branch).expect("the task to come back");
         let (from, _, _) =
             reconstructed(&back).expect("the handoff to be reported as reconstructed");
         assert!(
-            from.ends_with("200.toml"),
+            matches!(from, TakenFrom::TheRefusedDirectory(at) if at.ends_with("200.toml")),
             "the newest refused handoff for the task was not the one taken: {from:?}"
         );
         assert!(back.is_ready_to_gate(), "{back:?}");
@@ -732,7 +888,7 @@ mod tests {
         it.planned(28, "Doing the thing");
         it.write("src/work.rs", "what the task wrote\n");
         it.refused(100, "Some other task", &["src/other.rs", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         let refused = it.recovering(&branch);
         assert!(
@@ -761,8 +917,10 @@ mod tests {
         let it = ARepository::made("unplanned");
         it.planned(27, "Some other task");
         it.write("src/work.rs", "what the task wrote\n");
+        // Parked before the handoff was refused, so the branch carries none
+        // and the plan is the only road from the number to a name.
+        let branch = it.parking(28, "Doing the thing").branch;
         it.refused(100, "Doing the thing", &["src/work.rs", A_REPORT]);
-        let branch = it.parking(28);
 
         let refused = it.recovering(&branch);
         assert!(
@@ -794,7 +952,7 @@ mod tests {
             &["src/work.rs", "src/stale.rs", A_REPORT],
         );
         it.handing_over("Doing the thing", &["src/work.rs", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         let back = it.recovering(&branch).expect("the task to come back");
         assert_eq!(back.handoff, Handoff::OnTheBranch, "{back:?}");
@@ -820,7 +978,7 @@ mod tests {
         it.write("src/work.rs", "what the task wrote\n");
         it.write(A_REPORT, "the task's report\n");
         it.refused(100, "Doing the thing", &["src/work.rs", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         it.write("src/lying-around.rs", "somebody's uncommitted work\n");
         let back = it.recovering(&branch).expect("the task to come back");
@@ -833,6 +991,275 @@ mod tests {
             it.reading("src/lying-around.rs").as_deref(),
             Some("somebody's uncommitted work\n"),
             "recovery touched a file outside the paths it named"
+        );
+    }
+
+    /// **Parking carries the newest refused handoff for the task when the
+    /// worker left none**, under the carried name and never the handoff's own,
+    /// and the refused entry stays where the repair path put it.
+    ///
+    /// The real road: a first worker hands over, the gates refuse it and the
+    /// real [`Handed::put_aside`] moves the handoff, a second worker writes
+    /// more and is stopped, and the real `parked` parks what is there.
+    #[test]
+    fn parking_carries_the_newest_refused_handoff_when_the_worker_left_none() {
+        let it = ARepository::made("carries");
+        it.write("src/work.rs", "what the first worker wrote\n");
+        it.write(A_REPORT, "the task's report\n");
+        it.handing_over("Doing the thing", &["src/work.rs", A_REPORT]);
+        Handed::put_aside(&it.ours()).expect("the refused handoff to be put aside");
+        it.write("src/second.rs", "what only the second worker wrote\n");
+
+        let parked = it.parking(28, "Doing the thing");
+        let from = parked
+            .carried
+            .as_ref()
+            .expect("parking to say it carried the refused handoff");
+        assert!(
+            from.starts_with(Handed::where_refused_ones_are(&it.ours())) && from.exists(),
+            "the refused entry was moved rather than copied, or came from elsewhere: {from:?}"
+        );
+        let entry = std::fs::read_to_string(from).expect("the refused entry to still read");
+        assert_eq!(
+            it.on_the_branch(&parked.branch, &the_carried_handoff_on_the_branch())
+                .as_deref(),
+            Some(entry.as_str()),
+            "the branch does not carry the refused handoff byte for byte"
+        );
+        assert_eq!(
+            it.on_the_branch(&parked.branch, &the_handoff_on_the_branch()),
+            None,
+            "parking wrote the task's own handoff, which is inventing a worker's word"
+        );
+        assert_eq!(
+            it.on_the_branch(&parked.branch, "src/second.rs").as_deref(),
+            Some("what only the second worker wrote\n"),
+            "the second worker's work is not on the branch"
+        );
+        assert!(
+            Handed::waiting(&it.ours())
+                .expect("the handoff to read")
+                .is_none(),
+            "a handoff was left waiting on main after parking"
+        );
+        assert!(
+            !it.ours().join("refused-handoff.toml").exists(),
+            "the carried copy was left in the loop's directory for the next park to carry"
+        );
+        assert_eq!(
+            it.git(&["status", "--porcelain"]).trim(),
+            "",
+            "parking left `main` unclean"
+        );
+    }
+
+    /// **A copy of the branch on another checkout is recovered from what it
+    /// carries** — the whole reason for carrying it. The other checkout has no
+    /// `.kernel-loop/refused/` at all, and the recovery is reported exactly as
+    /// a reconstruction from that directory is: differences and all.
+    #[test]
+    fn a_carried_refused_handoff_recovers_the_branch_on_another_checkout() {
+        let it = ARepository::made("elsewhere");
+        it.write("src/work.rs", "what the first worker wrote\n");
+        it.write(A_REPORT, "the task's report\n");
+        it.handing_over(
+            "Doing the thing",
+            &["src/work.rs", "src/dropped.rs", A_REPORT],
+        );
+        Handed::put_aside(&it.ours()).expect("the refused handoff to be put aside");
+        it.write("src/work.rs", "what the second worker made of it\n");
+        it.write("src/second.rs", "what only the second worker wrote\n");
+        let branch = it.parking(28, "Doing the thing").branch;
+
+        let other = it.cloned_with(&branch, "elsewhere-clone");
+        assert!(
+            !Handed::where_refused_ones_are(&other.ours()).exists(),
+            "the fixture is wrong: the other checkout has a refused directory to fall back on"
+        );
+
+        let back = other
+            .recovering(&branch)
+            .expect("the task to come back elsewhere");
+        assert_eq!(back.task, "Doing the thing");
+        let (from, named_but_unchanged, changed_but_unnamed) =
+            reconstructed(&back).expect("the handoff to be reported as reconstructed");
+        assert_eq!(from, &TakenFrom::TheBranch);
+        assert_eq!(named_but_unchanged, &["src/dropped.rs".to_owned()]);
+        assert_eq!(changed_but_unnamed, &["src/second.rs".to_owned()]);
+        assert!(!back.is_ready_to_gate(), "{back:?}");
+        assert_eq!(
+            other.reading("src/work.rs").as_deref(),
+            Some("what the second worker made of it\n")
+        );
+        assert_eq!(
+            other.reading("src/second.rs").as_deref(),
+            Some("what only the second worker wrote\n")
+        );
+        assert_eq!(
+            other.reading("kept.txt").as_deref(),
+            Some("a file no task in these tests touches\n"),
+            "recovery on the other checkout touched a file no task named"
+        );
+        assert!(
+            !other.ours().join("refused-handoff.toml").exists(),
+            "the carried handoff was restored into the tree as if it were the task's"
+        );
+        let waiting = Handed::waiting(&other.ours())
+            .expect("the handoff to read")
+            .expect("a handoff to be waiting on the other checkout");
+        assert_eq!(waiting.task, "Doing the thing");
+        assert_eq!(
+            waiting.files.len(),
+            3,
+            "the handoff waiting is not the carried one, byte for byte"
+        );
+    }
+
+    /// **The one the branch carries is preferred to this checkout's refused
+    /// directory**, however new the directory's entry: the branch says what
+    /// it was parked with, and the directory says what happened here since.
+    #[test]
+    fn a_carried_refused_handoff_is_preferred_to_this_checkouts_refused_directory() {
+        let it = ARepository::made("carriedfirst");
+        it.planned(28, "Doing the thing");
+        it.write("src/work.rs", "what the task wrote\n");
+        it.write(A_REPORT, "the task's report\n");
+        it.refused(100, "Doing the thing", &["src/work.rs", A_REPORT]);
+        let branch = it.parking(28, "Doing the thing").branch;
+        it.refused(
+            200,
+            "Doing the thing",
+            &["src/work.rs", "src/later.rs", A_REPORT],
+        );
+
+        let back = it.recovering(&branch).expect("the task to come back");
+        let (from, _, _) =
+            reconstructed(&back).expect("the handoff to be reported as reconstructed");
+        assert_eq!(from, &TakenFrom::TheBranch, "{back:?}");
+        assert!(back.is_ready_to_gate(), "{back:?}");
+        let waiting = Handed::waiting(&it.ours())
+            .expect("the handoff to read")
+            .expect("a handoff to be waiting");
+        assert_eq!(
+            waiting.files.len(),
+            2,
+            "the directory's newer entry was taken over the one the branch carries"
+        );
+    }
+
+    /// **A handoff the worker left goes as itself, and nothing is carried
+    /// beside it**: a branch with both would have two files naming the task,
+    /// one of them the wrong worker's.
+    #[test]
+    fn nothing_is_carried_when_the_worker_left_a_handoff() {
+        let it = ARepository::made("notcarried");
+        it.write("src/work.rs", "what the task wrote\n");
+        it.write(A_REPORT, "the task's report\n");
+        it.refused(
+            100,
+            "Doing the thing",
+            &["src/work.rs", "src/stale.rs", A_REPORT],
+        );
+        it.handing_over("Doing the thing", &["src/work.rs", A_REPORT]);
+
+        let parked = it.parking(28, "Doing the thing");
+        assert_eq!(parked.carried, None, "{parked:?}");
+        assert_eq!(
+            it.on_the_branch(&parked.branch, &the_carried_handoff_on_the_branch()),
+            None,
+            "a refused handoff was carried beside the worker's own"
+        );
+        assert!(
+            it.on_the_branch(&parked.branch, &the_handoff_on_the_branch())
+                .is_some(),
+            "the worker's own handoff is not on the branch"
+        );
+        let back = it
+            .recovering(&parked.branch)
+            .expect("the task to come back");
+        assert_eq!(back.handoff, Handoff::OnTheBranch, "{back:?}");
+    }
+
+    /// **Parking with neither a handoff nor a refused one still parks.** A
+    /// branch with the work and no name is still better than no branch, and
+    /// `recover` says in words what it could not find.
+    #[test]
+    fn parking_with_neither_a_handoff_nor_a_refused_one_still_parks() {
+        let it = ARepository::made("neithercarried");
+        it.write("src/work.rs", "what the task wrote\n");
+
+        let parked = it.parking(28, "Doing the thing");
+        assert_eq!(parked.carried, None, "{parked:?}");
+        assert!(
+            repository::is_a_branch(&it.at, &parked.branch),
+            "nothing was parked"
+        );
+        assert_eq!(
+            it.on_the_branch(&parked.branch, "src/work.rs").as_deref(),
+            Some("what the task wrote\n"),
+            "the work is not on the branch"
+        );
+        for named in Handed::what_parking_carries() {
+            assert_eq!(
+                it.on_the_branch(&parked.branch, &named),
+                None,
+                "parking put {named} on a branch with nothing to carry"
+            );
+        }
+        assert!(
+            Handed::waiting(&it.ours())
+                .expect("the handoff to read")
+                .is_none(),
+            "parking wrote a handoff"
+        );
+    }
+
+    /// **A carried handoff that does not read is refused in words**, and the
+    /// refused directory is not quietly used instead: parking copied that file
+    /// from a handoff the gates had read, so one that no longer reads has been
+    /// changed since, and nothing is restored on the strength of it.
+    ///
+    /// The branch is made by the real `parked` and then edited by hand, which
+    /// is the only way a carried handoff stops reading.
+    #[test]
+    fn a_carried_refused_handoff_that_does_not_read_is_refused_in_words() {
+        let it = ARepository::made("tampered");
+        it.planned(28, "Doing the thing");
+        it.write("src/work.rs", "what the task wrote\n");
+        it.write(A_REPORT, "the task's report\n");
+        it.refused(100, "Doing the thing", &["src/work.rs", A_REPORT]);
+        let branch = it.parking(28, "Doing the thing").branch;
+
+        let carried = the_carried_handoff_on_the_branch();
+        it.git(&["switch", "--quiet", &branch]);
+        it.write(&carried, "task = Doing the thing\n");
+        it.git(&["add", "--force", "--", &carried]);
+        it.git(&[
+            "commit",
+            "--quiet",
+            "--message",
+            "somebody edited what the branch carries",
+        ]);
+        it.git(&["switch", "--quiet", "main"]);
+
+        let refused = it.recovering(&branch);
+        assert!(
+            refused
+                .as_ref()
+                .is_err_and(|why| why.contains("does not read") && why.contains(&carried)),
+            "a carried handoff that does not read was acted on, or passed over for the \
+             directory: {refused:?}"
+        );
+        assert_eq!(
+            it.reading("src/work.rs"),
+            None,
+            "a refused recovery still put files in the tree"
+        );
+        assert!(
+            Handed::waiting(&it.ours())
+                .expect("the handoff to read")
+                .is_none(),
+            "a refused recovery still left a handoff waiting"
         );
     }
 
@@ -857,7 +1284,7 @@ mod tests {
         it.write("src/work.rs", "what the task wrote\n");
         it.write(A_REPORT, "the task's report\n");
         it.handing_over("Doing the thing", &["src/work.rs", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         it.published("src/somebody-else.rs", "published while it was parked\n");
 
@@ -908,7 +1335,7 @@ mod tests {
             "Adding and removing",
             &["src/added.rs", "src/old.rs", A_REPORT],
         );
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
         assert_eq!(
             it.reading("src/old.rs").as_deref(),
             Some("to be deleted by the task\n"),
@@ -969,7 +1396,7 @@ mod tests {
         it.write("plan.md", &a_plan(&[18]));
         it.write(A_REPORT, "the task's report\n");
         it.handing_over("Marking itself done", &["plan.md", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         it.published("plan.md", &a_plan(&[2]));
 
@@ -999,7 +1426,7 @@ mod tests {
         it.write("plan.md", "one\ntask 28 - done by me\nthree\n");
         it.write(A_REPORT, "the task's report\n");
         it.handing_over("Both on one line", &["plan.md", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         it.published("plan.md", "one\ntask 28 - done by somebody else\nthree\n");
 
@@ -1035,7 +1462,7 @@ mod tests {
             "Naming what it did not write",
             &["src/work.rs", "src/never-written.rs", A_REPORT],
         );
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         let refused = it.recovering(&branch);
         assert!(
@@ -1098,7 +1525,7 @@ mod tests {
         it.write("src/work.rs", "what the task wrote\n");
         it.write(A_REPORT, "the task's report\n");
         it.handing_over("The parked one", &["src/work.rs", A_REPORT]);
-        let branch = it.parking(28);
+        let branch = it.parking(28, "Doing the thing").branch;
 
         it.handing_over("Somebody's work in hand", &["src/other.rs", A_REPORT]);
         let refused = it.recovering(&branch);
