@@ -144,11 +144,67 @@ pub enum NotBounded {
     /// than the syscall, because whoever reads it is looking at a boot order.
     #[error(
         "there is no boundary at {path}: alo-boundaryd loads one at boot, and until it has, this \
-         machine cannot bound a turn"
+         machine cannot bound a turn — docs/quirks.md, *A machine without a boundary runs no \
+         turn*, says what to check"
     )]
     NoBoundaryHere {
         /// Where it was looked for.
         path: String,
+    },
+
+    /// The programme is not held on one of its hooks.
+    ///
+    /// The pin is what keeps a hook attached once the loader has exited, so a
+    /// hook whose pin is gone is a hook the kernel decides nothing at — and a
+    /// boundary with eleven of its twelve is one that watches what a turn opens
+    /// and not, say, what it sends, while looking from the daemon's side like a
+    /// boundary. Asked of the machine before every turn and at start, in
+    /// `in_place.rs`: the daemon can see that a pin is there and cannot open
+    /// it, which is the mode `pinned.rs` chose and which is not loosened for
+    /// the asking.
+    #[error(
+        "the boundary is not held on {hook}: there is no pin at {path} ({why}), so the kernel \
+         decides nothing there, and a boundary with a hook missing is no boundary; alo-boundaryd \
+         pins every hook at boot — docs/quirks.md, *A machine without a boundary runs no turn*, \
+         says what to check"
+    )]
+    HookIsNotHeld {
+        /// The hook, named as the kernel names it.
+        hook: &'static str,
+
+        /// Where its pin was looked for.
+        path: String,
+
+        /// What the machine said about the path.
+        #[source]
+        why: io::Error,
+    },
+
+    /// The map pinned where this service opened one is a different map.
+    ///
+    /// The loader was run again since this service started: it took the pins
+    /// away and made new ones, so the programme now on the hooks reads a map
+    /// this service never opened, and what this service writes into the one it
+    /// holds is read by nothing. Every turn under that arrangement would be a
+    /// thread in a control group the kernel holds no entry for, which is a
+    /// thread the kernel allows everything — the exact shape `inside.rs`
+    /// orders its steps to prevent, arriving from outside the process. Asked of
+    /// the kernel's own numbering of its maps, before every turn.
+    #[error(
+        "the map of turns pinned at {path} is map {pinned} and this service holds map {held}: \
+         alo-boundaryd was run again since alo-agentd started, so what this service writes goes \
+         where no programme reads it; restart alo-agentd — docs/quirks.md, *A machine without a \
+         boundary runs no turn*, has the account"
+    )]
+    NotTheSameBoundary {
+        /// Where the map is pinned.
+        path: String,
+
+        /// The map this service holds, as the kernel numbers it.
+        held: u32,
+
+        /// The map at the pin, as the kernel numbers it.
+        pinned: u32,
     },
 
     /// The directory the boundary is pinned in could not be made.

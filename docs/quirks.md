@@ -113,6 +113,81 @@ test passes; this is Unix-socket development evidence, not physical input testin
 
 ## Hardware and firmware
 
+### A machine without a boundary runs no turn, and a development machine is no exception
+**Version:** `alo-agentd` and `alo-bounding` from 2026-09-12, measured on
+`6.18.33.2-microsoft-standard-WSL2` by
+`crates/alo-bounding/tests/a_turn_without_a_boundary_does_not_run.rs`.
+**Behaviour:** the boundary is twelve pinned links and two pinned maps under
+`/sys/fs/bpf/alo`, made once at boot by `alo-boundaryd` (ADR 0018), and
+`alo-agentd` opens the one map it may write. Three things can happen to that
+arrangement under a running service, and until 2026-09-12 the service noticed
+none of them:
+
+- **a pin is removed.** Removing a link's pin is the one thing on the machine
+  that detaches its hook. A service that had opened the map went on writing
+  entries into it and running turns, and the kernel decided at eleven hooks
+  instead of twelve — a turn could still, say, send where it could not open.
+- **the map's pin is removed, or the whole directory is taken away.** The
+  service holds a descriptor, so its writes still land somewhere; whether any
+  programme still reads that somewhere is the next point.
+- **the loader is run again** — `pinned.taken_away()` and a fresh
+  `Imposed::once`, which is what an operator restarting `alo-boundaryd` by hand
+  does. Every pin is new. The programme now on the hooks reads a map the
+  service never opened, and what the service writes into the map it holds is
+  read by nothing. **Measured:** a turn under that arrangement ran, and opened
+  a private key beside the one file it was granted — `Went { control: Opened,
+  granted: Opened }` — on a machine whose pin listing showed nothing wrong and
+  whose record said the turn was bounded.
+
+Two smaller things came out of measuring it. **Detaching is asynchronous**:
+the kernel releases a pinned link from a work queue, so for a moment after
+`rm /sys/fs/bpf/alo/file_open` the old programme is still refusing, and a
+test that removed a pin and opened a file in the same breath saw `EACCES`
+where a second later it would have seen the file. What is stable is the pin's
+absence, and that is what the service asks about. And **the daemon may see a
+pin and may not open one**: the pins are `0600 root:root` in a `0750`
+directory the agent's group may enter, so a `stat` from the service answers
+and an open does not — which is right, because a descriptor on a link is
+enough to detach it (`BPF_LINK_DETACH` checks nothing about how the descriptor
+was opened), and a mode that let the service read a pin would let the person's
+own daemon take the machine's boundary off.
+**Our response:** the service asks the machine before every turn, and at
+start — `alo_bounding::Boundary::in_place`, called first thing in
+`Turns::doing`: is the map of turns still pinned, is every one of the twelve
+hooks still held, and is the map at the pin the map this service holds, as the
+kernel numbers its maps. Any *no* refuses the turn before its first verb, with
+nothing made and nothing to undo; the refusal is written down in the record as
+the machine's own (`not-bounded`, `docs/contracts/record-file.md`), the person
+reads one sentence saying the machine and not they are at fault, and the
+service log carries the machine's account — which pin, which two map numbers.
+A machine with its boundary in place is unaffected, and the same file measures
+that beside every refusal.
+
+**There is no override, and there is not going to be one.** `docs/features.md`
+promises *a refusal, not a warning*, and an environment variable that let a
+turn run unbounded on a development machine would be the warning with a name;
+`nothing_in_this_crate_reads_the_environment` in the same test file reads
+`alo-bounding`'s source and fails the day one appears. What a development
+machine gets instead is the same refusal and this entry. To find out which of
+the three states it is in:
+
+```
+ls -l /sys/fs/bpf/alo                    # twelve links, bounds, fields — all present?
+systemctl status alo-boundaryd           # did the loader run, and once?
+journalctl -u alo-agentd | grep boundary # which pin, or which two map numbers
+```
+
+A missing directory or map is a loader that never ran, or one whose work was
+taken away: `docs/hardware.md`'s five checks say why a loader refuses. A
+missing link is a pin somebody removed; the remedy is the loader's pins made
+afresh **and the service restarted**, because of the third state. Two map
+numbers in the log is the third state exactly: the loader was run again, and
+`alo-agentd` has to be restarted so that it opens the map the programme now
+reads. Nothing here is repaired by the service on its own, because a service
+that re-opened a boundary while running would be one that decided for itself
+which boundary it was under.
+**Date:** 2026-09-12
+
 ### Hyper-V refuses to start a machine rather than start it small, and the figure it refuses at is the host's, not the guest's
 **Version:** Hyper-V on Windows 11 Pro 10.0.26200, a 15.5 GB host, measured
 2026-09-11 starting the `alo-os` generation-2 machine `docs/booting.md`

@@ -224,6 +224,34 @@ impl Entry {
         Self::new(at, Happened::GrantsNotReadAgain { why: Line::of(why) })
     }
 
+    /// There was no boundary to run this turn's work inside, so nothing ran.
+    ///
+    /// `why` is the sentence the person was shown, handed in already rendered
+    /// for the reason [`Entry::never_put_anywhere`] gives: the record and the
+    /// screen cannot become two accounts of one moment. `machine` is what the
+    /// machine said about its own boundary — which pin was gone, which map
+    /// was not the one — in the words whoever administers it reads, and it is
+    /// kept because that is the fact a review wants and the person's sentence
+    /// deliberately does not carry.
+    ///
+    /// **No call is passed in and there is no field for one.** A file verb
+    /// had one and a question had none; [`Happened::NotBounded`] says why the
+    /// shape holds neither.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision.
+    #[must_use]
+    pub fn not_bounded(agent: &Grantee, why: &str, machine: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::NotBounded {
+                agent: Line::of(agent.as_str()),
+                why: Line::of(why),
+                machine: Line::of(machine),
+            },
+        )
+    }
+
     /// A properly formed call that was stopped somewhere.
     ///
     /// Private because *where* it was stopped is not a caller's choice to make
@@ -481,5 +509,43 @@ mod tests {
         // no grants, refuses.
         assert!(read.what().is_some_and(|what| what.verb().is("move_file")));
         assert!(!archiving_march().permitted_by(&grants, &files(), noon()));
+    }
+
+    /// **A turn the machine would not run without a boundary is written
+    /// down**, as a refusal that is nobody's saying no: it counts as stopped,
+    /// it was stopped at no point in a call's journey, it names the agent, and
+    /// it carries both sentences — the person's, and the machine's own about
+    /// which pin was gone.
+    #[test]
+    fn a_turn_with_no_boundary_is_recorded_as_the_machine_refusing() {
+        let entry = Entry::not_bounded(
+            &files(),
+            "nothing was done: this machine cannot hold an agent inside what you granted it",
+            "the boundary is not held on file_open: there is no pin at /sys/fs/bpf/alo/file_open",
+            noon(),
+        );
+
+        assert!(entry.happened().was_stopped());
+        assert!(!entry.happened().ran());
+        assert_eq!(entry.happened().stopped(), None);
+        assert!(entry.agent().is_some_and(|agent| agent.is("@files")));
+        assert_eq!(entry.what(), None);
+        assert!(
+            entry
+                .happened()
+                .why_stopped()
+                .is_some_and(|why| why.as_str().starts_with("nothing was done"))
+        );
+        assert!(matches!(
+            entry.happened(),
+            Happened::NotBounded { machine, .. } if machine.as_str().contains("file_open")
+        ));
+        assert_eq!(entry.happened().destination(), None);
+        assert!(!entry.happened().caused_egress());
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(written.contains("\"not-bounded\""), "{written}");
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, entry);
     }
 }

@@ -8,7 +8,16 @@
 //! # The order is the security property, and both windows fail open
 //!
 //! `bounding.rs` says the same thing about loading, and this is the running
-//! half of it. Two orderings here are not tidiness:
+//! half of it. Two orderings here are not tidiness, and a third comes before
+//! both:
+//!
+//! **In place before anything.** The machine is asked whether the boundary is
+//! still there — the map pinned, every hook held, the map at the pin the one
+//! this service holds — before a control group is made. A thread bounded by a
+//! map no programme reads is a thread the kernel allows everything, exactly as
+//! in the two windows below, and it is the one a loader run again since the
+//! service started would open on every turn. `in_place.rs` has the three
+//! questions.
 //!
 //! **Bound before entered.** A thread inside a turn's cgroup that the kernel
 //! holds no entry for is a thread the kernel allows everything — the miss is the
@@ -175,6 +184,16 @@ impl Turns {
     /// and nothing around it: gather what happened, come back out, and decide
     /// about it afterwards.
     ///
+    /// # The boundary is asked for before anything is made
+    ///
+    /// The first thing here is [`Boundary::in_place`]: the machine is asked
+    /// whether the map is still pinned, whether every hook is still held and
+    /// whether the map at the pin is the one this service holds — before a
+    /// control group exists, before an entry is written, before `work` could
+    /// run. A machine that has lost its boundary refuses the turn at its first
+    /// verb and is left exactly as it was; `in_place.rs` has why each of the
+    /// three is asked, and why it is asked of the kernel rather than of a note.
+    ///
     /// # Errors
     /// [`NotBounded`] for anything the machine would not do. A failure to be
     /// **brought home** is the one that leaves the machine changed: the entry
@@ -187,6 +206,7 @@ impl Turns {
         granted: Bounds,
         work: impl FnOnce() -> T,
     ) -> Result<T, NotBounded> {
+        boundary.in_place()?;
         let turn = self.beginning(named)?;
         let which = match turn.id() {
             Ok(which) => which,

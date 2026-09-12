@@ -96,10 +96,11 @@ pub enum NotDone {
     MachineCouldNot(Failed),
     /// There was no boundary to run the work inside, so nothing ran.
     ///
-    /// Not a refusal and not the disk: ADR 0015's *a turn whose boundary cannot
-    /// be applied does not run*, which is the machine being unable to keep its
-    /// own guarantee rather than the capability model keeping it. Nothing is
-    /// written down — see this module's documentation — and a
+    /// Not the grants and not the disk: ADR 0015's *a turn whose boundary
+    /// cannot be applied does not run*, which is the machine being unable to
+    /// keep its own guarantee rather than the capability model keeping it. It
+    /// is written down as the machine's own refusal
+    /// (`alo_record::Entry::not_bounded`) before it is answered, and a
     /// [`NoBoundary::a_thread_is_still_inside`] is a service that stops.
     NotBounded(NoBoundary),
     /// What happened could not be written down.

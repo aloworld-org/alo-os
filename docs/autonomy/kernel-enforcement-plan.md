@@ -95,6 +95,11 @@ kernel, not a mock and not compilation.
 | A process that is not a turn makes every one of those changes and is refused none | same file, `a_process_that_is_not_a_turn_changes_what_it_always_could` |
 | The five attribute hooks, outside a turn, leave no trace | `the_boundary_decides_and_forgets.rs`, attribute changes beside the opens |
 | A refused attribute change and a refused open are one sentence in the record | `alo-files` `a_change_to_a_file_the_kernel_refused_is_the_sentence_a_refused_open_is` |
+| **A turn whose boundary has gone is refused before its first verb** — the map unpinned, any one of the twelve hook pins removed, the loader run again so the map at the pin is not the one the service holds, the whole boundary taken away; nothing ran, no control group is left, the kernel holds no entry, and the sentence names what is missing and points at `docs/quirks.md` | `a_turn_without_a_boundary_does_not_run.rs`, four refusals, each measured *running* before the check existed |
+| A machine whose boundary is in place is unaffected — the turn runs, the key is refused inside it, the invoice opens | same file, `a_turn_runs_where_the_boundary_is_in_place` |
+| A service does not start where the map is pinned and a hook is not | same file, `a_service_does_not_start_where_a_hook_is_not_held` |
+| There is no environment variable that lets a turn run without a boundary | same file, `nothing_in_this_crate_reads_the_environment`, which reads the crate's source |
+| **The machine's refusal is written down**, as `not-bounded`, with the person's sentence and the machine's own, and the service goes on serving | `alo-agentd/tests/a_turn_is_refused_when_the_boundary_is_gone.rs`, record on a real disk; `alo-turn` `a_turn_that_could_not_be_bounded_does_nothing_and_says_so`; `alo-record` `a_turn_with_no_boundary_is_recorded_as_the_machine_refusing`; `alo-recounting` `a_turn_with_no_boundary_reads_back_as_the_machine_refusing` |
 | Loader: a leftover pin on any hook is refused over and not removed | `alo-boundaryd` `a_machine_that_already_has_a_boundary_keeps_it`, per hook |
 | Loader: taking a boundary away leaves no hook attached | `taking_a_boundary_away_leaves_none_of_its_hooks_attached` |
 | Loader: the boundary outlives the loader; a second loader refuses | `the_boundary_outlives_the_loader.rs` |
@@ -137,7 +142,7 @@ Each is documented, most are reproduced, and none is scheduled here.
 | **A file's inode flags** through a descriptor opened before the turn began | v0.5 | `file_ioctl` is not hooked, so `FS_IOC_SETFLAGS` on such a descriptor still lands. **Reproduced** in `the_kernel_refuses_an_attribute_change.rs`, asserted in the direction it behaves today. Bounded by the kernel itself: `append-only` and `immutable` need `CAP_LINUX_IMMUTABLE`, which `alo-agentd` does not hold; what is left is `nodump` and `noatime` on a file that was already open. Named in `docs/quirks.md` |
 | Landlock, seccomp, namespaces — ADR 0013's other three primitives | v0.5 | None built; the BPF LSM carries the whole boundary today |
 | A snapshot at turn start, and exact undo | v0.5 / v1 | Not built |
-| Kernel-sourced enforcement records | v0.5 | **Needs a decision, not code** — see below |
+| Kernel-sourced enforcement records | v0.5 | **Decidable, and waiting on the owner** — [ADR 0029](../decisions/0029-what-the-kernel-writes-down-about-a-turn.md), proposed 2026-09-12 by task 16, recommends Option C; the programme is held to two maps by `the_records_source_is_decided_before_it_is_built.rs` until the status line changes. See below |
 | Loader upgrade path | — | A machine carrying pins from an older build refuses a new loader and an operator removes them by hand. Correct and deliberate; no automated upgrade exists |
 
 ### 4. Physical hardware acceptance
@@ -184,7 +189,19 @@ Three, and this workstream builds none of them without one.
 3. **Kernel-sourced enforcement records.** ADR 0015 promises the record becomes
    what the kernel watched; *the LSM decides and forgets* forbids the mechanism
    that would produce it, and a test fails if a third map appears. Those two
-   cannot both be delivered as written. Recorded, not scheduled.
+   cannot both be delivered as written. **Made decidable by task 16 on
+   2026-09-12**:
+   [ADR 0029](../decisions/0029-what-the-kernel-writes-down-about-a-turn.md)
+   sets out four options — the kernel emits and the daemon appends; the
+   daemon's account with the kernel's refusal counts beside it; the kernel's
+   observation held beside the account as identity, with the account shown as
+   a claim; and the honest rewording — names what each costs a person reading,
+   the record file and the loader, and **recommends the third**, a table of
+   `(cgroup, hook, device, inode)` counts the daemon folds against its own
+   account into one `watched` line per turn. It names the one price every
+   observing option pays: *decides and forgets* goes from a property of the
+   programme's shape to a property held by a test. The owner's or the
+   delegate's to answer; nothing is built until the status line changes.
 
 ## Tasks
 
@@ -961,6 +978,40 @@ exists to leave.
   development machine that cannot load the boundary gets the same refusal and a
   sentence pointing at `docs/quirks.md`.
 
+**Done, 2026-09-12.** The promise was kept once, at start, by opening the
+map; it is now asked of the machine **before every turn**, in
+`crates/alo-bounding/src/in_place.rs`, called first thing in `Turns::doing`
+and again by `Boundary::opened`: is the map of turns still pinned, is the
+programme still held on each of its twelve hooks (a `stat` of each pin — the
+daemon may see a pin and may not open one, because a descriptor on a link is
+enough to detach it, so no mode was loosened), and is the map at the pin the
+map this service holds, as the kernel numbers them. **The third question is
+the one the task did not name and the one that mattered most**: a loader run
+again since the service started leaves the service writing into a map no
+programme reads, and every turn afterwards is a thread the kernel allows
+everything. **Reproduced before it was closed**, in the committed file run
+against the crate as it was: `a_turn_without_a_boundary_does_not_run.rs`
+found a turn under a re-run loader *running and opening the private key*, and
+found a turn running with a hook's pin removed and with the map unpinned.
+Every one is refused now, before a control group is made, naming the hook or
+the two map numbers and pointing at `docs/quirks.md`; nothing ran, no control
+group is left and the kernel holds no entry; the same machine with its
+boundary in place runs the turn beside every refusal. **The refusal is
+recorded** — which reversed a decision in `alo-turn`'s `carrying.rs` that
+there was nothing true to write — as a new additive record kind,
+`not-bounded` (`docs/contracts/record-file.md`), carrying the person's
+sentence and the machine's own account; `alo-recounting` reads it back as
+the machine refusing. `alo-agentd` says the machine's account on the service
+log and answers the agent in the person's words, and
+`alo-agentd/tests/a_turn_is_refused_when_the_boundary_is_gone.rs` holds the
+whole of it at the layer a person meets it, with the record on a real disk.
+**No degraded mode**: `nothing_in_this_crate_reads_the_environment` reads
+`alo-bounding`'s source and fails the day a variable appears. One measurement
+worth keeping: the kernel releases a removed pin from a work queue, so a hook
+is still refusing for a moment after its pin is gone — the pin's absence is
+what is stable and what is asked. Report:
+`docs/autonomy/updates/a-turn-without-a-boundary-does-not-run.md`.
+
 ### 16. Kernel-sourced enforcement records — the decision
 
 **Status:** ready. **Depends on:** nothing.
@@ -984,6 +1035,75 @@ on it.
 - **Constraint:** no code beyond a test that the ADR exists and is pointed at
   by this plan. The decision is the owner's or the delegate's; the worker's job
   is to make it decidable.
+
+**Done, 2026-09-12.** The decision is
+`docs/decisions/0029-what-the-kernel-writes-down-about-a-turn.md`, **proposed**,
+in the shape ADR 0024 and ADR 0025 used: what is true today read off the tree,
+the contradiction stated exactly, what may not be done under any option, four
+options with what each costs a person reading *what did the agent do*, the
+record file and the loader, one recommendation, and what the code waits on.
+**Two findings shaped the options more than the task's framing did.** First,
+the kernel cannot write the record: ADR 0001 §7's four answers — what ran,
+whose authority, which approval, which grant — are things the kernel does not
+know, so *the kernel's observation replaces the daemon's account* is not
+buildable and Option A is Option C with the folding done later. Second, the
+two promises are not in conflict about *what* is watched, only about where the
+discipline lives: any place the programme writes into only inside a turn keeps
+*forgets everything that was not an agent* word for word, but turns it from a
+property of the programme's shape (nowhere to write) into a property held by a
+test (does not write), and that is the one price named in one sentence for the
+owner. **Recommended: Option C**, a hash map of `(cgroup, hook, device, inode)`
+counts — identity, never a name; no `bpf_d_path` — that the daemon reads and
+removes at the end of its turn and folds against its own account into one
+additive `watched` entry per turn: *the kernel saw exactly this*, *the kernel
+saw N things this account does not name*, or *the kernel could not keep every
+observation*. A table rather than a ring, because a ring is drained by whoever
+reads it and one machine runs one daemon per signed-in person, which the loader
+cannot be told about (ADR 0018). Option B — refusal counts in the turn's own
+`BOUNDS` entry, no third map — is the fallback that keeps the structural
+property; Option D is the rewording, named as a narrowing and left to the
+owner. **No code**: the programme keeps its two maps, and
+`crates/alo-bounding/tests/the_records_source_is_decided_before_it_is_built.rs`
+holds it there — the ADR exists once under its number, its status line says it
+stands, this task names it by filename, it carries the four options with the
+three costs under each and a recommendation, and **while it says *proposed*
+the programme declares exactly two maps**; each check is handed the thing it
+exists to catch and refuses it. Report:
+`docs/autonomy/updates/kernel-sourced-records-the-decision.md`.
+
+### 17. A file's inode flags are inside the grant
+
+**Status:** ready. **Depends on:** nothing.
+
+The last named gap on the filesystem that a hook closes. Task 14 reproduced it
+and left it standing in `the_kernel_refuses_an_attribute_change.rs`
+(`a_files_flags_are_not_yet_inside_the_grant`) and in `docs/quirks.md`: a
+descriptor opened before the turn began still takes `FS_IOC_SETFLAGS`, because
+`file_ioctl` is not hooked. What is reachable is bounded by the kernel itself —
+`append-only` and `immutable` need `CAP_LINUX_IMMUTABLE`, which `alo-agentd`
+does not hold — so what is left is `nodump` and `noatime` on a file that was
+already open. Small, and the row is still a row.
+
+- **Acceptance:** `file_ioctl` is the thirteenth hook, deciding by the same
+  walk from the file's entry that `file_permission` uses, for the two requests
+  that change what a file *is* — `FS_IOC_SETFLAGS` and `FS_IOC_FSSETXATTR` —
+  and for nothing else, so a terminal's `TIOCGWINSZ` inside a turn is never
+  walked. Inside a bound turn, setting a flag on a file outside the grant
+  through a descriptor opened before the turn is `EACCES` with the flags
+  undisturbed; the same on a file inside the grant lands; a process that is
+  not a turn is refused nothing. The existing reproduction is reversed into the
+  refusal, in the same file, beside its allowance. `Pinned` gains the hook
+  where the other twelve are, `every_hook_named()` is the one list, and
+  `a_turn_without_a_boundary_does_not_run.rs` refuses a turn when the
+  thirteenth pin is gone without a line changing. The hook outside a turn
+  leaves no trace, added to `the_boundary_decides_and_forgets.rs`'s ordinary
+  day. The row moves from section 3 to section 1, and `docs/quirks.md`'s entry
+  says what closed and what the kernel already bounded.
+- **Constraint:** the two maps stay two (ADR 0029 is proposed, and the test
+  from task 16 holds it). A request the hook does not recognise is allowed
+  through with no walk — `ioctl` is how a terminal, a socket and a device are
+  driven, and a boundary that walked every one of them would be a cost on a
+  person's editor for a flag nobody was changing.
 
 ## Rules this workstream holds itself to
 

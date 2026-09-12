@@ -63,8 +63,8 @@ machine that did nothing are the same file.
 
 Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
-`never-put-anywhere`, `grants-not-read-again`, `left`, `held-back`,
-`left-on-its-own` — and the fields under it depend on that tag.
+`never-put-anywhere`, `grants-not-read-again`, `not-bounded`, `left`,
+`held-back`, `left-on-its-own` — and the fields under it depend on that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
@@ -86,6 +86,19 @@ beside agents that really were granted something. A reader looking for what the
 machine did with nobody's authority looks for the entries with no `agent`; the
 two are told apart by their tags, and only the first of them reached the
 network.
+
+**`not-bounded` is the machine's own refusal**, added 2026-09-12 and additive.
+ADR 0015's *a turn whose boundary cannot be applied does not run* used to leave
+no entry, on the argument that nothing had happened; it does now, because a
+record that kept every refusal but the machine's own showed a boundary that had
+gone as a record that simply stopped. It carries `agent`, `why` — the sentence
+the person was shown — and `machine`, what the machine said about its own
+boundary in the words whoever administers it reads: which pin was gone, or
+which map was not the one the service opened. It holds no call, no verb, no
+approval and no grant: a file verb had a call and a question had none, and a
+shape with room for one would have a refused question wearing a call's
+clothes. A reader looking for what the machine refused of its own accord looks
+for this tag.
 
 ## Versioning
 

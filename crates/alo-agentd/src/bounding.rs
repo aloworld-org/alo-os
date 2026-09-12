@@ -19,7 +19,12 @@
 //!
 //! # What one turn's execution costs
 //!
-//! A control group made beside `home`, one entry written into the kernel's map,
+//! The machine asked whether the boundary is still there — the map pinned,
+//! every hook held, the map at the pin the one this service opened —
+//! before anything else, which is `alo_bounding::Boundary::in_place` and is
+//! how *a turn whose boundary cannot be applied does not run* is kept on a
+//! machine whose boundary went away after this service started. Then a
+//! control group made beside `home`, one entry written into the kernel's map,
 //! this thread moved in by writing a byte, the verb, the thread moved back out
 //! through a descriptor opened when the service started, the entry removed and
 //! the control group taken away. `alo_bounding::Turns::doing` is all of that in

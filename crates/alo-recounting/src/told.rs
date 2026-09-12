@@ -80,6 +80,9 @@ pub enum Outcome {
     /// The person's grants were not read again, so the service went on under
     /// the list it already had.
     GrantsNotReadAgain,
+    /// A turn the machine would not run, because there was no boundary to run
+    /// it inside (ADR 0015).
+    NotBounded,
     /// Something left this machine (law 1).
     Left,
     /// Something the egress policy refused to let leave.
@@ -102,6 +105,7 @@ impl Outcome {
             Happened::AnsweredHere { .. } => Self::AnsweredHere,
             Happened::NeverPutAnywhere { .. } => Self::NeverPutAnywhere,
             Happened::GrantsNotReadAgain { .. } => Self::GrantsNotReadAgain,
+            Happened::NotBounded { .. } => Self::NotBounded,
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
             Happened::LeftOnItsOwn { .. } => Self::LeftOnItsOwn,
@@ -121,6 +125,7 @@ impl Outcome {
             Self::AnsweredHere => words::ANSWERED_HERE,
             Self::NeverPutAnywhere => words::NEVER_PUT_ANYWHERE,
             Self::GrantsNotReadAgain => words::GRANTS_NOT_READ_AGAIN,
+            Self::NotBounded => words::NOT_BOUNDED,
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,
             Self::LeftOnItsOwn => words::LEFT_ON_ITS_OWN,
@@ -349,8 +354,8 @@ mod tests {
     use super::*;
     use crate::testing::{
         an_afternoon, answered_here, archived, declined, fetched_a_model, held_back, hour,
-        in_english, left, never_asked, never_put_anywhere, noon, ran_a_read, refused_at_the_moment,
-        translated, turned_away,
+        in_english, left, never_asked, never_put_anywhere, noon, not_bounded, ran_a_read,
+        refused_at_the_moment, translated, turned_away,
     };
 
     /// **The sentence read back is the one the machine wrote down.** Not a
@@ -466,6 +471,28 @@ mod tests {
         assert_eq!(nowhere.outcome(), Outcome::NeverPutAnywhere);
         assert!(nowhere.because().is_some());
         assert_eq!(nowhere.went_to(), None);
+    }
+
+    /// **A turn the machine would not run reads back as the machine's own
+    /// refusal**: it names the agent, it carries the sentence the person was
+    /// shown, and it has no verb, no destination and no approval — because
+    /// nothing became any of those. The machine's own account of its boundary
+    /// stays on the entry and is not drawn onto this surface, which shows
+    /// people what they were shown.
+    #[test]
+    fn a_turn_with_no_boundary_reads_back_as_the_machine_refusing() {
+        let told = Told::of(&not_bounded());
+        assert_eq!(told.outcome(), Outcome::NotBounded);
+        assert!(told.agent().is_some_and(|agent| agent.is("@files")));
+        assert!(
+            told.because()
+                .is_some_and(|why| why.as_str().starts_with("nothing was done"))
+        );
+        assert_eq!(told.verb(), None);
+        assert_eq!(told.sentence(), None);
+        assert_eq!(told.went_to(), None);
+        assert_eq!(told.from_approval(), None);
+        assert!(told.against().is_empty());
     }
 
     /// **Law 1, read back.** Something that left says where it went; something

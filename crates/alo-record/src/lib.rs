@@ -9,8 +9,8 @@
 //!
 //! **The refusals are the point.** A record keeping only successes cannot
 //! answer what a security review actually asks, which is not *what did it do*
-//! but *what did it try*. So all nine things that can happen are kept, and
-//! four of them are ways of being stopped:
+//! but *what did it try*. So all ten things that can happen are kept, and
+//! five of them are ways of being stopped:
 //!
 //! | | |
 //! |---|---|
@@ -20,13 +20,14 @@
 //! | [`Happened::AnsweredHere`] | A question answered on this machine ([ADR 0008](../../../docs/decisions/0008-where-inference-happens.md)) |
 //! | [`Happened::NeverPutAnywhere`] | A question a rule refused before it was put anywhere |
 //! | [`Happened::GrantsNotReadAgain`] | The person's grants were not read again, so the service went on under the list it had |
+//! | [`Happened::NotBounded`] | There was no boundary to run a turn's work inside, so nothing ran ([ADR 0015](../../../docs/decisions/0015-the-kernel-learns-what-a-turn-is.md)) |
 //! | [`Happened::Left`] | Something left this machine (law 1) |
 //! | [`Happened::HeldBack`] | Something the egress policy refused to let leave |
 //! | [`Happened::LeftOnItsOwn`] | alo OS reached the network with nobody having asked (★ *no telemetry*) |
 //!
 //! # The two with nobody in them
 //!
-//! Seven of the nine are an agent's, and answer *whose authority was this
+//! Eight of the ten are an agent's, and answer *whose authority was this
 //! under*. Two are nobody's and have **no agent field** — [`Entry::agent`]
 //! answers `None` for both, because nobody granted alo OS permission to sign
 //! somebody in, and nobody granted it permission to hold the person's own list

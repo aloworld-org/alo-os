@@ -59,8 +59,9 @@
 //! knows anything about how a boundary is imposed: `carrying.rs` has the order
 //! and [`crate::Bounding`] is what the machine was made with. What is here is
 //! the two things a turn is left holding when there was none —
-//! [`NotDone::NotBounded`], which nothing writes down because nothing happened,
-//! and [`Turning::a_thread_is_lost`], which is the one a service stops over.
+//! [`NotDone::NotBounded`], written down as the machine's own refusal before
+//! it is answered, and [`Turning::a_thread_is_lost`], which is the one a
+//! service stops over.
 
 use std::time::{Duration, SystemTime};
 
@@ -165,7 +166,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             Ok(authorised) => authorised,
             Err(refused) => return self.stopped_at_the_moment(refused, now),
         };
-        let (entry, outcome) = self.inside_a_boundary(authorised, grants)?;
+        let (entry, outcome) = self.inside_a_boundary(authorised, grants);
         self.writing_down(entry)?;
         outcome
     }
@@ -232,7 +233,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             Ok(authorised) => authorised,
             Err(refused) => return self.stopped_at_the_moment(refused, now),
         };
-        let (entry, outcome) = self.inside_a_boundary(authorised, grants)?;
+        let (entry, outcome) = self.inside_a_boundary(authorised, grants);
         self.writing_down(entry)?;
         outcome
     }
@@ -526,24 +527,28 @@ impl<'a, 'm> Turning<'a, 'm> {
     ///
     /// Both doors that run something come through here, and it is the whole of
     /// what a boundary changes about them: everything else on either side of it
-    /// is what it always was. Nothing is written down on the refusing road —
-    /// `carrying.rs` says why there is nothing true to write — and a
+    /// is what it always was. The refusing road carries an entry like every
+    /// other — `carrying.rs` makes it, and says why it used not to — and a
     /// thread left inside is remembered on the turn, because the service that
     /// holds it has to be able to ask.
     fn inside_a_boundary(
         &mut self,
         authorised: Authorised,
         grants: &Grants,
-    ) -> Result<(Entry, Result<Answer, NotDone>), NotDone> {
-        match carrying_out(self.machine, authorised, grants) {
-            Ok(both) => Ok(both),
-            Err(no_boundary) => {
-                if no_boundary.a_thread_is_still_inside() {
-                    self.lost_a_thread = true;
-                }
-                Err(NotDone::NotBounded(no_boundary))
-            }
+    ) -> (Entry, Result<Answer, NotDone>) {
+        let (entry, outcome) = carrying_out(self.machine, authorised, grants);
+        if matches!(&outcome, Err(NotDone::NotBounded(why)) if why.a_thread_is_still_inside()) {
+            self.lost_a_thread = true;
         }
+        (entry, outcome)
+    }
+
+    /// A thread of the service is inside a boundary that is over.
+    ///
+    /// `pub(crate)`, for [`crate::asking`]: a question is put from inside a
+    /// boundary too, and the thread that put it can be lost the same way.
+    pub(crate) const fn a_thread_was_lost(&mut self) {
+        self.lost_a_thread = true;
     }
 
     /// The capability model said no where it is asked last, written down and
@@ -1157,10 +1162,12 @@ mod tests {
         );
     }
 
-    /// **A turn that could not be bounded does nothing at all**, and that is
-    /// ADR 0015's rule met at the door: the file is still where it was, the
-    /// person is told in their own language, and it is not a refusal — nothing
-    /// was refused, because nothing was asked.
+    /// **A turn that could not be bounded does nothing at all, and that is
+    /// written down.** ADR 0015's rule met at the door: the file is still where
+    /// it was, the person is told in their own language, and it is not the
+    /// grants refusing — nothing was asked of them — but it is the machine
+    /// refusing, and the record says so with both sentences: the person's, and
+    /// the machine's own about its boundary.
     #[test]
     fn a_turn_that_could_not_be_bounded_does_nothing_and_says_so() {
         let mut record = Record::default();
@@ -1192,15 +1199,34 @@ mod tests {
         );
 
         assert!(still_there, "a change ran with no boundary around it");
+        assert_eq!(
+            record.len(),
+            1,
+            "a turn the machine refused left no record of the refusal"
+        );
+        let entry = record.everything().next().unwrap();
         assert!(
-            record.is_empty(),
-            "a turn that never ran wrote something down about having run"
+            !entry.happened().ran(),
+            "a turn that never ran was written down as having run"
+        );
+        assert!(entry.happened().was_stopped());
+        assert!(
+            matches!(
+                entry.happened(),
+                alo_record::Happened::NotBounded { agent, why, machine }
+                    if agent.is("@files")
+                        && why.as_str().starts_with("nothing was done")
+                        && machine.as_str().contains("would not take an entry")
+            ),
+            "{:?}",
+            entry.happened()
         );
     }
 
     /// **A read is bounded too**, which is the half somebody would be tempted to
     /// leave out: a read touches a disk, so a verb with a bug in it reads
-    /// whatever it names, and ADR 0013 is about exactly that.
+    /// whatever it names, and ADR 0013 is about exactly that. And a read the
+    /// machine would not run is written down exactly as a change is.
     #[test]
     fn a_read_that_could_not_be_bounded_answers_nothing() {
         let mut record = Record::default();
@@ -1224,7 +1250,16 @@ mod tests {
             },
         );
 
-        assert!(record.is_empty(), "a read that never ran left an entry");
+        assert_eq!(
+            record.len(),
+            1,
+            "a read the machine refused left no record of the refusal"
+        );
+        assert!(
+            record
+                .everything()
+                .all(|entry| matches!(entry.happened(), alo_record::Happened::NotBounded { .. }))
+        );
     }
 
     /// **A thread that could not be brought back is a service that stops**, and
@@ -1264,7 +1299,9 @@ mod tests {
             },
         );
 
-        assert!(record.is_empty());
+        // Written down like every other refusal: the service that stops over
+        // this leaves a record saying why its last turn did nothing.
+        assert_eq!(record.len(), 1);
     }
 
     /// **The document the invocation offered is reachable and the folder around

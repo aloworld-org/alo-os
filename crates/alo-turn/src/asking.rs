@@ -208,12 +208,17 @@ impl Turning<'_, '_> {
                     // A boundary that could not be imposed is ADR 0015's rule
                     // rather than a smaller question: nothing was asked and
                     // nothing left. A boundary that was imposed and ran nothing
-                    // is the same fact about this machine, said the same way.
-                    (Err(why), _) => Err(NoAnswer::NotBounded(why)),
-                    (Ok(()), None) => Err(NoAnswer::NotBounded(NoBoundary::because(
-                        "the boundary was imposed and the question was not put inside it"
-                            .to_owned(),
-                    ))),
+                    // is the same fact about this machine, said the same way —
+                    // and both are written down as the machine's own refusal.
+                    (Err(why), _) => self.nothing_was_bounded(why, &agent, now),
+                    (Ok(()), None) => self.nothing_was_bounded(
+                        NoBoundary::because(
+                            "the boundary was imposed and the question was not put inside it"
+                                .to_owned(),
+                        ),
+                        &agent,
+                        now,
+                    ),
                 }
             }
             Answers::Runtime(runtime) => {
@@ -280,6 +285,33 @@ impl Turning<'_, '_> {
         match kept {
             Ok(()) => Err(NoAnswer::DidNotAnswer(Box::new(failed))),
             Err(why) => Err(after_it_left(why)),
+        }
+    }
+
+    /// There was no boundary to put the question inside, so it was not put —
+    /// written down, and then said.
+    ///
+    /// The same entry a file verb leaves when the machine would not bound it,
+    /// `alo_record::Entry::not_bounded`, with the sentence the person was
+    /// shown and the machine's own account of its boundary; `carrying.rs`
+    /// says why the machine's refusal is written down at all. Nothing left,
+    /// nothing was shown, and a thread lost putting the question is
+    /// remembered on the turn for the service to ask about, as it is for a
+    /// verb.
+    fn nothing_was_bounded(
+        &mut self,
+        why: NoBoundary,
+        agent: &Grantee,
+        now: SystemTime,
+    ) -> Result<Answer, NoAnswer> {
+        if why.a_thread_is_still_inside() {
+            self.a_thread_was_lost();
+        }
+        let said = why.said(self.machine().strings());
+        let entry = Entry::not_bounded(agent, said.text(), why.why(), now);
+        match self.keeping(entry) {
+            Ok(()) => Err(NoAnswer::NotBounded(why)),
+            Err(kept) => Err(nothing_left(kept)),
         }
     }
 

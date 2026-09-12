@@ -313,19 +313,42 @@ impl Pinned {
     /// attached after the boundary was removed.
     #[must_use]
     pub fn every_hook(&self) -> [&Path; 12] {
+        self.every_hook_named().map(|(_, at)| at)
+    }
+
+    /// Every pinned link with the hook it holds, in the order the hooks are
+    /// attached.
+    ///
+    /// The list [`Pinned::every_hook`] is cut from, and the one `in_place.rs`
+    /// reads when it asks the machine, before every turn, whether each hook is
+    /// still held: a refusal has to name the hook rather than the path, because
+    /// whoever reads it is looking at a machine and not at a directory listing.
+    /// The name is the one the kernel function has and the pin is called after
+    /// it, so the two cannot drift.
+    #[must_use]
+    pub fn every_hook_named(&self) -> [(&'static str, &Path); 12] {
         [
-            &self.hook,
-            &self.rename_hook,
-            &self.delete_hook,
-            &self.link_hook,
-            &self.departure_hook,
-            &self.message_hook,
-            &self.use_hook,
-            &self.attribute_hook,
-            &self.extended_attribute_hook,
-            &self.removed_attribute_hook,
-            &self.access_list_hook,
-            &self.removed_access_list_hook,
+            (THE_HOOK, self.hook.as_path()),
+            (THE_RENAME_HOOK, self.rename_hook.as_path()),
+            (THE_DELETE_HOOK, self.delete_hook.as_path()),
+            (THE_LINK_HOOK, self.link_hook.as_path()),
+            (THE_DEPARTURE_HOOK, self.departure_hook.as_path()),
+            (THE_MESSAGE_HOOK, self.message_hook.as_path()),
+            (THE_USE_HOOK, self.use_hook.as_path()),
+            (THE_ATTRIBUTE_HOOK, self.attribute_hook.as_path()),
+            (
+                THE_EXTENDED_ATTRIBUTE_HOOK,
+                self.extended_attribute_hook.as_path(),
+            ),
+            (
+                THE_REMOVED_ATTRIBUTE_HOOK,
+                self.removed_attribute_hook.as_path(),
+            ),
+            (THE_ACCESS_LIST_HOOK, self.access_list_hook.as_path()),
+            (
+                THE_REMOVED_ACCESS_LIST_HOOK,
+                self.removed_access_list_hook.as_path(),
+            ),
         ]
     }
 

@@ -32,17 +32,22 @@
 //!
 //! It answers with the entry and with what the caller gets, and
 //! [`crate::Turning`] writes the first before handing over the second. That is
-//! the crate's whole promise in one place rather than in three: every road out
-//! of here carries an entry, so there is no branch a caller could take that
-//! leaves nothing written.
+//! the crate's whole promise in one place rather than in three: **every road
+//! out of here carries an entry**, so there is no branch a caller could take
+//! that leaves nothing written.
 //!
-//! **The one road that carries no entry does not come out of here at all**, and
-//! that is why it is an `Err` on this function rather than an entry that might
-//! be absent. A turn that could not be bounded did not run: no cgroup, no
-//! syscall, nothing asked of the disk and no grant consulted. [`crate::NoAnswer`]
-//! and [`crate::NotDone::NotAnswered`] are the same shape — the record keeps
-//! what happened on this machine, and this is a machine that could not do
-//! anything at all rather than an agent that was stopped.
+//! **That includes the road where there was no boundary**, and until
+//! 2026-09-12 it did not. A turn that could not be bounded did not run — no
+//! cgroup, no syscall, nothing asked of the disk and no grant consulted — and
+//! this file argued that there was nothing true to write. There was: the
+//! machine refused to run the agent's turn, which is a refusal, and a record
+//! that kept every refusal but the machine's own showed a boundary that had
+//! gone as a record that simply stopped. So the road out of a boundary that
+//! could not be applied carries [`Entry::not_bounded`], with the sentence the
+//! person was shown and the machine's own account of which pin was gone, and
+//! [`crate::NotDone::NotBounded`] beside it — the same shape as
+//! [`crate::NotDone::MachineCouldNot`], which is the other thing a machine
+//! rather than a grant can say no to.
 //!
 //! The moment is taken off the [`Authorised`] before it is consumed, because it
 //! is the moment the grants were asked and every entry about this call belongs
@@ -56,23 +61,20 @@ use alo_record::Entry;
 use crate::bounding::Doing;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
-use crate::unbounded::NoBoundary;
 
 /// Carry an authorised call out inside a boundary, and say what happened.
 ///
-/// The entry comes back on every road that got as far as the machine, including
-/// both refusals: a call the grants stopped at the last moment is a thing that
-/// happened, and a call the machine could not manage is one that was attempted
-/// and is recorded as one (`alo-files`' rule, kept here).
-///
-/// # Errors
-/// [`NoBoundary`] when there was none to run this inside. Nothing was done and
-/// nothing is written down — see this module's documentation.
+/// The entry comes back on every road, including all three refusals: a call
+/// the grants stopped at the last moment is a thing that happened, a call the
+/// machine could not manage is one that was attempted and is recorded as one
+/// (`alo-files`' rule, kept here), and a call the machine would not run
+/// because it could not bound it is the machine's own refusal, written down
+/// as such.
 pub(crate) fn carrying_out(
     machine: &mut Machine<'_>,
     authorised: Authorised,
     grants: &Grants,
-) -> Result<(Entry, Result<Answer, NotDone>), NoBoundary> {
+) -> (Entry, Result<Answer, NotDone>) {
     let at = authorised.at();
     let agent = authorised.under().clone();
     let strings = machine.strings();
@@ -81,7 +83,7 @@ pub(crate) fn carrying_out(
         Ok(touching) => touching,
         Err(refused) => {
             let entry = Entry::refused(&refused, &agent, strings, at);
-            return Ok((entry, Err(NotDone::Refused(refused))));
+            return (entry, Err(NotDone::Refused(refused)));
         }
     };
 
@@ -93,27 +95,35 @@ pub(crate) fn carrying_out(
         Ok(reaching) => reaching,
         Err(failed) => {
             let authorised = touching.into_authorised();
-            return Ok((
+            return (
                 Entry::ran(&authorised, strings),
                 Err(NotDone::MachineCouldNot(failed)),
-            ));
+            );
         }
     };
 
-    let done = machine
+    let done = match machine
         .bounding()
-        .carrying_out(&reaching, Doing::of(touching, grants, strings))?;
+        .carrying_out(&reaching, Doing::of(touching, grants, strings))
+    {
+        Ok(done) => done,
+        Err(no_boundary) => {
+            let said = no_boundary.said(strings);
+            let entry = Entry::not_bounded(&agent, said.text(), no_boundary.why(), at);
+            return (entry, Err(NotDone::NotBounded(no_boundary)));
+        }
+    };
     let did = match done {
         Ok(did) => did,
         Err(refused) => {
             let entry = Entry::refused(&refused, &agent, strings, at);
-            return Ok((entry, Err(NotDone::Refused(refused))));
+            return (entry, Err(NotDone::Refused(refused)));
         }
     };
 
     let (authorised, outcome) = did.into_parts();
-    Ok((
+    (
         Entry::ran(&authorised, strings),
         outcome.map_err(NotDone::MachineCouldNot),
-    ))
+    )
 }

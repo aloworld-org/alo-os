@@ -246,6 +246,44 @@ pub enum Happened {
         /// Why they were not, in the words the person was shown.
         why: Line,
     },
+    /// There was no boundary to run the turn's work inside, so nothing ran.
+    ///
+    /// ADR 0015's *a turn whose boundary cannot be applied does not run — a
+    /// refusal, not a warning*, and this is the refusal written down. Until
+    /// 2026-09-12 it was not: nothing had happened, and a record of what
+    /// happened had nothing to say. That left a security review with a gap
+    /// exactly where it would look hardest — a machine whose boundary was gone
+    /// showed a record that simply stopped, indistinguishable from a machine
+    /// nobody used — and `CLAUDE.md`'s gate is *every execution and every
+    /// refusal leaves a record*, so it is one now.
+    ///
+    /// **It is the machine's refusal and not the capability model's.** The
+    /// grants were not asked, no path was refused and no person said no:
+    /// the machine could not put a boundary around the work, and would not run
+    /// it without one. [`Happened::was_stopped`] counts it, because something
+    /// was stopped; [`Happened::stopped`] answers [`None`], because it was
+    /// stopped at no point in a call's journey.
+    ///
+    /// **It holds nothing of a call.** A file verb had one and a question had
+    /// none, and a shape with room for a call would have a refused question
+    /// wearing a call's clothes. `why` is the sentence the person was shown;
+    /// `machine` is what the machine said about itself, in the words whoever
+    /// administers it reads — the pin that was gone, the map that was not the
+    /// one — because *which* pin, at *which* moment, is the fact a review
+    /// wants and the one sentence to the person deliberately does not carry.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    NotBounded {
+        /// Which agent's turn it was.
+        agent: Line,
+        /// Why nothing ran, in the words the person was shown.
+        why: Line,
+        /// What the machine said about its own boundary, for whoever looks
+        /// after it.
+        machine: Line,
+    },
     /// Something left this machine (law 1).
     ///
     /// Made only from an [`alo_egress::Departing`], which the indicator is the
@@ -314,6 +352,7 @@ impl Happened {
             | Self::TurnedAway { agent, .. }
             | Self::AnsweredHere { agent }
             | Self::NeverPutAnywhere { agent, .. }
+            | Self::NotBounded { agent, .. }
             | Self::Left { agent, .. }
             | Self::HeldBack { agent, .. } => Some(agent),
             Self::LeftOnItsOwn { .. } | Self::GrantsNotReadAgain { .. } => None,
@@ -339,6 +378,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
         }
@@ -362,6 +402,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -370,11 +411,12 @@ impl Happened {
 
     /// Whether something was stopped.
     ///
-    /// All four refusals count, whether the call was well formed or not and
+    /// All five refusals count, whether the call was well formed or not and
     /// whether it was a call at all: a security review asking what was refused
-    /// wants the ones that never validated, the egress the policy held back and
-    /// the re-reading of the grants that did not happen, as much as the ones
-    /// the grants turned down.
+    /// wants the ones that never validated, the egress the policy held back,
+    /// the re-reading of the grants that did not happen and the turn the
+    /// machine would not run without a boundary, as much as the ones the
+    /// grants turned down.
     ///
     /// It used to say *whether the agent was stopped*, and
     /// [`Happened::GrantsNotReadAgain`] is why it no longer does: a machine that
@@ -389,6 +431,7 @@ impl Happened {
                 | Self::TurnedAway { .. }
                 | Self::HeldBack { .. }
                 | Self::GrantsNotReadAgain { .. }
+                | Self::NotBounded { .. }
         )
     }
 
@@ -411,6 +454,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -433,7 +477,8 @@ impl Happened {
             Self::TurnedAway { why, .. }
             | Self::HeldBack { refused: why, .. }
             | Self::NeverPutAnywhere { why, .. }
-            | Self::GrantsNotReadAgain { why } => Some(why),
+            | Self::GrantsNotReadAgain { why }
+            | Self::NotBounded { why, .. } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
             | Self::Left { .. }
@@ -451,6 +496,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => None,
@@ -467,6 +513,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
             | Self::LeftOnItsOwn { .. } => &[],
@@ -488,7 +535,8 @@ impl Happened {
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
-            | Self::GrantsNotReadAgain { .. } => None,
+            | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. } => None,
         }
     }
 
@@ -510,6 +558,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
     }

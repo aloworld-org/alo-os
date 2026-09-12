@@ -16,6 +16,7 @@
 //! | [`NoAnswer::Miswired`] | Nothing was asked. The permission and the place are not the same place | nothing — see below |
 //! | [`NoAnswer::NotRecorded`] | What happened could not be written down | nothing, which is the problem |
 //! | [`NoAnswer::TurnClosed`] | Something earlier in this turn could not be written down | nothing |
+//! | [`NoAnswer::NotBounded`] | Nothing was asked and nothing left. The machine could not put a boundary around the request, and would not make it without one | `not bounded`, with the machine's own account of its boundary |
 //!
 //! # What the record keeps of a question, and what it does not
 //!
@@ -26,8 +27,11 @@
 //! `alo_record::Entry::held_back`. A question answered **here** is
 //! `alo_record::Entry::answered_here`, which names who asked and nothing else.
 //!
-//! Four things are deliberately not written, and they are the four where
-//! nothing left the machine and nothing on the machine answered:
+//! A question the machine would not put for want of a boundary is written
+//! down as the machine's own refusal, the shape a file verb leaves —
+//! `alo_record::Entry::not_bounded`, and `carrying.rs` has why. Four things
+//! are deliberately not written, and they are the four where nothing left the
+//! machine and nothing on the machine answered:
 //!
 //! - **A question that never became one.** There was no place, no destination
 //!   and no attempt — and what a person typed is the one thing ADR 0001 §7 says
@@ -119,8 +123,8 @@ pub enum NoAnswer {
     /// verb: *a turn whose boundary cannot be applied does not run*. Since ADR
     /// 0020 a question is put from inside one, so a machine that cannot impose
     /// one asks nothing rather than asking unbounded — which is the direction
-    /// this has to fail in. Nothing left, nothing was shown and nothing is
-    /// written down.
+    /// this has to fail in. Nothing left and nothing was shown; the machine's
+    /// refusal is written down, as it is for a verb, before this is answered.
     NotBounded(NoBoundary),
 }
 

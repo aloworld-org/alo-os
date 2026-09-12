@@ -307,6 +307,17 @@ pub(crate) fn never_put_anywhere() -> Entry {
     )
 }
 
+/// A turn the machine would not run, because there was no boundary to run it
+/// inside.
+pub(crate) fn not_bounded() -> Entry {
+    Entry::not_bounded(
+        &files(),
+        "nothing was done: this machine cannot hold an agent inside what you granted it, so it          will not let one act at all",
+        "the boundary is not held on file_open: there is no pin at /sys/fs/bpf/alo/file_open",
+        noon(),
+    )
+}
+
 /// A provider that has said where it runs.
 fn to_alo() -> Destination {
     Destination::provider("alo", Region::Declared("the EU".to_owned())).unwrap()

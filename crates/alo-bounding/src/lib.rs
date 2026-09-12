@@ -17,6 +17,7 @@
 //! | [`Imposed`] | The programme loaded into the kernel and pinned, which is `alo-boundaryd`'s and needs `CAP_BPF` |
 //! | [`Pinned`] | Where it is pinned, and the modes that decide who may reach it there |
 //! | [`Boundary`] | The one map a person's own daemon writes, and the entry that tells the kernel what a turn may reach |
+//! | [`Boundary::in_place`] | Whether the boundary is still there — the map pinned, every hook held, the map the one this service opened — asked of the kernel before every turn |
 //! | [`Cgroup`] | The control group a turn runs in, which is how the kernel tells one turn from another |
 //! | [`Turns`] | Where this service's turns are made, and the one door into and out of a boundary |
 //! | [`place_of`] | A folder, as the two numbers the kernel knows it by |
@@ -74,6 +75,28 @@
 //! agent's boundary; one thread puts the verb inside it and leaves the service
 //! outside. [`Turns`] is the arrangement that makes it possible and
 //! [`Turns::doing`] is the only door.
+//!
+//! # A turn whose boundary cannot be applied does not run — and it is asked every turn
+//!
+//! `docs/features.md` promises it as *a refusal, not a warning*, and until
+//! 2026-09-12 it was asked once, at start, of one thing: that a map was
+//! pinned. A machine could lose its boundary under a running service and go
+//! on running turns — a pin removed by hand detaches its hook; a loader run
+//! again leaves the service writing into a map no programme reads, so every
+//! turn afterwards is a thread the kernel allows everything, written down as
+//! bounded. `tests/a_turn_without_a_boundary_does_not_run.rs` measured a
+//! turn under that arrangement **opening a private key** it had been refused
+//! a moment before.
+//!
+//! So [`Turns::doing`] asks the machine first, before a control group is
+//! made: is the map of turns still pinned, is the programme still held on
+//! each of its twelve hooks, and is the map at the pin the map this service
+//! holds, as the kernel numbers them. Any *no* is a refusal before the first
+//! verb, naming what is missing and pointing at `docs/quirks.md`; the same
+//! machine with its boundary in place is unaffected. `in_place.rs` has why
+//! each question is asked of the kernel's own state and never of a note this
+//! service kept, why the daemon may see a pin and not open one, and why there
+//! is no environment variable that turns any of it into a warning.
 //!
 //! # This crate is Linux, and on any other host it is nothing
 //!
@@ -326,6 +349,7 @@ mod cgroup;
 mod failing;
 mod fields;
 mod imposing;
+mod in_place;
 mod inside;
 mod pinned;
 mod place;

@@ -48,10 +48,15 @@ use crate::{failing::NotBounded, imposing::THE_BOUNDS, pinned::Pinned};
 pub struct Boundary {
     /// The map of turns, opened from the pin `alo-boundaryd` made at boot.
     bounds: Map,
+
+    /// Where it was opened from, kept so that the machine can be asked again
+    /// before every turn whether the boundary is still there — `in_place.rs`.
+    pinned: Pinned,
 }
 
 impl Boundary {
-    /// Open the map of turns that this machine's boundary decides from.
+    /// Open the map of turns that this machine's boundary decides from, and
+    /// ask the machine whether the boundary is in place.
     ///
     /// Nothing is loaded and nothing is attached: what this needs is permission
     /// on a file, which the agent's group has and `CAP_BPF` is not.
@@ -61,7 +66,11 @@ impl Boundary {
     /// pinned, which is the sentence a person reads when `alo-boundaryd` did not
     /// run — and ADR 0015's rule is the end of it either way: a service that
     /// cannot bound a turn does not serve. [`NotBounded::WillNotHold`] if the
-    /// pin is there and is not a map this can write.
+    /// pin is there and is not a map this can write. And everything
+    /// [`Boundary::in_place`] refuses with, because a map pinned with the
+    /// programme gone from one of its hooks is a service whose turns would be
+    /// bounded by nobody, and it is found at start rather than at the first
+    /// turn.
     pub fn opened(pinned: &Pinned) -> Result<Self, NotBounded> {
         if !pinned.bounds().exists() {
             return Err(NotBounded::NoBoundaryHere {
@@ -70,7 +79,36 @@ impl Boundary {
         }
         let opened = MapData::from_pin(pinned.bounds()).map_err(NotBounded::WillNotHold)?;
         let bounds = Map::from_map_data(opened).map_err(NotBounded::WillNotHold)?;
-        Ok(Self { bounds })
+        let boundary = Self {
+            bounds,
+            pinned: pinned.clone(),
+        };
+        boundary.in_place()?;
+        Ok(boundary)
+    }
+
+    /// Where this boundary was opened from.
+    pub(crate) const fn pinned(&self) -> &Pinned {
+        &self.pinned
+    }
+
+    /// The map this service holds, as the kernel numbers it.
+    ///
+    /// Read out of the kernel through the descriptor rather than remembered
+    /// from the open, so that what `in_place.rs` compares is two of the
+    /// kernel's own answers and not one of them against a note.
+    ///
+    /// # Errors
+    /// [`NotBounded::WillNotHold`] if the kernel would not describe the map,
+    /// and [`NotBounded::NothingCalled`] if the pin is not the map this expects.
+    pub(crate) fn held(&self) -> Result<u32, NotBounded> {
+        use aya::maps::IterableMap as _;
+        let info = self
+            .reading()?
+            .map()
+            .info()
+            .map_err(NotBounded::WillNotHold)?;
+        Ok(info.id())
     }
 
     /// Tells the kernel that a turn is running in `cgroup` and may reach

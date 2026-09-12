@@ -45,7 +45,7 @@ use alo_capability::{AnswerError, Grants, ProposalId};
 use alo_models::{NotAllowed, RuntimeError};
 use alo_protocol::{FromAnAgent, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
-use alo_turn::{Answers, NoAnswer, Turning};
+use alo_turn::{Answers, NoAnswer, NoBoundary, NotDone, Turning};
 
 use alo_secrets::NotStored;
 
@@ -100,13 +100,13 @@ fn carried_out(
         FromAnAgent::Read { verb, .. } => {
             match turning.reading(verb, &asked.given(), grants, now) {
                 Ok(answer) => ToAnAgent::did(&answer),
-                Err(why) => ToAnAgent::refused(&why.said(strings)),
+                Err(why) => not_done(&why, strings),
             }
         }
         FromAnAgent::Propose { verb, .. } => {
             match turning.proposing(verb, &asked.given(), grants, standing, now) {
                 Ok(number) => waiting_under(turning, number, strings, now),
-                Err(why) => ToAnAgent::refused(&why.said(strings)),
+                Err(why) => not_done(&why, strings),
             }
         }
         FromAnAgent::Ask { question } => put_to_a_model(question, turning, questions, strings, now),
@@ -306,16 +306,48 @@ fn put_to_a_model(
     }
 }
 
+/// A turn's refusal, said to the agent in the words of whoever refused it.
+///
+/// One of them is the machine's own — there was no boundary to run the work
+/// inside — and that one is also said to the service log, in the machine's
+/// English, because the person's sentence deliberately carries no fact about
+/// a kernel and whoever administers the machine needs exactly that fact.
+fn not_done(why: &NotDone, strings: &Strings) -> ToAnAgent {
+    if let NotDone::NotBounded(no_boundary) = why {
+        the_boundary_was_not_there(no_boundary);
+    }
+    ToAnAgent::refused(&why.said(strings))
+}
+
 /// The sentence for a question that was not answered.
 ///
 /// [`alo_turn::NoAnswer`] words all of them but one. The exception is a
 /// miswiring, which is this repository disagreeing with itself and has no
 /// sentence of its own because there is nothing for a person to do about it —
 /// so this crate says the one thing that is true and useful: it went nowhere,
-/// and it is not theirs to fix.
+/// and it is not theirs to fix. A question the machine would not put for want
+/// of a boundary reaches the service log as a verb's refusal does.
 fn nothing_answered(why: &NoAnswer, strings: &Strings) -> Said {
+    if let NoAnswer::NotBounded(no_boundary) = why {
+        the_boundary_was_not_there(no_boundary);
+    }
     why.said(strings)
         .unwrap_or_else(|| strings.say(&NOTHING_WAS_ASKED.key(), &Filling::nothing()))
+}
+
+/// What whoever looks after this machine reads when a turn was refused for
+/// want of a boundary.
+///
+/// The administrator's half of `alo_turn::NoBoundary`, in English on purpose
+/// — `alo_bounding::NotBounded` argues it — and on the service log because
+/// that is where they are already reading. The same sentence is in the record
+/// beside the person's, so the log is where it is *seen* rather than the only
+/// place it is kept.
+fn the_boundary_was_not_there(why: &NoBoundary) {
+    eprintln!(
+        "alo-agentd: a turn was not run, because its boundary was not in place: {}",
+        why.why()
+    );
 }
 
 /// The change that is now waiting, with the sentence the person will be asked.

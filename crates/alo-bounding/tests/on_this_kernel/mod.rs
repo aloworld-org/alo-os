@@ -97,6 +97,15 @@ impl AsAMachineHasIt {
             boundary,
         }
     }
+
+    /// Where this one is pinned.
+    ///
+    /// For the one file that takes a boundary apart on purpose —
+    /// `a_turn_without_a_boundary_does_not_run.rs` removes pins one at a time
+    /// and runs the loader again over the top — and for nothing else here.
+    pub fn pinned(&self) -> &Pinned {
+        &self.pinned
+    }
 }
 
 impl Drop for AsAMachineHasIt {

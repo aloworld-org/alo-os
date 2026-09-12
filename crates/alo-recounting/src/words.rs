@@ -152,6 +152,16 @@ pub const GRANTS_NOT_READ_AGAIN: Word = Word::saying(
     "Read at the head of one line of a record somebody is reading back. Somebody's side of the      machine said that what they had granted had changed, and the machine could not read its own      list of grants — so nothing was widened and nothing was forgotten either. The reason is shown      after it in the words the person was shown at the time. \"Granted\" is what a person does by      picking a folder for their agent to reach.",
 );
 
+/// A turn the machine would not run, because there was no boundary to run it
+/// inside.
+pub const NOT_BOUNDED: Word = Word::saying(
+    "recounting.outcome.not-bounded",
+    "the agent asked for this and nothing was done, because this machine could not hold the agent      inside what was granted",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back — the agent being the      assistant built into alo OS and not a person. The machine refused to run the agent's turn      because it could not put the boundary around it that keeps the agent inside the folders and      files the person granted. Nothing was attempted and nothing was refused by any rule: it is      a fault in the machine, and the reason is shown after it in the words the person was shown      at the time.",
+);
+
 /// Something left this machine.
 pub const LEFT: Word = Word::saying("recounting.outcome.left", "something left this machine")
     .noting(
@@ -303,7 +313,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 18] = [
+pub const EVERY_WORD: [Word; 19] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -312,6 +322,7 @@ pub const EVERY_WORD: [Word; 18] = [
     ANSWERED_HERE,
     NEVER_PUT_ANYWHERE,
     GRANTS_NOT_READ_AGAIN,
+    NOT_BOUNDED,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
@@ -329,7 +340,7 @@ pub const EVERY_WORD: [Word; 18] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 11] = [
+pub const EVERY_OUTCOME: [Word; 12] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -338,6 +349,7 @@ pub const EVERY_OUTCOME: [Word; 11] = [
     ANSWERED_HERE,
     NEVER_PUT_ANYWHERE,
     GRANTS_NOT_READ_AGAIN,
+    NOT_BOUNDED,
     LEFT,
     HELD_BACK,
     LEFT_ON_ITS_OWN,
