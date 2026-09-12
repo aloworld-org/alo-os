@@ -783,3 +783,114 @@ evidence, and **not when the task list is exhausted**. When the list empties, th
 honest report is *implementation complete; hardware acceptance pending* — never
 release completion, and never "kernel complete" while the v0.5 items above sit
 unbuilt with their release named.
+
+### 12. A descriptor opened before the turn began cannot move contents past the grant
+
+**Status:** ready. **Depends on:** nothing. **Why now:** ADR 0028 — v0.5's
+screenless work begins while v0.01 waits on hardware; this is lane A's
+partition (`alo-bounding`, `alo-bounding-kernel`, `alo-bounding-map`,
+`alo-boundaryd`, `alo-egress`, `alo-turn`).
+
+The hardening table above names one gap that **moves bytes past a grant** and
+is reproduced: a file descriptor opened before the turn began is still readable
+and writable inside it, because the boundary is applied at `open` and a
+descriptor that was never opened inside the turn was never asked. It is the
+gap `docs/features.md`'s v0.5 sentence is about — *for the length of one turn,
+everything outside the grant is unreachable* — and today that sentence is
+untrue of an inherited descriptor.
+
+- **Acceptance:** the reproduction that shows contents crossing the grant
+  through a pre-opened descriptor flips from *reaches* to *refused*, in the same
+  test file, with the refusal named; a read or write through such a descriptor
+  fails at the syscall, not after a byte has moved; a descriptor to a path
+  **inside** the grant is untouched; the loader's capability set is unchanged
+  and `crates/alo-image` still holds it to two; and the record carries the
+  refusal the way it carries every other, in words `alo-saying` collects.
+- **Constraint:** no kernel patch and no fork (ADR 0015). If the honest
+  mechanism is Landlock (ADR 0013's file primitive) rather than another hook on
+  the BPF LSM, that is this task's finding and its report says which and why;
+  it does not add a second privileged component to do it.
+
+### 13. A socket already open, and a datagram sent without connecting, are inside the boundary
+
+**Status:** ready. **Depends on:** nothing.
+
+Two reproduced gaps in `what_a_bound_turn_can_still_reach.rs`, one class: the
+network boundary is applied at `connect`, so a socket inherited or opened
+before the turn, and a `sendto` on an unconnected datagram socket, reach no
+hook. Nothing shipped does either from inside a turn, which is why they are
+documented rather than urgent — and why they belong to v0.5 rather than to a
+patch release.
+
+- **Acceptance:** both reproductions flip to *refused* in the same file; a
+  datagram to a destination inside the grant still goes; `alo-egress`'s
+  accounting is unchanged — the refusal is a kernel refusal, not an egress
+  event; nothing leaves the machine in the test, which runs against a socket of
+  the test's own; and the refusals are recorded in the same words as a refused
+  `connect`.
+- **Constraint:** the hooks are on the turn's own cgroup, as ADR 0013 requires,
+  and a syscall outside a turn is checked and leaves no trace — held by the
+  test the v0.5 promise says must exist rather than by a sentence.
+
+### 14. Attributes, ownership and size are inside the grant
+
+**Status:** ready. **Depends on:** nothing.
+
+`inode_setattr` and `inode_setxattr` are not hooked, and `truncate(2)` reaches
+`inode_setattr` without an `open` — so a bound turn can shorten a file it may
+not read, change its mode, or change its owner, none of which moves a byte and
+all of which change what a person has. The table calls it out by name.
+
+- **Acceptance:** a `truncate`, `chmod`, `chown` or `setxattr` on a path
+  outside the grant is refused at the syscall inside a turn; the same on a path
+  inside the grant succeeds; a reproduction for each is in the crate before the
+  hook, so the hook is shown to close it rather than believed to; and the four
+  refusals are one sentence in `alo-saying`'s vocabulary, not four.
+- **Constraint:** nothing outside a turn is affected or observed, and the test
+  that holds that is run for these hooks too.
+
+### 15. A turn whose boundary cannot be applied does not run
+
+**Status:** ready. **Depends on:** nothing.
+
+`docs/features.md`, v0.5: *a turn whose boundary cannot be applied does not
+run — a refusal, not a warning, the same rule `alo-egress` already follows when
+a policy cannot be evaluated.* Today a machine whose loader is absent, whose
+pins were refused, or whose map is missing runs the turn under the daemon's own
+rules and says nothing, which is the audit-log world the whole workstream
+exists to leave.
+
+- **Acceptance:** when the boundary is not in place — loader not running, map
+  not pinned, programme not attached — a turn is refused before its first verb,
+  in words that say the boundary was not there rather than that the person did
+  something wrong; the refusal is recorded; a machine where the boundary *is*
+  in place is unaffected; and the check is the kernel's own state (the pinned
+  map, the attached programme), never a flag the daemon set for itself.
+- **Constraint:** no *degraded mode*, no environment variable that permits a
+  turn without a boundary — that is the warning the promise refuses. A
+  development machine that cannot load the boundary gets the same refusal and a
+  sentence pointing at `docs/quirks.md`.
+
+### 16. Kernel-sourced enforcement records — the decision
+
+**Status:** ready. **Depends on:** nothing.
+
+The table says *needs a decision, not code*, and it is right: *what a turn
+touched is what the kernel watched it touch* means the record's source changes
+from the daemon's honest account of itself to the kernel's observations, and
+that is a decision about the record's shape, its size, and what a person is
+told. This task is the ADR, in the shape ADR 0024 and ADR 0025 used — options,
+a recommendation, consequences — handed over as the task, with the code waiting
+on it.
+
+- **Acceptance:** an ADR under `docs/decisions/` (pull and list first; the
+  number is taken from the tree as published, not from memory) setting out at
+  least: the kernel emitting records the daemon appends; the daemon's account
+  kept, with the kernel's refusals added beside it; and a hybrid where the
+  kernel's observation is the record and the daemon's account is a claim shown
+  as one. It names what each costs a person reading *what did the agent do*,
+  what each costs the record file (`docs/contracts/record-file.md`, additive
+  only), and what each costs the loader. It recommends one.
+- **Constraint:** no code beyond a test that the ADR exists and is pointed at
+  by this plan. The decision is the owner's or the delegate's; the worker's job
+  is to make it decidable.
