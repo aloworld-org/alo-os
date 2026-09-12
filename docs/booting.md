@@ -144,7 +144,13 @@ that is the honest state of v0.01 and not a machine that came up wrong.
   anyway. It is noted so nobody reads a blank address as a broken machine.
 - **The disk that booted was built from a six-day-old image**, before the
   weights and the serving unit were added; the current image was built the same
-  evening and has not been booted yet. That is the next run of this document.
+  evening. **Its disk booted the next morning, 2026-09-12:** 9.6 GB (the model
+  is 4.5 GB of it), the same machine switched to it, heartbeat at 60 seconds,
+  768 MB. So the image that carries the weights boots.
+- **What neither run can show:** whether each service came up. The image ships
+  no accounts (ADR 0024), so nobody can log in at that console to ask systemd;
+  the heartbeat proves the kernel and nothing about the units. That stays owed
+  until there is a sign-in.
 
 ## What a virtual machine cannot show
 
