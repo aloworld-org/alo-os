@@ -418,6 +418,7 @@ More prose.
             THE_PLAN,
             "docs/autonomy/v0-01-delivery-plan.md",
             "docs/autonomy/v0-01-lane-b-plan.md",
+            "docs/autonomy/v0-5-lane-b-plan.md",
         ] {
             let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../..")
