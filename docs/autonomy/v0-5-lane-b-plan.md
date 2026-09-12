@@ -20,6 +20,20 @@ first term); tick anything *on the machine*; edit a crate another lane owns.
 Before writing the next task, `git pull` and read the plan as published —
 numbers are a shared space.
 
+## This lane is stopped, and task 5 waits for the one that is still running
+
+**2026-09-12, on the owner's instruction:** when one lane finished its plan,
+that lane stops and the work continues with a single loop. Tasks 1 to 4 — the
+four v0.5 promises this plan was written for — are published. **Task 5 was
+written by task 4's worker and is not started**; it belongs to whichever loop
+is running when the kernel plan
+(`kernel-enforcement-plan.md`) empties, and it is safe for that loop to take
+because with one lane there is no partition to violate.
+
+Running a second loop again means re-reading ADR 0028's partition first: this
+plan's crates are `alo-models`, `alo-choosing`, `alo-asking`, `alo-secrets`
+and `alo-telling`.
+
 ## Tasks
 
 ### 1. An address that is not https is refused, unless it is a service on this machine
