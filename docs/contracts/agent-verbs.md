@@ -284,13 +284,17 @@ permission failure rather than by our code.
 
 **It does not cover every way a filesystem changes, and an adapter author should
 not read it as if it did.** A bounded turn can still make a symbolic link, make
-an empty file, make and remove empty directories, and change a file's mode, owner
-and attributes. None of those moves the contents of somebody's file past a grant
-— the reading and writing that would are opens, and opens are covered — but *a
-turn cannot change anything outside its grant* is not a sentence this contract
-makes. The complete list, what each one can and cannot lead to, and the release
+an empty file, and make and remove empty directories. None of those moves the
+contents of somebody's file past a grant — the reading and writing that would
+are opens, and opens are covered — but *a turn cannot change anything outside
+its grant* is not a sentence this contract makes. What it **does** cover since
+2026-09-12 is what a file *is*: a bounded turn cannot change the size, mode,
+owner, times, extended attributes or access list of a file outside the call's
+own places, and is refused each with the same permission failure. The complete
+list of what remains, what each one can and cannot lead to, and the release
 that owns closing each, is in `docs/quirks.md` under *Four hooks are not a
-filesystem*.
+filesystem*; what closed is under *Attributes, ownership and size are inside
+the grant* beside it.
 
 Nothing here changes what a caller sees. Every refusal an adapter can receive is
 still one of the ones in *Being told no*; the floor exists so that a refusal

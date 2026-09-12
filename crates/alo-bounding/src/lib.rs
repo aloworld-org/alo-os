@@ -136,11 +136,15 @@
 //!
 //! # What this boundary watches on a filesystem, and what it does not
 //!
-//! Five hooks decide about files — `file_open`, `file_permission`,
-//! `inode_rename`, `inode_unlink` and `inode_link` — and two about the
-//! network: `socket_connect`, where a turn joins a socket to, and
+//! Ten hooks decide about files — `file_open`, `file_permission`,
+//! `inode_rename`, `inode_unlink`, `inode_link`, and the five that decide
+//! about what a file *is* rather than what it holds: `inode_setattr` for its
+//! size, mode, owner and times, `inode_setxattr` and `inode_removexattr` for
+//! an extended attribute set and taken away, `inode_set_acl` and
+//! `inode_remove_acl` for an access list set and taken away — and two about
+//! the network: `socket_connect`, where a turn joins a socket to, and
 //! `socket_sendmsg`, where every message it sends is going. A filesystem has
-//! more verbs than five, and somebody auditing this crate is owed the list of
+//! more verbs than ten, and somebody auditing this crate is owed the list of
 //! the ones nothing here decides about rather than the count of the ones it
 //! does.
 //!
@@ -155,17 +159,27 @@
 //! granted — and putting anything in it is an open, refused, so what it leaves
 //! is an empty file. It can make and remove **empty** directories
 //! (`inode_mkdir`, `inode_rmdir`) — and emptying one that is not needs
-//! `inode_unlink`, which is watched. It can change a file's mode, owner, times
-//! and extended attributes (`inode_setattr`, `inode_setxattr`) — and is no
-//! better off, because what decides here is where a file is and not what its
-//! mode says.
+//! `inode_unlink`, which is watched.
 //!
-//! **One of those goes further than the promise and is not hidden inside it.**
+//! **What a file *is* was on that list until 2026-09-12, and one item on it
+//! went further than the promise.** A turn could change the mode, owner,
+//! times and extended attributes of a file nobody granted it, and was no
+//! better off for it because what decides here is where a file is — but
 //! `truncate(2)` reaches `inode_setattr` without opening anything, so a bound
-//! turn can empty a file nobody granted it. Nothing is read and nothing is
-//! copied, so no contents leave a grant; contents are destroyed where they sit,
-//! which is a different harm and a real one. `docs/quirks.md` has the
-//! measurement and says why it is the one item not in the committed suite.
+//! turn could **empty** a file it was refused `open` on. Nothing was read and
+//! nothing copied, so no contents left a grant; contents were destroyed where
+//! they sat, which is a different harm and a real one. The five attribute
+//! hooks close all of it with the walk `inode_unlink` already makes, from the
+//! entry of the file being changed: a size, mode, owner, time stamp, extended
+//! attribute or access list outside the grant is `EACCES` at the syscall, and
+//! the same change inside it lands.
+//! `tests/the_kernel_refuses_an_attribute_change.rs` measures every one of
+//! those beside its allowance, and the size through a descriptor opened
+//! before the turn began, which is how `truncate(2)`'s hook is reached
+//! without an open from Rust. What that leaves is a file's **flags** —
+//! `FS_IOC_SETFLAGS`, an `ioctl` on a descriptor rather than a change to an
+//! inode by name — on a descriptor that was open before the turn began;
+//! `docs/quirks.md` names it, with why.
 //!
 //! Two things sit beside the list rather than in it. **A descriptor opened
 //! before a turn began** is decided about on every use since 2026-09-12, which

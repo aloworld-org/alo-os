@@ -357,6 +357,44 @@ mod tests {
         );
     }
 
+    /// **A change to what a file *is* that the kernel refused is the sentence
+    /// a refused open is.** Since `inode_setattr`, `inode_setxattr`,
+    /// `inode_removexattr`, `inode_set_acl` and `inode_remove_acl`, the
+    /// boundary refuses a truncation, a `chmod`, a `chown`, a time stamp and
+    /// an attribute outside the grant with the same `EACCES` it refuses an
+    /// open with. No verb makes any of those changes, so one reaching the
+    /// record is a verb with a bug in it meeting ADR 0013's floor — and what
+    /// the person reads is *the machine refused this*, in the one sentence
+    /// every machine refusal gets, rather than a vocabulary of five new
+    /// failures for five hooks that answered one question.
+    #[test]
+    fn a_change_to_a_file_the_kernel_refused_is_the_sentence_a_refused_open_is() {
+        let key = Path::new("/home/anna/Private/id_ed25519");
+        let eacces = || Error::new(ErrorKind::PermissionDenied, "permission denied");
+        let refused_at_open = Failed::machine(key, "changed", &eacces());
+        for what in ["truncated", "chmod", "chown", "setxattr"] {
+            let refused = Failed::machine(key, what, &eacces());
+            assert!(
+                matches!(refused, Failed::TheMachineSaidNo { .. }),
+                "a refused {what} is not the machine saying no: {refused:?}"
+            );
+            assert_eq!(
+                Failed::machine(key, "changed", &eacces()),
+                refused_at_open,
+                "a refused {what} and a refused open are different sentences"
+            );
+            let words = said(&refused);
+            assert!(
+                words.contains("permission denied") && words.contains(what),
+                "{words}"
+            );
+            assert!(
+                !words.contains("ask again"),
+                "a refused {what} was answered as a file that went away: {words}"
+            );
+        }
+    }
+
     /// Every message says what to do about it. A refusal a person cannot act on
     /// is a refusal they will ask somebody else about.
     #[test]

@@ -12,18 +12,20 @@
 //!
 //! # The list, and the property they all share
 //!
-//! Seven hooks exist — `file_open`, `file_permission`, `inode_rename`,
-//! `inode_unlink`, `inode_link`, `socket_connect` and `socket_sendmsg` — and a
-//! filesystem has more verbs than the five of those that are about one.
-//! Unwatched:
-//! making a **symbolic link**, making a **file** — with an open or without one —
-//! making and removing a **directory**, and changing a file's **mode, owner,
-//! times or extended attributes**. `docs/quirks.md` carries the list with the
-//! release that owns closing each, and
-//! `crates/alo-bounding-kernel/src/deciding.rs` carries it beside the code that
-//! decides.
+//! Twelve hooks exist — `file_open`, `file_permission`, `inode_rename`,
+//! `inode_unlink`, `inode_link`, `inode_setattr`, `inode_setxattr`,
+//! `inode_removexattr`, `inode_set_acl`, `inode_remove_acl`, `socket_connect`
+//! and `socket_sendmsg` — and a filesystem has more verbs than the ten of
+//! those that are about one. Unwatched: making a **symbolic link**, making a
+//! **file** — with an open or without one — and making and removing a
+//! **directory**. `docs/quirks.md` carries the list with the release that
+//! owns closing each, and `crates/alo-bounding-kernel/src/deciding.rs` carries
+//! it beside the code that decides. Changing a file's **mode, owner, times,
+//! size or attributes** was on this list until 2026-09-12 and is refused now;
+//! `the_kernel_refuses_an_attribute_change.rs` is where those reproductions
+//! went when they flipped.
 //!
-//! What they have in common is the property the four filesystem hooks were
+//! What they have in common is the property the filesystem hooks were
 //! chosen for: **none of them moves a byte of somebody's file past a grant.**
 //! That sentence is what each test here holds up. Every one of them does three
 //! things in order — it is refused something to prove the boundary is in force,
@@ -68,7 +70,6 @@
 use std::{
     env, fs,
     io::{BufRead as _, BufReader, Write as _},
-    os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -117,12 +118,6 @@ const A_SECRET: &str = "not an invoice";
 
 /// What the legitimate write puts inside the granted folder.
 const A_LEGITIMATE_WRITE: &str = "an archive being made";
-
-/// The extended attribute a turn sets on a file it cannot read.
-const AN_ATTRIBUTE: &str = "user.alo.note";
-
-/// What it is set to.
-const AN_ATTRIBUTE_VALUE: &[u8] = b"changed by a turn";
 
 /// What one attempt came to.
 #[derive(Debug, PartialEq, Eq)]
@@ -495,94 +490,6 @@ fn directories_are_made_and_removed_but_a_folder_with_anything_in_it_is_not() {
     machine.taken_away();
 }
 
-/// **A turn changes the permissions of a file it cannot read, and still cannot
-/// read it.**
-///
-/// `inode_setattr` is unwatched, so mode, owner and times are a bound turn's to
-/// change on any file the ordinary permissions let it. The boundary is not
-/// fooled by the result, because it decides by **where a file is** and not by
-/// what its mode says: the same open is refused after `0o777` as before it.
-///
-/// What it costs is real and is not contents: a mode left wide open outlives the
-/// turn, and what the person's *other* software may then read is not this
-/// boundary's question. `docs/quirks.md` says so rather than leaving it implied.
-#[test]
-fn a_files_permissions_are_changed_and_it_is_still_not_readable() {
-    let machine = AMachine::with_something_worth_protecting("mode");
-    let went = a_bound_turn("alo-change-mode", &machine, "mode", Path::new(""));
-    the_boundary_was_in_force(&went);
-
-    assert_eq!(
-        went.subject,
-        Outcome::Allowed,
-        "changing the mode of a file nobody granted was refused, which means `inode_setattr` is \
-         watched now — say so in crates/alo-bounding-kernel/src/deciding.rs, in \
-         crates/alo-bounding/src/lib.rs and in the table in docs/quirks.md"
-    );
-    assert_eq!(
-        went.after,
-        Outcome::Refused(13),
-        "a bound turn read a file nobody granted it by changing its mode first, which would \
-         mean the boundary decides by permission rather than by place"
-    );
-
-    let mode = machine
-        .secret
-        .metadata()
-        .expect("the secret is there")
-        .permissions()
-        .mode()
-        & 0o777;
-    assert_eq!(
-        mode, 0o777,
-        "the mode was not changed, so this test proves nothing about the hook it is named after"
-    );
-    assert_eq!(holds(&machine.secret), A_SECRET, "the secret was disturbed");
-
-    machine.taken_away();
-}
-
-/// **A turn sets an extended attribute on a file it cannot read, and still
-/// cannot read it.**
-///
-/// `inode_setxattr` is the other half of the attribute gap and is unwatched too.
-/// An attribute is a place to put bytes that is not the file's contents, so this
-/// is the one of the list that could look like a way to *store* something —
-/// and it is not a way to move anybody's document, because filling it needs
-/// bytes the turn cannot read in the first place.
-#[test]
-fn an_extended_attribute_is_set_and_the_file_is_still_not_readable() {
-    let machine = AMachine::with_something_worth_protecting("xattr");
-    let went = a_bound_turn("alo-change-xattr", &machine, "xattr", Path::new(""));
-    the_boundary_was_in_force(&went);
-
-    assert_eq!(
-        went.subject,
-        Outcome::Allowed,
-        "setting an extended attribute on a file nobody granted was refused, which means \
-         `inode_setxattr` is watched now — say so in \
-         crates/alo-bounding-kernel/src/deciding.rs, in crates/alo-bounding/src/lib.rs and in \
-         the table in docs/quirks.md"
-    );
-    assert_eq!(
-        went.after,
-        Outcome::Refused(13),
-        "a bound turn read a file nobody granted it after writing an attribute on it"
-    );
-
-    let mut read = [0u8; 64];
-    let length = rustix::fs::getxattr(&machine.secret, AN_ATTRIBUTE, &mut read[..])
-        .expect("the attribute the turn set is there");
-    assert_eq!(
-        read.get(..length),
-        Some(AN_ATTRIBUTE_VALUE),
-        "the attribute was not set, so this test proves nothing about the hook it is named after"
-    );
-    assert_eq!(holds(&machine.secret), A_SECRET, "the secret was disturbed");
-
-    machine.taken_away();
-}
-
 /// **A bound turn cannot start a program to do any of this for it**, because
 /// starting one is an open of the program's own file.
 ///
@@ -601,7 +508,9 @@ fn an_extended_attribute_is_set_and_the_file_is_still_not_readable() {
 ///
 /// The measurement was an accident of trying to reproduce a `truncate(2)`
 /// through the coreutil, which was refused here rather than at the truncate.
-/// `docs/quirks.md` has what that left unreproduced.
+/// The truncation itself is reproduced since 2026-09-12 in
+/// `the_kernel_refuses_an_attribute_change.rs`, through a descriptor opened
+/// before the turn began, and refused there.
 #[test]
 fn a_turn_cannot_start_a_program_that_is_outside_its_bound() {
     let machine = AMachine::with_something_worth_protecting("program");
@@ -704,33 +613,14 @@ fn the_work_a_turn_does() {
             went(fs::create_dir(&into).and_then(|()| fs::remove_dir(&into))),
             went(fs::remove_file(&acting_on)),
         ),
-        // The mode of a file this turn cannot open, and then opening it.
-        "mode" => (
-            went(fs::set_permissions(
-                &acting_on,
-                fs::Permissions::from_mode(0o777),
-            )),
-            went(fs::File::open(&acting_on).map(drop)),
-        ),
         // Something else to make the calls this turn cannot, and then the open
         // that starting it really is.
         "program" => (
             went(Command::new(A_PROGRAM).status().map(drop)),
             went(fs::File::open(A_PROGRAM).map(drop)),
         ),
-        // An extended attribute on a file this turn cannot open, and then
-        // opening it.
-        _ => (
-            went(
-                rustix::fs::setxattr(
-                    &acting_on,
-                    AN_ATTRIBUTE,
-                    AN_ATTRIBUTE_VALUE,
-                    rustix::fs::XattrFlags::empty(),
-                )
-                .map_err(|why| std::io::Error::from_raw_os_error(why.raw_os_error())),
-            ),
-            went(fs::File::open(&acting_on).map(drop)),
+        other => panic!(
+            "the parent asked for a mutation called `{other}`, which this child does not know"
         ),
     };
     writeln!(saying, "{THE_SUBJECT_WENT}{subject}").expect("the parent is listening");

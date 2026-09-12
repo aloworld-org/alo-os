@@ -53,6 +53,7 @@
 use std::{
     env, fs,
     io::{Read as _, Write as _},
+    os::unix::fs::PermissionsExt as _,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -287,6 +288,94 @@ fn an_ordinary_days_messages() -> usize {
         .count()
 }
 
+/// An ordinary program's changes to what its files **are**: every file in the
+/// folder given a mode, an owner, a moment, an extended attribute and an
+/// access list, each taken away again where it can be, and shortened through
+/// a descriptor — and the count of files that went through all of it.
+///
+/// The five attribute hooks run on every one of those on the machine, and
+/// this is what holds them to *decides and forgets* the way the opens hold
+/// `file_open`: a process in no turn changes its own files, each hook looks
+/// up a control group, misses, and nothing anywhere is different afterwards.
+/// Every change is asserted to have landed, because a change that was
+/// silently refused outside a turn is the other thing these hooks must not
+/// do.
+fn an_ordinary_days_changes(folder: &Path) -> usize {
+    let of_rustix = |why: rustix::io::Errno| std::io::Error::from_raw_os_error(why.raw_os_error());
+    let mut changed = 0;
+    for entry in fs::read_dir(folder).expect("the ordinary folder is there") {
+        let entry = entry.expect("a directory entry can be read").path();
+        fs::set_permissions(&entry, fs::Permissions::from_mode(0o640))
+            .expect("an ordinary program can change the mode of its own files");
+        std::os::unix::fs::chown(&entry, Some(1), None)
+            .expect("an ordinary program run as root can give a file away");
+        std::os::unix::fs::chown(&entry, Some(0), None).expect("and take it back");
+        let moment = rustix::fs::Timespec {
+            tv_sec: 1_000_000_000,
+            tv_nsec: 0,
+        };
+        rustix::fs::utimensat(
+            rustix::fs::CWD,
+            &entry,
+            &rustix::fs::Timestamps {
+                last_access: moment,
+                last_modification: moment,
+            },
+            rustix::fs::AtFlags::empty(),
+        )
+        .map_err(of_rustix)
+        .expect("an ordinary program can change the times of its own files");
+        rustix::fs::setxattr(
+            &entry,
+            "user.alo.ordinary",
+            b"an ordinary attribute",
+            rustix::fs::XattrFlags::empty(),
+        )
+        .map_err(of_rustix)
+        .expect("an ordinary program can set an attribute on its own files");
+        rustix::fs::removexattr(&entry, "user.alo.ordinary")
+            .map_err(of_rustix)
+            .expect("and take it away");
+        rustix::fs::setxattr(
+            &entry,
+            "system.posix_acl_access",
+            &an_ordinary_access_list(),
+            rustix::fs::XattrFlags::empty(),
+        )
+        .map_err(of_rustix)
+        .expect("an ordinary program can set an access list on its own files");
+        rustix::fs::removexattr(&entry, "system.posix_acl_access")
+            .map_err(of_rustix)
+            .expect("and take it away");
+        let held = fs::OpenOptions::new()
+            .write(true)
+            .open(&entry)
+            .expect("an ordinary program can open its own files");
+        held.set_len(1)
+            .expect("an ordinary program can shorten its own files");
+        assert_eq!(
+            fs::metadata(&entry).expect("the file is there").len(),
+            1,
+            "the shortening did not land, so a hook refused something outside a turn"
+        );
+        changed += 1;
+    }
+    changed
+}
+
+/// A valid POSIX access list — version two, then the owner, the group and
+/// everybody else — which is the least the kernel accepts.
+fn an_ordinary_access_list() -> Vec<u8> {
+    let mut list = Vec::with_capacity(28);
+    list.extend_from_slice(&2u32.to_le_bytes());
+    for (tag, permissions) in [(0x01u16, 6u16), (0x04, 4), (0x20, 0)] {
+        list.extend_from_slice(&tag.to_le_bytes());
+        list.extend_from_slice(&permissions.to_le_bytes());
+        list.extend_from_slice(&u32::MAX.to_le_bytes());
+    }
+    list
+}
+
 /// One pass over the folder, opening each thing in it.
 ///
 /// Reading the directory is an open of its own and is deliberately not counted:
@@ -437,12 +526,21 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
         sent, ROUNDS,
         "only {sent} messages were sent, so the hook on every message was barely asked anything"
     );
+    let changed = an_ordinary_days_changes(&folder);
+    assert_eq!(
+        changed, FILES,
+        "only {changed} files had their attributes changed, so the five attribute hooks were \
+         barely asked anything"
+    );
 
     let after = Held::of(&kernel);
     nothing_was_written_down(
         &before,
         &after,
-        &format!("{opened} files were opened by programs that are not agent turns"),
+        &format!(
+            "{opened} files were opened, {sent} messages sent and {changed} files' attributes \
+             changed by programs that are not agent turns"
+        ),
     );
 }
 

@@ -252,6 +252,100 @@ pub fn file_permission(ctx: LsmContext) -> i32 {
     deciding::decide_use(file)
 }
 
+/// Every change to a file's size, mode, owner or times, on this machine,
+/// until the program is detached.
+///
+/// `inode_setattr(struct mnt_idmap *idmap, struct dentry *dentry,
+/// struct iattr *attr)` — three arguments, so the previous module's decision
+/// is the fourth, and **the entry is the second** rather than the first: the
+/// mapping the mount applies to owners comes before it, which is a shape the
+/// kernel gave every attribute hook in 6.9 and which `docs/quirks.md` records
+/// beside the rename hook's trap. The attributes themselves are not read: a
+/// change to any of them on a file outside the grant is refused alike, and
+/// reading which one would only be a reason to allow some.
+///
+/// The eighth hook, and the one the attribute hooks were added for: this is
+/// the one `truncate(2)` reaches without an open, so it is the one that let a
+/// bound turn empty a file it could not read.
+/// [`crate::deciding::decide_attribute`] says what is decided here and why.
+#[lsm(hook = "inode_setattr")]
+pub fn inode_setattr(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_attribute(entry)
+}
+
+/// Every extended attribute set on this machine, until the program is
+/// detached.
+///
+/// `inode_setxattr(struct mnt_idmap *idmap, struct dentry *dentry,
+/// const char *name, const void *value, size_t size, int flags)` — six
+/// arguments, so the previous module's decision is the seventh, and the
+/// entry is the second. Neither the name nor the value is read.
+#[lsm(hook = "inode_setxattr")]
+pub fn inode_setxattr(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(6);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_attribute(entry)
+}
+
+/// Every extended attribute taken away on this machine, until the program is
+/// detached.
+///
+/// `inode_removexattr(struct mnt_idmap *idmap, struct dentry *dentry,
+/// const char *name)` — three arguments, so the previous module's decision is
+/// the fourth, and the entry is the second.
+#[lsm(hook = "inode_removexattr")]
+pub fn inode_removexattr(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_attribute(entry)
+}
+
+/// Every POSIX access list set on this machine, until the program is
+/// detached.
+///
+/// `inode_set_acl(struct mnt_idmap *idmap, struct dentry *dentry,
+/// const char *acl_name, struct posix_acl *kacl)` — four arguments, so the
+/// previous module's decision is the fifth, and the entry is the second. A
+/// hook of its own because since Linux 6.2 an access list set with `setxattr`
+/// never reaches `inode_setxattr`: a boundary that watched only that hook
+/// would refuse `chmod` and allow the same thing spelled as a list.
+#[lsm(hook = "inode_set_acl")]
+pub fn inode_set_acl(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(4);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_attribute(entry)
+}
+
+/// Every POSIX access list taken away on this machine, until the program is
+/// detached.
+///
+/// `inode_remove_acl(struct mnt_idmap *idmap, struct dentry *dentry,
+/// const char *acl_name)` — three arguments, so the previous module's decision
+/// is the fourth, and the entry is the second.
+#[lsm(hook = "inode_remove_acl")]
+pub fn inode_remove_acl(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_attribute(entry)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

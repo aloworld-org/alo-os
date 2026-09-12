@@ -68,26 +68,31 @@ fn the_kernel_half() -> &'static [u8] {
 /// The hooks the programme sits on, each called the same inside the compiled
 /// object as the kernel function it stands in front of.
 ///
-/// **Seven of them**, and each was added because the ones before it were not
+/// **Twelve of them**, and each was added because the ones before it were not
 /// enough on their own: `file_open` is what a turn *opens*, `inode_rename`
 /// what it *moves*, `inode_unlink` what it *removes*, `inode_link` what it
 /// gives a *second name*, `socket_connect` where it *goes*, `socket_sendmsg`
 /// what it *sends* — on every message, because a socket joined before the
 /// turn began and a datagram sent without joining anything never pass a hook
-/// on the joining — and `file_permission` what it *reads and writes*, on every
+/// on the joining — `file_permission` what it *reads and writes*, on every
 /// use, because a descriptor opened before the turn began never passes a hook
-/// on the opening. A boundary watching only opens lets a file nobody granted
-/// be renamed or linked into a granted folder and read from there, with no
-/// step anything to complain about; a boundary watching only files lets
-/// everything it protected leave over a socket; a boundary watching only the
-/// joining lets it leave over a socket that was already joined; and a boundary
-/// watching only the opening lets a file that was already open be read whole.
-/// ADR 0015 named this shape in its own mechanism.
+/// on the opening, and the five attribute hooks — `inode_setattr`,
+/// `inode_setxattr`, `inode_removexattr`, `inode_set_acl` and
+/// `inode_remove_acl` — what it *changes about a file that is not its
+/// contents*, because `truncate(2)` reaches the first of them without an open
+/// and a boundary watching only opens let a turn empty a file it could not
+/// read. A boundary watching only opens lets a file nobody granted be renamed
+/// or linked into a granted folder and read from there, with no step anything
+/// to complain about; a boundary watching only files lets everything it
+/// protected leave over a socket; a boundary watching only the joining lets
+/// it leave over a socket that was already joined; and a boundary watching
+/// only the opening lets a file that was already open be read whole. ADR 0015
+/// named this shape in its own mechanism.
 ///
 /// The order is the order [`Pinned::every_hook`] gives their pins in, and that
 /// is not decoration: they are zipped together below, so a hook added to one
 /// list and not the other does not compile.
-const THE_HOOKS: [&str; 7] = [
+const THE_HOOKS: [&str; 12] = [
     "file_open",
     "inode_rename",
     "inode_unlink",
@@ -95,6 +100,11 @@ const THE_HOOKS: [&str; 7] = [
     "socket_connect",
     "socket_sendmsg",
     "file_permission",
+    "inode_setattr",
+    "inode_setxattr",
+    "inode_removexattr",
+    "inode_set_acl",
+    "inode_remove_acl",
 ];
 
 /// The map of turns to the places each may reach.
@@ -217,7 +227,7 @@ impl Imposed {
 /// to remove — and it would look like a working boundary. So a failure on any
 /// of them is a failure of the whole thing, and [`Imposed::once`] takes the
 /// earlier ones' pins away again on the way out. ADR 0015's rule, applied to a
-/// boundary that is now four pieces: a turn whose boundary cannot be applied
+/// boundary that is now twelve pieces: a turn whose boundary cannot be applied
 /// does not run.
 fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
     let hooks = Btf::from_sys_fs().map_err(|_| NotBounded::TypesAreNotReadable {

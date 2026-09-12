@@ -977,12 +977,13 @@ evidence and never certified-hardware acceptance.
 ### Four hooks are not a filesystem: what a bound turn can still change
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
-**Behaviour:** the boundary watches seven hooks — `file_open`,
+**Behaviour:** the boundary watches twelve hooks — `file_open`,
 `file_permission`, `inode_rename`, `inode_unlink`, `inode_link`,
-`socket_connect` and `socket_sendmsg` — and a filesystem has more verbs than
-the five of those that are about one. The filesystem hooks were chosen for one
-property: **none of the mutations they leave unwatched moves a byte of
-somebody's file past a grant.** That is a narrower promise than *a turn cannot change anything outside
+`inode_setattr`, `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
+`inode_remove_acl`, `socket_connect` and `socket_sendmsg` — and a filesystem
+has more verbs than the ten of those that are about one. The filesystem hooks
+were chosen for one property: **none of the mutations they leave unwatched
+moves a byte of somebody's file past a grant.** That is a narrower promise than *a turn cannot change anything outside
 its bound*, and reading the second where the first is written is how somebody
 audits this boundary and comes away believing more than it does.
 
@@ -996,8 +997,6 @@ refused open beside it proving the boundary was in force:
 | `inode_mknod` | make the same file without opening it at all, so nothing refuses anything | the same empty file at the end of it, and putting anything in it is an open, which is watched and refused | v0.5 |
 | `inode_mkdir` | make a directory in a place nobody granted | a directory holds no bytes of anybody's file, and filling one means creating files in it and writing to them, which is an open | v0.5 |
 | `inode_rmdir` | remove an **empty** directory nobody granted | removing one that is not empty needs its contents unlinked first, and `inode_unlink` is watched | v0.5 |
-| `inode_setattr` | change the mode, owner or times of a file nobody granted — **and its size** | the boundary decides by where a file is and not by what its mode says, so the same open is refused after `0o777` as before it. **Size is the exception that is not about contents leaving**: see below | v0.5 |
-| `inode_setxattr` | set an extended attribute on a file nobody granted | an attribute is somewhere to put bytes that is not the file's contents, and filling it needs bytes the turn cannot read | v0.5 |
 
 Two things are **not** on that list and belong beside it. **What is inside a
 file already open** was not a hook at all until 2026-09-12: `file_open` decides
@@ -1012,23 +1011,17 @@ runs, `file_open` is watched, and a bound turn asking for `/bin/true` is refused
 with `EACCES` like any other file outside its bound. That is a floor under law 2
 rather than the law, which is `alo-capability`'s.
 
-**The size half of `inode_setattr` is the sharpest thing here and it is stated
-plainly.** `truncate(2)` changes a file's length through that unwatched hook
-without opening it, so **a bound turn can empty a file nobody granted it**.
-Measured on 2026-09-08 on this kernel: the same turn was refused `open` on the
-file with `EACCES` and then truncated it to zero bytes. That is not contents
-leaving a grant — nothing is read and nothing is copied — but it is destruction
-outside the bound, and the list's headline promise does not cover it.
-
-It is the one item here **not reproduced in the committed suite**, and the reason
-is a rule rather than an oversight: no call this repository can make reaches
-`truncate(2)` without an open. `std` has no path truncate, `rustix` has only
-`ftruncate` on a descriptor, `unsafe` is forbidden outside
-`alo-bounding-kernel`'s one file, and the ordinary program that would do it —
-`truncate` from coreutils — is refused at the `execve` above. The measurement was
-made by hand with a Python child joined to the turn's control group; a language
-that is not Rust is a bug in this repository, so it was not committed. Whoever
-closes `inode_setattr` will get the reproduction for free.
+**Two rows left this table on 2026-09-12.** `inode_setattr` and
+`inode_setxattr` were here — a turn could change the mode, owner, times and
+extended attributes of a file nobody granted it, and was no better off for it
+because the boundary decides by place — and the size half of the first was
+the sharpest thing in the entry: `truncate(2)` reaches `inode_setattr` without
+an open, so a bound turn could **empty** a file it was refused `open` on,
+measured by hand on 2026-09-08 and not reproducible in Rust without a
+descriptor. Both are refused now, with three hooks beside them, and the
+truncation is reproduced through a descriptor opened before the turn began;
+the entry *Attributes, ownership and size are inside the grant* below has the
+measurement and what it leaves.
 
 **Our response:** documented rather than closed, and every claim above is a test
 except the one that says it is not. `crates/alo-bounding-kernel/src/deciding.rs`
@@ -1043,8 +1036,8 @@ list cannot rot into a description of a boundary this one stopped being.
 Every row is **v0.5**, which is where `docs/features.md` puts *the grant is a
 boundary the kernel imposes* (ADR 0013) and *the kernel is taught what a turn is*
 (ADR 0015). Nothing here is a v0.01 delivery commitment and nothing here ticks
-anything. Whoever schedules v0.5 should take `inode_setattr` first, because it is
-the only one that destroys.
+anything. The one row that destroyed rather than littered was taken first, and
+is gone.
 
 **What the ordinary permissions still do.** These measurements run as root, so
 nothing was refused by the mode — every *allowed* above is the boundary's own
@@ -1052,6 +1045,98 @@ answer. On a real machine `alo-agentd` runs as the person, and a turn can only
 make these changes to files that person may already change. The boundary is a
 floor under the ordinary bits and never a replacement for them.
 **Date:** 2026-09-08
+
+### Attributes, ownership and size are inside the grant
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
+`crates/alo-bounding/tests/the_kernel_refuses_an_attribute_change.rs`
+**Behaviour:** until 2026-09-12 the boundary decided what a turn could open,
+read, write, move, remove and link, and nothing about what a file *is*. A bound
+turn could change the mode, owner, times and extended attributes of a file it
+was refused `open` on — and could **empty** it, because `truncate(2)` reaches
+`inode_setattr` without an open. That last one was measured by hand and
+written up in the entry above; it could not be reproduced in Rust, because
+`std` has no path truncate and `rustix` has only `ftruncate` on a descriptor.
+
+**Five hooks close it, and they ask one question.** `inode_setattr` is a
+file's size, mode, owner and times; `inode_setxattr` and `inode_removexattr`
+are an extended attribute set and taken away; `inode_set_acl` and
+`inode_remove_acl` are a POSIX access list set and taken away. Every one of
+them is handed the directory entry of the file being changed and walks up from
+it exactly as `inode_unlink` does — `decide_attribute` in
+`crates/alo-bounding-kernel/src/deciding.rs` is the one function all five
+call — so a change to a file inside the grant goes, and one outside it is
+`EACCES` at the syscall before the attribute has moved. Outside a turn each is
+one hash lookup and a miss, and `the_boundary_decides_and_forgets.rs` makes
+every one of these changes outside a turn beside its opens and still finds
+nothing written down.
+
+**Three things the next reader should know, each worth an afternoon:**
+
+- **The entry is the second argument, not the first.** Since Linux 6.9 every
+  attribute hook begins with the mount's identity mapping —
+  `inode_setattr(struct mnt_idmap *, struct dentry *, struct iattr *)` — so
+  the entry is `arg(1)` and the previous module's decision comes after the
+  hook's own arguments as it does everywhere else: `arg(3)` for `setattr`,
+  `removexattr` and `remove_acl`, `arg(4)` for `set_acl`, `arg(6)` for
+  `setxattr`. Read from this kernel's own BTF (`bpf_lsm_inode_setattr` and its
+  siblings) rather than from a header, because the rename hook's trap in this
+  file is what reading the wrong pointer looks like: everything refused, for
+  no reason anybody can see.
+- **An access list is not an extended attribute to the kernel.** The call is
+  `setxattr` and the name begins `system.posix_acl`, but since Linux 6.2 the
+  kernel takes it to `inode_set_acl` and `inode_remove_acl` before
+  `inode_setxattr` is ever reached. A boundary that watched only the
+  extended-attribute hooks would refuse `chmod` and allow the same change
+  spelled as a list. Measured here with a hand-made list — version two, five
+  entries, forty-four bytes — set on `tmpfs`, which accepts one.
+- **The size is reached through a descriptor opened before the turn began**,
+  the way the daemon's own descriptors are, and `ftruncate` on it inside the
+  turn is `inode_setattr` on the file's own entry — the same call `truncate(2)`
+  makes, and not a read or a write, so `file_permission` never sees it. That
+  is how the truncation the entry above could only describe is in the
+  committed suite: before the hook the file emptied; after it, `EACCES` and
+  the file says what it said.
+
+Measured on this kernel, every one with a refused `open` proving the boundary
+was in force and the same change landing on a file inside the grant proving it
+was not refusing everything, and every one made by a process that is not a
+turn and refused nothing:
+
+| Change | Outside the grant, before | Outside the grant, now | Inside the grant |
+|---|---|---|---|
+| size, through a descriptor opened before the turn (`ftruncate`) | the file emptied | `EACCES`, and the file holds what it held | emptied |
+| a rewrite (`open` with `O_TRUNC`) | `EACCES` at the open, as always | `EACCES` at the open, as always | the open goes and so does the truncation it carries |
+| mode (`chmod`) | changed | `EACCES`, mode unchanged | changed |
+| owner (`chown`) | changed | `EACCES`, owner unchanged | changed |
+| times (`utimensat`) | changed | `EACCES`, times unchanged | changed |
+| an extended attribute set (`setxattr`) | set | `EACCES`, not there | set |
+| an extended attribute taken away (`removexattr`) | gone | `EACCES`, still there | gone |
+| an access list set (`setxattr` on `system.posix_acl_access`) | set | `EACCES`, not there | set |
+| an access list taken away | gone | `EACCES`, still there | gone |
+| **inode flags** (`ioctl` with `FS_IOC_SETFLAGS`, through a descriptor opened before the turn) | `nodump` set | **`nodump` set — not closed** | set |
+
+**What this does not close, and why it is named rather than built.** A file's
+**flags** — `chattr`'s `nodump`, `noatime`, `append-only` and `immutable` —
+are set with an `ioctl` on a descriptor, which is `file_ioctl` and not a
+change to an inode by name, so none of the five hooks sees it. What bounds it
+is real and is not the boundary's: a descriptor to a file outside the grant
+cannot be opened inside a turn, so only a file that was open before the turn
+began is reachable; `alo-agentd` runs as the person with no capability at all,
+so `append-only` and `immutable` — the two that would change what a person can
+do with their file — are refused by the kernel itself for want of
+`CAP_LINUX_IMMUTABLE`; and no byte moves. It is reproduced in the same file,
+asserted in the direction it behaves today, so the day `file_ioctl` is hooked
+that assertion fails and names this entry. A hook on every `ioctl` on the
+machine is a decision about cost as much as a hook, and it belongs to whoever
+schedules **v0.5** with the rest of ADR 0013.
+
+**Our response:** closed, and every row above is a test. `docs/contracts/agent-verbs.md`
+no longer tells an adapter author that a bounded turn can change a file's
+mode, owner and attributes, because it cannot. `alo-files` holds that a
+refused truncation, `chmod`, `chown` or attribute reaches the record as the
+one sentence every machine refusal gets, not five. WSL is development evidence
+and never certified-hardware acceptance; nothing *on the machine* is ticked.
+**Date:** 2026-09-12
 
 ### A descriptor opened before a turn began is decided about on every use
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
@@ -1137,8 +1222,10 @@ descriptor made inside a turn is a way to its contents that `file_permission`
 does not see. It is not hooked, and it is the one thing in this entry **not
 reproduced**: `std` has no `mmap`, `rustix`'s is `unsafe`, so is every crate's
 that wraps it, and `unsafe` is forbidden outside `alo-bounding-kernel`'s one
-file — a rule rather than an oversight, the same one that keeps `truncate(2)`
-out of the suite one entry up. A hook nobody can show refusing is a hook nobody
+file — a rule rather than an oversight, the same one that kept `truncate(2)`
+out of the suite until a descriptor opened before the turn reproduced it (the
+entry *Attributes, ownership and size are inside the grant* above). A hook
+nobody can show refusing is a hook nobody
 can show working, so it was not added on belief. Whoever closes `mmap_file`
 will have to measure it the way the truncation was measured, by hand and with
 the measurement written here; the walk is the one `decide_use` already makes,

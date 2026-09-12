@@ -72,14 +72,19 @@ const WHERE_IT_ALSO_BELONGS: &[&str] = &[
 /// The hooks this programme has, as an exact list.
 ///
 /// Written out rather than counted, for the reason
-/// `the_boundary_decides_and_forgets` names its two maps: a sixth hook is a
-/// change to what this boundary is, and it should arrive with somebody looking
-/// at it rather than as a test that still passes.
+/// `the_boundary_decides_and_forgets` names its two maps: a thirteenth hook is
+/// a change to what this boundary is, and it should arrive with somebody
+/// looking at it rather than as a test that still passes.
 const EVERY_HOOK: &[&str] = &[
     "file_open",
     "file_permission",
     "inode_link",
+    "inode_remove_acl",
+    "inode_removexattr",
     "inode_rename",
+    "inode_set_acl",
+    "inode_setattr",
+    "inode_setxattr",
     "inode_unlink",
     "socket_connect",
     "socket_sendmsg",
@@ -354,7 +359,7 @@ fn the_check_catches_a_list_that_has_stopped_being_true() {
     );
 
     // A hook that arrived without the documents moving.
-    let arrived: BTreeSet<String> = ["file_open", "inode_setattr"]
+    let arrived: BTreeSet<String> = ["file_open", "inode_mkdir"]
         .into_iter()
         .map(str::to_owned)
         .collect();

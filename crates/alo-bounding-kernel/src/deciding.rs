@@ -31,11 +31,15 @@
 
 //! # What is watched, and what is not
 //!
-//! Five hooks on the filesystem — `file_open`, `file_permission`,
-//! `inode_rename`, `inode_unlink` and `inode_link` — which is what a turn
-//! **opens**, **reads and writes**, **moves**, **removes**, and gives a
-//! **second name**. That is not the whole of a filesystem and this file does
-//! not pretend it is. Nothing here watches:
+//! Ten hooks on the filesystem — `file_open`, `file_permission`,
+//! `inode_rename`, `inode_unlink`, `inode_link`, `inode_setattr`,
+//! `inode_setxattr`, `inode_removexattr`, `inode_set_acl` and
+//! `inode_remove_acl` — which is what a turn **opens**, **reads and writes**,
+//! **moves**, **removes**, gives a **second name**, and **changes about a file
+//! that is not its contents**: its size, mode, owner, times, extended
+//! attributes and access lists, which [`decide_attribute`] decides as one
+//! question. That is not the whole of a filesystem and this file does not
+//! pretend it is. Nothing here watches:
 //!
 //! - **symbolic links** (`inode_symlink`) — a turn can make one pointing
 //!   anywhere. It is not a way out on its own: following it to read something
@@ -48,13 +52,13 @@
 //! - **making a file** (`inode_create`, and `inode_mknod` for the call that
 //!   makes one without opening it) — a turn can create one. Writing to it is an
 //!   open, which is watched, so what this leaves is an empty file somewhere;
-//! - **attributes** (`inode_setattr`, `inode_setxattr`) — a turn can change the
-//!   mode, owner, times and extended attributes of a file nobody granted it,
-//!   and is no better off for it: what decides here is where a file is and not
-//!   what its mode says. **The exception is size.** `truncate(2)` reaches
-//!   `inode_setattr` without an open, so a turn can empty a file it cannot
-//!   read — which moves no contents anywhere and destroys them where they are.
-//!   It is the sharpest thing on this list and `docs/quirks.md` says so;
+//! - **a file's flags** (`file_ioctl`) — `FS_IOC_SETFLAGS`, which is how a
+//!   file is made immutable or append-only, is an `ioctl` on a descriptor
+//!   and not a change to an inode by name, so it meets none of the five
+//!   attribute hooks. A descriptor to a file outside the grant cannot be
+//!   opened inside a turn, so what this leaves is the flags of a file that
+//!   was open before the turn began. It is named in `docs/quirks.md` beside
+//!   the attribute hooks and is not reproduced there, for the reason given;
 //! - **a mapping of a file** (`mmap_file`) — a file mapped into memory is read
 //!   by the processor rather than by a syscall, so a mapping is the one way
 //!   left to the contents of a descriptor that was **opened before a turn
@@ -72,11 +76,17 @@
 //!   those do and do not decide.
 //!
 //! Each of those is a real gap and each is written down rather than left to be
-//! discovered. What they have in common — size aside, which is named above
-//! rather than filed under it, and a mapping aside, which is the remainder of
-//! a gap that was closed rather than one that was chosen — is that none of
-//! them moves a byte of somebody's file to somewhere they did not approve,
-//! which is the property the hooks that exist were chosen for.
+//! discovered. What they have in common — a mapping and a file's flags aside,
+//! which are each the remainder of a gap that was closed rather than one that
+//! was chosen — is that none of them moves a byte of somebody's file to
+//! somewhere they did not approve, which is the property the hooks that exist
+//! were chosen for. **Until 2026-09-12 this list also held attributes**, and
+//! one of them went further than the promise: `truncate(2)` reaches
+//! `inode_setattr` without an open, so a turn could empty a file it could not
+//! read. [`decide_attribute`] closed it, and
+//! `alo-bounding/tests/the_kernel_refuses_an_attribute_change.rs` measures
+//! every attribute refused outside the grant beside the same change landing
+//! inside it.
 //!
 //! **All of them are reproduced** against this programme on a running kernel, in
 //! `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`, each with a
@@ -600,8 +610,65 @@ const fn stays_on_this_machine(family: Family, address: u128) -> bool {
 /// the half-written file it made, in the folder the archive was going into —
 /// which is a place that call named.
 pub fn decide_delete(entry: u64) -> i32 {
+    this_entry(entry)
+}
+
+/// Whether this change to what a file **is** — rather than to what it holds —
+/// may go ahead.
+///
+/// # One answer for five hooks
+///
+/// `inode_setattr` is a file's size, mode, owner and times; `inode_setxattr`
+/// and `inode_removexattr` are an extended attribute set and taken away;
+/// `inode_set_acl` and `inode_remove_acl` are an access list set and taken
+/// away, which since Linux 6.2 the kernel routes past the extended-attribute
+/// hooks even though the call that makes one is `setxattr`. Every one of them
+/// is handed the directory entry of the file being changed, and every one of
+/// them asks this: is that entry inside the grant. Five hooks answered by one
+/// function so that `chmod` and the same change spelled as an access list
+/// cannot come to different answers about the same file.
+///
+/// # Why this exists at all, when none of it moves a byte
+///
+/// Until 2026-09-12 none of these was watched, and the argument for leaving
+/// them was honest: a mode, an owner or an attribute on a file nobody granted
+/// moves no contents past a grant, and what decides here is where a file is
+/// and not what its mode says. **Size broke that argument.** `truncate(2)`
+/// reaches `inode_setattr` without an open, so a turn refused `open` on a file
+/// could still empty it — nothing left the grant and the contents were
+/// destroyed where they sat, which is worse. The rest came with it because
+/// they share the hook and because what a person has is not only what their
+/// files hold: a mode left wide open outlives the turn, an owner changed is a
+/// file they no longer own, and a boundary that stopped a turn reading a file
+/// but let it strip the file's access list would be one that had to be
+/// explained.
+///
+/// # The entry, not its folder
+///
+/// The same question `decide_delete` asks and for the same reason: a grant
+/// can be over a single file, and its folder is then not a place the call
+/// named. Judging by the parent would refuse every legitimate change inside
+/// a one-file grant.
+///
+/// # Not a turn
+///
+/// Allowed, and nothing is remembered — this is every `chmod`, every
+/// `truncate` and every attribute on the machine, and for all of them it is
+/// one hash lookup and a return.
+pub fn decide_attribute(entry: u64) -> i32 {
+    this_entry(entry)
+}
+
+/// Whether **this** directory entry is inside the grant, for the hooks that
+/// are handed one entry and are asking about the file it names.
+///
+/// One function for the two, so that a delete and an attribute change cannot
+/// walk from different places or come to different answers about the same
+/// entry.
+fn this_entry(entry: u64) -> i32 {
     let Some(granted) = kernel::granted(kernel::turn()) else {
-        // Not a turn, and this is almost every delete on the machine.
+        // Not a turn, and this is almost every delete and attribute change on
+        // the machine.
         return ALLOWED;
     };
     let Some(fields) = Fields::found() else {

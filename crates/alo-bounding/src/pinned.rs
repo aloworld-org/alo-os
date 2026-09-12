@@ -17,7 +17,12 @@
 //!   ├─ inode_link            0600 root:root                 what it links
 //!   ├─ socket_connect        0600 root:root                 where it connects
 //!   ├─ socket_sendmsg        0600 root:root                 what it sends
-//!   └─ file_permission       0600 root:root                 what it reads and writes
+//!   ├─ file_permission       0600 root:root                 what it reads and writes
+//!   ├─ inode_setattr         0600 root:root                 a file's size, mode, owner, times
+//!   ├─ inode_setxattr        0600 root:root                 an extended attribute set
+//!   ├─ inode_removexattr     0600 root:root                 an extended attribute taken away
+//!   ├─ inode_set_acl         0600 root:root                 an access list set
+//!   └─ inode_remove_acl      0600 root:root                 an access list taken away
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -35,11 +40,12 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! The seven named after kernel functions are the pinned links, and they are
+//! The twelve named after kernel functions are the pinned links, and they are
 //! what keeps the programme attached after the loader has exited. Removing one
-//! detaches that hook; nothing else does. There are seven because the
-//! programme sits on seven hooks — what a turn opens, moves, removes, links,
-//! connects to, sends, and reads and writes — and each attach is its own link.
+//! detaches that hook; nothing else does. There are twelve because the
+//! programme sits on twelve hooks — what a turn opens, moves, removes, links,
+//! connects to, sends, reads and writes, and changes about a file that is not
+//! its contents — and each attach is its own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
 //!
@@ -99,6 +105,23 @@ const THE_MESSAGE_HOOK: &str = "socket_sendmsg";
 /// The pinned link for the hook every read and every write goes through.
 const THE_USE_HOOK: &str = "file_permission";
 
+/// The pinned link for the hook every change to a file's size, mode, owner
+/// or times goes through.
+const THE_ATTRIBUTE_HOOK: &str = "inode_setattr";
+
+/// The pinned link for the hook every extended attribute set goes through.
+const THE_EXTENDED_ATTRIBUTE_HOOK: &str = "inode_setxattr";
+
+/// The pinned link for the hook every extended attribute taken away goes
+/// through.
+const THE_REMOVED_ATTRIBUTE_HOOK: &str = "inode_removexattr";
+
+/// The pinned link for the hook every access list set goes through.
+const THE_ACCESS_LIST_HOOK: &str = "inode_set_acl";
+
+/// The pinned link for the hook every access list taken away goes through.
+const THE_REMOVED_ACCESS_LIST_HOOK: &str = "inode_remove_acl";
+
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
 
@@ -140,6 +163,21 @@ pub struct Pinned {
 
     /// The link that holds it on `file_permission`.
     use_hook: PathBuf,
+
+    /// The link that holds it on `inode_setattr`.
+    attribute_hook: PathBuf,
+
+    /// The link that holds it on `inode_setxattr`.
+    extended_attribute_hook: PathBuf,
+
+    /// The link that holds it on `inode_removexattr`.
+    removed_attribute_hook: PathBuf,
+
+    /// The link that holds it on `inode_set_acl`.
+    access_list_hook: PathBuf,
+
+    /// The link that holds it on `inode_remove_acl`.
+    removed_access_list_hook: PathBuf,
 }
 
 impl Pinned {
@@ -151,7 +189,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is ten paths joined, and every other
+    /// Nothing is made or looked at: this is fifteen paths joined, and every other
     /// method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -166,6 +204,11 @@ impl Pinned {
             departure_hook: root.join(THE_DEPARTURE_HOOK),
             message_hook: root.join(THE_MESSAGE_HOOK),
             use_hook: root.join(THE_USE_HOOK),
+            attribute_hook: root.join(THE_ATTRIBUTE_HOOK),
+            extended_attribute_hook: root.join(THE_EXTENDED_ATTRIBUTE_HOOK),
+            removed_attribute_hook: root.join(THE_REMOVED_ATTRIBUTE_HOOK),
+            access_list_hook: root.join(THE_ACCESS_LIST_HOOK),
+            removed_access_list_hook: root.join(THE_REMOVED_ACCESS_LIST_HOOK),
         }
     }
 
@@ -230,6 +273,38 @@ impl Pinned {
         &self.use_hook
     }
 
+    /// The link for the hook every change to a file's size, mode, owner or
+    /// times goes through.
+    #[must_use]
+    pub fn attribute_hook(&self) -> &Path {
+        &self.attribute_hook
+    }
+
+    /// The link for the hook every extended attribute set goes through.
+    #[must_use]
+    pub fn extended_attribute_hook(&self) -> &Path {
+        &self.extended_attribute_hook
+    }
+
+    /// The link for the hook every extended attribute taken away goes
+    /// through.
+    #[must_use]
+    pub fn removed_attribute_hook(&self) -> &Path {
+        &self.removed_attribute_hook
+    }
+
+    /// The link for the hook every access list set goes through.
+    #[must_use]
+    pub fn access_list_hook(&self) -> &Path {
+        &self.access_list_hook
+    }
+
+    /// The link for the hook every access list taken away goes through.
+    #[must_use]
+    pub fn removed_access_list_hook(&self) -> &Path {
+        &self.removed_access_list_hook
+    }
+
     /// Every pinned link, in the order the hooks are attached.
     ///
     /// One list so that attaching, refusing over leftovers and taking a
@@ -237,7 +312,7 @@ impl Pinned {
     /// pin was left out of one of those three would be a hook that stayed
     /// attached after the boundary was removed.
     #[must_use]
-    pub fn every_hook(&self) -> [&Path; 7] {
+    pub fn every_hook(&self) -> [&Path; 12] {
         [
             &self.hook,
             &self.rename_hook,
@@ -246,6 +321,11 @@ impl Pinned {
             &self.departure_hook,
             &self.message_hook,
             &self.use_hook,
+            &self.attribute_hook,
+            &self.extended_attribute_hook,
+            &self.removed_attribute_hook,
+            &self.access_list_hook,
+            &self.removed_access_list_hook,
         ]
     }
 
@@ -418,11 +498,31 @@ mod tests {
             pinned.use_hook(),
             Path::new("/sys/fs/bpf/alo/file_permission")
         );
+        assert_eq!(
+            pinned.attribute_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_setattr")
+        );
+        assert_eq!(
+            pinned.extended_attribute_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_setxattr")
+        );
+        assert_eq!(
+            pinned.removed_attribute_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_removexattr")
+        );
+        assert_eq!(
+            pinned.access_list_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_set_acl")
+        );
+        assert_eq!(
+            pinned.removed_access_list_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_remove_acl")
+        );
         // Every hook has a pin of its own, and the list is what the loader
         // attaches in the order of: a hook missing from it would be attached
         // and never pinned, which is a hook detached the moment the loader
         // exits.
-        assert_eq!(pinned.every_hook().len(), 7);
+        assert_eq!(pinned.every_hook().len(), 12);
     }
 
     /// The directory is made shut: root owns it, the agent's group may enter
