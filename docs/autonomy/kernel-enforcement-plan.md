@@ -765,9 +765,10 @@ administrator.
 
 ### 12. A descriptor opened before the turn began cannot move contents past the grant
 
-**Status:** ready. **Depends on:** nothing. **Why now:** ADR 0028 — v0.5's
-screenless work begins while v0.01 waits on hardware; this is lane A's
-partition (`alo-bounding`, `alo-bounding-kernel`, `alo-bounding-map`,
+**Status:** ready. **Depends on:** nothing.
+
+**Why now:** ADR 0028 — v0.5's screenless work begins while v0.01 waits on
+hardware; this is lane A's partition (`alo-bounding`, `alo-bounding-kernel`, `alo-bounding-map`,
 `alo-boundaryd`, `alo-egress`, `alo-turn`).
 
 The hardening table above names one gap that **moves bytes past a grant** and
