@@ -902,12 +902,83 @@ A grant is over a place, and a path is only a name for one. Where the two come
 apart, a capability check can be correct and still be wrong — so this is where
 that gets written down rather than discovered.
 
+### A socket already open, and a datagram sent without connecting, are inside the boundary
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
+`crates/alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`
+**Behaviour:** `socket_connect` decides when a socket is *joined* to a
+destination, and a socket is joined once and written on many times. Two things
+never passed it, and both were reproduced moving bytes past a bound turn's
+boundary: a socket joined **before** the turn began — the network's version of
+an inherited descriptor — and a datagram sent with `sendto` on a socket joined
+to nothing, which makes no `connect` at all. A third, a proxy on loopback, is
+below and is not this entry's.
+
+**Our response:** a sixth hook, `socket_sendmsg`, which runs on every message
+the machine sends and decides where the bytes are going. Three things about it
+are worth an afternoon to whoever reads the code next:
+
+- **It is asked of the sending thread's control group**, not the socket's. That
+  is what closes the inherited case rather than restating it: a socket the
+  daemon opened outside any turn is, at the moment a turn writes on it, being
+  used by the turn. A cgroup `skb` programme would have attributed those bytes
+  to the daemon's cgroup, because a socket remembers the cgroup it was *made*
+  in, and would have closed nothing here — which is why an LSM hook and not a
+  second kind of programme.
+- **A message has up to two destinations, and both are checked.** The address
+  it names (`msg_name`, which `sendto` fills and `send` and `write` leave null)
+  and the peer the socket is joined to (`skc_daddr`, `skc_v6_daddr` and
+  `skc_dport` on the `struct sock`). The kernel picks which the bytes follow by
+  protocol — a stream socket ignores the name, a datagram socket uses it — and
+  a programme that guessed the protocol would be one somebody could arrange to
+  guess wrong. A message on a network socket that names nothing and is joined
+  to nobody has no destination the programme can read and is refused, as is one
+  whose named address is of a family the programme cannot read: `AF_UNSPEC` on
+  a datagram is read by the kernel as an IPv4 address, and here it is a
+  destination that cannot be checked rather than one that is not egress.
+- **The peer's fields are reached through a named member.** `struct sock`
+  keeps everything about its peer inside `__sk_common`, and inside that the
+  address and the port sit in unnamed unions holding unnamed structures. The
+  loader's type-information reader now follows a dotted path through *named*
+  members and adds the offsets up; the fixture puts `__sk_common` eight bytes
+  in rather than first, where the real kernel keeps it, so the addition is
+  measured rather than passing because every part of it was zero. Several of
+  the six offsets are genuinely zero on this kernel — `skc_daddr` opens
+  `sock_common`, `msg_name` opens `msghdr` — and the map is an array, so zero
+  is read as zero and not as *missing*.
+
+What it keeps: loopback exempt for ADR 0007's reason and with the same cost, a
+family that is not a network address allowed because it is not egress — which
+is what lets the daemon go on answering the person on its Unix socket from
+inside a turn — and *decides and forgets*, with the same two maps and nothing
+written down; `the_boundary_decides_and_forgets.rs` now sends datagrams outside
+a turn beside its opens. What it closes beyond the two named: a connection kept
+open past the withdrawal of its destination, which the connect hook could not
+re-check and this refuses on the next message.
+
+Measured on this kernel: an inherited connection to a destination nobody showed
+is refused `EACCES` at the write and the server hears nothing; the same to a
+destination the turn *was* shown carries on; a datagram to a destination nobody
+showed is refused and nothing arrives, and the same datagram from a process
+that is not a turn arrives; a datagram to a shown destination goes; a datagram
+to loopback goes unshown; the proxy on loopback still carries a turn out; a
+Unix socket is connected to and written on. Nothing reaches a network in any of
+them. `alo-egress`'s accounting is untouched — a refusal here is `EACCES` from
+the kernel and never an egress event — and on the production path a refused
+message reaches the record through the same `ureq` error the refused connect
+does, in the same words; `alo-asking`'s `openai.rs` holds that.
+
+**What this does not close:** a file descriptor opened before a turn began,
+which is the entry below and needs a decision this hook does not take; and the
+loopback proxy, which is ADR 0021's. WSL is development evidence and never
+certified-hardware acceptance.
+**Date:** 2026-09-12
+
 ### Four hooks are not a filesystem: what a bound turn can still change
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
-**Behaviour:** the boundary watches five hooks — `file_open`, `inode_rename`,
-`inode_unlink`, `inode_link` and `socket_connect` — and a filesystem has more
-verbs than five. The four filesystem hooks were chosen for one property: **none
+**Behaviour:** the boundary watches six hooks — `file_open`, `inode_rename`,
+`inode_unlink`, `inode_link`, `socket_connect` and `socket_sendmsg` — and a
+filesystem has more verbs than the four of those that are about one. The four filesystem hooks were chosen for one property: **none
 of the mutations they leave unwatched moves a byte of somebody's file past a
 grant.** That is a narrower promise than *a turn cannot change anything outside
 its bound*, and reading the second where the first is written is how somebody
@@ -928,9 +999,10 @@ refused open beside it proving the boundary was in force:
 
 Two things are **not** on that list and belong beside it. **What is inside a
 file already open** is not a hook at all: `file_open` decides at the moment of
-opening and says nothing afterwards, so a descriptor that existed before the
-turn began stays usable inside it. That is its own piece of work, with the socket
-half of it already reproduced in `what_a_bound_turn_can_still_reach.rs`. And
+opening and says nothing afterwards, so a file descriptor that existed before
+the turn began stays usable inside it. That is its own piece of work, the entry
+below; the socket half of it was closed on 2026-09-12 by `socket_sendmsg`, the
+entry above. And
 **starting a program** is not a way round any of this: `execve` opens the file it
 runs, `file_open` is watched, and a bound turn asking for `/bin/true` is refused
 with `EACCES` like any other file outside its bound. That is a floor under law 2
@@ -981,9 +1053,14 @@ floor under the ordinary bits and never a replacement for them.
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
 `crates/alo-bounding/tests/what_a_turn_inherits.rs`
 **Behaviour:** `file_open` decides at the moment of opening and says nothing
-afterwards. There is no hook here on a read, on a write, or on a descriptor
-arriving from somewhere else — so **everything already open when a turn starts
-stays fully usable inside it**, and the boundary is never asked.
+afterwards. There is no hook here on a read, on a write to a file, or on a
+descriptor arriving from somewhere else — so **every file already open when a
+turn starts stays fully usable inside it**, and the boundary is never asked. A
+socket already open is the exception since 2026-09-12: a message has a
+destination where a read has none, and `socket_sendmsg` decides about it on
+every write — the entry *A socket already open, and a datagram sent without
+connecting, are inside the boundary* above has the measurement, and the row this
+table carried for it is gone.
 
 That is not a corner of the design; it is most of the daemon. A turn is **one
 thread of `alo-agentd`** and not a process of its own (law 2 —
@@ -997,7 +1074,10 @@ machine today:
   before the first turn ever ran, because opening it from *inside* is an open the
   boundary refuses;
 - **the door and whoever is at it** — the `UnixListener` `alo-agentd` binds and
-  the `UnixStream` it is answering a caller on;
+  the `UnixStream` it is answering a caller on. Both are sockets, so
+  `socket_sendmsg` is asked about every write on them, and both are Unix
+  sockets, so its answer is that they are not egress — which is the right
+  answer and leaves them exactly as usable as they were;
 - **standard output and error**, and whatever else started the service left open.
 
 No verb hands a model a descriptor: the six verbs take paths, and `alo-files`
@@ -1011,7 +1091,6 @@ under.
 | `a file open for reading` | every byte, while the same thread is refused `open` on the same file by name — **and the bytes written into a folder the turn was granted**, which is contents leaving a grant | it cannot be reopened by name, and `/proc/self/fd/<n>` does not turn it back into an open: the walk starts at the file the open really reached, so the reopen is refused exactly as the name is | `what_a_turn_inherits.rs` | v0.5 |
 | `a file open for appending` | a line added to the machine's own record, caused by no execution and refused by nothing | `O_APPEND` puts every write at the end, so nothing already written can be altered, and opening the record by name — to read it, replace it or truncate it — is refused | `what_a_turn_inherits.rs` | v0.5 |
 | `a directory descriptor` | the handle stays valid and keeps naming the folder it was opened for | `openat` relative to it is still an open, and the hook is handed the file that was opened rather than the base — so a folder handle is not a key to anything under it | `what_a_turn_inherits.rs` | v0.5 |
-| `a socket already connected` | the conversation continues: `socket_connect` fired before the turn existed and nothing watches a socket afterwards | a *new* connection is decided, so this widens nothing beyond the destinations already open when the turn began | `what_a_bound_turn_can_still_reach.rs` | v0.5 |
 | `the way out of a turn` | a write of `0` into `home/cgroup.threads`, which is how `Inside::leaving` ends every turn — and would let a verb with a bug in it end its own boundary early | opening any `cgroup.threads` by name is refused, the service's and the turn's own alike, so this needs the descriptor and cannot be obtained from inside | `what_a_turn_inherits.rs` | v0.5 |
 
 **The first row is the sharp one, and it is sharper than anything in *Four hooks

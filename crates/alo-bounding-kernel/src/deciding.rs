@@ -55,18 +55,22 @@
 //!   read — which moves no contents anywhere and destroys them where they are.
 //!   It is the sharpest thing on this list and `docs/quirks.md` says so;
 //! - **what is inside a file already open** — a boundary on `file_open`
-//!   decides at the moment of opening and says nothing afterwards. **A
+//!   decides at the moment of opening and says nothing afterwards. **A file
 //!   descriptor opened before a turn began** is therefore inside no boundary,
 //!   and since a turn is one thread of `alo-agentd` that means the daemon's
-//!   record, its socket and its own way out of a turn. It is the one gap here
-//!   that moves contents past a grant, and closing it in the kernel would mean
+//!   record and its own way out of a turn. It is the one gap here that moves
+//!   contents past a grant, and closing it in the kernel would mean
 //!   `file_permission` — a walk on every read and write on the machine — or
 //!   `file_receive`. Neither is declared in `kernel.rs`; `docs/quirks.md` has
 //!   the account, `alo-bounding/tests/what_a_turn_inherits.rs` reproduces it,
-//!   and the decision it needs belongs in an ADR rather than in a commit;
+//!   and the decision it needs belongs in an ADR rather than in a commit. **A
+//!   socket is the exception, and it is closed**: `socket_sendmsg` decides on
+//!   every message, so a socket opened before the turn began is asked about the
+//!   moment the turn writes on it — [`decide_message`] has the whole of it;
 //! - **signals and memory**, and everything else that is not a filesystem. What
-//!   a turn connects to *is* watched, by `socket_connect`, and
-//!   [`decide_departure`] says what that does and does not decide.
+//!   a turn connects to *is* watched, by `socket_connect`, and what it sends by
+//!   `socket_sendmsg`; [`decide_departure`] and [`decide_message`] say what
+//!   those do and do not decide.
 //!
 //! Each of those is a real gap and each is written down rather than left to be
 //! discovered. What they have in common — size aside, which is named above
@@ -192,6 +196,23 @@ const INET_ADDRESS_AT: u64 = 4;
 /// Where a `sockaddr_in6` keeps its sixteen, past the flow label.
 const INET6_ADDRESS_AT: u64 = 8;
 
+/// Somewhere bytes are about to go, as far as this program can read it.
+///
+/// One shape for the two places a destination is found — the `sockaddr` a
+/// `connect` or a `sendto` names, and the peer a joined socket remembers — so
+/// that the two hooks that read them cannot come to different answers about
+/// the same address.
+#[derive(Clone, Copy)]
+enum Destination {
+    /// Not a network address at all: a Unix socket, a netlink socket, and
+    /// anything else whose family is not one this bound can describe. Not
+    /// egress, and not this program's to decide about.
+    NotEgress,
+
+    /// A network address, with the port in host order.
+    Network(Family, u128, u16),
+}
+
 /// Whether this connection may be made.
 ///
 /// # What is decided here, and the much larger thing that is not
@@ -236,40 +257,185 @@ const INET6_ADDRESS_AT: u64 = 8;
 /// this program untouched. The quirk's forward reference is corrected rather
 /// than left to read as answered.
 ///
-/// **All three of what a bound turn can still reach are reproduced**, against
-/// this programme on a running kernel, in
-/// `alo-bounding/tests/what_a_bound_turn_can_still_reach.rs`: a connection made
-/// before the turn began, a datagram sent without connecting, and this — a
-/// proxy on loopback carrying a turn to an address the boundary would have
-/// refused it directly. Each asserts what happens today, so the day one is
-/// closed its own assertion fails and names the documents to change.
+/// # What this hook alone could not decide, and what now does
+///
+/// A connection is made once and written on many times, and this hook sees
+/// only the once. A socket joined before the turn began, and a datagram sent
+/// on a socket joined to nothing, were both reproduced reaching past a bound
+/// turn's boundary — and both are now decided by [`decide_message`], on the
+/// message, which is the moment the bytes go. The proxy above is the one of
+/// the three that remains, reproduced in
+/// `alo-bounding/tests/what_a_bound_turn_can_still_reach.rs` beside the two
+/// that are closed.
 pub fn decide_departure(where_to: u64) -> i32 {
     let Some(granted) = kernel::granted(kernel::turn()) else {
         // Not a turn, and this is almost every connection on the machine.
         return ALLOWED;
     };
-    let Some(family) = kernel::quarter_word_at(where_to.wrapping_add(FAMILY_AT)) else {
+    match destination_named_at(where_to) {
+        Some(going) if may_go(granted, going) => ALLOWED,
+        _ => REFUSED,
+    }
+}
+
+/// Whether this message may be sent.
+///
+/// # Why a hook on the message, and what it costs
+///
+/// `socket_connect` runs once, when a socket is joined. Two things never pass
+/// it: a socket joined **before** the turn began — the network's version of an
+/// inherited descriptor — and a datagram sent with `sendto` on a socket joined
+/// to nothing, which makes no `connect` at all. Both were reproduced against
+/// this programme moving bytes past a bound turn's boundary, and both are the
+/// same fact: the moment that matters is when the bytes go, not when the
+/// socket was joined.
+///
+/// So this runs on every message the machine sends, and for every process that
+/// is not a turn it is one hash lookup and a return — the same price the other
+/// five hooks charge and for the same reason. Inside a turn it reads a handful
+/// of words of kernel memory and compares numbers; it does not read the bytes
+/// of the message, and it writes nothing down.
+///
+/// # What is asked, and it is asked of the sending thread
+///
+/// The control group is the **current** thread's, which is what makes this
+/// close the inherited-socket gap rather than restate it: a socket the daemon
+/// opened outside any turn is, at the moment a turn writes on it, being used by
+/// the turn, and the turn is what is asked. ADR 0013's *attribution of every
+/// one to the turn that caused it*, on the message.
+///
+/// # Where a message goes, and both places are asked
+///
+/// A message has up to two destinations, and either one is enough to send the
+/// bytes somewhere:
+///
+/// - **the address it names** — `msg_name`, which `sendto` fills and `send`
+///   and `write` leave null. A datagram socket sends there;
+/// - **the peer the socket is joined to** — `skc_daddr`, `skc_v6_daddr` and
+///   `skc_dport` on the `struct sock`, filled by a `connect` whenever it
+///   happened. A stream socket sends there whatever the message names.
+///
+/// **Both are checked when both are there**, because the kernel decides which
+/// one the bytes follow by protocol, and a program that guessed the protocol
+/// would be a program somebody could arrange to guess wrong. A message that
+/// names nothing on a socket joined to nobody has no destination this program
+/// can read, and is refused: the kernel would refuse it too, and a destination
+/// that cannot be checked is refused in every hook here.
+///
+/// # The answers, and where they come from
+///
+/// - **Not a turn** — allowed, and nothing is remembered.
+/// - **A socket whose family is not a network address** — allowed. The daemon
+///   answers the person on a Unix socket, and a turn writing on it is not
+///   egress; `decide_departure` says the same of a `connect` to one.
+/// - **A network socket whose message names an address this cannot read** —
+///   refused. `AF_UNSPEC` on a datagram is read by the kernel as an IPv4
+///   address; here it is a family this program does not enforce, and on a
+///   network socket that is a destination that cannot be checked rather than
+///   one that is not egress.
+/// - **Loopback**, whether named or joined — allowed, for ADR 0007's reason
+///   and with the same cost: a proxy on loopback is still believed.
+/// - **A destination the person was shown** — allowed. **Any other** —
+///   refused, with `EACCES`, before a byte leaves. Withdrawal and the end of
+///   the turn are the same map entry `socket_connect` reads, so a destination
+///   withdrawn while a connection to it is open is refused on the next message
+///   — which closes the connection-reuse gap the connect hook named.
+pub fn decide_message(socket: u64, message: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every message on the machine.
+        return ALLOWED;
+    };
+    let Some(fields) = NetworkFields::found() else {
+        return REFUSED;
+    };
+    let Some(sock) = kernel::word_at(socket.wrapping_add(fields.socket_sock)) else {
+        return REFUSED;
+    };
+    let Some(family) = kernel::quarter_word_at(sock.wrapping_add(fields.sock_family)) else {
         return REFUSED;
     };
     let Some(family) = Family::of(family) else {
-        // Not a network address, so not egress, so not this program's to
-        // decide about.
+        // Not a network socket, so not egress, so not this program's to decide
+        // about — whatever the message names.
         return ALLOWED;
     };
-    let Some(port) = kernel::quarter_word_at(where_to.wrapping_add(PORT_AT)) else {
+    let Some(named) = kernel::word_at(message.wrapping_add(fields.message_name)) else {
         return REFUSED;
     };
-    let Some(address) = address_of(family, where_to) else {
+    let Some(joined_to) = peer_of(sock, family, &fields) else {
         return REFUSED;
     };
-    if stays_on_this_machine(family, address) {
-        return ALLOWED;
+
+    let mut somewhere = false;
+    if let Some(peer) = joined_to {
+        if !may_go(granted, peer) {
+            return REFUSED;
+        }
+        somewhere = true;
     }
-    if granted.may_leave(Departure::of(family, address, u16::from_be(port))) {
-        ALLOWED
-    } else {
-        REFUSED
+    if named != 0 {
+        match destination_named_at(named) {
+            // A network socket naming an address that is not a network address
+            // is naming one this program cannot check, not one that stays home.
+            Some(Destination::Network(family, address, port))
+                if may_go(granted, Destination::Network(family, address, port)) => {}
+            _ => return REFUSED,
+        }
+        somewhere = true;
     }
+    if somewhere { ALLOWED } else { REFUSED }
+}
+
+/// Whether a bound turn may send bytes there.
+fn may_go(granted: Bounds, going: Destination) -> bool {
+    match going {
+        Destination::NotEgress => true,
+        Destination::Network(family, address, port) => {
+            stays_on_this_machine(family, address)
+                || granted.may_leave(Departure::of(family, address, port))
+        }
+    }
+}
+
+/// The destination a `sockaddr` names, or [`None`] if it cannot be read.
+fn destination_named_at(where_to: u64) -> Option<Destination> {
+    let family = kernel::quarter_word_at(where_to.wrapping_add(FAMILY_AT))?;
+    let Some(family) = Family::of(family) else {
+        return Some(Destination::NotEgress);
+    };
+    let port = kernel::quarter_word_at(where_to.wrapping_add(PORT_AT))?;
+    let address = address_of(family, where_to)?;
+    Some(Destination::Network(family, address, u16::from_be(port)))
+}
+
+/// The peer a network socket is joined to, [`None`] if it cannot be read, and
+/// [`Some`] of nothing for a socket joined to nobody.
+///
+/// A socket joined to nobody has a port of zero, which no peer has: the kernel
+/// clears the port on disconnect and never assigns port zero to a peer, so it
+/// is the honest reading of *there is no peer* rather than a sentinel this
+/// program chose.
+fn peer_of(sock: u64, family: Family, fields: &NetworkFields) -> Option<Option<Destination>> {
+    let port = kernel::quarter_word_at(sock.wrapping_add(fields.sock_port))?;
+    if port == 0 {
+        return Some(None);
+    }
+    let address = match family {
+        Family::Four => {
+            let four = kernel::half_word_at(sock.wrapping_add(fields.sock_address))?;
+            u128::from(u32::from_be(four))
+        }
+        Family::Six => {
+            let high = kernel::word_at(sock.wrapping_add(fields.sock_address6))?;
+            let low = kernel::word_at(sock.wrapping_add(fields.sock_address6 + 8))?;
+            (u128::from(u64::from_be(high)) << 64) | u128::from(u64::from_be(low))
+        }
+    };
+    Some(Some(Destination::Network(
+        family,
+        address,
+        u16::from_be(port),
+    )))
 }
 
 /// The address in a `sockaddr`, in host order, as far as it can be read.
@@ -430,5 +596,47 @@ impl Fields {
         let number = kernel::word_at(inode.wrapping_add(self.inode_number))?;
         let device = kernel::half_word_at(filesystem.wrapping_add(self.super_device))?;
         Some(Place::of(u64::from(device), number))
+    }
+}
+
+/// Where this kernel keeps the fields the message hook reads.
+///
+/// Its own set rather than six more on [`Fields`], because the two hooks that
+/// read them share nothing: a walk up a filesystem fetches no socket, and a
+/// message fetches no directory entry. Six lookups a turn does not need would
+/// be six the verifier still has to account for.
+struct NetworkFields {
+    /// `struct socket`'s `sk`.
+    socket_sock: u64,
+    /// `struct sock`'s `skc_family`, through `__sk_common`.
+    sock_family: u64,
+    /// `struct sock`'s `skc_dport`, through `__sk_common`.
+    sock_port: u64,
+    /// `struct sock`'s `skc_daddr`, through `__sk_common`.
+    sock_address: u64,
+    /// `struct sock`'s `skc_v6_daddr`, through `__sk_common`.
+    sock_address6: u64,
+    /// `struct msghdr`'s `msg_name`.
+    message_name: u64,
+}
+
+impl NetworkFields {
+    /// The six offsets, or [`None`] if the daemon did not put them there.
+    ///
+    /// Several of these are legitimately zero on a real kernel —
+    /// `__sk_common` is the first thing in a `struct sock` and the peer's
+    /// address is the first thing in it, and `msg_name` opens a `struct
+    /// msghdr` — so zero is not read as *missing* here any more than it is for
+    /// the walk. [`None`] is a slot the map does not have, which is a program
+    /// and a daemon built from different sources.
+    fn found() -> Option<Self> {
+        Some(Self {
+            socket_sock: kernel::offset(Field::SocketSock)?,
+            sock_family: kernel::offset(Field::SockFamily)?,
+            sock_port: kernel::offset(Field::SockPort)?,
+            sock_address: kernel::offset(Field::SockAddress)?,
+            sock_address6: kernel::offset(Field::SockAddress6)?,
+            message_name: kernel::offset(Field::MessageName)?,
+        })
     }
 }

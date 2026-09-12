@@ -4,7 +4,9 @@
 //! Everything the decision needs — which inode, on which filesystem, inside
 //! which directory — is reached by stepping through kernel structures whose
 //! layout is decided when that kernel is compiled and is not the same on the
-//! next one.
+//! next one. The program on `socket_sendmsg` is in the same position with a
+//! `struct socket *` and a `struct msghdr *`: who a socket is joined to sits
+//! several structures in.
 //!
 //! # This is why nothing here is a number
 //!
@@ -28,7 +30,8 @@
 ///
 /// The order is the order of the walk: from the file handed to the hook, down
 /// to the directory entry, and from there upwards and sideways into the inode
-/// and the filesystem.
+/// and the filesystem. After those come the six the message hook reads, from
+/// the socket it was handed to the address of whoever is on the other end.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
     /// `struct file`'s `f_path` — where the open's own path begins.
@@ -55,6 +58,34 @@ pub enum Field {
     /// `struct super_block`'s `s_dev` — the filesystem, as the kernel numbers
     /// it.
     SuperDevice,
+
+    /// `struct socket`'s `sk` — the protocol's half of a socket, which is where
+    /// a joined socket keeps who it is joined to.
+    ///
+    /// A `struct socket` is the filesystem's view of a socket and knows nothing
+    /// about addresses; the `struct sock` it points at is the network's view
+    /// and knows the peer.
+    SocketSock,
+
+    /// `struct sock`'s `__sk_common.skc_family` — which family of address this
+    /// socket speaks, as the kernel numbers them.
+    SockFamily,
+
+    /// `struct sock`'s `__sk_common.skc_dport` — the peer's port, in network
+    /// order, and zero for a socket joined to nobody.
+    SockPort,
+
+    /// `struct sock`'s `__sk_common.skc_daddr` — the peer's IPv4 address, in
+    /// network order.
+    SockAddress,
+
+    /// `struct sock`'s `__sk_common.skc_v6_daddr` — the peer's IPv6 address,
+    /// sixteen bytes in network order.
+    SockAddress6,
+
+    /// `struct msghdr`'s `msg_name` — the address a message names, or null for
+    /// a message that goes wherever the socket is already joined.
+    MessageName,
 }
 
 impl Field {
@@ -62,7 +93,7 @@ impl Field {
     ///
     /// The loader walks this, so a field added here is a field looked up rather
     /// than a field silently left at zero.
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 13] = [
         Self::FilePath,
         Self::PathDentry,
         Self::DentryParent,
@@ -70,6 +101,12 @@ impl Field {
         Self::DentrySuper,
         Self::InodeNumber,
         Self::SuperDevice,
+        Self::SocketSock,
+        Self::SockFamily,
+        Self::SockPort,
+        Self::SockAddress,
+        Self::SockAddress6,
+        Self::MessageName,
     ];
 
     /// The slot in the map this field's offset is written into and read out of.
@@ -83,6 +120,12 @@ impl Field {
             Self::DentrySuper => 4,
             Self::InodeNumber => 5,
             Self::SuperDevice => 6,
+            Self::SocketSock => 7,
+            Self::SockFamily => 8,
+            Self::SockPort => 9,
+            Self::SockAddress => 10,
+            Self::SockAddress6 => 11,
+            Self::MessageName => 12,
         }
     }
 
@@ -95,10 +138,22 @@ impl Field {
             Self::DentryParent | Self::DentryInode | Self::DentrySuper => "dentry",
             Self::InodeNumber => "inode",
             Self::SuperDevice => "super_block",
+            Self::SocketSock => "socket",
+            Self::SockFamily | Self::SockPort | Self::SockAddress | Self::SockAddress6 => "sock",
+            Self::MessageName => "msghdr",
         }
     }
 
     /// The member's name inside that structure.
+    ///
+    /// A name with a dot in it is a path through **named** members: `struct
+    /// sock` keeps everything about its peer inside a member called
+    /// `__sk_common`, and a search that only looked at the structure's own
+    /// members would answer that no kernel has a `skc_daddr`. The loader
+    /// follows each segment into the member it names and adds the offsets up,
+    /// so the number the program reads is measured from the start of the
+    /// structure named by [`Field::structure`] — which is the pointer the
+    /// program holds.
     #[must_use]
     pub const fn member(self) -> &'static str {
         match self {
@@ -109,6 +164,12 @@ impl Field {
             Self::DentrySuper => "d_sb",
             Self::InodeNumber => "i_ino",
             Self::SuperDevice => "s_dev",
+            Self::SocketSock => "sk",
+            Self::SockFamily => "__sk_common.skc_family",
+            Self::SockPort => "__sk_common.skc_dport",
+            Self::SockAddress => "__sk_common.skc_daddr",
+            Self::SockAddress6 => "__sk_common.skc_v6_daddr",
+            Self::MessageName => "msg_name",
         }
     }
 
@@ -125,11 +186,22 @@ impl Field {
             // A `struct path` is two pointers, and the offset points at it
             // rather than through it.
             Self::FilePath => 16,
-            Self::PathDentry | Self::DentryParent | Self::DentryInode | Self::DentrySuper => 8,
+            Self::PathDentry
+            | Self::DentryParent
+            | Self::DentryInode
+            | Self::DentrySuper
+            | Self::SocketSock
+            | Self::MessageName => 8,
             // `unsigned long` on the machines alo OS certifies.
             Self::InodeNumber => 8,
             // `dev_t`, which is thirty-two bits and has been since 2.6.
             Self::SuperDevice => 4,
+            // A family and a port are both sixteen bits, in every `sockaddr`
+            // there is and in the socket that remembers them.
+            Self::SockFamily | Self::SockPort => 2,
+            // A `__be32`, and a `struct in6_addr`.
+            Self::SockAddress => 4,
+            Self::SockAddress6 => 16,
         }
     }
 }
@@ -143,7 +215,7 @@ mod tests {
     /// step through the beginning of a `struct file` and refuse everything.
     #[test]
     fn every_field_is_in_the_list_exactly_once() {
-        assert_eq!(Field::ALL.len(), 7);
+        assert_eq!(Field::ALL.len(), 13);
         for (slot, field) in Field::ALL.iter().enumerate() {
             assert_eq!(field.index() as usize, slot);
         }
@@ -169,7 +241,22 @@ mod tests {
         for field in Field::ALL {
             assert!(!field.structure().is_empty());
             assert!(!field.member().is_empty());
-            assert!(field.width() == 4 || field.width() == 8 || field.width() == 16);
+            assert!(matches!(field.width(), 2 | 4 | 8 | 16));
+        }
+    }
+
+    /// A path through named members begins and ends with a name, and never
+    /// holds an empty segment: `__sk_common..skc_daddr` would be a search for
+    /// a member called nothing, which every anonymous union answers to.
+    #[test]
+    fn a_path_through_named_members_has_no_empty_segment() {
+        for field in Field::ALL {
+            assert!(
+                field.member().split('.').all(|segment| !segment.is_empty()),
+                "{:?} names `{}`",
+                field,
+                field.member()
+            );
         }
     }
 }

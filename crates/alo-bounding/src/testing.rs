@@ -5,12 +5,13 @@
 //! machine, and a test that read the real one would pass or fail for reasons
 //! belonging to whoever built the kernel rather than to this repository.
 //!
-//! So this builds a small one — seven structures with the seven members the
+//! So this builds a small one — the structures with the thirteen members the
 //! program looks for, in a layout chosen to be *wrong* in the ways a real
 //! kernel is inconvenient: a device number reached through two names before it
 //! is an integer, a member that is a structure rather than a pointer to one, a
-//! structure that points at itself, and `f_path` inside an anonymous union
-//! rather than beside its neighbours.
+//! structure that points at itself, `f_path` inside an anonymous union rather
+//! than beside its neighbours, and a socket's peer two anonymous composites
+//! deep inside a named one that is not the first thing in its structure.
 //!
 //! That last one is measured rather than invented. It is where Linux 6.18 keeps
 //! it, and it is the shape that stopped this crate loading on a kernel whose
@@ -146,6 +147,93 @@ fn written(kernel: Kernel) -> Vec<u8> {
         called,
         400,
         &[("f_mode", unsigned_int, 0), ("", unnamed, 16)],
+    );
+
+    // The six the message hook reads. `struct sock` keeps its peer inside a
+    // **named** member, `__sk_common`, which keeps the address and the port
+    // inside unnamed unions holding unnamed structures — the shape Linux 6.18
+    // has. The fixture puts `__sk_common` eight bytes in rather than first,
+    // where the real kernel keeps it, so that a path through a named member is
+    // measured as a sum rather than passing because every part of it was zero.
+    let unsigned_short = writing.integer("unsigned short", 2);
+    let be16 = writing.name_for("__be16", unsigned_short);
+    let be32 = writing.name_for("__be32", unsigned_int);
+    let void_pointer = writing.pointer_to(0);
+    let sock = writing.reserve();
+    let sock_pointer = writing.pointer_to(sock);
+    let sock_common = writing.reserve();
+    let in6_addr = writing.reserve();
+    let addresses = writing.reserve();
+    let where_the_address_is = writing.reserve();
+    let ports = writing.reserve();
+    let where_the_port_is = writing.reserve();
+    let socket = writing.reserve();
+    let msghdr = writing.reserve();
+
+    writing.structure(
+        addresses,
+        "",
+        8,
+        &[("skc_daddr", be32, 0), ("skc_rcv_saddr", be32, 4)],
+    );
+    writing.union(
+        where_the_address_is,
+        "",
+        8,
+        &[("skc_addrpair", unsigned_long, 0), ("", addresses, 0)],
+    );
+    writing.structure(
+        ports,
+        "",
+        4,
+        &[("skc_dport", be16, 0), ("skc_num", unsigned_short, 2)],
+    );
+    writing.union(
+        where_the_port_is,
+        "",
+        4,
+        &[("skc_portpair", unsigned_int, 0), ("", ports, 0)],
+    );
+    writing.structure(
+        in6_addr,
+        "in6_addr",
+        16,
+        &[("high", unsigned_long, 0), ("low", unsigned_long, 8)],
+    );
+    writing.structure(
+        sock_common,
+        "sock_common",
+        136,
+        &[
+            ("", where_the_address_is, 0),
+            ("", where_the_port_is, 12),
+            ("skc_family", unsigned_short, 16),
+            ("skc_v6_daddr", in6_addr, 56),
+        ],
+    );
+    writing.structure(
+        sock,
+        "sock",
+        760,
+        &[
+            ("sk_prefix", unsigned_long, 0),
+            ("__sk_common", sock_common, 8),
+        ],
+    );
+    writing.structure(
+        socket,
+        "socket",
+        128,
+        &[("state", unsigned_int, 0), ("sk", sock_pointer, 24)],
+    );
+    writing.structure(
+        msghdr,
+        "msghdr",
+        56,
+        &[
+            ("msg_name", void_pointer, 0),
+            ("msg_namelen", unsigned_int, 8),
+        ],
     );
 
     writing.finished()

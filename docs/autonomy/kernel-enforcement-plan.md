@@ -55,8 +55,9 @@ between them says which report moved it.
 Evidence means a test that runs against the **real loaded BPF LSM** on a running
 kernel, not a mock and not compilation.
 
-**Five hooks exist:** `file_open`, `inode_rename`, `inode_unlink`, `inode_link`,
-`socket_connect`. The programme has exactly two maps and writes nothing down.
+**Six hooks exist:** `file_open`, `inode_rename`, `inode_unlink`, `inode_link`,
+`socket_connect`, `socket_sendmsg`. The programme has exactly two maps and
+writes nothing down.
 
 | Requirement | Evidence |
 |---|---|
@@ -79,6 +80,10 @@ kernel, not a mock and not compilation.
 | **A question the rule refuses reaches no socket** | same file; indicator quiet, server saw nothing |
 | **A failed request leaves no permission for the next one** | same file, asked of the kernel rather than assumed |
 | **A question is bounded, and only to what it resolved** | `alo-turn` `a_file_verb_and_a_question_are_both_carried_out_inside_a_boundary` |
+| **A socket joined before the turn began is refused the moment the turn writes on it** — and one joined to a shown destination carries on | `what_a_bound_turn_can_still_reach.rs`, `a_connection_made_before_the_boundary_is_refused_inside_it` and its sibling |
+| **A datagram sent without connecting is refused** — and one to a shown destination goes, one to loopback goes unshown, and a process that is not a turn sends it | same file, `an_unconnected_datagram_is_refused_inside_a_bound_turn` and two siblings |
+| The message hook, outside a turn, leaves no trace | `the_boundary_decides_and_forgets.rs`, datagrams beside the opens |
+| A refused message and a refused connection are one sentence in the record | `alo-asking` `a_message_the_kernel_refused_is_the_sentence_a_refused_connection_is` |
 | Loader: a leftover pin on any hook is refused over and not removed | `alo-boundaryd` `a_machine_that_already_has_a_boundary_keeps_it`, per hook |
 | Loader: taking a boundary away leaves no hook attached | `taking_a_boundary_away_leaves_none_of_its_hooks_attached` |
 | Loader: the boundary outlives the loader; a second loader refuses | `the_boundary_outlives_the_loader.rs` |
@@ -112,9 +117,9 @@ Each is documented, most are reproduced, and none is scheduled here.
 | Gap | Release | State |
 |---|---|---|
 | **A descriptor opened before the turn began** | v0.5 | **Reproduced, and the only gap in this crate that moves contents past a grant**: the same thread is refused `open` on a private key and reads every byte of it through a descriptor that already existed. `what_a_turn_inherits.rs`. **Needs a decision** — options in `docs/autonomy/updates/network-boundary-decisions-proposed.md` |
-| **A socket already open or inherited** | v0.5 | Reproduced, `what_a_bound_turn_can_still_reach.rs`. Same class, same decision |
-| **A datagram sent without connecting** | v0.5 | Reproduced, same file. `sendto` reaches no `connect` hook. Nothing shipped sends one from inside a turn |
-| A connection reused after its destination is withdrawn | v0.5 | Closed on the production path by ADR 0020's per-request client; the hook still does not re-check an established connection |
+| ~~A socket already open or inherited~~ | v0.5 | **Closed, task 13, 2026-09-12** — `socket_sendmsg` decides on every message, asked of the sending thread's cgroup. Moved to section 1 |
+| ~~A datagram sent without connecting~~ | v0.5 | **Closed, task 13, 2026-09-12** — the same hook reads the address a message names. Moved to section 1 |
+| ~~A connection reused after its destination is withdrawn~~ | v0.5 | **Closed, task 13, 2026-09-12** — the message hook reads the map on every message, so a withdrawn destination is refused on the next write. ADR 0020's per-request client had already closed it on the production path |
 | Filesystem: `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink` | v0.5 | Documented and reproduced by task 5; none moves a byte past a grant |
 | Filesystem: `inode_setattr`, `inode_setxattr` — attributes, ownership **and size** | v0.5 | Not hooked. `truncate(2)` reaches `inode_setattr` without an open, so a bound turn can **empty** a file nobody granted. No contents leave a grant and contents are destroyed where they are — the one row that does more than litter, and the one to close first |
 | Landlock, seccomp, namespaces — ADR 0013's other three primitives | v0.5 | None built; the BPF LSM carries the whole boundary today |
@@ -154,10 +159,15 @@ Three, and this workstream builds none of them without one.
    **supervision, not ownership** — a third-party runtime under alo's
    supervision qualifies and alo's own outside it does not — and is blocked on a
    mechanism that does not exist. **The gap is open under every option.**
-2. **Inherited descriptors and sockets, and checks after a connection.** Options
-   in `docs/autonomy/updates/network-boundary-decisions-proposed.md`. The
+2. **Inherited file descriptors.** Options in
+   `docs/autonomy/updates/network-boundary-decisions-proposed.md`. The
    question is not which hook: every hook runs into the same exemption, because
-   the way out of a turn is itself an inherited descriptor.
+   the way out of a turn is itself an inherited descriptor. **The socket half
+   of that decision was taken by task 13 on 2026-09-12 and needed no
+   exemption**: a message has a destination where a read has none, the way out
+   of a turn is a file and not a socket, and the daemon's socket to the person
+   is a Unix socket the hook does not call egress. What remains open is the
+   file half, and only the file half.
 3. **Kernel-sourced enforcement records.** ADR 0015 promises the record becomes
    what the kernel watched; *the LSM decides and forgets* forbids the mechanism
    that would produce it, and a test fails if a third map appears. Those two
@@ -811,6 +821,32 @@ patch release.
 - **Constraint:** the hooks are on the turn's own cgroup, as ADR 0013 requires,
   and a syscall outside a turn is checked and leaves no trace — held by the
   test the v0.5 promise says must exist rather than by a sentence.
+
+**Done, 2026-09-12.** A sixth hook, `socket_sendmsg`, in
+`crates/alo-bounding-kernel/src/deciding.rs` as `decide_message`. It runs on
+every message the machine sends, asks the **sending thread's** control group —
+which is what closes the inherited case rather than restating it, and why an
+LSM hook rather than a cgroup `skb` programme, which attributes a socket to the
+cgroup it was *made* in — and reads both places a message can be going: the
+address it names and the peer the socket is joined to, checking both when both
+are there. Six offsets more in the existing `FIELDS` map, reached through a
+dotted path the type-information reader now follows through named members;
+no third map, and `the_program_has_nowhere_to_write_what_it_sees` still
+asserts exactly `["BOUNDS", "FIELDS"]`, unchanged.
+
+Both reproductions flipped in `what_a_bound_turn_can_still_reach.rs`, with
+their controls: an inherited connection to a shown destination carries on, a
+datagram to a shown destination goes, a datagram to loopback goes unshown, a
+process that is not a turn sends the refused datagram and it arrives, and a
+Unix socket is written on. The proxy on loopback is reproduced as it was. The
+connection-reuse gap the connect hook named is closed by the same mechanism.
+`the_boundary_decides_and_forgets.rs` sends datagrams outside a turn beside its
+opens and still finds nothing written. `alo-asking` holds that a refused
+message and a refused connection are the same sentence in the record.
+`alo-egress` is untouched. **Nothing that would have needed approval
+happened**: no exemption, because the way out of a turn is a file and the
+daemon's socket to the person is not egress. Report:
+`docs/autonomy/updates/sockets-and-datagrams-inside-the-boundary.md`.
 
 ### 14. Attributes, ownership and size are inside the grant
 

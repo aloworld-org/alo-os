@@ -78,8 +78,12 @@ static BOUNDS: HashMap<u64, [u64; WORDS]> = HashMap::with_max_entries(1024, 0);
 /// Filled by the daemon out of `/sys/kernel/btf/vmlinux` before the program is
 /// attached, so nothing here is compiled against a kernel version. `Field` is
 /// the agreement about which slot is which.
+///
+/// Sixteen slots for thirteen fields. The spare ones are read back by
+/// `the_boundary_decides_and_forgets` and held at zero, because an array this
+/// program can already reach is exactly where a counter would sit.
 #[map(name = "FIELDS")]
-static FIELDS: Array<u32> = Array::with_max_entries(8, 0);
+static FIELDS: Array<u32> = Array::with_max_entries(16, 0);
 
 /// Every open of every file, on this machine, from now until the program is
 /// detached.
@@ -188,6 +192,34 @@ pub fn socket_connect(ctx: LsmContext) -> i32 {
         return already;
     }
     deciding::decide_departure(where_to)
+}
+
+/// Every message sent on every socket on this machine, until the program is
+/// detached.
+///
+/// `socket_sendmsg(struct socket *sock, struct msghdr *msg, int size)` —
+/// three arguments, so the previous module's decision is the fourth. The size
+/// is not read: what decides is where the bytes are going, never how many
+/// there are, and this program does not look at the bytes themselves.
+///
+/// The sixth hook, and the one that makes the fifth whole. `socket_connect`
+/// decides when a connection is *made*, so a socket joined before the turn
+/// began was never asked, and a datagram sent without joining anything asks
+/// nothing at all. This runs on the message, which is the moment the bytes
+/// actually leave — and it is asked of the **sending thread's** control group,
+/// so a socket the daemon opened outside any turn is still the turn's to
+/// answer for the moment a turn writes on it.
+/// [`crate::deciding::decide_message`] says what may be decided here and what
+/// may not.
+#[lsm(hook = "socket_sendmsg")]
+pub fn socket_sendmsg(ctx: LsmContext) -> i32 {
+    let socket: u64 = ctx.arg(0);
+    let message: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_message(socket, message)
 }
 
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.

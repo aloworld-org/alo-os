@@ -94,11 +94,16 @@ const WOULD_CLOSE_IT: &[&str] = &["file_permission", "file_receive"];
 /// character in the table made the parser drop would otherwise leave this test
 /// green over an account it had stopped checking, and a row somebody removed is
 /// a claim about the daemon that should arrive with a person looking at it.
+///
+/// `a socket already connected` was the fifth row until 2026-09-12, when
+/// `socket_sendmsg` closed it: a socket inherited into a turn is decided about
+/// on every message, so it is no longer something a turn inherits the use of.
+/// It left this list with a person looking at it, which is what the list is
+/// for.
 const EVERY_ROW: &[&str] = &[
     "a file open for reading",
     "a file open for appending",
     "a directory descriptor",
-    "a socket already connected",
     "the way out of a turn",
 ];
 

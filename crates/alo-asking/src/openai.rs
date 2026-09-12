@@ -627,6 +627,40 @@ mod tests {
         );
     }
 
+    /// **A message the kernel refused is the sentence a refused connection
+    /// is.** The boundary refuses a `connect` to a destination nobody was shown
+    /// with `EACCES`, and since `socket_sendmsg` it refuses a *write* on a
+    /// socket the same way — an inherited connection, a datagram, a connection
+    /// kept open past a withdrawal. Both arrive here as the same `ureq` error,
+    /// and both have to be the same words in the record: a person reading
+    /// *what did the agent do* is owed one sentence for *the machine refused
+    /// to let this leave*, not one per hook.
+    #[test]
+    fn a_message_the_kernel_refused_is_the_sentence_a_refused_connection_is() {
+        let refused_at_connect =
+            || ureq::Error::Io(std::io::Error::from_raw_os_error(libc_eacces()));
+        let refused_at_write = || {
+            ureq::Error::Io(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "a write on a socket the boundary refused",
+            ))
+        };
+        assert_eq!(
+            what_went_wrong(refused_at_connect()),
+            WentWrong::NothingAnswered
+        );
+        assert_eq!(
+            what_went_wrong(refused_at_write()),
+            what_went_wrong(refused_at_connect()),
+            "a refused message and a refused connection are different sentences"
+        );
+    }
+
+    /// `EACCES` as every Unix numbers it, without a crate to say so.
+    const fn libc_eacces() -> i32 {
+        13
+    }
+
     /// Addresses are documented both ways. A second `/v1` would come back 404
     /// and be read as a wrong address when the address was right.
     #[test]

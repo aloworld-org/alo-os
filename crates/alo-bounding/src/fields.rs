@@ -1,6 +1,6 @@
-//! The seven offsets, found in this kernel and checked before they are used.
+//! The thirteen offsets, found in this kernel and checked before they are used.
 //!
-//! [`Field`] says which seven and how wide each should be; `btf.rs` says where
+//! [`Field`] says which thirteen and how wide each should be; `btf.rs` says where
 //! this kernel keeps them. This file is the meeting of the two, and the two
 //! refusals that come out of it.
 //!
@@ -75,12 +75,12 @@ mod tests {
     use super::*;
     use crate::testing;
 
-    /// The ordinary case, against the fixture: seven fields, each at the offset
+    /// The ordinary case, against the fixture: thirteen fields, each at the offset
     /// the type information gives.
     #[test]
     fn every_field_is_found_where_this_kernel_keeps_it() {
         let types = Types::read(testing::some_type_information()).expect("the fixture reads");
-        let offsets = Offsets::found(&types).expect("the fixture has all seven");
+        let offsets = Offsets::found(&types).expect("the fixture has all thirteen");
         assert_eq!(offsets.at(Field::FilePath), 16);
         assert_eq!(offsets.at(Field::PathDentry), 8);
         assert_eq!(offsets.at(Field::DentryParent), 24);
@@ -88,6 +88,15 @@ mod tests {
         assert_eq!(offsets.at(Field::DentrySuper), 40);
         assert_eq!(offsets.at(Field::InodeNumber), 32);
         assert_eq!(offsets.at(Field::SuperDevice), 8);
+        // The six the message hook reads: through a named member, through two
+        // unnamed ones, and one at the very front of its structure — because
+        // zero is a real offset and has to survive the trip into the map.
+        assert_eq!(offsets.at(Field::SocketSock), 24);
+        assert_eq!(offsets.at(Field::SockFamily), 24);
+        assert_eq!(offsets.at(Field::SockPort), 20);
+        assert_eq!(offsets.at(Field::SockAddress), 8);
+        assert_eq!(offsets.at(Field::SockAddress6), 64);
+        assert_eq!(offsets.at(Field::MessageName), 0);
         assert_eq!(offsets.each().count(), Field::ALL.len());
     }
 

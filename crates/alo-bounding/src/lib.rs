@@ -134,10 +134,11 @@
 //! # What this boundary watches on a filesystem, and what it does not
 //!
 //! Four hooks decide about files — `file_open`, `inode_rename`, `inode_unlink`
-//! and `inode_link` — and a fifth, `socket_connect`, about the network. A
-//! filesystem has more verbs than four, and somebody auditing this crate is owed
-//! the list of the ones nothing here decides about rather than the count of the
-//! ones it does.
+//! and `inode_link` — and two about the network: `socket_connect`, where a
+//! turn joins a socket to, and `socket_sendmsg`, where every message it sends
+//! is going. A filesystem has more verbs than four, and somebody auditing this
+//! crate is owed the list of the ones nothing here decides about rather than
+//! the count of the ones it does.
 //!
 //! **The promise these four keep is narrower than *a turn cannot change
 //! anything outside its bound*, and reading the second where the first is
@@ -179,11 +180,11 @@
 //!
 //! # What a turn inherits, and why it is not on that list
 //!
-//! Every hook above decides at the moment something is *done to a name*. None of
-//! them decides about a descriptor that already exists, and there is no hook here
-//! on a read, on a write, or on a descriptor arriving from somewhere else. **So
-//! anything open when a turn begins stays fully usable inside it**, and the
-//! boundary is never asked.
+//! The four file hooks decide at the moment something is *done to a name*. None
+//! of them decides about a descriptor that already exists, and there is no hook
+//! here on a read, on a write to a file, or on a descriptor arriving from
+//! somewhere else. **So any file open when a turn begins stays fully usable
+//! inside it**, and the boundary is never asked.
 //!
 //! That is not a corner of the design, it is most of the daemon. [`Turns::doing`]
 //! puts **one thread** of `alo-agentd` into a control group — the argument is in
@@ -192,6 +193,15 @@
 //! `alo_keeping::Writing` holds open for appending, the socket the daemon is
 //! listening on and the caller it is answering, standard output and error, and
 //! [`Turns::doing`]'s own way out of a turn.
+//!
+//! **A socket is the exception, since 2026-09-12.** A message has a destination
+//! where a read has none, so `socket_sendmsg` decides about every message a
+//! turn sends — on the socket it inherited as much as on one it opened — by
+//! asking the sending thread's control group and reading where the bytes are
+//! going. A socket joined before the turn began to a destination nobody showed
+//! is refused the moment the turn writes on it; the daemon's Unix socket to the
+//! person is not a network address and is not egress, so answering them is
+//! untouched. `tests/what_a_bound_turn_can_still_reach.rs` holds both.
 //!
 //! **A descriptor opened before a turn began is the one gap in this crate that
 //! moves contents past a grant.** The list above was measured against exactly
@@ -272,6 +282,16 @@
 //! exactly the ones the person was shown. What changes is that a verb with a
 //! bug in it can no longer open one the person was not shown — the same floor
 //! the file hooks are, under the other half of law 1.
+//!
+//! **Two hooks carry it, because a socket is joined once and written on many
+//! times.** `socket_connect` decides at the joining. `socket_sendmsg` decides
+//! at every message — the address a `sendto` names, and the peer the socket is
+//! joined to, both checked when both are there — so a socket that was joined
+//! before the turn began, a datagram that joins nothing, and a connection kept
+//! open past the withdrawal of its destination are all refused where the bytes
+//! would otherwise go. Loopback is exempt in both for ADR 0007's reason, a
+//! family that is not a network address is allowed in both because it is not
+//! egress, and neither writes anything down.
 
 #![cfg(target_os = "linux")]
 

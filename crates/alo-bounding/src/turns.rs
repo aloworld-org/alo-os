@@ -37,10 +37,13 @@
 //! a descriptor that already exists, and a write is not an open.
 //!
 //! **That is the same property as the gap this crate documents**, used on
-//! purpose. A descriptor opened before a turn began is inside no boundary, which
-//! is why the daemon's record and its socket stay reachable from inside one —
-//! and why a boundary that re-decided about a descriptor at the moment it was
-//! *used* would refuse a turn its own way out. `crates/alo-bounding/src/lib.rs`
+//! purpose. A file descriptor opened before a turn began is inside no boundary,
+//! which is why the daemon's record stays reachable from inside one — and why a
+//! boundary that re-decided about a file descriptor at the moment it was *used*
+//! would refuse a turn its own way out. A socket is decided about on every
+//! message since `socket_sendmsg`, and the daemon's own socket to the person is
+//! a Unix socket, which that hook does not call egress; the way out is a file,
+//! and stays the shape this file describes. `crates/alo-bounding/src/lib.rs`
 //! has the account and `tests/what_a_turn_inherits.rs` measures both halves of
 //! it, this one included.
 //!

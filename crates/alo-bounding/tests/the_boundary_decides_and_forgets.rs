@@ -257,6 +257,35 @@ fn an_ordinary_days_opens(folder: &Path) -> usize {
     (0..ROUNDS).map(|_| opening_everything_in(folder)).sum()
 }
 
+/// An ordinary program's messages: one datagram a round, from a socket of this
+/// process's own to itself on loopback, each one heard back.
+///
+/// The sixth hook runs on every message the machine sends, and this is what
+/// holds it to *decides and forgets* the way the opens above hold the first
+/// five: a process in no turn sends, the hook looks up a control group, misses,
+/// and nothing anywhere is different afterwards. Loopback because nothing here
+/// may reach a network; heard back because a datagram that was silently dropped
+/// would be a hook refusing outside a turn, which is the other thing it must
+/// not do.
+fn an_ordinary_days_messages() -> usize {
+    let ours = std::net::UdpSocket::bind("127.0.0.1:0").expect("a datagram socket of our own");
+    ours.set_read_timeout(Some(std::time::Duration::from_secs(5)))
+        .expect("a socket can be made to give up");
+    let at = ours.local_addr().expect("a socket knows where it is");
+    let mut heard = [0u8; 16];
+    (0..ROUNDS)
+        .filter(|round| {
+            let said = round.to_string();
+            ours.send_to(said.as_bytes(), at)
+                .expect("an ordinary program can send itself a datagram");
+            let (read, _) = ours
+                .recv_from(&mut heard)
+                .expect("a datagram sent to this process on loopback arrives");
+            heard.get(..read) == Some(said.as_bytes())
+        })
+        .count()
+}
+
 /// One pass over the folder, opening each thing in it.
 ///
 /// Reading the directory is an open of its own and is deliberately not counted:
@@ -387,6 +416,11 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
         opened >= FILES * ROUNDS * 2,
         "only {opened} files were opened, so the boundary was barely asked anything and a \
          program that wrote one line in a hundred would not have been caught"
+    );
+    let sent = an_ordinary_days_messages();
+    assert_eq!(
+        sent, ROUNDS,
+        "only {sent} messages were sent, so the hook on every message was barely asked anything"
     );
 
     let after = Held::of(&kernel);

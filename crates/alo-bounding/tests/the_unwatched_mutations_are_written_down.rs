@@ -81,6 +81,7 @@ const EVERY_HOOK: &[&str] = &[
     "inode_rename",
     "inode_unlink",
     "socket_connect",
+    "socket_sendmsg",
 ];
 
 /// One row of the table: a mutation nothing watches.

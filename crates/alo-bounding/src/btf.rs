@@ -137,6 +137,24 @@ pub struct Member {
     pub width: u32,
 }
 
+/// A member found inside one structure, with the type it is, so that a path
+/// can step into it.
+///
+/// [`Member`] is what a caller is told; this is what one step of the search
+/// hands the next. The type is kept only for as long as it takes to decide
+/// whether there is a next step, and never leaves this file.
+#[derive(Debug, Clone, Copy)]
+struct Found {
+    /// How many bytes from the start of the structure searched.
+    offset: u32,
+
+    /// How many bytes the member occupies.
+    width: u32,
+
+    /// The member's type, as this file numbers types.
+    of_type: u32,
+}
+
 /// This kernel's account of its own structures.
 #[derive(Debug)]
 pub struct Types {
@@ -223,12 +241,33 @@ impl Types {
 
     /// Where a member of a structure sits, and how wide it is.
     ///
+    /// `member` is a name, or a path of names separated by dots: `struct sock`
+    /// keeps who it is joined to inside a member called `__sk_common`, so the
+    /// peer's port is `__sk_common.skc_dport` and the answer is measured from
+    /// the start of `struct sock`, which is the pointer the program holds. Each
+    /// step but the last has to be a structure or a union **embedded** in the
+    /// one before it — a step through a pointer would add an offset to an
+    /// address that is not this structure's, so it answers [`None`].
+    ///
     /// [`None`] when this kernel has no such structure, or the structure has no
     /// such member — both of which mean the same thing to the caller, which is
     /// that the program cannot be told where to look.
     pub fn member(&self, structure: &str, member: &str) -> Option<Member> {
-        let found = self.structure_called(structure)?;
-        self.member_of(found, member, PATIENCE)
+        let mut found = self.structure_called(structure)?;
+        let mut offset: u32 = 0;
+        let mut steps = member.split('.').peekable();
+        loop {
+            let step = steps.next()?;
+            let here = self.member_of(found, step, PATIENCE)?;
+            offset = offset.checked_add(here.offset)?;
+            if steps.peek().is_none() {
+                return Some(Member {
+                    offset,
+                    width: here.width,
+                });
+            }
+            found = self.composite(here.of_type, PATIENCE)?;
+        }
     }
 
     /// The same question asked of one already-found structure or union, with the
@@ -237,7 +276,7 @@ impl Types {
     /// A member with no name is an anonymous structure or union, and what it
     /// holds belongs to this one — so the search goes into it and comes back
     /// with the two offsets added together.
-    fn member_of(&self, found: usize, member: &str, patience: usize) -> Option<Member> {
+    fn member_of(&self, found: usize, member: &str, patience: usize) -> Option<Found> {
         if patience == 0 {
             return None;
         }
@@ -267,17 +306,19 @@ impl Types {
                     continue;
                 };
                 if let Some(deeper) = self.member_of(inside, member, patience - 1) {
-                    return Some(Member {
+                    return Some(Found {
                         offset: bits / 8 + deeper.offset,
                         width: deeper.width,
+                        of_type: deeper.of_type,
                     });
                 }
                 continue;
             }
             if name == member {
-                return Some(Member {
+                return Some(Found {
                     offset: bits / 8,
                     width: self.width_of(of_type, PATIENCE)?,
+                    of_type,
                 });
             }
         }
@@ -411,7 +452,7 @@ mod tests {
     use super::*;
     use crate::testing;
 
-    /// The seven fields the program needs, found in a small file written by
+    /// The fields the program needs, found in a small file written by
     /// this repository's own fixture rather than by a kernel — so the parsing
     /// is held to a case on a machine with no kernel worth reading.
     #[test]
@@ -495,6 +536,65 @@ mod tests {
         assert_eq!(
             types.member("dentry", "d_parent").map(|m| m.offset),
             Some(24)
+        );
+    }
+
+    /// A path through a **named** member is measured from the start of the
+    /// structure the program holds a pointer to — `__sk_common` sits eight
+    /// bytes into the fixture's `struct sock`, and the peer's address sits at
+    /// the front of it inside two unnamed composites, so the sum is the answer
+    /// and neither half of it is.
+    #[test]
+    fn a_path_through_a_named_member_adds_the_offsets_up() {
+        let types = Types::read(testing::some_type_information()).expect("the fixture reads");
+        assert_eq!(
+            types.member("sock", "__sk_common.skc_daddr"),
+            Some(Member {
+                offset: 8,
+                width: 4
+            })
+        );
+        assert_eq!(
+            types.member("sock", "__sk_common.skc_dport"),
+            Some(Member {
+                offset: 20,
+                width: 2
+            })
+        );
+        assert_eq!(
+            types.member("sock", "__sk_common.skc_v6_daddr"),
+            Some(Member {
+                offset: 64,
+                width: 16
+            })
+        );
+        // The first step on its own is the embedded structure, measured whole.
+        assert_eq!(
+            types.member("sock", "__sk_common").map(|m| m.offset),
+            Some(8)
+        );
+        // A member that is not on the path, and a path that names a member
+        // `struct sock` has directly, are both not there.
+        assert_eq!(types.member("sock", "skc_daddr"), None);
+        assert_eq!(types.member("sock", "__sk_common.sk_prefix"), None);
+    }
+
+    /// A step through a pointer is refused: the bytes past `socket.sk` belong
+    /// to whatever it points at, and an offset added to the socket's own
+    /// address would read the wrong structure without saying so.
+    #[test]
+    fn a_path_does_not_step_through_a_pointer() {
+        let types = Types::read(testing::some_type_information()).expect("the fixture reads");
+        assert_eq!(types.member("socket", "sk").map(|m| m.width), Some(8));
+        assert_eq!(types.member("socket", "sk.__sk_common"), None);
+        assert_eq!(types.member("socket", "sk.__sk_common.skc_daddr"), None);
+        // An offset that opens a structure is an answer, not an absence.
+        assert_eq!(
+            types.member("msghdr", "msg_name"),
+            Some(Member {
+                offset: 0,
+                width: 8
+            })
         );
     }
 

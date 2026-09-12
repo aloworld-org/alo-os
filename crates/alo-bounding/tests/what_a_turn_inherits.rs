@@ -41,8 +41,11 @@
 //!   re-decided about a descriptor at the moment it was *used* would refuse a
 //!   turn its own way out.
 //!
-//! The fifth row of the table, `a socket already connected`, is reproduced in
-//! `what_a_bound_turn_can_still_reach.rs` and is not repeated here.
+//! The table used to have a fifth row, `a socket already connected`, reproduced
+//! in `what_a_bound_turn_can_still_reach.rs`. It is gone since 2026-09-12: a
+//! message has a destination where a read has none, so `socket_sendmsg` decides
+//! about an inherited socket on every write, and that file now holds the
+//! refusal where it held the gap.
 //!
 //! One thing measured here is not a row at all, because it is a refusal rather
 //! than a gap: **the name the kernel gives a descriptor.** `/proc/self/fd/<n>`
