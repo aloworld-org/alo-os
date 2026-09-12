@@ -10,8 +10,10 @@ one is decidable without a pixel.
 
 **How the loop reads this file:** the tasks under `## Tasks`, numbered from one
 in order, each with a `**Status:**` line. A finished task is marked
-`**Done, <date>.**` in the change that finishes it, and the next one is written
-there if none follows.
+`**Done, <date>.**` at the start of a line of its own, in the change that
+finishes it, and the next one is written there if none follows. The loop also
+reads the mark directly after the `**Status:**` label, because that is where
+this paragraph once led a worker to put it (`tools/kernel-loop/src/plan.rs`).
 
 **What this plan may not do:** move any v0.01 box, line or wording (ADR 0028's
 first term); tick anything *on the machine*; edit a crate another lane owns.
@@ -22,9 +24,14 @@ numbers are a shared space.
 
 ### 1. An address that is not https is refused, unless it is a service on this machine
 
-**Status:** **Done, 2026-09-12.** Report:
+**Status:** done. **Depends on:** nothing.
+
+**Done, 2026-09-12.** Report:
 [`updates/an-address-that-is-not-https-is-refused-at-the-write.md`](updates/an-address-that-is-not-https-is-refused-at-the-write.md).
-**Depends on:** nothing.
+The mark first sat after the `**Status:**` label, where the loop did not read
+it and selected this task again after publishing it; the loop now reads it
+there too, and the follow-up is
+[`updates/a-done-mark-on-the-status-line-is-read.md`](updates/a-done-mark-on-the-status-line-is-read.md).
 
 `docs/features.md`, v0.5: *an address that is not https is refused rather than
 warned about, unless it is a service on this machine — "it is only our internal

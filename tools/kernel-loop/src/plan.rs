@@ -16,8 +16,19 @@
 //!
 //! A task is a `###` heading beginning with a number **under the plan's
 //! `## Tasks`**. It is **done** when its section contains a line beginning
-//! `**Done,`. It **depends on** the numbers on its `**Depends on:**` line, and
-//! `nothing` there means it depends on nothing.
+//! `**Done,` — or a `**Status:**` line whose status is `**Done,`, which is where
+//! a plan that says *each with a `**Status:**` line* invites the mark. It
+//! **depends on** the numbers on its `**Depends on:**` line, and `nothing`
+//! there means it depends on nothing.
+//!
+//! # Why a done mark on the status line counts
+//!
+//! Lane B's v0.5 plan tells a worker every task has a `**Status:**` line and
+//! that a finished one is marked `**Done, <date>.**`, so the worker who finished
+//! its first task wrote `**Status:** **Done, 2026-09-12.**` — and this file,
+//! reading only a line's first characters, saw nothing. The loop published the
+//! task and in the same second selected it again, and the next worker was sent
+//! at work that was already on `main`. Found by running it.
 //!
 //! # Why the section is read, and not the depth alone
 //!
@@ -82,6 +93,12 @@ pub fn the_plan() -> Result<String, String> {
 
 /// The one section of it that holds work.
 const THE_TASKS: &str = "Tasks";
+
+/// The label every task's status line begins with.
+const THE_STATUS: &str = "**Status:**";
+
+/// How a finished task is marked: `**Done, <date>.**`.
+const THE_DONE_MARK: &str = "**Done,";
 
 /// Every `**Status:**` word that means *a person has to arrange something
 /// first*.
@@ -194,10 +211,10 @@ fn read(written: &str) -> Vec<Task> {
         let Some(current) = tasks.last_mut() else {
             continue;
         };
-        if line.starts_with("**Done,") {
+        if marked_done(line) {
             current.done = true;
         }
-        if line.starts_with("**Status:**") && NOT_YET.iter().any(|word| line.contains(word)) {
+        if line.starts_with(THE_STATUS) && NOT_YET.iter().any(|word| line.contains(word)) {
             current.blocked = true;
         }
         if let Some(after) = line.split("**Depends on:**").nth(1) {
@@ -205,6 +222,18 @@ fn read(written: &str) -> Vec<Task> {
         }
     }
     tasks
+}
+
+/// Whether a line of a task's section is its done mark.
+///
+/// The mark begins the line, or follows the `**Status:**` label — the one
+/// place besides the line's start where a plan's own instructions put it.
+/// Nowhere else: a task's prose may quote `**Done, <date>.**` when it explains
+/// how the plan is read, and a mark found anywhere in a line would finish a
+/// task by describing the finishing.
+fn marked_done(line: &str) -> bool {
+    let status = line.strip_prefix(THE_STATUS).map_or(line, str::trim_start);
+    status.starts_with(THE_DONE_MARK)
 }
 
 /// The task numbers written in a fragment of a line.
@@ -352,6 +381,67 @@ More prose.
                 .iter()
                 .any(|task| task.named == "Not a task either")
         );
+    }
+
+    /// Lane B's v0.5 plan, as its first task was marked done — the mark on the
+    /// status line, after the label, and the prose above the tasks quoting
+    /// the mark to say how the plan is read.
+    const A_PLAN_MARKED_ON_ITS_STATUS_LINE: &str = "# v0.5, lane B
+
+**How the loop reads this file:** the tasks under `## Tasks`, numbered from one
+in order, each with a `**Status:**` line. A finished task is marked
+`**Done, <date>.**` in the change that finishes it.
+
+## Tasks
+
+### 1. An address that is not https is refused, unless it is a service on this machine
+
+**Status:** **Done, 2026-09-12.** Report:
+[`updates/an-address.md`](updates/an-address.md).
+**Depends on:** nothing.
+
+### 2. Test a provider before saving it
+
+**Status:** ready. **Depends on:** 1.
+
+The plan says a finished task is marked `**Done, <date>.**`; this one is not.
+";
+
+    /// **A done mark after the `**Status:**` label finishes the task.** The
+    /// plan's own instructions put the mark on that line, a worker put it
+    /// there, and the loop published task 1 and then selected task 1 again.
+    #[test]
+    fn a_done_mark_on_the_status_line_finishes_the_task() {
+        let tasks = read(A_PLAN_MARKED_ON_ITS_STATUS_LINE);
+        let first = tasks.iter().find(|task| task.number == 1).unwrap();
+        assert!(
+            first.done,
+            "the mark on the status line was not read: {first:?}"
+        );
+        assert!(!first.blocked);
+
+        let chosen = the_next_of(&tasks, &BTreeSet::new()).unwrap();
+        assert_eq!(
+            chosen.number, 2,
+            "the finished task was chosen again: {chosen:?}"
+        );
+    }
+
+    /// **Quoting the mark is not making it.** Task 2's prose says how a task
+    /// is marked done, and the prose above the tasks does too; neither is a
+    /// finished task, and a reader that found `**Done,` anywhere in a line
+    /// would have finished task 2 by its own description.
+    #[test]
+    fn a_line_that_quotes_the_done_mark_does_not_finish_a_task() {
+        let tasks = read(A_PLAN_MARKED_ON_ITS_STATUS_LINE);
+        let second = tasks.iter().find(|task| task.number == 2).unwrap();
+        assert!(!second.done, "a quoted mark finished a task: {second:?}");
+        assert!(!marked_done(
+            "A finished task is marked `**Done, <date>.**` in the change."
+        ));
+        assert!(!marked_done("**Depends on:** 1 — **Done, 2026-09-12.**"));
+        assert!(marked_done("**Done, 2026-09-12.** It is."));
+        assert!(marked_done("**Status:** **Done, 2026-09-12.** Report:"));
     }
 
     /// **A scheduled task is stepped over, like a blocked one.** It waits on a
