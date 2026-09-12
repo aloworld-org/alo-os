@@ -370,6 +370,14 @@ fn asked_of_it(task: &Task) -> String {
          break it finds comes straight back to a worker holding the exact error —\n\
          cheaper than the hour, and not your job to pre-empt.\n\
          \n\
+         STAY WITH YOUR GATES. Run them in the foreground and wait for the exit code\n\
+         yourself. Three workers have started their crates' suites in the background,\n\
+         written some version of *I'll wait for the notification*, and ended before it\n\
+         came: three finished tasks, correct code, no handoff, and an hour of the\n\
+         supervisor waiting for each. **A gate you started and walked away from is a\n\
+         gate you did not run.** If they are slow, run fewer crates — yours — not\n\
+         asynchronously.\n\
+         \n\
          Workers have handed over code that did not compile, and the commonest cause is\n\
          never the logic but a registration nobody could know about: a new crate that\n\
          has words has to be collected, an image manifest has to agree, a rustdoc link\n\
@@ -569,6 +577,10 @@ mod tests {
         // expected, which failed twenty-four image checks as well — every one
         // of them named in seconds by a gate the worker never ran, and none of
         // them anything to do with the approval logic it had written well.
+        assert!(
+            asked.contains("STAY WITH YOUR GATES"),
+            "three workers started their gates in the background, said they would wait              for a notice, and ended before it came -- finished work, no handoff: {asked}"
+        );
         assert!(
             asked.contains("DO NOT WRITE THE HANDOFF UNTIL THE GATES PASS"),
             "a worker not told to gate its own work discovers its mistakes an hour later, \

@@ -449,6 +449,20 @@ fn said_where_it_builds(at: &Path, ours: &Path) {
 /// on.
 const WAITING_AT_MOST: Duration = Duration::from_secs(60 * 60);
 
+/// How long it waits when **it launched the worker itself** and that worker has
+/// already exited.
+///
+/// The hour above is for a person writing the handoff between iterations. A
+/// worker that has exited will never write one: whatever it left is on disk
+/// already, and every further second is spent on an answer that cannot change.
+/// Twice on 2026-09-12 a worker finished its task, wrote no handoff, and the
+/// loop waited the full hour before stepping over finished work — two hours,
+/// two tasks, and nothing learned by waiting.
+///
+/// Not zero: a worker's last act may be the write itself, and a file being
+/// created is not instantaneous. Ten seconds is one look, a pause, and another.
+const WAITING_ON_A_WORKER: Duration = Duration::from_secs(10);
+
 /// How often it looks for the work while waiting, and how often it notices a
 /// stop.
 const LOOKING_EVERY: Duration = Duration::from_secs(10);
@@ -502,7 +516,15 @@ fn one_iteration(
         }
     }
 
-    let Some(task) = waiting_for(ours, &chosen.named)? else {
+    // The loop launched a worker above if one is configured, and that worker has
+    // exited by the time this runs; a person writing the handoff by hand gets
+    // the hour.
+    let bound = if worker::is_configured() {
+        WAITING_ON_A_WORKER
+    } else {
+        WAITING_AT_MOST
+    };
+    let Some(task) = waiting_for(ours, &chosen.named, bound)? else {
         return Ok(journal::Went::NobodyWroteIt(chosen.number, chosen.named));
     };
     journal::note(ours, &format!("taking up: {}", task.task));
@@ -549,7 +571,7 @@ fn one_iteration(
         }
     }
 
-    let Some(again) = waiting_for(ours, &chosen.named)? else {
+    let Some(again) = waiting_for(ours, &chosen.named, WAITING_ON_A_WORKER)? else {
         return Err(said);
     };
     journal::note(ours, &format!("taking up again: {}", again.task));
@@ -779,8 +801,12 @@ fn recover(at: &Path, ours: &Path, branch: &str) -> ExitCode {
 /// # Errors
 /// A sentence when a handoff is there and names another task, or is missing
 /// something a commit needs.
-fn waiting_for(ours: &Path, chosen: &str) -> Result<Option<handoff::Handed>, String> {
-    let until = Instant::now() + WAITING_AT_MOST;
+fn waiting_for(
+    ours: &Path,
+    chosen: &str,
+    at_most: Duration,
+) -> Result<Option<handoff::Handed>, String> {
+    let until = Instant::now() + at_most;
     let mut said_so = false;
     loop {
         // **Look before honouring a stop.** A stop asked for while a worker is
@@ -899,7 +925,7 @@ mod tests {
         assert!(journal::asked_to_stop(&ours.0).is_ok());
         assert!(std::fs::write(ours.0.join("handoff.toml"), a_handoff_for("The task")).is_ok());
 
-        let found = waiting_for(&ours.0, "The task");
+        let found = waiting_for(&ours.0, "The task", WAITING_ON_A_WORKER);
         assert!(
             matches!(&found, Ok(Some(handed)) if handed.task == "The task"),
             "a stop was honoured before the handoff was looked for: {found:?}"
@@ -914,7 +940,7 @@ mod tests {
         assert!(journal::asked_to_stop(&ours.0).is_ok());
 
         let began = Instant::now();
-        let found = waiting_for(&ours.0, "The task");
+        let found = waiting_for(&ours.0, "The task", WAITING_ON_A_WORKER);
         assert!(matches!(found, Ok(None)), "{found:?}");
         assert!(
             began.elapsed() < LOOKING_EVERY,
