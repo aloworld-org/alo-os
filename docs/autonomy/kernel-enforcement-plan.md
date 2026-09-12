@@ -608,8 +608,9 @@ recommendation is explicitly not an approval.
 
 ### 10. What a credential does when a session really ends
 
-**Status:** the three cases are measured; the held-handle half below is
-scheduled. **Depends on:** the credential store — done.
+**Status:** scheduled — the three cases are measured; the held-handle half
+below is what remains, and it waits on a network service this machine does not
+run (see below). Stepped over until then. **Depends on:** the credential store — done.
 
 **Measured, 2026-09-10.** All three cases observed on this machine's `logind`,
 in `crates/alo-secrets/tests/a_session_that_really_ended.rs`: one login logged
@@ -762,28 +763,6 @@ proved in the reader's own tests; the disk-level tests take their expectation
 from who really owns the file, which under a suite running as root is an
 administrator.
 
-## Rules this workstream holds itself to
-
-- No `unsafe` outside `alo-bounding-kernel`'s one permitted file, no weakened
-  test, no placeholder, no kernel patch.
-- Every refusal path tested beside the legitimate path it must not break.
-- Gaps reproduced with temporary fixtures before being closed.
-- Kernel behaviour verified against the real loaded BPF LSM.
-- Data preserved on refusal, and asserted.
-- *Inside the boundary* is never equated with *authorised*: `alo-capability`
-  decides, and the kernel is the floor under a verb with a bug in it.
-- Shared kernel state is coordinated — per-process pin paths, the existing
-  `one_at_a_time()` lock, and never removing another process's pins, unloading
-  its programmes or restarting anything the compositor worker depends on.
-
-## Completion
-
-This workstream is complete when every in-scope requirement above has executable
-evidence, and **not when the task list is exhausted**. When the list empties, the
-honest report is *implementation complete; hardware acceptance pending* — never
-release completion, and never "kernel complete" while the v0.5 items above sit
-unbuilt with their release named.
-
 ### 12. A descriptor opened before the turn began cannot move contents past the grant
 
 **Status:** ready. **Depends on:** nothing. **Why now:** ADR 0028 — v0.5's
@@ -894,3 +873,25 @@ on it.
 - **Constraint:** no code beyond a test that the ADR exists and is pointed at
   by this plan. The decision is the owner's or the delegate's; the worker's job
   is to make it decidable.
+
+## Rules this workstream holds itself to
+
+- No `unsafe` outside `alo-bounding-kernel`'s one permitted file, no weakened
+  test, no placeholder, no kernel patch.
+- Every refusal path tested beside the legitimate path it must not break.
+- Gaps reproduced with temporary fixtures before being closed.
+- Kernel behaviour verified against the real loaded BPF LSM.
+- Data preserved on refusal, and asserted.
+- *Inside the boundary* is never equated with *authorised*: `alo-capability`
+  decides, and the kernel is the floor under a verb with a bug in it.
+- Shared kernel state is coordinated — per-process pin paths, the existing
+  `one_at_a_time()` lock, and never removing another process's pins, unloading
+  its programmes or restarting anything the compositor worker depends on.
+
+## Completion
+
+This workstream is complete when every in-scope requirement above has executable
+evidence, and **not when the task list is exhausted**. When the list empties, the
+honest report is *implementation complete; hardware acceptance pending* — never
+release completion, and never "kernel complete" while the v0.5 items above sit
+unbuilt with their release named.
