@@ -36,6 +36,19 @@
 //! address that is not https is refused before a byte is written and in
 //! `alo-models`' own words, whichever door it arrived at.
 //!
+//! # A file on this machine is a door of its own
+//!
+//! [`Choosing::bringing_a_file`] is *point alo OS at weights you already
+//! have* as one call: the file is measured by `alo_models::Weights::at` —
+//! its size read off the disk, its id the file's own name, nothing guessed
+//! and nothing looked up — and then goes through [`Choosing::bringing`]
+//! like any other weights. A path with nothing at it, a folder, or a disk
+//! that will not say is refused in `alo-models`' own words naming the path,
+//! and the file is byte for byte what it was. The catalogue is not consulted
+//! on the way, because the catalogue recommends and does not gate: a name
+//! that happens to match a catalogue entry is still the person's own file,
+//! on the person's own list, under `Which::Brought`.
+//!
 //! # A change is applied to a copy
 //!
 //! Every door builds the changed settings, writes **those** whole, and only
@@ -196,6 +209,38 @@ impl Choosing {
             self.settings.setup(),
         )?;
         self.apply(changed)
+    }
+
+    /// **A weights file on this machine, named as a model source** — *point
+    /// alo OS at weights you already have*.
+    ///
+    /// The file is measured rather than described: its size is what the disk
+    /// reports at this moment, its id is the file's own name, and its grade is
+    /// *not measured* until somebody measures it. That is
+    /// `alo_models::Weights::at`, and everything it refuses is refused here in
+    /// its words, naming the path. Then the weights go on the person's list
+    /// through [`Choosing::bringing`], with that door's rule about the same
+    /// name twice.
+    ///
+    /// **Bringing a file is not choosing it**, for the reason adding a
+    /// provider is not: what answers this person's questions is still whatever
+    /// it was, and [`Choosing::answered_by`] with `Which::Brought` and the
+    /// file's name is the person choosing it — which alo OS then does, however
+    /// large the file is. What it costs on this machine is a sentence, said
+    /// once, and never a refusal.
+    ///
+    /// # Errors
+    ///
+    /// [`NotWritten::NotWeights`] when the path is not a file alo OS can
+    /// measure — nothing there, a folder, a disk that will not say — or when
+    /// the list will not take the name; and the three the other doors share.
+    /// Nothing is written in any of them.
+    pub fn bringing_a_file(&mut self, path: &Path) -> Result<(), NotWritten> {
+        let weights = Weights::at(path).map_err(|why| NotWritten::NotWeights {
+            at: self.at.clone(),
+            why,
+        })?;
+        self.bringing(weights)
     }
 
     /// **A provider this person added themselves**, added to their own list.
@@ -616,6 +661,109 @@ mod tests {
         );
         assert_eq!(std::fs::read_to_string(&at).unwrap(), before);
         assert_eq!(choosing.settings().brought().weights.len(), 1);
+    }
+
+    /// **A weights file on this machine is brought by pointing at it**, and
+    /// what is written down is what the disk said about it: its size, its
+    /// name, and where it is. Chosen afterwards, it reads back as the weights
+    /// themselves.
+    #[test]
+    fn a_weights_file_pointed_at_is_brought_measured_and_can_then_be_chosen() {
+        let folder = a_folder_of_our_own("a-file");
+        let at = folder.join(crate::THE_FOLDER).join(crate::THE_SETTINGS);
+        let file = folder.join("my-finetune.gguf");
+        std::fs::write(&file, vec![7u8; 4_096]).unwrap();
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing.bringing_a_file(&file).unwrap();
+        // Bringing is not choosing.
+        assert!(choosing.settings().chosen().is_none());
+
+        choosing
+            .answered_by(Some(Picked::OnThisMachine(
+                Chosen::of(Which::Brought, "my-finetune.gguf").unwrap(),
+            )))
+            .unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        let weights = read.weights().unwrap();
+        assert_eq!(weights.id, "my-finetune.gguf");
+        assert_eq!(weights.bytes_on_disk, 4_096);
+        assert_eq!(weights.file.as_deref(), Some(file.as_path()));
+        assert_eq!(weights.drives_verbs, Driving::NotMeasured);
+        assert_eq!(*choosing.settings(), read);
+    }
+
+    /// **A path that is not a file is refused in `alo-models`' words, naming
+    /// the path, and nothing is written** — on a machine with no file yet, and
+    /// on one whose file is then byte for byte what it was.
+    #[test]
+    fn pointing_at_something_that_is_not_a_weights_file_writes_nothing() {
+        let folder = a_folder_of_our_own("not-a-file");
+        let at = folder.join(crate::THE_FOLDER).join(crate::THE_SETTINGS);
+        let mut choosing = Choosing::at(&at).unwrap();
+        let strings = crate::testing::in_english();
+
+        let nowhere = folder.join("not-here.gguf");
+        let refused = choosing.bringing_a_file(&nowhere).unwrap_err();
+        assert!(
+            matches!(
+                &refused,
+                NotWritten::NotWeights {
+                    why: alo_models::WeightsError::NoFileThere(path),
+                    ..
+                } if *path == nowhere
+            ),
+            "{refused:?}"
+        );
+        assert!(!at.exists(), "a refused file wrote settings");
+        let said = refused.said(&strings);
+        assert!(!said.is_a_bug(), "{said}");
+        assert!(said.text().contains("not-here.gguf"), "{said}");
+
+        // With settings on the disk already, they stay as they are.
+        choosing.bringing(weights("my-finetune")).unwrap();
+        let before = std::fs::read_to_string(&at).unwrap();
+        let refused = choosing.bringing_a_file(&folder).unwrap_err();
+        assert!(
+            matches!(
+                &refused,
+                NotWritten::NotWeights {
+                    why: alo_models::WeightsError::NotAFile(_),
+                    ..
+                }
+            ),
+            "{refused:?}"
+        );
+        assert_eq!(std::fs::read_to_string(&at).unwrap(), before);
+        assert_eq!(choosing.settings().brought().weights.len(), 1);
+    }
+
+    /// **The same file twice is the same name twice**, refused by the list's
+    /// own rule, and the file keeps the one entry it had.
+    #[test]
+    fn the_same_file_pointed_at_twice_is_refused_by_the_list() {
+        let folder = a_folder_of_our_own("a-file-twice");
+        let at = folder.join(crate::THE_FOLDER).join(crate::THE_SETTINGS);
+        let file = folder.join("theirs.gguf");
+        std::fs::write(&file, b"weights").unwrap();
+        let mut choosing = Choosing::at(&at).unwrap();
+        choosing.bringing_a_file(&file).unwrap();
+        let before = std::fs::read_to_string(&at).unwrap();
+
+        let refused = choosing.bringing_a_file(&file).unwrap_err();
+
+        assert!(
+            matches!(
+                &refused,
+                NotWritten::NotWeights {
+                    why: alo_models::WeightsError::AlreadyBrought(id),
+                    ..
+                } if id == "theirs.gguf"
+            ),
+            "{refused:?}"
+        );
+        assert_eq!(std::fs::read_to_string(&at).unwrap(), before);
     }
 
     /// A provider built the way nothing should build one: by hand, from the

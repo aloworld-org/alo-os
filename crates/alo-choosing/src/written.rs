@@ -61,6 +61,8 @@
 //! the defect, and it is refused before the disk is touched — `crate::writing`
 //! has that argument.
 
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
 use alo_models::{
@@ -199,6 +201,19 @@ pub(crate) struct WeightsAsWritten {
     /// What a measurement of these weights earned. No serde default, so an
     /// entry that says nothing about it fails to read.
     pub(crate) drives_verbs: Driving,
+    /// The file on this machine the person pointed at, where they pointed at
+    /// one rather than picking from what a runtime reports. Optional, and
+    /// absent in every entry written before it existed — additive, so the
+    /// format number did not move: an alo OS that ignored it would still ask
+    /// the runtime for the same id.
+    ///
+    /// **Not measured again on the way in.** The size beside it is what the
+    /// disk said when the person pointed, and a settings reader that reached
+    /// out to every file its entries name would be a reader with a second
+    /// reason to fail — a drive not mounted this morning is not a settings
+    /// file that is wrong.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) file: Option<PathBuf>,
 }
 
 impl WeightsAsWritten {
@@ -206,6 +221,7 @@ impl WeightsAsWritten {
     fn checked(self) -> Result<Weights, WeightsError> {
         let mut weights = Weights::checked(&self.id, self.bytes_on_disk)?;
         weights.quantisation = self.quantisation;
+        weights.file = self.file;
         Ok(weights.measured(self.drives_verbs))
     }
 }
@@ -222,6 +238,14 @@ fn not_weights(at: &std::path::Path, why: WeightsError) -> NotSet {
             at: at.to_owned(),
             id,
         },
+        // Nothing on the way in looks at a weights file, so none of the three
+        // refusals about one can arise here: an entry is read as the id and
+        // the size it states. Named rather than wildcarded, so that a fourth
+        // refusal added to that list is a question asked here rather than a
+        // branch that silently answers it.
+        WeightsError::NoFileThere(_)
+        | WeightsError::NotAFile(_)
+        | WeightsError::FileNotRead { .. } => NotSet::WeightsUnnamed { at: at.to_owned() },
     }
 }
 

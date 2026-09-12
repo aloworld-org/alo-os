@@ -185,6 +185,7 @@ impl WeightsAsWritten {
             bytes_on_disk: weights.bytes_on_disk,
             quantisation: weights.quantisation.clone(),
             drives_verbs: weights.drives_verbs,
+            file: weights.file.clone(),
         }
     }
 }

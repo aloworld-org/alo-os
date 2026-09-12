@@ -123,7 +123,18 @@ nobody stated.
 
 ### 4. Run a model we never catalogued — the catalogue recommends, it does not gate
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
+
+**Done, 2026-09-12.** Report:
+[`updates/run-a-model-we-never-catalogued.md`](updates/run-a-model-we-never-catalogued.md).
+The road is `alo_choosing::Choosing::bringing_a_file`, which is
+`alo_models::Weights::at` — the size read off the file, the id the file's own
+name, nothing guessed and nothing looked up — and then the existing
+`bringing`. The *once* is `alo_telling::Warning`, beside `Telling` and built
+the same way. What this task found and did not do is task 5: the pinned
+runtime is asked by id and has no door that takes a file, so a brought file is
+chosen, costed and asked, and the runtime answers *no model there* until it is
+told about the file.
 
 Three sentences from `docs/features.md`, one task, because they are one rule
 seen from three sides: *point alo OS at weights you already have and it runs
@@ -147,3 +158,39 @@ checked it.*
   is *not measured* and the sentence says so. Nothing here downloads anything.
   Nothing here changes what ships on the image (that is lane A's, and ADR 0025's
   reading of it stands).
+
+### 5. A brought file is one the runtime answers to
+
+**Status:** ready. **Depends on:** 4.
+
+Task 4 made *point alo OS at weights you already have* a settings entry with
+the file's path and measured size in it, chosen and costed and asked like any
+other. What it did not make is the last word of the promise — *and it runs
+them.* `alo_models::ModelRuntime` is asked by id (`answers`, `load`,
+`installed`), and the Ollama adapter behind it knows only what `/api/tags`
+lists; a `.gguf` a person pointed at is not on that list, so the first
+question put to it fails as *no model there*, said once through `alo-telling`.
+Honest, and not the promise.
+
+- **Acceptance:** `ModelRuntime` gains one door that takes
+  `alo_models::Weights` carrying a `file` and makes the runtime answer to its
+  id — for the pinned runtime that is `/api/create` with a Modelfile whose
+  `FROM` is the file's own path, and nothing else in it; afterwards
+  `installed` lists the id and `answers` answers it, measured against the
+  crate's own serving fixture with the request body asserted on; a `Weights`
+  with no `file` is refused at the door with a sentence `alo-saying` collects,
+  because there is nothing to tell the runtime about; a file the runtime will
+  not take is the runtime's own refusal carried in words, and nothing about
+  the person's list changes for it; the door is not the choosing door — it is
+  called after `Choosing::bringing_a_file` succeeded, so a runtime that is down
+  costs the person nothing they typed; and the whole road is walked once in an
+  integration test from a real settings file to a runtime fixture answering
+  by the file's name.
+- **Constraint:** nothing downloads anything — `FROM` names a path on this
+  disk and the adapter refuses a Modelfile that names anything else. The
+  catalogue's licence gate on `fetch` is untouched, and nothing in this task
+  reads it. No quantisation, parameter count or grade is inferred from the
+  file: `drives_verbs` stays *not measured* until `alo-driving` measures it.
+  Engines are configured, never patched (`CLAUDE.md`): the runtime's own API is
+  used as shipped, and a runtime that has no such API is *this cannot be done
+  here*, said rather than worked around.

@@ -254,15 +254,18 @@ fn weights_somebody_brought_are_costed_and_the_licence_stays_theirs() {
 
     // Forty gigabytes of somebody's own weights on a sixteen gigabyte machine.
     let theirs = Weights::checked("their-own-70b", 40_000_000_000).unwrap();
-    let [cost, licence] = theirs.lines(&strings, 16.0);
+    let [cost, licence, measured] = theirs.lines(&strings, 16.0);
     assert!(cost.is_translated());
     assert!(cost.text().contains("trotzdem"), "{cost}");
     assert!(licence.is_translated());
     assert!(licence.text().contains("nicht gelesen"), "{licence}");
+    // The third line was not translated here, and says so rather than
+    // looking finished.
+    assert!(!measured.is_translated());
 
-    // Neither line counts anything out loud, and both numbers are still
+    // No line counts anything out loud, and both numbers are still
     // available to whoever writes them the way this region writes a size.
-    for line in [&cost, &licence] {
+    for line in [&cost, &licence, &measured] {
         assert!(!line.text().chars().any(|c| c.is_ascii_digit()), "{line}");
     }
     assert!(theirs.costs_on(16.0).larger_than_memory());

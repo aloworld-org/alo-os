@@ -210,6 +210,7 @@ becomes six.
 | `bytes-on-disk` | What the weights take on this machine's disk, as the runtime reported it. Required. |
 | `quantisation` | The quantisation the runtime reports, where it says. Optional — a runtime does not always say. |
 | `drives-verbs` | What a measurement of these weights earned: `"reliably"`, `"sometimes"`, `"rarely"` or `"not-measured"`. Required. |
+| `file` | The file on this machine the person pointed at, where they pointed at one rather than picking from what a runtime reports. Optional, and absent in every entry written before it existed. When alo OS writes it, `bytes-on-disk` beside it is what the disk said about that file at the moment they pointed — measured, never typed — and `id` is the file's own name. |
 
 - **`drives-verbs` has no default and an entry without it does not read.** *Not
   measured* is a thing to state, not a blank to leave: an entry that said nothing
@@ -223,6 +224,14 @@ becomes six.
   question, and with two entries under one name it could not.
 - **Weights with no name are refused**, because there would be nothing to ask the
   runtime for.
+- **`file` is additive and the format number did not move for it.** An alo OS
+  from before the key would ask the runtime for the same `id`; nothing about the
+  choice changes. It is not measured again on the way in: a drive that is not
+  mounted this morning is not a settings file that is wrong.
+- **Pointing at a file that is not there, or at a folder, is refused at the
+  write** — naming the path, and nothing is added. The catalogue is not consulted
+  on the way: a file whose name matches a catalogue entry is still the person's
+  own, on this list, and *the catalogue recommends; it does not gate*.
 
 **alo OS states no licence for anything on this list and does not pretend to
 have checked one.** There is no licence key here and there is nowhere to put

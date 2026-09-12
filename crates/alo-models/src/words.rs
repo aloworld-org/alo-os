@@ -19,15 +19,28 @@
 //! that softened the second one would take away the only thing on the screen
 //! saying the question is about to leave the building, so its note says so.
 //!
-//! # And three of them are not refusals at all
+//! # And five of them are not refusals at all
 //!
-//! [`crate::Cost`]'s two lines and [`LICENCE_IS_YOURS`] are read by somebody
-//! who has just pointed alo OS at weights of their own, and nothing was
-//! stopped. `docs/features.md` promises the machine *warns and then gets out of
-//! the way*, so a translation that made *larger than the memory this machine
-//! has* sound like a door closing would take away the promise rather than the
-//! politeness. Their notes say so, and `weights.rs` is where the code makes it
-//! structurally true.
+//! [`crate::Cost`]'s two lines, [`LICENCE_IS_YOURS`], [`WEIGHTS_NOT_MEASURED`]
+//! and [`WEIGHTS_MEASURED`] are read by somebody who has just pointed alo OS at
+//! weights of their own, and nothing was stopped. `docs/features.md` promises
+//! the machine *warns and then gets out of the way*, so a translation that
+//! made *larger than the memory this machine has* sound like a door closing
+//! would take away the promise rather than the politeness. Their notes say so,
+//! and `weights.rs` is where the code makes it structurally true.
+//!
+//! **None of them nudges.** Not toward a catalogued model, not away from the
+//! person's own: no *instead*, no *recommended*, no *supported*, no *safer*.
+//! The catalogue recommends by stating licences and costs for its own entries;
+//! it does not gate, and a sentence shown beside somebody's own weights that
+//! leaned toward the catalogue would be the gate arriving as tone. The test at
+//! the bottom of this file reads every sentence about brought weights for
+//! exactly those words, and `alo-models`' integration test reads them again in
+//! the vocabulary the whole machine loads.
+//!
+//! Three more are refusals of a **path** rather than of weights — nothing is
+//! there, it is a folder, the disk would not say — and each names the path,
+//! because the path is the thing a person acts on.
 //!
 //! [`WEIGHTS_YOU_ALREADY_HAVE`] is a fourth, read one moment earlier: it is
 //! shown to somebody whose catalogue offers them nothing, and it says that the
@@ -403,6 +416,40 @@ pub const WEIGHTS_LARGER_THAN_MEMORY: Word = Word::saying(
      sizes are numbers shown beside this line rather than inside it.",
 );
 
+/// Nothing is at the path a person pointed at.
+pub const WEIGHTS_NO_FILE_THERE: Word = Word::saying(
+    "models.brought.no-file-there",
+    "there is no file at {path}, so nothing has been added",
+)
+.noting(
+    "{path} is a file on this machine, exactly as the person pointed at it, and is never \
+     translated. Said when somebody names a weights file that is not there — a typo, a drive \
+     that is not mounted. The second half says what the machine did, which is nothing.",
+);
+
+/// Something is at the path and it is not a file.
+pub const WEIGHTS_NOT_A_FILE: Word = Word::saying(
+    "models.brought.not-a-file",
+    "{path} is not a file, so nothing has been added",
+)
+.noting(
+    "{path} is on this machine, exactly as the person pointed at it, and is never translated. \
+     Most often a folder: weights are one file, and pointing at the folder they are in is not \
+     pointing at them. The second half says what the machine did, which is nothing.",
+);
+
+/// The disk would not say what is at the path.
+pub const WEIGHTS_FILE_NOT_READ: Word = Word::saying(
+    "models.brought.file-not-read",
+    "the file at {path} could not be looked at, so nothing has been added",
+)
+.noting(
+    "{path} is a file on this machine, exactly as the person pointed at it, and is never \
+     translated. A permission or a disk rather than anything the person typed — a file they \
+     cannot read, a device that is not answering. \"Looked at\" is deliberate: alo OS only asked \
+     the disk how large the file is, and did not open it.",
+);
+
 /// Whose terms these weights come with.
 pub const LICENCE_IS_YOURS: Word = Word::saying(
     "models.brought.licence-is-yours",
@@ -413,6 +460,34 @@ pub const LICENCE_IS_YOURS: Word = Word::saying(
     "A second line, shown under whichever of the two lines above was said and never on its own. It \
      is not a warning that something is wrong and not a judgement about the model: it says who is \
      answerable for the terms. Do not shorten it into a disclaimer.",
+);
+
+/// Nobody has measured whether these weights drive the verbs.
+pub const WEIGHTS_NOT_MEASURED: Word = Word::saying(
+    "models.brought.not-measured",
+    "nobody has measured whether these weights can drive the agent's verbs, and alo OS has not \
+     guessed — they answer your questions now, and get an agent turn once a measurement says they \
+     can",
+)
+.noting(
+    "A third line, shown under the licence line where somebody adds weights of their own. \"The \
+     agent's verbs\" are the typed instructions the assistant built into alo OS asks a model \
+     for; \"an agent turn\" is the assistant acting on somebody's files with them. The sentence \
+     says three things and all three must survive: nobody measured, nothing was guessed, and \
+     the weights are used now. It is not a warning and it does not lean toward any other model.",
+);
+
+/// A measurement of these weights has been run.
+pub const WEIGHTS_MEASURED: Word = Word::saying(
+    "models.brought.measured",
+    "these weights have been measured driving the agent's verbs, and what they earned is shown \
+     beside this line",
+)
+.noting(
+    "The same third line, for weights somebody has already measured. The grade itself — \
+     reliably, sometimes, rarely — is a value shown beside the sentence rather than inside it, \
+     for the reason numbers are. \"The agent's verbs\" are the typed instructions the assistant \
+     built into alo OS asks a model for.",
 );
 
 // ---------------------------------------------------------------------------
@@ -637,7 +712,7 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 42] = [
+pub const EVERY_WORD: [Word; 47] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -660,7 +735,12 @@ pub const EVERY_WORD: [Word; 42] = [
     WEIGHTS_ALREADY_BROUGHT,
     WEIGHTS_FIT,
     WEIGHTS_LARGER_THAN_MEMORY,
+    WEIGHTS_NO_FILE_THERE,
+    WEIGHTS_NOT_A_FILE,
+    WEIGHTS_FILE_NOT_READ,
     LICENCE_IS_YOURS,
+    WEIGHTS_NOT_MEASURED,
+    WEIGHTS_MEASURED,
     KEY_BLANK,
     KEY_NOT_SENDABLE,
     THAT_WORKED,
@@ -698,6 +778,49 @@ pub enum WordsError {
     #[error(transparent)]
     List(#[from] alo_strings::VocabularyError),
 }
+
+/// Every sentence shown beside weights somebody brought themselves.
+///
+/// Written down as a list so that the test which reads them for a nudge and
+/// the integration test which reads them again in the machine's vocabulary
+/// cannot disagree about which sentences that rule covers. A word added to
+/// the `brought` area and left out here is a sentence that rule stops
+/// reading.
+pub const ABOUT_BROUGHT_WEIGHTS: [Word; 10] = [
+    WEIGHTS_UNNAMED,
+    WEIGHTS_ALREADY_BROUGHT,
+    WEIGHTS_FIT,
+    WEIGHTS_LARGER_THAN_MEMORY,
+    WEIGHTS_NO_FILE_THERE,
+    WEIGHTS_NOT_A_FILE,
+    WEIGHTS_FILE_NOT_READ,
+    LICENCE_IS_YOURS,
+    WEIGHTS_NOT_MEASURED,
+    WEIGHTS_MEASURED,
+];
+
+/// Words a sentence beside somebody's own weights may not use.
+///
+/// Each is a way of leaning: toward what alo OS offers, or away from what the
+/// person brought. The list is read against the sentence **and** the note,
+/// because a note is what a translator writes the sentence from, and a nudge
+/// in the note becomes a nudge in twenty-three languages.
+pub const NUDGES: [&str; 14] = [
+    "instead",
+    "recommend",
+    "prefer",
+    "approved",
+    "supported",
+    "better",
+    "consider",
+    "official",
+    "trusted",
+    "verified",
+    "safer",
+    "suggest",
+    "we advise",
+    "should use",
+];
 
 /// Everything this crate can say, as a vocabulary of its own.
 ///
@@ -804,10 +927,67 @@ mod tests {
             NOT_ON_THIS_MACHINE,
             PROVIDER_ALREADY_ADDED,
             WEIGHTS_ALREADY_BROUGHT,
+            WEIGHTS_NO_FILE_THERE,
+            WEIGHTS_NOT_A_FILE,
+            WEIGHTS_FILE_NOT_READ,
             PROVIDER_NOT_WELL,
             MODEL_NOT_OFFERED,
         ] {
             assert!(word.note().is_some(), "{}", word.named());
+        }
+    }
+
+    /// **Every sentence about brought weights is in the `brought` area, and
+    /// every word in that area is on the list the nudge rule reads.** A word
+    /// added to the area and not to the list is a sentence the rule below
+    /// stops reading.
+    #[test]
+    fn every_sentence_about_brought_weights_is_on_the_list_the_nudge_rule_reads() {
+        let listed: BTreeSet<&str> = ABOUT_BROUGHT_WEIGHTS.iter().map(Word::named).collect();
+        for word in EVERY_WORD {
+            let in_the_area = word.named().starts_with("models.brought.");
+            assert_eq!(
+                in_the_area,
+                listed.contains(word.named()),
+                "{} is {} the brought area and {} the list",
+                word.named(),
+                if in_the_area { "in" } else { "not in" },
+                if listed.contains(word.named()) {
+                    "on"
+                } else {
+                    "not on"
+                },
+            );
+        }
+        assert_eq!(listed.len(), ABOUT_BROUGHT_WEIGHTS.len());
+    }
+
+    /// **Nothing said beside somebody's own weights nudges them** toward a
+    /// catalogued model or away from their own. The catalogue recommends by
+    /// stating licences and costs for its own entries; a sentence here that
+    /// leaned would be the gate arriving as tone. Sentences and notes both,
+    /// because a translator writes the sentence from the note.
+    #[test]
+    fn nothing_said_beside_brought_weights_nudges_toward_the_catalogue_or_away_from_their_own() {
+        for word in ABOUT_BROUGHT_WEIGHTS {
+            let read =
+                format!("{} {}", word.says(), word.note().unwrap_or_default()).to_ascii_lowercase();
+            for nudge in NUDGES {
+                assert!(
+                    !read.contains(nudge),
+                    "{} says \"{nudge}\", which is a nudge",
+                    word.named()
+                );
+            }
+            // And none of them names the catalogue in the sentence a person
+            // reads: what alo OS offers is not the subject of a line about
+            // what they brought.
+            assert!(
+                !word.says().to_ascii_lowercase().contains("catalogue"),
+                "{}: {}",
+                word.named(),
+                word.says()
+            );
         }
     }
 

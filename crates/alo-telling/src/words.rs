@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Two, and they are the two halves of ADR 0009's sentence that nobody else in
+//! Three. Two are the two halves of ADR 0009's sentence that nobody else in
 //! this workspace owns: **a machine that cannot reach a model says so once,
 //! where it happened, and continues.** The *says so* half already has words —
 //! `alo_answering::Failed::said` names what went wrong and where, and
@@ -16,6 +16,13 @@
 //!   promise said out loud: nothing on this machine is waiting for the person
 //!   to fix this, so there is nothing to come back to and nothing to be
 //!   reminded about.
+//!
+//! The third is the same promise about a different thing. `docs/features.md`:
+//! *a model too large for the memory in this laptop is said so plainly, once —
+//! and then run anyway.* `alo-models` says the *plainly*; [`RUNS_THEM_ANYWAY`]
+//! is the *once — and then run anyway*, read under it, and it is held to the
+//! same rule the two above are held to: it sells nothing, and it leans toward
+//! nothing — not a smaller model, not a catalogued one, not a provider.
 //!
 //! # What is deliberately not here
 //!
@@ -79,13 +86,28 @@ pub const CARRY_ON: Word = Word::saying(
      being asked to come back to it. \"Carry on\" means continue with whatever you were doing.",
 );
 
+/// The last line of a warning about size: it is said once, and the weights run.
+pub const RUNS_THEM_ANYWAY: Word = Word::saying(
+    "telling.runs-them-anyway",
+    "That is said once: alo OS will run these weights whenever you choose them, and will not \
+     raise their size again by itself",
+)
+.noting(
+    "The last line of what a person is shown when weights they chose are larger than this \
+     machine's memory, read directly under the line that says so. \"alo OS\" is the product's \
+     name and is never translated. Both halves are promises and must survive whole: the weights \
+     run — this is not a refusal and not advice to pick something smaller — and the machine will \
+     not bring their size up again on its own. \"By itself\" is the point: if the person asks, \
+     they are answered.",
+);
+
 /// Every string this crate can say, in the order a person reads them.
 ///
 /// There is no countable one, and there is unlikely ever to be: a telling is
 /// about one unavailability, and a machine that counted how many times it had
 /// not been able to reach a model would be keeping a tally in order to show
 /// somebody a number, which is a nag with arithmetic in it.
-pub const EVERY_WORD: [Word; 2] = [THE_AGENT_CANNOT_ANSWER, CARRY_ON];
+pub const EVERY_WORD: [Word; 3] = [THE_AGENT_CANNOT_ANSWER, CARRY_ON, RUNS_THEM_ANYWAY];
 
 /// Why this crate's own words could not be declared.
 ///
@@ -213,12 +235,19 @@ mod tests {
     }
 
     /// **Every sentence that names the agent says the agent is not a person.**
-    /// Both of these name it, and in a language where the answer decides the
-    /// grammar of the whole sentence a translator cannot guess.
+    /// The two about a question name it, and in a language where the answer
+    /// decides the grammar of the whole sentence a translator cannot guess.
+    /// The one about size does not name it, because it is not about the
+    /// agent: the weights answer questions whether or not they ever get a
+    /// turn.
     #[test]
     fn every_word_that_names_the_agent_says_what_the_agent_is() {
+        let mut naming_it = 0;
         for word in EVERY_WORD {
-            assert!(word.says().contains("agent"), "{}", word.named());
+            if !word.says().contains("agent") {
+                continue;
+            }
+            naming_it += 1;
             assert!(
                 word.note()
                     .is_some_and(|note| note.contains("not a person")),
@@ -226,6 +255,29 @@ mod tests {
                 word.named()
             );
         }
+        assert_eq!(naming_it, 2);
+    }
+
+    /// **Nothing said about size leans anywhere.** The line under a warning is
+    /// held to `alo-models`' own list of nudges, because it is read beside that
+    /// crate's sentence about somebody's own weights and the two must not
+    /// disagree about whose decision that was.
+    #[test]
+    fn the_line_about_size_nudges_toward_nothing() {
+        let read = format!(
+            "{} {}",
+            RUNS_THEM_ANYWAY.says(),
+            RUNS_THEM_ANYWAY.note().unwrap_or_default()
+        )
+        .to_ascii_lowercase();
+        for nudge in alo_models::words::NUDGES {
+            assert!(
+                !read.contains(nudge),
+                "the line about size says \"{nudge}\""
+            );
+        }
+        assert!(!read.contains("catalogue"));
+        assert!(read.contains("will run these weights"));
     }
 
     /// **Both are whole sentences with nothing to fill in.** A gap in a line

@@ -25,8 +25,12 @@ use alo_answering::{Answering, Failed, WentWrong};
 use alo_models::{InferenceSource, Region, SourcePolicy};
 use alo_strings::{Strings, Vocabulary};
 
+use alo_models::Weights;
+
 use crate::telling::Telling;
 use crate::told_once::ToldOnce;
+use crate::warned_once::WarnedOnce;
+use crate::warning::Warning;
 use crate::who_asked::WhoAsked;
 use crate::words::telling_words;
 
@@ -87,6 +91,30 @@ pub(crate) fn a_telling_about(
         crate::telling::Tell::Say(told) => told,
         crate::telling::Tell::SaidAlready => {
             unreachable!("a fresh session has said nothing to anybody")
+        }
+    }
+}
+
+/// Weights somebody brought, of this size, measured by nobody.
+pub(crate) fn weights_of(id: &str, bytes_on_disk: u64) -> Weights {
+    Weights::checked(id, bytes_on_disk).unwrap()
+}
+
+/// One warning, about weights nobody has been warned about before, on a
+/// machine with this much memory.
+///
+/// Goes through [`Warning::about`] rather than around it, because there is no
+/// way around it.
+pub(crate) fn a_warning_about(id: &str, bytes_on_disk: u64, machine_gb: f32) -> WarnedOnce {
+    let mut warning = Warning::nothing_said_yet();
+    match warning.about(
+        &weights_of(id, bytes_on_disk),
+        machine_gb,
+        WhoAsked::ThePerson,
+    ) {
+        crate::warning::Warn::Say(warned) => warned,
+        crate::warning::Warn::SaidAlready | crate::warning::Warn::Fits => {
+            unreachable!("a fresh session has warned nobody, and these weights do not fit")
         }
     }
 }

@@ -25,6 +25,9 @@
 //! | [`who_asked`] | Whether a person is waiting, which is what makes saying it again not a nag |
 //! | [`told_once`] | The four lines a person reads, in the order they read them |
 //! | [`telling`] | What this machine has already said, for as long as a session lasts |
+//! | [`too_large`] | What makes one warning about size the same as another |
+//! | [`warned_once`] | The two lines a person reads about weights larger than this machine's memory |
+//! | [`warning`] | What this machine has already warned about, for as long as a session lasts |
 //! | [`words`] | Every string this crate can say, and the English beside each |
 //!
 //! ```
@@ -76,6 +79,30 @@
 //! - the **person asking again** is always a telling, because an answer to a
 //!   question somebody just asked is not a reminder, and a key that silently
 //!   does nothing is the worst outcome available.
+//!
+//! # The same rule, about size
+//!
+//! `docs/features.md` at v0.5: *a model too large for the memory in this
+//! laptop is said so plainly, once — and then run anyway if that is what
+//! somebody asked for.* [`Warning`] is the *once* of that sentence, beside
+//! [`Telling`] and built the same way: an identity ([`TooLarge`]) remembered
+//! for a session, a door that answers what to show ([`Warn`]), and the person
+//! asking again never suppressed. It refuses nothing, because there is no
+//! `Err` in it to refuse with — the weights run whichever answer it gives.
+//!
+//! ```
+//! use alo_models::{Weights, costing::GIGABYTE};
+//! use alo_telling::{Warn, Warning, WhoAsked};
+//!
+//! let theirs = Weights::checked("their-own-70b", 40 * GIGABYTE).expect("a name");
+//! let mut warning = Warning::nothing_said_yet();
+//!
+//! // Chosen on a sixteen gigabyte laptop: the person is told, once.
+//! assert!(warning.about(&theirs, 16.0, WhoAsked::ThePerson).was_said());
+//! for _ in 0..20 {
+//!     assert_eq!(warning.about(&theirs, 16.0, WhoAsked::TheMachine), Warn::SaidAlready);
+//! }
+//! ```
 //!
 //! # Four things this crate is deliberately not
 //!
@@ -131,7 +158,10 @@
 
 pub mod telling;
 pub mod told_once;
+pub mod too_large;
 pub mod unavailable;
+pub mod warned_once;
+pub mod warning;
 pub mod who_asked;
 pub mod words;
 
@@ -140,6 +170,9 @@ mod testing;
 
 pub use telling::{HOW_MANY_IT_REMEMBERS, Tell, Telling};
 pub use told_once::{HOW_MANY_LINES, ToldOnce};
+pub use too_large::TooLarge;
 pub use unavailable::Unavailable;
+pub use warned_once::{HOW_MANY_WARNING_LINES, WarnedOnce};
+pub use warning::{Warn, Warning};
 pub use who_asked::WhoAsked;
 pub use words::{EVERY_WORD, Word, WordsError, declare_into, telling_words};
