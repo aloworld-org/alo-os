@@ -230,7 +230,23 @@ the half the promise underlines.
 
 ### 6. Which folders are indexed, and the index for a folder found by its name
 
-**Status:** ready. **Depends on:** 3, 5.
+**Status:** done. **Depends on:** 3, 5.
+
+**Done, 2026-09-13.** Report:
+[`updates/which-folders-are-indexed-is-a-list-beside-the-indexes.md`](updates/which-folders-are-indexed-is-a-list-beside-the-indexes.md).
+`crates/alo-finding`: `Indexed` is the list of folders a person asked to
+have indexed, kept as `folders.list` beside the indexes under
+`$XDG_DATA_HOME/alo/finding/` in the shape `docs/contracts/file-index.md`
+now describes, and written whole the way an index is. `Indexed::index_of`
+hands back a folder's index read from its file or refuses with
+`NeverIndexed` in words, and never walks the folder — a test holds it to the
+kernel's own count of the thread's reads. `Indexed::keep` writes the index
+first and the list second; `Indexed::forget` removes the index file first
+and the list second, so a forgotten folder's words are off the disk before
+anything else. The list holds folders and no other field, is not a grant —
+a test indexes a folder no grant covers and shows the verb still refused —
+and `Searched::of` is unchanged. Five new refusals, each with a sentence and
+a Polish translation in the test.
 
 Task 5 left one thing to the caller on purpose: `Searched::of` is handed the
 index of the granted folder and checks that it is that folder's, but nothing
@@ -258,3 +274,41 @@ and call `Index::where_kept` itself, which is two lists of the same fact.
   crate: `$XDG_DATA_HOME` and `$HOME` are passed in, as `Index::where_kept`
   already takes them. The walk stays `alo-files`'; nothing here opens a
   socket, and the shipped-source test keeps saying so.
+
+### 7. An index brought up to date by its name, and an answer that says how old it is
+
+**Status:** ready. **Depends on:** 3, 6.
+
+Task 6 made the list the one place that says which folders are indexed and
+hands back the index for one. What nobody can yet do through that list is
+bring an index **up to date**: `Index::again` exists and reads only what
+changed, but a caller holding a folder's name has to read the index back,
+call `again` on it, and keep the result — three calls that a daemon and a
+file manager would each write, which is the pair of lists task 6 removed
+coming back as a pair of refresh loops. And an index does not say **when it
+was made**: a search over a folder indexed last Tuesday answers as if it
+were now, and the person has no way to tell.
+
+- **Acceptance:** `alo-finding` records in the index's first line the moment
+  the index was made, **passed in by the caller** as a `SystemTime` rather
+  than read from a clock inside the crate, so a test can make an index at
+  noon and read *noon* back; the moment is in the file additively, as
+  `docs/contracts/file-index.md` says a later field is, and an index file
+  without it still reads; an `Answer` carries the moment the index it
+  answered from was made, so a window can say *as of Tuesday* beside the
+  results; and `Indexed::again` takes a folder's name and a moment, reads
+  the kept index, indexes again reading only files whose size or time
+  changed — checked by the read count `Index::opened` already gives — and
+  keeps the result whole, in one call. A folder never indexed is refused
+  with `NeverIndexed` and is **not** indexed for the first time by a call
+  meant to refresh one; a folder that is gone since it was indexed is
+  refused with `NotWalked`, and the index it had is **kept**, not removed —
+  an unplugged disk is not a request to forget it.
+- **Constraint:** nothing here watches a folder: no `inotify`, no thread,
+  no timer. When an index is brought up to date is the caller's decision —
+  the file manager's, the daemon's, the person's — and a crate that woke up
+  on its own to read the disk would be the background reader `CLAUDE.md`
+  calls a bug, whether or not what it read was ever shown to a model. The
+  shipped-source test gains the names that would let one in. Nothing here
+  reads a clock: the moment is an argument, like the interval in task 1.
+  The list is still not a grant, and `Searched::of` is still unchanged.

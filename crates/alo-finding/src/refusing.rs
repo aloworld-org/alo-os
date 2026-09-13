@@ -1,4 +1,4 @@
-//! The seven ways there is no index at all.
+//! The twelve ways there is no index at all.
 //!
 //! Every one of these is a refusal of the whole question rather than a gap in
 //! the answer. A file whose words could not be read is a [`crate::Contents`]
@@ -78,6 +78,51 @@ pub enum NotIndexed {
     /// index could be kept.
     #[error("there is no home directory to keep an index in")]
     NowhereToKeepIt,
+
+    /// The folder is not on the list of folders a person asked to index, so
+    /// there is no index of it to read — and it is not walked to make one.
+    #[error("{} was never indexed", at.display())]
+    NeverIndexed {
+        /// The folder asked about.
+        at: PathBuf,
+    },
+
+    /// The index file of a folder being forgotten could not be removed.
+    #[error("the index at {} could not be removed: {why}", at.display())]
+    NotRemoved {
+        /// The file.
+        at: PathBuf,
+        /// What the machine said.
+        why: String,
+    },
+
+    /// The list of indexed folders is there and could not be read.
+    #[error("the list of indexed folders at {} could not be read: {why}", at.display())]
+    ListNotRead {
+        /// Where it was looked for.
+        at: PathBuf,
+        /// What the machine said.
+        why: String,
+    },
+
+    /// The file where the list should be holds something that is not a list
+    /// this machine can read.
+    #[error("{} is not a list of indexed folders this machine can read: {why}", at.display())]
+    NotAList {
+        /// The file.
+        at: PathBuf,
+        /// What was wrong with it, as a sentence.
+        why: String,
+    },
+
+    /// The list of indexed folders could not be written.
+    #[error("the list of indexed folders could not be written to {}: {why}", at.display())]
+    ListNotKept {
+        /// Where it was to be written.
+        at: PathBuf,
+        /// What the machine said.
+        why: String,
+    },
 }
 
 impl NotIndexed {
@@ -92,6 +137,11 @@ impl NotIndexed {
             Self::NotOpened { .. } => &words::NOT_OPENED,
             Self::NotAnIndex { .. } => &words::NOT_AN_INDEX,
             Self::NowhereToKeepIt => &words::NOWHERE_TO_KEEP_IT,
+            Self::NeverIndexed { .. } => &words::NEVER_INDEXED,
+            Self::NotRemoved { .. } => &words::NOT_REMOVED,
+            Self::ListNotRead { .. } => &words::LIST_NOT_READ,
+            Self::NotAList { .. } => &words::NOT_A_LIST,
+            Self::ListNotKept { .. } => &words::LIST_NOT_KEPT,
         }
     }
 
@@ -104,7 +154,9 @@ impl NotIndexed {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::NotAbsolute { at } => Filling::of("at", at.display().to_string()),
+            Self::NotAbsolute { at } | Self::NeverIndexed { at } => {
+                Filling::of("at", at.display().to_string())
+            }
             Self::NotWalked { at, why } => {
                 Filling::of("at", at.display().to_string()).and_said("why", &why.said(strings))
             }
@@ -114,7 +166,11 @@ impl NotIndexed {
             }
             Self::NotKept { at, why }
             | Self::NotOpened { at, why }
-            | Self::NotAnIndex { at, why } => {
+            | Self::NotAnIndex { at, why }
+            | Self::NotRemoved { at, why }
+            | Self::ListNotRead { at, why }
+            | Self::NotAList { at, why }
+            | Self::ListNotKept { at, why } => {
                 Filling::of("at", at.display().to_string()).and("why", why.clone())
             }
             Self::NowhereToKeepIt => Filling::nothing(),
@@ -160,6 +216,25 @@ mod tests {
                 why: "the first line is not an index's".to_owned(),
             },
             NotIndexed::NowhereToKeepIt,
+            NotIndexed::NeverIndexed {
+                at: PathBuf::from("/home/ada/Pictures"),
+            },
+            NotIndexed::NotRemoved {
+                at: PathBuf::from("/home/ada/.local/share/alo/finding/x.index"),
+                why: "permission denied".to_owned(),
+            },
+            NotIndexed::ListNotRead {
+                at: PathBuf::from("/home/ada/.local/share/alo/finding/folders.list"),
+                why: "permission denied".to_owned(),
+            },
+            NotIndexed::NotAList {
+                at: PathBuf::from("/home/ada/.local/share/alo/finding/folders.list"),
+                why: "the first line is not a list's".to_owned(),
+            },
+            NotIndexed::ListNotKept {
+                at: PathBuf::from("/home/ada/.local/share/alo/finding/folders.list"),
+                why: "read-only filesystem".to_owned(),
+            },
         ]
     }
 

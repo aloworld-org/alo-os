@@ -28,6 +28,13 @@
 //! file whose head names another folder is refused rather than trusted. The
 //! hash is FNV-1a, written out here in eight lines rather than rented,
 //! because nothing about it is secret: it is a stable name, not a signature.
+//!
+//! # And one file that is the list of them
+//!
+//! Beside the indexes, under a name no hash can produce, is the list of the
+//! folders a person asked to have indexed — `indexed.rs` keeps it — so that
+//! *which folders are indexed* is one file read rather than a directory
+//! listed and every head opened.
 
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
@@ -47,25 +54,20 @@ pub const THE_INDEXES: &str = "finding";
 /// What an index file's name ends in.
 const THE_EXTENSION: &str = "index";
 
+/// What the list of indexed folders is called, beside the indexes.
+pub(crate) const THE_LIST: &str = "folders.list";
+
 /// What `$HOME` is followed by when `$XDG_DATA_HOME` says nothing.
 const DOT_LOCAL_SHARE: [&str; 2] = [".local", "share"];
 
-/// Where the index of this folder is kept, given what the session says.
+/// The directory a person's indexes are kept in, given what the session
+/// says.
 ///
 /// `data_home` is `$XDG_DATA_HOME` and `home` is `$HOME`, each as the process
 /// really has it — unset arrives as [`None`]. [`None`] when neither is
 /// usable, which is a login with no home directory.
-pub(crate) fn where_it_is(
-    data_home: Option<&OsStr>,
-    home: Option<&OsStr>,
-    folder: &Path,
-) -> Option<PathBuf> {
-    let under = |directory: &Path| {
-        directory
-            .join(THE_FOLDER)
-            .join(THE_INDEXES)
-            .join(named_for(folder))
-    };
+pub(crate) fn the_directory(data_home: Option<&OsStr>, home: Option<&OsStr>) -> Option<PathBuf> {
+    let under = |directory: &Path| directory.join(THE_FOLDER).join(THE_INDEXES);
     if let Some(data) = data_home.map(Path::new)
         && data.has_root()
     {
@@ -81,6 +83,30 @@ pub(crate) fn where_it_is(
         }
         Some(_) | None => None,
     }
+}
+
+/// Where the index of this folder is kept, given what the session says.
+///
+/// [`the_directory`], and the folder's file inside it.
+pub(crate) fn where_it_is(
+    data_home: Option<&OsStr>,
+    home: Option<&OsStr>,
+    folder: &Path,
+) -> Option<PathBuf> {
+    the_directory(data_home, home).map(|directory| index_under(&directory, folder))
+}
+
+/// The file the index of this folder is kept in, inside this directory.
+pub(crate) fn index_under(directory: &Path, folder: &Path) -> PathBuf {
+    directory.join(named_for(folder))
+}
+
+/// The file the list of indexed folders is kept in, inside this directory.
+///
+/// One name, with no hash in it, beside the hashed names of the indexes: a
+/// person listing the directory sees which file is the list.
+pub(crate) fn list_under(directory: &Path) -> PathBuf {
+    directory.join(THE_LIST)
 }
 
 /// The file name for this folder's index.
@@ -144,6 +170,26 @@ mod tests {
 
         assert_eq!(where_it_is(None, None, documents), None);
         assert_eq!(where_it_is(None, Some(OsStr::new("ada")), documents), None);
+    }
+
+    /// The list sits beside the indexes under a name no hash can produce,
+    /// and both are worked out from the one directory.
+    #[test]
+    fn the_list_sits_beside_the_indexes_under_a_name_no_hash_can_produce() {
+        let directory = the_directory(Some(OsStr::new("/data/ada")), None).unwrap();
+        assert_eq!(directory, Path::new("/data/ada/alo/finding"));
+        assert_eq!(list_under(&directory), directory.join("folders.list"));
+        assert_eq!(
+            index_under(&directory, Path::new("/home/ada/Documents")),
+            where_it_is(
+                Some(OsStr::new("/data/ada")),
+                None,
+                Path::new("/home/ada/Documents")
+            )
+            .unwrap()
+        );
+        assert!(!THE_LIST.ends_with(THE_EXTENSION));
+        assert_eq!(the_directory(None, None), None);
     }
 
     /// Two folders are two files, and the same folder is the same file every

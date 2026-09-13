@@ -47,6 +47,60 @@ from the one asked about is refused rather than trusted.
 A session with no usable `$HOME` has nowhere for an index to be, and
 `alo-finding` says so rather than inventing one.
 
+## The list of indexed folders
+
+Beside the indexes, in the same directory, one file says which folders a
+person asked to have indexed:
+
+```
+$XDG_DATA_HOME/alo/finding/folders.list
+```
+
+(and under `$HOME/.local/share` by the same rule). Its name is one no hash
+can produce, so a person listing the directory sees which file is the list.
+`alo_finding::Indexed::read_from` reads it, `Indexed::index_of` hands back
+the index of a folder on it — read from that folder's index file, never by
+walking the folder — or says the folder was never indexed, `Indexed::keep`
+writes an index and puts its folder on the list, and `Indexed::forget` takes
+a folder off the list and removes its index file with it.
+
+The shape is the index file's: the first line says what the file is, and
+every line after it is one folder, in the order they were asked for. Every
+line is compact JSON with no newline inside it.
+
+```
+{"format":1}
+{"folder":"/home/ada/Documents"}
+{"folder":"/home/ada/Pictures"}
+```
+
+| Line | Field | Meaning |
+|---|---|---|
+| first | `format` | Which shape the file is in. Required. `1` today. |
+| each after | `folder` | A folder a person asked to index, as an absolute path. Its index is the file named by that path's hash, above. |
+
+A list that is not there yet is an empty list: nothing has been asked for. A
+file that is there and does not parse whole — any line — is refused whole,
+with the reason, rather than read as an empty list: an empty list would say
+every folder was never indexed while its index sat on the disk. The file is
+**replaced whole**, never appended to, the way an index is. A later version
+may add a field to either line; a reader of this version ignores a field it
+does not know, and refuses a `format` it does not read.
+
+**The list is the authority.** A file in the directory the list does not
+name is nobody's index: the list is what says a folder is indexed, and
+nothing lists the directory to find out. When a folder is kept, its index is
+written first and the list second, so the list never names a folder whose
+index was not written. When a folder is forgotten, its index file is removed
+first and the list second, so the words of a folder a person asked to have
+forgotten are off the disk before anything else.
+
+**The list is not a grant.** A folder being on it says nothing about whether
+an agent may search it: that is a grant, made by the person and checked by
+`alo-capability` at the door, and the list holds folders and nothing the
+record does — no agent, no grant, no approval, nothing about who asked — so
+it answers the same whether an agent or a person asked.
+
 ## The shape
 
 The shape is the record's (`docs/contracts/record-file.md`), for the record's

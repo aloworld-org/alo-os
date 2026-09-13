@@ -136,6 +136,62 @@ pub const NOWHERE_TO_KEEP_IT: Word = Word::saying(
      happen: an index is kept in the person's own directory, and there is none.",
 );
 
+/// The folder is not on the list of indexed folders.
+pub const NEVER_INDEXED: Word = Word::saying(
+    "finding.never-indexed",
+    "{at} was never indexed, so there is no index of it to search.",
+)
+.noting(
+    "Said when a folder is asked about that is not on the list of folders the person asked to \
+     have indexed. {at} is the folder's path and is never translated. Nothing is wrong: the \
+     folder can be indexed, and then it can be searched.",
+);
+
+/// The index file could not be removed.
+pub const NOT_REMOVED: Word = Word::saying(
+    "finding.not-removed",
+    "The index at {at} could not be removed: {why}",
+)
+.noting(
+    "Said when a folder was to be forgotten and the file its index is kept in could not be \
+     deleted. {at} is the file's path and is never translated. {why} is what the operating \
+     system said, in its own words. The folder stays on the list until the file is gone.",
+);
+
+/// The list of indexed folders could not be read.
+pub const LIST_NOT_READ: Word = Word::saying(
+    "finding.list-not-read",
+    "The list of indexed folders at {at} could not be read: {why}",
+)
+.noting(
+    "Said when the file that lists which folders are indexed is there and could not be \
+     opened. {at} is the file's path and is never translated. {why} is what the operating \
+     system said, in its own words.",
+);
+
+/// The file is not a list of indexed folders.
+pub const NOT_A_LIST: Word = Word::saying(
+    "finding.not-a-list",
+    "{at} is not a list of indexed folders this machine can read: {why}",
+)
+.noting(
+    "Said when the file that should list which folders are indexed holds something else: a \
+     write that was cut short, another program's file, or a list from a later version of alo \
+     OS. {at} is the file's path and is never translated. {why} says what was wrong, as a \
+     sentence.",
+);
+
+/// The list of indexed folders could not be written.
+pub const LIST_NOT_KEPT: Word = Word::saying(
+    "finding.list-not-kept",
+    "The list of indexed folders could not be written to {at}: {why}",
+)
+.noting(
+    "Said when the file that lists which folders are indexed could not be written: the disk \
+     is full, the folder is read-only. {at} is the file's path and is never translated. {why} \
+     is what the operating system said, in its own words.",
+);
+
 // ---------------------------------------------------------------------------
 // Why a file has no words in the index — `crate::Contents`.
 // ---------------------------------------------------------------------------
@@ -458,7 +514,7 @@ pub const MISSING: Word = Word::saying(
 );
 
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 37] = [
+pub const EVERY_WORD: [Word; 42] = [
     NOT_ASKED_NOTHING,
     NOT_ASKED_MORE_THAN_A_SENTENCE,
     NOT_ASKED_LONGER_THAN_A_NAME,
@@ -474,6 +530,11 @@ pub const EVERY_WORD: [Word; 37] = [
     NOT_OPENED,
     NOT_AN_INDEX,
     NOWHERE_TO_KEEP_IT,
+    NEVER_INDEXED,
+    NOT_REMOVED,
+    LIST_NOT_READ,
+    NOT_A_LIST,
+    LIST_NOT_KEPT,
     NOT_TEXT,
     NOT_READ,
     TOO_BIG,
@@ -580,7 +641,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(finding_words().unwrap().how_many(), 41);
+        assert_eq!(finding_words().unwrap().how_many(), 46);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

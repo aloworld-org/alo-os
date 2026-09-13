@@ -25,7 +25,7 @@ fn key(named: &str) -> Key {
     Key::named(named).expect("a key")
 }
 
-/// Polish, and this crate's thirty-five strings in it.
+/// Polish, and every sentence this crate says to a person in it.
 fn in_polish() -> Strings {
     let vocabulary = finding_words().expect("this crate's own words");
     let polish = Language::written("pl").expect("a language");
@@ -125,6 +125,28 @@ fn in_polish() -> Strings {
             "Nie ma katalogu domowego, w którym można by trzymać indeks.",
         )
         .says(
+            key("finding.never-indexed"),
+            "{at} nigdy nie został zindeksowany, więc nie ma indeksu, który można by \
+             przeszukać.",
+        )
+        .says(
+            key("finding.not-removed"),
+            "Nie udało się usunąć indeksu z {at}: {why}",
+        )
+        .says(
+            key("finding.list-not-read"),
+            "Nie udało się odczytać listy zindeksowanych folderów z {at}: {why}",
+        )
+        .says(
+            key("finding.not-a-list"),
+            "{at} nie jest listą zindeksowanych folderów, którą ta maszyna potrafi odczytać: \
+             {why}",
+        )
+        .says(
+            key("finding.list-not-kept"),
+            "Nie udało się zapisać listy zindeksowanych folderów do {at}: {why}",
+        )
+        .says(
             key("finding.contents.not-text"),
             "Nie jest to rodzaj pliku, którego słowa można odczytać.",
         )
@@ -184,7 +206,7 @@ fn in_polish() -> Strings {
         );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of thirty-five strings with no gaps in it");
+        .expect("a translation with no gaps in it");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[polish]);
@@ -258,6 +280,7 @@ fn everything_a_search_did_not_look_at(strings: &Strings) -> Vec<Said> {
 /// that one against both crates' words.
 fn everything_said_here(strings: &Strings) -> Vec<Said> {
     let file = PathBuf::from("/home/ada/.local/share/alo/finding/x.index");
+    let list = PathBuf::from("/home/ada/.local/share/alo/finding/folders.list");
     let mut said = vec![
         NotIndexed::NotAbsolute {
             at: PathBuf::from("Documents"),
@@ -279,11 +302,35 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
         }
         .said(strings),
         NotIndexed::NotAnIndex {
-            at: file,
+            at: file.clone(),
             why: "the file is empty".to_owned(),
         }
         .said(strings),
         NotIndexed::NowhereToKeepIt.said(strings),
+        NotIndexed::NeverIndexed {
+            at: PathBuf::from("/home/ada/Pictures"),
+        }
+        .said(strings),
+        NotIndexed::NotRemoved {
+            at: file.clone(),
+            why: "permission denied".to_owned(),
+        }
+        .said(strings),
+        NotIndexed::ListNotRead {
+            at: list.clone(),
+            why: "permission denied".to_owned(),
+        }
+        .said(strings),
+        NotIndexed::NotAList {
+            at: list.clone(),
+            why: "the file is empty".to_owned(),
+        }
+        .said(strings),
+        NotIndexed::ListNotKept {
+            at: list,
+            why: "read-only".to_owned(),
+        }
+        .said(strings),
     ];
     for contents in [
         Contents::NotText,
@@ -337,7 +384,7 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
 fn a_machine_with_no_translations_still_says_everything_in_english() {
     let strings = Strings::of(finding_words().expect("this crate's own words"));
     let said = everything_said_here(&strings);
-    assert_eq!(said.len(), 6 + 3 + 13 + 6 + 3 + 3 * 7);
+    assert_eq!(said.len(), 11 + 3 + 13 + 6 + 3 + 3 * 7);
     for said in said {
         assert!(!said.is_a_bug(), "{said}");
         assert!(!said.is_translated(), "{said}");
