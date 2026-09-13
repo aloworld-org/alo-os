@@ -11,6 +11,7 @@
 //! - what left this machine today?
 //! - what did the machine do with nobody having asked it to?
 //! - is there anything in here that an agent did at all?
+//! - what did other machines cause here?
 //!
 //! — are asked here in the record's own terms, and answered from the fields the
 //! entries carry. None of them is a search for text. A record answered by
@@ -78,6 +79,17 @@ pub enum Only {
     /// nobody's name on it, so every other entry there has ever been is one of
     /// these.
     ByAnAgent,
+    /// Anything a paired machine caused here (ADR 0003): a verb it asked for,
+    /// and a question it put to this machine's models.
+    ///
+    /// The question somebody puts to their record having paired with the
+    /// machine down the corridor: *what has it done on mine?* Answered from
+    /// [`Entry::origin`], so the two doors a paired machine reaches this one
+    /// through are one answer — and asked by kind rather than by name, because
+    /// the name in the agent column of a remote verb is the machine's
+    /// principal on this machine's grants, which a person did not choose and
+    /// should not have to know.
+    FromAnotherMachine,
 }
 
 /// A question put to the record.
@@ -192,6 +204,7 @@ fn is_only(entry: &Entry, only: Only) -> bool {
         Only::Egress => entry.happened().caused_egress(),
         Only::OnItsOwn => entry.happened().on_its_own(),
         Only::ByAnAgent => entry.agent().is_some(),
+        Only::FromAnotherMachine => entry.origin().is_some(),
     }
 }
 
@@ -552,5 +565,53 @@ mod tests {
         // And the record it was read into is not an authority: nothing in it
         // permits anything.
         assert!(!archiving_march().permitted_by(&Grants::default(), &files(), noon()));
+    }
+
+    /// **What other machines caused here is one question**, whichever door it
+    /// came through — a verb a paired machine asked for and a question it put
+    /// to this machine's models both answer it, and nothing caused on this
+    /// machine does.
+    #[test]
+    fn what_other_machines_caused_here_is_one_question_across_both_doors() {
+        let afternoon = afternoon();
+        let mut record = afternoon.record;
+        let before = record.len();
+        assert_eq!(
+            how_many(&record, &Asking::anything().only(Only::FromAnotherMachine)),
+            0,
+            "an afternoon nothing arrived in answered as though something had"
+        );
+
+        let read = Authorised::read(
+            &listing_invoices(),
+            &files(),
+            &granting_both(),
+            noon() + hour() * 3,
+        )
+        .unwrap();
+        record.keep(Entry::ran(&read, &in_english()).from_another_machine("the reception machine"));
+        record.keep(Entry::answered_for(
+            "the studio machine",
+            noon() + hour() * 3,
+        ));
+
+        let from_elsewhere = Asking::anything().only(Only::FromAnotherMachine);
+        assert_eq!(how_many(&record, &from_elsewhere), 2);
+        assert_eq!(record.len(), before + 2);
+
+        // And it narrows with everything else: a span before either arrived
+        // finds nothing, and the one that ran is findable under the grant it
+        // ran against exactly as a local execution is.
+        assert_eq!(
+            how_many(
+                &record,
+                &from_elsewhere.clone().between(noon(), noon() + hour() * 3)
+            ),
+            0
+        );
+        assert_eq!(
+            how_many(&record, &from_elsewhere.under_grant(afternoon.grant)),
+            1
+        );
     }
 }

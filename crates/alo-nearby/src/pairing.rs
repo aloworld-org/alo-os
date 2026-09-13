@@ -33,7 +33,7 @@ use crate::words;
 /// Why there is no pairing.
 ///
 /// **No `Display`**, and so not a `std::error::Error`, for the reason
-/// [`alo_capability::GrantError`] has none: the only road to words is
+/// `alo_capability::GrantError` has none: the only road to words is
 /// [`said`](NotPaired::said), which takes the strings the person in front of
 /// the machine reads. A `Display` here would be an English sentence one
 /// `to_string()` away from a settings panel whose author had no reason to think
@@ -57,6 +57,15 @@ pub enum NotPaired {
     TooLong,
     /// A pairing whose end is past anything this machine can represent.
     NoEnd,
+    /// This machine is not paired with the one that asked.
+    ///
+    /// The refusal on the **asked** side of ADR 0003, made by
+    /// [`Origin::paired`](crate::Origin::paired): a machine that was merely
+    /// discovered, one whose pairing has ended, and one whose pairing was
+    /// revoked are all this, with no arm that distinguishes them, because
+    /// telling a caller which kind of not-paired it is would be telling it how
+    /// to become paired.
+    NotWithThatMachine,
 }
 
 impl NotPaired {
@@ -68,6 +77,7 @@ impl NotPaired {
             Self::WithItself => words::A_MACHINE_CANNOT_PAIR_WITH_ITSELF,
             Self::NothingAsked => words::A_PAIRING_HAS_TO_PERMIT_SOMETHING,
             Self::NoTime | Self::NoEnd | Self::TooLong => words::A_PAIRING_HAS_TO_END,
+            Self::NotWithThatMachine => words::NOT_PAIRED_WITH_THE_ONE_THAT_ASKED,
         }
     }
 
@@ -219,6 +229,24 @@ impl Pairings {
             .iter()
             .any(|pairing| pairing.with == *with && pairing.permits(what, now))
     }
+
+    /// Whether a pairing with that machine stands at `now`, whatever it
+    /// permits.
+    ///
+    /// The question the **asked** side of ADR 0003 puts to this list
+    /// ([`crate::Origin::paired`]): not *may it ask for this*, which
+    /// [`Pairings::permits`] answers, but *is it somebody this machine can
+    /// name at all*. A verb it asks for is then decided by the grants this
+    /// machine's person made to it, and by nothing on the pairing — which is
+    /// why there is no [`MayAskIts`] arm for a verb and no arm is asked about
+    /// here. The four cases above answer `false` here for the same reason they
+    /// do there.
+    #[must_use]
+    pub fn paired_with(&self, with: &MachineId, now: SystemTime) -> bool {
+        self.made
+            .iter()
+            .any(|pairing| pairing.with == *with && now < pairing.ends)
+    }
 }
 
 #[cfg(test)]
@@ -345,5 +373,26 @@ mod tests {
         let one = pairings.every().first().unwrap();
         assert_eq!(one.made(), a_moment());
         assert_eq!(one.ends(), a_moment() + Duration::from_secs(86_400));
+    }
+
+    /// **Being paired at all is asked apart from what the pairing permits**,
+    /// and answers `false` for a stranger, for a pairing that ended and for one
+    /// that was revoked — the four cases the module's own documentation names.
+    #[test]
+    fn whether_a_machine_is_paired_with_is_asked_apart_from_what_it_may_ask_for() {
+        let mut pairings = Pairings::none();
+        assert!(!pairings.paired_with(&another(), a_moment()));
+
+        pairings.keep(for_a_day());
+        assert!(pairings.paired_with(&another(), a_moment()));
+        assert!(pairings.paired_with(&another(), a_moment() + Duration::from_secs(86_399)));
+        // Paired, and permitted nothing but what its list says.
+        assert!(!pairings.permits(&another(), MayAskIts::Workspace, a_moment()));
+
+        assert!(!pairings.paired_with(&a_stranger(), a_moment()));
+        assert!(!pairings.paired_with(&another(), a_moment() + Duration::from_secs(86_400)));
+
+        assert!(pairings.revoke(&another()));
+        assert!(!pairings.paired_with(&another(), a_moment()));
     }
 }

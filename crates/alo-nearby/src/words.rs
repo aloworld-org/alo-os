@@ -74,7 +74,8 @@ pub const MAY_REACH_ITS_WORKSPACE: Word = Word::saying(
 //
 // Somebody reads these having just been told they cannot pair with something.
 // Each one says what is true rather than what went wrong, because in three of
-// the four cases nothing did.
+// the four cases nothing did. The fifth is read on the other side of the
+// corridor, by whoever a machine without a pairing asked for something.
 // ---------------------------------------------------------------------------
 
 /// One machine's person has agreed and the other's has not.
@@ -125,14 +126,28 @@ pub const A_PAIRING_HAS_TO_END: Word = Word::saying(
      Nothing here can turn it off.",
 );
 
+/// This machine is not paired with the one that asked it for something.
+pub const NOT_PAIRED_WITH_THE_ONE_THAT_ASKED: Word = Word::saying(
+    "nearby.not-paired.not-with-the-one-that-asked",
+    "This machine is not paired with the one that asked, so nothing it asked for was considered.",
+)
+.noting(
+    "Said on the machine that was asked, about a machine that asked it to do something without a \
+     pairing standing between them: one that was only seen on the network, one whose pairing has \
+     run out, or one whose pairing was undone. It deliberately does not say which, because saying \
+     which would tell the asker how to become paired. \"Was considered\" is the whole of it: no \
+     grant was looked at and nobody on this machine was asked anything.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 6] = [
+pub const EVERY_WORD: [Word; 7] = [
     MAY_ASK_ITS_MODELS,
     MAY_REACH_ITS_WORKSPACE,
     BOTH_MACHINES_HAVE_NOT_AGREED,
     A_MACHINE_CANNOT_PAIR_WITH_ITSELF,
     A_PAIRING_HAS_TO_PERMIT_SOMETHING,
     A_PAIRING_HAS_TO_END,
+    NOT_PAIRED_WITH_THE_ONE_THAT_ASKED,
 ];
 
 /// Why this crate's list could not be declared.

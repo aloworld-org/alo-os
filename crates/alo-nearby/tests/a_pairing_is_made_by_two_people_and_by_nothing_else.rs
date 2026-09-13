@@ -65,7 +65,7 @@ fn paired_for_a_day() -> Pairings {
         Deliberating::of(asking_for_its_models())
             .agreed_at(Side::TheOneAsking)
             .agreed_at(Side::TheOneAsked)
-            .agreed(a_moment())
+            .agreed(Side::TheOneAsking, a_moment())
             .unwrap(),
     );
     pairings
@@ -78,14 +78,14 @@ fn a_pairing_needs_two_people_and_one_of_them_is_not_enough() {
     let both = Deliberating::of(asking_for_its_models())
         .agreed_at(Side::TheOneAsking)
         .agreed_at(Side::TheOneAsked)
-        .agreed(a_moment());
+        .agreed(Side::TheOneAsking, a_moment());
     assert!(both.is_ok());
 
     for alone in [Side::TheOneAsking, Side::TheOneAsked] {
         assert_eq!(
             Deliberating::of(asking_for_its_models())
                 .agreed_at(alone)
-                .agreed(a_moment())
+                .agreed(Side::TheOneAsking, a_moment())
                 .unwrap_err(),
             NotPaired::OnlyOneSideAgreed,
             "{alone:?} paired a machine on its own"
@@ -248,7 +248,7 @@ fn having_paired_before_confers_nothing() {
     assert_eq!(
         Deliberating::of(asking_for_its_models())
             .agreed_at(Side::TheOneAsking)
-            .agreed(a_month_later)
+            .agreed(Side::TheOneAsking, a_month_later)
             .unwrap_err(),
         NotPaired::OnlyOneSideAgreed,
         "having paired before let one machine pair again on its own"

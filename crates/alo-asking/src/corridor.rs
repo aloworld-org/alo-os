@@ -202,7 +202,7 @@ mod tests {
             )
             .agreed_at(Side::TheOneAsking)
             .agreed_at(Side::TheOneAsked)
-            .agreed(a_moment())
+            .agreed(Side::TheOneAsking, a_moment())
             .unwrap(),
         );
         pairings
@@ -258,7 +258,7 @@ mod tests {
             )
             .agreed_at(Side::TheOneAsking)
             .agreed_at(Side::TheOneAsked)
-            .agreed(a_moment())
+            .agreed(Side::TheOneAsking, a_moment())
             .unwrap(),
         );
 

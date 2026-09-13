@@ -43,6 +43,11 @@ alo-egress = { path = "../alo-egress" }
 alo-keeping = { path = "../alo-keeping" }
 alo-record = { path = "../alo-record" }
 
+# The machine a change came from, when it came from a paired one (ADR 0003).
+# Only a test needs it: the surface reads a remote turn exactly as it reads a
+# local one, and this is what stands one up.
+alo-nearby = { path = "../alo-nearby" }
+
 # The machine's one vocabulary. This crate's own tests are written against its
 # own list; the acceptance test asks the question that list cannot — whether
 # what this crate says survives being put beside everybody else's, and whether

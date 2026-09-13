@@ -219,7 +219,7 @@ pub(crate) fn german_language() -> Language {
 
 /// Every word a machine running a turn has loaded.
 ///
-/// **Eight crates' lists.** A turn can hand back a refusal worded by any of
+/// **Nine crates' lists.** A turn can hand back a refusal worded by any of
 /// them, and a fixture that held only the ones this crate's oldest tests needed
 /// would answer a missing string with a passing test.
 fn everything_this_machine_says() -> alo_strings::Vocabulary {
@@ -230,6 +230,7 @@ fn everything_this_machine_says() -> alo_strings::Vocabulary {
     alo_egress::declare_into(&mut vocabulary).unwrap();
     alo_answering::declare_into(&mut vocabulary).unwrap();
     alo_asking::declare_into(&mut vocabulary).unwrap();
+    alo_nearby::words::declare_into(&mut vocabulary).unwrap();
     crate::words::declare_into(&mut vocabulary).unwrap();
     vocabulary
 }

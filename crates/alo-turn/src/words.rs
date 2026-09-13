@@ -1,9 +1,10 @@
 //! Every string this crate can say, and the English beside it.
 //!
 //! `CLAUDE.md` says hardcoded English is a bug. This is the list that stops it
-//! being one here, and it holds two strings.
+//! being one here, and it holds five strings: two about the turn itself, and
+//! three about a verb that came from another machine.
 //!
-//! # Two, in the crate that joins five others together
+//! # Two about the turn, in the crate that joins five others together
 //!
 //! Everything a person reads during a turn was already somebody's to say, and
 //! this crate deliberately does not say any of it a second time:
@@ -33,13 +34,35 @@
 //! boundary is a mechanism and says nothing to anybody — and because a portable
 //! crate's refusal has to be sayable on every host this crate compiles for.
 //!
-//! # Nothing here counts, and nothing here has a gap
+//! # Three about a verb from another machine, and why they are here
+//!
+//! ADR 0003: a verb from a paired machine is evaluated against **this**
+//! machine's grants, and the refusal has to say the grant was not made here
+//! rather than blame the person who asked. The capability model's own refusal
+//! is right and reads wrong on the far side of a corridor — *grants are made by
+//! picking a folder* tells the person who asked to pick one on a machine where
+//! it would grant nothing. So [`NOT_GRANTED_HERE`] and [`GRANT_HERE_EXPIRED`]
+//! say the same fact from the machine that was asked, and [`NO_LONGER_PAIRED`]
+//! is the one refusal a remote turn has that a local one cannot. They live
+//! here because this is the crate that knows which machine asked; the
+//! capability model decides the refusal and never learns that.
+//!
+//! **They are not a second rendering of one moment.** Each replaces the
+//! capability model's sentence rather than sitting beside it, travelling as a
+//! refusal *worded elsewhere* through the door that crate already holds open
+//! for exactly that — so the screen and the record still render one value.
+//!
+//! # Nothing here counts, and the gaps are the person's own names
 //!
 //! There is no [`alo_strings::Plural`], for the reason `alo-models` and
 //! `alo-asking` give: a sentence that counted would be English's two shapes
-//! standing in for Polish's three. And the one sentence has no gap in it, so
-//! there is nothing a translation could drop and nothing anybody outside alo OS
-//! wrote that could be put into one.
+//! standing in for Polish's three. The two sentences about the turn have no
+//! gap in them, so there is nothing a translation could drop and nothing
+//! anybody outside alo OS wrote that could be put into one. The three about
+//! another machine have exactly the gaps the capability model's own refusals
+//! have — a name a person gave a machine on this machine, a path or an
+//! application the machine fills in, a clause this machine's own list already
+//! words — and nothing a model wrote can reach any of them.
 
 use alo_strings::Vocabulary;
 
@@ -80,11 +103,66 @@ pub const NOT_BOUNDED: Word = Word::saying(
      for whoever administers the machine, and must not be worked into this one.",
 );
 
+/// A paired machine asked for something this machine's person has not granted
+/// it.
+///
+/// Said instead of `alo-capability`'s *has not been granted — grants are made
+/// by picking a folder*, which is true and, carried back to the person who
+/// asked, tells them to pick a folder on the wrong machine.
+pub const NOT_GRANTED_HERE: Word = Word::saying(
+    "turn.not-granted-here",
+    "{machine} has not been granted {wanted} on this machine — what was granted on another \
+     machine does not reach here, and only a grant made here would",
+)
+.noting(
+    "Read on the machine that was asked, about a machine on the same network that asked this \
+     one's agent to reach something; it may be carried back to the person who asked. It must not \
+     tell anybody to grant anything: the grant it is about can only be made by the person in \
+     front of this machine, from this machine's own list, and the person who asked cannot make it \
+     from where they are. {machine} is the name this machine's person gave the other machine when \
+     they paired, and is never translated. {wanted} is a path or an application, filled in by \
+     the machine.",
+);
+
+/// A grant this machine's person made to a paired machine has run out.
+pub const GRANT_HERE_EXPIRED: Word = Word::saying(
+    "turn.grant-here-expired",
+    "{machine} was permitted {reach} on this machine, and that has expired, so it cannot reach \
+     {wanted} — nothing granted on another machine stands in for it",
+)
+.noting(
+    "Read on the machine that was asked, about a grant its own person made to a machine on the \
+     network and that has since run out. It is the one refusal about a remote machine a person on \
+     this machine can act on, and still does not tell them to: whether to grant it again is \
+     theirs. {machine} is the name this machine's person gave the other machine and is never \
+     translated; {reach} is a clause this machine already words, such as a folder and everything \
+     in it; {wanted} is a path or an application, filled in by the machine.",
+);
+
+/// The pairing with the machine that asked ended while it was asking.
+pub const NO_LONGER_PAIRED: Word = Word::saying(
+    "turn.no-longer-paired",
+    "this machine is no longer paired with {machine}, so nothing more it asked for is considered",
+)
+.noting(
+    "Read on the machine that was asked, when a pairing was undone or ran out between one thing \
+     a machine on the network asked for and the next. Nothing was refused by a grant and nobody \
+     said no to anything: the pairing ended, and that ends the turn's standing at once. It \
+     deliberately does not say whether the pairing was undone or ran out. {machine} is the name \
+     this machine's person gave the other machine, and is never translated.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 2] = [TURN_CLOSED, NOT_BOUNDED];
+pub const EVERY_WORD: [Word; 5] = [
+    TURN_CLOSED,
+    NOT_BOUNDED,
+    NOT_GRANTED_HERE,
+    GRANT_HERE_EXPIRED,
+    NO_LONGER_PAIRED,
+];
 
 /// Why this crate's own list could not be declared.
 ///
@@ -180,14 +258,37 @@ mod tests {
         assert!(matches!(again, WordsError::List(_)), "{again}");
     }
 
-    /// **The sentence has no gap in it**, which is the strong form of what this
-    /// crate holds: a turn carries the person's own document, the agent's
-    /// arguments and the model's words, and none of them can reach a string of
-    /// ours because there is nowhere in one for them to go.
+    /// **The two sentences about the turn have no gap in them**, which is the
+    /// strong form of what this crate holds: a turn carries the person's own
+    /// document, the agent's arguments and the model's words, and none of them
+    /// can reach either string because there is nowhere in one for them to go.
+    ///
+    /// **The three about another machine have exactly the gaps the capability
+    /// model's own refusals have**, and no other: the name a person gave a
+    /// machine, what was asked for, and the clause this machine already words
+    /// for what a grant was over. A gap added here for anything else — the
+    /// model's words, the other machine's account of itself — is what this
+    /// test refuses.
     #[test]
-    fn the_sentence_has_no_gap_for_anything_to_be_put_into() {
-        for word in EVERY_WORD {
+    fn the_only_gaps_are_the_ones_a_refusal_already_has() {
+        for word in [TURN_CLOSED, NOT_BOUNDED] {
             assert!(!word.says().contains('{'), "{}", word.named());
+        }
+        for word in [NOT_GRANTED_HERE, GRANT_HERE_EXPIRED, NO_LONGER_PAIRED] {
+            let gaps: Vec<&str> = word
+                .says()
+                .split('{')
+                .skip(1)
+                .filter_map(|after| after.split('}').next())
+                .collect();
+            assert!(!gaps.is_empty(), "{}", word.named());
+            for gap in gaps {
+                assert!(
+                    ["machine", "wanted", "reach"].contains(&gap),
+                    "{}: a gap for {gap}",
+                    word.named()
+                );
+            }
         }
     }
 

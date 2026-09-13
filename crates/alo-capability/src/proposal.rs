@@ -40,6 +40,14 @@ use crate::words;
 /// than a copy of its words: what a person reads about a change that was never
 /// proposed is the same sentence they would read about one refused at the
 /// moment it ran.
+///
+/// [`ProposalError::NotGrantedElsewhere`] is the same door
+/// [`crate::NotAuthorised::NotGrantedElsewhere`] is, for the same reason and
+/// at the earlier point in the journey: a refusal by the grants whose words are
+/// not this crate's to write, arriving already said. [`Proposal::checked`]
+/// never makes one — the caller that could see what this crate cannot does,
+/// and a refusal made in error stops something, which is the safe way to be
+/// wrong.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProposalError {
     /// A read, which does not wait for anybody.
@@ -49,6 +57,15 @@ pub enum ProposalError {
     },
     /// Something the grants do not permit.
     NotGranted(NotGranted),
+    /// Something the grants do not permit, worded by the crate that could see
+    /// why — the same fact as [`ProposalError::NotGranted`], said elsewhere.
+    ///
+    /// The one case that reaches this today is a verb from a paired machine
+    /// (ADR 0003): the grants on this machine refused it, and the sentence has
+    /// to say the grant was not made *here* rather than send the person who
+    /// asked to a folder picker on the wrong machine. `alo-turn` words it,
+    /// because it is the crate that knows which machine asked.
+    NotGrantedElsewhere(Said),
     /// A question that stands for no time at all.
     NoTime,
     /// A question standing for longer than this machine can represent.
@@ -61,6 +78,7 @@ impl ProposalError {
     pub fn said(&self, strings: &Strings) -> Said {
         match self {
             Self::NotGranted(why) => why.said(strings),
+            Self::NotGrantedElsewhere(said) => said.clone(),
             Self::ReadDoesNotWait { verb } => strings.say(
                 &words::READ_DOES_NOT_WAIT.key(),
                 &Filling::of("verb", verb.clone()),
@@ -326,5 +344,27 @@ mod tests {
                 .text()
                 .contains("how long this one stands")
         );
+    }
+
+    /// A refusal worded elsewhere is handed back as it was said, because it
+    /// was said by the only code that knew what it was about — and nothing in
+    /// this crate makes one, so [`Proposal::checked`] cannot be talked into
+    /// wording a refusal it did not decide.
+    #[test]
+    fn a_refusal_worded_elsewhere_is_said_as_it_was_said() {
+        let strings = in_english();
+        let theirs = strings.say(
+            &alo_strings::Key::named("turn.not-granted-here").unwrap(),
+            &Filling::nothing(),
+        );
+        let refused = ProposalError::NotGrantedElsewhere(theirs.clone());
+        assert_eq!(refused.said(&strings), theirs);
+        // A key this crate does not declare says so rather than pretending,
+        // and the words still travel: whoever declared it is the crate that
+        // refused.
+        assert!(refused.said(&strings).is_a_bug());
+
+        let both = granting(&["/home/anna/Invoices", "/home/anna/Archive"]);
+        assert!(Proposal::checked(&archiving_march(), &files(), &both, noon(), hour()).is_ok());
     }
 }

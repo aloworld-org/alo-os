@@ -108,7 +108,10 @@ machine down the hall"* is exactly the sentence this product exists to refuse.
 
 ### 4. What a remote agent may do is what the local person granted
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-13.** **Depends on:** 3.
+Built in `crates/alo-turn/src/arriving.rs` and `crates/alo-nearby/src/origin.rs`;
+the report is
+`docs/autonomy/updates/what-a-remote-agent-may-do-is-what-the-local-person-granted.md`.
 
 ADR 0003's sharpest line, and the one a reader will most want proof of: *an
 agent on machine A that reaches machine B is bound by the grants made on B, by

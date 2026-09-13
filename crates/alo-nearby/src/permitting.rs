@@ -18,9 +18,12 @@
 //! There is no arm for *run a verb on that machine*, and there never will be
 //! one here. ADR 0003 is exact about it: **pairing lets A ask; it never lets A
 //! act.** A verb arriving from a paired machine is evaluated against the
-//! receiving machine's own grants, by the receiving machine's own person, which
-//! is task 4 and is not something this list could ever grant on that machine's
-//! behalf.
+//! receiving machine's own grants, by the receiving machine's own person, and
+//! is not something this list could ever grant on that machine's behalf. What
+//! the pairing contributes to it is standing alone — [`crate::Origin`] is made
+//! by asking whether a pairing exists, [`crate::Pairings::paired_with`], and
+//! asks about no arm — and the grant that machine's person made on their own
+//! machine is what decides.
 
 use crate::words;
 

@@ -31,6 +31,11 @@ alo-keeping = { path = "../alo-keeping" }
 # Where a question may be answered, the rule this machine is under, and the
 # runtime alo OS ships.
 alo-models = { path = "../alo-models" }
+# The machine a verb arrived from, when it arrived from a paired one (ADR
+# 0003). Reached only from `arriving.rs`, and only to ask whether the pairing
+# still stands and what the machine is called: which of this machine's grants
+# are asked is decided here, and nothing on the pairing decides it.
+alo-nearby = { path = "../alo-nearby" }
 # The entry itself. A turn makes one for every execution and every refusal, and
 # hands nothing back until it is written.
 alo-record = { path = "../alo-record" }

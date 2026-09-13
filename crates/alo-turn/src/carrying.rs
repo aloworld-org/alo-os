@@ -56,8 +56,10 @@
 
 use alo_capability::{Authorised, Grants};
 use alo_files::{Answer, Reaching, Touching};
+use alo_nearby::Origin;
 use alo_record::Entry;
 
+use crate::arriving::worded_here;
 use crate::bounding::Doing;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
@@ -70,10 +72,18 @@ use crate::refusing::NotDone;
 /// (`alo-files`' rule, kept here), and a call the machine would not run
 /// because it could not bound it is the machine's own refusal, written down
 /// as such.
+///
+/// `origin` is the machine the call came from when it came from another one
+/// (ADR 0003), and it changes one thing here: the two refusals the grants can
+/// make about a resolved path are worded for the machine that was asked, as
+/// they are at every other door. The boundary, the reach and the work are
+/// exactly what they are for a local call — ADR 0013 applies on the receiving
+/// machine exactly as it does here.
 pub(crate) fn carrying_out(
     machine: &mut Machine<'_>,
     authorised: Authorised,
     grants: &Grants,
+    origin: Option<&Origin>,
 ) -> (Entry, Result<Answer, NotDone>) {
     let at = authorised.at();
     let agent = authorised.under().clone();
@@ -82,6 +92,7 @@ pub(crate) fn carrying_out(
     let touching = match Touching::of(authorised, grants, machine.resolving(), strings) {
         Ok(touching) => touching,
         Err(refused) => {
+            let refused = worded_here(refused, origin, strings);
             let entry = Entry::refused(&refused, &agent, strings, at);
             return (entry, Err(NotDone::Refused(refused)));
         }
@@ -116,6 +127,7 @@ pub(crate) fn carrying_out(
     let did = match done {
         Ok(did) => did,
         Err(refused) => {
+            let refused = worded_here(refused, origin, strings);
             let entry = Entry::refused(&refused, &agent, strings, at);
             return (entry, Err(NotDone::Refused(refused)));
         }

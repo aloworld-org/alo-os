@@ -188,10 +188,22 @@ impl Deliberating {
         self.asking_agreed && self.asked_agreed
     }
 
-    /// The pairing, if both people agreed.
+    /// The pairing, if both people agreed, as the machine on `kept_on`'s side
+    /// keeps it.
     ///
     /// This is the only thing in this workspace that returns a
     /// [`Pairing`](crate::Pairing).
+    ///
+    /// **One agreement, two lists, each naming the other machine.** A pairing
+    /// is between two machines and each keeps its own row about it — ADR
+    /// 0003's *visible* is a list on each machine, and *revocable in one
+    /// action* is either person's — so the row the asking machine keeps names
+    /// the one it asked, and the row the asked machine keeps names the one
+    /// that asked it. Until 2026-09-13 there was one row and it always named
+    /// the asked machine, which was right on the machine that asked and, on
+    /// the one that was asked, a pairing with itself: the first thing built on
+    /// the asked side ([`crate::Origin`]) found that nothing it was asked by
+    /// was paired, and the side is now named rather than assumed.
     ///
     /// # Errors
     ///
@@ -200,16 +212,15 @@ impl Deliberating {
     /// twice. The refusal names no side: what is true is that the machines have
     /// not agreed, and saying *they refused* about a person who has simply not
     /// answered yet would be a sentence the machine cannot support.
-    pub fn agreed(self, at: std::time::SystemTime) -> Result<Pairing, NotPaired> {
+    pub fn agreed(self, kept_on: Side, at: std::time::SystemTime) -> Result<Pairing, NotPaired> {
         if !self.is_mutual() {
             return Err(NotPaired::OnlyOneSideAgreed);
         }
-        Pairing::between(
-            self.proposal.asked,
-            &self.proposal.may,
-            at,
-            self.proposal.lasting,
-        )
+        let other = match kept_on {
+            Side::TheOneAsking => self.proposal.asked,
+            Side::TheOneAsked => self.proposal.asking,
+        };
+        Pairing::between(other, &self.proposal.may, at, self.proposal.lasting)
     }
 }
 
@@ -258,7 +269,7 @@ mod tests {
         let pairing = Deliberating::of(a_proposal())
             .agreed_at(Side::TheOneAsking)
             .agreed_at(Side::TheOneAsked)
-            .agreed(a_moment())
+            .agreed(Side::TheOneAsking, a_moment())
             .unwrap();
         assert_eq!(*pairing.with(), another());
         assert!(pairing.permits(MayAskIts::Models, a_moment()));
@@ -271,7 +282,7 @@ mod tests {
         for alone in [Side::TheOneAsking, Side::TheOneAsked] {
             let refused = Deliberating::of(a_proposal())
                 .agreed_at(alone)
-                .agreed(a_moment())
+                .agreed(Side::TheOneAsking, a_moment())
                 .unwrap_err();
             assert_eq!(refused, NotPaired::OnlyOneSideAgreed, "{alone:?}");
         }
@@ -285,7 +296,7 @@ mod tests {
         let refused = Deliberating::of(a_proposal())
             .agreed_at(Side::TheOneAsking)
             .agreed_at(Side::TheOneAsking)
-            .agreed(a_moment())
+            .agreed(Side::TheOneAsking, a_moment())
             .unwrap_err();
         assert_eq!(refused, NotPaired::OnlyOneSideAgreed);
     }
@@ -294,7 +305,7 @@ mod tests {
     #[test]
     fn nobody_agreeing_pairs_nothing() {
         let refused = Deliberating::of(a_proposal())
-            .agreed(a_moment())
+            .agreed(Side::TheOneAsking, a_moment())
             .unwrap_err();
         assert_eq!(refused, NotPaired::OnlyOneSideAgreed);
     }
@@ -364,5 +375,31 @@ mod tests {
     #[test]
     fn how_long_it_would_last_is_part_of_what_is_shown() {
         assert_eq!(a_proposal().lasting(), Duration::from_secs(86_400));
+    }
+
+    /// **Each machine keeps a row naming the other one.** The same agreement,
+    /// kept on the asked machine, names the machine that asked — which is what
+    /// lets the asked machine later answer whether something arriving from
+    /// there is from a machine it is paired with.
+    #[test]
+    fn the_same_agreement_names_the_other_machine_on_each_side() {
+        let on_the_asking = Deliberating::of(a_proposal())
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(Side::TheOneAsking, a_moment())
+            .unwrap();
+        let on_the_asked = Deliberating::of(a_proposal())
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(Side::TheOneAsked, a_moment())
+            .unwrap();
+
+        assert_eq!(on_the_asking.with(), a_proposal().asked());
+        assert_eq!(on_the_asked.with(), a_proposal().asking());
+        assert_ne!(on_the_asking.with(), on_the_asked.with());
+        // And everything else about the two rows is the same agreement.
+        assert_eq!(on_the_asking.may(), on_the_asked.may());
+        assert_eq!(on_the_asking.made(), on_the_asked.made());
+        assert_eq!(on_the_asking.ends(), on_the_asked.ends());
     }
 }

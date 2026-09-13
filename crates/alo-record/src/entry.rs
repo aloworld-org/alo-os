@@ -23,6 +23,26 @@
 //! fill it, and the words are asked for here, once, with the vocabulary that
 //! person reads — the rule [`Entry::refused`] has kept since 9e, now covering
 //! what ran as well as what did not.
+//!
+//! # Where it came from, when it came from another machine
+//!
+//! ADR 0003: *B records it, with A named as the origin.* A verb that arrived
+//! from a paired machine walks the same journey as one an agent on this machine
+//! asked for — the same constructors above, the same four answers — and one
+//! thing more is true of it, which is which machine it came from. That is
+//! [`Entry::from_another_machine`], a stamp put on an entry already made rather
+//! than a second set of constructors, so that a remote turn cannot write down a
+//! kind of event a local one could not: what it adds is an origin and nothing
+//! else. [`Entry::origin`] answers it, and answers it for the question a
+//! paired machine put to this one's models as well, which carried its origin
+//! inside [`Happened::AnsweredForAnotherMachine`] before there was a field for
+//! it.
+//!
+//! **The name is the one this machine's person gave the other when they
+//! paired**, for the reason that variant gives: it is the only name here anybody
+//! on this machine has reason to trust. It is additive, and `format` stays `1`:
+//! an entry with nowhere to have come from carries no field, and a reader that
+//! has never heard of one ignores it.
 
 use std::time::SystemTime;
 
@@ -41,6 +61,14 @@ pub struct Entry {
     at: SystemTime,
     /// What happened.
     happened: Happened,
+    /// The machine it was caused from, when it was caused from another one
+    /// (ADR 0003), by the name this machine's person gave it when they paired.
+    ///
+    /// Absent — not present and empty — for everything caused on this
+    /// machine, so a record written before there was such a thing as a remote
+    /// turn reads back exactly as it was written.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    origin: Option<Line>,
 }
 
 impl Entry {
@@ -52,7 +80,31 @@ impl Entry {
     /// the journey, which is what stops a record being handed something that
     /// never happened.
     pub(crate) fn new(at: SystemTime, happened: Happened) -> Self {
-        Self { at, happened }
+        Self {
+            at,
+            happened,
+            origin: None,
+        }
+    }
+
+    /// This entry, as something a paired machine caused (ADR 0003).
+    ///
+    /// `machine` is the name this machine's person gave the other when they
+    /// paired with it — their own word for it, and the only name here anybody
+    /// on this machine has reason to trust. It goes through [`Line`] like every
+    /// other sentence the record keeps.
+    ///
+    /// A stamp rather than a constructor, on purpose: everything else about the
+    /// entry was decided by the constructor that made it, from the same values
+    /// a local turn would have handed over, and what a remote turn can add is
+    /// where it came from and nothing beside it. The name a person gave a
+    /// machine is not an authority and does not become one here — the entry's
+    /// `agent` is still whose grants on **this** machine permitted or refused
+    /// the call.
+    #[must_use]
+    pub fn from_another_machine(mut self, machine: &str) -> Self {
+        self.origin = Some(Line::of(machine));
+        self
     }
 
     /// A verb ran.
@@ -63,9 +115,9 @@ impl Entry {
     /// when it got round to writing.
     #[must_use]
     pub fn ran(authorised: &Authorised, strings: &Strings) -> Self {
-        Self {
-            at: authorised.at(),
-            happened: Happened::Ran {
+        Self::new(
+            authorised.at(),
+            Happened::Ran {
                 agent: Line::of(authorised.under().as_str()),
                 what: What::of(authorised.call(), strings),
                 from_approval: authorised.from_approval().map(|from| from.as_u64()),
@@ -75,7 +127,7 @@ impl Entry {
                     .map(|grant| grant.as_u64())
                     .collect(),
             },
-        }
+        )
     }
 
     /// A call was refused at the moment it would have run.
@@ -143,14 +195,14 @@ impl Entry {
     /// about the attempt is kept.
     #[must_use]
     pub fn turned_away(verb: &str, why: &str, agent: &Grantee, at: SystemTime) -> Self {
-        Self {
+        Self::new(
             at,
-            happened: Happened::TurnedAway {
+            Happened::TurnedAway {
                 agent: Line::of(agent.as_str()),
                 verb: Line::of(verb),
                 why: Line::of(why),
             },
-        }
+        )
     }
 
     /// A question was answered on this machine (ADR 0008).
@@ -284,14 +336,14 @@ impl Entry {
         strings: &Strings,
         at: SystemTime,
     ) -> Self {
-        Self {
+        Self::new(
             at,
-            happened: Happened::Stopped {
+            Happened::Stopped {
                 agent: Line::of(agent.as_str()),
                 what: What::of(call, strings),
                 how,
             },
-        }
+        )
     }
 
     /// When it happened.
@@ -320,6 +372,23 @@ impl Entry {
     #[must_use]
     pub fn what(&self) -> Option<&What> {
         self.happened.what()
+    }
+
+    /// Which machine this was caused from, when it was caused from another one
+    /// — `None` for everything caused on this machine.
+    ///
+    /// One question for both ways a paired machine reaches this one: a verb it
+    /// asked for, stamped with [`Entry::from_another_machine`], and a question
+    /// it put to this machine's models, which
+    /// [`Happened::AnsweredForAnotherMachine`] carries the origin of itself. A
+    /// reader asking *what did other machines cause here* should not have to
+    /// know that the two arrived through different doors.
+    #[must_use]
+    pub fn origin(&self) -> Option<&Line> {
+        self.origin.as_ref().or(match &self.happened {
+            Happened::AnsweredForAnotherMachine { origin } => Some(origin),
+            _ => None,
+        })
     }
 }
 
@@ -567,5 +636,82 @@ mod tests {
         assert!(written.contains("\"not-bounded\""), "{written}");
         let read = serde_json::from_str::<Entry>(&written).unwrap();
         assert_eq!(read, entry);
+    }
+
+    /// **A verb from a paired machine is recorded with the origin machine
+    /// named** (ADR 0003), and with everything a local entry carries: the same
+    /// constructor made it, and the stamp added where it came from and nothing
+    /// else.
+    #[test]
+    fn what_a_paired_machine_caused_is_recorded_with_the_machine_named() {
+        let grants = granting(&["/home/anna/Invoices"]);
+        let authorised = Authorised::read(&listing_invoices(), &files(), &grants, noon()).unwrap();
+        let here = Entry::ran(&authorised, &in_english());
+        assert_eq!(here.origin(), None, "a local entry came from somewhere");
+
+        let from_elsewhere =
+            Entry::ran(&authorised, &in_english()).from_another_machine("the reception machine");
+        assert!(
+            from_elsewhere
+                .origin()
+                .is_some_and(|origin| origin.is("the reception machine"))
+        );
+        // Everything else is exactly what the local entry says: the stamp
+        // changes where it came from and not what happened.
+        assert_eq!(from_elsewhere.at(), here.at());
+        assert_eq!(from_elsewhere.happened(), here.happened());
+        assert_eq!(from_elsewhere.agent(), here.agent());
+        assert_eq!(
+            from_elsewhere.happened().against(),
+            here.happened().against()
+        );
+    }
+
+    /// **The origin is kept in the file and comes back**, and an entry with
+    /// nowhere to have come from carries no field at all — so a record written
+    /// before there was such a thing reads back byte for byte as it was.
+    #[test]
+    fn where_an_entry_came_from_survives_being_written_down_and_is_absent_otherwise() {
+        let here = Entry::answered_here(&mail(), noon());
+        let written = serde_json::to_string(&here).unwrap();
+        assert!(!written.contains("origin"), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).ok(), Some(here));
+
+        let from_elsewhere =
+            Entry::answered_here(&mail(), noon()).from_another_machine("the reception machine");
+        let written = serde_json::to_string(&from_elsewhere).unwrap();
+        assert!(
+            written.contains("\"origin\":\"the reception machine\""),
+            "{written}"
+        );
+        let read = serde_json::from_str::<Entry>(&written).unwrap();
+        assert_eq!(read, from_elsewhere);
+        assert!(
+            read.origin()
+                .is_some_and(|origin| origin.is("the reception machine"))
+        );
+    }
+
+    /// **A question a paired machine put to this one's models has an origin
+    /// too**, answered by the same question: a reader should not have to know
+    /// that a verb and a question arrived through different doors.
+    #[test]
+    fn a_question_answered_for_another_machine_answers_where_it_came_from() {
+        let entry = Entry::answered_for("the reception machine", noon());
+        assert!(
+            entry
+                .origin()
+                .is_some_and(|origin| origin.is("the reception machine"))
+        );
+    }
+
+    /// The name a person gave a machine is data and goes through [`Line`]: one
+    /// carrying a control character cannot rewrite the record it appears in.
+    #[test]
+    fn the_origin_cannot_carry_a_control_character_into_the_record() {
+        let entry = Entry::answered_here(&mail(), noon())
+            .from_another_machine("the reception machine\u{1b}[2K");
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(!written.contains('\u{1b}'), "{written}");
     }
 }

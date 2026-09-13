@@ -1,6 +1,7 @@
 //! What this crate says, against the vocabulary the code actually uses.
 //!
-//! There are two sentences, so this file is mostly about the other side of the
+//! There are five sentences — two about the turn, three about a verb from
+//! another machine — so this file is mostly about the other side of the
 //! bargain: that everything *else* a turn hands a person is somebody else's
 //! string, read out of the one vocabulary a shell has.
 //!
@@ -24,7 +25,7 @@ fn not_bounded() -> NotDone {
     ))
 }
 
-/// Finnish, and this crate's two strings in it.
+/// Finnish, and this crate's five strings in it.
 fn in_finnish() -> Strings {
     let vocabulary = turn_words().expect("this crate's own words");
     let finnish = Language::written("fi").expect("a language");
@@ -36,10 +37,22 @@ fn in_finnish() -> Strings {
         .says(
             Key::named("turn.not-bounded").expect("a key"),
             "mitään ei tehty: tämä kone ei voi rajata agenttia siihen, minkä olet sille antanut",
+        )
+        .says(
+            Key::named("turn.not-granted-here").expect("a key"),
+            "{machine} ei ole saanut lupaa kohteeseen {wanted} tällä koneella — toisella koneella              annettu lupa ei ulotu tänne, ja vain täällä annettu ulottuisi",
+        )
+        .says(
+            Key::named("turn.grant-here-expired").expect("a key"),
+            "{machine} sai luvan kohteeseen {reach} tällä koneella, ja se on vanhentunut, joten se              ei voi käyttää kohdetta {wanted} — toisella koneella annettu lupa ei korvaa sitä",
+        )
+        .says(
+            Key::named("turn.no-longer-paired").expect("a key"),
+            "tämä kone ei ole enää pariliitoksessa koneen {machine} kanssa, joten mitään sen              pyytämää ei enää käsitellä",
         );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of two sentences with no gaps in them");
+        .expect("a translation of five sentences with the gaps the code fills");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[finnish]);

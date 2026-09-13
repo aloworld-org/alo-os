@@ -62,6 +62,16 @@
 //! [`NotDone::NotBounded`], written down as the machine's own refusal before
 //! it is answered, and [`Turning::a_thread_is_lost`], which is the one a
 //! service stops over.
+//!
+//! # And a turn may belong to a machine on the network
+//!
+//! [`crate::Arriving`] is a turn whose verbs come from a paired machine (ADR
+//! 0003), and it is this type underneath with an origin set: the grants asked
+//! are this machine's for that machine's principal, every entry written is
+//! stamped with where it came from, and two refusals are worded for the
+//! machine that was asked rather than the one that asked. The doors that do
+//! that work are `pub(crate)` halves of the public ones here, so that a remote
+//! turn walks exactly the road a local one does and skips no step of it.
 
 use std::time::{Duration, SystemTime};
 
@@ -71,9 +81,11 @@ use alo_capability::{
 };
 use alo_context::{Context, Turn};
 use alo_files::Answer;
+use alo_nearby::Origin;
 use alo_record::Entry;
 use alo_strings::{Said, Strings};
 
+use crate::arriving::{proposal_worded_here, worded_here};
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
@@ -105,6 +117,13 @@ pub struct Turning<'a, 'm> {
     /// evidence, and this is a service that has lost a thread to a grant that
     /// is over. Neither can be told from the other by reading a sentence.
     lost_a_thread: bool,
+    /// The machine this turn's verbs come from, when they come from another
+    /// one (ADR 0003) — `None` for a turn an agent on this machine is in.
+    ///
+    /// Set only by [`Turning::arriving_from`], and read in three places: where
+    /// an entry is written, so it says where it came from; and where the two
+    /// refusals a remote verb reads differently are worded.
+    origin: Option<Origin>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -137,6 +156,38 @@ impl<'a, 'm> Turning<'a, 'm> {
             approvals: Approvals::default(),
             closed: false,
             lost_a_thread: false,
+            origin: None,
+        })
+    }
+
+    /// Begin a turn for verbs arriving from a paired machine.
+    ///
+    /// `pub(crate)`, and [`crate::Arriving::beginning`] is the only caller:
+    /// a turn with an origin is handed out only inside an [`crate::Arriving`],
+    /// which has four of this type's six doors and lends the turn itself for
+    /// reading alone. The context is [`Context::at_invocation`] with nothing
+    /// on it, because nobody on this machine invoked anything and nothing of
+    /// this machine's screen is offered to a machine on the network; the
+    /// agent is the paired machine's principal on this machine's grants.
+    pub(crate) fn arriving_from(
+        origin: &Origin,
+        lasting: Duration,
+        at: SystemTime,
+        grants: &mut Grants,
+        machine: &'a mut Machine<'m>,
+    ) -> Result<Self, GrantError> {
+        Ok(Self {
+            turn: Turn::beginning(
+                Context::at_invocation(at),
+                &origin.principal(),
+                lasting,
+                grants,
+            )?,
+            machine,
+            approvals: Approvals::default(),
+            closed: false,
+            lost_a_thread: false,
+            origin: Some(origin.clone()),
         })
     }
 
@@ -162,13 +213,24 @@ impl<'a, 'm> Turning<'a, 'm> {
     ) -> Result<Answer, NotDone> {
         self.still_open()?;
         let call = self.calling(verb, given, now)?;
+        self.reading_call(call, grants, now)
+    }
+
+    /// The read, from the call onwards: the grants, the boundary, the record.
+    ///
+    /// `pub(crate)`, for [`crate::Arriving::reading`], which asks the pairing
+    /// between forming the call and this.
+    pub(crate) fn reading_call(
+        &mut self,
+        call: Call,
+        grants: &Grants,
+        now: SystemTime,
+    ) -> Result<Answer, NotDone> {
         let authorised = match Authorised::read(&call, self.turn.grantee(), grants, now) {
             Ok(authorised) => authorised,
             Err(refused) => return self.stopped_at_the_moment(refused, now),
         };
-        let (entry, outcome) = self.inside_a_boundary(authorised, grants);
-        self.writing_down(entry)?;
-        outcome
+        self.running(authorised, grants)
     }
 
     /// A change, put to a person in one sentence.
@@ -192,9 +254,26 @@ impl<'a, 'm> Turning<'a, 'm> {
     ) -> Result<ProposalId, NotDone> {
         self.still_open()?;
         let call = self.calling(verb, given, now)?;
+        self.proposing_call(call, grants, standing, now)
+    }
+
+    /// The proposal, from the call onwards.
+    ///
+    /// `pub(crate)`, for [`crate::Arriving::proposing`], which asks the
+    /// pairing between forming the call and this. A refusal by the grants is
+    /// worded for the machine that was asked when there is one — the value is
+    /// the grants' own either way.
+    pub(crate) fn proposing_call(
+        &mut self,
+        call: Call,
+        grants: &Grants,
+        standing: Duration,
+        now: SystemTime,
+    ) -> Result<ProposalId, NotDone> {
         let proposal = match Proposal::checked(&call, self.turn.grantee(), grants, now, standing) {
             Ok(proposal) => proposal,
             Err(why) => {
+                let why = proposal_worded_here(why, self.origin.as_ref(), self.machine.strings());
                 let said = why.said(self.machine.strings()).into_text();
                 let entry = Entry::never_asked(
                     &call,
@@ -227,12 +306,38 @@ impl<'a, 'm> Turning<'a, 'm> {
         grants: &Grants,
         now: SystemTime,
     ) -> Result<Answer, NotDone> {
+        let authorised = self.redeeming(id, grants, now)?;
+        self.running(authorised, grants)
+    }
+
+    /// Spend the approval and ask the grants at the moment of execution, or
+    /// write down why not.
+    ///
+    /// `pub(crate)`, for [`crate::Arriving::approving`], which asks the
+    /// pairing between this and running what was authorised.
+    pub(crate) fn redeeming(
+        &mut self,
+        id: ProposalId,
+        grants: &Grants,
+        now: SystemTime,
+    ) -> Result<Authorised, NotDone> {
         self.still_open()?;
         let approved = self.approvals.approve(id, now)?;
-        let authorised = match approved.redeem(grants, now) {
-            Ok(authorised) => authorised,
-            Err(refused) => return self.stopped_at_the_moment(refused, now),
-        };
+        match approved.redeem(grants, now) {
+            Ok(authorised) => Ok(authorised),
+            Err(refused) => self.stopped_at_the_moment(refused, now),
+        }
+    }
+
+    /// Run what was authorised inside the boundary, write down what happened,
+    /// and answer.
+    ///
+    /// `pub(crate)`, and the second half of both doors that run something.
+    pub(crate) fn running(
+        &mut self,
+        authorised: Authorised,
+        grants: &Grants,
+    ) -> Result<Answer, NotDone> {
         let (entry, outcome) = self.inside_a_boundary(authorised, grants);
         self.writing_down(entry)?;
         outcome
@@ -504,8 +609,9 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// `alo_capability::Verbs::call`. What is written down carries the verb as
     /// it was asked for and the refusal, and **no arguments at all**: they are
     /// whatever a model was persuaded to send, and `alo_record` keeps none of
-    /// them.
-    fn calling(
+    /// them. `pub(crate)` for [`crate::Arriving`], which is the other thing
+    /// that takes a name and some values, and takes them through here.
+    pub(crate) fn calling(
         &mut self,
         verb: &str,
         given: &[(&str, Given)],
@@ -536,7 +642,7 @@ impl<'a, 'm> Turning<'a, 'm> {
         authorised: Authorised,
         grants: &Grants,
     ) -> (Entry, Result<Answer, NotDone>) {
-        let (entry, outcome) = carrying_out(self.machine, authorised, grants);
+        let (entry, outcome) = carrying_out(self.machine, authorised, grants, self.origin.as_ref());
         if matches!(&outcome, Err(NotDone::NotBounded(why)) if why.a_thread_is_still_inside()) {
             self.lost_a_thread = true;
         }
@@ -556,12 +662,16 @@ impl<'a, 'm> Turning<'a, 'm> {
     ///
     /// Both doors that run something end here when the grants refuse, and they
     /// share it because it is one fact: a properly formed call, stopped at the
-    /// moment it would have run.
-    fn stopped_at_the_moment<T>(
+    /// moment it would have run. On a turn from another machine the refusal is
+    /// worded for the machine that was asked first, so the record and the
+    /// caller carry one sentence; `pub(crate)` for [`crate::Arriving`], whose
+    /// own refusal — a pairing that ended — arrives here already worded.
+    pub(crate) fn stopped_at_the_moment<T>(
         &mut self,
         refused: alo_capability::Refused,
         now: SystemTime,
     ) -> Result<T, NotDone> {
+        let refused = worded_here(refused, self.origin.as_ref(), self.machine.strings());
         let entry = Entry::refused(&refused, self.turn.grantee(), self.machine.strings(), now);
         self.writing_down(entry)?;
         Err(NotDone::Refused(refused))
@@ -573,7 +683,17 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// The only road to the record in this crate. A door that answered without
     /// coming through here would be a door the gate's *every execution and every
     /// refusal leaves a record* is not true of.
-    fn writing_down(&mut self, entry: Entry) -> Result<(), NotDone> {
+    ///
+    /// On a turn from another machine the entry is stamped with where it came
+    /// from here, once, so that no door can write down something a paired
+    /// machine caused as though an agent on this machine had (ADR 0003: *B
+    /// records it, with A named as the origin*). `pub(crate)` for
+    /// [`crate::Arriving`], which has one entry of its own to write.
+    pub(crate) fn writing_down(&mut self, entry: Entry) -> Result<(), NotDone> {
+        let entry = match &self.origin {
+            Some(origin) => entry.from_another_machine(origin.called()),
+            None => entry,
+        };
         self.keeping(entry).map_err(NotDone::NotRecorded)
     }
 
@@ -605,7 +725,10 @@ impl<'a, 'm> Turning<'a, 'm> {
     }
 
     /// Whether anything more may happen under this turn.
-    fn still_open(&self) -> Result<(), NotDone> {
+    ///
+    /// `pub(crate)` for [`crate::Arriving`], whose doors ask it first exactly
+    /// as the doors here do.
+    pub(crate) fn still_open(&self) -> Result<(), NotDone> {
         if self.closed {
             return Err(NotDone::TurnClosed);
         }

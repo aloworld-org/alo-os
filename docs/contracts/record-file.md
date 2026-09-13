@@ -100,6 +100,20 @@ shape with room for one would have a refused question wearing a call's
 clothes. A reader looking for what the machine refused of its own accord looks
 for this tag.
 
+**`origin` names the machine an entry was caused from**, added 2026-09-13 and
+additive. ADR 0003: a verb from a paired machine is evaluated against the
+receiving machine's grants and *recorded there, with the origin machine
+named*. Any entry may carry `origin`, a string: the name the person on this
+machine gave the other machine when they paired with it. It is absent — not
+present and empty — on everything caused on this machine, so a record written
+before it existed reads back byte for byte, and a reader that has never heard
+of it ignores it as the rule below says. It is not an authority: `agent` on
+such an entry is still whose grants on **this** machine permitted or refused
+the call, which for a verb from a paired machine is that machine's principal,
+spelt `machine:` and its identity. A question a paired machine put to this
+machine's models carries its origin inside `answered-for-another-machine`, as
+it did before, and a reader asking what other machines caused here reads both.
+
 ## Versioning
 
 `format` is `1`. Anything that would stop this version reading a record

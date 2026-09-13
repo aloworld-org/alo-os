@@ -52,6 +52,19 @@
 //! anything in here that an agent did?* Naming every agent that might have run
 //! and trusting the list is no way to establish that none did.
 //!
+//! # And what another machine caused, told apart from what this one did
+//!
+//! ADR 0003: a verb that arrives from a paired machine is evaluated against
+//! this machine's grants, approved by this machine's person, and *recorded
+//! here, with the origin machine named*. It walks the same journey and makes
+//! the same entries as a local verb, and every entry can then carry one thing
+//! more — [`Entry::origin`], the name this machine's person gave the machine it
+//! came from. [`Only::FromAnotherMachine`] asks for everything with one, the
+//! question a paired machine put to this one's models included, so *what has
+//! the machine down the corridor done on mine* is one question rather than one
+//! per door. [`entry`] has the reasoning, and it is additive: an entry caused
+//! here carries no field, and `format` stays `1`.
+//!
 //! # What left, kept once
 //!
 //! Law 1 asks *what left this machine today* and law 1's answer has to be one

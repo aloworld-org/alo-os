@@ -50,6 +50,18 @@
 //! put to a model is not a verb, asks the grants nothing, and is shaped by law
 //! 1 instead — the next section but one is about it.
 //!
+//! # A verb from another machine walks the same road
+//!
+//! [`Arriving`] is a turn whose verbs come from a paired machine, and it is
+//! ADR 0003's *a remote agent acts only under a local grant* as a type: the
+//! grants asked at every step above are **this** machine's, made out to that
+//! machine's principal, and there is no parameter anywhere for the asking
+//! machine's own. It has four of the doors — a read, a proposal, an approval
+//! and a decline — and not the question, offers nothing of this machine's
+//! screen, asks the pairing at every door the way the grants are asked, and
+//! stamps every entry with where it came from. [`arriving`] is the argument in
+//! full, including the two refusals it words differently and why.
+//!
 //! # Nothing is handed back that has not been written down
 //!
 //! `CLAUDE.md`'s gate asks that *every execution and every refusal leaves a
@@ -121,6 +133,7 @@
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 pub mod answers;
+pub mod arriving;
 pub mod asking;
 pub mod bounding;
 mod carrying;
@@ -138,6 +151,7 @@ pub mod words;
 mod testing;
 
 pub use answers::Answers;
+pub use arriving::Arriving;
 pub use bounding::{Bounding, Doing, Done};
 pub use kept::Kept;
 pub use machine::Machine;

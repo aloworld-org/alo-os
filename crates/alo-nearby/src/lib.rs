@@ -55,8 +55,15 @@
 //! it found. A [`Found`] is a fact written down, and turning one into something
 //! this machine will talk to is ADR 0003's mutual, deliberate pairing — made on
 //! **both** machines, enumerated, revocable in one action and expiring, with a
-//! remote agent acting only under a grant made locally. That is the next task,
-//! and it is deliberately not reachable from here.
+//! remote agent acting only under a grant made locally. [`Pairing`] and
+//! [`Pairings`] are that pairing; [`Deliberating`] is the two people agreeing
+//! to it.
+//!
+//! **And the other end of it.** [`Origin`] is a paired machine as a place a
+//! verb may *arrive* from: the identity a grant on this machine is made out
+//! to, and the name this machine's person reads. It is made only by asking
+//! the pairings, and it permits nothing — what a verb from there may do is
+//! decided by the grants made on this machine, which is `alo-turn`'s to ask.
 //!
 //! **And not a trusted network.** There is no setting in this crate, which is
 //! the point of it having none: no *advertise as*, no *discovery off*, no
@@ -70,6 +77,7 @@ pub mod advertising;
 mod deliberating;
 mod looking;
 mod machine;
+mod origin;
 mod pairing;
 mod permitting;
 mod presence;
@@ -81,6 +89,7 @@ pub mod words;
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
 pub use looking::{Answering, Looking, THE_ADDRESS, THE_PORT};
 pub use machine::MachineId;
+pub use origin::Origin;
 pub use pairing::{NotPaired, Pairing, Pairings};
 pub use permitting::{EVERYTHING_A_PAIRING_MAY_PERMIT, MayAskIts};
 pub use presence::{Found, Presence, SERVICE, Standing, VERSION, VERSION_KEY};
