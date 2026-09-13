@@ -31,23 +31,40 @@
 
 //! # What is watched, and what is not
 //!
-//! Sixteen hooks on the filesystem — `file_open`, `file_permission`,
+//! Twenty hooks on the filesystem — `file_open`, `file_permission`,
 //! `inode_rename`, `inode_unlink`, `inode_link`, `inode_setattr`,
 //! `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
 //! `inode_remove_acl`, `file_ioctl`, `inode_create`, `inode_mknod`,
-//! `inode_mkdir`, `inode_rmdir` and `inode_symlink` — which is what a turn
-//! **opens**, **reads and writes**, **moves**, **removes**, gives a **second
-//! name**, **changes about a file that is not its contents** — its size,
-//! mode, owner, times, extended attributes and access lists, which
+//! `inode_mkdir`, `inode_rmdir`, `inode_symlink`, `inode_getattr`,
+//! `inode_getxattr`, `inode_listxattr` and `inode_readlink` — which is what
+//! a turn **opens**, **reads and writes**, **moves**, **removes**, gives a
+//! **second name**, **changes about a file that is not its contents** — its
+//! size, mode, owner, times, extended attributes and access lists, which
 //! [`decide_attribute`] decides as one question, and its inode flags, which
 //! [`decide_request`] decides for the two `ioctl` requests that set them —
-//! and, since 2026-09-13, what it **makes**: a file, with an open or without
-//! one, a directory, and a symbolic link, each decided by the folder the
-//! name is being made in, which [`decide_making`] argues; and a directory it
-//! removes, which [`decide_delete`] decides as it decides a file. That is not
-//! the whole of a filesystem and this file does not pretend it is. Nothing
-//! here watches:
+//! since 2026-09-13 what it **makes**: a file, with an open or without one,
+//! a directory, and a symbolic link, each decided by the folder the name is
+//! being made in, which [`decide_making`] argues; and a directory it
+//! removes, which [`decide_delete`] decides as it decides a file — and,
+//! since the same day, what it **learns about** a file it may not open: its
+//! size, mode, owner and times, the value of an extended attribute, the
+//! names of its attributes, and where a symbolic link points, which
+//! [`decide_asking`] and [`decide_question`] decide by the walk every other
+//! file hook makes. That is not the whole of a filesystem and this file does
+//! not pretend it is. Nothing here watches:
 //!
+//! - **a file's access list, read** (`inode_get_acl`) — since Linux 6.2 a
+//!   `getxattr` of `system.posix_acl_access` is routed to that hook and never
+//!   reaches `inode_getxattr`, exactly as the write is routed to
+//!   `inode_set_acl` past `inode_setxattr`; so a bound turn refused the names
+//!   of a file's attributes is still answered its access list. Reproduced in
+//!   `alo-bounding/tests/the_kernel_refuses_what_a_turn_reads_about_a_file.rs`
+//!   in the direction it behaves, named in `docs/quirks.md`, and the
+//!   kernel-enforcement plan's task 20 is what closes it;
+//! - **whether a name exists** (`inode_permission`) — `access(2)` and every
+//!   path the kernel resolves ask it, so a hook there would be paid for every
+//!   component of every open on the machine, twice, to refuse a turn the one
+//!   bit `stat` no longer gives it. Named rather than closed, deliberately;
 //! - **a mapping of a file** (`mmap_file`) — a file mapped into memory is read
 //!   by the processor rather than by a syscall, so a mapping is the one way
 //!   left to the contents of a descriptor that was **opened before a turn
@@ -87,6 +104,16 @@
 //! it. [`decide_making`] and [`decide_delete`] closed the five, and
 //! `alo-bounding/tests/the_kernel_refuses_what_a_turn_makes.rs` measures
 //! each refused outside the grant beside the same thing made inside it.
+//! **And until 2026-09-13 nothing decided what a turn learned *about* a file
+//! it could not open**: `stat(2)` answered with its size, owner, mode and
+//! times, `getxattr(2)` with the value of an attribute an application put
+//! there, `listxattr(2)` with their names and `readlink(2)` with where a link
+//! points — no byte of contents, and everything the machine knew about files
+//! nobody granted, which is *context is offered, never watched* failing by
+//! another road. [`decide_asking`] and [`decide_question`] closed the four,
+//! and `alo-bounding/tests/the_kernel_refuses_what_a_turn_reads_about_a_file.rs`
+//! measures each refused outside the grant beside the same question answered
+//! inside it, with the right answer.
 //!
 //! What a bound turn can still change on a filesystem is therefore
 //! reproduced in `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
@@ -229,12 +256,141 @@ pub fn decide_use(file: u64) -> i32 {
 fn kind_of(file: u64) -> Option<u16> {
     let file_path = kernel::offset(Field::FilePath)?;
     let path_dentry = kernel::offset(Field::PathDentry)?;
+    let entry = kernel::word_at(file.wrapping_add(file_path).wrapping_add(path_dentry))?;
+    kind_at(entry)
+}
+
+/// What kind of file this directory entry names — the `S_IFMT` bits of its
+/// inode's mode — or [`None`] if the kernel would not say.
+///
+/// The half of [`kind_of`] that starts from an entry, so that a `stat` handed
+/// a `struct path` and a read handed a `struct file` ask the same question of
+/// the same inode. Its own frame for the reason [`kind_of`] has one.
+fn kind_at(entry: u64) -> Option<u16> {
     let dentry_inode = kernel::offset(Field::DentryInode)?;
     let inode_mode = kernel::offset(Field::InodeMode)?;
-    let entry = kernel::word_at(file.wrapping_add(file_path).wrapping_add(path_dentry))?;
     let inode = kernel::word_at(entry.wrapping_add(dentry_inode))?;
     let mode = kernel::quarter_word_at(inode.wrapping_add(inode_mode))?;
     Some(mode & A_KIND)
+}
+
+/// Whether this question about a file — its size, mode, owner and times,
+/// put by a `struct path` rather than by an entry — may be answered.
+///
+/// # What `stat` reveals, and why it is decided
+///
+/// Every hook before this one decides what a turn does *to* a file. None
+/// decided what a turn found out *about* one it could not open, and `stat`
+/// is the whole of that: a turn refused a folder's listing by
+/// `file_permission` could still ask each name in it whether it existed and
+/// how big it was, and for a private folder that is most of what a listing
+/// would have said. No byte of contents moves; what moves is what the machine
+/// knows about files nobody granted, and *context is offered, never watched*
+/// forbids exactly that by another road.
+///
+/// # The path, and then the entry, and then the same walk
+///
+/// `inode_getattr` is handed a `struct path` — the one an open reaches its
+/// entry through as `f_path`, handed here on its own — so the entry is one
+/// read further in, and from there the decision is [`decide`]'s exactly: the
+/// file's own entry, upwards, until a granted place is met or the top of the
+/// filesystem is. `alo-files` asks `symlink_metadata` of every path it was
+/// given before it opens one, and reads a file's size and link count through
+/// the descriptor it opened; every one of those is among the turn's places,
+/// and was measured answered before this hook was written.
+///
+/// # A socket and a pipe are stepped aside from
+///
+/// `fstat` reaches this hook through the descriptor's own path, and a
+/// descriptor can be a socket or a pipe. Both are stepped aside from for the
+/// reason [`decide_use`] steps aside from them: neither holds contents of its
+/// own, neither is a place a grant is over, and a copy in the standard
+/// library asks the kind of both its ends before it moves a byte — so a
+/// refusal here would break a verb copying a file inside its grant towards a
+/// process this service already talks to, while looking like a boundary. The
+/// kind is read from the inode's mode; a mode that cannot be read is a file
+/// that cannot be checked, and is refused. A terminal, a device and the
+/// cgroup filesystem are not stepped aside from, and are refused as they are
+/// by name.
+///
+/// # What it costs, and what is deliberately not paid
+///
+/// This runs on every `stat`, `lstat`, `fstat` and `statx` on the machine,
+/// which is the busiest hook here after reads and writes; for a process that
+/// is not a turn it is one hash lookup and a miss, as everywhere. What is
+/// **not** hooked is `inode_permission`: it runs on every component of every
+/// path the kernel resolves, so the walk would be paid for every open on the
+/// machine twice, and what it would add is refusing `access(2)`, which
+/// reveals only whether a name exists. Named in `docs/quirks.md` rather than
+/// closed.
+///
+/// # Not a turn
+///
+/// Allowed, and nothing is remembered.
+pub fn decide_asking(path: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every `stat` on the machine.
+        return ALLOWED;
+    };
+    let Some(entry) = entry_at(path) else {
+        return REFUSED;
+    };
+    match kind_at(entry) {
+        Some(A_SOCKET | A_PIPE) => ALLOWED,
+        Some(_) if entry_inside(entry, granted) => ALLOWED,
+        _ => REFUSED,
+    }
+}
+
+/// Whether this question about a file — the value of an extended attribute,
+/// the names of its attributes, or where a symbolic link points — may be
+/// answered.
+///
+/// # One answer for three hooks
+///
+/// `inode_getxattr`, `inode_listxattr` and `inode_readlink` are each handed
+/// the directory entry of the file being asked about. The file exists, so
+/// this is the question [`decide_attribute`] asks of a change and the same
+/// walk answers it, from the entry rather than its folder: a grant can be
+/// over a single file, and its folder is then not a place the call named.
+///
+/// # Why a read of what is not the contents is decided
+///
+/// A `user.*` attribute is somewhere a person's application keeps bytes that
+/// are not the file's contents — a comment, an origin, a checksum — and a
+/// byte somebody put there is theirs whether or not it is in the file. The
+/// names say which files carry one. And where a link points is somebody's
+/// filesystem laid out in words: a turn that could read every link on the
+/// machine could map it without opening a file. None of that moves a byte of
+/// contents past a grant, which is the argument that was made for attribute
+/// changes until the size broke it, and it has the same remainder — nothing
+/// of somebody's contents, all of somebody's files.
+///
+/// # What is not decided here
+///
+/// A file's access list, read: `getxattr` of `system.posix_acl_access` is
+/// routed by the kernel to `inode_get_acl` since Linux 6.2 and never reaches
+/// `inode_getxattr`, as the write is routed to `inode_set_acl`. That hook is
+/// not on this programme; the crate's own documentation and `docs/quirks.md`
+/// name it, and the reproduction that holds it open is in the test file
+/// beside the four refusals.
+///
+/// # Not a turn
+///
+/// Allowed, and nothing is remembered.
+pub fn decide_question(entry: u64) -> i32 {
+    this_entry(entry)
+}
+
+/// The directory entry a `struct path` leads to, or [`None`] if it cannot be
+/// read.
+///
+/// The second half of [`entry_of`]: a `struct file` embeds a path, and this
+/// is the step from the path to its entry, so a `stat` handed the path alone
+/// and an open handed the file start their walks from the same place.
+fn entry_at(path: u64) -> Option<u64> {
+    let path_dentry = kernel::offset(Field::PathDentry)?;
+    kernel::word_at(path.wrapping_add(path_dentry))
 }
 
 /// The `ioctl` request that sets a file's inode flags: `FS_IOC_SETFLAGS`,
@@ -827,18 +983,26 @@ pub fn decide_attribute(entry: u64) -> i32 {
 /// entry.
 fn this_entry(entry: u64) -> i32 {
     let Some(granted) = kernel::granted(kernel::turn()) else {
-        // Not a turn, and this is almost every delete and attribute change on
-        // the machine.
+        // Not a turn, and this is almost every delete, attribute change and
+        // question about a file on the machine.
         return ALLOWED;
     };
-    let Some(fields) = Fields::found() else {
-        return REFUSED;
-    };
-    if upwards_from(entry, &fields, granted) {
+    if entry_inside(entry, granted) {
         ALLOWED
     } else {
         REFUSED
     }
+}
+
+/// Whether this directory entry lies at or under a granted place.
+///
+/// The fetch of the fields and the walk, for the hooks that already hold an
+/// entry; [`inside`] is the same for the hooks that hold a file.
+fn entry_inside(entry: u64, granted: Bounds) -> bool {
+    let Some(fields) = Fields::found() else {
+        return false;
+    };
+    upwards_from(entry, &fields, granted)
 }
 
 /// Whether the file this open is for lies at or under a granted place.

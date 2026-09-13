@@ -291,14 +291,25 @@ outside the call's own places. And since 2026-09-13 it covers what a turn
 **makes**: a bounded turn cannot make a file, a directory or a symbolic link
 in a folder outside the call's own places, and cannot remove a directory
 there — each refused with the same permission failure, and each landing
-inside the call's own places, which is where an archive is written. What a
+inside the call's own places, which is where an archive is written. And since
+the same day it covers what a turn **learns about** a file: a bounded turn
+cannot ask the size, mode, owner or times of a file outside the call's own
+places, by name or through a descriptor it held before the turn began; cannot
+read or list its extended attributes; and cannot read where a symbolic link
+there points. **An adapter may no longer assume that a path it was not
+granted can be checked from inside a turn** — not for its existence by
+`stat`, not for its size — and a check of a path the call *did* name is
+answered as it always was, because every such path is among the turn's
+places. Two things a turn can still learn are named rather than closed in
+`docs/quirks.md` under *What a turn reads about a file is inside the grant*:
+whether a name exists, by `access(2)`, and a file's access list. What a
 bounded turn can still do on a filesystem is read a file it was handed
 through a memory mapping, which is named in `docs/quirks.md` under *A
 descriptor opened before a turn began is decided about on every use*; the
 list of what was once unwatched and when each row closed is under *Four hooks
 are not a filesystem*, and what closed is under *Attributes, ownership and
-size are inside the grant* and *What a turn makes is inside the grant* beside
-it.
+size are inside the grant*, *What a turn makes is inside the grant* and *What
+a turn reads about a file is inside the grant* beside it.
 
 Nothing here changes what a caller sees. Every refusal an adapter can receive is
 still one of the ones in *Being told no*; the floor exists so that a refusal

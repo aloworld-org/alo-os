@@ -435,6 +435,89 @@ fn an_ordinary_days_makings(folder: &Path) -> usize {
     made
 }
 
+/// An ordinary program's questions about its files: every file in the folder
+/// asked its size by name and through a descriptor, given an attribute and
+/// asked its value and the names of its attributes, and a link made beside
+/// it and asked where it points — each taken away again, and the count of
+/// files that went through all of it.
+///
+/// The four hooks on what a turn learns about a file run on every one of
+/// those on the machine — `inode_getattr` on every `stat`, which is the
+/// busiest hook here after reads and writes — and this is what holds them to
+/// *decides and forgets* the way the opens hold `file_open`: a process in no
+/// turn asks about its own files, each hook looks up a control group, misses,
+/// and nothing anywhere is different afterwards. Every answer is asserted to
+/// be the right one, because a question silently refused or answered wrongly
+/// outside a turn is the other thing these hooks must not do.
+fn an_ordinary_days_questions(folder: &Path) -> usize {
+    let of_rustix = |why: rustix::io::Errno| std::io::Error::from_raw_os_error(why.raw_os_error());
+    let entries: Vec<PathBuf> = fs::read_dir(folder)
+        .expect("the ordinary folder is there")
+        .map(|entry| entry.expect("a directory entry can be read").path())
+        .collect();
+    let mut asked = 0;
+    for entry in entries {
+        let by_name = fs::symlink_metadata(&entry)
+            .expect("an ordinary program can ask the size of its own files");
+        let held = fs::File::open(&entry).expect("an ordinary program can open its own files");
+        let through = held
+            .metadata()
+            .expect("an ordinary program can ask the size of a file it holds");
+        assert_eq!(
+            by_name.len(),
+            through.len(),
+            "stat and fstat disagree about the size of an ordinary file, so the `stat` hook \
+             answered one of them wrongly outside a turn"
+        );
+        rustix::fs::setxattr(
+            &entry,
+            "user.alo.asked",
+            b"an ordinary answer",
+            rustix::fs::XattrFlags::empty(),
+        )
+        .map_err(of_rustix)
+        .expect("an ordinary program can set an attribute on its own files");
+        let mut value = [0u8; 64];
+        let length = rustix::fs::getxattr(&entry, "user.alo.asked", &mut value[..])
+            .map_err(of_rustix)
+            .expect("an ordinary program can read an attribute of its own files");
+        assert_eq!(
+            value.get(..length),
+            Some(&b"an ordinary answer"[..]),
+            "the attribute read back is not the one set, so the `getxattr` hook answered \
+             wrongly outside a turn"
+        );
+        let mut names = [0u8; 256];
+        let length = rustix::fs::listxattr(&entry, &mut names[..])
+            .map_err(of_rustix)
+            .expect("an ordinary program can list the attributes of its own files");
+        assert!(
+            names
+                .get(..length)
+                .unwrap_or_default()
+                .split(|byte| *byte == 0)
+                .any(|name| name == b"user.alo.asked"),
+            "the attribute set is not among the names listed, so the `listxattr` hook answered \
+             wrongly outside a turn"
+        );
+        rustix::fs::removexattr(&entry, "user.alo.asked")
+            .map_err(of_rustix)
+            .expect("and take it away");
+        let link = entry.with_extension("asked-link");
+        std::os::unix::fs::symlink(&entry, &link)
+            .expect("an ordinary program can make a symbolic link");
+        assert_eq!(
+            fs::read_link(&link).expect("an ordinary program can read where its own link points"),
+            entry,
+            "the link points somewhere else, so the `readlink` hook answered wrongly outside a \
+             turn"
+        );
+        fs::remove_file(&link).expect("and take it away");
+        asked += 1;
+    }
+    asked
+}
+
 /// A valid POSIX access list — version two, then the owner, the group and
 /// everybody else — which is the least the kernel accepts.
 fn an_ordinary_access_list() -> Vec<u8> {
@@ -610,6 +693,12 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
         "only {made} rounds of files, directories and links were made, so the five hooks on \
          what is made were barely asked anything"
     );
+    let asked = an_ordinary_days_questions(&folder);
+    assert_eq!(
+        asked, FILES,
+        "only {asked} files were asked about, so the four hooks on what a turn learns about a \
+         file were barely asked anything"
+    );
 
     let after = Held::of(&kernel);
     nothing_was_written_down(
@@ -617,8 +706,9 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
         &after,
         &format!(
             "{opened} files were opened, {sent} messages sent, {changed} files' attributes \
-             changed and {made} rounds of files, directories and links made and removed by \
-             programs that are not agent turns"
+             changed, {made} rounds of files, directories and links made and removed, and \
+             {asked} files asked their size, attributes and links by programs that are not \
+             agent turns"
         ),
     );
 }

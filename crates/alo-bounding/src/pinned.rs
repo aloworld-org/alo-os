@@ -28,7 +28,11 @@
 //!   ├─ inode_mknod           0600 root:root                 a file it makes without opening
 //!   ├─ inode_mkdir           0600 root:root                 a directory it makes
 //!   ├─ inode_rmdir           0600 root:root                 a directory it removes
-//!   └─ inode_symlink         0600 root:root                 a symbolic link it makes
+//!   ├─ inode_symlink         0600 root:root                 a symbolic link it makes
+//!   ├─ inode_getattr         0600 root:root                 a file's size, mode, owner, times, asked
+//!   ├─ inode_getxattr        0600 root:root                 an extended attribute read
+//!   ├─ inode_listxattr       0600 root:root                 a file's attribute names listed
+//!   └─ inode_readlink        0600 root:root                 where a symbolic link points
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -46,13 +50,15 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! The eighteen named after kernel functions are the pinned links, and they
+//! The twenty-two named after kernel functions are the pinned links, and they
 //! are what keeps the programme attached after the loader has exited. Removing
-//! one detaches that hook; nothing else does. There are eighteen because the
-//! programme sits on eighteen hooks — what a turn opens, moves, removes,
+//! one detaches that hook; nothing else does. There are twenty-two because the
+//! programme sits on twenty-two hooks — what a turn opens, moves, removes,
 //! links, connects to, sends, reads and writes, changes about a file that is
-//! not its contents, sets among a file's inode flags, and makes: a file, a
-//! directory, a symbolic link, and a directory it removes — and each attach
+//! not its contents, sets among a file's inode flags, makes: a file, a
+//! directory, a symbolic link, and a directory it removes — and learns about
+//! a file it may not open: its size, mode, owner and times, an attribute's
+//! value, its attributes' names, and where a link points — and each attach
 //! is its own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
@@ -150,6 +156,21 @@ const THE_RMDIR_HOOK: &str = "inode_rmdir";
 /// The pinned link for the hook every symbolic link made goes through.
 const THE_SYMLINK_HOOK: &str = "inode_symlink";
 
+/// The pinned link for the hook every `stat` goes through, where a file's
+/// size, mode, owner and times are asked.
+const THE_STAT_HOOK: &str = "inode_getattr";
+
+/// The pinned link for the hook every extended attribute read goes through.
+const THE_READ_ATTRIBUTE_HOOK: &str = "inode_getxattr";
+
+/// The pinned link for the hook every listing of a file's attribute names
+/// goes through.
+const THE_ATTRIBUTE_NAMES_HOOK: &str = "inode_listxattr";
+
+/// The pinned link for the hook every read of where a symbolic link points
+/// goes through.
+const THE_READLINK_HOOK: &str = "inode_readlink";
+
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
 
@@ -224,6 +245,18 @@ pub struct Pinned {
 
     /// The link that holds it on `inode_symlink`.
     symlink_hook: PathBuf,
+
+    /// The link that holds it on `inode_getattr`.
+    stat_hook: PathBuf,
+
+    /// The link that holds it on `inode_getxattr`.
+    read_attribute_hook: PathBuf,
+
+    /// The link that holds it on `inode_listxattr`.
+    attribute_names_hook: PathBuf,
+
+    /// The link that holds it on `inode_readlink`.
+    readlink_hook: PathBuf,
 }
 
 impl Pinned {
@@ -235,7 +268,7 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is twenty-one paths joined, and
+    /// Nothing is made or looked at: this is twenty-five paths joined, and
     /// every other method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
@@ -261,6 +294,10 @@ impl Pinned {
             mkdir_hook: root.join(THE_MKDIR_HOOK),
             rmdir_hook: root.join(THE_RMDIR_HOOK),
             symlink_hook: root.join(THE_SYMLINK_HOOK),
+            stat_hook: root.join(THE_STAT_HOOK),
+            read_attribute_hook: root.join(THE_READ_ATTRIBUTE_HOOK),
+            attribute_names_hook: root.join(THE_ATTRIBUTE_NAMES_HOOK),
+            readlink_hook: root.join(THE_READLINK_HOOK),
         }
     }
 
@@ -394,6 +431,33 @@ impl Pinned {
         &self.symlink_hook
     }
 
+    /// The link for the hook every `stat` goes through, where a file's size,
+    /// mode, owner and times are asked.
+    #[must_use]
+    pub fn stat_hook(&self) -> &Path {
+        &self.stat_hook
+    }
+
+    /// The link for the hook every extended attribute read goes through.
+    #[must_use]
+    pub fn read_attribute_hook(&self) -> &Path {
+        &self.read_attribute_hook
+    }
+
+    /// The link for the hook every listing of a file's attribute names goes
+    /// through.
+    #[must_use]
+    pub fn attribute_names_hook(&self) -> &Path {
+        &self.attribute_names_hook
+    }
+
+    /// The link for the hook every read of where a symbolic link points goes
+    /// through.
+    #[must_use]
+    pub fn readlink_hook(&self) -> &Path {
+        &self.readlink_hook
+    }
+
     /// Every pinned link, in the order the hooks are attached.
     ///
     /// One list so that attaching, refusing over leftovers and taking a
@@ -401,7 +465,7 @@ impl Pinned {
     /// pin was left out of one of those three would be a hook that stayed
     /// attached after the boundary was removed.
     #[must_use]
-    pub fn every_hook(&self) -> [&Path; 18] {
+    pub fn every_hook(&self) -> [&Path; 22] {
         self.every_hook_named().map(|(_, at)| at)
     }
 
@@ -415,7 +479,7 @@ impl Pinned {
     /// The name is the one the kernel function has and the pin is called after
     /// it, so the two cannot drift.
     #[must_use]
-    pub fn every_hook_named(&self) -> [(&'static str, &Path); 18] {
+    pub fn every_hook_named(&self) -> [(&'static str, &Path); 22] {
         [
             (THE_HOOK, self.hook.as_path()),
             (THE_RENAME_HOOK, self.rename_hook.as_path()),
@@ -444,6 +508,13 @@ impl Pinned {
             (THE_MKDIR_HOOK, self.mkdir_hook.as_path()),
             (THE_RMDIR_HOOK, self.rmdir_hook.as_path()),
             (THE_SYMLINK_HOOK, self.symlink_hook.as_path()),
+            (THE_STAT_HOOK, self.stat_hook.as_path()),
+            (THE_READ_ATTRIBUTE_HOOK, self.read_attribute_hook.as_path()),
+            (
+                THE_ATTRIBUTE_NAMES_HOOK,
+                self.attribute_names_hook.as_path(),
+            ),
+            (THE_READLINK_HOOK, self.readlink_hook.as_path()),
         ]
     }
 
@@ -657,11 +728,27 @@ mod tests {
             pinned.symlink_hook(),
             Path::new("/sys/fs/bpf/alo/inode_symlink")
         );
+        assert_eq!(
+            pinned.stat_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_getattr")
+        );
+        assert_eq!(
+            pinned.read_attribute_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_getxattr")
+        );
+        assert_eq!(
+            pinned.attribute_names_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_listxattr")
+        );
+        assert_eq!(
+            pinned.readlink_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_readlink")
+        );
         // Every hook has a pin of its own, and the list is what the loader
         // attaches in the order of: a hook missing from it would be attached
         // and never pinned, which is a hook detached the moment the loader
         // exits.
-        assert_eq!(pinned.every_hook().len(), 18);
+        assert_eq!(pinned.every_hook().len(), 22);
         assert_eq!(
             pinned
                 .every_hook_named()
@@ -674,10 +761,15 @@ mod tests {
                 "inode_mknod",
                 "inode_mkdir",
                 "inode_rmdir",
-                "inode_symlink"
+                "inode_symlink",
+                "inode_getattr",
+                "inode_getxattr",
+                "inode_listxattr",
+                "inode_readlink",
             ],
-            "the five hooks on what a turn makes are attached last, in this order, and each pin \
-             is called after the kernel function"
+            "the five hooks on what a turn makes and then the four on what it reads about a \
+             file are attached last, in this order, and each pin is called after the kernel \
+             function"
         );
         let named: std::collections::BTreeSet<&str> = pinned
             .every_hook_named()
@@ -686,7 +778,7 @@ mod tests {
             .collect();
         assert_eq!(
             named.len(),
-            18,
+            22,
             "two pins are called the same, so one hook would be attached twice and the other never"
         );
     }

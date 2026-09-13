@@ -68,7 +68,7 @@ fn the_kernel_half() -> &'static [u8] {
 /// The hooks the programme sits on, each called the same inside the compiled
 /// object as the kernel function it stands in front of.
 ///
-/// **Eighteen of them**, and each was added because the ones before it were
+/// **Twenty-two of them**, and each was added because the ones before it were
 /// not enough on their own: `file_open` is what a turn *opens*, `inode_rename`
 /// what it *moves*, `inode_unlink` what it *removes*, `inode_link` what it
 /// gives a *second name*, `socket_connect` where it *goes*, `socket_sendmsg`
@@ -87,7 +87,12 @@ fn the_kernel_half() -> &'static [u8] {
 /// `inode_mknod`, `inode_mkdir`, `inode_rmdir` and `inode_symlink` —
 /// because a name a turn leaves in a folder nobody granted outlives the
 /// turn, and a boundary that refused a file's mode while allowing the folder
-/// to be filled with names was one that had to be explained. A boundary
+/// to be filled with names was one that had to be explained, and the four on
+/// what a turn *learns about* a file it may not open — `inode_getattr`,
+/// `inode_getxattr`, `inode_listxattr` and `inode_readlink` — because a turn
+/// refused a folder's listing could still ask each name in it whether it was
+/// there and how big it was, and *context is offered, never watched* forbids
+/// that by any road. A boundary
 /// watching only opens lets a file nobody granted be renamed
 /// or linked into a granted folder and read from there, with no step anything
 /// to complain about; a boundary watching only files lets everything it
@@ -99,7 +104,7 @@ fn the_kernel_half() -> &'static [u8] {
 /// The order is the order [`Pinned::every_hook`] gives their pins in, and that
 /// is not decoration: they are zipped together below, so a hook added to one
 /// list and not the other does not compile.
-const THE_HOOKS: [&str; 18] = [
+const THE_HOOKS: [&str; 22] = [
     "file_open",
     "inode_rename",
     "inode_unlink",
@@ -118,6 +123,10 @@ const THE_HOOKS: [&str; 18] = [
     "inode_mkdir",
     "inode_rmdir",
     "inode_symlink",
+    "inode_getattr",
+    "inode_getxattr",
+    "inode_listxattr",
+    "inode_readlink",
 ];
 
 /// The map of turns to the places each may reach.
@@ -240,7 +249,7 @@ impl Imposed {
 /// to remove — and it would look like a working boundary. So a failure on any
 /// of them is a failure of the whole thing, and [`Imposed::once`] takes the
 /// earlier ones' pins away again on the way out. ADR 0015's rule, applied to a
-/// boundary that is now eighteen pieces: a turn whose boundary cannot be
+/// boundary that is now twenty-two pieces: a turn whose boundary cannot be
 /// applied does not run.
 fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
     let hooks = Btf::from_sys_fs().map_err(|_| NotBounded::TypesAreNotReadable {

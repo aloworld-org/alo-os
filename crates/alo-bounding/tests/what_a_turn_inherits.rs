@@ -425,9 +425,12 @@ fn a_file_opened_before_the_turn_began_is_refused_inside_it() {
 /// The other direction of the same descriptor: a verb with a bug in it holding
 /// a writable handle to a file nobody granted could replace what is in it, and
 /// the record would say nothing. The write is refused with `EACCES`, the
-/// handle itself is still a handle — `fstat` asks no hook, and it is measured
-/// so that the refusal cannot be a descriptor that had gone stale — and the
-/// file still says what it said.
+/// handle itself is still a handle — `fcntl` asks no hook this boundary sits
+/// on, and it is measured so that the refusal cannot be a descriptor that had
+/// gone stale; until 2026-09-13 that probe was `fstat`, which now asks
+/// `inode_getattr` and is refused on this descriptor, measured in
+/// `the_kernel_refuses_what_a_turn_reads_about_a_file.rs` — and the file
+/// still says what it said.
 #[test]
 fn a_file_opened_for_writing_before_the_turn_began_is_refused_inside_it() {
     let machine = AMachine::with_something_worth_protecting("write");
@@ -445,7 +448,11 @@ fn a_file_opened_for_writing_before_the_turn_began_is_refused_inside_it() {
                 held.write_all(A_REPLACEMENT.as_bytes())
                     .and_then(|()| held.flush()),
             );
-            let still_there = went(held.metadata().map(drop));
+            let still_there = went(
+                rustix::fs::fcntl_getfl(&*held)
+                    .map(drop)
+                    .map_err(|why| std::io::Error::from_raw_os_error(why.raw_os_error())),
+            );
             (wrote, still_there)
         },
     );
@@ -669,8 +676,15 @@ fn a_directory_opened_before_the_turn_began_is_not_a_key_to_what_is_in_it() {
                     .map_err(|why| std::io::Error::from_raw_os_error(why.raw_os_error())),
             );
             // And the handle itself is still a handle, so the refusal above is
-            // the boundary rather than a descriptor that had gone stale.
-            let still_there = went(held.metadata().map(drop));
+            // the boundary rather than a descriptor that had gone stale —
+            // asked with `fcntl`, which no hook here sits on, because since
+            // 2026-09-13 `fstat` on a handle to a folder outside the grant is
+            // itself refused.
+            let still_there = went(
+                rustix::fs::fcntl_getfl(&*held)
+                    .map(drop)
+                    .map_err(|why| std::io::Error::from_raw_os_error(why.raw_os_error())),
+            );
             (opened, still_there)
         },
     );

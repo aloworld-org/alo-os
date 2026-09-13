@@ -55,10 +55,11 @@ between them says which report moved it.
 Evidence means a test that runs against the **real loaded BPF LSM** on a running
 kernel, not a mock and not compilation.
 
-**Eighteen hooks exist:** `file_open`, `file_permission`, `inode_rename`,
+**Twenty-two hooks exist:** `file_open`, `file_permission`, `inode_rename`,
 `inode_unlink`, `inode_link`, `inode_setattr`, `inode_setxattr`,
 `inode_removexattr`, `inode_set_acl`, `inode_remove_acl`, `file_ioctl`,
 `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink`,
+`inode_getattr`, `inode_getxattr`, `inode_listxattr`, `inode_readlink`,
 `socket_connect`, `socket_sendmsg`. The programme has exactly two maps and
 writes nothing down.
 
@@ -105,9 +106,12 @@ writes nothing down.
 | A link made inside the grant to a file outside it buys the turn nothing — the read through it is `EACCES` | same file, `a_symbolic_link_made_is_inside_the_grant_and_leads_nowhere_the_turn_can_go` |
 | A process that is not a turn makes every one of those and is refused none | same file, `a_process_that_is_not_a_turn_makes_what_it_always_could` |
 | The five hooks on what a turn makes, outside a turn, leave no trace | `the_boundary_decides_and_forgets.rs`, files, directories and links made and removed beside the opens |
-| Every one of the eighteen hooks has a pin, the list is one, and the five on what a turn makes are attached last in a known order | `alo-bounding` `pinned::tests::the_boundary_is_pinned_where_the_decision_says_it_is` |
-| The eighteen hooks are documented where an auditor reads, nothing listed as unwatched is watched, and an empty list under its heading is told from a heading that has gone | `the_unwatched_mutations_are_written_down.rs` |
-| **A turn whose boundary has gone is refused before its first verb** — the map unpinned, any one of the eighteen hook pins removed, the loader run again so the map at the pin is not the one the service holds, the whole boundary taken away; nothing ran, no control group is left, the kernel holds no entry, and the sentence names what is missing and points at `docs/quirks.md` | `a_turn_without_a_boundary_does_not_run.rs`, four refusals, each measured *running* before the check existed |
+| **A bound turn cannot learn about a file outside its grant** — its size, mode, owner and times by `stat` and by `fstat` on a descriptor opened before the turn began, an extended attribute's value, the names of its attributes, where a symbolic link points — each `EACCES` at the syscall, and each answered, with the right answer, about a file inside the grant in the same turn | `the_kernel_refuses_what_a_turn_reads_about_a_file.rs`, five refusals beside five answers — the reproductions that held the gap open, run against the programme at `5836d9c` that morning and then flipped |
+| A process that is not a turn is answered every one of those | same file, `a_process_that_is_not_a_turn_is_answered_what_it_always_was` |
+| The four hooks on what a turn reads about a file, outside a turn, leave no trace | `the_boundary_decides_and_forgets.rs`, every file asked its size, attributes and link beside the opens |
+| Every one of the twenty-two hooks has a pin, the list is one, and the five on what a turn makes and the four on what it reads about a file are attached last in a known order | `alo-bounding` `pinned::tests::the_boundary_is_pinned_where_the_decision_says_it_is` |
+| The twenty-two hooks are documented where an auditor reads, nothing listed as unwatched is watched, and an empty list under its heading is told from a heading that has gone | `the_unwatched_mutations_are_written_down.rs` |
+| **A turn whose boundary has gone is refused before its first verb** — the map unpinned, any one of the twenty-two hook pins removed, the loader run again so the map at the pin is not the one the service holds, the whole boundary taken away; nothing ran, no control group is left, the kernel holds no entry, and the sentence names what is missing and points at `docs/quirks.md` | `a_turn_without_a_boundary_does_not_run.rs`, four refusals, each measured *running* before the check existed |
 | A machine whose boundary is in place is unaffected — the turn runs, the key is refused inside it, the invoice opens | same file, `a_turn_runs_where_the_boundary_is_in_place` |
 | A service does not start where the map is pinned and a hook is not | same file, `a_service_does_not_start_where_a_hook_is_not_held` |
 | There is no environment variable that lets a turn run without a boundary | same file, `nothing_in_this_crate_reads_the_environment`, which reads the crate's source |
@@ -152,6 +156,7 @@ Each is documented, most are reproduced, and none is scheduled here.
 | ~~Filesystem: `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`, `inode_symlink`~~ | v0.5 | **Closed, task 18, 2026-09-13** — four decided by the folder the name is made in, as the rename hook decides its destination; `inode_rmdir` by the entry, as `inode_unlink` is. Moved to section 1. The filesystem row that remains is the mapping above |
 | ~~Filesystem: `inode_setattr`, `inode_setxattr` — attributes, ownership **and size**~~ | v0.5 | **Closed, task 14, 2026-09-12** — five hooks, one walk from the entry being changed; the truncation reproduced through a descriptor opened before the turn and refused. Moved to section 1 |
 | ~~A file's inode flags through a descriptor opened before the turn began~~ | v0.5 | **Closed, task 17, 2026-09-13** — `file_ioctl` decides `FS_IOC_SETFLAGS`, its 32-bit width and `FS_IOC_FSSETXATTR` by the walk `file_open` makes, and lets every other request through without a lookup. Moved to section 1. What remains is `file_ioctl_compat`, a 32-bit program's hook since Linux 6.8, bounded and named in `docs/quirks.md` |
+| **A file's access list, read inside a turn** (`inode_get_acl`) | v0.5 | **Open, reproduced, task 20** — found by task 19's own reproduction on 2026-09-13: since Linux 6.2 a `getxattr` of `system.posix_acl_access` is routed past `inode_getxattr` to a hook this programme does not sit on, so a bound turn refused the names of a file's attributes is still answered its access list. `the_kernel_refuses_what_a_turn_reads_about_a_file.rs` holds it in the direction it behaves |
 | Landlock, seccomp, namespaces — ADR 0013's other three primitives | v0.5 | None built; the BPF LSM carries the whole boundary today |
 | A snapshot at turn start, and exact undo | v0.5 / v1 | Not built |
 | Kernel-sourced enforcement records | v0.5 | **Decidable, and waiting on the owner** — [ADR 0029](../decisions/0029-what-the-kernel-writes-down-about-a-turn.md), proposed 2026-09-12 by task 16, recommends Option C; the programme is held to two maps by `the_records_source_is_decided_before_it_is_built.rs` until the status line changes. See below |
@@ -1279,6 +1284,94 @@ is a byte somebody put there.
   refusing `access(2)`, which reveals only whether a name exists and is
   named here rather than closed. The mapping (`mmap_file`) stays where it
   is, for the reason task 18 gave.
+
+**Done, 2026-09-13.** Four hooks in `crates/alo-bounding-kernel/src/kernel.rs`,
+their shapes read from this kernel's BTF with a throwaway reader over
+`/sys/kernel/btf/vmlinux` — checked first against four hooks the programme
+already documents — before a line was written: `inode_getattr(const struct
+path *path)`, `inode_getxattr(struct dentry *dentry, const char *name)`,
+`inode_listxattr(struct dentry *dentry)` and `inode_readlink(struct dentry
+*dentry)`. **The constraint's guess was wrong on one of them and the reader
+caught it**: `inode_getxattr` carries no mount mapping before the entry,
+unlike the attribute hooks that change one, so the entry is `arg(0)` and not
+`arg(1)`. `inode_getattr` asks `decide_asking` in `deciding.rs`, which reads
+the entry out of the path, steps aside from a socket and a pipe by the
+inode's kind for the reason `decide_use` does, and then walks from the entry
+as an open would; the other three ask `decide_question`, which is the walk
+from the entry that `decide_attribute` makes. **The reproductions were run
+before the hooks existed**: the five questions in
+`the_kernel_refuses_what_a_turn_reads_about_a_file.rs` — `lstat` by name,
+`fstat` through a descriptor opened before the turn, `getxattr`,
+`listxattr`, `readlink` — passed against the programme at `5836d9c` that
+morning with each answered about a file outside the grant, and are flipped:
+five refusals, each `EACCES` at the syscall with the secret undisturbed,
+beside five answers inside the grant asserted to be the *right* answer — the
+size, the value, the name among the names, the target — because a hook that
+let a `stat` through and had it answer wrongly would be worse than a refusal.
+A process that is not a turn is answered all five. The `fstat` that
+`what_a_turn_inherits.rs` used to prove an inherited handle was still a
+handle is now refused, so that proof is `fcntl`, which asks no hook this
+boundary sits on, and the `fstat` is measured in the new file. `Pinned` gains
+the four where the eighteen are, attached last in a known order,
+`every_hook_named()` is still the one list and the pin test names the nine
+attached last; `a_turn_without_a_boundary_does_not_run.rs` refuses a turn
+over each of the four pins with no line of its loop changed; the four
+outside a turn are in `the_boundary_decides_and_forgets.rs`'s ordinary day,
+every file asked its size by name and through a descriptor, an attribute's
+value, its attributes' names and where a link beside it points, with nothing
+written down; the documentation test's exact list is twenty-two. **What the
+reproduction found that the plan did not name**: a file's access list, read,
+is routed by the kernel to `inode_get_acl` since Linux 6.2 and never reaches
+`inode_getxattr`, so a bound turn refused the names of a file's attributes is
+still answered its access list — measured in
+`a_files_access_list_is_not_yet_inside_the_grant`, left standing in the
+direction it behaves, named in `docs/quirks.md`, and written as task 20.
+`inode_permission` and `access(2)` are named rather than closed, as the
+constraint said. The quirks entry *What a turn reads about a file is inside
+the grant* says what closed and what it costs; `docs/contracts/agent-verbs.md`
+says an adapter may no longer assume a path it was not granted can be checked
+from inside a turn. Report:
+`docs/autonomy/updates/what-a-turn-reads-about-a-file-is-inside-the-grant.md`.
+
+### 20. A file's access list, read, is inside the grant
+
+**Status:** ready. **Depends on:** nothing.
+
+The one question about a file that task 19 left answered, and it was found
+by that task's own reproduction rather than by reading. Since Linux 6.2 a
+`getxattr(2)` of `system.posix_acl_access` or `system.posix_acl_default` is
+routed to `inode_get_acl` and never reaches `inode_getxattr` — the same
+routing that made `inode_set_acl` a hook of its own beside `inode_setxattr`
+in task 14 — so a bound turn refused the names of a file's attributes is
+still answered its access list, which is who may read the file and who may
+not, by name. `a_files_access_list_is_not_yet_inside_the_grant` in
+`the_kernel_refuses_what_a_turn_reads_about_a_file.rs` measures it landing
+and stands until this closes it. Small, and a row is still a row.
+
+- **Acceptance:** `inode_get_acl` is the twenty-third hook, deciding by the
+  entry being asked about through `decide_question`, the same walk as the
+  three beside it. Its arguments are read from this kernel's BTF first —
+  task 19's reader printed `(struct mnt_idmap *idmap, struct dentry *dentry,
+  const char *acl_name)`, so the entry is the second and the previous
+  decision the fourth, and that is confirmed on the day rather than copied.
+  Inside a bound turn the access list of a file outside the grant is
+  `EACCES`; the same read on a file inside the grant answers with the list
+  that was put; a process that is not a turn is refused nothing; and the
+  read outside a turn joins `the_boundary_decides_and_forgets.rs`'s ordinary
+  day, with a list the kernel has to keep — one with a named user and a
+  mask, because a list that says no more than the mode is folded into it and
+  answers `ENODATA`. The standing reproduction is flipped into the refusal in
+  the same file, beside its allowance. `Pinned`, the pin count,
+  `every_hook_named()`, the loader's list and the documentation test's exact
+  list move together; the `docs/quirks.md` entry *What a turn reads about a
+  file is inside the grant* moves the access-list row from *still* to
+  closed, `deciding.rs`'s and `lib.rs`'s lists of what is not watched lose
+  the row, and `docs/contracts/agent-verbs.md` stops naming the access list
+  as something a bounded turn can still learn. The row moves from section 3
+  to section 1.
+- **Constraint:** the two maps stay two (ADR 0029 is proposed). `access(2)`
+  stays named rather than closed for the reason task 19 gave, and the
+  mapping stays where it is.
 
 ## Rules this workstream holds itself to
 

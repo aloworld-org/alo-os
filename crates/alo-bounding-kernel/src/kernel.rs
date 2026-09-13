@@ -490,6 +490,99 @@ pub fn inode_symlink(ctx: LsmContext) -> i32 {
     deciding::decide_making(entry)
 }
 
+/// Every `stat` on this machine, until the program is detached.
+///
+/// `inode_getattr(const struct path *path)` — one argument, so the previous
+/// module's decision is the second, and **the argument is a path rather than
+/// an entry**: the same `struct path` an open reaches its entry through,
+/// embedded in a `struct file` as `f_path`, handed here on its own. Read from
+/// this kernel's own BTF (`bpf_lsm_inode_getattr`) before a line was written.
+///
+/// The nineteenth hook, and the first of four that decide what a turn
+/// **learns about** a file rather than what it does to one. It runs on every
+/// `stat`, `lstat`, `fstat` and `statx` on the machine — the busiest hook
+/// here after reads and writes — and for a process that is not a turn each
+/// is one hash lookup and a miss. Until 2026-09-13 a bound turn refused a
+/// folder's listing could still ask each name in it whether it was there and
+/// how big it was. [`crate::deciding::decide_asking`] says what is decided,
+/// and why a socket and a pipe are stepped aside from.
+#[lsm(hook = "inode_getattr")]
+pub fn inode_getattr(ctx: LsmContext) -> i32 {
+    let path: u64 = ctx.arg(0);
+    let already: i32 = ctx.arg(1);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_asking(path)
+}
+
+/// Every extended attribute read on this machine, until the program is
+/// detached.
+///
+/// `inode_getxattr(struct dentry *dentry, const char *name)` — two arguments,
+/// so the previous module's decision is the third, and **the entry is the
+/// first**: unlike the five hooks that change an attribute, this one carries
+/// no mount mapping before it, which this kernel's BTF says and which a guess
+/// from `inode_setxattr`'s shape would have got wrong — the rename hook's
+/// trap in `docs/quirks.md`, one hook along. The name is not read: an
+/// attribute of a file outside the grant is refused whatever it is called.
+///
+/// The twentieth hook. A `user.*` attribute is somewhere a person's
+/// application keeps bytes that are not the file's contents — a comment, an
+/// origin, a checksum — and a byte somebody put there is theirs.
+/// [`crate::deciding::decide_question`] is what it asks.
+#[lsm(hook = "inode_getxattr")]
+pub fn inode_getxattr(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(0);
+    let already: i32 = ctx.arg(2);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_question(entry)
+}
+
+/// Every listing of a file's attribute names on this machine, until the
+/// program is detached.
+///
+/// `inode_listxattr(struct dentry *dentry)` — one argument, so the previous
+/// module's decision is the second, and the entry is the first.
+///
+/// The twenty-first hook. The names are the half of an attribute that says
+/// what an application kept, and a turn refused every value could still
+/// learn which files carry one.
+#[lsm(hook = "inode_listxattr")]
+pub fn inode_listxattr(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(0);
+    let already: i32 = ctx.arg(1);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_question(entry)
+}
+
+/// Every read of where a symbolic link points on this machine, until the
+/// program is detached.
+///
+/// `inode_readlink(struct dentry *dentry)` — one argument, so the previous
+/// module's decision is the second, and the entry is the link's own. **The
+/// target is not read**, as `inode_symlink` does not read it when the link
+/// is made: what is decided is whether the link's own entry is inside the
+/// grant, and a turn that could read every link on the machine could map
+/// somebody's filesystem without opening a file.
+///
+/// The twenty-second hook. A link a turn follows by opening through it is
+/// still decided by `file_open` on the file it leads to; this decides the
+/// one thing a link says that an open does not, which is where it leads.
+#[lsm(hook = "inode_readlink")]
+pub fn inode_readlink(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(0);
+    let already: i32 = ctx.arg(1);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_question(entry)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

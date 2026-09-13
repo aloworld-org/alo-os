@@ -90,7 +90,7 @@
 //!
 //! So [`Turns::doing`] asks the machine first, before a control group is
 //! made: is the map of turns still pinned, is the programme still held on
-//! each of its eighteen hooks, and is the map at the pin the map this service
+//! each of its twenty-two hooks, and is the map at the pin the map this service
 //! holds, as the kernel numbers them. Any *no* is a refusal before the first
 //! verb, naming what is missing and pointing at `docs/quirks.md`; the same
 //! machine with its boundary in place is unaffected. `in_place.rs` has why
@@ -159,19 +159,23 @@
 //!
 //! # What this boundary watches on a filesystem, and what it does not
 //!
-//! Sixteen hooks decide about files — `file_open`, `file_permission`,
+//! Twenty hooks decide about files — `file_open`, `file_permission`,
 //! `inode_rename`, `inode_unlink`, `inode_link`, the five that decide about
 //! what a file *is* rather than what it holds: `inode_setattr` for its size,
 //! mode, owner and times, `inode_setxattr` and `inode_removexattr` for an
 //! extended attribute set and taken away, `inode_set_acl` and
 //! `inode_remove_acl` for an access list set and taken away, `file_ioctl`
-//! for its inode flags, and since 2026-09-13 the five that decide about what
+//! for its inode flags, since 2026-09-13 the five that decide about what
 //! a turn *makes*: `inode_create` and `inode_mknod` for a file made with an
 //! open or without one, `inode_mkdir` and `inode_rmdir` for a directory made
-//! and removed, and `inode_symlink` for a symbolic link — and two about the
+//! and removed, and `inode_symlink` for a symbolic link, and since the same
+//! day the four that decide what a turn *learns about* a file it may not
+//! open: `inode_getattr` for its size, mode, owner and times, `inode_getxattr`
+//! and `inode_listxattr` for an attribute's value and the names of them, and
+//! `inode_readlink` for where a symbolic link points — and two about the
 //! network: `socket_connect`, where a turn joins a socket to, and
 //! `socket_sendmsg`, where every message it sends is going. A filesystem has
-//! more verbs than sixteen, and somebody auditing this crate is owed the list
+//! more verbs than twenty, and somebody auditing this crate is owed the list
 //! of the ones nothing here decides about rather than the count of the ones
 //! it does.
 //!
@@ -221,6 +225,34 @@
 //! never walked. The same test file measures the flag refused outside the
 //! grant beside the flag landing inside it, and `docs/quirks.md` says what
 //! the kernel had already bounded and what remains.
+//!
+//! **What a turn could learn *about* a file it could not open was never on
+//! the list, because none of it is a mutation, and it was the last road
+//! left.** Every hook above decides what a turn does to a file; until
+//! 2026-09-13 none decided what it found out about one. Inside a bound turn
+//! `stat(2)` on a path outside the grant answered with its size, owner, mode
+//! and times, so a turn refused a folder's listing could ask each name in it
+//! whether it was there and how big it was; `getxattr(2)` returned the value
+//! of a `user.*` attribute, which is a byte somebody's application put
+//! there; `listxattr(2)` returned their names; and `readlink(2)` returned
+//! where a link points, which is somebody's filesystem laid out in words.
+//! *Context is offered, never watched* forbids exactly that by another road.
+//! Four hooks close it — `inode_getattr`, handed the `struct path` a `stat`
+//! or `fstat` names, and `inode_getxattr`, `inode_listxattr` and
+//! `inode_readlink`, handed the file's entry — with the walk every other
+//! file hook makes, from the file being asked about: outside the grant each
+//! is `EACCES` at the syscall, and inside it each answers with the right
+//! answer, which is what `alo-files` needs of every path it is given. A
+//! socket and a pipe are stepped aside from by the `stat` hook as
+//! `file_permission` steps aside from them, and for the same reason.
+//! `tests/the_kernel_refuses_what_a_turn_reads_about_a_file.rs` measures
+//! every one of those beside its answer, and the `fstat` of a descriptor
+//! opened before the turn began beside them. What it leaves is a file's
+//! **access list, read**: `getxattr` of `system.posix_acl_access` is routed
+//! by the kernel to `inode_get_acl` and never reaches `inode_getxattr`, as
+//! the write is routed to `inode_set_acl`, and that hook is not on the
+//! programme. The same test file holds that open in the direction it
+//! behaves, and `docs/quirks.md` names the task that closes it.
 //!
 //! Two things sit beside the list rather than in it. **A descriptor opened
 //! before a turn began** is decided about on every use since 2026-09-12, which
