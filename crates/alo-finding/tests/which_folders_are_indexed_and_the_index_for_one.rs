@@ -139,7 +139,7 @@ fn a_folder_kept_is_on_the_list_and_its_index_comes_back_from_the_disk_and_not_f
     let data_home = a_data_home("kept");
     let documents = a_folder_of_our_own("documents");
     a_library(&documents);
-    let index = Index::of(&documents).unwrap();
+    let index = Index::of(&documents, noon()).unwrap();
     assert_eq!(index.opened, 3);
 
     let mut indexed = the_list_under(&data_home);
@@ -172,7 +172,7 @@ fn a_folder_kept_is_on_the_list_and_its_index_comes_back_from_the_disk_and_not_f
         "read from its file, and no file under the folder was opened"
     );
     assert!(matches!(
-        Index::of(&documents),
+        Index::of(&documents, noon()),
         Err(NotIndexed::NotWalked { .. })
     ));
 
@@ -226,7 +226,7 @@ fn a_folder_never_indexed_is_refused_in_words_and_never_walked() {
              reading it costs, and fifty files would be fifty more"
         );
         let walked_before = reads_so_far().unwrap();
-        let walked = Index::of(&pictures).unwrap();
+        let walked = Index::of(&pictures, noon()).unwrap();
         let walked_after = reads_so_far().unwrap();
         assert_eq!(walked.opened, 50);
         assert!(
@@ -242,7 +242,7 @@ fn a_folder_never_indexed_is_refused_in_words_and_never_walked() {
         Err(NotIndexed::NeverIndexed { .. })
     ));
     assert!(matches!(
-        Index::of(&gone),
+        Index::of(&gone, noon()),
         Err(NotIndexed::NotWalked { .. })
     ));
 
@@ -267,8 +267,12 @@ fn a_folder_forgotten_has_its_index_file_removed_with_it() {
     a_library(&documents);
     a_library(&pictures);
     let mut indexed = the_list_under(&data_home);
-    indexed.keep(&Index::of(&documents).unwrap()).unwrap();
-    indexed.keep(&Index::of(&pictures).unwrap()).unwrap();
+    indexed
+        .keep(&Index::of(&documents, noon()).unwrap())
+        .unwrap();
+    indexed
+        .keep(&Index::of(&pictures, noon()).unwrap())
+        .unwrap();
     assert_eq!(indexed.folders(), [documents.clone(), pictures.clone()]);
     let documents_file = indexed.where_index_of(&documents);
     let pictures_file = indexed.where_index_of(&pictures);
@@ -321,7 +325,7 @@ fn the_list_is_written_whole_or_not_at_all_and_what_is_not_a_list_is_refused() {
     let data_home = a_data_home("whole");
     let documents = a_folder_of_our_own("documents");
     a_library(&documents);
-    let index = Index::of(&documents).unwrap();
+    let index = Index::of(&documents, noon()).unwrap();
     let mut indexed = the_list_under(&data_home);
     indexed.keep(&index).unwrap();
     let list = Indexed::where_kept(Some(data_home.as_os_str()), None).unwrap();
@@ -336,7 +340,9 @@ fn the_list_is_written_whole_or_not_at_all_and_what_is_not_a_list_is_refused() {
     fs::write(&directory, b"in the way").unwrap();
     let pictures = a_folder_of_our_own("pictures");
     a_library(&pictures);
-    let refused = indexed.keep(&Index::of(&pictures).unwrap()).unwrap_err();
+    let refused = indexed
+        .keep(&Index::of(&pictures, noon()).unwrap())
+        .unwrap_err();
     assert!(
         matches!(refused, NotIndexed::NotKept { .. }),
         "the index is written before the list, so it is the index that refuses: {refused}"
@@ -399,7 +405,9 @@ fn the_list_holds_folders_and_nothing_the_record_does() {
     let documents = a_folder_of_our_own("documents");
     a_library(&documents);
     let mut indexed = the_list_under(&data_home);
-    indexed.keep(&Index::of(&documents).unwrap()).unwrap();
+    indexed
+        .keep(&Index::of(&documents, noon()).unwrap())
+        .unwrap();
     let list = Indexed::where_kept(Some(data_home.as_os_str()), None).unwrap();
     for (number, line) in fs::read_to_string(&list).unwrap().lines().enumerate() {
         let fields: serde_json::Map<String, serde_json::Value> =
@@ -431,7 +439,9 @@ fn an_indexed_folder_is_not_a_granted_one_and_a_granted_one_is_not_an_indexed_on
     a_library(&documents);
     a_library(&pictures);
     let mut indexed = the_list_under(&data_home);
-    indexed.keep(&Index::of(&documents).unwrap()).unwrap();
+    indexed
+        .keep(&Index::of(&documents, noon()).unwrap())
+        .unwrap();
     let grants = granting(&pictures);
 
     // Indexed, and not granted: the grants refuse, and the index is never
@@ -471,7 +481,9 @@ fn an_indexed_folder_is_not_a_granted_one_and_a_granted_one_is_not_an_indexed_on
     );
 
     // Both: the index the list gave is what the door takes.
-    indexed.keep(&Index::of(&pictures).unwrap()).unwrap();
+    indexed
+        .keep(&Index::of(&pictures, noon()).unwrap())
+        .unwrap();
     let authorised =
         Authorised::read(&searching(&pictures, "march"), &agent(), &grants, noon()).unwrap();
     let touching = Touching::of(authorised, &grants, &OnThisMachine, &strings).unwrap();

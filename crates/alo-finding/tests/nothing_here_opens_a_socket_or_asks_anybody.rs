@@ -13,6 +13,17 @@
 //! | the walk is `alo-files`', the format is JSON, and nothing else is rented | [`the_walk_is_alo_files_and_nothing_else_is_rented`] |
 //! | the index takes no account of who asked, and holds nothing the record does | [`the_index_takes_no_account_of_who_asked`] |
 //! | only the verb's declaration and its door name the capability model | [`only_the_verb_and_its_door_name_the_capability_model`] |
+//! | nothing here reads a clock: the one `now` is the stopwatch around a search | [`the_only_clock_is_the_stopwatch_around_a_search`] |
+//!
+//! # Nothing here watches a folder, and nothing here reads a clock
+//!
+//! When an index is brought up to date is the caller's decision — the file
+//! manager's, the daemon's, the person's — and the moment it was made is an
+//! argument. So the forbidden list names every road to waking up on one's
+//! own (`inotify`, a thread, a timer, a channel) beside the roads to the
+//! network, and [`the_only_clock_is_the_stopwatch_around_a_search`] holds
+//! the one `now` in the shipped source to `searching.rs`, where it times how
+//! long an answer took and decides nothing.
 //!
 //! # What is read, and what is deliberately not
 //!
@@ -38,6 +49,7 @@
 )]
 
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use alo_finding::{Entry, Index, NotIndexed, Query};
 
@@ -195,6 +207,24 @@ fn nothing_in_the_shipped_source_opens_a_socket_or_asks_anybody() {
         "args",
         // a walk of its own — the walk is alo-files'
         "read_dir",
+        // waking up on one's own to read the disk: nothing here watches a
+        // folder, and when an index is made is the caller's decision
+        "inotify",
+        "notify",
+        "Watcher",
+        "watch",
+        "thread",
+        "sleep",
+        "timer",
+        "Timer",
+        "interval",
+        "Interval",
+        "poll",
+        "epoll",
+        "mpsc",
+        "channel",
+        "Receiver",
+        "recv",
     ];
     for at in shipped_source() {
         let code = code_of(&at);
@@ -259,17 +289,18 @@ fn the_walk_is_alo_files_and_nothing_else_is_rented() {
 /// **The index takes no account of who asked, and holds nothing the record
 /// does.**
 ///
-/// [`Index::of`] takes a folder and nothing else: no caller, no grant, no
-/// name. [`Index::find`] takes the index and a query. There is no argument
-/// through which an agent and a person could be told apart, so there is no
-/// road by which they could be given different answers — and an [`Entry`]
-/// has five fields, none of which is an agent, an approval or a moment
-/// anybody asked. The assignments are the test; they do not compile against
-/// a signature that asks.
+/// [`Index::of`] takes a folder and the moment it is made, and nothing
+/// else: no caller, no grant, no name. [`Index::find`] takes the index and a
+/// query. There is no argument through which an agent and a person could be
+/// told apart, so there is no road by which they could be given different
+/// answers — and an [`Entry`] has five fields, none of which is an agent, an
+/// approval or a moment anybody asked. The moment an index was made is not
+/// one: it says when the folder was read, not who asked. The assignments are
+/// the test; they do not compile against a signature that asks.
 #[test]
 fn the_index_takes_no_account_of_who_asked() {
-    let of: fn(&Path) -> Result<Index, NotIndexed> = Index::of;
-    let again: fn(&Index) -> Result<Index, NotIndexed> = Index::again;
+    let of: fn(&Path, SystemTime) -> Result<Index, NotIndexed> = Index::of;
+    let again: fn(&Index, SystemTime) -> Result<Index, NotIndexed> = Index::again;
     let find: for<'a> fn(&'a Index, &Query) -> Vec<&'a Entry> = Index::find;
     // Nothing is indexed by the assignment, and nothing here needs it to
     // be: the shape is the fact.
@@ -329,4 +360,43 @@ fn only_the_verb_and_its_door_name_the_capability_model() {
         );
     }
     assert_eq!(naming_it.len(), THE_VERB_AND_ITS_DOOR.len());
+}
+
+/// **Nothing here reads a clock: the one `now` in the shipped source is the
+/// stopwatch around a search.**
+///
+/// The moment an index was made is an argument to [`Index::of`] and
+/// [`Index::again`], and a crate that asked the clock itself would be a step
+/// from asking the disk itself. `searching.rs` reads a monotonic instant
+/// before and after a search so that an [`alo_finding::Answer`] can say how
+/// long it took — a measurement, and one that decides nothing. Every other
+/// file names `now` nowhere; and that file names it only on a line that also
+/// names `Instant`, so a `SystemTime::now()` cannot hide beside the
+/// stopwatch.
+#[test]
+fn the_only_clock_is_the_stopwatch_around_a_search() {
+    const THE_STOPWATCH: &str = "searching.rs";
+    let mut stopwatches = 0;
+    for at in shipped_source() {
+        let code = code_of(&at);
+        let is_the_stopwatch = at
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name == THE_STOPWATCH);
+        for (number, line) in code.lines().enumerate() {
+            let names = identifiers(line);
+            if !names.contains(&"now") {
+                continue;
+            }
+            assert!(
+                is_the_stopwatch && names.contains(&"Instant"),
+                "{}:{}: `now` — nothing here reads a clock; the moment an index is made is \
+                 the caller's to say",
+                at.display(),
+                number + 1
+            );
+            stopwatches += 1;
+        }
+    }
+    assert_eq!(stopwatches, 1, "one stopwatch, started once");
 }

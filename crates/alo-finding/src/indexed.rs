@@ -28,6 +28,18 @@
 //! list still names and that is not there is read as *could not be read*,
 //! and the folder is simply indexed again or forgotten again.
 //!
+//! # Brought up to date by its name, and never on its own
+//!
+//! [`Indexed::again`] is the three calls a daemon and a file manager would
+//! each have written — read the kept index, index the folder again reading
+//! only what changed, keep the result — as one, with the moment it was made
+//! passed in by the caller. Nothing here decides *when*: there is no
+//! `inotify`, no thread and no timer in this crate, and
+//! `tests/nothing_here_opens_a_socket_or_asks_anybody.rs` names each so that
+//! one cannot arrive unnoticed. A crate that woke up on its own to read the
+//! disk would be the background reader `CLAUDE.md` calls a bug, whether or
+//! not what it read was ever shown to a model.
+//!
 //! # The list is not a grant
 //!
 //! A folder being on the list says nothing about whether an agent may search
@@ -43,6 +55,7 @@
 
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use crate::index::Index;
 use crate::keeping;
@@ -173,6 +186,37 @@ impl Indexed {
         self.written(&folders)?;
         self.folders = folders;
         Ok(())
+    }
+
+    /// This folder's index brought up to date at this moment: the kept index
+    /// read, the folder indexed again reading only a file whose size or time
+    /// changed since, and the result kept whole — in one call.
+    ///
+    /// A folder never indexed is refused and is **not** indexed for the
+    /// first time here: a call meant to refresh an index that made one would
+    /// be a walk nobody asked for. A folder that is gone since it was indexed
+    /// is refused and its index is **kept**, not removed: an unplugged disk
+    /// is not a request to forget it, and the index still answers about the
+    /// folder as it was, saying when that was.
+    ///
+    /// `made` is the moment the fresh index is made, as the caller says it;
+    /// nothing here reads a clock, and nothing here decides when an index is
+    /// brought up to date.
+    ///
+    /// # Errors
+    ///
+    /// [`NotIndexed::NotAbsolute`] for a folder not named from the root,
+    /// [`NotIndexed::NeverIndexed`] for one not on the list, whatever
+    /// [`Index::read_from`] says about the kept index's file, and
+    /// [`NotIndexed::NotWalked`] for a folder that is not there any more — in
+    /// every one of these the kept index and the list are as they were. And
+    /// [`NotIndexed::NotKept`] when the fresh index could not be written, in
+    /// which case the kept one is still the one on the disk.
+    pub fn again(&mut self, folder: &Path, made: SystemTime) -> Result<Index, NotIndexed> {
+        let kept = self.index_of(folder)?;
+        let fresh = kept.again(made)?;
+        self.keep(&fresh)?;
+        Ok(fresh)
     }
 
     /// Forget this folder: its index file removed, and the folder taken off

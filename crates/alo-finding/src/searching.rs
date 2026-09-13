@@ -75,6 +75,7 @@ pub(crate) fn answered<'a>(index: &'a Index, query: &Query) -> Result<Answer<'a>
     Ok(Answer {
         found,
         not_searched,
+        made: index.made,
         took: started.elapsed(),
     })
 }
@@ -109,6 +110,10 @@ mod tests {
     fn an_index() -> Index {
         Index {
             of: PathBuf::from("/home/ada/Documents"),
+            made: Some(Moment {
+                secs: 1_760_000_000,
+                nanos: 0,
+            }),
             covered: Covered {
                 whole: true,
                 most: 20_000,
@@ -178,6 +183,10 @@ mod tests {
         assert_eq!(by_name.not_searched.elsewhere, ["mnt"]);
         assert_eq!(by_name.not_searched.outside, index.of);
         assert!(!by_name.not_searched.is_nothing());
+        assert_eq!(
+            by_name.made, index.made,
+            "the answer says when its index was made"
+        );
 
         let by_words = answered(&index, &Query::saying("Anna")).unwrap();
         assert_eq!(below(&by_words.found), ["2026/notes.txt", "letter.txt"]);

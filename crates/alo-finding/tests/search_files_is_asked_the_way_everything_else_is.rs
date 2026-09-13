@@ -148,7 +148,7 @@ fn a_search_under_its_grant_answers_inside_the_turn_and_is_recorded_with_no_appr
     let strings = in_english();
     let documents = a_folder_of_our_own("granted");
     a_library(&documents);
-    let index = Index::of(&documents).unwrap();
+    let index = Index::of(&documents, noon()).unwrap();
     let grants = granting(&[&documents]);
 
     let call = searching(&documents, "march").unwrap();
@@ -285,7 +285,7 @@ fn an_index_of_another_folder_does_not_answer_for_the_granted_one() {
     let pictures = a_folder_of_our_own("indexed-instead");
     a_library(&documents);
     a_library(&pictures);
-    let of_pictures = Index::of(&pictures).unwrap();
+    let of_pictures = Index::of(&pictures, noon()).unwrap();
     let grants = granting(&[&documents]);
 
     let call = searching(&documents, "march").unwrap();
@@ -346,7 +346,7 @@ fn a_person_with_no_agent_and_no_grant_gets_the_same_answer() {
     let strings = in_english();
     let documents = a_folder_of_our_own("by-hand");
     a_library(&documents);
-    let index = Index::of(&documents).unwrap();
+    let index = Index::of(&documents, noon()).unwrap();
 
     // Nobody: no grants were made, and nothing asks for any.
     let by_hand = index.answer(&Query::named("march")).unwrap();
@@ -384,7 +384,7 @@ fn only_the_search_verb_is_this_crates_to_answer() {
     let strings = in_english();
     let documents = a_folder_of_our_own("not-ours");
     a_library(&documents);
-    let index = Index::of(&documents).unwrap();
+    let index = Index::of(&documents, noon()).unwrap();
     let grants = granting(&[&documents]);
 
     let listing = alo_files::file_verbs()

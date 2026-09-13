@@ -277,7 +277,25 @@ and call `Index::where_kept` itself, which is two lists of the same fact.
 
 ### 7. An index brought up to date by its name, and an answer that says how old it is
 
-**Status:** ready. **Depends on:** 3, 6.
+**Status:** done. **Depends on:** 3, 6.
+
+**Done, 2026-09-14.** Report:
+[`updates/an-index-brought-up-to-date-by-its-name-says-how-old-it-is.md`](updates/an-index-brought-up-to-date-by-its-name-says-how-old-it-is.md).
+`crates/alo-finding`: `Index::of` and `Index::again` take the moment the
+index is made from the caller as a `SystemTime`, and `Index::made` carries
+it — written into the file's first line as `made`, additively, with
+`format` still `1`; a head without it reads with no moment rather than an
+invented one, and `docs/contracts/file-index.md` says so. `Answer::made` is
+that moment beside the results, so a window can say *as of Tuesday*; how a
+moment is spelled for the reader is the window's, because `alo-strings`
+formats no dates by design. `Indexed::again` takes a folder's name and a
+moment, reads the kept index, indexes again reading only what changed, and
+keeps the result whole — one call; a folder never indexed is `NeverIndexed`
+and not indexed for the first time, with the kernel's per-thread read count
+held to the counter's own cost; a folder gone since is `NotWalked` and its
+index is kept byte for byte. The shipped-source test gains sixteen names
+that would let a watcher, a thread, a timer or a channel in, and a new test
+holds the one `now` in the crate to the stopwatch around a search.
 
 Task 6 made the list the one place that says which folders are indexed and
 hands back the index for one. What nobody can yet do through that list is
@@ -312,3 +330,41 @@ were now, and the person has no way to tell.
   shipped-source test gains the names that would let one in. Nothing here
   reads a clock: the moment is an argument, like the interval in task 1.
   The list is still not a grant, and `Searched::of` is still unchanged.
+
+### 8. One search over every indexed folder, each answer saying which folder and how old
+
+**Status:** ready. **Depends on:** 4, 6, 7.
+
+A person's search box is not a folder's. Task 6 made the list the one place
+that says which folders are indexed, and task 7 made every answer say how
+old it is; what nobody can yet do is type *contract* once and be answered
+from every folder they asked to have indexed. Today a file manager would
+read the list, read each index, ask each, and stitch the answers together —
+which is the loop task 6 removed for *which folder is indexed* coming back
+for *what did I search*. And a search stitched together by each caller is a
+search whose honesty depends on the caller: one that skips a folder whose
+index file would not read, and says nothing, has answered *nothing matched*
+about a folder it never looked at.
+
+- **Acceptance:** `alo-finding` answers one `Query` over every folder on the
+  list in one call — `Indexed::answer`, or a name the report argues for —
+  as one answer per folder, **in the list's order**, each carrying the
+  folder it is of, what matched, what was not searched and the moment its
+  index was made, read from each index's file and never by walking; a
+  folder whose index file could not be read or is not an index is a
+  refusal **beside** the other answers, named, rather than a missing folder
+  or a failed search, so a test that tears one index file of three still
+  gets two answers and one named refusal; a query that is not one is
+  refused once, before any index file is opened, checked by the read count
+  the task 6 test uses; and an empty list answers with no folders and no
+  refusal, because nothing asked for is nothing to search.
+- **Constraint:** nothing ranks across folders — the order is the list's,
+  and within a folder the index's own, and nothing the person did not ask
+  for moves an entry up or down. The verb is **unchanged**: an agent's
+  `search_files` still names one granted folder and takes one index through
+  `Searched::of`, because a search across every indexed folder under one
+  grant would be a search of folders nobody granted — if a cross-folder
+  verb is ever wanted it is a verb with a grant per folder, declared in its
+  own task and checked at the door like any other. The list is still not a
+  grant. Nothing here opens a socket, reads a clock or watches a folder,
+  and the shipped-source test keeps saying so.

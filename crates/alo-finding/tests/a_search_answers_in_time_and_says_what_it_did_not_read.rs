@@ -24,7 +24,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use alo_finding::{A_NAME, A_SENTENCE, Entry, Index, Kind, NotAsked, Query, finding_words};
 use alo_strings::Strings;
@@ -45,6 +45,11 @@ fn a_folder_of_our_own(what: &str) -> PathBuf {
 
 /// How many files the timed index holds.
 const TEN_THOUSAND: usize = 10_000;
+
+/// A fixed moment for every index these tests make.
+fn noon() -> SystemTime {
+    SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
+}
 
 /// How many of them are PDFs, which have a kind and no words.
 const PDFS: usize = 1_000;
@@ -121,7 +126,7 @@ fn a_query_over_ten_thousand_files_answers_in_the_time_a_person_will_wait() {
     let writing = Instant::now();
     ten_thousand_files(&root);
     let indexing = Instant::now();
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     println!(
         "ten thousand files written in {:?} and indexed in {:?}",
         indexing.duration_since(writing),
@@ -183,7 +188,7 @@ fn the_answer_lists_what_it_did_not_search_beside_what_it_found() {
     assert!(big.len() as u64 > alo_files::MOST_READ);
     fs::write(root.join("2026").join("contract-log.txt"), big).unwrap();
 
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     let _ = fs::remove_dir_all(&root);
 
     let by_words = index.answer(&Query::saying("contract")).unwrap();
@@ -245,7 +250,7 @@ fn the_answer_lists_what_it_did_not_search_beside_what_it_found() {
 fn a_query_that_is_not_a_query_is_refused_in_words() {
     let root = a_folder_of_our_own("refused");
     fs::write(root.join("notes.txt"), b"Dear Anna").unwrap();
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     let _ = fs::remove_dir_all(&root);
     let strings = in_english();
 

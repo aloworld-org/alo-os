@@ -72,6 +72,11 @@ fn a_library(root: &Path) {
     fs::write(root.join("empty.bin"), b"").unwrap();
 }
 
+/// A fixed moment for every index these tests make.
+fn noon() -> SystemTime {
+    SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
+}
+
 /// A time, as seconds since the epoch.
 fn at(secs: u64) -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(secs)
@@ -108,7 +113,7 @@ fn a_folder_is_indexed_by_name_kind_date_and_contents_and_answers_each() {
     a_library(&root);
     written_at(&root.join("notes.txt"), at(1_000_000_000));
 
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     assert_eq!(index.of, root);
     assert!(index.covered.is_everything(), "{:?}", index.covered);
     assert_eq!(
@@ -225,7 +230,7 @@ fn a_kind_is_read_from_the_bytes_and_a_pdf_that_is_a_text_file_is_text() {
     .unwrap();
     fs::write(root.join("archive.docx"), b"PK\x03\x04\x14\x00\x06\x00").unwrap();
 
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     let entry = |name: &str| {
         index
             .entries
@@ -267,7 +272,7 @@ fn the_answer_comes_from_the_index_alone_after_the_folder_is_gone() {
     a_library(&root);
     let kept = a_folder_of_our_own("gone-kept").join("library.index");
 
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     index.kept_at(&kept).unwrap();
     fs::remove_dir_all(&root).unwrap();
     assert!(!root.exists());
@@ -283,7 +288,7 @@ fn the_answer_comes_from_the_index_alone_after_the_folder_is_gone() {
         assert_eq!(below(&index.find(&Query::saying("summer"))), ["notes.txt"]);
     }
 
-    match index.again() {
+    match index.again(noon()) {
         Err(NotIndexed::NotWalked { at, .. }) => assert_eq!(at, root),
         other => panic!("{other:?}"),
     }
@@ -310,7 +315,7 @@ fn the_index_is_kept_in_a_file_under_the_persons_own_directory_in_the_contract_f
     assert_eq!(at.extension().unwrap(), "index");
     assert!(!at.exists(), "nothing has been kept yet");
 
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     index.kept_at(&at).unwrap();
 
     let text = fs::read_to_string(&at).unwrap();
@@ -370,10 +375,10 @@ fn a_file_unchanged_since_last_time_is_not_read_again() {
     let root = a_folder_of_our_own("incremental");
     a_library(&root);
 
-    let first = Index::of(&root).unwrap();
+    let first = Index::of(&root, noon()).unwrap();
     assert_eq!(first.opened, 5);
 
-    let unchanged = first.again().unwrap();
+    let unchanged = first.again(noon()).unwrap();
     assert_eq!(unchanged.opened, 0);
     assert_eq!(
         unchanged.find(&Query::saying("summer")).len(),
@@ -386,7 +391,7 @@ fn a_file_unchanged_since_last_time_is_not_read_again() {
         b"Dear Anna, the contract is signed.",
     )
     .unwrap();
-    let one_rewritten = unchanged.again().unwrap();
+    let one_rewritten = unchanged.again(noon()).unwrap();
     assert_eq!(one_rewritten.opened, 1);
     assert!(one_rewritten.find(&Query::saying("summer")).is_empty());
     assert_eq!(
@@ -395,11 +400,11 @@ fn a_file_unchanged_since_last_time_is_not_read_again() {
     );
 
     written_at(&root.join("2026").join("march.pdf"), at(1_000_000_000));
-    let one_touched = one_rewritten.again().unwrap();
+    let one_touched = one_rewritten.again(noon()).unwrap();
     assert_eq!(one_touched.opened, 1);
 
     fs::write(root.join("2026").join("april.txt"), b"new").unwrap();
-    let one_new = one_touched.again().unwrap();
+    let one_new = one_touched.again(noon()).unwrap();
     assert_eq!(one_new.opened, 1);
     assert_eq!(
         below(&one_new.find(&Query::saying("new"))),
@@ -419,7 +424,7 @@ fn a_folder_that_is_not_there_or_is_a_file_or_is_relative_is_refused_in_words() 
     let strings = in_english();
 
     let missing = root.join("Missing");
-    match Index::of(&missing) {
+    match Index::of(&missing, noon()) {
         Err(refusal @ NotIndexed::NotWalked { .. }) => {
             let said = refusal.said(&strings);
             assert!(!said.is_a_bug(), "{said}");
@@ -431,7 +436,7 @@ fn a_folder_that_is_not_there_or_is_a_file_or_is_relative_is_refused_in_words() 
         }
         other => panic!("{other:?}"),
     }
-    match Index::of(&root.join("a-file.txt")) {
+    match Index::of(&root.join("a-file.txt"), noon()) {
         Err(refusal @ NotIndexed::NotWalked { .. }) => {
             let said = refusal.said(&strings);
             assert!(said.text().contains("a-file.txt"), "{said}");
@@ -442,7 +447,7 @@ fn a_folder_that_is_not_there_or_is_a_file_or_is_relative_is_refused_in_words() 
         }
         other => panic!("{other:?}"),
     }
-    match Index::of(Path::new("Documents")) {
+    match Index::of(Path::new("Documents"), noon()) {
         Err(refusal @ NotIndexed::NotAbsolute { .. }) => {
             let said = refusal.said(&strings);
             assert!(said.text().starts_with("Documents does not say"), "{said}");
@@ -482,7 +487,7 @@ fn a_file_that_is_not_an_index_or_not_there_or_another_folders_is_refused() {
     let torn = root.join("torn.index");
     let whole = {
         let at = root.join("whole.index");
-        Index::of(&other).unwrap().kept_at(&at).unwrap();
+        Index::of(&other, noon()).unwrap().kept_at(&at).unwrap();
         fs::read_to_string(at).unwrap()
     };
     fs::write(&torn, whole.trim_end().as_bytes()).unwrap();
@@ -527,7 +532,7 @@ fn a_link_is_indexed_as_a_link_and_never_followed() {
     .unwrap();
     std::os::unix::fs::symlink(&elsewhere, root.join("looks-like-a-folder")).unwrap();
 
-    let index = Index::of(&root).unwrap();
+    let index = Index::of(&root, noon()).unwrap();
     assert_eq!(
         below(&index.entries.iter().collect::<Vec<_>>()),
         ["looks-like-a-file.txt", "looks-like-a-folder", "mine.txt"]

@@ -40,6 +40,17 @@
 //! whose size or time has changed, and [`Index::opened`] says how many it
 //! read, so that a test can count.
 //!
+//! # An index says when it was made, and an answer says how old it is
+//!
+//! [`Index::of`] and [`Index::again`] take the moment the index is made
+//! **from the caller**, as a [`std::time::SystemTime`], and write it into the
+//! file's first line as [`Index::made`]; nothing in this crate reads a clock,
+//! and the shipped-source test holds the one stopwatch here to timing a
+//! search. [`Answer::made`] carries that moment back out beside the results,
+//! so a window can say *as of Tuesday* rather than answering about last
+//! Tuesday's folder as if it were now. An index file written before the
+//! moment was kept still reads, with no moment rather than an invented one.
+//!
 //! # Which folders are indexed
 //!
 //! [`Indexed`] is the list of the folders a person asked to have indexed,
@@ -48,9 +59,15 @@
 //! or refuses in words saying the folder was never indexed — and never walks
 //! the folder to find out. [`Indexed::keep`] writes an index and puts its
 //! folder on the list; [`Indexed::forget`] takes a folder off the list and
-//! removes its index file with it. The list is not a grant: a folder being
-//! indexed says nothing about whether an agent may search it, and the list
-//! holds folders and nothing the record does.
+//! removes its index file with it; [`Indexed::again`] brings a folder's
+//! index up to date by its name — read, indexed again reading only what
+//! changed, kept — in one call, at a moment the caller names, refusing a
+//! folder never indexed rather than indexing it for the first time and
+//! keeping the index of a folder that is gone rather than forgetting it.
+//! Nothing here watches a folder: no `inotify`, no thread, no timer — when
+//! an index is brought up to date is the caller's decision. The list is not
+//! a grant: a folder being indexed says nothing about whether an agent may
+//! search it, and the list holds folders and nothing the record does.
 //!
 //! # An agent asks the same index, under a grant
 //!
@@ -80,14 +97,16 @@
 //!
 //! | | |
 //! |---|---|
-//! | [`Index`], [`Index::of`] | One folder, indexed now |
+//! | [`Index`], [`Index::of`] | One folder, indexed at a moment the caller names |
 //! | [`Index::again`] | The same folder, indexed again, reading only what changed |
+//! | [`Index::made`], [`Answer::made`] | When the index was made, and so how old an answer is |
 //! | [`Index::answer`], [`Query`], [`Answer`] | An answer from the index alone, beside what was not searched |
 //! | [`NotSearched`] | What the query could not be held against |
 //! | [`NotAsked`] | A query that is not one, refused before anything is searched |
 //! | [`Index::kept_at`], [`Index::read_from`], [`Index::where_kept`] | The file the index lives in |
 //! | [`Indexed`], [`Indexed::read_from`], [`Indexed::index_of`] | Which folders are indexed, and the index for one by its name |
 //! | [`Indexed::keep`], [`Indexed::forget`] | A folder put on the list with its index, or taken off it with its index removed |
+//! | [`Indexed::again`] | A folder's index brought up to date by its name, in one call |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
 //! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The twelve ways there is no index at all |
@@ -97,13 +116,17 @@
 //!
 //! ```no_run
 //! use std::path::Path;
+//! use std::time::SystemTime;
 //!
 //! use alo_finding::{Index, Indexed, Kind, Query};
 //!
-//! let index = Index::of(Path::new("/home/ada/Documents"))?;
+//! // The caller's clock, not the crate's: when an index is made is the
+//! // caller's decision, and the moment is written into the index.
+//! let index = Index::of(Path::new("/home/ada/Documents"), SystemTime::now())?;
 //! let invoices = index.answer(&Query::of_kind(Kind::Pdf).and_named("invoice"))?;
 //! let about_the_summer = index.answer(&Query::saying("contract summer"))?;
 //! assert!(about_the_summer.not_searched.no_reader.contains(&invoices.found[0]));
+//! assert_eq!(about_the_summer.made, index.made, "an answer says how old it is");
 //! let mut indexed = Indexed::read_from(
 //!     std::env::var_os("XDG_DATA_HOME").as_deref(),
 //!     std::env::var_os("HOME").as_deref(),
@@ -112,6 +135,9 @@
 //! let back = indexed.index_of(&index.of)?;
 //! assert_eq!(back.entries, index.entries);
 //! assert!(indexed.index_of(Path::new("/home/ada/Pictures")).is_err());
+//! // Later — when the caller decides — brought up to date by its name.
+//! let fresh = indexed.again(&index.of, SystemTime::now())?;
+//! assert!(fresh.opened <= index.opened, "only what changed was read");
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 

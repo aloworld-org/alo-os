@@ -23,6 +23,7 @@
 
 use std::collections::HashMap;
 use std::path::Path;
+use std::time::SystemTime;
 
 use alo_files::{MOST_WALKED, Walked, Walking};
 
@@ -34,8 +35,8 @@ use crate::reading::{Looked, Reading};
 use crate::refusing::NotIndexed;
 use crate::wording;
 
-/// The index of this folder, reading a file only where `previous` cannot
-/// vouch for it.
+/// The index of this folder, made at `made` as the caller says it, reading a
+/// file only where `previous` cannot vouch for it.
 ///
 /// # Errors
 ///
@@ -47,6 +48,7 @@ use crate::wording;
 pub(crate) fn assembled(
     folder: &Path,
     previous: Option<&Index>,
+    made: SystemTime,
     reading: &mut dyn Reading,
 ) -> Result<Index, NotIndexed> {
     if !folder.has_root() {
@@ -101,6 +103,7 @@ pub(crate) fn assembled(
     }
     Ok(Index {
         of: folder.to_path_buf(),
+        made: Some(Moment::of(made)),
         covered: covered_from(&walked),
         entries,
         opened,
@@ -178,6 +181,11 @@ mod tests {
     use super::*;
     use crate::reading::Disk;
 
+    /// A fixed moment for every index these tests make.
+    fn noon() -> SystemTime {
+        SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
+    }
+
     /// A reader that counts, and looks with the disk.
     struct Counting {
         /// How many looks so far.
@@ -229,16 +237,21 @@ mod tests {
             looks: 0,
             at: Vec::new(),
         };
-        let index = assembled(&folder, None, &mut first).unwrap();
+        let index = assembled(&folder, None, noon(), &mut first).unwrap();
         assert_eq!(first.looks, 2, "{:?}", first.at);
         assert_eq!(index.opened, 2);
+        assert_eq!(
+            index.made,
+            Some(Moment::of(noon())),
+            "made when the caller said"
+        );
         assert_eq!(index.entries.len(), 3, "a folder and two files");
 
         let mut second = Counting {
             looks: 0,
             at: Vec::new(),
         };
-        let again = assembled(&folder, Some(&index), &mut second).unwrap();
+        let again = assembled(&folder, Some(&index), noon(), &mut second).unwrap();
         assert_eq!(second.looks, 0, "{:?}", second.at);
         assert_eq!(again.opened, 0);
         // The files are the same entries, read from the earlier index. A
@@ -253,7 +266,7 @@ mod tests {
             looks: 0,
             at: Vec::new(),
         };
-        let changed = assembled(&folder, Some(&again), &mut third).unwrap();
+        let changed = assembled(&folder, Some(&again), noon(), &mut third).unwrap();
         assert_eq!(third.looks, 2, "{:?}", third.at);
         assert!(third.at.iter().any(|at| at.ends_with("notes.txt")));
         assert!(third.at.iter().any(|at| at.ends_with("april.txt")));

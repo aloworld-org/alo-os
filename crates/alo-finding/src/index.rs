@@ -2,11 +2,12 @@
 
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use crate::answer::Answer;
 use crate::asking::NotAsked;
 use crate::covered::Covered;
-use crate::entry::Entry;
+use crate::entry::{Entry, Moment};
 use crate::format;
 use crate::indexing;
 use crate::keeping;
@@ -20,10 +21,23 @@ use crate::refusing::NotIndexed;
 /// Everything under the folder, one [`Entry`] each, in the walk's order:
 /// each folder before the things inside it, and names in order within a
 /// folder. Asking it is [`Self::find`], which never touches the disk.
+///
+/// # When it was made is the caller's to say
+///
+/// [`Self::made`] is the moment the caller handed [`Self::of`] or
+/// [`Self::again`], never one this crate read from a clock: when an index is
+/// made is the file manager's, the daemon's or the person's decision, and a
+/// crate that looked at the clock itself would be a step from looking at the
+/// disk itself. It is [`None`] only for an index read back from a file written
+/// before the moment was kept, which the format allows and the contract says.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Index {
     /// The folder this is the index of, as it was named — from the root.
     pub of: PathBuf,
+    /// The moment this index was made, as the caller said it, so that an
+    /// answer from it can say how old it is; [`None`] for one read back from
+    /// a file written before the moment was kept.
+    pub made: Option<Moment>,
     /// What the walk under it could not reach.
     pub covered: Covered,
     /// Everything it could.
@@ -36,25 +50,29 @@ pub struct Index {
 }
 
 impl Index {
-    /// This folder, indexed now, every file read.
+    /// This folder, indexed at this moment, every file read.
+    ///
+    /// `made` is written into the index as the moment it was made, so that
+    /// an answer from it can say how old it is. It is an argument rather than
+    /// a reading of the clock, for the reasons on [`Self::made`].
     ///
     /// # Errors
     ///
     /// [`NotIndexed::NotAbsolute`] for a folder not named from the root, and
     /// [`NotIndexed::NotWalked`] for one that is not there, is a file, or
     /// could not be read.
-    pub fn of(folder: &Path) -> Result<Self, NotIndexed> {
-        indexing::assembled(folder, None, &mut Disk)
+    pub fn of(folder: &Path, made: SystemTime) -> Result<Self, NotIndexed> {
+        indexing::assembled(folder, None, made, &mut Disk)
     }
 
-    /// The same folder, indexed again: walked again, and a file read only if
-    /// its size or its time has changed since this index.
+    /// The same folder, indexed again at this moment: walked again, and a
+    /// file read only if its size or its time has changed since this index.
     ///
     /// # Errors
     ///
-    /// As [`Self::of`].
-    pub fn again(&self) -> Result<Self, NotIndexed> {
-        indexing::assembled(&self.of, Some(self), &mut Disk)
+    /// As [`Self::of`]. This index is as it was, whatever the answer.
+    pub fn again(&self, made: SystemTime) -> Result<Self, NotIndexed> {
+        indexing::assembled(&self.of, Some(self), made, &mut Disk)
     }
 
     /// Everything that answers this query, from the index alone and in the
@@ -200,6 +218,7 @@ mod tests {
     fn where_an_entry_is_joins_the_parts_the_way_this_host_does() {
         let index = Index {
             of: PathBuf::from("/home/ada/Documents"),
+            made: None,
             covered: Covered {
                 whole: true,
                 most: 0,

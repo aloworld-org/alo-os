@@ -26,7 +26,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::covered::Covered;
-use crate::entry::Entry;
+use crate::entry::{Entry, Moment};
 use crate::index::Index;
 
 /// Which shape the file is in.
@@ -39,6 +39,12 @@ struct Head {
     format: u32,
     /// The folder this is the index of.
     of: PathBuf,
+    /// The moment the index was made, as the caller said it. Added after
+    /// the first indexes were written, so it is left out rather than written
+    /// as nothing, and a head without it still reads — which is what
+    /// `docs/contracts/file-index.md` says a later field does.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    made: Option<Moment>,
     /// What the walk under it could not reach.
     covered: Covered,
 }
@@ -53,6 +59,7 @@ pub(crate) fn written(index: &Index) -> Result<String, serde_json::Error> {
     let head = Head {
         format: FORMAT,
         of: index.of.clone(),
+        made: index.made,
         covered: index.covered.clone(),
     };
     let mut text = serde_json::to_string(&head)?;
@@ -95,6 +102,7 @@ pub(crate) fn read(text: &str) -> Result<Index, String> {
         .collect::<Result<Vec<Entry>, String>>()?;
     Ok(Index {
         of: head.of,
+        made: head.made,
         covered: head.covered,
         entries,
         opened: 0,
@@ -115,6 +123,10 @@ mod tests {
     fn an_index() -> Index {
         Index {
             of: PathBuf::from("/home/ada/Documents"),
+            made: Some(Moment {
+                secs: 1_760_000_000,
+                nanos: 0,
+            }),
             covered: Covered {
                 whole: true,
                 most: 20_000,
@@ -155,7 +167,7 @@ mod tests {
         assert_eq!(lines.len(), 3);
         assert_eq!(
             lines.first().copied().unwrap(),
-            r#"{"format":1,"of":"/home/ada/Documents","covered":{"whole":true,"most":20000,"unread":[],"elsewhere":["Elsewhere"],"not_entered":[],"unnamed":1}}"#
+            r#"{"format":1,"of":"/home/ada/Documents","made":{"secs":1760000000,"nanos":0},"covered":{"whole":true,"most":20000,"unread":[],"elsewhere":["Elsewhere"],"not_entered":[],"unnamed":1}}"#
         );
         assert_eq!(
             lines.get(2).copied().unwrap(),
@@ -165,6 +177,11 @@ mod tests {
 
         let back = read(&text).unwrap();
         assert_eq!(back.of, an_index().of);
+        assert_eq!(
+            back.made,
+            an_index().made,
+            "the moment comes back as it was said"
+        );
         assert_eq!(back.covered, an_index().covered);
         assert_eq!(back.entries, an_index().entries);
         assert_eq!(back.opened, 0);
@@ -208,7 +225,7 @@ mod tests {
     fn a_field_from_a_later_version_is_ignored() {
         let text = written(&an_index())
             .unwrap()
-            .replacen("\"format\":1,", "\"format\":1,\"made\":123,", 1)
+            .replacen("\"format\":1,", "\"format\":1,\"checked\":123,", 1)
             .replacen(
                 "\"kind\":\"text\",",
                 "\"kind\":\"text\",\"colour\":\"blue\",",
@@ -216,5 +233,23 @@ mod tests {
             );
         let back = read(&text).unwrap();
         assert_eq!(back.entries, an_index().entries);
+    }
+
+    /// **An index written before the moment was kept still reads**, with no
+    /// moment rather than an invented one: `made` was added to the head after
+    /// the first indexes were written, and the contract says a reader takes a
+    /// head without a later field. And an index with no moment is written
+    /// with the field left out, not as `null`, so the file is the one an
+    /// earlier version wrote.
+    #[test]
+    fn a_head_without_the_moment_still_reads_and_is_written_without_it() {
+        let earlier = r#"{"format":1,"of":"/home/ada/Documents","covered":{"whole":true,"most":20000,"unread":[],"elsewhere":[],"not_entered":[],"unnamed":0}}"#;
+        let back = read(earlier).unwrap();
+        assert_eq!(back.made, None);
+        assert_eq!(back.of, PathBuf::from("/home/ada/Documents"));
+
+        let text = written(&back).unwrap();
+        assert_eq!(text.lines().next().unwrap(), earlier);
+        assert!(!text.contains("made"));
     }
 }

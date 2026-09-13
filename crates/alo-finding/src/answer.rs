@@ -15,6 +15,16 @@
 //! A search by words cannot be held against a file whose words the index
 //! does not have, and a search by kind cannot be held against a file whose
 //! bytes were never seen — and those are the files [`NotSearched`] lists.
+//!
+//! # An answer says how old it is
+//!
+//! [`Answer::made`] is the moment the index it answered from was made, as
+//! the caller said it when the index was made, so that a window can put *as
+//! of Tuesday* beside the results: a search over a folder indexed last week
+//! answers about last week's folder, and the person should be able to tell.
+//! How a moment is written for the reader is the window's, in the reader's
+//! own calendar; `alo-strings` formats no dates, by its own design, and this
+//! crate hands the moment over as two numbers rather than as English.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -22,7 +32,7 @@ use std::time::Duration;
 use alo_strings::{Counting, Filling, Said, Strings};
 
 use crate::covered::Unread;
-use crate::entry::Entry;
+use crate::entry::{Entry, Moment};
 use crate::words;
 
 /// What a search answered.
@@ -32,6 +42,11 @@ pub struct Answer<'a> {
     pub found: Vec<&'a Entry>,
     /// Everything the query could not be held against.
     pub not_searched: NotSearched<'a>,
+    /// The moment the index this answered from was made, as the caller said
+    /// it then — so a window can say *as of Tuesday* beside the results.
+    /// [`None`] for an index read back from a file written before the moment
+    /// was kept.
+    pub made: Option<Moment>,
     /// How long the answer took, measured around the search alone.
     pub took: Duration,
 }

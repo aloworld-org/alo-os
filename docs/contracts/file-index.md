@@ -12,8 +12,10 @@ person who wants to see what their machine knows about their documents can
 open it in anything that reads JSON.
 
 `crates/alo-finding` is the shape as working code: `alo_finding::Index::of`
-makes one, `Index::kept_at` writes it, `Index::read_from` reads it back, and
-`Index::again` refreshes it reading only what changed.
+makes one at a moment the caller names, `Index::kept_at` writes it,
+`Index::read_from` reads it back, `Index::again` refreshes it reading only
+what changed, and `Indexed::again` does the last three for a folder by its
+name, in one call.
 
 ## Where it is
 
@@ -61,8 +63,20 @@ can produce, so a person listing the directory sees which file is the list.
 `alo_finding::Indexed::read_from` reads it, `Indexed::index_of` hands back
 the index of a folder on it — read from that folder's index file, never by
 walking the folder — or says the folder was never indexed, `Indexed::keep`
-writes an index and puts its folder on the list, and `Indexed::forget` takes
-a folder off the list and removes its index file with it.
+writes an index and puts its folder on the list, `Indexed::forget` takes a
+folder off the list and removes its index file with it, and `Indexed::again`
+brings a folder's index up to date by its name at a moment the caller passes
+in: the kept index read, the folder indexed again reading only a file whose
+size or time changed, and the result written whole in the index's place. A
+folder not on the list is refused and is not indexed for the first time by
+it; a folder that is gone since it was indexed is refused and its index is
+kept, because an unplugged disk is not a request to forget it.
+
+**Nothing watches.** When an index is brought up to date is the caller's
+decision and nobody else's: there is no `inotify`, no thread and no timer in
+`alo-finding`, and a test reads its shipped source to say so. A crate that
+woke up on its own to read the disk would be a background reader, whatever
+it did with what it read.
 
 The shape is the index file's: the first line says what the file is, and
 every line after it is one folder, in the order they were asked for. Every
@@ -110,7 +124,7 @@ before the things inside it, and names in order within a folder. Every line is
 JSON, compact, with no newline inside it.
 
 ```
-{"format":1,"of":"/home/ada/Documents","covered":{"whole":true,"most":20000,"unread":[],"elsewhere":[],"not_entered":[],"unnamed":0}}
+{"format":1,"of":"/home/ada/Documents","made":{"secs":1760000100,"nanos":0},"covered":{"whole":true,"most":20000,"unread":[],"elsewhere":[],"not_entered":[],"unnamed":0}}
 {"below":"2026","kind":"folder","bytes":0,"modified":{"secs":1760000000,"nanos":0},"contents":{"were":"not-a-file"}}
 {"below":"notes.txt","kind":"text","bytes":47,"modified":{"secs":1760000060,"nanos":0},"contents":{"were":"read","words":["anna","before","contract","dear","from","summer","the"]}}
 {"below":"2026/march.pdf","kind":"pdf","bytes":18201,"modified":{"secs":1759000000,"nanos":0},"contents":{"were":"not-text"}}
@@ -129,10 +143,20 @@ index is simply made again.
 |---|---|
 | `format` | Which shape the file is in. Required. `1` today. |
 | `of` | The folder this is the index of, as an absolute path. Required. |
+| `made` | The moment the index was made, as `{"secs":…,"nanos":…}` since the Unix epoch — the same shape as an entry's `modified`. Optional: added after the first indexes were written, so a head without it is an index made before the moment was kept, and is read with no moment rather than an invented one. |
 | `covered` | What the walk under the folder could not reach. Required. |
 
 **`format` is what tells the first line from an entry**, which has no such
 field. A file whose first line is not a head is not an index.
+
+**`made` is the caller's moment, not the machine's.** Whoever makes the
+index — the file manager, a daemon, the person — passes in the moment, and
+`alo-finding` reads no clock of its own; what the field says is when that
+caller said the folder was read, so that an answer from the index can say
+*as of then* beside its results. It is written when the index is made or
+made again, and an index made again at a moment the caller names earlier
+than the last one says the earlier moment, because nothing in the crate
+looks at a clock to disagree.
 
 `covered` says what a search over this index did not look at, so that an
 empty answer is *nothing matched* and never *nothing was looked at*:
@@ -213,3 +237,8 @@ value of `were`; a reader of this version ignores a field it does not know
 and treats a kind it does not know as `bytes`. A changed meaning of an
 existing field is a new `format`, and this version refuses a `format` it
 does not read rather than guessing.
+
+`made` in the head is the first field added this way: `format` stayed `1`,
+a head written before it still reads, and a head written without it — an
+index of an earlier version, made again — gains it the next time the index
+is made.
