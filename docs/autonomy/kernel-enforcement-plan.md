@@ -150,7 +150,7 @@ Each is documented, most are reproduced, and none is scheduled here.
 | Gap | Release | State |
 |---|---|---|
 | ~~A descriptor opened before the turn began~~ | v0.5 | **Closed, task 12, 2026-09-12** — `file_permission` decides on every read and write, asked of the using thread's cgroup; the turn is brought home by a thread that was never in it. Moved to section 1 |
-| **A mapping of a file opened before the turn began** | v0.5 | `mmap_file` is not hooked: a file mapped into memory is read by the processor, so a mapping of an inherited descriptor made inside the turn reaches its contents past `file_permission`. **Not reproduced** — there is no safe `mmap` in Rust and `unsafe` is forbidden outside the kernel package's one file; the rule that kept `truncate(2)` out of the suite until task 14 reached it through a descriptor. `docs/quirks.md` names it beside what closed. **Task 21 is the decision about how it is reproduced**, and the hook waits on it |
+| **A mapping of a file opened before the turn began** | v0.5 | `mmap_file` is not hooked: a file mapped into memory is read by the processor, so a mapping of an inherited descriptor made inside the turn reaches its contents past `file_permission`. **Not reproduced** — there is no safe `mmap` in Rust and `unsafe` is forbidden outside the kernel package's one file; the rule that kept `truncate(2)` out of the suite until task 14 reached it through a descriptor. `docs/quirks.md` names it beside what closed. **Task 21 is the decision about how it is reproduced**, and the hook waits on it | **How it is reproduced is [ADR 0030](../decisions/0030-how-a-mapping-is-reproduced.md)**, proposed 2026-09-13 by task 21: one audited `unsafe` in a named test fixture, or the hook measured once by hand, or a reproduction through a pinned component — recommending the first. The hook is the task after it and waits on its status line.
 | ~~A socket already open or inherited~~ | v0.5 | **Closed, task 13, 2026-09-12** — `socket_sendmsg` decides on every message, asked of the sending thread's cgroup. Moved to section 1 |
 | ~~A datagram sent without connecting~~ | v0.5 | **Closed, task 13, 2026-09-12** — the same hook reads the address a message names. Moved to section 1 |
 | ~~A connection reused after its destination is withdrawn~~ | v0.5 | **Closed, task 13, 2026-09-12** — the message hook reads the map on every message, so a withdrawn destination is refused on the next write. ADR 0020's per-request client had already closed it on the production path |
@@ -1468,3 +1468,19 @@ evidence, and **not when the task list is exhausted**. When the list empties, th
 honest report is *implementation complete; hardware acceptance pending* — never
 release completion, and never "kernel complete" while the v0.5 items above sit
 unbuilt with their release named.
+
+**Done, 2026-09-13.**
+[ADR 0030](../decisions/0030-how-a-mapping-is-reproduced.md), proposed: three
+options with what each costs the four laws and the gate — one audited `unsafe`
+in a named test fixture with the rule amended to name it; the hook written and
+measured once by hand into `docs/quirks.md`; or a reproduction driven through a
+pinned component that maps a file it is handed. It recommends the first, because
+*reproduce the gap, then close it* is what made the nine closed rows believable
+and the other two roads each trade it. The hook's shape is in the ADR, read from
+this kernel's BTF on the day rather than from documentation: four arguments,
+`file` at `arg(0)` with no mount mapping in front of it, so `decide_use`'s
+existing walk answers it and no new deciding function is needed. What it must
+not decide is written down too — a mapping with no file behind it is every
+allocator on the machine, so the question is asked only of a mapping that names
+a file. No `unsafe` was added by this task, the two maps stay two, and the hook
+is the task after this one, not written until the status line changes.
