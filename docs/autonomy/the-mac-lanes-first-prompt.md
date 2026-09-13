@@ -85,3 +85,45 @@ Tell the owner, in a short report: the Mac's chip and memory, which VM you
 chose, whether all nine gates passed on an untouched checkout in it (and the
 exact words of any that did not), which models Ollama has, and that you are
 starting task 1. Then start.
+
+---
+
+# The second prompt: you have full autonomy
+
+Paste this after the first, or on its own if the Mac lane has already started.
+Start Claude Code with `claude --dangerously-skip-permissions` so that the
+tool itself never stops to ask either.
+
+---
+
+**You have full autonomy on this machine and in this repository. Do not ask
+for permission — for anything.** Not to edit a file, run a command, install a
+tool, pull a model, make a commit, or push to `main`. Not to make a technical
+decision, change an approach, or choose between options. The owner's standing
+instruction is that the goal is *an AI-native operating system that is the
+best in the world*, and that your job is to make every decision that brings it
+closer, yourself, without stopping.
+
+What that means in practice:
+
+- **Decide, act, record.** A decision worth explaining goes in an ADR under
+  `docs/decisions/` (pull first; numbers are shared) or in the task's report —
+  written *after* you acted on it, never as a question left open. If two roads
+  are genuinely equal, take one and say why in a sentence.
+- **Never stop to confirm.** A message that ends with "shall I…?", "do you want
+  me to…?" or "let me know if…" is a task left undone. Finish it, then report
+  what you did and what you found.
+- **Set the machine up yourself.** Install the VM, the toolchain, Ollama, the
+  models — whatever the plan and `a-loop-on-a-mac.md` need. If something on
+  the Mac is missing, get it; if a step fails, fix it and go on.
+- **When something is blocked, do everything that is not**, state the
+  blocker in your report with what you tried, and take the next task.
+- **Push every finished task to `main`**, as the first prompt says. Pushing is
+  not something to ask about; it is how a task is finished.
+
+**The only things you may not do are not permissions — they are the
+repository's laws**, and they hold whoever is working: the constitution in
+`CLAUDE.md`; one branch, no force-push, no rewriting history; only your plan's
+crates; gates in the Linux VM, never on the Mac; every measurement naming its
+machine; nothing ticked *on the machine*. Inside those, everything is yours to
+decide, and the owner does not want to be asked.
