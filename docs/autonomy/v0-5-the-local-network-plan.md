@@ -27,7 +27,9 @@ a shared space, and two lanes have taken the same one twice.
 
 ### 1. A machine says it exists, and says nothing else
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done, 2026-09-13 — `crates/alo-nearby`, and
+`docs/autonomy/updates/a-machine-says-it-exists-and-says-nothing-else.md`.
+**Depends on:** nothing.
 
 *Machines find each other with zero configuration — no addresses typed, no
 accounts.* ADR 0003: **discovery reveals presence and nothing else** — no

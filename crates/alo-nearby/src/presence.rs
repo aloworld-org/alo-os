@@ -1,0 +1,188 @@
+//! What a machine advertises, which is a closed list of two things.
+//!
+//! # The list, and why it is closed
+//!
+//! [`Presence`] holds a [`MachineId`] and a port. There is no field for the
+//! person, the organisation, the models on the machine, what it has granted,
+//! what it is doing, or what it is called — and there is no field for whether
+//! it has paired with anything, so **what a machine advertises is the same
+//! whether it has paired with nothing or with everything**. Presence that
+//! changed shape when a pairing was made would tell a network watching it that
+//! a pairing had been made.
+//!
+//! The list is closed in the type rather than by convention. A later change
+//! that wanted to say more would have to add a field here, in a file whose
+//! entire subject is that it does not, rather than append a key somewhere in a
+//! packet builder.
+//!
+//! # And what is found is no more than that
+//!
+//! [`Found`] is the other side: one machine, seen. It carries what was
+//! advertised and [`Standing`], which today has one arm — nobody is paired with
+//! anybody, because pairing does not exist yet. Being on the network is not
+//! standing of any kind (ADR 0003), and the enum is the shape of that sentence:
+//! finding a machine moves nothing.
+
+use crate::machine::MachineId;
+
+/// The service this machine answers to on a local network.
+///
+/// `_alo-os._tcp.local` in DNS-SD's own spelling: an application protocol named
+/// `alo-os`, over TCP, on the link-local name space every machine on the
+/// network shares.
+pub const SERVICE: &str = "_alo-os._tcp.local";
+
+/// The one key an advertisement may carry beyond the service and the machine,
+/// being which version of this protocol the machine speaks.
+pub const VERSION_KEY: &str = "v";
+
+/// The version this crate speaks.
+pub const VERSION: &str = "1";
+
+/// What this machine says about itself on a local network.
+///
+/// Made from an identity and a port, and nothing else is reachable from here —
+/// see this module's own documentation for why the list is closed in the type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Presence {
+    /// Which machine.
+    machine: MachineId,
+    /// Where it would answer, if anything were ever permitted to ask it.
+    port: u16,
+}
+
+impl Presence {
+    /// This machine, at a port.
+    ///
+    /// The port is advertised and nothing listens on it as far as this crate is
+    /// concerned: being reachable is not being usable, and what it would take
+    /// to use a machine found this way is [ADR 0003]'s mutual pairing, which is
+    /// the next task rather than this one.
+    ///
+    /// [ADR 0003]: https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0003-the-network-is-not-authority.md
+    #[must_use]
+    pub const fn of(machine: MachineId, port: u16) -> Self {
+        Self { machine, port }
+    }
+
+    /// Which machine this is.
+    #[must_use]
+    pub const fn machine(&self) -> &MachineId {
+        &self.machine
+    }
+
+    /// The port it advertises.
+    #[must_use]
+    pub const fn port(&self) -> u16 {
+        self.port
+    }
+
+    /// The name this machine answers to in the service, which is its identity
+    /// and the service's own name.
+    ///
+    /// A DNS-SD instance name is ordinarily something a person reads — *Disan's
+    /// printer* — and that is exactly the leak this crate is organised against,
+    /// so the instance is the identity.
+    #[must_use]
+    pub fn instance(&self) -> String {
+        format!("{}.{SERVICE}", self.machine)
+    }
+
+    /// The host name it answers to, which is again its identity and nothing a
+    /// person chose.
+    #[must_use]
+    pub fn host(&self) -> String {
+        format!("{}.local", self.machine)
+    }
+}
+
+/// One machine, seen on the local network.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Found {
+    /// Which machine it said it was.
+    pub machine: MachineId,
+    /// The port it advertised.
+    pub port: u16,
+    /// What that means for this machine, which is nothing.
+    pub standing: Standing,
+}
+
+/// What a machine found on the network is to this one.
+///
+/// # One arm
+///
+/// ADR 0003: *being on the same network is not authority.* Finding a machine
+/// establishes that it exists and nothing else, so today every machine found is
+/// [`Standing::NotPaired`] — there is no way to be anything else, because
+/// pairing is not built. The enum exists at one arm rather than being a `bool`
+/// or absent because the next task adds the other, and because a reader looking
+/// for *what does finding a machine give it* should find the answer written
+/// down rather than have to notice that nothing gives it anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Standing {
+    /// Seen, and nothing more. Nothing on this machine is open to it.
+    NotPaired,
+}
+
+impl Found {
+    /// A machine seen on the network, which is not paired with this one,
+    /// because nothing is.
+    #[must_use]
+    pub const fn seen(machine: MachineId, port: u16) -> Self {
+        Self {
+            machine,
+            port,
+            standing: Standing::NotPaired,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Found, Presence, SERVICE, Standing};
+    use crate::machine::MachineId;
+
+    #[expect(
+        clippy::unwrap_used,
+        reason = "in a test, a panic on an unexpected Err is the failure being reported"
+    )]
+    /// An identity for a test to build a presence from.
+    fn a_machine() -> MachineId {
+        MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap()
+    }
+
+    /// The instance a machine answers to is its identity, not a name anybody
+    /// chose — which is the field DNS-SD ordinarily fills with a person's own
+    /// words.
+    #[test]
+    fn the_name_on_the_network_is_the_identity_and_the_service() {
+        let presence = Presence::of(a_machine(), 7_610);
+        assert_eq!(
+            presence.instance(),
+            format!("0f1e2d3c4b5a69788796a5b4c3d2e1f0.{SERVICE}")
+        );
+        assert_eq!(presence.host(), "0f1e2d3c4b5a69788796a5b4c3d2e1f0.local");
+    }
+
+    /// **Presence is made of two things**, and this is the test that fails if
+    /// somebody adds a third: two presences with the same identity and port are
+    /// the same presence, whatever else is true of either machine.
+    #[test]
+    fn two_machines_agreeing_on_identity_and_port_advertise_the_same_thing() {
+        assert_eq!(
+            Presence::of(a_machine(), 7_610),
+            Presence::of(a_machine(), 7_610)
+        );
+    }
+
+    /// Finding a machine gives this one nothing, which is ADR 0003 in the one
+    /// place the type could have said otherwise.
+    #[test]
+    fn a_machine_that_has_been_found_is_not_paired_with() {
+        assert_eq!(
+            Found::seen(a_machine(), 7_610).standing,
+            Standing::NotPaired
+        );
+    }
+}

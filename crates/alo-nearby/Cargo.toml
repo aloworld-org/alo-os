@@ -1,0 +1,18 @@
+[package]
+name = "alo-nearby"
+version = "0.0.1"
+description = "What a machine says about itself on a local network, which is that it exists (ADR 0003)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The kernel's randomness, for the one identity this machine keeps. It is
+# reached from `machine.rs` and nowhere else, and the argument for why the
+# identity is random rather than derived is in that file.
+getrandom = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
