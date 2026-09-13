@@ -32,7 +32,7 @@
 //! answered and nothing in this repository reaches one. A variant for it would
 //! be a stub wearing a capability, which law 3 forbids; what happens instead is
 //! that the permission arrives naming somewhere none of the three doors goes,
-//! and `alo_asking::Miswired::NoPathToAPairedMachine` says so.
+//! and `alo_asking::Miswired::BelongsDownTheCorridor` says so.
 
 use alo_asking::{Hosted, Served};
 use alo_models::{InferenceSource, ModelRuntime};

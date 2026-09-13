@@ -1,6 +1,6 @@
 //! What one entry says happened.
 //!
-//! Seven things can happen on this machine, and the record keeps all seven.
+//! Eight things can happen on this machine, and the record keeps all eight.
 //! Three of them are refusals, which is the point: **a record that keeps only
 //! successes cannot answer what a security review actually asks.** "The agent
 //! tried and was stopped" is the sentence that matters, and it is worthless if
@@ -18,15 +18,17 @@
 //! - [`Happened::AnsweredHere`] — a question answered on this machine, which is
 //!   the ordinary day and the thing law 1 promises there will be a great many
 //!   of;
+//! - [`Happened::AnsweredForAnotherMachine`] — a question answered on this
+//!   machine for a paired one, which is the other end of somebody else's
+//!   [`Happened::Left`] (ADR 0003);
 //! - [`Happened::Left`] — something left this machine (law 1);
 //! - [`Happened::HeldBack`] — something the egress policy refused to let leave;
 //! - [`Happened::LeftOnItsOwn`] — alo OS reached the network with nobody having
 //!   asked it to (★ *no telemetry*).
 //!
-//! # The one entry with nobody in it
+//! # The entries with nobody in them
 //!
-//! Six of the seven name whose authority they were under, and the seventh
-//! cannot. An errand — signing somebody in, fetching a model, checking for an
+//! Most of them name whose authority they were under, and two cannot. An errand — signing somebody in, fetching a model, checking for an
 //! update — is caused by the machine rather than by an agent, and
 //! `alo-egress`'s [`Errand`] is the closed list of them.
 //!
@@ -37,8 +39,16 @@
 //! Nothing granted alo OS anything; a name there would be answered by
 //! [`crate::Asking::by`] as though somebody had asked for it, and would sit in
 //! a SIEM's *who did what* column next to agents that really were granted
-//! something. So the seventh variant has **no agent field**, and
+//! something. So that variant has **no agent field**, and
 //! [`Happened::agent`] answers `None` for it.
+//!
+//! [`Happened::AnsweredForAnotherMachine`] has no agent field for a different
+//! reason, and it is worth keeping the two apart. There *was* an agent: one on
+//! the machine that asked. But its name is a name on somebody else's machine,
+//! which this one has no way to check, and a name this machine cannot stand
+//! behind does not go in the field whose job is *whose authority was this
+//! under*. What this machine can stand behind is which machine it paired with,
+//! because its own person agreed to that, and that is what the entry keeps.
 //!
 //! That is the same answer `alo-egress` gave one crate earlier, where
 //! `Showing::agent` answers `None` and `OnItsOwn` has no `agent()` at all: the
@@ -189,6 +199,32 @@ pub enum Happened {
     AnsweredHere {
         /// Which agent asked.
         agent: Line,
+    },
+    /// A question from a paired machine was answered on this machine
+    /// ([ADR 0003](../../../docs/decisions/0003-the-network-is-not-authority.md)).
+    ///
+    /// The other side of [`Happened::Left`]: where the asking machine writes
+    /// down that a question went down the corridor, the machine that answered
+    /// writes down that one arrived. Both halves exist so that *one GPU box
+    /// serves the office* is something either person can check from their own
+    /// machine rather than something one of them has to be told.
+    ///
+    /// **It names the machine and not the agent.** The agent that asked is a
+    /// name on somebody else's machine, and this machine has no way to check
+    /// that the name is real; writing it here would put a claim into a record
+    /// people read as a statement of fact. What this machine knows is which
+    /// machine it is paired with, because two people agreed to that.
+    ///
+    /// **What was asked is not kept**, for the reason
+    /// [`Happened::AnsweredHere`] gives, and with more force: the question is
+    /// somebody else's.
+    ///
+    /// Additive, and `format` stays `1` — `docs/contracts/record-file.md`'s
+    /// *a new kind of `happened` is additive* is the decision, including what
+    /// an older reader does with a tag it has never heard of.
+    AnsweredForAnotherMachine {
+        /// The machine that asked, by the name this machine paired it under.
+        origin: Line,
     },
     /// A question was refused before it was put anywhere.
     ///
@@ -355,7 +391,13 @@ impl Happened {
             | Self::NotBounded { agent, .. }
             | Self::Left { agent, .. }
             | Self::HeldBack { agent, .. } => Some(agent),
-            Self::LeftOnItsOwn { .. } | Self::GrantsNotReadAgain { .. } => None,
+            // And a third that answers `None`: a question from a paired
+            // machine was caused by an agent on *that* machine, whose name
+            // this one cannot check. Writing it here would put somebody
+            // else's word into a record people read as fact.
+            Self::LeftOnItsOwn { .. }
+            | Self::GrantsNotReadAgain { .. }
+            | Self::AnsweredForAnotherMachine { .. } => None,
         }
     }
 
@@ -376,6 +418,7 @@ impl Happened {
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. }
@@ -400,6 +443,7 @@ impl Happened {
             // in which it could pretend otherwise.
             Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. }
@@ -452,6 +496,7 @@ impl Happened {
             Self::Ran { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. }
@@ -481,6 +526,7 @@ impl Happened {
             | Self::NotBounded { why, .. } => Some(why),
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
@@ -494,6 +540,7 @@ impl Happened {
             Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. }
@@ -511,6 +558,7 @@ impl Happened {
             Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. }
@@ -534,6 +582,7 @@ impl Happened {
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. } => None,
@@ -556,6 +605,7 @@ impl Happened {
             | Self::Stopped { .. }
             | Self::TurnedAway { .. }
             | Self::AnsweredHere { .. }
+            | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::NotBounded { .. }

@@ -81,7 +81,9 @@ is worse than no pairing at all.
 
 ### 3. One GPU box serves the office, and the indicator still fires
 
-**Status:** ready. **Depends on:** 2.
+**Status:** done, 2026-09-13 — `crates/alo-asking/src/corridor.rs`, and
+`docs/autonomy/updates/the-machine-down-the-corridor-is-still-an-egress.md`.
+**Depends on:** 2.
 
 *A machine without a GPU discovers the one with it, and the agents just work.
 The inference never leaves the building; it moves down the corridor.* The

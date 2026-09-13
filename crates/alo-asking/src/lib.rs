@@ -149,6 +149,7 @@
 pub mod answer;
 pub mod asked;
 pub mod asking;
+pub mod corridor;
 pub mod found;
 pub mod hosted;
 pub mod locally;
@@ -179,6 +180,7 @@ mod testing;
 pub use answer::Answer;
 pub use asked::Asked;
 pub use asking::Asking;
+pub use corridor::DownTheCorridor;
 pub use found::{Found, NotVetted};
 pub use hosted::Hosted;
 pub use question::{NotAQuestion, Question};

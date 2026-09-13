@@ -234,7 +234,7 @@ impl Asking<'_> {
             // face, which is the half of ADR 0008 that runs the other way.
             InferenceSource::Hosted { .. } => return Err(Miswired::NotOnThisMachine.into()),
             InferenceSource::PairedMachine { .. } => {
-                return Err(Miswired::NoPathToAPairedMachine.into());
+                return Err(Miswired::BelongsDownTheCorridor.into());
             }
         }
 
@@ -528,7 +528,7 @@ mod tests {
                 InferenceSource::PairedMachine {
                     machine: "the studio workstation".to_owned(),
                 },
-                Miswired::NoPathToAPairedMachine,
+                Miswired::BelongsDownTheCorridor,
             ),
         ] {
             // Nothing is listening on this address, so a question that reached

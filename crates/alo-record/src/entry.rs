@@ -173,6 +173,26 @@ impl Entry {
         )
     }
 
+    /// A question from a paired machine, answered on this one.
+    ///
+    /// What the machine down the corridor writes down when it is the one with
+    /// the GPU in it. `machine` is the name this machine paired the other
+    /// under — its own person's word for it, which is the only name here
+    /// anybody on this machine has reason to trust.
+    ///
+    /// **No agent, and no question.**
+    /// [`Happened::AnsweredForAnotherMachine`] has both reasons, which are
+    /// different reasons for the same kind of absence.
+    #[must_use]
+    pub fn answered_for(machine: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::AnsweredForAnotherMachine {
+                origin: Line::of(machine),
+            },
+        )
+    }
+
     /// A question that was refused before it was put anywhere.
     ///
     /// The other ending of [`Entry::answered_here`]'s event. `why` is the

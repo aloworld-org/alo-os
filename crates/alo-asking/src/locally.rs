@@ -133,7 +133,7 @@ impl Asking<'_> {
             // mattered.
             InferenceSource::Hosted { .. } => return Err(Miswired::NotOnThisMachine.into()),
             InferenceSource::PairedMachine { .. } => {
-                return Err(Miswired::NoPathToAPairedMachine.into());
+                return Err(Miswired::BelongsDownTheCorridor.into());
             }
         }
 
@@ -426,7 +426,7 @@ mod tests {
                 InferenceSource::PairedMachine {
                     machine: "the studio workstation".to_owned(),
                 },
-                Miswired::NoPathToAPairedMachine,
+                Miswired::BelongsDownTheCorridor,
             ),
         ] {
             let runtime = Stub::answering("this should never be reached");

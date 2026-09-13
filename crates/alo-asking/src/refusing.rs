@@ -240,14 +240,39 @@ pub enum Miswired {
          address anywhere else belongs"
     )]
     ReachesOffThisMachine,
-    /// The permission names a machine on this network, and neither door goes
-    /// there.
+    /// The permission names a machine on this network, and this is not the door
+    /// that goes there.
+    ///
+    /// It used to say there was no path to one anywhere in this repository,
+    /// which stopped being true when [`crate::Asking::to_a_paired_machine`] was
+    /// built. A refusal that describes the world rather than the caller's
+    /// mistake is one that goes stale without anything failing.
     #[error(
-        "this question was permitted to be answered on a machine on this network, and there is no \
-         path to one in this repository yet — neither a provider nor the runtime on this machine \
-         is that place, and neither is a substitute for it"
+        "this question was permitted to be answered on a machine on this network — put it with \
+         `to_a_paired_machine`, which is where a paired machine belongs; neither a provider nor \
+         the runtime on this machine is a substitute for it"
     )]
-    NoPathToAPairedMachine,
+    BelongsDownTheCorridor,
+    /// The paired-machine door was used for a question not going to one.
+    #[error(
+        "this question was not permitted to be answered on a machine on this network, so \
+         `to_a_paired_machine` is not its door — a provider goes to `to_a_provider`, and either \
+         kind of local to `to_this_machine` or `to_a_service_on_this_machine`"
+    )]
+    NotAPairedMachine,
+    /// The question is for one paired machine and a different one was offered.
+    #[error(
+        "this question was permitted to be answered on one machine and a different machine was \
+         offered to answer it — they must be the same machine, because the person chose which one"
+    )]
+    AnotherMachine,
+    /// Nothing on this machine permits asking that machine's models.
+    #[error(
+        "no pairing on this machine permits asking that machine's models right now — being on the \
+         same network is not authority, and a pairing that has ended or been revoked permits \
+         nothing"
+    )]
+    NotPairedWithIt,
     /// A failure was reported where it could not have happened.
     #[error(transparent)]
     NotWhatFailed(#[from] NotWhatFailed),
@@ -289,9 +314,19 @@ mod tests {
                 .contains("`to_a_provider`")
         );
         assert!(
-            Miswired::NoPathToAPairedMachine
+            Miswired::BelongsDownTheCorridor
                 .to_string()
-                .contains("no path to one")
+                .contains("`to_a_paired_machine`")
+        );
+        assert!(
+            Miswired::NotPairedWithIt
+                .to_string()
+                .contains("being on the same network is not authority")
+        );
+        assert!(
+            Miswired::AnotherMachine
+                .to_string()
+                .contains("the person chose which one")
         );
         assert!(
             Miswired::ReachesOffThisMachine
@@ -324,11 +359,24 @@ mod tests {
         assert!(!hosted.contains("`to_this_machine`"), "{hosted}");
         assert!(hosted.contains("same face"), "{hosted}");
 
-        // And the place with no door offers none of the other three.
-        let paired = Miswired::NoPathToAPairedMachine.to_string();
+        // The permission is for a machine on this network, which now has a door
+        // of its own — named here, with neither of the others offered as a
+        // stand-in for it.
+        let paired = Miswired::BelongsDownTheCorridor.to_string();
+        assert!(paired.contains("`to_a_paired_machine`"), "{paired}");
         assert!(!paired.contains("`to_a_provider`"), "{paired}");
         assert!(!paired.contains("`to_this_machine`"), "{paired}");
-        assert!(paired.contains("neither is a substitute"), "{paired}");
+        assert!(paired.contains("is a substitute for it"), "{paired}");
+
+        // And the new door, used for a question that is not going down the
+        // corridor, sends it to whichever door its own place is behind.
+        let not_paired = Miswired::NotAPairedMachine.to_string();
+        assert!(not_paired.contains("`to_a_provider`"), "{not_paired}");
+        assert!(not_paired.contains("`to_this_machine`"), "{not_paired}");
+        assert!(
+            !not_paired.contains("`to_a_paired_machine` is its door"),
+            "{not_paired}"
+        );
     }
 
     /// **An address refused for reaching off this machine is sent to the door

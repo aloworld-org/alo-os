@@ -63,6 +63,7 @@ use alo_models::{InferenceSource, SourcePolicy};
 
 use crate::answer::Answer;
 use crate::asked::Asked;
+use crate::corridor::DownTheCorridor;
 use crate::hosted::Hosted;
 use crate::question::Question;
 use crate::refusing::{Miswired, NotAsked};
@@ -177,9 +178,9 @@ impl<'a> Asking<'a> {
             InferenceSource::ThisMachine | InferenceSource::AServiceAtThisMachinesAddress => {
                 return Err(Miswired::NotAProvider.into());
             }
-            // And nothing anywhere reaches a machine on this network yet.
+            // A machine on this network has a door of its own, and this is not it.
             InferenceSource::PairedMachine { .. } => {
-                return Err(Miswired::NoPathToAPairedMachine.into());
+                return Err(Miswired::BelongsDownTheCorridor.into());
             }
             InferenceSource::Hosted { .. } if source != hosted.named_source() => {
                 return Err(Miswired::AnotherPlace.into());
@@ -211,6 +212,76 @@ impl<'a> Asking<'a> {
                 // hosted provider — but this crate is a reporter like any
                 // other and does not get to assume it passes. The line comes
                 // off the indicator first, because nothing is leaving.
+                Err(reported) => {
+                    indicator.ended(departing);
+                    Err(reported.into())
+                }
+            },
+        }
+    }
+
+    /// Put a question to the machine down the corridor.
+    ///
+    /// **The same door as [`to_a_provider`](Self::to_a_provider), in every way
+    /// that law 1 cares about.** The departure is made before anything is sent,
+    /// the indicator is shown it while it happens, and the answer says which
+    /// machine it came from. *"It only went down the corridor"* is exactly the
+    /// exception that would erode law 1, so the short journey is shown like
+    /// every other one and what makes it different is said in words rather than
+    /// by the indicator staying quiet.
+    ///
+    /// The grant does not travel with the question. What this machine's pairing
+    /// settled is that it **may ask**; what the machine down the corridor does
+    /// about the question is that machine's, and [`crate::corridor`] has the
+    /// argument.
+    ///
+    /// # Errors
+    ///
+    /// [`NotAsked`], as [`to_a_provider`](Self::to_a_provider) answers it, with
+    /// [`Miswired::NotAPairedMachine`] when the permission does not name one and
+    /// [`Miswired::AnotherMachine`] when it names a different one than was
+    /// offered — the person chose which machine, and two machines here would be
+    /// this one choosing for them.
+    ///
+    /// `to` is where this request may connect, resolved and registered by the
+    /// caller before any boundary was entered (ADR 0020).
+    pub fn to_a_paired_machine(
+        self,
+        question: &Question,
+        corridor: &DownTheCorridor<'_>,
+        indicator: &mut Indicator,
+        now: SystemTime,
+        to: &[SocketAddr],
+    ) -> Result<Asked, NotAsked> {
+        let source = self.answering.source().clone();
+        match &source {
+            InferenceSource::PairedMachine { .. } if source != corridor.source() => {
+                return Err(Miswired::AnotherMachine.into());
+            }
+            InferenceSource::PairedMachine { .. } => {}
+            InferenceSource::ThisMachine
+            | InferenceSource::AServiceAtThisMachinesAddress
+            | InferenceSource::Hosted { .. } => {
+                return Err(Miswired::NotAPairedMachine.into());
+            }
+        }
+
+        // Law 1, in the order law 1 requires, and with no exception made for
+        // the journey being a short one.
+        let leaving = Leaving::asking(self.agent, &source).map_err(NotAsked::CannotBeShown)?;
+        let departing = indicator
+            .beginning(&EgressPolicy::from(self.policy), leaving, now)
+            .map_err(NotAsked::HeldBack)?;
+
+        match corridor.ask(question, to) {
+            Ok(said) => Ok(Asked::new(
+                departing,
+                Answer::new(said, source, question.of().to_owned()),
+            )),
+            Err(why) => match self.answering.did_not_answer(why, self.others, self.policy) {
+                Ok(failed) => Err(NotAsked::DidNotAnswer(Box::new(DidNotAnswer::new(
+                    departing, failed,
+                )))),
                 Err(reported) => {
                     indicator.ended(departing);
                     Err(reported.into())
@@ -511,7 +582,7 @@ mod tests {
                 InferenceSource::PairedMachine {
                     machine: "the studio workstation".to_owned(),
                 },
-                Miswired::NoPathToAPairedMachine,
+                Miswired::BelongsDownTheCorridor,
             ),
         ] {
             let not_asked = Asking::by(

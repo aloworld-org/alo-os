@@ -75,6 +75,8 @@ pub enum Outcome {
     NeverBecameACall,
     /// A question answered on this machine (ADR 0008).
     AnsweredHere,
+    /// A question from a paired machine, answered on this one (ADR 0003).
+    AnsweredForAnotherMachine,
     /// A question a rule refused before it was put anywhere.
     NeverPutAnywhere,
     /// The person's grants were not read again, so the service went on under
@@ -103,6 +105,7 @@ impl Outcome {
             },
             Happened::TurnedAway { .. } => Self::NeverBecameACall,
             Happened::AnsweredHere { .. } => Self::AnsweredHere,
+            Happened::AnsweredForAnotherMachine { .. } => Self::AnsweredForAnotherMachine,
             Happened::NeverPutAnywhere { .. } => Self::NeverPutAnywhere,
             Happened::GrantsNotReadAgain { .. } => Self::GrantsNotReadAgain,
             Happened::NotBounded { .. } => Self::NotBounded,
@@ -123,6 +126,7 @@ impl Outcome {
             Self::TheGrantsSaidNo => words::THE_GRANTS_SAID_NO,
             Self::NeverBecameACall => words::NEVER_BECAME_A_CALL,
             Self::AnsweredHere => words::ANSWERED_HERE,
+            Self::AnsweredForAnotherMachine => words::ANSWERED_FOR_ANOTHER_MACHINE,
             Self::NeverPutAnywhere => words::NEVER_PUT_ANYWHERE,
             Self::GrantsNotReadAgain => words::GRANTS_NOT_READ_AGAIN,
             Self::NotBounded => words::NOT_BOUNDED,

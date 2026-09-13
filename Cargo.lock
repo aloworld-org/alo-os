@@ -133,6 +133,7 @@ dependencies = [
  "alo-choosing",
  "alo-egress",
  "alo-models",
+ "alo-nearby",
  "alo-record",
  "alo-saying",
  "alo-strings",

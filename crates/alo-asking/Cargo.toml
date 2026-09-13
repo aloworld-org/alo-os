@@ -30,6 +30,9 @@ alo-capability = { path = "../alo-capability" }
 alo-egress = { path = "../alo-egress" }
 # The provider, its key, and where an answer came from.
 alo-models = { path = "../alo-models" }
+# The pairing that says this machine may ask the one down the corridor. Reached
+# only from `corridor.rs`, and only to ask whether a pairing permits it.
+alo-nearby = { path = "../alo-nearby" }
 # Two refusals a person reads, in the language they read.
 alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
