@@ -56,10 +56,11 @@ pub struct Presence {
 impl Presence {
     /// This machine, at a port.
     ///
-    /// The port is advertised and nothing listens on it as far as this crate is
-    /// concerned: being reachable is not being usable, and what it would take
-    /// to use a machine found this way is [ADR 0003]'s mutual pairing, which is
-    /// the next task rather than this one.
+    /// The port is advertised; what listens on it is whoever runs alo OS,
+    /// with [`crate::Receiving`] for proposals and the corridor for questions.
+    /// Being reachable is not being usable, and what it takes to use a machine
+    /// found this way is [ADR 0003]'s mutual pairing, which is what a proposal
+    /// on that port asks for.
     ///
     /// [ADR 0003]: https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0003-the-network-is-not-authority.md
     #[must_use]

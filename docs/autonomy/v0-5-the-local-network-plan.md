@@ -204,7 +204,11 @@ A — which is exactly the lateral movement ADR 0003 exists to refuse.
 
 ### 7. A proposal reaches the other machine, and the answer comes back
 
-**Status:** ready. **Depends on:** 6.
+**Status:** **Done, 2026-09-13.** **Depends on:** 6.
+Built in `crates/alo-nearby` (`proposals.rs`, `waiting.rs`, `confirming.rs`,
+`carried.rs`, `http.rs`, `dialling.rs`, `receiving.rs`, `crossing.rs`); the
+report is
+`docs/autonomy/updates/a-proposal-reaches-the-other-machine-and-the-answer-comes-back.md`.
 
 Tasks 2 and 6 decided what a pairing is and what it leaves each machine
 holding, and every test in this plan has made one by handing a `Proposal` and
@@ -240,3 +244,42 @@ with until a pairing exists.
   `Code` is `alo-shell`'s and outside this plan; what this task owes it is a
   value with the proposal, the code and the two confirmations on it, in
   `crates/alo-nearby`, and the wire that fills it. Nothing in `image/`.
+
+### 8. A verb crosses between two machines, and is proven at the door
+
+**Status:** ready. **Depends on:** 4, 6, 7.
+
+Task 7 built the pairing wire, and nothing on it carries a verb or a
+question: two machines that never shared a process can now hold a pairing,
+and task 4's door — `alo_turn::Arriving` — still has nothing that reaches it
+from a network. Task 6's report said per-message proofs on an open turn's
+later doors are the verb wire's to check, and task 4's report said the same
+of the wire itself. This is that wire, and it is written after the pairing's
+because a verb had nothing to prove itself with until a pairing existed.
+
+- **Acceptance:** a verb an agent on a paired machine asks for reaches the
+  machine it names at the address discovery measured
+  (`alo_nearby::Found::where_it_answers`), carrying the verb, its typed
+  arguments and a `Proof` over exactly those bytes — and nothing else, held
+  by a test that reads the wire and refuses any field not on that list; the
+  receiving machine calls `Proven::checked` before anything else and
+  `alo_turn::Arriving` and no other door, so a verb from a stranger
+  presenting a paired machine's identity, a verb replayed from an earlier
+  exchange, and a verb from a pairing since revoked are each refused before
+  any grant is asked, with the record staying empty — one test each; a verb
+  the receiving machine's person has not granted is refused as *not granted
+  here*, tested beside the same verb granted there and run; every answer sent
+  back travels holding an `alo_egress::Departing`, tested by there being no
+  road to the wire without one; the receiving machine's record names the
+  origin machine and the asking machine's record names where the verb went;
+  and the second message of an open turn carries a fresh proof, with the
+  first one replayed refused.
+- **Constraint:** ADR 0003 and ADR 0031 both: the question travels, the
+  grant does not; no new verb, nothing widening the enumerated list, and
+  `alo-capability`'s reasoning untouched — the wire decides *whose* grant is
+  asked and how the asker is proven, never what a grant is. The kernel
+  boundary (ADR 0013) applies on the receiving machine exactly as for a local
+  turn, and a turn whose boundary cannot be applied still does not run. One
+  port, one shape: HTTP on the port presence advertises, beside task 7's two
+  paths, with the proof in `alo_asking::THE_PROOF_HEADER`. Nothing in
+  `alo-shell`, nothing in `image/`.

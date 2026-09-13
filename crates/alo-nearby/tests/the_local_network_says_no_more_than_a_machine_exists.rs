@@ -10,7 +10,7 @@
 //! | a machine advertises, and a second one reads it back as one machine, not paired | [`a_machine_on_the_network_is_found_by_another_and_nothing_is_open_to_it`] |
 //! | what it advertises carries nothing a person chose and nothing about what it is doing | [`what_a_machine_advertises_is_its_identity_the_service_and_a_port`] |
 //! | the identity is stable across a restart, and is not a serial | [`the_identity_survives_a_restart_and_outlives_nothing_else`] |
-//! | nothing here connects to anything it finds, and nothing here is configurable | [`this_crate_dials_nothing_and_has_no_setting`] |
+//! | nothing here connects to anything it finds, and nothing here is configurable | [`discovery_dials_nothing_the_wire_dials_what_it_measured_and_nothing_has_a_setting`] |
 //!
 //! # What no test here shows
 //!
@@ -150,25 +150,32 @@ fn the_identity_survives_a_restart_and_outlives_nothing_else() {
     drop(std::fs::remove_dir_all(other.parent().unwrap()));
 }
 
-/// **Nothing here connects to anything it finds, and nothing here is
-/// configurable.**
+/// **Discovery connects to nothing it finds, the one wire this crate has
+/// dials only what discovery measured, and nothing here is configurable.**
 ///
 /// Read off the crate's own source, which is the only way to hold *there is no
 /// such thing here*. Two failures are being guarded against, and neither is a
 /// stranger's:
 ///
-/// A **connection** would be the half of ADR 0003 this task does not build.
-/// Discovery ends at a fact written down; turning that fact into a machine this
-/// one will talk to is mutual pairing, and a `TcpStream::connect` appearing
-/// here would mean that had been skipped.
+/// A **connection from discovery** would be the half of ADR 0003 task 1 does
+/// not build. Discovery ends at a fact written down; turning that fact into a
+/// machine this one will talk to is mutual pairing, and a `TcpStream::connect`
+/// appearing in the files that advertise, look and read would mean that had
+/// been skipped. Task 7 built the pairing wire, in exactly two files —
+/// `dialling.rs`, which opens a connection, and `receiving.rs`, which accepts
+/// one — and those two are the only files permitted to; every other file is
+/// held to the original promise. And `dialling.rs` takes its address from a
+/// `Found` or from a `Waiting` made from one, never from a string: no address
+/// is spelt in it.
 ///
 /// A **setting** would be the trusted-network setting arriving by the back
 /// door. ADR 0003 says there is no such setting, and *discovery off for this
 /// network* or *advertise as* would each be one under another name.
 #[test]
-fn this_crate_dials_nothing_and_has_no_setting() {
+fn discovery_dials_nothing_the_wire_dials_what_it_measured_and_nothing_has_a_setting() {
     let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut read = 0_usize;
+    let mut dials = Vec::new();
     for file in std::fs::read_dir(&source).unwrap() {
         let file = file.unwrap().path();
         if file.extension().is_none_or(|of| of != "rs") {
@@ -176,6 +183,21 @@ fn this_crate_dials_nothing_and_has_no_setting() {
         }
         let written = std::fs::read_to_string(&file).unwrap();
         read += 1;
+        let name = file
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        if name == "dialling.rs" || name == "receiving.rs" {
+            dials.push(name.clone());
+            let ships = written
+                .split_once("#[cfg(test)]")
+                .map_or(written.as_str(), |(before, _)| before);
+            assert!(
+                !ships.contains("parse(") && !ships.contains("SocketAddr::new"),
+                "{name} spells an address of its own rather than taking what discovery measured"
+            );
+            continue;
+        }
         // Comments say what this crate does not do, so only the code is read —
         // and only the code that ships. A test may look up this machine's own
         // name in the environment in order to prove the packet does not carry
@@ -191,7 +213,7 @@ fn this_crate_dials_nothing_and_has_no_setting() {
         for dialling in ["TcpStream", "TcpListener", "connect("] {
             assert!(
                 !code.contains(dialling),
-                "{} opens a connection to a machine it found, which pairing has not permitted",
+                "{} opens a connection, which only the pairing wire's two files may",
                 file.display()
             );
         }
@@ -204,6 +226,12 @@ fn this_crate_dials_nothing_and_has_no_setting() {
         }
     }
     assert!(read > 4, "only {read} files were read");
+    dials.sort_unstable();
+    assert_eq!(
+        dials,
+        ["dialling.rs", "receiving.rs"],
+        "the two files of the pairing wire are not both there to be held"
+    );
 }
 
 /// The service is spelled once, in the crate, so a change to it is a change

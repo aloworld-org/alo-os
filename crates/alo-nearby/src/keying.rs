@@ -230,6 +230,11 @@ impl Transcript {
         Self { bytes }
     }
 
+    /// The bytes, for the file whose confirmation tag is over them.
+    pub(crate) fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
     /// The six digits two people compare, derived from this transcript.
     pub(crate) fn code(&self) -> Code {
         let mut over = Vec::with_capacity(A_CODE.len().saturating_add(self.bytes.len()));

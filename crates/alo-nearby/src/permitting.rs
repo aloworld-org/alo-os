@@ -69,6 +69,26 @@ impl MayAskIts {
             Self::Workspace => words::MAY_REACH_ITS_WORKSPACE,
         }
     }
+
+    /// One arm as it is written on the wire: one lowercase word, so that a
+    /// proposal carrying it spells it the same way on both machines.
+    #[must_use]
+    pub const fn said(self) -> &'static str {
+        match self {
+            Self::Models => "models",
+            Self::Workspace => "workspace",
+        }
+    }
+
+    /// An arm somebody else wrote on the wire, or nothing for a word that is
+    /// not one — which is how a proposal asking for something this list does
+    /// not have is refused rather than widened.
+    #[must_use]
+    pub fn read(said: &str) -> Option<Self> {
+        EVERYTHING_A_PAIRING_MAY_PERMIT
+            .into_iter()
+            .find(|arm| arm.said() == said)
+    }
 }
 
 #[cfg(test)]
@@ -94,6 +114,19 @@ mod tests {
         assert_eq!(sorted.len(), EVERYTHING_A_PAIRING_MAY_PERMIT.len());
         assert!(sorted.contains(&MayAskIts::Models));
         assert!(sorted.contains(&MayAskIts::Workspace));
+    }
+
+    /// Every arm is written on the wire as one lowercase word and read back
+    /// as itself, and a word that is not an arm is read as nothing.
+    #[test]
+    fn every_arm_is_written_on_the_wire_and_read_back_and_nothing_else_is() {
+        for may in EVERYTHING_A_PAIRING_MAY_PERMIT {
+            assert_eq!(MayAskIts::read(may.said()), Some(may));
+            assert!(may.said().chars().all(|c| c.is_ascii_lowercase()));
+        }
+        for not_one in ["", "Models", "everything", "verbs", "models "] {
+            assert_eq!(MayAskIts::read(not_one), None, "`{not_one}` was read");
+        }
     }
 
     /// Two arms is a list. One would be a flag wearing a list's clothes, and

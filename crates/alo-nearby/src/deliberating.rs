@@ -33,13 +33,27 @@
 //! both machines, and two people who read the same six digits are not being
 //! intercepted. The surface owes the person that code beside the confirmation.
 //!
+//! # The key is agreed the moment both offers are known
+//!
+//! Not when both people have said yes. Each side's private half is consumed
+//! the moment the other's offer arrives — on the asked machine at
+//! [`Deliberating::asked`], on the asking one at
+//! [`Deliberating::answered_with`] — and what the deliberation holds from then
+//! on is the key. Two things depend on that: the private half is gone as soon
+//! as it has done its one job rather than sitting in memory while two people
+//! walk between rooms, and `confirming.rs` can prove *the person here said
+//! yes* to the other machine with the key, before either machine holds a
+//! [`Pairing`](crate::Pairing). A pairing is still made only by
+//! [`Deliberating::agreed`], and only when both have agreed; holding the key
+//! early changes nothing about that.
+//!
 //! Nothing here reads the clock either. The moment a pairing starts is passed
 //! in, the same way `alo_capability::Grant` takes it, so that what a pairing
 //! does at a moment can be asked about a moment that is not now.
 
 use std::time::Duration;
 
-use crate::keying::{Code, Keying, Offer, Transcript};
+use crate::keying::{Code, Keying, Offer, PairingKey, Transcript};
 use crate::machine::MachineId;
 use crate::pairing::{NotPaired, Pairing};
 use crate::permitting::MayAskIts;
@@ -86,7 +100,10 @@ impl Proposal {
     /// machine* ambiguous; [`NotPaired::NothingAsked`] for an empty list,
     /// because a pairing that permits nothing is a row in a list that does
     /// nothing and confuses everybody who reads it; [`NotPaired::NoTime`] for
-    /// zero; and [`NotPaired::TooLong`] past [`AT_MOST`].
+    /// less than a second, because a pairing lasts whole seconds — the wire
+    /// and the transcript both spell the duration in seconds, so a fraction
+    /// would be a term the other machine never saw; and [`NotPaired::TooLong`]
+    /// past [`AT_MOST`].
     pub fn checked(
         asking: MachineId,
         asked: MachineId,
@@ -100,6 +117,7 @@ impl Proposal {
         if may.is_empty() {
             return Err(NotPaired::NothingAsked);
         }
+        let lasting = Duration::from_secs(lasting.as_secs());
         if lasting.is_zero() {
             return Err(NotPaired::NoTime);
         }
@@ -163,11 +181,25 @@ pub enum Side {
     TheOneAsked,
 }
 
+/// This machine's part in the key, at whichever stage it has reached.
+#[derive(Debug)]
+enum Part {
+    /// The private half, kept only until the other machine's offer is known.
+    Keeping(Keying),
+    /// The key, agreed the moment the other machine's offer was known.
+    Agreed(PairingKey),
+    /// No key could be agreed, which an offer of the right length does not
+    /// cause. Kept rather than refused at once so that the refusal is said
+    /// where a pairing would have been made, by [`Deliberating::agreed`].
+    NoKey,
+}
+
 /// A proposal that is waiting for two people, on one of the two machines.
 ///
 /// Deliberately not `Clone` and deliberately consuming: it holds this
-/// machine's private half, and [`agreed`](Self::agreed) takes the deliberation,
-/// so a pairing is made from it once.
+/// machine's private half until the key is agreed and the key afterwards, and
+/// [`agreed`](Self::agreed) takes the deliberation, so a pairing is made from
+/// it once.
 #[derive(Debug)]
 pub struct Deliberating {
     /// What is being proposed.
@@ -175,7 +207,7 @@ pub struct Deliberating {
     /// Which machine this deliberation is on.
     on: Side,
     /// This machine's part of the key.
-    keying: Keying,
+    part: Part,
     /// The asked machine's public half, once known: its own, on the asked
     /// machine; what came back, on the asking one.
     answered: Option<Offer>,
@@ -201,7 +233,7 @@ impl Deliberating {
         Ok(Self {
             proposal,
             on: Side::TheOneAsking,
-            keying,
+            part: Part::Keeping(keying),
             answered: None,
             asking_agreed: false,
             asked_agreed: false,
@@ -210,14 +242,28 @@ impl Deliberating {
 
     /// The proposal, on the machine it was carried to, with a keying of that
     /// machine's own — whose offer is the answer it sends back.
+    ///
+    /// Both offers are known here from the start, so the key is agreed here
+    /// and the private half is gone before this returns.
     #[must_use]
     pub fn asked(proposal: Proposal, keying: Keying) -> Self {
-        let answered = Some(keying.offer().clone());
+        let answered = keying.offer().clone();
+        let transcript = Transcript::of(
+            &proposal.asking,
+            &proposal.asked,
+            &proposal.offered,
+            &answered,
+            &proposal.may,
+            proposal.lasting,
+        );
+        let part = keying
+            .agreed(&proposal.offered, &transcript)
+            .map_or(Part::NoKey, Part::Agreed);
         Self {
             proposal,
             on: Side::TheOneAsked,
-            keying,
-            answered,
+            part,
+            answered: Some(answered),
             asking_agreed: false,
             asked_agreed: false,
         }
@@ -225,16 +271,36 @@ impl Deliberating {
 
     /// The asked machine's offer, carried back to the asking machine.
     ///
+    /// The key is agreed here, and the private half is gone before this
+    /// returns.
+    ///
     /// # Errors
     ///
     /// [`NotPaired::NotTheOfferMade`] on the asked machine, whose answer is
-    /// its own and not something that arrives — and on either machine if the
-    /// offer is the asking machine's own reflected back, which is what an
-    /// attacker in between who cannot make a key of its own would send.
+    /// its own and not something that arrives; on either machine if the offer
+    /// is the asking machine's own reflected back, which is what an attacker
+    /// in between who cannot make a key of its own would send; and on an
+    /// asking machine that has been answered already, because the private
+    /// half was consumed by the first answer and a second one would be a
+    /// second machine trying to be the one that answered.
     pub fn answered_with(mut self, offer: Offer) -> Result<Self, NotPaired> {
         if self.on == Side::TheOneAsked || offer == self.proposal.offered {
             return Err(NotPaired::NotTheOfferMade);
         }
+        let Part::Keeping(keying) = std::mem::replace(&mut self.part, Part::NoKey) else {
+            return Err(NotPaired::NotTheOfferMade);
+        };
+        let transcript = Transcript::of(
+            &self.proposal.asking,
+            &self.proposal.asked,
+            &self.proposal.offered,
+            &offer,
+            &self.proposal.may,
+            self.proposal.lasting,
+        );
+        self.part = keying
+            .agreed(&offer, &transcript)
+            .map_or(Part::NoKey, Part::Agreed);
         self.answered = Some(offer);
         Ok(self)
     }
@@ -286,10 +352,34 @@ impl Deliberating {
         self
     }
 
+    /// Whether the person in front of one of the two machines has said yes.
+    ///
+    /// For the surface that shows a person where the pairing stands: *you
+    /// have confirmed; the other person has not yet.*
+    #[must_use]
+    pub const fn has_agreed(&self, side: Side) -> bool {
+        match side {
+            Side::TheOneAsking => self.asking_agreed,
+            Side::TheOneAsked => self.asked_agreed,
+        }
+    }
+
     /// Whether both people have agreed.
     #[must_use]
     pub const fn is_mutual(&self) -> bool {
         self.asking_agreed && self.asked_agreed
+    }
+
+    /// The key, once both offers are known here and the agreement held.
+    ///
+    /// For `confirming.rs`, which proves *the person here said yes* to the
+    /// other machine with it. `None` before the other machine's offer has
+    /// arrived, and `None` if the agreement failed.
+    pub(crate) const fn key(&self) -> Option<&PairingKey> {
+        match &self.part {
+            Part::Agreed(key) => Some(key),
+            Part::Keeping(_) | Part::NoKey => None,
+        }
     }
 
     /// The pairing, if both people agreed, as this machine keeps it — naming
@@ -320,19 +410,24 @@ impl Deliberating {
         if !self.is_mutual() {
             return Err(NotPaired::OnlyOneSideAgreed);
         }
-        let (Some(transcript), Some(answered)) = (self.transcript(), self.answered.as_ref()) else {
+        if self.answered.is_none() {
             return Err(NotPaired::OnlyOneSideAgreed);
+        }
+        let other = match self.on {
+            Side::TheOneAsking => self.proposal.asked.clone(),
+            Side::TheOneAsked => self.proposal.asking.clone(),
         };
-        let (other, theirs) = match self.on {
-            Side::TheOneAsking => (self.proposal.asked.clone(), answered),
-            Side::TheOneAsked => (self.proposal.asking.clone(), &self.proposal.offered),
+        let key = match self.part {
+            Part::Agreed(key) => key,
+            Part::Keeping(_) | Part::NoKey => return Err(NotPaired::NoKey),
         };
-        let key = self.keying.agreed(theirs, &transcript)?;
         Pairing::between(other, &self.proposal.may, at, self.proposal.lasting, key)
     }
 
     /// The transcript both sides derive from, once both offers are known.
-    fn transcript(&self) -> Option<Transcript> {
+    ///
+    /// For `confirming.rs`, whose tag is over it.
+    pub(crate) fn transcript(&self) -> Option<Transcript> {
         self.answered.as_ref().map(|answered| {
             Transcript::of(
                 &self.proposal.asking,
@@ -624,5 +719,47 @@ mod tests {
     #[test]
     fn how_long_it_would_last_is_part_of_what_is_shown() {
         assert_eq!(a_proposal().0.lasting(), Duration::from_secs(86_400));
+    }
+
+    /// **The key is agreed the moment both offers are known**, before anybody
+    /// has said yes, and is nothing before then — on the asked machine from
+    /// the start, on the asking one once the answer arrives, and the same on
+    /// both.
+    #[test]
+    fn the_key_is_held_once_both_offers_are_known_and_not_before() {
+        let (proposal, keying) = a_proposal();
+        let waiting = Deliberating::asking(proposal, keying).unwrap();
+        assert!(waiting.key().is_none());
+
+        let (asking, asked) = both_sides();
+        assert!(!asking.is_mutual() && !asked.is_mutual());
+        let on_asking = asking.key().unwrap();
+        let on_asked = asked.key().unwrap();
+        assert_eq!(on_asking, on_asked);
+    }
+
+    /// **An asking machine answered twice is refused the second time.** The
+    /// private half was consumed by the first answer, and a second answer is
+    /// a second machine trying to be the one that answered.
+    #[test]
+    fn a_second_answer_to_an_asking_machine_is_refused() {
+        let (asking, _) = both_sides();
+        let refused = asking
+            .answered_with(Keying::fresh().unwrap().offer().clone())
+            .unwrap_err();
+        assert_eq!(refused, NotPaired::NotTheOfferMade);
+    }
+
+    /// Where each person stands is readable one side at a time, for the
+    /// surface that says *you have confirmed; the other person has not yet*.
+    #[test]
+    fn where_each_person_stands_is_readable_one_side_at_a_time() {
+        let (asking, _) = both_sides();
+        assert!(!asking.has_agreed(Side::TheOneAsking));
+        assert!(!asking.has_agreed(Side::TheOneAsked));
+        let asking = asking.agreed_at(Side::TheOneAsked);
+        assert!(!asking.has_agreed(Side::TheOneAsking));
+        assert!(asking.has_agreed(Side::TheOneAsked));
+        assert!(!asking.is_mutual());
     }
 }

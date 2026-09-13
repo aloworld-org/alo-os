@@ -7,10 +7,12 @@
 //!
 //! Not one line opens a connection to a machine it heard from. Everything is
 //! one unconnected datagram socket, and the port a [`Found`] carries is a
-//! number that is written down rather than dialled. What it would take to use a
-//! machine found this way is ADR 0003's mutual pairing, which is not built; a
-//! `TcpStream::connect` appearing in this crate would mean that decision had
-//! been quietly reversed, and
+//! number that is written down rather than dialled. What it takes to use a
+//! machine found this way is ADR 0003's mutual pairing, and the one wire this
+//! crate has for that lives in `dialling.rs` and `receiving.rs` and dials
+//! [`Found::where_it_answers`] under a proposal a person made; a
+//! `TcpStream::connect` appearing in this file or any other would mean that
+//! decision had been quietly reversed, and
 //! `the_local_network_says_no_more_than_a_machine_exists.rs` fails if one does.
 //!
 //! # Finding nothing is an answer

@@ -84,6 +84,32 @@ pub enum NotNearby {
     #[error("what arrived as a proof is not one: {0}")]
     NotAProof(String),
 
+    /// What arrived as a proposal is not shaped like one.
+    ///
+    /// The shape only, and the checks [`Proposal::checked`](crate::Proposal)
+    /// makes of any proposal: a proposal that names one machine twice, that
+    /// asks for nothing or that lasts no time is not one, wherever it came
+    /// from. Whether a proposal that *is* one is accepted is
+    /// [`crate::Proposals::arrived`]'s to answer, and is not a `NotNearby`.
+    #[error("what arrived as a proposal is not one: {0}")]
+    NotAProposal(String),
+
+    /// What arrived as a confirmation is not shaped like one.
+    ///
+    /// The shape only. Whether it was made by the machine being paired with
+    /// is `Proposals::confirmation_arrived`'s to answer.
+    #[error("what arrived as a confirmation is not one: {0}")]
+    NotAConfirmation(String),
+
+    /// What arrived on the pairing wire is not a message this machine reads.
+    ///
+    /// A request that is not the one shape the wire carries, a reply that is
+    /// not one, a message longer than any this crate sends, or a connection
+    /// that ended in the middle of one. Ordinary on a port anything on a
+    /// network can reach.
+    #[error("what arrived on the pairing wire is not a message: {0}")]
+    NotAMessage(String),
+
     /// A name this machine was about to write into a packet cannot be written.
     ///
     /// A label over sixty-three characters or a name over two hundred and
@@ -146,6 +172,9 @@ impl NotNearby {
                 | Self::SaysNothingAboutWhichMachine
                 | Self::NotAnOffer(_)
                 | Self::NotAProof(_)
+                | Self::NotAProposal(_)
+                | Self::NotAConfirmation(_)
+                | Self::NotAMessage(_)
         )
     }
 }

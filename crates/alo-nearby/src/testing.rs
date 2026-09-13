@@ -52,6 +52,42 @@ pub(crate) fn paired() -> (Pairing, Pairing) {
     paired_between(reception(), studio())
 }
 
+/// Reception proposing to the studio, for a day, for the studio's models,
+/// with the keying whose offer the proposal carries.
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+pub(crate) fn a_proposal() -> (Proposal, Keying) {
+    let keying = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
+        reception(),
+        studio(),
+        &[MayAskIts::Models],
+        Duration::from_secs(86_400),
+        keying.offer().clone(),
+    )
+    .unwrap();
+    (proposal, keying)
+}
+
+/// Both sides of one proposal from reception to the studio, each holding the
+/// other's offer and nobody having agreed yet: reception's first, the
+/// studio's second.
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+pub(crate) fn both_sides() -> (Deliberating, Deliberating) {
+    let (proposal, at_reception) = a_proposal();
+    let at_studio = Deliberating::asked(proposal.clone(), Keying::fresh().unwrap());
+    let at_reception = Deliberating::asking(proposal, at_reception)
+        .unwrap()
+        .answered_with(at_studio.answered().unwrap().clone())
+        .unwrap();
+    (at_reception, at_studio)
+}
+
 /// Any two machines, paired for a day for the asked one's models, as each side
 /// keeps it: the asking machine's row first, the asked machine's second.
 #[expect(

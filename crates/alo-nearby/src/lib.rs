@@ -74,6 +74,20 @@
 //! that held, and it permits nothing — what a verb from there may do is
 //! decided by the grants made on this machine, which is `alo-turn`'s to ask.
 //!
+//! **And the wire a proposal crosses.** A proposal made on one machine
+//! reaches the machine it names at the address discovery measured
+//! ([`Found::where_it_answers`]), carrying exactly the [`Proposal`] and
+//! nothing else; the asked machine answers with its own [`Offer`] once its
+//! person has been shown the proposal and the [`Code`]; and each person's
+//! confirmation crosses as a [`Confirmation`] only the confirming machine
+//! could have made. [`Proposals`] is every proposal waiting on a machine and
+//! each thing that can happen to one, decided with no socket in sight;
+//! [`Waiting`] is one of them as a surface reads it — the proposal, the
+//! code and the two confirmations; [`Receiving`] is the asked end of the
+//! wire and [`crossing`] the asking end. Nothing on the wire carries a verb
+//! or a question, and a pairing is kept on each machine only after both
+//! people have confirmed on their own.
+//!
 //! **And not a trusted network.** There is no setting in this crate, which is
 //! the point of it having none: no *advertise as*, no *discovery off*, no
 //! subnet rule, no *remember this machine*. ADR 0003 names each as the whole
@@ -83,8 +97,13 @@
 //! [ADR 0003]: https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0003-the-network-is-not-authority.md
 
 pub mod advertising;
+mod carried;
+mod confirming;
+pub mod crossing;
 mod deliberating;
+mod dialling;
 mod hexing;
+mod http;
 mod keying;
 mod looking;
 mod machine;
@@ -93,15 +112,19 @@ mod pairing;
 mod permitting;
 mod presence;
 mod proof;
+mod proposals;
 mod proven;
 pub mod reading;
+mod receiving;
 mod refusing;
 mod replaying;
 #[cfg(test)]
 mod testing;
+mod waiting;
 mod wire;
 pub mod words;
 
+pub use confirming::Confirmation;
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
 pub use keying::{Code, Keying, Offer};
 pub use looking::{Answering, Looking, THE_ADDRESS, THE_PORT};
@@ -111,7 +134,10 @@ pub use pairing::{NotPaired, Pairing, Pairings};
 pub use permitting::{EVERYTHING_A_PAIRING_MAY_PERMIT, MayAskIts};
 pub use presence::{Found, Presence, SERVICE, Standing, VERSION, VERSION_KEY};
 pub use proof::Proof;
+pub use proposals::{NotProposed, Proposals, WHILE_A_PROPOSAL_WAITS};
 pub use proven::{NotProven, Proven};
+pub use receiving::{Arrived, Heard, Receiving, Surface, THE_CONFIRMATION_PATH, THE_PROPOSAL_PATH};
 pub use refusing::NotNearby;
 pub use replaying::{Seen, WHILE_A_PROOF_STANDS};
+pub use waiting::Waiting;
 pub use words::nearby_words;

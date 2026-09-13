@@ -201,8 +201,122 @@ pub const A_PROOF_FROM_ANOTHER_MOMENT: Word = Word::saying(
      refusal here a person can fix.",
 );
 
+// ---------------------------------------------------------------------------
+// Why a proposal did not go through — [`crate::NotProposed`].
+//
+// Read on the machine whose person proposed, or whose person confirmed, about
+// something the wire refused. Nobody at the machine that refused was shown
+// anything, and several of these say so, because the reader's next question
+// is whether the other person saw it.
+// ---------------------------------------------------------------------------
+
+/// The proposal named a machine other than the one it was on.
+pub const A_PROPOSAL_FOR_ANOTHER_MACHINE: Word = Word::saying(
+    "nearby.not-proposed.for-another-machine",
+    "The proposal named a different machine from the one it reached, so nobody there was shown \
+     it. Choose the machine again.",
+)
+.noting(
+    "Said on the machine that proposed, when the machine at the other end says the proposal \
+     named some other machine — the address it was found at now belongs to a different machine, \
+     usually. The second sentence is what to do.",
+);
+
+/// The proposal came from an address the other machine has not seen this one
+/// at.
+pub const A_PROPOSAL_FROM_AN_ADDRESS_NOT_SEEN: Word = Word::saying(
+    "nearby.not-proposed.from-an-address-not-seen",
+    "The other machine has not seen this one on the network, so nobody there was shown the \
+     proposal. Make sure both machines can see each other, then try again.",
+)
+.noting(
+    "Said on the machine that proposed, when the other machine refuses because its own search \
+     of the network never found this machine at the address the proposal came from. Nothing is \
+     wrong with either machine; the second sentence is what to do.",
+);
+
+/// A proposal between these two machines is already waiting.
+pub const A_PROPOSAL_IS_ALREADY_WAITING: Word = Word::saying(
+    "nearby.not-proposed.already-waiting",
+    "A proposal between these two machines is already waiting. Answer that one, or let it \
+     lapse.",
+)
+.noting(
+    "Said when somebody proposes to a machine a proposal is already waiting with, in either \
+     direction. \"Lapse\" is the word for a proposal that nobody answered and that goes away \
+     on its own after a stated time.",
+);
+
+/// Nobody at the other machine to show the proposal to.
+pub const NOBODY_AT_THE_OTHER_MACHINE: Word = Word::saying(
+    "nearby.not-proposed.nobody-at-the-other-machine",
+    "Nobody is at the other machine to show the proposal to.",
+)
+.noting(
+    "Said on the machine that proposed, when the other machine could not put the proposal in \
+     front of a person — nobody signed in, usually. A statement of fact rather than a refusal.",
+);
+
+/// No proposal is waiting between these two machines.
+pub const NO_PROPOSAL_IS_WAITING: Word = Word::saying(
+    "nearby.not-proposed.nothing-waiting",
+    "No proposal is waiting between these two machines. Start the pairing again.",
+)
+.noting(
+    "Said when somebody confirms a proposal that is no longer there: it lapsed, was withdrawn, \
+     or was already completed. The second sentence is what to do.",
+);
+
+/// The other machine has not answered yet, so there is no code to confirm.
+pub const THE_OTHER_MACHINE_HAS_NOT_ANSWERED_YET: Word = Word::saying(
+    "nearby.not-proposed.not-answered-yet",
+    "The other machine has not answered yet, so there is no code to confirm.",
+)
+.noting(
+    "Said on the machine that proposed, when its person tries to confirm before the other \
+     machine's answer has arrived. The code is the six digits both people compare, and it \
+     cannot exist before the answer.",
+);
+
+/// A confirmation arrived that was not from the machine being paired with.
+pub const A_CONFIRMATION_NOT_FROM_THAT_MACHINE: Word = Word::saying(
+    "nearby.not-proposed.not-confirmed-by-that-machine",
+    "A confirmation arrived that did not come from the machine being paired with, so it was \
+     not counted.",
+)
+.noting(
+    "Said when something on the network sent a confirmation it could not have made without \
+     being the other machine. The sentence describes the fact and blames nobody, because the \
+     machine cannot know who sent it.",
+);
+
+/// The other machine did not accept the proposal, for a reason it wrote in
+/// a word this machine does not have.
+pub const THE_OTHER_MACHINE_DID_NOT_ACCEPT: Word = Word::saying(
+    "nearby.not-proposed.not-accepted-there",
+    "The other machine did not accept the proposal. Start the pairing again.",
+)
+.noting(
+    "Said on the machine that proposed, when the other machine refused for a reason this one \
+     has no sentence for — a newer version with a refusal this one does not know. The second \
+     sentence is what to do.",
+);
+
+/// The other machine could not be reached, or what it said could not be
+/// read.
+pub const THE_OTHER_MACHINE_COULD_NOT_BE_REACHED: Word = Word::saying(
+    "nearby.not-proposed.could-not-be-reached",
+    "The other machine could not be reached, or did not answer as an alo machine would. Try \
+     again.",
+)
+.noting(
+    "Said when the connection to the other machine failed, timed out, or answered with \
+     something that is not this product's reply. One sentence for all three, because what the \
+     reader does is the same. \"alo\" is the product's name and is not translated.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 11] = [
+pub const EVERY_WORD: [Word; 20] = [
     MAY_ASK_ITS_MODELS,
     MAY_REACH_ITS_WORKSPACE,
     BOTH_MACHINES_HAVE_NOT_AGREED,
@@ -214,6 +328,15 @@ pub const EVERY_WORD: [Word; 11] = [
     NOT_FROM_THE_MACHINE_IT_NAMES,
     A_PROOF_ALREADY_USED,
     A_PROOF_FROM_ANOTHER_MOMENT,
+    A_PROPOSAL_FOR_ANOTHER_MACHINE,
+    A_PROPOSAL_FROM_AN_ADDRESS_NOT_SEEN,
+    A_PROPOSAL_IS_ALREADY_WAITING,
+    NOBODY_AT_THE_OTHER_MACHINE,
+    NO_PROPOSAL_IS_WAITING,
+    THE_OTHER_MACHINE_HAS_NOT_ANSWERED_YET,
+    A_CONFIRMATION_NOT_FROM_THAT_MACHINE,
+    THE_OTHER_MACHINE_DID_NOT_ACCEPT,
+    THE_OTHER_MACHINE_COULD_NOT_BE_REACHED,
 ];
 
 /// Why this crate's list could not be declared.
