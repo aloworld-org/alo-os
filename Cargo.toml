@@ -96,6 +96,12 @@ getrandom = "0.3"
 # a handler that writes one byte to an already-open descriptor and does nothing
 # else. Reached only by `alo-agentd`, and only from `signalling.rs`.
 signal-hook = { version = "0.4", default-features = false }
+# The primitives a pairing's key and a message's proof are made with — X25519
+# agreement, HKDF and HMAC over SHA-256 — rented rather than written, as ADR
+# 0031 decides. Already pinned and compiled for every build through `ureq`'s
+# `rustls`, so this adds no code to the tree; reached only by `alo-nearby`,
+# and only from `keying.rs`, `proof.rs` and `proven.rs`.
+ring = "0.17"
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is
 # a rule that survives until the reviewer is busy.

@@ -22,7 +22,9 @@ use alo_approving::{Approving, Asked, Asks, Compositor, NotAsked, SurfaceRefused
 use alo_capability::{Given, Grant, Grants, Reach};
 use alo_egress::Indicator;
 use alo_files::{OnThisMachine, Reaching, Resolving as _};
-use alo_nearby::{Deliberating, MachineId, MayAskIts, Origin, Pairings, Proposal, Side};
+use alo_nearby::{
+    Deliberating, Keying, MachineId, MayAskIts, Origin, Pairings, Proof, Proposal, Seen, Side,
+};
 use alo_record::Record;
 use alo_saying::everything_this_machine_can_say;
 use alo_strings::Strings;
@@ -62,21 +64,50 @@ fn hour() -> Duration {
     Duration::from_secs(60 * 60)
 }
 
-/// The machine that asked, as the machine being asked keeps its pairing.
-fn paired_with_the_reception() -> (Pairings, MachineId) {
+/// The machine that asked, as a place a verb arrives from — paired the way two
+/// machines pair (ADR 0031), with the verb's proof made on the reception
+/// machine's own row and checked here against this machine's.
+fn from_the_reception() -> (Pairings, Origin) {
     let here = MachineId::read("aaaabbbbccccddddeeeeffff00001111").unwrap();
     let reception = MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap();
-    let mut pairings = Pairings::none();
-    pairings.keep(
-        Deliberating::of(
-            Proposal::checked(reception.clone(), here, &[MayAskIts::Models], hour()).unwrap(),
-        )
+    let at_reception = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
+        reception.clone(),
+        here.clone(),
+        &[MayAskIts::Models],
+        hour(),
+        at_reception.offer().clone(),
+    )
+    .unwrap();
+    let on_here = Deliberating::asked(proposal.clone(), Keying::fresh().unwrap());
+    let on_reception = Deliberating::asking(proposal, at_reception)
+        .unwrap()
+        .answered_with(on_here.answered().unwrap().clone())
+        .unwrap()
         .agreed_at(Side::TheOneAsking)
         .agreed_at(Side::TheOneAsked)
-        .agreed(Side::TheOneAsked, noon())
-        .unwrap(),
+        .agreed(noon())
+        .unwrap();
+    let mut pairings = Pairings::none();
+    pairings.keep(
+        on_here
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(noon())
+            .unwrap(),
     );
-    (pairings, reception)
+    let proof = Proof::made(&on_reception, &reception, b"a change", noon());
+    let origin = Origin::proven(
+        &pairings,
+        &here,
+        &proof,
+        b"a change",
+        "the reception machine",
+        noon(),
+        &mut Seen::nothing(),
+    )
+    .unwrap();
+    (pairings, origin)
 }
 
 /// A folder of this test's own with one file in it, resolved.
@@ -108,8 +139,7 @@ fn a_change_from_a_paired_machine_is_shown_to_the_person_on_this_machine() {
         &mut record,
     )
     .unwrap();
-    let (pairings, reception) = paired_with_the_reception();
-    let origin = Origin::paired(&pairings, &reception, "the reception machine", noon()).unwrap();
+    let (pairings, origin) = from_the_reception();
     let mut grants = Grants::default();
     grants.grant(
         Grant::checked(

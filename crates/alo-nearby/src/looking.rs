@@ -160,7 +160,7 @@ impl Looking {
             self.socket
                 .set_read_timeout(Some(left))
                 .map_err(|why| NotNearby::TheNetwork(because(&why)))?;
-            let Ok((how_many, _who)) = self.socket.recv_from(&mut heard) else {
+            let Ok((how_many, who)) = self.socket.recv_from(&mut heard) else {
                 // Nothing more arrived in the time there was, which is the
                 // ordinary end of a search rather than a fault.
                 return Ok(machines);
@@ -168,7 +168,7 @@ impl Looking {
             let Some(said) = heard.get(..how_many) else {
                 continue;
             };
-            if let Ok(found) = a_machine_in(said)
+            if let Ok(found) = a_machine_in(said, who.ip())
                 && !machines
                     .iter()
                     .any(|already| already.machine == found.machine)
@@ -220,6 +220,11 @@ mod tests {
         let one = found.first().unwrap();
         assert_eq!(one.machine, machine);
         assert_eq!(one.port, 7_610);
+        assert_eq!(one.address, at.ip());
+        assert_eq!(
+            one.where_it_answers(),
+            std::net::SocketAddr::new(at.ip(), 7_610)
+        );
         assert_eq!(one.standing, Standing::NotPaired);
     }
 

@@ -69,6 +69,21 @@ pub enum NotNearby {
     #[error("nothing in the advertisement says which machine sent it")]
     SaysNothingAboutWhichMachine,
 
+    /// What was offered as a machine's public half is not one.
+    ///
+    /// Sixty-four lowercase hexadecimal characters and nothing else; the
+    /// length is carried rather than the bytes, because a stranger's bytes
+    /// have no business in a sentence.
+    #[error("{0} characters were offered as a machine's part in a pairing, which is not one")]
+    NotAnOffer(usize),
+
+    /// What arrived as a proof is not shaped like one.
+    ///
+    /// The shape only. Whether a proof that *is* shaped like one is true is
+    /// `Proven::checked`'s to answer, and is not a `NotNearby`.
+    #[error("what arrived as a proof is not one: {0}")]
+    NotAProof(String),
+
     /// A name this machine was about to write into a packet cannot be written.
     ///
     /// A label over sixty-three characters or a name over two hundred and
@@ -129,6 +144,8 @@ impl NotNearby {
                 | Self::SaysMoreThanPresence(_)
                 | Self::NotAnAloMachine(_)
                 | Self::SaysNothingAboutWhichMachine
+                | Self::NotAnOffer(_)
+                | Self::NotAProof(_)
         )
     }
 }

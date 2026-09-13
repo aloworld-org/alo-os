@@ -27,7 +27,7 @@
 use std::time::{Duration, SystemTime};
 
 use alo_nearby::{
-    Deliberating, EVERYTHING_A_PAIRING_MAY_PERMIT, Found, MachineId, MayAskIts, NotPaired,
+    Deliberating, EVERYTHING_A_PAIRING_MAY_PERMIT, Found, Keying, MachineId, MayAskIts, NotPaired,
     Pairings, Proposal, Side, nearby_words,
 };
 use alo_strings::Strings;
@@ -47,49 +47,72 @@ fn a_moment() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
 }
 
-/// What a person would ask the machine down the corridor for.
-fn asking_for_its_models() -> Proposal {
-    Proposal::checked(
+/// What a person would ask the machine down the corridor for, with the keying
+/// this machine keeps for it.
+fn asking_for_its_models() -> (Proposal, Keying) {
+    let keying = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
         this_machine(),
         down_the_corridor(),
         &[MayAskIts::Models],
         Duration::from_secs(86_400),
+        keying.offer().clone(),
     )
-    .unwrap()
+    .unwrap();
+    (proposal, keying)
 }
 
-/// A pairing, made the only way one can be.
+/// The proposal on both machines, each holding the other's offer and neither
+/// person having agreed: this machine's side first, the corridor's second.
+fn both_sides() -> (Deliberating, Deliberating) {
+    let (proposal, keying) = asking_for_its_models();
+    let there = Deliberating::asked(proposal.clone(), Keying::fresh().unwrap());
+    let here = Deliberating::asking(proposal, keying)
+        .unwrap()
+        .answered_with(there.answered().unwrap().clone())
+        .unwrap();
+    (here, there)
+}
+
+/// A pairing, made the only way one can be, as this machine keeps it.
 fn paired_for_a_day() -> Pairings {
     let mut pairings = Pairings::none();
     pairings.keep(
-        Deliberating::of(asking_for_its_models())
+        both_sides()
+            .0
             .agreed_at(Side::TheOneAsking)
             .agreed_at(Side::TheOneAsked)
-            .agreed(Side::TheOneAsking, a_moment())
+            .agreed(a_moment())
             .unwrap(),
     );
     pairings
 }
 
 /// **Mutual and deliberate.** Two people, each at their own machine — and one
-/// of them alone leaves nothing paired, whichever one it is.
+/// of them alone leaves nothing paired, whichever one it is, on either machine.
 #[test]
 fn a_pairing_needs_two_people_and_one_of_them_is_not_enough() {
-    let both = Deliberating::of(asking_for_its_models())
+    let (here, there) = both_sides();
+    let both_here = here
         .agreed_at(Side::TheOneAsking)
         .agreed_at(Side::TheOneAsked)
-        .agreed(Side::TheOneAsking, a_moment());
-    assert!(both.is_ok());
+        .agreed(a_moment());
+    let both_there = there
+        .agreed_at(Side::TheOneAsking)
+        .agreed_at(Side::TheOneAsked)
+        .agreed(a_moment());
+    assert!(both_here.is_ok());
+    assert!(both_there.is_ok());
 
     for alone in [Side::TheOneAsking, Side::TheOneAsked] {
-        assert_eq!(
-            Deliberating::of(asking_for_its_models())
-                .agreed_at(alone)
-                .agreed(Side::TheOneAsking, a_moment())
-                .unwrap_err(),
-            NotPaired::OnlyOneSideAgreed,
-            "{alone:?} paired a machine on its own"
-        );
+        let (here, there) = both_sides();
+        for on in [here, there] {
+            assert_eq!(
+                on.agreed_at(alone).agreed(a_moment()).unwrap_err(),
+                NotPaired::OnlyOneSideAgreed,
+                "{alone:?} paired a machine on its own"
+            );
+        }
     }
 }
 
@@ -98,7 +121,7 @@ fn a_pairing_needs_two_people_and_one_of_them_is_not_enough() {
 #[test]
 fn a_pairing_ends_and_how_long_it_lasts_is_part_of_what_was_agreed() {
     assert_eq!(
-        asking_for_its_models().lasting(),
+        asking_for_its_models().0.lasting(),
         Duration::from_secs(86_400),
         "how long the pairing would last was not part of what was proposed"
     );
@@ -120,7 +143,8 @@ fn a_pairing_ends_and_how_long_it_lasts_is_part_of_what_was_agreed() {
             this_machine(),
             down_the_corridor(),
             &[MayAskIts::Models],
-            Duration::ZERO
+            Duration::ZERO,
+            Keying::fresh().unwrap().offer().clone(),
         )
         .unwrap_err(),
         NotPaired::NoTime
@@ -183,7 +207,11 @@ fn what_a_pairing_permits_is_a_list_a_person_can_read() {
 /// is a fact written down.
 #[test]
 fn being_on_the_same_network_confers_nothing() {
-    let found = Found::seen(down_the_corridor(), 7_610);
+    let found = Found::seen(
+        down_the_corridor(),
+        7_610,
+        std::net::Ipv4Addr::new(192, 168, 1, 20).into(),
+    );
     let pairings = Pairings::none();
 
     for may in EVERYTHING_A_PAIRING_MAY_PERMIT {
@@ -246,9 +274,10 @@ fn having_paired_before_confers_nothing() {
 
     // And pairing again is the whole deliberation again, not a shortcut.
     assert_eq!(
-        Deliberating::of(asking_for_its_models())
+        both_sides()
+            .0
             .agreed_at(Side::TheOneAsking)
-            .agreed(Side::TheOneAsking, a_month_later)
+            .agreed(a_month_later)
             .unwrap_err(),
         NotPaired::OnlyOneSideAgreed,
         "having paired before let one machine pair again on its own"
@@ -264,6 +293,7 @@ fn a_person_who_picks_their_own_machine_is_told_what_it_is() {
         this_machine(),
         &[MayAskIts::Models],
         Duration::from_secs(60),
+        Keying::fresh().unwrap().offer().clone(),
     )
     .unwrap_err();
     assert_eq!(refused, NotPaired::WithItself);
@@ -288,6 +318,9 @@ fn every_refusal_reaches_the_person_in_their_own_language() {
         NotPaired::NoTime,
         NotPaired::TooLong,
         NotPaired::NoEnd,
+        NotPaired::NotWithThatMachine,
+        NotPaired::NoKey,
+        NotPaired::NotTheOfferMade,
     ] {
         let said = refused.said(&strings);
         assert!(!said.text().is_empty(), "{refused:?} has nothing to say");

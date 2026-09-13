@@ -26,6 +26,7 @@
 
 use std::time::{Duration, SystemTime};
 
+use crate::keying::PairingKey;
 use crate::machine::MachineId;
 use crate::permitting::MayAskIts;
 use crate::words;
@@ -60,12 +61,26 @@ pub enum NotPaired {
     /// This machine is not paired with the one that asked.
     ///
     /// The refusal on the **asked** side of ADR 0003, made by
-    /// [`Origin::paired`](crate::Origin::paired): a machine that was merely
+    /// [`Proof::made`](crate::Proof::made)'s callers and by
+    /// [`Proven::checked`](crate::Proven::checked): a machine that was merely
     /// discovered, one whose pairing has ended, and one whose pairing was
     /// revoked are all this, with no arm that distinguishes them, because
     /// telling a caller which kind of not-paired it is would be telling it how
     /// to become paired.
     NotWithThatMachine,
+    /// The two machines could not agree a key (ADR 0031).
+    ///
+    /// Not reachable from an [`Offer`](crate::Offer) this crate read, and
+    /// answered rather than unwrapped.
+    NoKey,
+    /// The offer this machine holds the private half of is not the one in
+    /// the proposal, or the offer that came back is this machine's own.
+    ///
+    /// The second is what an attacker reflecting a machine's offer back at it
+    /// looks like, and the first is a program that lost track of which
+    /// keying went with which proposal. Both are refused before anybody is
+    /// shown a code.
+    NotTheOfferMade,
 }
 
 impl NotPaired {
@@ -78,6 +93,7 @@ impl NotPaired {
             Self::NothingAsked => words::A_PAIRING_HAS_TO_PERMIT_SOMETHING,
             Self::NoTime | Self::NoEnd | Self::TooLong => words::A_PAIRING_HAS_TO_END,
             Self::NotWithThatMachine => words::NOT_PAIRED_WITH_THE_ONE_THAT_ASKED,
+            Self::NoKey | Self::NotTheOfferMade => words::START_THE_PAIRING_AGAIN,
         }
     }
 
@@ -93,7 +109,8 @@ impl NotPaired {
 /// There is no public constructor. The only thing that returns one is
 /// [`Deliberating::agreed`](crate::Deliberating::agreed), which refuses unless
 /// both machines' people have said yes — so a `Pairing` in hand is evidence
-/// that they did.
+/// that they did, and that this machine holds the key the two of them agreed
+/// (ADR 0031). The key is on the row, so revoking the row is revoking the key.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Pairing {
     /// The other machine.
@@ -105,6 +122,9 @@ pub struct Pairing {
     made: SystemTime,
     /// When it stops. Not optional, on purpose.
     ends: SystemTime,
+    /// The key both machines hold and nobody else does. Never shown, never
+    /// written on any wire, and printed as nothing.
+    key: PairingKey,
 }
 
 impl Pairing {
@@ -124,6 +144,7 @@ impl Pairing {
         may: &[MayAskIts],
         at: SystemTime,
         lasting: Duration,
+        key: PairingKey,
     ) -> Result<Self, NotPaired> {
         let ends = at.checked_add(lasting).ok_or(NotPaired::NoEnd)?;
         Ok(Self {
@@ -131,7 +152,13 @@ impl Pairing {
             may: may.to_vec(),
             made: at,
             ends,
+            key,
         })
+    }
+
+    /// The key, for the file that makes proofs and the file that checks them.
+    pub(crate) const fn key(&self) -> &PairingKey {
+        &self.key
     }
 
     /// The other machine.
@@ -234,7 +261,7 @@ impl Pairings {
     /// permits.
     ///
     /// The question the **asked** side of ADR 0003 puts to this list
-    /// ([`crate::Origin::paired`]): not *may it ask for this*, which
+    /// ([`crate::Origin::proven`]): not *may it ask for this*, which
     /// [`Pairings::permits`] answers, but *is it somebody this machine can
     /// name at all*. A verb it asks for is then decided by the grants this
     /// machine's person made to it, and by nothing on the pairing — which is
@@ -243,9 +270,19 @@ impl Pairings {
     /// do there.
     #[must_use]
     pub fn paired_with(&self, with: &MachineId, now: SystemTime) -> bool {
+        self.with(with, now).is_some()
+    }
+
+    /// The pairing with that machine, if one stands at `now`.
+    ///
+    /// The row itself, for whatever makes a proof to that machine or checks
+    /// one from it (ADR 0031): the key is on the row, and a row that has ended
+    /// or was revoked is not here to be borrowed from.
+    #[must_use]
+    pub fn with(&self, with: &MachineId, now: SystemTime) -> Option<&Pairing> {
         self.made
             .iter()
-            .any(|pairing| pairing.with == *with && now < pairing.ends)
+            .find(|pairing| pairing.with == *with && now < pairing.ends)
     }
 }
 
@@ -258,6 +295,7 @@ mod tests {
     use std::time::{Duration, SystemTime};
 
     use super::{Pairing, Pairings};
+    use crate::keying::PairingKey;
     use crate::machine::MachineId;
     use crate::permitting::MayAskIts;
 
@@ -283,6 +321,7 @@ mod tests {
             &[MayAskIts::Models],
             a_moment(),
             Duration::from_secs(86_400),
+            PairingKey::of([7; 32]),
         )
         .unwrap()
     }
@@ -355,6 +394,7 @@ mod tests {
                 &[MayAskIts::Models, MayAskIts::Workspace],
                 a_moment(),
                 Duration::from_secs(60),
+                PairingKey::of([7; 32]),
             )
             .unwrap(),
         );

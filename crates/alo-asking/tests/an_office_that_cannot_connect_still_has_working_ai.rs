@@ -41,11 +41,12 @@
 //! Both machines are in one process on one host, over real sockets — which is
 //! what task 1 and task 3 already measured, and is what shows the packets are
 //! right and the road is walked. The reception machine dials the studio at
-//! the port discovery returned and this host's loopback address, because a
-//! [`alo_nearby::Found`] carries no address of its own; whether an office
-//! switch carries the same packets between two chassis is owed to two
-//! machines, as every report in this plan has said. There is no cryptography
-//! here and none is claimed.
+//! what discovery measured — [`alo_nearby::Found::where_it_answers`], the
+//! address the studio's answer came from and the port it advertised — and
+//! every question carries a proof the studio checks against its own pairing
+//! before it answers (ADR 0031). Whether an office switch carries the same
+//! packets between two chassis is owed to two machines, as every report in
+//! this plan has said.
 
 #![cfg(target_os = "linux")]
 #![expect(
@@ -62,13 +63,13 @@ use std::thread;
 use std::time::{Duration, SystemTime};
 
 use alo_answering::{Answering, WentWrong};
-use alo_asking::{Asking, DownTheCorridor, Hosted, NotAsked, Question};
+use alo_asking::{Asking, DownTheCorridor, Hosted, NotAsked, Question, THE_PROOF_HEADER};
 use alo_capability::Grantee;
 use alo_egress::Indicator;
 use alo_models::{InferenceSource, Provider, Region, SourcePolicy};
 use alo_nearby::{
-    Answering as AnsweringWhoIsHere, Deliberating, Looking, MachineId, MayAskIts, Pairings,
-    Presence, Proposal, Side, Standing,
+    Answering as AnsweringWhoIsHere, Deliberating, Keying, Looking, MachineId, MayAskIts, Pairings,
+    Presence, Proof, Proposal, Proven, Seen, Side, Standing,
 };
 use alo_record::{Entry, Only, Record};
 use alo_strings::Strings;
@@ -123,25 +124,50 @@ fn strings() -> Strings {
     Strings::of(alo_saying::everything_this_machine_can_say().expect("the machine's own words"))
 }
 
-/// The studio, answering this many questions in turn and handing back every
-/// request it was sent so the test can read what travelled.
-fn a_studio_answering(how_many: u64, said: &'static str) -> (u16, thread::JoinHandle<Vec<String>>) {
+/// The studio, listening on a port of this host's before anybody has paired
+/// with it — which is what discovery advertises.
+fn a_studio_listening() -> (u16, TcpListener) {
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).expect("a port on this host");
     let port = listener.local_addr().expect("an address").port();
-    let handle = thread::spawn(move || {
+    (port, listener)
+}
+
+/// The studio, answering this many questions in turn and handing back every
+/// request it was sent so the test can read what travelled.
+///
+/// **Each question is judged before it is answered** (ADR 0031): the proof
+/// in its header is checked against the studio's own pairings, over the exact
+/// bytes that arrived, at the moment the studio's clock has for that
+/// question, and a question that does not prove where it came from is
+/// refused with nothing answered. `moment_of` is the studio's clock, which
+/// ticks once per question the way the day does.
+fn a_studio_answering(
+    listener: TcpListener,
+    how_many: u64,
+    said: &'static str,
+    pairings: Pairings,
+    moment_of: impl Fn(u64) -> SystemTime + Send + 'static,
+) -> thread::JoinHandle<Vec<String>> {
+    thread::spawn(move || {
         let mut sent = Vec::new();
-        for _ in 0..how_many {
+        let mut seen = Seen::nothing();
+        for nth in 0..how_many {
             let (mut stream, _) = listener.accept().expect("one question");
             let mut reader = std::io::BufReader::new(stream.try_clone().expect("the same socket"));
             let mut request = String::new();
             let mut length = 0_usize;
+            let mut proof: Option<Proof> = None;
             loop {
                 let mut line = String::new();
                 if reader.read_line(&mut line).expect("a line") == 0 {
                     break;
                 }
-                if let Some(how_long) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                let lowered = line.to_ascii_lowercase();
+                if let Some(how_long) = lowered.strip_prefix("content-length:") {
                     length = how_long.trim().parse().unwrap_or(0);
+                }
+                if let Some(said) = lowered.strip_prefix(&format!("{THE_PROOF_HEADER}:")) {
+                    proof = Proof::read(said.trim()).ok();
                 }
                 let done = line == "\r\n" || line == "\n";
                 request.push_str(&line);
@@ -154,12 +180,32 @@ fn a_studio_answering(how_many: u64, said: &'static str) -> (u16, thread::JoinHa
                 reader.read_exact(&mut body).expect("the body");
             }
             request.push_str(&String::from_utf8_lossy(&body));
-            let answer = format!(
-                r#"{{"choices":[{{"message":{{"role":"assistant","content":"{said}"}}}}]}}"#
-            );
+            let proven = proof.as_ref().and_then(|proof| {
+                Proven::checked(
+                    &pairings,
+                    &the_studio(),
+                    proof,
+                    &body,
+                    moment_of(nth),
+                    &mut seen,
+                )
+                .ok()
+            });
+            let (status, answer) = match proven {
+                Some(proven) => {
+                    assert_eq!(proven.machine(), &reception());
+                    (
+                        "200 OK",
+                        format!(
+                            r#"{{"choices":[{{"message":{{"role":"assistant","content":"{said}"}}}}]}}"#
+                        ),
+                    )
+                }
+                None => ("400 Bad Request", "{}".to_owned()),
+            };
             write!(
                 stream,
-                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{answer}",
+                "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{answer}",
                 answer.len()
             )
             .expect("a reply");
@@ -167,8 +213,7 @@ fn a_studio_answering(how_many: u64, said: &'static str) -> (u16, thread::JoinHa
             sent.push(request);
         }
         sent
-    });
-    (port, handle)
+    })
 }
 
 /// A datagram socket of this test's own, on this host and nowhere else.
@@ -210,7 +255,7 @@ struct Day {
 fn a_working_day() -> Day {
     let strings = strings();
     let now = a_moment();
-    let (studio_port, studio) = a_studio_answering(A_WORKING_DAY, "Yes, and here is why.");
+    let (studio_port, studio_listening) = a_studio_listening();
 
     // **Discovery.** The studio says it exists; reception asks who is here and
     // finds one machine, not paired.
@@ -237,36 +282,74 @@ fn a_working_day() -> Day {
     assert_eq!(found.standing, Standing::NotPaired);
 
     // **Being found confers nothing.** The studio is right there and would
-    // answer, and there is no door to it until two people say so.
-    let at = SocketAddr::from((Ipv4Addr::LOCALHOST, found.port));
+    // answer, and there is no door to it until two people say so. Where it
+    // would be dialled is what discovery measured — the address the answer
+    // came from and the port it advertised — rather than an address typed
+    // here.
+    let at = found.where_it_answers();
+    assert_eq!(at.port(), studio_port);
     assert!(
-        DownTheCorridor::paired(&Pairings::none(), &found.machine, THE_STUDIO, at, None, now)
-            .is_err(),
+        DownTheCorridor::paired(
+            &Pairings::none(),
+            &reception(),
+            &found.machine,
+            THE_STUDIO,
+            at,
+            None,
+            now
+        )
+        .is_err(),
         "a machine that was merely found was usable"
     );
 
-    // **Pairing, by two people.** Each keeps a row naming the other.
+    // **Pairing, by two people**, each on their own machine (ADR 0031): a
+    // keying on each side, the offers crossed, the same six digits read on
+    // both, and each machine keeping a row naming the other with the same key
+    // on it.
+    let at_reception = Keying::fresh().expect("randomness");
+    let at_the_studio = Keying::fresh().expect("randomness");
     let proposal = Proposal::checked(
         reception(),
         the_studio(),
         &[MayAskIts::Models],
         Duration::from_secs(86_400),
+        at_reception.offer().clone(),
     )
     .expect("a proposal");
-    let agreed = Deliberating::of(proposal)
-        .agreed_at(Side::TheOneAsking)
-        .agreed_at(Side::TheOneAsked);
+    let studio_side = Deliberating::asked(proposal.clone(), at_the_studio);
+    let reception_side = Deliberating::asking(proposal, at_reception)
+        .expect("the keying whose offer the proposal carries")
+        .answered_with(studio_side.answered().expect("the studio's offer").clone())
+        .expect("the studio's own offer, not a reflection");
+    assert_eq!(reception_side.code(), studio_side.code());
     let mut reception_pairings = Pairings::none();
     reception_pairings.keep(
-        agreed
-            .clone()
-            .agreed(Side::TheOneAsking, now)
+        reception_side
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(now)
             .expect("both agreed"),
     );
     let mut studio_pairings = Pairings::none();
-    studio_pairings.keep(agreed.agreed(Side::TheOneAsked, now).expect("both agreed"));
+    studio_pairings.keep(
+        studio_side
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(now)
+            .expect("both agreed"),
+    );
     assert!(reception_pairings.permits(&the_studio(), MayAskIts::Models, now));
     assert!(studio_pairings.paired_with(&reception(), now));
+
+    // The studio now answers, judging each question against its own pairings
+    // with its clock at the hour the question is asked.
+    let studio = a_studio_answering(
+        studio_listening,
+        A_WORKING_DAY,
+        "Yes, and here is why.",
+        studio_pairings.clone(),
+        move |hour| now + Duration::from_secs(60 * 60 * hour),
+    );
 
     // **The day.** Under the rule an office like this one would set: nothing
     // leaves the building. The corridor stays inside it.
@@ -282,6 +365,7 @@ fn a_working_day() -> Day {
         let when = now + Duration::from_secs(60 * 60 * hour);
         let corridor = DownTheCorridor::paired(
             &reception_pairings,
+            &reception(),
             &the_studio(),
             THE_STUDIO,
             at,

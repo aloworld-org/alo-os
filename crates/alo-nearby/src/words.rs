@@ -139,8 +139,70 @@ pub const NOT_PAIRED_WITH_THE_ONE_THAT_ASKED: Word = Word::saying(
      grant was looked at and nobody on this machine was asked anything.",
 );
 
+/// The two machines could not agree a key, or this machine's part of the
+/// pairing was not the one it offered.
+pub const START_THE_PAIRING_AGAIN: Word = Word::saying(
+    "nearby.not-paired.start-again",
+    "The two machines could not agree a key between them. Start the pairing again.",
+)
+.noting(
+    "Said when the key agreement underneath a pairing fails, which does not happen in the \
+     ordinary course of things: the other machine's part did not arrive, arrived twice, or was \
+     this machine's own reflected back. Nothing was paired. The second sentence is what to do, \
+     and there is nothing else to do.",
+);
+
+// ---------------------------------------------------------------------------
+// Why a message was not taken as a paired machine's — [`crate::NotProven`].
+//
+// Read on the machine that was asked, about something that arrived naming a
+// paired machine and did not prove it. Nothing it asked for was considered,
+// and each sentence says so.
+// ---------------------------------------------------------------------------
+
+/// Something arrived naming a paired machine and could not prove it came from
+/// there.
+pub const NOT_FROM_THE_MACHINE_IT_NAMES: Word = Word::saying(
+    "nearby.not-proven.not-from-the-machine-it-names",
+    "Something arrived naming a paired machine but could not prove it came from there, so \
+     nothing it asked for was considered.",
+)
+.noting(
+    "Said on the machine that was asked, when a message names a machine this one is paired \
+     with but was not made with the key that pairing holds — or was made for a different \
+     machine. \"Could not prove\" is the whole of it: it may be a stranger presenting a paired \
+     machine's identity, and the sentence does not say so because the machine cannot know. \
+     \"Was considered\" as in \"nearby.not-paired.not-with-the-one-that-asked\".",
+);
+
+/// A proof that has been accepted already.
+pub const A_PROOF_ALREADY_USED: Word = Word::saying(
+    "nearby.not-proven.already-used",
+    "The same message from a paired machine arrived a second time, so the second was not \
+     considered.",
+)
+.noting(
+    "Said on the machine that was asked, when a message it already accepted arrives again — \
+     which is what somebody replaying a recording off the network looks like, and also what an \
+     honest retry of the identical bytes looks like. The sentence describes the fact and blames \
+     nobody.",
+);
+
+/// A proof from a moment too far from this machine's.
+pub const A_PROOF_FROM_ANOTHER_MOMENT: Word = Word::saying(
+    "nearby.not-proven.from-another-moment",
+    "A message from a paired machine was stamped with a time more than two minutes from this \
+     machine's, so it was not considered. Check both machines' clocks.",
+)
+.noting(
+    "Said on the machine that was asked, when the moment in a message is further from this \
+     machine's clock than a proof may be. \"Two minutes\" is the window the code uses and must \
+     survive translation as a number; the second sentence is what to do, and is the one \
+     refusal here a person can fix.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 7] = [
+pub const EVERY_WORD: [Word; 11] = [
     MAY_ASK_ITS_MODELS,
     MAY_REACH_ITS_WORKSPACE,
     BOTH_MACHINES_HAVE_NOT_AGREED,
@@ -148,6 +210,10 @@ pub const EVERY_WORD: [Word; 7] = [
     A_PAIRING_HAS_TO_PERMIT_SOMETHING,
     A_PAIRING_HAS_TO_END,
     NOT_PAIRED_WITH_THE_ONE_THAT_ASKED,
+    START_THE_PAIRING_AGAIN,
+    NOT_FROM_THE_MACHINE_IT_NAMES,
+    A_PROOF_ALREADY_USED,
+    A_PROOF_FROM_ANOTHER_MOMENT,
 ];
 
 /// Why this crate's list could not be declared.

@@ -36,7 +36,7 @@ use alo_asking::{Asking, DownTheCorridor, Question};
 use alo_capability::Grantee;
 use alo_egress::Indicator;
 use alo_models::{InferenceSource, SourcePolicy};
-use alo_nearby::{Deliberating, MachineId, MayAskIts, Pairings, Proposal, Side};
+use alo_nearby::{Deliberating, Keying, MachineId, MayAskIts, Pairings, Proposal, Side};
 use alo_strings::Strings;
 
 /// This machine — the one in the office with no GPU in it.
@@ -57,23 +57,32 @@ fn a_moment() -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
 }
 
-/// A pairing two people made, permitting this machine to ask its models.
+/// A pairing two people made, permitting this machine to ask its models, as
+/// this machine keeps it — made the way two machines make one (ADR 0031),
+/// with the studio's side agreed and then let go of, because these tests are
+/// about this machine's door.
 fn paired_for_a_day() -> Pairings {
+    let at_here = Keying::fresh().unwrap();
+    let at_the_studio = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
+        here(),
+        the_studio(),
+        &[MayAskIts::Models],
+        Duration::from_secs(86_400),
+        at_here.offer().clone(),
+    )
+    .unwrap();
+    let studio_side = Deliberating::asked(proposal.clone(), at_the_studio);
     let mut pairings = Pairings::none();
     pairings.keep(
-        Deliberating::of(
-            Proposal::checked(
-                here(),
-                the_studio(),
-                &[MayAskIts::Models],
-                Duration::from_secs(86_400),
-            )
+        Deliberating::asking(proposal, at_here)
+            .unwrap()
+            .answered_with(studio_side.answered().unwrap().clone())
+            .unwrap()
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(a_moment())
             .unwrap(),
-        )
-        .agreed_at(Side::TheOneAsking)
-        .agreed_at(Side::TheOneAsked)
-        .agreed(Side::TheOneAsking, a_moment())
-        .unwrap(),
     );
     pairings
 }
@@ -143,6 +152,7 @@ fn a_machine_with_no_model_of_its_own_is_answered_down_the_corridor() {
     let (at, studio) = a_machine_answering("Yes, and here is why.");
     let corridor = DownTheCorridor::paired(
         &paired_for_a_day(),
+        &here(),
         &the_studio(),
         CALLED,
         at,
@@ -183,6 +193,7 @@ fn the_indicator_fires_for_the_corridor_and_stays_quiet_for_this_machine() {
     let (at, studio) = a_machine_answering("Down the corridor.");
     let corridor = DownTheCorridor::paired(
         &paired_for_a_day(),
+        &here(),
         &the_studio(),
         CALLED,
         at,
@@ -228,6 +239,7 @@ fn what_a_person_is_shown_names_the_machine_down_the_corridor() {
     let (at, studio) = a_machine_answering("Named.");
     let corridor = DownTheCorridor::paired(
         &paired_for_a_day(),
+        &here(),
         &the_studio(),
         CALLED,
         at,
@@ -267,6 +279,7 @@ fn an_unpaired_machine_offering_inference_is_not_used_however_convenient() {
 
     let refused = DownTheCorridor::paired(
         &Pairings::none(),
+        &here(),
         &the_studio(),
         CALLED,
         at,
@@ -296,6 +309,7 @@ fn the_machine_down_the_corridor_is_not_a_fallback_for_anything() {
     let (at, studio) = a_machine_answering("I should not be asked.");
     let corridor = DownTheCorridor::paired(
         &paired_for_a_day(),
+        &here(),
         &the_studio(),
         CALLED,
         at,
@@ -382,6 +396,7 @@ fn a_permission_for_one_machine_does_not_reach_another() {
     let (at, studio) = a_machine_answering("Wrong machine.");
     let corridor = DownTheCorridor::paired(
         &paired_for_a_day(),
+        &here(),
         &the_studio(),
         CALLED,
         at,

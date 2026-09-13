@@ -23,6 +23,8 @@
 //! standing of any kind (ADR 0003), and the enum is the shape of that sentence:
 //! finding a machine moves nothing.
 
+use std::net::{IpAddr, SocketAddr};
+
 use crate::machine::MachineId;
 
 /// The service this machine answers to on a local network.
@@ -103,6 +105,14 @@ pub struct Found {
     pub machine: MachineId,
     /// The port it advertised.
     pub port: u16,
+    /// The address its answer came from.
+    ///
+    /// Measured, not advertised: an advertisement carries no `A` record
+    /// (`advertising.rs` says why), and the one true address a machine can be
+    /// reached at is the one it was heard from. What dials the machine later
+    /// dials this, so the next hop is what discovery measured rather than what
+    /// somebody typed.
+    pub address: IpAddr,
     /// What that means for this machine, which is nothing.
     pub standing: Standing,
 }
@@ -126,15 +136,27 @@ pub enum Standing {
 }
 
 impl Found {
-    /// A machine seen on the network, which is not paired with this one,
-    /// because nothing is.
+    /// A machine seen on the network, heard from `address`, which is not
+    /// paired with this one, because seeing it pairs nothing.
     #[must_use]
-    pub const fn seen(machine: MachineId, port: u16) -> Self {
+    pub const fn seen(machine: MachineId, port: u16, address: IpAddr) -> Self {
         Self {
             machine,
             port,
+            address,
             standing: Standing::NotPaired,
         }
+    }
+
+    /// Where the machine answers: the address it was heard from and the port
+    /// it advertised.
+    ///
+    /// The one thing a `Found` says about reaching a machine, and the thing
+    /// nothing in this crate dials — what dials it is the corridor, under a
+    /// pairing two people made.
+    #[must_use]
+    pub const fn where_it_answers(&self) -> SocketAddr {
+        SocketAddr::new(self.address, self.port)
     }
 }
 
@@ -181,7 +203,7 @@ mod tests {
     #[test]
     fn a_machine_that_has_been_found_is_not_paired_with() {
         assert_eq!(
-            Found::seen(a_machine(), 7_610).standing,
+            Found::seen(a_machine(), 7_610, std::net::Ipv4Addr::LOCALHOST.into()).standing,
             Standing::NotPaired
         );
     }

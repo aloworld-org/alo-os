@@ -273,7 +273,7 @@ impl<'a> Asking<'a> {
             .beginning(&EgressPolicy::from(self.policy), leaving, now)
             .map_err(NotAsked::HeldBack)?;
 
-        match corridor.ask(question, to) {
+        match corridor.ask(question, to, now) {
             Ok(said) => Ok(Asked::new(
                 departing,
                 Answer::new(said, source, question.of().to_owned()),

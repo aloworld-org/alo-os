@@ -268,3 +268,51 @@ pub(crate) fn serving_with(
     });
     (format!("http://127.0.0.1:{port}"), handle)
 }
+
+/// Two machines paired the way two machines are (ADR 0031): each side with a
+/// keying of its own, the offers crossed, both people agreeing, and the same
+/// key on both rows. The asking machine's row first, the asked machine's
+/// second.
+///
+/// Not a second constructor for a pairing — it walks the one road
+/// `alo_nearby::Deliberating` offers, on both sides, so that a test holding
+/// both rows holds what two real machines would.
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected Err is the failure being reported"
+)]
+pub(crate) fn paired_as_two_machines(
+    asking: alo_nearby::MachineId,
+    asked: alo_nearby::MachineId,
+    may: &[alo_nearby::MayAskIts],
+    at: std::time::SystemTime,
+) -> (alo_nearby::Pairing, alo_nearby::Pairing) {
+    use alo_nearby::{Deliberating, Keying, Proposal, Side};
+    let at_asking = Keying::fresh().unwrap();
+    let at_asked = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
+        asking,
+        asked,
+        may,
+        std::time::Duration::from_secs(86_400),
+        at_asking.offer().clone(),
+    )
+    .unwrap();
+    let asked_side = Deliberating::asked(proposal.clone(), at_asked);
+    let asking_side = Deliberating::asking(proposal, at_asking)
+        .unwrap()
+        .answered_with(asked_side.answered().unwrap().clone())
+        .unwrap();
+    assert_eq!(asking_side.code(), asked_side.code());
+    let on_asking = asking_side
+        .agreed_at(Side::TheOneAsking)
+        .agreed_at(Side::TheOneAsked)
+        .agreed(at)
+        .unwrap();
+    let on_asked = asked_side
+        .agreed_at(Side::TheOneAsking)
+        .agreed_at(Side::TheOneAsked)
+        .agreed(at)
+        .unwrap();
+    (on_asking, on_asked)
+}

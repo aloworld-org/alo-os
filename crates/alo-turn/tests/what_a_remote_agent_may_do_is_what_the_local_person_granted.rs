@@ -39,7 +39,12 @@ use alo_capability::{AnswerError, Given, Grant, Grantee, Grants, Reach};
 use alo_context::Context;
 use alo_egress::Indicator;
 use alo_files::{OnThisMachine, Reaching, Resolving as _, file_words};
-use alo_nearby::{Deliberating, MachineId, MayAskIts, NotPaired, Origin, Pairings, Proposal, Side};
+use std::sync::OnceLock;
+
+use alo_nearby::{
+    Deliberating, Keying, MachineId, MayAskIts, NotProven, Origin, Pairing, Pairings, Proof,
+    Proposal, Seen, Side,
+};
 use alo_record::{Asking, Happened, Only, Record, Stopped};
 use alo_strings::{Strings, Vocabulary};
 use alo_turn::{Arriving, Bounding, Doing, Done, Machine, NoBoundary, NotDone, Turning};
@@ -67,24 +72,67 @@ fn hour() -> Duration {
     Duration::from_secs(60 * 60)
 }
 
+/// The one pairing two people made in this file, as each machine keeps it:
+/// A's row naming B first, B's row naming A second, the same key on both
+/// (ADR 0031). Made once, because every proof A makes has to be made with the
+/// key B checks it against.
+fn the_pairing() -> &'static (Pairing, Pairing) {
+    static THE_PAIRING: OnceLock<(Pairing, Pairing)> = OnceLock::new();
+    THE_PAIRING.get_or_init(|| {
+        let at_a = Keying::fresh().unwrap();
+        let at_b = Keying::fresh().unwrap();
+        let proposal = Proposal::checked(
+            the_reception(),
+            here(),
+            &[MayAskIts::Models],
+            hour(),
+            at_a.offer().clone(),
+        )
+        .unwrap();
+        let on_b = Deliberating::asked(proposal.clone(), at_b);
+        let on_a = Deliberating::asking(proposal, at_a)
+            .unwrap()
+            .answered_with(on_b.answered().unwrap().clone())
+            .unwrap();
+        assert_eq!(on_a.code(), on_b.code());
+        (
+            on_a.agreed_at(Side::TheOneAsking)
+                .agreed_at(Side::TheOneAsked)
+                .agreed(noon())
+                .unwrap(),
+            on_b.agreed_at(Side::TheOneAsking)
+                .agreed_at(Side::TheOneAsked)
+                .agreed(noon())
+                .unwrap(),
+        )
+    })
+}
+
 /// A pairing two people made, as B keeps it: naming A.
 fn paired_with_the_reception() -> Pairings {
     let mut pairings = Pairings::none();
-    pairings.keep(
-        Deliberating::of(
-            Proposal::checked(the_reception(), here(), &[MayAskIts::Models], hour()).unwrap(),
-        )
-        .agreed_at(Side::TheOneAsking)
-        .agreed_at(Side::TheOneAsked)
-        .agreed(Side::TheOneAsked, noon())
-        .unwrap(),
-    );
+    pairings.keep(the_pairing().1.clone());
     pairings
 }
 
-/// A, as a place a verb arrives at B from.
+/// A proof, made at A with A's row, that a verb arriving at B is A's.
+fn a_proof_from_the_reception(about: &[u8], at: SystemTime) -> Proof {
+    Proof::made(&the_pairing().0, &the_reception(), about, at)
+}
+
+/// A, as a place a verb arrives at B from — which B accepts only because the
+/// verb proved it (ADR 0031).
 fn from_the_reception(pairings: &Pairings) -> Origin {
-    Origin::paired(pairings, &the_reception(), CALLED, noon()).unwrap()
+    Origin::proven(
+        pairings,
+        &here(),
+        &a_proof_from_the_reception(b"a turn", noon()),
+        b"a turn",
+        CALLED,
+        noon(),
+        &mut Seen::nothing(),
+    )
+    .unwrap()
 }
 
 /// Every word B has loaded: the nine lists a turn can hand back a refusal
@@ -702,26 +750,89 @@ fn a_grant_to_this_machines_own_agent_does_not_reach_a_remote_one() {
 /// whose pairing ran out, or one whose pairing was undone.
 #[test]
 fn a_machine_nobody_paired_with_cannot_begin_a_turn_here() {
-    let seen_only = Origin::paired(&Pairings::none(), &the_reception(), CALLED, noon());
-    assert_eq!(seen_only.unwrap_err(), NotPaired::NotWithThatMachine);
+    let seen_only = Origin::proven(
+        &Pairings::none(),
+        &here(),
+        &a_proof_from_the_reception(b"a turn", noon()),
+        b"a turn",
+        CALLED,
+        noon(),
+        &mut Seen::nothing(),
+    );
+    assert_eq!(seen_only.unwrap_err(), NotProven::NotWithThatMachine);
 
-    let ran_out = Origin::paired(
+    let ran_out = Origin::proven(
         &paired_with_the_reception(),
-        &the_reception(),
+        &here(),
+        &a_proof_from_the_reception(b"a turn", noon() + hour()),
+        b"a turn",
         CALLED,
         noon() + hour(),
+        &mut Seen::nothing(),
     );
-    assert_eq!(ran_out.unwrap_err(), NotPaired::NotWithThatMachine);
+    assert_eq!(ran_out.unwrap_err(), NotProven::NotWithThatMachine);
 
     let mut pairings = paired_with_the_reception();
     assert!(pairings.revoke(&the_reception()));
-    let undone = Origin::paired(&pairings, &the_reception(), CALLED, noon());
-    assert_eq!(undone.unwrap_err(), NotPaired::NotWithThatMachine);
+    let undone = Origin::proven(
+        &pairings,
+        &here(),
+        &a_proof_from_the_reception(b"a turn", noon()),
+        b"a turn",
+        CALLED,
+        noon(),
+        &mut Seen::nothing(),
+    );
+    assert_eq!(undone.unwrap_err(), NotProven::NotWithThatMachine);
 
     // And the sentence for it says nothing was considered, in words B has.
-    let said = NotPaired::NotWithThatMachine.said(&Strings::of(everything_b_says()));
+    let said = NotProven::NotWithThatMachine.said(&Strings::of(everything_b_says()));
     assert!(!said.is_a_bug(), "{said}");
     assert!(said.text().contains("not paired"), "{said}");
+}
+
+/// **A stranger presenting A's identity cannot begin a turn here either**, and
+/// is refused before any grant is asked (ADR 0031): B is paired with A, the
+/// stranger read A's identity off the network and holds a key of its own,
+/// and the one door a remote turn begins from takes a proof and not a name.
+#[test]
+fn a_stranger_presenting_the_receptions_identity_cannot_begin_a_turn_here() {
+    let strangers_keying = Keying::fresh().unwrap();
+    let a_stranger = MachineId::read("99998888777766665555444433332222").unwrap();
+    let proposal = Proposal::checked(
+        a_stranger,
+        here(),
+        &[MayAskIts::Models],
+        hour(),
+        strangers_keying.offer().clone(),
+    )
+    .unwrap();
+    let somebody_elses = Deliberating::asked(proposal.clone(), Keying::fresh().unwrap());
+    let strangers_row = Deliberating::asking(proposal, strangers_keying)
+        .unwrap()
+        .answered_with(somebody_elses.answered().unwrap().clone())
+        .unwrap()
+        .agreed_at(Side::TheOneAsking)
+        .agreed_at(Side::TheOneAsked)
+        .agreed(noon())
+        .unwrap();
+    let presenting = Proof::made(&strangers_row, &the_reception(), b"a turn", noon());
+    assert_eq!(presenting.from(), &the_reception());
+
+    let refused = Origin::proven(
+        &paired_with_the_reception(),
+        &here(),
+        &presenting,
+        b"a turn",
+        CALLED,
+        noon(),
+        &mut Seen::nothing(),
+    );
+    assert_eq!(refused.unwrap_err(), NotProven::NotFromThatMachine);
+
+    let said = NotProven::NotFromThatMachine.said(&Strings::of(everything_b_says()));
+    assert!(!said.is_a_bug(), "{said}");
+    assert!(said.text().contains("could not prove"), "{said}");
 }
 
 /// **A pairing undone during a turn stops it at the next door**, taking effect

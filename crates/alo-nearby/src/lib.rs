@@ -59,10 +59,19 @@
 //! [`Pairings`] are that pairing; [`Deliberating`] is the two people agreeing
 //! to it.
 //!
+//! **And the key the pairing is.** ADR 0031: a pairing leaves each machine
+//! holding a key nobody else has — agreed between two [`Keying`]s whose
+//! [`Offer`]s crossed the wire and whose private halves never did, over the
+//! terms both people were shown, with a [`Code`] both people compare. A
+//! message from a paired machine carries a [`Proof`] made with that key, and
+//! the receiving machine's one judgement of it is [`Proven::checked`], which
+//! asks the pairings at the moment, verifies the tag, and refuses a proof
+//! [`Seen`] before.
+//!
 //! **And the other end of it.** [`Origin`] is a paired machine as a place a
 //! verb may *arrive* from: the identity a grant on this machine is made out
-//! to, and the name this machine's person reads. It is made only by asking
-//! the pairings, and it permits nothing — what a verb from there may do is
+//! to, and the name this machine's person reads. It is made only from a proof
+//! that held, and it permits nothing — what a verb from there may do is
 //! decided by the grants made on this machine, which is `alo-turn`'s to ask.
 //!
 //! **And not a trusted network.** There is no setting in this crate, which is
@@ -75,23 +84,34 @@
 
 pub mod advertising;
 mod deliberating;
+mod hexing;
+mod keying;
 mod looking;
 mod machine;
 mod origin;
 mod pairing;
 mod permitting;
 mod presence;
+mod proof;
+mod proven;
 pub mod reading;
 mod refusing;
+mod replaying;
+#[cfg(test)]
+mod testing;
 mod wire;
 pub mod words;
 
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
+pub use keying::{Code, Keying, Offer};
 pub use looking::{Answering, Looking, THE_ADDRESS, THE_PORT};
 pub use machine::MachineId;
 pub use origin::Origin;
 pub use pairing::{NotPaired, Pairing, Pairings};
 pub use permitting::{EVERYTHING_A_PAIRING_MAY_PERMIT, MayAskIts};
 pub use presence::{Found, Presence, SERVICE, Standing, VERSION, VERSION_KEY};
+pub use proof::Proof;
+pub use proven::{NotProven, Proven};
 pub use refusing::NotNearby;
+pub use replaying::{Seen, WHILE_A_PROOF_STANDS};
 pub use words::nearby_words;

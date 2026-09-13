@@ -63,6 +63,12 @@ fn a_machine_on_the_network_is_found_by_another_and_nothing_is_open_to_it() {
     let one = found.first().unwrap();
     assert_eq!(one.machine, machine);
     assert_eq!(one.port, 7_610);
+    // Where it answers is where it was heard from, measured off the answer
+    // rather than advertised, with the port it advertised.
+    assert_eq!(
+        one.where_it_answers(),
+        std::net::SocketAddr::new(at.ip(), 7_610)
+    );
     assert_eq!(one.standing, Standing::NotPaired);
 }
 

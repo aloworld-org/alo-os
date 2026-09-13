@@ -23,6 +23,8 @@
 //! one machine carried in an answer about another is not something a correct
 //! responder does.
 
+use std::net::IpAddr;
+
 use crate::machine::MachineId;
 use crate::presence::{Found, SERVICE, VERSION, VERSION_KEY};
 use crate::refusing::NotNearby;
@@ -32,7 +34,7 @@ use crate::wire::{Packet, kind};
 /// than part of the class.
 const WITHOUT_THE_FLUSH_BIT: u16 = 0x7fff;
 
-/// One machine, read out of an answer it sent.
+/// One machine, read out of an answer it sent from `from`.
 ///
 /// # Errors
 ///
@@ -43,7 +45,7 @@ const WITHOUT_THE_FLUSH_BIT: u16 = 0x7fff;
 /// packet that is not well formed; and
 /// [`NotNearby::SaysNothingAboutWhichMachine`] for one that never named an
 /// instance.
-pub fn a_machine_in(packet: &[u8]) -> Result<Found, NotNearby> {
+pub fn a_machine_in(packet: &[u8], from: IpAddr) -> Result<Found, NotNearby> {
     let mut reading = Packet::of(packet);
     let _transaction = reading.sixteen()?;
     let _flags = reading.sixteen()?;
@@ -109,7 +111,7 @@ pub fn a_machine_in(packet: &[u8]) -> Result<Found, NotNearby> {
     if !version_said {
         return Err(NotNearby::SaysNothingAboutWhichMachine);
     }
-    Ok(Found::seen(machine, port))
+    Ok(Found::seen(machine, port, from))
 }
 
 /// Whether a packet is somebody asking who is here.
@@ -206,6 +208,11 @@ mod tests {
         IN_AND_THE_ONLY_ONE, kind, write_data, write_name, write_sixteen, write_thirty_two,
     };
 
+    /// Where every answer here is heard from.
+    fn here() -> std::net::IpAddr {
+        std::net::Ipv4Addr::LOCALHOST.into()
+    }
+
     /// The identity every test here advertises.
     fn an_identity() -> MachineId {
         MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap()
@@ -216,9 +223,11 @@ mod tests {
     #[test]
     fn a_machine_that_advertises_is_read_back_as_one_machine_not_paired() {
         let packet = about(&Presence::of(an_identity(), 7_610)).unwrap();
-        let found = a_machine_in(&packet).unwrap();
+        let found = a_machine_in(&packet, here()).unwrap();
         assert_eq!(found.machine, an_identity());
         assert_eq!(found.port, 7_610);
+        assert_eq!(found.address, here());
+        assert_eq!(found.where_it_answers().port(), 7_610);
         assert_eq!(found.standing, Standing::NotPaired);
     }
 
@@ -274,7 +283,7 @@ mod tests {
         })
         .unwrap();
 
-        let refused = a_machine_in(&packet).unwrap_err();
+        let refused = a_machine_in(&packet, here()).unwrap_err();
 
         assert!(matches!(refused, NotNearby::NotAnAloMachine(_)));
         assert!(
@@ -290,7 +299,7 @@ mod tests {
     fn an_advertisement_saying_more_than_presence_is_refused_by_name() {
         for saying in ["who=disan", "models=mistral-7b", "org=axon", "paired=2"] {
             let packet = an_advertisement_also_saying(saying);
-            let refused = a_machine_in(&packet).unwrap_err();
+            let refused = a_machine_in(&packet, here()).unwrap_err();
             let key = saying.split_once('=').unwrap().0;
             assert_eq!(
                 refused,
@@ -307,7 +316,7 @@ mod tests {
     fn an_advertisement_claiming_another_version_is_refused() {
         let packet = an_advertisement_also_saying("v=2");
         assert!(matches!(
-            a_machine_in(&packet).unwrap_err(),
+            a_machine_in(&packet, here()).unwrap_err(),
             NotNearby::SaysMoreThanPresence(_)
         ));
     }
@@ -319,7 +328,7 @@ mod tests {
         for how_much in [4_usize, 12, 30, 60] {
             let half = whole.get(..how_much).unwrap().to_vec();
             assert!(
-                a_machine_in(&half).is_err(),
+                a_machine_in(&half, here()).is_err(),
                 "{how_much} bytes of an advertisement read as a machine"
             );
         }

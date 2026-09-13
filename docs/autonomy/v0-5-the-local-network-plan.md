@@ -162,7 +162,12 @@ for the want of one.
 
 ### 6. The machine that asks is the machine that paired
 
-**Status:** ready. **Depends on:** 2, 3, 4.
+**Status:** **Done, 2026-09-13.** **Depends on:** 2, 3, 4.
+Decided in [ADR 0031](../decisions/0031-the-pairing-is-the-key.md) and built
+in `crates/alo-nearby` (`keying.rs`, `proof.rs`, `proven.rs`,
+`replaying.rs`), with the corridor in `crates/alo-asking` carrying the proof
+and `Origin` in `crates/alo-turn`'s door made only from one; the report is
+`docs/autonomy/updates/the-machine-that-asks-is-the-machine-that-paired.md`.
 
 Task 3's report said it outright and task 4 and 5 built on it: *there is no
 cryptography here and none is claimed.* A question arrives at the studio over
@@ -196,3 +201,42 @@ A — which is exactly the lateral movement ADR 0003 exists to refuse.
   consequences. A worker who cannot finish this task without making that
   decision writes the ADR, hands it over as this task, and says in the report
   that the code waits on it.
+
+### 7. A proposal reaches the other machine, and the answer comes back
+
+**Status:** ready. **Depends on:** 6.
+
+Tasks 2 and 6 decided what a pairing is and what it leaves each machine
+holding, and every test in this plan has made one by handing a `Proposal` and
+an `Offer` from one value to another inside one process. Nothing yet carries
+them between two machines: a person at reception cannot propose to the
+studio, and the studio's person has nothing to confirm. Task 6's report says so
+and task 4's says the same of verbs. This is the first wire, and it is the
+pairing's rather than the verb's because a verb has nothing to prove itself
+with until a pairing exists.
+
+- **Acceptance:** a proposal made on one machine reaches the machine it names
+  at the address discovery measured (`alo_nearby::Found::where_it_answers`),
+  carrying exactly the `Proposal` — both identities, the enumerated list, the
+  duration and the asking machine's `Offer` — and nothing else, held by a test
+  that reads the wire and refuses any field not on that list; the asked
+  machine answers with its own `Offer` and nothing else, and only once its
+  person has been shown the proposal and the `Code`; the asking machine's
+  person is shown the same `Code`, and a pairing is kept on each machine only
+  after both people have confirmed on their own — one test each for the
+  asking side confirming alone, the asked side confirming alone, and a
+  proposal that arrived from an address discovery never measured; a proposal
+  is refused, before anybody is shown anything, when it names a machine other
+  than the one it arrived at, when its `Offer` does not read, and when a
+  second proposal from the same machine arrives while the first waits; a
+  proposal nobody answered expires from both machines within a stated time;
+  and nothing about any of it is written in either record until a pairing is
+  kept, because a proposal is not something that happened to the machine.
+- **Constraint:** ADR 0003 and ADR 0031 both: no certificate, no trusted
+  network, no *remember this machine*, and nothing here carries a verb or a
+  question — the verb wire is the task after this one, and it calls
+  `alo_turn::Arriving` and no other door, holding an `alo_egress::Departing`
+  for every answer it sends back. The surface that shows a proposal and its
+  `Code` is `alo-shell`'s and outside this plan; what this task owes it is a
+  value with the proposal, the code and the two confirmations on it, in
+  `crates/alo-nearby`, and the wire that fills it. Nothing in `image/`.

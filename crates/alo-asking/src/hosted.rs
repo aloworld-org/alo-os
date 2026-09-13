@@ -101,6 +101,7 @@ impl<'a> Hosted<'a> {
             question,
             WHILE_A_MODEL_THINKS,
             to,
+            None,
         )
     }
 

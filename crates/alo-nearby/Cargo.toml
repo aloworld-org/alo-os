@@ -14,6 +14,11 @@ alo-strings = { path = "../alo-strings" }
 # reached from `machine.rs` and nowhere else, and the argument for why the
 # identity is random rather than derived is in that file.
 getrandom = { workspace = true }
+# The key a pairing leaves each side holding, and the proof each message
+# carries (ADR 0031). Every primitive comes from here and none is written in
+# this crate: `keying.rs` agrees and derives, `proof.rs` signs, `proven.rs`
+# verifies.
+ring = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

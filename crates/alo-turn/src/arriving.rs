@@ -117,9 +117,10 @@ impl<'a, 'm> Arriving<'a, 'm> {
     /// Begin a turn for verbs arriving from a paired machine.
     ///
     /// `origin` is the machine they come from, which only
-    /// [`alo_nearby::Origin::paired`] makes — so a turn cannot begin here for a
-    /// machine this one is not paired with, and there is no constructor that
-    /// skips that. `at` is the moment, passed rather than read as everywhere
+    /// [`alo_nearby::Origin::proven`] makes, from a proof the verb carried
+    /// (ADR 0031) — so a turn cannot begin here for a machine this one is not
+    /// paired with, nor for a stranger presenting a paired machine's identity,
+    /// and there is no constructor that skips that. `at` is the moment, passed rather than read as everywhere
     /// in this workspace. Nothing is offered: no window, no selection, no
     /// document of this machine's, and so nothing is granted at the beginning
     /// of this turn and nothing is taken back at its end.
@@ -409,7 +410,9 @@ mod tests {
     use std::path::Path;
 
     use alo_capability::{Ask, Authorised, Grant, Reach};
-    use alo_nearby::{Deliberating, MachineId, MayAskIts, Proposal, Side};
+    use alo_nearby::{
+        Deliberating, Keying, MachineId, MayAskIts, Pairing, Proof, Proposal, Seen, Side,
+    };
 
     use super::*;
     use crate::testing::{files, hour, in_english, listing, noon};
@@ -424,24 +427,54 @@ mod tests {
         MachineId::read("aaaabbbbccccddddeeeeffff00001111").unwrap()
     }
 
-    /// Paired with the reception machine, as this machine keeps it.
-    fn paired() -> Pairings {
-        let mut pairings = Pairings::none();
-        pairings.keep(
-            Deliberating::of(
-                Proposal::checked(the_reception(), here(), &[MayAskIts::Models], hour()).unwrap(),
-            )
-            .agreed_at(Side::TheOneAsking)
-            .agreed_at(Side::TheOneAsked)
-            .agreed(Side::TheOneAsked, noon())
-            .unwrap(),
-        );
-        pairings
+    /// The pairing with the reception machine, as each side keeps it: the
+    /// reception's row first, this machine's second, one key on both.
+    fn paired_both_ways() -> (Pairing, Pairing) {
+        let at_reception = Keying::fresh().unwrap();
+        let proposal = Proposal::checked(
+            the_reception(),
+            here(),
+            &[MayAskIts::Models],
+            hour(),
+            at_reception.offer().clone(),
+        )
+        .unwrap();
+        let on_here = Deliberating::asked(proposal.clone(), Keying::fresh().unwrap());
+        let on_reception = Deliberating::asking(proposal, at_reception)
+            .unwrap()
+            .answered_with(on_here.answered().unwrap().clone())
+            .unwrap();
+        (
+            on_reception
+                .agreed_at(Side::TheOneAsking)
+                .agreed_at(Side::TheOneAsked)
+                .agreed(noon())
+                .unwrap(),
+            on_here
+                .agreed_at(Side::TheOneAsking)
+                .agreed_at(Side::TheOneAsked)
+                .agreed(noon())
+                .unwrap(),
+        )
     }
 
-    /// The reception machine, as a place a verb arrives from.
+    /// The reception machine, as a place a verb arrives from — proven, with
+    /// a proof made on its own row.
     fn origin() -> Origin {
-        Origin::paired(&paired(), &the_reception(), "the reception machine", noon()).unwrap()
+        let (on_reception, on_here) = paired_both_ways();
+        let mut pairings = Pairings::none();
+        pairings.keep(on_here);
+        let proof = Proof::made(&on_reception, &the_reception(), b"a turn", noon());
+        Origin::proven(
+            &pairings,
+            &here(),
+            &proof,
+            b"a turn",
+            "the reception machine",
+            noon(),
+            &mut Seen::nothing(),
+        )
+        .unwrap()
     }
 
     /// The grants' own refusal of a folder never granted.

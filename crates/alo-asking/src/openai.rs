@@ -200,10 +200,19 @@ struct Wrote {
     content: String,
 }
 
+/// What makes the proof that travels beside a body: given the exact bytes, it
+/// answers with the header's value (ADR 0031).
+pub(crate) type Vouching<'a> = &'a dyn Fn(&[u8]) -> String;
+
 /// Put the question to this address, and read what comes back.
 ///
 /// `waiting` is how long this machine waits for an answer, which is the caller's
-/// to say.
+/// to say. `vouching`, when there is one, is given the exact bytes of the body
+/// and answers with the proof that travels beside them in
+/// [`crate::corridor::THE_PROOF_HEADER`] (ADR 0031); only the corridor has one,
+/// because only a paired machine holds a key to make one with. The body is
+/// serialised here rather than by the client so that what is signed is what is
+/// sent, byte for byte.
 ///
 /// # Errors
 /// [`WentWrong`], which is `alo-answering`'s closed list rather than one of this
@@ -216,6 +225,7 @@ pub(crate) fn put(
     question: &Question,
     waiting: Duration,
     to: &[SocketAddr],
+    vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
     let Some(only_these) = OnlyThese::of(to) else {
         // Nowhere was registered, so there is nowhere to go. Refused here
@@ -265,7 +275,16 @@ pub(crate) fn put(
         }],
         stream: false,
     };
-    let mut response = request.send_json(&sent).map_err(what_went_wrong)?;
+    // Serialised here, compactly, so that the bytes a proof is made over are
+    // the bytes on the wire; `send_json` would serialise again on its own
+    // terms (`docs/quirks.md`, ureq 3.4.0).
+    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
+    let request = request.header("content-type", "application/json");
+    let request = match vouching {
+        Some(vouch) => request.header(crate::corridor::THE_PROOF_HEADER, vouch(&body)),
+        None => request,
+    };
+    let mut response = request.send(&body).map_err(what_went_wrong)?;
     let status = response.status().as_u16();
     // Two statuses in this convention are ambiguous, and the name inside the
     // refusal is the only thing that resolves them: a `403` is a refused key
@@ -417,7 +436,14 @@ mod tests {
     fn a_question_goes_out_whole_and_alone_and_the_answer_comes_back_as_it_was_written() {
         let (url, server) = serving(AN_ANSWER, 200);
         let key = Secret::typed("sk-live-0123456789").unwrap();
-        let answer = put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url));
+        let answer = put(
+            &url,
+            Some(&key),
+            &question(),
+            A_MOMENT,
+            &resolved(&url),
+            None,
+        );
         let request = server.join().unwrap();
 
         assert_eq!(answer.unwrap(), "The tenant may not sublet.");
@@ -452,7 +478,7 @@ mod tests {
     #[test]
     fn a_service_given_no_key_is_sent_no_authorisation_at_all() {
         let (url, server) = serving(AN_ANSWER, 200);
-        let answer = put(&url, None, &question(), A_MOMENT, &resolved(&url));
+        let answer = put(&url, None, &question(), A_MOMENT, &resolved(&url), None);
         let request = server.join().unwrap();
         assert!(answer.is_ok(), "{answer:?}");
         assert!(
@@ -467,7 +493,15 @@ mod tests {
     fn a_key_the_service_refuses_is_said_without_quoting_it_or_them() {
         let (url, server) = serving(r#"{"message":"Unauthorized","request_id":"abc"}"#, 401);
         let key = Secret::typed("sk-live-0123456789").unwrap();
-        let went_wrong = put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+        let went_wrong = put(
+            &url,
+            Some(&key),
+            &question(),
+            A_MOMENT,
+            &resolved(&url),
+            None,
+        )
+        .unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::KeyNotAccepted);
 
@@ -487,7 +521,15 @@ mod tests {
             "Location: http://127.0.0.1:1/v1/chat/completions\r\n",
         );
         let key = Secret::typed("sk-live-0123456789").unwrap();
-        let went_wrong = put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+        let went_wrong = put(
+            &url,
+            Some(&key),
+            &question(),
+            A_MOMENT,
+            &resolved(&url),
+            None,
+        )
+        .unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::SentSomewhereElse);
     }
@@ -515,8 +557,15 @@ mod tests {
         ] {
             let (url, server) = serving(body, status);
             let key = Secret::typed("sk-live-0123456789").unwrap();
-            let went_wrong =
-                put(&url, Some(&key), &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+            let went_wrong = put(
+                &url,
+                Some(&key),
+                &question(),
+                A_MOMENT,
+                &resolved(&url),
+                None,
+            )
+            .unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, WentWrong::RanOut, "{status}: {body}");
         }
@@ -545,7 +594,8 @@ mod tests {
             ("<html>403 Forbidden</html>", 403, WentWrong::KeyNotAccepted),
         ] {
             let (url, server) = serving(body, status);
-            let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+            let went_wrong =
+                put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, expected, "{status}: {body:?}");
         }
@@ -556,7 +606,7 @@ mod tests {
     #[test]
     fn a_refusal_this_file_does_not_have_to_read_is_not_read() {
         let (url, server) = serving(r#"{"error":{"code":"insufficient_quota"}}"#, 401);
-        let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+        let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap_err();
         server.join().unwrap();
         assert_eq!(went_wrong, WentWrong::KeyNotAccepted);
     }
@@ -586,7 +636,8 @@ mod tests {
             ),
         ] {
             let (url, server) = serving(body, status);
-            let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+            let went_wrong =
+                put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, expected, "{status}");
         }
@@ -604,7 +655,8 @@ mod tests {
             r#"{"choices":[{"index":0,"message":{"role":"assistant","content":"   "}}]}"#,
         ] {
             let (url, server) = serving(body, 200);
-            let went_wrong = put(&url, None, &question(), A_MOMENT, &resolved(&url)).unwrap_err();
+            let went_wrong =
+                put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap_err();
             server.join().unwrap();
             assert_eq!(went_wrong, WentWrong::NothingUsable, "{body}");
         }
@@ -621,6 +673,7 @@ mod tests {
                 &question(),
                 A_MOMENT,
                 &resolved("http://127.0.0.1:1"),
+                None,
             )
             .unwrap_err(),
             WentWrong::NothingAnswered

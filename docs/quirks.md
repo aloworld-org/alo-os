@@ -733,6 +733,10 @@ its text, so it says *these three fields and nothing else* — which is the
 promise worth keeping (nothing of the person's leaves except the question) and
 is also the assertion that does not break the next time ureq changes its
 whitespace.
+**Since 2026-09-13:** `alo-asking` serialises the body itself, compactly, and
+sends the bytes — because ADR 0031's proof down the corridor is made over the
+exact bytes on the wire, and a body the client re-serialises on its own terms
+is not those bytes. The test assertion stays parsed, for the reason above.
 **Upstream:** not reported; it is not a defect.
 **Date:** 2026-09-03
 

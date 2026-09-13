@@ -38,6 +38,19 @@
 //! constructor and is refused, however convenient it would be — which is
 //! `an_unpaired_machine_offering_inference_is_not_used`.
 //!
+//! # And the question proves where it came from
+//!
+//! ADR 0031. What does travel with the question is a proof made with the key
+//! the pairing holds — over the exact bytes of the request, for the machine
+//! it is going to, at the moment — carried in [`THE_PROOF_HEADER`]. The machine
+//! down the corridor checks it against its own pairings before it does
+//! anything else, and writes down *the reception machine* because the
+//! connection proved it rather than because a pairing happened to name one. A
+//! stranger who read this machine's identity off a discovery packet can put a
+//! question in the same shape at the same address and is refused there, before
+//! any grant is asked. The proof is made here and nowhere else in this crate,
+//! because this is the one door with a pairing in hand.
+//!
 //! # And it is never a fallback
 //!
 //! Nothing here substitutes for a model that was not there.
@@ -48,11 +61,11 @@
 //! named this machine, and for no other reason.
 
 use std::net::SocketAddr;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use alo_answering::WentWrong;
 use alo_models::{InferenceSource, Secret};
-use alo_nearby::{MachineId, MayAskIts, Pairings};
+use alo_nearby::{MachineId, MayAskIts, Pairing, Pairings, Proof};
 
 use crate::openai;
 use crate::question::Question;
@@ -65,11 +78,18 @@ use crate::refusing::Miswired;
 /// about as long either way.
 const WHILE_A_MODEL_THINKS: Duration = Duration::from_secs(120);
 
+/// The header a question down the corridor carries its proof in.
+///
+/// One spelling, here, for the door that sends it and whatever receives it.
+/// The value is [`alo_nearby::Proof::said`], one line.
+pub const THE_PROOF_HEADER: &str = "alo-pairing";
+
 /// A paired machine, as a place a question may be put.
 ///
 /// Made only by [`paired`](Self::paired), which asks this machine's own
 /// pairings. There is no other constructor, so holding one of these is evidence
-/// that two people agreed and that their agreement had not ended.
+/// that two people agreed, that their agreement had not ended, and that this
+/// machine holds the key to prove a question is its.
 #[derive(Debug)]
 pub struct DownTheCorridor<'a> {
     /// The name the person gave it when they paired with it, which is what
@@ -80,14 +100,20 @@ pub struct DownTheCorridor<'a> {
     /// A key, if that machine asks for one. Usually nothing: it is a machine
     /// somebody owns, and what stands in for a key is the pairing.
     key: Option<&'a Secret>,
+    /// The pairing, which holds the key a proof is made with and names the
+    /// machine the proof is for.
+    pairing: Pairing,
+    /// This machine, which the proof names as the sender.
+    here: MachineId,
 }
 
 impl<'a> DownTheCorridor<'a> {
     /// The machine down the corridor, if a pairing permits asking its models.
     ///
-    /// `now` is passed rather than read, as it is everywhere a pairing is
-    /// asked about, so that *at the moment of asking* is a moment the caller
-    /// names.
+    /// `here` is this machine, which every question from here names as its
+    /// sender. `now` is passed rather than read, as it is everywhere a pairing
+    /// is asked about, so that *at the moment of asking* is a moment the
+    /// caller names.
     ///
     /// # Errors
     ///
@@ -99,19 +125,25 @@ impl<'a> DownTheCorridor<'a> {
     /// of not-paired a machine is would be telling them how to become paired.
     pub fn paired(
         pairings: &Pairings,
+        here: &MachineId,
         machine: &MachineId,
         called: &'a str,
         at: SocketAddr,
         key: Option<&'a Secret>,
-        now: std::time::SystemTime,
+        now: SystemTime,
     ) -> Result<Self, Miswired> {
-        if !pairings.permits(machine, MayAskIts::Models, now) {
+        let Some(pairing) = pairings.with(machine, now) else {
+            return Err(Miswired::NotPairedWithIt);
+        };
+        if !pairing.permits(MayAskIts::Models, now) {
             return Err(Miswired::NotPairedWithIt);
         }
         Ok(Self {
             called,
             endpoint: format!("http://{at}"),
             key,
+            pairing: pairing.clone(),
+            here: here.clone(),
         })
     }
 
@@ -135,7 +167,8 @@ impl<'a> DownTheCorridor<'a> {
         alo_models::address::where_it_connects(&self.endpoint)
     }
 
-    /// Put the question down the corridor.
+    /// Put the question down the corridor, with a proof that it is this
+    /// machine's, made at `now`.
     ///
     /// `pub(crate)`, and the only caller is
     /// [`crate::Asking::to_a_paired_machine`], which holds an
@@ -149,8 +182,21 @@ impl<'a> DownTheCorridor<'a> {
     /// corridor is asked in the same shape a provider is, because it is running
     /// the same kind of thing and inventing a second shape for it would be two
     /// wire formats to keep true rather than one.
-    pub(crate) fn ask(&self, question: &Question, to: &[SocketAddr]) -> Result<String, WentWrong> {
-        openai::put(&self.endpoint, self.key, question, WHILE_A_MODEL_THINKS, to)
+    pub(crate) fn ask(
+        &self,
+        question: &Question,
+        to: &[SocketAddr],
+        now: SystemTime,
+    ) -> Result<String, WentWrong> {
+        let vouching = |body: &[u8]| Proof::made(&self.pairing, &self.here, body, now).said();
+        openai::put(
+            &self.endpoint,
+            self.key,
+            question,
+            WHILE_A_MODEL_THINKS,
+            to,
+            Some(&vouching),
+        )
     }
 }
 
@@ -162,10 +208,11 @@ impl<'a> DownTheCorridor<'a> {
 mod tests {
     use std::time::{Duration, SystemTime};
 
-    use alo_nearby::{Deliberating, MachineId, MayAskIts, Pairings, Proposal, Side};
+    use alo_nearby::{MachineId, MayAskIts, Pairings};
 
     use super::DownTheCorridor;
     use crate::refusing::Miswired;
+    use crate::testing::paired_as_two_machines;
 
     /// This machine.
     fn here() -> MachineId {
@@ -187,24 +234,11 @@ mod tests {
         "192.168.1.20:7610".parse().unwrap()
     }
 
-    /// A pairing two people made, for a day.
+    /// A pairing two people made, for a day, as this machine keeps it.
     fn paired_for_a_day() -> Pairings {
         let mut pairings = Pairings::none();
-        pairings.keep(
-            Deliberating::of(
-                Proposal::checked(
-                    here(),
-                    the_studio(),
-                    &[MayAskIts::Models],
-                    Duration::from_secs(86_400),
-                )
-                .unwrap(),
-            )
-            .agreed_at(Side::TheOneAsking)
-            .agreed_at(Side::TheOneAsked)
-            .agreed(Side::TheOneAsking, a_moment())
-            .unwrap(),
-        );
+        pairings
+            .keep(paired_as_two_machines(here(), the_studio(), &[MayAskIts::Models], a_moment()).0);
         pairings
     }
 
@@ -214,6 +248,7 @@ mod tests {
     fn an_unpaired_machine_offering_inference_is_not_used() {
         let refused = DownTheCorridor::paired(
             &Pairings::none(),
+            &here(),
             &the_studio(),
             "the studio machine",
             its_address(),
@@ -231,6 +266,7 @@ mod tests {
         let a_week_later = a_moment() + Duration::from_secs(7 * 86_400);
         let refused = DownTheCorridor::paired(
             &paired_for_a_day(),
+            &here(),
             &the_studio(),
             "the studio machine",
             its_address(),
@@ -247,23 +283,12 @@ mod tests {
     fn a_pairing_for_something_else_does_not_open_this_door() {
         let mut pairings = Pairings::none();
         pairings.keep(
-            Deliberating::of(
-                Proposal::checked(
-                    here(),
-                    the_studio(),
-                    &[MayAskIts::Workspace],
-                    Duration::from_secs(86_400),
-                )
-                .unwrap(),
-            )
-            .agreed_at(Side::TheOneAsking)
-            .agreed_at(Side::TheOneAsked)
-            .agreed(Side::TheOneAsking, a_moment())
-            .unwrap(),
+            paired_as_two_machines(here(), the_studio(), &[MayAskIts::Workspace], a_moment()).0,
         );
 
         let refused = DownTheCorridor::paired(
             &pairings,
+            &here(),
             &the_studio(),
             "the studio machine",
             its_address(),
@@ -280,6 +305,7 @@ mod tests {
     fn an_answer_from_here_names_the_machine_the_person_named() {
         let corridor = DownTheCorridor::paired(
             &paired_for_a_day(),
+            &here(),
             &the_studio(),
             "the studio machine",
             its_address(),
@@ -306,6 +332,7 @@ mod tests {
     fn where_it_would_connect_is_known_before_anything_is_asked() {
         let corridor = DownTheCorridor::paired(
             &paired_for_a_day(),
+            &here(),
             &the_studio(),
             "the studio machine",
             its_address(),

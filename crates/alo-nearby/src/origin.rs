@@ -13,17 +13,27 @@
 //! this machine's grants can be made out to. Everything after it is `alo-turn`'s
 //! and `alo-capability`'s, unchanged.
 //!
+//! # An origin is made from a proof, and from nothing else
+//!
+//! ADR 0031. [`Origin::proven`] takes a [`Proof`] and the bytes it is about,
+//! and asks [`Proven::checked`] — the one judgement of whether a message came
+//! from the machine it names — before it asks anything else. There is no
+//! constructor that takes an identity alone: an identity is read off the wire
+//! by design, and a stranger on the office WiFi presenting a paired machine's
+//! identity reaches this door and is refused before any grant is asked, which
+//! is the lateral movement ADR 0003 exists to refuse.
+//!
 //! # A pairing is standing, not a permission to act
 //!
-//! [`Origin::paired`] asks one question of this machine's pairings — is there
-//! one with that machine, standing now — and asks nothing about what it
-//! permits. [`crate::MayAskIts`] has no arm for *run a verb on that machine*
-//! and says why it never will: pairing lets a machine **ask**, and a verb it
-//! asks for is decided by the grants **this** machine's person made, on this
-//! machine, to that machine. The pairing is what makes the asker somebody this
-//! machine can name; the grant is what decides the answer. Neither stands in
-//! for the other, and a machine with a pairing and no grant is refused at every
-//! door exactly as an agent with no grant is.
+//! The proof establishes that a pairing with that machine stands now and that
+//! the message is its; it establishes nothing about what the machine may do.
+//! [`crate::MayAskIts`] has no arm for *run a verb on that machine* and says
+//! why it never will: pairing lets a machine **ask**, and a verb it asks for is
+//! decided by the grants **this** machine's person made, on this machine, to
+//! that machine. The pairing is what makes the asker somebody this machine can
+//! name; the grant is what decides the answer. Neither stands in for the other,
+//! and a machine with a pairing and no grant is refused at every door exactly
+//! as an agent with no grant is.
 //!
 //! # The principal is the identity, and the name is for people
 //!
@@ -40,25 +50,28 @@
 //! why it decides nothing: a caller that handed over the wrong name would
 //! mislabel a record, and a caller that could hand over the wrong *identity*
 //! would be choosing whose grants to ask. Only the second is an authority, and
-//! only the second is what the pairings are asked about.
+//! only the second is what the proof is about.
 //!
 //! # What is refused here, and what is not written down
 //!
-//! A machine that was merely discovered, one whose pairing has ended, and one
-//! whose pairing was revoked all reach [`Origin::paired`] and are refused with
-//! one arm, [`NotPaired::NotWithThatMachine`], for the reason `alo-asking`'s
-//! corridor gives: telling a caller *which* kind of not-paired it is would be
-//! telling it how to become paired. Nothing on this machine was consulted for
-//! that refusal — no grant, no verb list, no person — so nothing is written in
-//! the record about it, exactly as nothing is written when this machine
-//! declines to *ask* an unpaired one. Whatever carries verbs between machines
-//! is where a knock from a stranger is counted, the way `alo-agentd` counts a
-//! knock from a caller it does not know.
+//! Every refusal is [`NotProven`]'s: a machine merely discovered, one whose
+//! pairing has ended, and one whose pairing was revoked are one arm, for the
+//! reason `alo-asking`'s corridor gives — telling a caller *which* kind of
+//! not-paired it is would be telling it how to become paired — and a proof
+//! that does not verify, one for another machine, one from another moment and
+//! one seen before are the rest. Nothing on this machine was consulted for any
+//! of them — no grant, no verb list, no person — so nothing is written in the
+//! record about it. Whatever carries verbs between machines is where a knock
+//! from a stranger is counted, the way `alo-agentd` counts a knock from a
+//! caller it does not know.
 
 use std::time::SystemTime;
 
 use crate::machine::MachineId;
-use crate::pairing::{NotPaired, Pairings};
+use crate::pairing::Pairings;
+use crate::proof::Proof;
+use crate::proven::{NotProven, Proven};
+use crate::replaying::Seen;
 
 /// What a grantee naming a paired machine begins with, so that it can never be
 /// the name of an agent on this machine.
@@ -70,11 +83,13 @@ const A_MACHINE: &str = "machine:";
 
 /// A paired machine, as a place a verb may arrive from.
 ///
-/// Made only by [`paired`](Self::paired), which asks this machine's own
-/// pairings. There is no other constructor, so holding one is evidence that two
-/// people agreed and that their agreement had not ended at the moment it was
-/// made — and every door a verb then goes through asks the pairings again for
-/// its own moment, because an agreement can end during a turn.
+/// Made only by [`proven`](Self::proven), which asks this machine's own
+/// pairings and checks the proof the message carried. There is no other
+/// constructor, so holding one is evidence that two people agreed, that their
+/// agreement had not ended at the moment it was made, and that what arrived
+/// was made with the key only that agreement holds — and every door a verb
+/// then goes through asks the pairings again for its own moment, because an
+/// agreement can end during a turn.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Origin {
     /// The other machine, as the pairing knows it.
@@ -85,8 +100,11 @@ pub struct Origin {
 }
 
 impl Origin {
-    /// The machine a verb arrived from, if this machine is paired with it now.
+    /// The machine a verb arrived from, if its proof holds against this
+    /// machine's pairings now.
     ///
+    /// `here` is this machine; `about` is exactly the bytes that arrived with
+    /// the proof; `seen` is what this machine remembers having accepted.
     /// `now` is passed rather than read, as it is everywhere a pairing is
     /// asked about, so that *at the moment of arriving* is a moment the caller
     /// names. `called` is the name this machine's person gave the other
@@ -94,24 +112,24 @@ impl Origin {
     ///
     /// # Errors
     ///
-    /// [`NotPaired::NotWithThatMachine`] when no pairing with that machine
-    /// stands at `now` — a machine that was merely discovered, one whose
-    /// pairing has ended, and one whose pairing was revoked, with no arm that
-    /// distinguishes them.
-    pub fn paired(
+    /// [`NotProven`], as [`Proven::checked`] answers it — including
+    /// [`NotProven::NotWithThatMachine`] when no pairing with the machine the
+    /// proof names stands at `now`.
+    pub fn proven(
         pairings: &Pairings,
-        machine: &MachineId,
+        here: &MachineId,
+        proof: &Proof,
+        about: &[u8],
         called: &str,
         now: SystemTime,
-    ) -> Result<Self, NotPaired> {
-        if !pairings.paired_with(machine, now) {
-            return Err(NotPaired::NotWithThatMachine);
-        }
+        seen: &mut Seen,
+    ) -> Result<Self, NotProven> {
+        let proven = Proven::checked(pairings, here, proof, about, now, seen)?;
         let called = called.trim();
         Ok(Self {
-            machine: machine.clone(),
+            machine: proven.machine().clone(),
             called: if called.is_empty() {
-                machine.as_str().to_owned()
+                proven.machine().as_str().to_owned()
             } else {
                 called.to_owned()
             },
@@ -164,68 +182,45 @@ impl Origin {
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 mod tests {
-    use std::time::{Duration, SystemTime};
+    use std::time::Duration;
 
     use super::Origin;
-    use crate::deliberating::{Deliberating, Proposal, Side};
-    use crate::machine::MachineId;
-    use crate::pairing::{NotPaired, Pairings};
-    use crate::permitting::MayAskIts;
+    use crate::pairing::{Pairing, Pairings};
+    use crate::proof::Proof;
+    use crate::proven::NotProven;
+    use crate::replaying::Seen;
+    use crate::testing::{a_moment, a_stranger, paired, paired_between, reception, studio};
 
-    /// This machine — the one with the GPU in it, being asked.
-    fn here() -> MachineId {
-        MachineId::read("aaaabbbbccccddddeeeeffff00001111").unwrap()
-    }
-
-    /// The machine down the corridor, asking.
-    fn the_reception() -> MachineId {
-        MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap()
-    }
-
-    /// A machine nobody paired with.
-    fn a_stranger() -> MachineId {
-        MachineId::read("99998888777766665555444433332222").unwrap()
-    }
-
-    /// A moment to reason from.
-    fn a_moment() -> SystemTime {
-        SystemTime::UNIX_EPOCH + Duration::from_secs(1_760_000_000)
-    }
-
-    /// A pairing two people made, for a day, permitting the reception machine
-    /// to ask this one's models.
-    fn paired_for_a_day() -> Pairings {
+    /// This machine's pairings — the studio's, holding its row about the
+    /// reception machine — and reception's own row, to make proofs with.
+    fn paired_for_a_day() -> (Pairings, Pairing) {
+        let (on_reception, on_studio) = paired();
         let mut pairings = Pairings::none();
-        pairings.keep(
-            Deliberating::of(
-                Proposal::checked(
-                    the_reception(),
-                    here(),
-                    &[MayAskIts::Models],
-                    Duration::from_secs(86_400),
-                )
-                .unwrap(),
-            )
-            .agreed_at(Side::TheOneAsking)
-            .agreed_at(Side::TheOneAsked)
-            .agreed(Side::TheOneAsked, a_moment())
-            .unwrap(),
-        );
-        pairings
+        pairings.keep(on_studio);
+        (pairings, on_reception)
     }
 
-    /// **A paired machine is an origin**, named as the person named it, and
-    /// its principal is its identity and not that name.
+    /// A proof from reception over a verb, at the moment.
+    fn a_proof_from_reception(on_reception: &Pairing) -> Proof {
+        Proof::made(on_reception, &reception(), b"list_folder", a_moment())
+    }
+
+    /// **A paired machine that proves itself is an origin**, named as the
+    /// person named it, and its principal is its identity and not that name.
     #[test]
-    fn a_paired_machine_is_an_origin_named_as_the_person_named_it() {
-        let origin = Origin::paired(
-            &paired_for_a_day(),
-            &the_reception(),
+    fn a_paired_machine_that_proves_itself_is_an_origin_named_as_the_person_named_it() {
+        let (pairings, on_reception) = paired_for_a_day();
+        let origin = Origin::proven(
+            &pairings,
+            &studio(),
+            &a_proof_from_reception(&on_reception),
+            b"list_folder",
             "  the reception machine ",
             a_moment(),
+            &mut Seen::nothing(),
         )
         .unwrap();
-        assert_eq!(origin.machine(), &the_reception());
+        assert_eq!(origin.machine(), &reception());
         assert_eq!(origin.called(), "the reception machine");
         assert_eq!(
             origin.principal(),
@@ -235,27 +230,43 @@ mod tests {
         assert!(!origin.principal().contains("reception"));
     }
 
-    /// **A machine nobody paired with is no origin**, however present it is on
-    /// the network. There is no constructor that skips the pairing.
+    /// **A stranger presenting reception's identity is no origin**, and is
+    /// refused before any grant is asked: there is no constructor that takes
+    /// an identity without a proof, and the proof does not verify.
     #[test]
-    fn a_machine_nobody_paired_with_is_no_origin() {
-        let refused = Origin::paired(
-            &Pairings::none(),
-            &the_reception(),
+    fn a_stranger_presenting_a_paired_machines_identity_is_no_origin() {
+        let (pairings, _) = paired_for_a_day();
+        let (strangers_row, _) = paired_between(a_stranger(), studio());
+        let forged = Proof::made(&strangers_row, &reception(), b"list_folder", a_moment());
+        let refused = Origin::proven(
+            &pairings,
+            &studio(),
+            &forged,
+            b"list_folder",
             "the reception machine",
             a_moment(),
+            &mut Seen::nothing(),
         )
         .unwrap_err();
-        assert_eq!(refused, NotPaired::NotWithThatMachine);
+        assert_eq!(refused, NotProven::NotFromThatMachine);
+    }
 
-        let refused = Origin::paired(
-            &paired_for_a_day(),
-            &a_stranger(),
-            "somebody's laptop",
+    /// **A machine nobody paired with is no origin**, however present it is on
+    /// the network and whatever it holds.
+    #[test]
+    fn a_machine_nobody_paired_with_is_no_origin() {
+        let (_, on_reception) = paired_for_a_day();
+        let refused = Origin::proven(
+            &Pairings::none(),
+            &studio(),
+            &a_proof_from_reception(&on_reception),
+            b"list_folder",
+            "the reception machine",
             a_moment(),
+            &mut Seen::nothing(),
         )
         .unwrap_err();
-        assert_eq!(refused, NotPaired::NotWithThatMachine);
+        assert_eq!(refused, NotProven::NotWithThatMachine);
     }
 
     /// **A pairing that has ended makes no origin, and neither does one that was
@@ -264,64 +275,84 @@ mod tests {
     /// to become paired.
     #[test]
     fn a_pairing_that_has_ended_or_was_revoked_makes_no_origin() {
+        let (pairings, on_reception) = paired_for_a_day();
         let a_week_later = a_moment() + Duration::from_secs(7 * 86_400);
-        let ended = Origin::paired(
-            &paired_for_a_day(),
-            &the_reception(),
+        let ended = Origin::proven(
+            &pairings,
+            &studio(),
+            &Proof::made(&on_reception, &reception(), b"list_folder", a_week_later),
+            b"list_folder",
             "the reception machine",
             a_week_later,
+            &mut Seen::nothing(),
         )
         .unwrap_err();
-        assert_eq!(ended, NotPaired::NotWithThatMachine);
+        assert_eq!(ended, NotProven::NotWithThatMachine);
 
-        let mut pairings = paired_for_a_day();
-        assert!(pairings.revoke(&the_reception()));
-        let revoked = Origin::paired(
+        let mut pairings = pairings;
+        assert!(pairings.revoke(&reception()));
+        let revoked = Origin::proven(
             &pairings,
-            &the_reception(),
+            &studio(),
+            &a_proof_from_reception(&on_reception),
+            b"list_folder",
             "the reception machine",
             a_moment(),
+            &mut Seen::nothing(),
         )
         .unwrap_err();
-        assert_eq!(revoked, NotPaired::NotWithThatMachine);
+        assert_eq!(revoked, NotProven::NotWithThatMachine);
     }
 
-    /// **What a pairing permits is not asked here.** A pairing for the workspace
-    /// alone still names the machine: the pairing is what makes the asker
-    /// somebody this machine can name, and the grants on this machine are what
-    /// decide any verb it asks for.
+    /// **A proof replayed makes no second origin.** The same bytes arriving
+    /// again are refused, which is what stops somebody who recorded a verb
+    /// off the wire from having it run twice.
     #[test]
-    fn a_pairing_for_anything_names_the_machine_and_permits_no_verb_by_itself() {
-        let mut pairings = Pairings::none();
-        pairings.keep(
-            Deliberating::of(
-                Proposal::checked(
-                    the_reception(),
-                    here(),
-                    &[MayAskIts::Workspace],
-                    Duration::from_secs(86_400),
-                )
-                .unwrap(),
+    fn a_proof_replayed_makes_no_second_origin() {
+        let (pairings, on_reception) = paired_for_a_day();
+        let mut seen = Seen::nothing();
+        let proof = a_proof_from_reception(&on_reception);
+        assert!(
+            Origin::proven(
+                &pairings,
+                &studio(),
+                &proof,
+                b"list_folder",
+                "the reception machine",
+                a_moment(),
+                &mut seen
             )
-            .agreed_at(Side::TheOneAsking)
-            .agreed_at(Side::TheOneAsked)
-            .agreed(Side::TheOneAsked, a_moment())
-            .unwrap(),
+            .is_ok()
         );
-        let origin = Origin::paired(&pairings, &the_reception(), "reception", a_moment()).unwrap();
-        assert_eq!(origin.called(), "reception");
-        // And nothing on the origin is, or answers, a permission: what it
-        // offers is a name to make a grant out to.
-        assert!(!pairings.permits(&the_reception(), MayAskIts::Models, a_moment()));
+        let again = Origin::proven(
+            &pairings,
+            &studio(),
+            &proof,
+            b"list_folder",
+            "the reception machine",
+            a_moment() + Duration::from_secs(5),
+            &mut seen,
+        )
+        .unwrap_err();
+        assert_eq!(again, NotProven::AlreadySeen);
     }
 
     /// A machine the person called nothing is named by its identity, because a
     /// sentence with an empty name in it says nothing about who asked.
     #[test]
     fn a_machine_called_nothing_is_named_by_its_identity() {
-        let origin =
-            Origin::paired(&paired_for_a_day(), &the_reception(), "   ", a_moment()).unwrap();
-        assert_eq!(origin.called(), the_reception().as_str());
+        let (pairings, on_reception) = paired_for_a_day();
+        let origin = Origin::proven(
+            &pairings,
+            &studio(),
+            &a_proof_from_reception(&on_reception),
+            b"list_folder",
+            "   ",
+            a_moment(),
+            &mut Seen::nothing(),
+        )
+        .unwrap();
+        assert_eq!(origin.called(), reception().as_str());
     }
 
     /// An agent on this machine cannot be called by a machine's name, and this
