@@ -8,11 +8,16 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+# What a pairing permits, in the language the person deciding reads it in.
+alo-strings = { path = "../alo-strings" }
 # The kernel's randomness, for the one identity this machine keeps. It is
 # reached from `machine.rs` and nowhere else, and the argument for why the
 # identity is random rather than derived is in that file.
 getrandom = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+alo-strings = { path = "../alo-strings" }
 
 [lints]
 workspace = true

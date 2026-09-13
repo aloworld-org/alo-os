@@ -67,14 +67,22 @@
 //! [ADR 0003]: https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0003-the-network-is-not-authority.md
 
 pub mod advertising;
+mod deliberating;
 mod looking;
 mod machine;
+mod pairing;
+mod permitting;
 mod presence;
 pub mod reading;
 mod refusing;
 mod wire;
+pub mod words;
 
+pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
 pub use looking::{Answering, Looking, THE_ADDRESS, THE_PORT};
 pub use machine::MachineId;
+pub use pairing::{NotPaired, Pairing, Pairings};
+pub use permitting::{EVERYTHING_A_PAIRING_MAY_PERMIT, MayAskIts};
 pub use presence::{Found, Presence, SERVICE, Standing, VERSION, VERSION_KEY};
 pub use refusing::NotNearby;
+pub use words::nearby_words;

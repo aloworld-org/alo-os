@@ -36,6 +36,7 @@ alo-greeting = { path = "../alo-greeting" }
 alo-indicator = { path = "../alo-indicator" }
 alo-keeping = { path = "../alo-keeping" }
 alo-models = { path = "../alo-models" }
+alo-nearby = { path = "../alo-nearby" }
 alo-overlay = { path = "../alo-overlay" }
 alo-picking = { path = "../alo-picking" }
 alo-protocol = { path = "../alo-protocol" }

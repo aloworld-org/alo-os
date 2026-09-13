@@ -404,6 +404,7 @@ dependencies = [
 name = "alo-nearby"
 version = "0.0.1"
 dependencies = [
+ "alo-strings",
  "getrandom 0.3.4",
  "thiserror 2.0.20",
 ]
@@ -524,6 +525,7 @@ dependencies = [
  "alo-indicator",
  "alo-keeping",
  "alo-models",
+ "alo-nearby",
  "alo-overlay",
  "alo-picking",
  "alo-protocol",

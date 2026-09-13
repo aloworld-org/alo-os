@@ -54,7 +54,9 @@ can read one, including a machine nobody has paired with and nobody owns.
 
 ### 2. Pairing is mutual, deliberate, and refused every other way
 
-**Status:** ready. **Depends on:** 1.
+**Status:** done, 2026-09-13 — `crates/alo-nearby`, and
+`docs/autonomy/updates/a-pairing-is-made-by-two-people-and-by-nothing-else.md`.
+**Depends on:** 1.
 
 *Pairing: mutual, deliberate, enumerated, revocable in one action, and
 expiring — grants, across a machine boundary.* This is the task the whole
