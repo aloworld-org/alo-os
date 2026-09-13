@@ -117,7 +117,7 @@ test passes; this is Unix-socket development evidence, not physical input testin
 **Version:** `alo-agentd` and `alo-bounding` from 2026-09-12, measured on
 `6.18.33.2-microsoft-standard-WSL2` by
 `crates/alo-bounding/tests/a_turn_without_a_boundary_does_not_run.rs`.
-**Behaviour:** the boundary is twelve pinned links and two pinned maps under
+**Behaviour:** the boundary is eighteen pinned links and two pinned maps under
 `/sys/fs/bpf/alo`, made once at boot by `alo-boundaryd` (ADR 0018), and
 `alo-agentd` opens the one map it may write. Three things can happen to that
 arrangement under a running service, and until 2026-09-12 the service noticed
@@ -125,8 +125,8 @@ none of them:
 
 - **a pin is removed.** Removing a link's pin is the one thing on the machine
   that detaches its hook. A service that had opened the map went on writing
-  entries into it and running turns, and the kernel decided at eleven hooks
-  instead of twelve — a turn could still, say, send where it could not open.
+  entries into it and running turns, and the kernel decided at one hook fewer
+  than it had — a turn could still, say, send where it could not open.
 - **the map's pin is removed, or the whole directory is taken away.** The
   service holds a descriptor, so its writes still land somewhere; whether any
   programme still reads that somewhere is the next point.
@@ -153,7 +153,7 @@ was opened), and a mode that let the service read a pin would let the person's
 own daemon take the machine's boundary off.
 **Our response:** the service asks the machine before every turn, and at
 start — `alo_bounding::Boundary::in_place`, called first thing in
-`Turns::doing`: is the map of turns still pinned, is every one of the twelve
+`Turns::doing`: is the map of turns still pinned, is every one of the eighteen
 hooks still held, and is the map at the pin the map this service holds, as the
 kernel numbers its maps. Any *no* refuses the turn before its first verb, with
 nothing made and nothing to undo; the refusal is written down in the record as
@@ -172,7 +172,7 @@ machine gets instead is the same refusal and this entry. To find out which of
 the three states it is in:
 
 ```
-ls -l /sys/fs/bpf/alo                    # twelve links, bounds, fields — all present?
+ls -l /sys/fs/bpf/alo                    # eighteen links, bounds, fields — all present?
 systemctl status alo-boundaryd           # did the loader run, and once?
 journalctl -u alo-agentd | grep boundary # which pin, or which two map numbers
 ```
@@ -1050,28 +1050,55 @@ evidence and never certified-hardware acceptance.
 **Date:** 2026-09-12
 
 ### Four hooks are not a filesystem: what a bound turn can still change
-**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08 and
+as it stands on 2026-09-13;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
-**Behaviour:** the boundary watches thirteen hooks — `file_open`,
+**Behaviour:** the boundary watches eighteen hooks — `file_open`,
 `file_permission`, `inode_rename`, `inode_unlink`, `inode_link`,
 `inode_setattr`, `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
-`inode_remove_acl`, `file_ioctl`, `socket_connect` and `socket_sendmsg` — and
-a filesystem has more verbs than the eleven of those that are about one. The filesystem hooks
-were chosen for one property: **none of the mutations they leave unwatched
-moves a byte of somebody's file past a grant.** That is a narrower promise than *a turn cannot change anything outside
-its bound*, and reading the second where the first is written is how somebody
-audits this boundary and comes away believing more than it does.
+`inode_remove_acl`, `file_ioctl`, `inode_create`, `inode_mknod`,
+`inode_mkdir`, `inode_rmdir`, `inode_symlink`, `socket_connect` and
+`socket_sendmsg` — and a filesystem has more verbs than the sixteen of those
+that are about one. The filesystem hooks were chosen for one property:
+**none of the mutations they leave unwatched moves a byte of somebody's file
+past a grant.** That is a narrower promise than *a turn cannot change anything
+outside its bound*, and reading the second where the first is written is how
+somebody audits this boundary and comes away believing more than it does.
 
-So this is the list, each one run against the real loaded programme with a
-refused open beside it proving the boundary was in force:
+So this is the list, each row run against the real loaded programme with a
+refused open beside it proving the boundary was in force — and since
+2026-09-13 the list is empty, because every row it held is a hook:
 
 | Hook | What a bound turn can still do | Why no contents leave a grant | Release |
 |---|---|---|---|
-| `inode_symlink` | make a symbolic link, in a folder somebody granted, pointing at a file nobody did | a name is not contents. Opening through it is a `file_open` on the file it leads to, which is outside the bound and refused — the walk starts at the file the open reached, so the *link's* place buys nothing | v0.5 |
-| `inode_create` | make a file in a folder nobody granted, by opening with `O_CREAT` | the create is unwatched and the open that follows it is not, in that order, so the inode is made and the write is refused. What is left is an empty file with a name of the turn's choosing | v0.5 |
-| `inode_mknod` | make the same file without opening it at all, so nothing refuses anything | the same empty file at the end of it, and putting anything in it is an open, which is watched and refused | v0.5 |
-| `inode_mkdir` | make a directory in a place nobody granted | a directory holds no bytes of anybody's file, and filling one means creating files in it and writing to them, which is an open | v0.5 |
-| `inode_rmdir` | remove an **empty** directory nobody granted | removing one that is not empty needs its contents unlinked first, and `inode_unlink` is watched | v0.5 |
+
+The heading is kept, because `docs/contracts/agent-verbs.md` and every report
+since task 5 point at it, and because
+`crates/alo-bounding/tests/the_unwatched_mutations_are_written_down.rs` holds
+this entry to the programme by name: an empty table under the heading is
+accepted as the honest state, and the heading being gone is not. What the
+table held, and when each row closed:
+
+- **`inode_symlink`** — a turn could make a symbolic link in a folder somebody
+  granted pointing at a file nobody did; a name is not contents, and opening
+  through it is a `file_open` on the file it leads to, refused. Closed
+  2026-09-13.
+- **`inode_create`** — a turn could make a file in a folder nobody granted by
+  opening with `O_CREAT`: the create was unwatched and the open that followed
+  it was not, in that order, so the inode was made and the write refused, and
+  what was left was an empty file with a name of the turn's choosing. Closed
+  2026-09-13.
+- **`inode_mknod`** — the same file made without opening it, so nothing
+  refused anything; putting anything in it was an open, refused. Closed
+  2026-09-13.
+- **`inode_mkdir`** — a directory made in a place nobody granted; a directory
+  holds no bytes of anybody's file. Closed 2026-09-13.
+- **`inode_rmdir`** — an **empty** directory nobody granted, removed; one that
+  was not empty needed its contents unlinked first, and `inode_unlink` was
+  watched. Closed 2026-09-13.
+
+The entry *What a turn makes is inside the grant* below has the five hooks,
+the shape of each, and the measurement.
 
 Two things are **not** on that list and belong beside it. **What is inside a
 file already open** was not a hook at all until 2026-09-12: `file_open` decides
@@ -1096,30 +1123,21 @@ measured by hand on 2026-09-08 and not reproducible in Rust without a
 descriptor. Both are refused now, with three hooks beside them, and the
 truncation is reproduced through a descriptor opened before the turn began;
 the entry *Attributes, ownership and size are inside the grant* below has the
-measurement and what it leaves.
+measurement and what it leaves. **The last five left it on 2026-09-13**, and
+the argument that had kept them — none moves a byte — is the argument that
+had been made for attributes until the size broke it; the entry *What a turn
+makes is inside the grant* says what each left behind instead.
 
-**Our response:** documented rather than closed, and every claim above is a test
-except the one that says it is not. `crates/alo-bounding-kernel/src/deciding.rs`
+**Our response:** every claim above is a test. `crates/alo-bounding-kernel/src/deciding.rs`
 carries the list beside the code that decides, `crates/alo-bounding/src/lib.rs`
 carries it where somebody auditing the crate reads, and
 `crates/alo-bounding/tests/the_unwatched_mutations_are_written_down.rs` holds
 this table to the programme: a hook that appears in `kernel.rs` and is still
 listed here as unwatched fails that test, as does a row with no release, a row
-nobody reproduced, or a release `docs/features.md` has never heard of. So the
-list cannot rot into a description of a boundary this one stopped being.
-
-Every row is **v0.5**, which is where `docs/features.md` puts *the grant is a
-boundary the kernel imposes* (ADR 0013) and *the kernel is taught what a turn is*
-(ADR 0015). Nothing here is a v0.01 delivery commitment and nothing here ticks
-anything. The one row that destroyed rather than littered was taken first, and
-is gone.
-
-**What the ordinary permissions still do.** These measurements run as root, so
-nothing was refused by the mode — every *allowed* above is the boundary's own
-answer. On a real machine `alo-agentd` runs as the person, and a turn can only
-make these changes to files that person may already change. The boundary is a
-floor under the ordinary bits and never a replacement for them.
-**Date:** 2026-09-08
+nobody reproduced, a release `docs/features.md` has never heard of, or a hook
+that arrives with no document naming it. So the list cannot rot into a
+description of a boundary this one stopped being — in either direction.
+**Date:** 2026-09-08; the table emptied 2026-09-13
 
 ### Attributes, ownership and size are inside the grant
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;
@@ -1270,6 +1288,87 @@ its ordinary day and finds nothing written down; `a_turn_without_a_boundary_does
 refuses a turn when the thirteenth pin is gone with no line of its loop
 changed. WSL is development evidence and never certified-hardware acceptance.
 **Date:** 2026-09-13
+
+### What a turn makes is inside the grant
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-13;
+`crates/alo-bounding/tests/the_kernel_refuses_what_a_turn_makes.rs`
+**Behaviour:** until 2026-09-13 a bound turn could leave a name of its
+choosing anywhere on the machine — an empty file, by an open with `O_CREAT`
+that was refused *after* the inode was made, or by `mknod(2)`, which opens
+nothing and was refused nothing; a directory; a symbolic link — and could
+remove any empty directory. Every one was measured in
+`what_a_bound_turn_can_still_change.rs` with a refused open beside it, and
+the entry above kept them with the honest reason none moved a byte: putting
+contents into any of them is an open, and an open is watched. It is the
+argument that had been made for attributes until `truncate(2)` broke it, and
+what it left was the same shape of remainder — nothing of somebody's
+contents, all of somebody's filesystem, and a name a turn leaves outlives the
+turn.
+
+**Five hooks close it, and four of them are decided by the folder.**
+`inode_create(struct inode *dir, struct dentry *dentry, umode_t mode)`,
+`inode_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t
+dev)`, `inode_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)`
+and `inode_symlink(struct inode *dir, struct dentry *dentry, const char
+*old_name)` are each handed the directory entry for the name being made, and
+that entry is **negative** — it names a place in a folder rather than a file,
+and has no inode to be asked about. So `decide_making` in
+`crates/alo-bounding-kernel/src/deciding.rs` reads the entry's parent and
+walks upwards from the folder exactly as an open would, which is the answer
+the rename hook already gives its destination for the same reason, and it is
+the folder `alo_files::Reaching` already puts among a turn's places for
+anything a verb creates — so the `O_CREAT` open that writing an archive is
+lands inside the grant without any bound widening. `inode_rmdir(struct inode
+*dir, struct dentry *dentry)` is the one that removes; the directory exists,
+so it is decided by its own entry through `decide_delete`, as a file unlinked
+is, and a grant over a single directory is a grant over removing it. The
+previous module's decision sits after each hook's own arguments — third,
+fourth, third, second and third — and none of the modes, the device number or
+the link's target is read.
+
+**Three things the next reader should know:**
+
+- **The arguments were read from this kernel's BTF, not from a header.**
+  `bpf_lsm_inode_create` and its four siblings, with a throwaway reader over
+  `/sys/kernel/btf/vmlinux`, before a line of the programme was written: the
+  entry is the second argument on all five and the folder's inode the first,
+  which is `inode_unlink`'s shape and not `inode_link`'s. The rename hook's
+  trap in this file is what guessing looks like.
+- **A refused `O_CREAT` open looked the same before and after.** `EACCES`
+  either way; what changed is whether the empty file is there afterwards. The
+  test asserts the name's absence rather than the number, because the number
+  alone would have passed on the morning the gap was open.
+- **A link's target is not decided, and deliberately.** A turn may make a
+  link inside its grant that points at a file outside it, and is no better off:
+  opening through it is `file_open` on the file it reaches, and the walk starts
+  there. The test makes exactly that link, allowed, and reads through it from
+  inside the turn, refused — and reads through it from outside to prove the
+  refusal is the boundary's and not a broken link's.
+
+Measured on this kernel, every one with a refused `open` proving the boundary
+was in force, the same thing made inside the grant and used, and every one
+made by a process that is not a turn and refused nothing:
+
+| Making | Outside the grant, before | Outside the grant, now | Inside the grant |
+|---|---|---|---|
+| a file, by `open(O_CREAT)` | `EACCES` at the open, and the empty file left behind | `EACCES`, and no file | made, and takes bytes |
+| a file, by `mknod` | made | `EACCES`, and no file | made, and takes bytes |
+| a directory | made | `EACCES`, and no directory | made, and takes a file |
+| an empty directory removed | removed | `EACCES`, and still there | removed, and made again |
+| a symbolic link | made | `EACCES`, and no link | made; reading through it to a file outside the grant is `EACCES` |
+
+**Our response:** closed, and every row above is a test — the reproductions
+that held the gap open were run against the programme at `16eba10` that
+morning and passed with each name landing, then flipped into the refusals
+they are now. `the_boundary_decides_and_forgets.rs` makes and removes a file
+by opening, a file without opening, a directory with a file in it and a link,
+twenty rounds over, outside any turn, and finds nothing written down;
+`a_turn_without_a_boundary_does_not_run.rs` refuses a turn over each of the
+five new pins with no line of its loop changed. What is left on the
+filesystem is the mapping the entry below names. WSL is development evidence
+and never certified-hardware acceptance.
+**Date:** 2026-09-13
+
 
 ### A descriptor opened before a turn began is decided about on every use
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;

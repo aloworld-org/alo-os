@@ -21,7 +21,7 @@
 //! 1. **Is the map of turns still pinned?** A missing pin is a loader that
 //!    never ran, or a boundary somebody took away — [`NotBounded::NoBoundaryHere`],
 //!    which names the service that was supposed to run first.
-//! 2. **Is every hook still held?** The thirteen pins are what keep the
+//! 2. **Is every hook still held?** The eighteen pins are what keep the
 //!    programme attached once the loader has exited, so a hook whose pin is
 //!    gone is a hook the kernel decides nothing at. Each is asked by name, in
 //!    the order they are attached — [`NotBounded::HookIsNotHeld`].
@@ -78,7 +78,7 @@ impl Boundary {
     /// # Errors
     /// [`NotBounded::NoBoundaryHere`] when the map of turns is no longer
     /// pinned; [`NotBounded::HookIsNotHeld`] when the programme's pin on one
-    /// of its thirteen hooks is gone, naming the hook; and
+    /// of its eighteen hooks is gone, naming the hook; and
     /// [`NotBounded::NotTheSameBoundary`] when the map at the pin is not the
     /// map this service holds. Each is a refusal rather than a warning, and
     /// there is no argument that turns any of them into one.

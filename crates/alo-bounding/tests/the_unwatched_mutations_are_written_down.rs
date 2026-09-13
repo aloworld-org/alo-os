@@ -1,10 +1,10 @@
 //! The list of what this boundary does **not** watch, held to the programme
 //! that does the watching.
 //!
-//! `what_a_bound_turn_can_still_change.rs` reproduces each unwatched mutation
-//! against a running kernel. This file is about the other half of the same
-//! job — that somebody auditing the boundary can find the list, and that the
-//! list is still true.
+//! `what_a_bound_turn_can_still_change.rs` reproduced each unwatched mutation
+//! against a running kernel while there were any, and says where each went.
+//! This file is about the other half of the same job — that somebody auditing
+//! the boundary can find the list, and that the list is still true.
 //!
 //! # Why a documented limit needs a test at all
 //!
@@ -30,6 +30,16 @@
 //!   into work rather than a shrug.
 //! - **Every row is reproduced.** A row whose hook is not named in the test file
 //!   that reproduces these is a claim about a kernel nobody asked.
+//!
+//! # The table is empty, and the heading is still held to
+//!
+//! Since 2026-09-13 every row the table held is a hook, and the table under
+//! the heading has no rows. That is the honest state and it is accepted here
+//! — what is refused is the **heading** being gone, because a heading that
+//! moved would leave this test comparing the programme against nothing and
+//! passing. With no rows, what remains checked is the half that never
+//! depended on them: every hook the programme has is named where an auditor
+//! reads, and the list of hooks is exactly the one somebody last looked at.
 //!
 //! # It needs no kernel
 //!
@@ -72,20 +82,25 @@ const WHERE_IT_ALSO_BELONGS: &[&str] = &[
 /// The hooks this programme has, as an exact list.
 ///
 /// Written out rather than counted, for the reason
-/// `the_boundary_decides_and_forgets` names its two maps: a fourteenth hook is
+/// `the_boundary_decides_and_forgets` names its two maps: a nineteenth hook is
 /// a change to what this boundary is, and it should arrive with somebody
 /// looking at it rather than as a test that still passes.
 const EVERY_HOOK: &[&str] = &[
     "file_ioctl",
     "file_open",
     "file_permission",
+    "inode_create",
     "inode_link",
+    "inode_mkdir",
+    "inode_mknod",
     "inode_remove_acl",
     "inode_removexattr",
     "inode_rename",
+    "inode_rmdir",
     "inode_set_acl",
     "inode_setattr",
     "inode_setxattr",
+    "inode_symlink",
     "inode_unlink",
     "socket_connect",
     "socket_sendmsg",
@@ -136,13 +151,16 @@ fn hooks_declared_in(source: &str) -> BTreeSet<String> {
         .collect()
 }
 
-/// The table under a heading, as rows.
+/// The table under a heading, as rows — or [`None`] when the heading is not
+/// in the document at all.
 ///
 /// A row is a line beginning with a pipe whose first cell is a backticked name;
 /// the header and the rule beneath it are neither, so they fall away without
 /// being special-cased. The section ends at the next heading, so a table
-/// somewhere else in the same document is not this one.
-fn the_table_under(document: &str, heading: &str) -> Vec<Unwatched> {
+/// somewhere else in the same document is not this one. A heading that is
+/// there with no rows under it is [`Some`] of nothing, which is a different
+/// answer from a heading that has gone, and the check treats them differently.
+fn the_table_under(document: &str, heading: &str) -> Option<Vec<Unwatched>> {
     let mut rows = Vec::new();
     let mut inside = false;
     for line in document.lines() {
@@ -151,7 +169,7 @@ fn the_table_under(document: &str, heading: &str) -> Vec<Unwatched> {
             continue;
         }
         if inside && (line.starts_with("## ") || line.starts_with("### ")) {
-            break;
+            return Some(rows);
         }
         if !inside || !line.trim_start().starts_with('|') {
             continue;
@@ -176,7 +194,7 @@ fn the_table_under(document: &str, heading: &str) -> Vec<Unwatched> {
             release: (*release).to_owned(),
         });
     }
-    rows
+    inside.then_some(rows)
 }
 
 /// How much of an answer *why this is not a way out* has to be.
@@ -196,17 +214,17 @@ const AN_ANSWER: usize = 60;
 /// A sentence naming the row and what is wrong with it.
 fn whether_it_is_written_down(
     watched: &BTreeSet<String>,
-    rows: &[Unwatched],
+    rows: Option<&[Unwatched]>,
     also: &[(&str, &str)],
     releases: &str,
 ) -> Result<(), String> {
-    if rows.is_empty() {
+    let Some(rows) = rows else {
         return Err(format!(
-            "there is no table of unwatched mutations under `{THE_ENTRY}` in {THE_LIST}, so \
-             this test is checking nothing. It is the list somebody auditing this boundary \
-             reads; if it moved, this test moves with it"
+            "there is no entry `{THE_ENTRY}` in {THE_LIST}, so this test is checking nothing. \
+             It is the list somebody auditing this boundary reads; if it moved, this test \
+             moves with it"
         ));
-    }
+    };
     if watched.is_empty() {
         return Err(format!(
             "no hooks were found in {THE_PROGRAMME}, so nothing below is being compared against \
@@ -280,7 +298,9 @@ fn every_mutation_this_boundary_does_not_watch_is_written_down() {
         .collect();
 
     let rows = the_table_under(&reading(THE_LIST), THE_ENTRY);
-    if let Err(why) = whether_it_is_written_down(&watched, &rows, &also, &reading(THE_RELEASES)) {
+    if let Err(why) =
+        whether_it_is_written_down(&watched, rows.as_deref(), &also, &reading(THE_RELEASES))
+    {
         panic!("{why}");
     }
 
@@ -316,14 +336,19 @@ fn the_check_catches_a_list_that_has_stopped_being_true() {
     let also = [("a source", named_everywhere)];
 
     assert_eq!(
-        whether_it_is_written_down(&watched, &[sound("inode_symlink")], &also, releases),
+        whether_it_is_written_down(&watched, Some(&[sound("inode_symlink")]), &also, releases),
         Ok(()),
         "a sound list was refused, so the refusals below say nothing"
+    );
+    assert_eq!(
+        whether_it_is_written_down(&watched, Some(&[]), &also, releases),
+        Ok(()),
+        "an empty table under a heading that is there was refused, and since 2026-09-13 that is \n         the honest state of the list"
     );
 
     // The one this test exists for: the gap was closed and the paragraph was
     // not, so the document now understates the boundary.
-    let closed = whether_it_is_written_down(&watched, &[sound("file_open")], &also, releases);
+    let closed = whether_it_is_written_down(&watched, Some(&[sound("file_open")]), &also, releases);
     assert!(
         closed.is_err_and(|why| why.contains("now has a hook on it")),
         "a mutation listed as unwatched that the programme watches was accepted"
@@ -335,7 +360,7 @@ fn the_check_catches_a_list_that_has_stopped_being_true() {
         ..sound("inode_symlink")
     };
     assert!(
-        whether_it_is_written_down(&watched, &[vague], &also, releases)
+        whether_it_is_written_down(&watched, Some(&[vague]), &also, releases)
             .is_err_and(|why| why.contains("not a way to move")),
         "a row that does not say why contents stay inside the grant was accepted"
     );
@@ -346,14 +371,14 @@ fn the_check_catches_a_list_that_has_stopped_being_true() {
         ..sound("inode_symlink")
     };
     assert!(
-        whether_it_is_written_down(&watched, &[someday], &also, releases)
+        whether_it_is_written_down(&watched, Some(&[someday]), &also, releases)
             .is_err_and(|why| why.contains("no such tier")),
         "a row naming a release that is not in the only list of what gets built was accepted"
     );
 
     // A row nothing reproduces and nothing argues.
     let unmentioned =
-        whether_it_is_written_down(&watched, &[sound("inode_rmdir")], &also, releases);
+        whether_it_is_written_down(&watched, Some(&[sound("inode_rmdir")]), &also, releases);
     assert!(
         unmentioned.is_err_and(|why| why.contains("does not mention it")),
         "a row no test reproduces was accepted"
@@ -365,20 +390,25 @@ fn the_check_catches_a_list_that_has_stopped_being_true() {
         .map(str::to_owned)
         .collect();
     assert!(
-        whether_it_is_written_down(&arrived, &[sound("inode_symlink")], &also, releases)
+        whether_it_is_written_down(&arrived, Some(&[sound("inode_symlink")]), &also, releases)
             .is_err_and(|why| why.contains("does not mention")),
         "a hook the programme has that no document names was accepted"
     );
 
     // And the two that mean this test is looking at nothing at all.
     assert!(
-        whether_it_is_written_down(&watched, &[], &also, releases)
+        whether_it_is_written_down(&watched, None, &also, releases)
             .is_err_and(|why| why.contains("checking nothing")),
-        "an empty table was accepted, so a heading that moved would pass in silence"
+        "a heading that is gone was accepted, so a list that moved would pass in silence"
     );
     assert!(
-        whether_it_is_written_down(&BTreeSet::new(), &[sound("inode_symlink")], &also, releases)
-            .is_err_and(|why| why.contains("nothing below is being compared")),
+        whether_it_is_written_down(
+            &BTreeSet::new(),
+            Some(&[sound("inode_symlink")]),
+            &also,
+            releases
+        )
+        .is_err_and(|why| why.contains("nothing below is being compared")),
         "a programme with no hooks found in it was accepted"
     );
 }
@@ -404,7 +434,7 @@ fn the_table_is_the_one_under_that_heading_and_no_other() {
 |---|---|
 | `inode_rename` | watched since 2026-09-07 |
 ";
-    let rows = the_table_under(document, THE_ENTRY);
+    let rows = the_table_under(document, THE_ENTRY).expect("the heading is in the document");
     assert_eq!(
         rows.iter().map(|row| row.hook.as_str()).collect::<Vec<_>>(),
         ["inode_symlink", "inode_mkdir"],
@@ -416,8 +446,13 @@ fn the_table_is_the_one_under_that_heading_and_no_other() {
         "the release cell is not where the parser thinks it is"
     );
     assert!(
-        the_table_under(document, "### A heading nothing is under").is_empty(),
-        "the parser found rows under a heading that is not in the document"
+        the_table_under(document, "### A heading nothing is under").is_none(),
+        "the parser found a table under a heading that is not in the document"
+    );
+    assert_eq!(
+        the_table_under(document, "### Something else entirely").map(|rows| rows.len()),
+        Some(0),
+        "a heading that is there with no rows of the list's shape under it is an empty table, \n         not a missing one"
     );
 }
 

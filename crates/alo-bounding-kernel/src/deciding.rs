@@ -31,29 +31,23 @@
 
 //! # What is watched, and what is not
 //!
-//! Eleven hooks on the filesystem — `file_open`, `file_permission`,
+//! Sixteen hooks on the filesystem — `file_open`, `file_permission`,
 //! `inode_rename`, `inode_unlink`, `inode_link`, `inode_setattr`,
 //! `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
-//! `inode_remove_acl` and `file_ioctl` — which is what a turn **opens**,
-//! **reads and writes**, **moves**, **removes**, gives a **second name**, and
-//! **changes about a file that is not its contents**: its size, mode, owner,
-//! times, extended attributes and access lists, which [`decide_attribute`]
-//! decides as one question, and its inode flags, which [`decide_request`]
-//! decides for the two `ioctl` requests that set them. That is not the whole
-//! of a filesystem and this file does not pretend it is. Nothing here
-//! watches:
+//! `inode_remove_acl`, `file_ioctl`, `inode_create`, `inode_mknod`,
+//! `inode_mkdir`, `inode_rmdir` and `inode_symlink` — which is what a turn
+//! **opens**, **reads and writes**, **moves**, **removes**, gives a **second
+//! name**, **changes about a file that is not its contents** — its size,
+//! mode, owner, times, extended attributes and access lists, which
+//! [`decide_attribute`] decides as one question, and its inode flags, which
+//! [`decide_request`] decides for the two `ioctl` requests that set them —
+//! and, since 2026-09-13, what it **makes**: a file, with an open or without
+//! one, a directory, and a symbolic link, each decided by the folder the
+//! name is being made in, which [`decide_making`] argues; and a directory it
+//! removes, which [`decide_delete`] decides as it decides a file. That is not
+//! the whole of a filesystem and this file does not pretend it is. Nothing
+//! here watches:
 //!
-//! - **symbolic links** (`inode_symlink`) — a turn can make one pointing
-//!   anywhere. It is not a way out on its own: following it to read something
-//!   is a `file_open`, which is watched, and `alo-files` refuses a path with a
-//!   link in it. It is a way to leave a **name** somewhere, which is not a way
-//!   to leave *contents*;
-//! - **directories** (`inode_mkdir`, `inode_rmdir`) — a turn can make and
-//!   remove empty ones. Removing a directory with anything in it needs the
-//!   contents gone first, and that is `inode_unlink`;
-//! - **making a file** (`inode_create`, and `inode_mknod` for the call that
-//!   makes one without opening it) — a turn can create one. Writing to it is an
-//!   open, which is watched, so what this leaves is an empty file somewhere;
 //! - **a mapping of a file** (`mmap_file`) — a file mapped into memory is read
 //!   by the processor rather than by a syscall, so a mapping is the one way
 //!   left to the contents of a descriptor that was **opened before a turn
@@ -71,9 +65,9 @@
 //!   those do and do not decide.
 //!
 //! Each of those is a real gap and each is written down rather than left to be
-//! discovered. What they have in common — a mapping aside, which is the
-//! remainder of a gap that was closed rather than one that was chosen — is
-//! that none of them moves a byte of somebody's file to somewhere they did not
+//! discovered. The mapping is the remainder of a gap that was closed rather
+//! than one that was chosen, and what it and the rest have in common is that
+//! none of them moves a byte of somebody's file to somewhere they did not
 //! approve, which is the property the hooks that exist were chosen for.
 //! **Until 2026-09-12 this list also held attributes**, and one of them went
 //! further than the promise: `truncate(2)` reaches `inode_setattr` without an
@@ -86,15 +80,22 @@
 //! the five attribute hooks, because an `ioctl` is not a change to an inode
 //! by name. [`decide_request`] closed it, on `file_ioctl`, and the same test
 //! file measures the flag refused outside the grant beside the same flag
-//! landing inside it.
+//! landing inside it. **And until 2026-09-13 it held what a turn makes** —
+//! a symbolic link, a file with or without an open, a directory made or
+//! removed — with the honest argument that none of them moves a byte, which
+//! is the argument that had been made for attributes until the size broke
+//! it. [`decide_making`] and [`decide_delete`] closed the five, and
+//! `alo-bounding/tests/the_kernel_refuses_what_a_turn_makes.rs` measures
+//! each refused outside the grant beside the same thing made inside it.
 //!
-//! **All of them are reproduced** against this programme on a running kernel, in
-//! `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`, each with a
-//! refused open beside it proving the boundary was in force. `docs/quirks.md`
-//! carries the same list with the release that owns closing each — every one of
-//! them v0.5 — and `alo-bounding/tests/the_unwatched_mutations_are_written_down.rs`
-//! fails the day one of these hooks lands and the documents still call it
-//! unwatched.
+//! What a bound turn can still change on a filesystem is therefore
+//! reproduced in `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
+//! as the two things that file has left to say: a program outside the grant
+//! cannot be started, and a write inside the grant lands. `docs/quirks.md`
+//! carries the list of what was unwatched, with the date each row closed,
+//! and `alo-bounding/tests/the_unwatched_mutations_are_written_down.rs`
+//! fails the day a hook lands and the documents still call it unwatched —
+//! or a hook arrives that no document names.
 //!
 //! One thing that is **not** a way round any of it: a turn cannot start a
 //! program to make the calls for it, because starting one opens the program's
@@ -697,8 +698,79 @@ const fn stays_on_this_machine(family: Family, address: u128) -> bool {
 /// when writing an archive fails part of the way through, `alo-files` removes
 /// the half-written file it made, in the folder the archive was going into —
 /// which is a place that call named.
+///
+/// # A directory removed is a name removed
+///
+/// `inode_rmdir` asks this as well, since 2026-09-13, and it is the same
+/// question: the directory being removed exists, so it is judged by its own
+/// entry, and a grant over a single directory is a grant over removing it.
+/// Removing a directory that is not empty needs its contents unlinked first,
+/// which is this function again, one name at a time — so what was left
+/// before the hook was the removal of an **empty** directory nobody granted,
+/// and that is what is refused now.
 pub fn decide_delete(entry: u64) -> i32 {
     this_entry(entry)
+}
+
+/// Whether this name may be **made** — a file, with `open(O_CREAT)` or with
+/// `mknod`, a directory, or a symbolic link.
+///
+/// # The folder, because the entry is not there yet
+///
+/// Every one of the four hooks that ask this is handed the directory entry
+/// for the name being made, and that entry is **negative**: it names a place
+/// in a folder rather than a file, and it has no inode to be asked about.
+/// The rename hook's destination has the same shape, and
+/// `a_name_being_made` answers it the same way: the folder the name is
+/// being made in is what the call named, it exists, and its entry is walked
+/// upwards exactly as an open's would be. `alo_files::Reaching` puts *the
+/// folder above anything a call would create* among a turn's places for
+/// exactly this, so a verb that writes an archive is bound to the folder the
+/// archive goes into and the create inside it lands.
+///
+/// # Why this exists, when none of it moves a byte
+///
+/// The argument for leaving these unwatched was honest and was measured:
+/// what a bound turn could leave was an empty file, a device node, a folder
+/// or a link — no byte of anybody's document in any of them, because putting
+/// one there is an open and an open is watched. It is the same argument that
+/// was made for attributes until `truncate(2)` broke it, and it has the same
+/// shape of remainder: none of that is somebody's contents, all of it is
+/// somebody's filesystem. A boundary that stopped a turn changing a file's
+/// mode outside the grant while letting it fill the same folder with names
+/// of its choosing was one that had to be explained, and a name a turn
+/// leaves outlives the turn.
+///
+/// # The target of a link is not read
+///
+/// A link inside the grant may point anywhere, and the turn is no better off
+/// for it: opening through it is a `file_open` on the file it leads to, and
+/// the walk starts there. What this decides is where the *name* goes, which
+/// is the folder — a link made outside the grant is refused whatever it
+/// points at, and one made inside it is allowed whatever it points at.
+///
+/// # Not a turn
+///
+/// Allowed, and nothing is remembered — this is every file, folder and link
+/// made on the machine, and for all of them it is one hash lookup and a
+/// return.
+pub fn decide_making(entry: u64) -> i32 {
+    let Some(granted) = kernel::granted(kernel::turn()) else {
+        // Not a turn, and this is almost every file and folder made on the
+        // machine.
+        return ALLOWED;
+    };
+    let Some(fields) = Fields::found() else {
+        return REFUSED;
+    };
+    let Some(folder) = kernel::word_at(entry.wrapping_add(fields.dentry_parent)) else {
+        return REFUSED;
+    };
+    if upwards_from(folder, &fields, granted) {
+        ALLOWED
+    } else {
+        REFUSED
+    }
 }
 
 /// Whether this change to what a file **is** — rather than to what it holds —

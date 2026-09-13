@@ -376,6 +376,120 @@ pub fn file_ioctl(ctx: LsmContext) -> i32 {
     deciding::decide_request(file, request)
 }
 
+/// Every file made by name on this machine, until the program is detached.
+///
+/// `inode_create(struct inode *dir, struct dentry *dentry, umode_t mode)` —
+/// three arguments, so the previous module's decision is the fourth, and
+/// **the entry is the second**: the folder's inode comes first, as it does
+/// for `inode_unlink`. Read from this kernel's own BTF
+/// (`bpf_lsm_inode_create`) before a line was written, because the rename
+/// hook's trap in `docs/quirks.md` is what a guessed argument looks like. The
+/// mode is not read: a file made outside the grant is refused whatever mode
+/// it would have had.
+///
+/// The fourteenth hook, and the first of five that decide what a turn
+/// **makes**. An open with `O_CREAT` meets this before it meets `file_open`,
+/// so until 2026-09-13 a bound turn refused the open still left the empty
+/// file behind, with a name of its choosing, in a folder nobody granted.
+/// [`crate::deciding::decide_making`] says why the decision is about the
+/// folder rather than the entry, which does not exist yet.
+#[lsm(hook = "inode_create")]
+pub fn inode_create(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_making(entry)
+}
+
+/// Every file made without an open on this machine, until the program is
+/// detached.
+///
+/// `inode_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
+/// dev_t dev)` — four arguments, so the previous module's decision is the
+/// fifth, and the entry is the second. Neither the mode nor the device
+/// number is read: a device node and a plain file made outside the grant are
+/// refused alike, and a node the kernel would refuse the person anyway is
+/// still refused here first.
+///
+/// The fifteenth hook. `mknod(2)` makes a file and opens nothing, so it was
+/// the one way to leave a file outside the grant that met no hook at all.
+#[lsm(hook = "inode_mknod")]
+pub fn inode_mknod(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(4);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_making(entry)
+}
+
+/// Every directory made on this machine, until the program is detached.
+///
+/// `inode_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)` —
+/// three arguments, so the previous module's decision is the fourth, and the
+/// entry is the second. The mode is not read.
+///
+/// The sixteenth hook. A directory holds no bytes of anybody's file, which
+/// was the argument for leaving it; what it is, is somebody's filesystem
+/// with a folder in it they did not make, and a boundary that refused a turn
+/// a file's mode outside the grant while letting it litter the same folder
+/// was one that had to be explained.
+#[lsm(hook = "inode_mkdir")]
+pub fn inode_mkdir(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_making(entry)
+}
+
+/// Every directory removed on this machine, until the program is detached.
+///
+/// `inode_rmdir(struct inode *dir, struct dentry *dentry)` — two arguments,
+/// so the previous module's decision is the third, and the entry is the
+/// second: the same shape as `inode_unlink`, and it asks the same question
+/// of the same thing. The directory being removed exists, so it is judged by
+/// its own entry as a file being unlinked is, and not by its folder — a
+/// grant can be over a single directory.
+///
+/// The seventeenth hook, and the one of the five that removes rather than
+/// makes. [`crate::deciding::decide_delete`] is what it asks.
+#[lsm(hook = "inode_rmdir")]
+pub fn inode_rmdir(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(2);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_delete(entry)
+}
+
+/// Every symbolic link made on this machine, until the program is detached.
+///
+/// `inode_symlink(struct inode *dir, struct dentry *dentry,
+/// const char *old_name)` — three arguments, so the previous module's
+/// decision is the fourth, and the entry is the second. **The target is not
+/// read**, and deliberately: a link is a name, and where it points is
+/// decided the moment somebody opens through it, by `file_open` on the file
+/// it leads to. What this decides is where the *name* is being made.
+///
+/// The eighteenth hook. A link made inside the grant to a file outside it is
+/// allowed here and useless to the turn — the walk starts from the file an
+/// open reaches, never from the link — and `alo-files` refuses a path with a
+/// link in it before any of this.
+#[lsm(hook = "inode_symlink")]
+pub fn inode_symlink(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_making(entry)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

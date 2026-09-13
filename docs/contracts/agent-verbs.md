@@ -283,18 +283,22 @@ call's own places, each of those is refused by the machine with the ordinary
 permission failure rather than by our code.
 
 **It does not cover every way a filesystem changes, and an adapter author should
-not read it as if it did.** A bounded turn can still make a symbolic link, make
-an empty file, and make and remove empty directories. None of those moves the
-contents of somebody's file past a grant — the reading and writing that would
-are opens, and opens are covered — but *a turn cannot change anything outside
-its grant* is not a sentence this contract makes. What it **does** cover since
-2026-09-12 is what a file *is*: a bounded turn cannot change the size, mode,
-owner, times, extended attributes or access list of a file outside the call's
-own places, and is refused each with the same permission failure. The complete
-list of what remains, what each one can and cannot lead to, and the release
-that owns closing each, is in `docs/quirks.md` under *Four hooks are not a
-filesystem*; what closed is under *Attributes, ownership and size are inside
-the grant* beside it.
+not read it as if it did.** *A turn cannot change anything outside its grant*
+is not a sentence this contract makes. What it **does** cover, since
+2026-09-12, is what a file *is*: a bounded turn cannot change the size, mode,
+owner, times, extended attributes, access list or inode flags of a file
+outside the call's own places. And since 2026-09-13 it covers what a turn
+**makes**: a bounded turn cannot make a file, a directory or a symbolic link
+in a folder outside the call's own places, and cannot remove a directory
+there — each refused with the same permission failure, and each landing
+inside the call's own places, which is where an archive is written. What a
+bounded turn can still do on a filesystem is read a file it was handed
+through a memory mapping, which is named in `docs/quirks.md` under *A
+descriptor opened before a turn began is decided about on every use*; the
+list of what was once unwatched and when each row closed is under *Four hooks
+are not a filesystem*, and what closed is under *Attributes, ownership and
+size are inside the grant* and *What a turn makes is inside the grant* beside
+it.
 
 Nothing here changes what a caller sees. Every refusal an adapter can receive is
 still one of the ones in *Being told no*; the floor exists so that a refusal

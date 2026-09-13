@@ -68,7 +68,7 @@ fn the_kernel_half() -> &'static [u8] {
 /// The hooks the programme sits on, each called the same inside the compiled
 /// object as the kernel function it stands in front of.
 ///
-/// **Thirteen of them**, and each was added because the ones before it were
+/// **Eighteen of them**, and each was added because the ones before it were
 /// not enough on their own: `file_open` is what a turn *opens*, `inode_rename`
 /// what it *moves*, `inode_unlink` what it *removes*, `inode_link` what it
 /// gives a *second name*, `socket_connect` where it *goes*, `socket_sendmsg`
@@ -81,9 +81,14 @@ fn the_kernel_half() -> &'static [u8] {
 /// `inode_remove_acl` — what it *changes about a file that is not its
 /// contents*, because `truncate(2)` reaches the first of them without an open
 /// and a boundary watching only opens let a turn empty a file it could not
-/// read, and `file_ioctl` what it *sets among a file's inode flags*, because
+/// read, `file_ioctl` what it *sets among a file's inode flags*, because
 /// an `ioctl` on a descriptor opened before the turn began meets none of the
-/// five. A boundary watching only opens lets a file nobody granted be renamed
+/// five, and the five on what a turn *makes* — `inode_create`,
+/// `inode_mknod`, `inode_mkdir`, `inode_rmdir` and `inode_symlink` —
+/// because a name a turn leaves in a folder nobody granted outlives the
+/// turn, and a boundary that refused a file's mode while allowing the folder
+/// to be filled with names was one that had to be explained. A boundary
+/// watching only opens lets a file nobody granted be renamed
 /// or linked into a granted folder and read from there, with no step anything
 /// to complain about; a boundary watching only files lets everything it
 /// protected leave over a socket; a boundary watching only the joining lets
@@ -94,7 +99,7 @@ fn the_kernel_half() -> &'static [u8] {
 /// The order is the order [`Pinned::every_hook`] gives their pins in, and that
 /// is not decoration: they are zipped together below, so a hook added to one
 /// list and not the other does not compile.
-const THE_HOOKS: [&str; 13] = [
+const THE_HOOKS: [&str; 18] = [
     "file_open",
     "inode_rename",
     "inode_unlink",
@@ -108,6 +113,11 @@ const THE_HOOKS: [&str; 13] = [
     "inode_set_acl",
     "inode_remove_acl",
     "file_ioctl",
+    "inode_create",
+    "inode_mknod",
+    "inode_mkdir",
+    "inode_rmdir",
+    "inode_symlink",
 ];
 
 /// The map of turns to the places each may reach.
@@ -230,7 +240,7 @@ impl Imposed {
 /// to remove — and it would look like a working boundary. So a failure on any
 /// of them is a failure of the whole thing, and [`Imposed::once`] takes the
 /// earlier ones' pins away again on the way out. ADR 0015's rule, applied to a
-/// boundary that is now thirteen pieces: a turn whose boundary cannot be
+/// boundary that is now eighteen pieces: a turn whose boundary cannot be
 /// applied does not run.
 fn attach_and_pin(loaded: &mut Ebpf, pinned: &Pinned) -> Result<(), NotBounded> {
     let hooks = Btf::from_sys_fs().map_err(|_| NotBounded::TypesAreNotReadable {

@@ -90,7 +90,7 @@
 //!
 //! So [`Turns::doing`] asks the machine first, before a control group is
 //! made: is the map of turns still pinned, is the programme still held on
-//! each of its thirteen hooks, and is the map at the pin the map this service
+//! each of its eighteen hooks, and is the map at the pin the map this service
 //! holds, as the kernel numbers them. Any *no* is a refusal before the first
 //! verb, naming what is missing and pointing at `docs/quirks.md`; the same
 //! machine with its boundary in place is unaffected. `in_place.rs` has why
@@ -159,30 +159,44 @@
 //!
 //! # What this boundary watches on a filesystem, and what it does not
 //!
-//! Ten hooks decide about files — `file_open`, `file_permission`,
-//! `inode_rename`, `inode_unlink`, `inode_link`, and the five that decide
-//! about what a file *is* rather than what it holds: `inode_setattr` for its
-//! size, mode, owner and times, `inode_setxattr` and `inode_removexattr` for
-//! an extended attribute set and taken away, `inode_set_acl` and
-//! `inode_remove_acl` for an access list set and taken away — and two about
-//! the network: `socket_connect`, where a turn joins a socket to, and
+//! Sixteen hooks decide about files — `file_open`, `file_permission`,
+//! `inode_rename`, `inode_unlink`, `inode_link`, the five that decide about
+//! what a file *is* rather than what it holds: `inode_setattr` for its size,
+//! mode, owner and times, `inode_setxattr` and `inode_removexattr` for an
+//! extended attribute set and taken away, `inode_set_acl` and
+//! `inode_remove_acl` for an access list set and taken away, `file_ioctl`
+//! for its inode flags, and since 2026-09-13 the five that decide about what
+//! a turn *makes*: `inode_create` and `inode_mknod` for a file made with an
+//! open or without one, `inode_mkdir` and `inode_rmdir` for a directory made
+//! and removed, and `inode_symlink` for a symbolic link — and two about the
+//! network: `socket_connect`, where a turn joins a socket to, and
 //! `socket_sendmsg`, where every message it sends is going. A filesystem has
-//! more verbs than ten, and somebody auditing this crate is owed the list of
-//! the ones nothing here decides about rather than the count of the ones it
-//! does.
+//! more verbs than sixteen, and somebody auditing this crate is owed the list
+//! of the ones nothing here decides about rather than the count of the ones
+//! it does.
 //!
 //! **The promise these keep is narrower than *a turn cannot change anything
 //! outside its bound*, and reading the second where the first is written is
 //! the mistake this section exists to prevent.** What they keep is
 //! this: **no mutation left unwatched moves a byte of somebody's file past a
-//! grant.** A turn can still make a symbolic link (`inode_symlink`) in a folder
-//! somebody granted that leads to a file nobody did — and reading through it is
-//! an open of the file it leads to, refused. It can make a file
-//! (`inode_create`, or `inode_mknod` without an open at all) in a folder nobody
-//! granted — and putting anything in it is an open, refused, so what it leaves
-//! is an empty file. It can make and remove **empty** directories
-//! (`inode_mkdir`, `inode_rmdir`) — and emptying one that is not needs
-//! `inode_unlink`, which is watched.
+//! grant.** Until 2026-09-13 that list had five rows, each measured and each
+//! honest about moving no byte: a turn could make a symbolic link
+//! (`inode_symlink`), a file (`inode_create`, or `inode_mknod` without an
+//! open at all) and a directory (`inode_mkdir`) in a folder nobody granted,
+//! and remove an **empty** directory there (`inode_rmdir`) — no contents in
+//! any of it, because putting some there is an open, and an open is watched.
+//! What each of them left was a name of the turn's choosing in somebody's
+//! filesystem, and the name outlived the turn. The five hooks close all of
+//! it: a file, directory or link is decided by **the folder the name is made
+//! in** — the same answer the rename hook gives its destination, since the
+//! entry does not exist yet and the folder is what the call named, and the
+//! same folder `alo_files::Reaching` already puts among a turn's places for
+//! anything a verb creates — and a directory removed is decided by its own
+//! entry, as a file unlinked is. Outside the grant each is `EACCES` with
+//! nothing made or removed; inside it each lands, including the `O_CREAT`
+//! open that writing an archive is; a process that is not a turn is refused
+//! none. `tests/the_kernel_refuses_what_a_turn_makes.rs` measures every one
+//! of those beside its allowance.
 //!
 //! **What a file *is* was on that list until 2026-09-12, and one item on it
 //! went further than the promise.** A turn could change the mode, owner,
@@ -215,14 +229,15 @@
 //! file it runs, so a turn asking for a program outside its bound is refused like
 //! any other file.
 //!
-//! Every one of these is reproduced against the real loaded programme in
-//! `tests/what_a_bound_turn_can_still_change.rs`, each with a refused open
-//! beside it proving the boundary was in force and a legitimate write inside the
-//! grant proving it was not simply refusing everything. `docs/quirks.md` carries
-//! the same list with the release that owns closing each — all of them v0.5,
-//! with ADR 0013's other primitives — and
-//! `tests/the_unwatched_mutations_are_written_down.rs` fails the day one of them
-//! lands while the documents still call it unwatched.
+//! What a bound turn can still change on a filesystem is measured against
+//! the real loaded programme in `tests/what_a_bound_turn_can_still_change.rs`,
+//! which since 2026-09-13 has two things left to say — a program outside the
+//! grant cannot be started, and a write inside the grant lands — each with a
+//! refused open beside it proving the boundary was in force. `docs/quirks.md`
+//! carries the list of what was unwatched, with the date each row closed, and
+//! `tests/the_unwatched_mutations_are_written_down.rs` fails the day a hook
+//! lands while the documents still call it unwatched, or arrives with no
+//! document naming it.
 //!
 //! # What a turn inherits, and what the boundary now says about it
 //!

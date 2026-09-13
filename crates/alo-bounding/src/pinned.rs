@@ -23,7 +23,12 @@
 //!   ├─ inode_removexattr     0600 root:root                 an extended attribute taken away
 //!   ├─ inode_set_acl         0600 root:root                 an access list set
 //!   ├─ inode_remove_acl      0600 root:root                 an access list taken away
-//!   └─ file_ioctl            0600 root:root                 a file's inode flags
+//!   ├─ file_ioctl            0600 root:root                 a file's inode flags
+//!   ├─ inode_create          0600 root:root                 a file it makes by opening
+//!   ├─ inode_mknod           0600 root:root                 a file it makes without opening
+//!   ├─ inode_mkdir           0600 root:root                 a directory it makes
+//!   ├─ inode_rmdir           0600 root:root                 a directory it removes
+//!   └─ inode_symlink         0600 root:root                 a symbolic link it makes
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -41,13 +46,14 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! The thirteen named after kernel functions are the pinned links, and they
+//! The eighteen named after kernel functions are the pinned links, and they
 //! are what keeps the programme attached after the loader has exited. Removing
-//! one detaches that hook; nothing else does. There are thirteen because the
-//! programme sits on thirteen hooks — what a turn opens, moves, removes,
+//! one detaches that hook; nothing else does. There are eighteen because the
+//! programme sits on eighteen hooks — what a turn opens, moves, removes,
 //! links, connects to, sends, reads and writes, changes about a file that is
-//! not its contents, and sets among a file's inode flags — and each attach is
-//! its own link.
+//! not its contents, sets among a file's inode flags, and makes: a file, a
+//! directory, a symbolic link, and a directory it removes — and each attach
+//! is its own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
 //!
@@ -128,6 +134,22 @@ const THE_REMOVED_ACCESS_LIST_HOOK: &str = "inode_remove_acl";
 /// where a file's inode flags are set.
 const THE_FLAGS_HOOK: &str = "file_ioctl";
 
+/// The pinned link for the hook every file made by opening goes through.
+const THE_CREATE_HOOK: &str = "inode_create";
+
+/// The pinned link for the hook every file made without an open goes
+/// through.
+const THE_MKNOD_HOOK: &str = "inode_mknod";
+
+/// The pinned link for the hook every directory made goes through.
+const THE_MKDIR_HOOK: &str = "inode_mkdir";
+
+/// The pinned link for the hook every directory removed goes through.
+const THE_RMDIR_HOOK: &str = "inode_rmdir";
+
+/// The pinned link for the hook every symbolic link made goes through.
+const THE_SYMLINK_HOOK: &str = "inode_symlink";
+
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
 
@@ -187,6 +209,21 @@ pub struct Pinned {
 
     /// The link that holds it on `file_ioctl`.
     flags_hook: PathBuf,
+
+    /// The link that holds it on `inode_create`.
+    create_hook: PathBuf,
+
+    /// The link that holds it on `inode_mknod`.
+    mknod_hook: PathBuf,
+
+    /// The link that holds it on `inode_mkdir`.
+    mkdir_hook: PathBuf,
+
+    /// The link that holds it on `inode_rmdir`.
+    rmdir_hook: PathBuf,
+
+    /// The link that holds it on `inode_symlink`.
+    symlink_hook: PathBuf,
 }
 
 impl Pinned {
@@ -198,8 +235,8 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is sixteen paths joined, and every
-    /// other method here is what touches a filesystem.
+    /// Nothing is made or looked at: this is twenty-one paths joined, and
+    /// every other method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
         Self {
@@ -219,6 +256,11 @@ impl Pinned {
             access_list_hook: root.join(THE_ACCESS_LIST_HOOK),
             removed_access_list_hook: root.join(THE_REMOVED_ACCESS_LIST_HOOK),
             flags_hook: root.join(THE_FLAGS_HOOK),
+            create_hook: root.join(THE_CREATE_HOOK),
+            mknod_hook: root.join(THE_MKNOD_HOOK),
+            mkdir_hook: root.join(THE_MKDIR_HOOK),
+            rmdir_hook: root.join(THE_RMDIR_HOOK),
+            symlink_hook: root.join(THE_SYMLINK_HOOK),
         }
     }
 
@@ -322,6 +364,36 @@ impl Pinned {
         &self.flags_hook
     }
 
+    /// The link for the hook every file made by opening goes through.
+    #[must_use]
+    pub fn create_hook(&self) -> &Path {
+        &self.create_hook
+    }
+
+    /// The link for the hook every file made without an open goes through.
+    #[must_use]
+    pub fn mknod_hook(&self) -> &Path {
+        &self.mknod_hook
+    }
+
+    /// The link for the hook every directory made goes through.
+    #[must_use]
+    pub fn mkdir_hook(&self) -> &Path {
+        &self.mkdir_hook
+    }
+
+    /// The link for the hook every directory removed goes through.
+    #[must_use]
+    pub fn rmdir_hook(&self) -> &Path {
+        &self.rmdir_hook
+    }
+
+    /// The link for the hook every symbolic link made goes through.
+    #[must_use]
+    pub fn symlink_hook(&self) -> &Path {
+        &self.symlink_hook
+    }
+
     /// Every pinned link, in the order the hooks are attached.
     ///
     /// One list so that attaching, refusing over leftovers and taking a
@@ -329,7 +401,7 @@ impl Pinned {
     /// pin was left out of one of those three would be a hook that stayed
     /// attached after the boundary was removed.
     #[must_use]
-    pub fn every_hook(&self) -> [&Path; 13] {
+    pub fn every_hook(&self) -> [&Path; 18] {
         self.every_hook_named().map(|(_, at)| at)
     }
 
@@ -343,7 +415,7 @@ impl Pinned {
     /// The name is the one the kernel function has and the pin is called after
     /// it, so the two cannot drift.
     #[must_use]
-    pub fn every_hook_named(&self) -> [(&'static str, &Path); 13] {
+    pub fn every_hook_named(&self) -> [(&'static str, &Path); 18] {
         [
             (THE_HOOK, self.hook.as_path()),
             (THE_RENAME_HOOK, self.rename_hook.as_path()),
@@ -367,6 +439,11 @@ impl Pinned {
                 self.removed_access_list_hook.as_path(),
             ),
             (THE_FLAGS_HOOK, self.flags_hook.as_path()),
+            (THE_CREATE_HOOK, self.create_hook.as_path()),
+            (THE_MKNOD_HOOK, self.mknod_hook.as_path()),
+            (THE_MKDIR_HOOK, self.mkdir_hook.as_path()),
+            (THE_RMDIR_HOOK, self.rmdir_hook.as_path()),
+            (THE_SYMLINK_HOOK, self.symlink_hook.as_path()),
         ]
     }
 
@@ -560,15 +637,57 @@ mod tests {
             Path::new("/sys/fs/bpf/alo/inode_remove_acl")
         );
         assert_eq!(pinned.flags_hook(), Path::new("/sys/fs/bpf/alo/file_ioctl"));
+        assert_eq!(
+            pinned.create_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_create")
+        );
+        assert_eq!(
+            pinned.mknod_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_mknod")
+        );
+        assert_eq!(
+            pinned.mkdir_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_mkdir")
+        );
+        assert_eq!(
+            pinned.rmdir_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_rmdir")
+        );
+        assert_eq!(
+            pinned.symlink_hook(),
+            Path::new("/sys/fs/bpf/alo/inode_symlink")
+        );
         // Every hook has a pin of its own, and the list is what the loader
         // attaches in the order of: a hook missing from it would be attached
         // and never pinned, which is a hook detached the moment the loader
         // exits.
-        assert_eq!(pinned.every_hook().len(), 13);
+        assert_eq!(pinned.every_hook().len(), 18);
         assert_eq!(
-            pinned.every_hook_named().last().map(|(hook, _)| *hook),
-            Some("file_ioctl"),
-            "the thirteenth hook is attached last, and its pin is called after the kernel function"
+            pinned
+                .every_hook_named()
+                .iter()
+                .skip(13)
+                .map(|(hook, _)| *hook)
+                .collect::<Vec<_>>(),
+            [
+                "inode_create",
+                "inode_mknod",
+                "inode_mkdir",
+                "inode_rmdir",
+                "inode_symlink"
+            ],
+            "the five hooks on what a turn makes are attached last, in this order, and each pin \
+             is called after the kernel function"
+        );
+        let named: std::collections::BTreeSet<&str> = pinned
+            .every_hook_named()
+            .iter()
+            .map(|(hook, _)| *hook)
+            .collect();
+        assert_eq!(
+            named.len(),
+            18,
+            "two pins are called the same, so one hook would be attached twice and the other never"
         );
     }
 

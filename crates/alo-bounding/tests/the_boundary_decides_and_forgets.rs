@@ -377,6 +377,64 @@ fn an_ordinary_days_changes(folder: &Path) -> usize {
     changed
 }
 
+/// An ordinary program's makings: in the folder, a file made by opening, a
+/// file made without opening, a directory with a file in it, a symbolic link,
+/// and every one of them taken away again — the directory by the call that
+/// removes one — and the count of rounds that went through all of it.
+///
+/// The five hooks on what a turn makes run on every one of those on the
+/// machine, and this is what holds them to *decides and forgets* the way the
+/// opens hold `file_open`: a process in no turn makes and removes its own
+/// names, each hook looks up a control group, misses, and nothing anywhere is
+/// different afterwards. Every making is asserted to have landed, because a
+/// name that was silently refused outside a turn is the other thing these
+/// hooks must not do.
+fn an_ordinary_days_makings(folder: &Path) -> usize {
+    let of_rustix = |why: rustix::io::Errno| std::io::Error::from_raw_os_error(why.raw_os_error());
+    let mut made = 0;
+    for round in 0..ROUNDS {
+        let opened = folder.join(format!("made-by-opening-{round}"));
+        let unopened = folder.join(format!("made-without-opening-{round}"));
+        let directory = folder.join(format!("made-directory-{round}"));
+        let link = folder.join(format!("made-link-{round}"));
+
+        fs::File::create(&opened).expect("an ordinary program can make a file by opening it");
+        rustix::fs::mknodat(
+            rustix::fs::CWD,
+            &unopened,
+            rustix::fs::FileType::RegularFile,
+            rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+            0,
+        )
+        .map_err(of_rustix)
+        .expect("an ordinary program can make a file without opening it");
+        fs::create_dir(&directory).expect("an ordinary program can make a directory");
+        fs::write(directory.join("inside"), b"an ordinary file")
+            .expect("an ordinary program can make a file in the directory it made");
+        std::os::unix::fs::symlink(&opened, &link)
+            .expect("an ordinary program can make a symbolic link");
+        for at in [&opened, &unopened, &link] {
+            assert!(
+                at.symlink_metadata().is_ok(),
+                "{} was not made, so a hook refused something outside a turn",
+                at.display()
+            );
+        }
+
+        fs::remove_file(directory.join("inside")).expect("and take the file in it away");
+        fs::remove_dir(&directory).expect("an ordinary program can remove an empty directory");
+        assert!(
+            !directory.exists(),
+            "the directory was not removed, so a hook refused something outside a turn"
+        );
+        for at in [&opened, &unopened, &link] {
+            fs::remove_file(at).expect("and take it away");
+        }
+        made += 1;
+    }
+    made
+}
+
 /// A valid POSIX access list — version two, then the owner, the group and
 /// everybody else — which is the least the kernel accepts.
 fn an_ordinary_access_list() -> Vec<u8> {
@@ -546,14 +604,21 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
         "only {changed} files had their attributes and flags changed, so the five attribute \
          hooks and the `ioctl` hook were barely asked anything"
     );
+    let made = an_ordinary_days_makings(&folder);
+    assert_eq!(
+        made, ROUNDS,
+        "only {made} rounds of files, directories and links were made, so the five hooks on \
+         what is made were barely asked anything"
+    );
 
     let after = Held::of(&kernel);
     nothing_was_written_down(
         &before,
         &after,
         &format!(
-            "{opened} files were opened, {sent} messages sent and {changed} files' attributes \
-             changed by programs that are not agent turns"
+            "{opened} files were opened, {sent} messages sent, {changed} files' attributes \
+             changed and {made} rounds of files, directories and links made and removed by \
+             programs that are not agent turns"
         ),
     );
 }
