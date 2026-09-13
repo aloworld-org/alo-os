@@ -25,10 +25,15 @@
 //! first symptom is a supervisor sitting on a `git-remote-https` that will
 //! never be answered. The credentials live on the Windows side.
 //!
-//! So the loop is a Windows program: `git` runs where the credentials are, and
-//! every gate is handed to `wsl` because that is where a kernel, a BPF target
-//! and a pinned nightly are. On a Linux host each gate is run directly and
-//! there is nothing to bridge.
+//! So the loop is a host program: `git` runs where the credentials are, and
+//! every gate is handed to the Linux beside it because that is where a kernel,
+//! a BPF target and a pinned nightly are. On Windows that Linux is `wsl`. On a
+//! Mac it is a virtual machine the person names in `ALO_KERNEL_LOOP_LINUX` —
+//! `limactl shell alo`, `orb -m alo` — and **a Mac that names none is refused
+//! rather than gated natively**: a macOS-green suite hides Linux-red exactly
+//! the way a Windows-green one does, and the BPF target has nothing to build
+//! against there at all. On a Linux host each gate is run directly and there is
+//! nothing to bridge. `docs/autonomy/a-loop-on-a-mac.md` is the setup.
 //!
 //! `CARGO_TARGET_DIR` is set to this checkout's own, which is what keeps two
 //! contributors compiling the same workspace from writing into one directory.
@@ -552,12 +557,105 @@ fn as_wsl_sees_it(path: &Path) -> Result<String, String> {
     Ok(format!("/mnt/{letter}/{rest}"))
 }
 
+/// What names the Linux a Mac's gates run in: a command that opens a shell
+/// inside it, to which the loop appends `bash -lc "<the gate's script>"`.
+///
+/// `limactl shell alo`, `orb -m alo`, or `ssh` to a Linux box on the desk —
+/// anything of that shape. Read on macOS only, and never given a default: the
+/// gates run in Linux or they do not run.
+#[cfg_attr(
+    not(any(test, target_os = "macos")),
+    expect(
+        dead_code,
+        reason = "read on a Mac; on every other host the bridge is decided at compile time"
+    )
+)]
+pub const THE_LINUX_NAMED: &str = "ALO_KERNEL_LOOP_LINUX";
+
+/// The command that opens a shell in the Linux the gates run in, as words.
+///
+/// Platform-neutral so that the one decision a Mac makes — refuse when nothing
+/// is named — is a thing tests on any host can ask.
+///
+/// # Errors
+/// A sentence when nothing is named, or something empty is. There is no
+/// fallback to running the gates on the host, on purpose.
+#[cfg_attr(
+    not(any(test, target_os = "macos")),
+    expect(
+        dead_code,
+        reason = "used on a Mac; on every other host the bridge is decided at compile time"
+    )
+)]
+fn a_bridge_named(named: Option<&str>) -> Result<Vec<String>, String> {
+    let words: Vec<String> = named
+        .unwrap_or_default()
+        .split_whitespace()
+        .map(str::to_owned)
+        .collect();
+    if words.is_empty() {
+        return Err(format!(
+            "on this host the gates must run in a Linux virtual machine, and none is named: set \
+             {THE_LINUX_NAMED} to the command that opens a shell in it — `limactl shell alo`, or \
+             `orb -m alo`. The gates are never run on the Mac itself; \
+             docs/autonomy/a-loop-on-a-mac.md says why and how."
+        ));
+    }
+    Ok(words)
+}
+
+/// The same, handed to the Linux virtual machine this Mac names.
+///
+/// **Never the Mac itself.** The path is handed over untranslated because
+/// both Lima and OrbStack mount the home directory inside Linux at the same
+/// path — which is why `docs/autonomy/a-loop-on-a-mac.md` says the checkout
+/// lives under `~`. A path a shell would have to quote is refused rather than
+/// quoted, the way `where_it_builds` refuses one for the build directory.
+///
+/// # Errors
+/// A sentence when no Linux is named, or the checkout's path cannot go on a
+/// command line safely.
+#[cfg(target_os = "macos")]
+fn bridged(
+    at: &Path,
+    within: &str,
+    program: &str,
+    args: &[String],
+    building_in: Option<&str>,
+) -> Result<Command, String> {
+    let words = a_bridge_named(std::env::var(THE_LINUX_NAMED).ok().as_deref())?;
+    let Some((first, rest)) = words.split_first() else {
+        return Err(format!(
+            "{THE_LINUX_NAMED} names nothing that could open a shell"
+        ));
+    };
+    let within = at.join(within);
+    let within = within.to_string_lossy();
+    if within.contains(|of: char| of.is_whitespace() || matches!(of, '"' | '\'' | '$' | '`')) {
+        return Err(format!(
+            "{within} has a character in it the bridge's command line cannot carry safely; put \
+             the checkout somewhere plainer under your home directory"
+        ));
+    }
+    let target = building_in.map_or_else(String::new, |directory| {
+        format!("export CARGO_TARGET_DIR=\"{directory}\"; ")
+    });
+    let mut asking = Command::new(first);
+    asking.args(rest).args(["bash", "-lc"]).arg(format!(
+        "export PATH=\"$HOME/.cargo/bin:$PATH\"; \
+         {target}export RUSTDOCFLAGS=\"-D warnings\"; \
+         cd {within} && {program} {}",
+        args.join(" ")
+    ));
+    Ok(asking)
+}
+
 /// The same, run where it stands.
 ///
 /// # Errors
-/// None on a Linux host; the signature matches the Windows half so the caller
-/// has one shape.
-#[cfg(not(windows))]
+/// None on a Linux host; the signature matches the bridged halves so the
+/// caller has one shape.
+#[cfg(not(any(windows, target_os = "macos")))]
 fn bridged(
     at: &Path,
     within: &str,
@@ -574,6 +672,58 @@ fn bridged(
         asking.env("CARGO_TARGET_DIR", directory);
     }
     Ok(asking)
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::panic,
+    reason = "in a test, a panic on an unexpected Ok is the failure being reported"
+)]
+mod a_mac_names_its_linux {
+    use super::{THE_LINUX_NAMED, a_bridge_named};
+
+    /// **A Mac that names no Linux is refused, and the refusal says what to
+    /// set.** There is no arm that runs the gates on the Mac itself.
+    #[test]
+    fn naming_no_linux_is_refused_rather_than_gating_natively() {
+        for nothing in [None, Some(""), Some("   ")] {
+            let refused = match a_bridge_named(nothing) {
+                Err(why) => why,
+                Ok(words) => panic!("{nothing:?} opened a shell: {words:?}"),
+            };
+            assert!(refused.contains(THE_LINUX_NAMED), "{refused}");
+            assert!(
+                refused.contains("never be run on the Mac itself")
+                    || refused.contains("never run on the Mac itself"),
+                "{refused}"
+            );
+        }
+    }
+
+    /// The command is taken as words, so `limactl shell alo` and `orb -m alo`
+    /// both work and neither is special-cased.
+    #[test]
+    fn the_command_named_is_taken_as_words() {
+        assert_eq!(
+            a_bridge_named(Some("limactl shell alo")).ok(),
+            Some(vec![
+                "limactl".to_owned(),
+                "shell".to_owned(),
+                "alo".to_owned()
+            ])
+        );
+        assert_eq!(
+            a_bridge_named(Some("  orb   -m alo ")).ok(),
+            Some(vec!["orb".to_owned(), "-m".to_owned(), "alo".to_owned()])
+        );
+    }
+
+    /// The variable is the one the setup document names, so the two cannot
+    /// drift apart without this line changing.
+    #[test]
+    fn the_variable_is_the_one_the_document_names() {
+        assert_eq!(THE_LINUX_NAMED, "ALO_KERNEL_LOOP_LINUX");
+    }
 }
 
 #[cfg(test)]

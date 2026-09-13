@@ -90,7 +90,10 @@ impl Awake {
     }
 
     /// On a host that runs the gates directly there is no distribution to keep
-    /// awake, and nothing to do.
+    /// awake, and nothing to do. On a Mac the Linux is a virtual machine that
+    /// Lima or OrbStack keeps up for as long as it was started, and whether it
+    /// stays up is theirs rather than this loop's — a gate handed to a stopped
+    /// one is refused by the bridge in words, not hung.
     #[cfg(not(windows))]
     fn asleep_inside_it() -> Option<Child> {
         None

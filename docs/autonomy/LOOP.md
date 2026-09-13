@@ -180,6 +180,9 @@ entry, written in full.
 This loop runs on Windows, and a few v0.01 items cannot be built there — a Unix
 socket's peer credentials being the one that stopped it. **That is no longer a
 blocker: the machine has Ubuntu in WSL2, and it can build this very checkout.**
+(A loop on a Mac reaches Linux the same way through a virtual machine it names,
+and is refused rather than gated natively if it names none —
+`a-loop-on-a-mac.md`.)
 
 ```
 wsl -d Ubuntu -u root -- bash -c '

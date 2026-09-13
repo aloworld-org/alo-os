@@ -243,15 +243,19 @@ fn where_it_goes(at: &Path) -> Result<String, String> {
 
 /// The home directory the gates run in.
 ///
-/// On Windows it is left as `$HOME` for the shell the bridge already runs
-/// through: the home that matters is the distribution's, and this process
-/// cannot see it. Every path built from it is free of spaces by construction —
-/// the distribution's home has none and [`a_name_from`] allows none — which is
-/// what makes it safe in a command line the bridge assembles unquoted.
+/// On Windows and on a Mac it is left as `$HOME` for the shell the bridge
+/// already runs through: the home that matters is the Linux side's — WSL's
+/// distribution, or the virtual machine a Mac names — and this process cannot
+/// see it. That matters on a Mac in particular, where the Mac's own `HOME` is
+/// visible inside the VM at the same path and would put the build directory on
+/// the shared mount rather than on the VM's own disk. Every path built from
+/// `$HOME` is free of spaces by construction — the Linux home has none and
+/// [`a_name_from`] allows none — which is what makes it safe in a command line
+/// the bridge assembles unquoted.
 ///
 /// # Errors
 /// None here; the signature matches the Linux half so the caller has one shape.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn the_home() -> Result<String, String> {
     Ok("$HOME".to_owned())
 }
@@ -261,7 +265,7 @@ fn the_home() -> Result<String, String> {
 /// # Errors
 /// A sentence when the environment names no home, which is what sends the
 /// choice to its fallback rather than to a directory called `$HOME`.
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "macos")))]
 fn the_home() -> Result<String, String> {
     std::env::var("HOME")
         .map_err(|_| "this machine's environment names no HOME to build under".to_owned())
