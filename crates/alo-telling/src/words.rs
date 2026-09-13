@@ -90,7 +90,7 @@ pub const CARRY_ON: Word = Word::saying(
 pub const RUNS_THEM_ANYWAY: Word = Word::saying(
     "telling.runs-them-anyway",
     "That is said once: alo OS will run these weights whenever you choose them, and will not \
-     raise their size again by itself",
+     mention their size again by itself",
 )
 .noting(
     "The last line of what a person is shown when weights they chose are larger than this \

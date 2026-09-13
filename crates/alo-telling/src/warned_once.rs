@@ -5,7 +5,7 @@
 //! `alo-models`', because what a model costs on this machine is that crate's
 //! knowledge and its sentence already says the model runs; the second is this
 //! crate's, and it is the *once*: alo OS will run these weights whenever they
-//! are chosen and will not raise their size again by itself. The reason they
+//! are chosen and will not mention their size again by itself. The reason they
 //! are gathered here rather than assembled by whoever is drawing them is the
 //! guarantee this crate exists for — **a warning that was suppressed produces
 //! no sentence anywhere.** A surface that built its own two lines out of the

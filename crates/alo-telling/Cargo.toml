@@ -31,6 +31,9 @@ alo-models = { path = "../alo-models" }
 # every crate here takes: a crate that says something is collected by
 # `alo-saying`, and never reaches for it.
 alo-saying = { path = "../alo-saying" }
+# Where a person's choices and the grades beside their own weights are kept,
+# walked from a fresh settings file in the order a person meets what is said.
+alo-choosing = { path = "../alo-choosing" }
 
 [lints]
 workspace = true

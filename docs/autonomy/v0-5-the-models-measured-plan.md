@@ -132,7 +132,8 @@ and says what the person is told either way.
 
 ### 5. What a person is told, measured against what a person can read
 
-**Status:** ready. **Depends on:** 2, 4.
+**Status:** **Done, 2026-09-14.** **Depends on:** 2, 4.
+**Report:** `docs/autonomy/updates/what-a-person-is-told-in-the-order-they-meet-it.md`.
 
 The measurement work ends in sentences, and the sentences are the product.
 This task reads every one of them as a person would — in the order a person

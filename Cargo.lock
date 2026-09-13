@@ -675,6 +675,7 @@ name = "alo-telling"
 version = "0.0.1"
 dependencies = [
  "alo-answering",
+ "alo-choosing",
  "alo-models",
  "alo-saying",
  "alo-strings",

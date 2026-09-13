@@ -480,13 +480,14 @@ pub const WEIGHTS_NOT_MEASURED: Word = Word::saying(
 /// These weights were measured, and cleared the bar.
 pub const WEIGHTS_MEASURED_THE_AGENT: Word = Word::saying(
     "models.brought.measured-the-agent",
-    "these weights have been measured driving the agent's verbs dependably on this machine, so \
-     they can be given agent turns",
+    "these weights have been measured driving the agent's verbs dependably, so they can be given \
+     agent turns",
 )
 .noting(
     "The same third line, for weights somebody has measured and that cleared the bar. The grade \
      and the machine it was measured on are values shown beside the sentence rather than inside \
-     it, for the reason numbers are. \"The agent's verbs\" are the typed instructions the \
+     it, for the reason numbers are — and the sentence says no machine, because the one that \
+     measured may not be the one the person is reading on. \"The agent's verbs\" are the typed instructions the \
      assistant built into alo OS asks a model for; \"agent turns\" are the assistant acting on \
      somebody's files with them. Said of a person's own weights: it does not compare them with \
      anything.",
@@ -495,8 +496,8 @@ pub const WEIGHTS_MEASURED_THE_AGENT: Word = Word::saying(
 /// These weights were measured, and did not clear the bar.
 pub const WEIGHTS_MEASURED_NOT_THE_AGENT: Word = Word::saying(
     "models.brought.measured-not-the-agent",
-    "these weights have been measured driving the agent's verbs on this machine, not often enough \
-     to be given agent turns — they still answer your questions",
+    "these weights have been measured driving the agent's verbs, not often enough to be given \
+     agent turns — they still answer your questions",
 )
 .noting(
     "The same third line, for weights somebody has measured that did not clear the bar. Both \
