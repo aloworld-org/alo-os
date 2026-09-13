@@ -1,13 +1,13 @@
 [package]
 name = "alo-measuring"
 version = "0.0.1"
-description = "What is running on this machine and what it is using, read from the kernel and estimated by nothing."
+description = "What is running on this machine and what it is using, and what is filling its disk — read from the kernel and estimated by nothing."
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-# Two dependencies, and `tests/nothing_here_acts_or_asks_who_is_asking.rs`
+# Three dependencies, and `tests/nothing_here_acts_or_asks_who_is_asking.rs`
 # holds the list to exactly these. There is deliberately no `sysinfo`, no
 # `procfs` and no crate of that kind: the numbers this crate answers with are
 # read out of `/proc` by the code in `src/`, which is the only way a number
@@ -15,9 +15,14 @@ repository.workspace = true
 # person. A rented reader would be a second author's opinion about what
 # *memory* means, unreviewable from this repository.
 [dependencies]
+# The walk under a folder, for *what is filling the disk*. Borrowed rather
+# than written again because a second walker would be two opinions in this
+# repository about what a link is, and `alo-files` exists because there is
+# one: a link is never followed, and a walk is bounded and says when it was.
+alo-files = { path = "../alo-files" }
 # Every sentence a window shows beside a number — *ended since the last
-# reading*, *the kernel did not show this* — is one of this crate's words,
-# looked up in the reader's own language.
+# reading*, *could not be read* — is one of this crate's words, looked up in
+# the reader's own language.
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 

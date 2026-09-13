@@ -1,16 +1,20 @@
-//! What is running on this machine and what it is using — read, not estimated.
+//! What is running on this machine and what it is using, and what is filling
+//! its disk — read, not estimated.
 //!
 //! `docs/features.md` promises, at v0.5: *what is running, and what it is
 //! using — processes, memory, disk and network in a window. The plain answer
-//! to "why is it slow?", for the person who cannot or will not ask.* The window
-//! is the shell's. What it shows is this crate's, and the whole of the promise
-//! is in the word **plain**: a number the person can check against the
-//! machine, not one the machine derived and hopes is close.
+//! to "why is it slow?", for the person who cannot or will not ask.* And,
+//! beside it: *what is filling the disk — shown as sizes you can open up and
+//! click through, not a number in Settings.* The windows are the shell's.
+//! What they show is this crate's, and the whole of both promises is in the
+//! word **plain**: a number the person can check against the machine, not
+//! one the machine derived and hopes is close.
 //!
-//! So every number here is **read from the kernel** — `/proc`, and nowhere
-//! else — and every number is **named for the file it came from**. A
-//! [`Number`] carries its [`Source`]: the file and the line or field in it.
-//! A test opens that file and compares, and so can a person with `cat`.
+//! So every number here is **read** — from the kernel's `/proc` for what is
+//! running, from the filesystem for what is filling a folder — and every
+//! number says where. A [`Number`] carries its [`Source`]: the file and the
+//! line or field in it. A [`Node`] carries its path, and `stat` on it shows
+//! the same bytes. A test opens the file and compares, and so can a person.
 //!
 //! | | |
 //! |---|---|
@@ -19,12 +23,15 @@
 //! | [`Reading::since`] | Two readings and the time between them, as rates: [`Running`] |
 //! | [`Running`], [`Process`], [`Gone`] | What is running, what each is using, and what ended between the readings |
 //! | [`Number`], [`Source`] | One number and where it came from — or why there is no number |
-//! | [`NotMeasured`] | The four ways nothing can be said at all |
+//! | [`Holding`], [`Holding::of`] | What is filling a folder: a tree of sizes, counted now |
+//! | [`Node`], [`Counted`] | One thing in that tree, its size, and whether the size is the whole truth |
+//! | [`NotMeasured`] | The five ways nothing can be said at all |
 //! | [`words`] | Every sentence a window shows beside these, in the reader's language |
 //!
 //! ```no_run
+//! use std::path::Path;
 //! use std::time::Duration;
-//! use alo_measuring::Reading;
+//! use alo_measuring::{Holding, Reading};
 //!
 //! // A total is a fact about a moment; a rate needs two of them.
 //! let earlier = Reading::now()?;
@@ -39,6 +46,13 @@
 //! }
 //! // A process that ended between the readings is here, not reported as zero.
 //! let _ = running.gone();
+//!
+//! // What is filling a folder: each node's size is its own bytes plus its
+//! // children's, and a node whose size is not the whole truth says why.
+//! let holding = Holding::of(Path::new("Documents"))?;
+//! for child in &holding.tree.children {
+//!     let _ = (child.size, &child.counted);
+//! }
 //! # Ok::<(), alo_measuring::NotMeasured>(())
 //! ```
 //!
@@ -81,13 +95,30 @@
 //! left out of the sum, because bytes that never left the machine are not what
 //! *network* means to the person asking.
 //!
+//! # A size that is silently too small is worse than no size
+//!
+//! [`Holding::of`] answers *what is filling this folder* as a tree, each
+//! node's size the sum of its children plus its own bytes. The walk is
+//! `alo-files`' — borrowed, not written again, so that there is one opinion
+//! in this repository about what a link is — and every way a size can fall
+//! short of the truth is written on the node it happens to, as a [`Counted`]:
+//! a file with two names is counted once and the second name says where; a
+//! link is the bytes of the link and is never followed; a folder the machine
+//! would not read says so rather than being a zero; a folder on another
+//! filesystem is not entered, which is how naming the root of the machine is
+//! answered — a tree that stops at each mount point; and a count that reached
+//! the walk's bound says so on every folder it had not finished, and once
+//! above the tree. Nothing here deletes, moves or empties anything, and the
+//! whole disk is never walked unasked: a caller names a folder.
+//!
 //! # This crate reads, and does nothing else
 //!
-//! Nothing here signals, stops, renices or otherwise touches a process; *what
-//! is using the machine* is a measurement, and acting on it would be a verb
-//! needing a grant under ADR 0001. Nothing here opens a socket, reads a
-//! setting, or asks who is asking: the list is the same whether an agent or a
-//! person wanted it, because it is a list of facts.
+//! Nothing here signals, stops, renices or otherwise touches a process, and
+//! nothing here changes a file; *what is using the machine* and *what is
+//! filling it* are measurements, and acting on either would be a verb needing
+//! a grant under ADR 0001. Nothing here opens a socket, reads a setting, or
+//! asks who is asking: the list and the tree are the same whether an agent or
+//! a person wanted them, because they are lists of facts.
 //! `tests/nothing_here_acts_or_asks_who_is_asking.rs` reads the shipped
 //! source and holds all of that.
 //!
@@ -95,18 +126,22 @@
 //!
 //! `/proc` is Linux, and alo OS boots Linux. The crate compiles everywhere —
 //! its types, its parsers and its arithmetic are portable and tested on every
-//! host against a kernel a test writes out — but [`Reading::now`] on any other
-//! host answers [`NotMeasured::NotOnThisHost`] rather than a reading of
-//! nothing, the way `alo-agentd` is absent rather than pretending. What runs
-//! the tests that open the real `/proc` is the Linux host;
+//! host against a kernel a test writes out and a walk a test writes out — but
+//! [`Reading::now`] and [`Holding::of`] on any other host answer
+//! [`NotMeasured::NotOnThisHost`] rather than a reading of nothing, the way
+//! `alo-agentd` is absent rather than pretending. What runs the tests that
+//! open the real `/proc` and the real disk is the Linux host;
 //! `docs/autonomy/LOOP.md` says how.
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+mod counting;
+mod holding;
 mod io;
 mod kernel;
 mod kilobytes;
 mod listing;
+mod looking;
 mod netdev;
 mod rating;
 mod reading;
@@ -118,6 +153,8 @@ mod source;
 mod stat;
 pub mod words;
 
+pub use alo_files::Kind;
+pub use holding::{Counted, Holding, Node};
 pub use kernel::{Disk, Kernel};
 pub use reading::Reading;
 pub use refusing::NotMeasured;

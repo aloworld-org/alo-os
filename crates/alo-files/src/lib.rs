@@ -85,6 +85,9 @@
 //!
 //! Two files touch a disk on purpose: [`resolving`], which asks where a path
 //! really leads, and everything reached from [`Did::of`], which does the work.
+//! One of those, [`walking`], is also reached from outside: it only reads,
+//! it follows nothing, and `alo-measuring` borrows it to count what is
+//! filling a folder rather than keeping a second opinion about what a link is.
 //! Everything that *decides* — [`touching`], [`verbs`], and the shapes an
 //! answer comes back in — is somewhere a test can reach without a filesystem,
 //! and the deciding is tested that way.
@@ -146,7 +149,7 @@ mod changing;
 mod crc;
 mod looking;
 mod opening;
-mod walking;
+pub mod walking;
 mod zip;
 
 #[cfg(test)]
@@ -162,4 +165,5 @@ pub use real::{Real, RealError};
 pub use resolving::{OnThisMachine, Resolving};
 pub use touching::Touching;
 pub use verbs::{Declaring, declare_into, file_verbs};
+pub use walking::{MOST_WALKED, Step, Unread, Walked, Walking};
 pub use words::{Counted, EVERY_WORD, Word, WordsError, file_words};

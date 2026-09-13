@@ -32,7 +32,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use alo_measuring::{NotMeasured, Reading, Running};
+use alo_measuring::{Holding, NotMeasured, Reading, Running};
 
 /// This crate's own directory.
 fn here() -> PathBuf {
@@ -167,8 +167,10 @@ fn nothing_in_the_shipped_source_signals_stops_renices_or_writes() {
 
 /// **The numbers come from `/proc`, read by this crate's own code.**
 ///
-/// The manifest names exactly two dependencies, neither of which reads a
-/// process; and every absolute path in the shipped source is under `/proc`.
+/// The manifest names exactly three dependencies, none of which reads a
+/// process — `alo-files` is the walk under a folder, borrowed so that this
+/// repository has one opinion about what a link is — and every absolute path
+/// in the shipped source is under `/proc`.
 #[test]
 fn the_numbers_come_from_proc_and_from_no_rented_crate() {
     let manifest = std::fs::read_to_string(here().join("Cargo.toml")).unwrap();
@@ -184,7 +186,7 @@ fn the_numbers_come_from_proc_and_from_no_rented_crate() {
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .map(|line| line.split('=').next().unwrap().trim())
         .collect();
-    assert_eq!(dependencies, ["alo-strings", "thiserror"]);
+    assert_eq!(dependencies, ["alo-files", "alo-strings", "thiserror"]);
     assert!(
         !manifest.contains("[dev-dependencies]"),
         "a test measures the kernel with nothing rented either"
@@ -210,18 +212,20 @@ fn the_numbers_come_from_proc_and_from_no_rented_crate() {
     }
 }
 
-/// **The list takes no account of who asked.**
+/// **The list takes no account of who asked, and neither does the tree.**
 ///
 /// [`Reading::now`] takes nothing: no caller, no grant, no name. There is no
 /// argument through which an agent and a person could be told apart, so
-/// there is no road by which they could be given different lists. The
+/// there is no road by which they could be given different lists.
+/// [`Holding::of`] takes a folder and nothing else, for the same reason. The
 /// assignments are the test; they do not compile against a signature that
 /// asks.
 #[test]
 fn the_list_takes_no_account_of_who_asked() {
     let now: fn() -> Result<Reading, NotMeasured> = Reading::now;
     let since: fn(&Reading, &Reading, Duration) -> Result<Running, NotMeasured> = Reading::since;
+    let of: fn(&Path) -> Result<Holding, NotMeasured> = Holding::of;
     // Nothing is measured by the assignment, and nothing here needs it to
     // be: the shape is the fact.
-    let _ = (now, since);
+    let _ = (now, since, of);
 }

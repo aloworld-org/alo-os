@@ -181,8 +181,92 @@ pub const NETWORK_SHARED: Counted = Counted {
            others, not how many in all.",
 };
 
+// ---------------------------------------------------------------------------
+// What is filling a folder — `crate::Holding`, `crate::Counted`.
+// ---------------------------------------------------------------------------
+
+/// A file counted under another of its names.
+pub const ELSEWHERE: Word = Word::saying(
+    "measuring.filling.counted-elsewhere",
+    "Counted under another of its names, {at}.",
+)
+.noting(
+    "Shown beside a file that has more than one name on the disk (a hard link), on every name \
+     but the one its bytes were counted under. {at} is the path of that other name and is never \
+     translated. The file takes up its space once, so it is counted once. A phrase rather than \
+     a sentence: it stands beside a size.",
+);
+
+/// A folder that could not be read.
+pub const NOT_READ: Word = Word::saying(
+    "measuring.filling.not-read",
+    "Could not be read, so nothing inside it is counted.",
+)
+.noting(
+    "Shown beside a folder the machine would not let this reader open, usually because it \
+     belongs to another person on the machine. Its size is shown as unknown rather than as \
+     nothing, and the phrase must not read as a fault of the person's. It stands beside a size.",
+);
+
+/// A folder on another filesystem.
+pub const ANOTHER_FILESYSTEM: Word = Word::saying(
+    "measuring.filling.another-filesystem",
+    "On another filesystem, so what is inside it is not counted here.",
+)
+.noting(
+    "Shown beside a folder where a different disk or a different part of the system is \
+     attached: the kernel's own view of every process, a plugged-in drive, another machine's \
+     files. What is inside it takes no space on the disk being counted. \"Filesystem\" is the \
+     technical term and may be translated as such. It stands beside a size.",
+);
+
+/// A folder the count stopped in before it was finished.
+pub const NOT_FINISHED: Word = Word::saying(
+    "measuring.filling.not-finished",
+    "The count stopped before everything inside it was seen.",
+)
+.noting(
+    "Shown beside a folder when the count reached its limit while inside it or before reaching \
+     it, so its size is the size of what was seen and not of the whole. Read with \
+     \"measuring.filling.cut-short\", which is said once about the whole count. It stands \
+     beside a size.",
+);
+
+/// The folder asked about could not be counted at all.
+pub const NOT_COUNTED: Word = Word::saying(
+    "measuring.filling.not-counted",
+    "What is filling {at} could not be counted. {why}",
+)
+.noting(
+    "Said when the folder a person asked about could not be opened at all: it is not there, it \
+     is a file rather than a folder, or the machine refused. {at} is its path and is never \
+     translated. {why} is a whole sentence saying which, already in the reader's language.",
+);
+
+/// A count that stopped at its limit.
+pub const CUT_SHORT: Counted = Counted {
+    named: "measuring.filling.cut-short",
+    number: "most",
+    one: "The count stopped after one thing, so these sizes are not the whole of it.",
+    other: "The count stopped after {most} things, so these sizes are not the whole of it.",
+    note: "Said once, above a tree of sizes, when the folder holds more things than one count \
+           looks at. {most} is that limit. The sizes shown are true for what was seen and \
+           smaller than the whole.",
+};
+
+/// Things whose names cannot be shown, left out of the count.
+pub const UNNAMED: Counted = Counted {
+    named: "measuring.filling.unnamed",
+    number: "unnamed",
+    one: "One thing whose name cannot be shown is not counted.",
+    other: "{unnamed} things whose names cannot be shown are not counted.",
+    note: "Said once, above a tree of sizes, when the folder holds files or folders whose names \
+           contain characters a screen cannot show safely. They are left out rather than shown \
+           under a name that could mislead. {unnamed} is how many.",
+};
+
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 9] = [
+pub const EVERY_WORD: [Word; 14] = [
     NOT_ON_THIS_HOST,
     UNREADABLE,
     NO_INTERVAL,
@@ -192,10 +276,15 @@ pub const EVERY_WORD: [Word; 9] = [
     WITHHELD,
     NOT_SAID,
     NETWORK_THIS_PROCESS_ALONE,
+    ELSEWHERE,
+    NOT_READ,
+    ANOTHER_FILESYSTEM,
+    NOT_FINISHED,
+    NOT_COUNTED,
 ];
 
 /// Everything this crate can say about a number of things.
-pub const EVERY_COUNTED: [Counted; 1] = [NETWORK_SHARED];
+pub const EVERY_COUNTED: [Counted; 3] = [NETWORK_SHARED, CUT_SHORT, UNNAMED];
 
 /// Why this crate's list could not be declared.
 #[derive(Debug, thiserror::Error)]
@@ -271,7 +360,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(measuring_words().unwrap().how_many(), 10);
+        assert_eq!(measuring_words().unwrap().how_many(), 17);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

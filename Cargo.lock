@@ -395,6 +395,7 @@ dependencies = [
 name = "alo-measuring"
 version = "0.0.1"
 dependencies = [
+ "alo-files",
  "alo-strings",
  "thiserror 2.0.20",
 ]

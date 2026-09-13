@@ -1,9 +1,10 @@
-//! The four ways nothing can be measured at all.
+//! The five ways nothing can be measured at all.
 //!
 //! Every one of these is a refusal of the whole question rather than a gap in
 //! the answer. A number the kernel would not give for one process is a
-//! [`crate::Number`] saying so in that process's row; this is for when there is
-//! no list to put a row in.
+//! [`crate::Number`] saying so in that process's row, and a folder that could
+//! not be read is a [`crate::Counted`] on that folder's node; this is for when
+//! there is no list to put a row in and no tree to put a node in.
 
 use std::path::PathBuf;
 
@@ -11,7 +12,7 @@ use alo_strings::{Filling, Said, Strings};
 
 use crate::words::{self, Word};
 
-/// Why what is running could not be measured.
+/// Why what is running, or what is filling a folder, could not be measured.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum NotMeasured {
@@ -52,6 +53,20 @@ pub enum NotMeasured {
     /// one tick. Nothing can be said about a rate over no time.
     #[error("both readings are from the same moment")]
     SameMoment,
+
+    /// The folder asked about could not be counted: it is not there, it is a
+    /// file rather than a folder, or the machine would not read it.
+    ///
+    /// Only ever the folder the caller named. A folder found *inside* it
+    /// that cannot be read is a node in the answer saying so, because the
+    /// rest of the answer is still true.
+    #[error("what is filling {} could not be counted", at.display())]
+    NotCounted {
+        /// The folder, as it was named.
+        at: PathBuf,
+        /// What the file half said about it, in its own words.
+        why: alo_files::Failed,
+    },
 }
 
 impl NotMeasured {
@@ -63,14 +78,23 @@ impl NotMeasured {
             Self::Unreadable { .. } => &words::UNREADABLE,
             Self::NoInterval => &words::NO_INTERVAL,
             Self::SameMoment => &words::SAME_MOMENT,
+            Self::NotCounted { .. } => &words::NOT_COUNTED,
         }
     }
 
     /// This refusal, in the language the person reads.
+    ///
+    /// For [`Self::NotCounted`] the sentence carries the file half's own,
+    /// which `alo-files` words; a vocabulary that holds only this crate's
+    /// list shows that half as a key, marked as such, rather than as English
+    /// nobody offered to translate.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
             Self::Unreadable { at, .. } => Filling::of("at", at.display().to_string()),
+            Self::NotCounted { at, why } => {
+                Filling::of("at", at.display().to_string()).and_said("why", &why.said(strings))
+            }
             Self::NotOnThisHost | Self::NoInterval | Self::SameMoment => Filling::nothing(),
         };
         strings.say(&self.word().key(), &filling)
@@ -86,19 +110,28 @@ mod tests {
     use super::*;
 
     /// Every refusal has a sentence, none of them is a key on somebody's
-    /// screen, and the one with a file in it names the file.
+    /// screen, and the ones with a file or a folder in them name it.
     #[test]
     fn every_refusal_is_said_in_a_sentence_a_person_reads() {
-        let strings = Strings::of(crate::measuring_words().unwrap());
+        let mut vocabulary = crate::measuring_words().unwrap();
+        alo_files::words::declare_into(&mut vocabulary).unwrap();
+        let strings = Strings::of(vocabulary);
         let unreadable = NotMeasured::Unreadable {
             at: PathBuf::from("/proc/stat"),
             why: "no such file".to_owned(),
+        };
+        let not_counted = NotMeasured::NotCounted {
+            at: PathBuf::from("Documents"),
+            why: alo_files::Failed::Gone {
+                path: "Documents".to_owned(),
+            },
         };
         for refusal in [
             NotMeasured::NotOnThisHost,
             unreadable.clone(),
             NotMeasured::NoInterval,
             NotMeasured::SameMoment,
+            not_counted.clone(),
         ] {
             let said = refusal.said(&strings);
             assert!(!said.is_a_bug(), "{said}");
@@ -108,6 +141,12 @@ mod tests {
         assert!(
             unreadable.said(&strings).text().contains("/proc/stat"),
             "the file is named"
+        );
+        let said = not_counted.said(&strings);
+        assert!(said.text().contains("Documents"), "{said}");
+        assert!(
+            !said.text().contains("files."),
+            "the file half's sentence is a sentence, not a key: {said}"
         );
     }
 }

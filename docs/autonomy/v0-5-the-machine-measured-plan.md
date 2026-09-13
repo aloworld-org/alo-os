@@ -15,7 +15,9 @@ and the search, `crates/alo-measuring` for processes, memory, disk and network
 — and `crates/alo-saying`'s three list entries when either declares words.
 **It reads `crates/alo-files` and never edits it**: the walker there already
 knows which paths are real, and a second walker would be two opinions about a
-symlink. **Nothing in `crates/alo-shell`**, nothing in `image/`, and nothing in
+symlink. (Task 2 made that walker public, additively, as `alo_files::Walking`
+with a searching and a measuring policy; task 3 borrows it the same way and
+edits nothing there.) **Nothing in `crates/alo-shell`**, nothing in `image/`, and nothing in
 `alo-nearby`, `alo-asking`, `alo-record`, `alo-capability`, `alo-turn` or
 `alo-egress`, which are lane A's on `v0-5-the-local-network-plan.md`.
 
@@ -67,7 +69,19 @@ close.
 
 ### 2. What is filling the disk — sizes a person can open up
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
+
+**Done, 2026-09-13.** Report:
+[`updates/what-is-filling-the-disk-is-a-tree-of-sizes.md`](updates/what-is-filling-the-disk-is-a-tree-of-sizes.md).
+`crates/alo-measuring`: `Holding::of` answers a folder as a tree of `Node`s,
+each size the sum of its children plus its own bytes, and each node carrying a
+`Counted` that says when the size is not the whole truth — a hard link counted
+under its first name, a folder the machine would not read, a folder on another
+filesystem, a folder the bound stopped the walk in. The walk is `alo-files`',
+made public and given a measuring policy in the same change — the one edit to
+that crate this plan makes, decided in the report because the private walker
+could not express three of the acceptance's clauses and a second walker was
+the worse answer.
 
 *What is filling the disk — shown as sizes you can open up and click through,
 not a number in Settings.* The click-through is the shell's; the tree of sizes
