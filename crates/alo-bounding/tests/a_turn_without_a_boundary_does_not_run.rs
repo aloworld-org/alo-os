@@ -14,7 +14,7 @@
 //!   pinned, and the turn is refused naming the service that pins one;
 //! - **the programme is not held on one of its hooks** — a pin removed,
 //!   which is the one thing on the machine that detaches a hook, and the turn
-//!   is refused naming that hook, for each of the twelve;
+//!   is refused naming that hook, for each of the thirteen;
 //! - **the loader was run again** — every pin taken away and made afresh, so
 //!   the programme on the hooks reads a map this service never opened; the
 //!   turn is refused naming both maps as the kernel numbers them.
@@ -253,10 +253,13 @@ fn a_turn_runs_where_the_boundary_is_in_place() {
 }
 
 /// **A hook whose pin is gone is a turn refused, by name, for every one of the
-/// twelve.** Removing a pin is the one thing on the machine that detaches a
-/// hook, and a boundary with eleven hooks is a boundary with a gap the width
-/// of the twelfth. The pins are taken in reverse order so that each turn is
-/// refused over the pin just removed rather than over the first one missing.
+/// thirteen.** Removing a pin is the one thing on the machine that detaches a
+/// hook, and a boundary with twelve hooks is a boundary with a gap the width
+/// of the thirteenth. The pins are taken in reverse order so that each turn is
+/// refused over the pin just removed rather than over the first one missing —
+/// which since 2026-09-13 means `file_ioctl`'s is the first taken, and the
+/// list is read from `Pinned::every_hook_named` so that no line here changed
+/// when it arrived.
 ///
 /// Until 2026-09-12 every one of these turns ran, and the key was refused only
 /// while `file_open`'s own pin happened to be among those still there.

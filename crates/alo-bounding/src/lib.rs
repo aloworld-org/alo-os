@@ -90,7 +90,7 @@
 //!
 //! So [`Turns::doing`] asks the machine first, before a control group is
 //! made: is the map of turns still pinned, is the programme still held on
-//! each of its twelve hooks, and is the map at the pin the map this service
+//! each of its thirteen hooks, and is the map at the pin the map this service
 //! holds, as the kernel numbers them. Any *no* is a refusal before the first
 //! verb, naming what is missing and pointing at `docs/quirks.md`; the same
 //! machine with its boundary in place is unaffected. `in_place.rs` has why
@@ -199,10 +199,14 @@
 //! `tests/the_kernel_refuses_an_attribute_change.rs` measures every one of
 //! those beside its allowance, and the size through a descriptor opened
 //! before the turn began, which is how `truncate(2)`'s hook is reached
-//! without an open from Rust. What that leaves is a file's **flags** —
+//! without an open from Rust. What that left was a file's **flags** —
 //! `FS_IOC_SETFLAGS`, an `ioctl` on a descriptor rather than a change to an
-//! inode by name — on a descriptor that was open before the turn began;
-//! `docs/quirks.md` names it, with why.
+//! inode by name — on a descriptor that was open before the turn began, and
+//! since 2026-09-13 `file_ioctl` decides that too, for the two requests that
+//! set them and for nothing else: a terminal asked its size inside a turn is
+//! never walked. The same test file measures the flag refused outside the
+//! grant beside the flag landing inside it, and `docs/quirks.md` says what
+//! the kernel had already bounded and what remains.
 //!
 //! Two things sit beside the list rather than in it. **A descriptor opened
 //! before a turn began** is decided about on every use since 2026-09-12, which

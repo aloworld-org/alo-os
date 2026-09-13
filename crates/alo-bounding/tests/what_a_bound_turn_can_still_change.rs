@@ -12,18 +12,20 @@
 //!
 //! # The list, and the property they all share
 //!
-//! Twelve hooks exist — `file_open`, `file_permission`, `inode_rename`,
+//! Thirteen hooks exist — `file_open`, `file_permission`, `inode_rename`,
 //! `inode_unlink`, `inode_link`, `inode_setattr`, `inode_setxattr`,
-//! `inode_removexattr`, `inode_set_acl`, `inode_remove_acl`, `socket_connect`
-//! and `socket_sendmsg` — and a filesystem has more verbs than the ten of
-//! those that are about one. Unwatched: making a **symbolic link**, making a
-//! **file** — with an open or without one — and making and removing a
-//! **directory**. `docs/quirks.md` carries the list with the release that
-//! owns closing each, and `crates/alo-bounding-kernel/src/deciding.rs` carries
-//! it beside the code that decides. Changing a file's **mode, owner, times,
-//! size or attributes** was on this list until 2026-09-12 and is refused now;
-//! `the_kernel_refuses_an_attribute_change.rs` is where those reproductions
-//! went when they flipped.
+//! `inode_removexattr`, `inode_set_acl`, `inode_remove_acl`, `file_ioctl`,
+//! `socket_connect` and `socket_sendmsg` — and a filesystem has more verbs
+//! than the eleven of those that are about one. Unwatched: making a
+//! **symbolic link**, making a **file** — with an open or without one — and
+//! making and removing a **directory**. `docs/quirks.md` carries the list
+//! with the release that owns closing each, and
+//! `crates/alo-bounding-kernel/src/deciding.rs` carries it beside the code
+//! that decides. Changing a file's **mode, owner, times, size or attributes**
+//! was on this list until 2026-09-12 and is refused now, and its **inode
+//! flags** through a descriptor opened before the turn began were refused on
+//! 2026-09-13; `the_kernel_refuses_an_attribute_change.rs` is where those
+//! reproductions went when they flipped.
 //!
 //! What they have in common is the property the filesystem hooks were
 //! chosen for: **none of them moves a byte of somebody's file past a grant.**

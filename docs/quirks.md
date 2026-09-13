@@ -1052,11 +1052,11 @@ evidence and never certified-hardware acceptance.
 ### Four hooks are not a filesystem: what a bound turn can still change
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
-**Behaviour:** the boundary watches twelve hooks — `file_open`,
+**Behaviour:** the boundary watches thirteen hooks — `file_open`,
 `file_permission`, `inode_rename`, `inode_unlink`, `inode_link`,
 `inode_setattr`, `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
-`inode_remove_acl`, `socket_connect` and `socket_sendmsg` — and a filesystem
-has more verbs than the ten of those that are about one. The filesystem hooks
+`inode_remove_acl`, `file_ioctl`, `socket_connect` and `socket_sendmsg` — and
+a filesystem has more verbs than the eleven of those that are about one. The filesystem hooks
 were chosen for one property: **none of the mutations they leave unwatched
 moves a byte of somebody's file past a grant.** That is a narrower promise than *a turn cannot change anything outside
 its bound*, and reading the second where the first is written is how somebody
@@ -1188,22 +1188,16 @@ turn and refused nothing:
 | an extended attribute taken away (`removexattr`) | gone | `EACCES`, still there | gone |
 | an access list set (`setxattr` on `system.posix_acl_access`) | set | `EACCES`, not there | set |
 | an access list taken away | gone | `EACCES`, still there | gone |
-| **inode flags** (`ioctl` with `FS_IOC_SETFLAGS`, through a descriptor opened before the turn) | `nodump` set | **`nodump` set — not closed** | set |
+| **inode flags** (`ioctl` with `FS_IOC_SETFLAGS`, through a descriptor opened before the turn) | `nodump` set | `nodump` set until 2026-09-13; `EACCES` since, flags undisturbed — the entry *A file's inode flags are inside the grant* below | set |
 
-**What this does not close, and why it is named rather than built.** A file's
-**flags** — `chattr`'s `nodump`, `noatime`, `append-only` and `immutable` —
-are set with an `ioctl` on a descriptor, which is `file_ioctl` and not a
-change to an inode by name, so none of the five hooks sees it. What bounds it
-is real and is not the boundary's: a descriptor to a file outside the grant
-cannot be opened inside a turn, so only a file that was open before the turn
-began is reachable; `alo-agentd` runs as the person with no capability at all,
-so `append-only` and `immutable` — the two that would change what a person can
-do with their file — are refused by the kernel itself for want of
-`CAP_LINUX_IMMUTABLE`; and no byte moves. It is reproduced in the same file,
-asserted in the direction it behaves today, so the day `file_ioctl` is hooked
-that assertion fails and names this entry. A hook on every `ioctl` on the
-machine is a decision about cost as much as a hook, and it belongs to whoever
-schedules **v0.5** with the rest of ADR 0013.
+**What this did not close, for one day.** A file's **flags** — `chattr`'s
+`nodump`, `noatime`, `append-only` and `immutable` — are set with an `ioctl`
+on a descriptor, which is `file_ioctl` and not a change to an inode by name,
+so none of the five hooks sees it. This entry named it, reproduced it in the
+same test file in the direction it behaved, and said a hook on every `ioctl`
+on the machine was a decision about cost as much as a hook. The decision was
+taken on 2026-09-13 and the entry *A file's inode flags are inside the grant*
+below has the hook, the cost, and what the kernel had bounded on its own.
 
 **Our response:** closed, and every row above is a test. `docs/contracts/agent-verbs.md`
 no longer tells an adapter author that a bounded turn can change a file's
@@ -1212,6 +1206,70 @@ refused truncation, `chmod`, `chown` or attribute reaches the record as the
 one sentence every machine refusal gets, not five. WSL is development evidence
 and never certified-hardware acceptance; nothing *on the machine* is ticked.
 **Date:** 2026-09-12
+
+### A file's inode flags are inside the grant
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-13;
+`crates/alo-bounding/tests/the_kernel_refuses_an_attribute_change.rs`
+**Behaviour:** until 2026-09-13 a bound turn holding a descriptor that was
+open before the turn began could set `FS_IOC_SETFLAGS` on it, and the flag
+landed on a file the same turn had been refused `open` on a moment earlier.
+An `ioctl` is not a change to an inode by name, so none of the five attribute
+hooks saw it, and `file_permission` sees reads and writes, which an `ioctl`
+is neither of. The entry above reproduced it and left it standing.
+
+**One hook closes it, and the hook reads the request before it reads
+anything else.** `file_ioctl(struct file *, unsigned int cmd, unsigned long
+arg)` — three arguments, the previous module's decision fourth, the file
+first as `file_open` and `file_permission` have it — runs on every `ioctl`
+on the machine, which is every terminal asked its size, every socket asked
+its state and every device driven. So `decide_request` in
+`crates/alo-bounding-kernel/src/deciding.rs` compares the request number
+before it looks up a control group: `FS_IOC_SETFLAGS` (`0x40086602`), the
+same request in its 32-bit width `FS_IOC32_SETFLAGS` (`0x40046602`), and
+`FS_IOC_FSSETXATTR` (`0x401c5820`) are decided exactly as an open of the same
+descriptor would be — the walk from the file's own entry — and every other
+request is allowed before any map is read. A `TIOCGWINSZ` inside a turn costs
+three comparisons and is never walked. Measured: a read of a file's flags
+(`FS_IOC_GETFLAGS`) on a descriptor to a file outside the grant, inside a
+bound turn, is answered.
+
+**Three things the next reader should know:**
+
+- **What the kernel bounded on its own is unchanged.** `append-only` and
+  `immutable` need `CAP_LINUX_IMMUTABLE`, which `alo-agentd` does not hold,
+  so before this hook what a turn could actually set was `nodump` and
+  `noatime`, and `nodump` is what the test sets. Small, and it was still a
+  row in the hardening table; it is not any more.
+- **`FS_IOC_FSSETXATTR` is refused by the same arm and is not in the
+  committed suite.** `rustix` has a safe `ioctl_setflags` and `ioctl_getflags`
+  and no safe spelling of the `fsxattr` request; `rustix::ioctl::ioctl` is
+  `unsafe`, and `unsafe` is forbidden outside the kernel package's one file.
+  The request number is the kernel's own encoding of `_IOW('X', 32, struct
+  fsxattr)` and was read from this machine's `linux/fs.h` and from
+  `linux-raw-sys`, both of which agree; the arm is three constants in one
+  `match`, so a test of one spelling is a test of the comparison. It is named
+  here rather than assumed, the way the mapping is.
+- **A 32-bit program's requests go somewhere else on this kernel.** Since
+  Linux 6.8 a compat `ioctl` reaches `file_ioctl_compat`, a hook of its own
+  that this boundary does not sit on; before 6.8 it reached `file_ioctl` with
+  the 32-bit width, which is why that number is recognised. What bounds it is
+  real: a turn is one thread of a 64-bit `alo-agentd`, a turn cannot start a
+  program outside its grant (`execve` is a `file_open`), and every descriptor
+  Rust's standard library opens is close-on-exec, so an inherited descriptor
+  does not survive into a program a verb with a bug in it might start inside
+  the grant. It is
+  written down here rather than hooked, and a hook on it is one `#[lsm]`
+  function calling the same `decide_request` the day it is wanted.
+
+**Our response:** closed, and the row is a test — the reproduction that held
+the gap open was run against the programme that morning and passed with the
+flag landing, then flipped into the refusal it is now, beside a test that a
+read of the same flags inside the same turn is let through unwalked.
+`the_boundary_decides_and_forgets.rs` sets and clears a flag on every file of
+its ordinary day and finds nothing written down; `a_turn_without_a_boundary_does_not_run.rs`
+refuses a turn when the thirteenth pin is gone with no line of its loop
+changed. WSL is development evidence and never certified-hardware acceptance.
+**Date:** 2026-09-13
 
 ### A descriptor opened before a turn began is decided about on every use
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-12;

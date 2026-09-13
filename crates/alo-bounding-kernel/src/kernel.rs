@@ -346,6 +346,36 @@ pub fn inode_remove_acl(ctx: LsmContext) -> i32 {
     deciding::decide_attribute(entry)
 }
 
+/// Every `ioctl` on every descriptor on this machine, until the program is
+/// detached.
+///
+/// `file_ioctl(struct file *file, unsigned int cmd, unsigned long arg)` —
+/// three arguments, so the previous module's decision is the fourth. The
+/// file is the first, as it is for `file_open` and `file_permission`; the
+/// request is the second and is the one thing this hook reads before it
+/// decides whether to read anything else; the third is the request's own
+/// argument, which is not read.
+///
+/// The thirteenth hook, and the one that reaches the last thing a descriptor
+/// opened before the turn began could still do: `FS_IOC_SETFLAGS` and
+/// `FS_IOC_FSSETXATTR` change what a file *is* — its inode flags — and
+/// neither is a change to an inode by name, so none of the five attribute
+/// hooks sees them. This runs on the request, which is the moment the flags
+/// would move, and it is asked of the **requesting thread's** control group,
+/// as `file_permission` is. [`crate::deciding::decide_request`] says which
+/// requests are decided here and why every other one is let through without
+/// a walk.
+#[lsm(hook = "file_ioctl")]
+pub fn file_ioctl(ctx: LsmContext) -> i32 {
+    let file: u64 = ctx.arg(0);
+    let request: u32 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_request(file, request)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

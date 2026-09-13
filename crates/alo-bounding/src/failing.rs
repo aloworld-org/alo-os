@@ -156,7 +156,7 @@ pub enum NotBounded {
     ///
     /// The pin is what keeps a hook attached once the loader has exited, so a
     /// hook whose pin is gone is a hook the kernel decides nothing at — and a
-    /// boundary with eleven of its twelve is one that watches what a turn opens
+    /// boundary with twelve of its thirteen is one that watches what a turn opens
     /// and not, say, what it sends, while looking from the daemon's side like a
     /// boundary. Asked of the machine before every turn and at start, in
     /// `in_place.rs`: the daemon can see that a pin is there and cannot open

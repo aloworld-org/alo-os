@@ -290,16 +290,17 @@ fn an_ordinary_days_messages() -> usize {
 
 /// An ordinary program's changes to what its files **are**: every file in the
 /// folder given a mode, an owner, a moment, an extended attribute and an
-/// access list, each taken away again where it can be, and shortened through
-/// a descriptor — and the count of files that went through all of it.
+/// access list, each taken away again where it can be, shortened through a
+/// descriptor, and given an inode flag through the same descriptor and
+/// relieved of it — and the count of files that went through all of it.
 ///
-/// The five attribute hooks run on every one of those on the machine, and
-/// this is what holds them to *decides and forgets* the way the opens hold
-/// `file_open`: a process in no turn changes its own files, each hook looks
-/// up a control group, misses, and nothing anywhere is different afterwards.
-/// Every change is asserted to have landed, because a change that was
-/// silently refused outside a turn is the other thing these hooks must not
-/// do.
+/// The five attribute hooks and the `ioctl` hook run on every one of those on
+/// the machine, and this is what holds them to *decides and forgets* the way
+/// the opens hold `file_open`: a process in no turn changes its own files,
+/// each hook looks up a control group, misses, and nothing anywhere is
+/// different afterwards. Every change is asserted to have landed, because a
+/// change that was silently refused outside a turn is the other thing these
+/// hooks must not do.
 fn an_ordinary_days_changes(folder: &Path) -> usize {
     let of_rustix = |why: rustix::io::Errno| std::io::Error::from_raw_os_error(why.raw_os_error());
     let mut changed = 0;
@@ -358,6 +359,19 @@ fn an_ordinary_days_changes(folder: &Path) -> usize {
             1,
             "the shortening did not land, so a hook refused something outside a turn"
         );
+        rustix::fs::ioctl_setflags(&held, rustix::fs::IFlags::NODUMP)
+            .map_err(of_rustix)
+            .expect("an ordinary program can set a flag on its own files");
+        assert!(
+            rustix::fs::ioctl_getflags(&held)
+                .map_err(of_rustix)
+                .expect("an ordinary program can read the flags of its own files")
+                .contains(rustix::fs::IFlags::NODUMP),
+            "the flag did not land, so the `ioctl` hook refused something outside a turn"
+        );
+        rustix::fs::ioctl_setflags(&held, rustix::fs::IFlags::empty())
+            .map_err(of_rustix)
+            .expect("and take it away");
         changed += 1;
     }
     changed
@@ -529,8 +543,8 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
     let changed = an_ordinary_days_changes(&folder);
     assert_eq!(
         changed, FILES,
-        "only {changed} files had their attributes changed, so the five attribute hooks were \
-         barely asked anything"
+        "only {changed} files had their attributes and flags changed, so the five attribute \
+         hooks and the `ioctl` hook were barely asked anything"
     );
 
     let after = Held::of(&kernel);

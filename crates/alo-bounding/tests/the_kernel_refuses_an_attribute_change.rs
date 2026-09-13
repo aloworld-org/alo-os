@@ -1,6 +1,6 @@
 //! What a bound turn may change about a file that is **not its contents** —
-//! its size, mode, owner, times, extended attributes and access lists — is
-//! decided by the kernel, and decided by where the file is.
+//! its size, mode, owner, times, extended attributes, access lists and inode
+//! flags — is decided by the kernel, and decided by where the file is.
 //!
 //! `the_kernel_refuses.rs` covers what a turn opens, `the_kernel_refuses_a_rename.rs`
 //! what it moves, `the_kernel_refuses_a_delete_or_a_link.rs` what it removes
@@ -28,6 +28,19 @@
 //! inside the grant goes and one outside it is `EACCES` at the syscall,
 //! before the attribute has moved. `deciding.rs` argues why the entry and
 //! not its folder.
+//!
+//! # And a sixth, for the one change an `ioctl` makes
+//!
+//! A file's inode flags — `chattr`'s `nodump`, `noatime`, `append-only` and
+//! `immutable` — are set with `FS_IOC_SETFLAGS` on a descriptor, which is
+//! `file_ioctl` and not a change to an inode by name, so none of the five
+//! sees it. Until 2026-09-13 this file held that gap in the direction it
+//! behaved: the flag landed on a file the same turn was refused `open` on,
+//! through a descriptor opened before the turn began. `file_ioctl` decides
+//! it now, for the two requests that set flags and for nothing else, and the
+//! test that held the gap open is the test that holds it closed — beside one
+//! that reads the flags of the same file inside the same turn and is let
+//! through, because a request that changes nothing is never walked.
 //!
 //! # How the size is reached without an open
 //!
@@ -205,13 +218,20 @@ enum Change {
 
     /// Its inode flags — `chattr`'s `nodump`, `noatime`, `append-only` and
     /// `immutable` — set with an `ioctl` on a descriptor opened before the
-    /// turn began. **Not yet inside the grant**, and measured as such below.
+    /// turn began.
     Flags,
+
+    /// Its inode flags **read**, with the other `ioctl` on the same
+    /// descriptor. Not a change at all, and here because the hook that
+    /// decides the change above must let this through without walking
+    /// anything: it is the nearest safe spelling of a terminal asked its
+    /// size inside a turn.
+    FlagsRead,
 }
 
 impl Change {
     /// Every change this file measures.
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 11] = [
         Self::Size,
         Self::Rewritten,
         Self::Mode,
@@ -222,6 +242,7 @@ impl Change {
         Self::AccessList,
         Self::AccessListRemoved,
         Self::Flags,
+        Self::FlagsRead,
     ];
 
     /// How the parent names it to the child.
@@ -237,6 +258,7 @@ impl Change {
             Self::AccessList => "access-list",
             Self::AccessListRemoved => "access-list-removed",
             Self::Flags => "flags",
+            Self::FlagsRead => "flags-read",
         }
     }
 
@@ -248,7 +270,7 @@ impl Change {
 
     /// Whether this change needs a descriptor opened before the turn began.
     const fn through_a_descriptor(self) -> bool {
-        matches!(self, Self::Size | Self::Flags)
+        matches!(self, Self::Size | Self::Flags | Self::FlagsRead)
     }
 
     /// Whether this change takes something away that has to be there first.
@@ -335,6 +357,11 @@ fn changing(change: Change, file: &Path, held: Option<&fs::File>) -> std::io::Re
             held.expect("a flags change goes through a descriptor opened beforehand"),
             rustix::fs::IFlags::NODUMP,
         )
+        .map_err(of_rustix),
+        Change::FlagsRead => rustix::fs::ioctl_getflags(
+            held.expect("a flags read goes through a descriptor opened beforehand"),
+        )
+        .map(drop)
         .map_err(of_rustix),
     }
 }
@@ -469,6 +496,10 @@ impl AMachine {
                 Self::has(&self.secret, THE_ACCESS_LIST),
                 "the access list a bound turn was refused the removal of is gone anyway"
             ),
+            Change::Flags | Change::FlagsRead => assert!(
+                !flags_of(&self.secret).contains(rustix::fs::IFlags::NODUMP),
+                "the flag a bound turn was refused is on the secret anyway"
+            ),
             _ => {}
         }
     }
@@ -527,6 +558,10 @@ impl AMachine {
                 flags_of(&self.invoice).contains(rustix::fs::IFlags::NODUMP),
                 "the invoice's flags were not changed, so the allowance inside the grant did \
                  nothing"
+            ),
+            Change::FlagsRead => assert!(
+                !flags_of(&self.invoice).contains(rustix::fs::IFlags::NODUMP),
+                "the invoice's flags were changed by a read of them"
             ),
         }
     }
@@ -610,7 +645,8 @@ fn refused_outside_and_allowed_inside(what: &str, change: Change) {
         "a bound turn made a {change:?} change to a file nobody granted it. The five hooks \
          `inode_setattr`, `inode_setxattr`, `inode_removexattr`, `inode_set_acl` and \
          `inode_remove_acl` in crates/alo-bounding-kernel/src/kernel.rs are what refuse this, \
-         and `decide_attribute` in deciding.rs is what they ask"
+         and `decide_attribute` in deciding.rs is what they ask — or, for a file's flags, \
+         `file_ioctl` and `decide_request`"
     );
     assert_eq!(
         went.inside,
@@ -695,23 +731,40 @@ fn removing_an_access_list_is_inside_the_grant() {
     refused_outside_and_allowed_inside("access-list-removed", Change::AccessListRemoved);
 }
 
-/// **A file's flags are not yet inside the grant**, and this is the gap the
-/// five hooks leave, asserted in the direction it behaves today so that the
-/// day it is closed this fails and says where to come.
+/// **A bound turn cannot set a flag on a file it may not read**, even through
+/// a descriptor that was open before the turn began — which is the one way
+/// `FS_IOC_SETFLAGS` reaches a file outside the grant, since an open inside
+/// the turn is refused at the open.
 ///
-/// `FS_IOC_SETFLAGS` is an `ioctl` on a descriptor, which is `file_ioctl` and
-/// not any hook on an inode, so a turn with a descriptor that was open before
-/// it began can still set `nodump`, `noatime` — and, with `CAP_LINUX_IMMUTABLE`,
-/// `append-only` and `immutable` — on a file it is refused `open` on. What
-/// bounds it is real and is not the boundary's: a descriptor to a file
-/// outside the grant cannot be opened inside a turn, `alo-agentd` runs as the
-/// person with no capability at all so the two flags that would matter are
-/// the kernel's own refusal, and nothing here moves a byte. `docs/quirks.md`
-/// names it with the release that owns closing it.
+/// Until 2026-09-13 this test held the gap open: it asserted the flag
+/// **landing** on the secret, in the direction the boundary behaved, so that
+/// the day `file_ioctl` was hooked it would fail and say where to come. It
+/// was run against the programme as it stood that morning and passed, which
+/// is the reproduction; then the hook was written and the same test, flipped,
+/// is what says it closed. What the kernel bounded on its own is unchanged
+/// and is still not the boundary's: `append-only` and `immutable` need
+/// `CAP_LINUX_IMMUTABLE`, which `alo-agentd` does not hold, so `nodump` is
+/// what is measured here, being what a turn could actually set.
 #[test]
-fn a_files_flags_are_not_yet_inside_the_grant() {
-    let machine = AMachine::ready_for("flags", Change::Flags);
-    let went = a_bound_turn("alo-attribute-flags", &machine, Change::Flags);
+fn a_files_flags_are_inside_the_grant() {
+    refused_outside_and_allowed_inside("flags", Change::Flags);
+}
+
+/// **A request that changes nothing is not walked.** The same descriptor, to
+/// the same file outside the grant, inside the same turn, asked for its flags
+/// rather than given some — `FS_IOC_GETFLAGS` — and the answer comes back.
+///
+/// This is the *and for nothing else* half of the hook: `ioctl` is how a
+/// terminal is asked its size and a device is driven, and a hook that walked
+/// a filesystem for every one of those would be a cost on a person's editor
+/// for a flag nobody was changing. A read of the flags is the nearest thing
+/// to `TIOCGWINSZ` that can be made safely against a file, and it is let
+/// through on a file the turn is refused `open` on — which is exactly what
+/// proves the request number is asked before anything else is.
+#[test]
+fn a_read_of_a_files_flags_is_not_walked() {
+    let machine = AMachine::ready_for("flags-read", Change::FlagsRead);
+    let went = a_bound_turn("alo-attribute-flags-read", &machine, Change::FlagsRead);
 
     assert_eq!(
         went.control,
@@ -721,27 +774,18 @@ fn a_files_flags_are_not_yet_inside_the_grant() {
     assert_eq!(
         went.outside,
         Outcome::Allowed,
-        "a bound turn was refused an `ioctl` on a descriptor opened before it began, which \
-         means `file_ioctl` is watched now — say so in crates/alo-bounding-kernel/src/deciding.rs, \
-         in crates/alo-bounding/src/lib.rs and in docs/quirks.md under *Attributes, ownership \
-         and size are inside the grant*, and turn this into the refusal it should be"
+        "a bound turn was refused a read of a file's flags through a descriptor opened before \
+         it began. `file_ioctl` decides only `FS_IOC_SETFLAGS` and `FS_IOC_FSSETXATTR` and \
+         walks nothing for any other request — `decide_request` in \
+         crates/alo-bounding-kernel/src/deciding.rs compares the request first"
     );
     assert_eq!(
         went.inside,
         Outcome::Allowed,
-        "the same change inside the grant was refused"
+        "a read of the flags of a file inside the grant was refused"
     );
-    assert!(
-        flags_of(&machine.secret).contains(rustix::fs::IFlags::NODUMP),
-        "the flag did not land on the secret, so this test proves nothing about the hook it is \
-         named after"
-    );
-    machine.the_invoice_was_changed(Change::Flags);
-    assert_eq!(
-        fs::read_to_string(&machine.secret).expect("the secret is readable"),
-        A_SECRET,
-        "the secret's contents were disturbed"
-    );
+    machine.the_secret_is_undisturbed(Change::FlagsRead);
+    machine.the_invoice_was_changed(Change::FlagsRead);
     machine.taken_away();
 }
 

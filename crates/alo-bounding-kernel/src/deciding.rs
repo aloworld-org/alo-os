@@ -31,15 +31,17 @@
 
 //! # What is watched, and what is not
 //!
-//! Ten hooks on the filesystem — `file_open`, `file_permission`,
+//! Eleven hooks on the filesystem — `file_open`, `file_permission`,
 //! `inode_rename`, `inode_unlink`, `inode_link`, `inode_setattr`,
-//! `inode_setxattr`, `inode_removexattr`, `inode_set_acl` and
-//! `inode_remove_acl` — which is what a turn **opens**, **reads and writes**,
-//! **moves**, **removes**, gives a **second name**, and **changes about a file
-//! that is not its contents**: its size, mode, owner, times, extended
-//! attributes and access lists, which [`decide_attribute`] decides as one
-//! question. That is not the whole of a filesystem and this file does not
-//! pretend it is. Nothing here watches:
+//! `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
+//! `inode_remove_acl` and `file_ioctl` — which is what a turn **opens**,
+//! **reads and writes**, **moves**, **removes**, gives a **second name**, and
+//! **changes about a file that is not its contents**: its size, mode, owner,
+//! times, extended attributes and access lists, which [`decide_attribute`]
+//! decides as one question, and its inode flags, which [`decide_request`]
+//! decides for the two `ioctl` requests that set them. That is not the whole
+//! of a filesystem and this file does not pretend it is. Nothing here
+//! watches:
 //!
 //! - **symbolic links** (`inode_symlink`) — a turn can make one pointing
 //!   anywhere. It is not a way out on its own: following it to read something
@@ -52,13 +54,6 @@
 //! - **making a file** (`inode_create`, and `inode_mknod` for the call that
 //!   makes one without opening it) — a turn can create one. Writing to it is an
 //!   open, which is watched, so what this leaves is an empty file somewhere;
-//! - **a file's flags** (`file_ioctl`) — `FS_IOC_SETFLAGS`, which is how a
-//!   file is made immutable or append-only, is an `ioctl` on a descriptor
-//!   and not a change to an inode by name, so it meets none of the five
-//!   attribute hooks. A descriptor to a file outside the grant cannot be
-//!   opened inside a turn, so what this leaves is the flags of a file that
-//!   was open before the turn began. It is named in `docs/quirks.md` beside
-//!   the attribute hooks and is not reproduced there, for the reason given;
 //! - **a mapping of a file** (`mmap_file`) — a file mapped into memory is read
 //!   by the processor rather than by a syscall, so a mapping is the one way
 //!   left to the contents of a descriptor that was **opened before a turn
@@ -76,17 +71,22 @@
 //!   those do and do not decide.
 //!
 //! Each of those is a real gap and each is written down rather than left to be
-//! discovered. What they have in common — a mapping and a file's flags aside,
-//! which are each the remainder of a gap that was closed rather than one that
-//! was chosen — is that none of them moves a byte of somebody's file to
-//! somewhere they did not approve, which is the property the hooks that exist
-//! were chosen for. **Until 2026-09-12 this list also held attributes**, and
-//! one of them went further than the promise: `truncate(2)` reaches
-//! `inode_setattr` without an open, so a turn could empty a file it could not
-//! read. [`decide_attribute`] closed it, and
+//! discovered. What they have in common — a mapping aside, which is the
+//! remainder of a gap that was closed rather than one that was chosen — is
+//! that none of them moves a byte of somebody's file to somewhere they did not
+//! approve, which is the property the hooks that exist were chosen for.
+//! **Until 2026-09-12 this list also held attributes**, and one of them went
+//! further than the promise: `truncate(2)` reaches `inode_setattr` without an
+//! open, so a turn could empty a file it could not read. [`decide_attribute`]
+//! closed it, and
 //! `alo-bounding/tests/the_kernel_refuses_an_attribute_change.rs` measures
 //! every attribute refused outside the grant beside the same change landing
-//! inside it.
+//! inside it. **Until 2026-09-13 it held a file's flags** beside the mapping:
+//! `FS_IOC_SETFLAGS` on a descriptor opened before the turn began met none of
+//! the five attribute hooks, because an `ioctl` is not a change to an inode
+//! by name. [`decide_request`] closed it, on `file_ioctl`, and the same test
+//! file measures the flag refused outside the grant beside the same flag
+//! landing inside it.
 //!
 //! **All of them are reproduced** against this programme on a running kernel, in
 //! `alo-bounding/tests/what_a_bound_turn_can_still_change.rs`, each with a
@@ -234,6 +234,94 @@ fn kind_of(file: u64) -> Option<u16> {
     let inode = kernel::word_at(entry.wrapping_add(dentry_inode))?;
     let mode = kernel::quarter_word_at(inode.wrapping_add(inode_mode))?;
     Some(mode & A_KIND)
+}
+
+/// The `ioctl` request that sets a file's inode flags: `FS_IOC_SETFLAGS`,
+/// which is `_IOW('f', 2, long)` — how `chattr` spells `nodump`, `noatime`,
+/// `append-only` and `immutable`.
+///
+/// A number rather than a constant from a header, for the reason [`REFUSED`]
+/// is one: this program has no headers. The encoding is the kernel's own —
+/// direction, size, type and number — and a `long` is eight bytes on every
+/// machine this program can be loaded on.
+const SETTING_FLAGS: u32 = 0x4008_6602;
+
+/// The same request in its 32-bit width: `FS_IOC32_SETFLAGS`, which is
+/// `_IOW('f', 2, int)`.
+///
+/// Not a different request. It is what a 32-bit program spells when it means
+/// [`SETTING_FLAGS`], and a kernel before 6.8 hands it to this same hook with
+/// the width unchanged — so a boundary that recognised only the 64-bit
+/// spelling would be one a 32-bit program could walk past. On this kernel a
+/// 32-bit program's requests reach `file_ioctl_compat` instead, which is
+/// named in `docs/quirks.md` with why it is bounded already; recognising the
+/// number here costs one comparison and closes the older kernels.
+const SETTING_FLAGS_32: u32 = 0x4004_6602;
+
+/// The `ioctl` request that sets a file's extended inode attributes:
+/// `FS_IOC_FSSETXATTR`, which is `_IOW('X', 32, struct fsxattr)`, twenty-eight
+/// bytes of it.
+///
+/// The other spelling of the same change: the `fsxattr` structure carries the
+/// same flags as [`SETTING_FLAGS`] in a different layout, with a project
+/// identifier beside them, and a boundary that refused one spelling and let
+/// the other through would be refusing `chattr` and allowing the change made
+/// by hand.
+const SETTING_EXTENDED_FLAGS: u32 = 0x401c_5820;
+
+/// Whether this `ioctl` request may go ahead.
+///
+/// # The request is read first, and almost every request ends here
+///
+/// `ioctl` is how a terminal is asked its size, a socket its state, a device
+/// anything at all — and a person's editor, shell and compositor make those
+/// requests constantly. So this is the one hook whose first question is not
+/// *is this a turn*: the request number is compared against the three that
+/// change what a file **is**, and a request that is not one of them is
+/// allowed before any map is looked up or any word of kernel memory read.
+/// `TIOCGWINSZ` inside a turn costs three comparisons; it is never walked.
+/// That order is the plan's constraint and the honest shape of the cost: a
+/// boundary that walked a filesystem for every request on the machine would
+/// be a tax on everybody for a flag nobody was changing.
+///
+/// # What is decided, and why it is these three
+///
+/// [`SETTING_FLAGS`], its 32-bit width, and [`SETTING_EXTENDED_FLAGS`] — the
+/// two ways a file's inode flags are set, one of them in two widths. Flags
+/// are the last thing about a file that is not its contents and that a
+/// descriptor opened **before** the turn began could still change: an open
+/// inside the turn on a file outside the grant is refused at the open, so
+/// what this reaches is exactly the inherited descriptor `file_permission`
+/// closed for reads and writes and `inode_setattr` closed for the size.
+/// What the kernel already bounds is real and is not this program's:
+/// `append-only` and `immutable` need `CAP_LINUX_IMMUTABLE`, which
+/// `alo-agentd` does not hold, so before this hook what a turn could do was
+/// set `nodump` or `noatime` on a file it could not read. Small, and a row is
+/// still a row.
+///
+/// Reading a file's flags — `FS_IOC_GETFLAGS`, `FS_IOC_FSGETXATTR` — is not
+/// decided here and is let through like every other request: the flags are
+/// not the contents, and what `file_open` and `file_permission` refuse is
+/// reading the file.
+///
+/// # And then the same question every file hook asks
+///
+/// For one of the three, the decision is [`decide`]'s exactly: the file's own
+/// directory entry, walked upwards until a granted place is met or the top of
+/// the filesystem is. The same function and the same walk, so an open and a
+/// flag change on the same descriptor cannot come to different answers about
+/// where it is.
+///
+/// # Not a turn
+///
+/// Allowed, and nothing is remembered — for one of the three requests it is
+/// one hash lookup and a miss, and for every other request it is not even
+/// that.
+pub fn decide_request(file: u64, request: u32) -> i32 {
+    match request {
+        SETTING_FLAGS | SETTING_FLAGS_32 | SETTING_EXTENDED_FLAGS => decide(file),
+        _ => ALLOWED,
+    }
 }
 
 /// Whether this rename may go ahead.

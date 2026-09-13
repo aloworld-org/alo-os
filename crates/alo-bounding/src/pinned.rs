@@ -22,7 +22,8 @@
 //!   ├─ inode_setxattr        0600 root:root                 an extended attribute set
 //!   ├─ inode_removexattr     0600 root:root                 an extended attribute taken away
 //!   ├─ inode_set_acl         0600 root:root                 an access list set
-//!   └─ inode_remove_acl      0600 root:root                 an access list taken away
+//!   ├─ inode_remove_acl      0600 root:root                 an access list taken away
+//!   └─ file_ioctl            0600 root:root                 a file's inode flags
 //! ```
 //!
 //! # The two maps are not given away on the same terms, and that is the point
@@ -40,12 +41,13 @@
 //! this file*, arriving as a permission rather than as a check. **The daemon can
 //! bind a turn and cannot change how the kernel reads a file.**
 //!
-//! The twelve named after kernel functions are the pinned links, and they are
-//! what keeps the programme attached after the loader has exited. Removing one
-//! detaches that hook; nothing else does. There are twelve because the
-//! programme sits on twelve hooks — what a turn opens, moves, removes, links,
-//! connects to, sends, reads and writes, and changes about a file that is not
-//! its contents — and each attach is its own link.
+//! The thirteen named after kernel functions are the pinned links, and they
+//! are what keeps the programme attached after the loader has exited. Removing
+//! one detaches that hook; nothing else does. There are thirteen because the
+//! programme sits on thirteen hooks — what a turn opens, moves, removes,
+//! links, connects to, sends, reads and writes, changes about a file that is
+//! not its contents, and sets among a file's inode flags — and each attach is
+//! its own link.
 //!
 //! # A root the caller names, for the reason `alo-agentd`'s `place.rs` has one
 //!
@@ -122,6 +124,10 @@ const THE_ACCESS_LIST_HOOK: &str = "inode_set_acl";
 /// The pinned link for the hook every access list taken away goes through.
 const THE_REMOVED_ACCESS_LIST_HOOK: &str = "inode_remove_acl";
 
+/// The pinned link for the hook every `ioctl` request goes through, which is
+/// where a file's inode flags are set.
+const THE_FLAGS_HOOK: &str = "file_ioctl";
+
 /// Root owns it, the agent's group may enter it, nobody else exists.
 const THE_DIRECTORY_MODE: u32 = 0o750;
 
@@ -178,6 +184,9 @@ pub struct Pinned {
 
     /// The link that holds it on `inode_remove_acl`.
     removed_access_list_hook: PathBuf,
+
+    /// The link that holds it on `file_ioctl`.
+    flags_hook: PathBuf,
 }
 
 impl Pinned {
@@ -189,8 +198,8 @@ impl Pinned {
 
     /// The same shape beneath a root somebody names.
     ///
-    /// Nothing is made or looked at: this is fifteen paths joined, and every other
-    /// method here is what touches a filesystem.
+    /// Nothing is made or looked at: this is sixteen paths joined, and every
+    /// other method here is what touches a filesystem.
     #[must_use]
     pub fn beneath(root: &Path) -> Self {
         Self {
@@ -209,6 +218,7 @@ impl Pinned {
             removed_attribute_hook: root.join(THE_REMOVED_ATTRIBUTE_HOOK),
             access_list_hook: root.join(THE_ACCESS_LIST_HOOK),
             removed_access_list_hook: root.join(THE_REMOVED_ACCESS_LIST_HOOK),
+            flags_hook: root.join(THE_FLAGS_HOOK),
         }
     }
 
@@ -305,6 +315,13 @@ impl Pinned {
         &self.removed_access_list_hook
     }
 
+    /// The link for the hook every `ioctl` request goes through, where a
+    /// file's inode flags are set.
+    #[must_use]
+    pub fn flags_hook(&self) -> &Path {
+        &self.flags_hook
+    }
+
     /// Every pinned link, in the order the hooks are attached.
     ///
     /// One list so that attaching, refusing over leftovers and taking a
@@ -312,7 +329,7 @@ impl Pinned {
     /// pin was left out of one of those three would be a hook that stayed
     /// attached after the boundary was removed.
     #[must_use]
-    pub fn every_hook(&self) -> [&Path; 12] {
+    pub fn every_hook(&self) -> [&Path; 13] {
         self.every_hook_named().map(|(_, at)| at)
     }
 
@@ -326,7 +343,7 @@ impl Pinned {
     /// The name is the one the kernel function has and the pin is called after
     /// it, so the two cannot drift.
     #[must_use]
-    pub fn every_hook_named(&self) -> [(&'static str, &Path); 12] {
+    pub fn every_hook_named(&self) -> [(&'static str, &Path); 13] {
         [
             (THE_HOOK, self.hook.as_path()),
             (THE_RENAME_HOOK, self.rename_hook.as_path()),
@@ -349,6 +366,7 @@ impl Pinned {
                 THE_REMOVED_ACCESS_LIST_HOOK,
                 self.removed_access_list_hook.as_path(),
             ),
+            (THE_FLAGS_HOOK, self.flags_hook.as_path()),
         ]
     }
 
@@ -541,11 +559,17 @@ mod tests {
             pinned.removed_access_list_hook(),
             Path::new("/sys/fs/bpf/alo/inode_remove_acl")
         );
+        assert_eq!(pinned.flags_hook(), Path::new("/sys/fs/bpf/alo/file_ioctl"));
         // Every hook has a pin of its own, and the list is what the loader
         // attaches in the order of: a hook missing from it would be attached
         // and never pinned, which is a hook detached the moment the loader
         // exits.
-        assert_eq!(pinned.every_hook().len(), 12);
+        assert_eq!(pinned.every_hook().len(), 13);
+        assert_eq!(
+            pinned.every_hook_named().last().map(|(hook, _)| *hook),
+            Some("file_ioctl"),
+            "the thirteenth hook is attached last, and its pin is called after the kernel function"
+        );
     }
 
     /// The directory is made shut: root owns it, the agent's group may enter
