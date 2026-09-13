@@ -17,6 +17,7 @@
 use alo_egress::{Departing, DestinationError, Indicator, NotPermitted};
 use alo_nearby::words as nearby;
 use alo_strings::{Filling, Said, Strings};
+use alo_turn::NoAnswer;
 
 use crate::door::AtTheDoor;
 use crate::words;
@@ -93,6 +94,59 @@ impl Left {
     pub fn ended(self, indicator: &mut Indicator) -> WentBack {
         indicator.ended(self.departing);
         self.why
+    }
+
+    /// The departure and the word, apart — for a turn, which writes the one
+    /// down and ends it itself.
+    pub(crate) fn taken(self) -> (Departing, WentBack) {
+        (self.departing, self.why)
+    }
+}
+
+/// Why a verb did not cross through a turn.
+///
+/// [`NotCrossed`] with the departure gone: a turn has written it down and
+/// taken it off the indicator by the time this is handed back, so the arm
+/// that carried it carries only what came back. The turn's own refusals —
+/// held back by the rule, no boundary, the turn closed, the record broken —
+/// come whole as [`NotThrough::TheTurn`].
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum NotThrough {
+    /// This machine holds no pairing permitting it, at the moment.
+    NotPairedWithIt,
+    /// The destination could not be shown on the indicator.
+    CannotBeShown(DestinationError),
+    /// It left, the departure is in the record, and this is what came back.
+    WentBack(WentBack),
+    /// The turn refused it, or could not write it down.
+    TheTurn(NoAnswer),
+}
+
+impl NotThrough {
+    /// The sentence the person on the asking machine reads, where there is
+    /// one — a turn miswired has none, as [`NoAnswer::said`] says.
+    #[must_use]
+    pub fn said(&self, machine: &str, strings: &Strings) -> Option<Said> {
+        match self {
+            Self::NotPairedWithIt => Some(strings.say(
+                &nearby::NOT_PAIRED_WITH_THE_ONE_THAT_ASKED.key(),
+                &Filling::nothing(),
+            )),
+            Self::CannotBeShown(why) => Some(why.said(strings)),
+            Self::WentBack(why) => Some(why.said(machine, strings)),
+            Self::TheTurn(why) => why.said(strings),
+        }
+    }
+
+    /// Whether anything left this machine.
+    #[must_use]
+    pub fn something_left(&self) -> bool {
+        match self {
+            Self::WentBack(_) => true,
+            Self::NotPairedWithIt | Self::CannotBeShown(_) => false,
+            Self::TheTurn(why) => !why.nothing_left(),
+        }
     }
 }
 

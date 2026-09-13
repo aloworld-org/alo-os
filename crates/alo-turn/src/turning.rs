@@ -86,6 +86,7 @@ use alo_record::Entry;
 use alo_strings::{Said, Strings};
 
 use crate::arriving::{proposal_worded_here, worded_here};
+use crate::became::Became;
 use crate::carrying::carrying_out;
 use crate::machine::Machine;
 use crate::refusing::NotDone;
@@ -124,6 +125,10 @@ pub struct Turning<'a, 'm> {
     /// an entry is written, so it says where it came from; and where the two
     /// refusals a remote verb reads differently are worded.
     origin: Option<Origin>,
+    /// What became of each change this turn put to the person, by the
+    /// number it waits under: put, approved, or declined. Lapsing is read
+    /// off the change at the moment it is asked about.
+    became: Vec<(u64, Became)>,
 }
 
 impl<'a, 'm> Turning<'a, 'm> {
@@ -157,6 +162,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             closed: false,
             lost_a_thread: false,
             origin: None,
+            became: Vec::new(),
         })
     }
 
@@ -188,6 +194,7 @@ impl<'a, 'm> Turning<'a, 'm> {
             closed: false,
             lost_a_thread: false,
             origin: Some(origin.clone()),
+            became: Vec::new(),
         })
     }
 
@@ -286,7 +293,9 @@ impl<'a, 'm> Turning<'a, 'm> {
                 return Err(NotDone::NeverAsked(why));
             }
         };
-        Ok(self.approvals.propose(proposal))
+        let id = self.approvals.propose(proposal);
+        self.became.push((id.as_u64(), Became::Waiting));
+        Ok(id)
     }
 
     /// The person approved it, so it runs — once.
@@ -323,6 +332,7 @@ impl<'a, 'm> Turning<'a, 'm> {
     ) -> Result<Authorised, NotDone> {
         self.still_open()?;
         let approved = self.approvals.approve(id, now)?;
+        self.remembering(id, Became::Approved);
         match approved.redeem(grants, now) {
             Ok(authorised) => Ok(authorised),
             Err(refused) => self.stopped_at_the_moment(refused, now),
@@ -358,6 +368,7 @@ impl<'a, 'm> Turning<'a, 'm> {
                 number: id.as_u64(),
             }));
         };
+        self.remembering(id, Became::Declined);
         let entry = Entry::declined(&proposal, self.machine.strings(), now);
         self.writing_down(entry)
     }
@@ -497,6 +508,44 @@ impl<'a, 'm> Turning<'a, 'm> {
     #[must_use]
     pub fn proposed(&self, id: ProposalId) -> Option<&Waiting> {
         self.approvals.of(id)
+    }
+
+    /// What became of the change waiting under `number`, at `now`.
+    ///
+    /// A read of this turn's own memory, asking the grants nothing and
+    /// running nothing: [`Became::Waiting`] while the person has not
+    /// answered and the change still stands, [`Became::Lapsed`] once it no
+    /// longer does, [`Became::Approved`] or [`Became::Declined`] once they
+    /// have, and [`Became::NothingWaiting`] for a number this turn never
+    /// put to anybody. A number is its turn's and means nothing outside it,
+    /// so a change another turn put is answered as nothing waiting.
+    #[must_use]
+    pub fn became(&self, number: u64, now: SystemTime) -> Became {
+        let remembered = self
+            .became
+            .iter()
+            .rev()
+            .find(|(of, _)| *of == number)
+            .map(|(_, became)| *became);
+        match remembered {
+            Some(Became::Waiting) => {
+                if self
+                    .waiting_at(now)
+                    .any(|waiting| waiting.id.as_u64() == number)
+                {
+                    Became::Waiting
+                } else {
+                    Became::Lapsed
+                }
+            }
+            Some(became) => became,
+            None => Became::NothingWaiting,
+        }
+    }
+
+    /// Remember what the person did about a change.
+    fn remembering(&mut self, id: ProposalId, became: Became) {
+        self.became.push((id.as_u64(), became));
     }
 
     /// The words the person in front of this machine reads.
@@ -942,6 +991,43 @@ mod tests {
         let entry = record.everything().next().unwrap();
         assert!(entry.happened().ran());
         assert!(entry.happened().from_approval().is_some());
+    }
+
+    /// **What became of a change is answered by the turn that put it**:
+    /// waiting while it stands, lapsed once it does not, approved or
+    /// declined once the person has answered, and nothing waiting for a
+    /// number this turn never gave out.
+    #[test]
+    fn what_became_of_a_change_is_answered_by_the_turn_that_put_it() {
+        let mut record = Record::default();
+        on_a_machine("became", &mut record, |turning, grants, _, invoice| {
+            assert_eq!(turning.became(1, noon()), Became::NothingWaiting);
+            let id = turning
+                .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
+                .unwrap();
+            let number = id.as_u64();
+            assert_eq!(turning.became(number, noon()), Became::Waiting);
+            assert_eq!(
+                turning.became(number, noon() + hour() + hour()),
+                Became::Lapsed
+            );
+            turning.approving(id, grants, noon()).unwrap();
+            assert_eq!(turning.became(number, noon()), Became::Approved);
+            assert_eq!(turning.became(number + 1, noon()), Became::NothingWaiting);
+        });
+
+        let mut record = Record::default();
+        on_a_machine(
+            "declined-became",
+            &mut record,
+            |turning, grants, _, invoice| {
+                let id = turning
+                    .proposing("rename_file", &renaming(invoice), grants, hour(), noon())
+                    .unwrap();
+                turning.declining(id, noon()).unwrap();
+                assert_eq!(turning.became(id.as_u64(), noon()), Became::Declined);
+            },
+        );
     }
 
     /// **A change offered as a read is refused, and a read offered for approval

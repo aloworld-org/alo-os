@@ -45,6 +45,9 @@ pub const THE_READ_PATH: &str = "/alo-os/1/verb/read";
 /// Where a change is put, on the same port.
 pub const THE_CHANGE_PATH: &str = "/alo-os/1/verb/change";
 
+/// Where what became of a change is asked after, on the same port.
+pub const THE_OUTCOME_PATH: &str = "/alo-os/1/verb/outcome";
+
 /// The one method this wire answers.
 const POST: &str = "POST";
 
@@ -198,6 +201,7 @@ fn read(message: &http::Message) -> Message {
     let door = match path.as_str() {
         THE_READ_PATH => Door::Read,
         THE_CHANGE_PATH => Door::Change,
+        THE_OUTCOME_PATH => Door::Outcome,
         _ => return Message::NotForThisWire,
     };
     let proof = match message.header(THE_PROOF_HEADER) {
@@ -322,7 +326,7 @@ fn written(stream: &mut TcpStream, replying: &Replying) -> Result<(), NotNearby>
 mod tests {
     use alo_nearby::http;
 
-    use super::{Message, THE_CHANGE_PATH, THE_READ_PATH, read};
+    use super::{Message, THE_CHANGE_PATH, THE_OUTCOME_PATH, THE_READ_PATH, read};
     use crate::doorway::Door;
 
     /// A request to `path` with these headers and body, as read off a wire.
@@ -357,6 +361,15 @@ mod tests {
             message,
             Message::AVerb {
                 door: Door::Change,
+                ..
+            }
+        ));
+        let outcome_line = format!("POST {THE_OUTCOME_PATH} HTTP/1.1");
+        let message = read(&a_message(&outcome_line, &[], "{}"));
+        assert!(matches!(
+            message,
+            Message::AVerb {
+                door: Door::Outcome,
                 ..
             }
         ));

@@ -37,6 +37,9 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# What a turn on the asking machine begins from: an invocation offering
+# nothing, so the integration test can open a real turn to cross from.
+alo-context = { path = "../alo-context" }
 # Every crate whose words a refusal met on the receiving machine can be worded
 # by, so the integration test's vocabulary is the one a real machine has.
 alo-answering = { path = "../alo-answering" }

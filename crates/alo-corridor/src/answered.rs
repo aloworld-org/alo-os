@@ -24,6 +24,8 @@
 
 use alo_nearby::NotNearby;
 use alo_protocol::Done;
+
+use crate::outcome::Outcome;
 use serde::{Deserialize, Serialize};
 
 /// The most bytes an answer on the wire may be.
@@ -43,6 +45,9 @@ pub enum Answered {
         /// The number it waits under, on that machine.
         number: u64,
     },
+    /// What became of a change asked after: the answer to
+    /// [`crate::AskedAbout`], on the outcome path.
+    Became(Outcome),
 }
 
 impl Answered {
@@ -68,7 +73,7 @@ impl Answered {
     pub const fn did(&self) -> Option<&Done> {
         match self {
             Self::Did(done) => Some(done),
-            Self::Waits { .. } => None,
+            Self::Waits { .. } | Self::Became(_) => None,
         }
     }
 
@@ -76,8 +81,17 @@ impl Answered {
     #[must_use]
     pub const fn waits(&self) -> Option<u64> {
         match self {
-            Self::Did(_) => None,
+            Self::Did(_) | Self::Became(_) => None,
             Self::Waits { number } => Some(*number),
+        }
+    }
+
+    /// What became of the change asked after, if this answers that.
+    #[must_use]
+    pub const fn became(&self) -> Option<Outcome> {
+        match self {
+            Self::Became(outcome) => Some(*outcome),
+            Self::Did(_) | Self::Waits { .. } => None,
         }
     }
 }

@@ -292,7 +292,18 @@ because a verb had nothing to prove itself with until a pairing existed.
 
 ### 9. The machine that is asked answers on the port it advertises
 
-**Status:** ready. **Depends on:** 7, 8.
+**Status:** **Done, 2026-09-14**, in the shape the constraint below names
+for a daemon another lane owns: the asking side's door on
+`alo_turn::Turning` (`crates/alo-turn/src/crossing.rs`, `became.rs`), the
+outcome path on the wire (`crates/alo-corridor/src/outcome.rs`,
+`THE_OUTCOME_PATH`, the three `*_through` doors on `Crossing`), and the
+report saying what the daemon still owes:
+`docs/autonomy/updates/the-asking-machine-crosses-through-a-turn-and-is-told-what-became-of-it.md`.
+`alo-agentd` is built by the v0.01 delivery lane and the kernel-enforcement
+plan, is Linux-only and gated only under WSL, and holds the one `Machine`
+under the person's door's `Holding` — so the daemon's lines of the
+acceptance below are **task 10**, carried there unchanged. Nothing in
+`crates/alo-agentd` was touched. **Depends on:** 7, 8.
 
 Tasks 7 and 8 built the two wires, and each takes a listener somebody bound:
 `alo_nearby::Receiving` for a proposal and a confirmation,
@@ -339,3 +350,47 @@ can be asked.
   the name a person gave a paired machine is resolved through
   `alo_corridor::Naming` and shown by the shell, and the shell is outside
   this plan.
+
+### 10. The daemon binds the port
+
+**Status:** ready. **Depends on:** 9. **Before starting: `git pull`, read
+this plan as published, and confirm with the loop's owner which lane takes
+`alo-agentd` for this** — it is shared by three lanes, its gate is
+`cargo test -p alo-agentd` under WSL with the test count read and reported
+(`docs/autonomy/LOOP.md`), and the change is to its serving loop's shape,
+not to a file at its edge.
+
+Task 9 built the asking side's door and the outcome path and left the
+daemon owing everything that turns three libraries into a machine that can
+be asked. This is that, with task 9's own words:
+
+- **Acceptance:** one process binds the port presence advertises and
+  answers discovery with that port, and on that port tells a proposal, a
+  confirmation, a verb, a question and an outcome apart by path, handing
+  each to the crate that decides it and refusing anything else as *not for
+  this wire* — tested by a request on each path reaching its door and a
+  request on none reaching nothing; the `Pairings`, the `Proposals`, the
+  `Doorway` and the `Seen` are one each, behind one lock, beside the
+  person's door's `Holding` of the same `alo_turn::Machine`, so a pairing
+  revoked on the person's surface refuses the next verb and the next
+  question alike, tested by a revocation between two requests on two paths;
+  a pairing kept is written to `alo-record` at the one moment there is one
+  value to write it from, and a proposal refused or withdrawn writes
+  nothing, tested; and a local agent that calls itself by a machine's name
+  is refused at the daemon's door (`alo_nearby::Origin::names_a_machine`),
+  tested — which needs a refusal `alo_capability::GrantError` does not yet
+  have, and adding an arm to that closed list, with its word, is a decision
+  for whoever owns that crate rather than a side effect of this task.
+- **Constraint:** ADR 0003 and ADR 0031 throughout, and nothing tasks 8
+  and 9 decided is re-decided: one turn at a time per remote machine, the
+  proof judged before anything else, every answer under a departure, an
+  outcome a read of the turn's own memory. The two `Receiving`s each take a
+  listener and read the request themselves, so one port needs either a
+  dispatcher that peeks the request line and hands the connection on, or an
+  additive constructor on each that takes a connection already accepted —
+  choose one and say why. The person's-door `Holding` and the network's
+  `Doorway` borrow one machine: the lock is over the machine, and a verb
+  from the network waits on a local turn as a local turn waits on it.
+  Nothing in `alo-shell`, nothing in `image/`; the corridor's paths become a
+  surface another alo machine speaks and get a document under
+  `docs/contracts/` in the same change.

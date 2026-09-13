@@ -34,13 +34,15 @@ use std::time::SystemTime;
 use alo_capability::{Given, Grantee};
 use alo_egress::{Departing, Destination, EgressPolicy, Indicator, Leaving, Why};
 use alo_nearby::{Found, MachineId, Pairing, Pairings, Proof};
+use alo_turn::{Departed, Places, Turning};
 
 use crate::answered::Answered;
 use crate::carried::Carried;
 use crate::dialling;
 use crate::door::AtTheDoor;
-use crate::receiving::{THE_CHANGE_PATH, THE_READ_PATH};
-use crate::refusing::{Left, NotCrossed, WentBack};
+use crate::outcome::AskedAbout;
+use crate::receiving::{THE_CHANGE_PATH, THE_OUTCOME_PATH, THE_READ_PATH};
+use crate::refusing::{Left, NotCrossed, NotThrough, WentBack};
 
 /// A paired machine, as a place a verb may be put.
 ///
@@ -128,7 +130,13 @@ impl<'a> Crossing<'a> {
         indicator: &mut Indicator,
         now: SystemTime,
     ) -> Result<Crossed, NotCrossed> {
-        self.crossing(THE_READ_PATH, verb, given, policy, indicator, now)
+        self.crossing(
+            THE_READ_PATH,
+            Carried::of(verb, given).said(),
+            policy,
+            indicator,
+            now,
+        )
     }
 
     /// Put a change to the other machine, which waits for the person there.
@@ -148,7 +156,160 @@ impl<'a> Crossing<'a> {
         indicator: &mut Indicator,
         now: SystemTime,
     ) -> Result<Crossed, NotCrossed> {
-        self.crossing(THE_CHANGE_PATH, verb, given, policy, indicator, now)
+        self.crossing(
+            THE_CHANGE_PATH,
+            Carried::of(verb, given).said(),
+            policy,
+            indicator,
+            now,
+        )
+    }
+
+    /// Ask what became of the change waiting under `number` there.
+    ///
+    /// The additive path: a change came back as a number, the person there
+    /// answers it in their own time, and this is how the asking machine
+    /// learns what they decided rather than guessing. It crosses exactly as
+    /// a verb does — proven at the door, under a departure, answered from
+    /// inside the turn open there — and asks no grant there, because it is
+    /// a read of that turn's own memory.
+    ///
+    /// # Errors
+    ///
+    /// [`NotCrossed`], as for a verb.
+    pub fn asking_after(
+        self,
+        number: u64,
+        policy: &EgressPolicy,
+        indicator: &mut Indicator,
+        now: SystemTime,
+    ) -> Result<Crossed, NotCrossed> {
+        self.crossing(
+            THE_OUTCOME_PATH,
+            AskedAbout::the_change(number).said(),
+            policy,
+            indicator,
+            now,
+        )
+    }
+
+    /// A read, crossed from inside a turn on this machine.
+    ///
+    /// The door the plan asks for beside [`Turning::asking`]: the verb is
+    /// put from inside a boundary permitting the studio's one address (ADR
+    /// 0020), the departure is written into the turn's record whether or
+    /// not an answer came back, and the answer or the door's word is
+    /// handed back. `turn` is the turn the asking agent is in, and the
+    /// `Crossing` was made for that turn's grantee.
+    ///
+    /// # Errors
+    ///
+    /// [`NotThrough`]: nothing left, or it left and this came back, or the
+    /// turn itself refused it.
+    pub fn reading_through(
+        self,
+        turn: &mut Turning<'_, '_>,
+        verb: &str,
+        given: &[(&str, Given)],
+        places: &Places<'_>,
+        now: SystemTime,
+    ) -> Result<Answered, NotThrough> {
+        self.through(
+            turn,
+            THE_READ_PATH,
+            Carried::of(verb, given).said(),
+            places,
+            now,
+        )
+    }
+
+    /// A change, crossed from inside a turn on this machine; what comes back
+    /// is the number it waits under there.
+    ///
+    /// # Errors
+    ///
+    /// [`NotThrough`], as for [`reading_through`](Self::reading_through).
+    pub fn changing_through(
+        self,
+        turn: &mut Turning<'_, '_>,
+        verb: &str,
+        given: &[(&str, Given)],
+        places: &Places<'_>,
+        now: SystemTime,
+    ) -> Result<Answered, NotThrough> {
+        self.through(
+            turn,
+            THE_CHANGE_PATH,
+            Carried::of(verb, given).said(),
+            places,
+            now,
+        )
+    }
+
+    /// Ask what became of a change, from inside a turn on this machine.
+    ///
+    /// # Errors
+    ///
+    /// [`NotThrough`], as for [`reading_through`](Self::reading_through).
+    pub fn asking_after_through(
+        self,
+        turn: &mut Turning<'_, '_>,
+        number: u64,
+        places: &Places<'_>,
+        now: SystemTime,
+    ) -> Result<Answered, NotThrough> {
+        self.through(
+            turn,
+            THE_OUTCOME_PATH,
+            AskedAbout::the_change(number).said(),
+            places,
+            now,
+        )
+    }
+
+    /// The one road through a turn: [`Turning::crossing`], handed this
+    /// crossing as the thing to put from inside the boundary, with the
+    /// departure handed out of whatever carried it so the turn can write it
+    /// down and end it.
+    fn through(
+        self,
+        turn: &mut Turning<'_, '_>,
+        path: &str,
+        body: String,
+        places: &Places<'_>,
+        now: SystemTime,
+    ) -> Result<Answered, NotThrough> {
+        let to = self.to;
+        let put =
+            move |policy: &EgressPolicy, indicator: &mut Indicator, now: SystemTime| match self
+                .crossing(path, body, policy, indicator, now)
+            {
+                Ok(crossed) => {
+                    let (departing, answered) = crossed.taken();
+                    Departed::Left {
+                        departing,
+                        back: Ok(answered),
+                    }
+                }
+                Err(NotCrossed::Left(left)) => {
+                    let (departing, why) = left.taken();
+                    Departed::Left {
+                        departing,
+                        back: Err(NotThrough::WentBack(why)),
+                    }
+                }
+                Err(NotCrossed::HeldBack(refused)) => Departed::HeldBack(refused),
+                Err(NotCrossed::NotPairedWithIt) => {
+                    Departed::NothingLeft(Err(NotThrough::NotPairedWithIt))
+                }
+                Err(NotCrossed::CannotBeShown(why)) => {
+                    Departed::NothingLeft(Err(NotThrough::CannotBeShown(why)))
+                }
+            };
+        match turn.crossing(to, places, put, now) {
+            Ok(back) => back,
+            Err(why) => Err(NotThrough::TheTurn(why)),
+        }
     }
 
     /// The crossing itself: the bytes, the proof over them, the indicator,
@@ -156,13 +317,11 @@ impl<'a> Crossing<'a> {
     fn crossing(
         self,
         path: &str,
-        verb: &str,
-        given: &[(&str, Given)],
+        body: String,
         policy: &EgressPolicy,
         indicator: &mut Indicator,
         now: SystemTime,
     ) -> Result<Crossed, NotCrossed> {
-        let body = Carried::of(verb, given).said();
         let proof = Proof::made(&self.pairing, &self.here, body.as_bytes(), now).said();
         let destination = Destination::paired(self.called).map_err(NotCrossed::CannotBeShown)?;
         let leaving = Leaving::because(&self.agent, Why::Sending, destination);
@@ -210,6 +369,12 @@ impl Crossed {
     pub fn ended(self, indicator: &mut Indicator) -> Answered {
         indicator.ended(self.departing);
         self.answered
+    }
+
+    /// The departure and the answer, apart — for a turn, which writes the
+    /// one down and ends it itself.
+    pub(crate) fn taken(self) -> (Departing, Answered) {
+        (self.departing, self.answered)
     }
 }
 

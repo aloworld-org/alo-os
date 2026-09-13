@@ -404,6 +404,16 @@ impl<'a, 'm> Arriving<'a, 'm> {
         self.turning.proposed(id)
     }
 
+    /// What became of the change waiting under `number`, at `now` — for
+    /// the asking machine, which was told the number and nothing more.
+    ///
+    /// [`Turning::became`], on the turn this is: a read of this turn's own
+    /// memory, asking the grants nothing and running nothing.
+    #[must_use]
+    pub fn became(&self, number: u64, now: SystemTime) -> crate::became::Became {
+        self.turning.became(number, now)
+    }
+
     /// Whether this turn has stopped because something could not be written
     /// down.
     #[must_use]

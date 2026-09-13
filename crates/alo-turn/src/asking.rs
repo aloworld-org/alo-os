@@ -210,15 +210,15 @@ impl Turning<'_, '_> {
                     // nothing left. A boundary that was imposed and ran nothing
                     // is the same fact about this machine, said the same way —
                     // and both are written down as the machine's own refusal.
-                    (Err(why), _) => self.nothing_was_bounded(why, &agent, now),
-                    (Ok(()), None) => self.nothing_was_bounded(
+                    (Err(why), _) => Err(self.nothing_was_bounded(why, &agent, now)),
+                    (Ok(()), None) => Err(self.nothing_was_bounded(
                         NoBoundary::because(
                             "the boundary was imposed and the question was not put inside it"
                                 .to_owned(),
                         ),
                         &agent,
                         now,
-                    ),
+                    )),
                 }
             }
             Answers::Runtime(runtime) => {
@@ -298,20 +298,20 @@ impl Turning<'_, '_> {
     /// nothing was shown, and a thread lost putting the question is
     /// remembered on the turn for the service to ask about, as it is for a
     /// verb.
-    fn nothing_was_bounded(
+    pub(crate) fn nothing_was_bounded(
         &mut self,
         why: NoBoundary,
         agent: &Grantee,
         now: SystemTime,
-    ) -> Result<Answer, NoAnswer> {
+    ) -> NoAnswer {
         if why.a_thread_is_still_inside() {
             self.a_thread_was_lost();
         }
         let said = why.said(self.machine().strings());
         let entry = Entry::not_bounded(agent, said.text(), why.why(), now);
         match self.keeping(entry) {
-            Ok(()) => Err(NoAnswer::NotBounded(why)),
-            Err(kept) => Err(nothing_left(kept)),
+            Ok(()) => NoAnswer::NotBounded(why),
+            Err(kept) => nothing_left(kept),
         }
     }
 

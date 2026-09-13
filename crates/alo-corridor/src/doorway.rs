@@ -55,6 +55,7 @@ use crate::carried::Carried;
 use crate::door::AtTheDoor;
 use crate::holding::Holding;
 use crate::naming::Naming;
+use crate::outcome::{AskedAbout, Outcome};
 use crate::replying::Replying;
 
 /// The longest a remote turn may last, or a change may wait, in seconds.
@@ -71,6 +72,9 @@ pub enum Door {
     Read,
     /// A change, which waits for the person here.
     Change,
+    /// A question about what became of a change, answered from the turn's
+    /// own memory and asking no grant.
+    Outcome,
 }
 
 /// Why a doorway could not be made.
@@ -244,23 +248,33 @@ impl<'a, 'm> Doorway<'a, 'm> {
             return Judged::NotBegun(self.lost.unwrap_or(GrantError::NoTime));
         };
 
-        // 3. The body, now that the proof over it held.
-        let carried = match Carried::read(body) {
-            Ok(carried) => carried,
-            Err(_) => return before_the_door(AtTheDoor::NotAVerb),
-        };
-
-        // 4. The door, and no other.
-        let given = carried.given();
+        // 3. The body, now that the proof over it held — and 4. the door,
+        // and no other.
         let outcome = match door {
-            Door::Read => arriving
-                .reading(carried.verb(), &given, pairings, grants, now)
-                .map(|answer| Answered::Did(alo_protocol::Done::of(&answer))),
-            Door::Change => arriving
-                .proposing(carried.verb(), &given, pairings, grants, changes_wait, now)
-                .map(|id| Answered::Waits {
-                    number: id.as_u64(),
-                }),
+            Door::Outcome => match AskedAbout::read(body) {
+                Ok(asked) => Ok(Answered::Became(Outcome::from(
+                    arriving.became(asked.number(), now),
+                ))),
+                Err(_) => return before_the_door(AtTheDoor::NotAVerb),
+            },
+            Door::Read | Door::Change => {
+                let carried = match Carried::read(body) {
+                    Ok(carried) => carried,
+                    Err(_) => return before_the_door(AtTheDoor::NotAVerb),
+                };
+                let given = carried.given();
+                if door == Door::Read {
+                    arriving
+                        .reading(carried.verb(), &given, pairings, grants, now)
+                        .map(|answer| Answered::Did(alo_protocol::Done::of(&answer)))
+                } else {
+                    arriving
+                        .proposing(carried.verb(), &given, pairings, grants, changes_wait, now)
+                        .map(|id| Answered::Waits {
+                            number: id.as_u64(),
+                        })
+                }
+            }
         };
         let refused = match &outcome {
             Ok(_) => None,

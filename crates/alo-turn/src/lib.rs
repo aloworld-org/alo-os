@@ -135,8 +135,10 @@
 pub mod answers;
 pub mod arriving;
 pub mod asking;
+pub mod became;
 pub mod bounding;
 mod carrying;
+pub mod crossing;
 pub mod kept;
 pub mod machine;
 pub mod places;
@@ -152,7 +154,9 @@ mod testing;
 
 pub use answers::Answers;
 pub use arriving::Arriving;
+pub use became::Became;
 pub use bounding::{Bounding, Doing, Done};
+pub use crossing::Departed;
 pub use kept::Kept;
 pub use machine::Machine;
 pub use places::Places;
