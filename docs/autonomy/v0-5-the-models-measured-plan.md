@@ -153,3 +153,81 @@ and fixes what does not read.
   reads badly, the sentence changes; if a sentence reads well and is not true,
   the sentence changes the other way. Nothing on this list moves an *On the
   machine* box, because a Mac is not the machine.
+
+### 6. A grade that lands one short of a line gets a second round
+
+**Status:** ready. **Depends on:** 1.
+
+Written from task 4's finding: the runtime samples every answer (temperature 0.8,
+the default, because alo OS asks the way a turn asks), and the same Qwen 2.5 7B
+bytes drove 4 of 10 by catalogue name and 3 of 10 by file. Four is one short of
+`sometimes`. A grade that close to a line is a grade from ten samples, and the
+catalogue should not say `rarely` or `sometimes` about it on the strength of one.
+
+- **Acceptance:** `qwen2.5-7b-instruct` is put to a second round of the fixed ten
+  on the same machine through the same door (`ALO_DRIVING_ROUNDS`), and the
+  catalogue's grade is the one twenty attempts earn, with the machine and date
+  beside it; the report carries all twenty verbatim; and the catalogue's rule
+  for when a second round is owed — a first round landing within one of five or
+  nine — is written into `data/catalogue.toml` and held by a test that refuses a
+  one-round grade in that band.
+- **Constraint:** the bar, the prompt, the scoring, the wait and the sampling are
+  unchanged. A second round is a bigger sample, not a different method.
+
+### 7. Whether a turn asks a local model for the shape it must answer in
+
+**Status:** ready. **Depends on:** 2.
+
+Every 7B-class model measured so far failed the call's **grammar** rather than
+its reasoning: reads went through the right door, and changes named their verb
+where the door belongs, or wrote the arguments as a plain object. The pinned
+runtime can hold a model's answer to a JSON schema (`/api/chat`'s `format`), and
+the protocol already has the schema a call must match. Asking for it changes how
+**every** turn asks a local model, not how the measurement scores one — which is
+exactly why it is a decision before it is a change.
+
+- **Acceptance:** an ADR in `docs/decisions/` decides whether a turn asks the
+  pinned runtime for the protocol's shape, weighing what it costs (a model that
+  can only emit the envelope cannot decline in prose; a hosted provider may not
+  offer the same), and what it would mean for the catalogue's grades, which were
+  earned without it; if the ADR accepts, `alo-models`' chat request carries the
+  schema, the measurement is run again against every entry graded on the Mac
+  **as a new measurement with the method named beside it**, and both sets of
+  grades are reported side by side; if it rejects, the report says what was
+  measured to decide it.
+- **Constraint:** the exercises and the bar do not move. A grade earned with a
+  schema is never written over one earned without, and the catalogue says which
+  method a grade was earned by.
+
+### 8. Teuken's chat template, decided before Teuken is graded
+
+**Status:** ready. **Depends on:** 3.
+
+`docs/quirks.md` has it: the GGUF the catalogue names for `teuken-7b-instruct`
+carries no chat template, the runtime warns and answers with the end-of-turn
+token in the text, and a grade made that way would measure the missing template.
+The constitution lets alo OS configure an engine; choosing a template for a model
+whose publisher wrote one elsewhere is a decision with a name on it.
+
+- **Acceptance:** the template openGPT-X publishes for the commercial release is
+  found and cited, and either the catalogue entry carries it (applied as a
+  Modelfile `TEMPLATE` when the model is fetched, with a test that a fetch of
+  that entry sends it and no other entry's does) or the entry says why it does
+  not; the reason Teuken carries today stays until a machine with room grades it.
+- **Constraint:** nothing is invented: a template not published by the model's
+  publisher is not used.
+
+### 9. The four entries the measuring machine could not hold
+
+**Status:** blocked — on a machine with more memory than 8 GB, or on this one
+with the GPU's share of memory raised (`sudo sysctl iogpu.wired_limit_mb=6800`,
+which needs the owner's password). **Depends on:** 2, 8 for Teuken.
+
+`teuken-7b-instruct`, `gemma-2-9b-instruct`, `eurollm-9b-instruct` and
+`mixtral-8x7b-instruct` carry `too-large-for-the-measuring-machine`. The
+measurement is the same one; only the room is missing.
+
+- **Acceptance:** each is graded with the machine beside it, or keeps its reason
+  with a machine that actually tried named in it.
+- **Constraint:** nothing is loosened to fit — not the context window, the wait
+  or the quantisation.
