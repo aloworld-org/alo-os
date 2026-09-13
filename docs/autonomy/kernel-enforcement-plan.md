@@ -1447,6 +1447,22 @@ that rule, so this task is the decision, not the hook.
   `unsafe` is added by this task under any option; the ADR proposes, the
   owner decides. `access(2)` stays named rather than closed.
 
+**Done, 2026-09-13.**
+[ADR 0030](../decisions/0030-how-a-mapping-is-reproduced.md), proposed: three
+options with what each costs the four laws and the gate — one audited `unsafe`
+in a named test fixture with the rule amended to name it; the hook written and
+measured once by hand into `docs/quirks.md`; or a reproduction driven through a
+pinned component that maps a file it is handed. It recommends the first, because
+*reproduce the gap, then close it* is what made the nine closed rows believable
+and the other two roads each trade it. The hook's shape is in the ADR, read from
+this kernel's BTF on the day rather than from documentation: four arguments,
+`file` at `arg(0)` with no mount mapping in front of it, so `decide_use`'s
+existing walk answers it and no new deciding function is needed. What it must
+not decide is written down too — a mapping with no file behind it is every
+allocator on the machine, so the question is asked only of a mapping that names
+a file. No `unsafe` was added by this task, the two maps stay two, and the hook
+is the task after this one, not written until the status line changes.
+
 ## Rules this workstream holds itself to
 
 - No `unsafe` outside `alo-bounding-kernel`'s one permitted file, no weakened
@@ -1468,19 +1484,3 @@ evidence, and **not when the task list is exhausted**. When the list empties, th
 honest report is *implementation complete; hardware acceptance pending* — never
 release completion, and never "kernel complete" while the v0.5 items above sit
 unbuilt with their release named.
-
-**Done, 2026-09-13.**
-[ADR 0030](../decisions/0030-how-a-mapping-is-reproduced.md), proposed: three
-options with what each costs the four laws and the gate — one audited `unsafe`
-in a named test fixture with the rule amended to name it; the hook written and
-measured once by hand into `docs/quirks.md`; or a reproduction driven through a
-pinned component that maps a file it is handed. It recommends the first, because
-*reproduce the gap, then close it* is what made the nine closed rows believable
-and the other two roads each trade it. The hook's shape is in the ADR, read from
-this kernel's BTF on the day rather than from documentation: four arguments,
-`file` at `arg(0)` with no mount mapping in front of it, so `decide_use`'s
-existing walk answers it and no new deciding function is needed. What it must
-not decide is written down too — a mapping with no file behind it is every
-allocator on the machine, so the question is asked only of a mapping that names
-a file. No `unsafe` was added by this task, the two maps stay two, and the hook
-is the task after this one, not written until the status line changes.
