@@ -251,6 +251,19 @@ pub const CHANGE_NOTHING_TO_CHANGE: Word = Word::saying(
      are two different things the person did.",
 );
 
+/// A measurement for weights the person's list does not have.
+pub const CHANGE_NOTHING_TO_MEASURE: Word = Word::saying(
+    "choosing.change.nothing-to-measure",
+    "your settings at {path} list no weights called {model} to write a measurement beside, so \
+     nothing in your settings has been changed",
+)
+.noting(
+    "{path} and {model} are both data and are never translated — {model} is the name a model \
+     runtime answers to. Said when a measurement finishes for weights that are not on the \
+     person's list: the weights were not added, because measuring something and bringing it are \
+     two different things.",
+);
+
 /// The changed settings could not be written as a file this alo OS reads back.
 pub const CHANGE_NOT_EXPRESSIBLE: Word = Word::saying(
     "choosing.change.not-expressible",
@@ -278,7 +291,7 @@ pub const CHANGE_NOT_KEPT: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 16] = [
+pub const EVERY_WORD: [Word; 17] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -293,6 +306,7 @@ pub const EVERY_WORD: [Word; 16] = [
     CHANGE_NOT_BROUGHT,
     CHANGE_NO_SUCH_PROVIDER,
     CHANGE_NOTHING_TO_CHANGE,
+    CHANGE_NOTHING_TO_MEASURE,
     CHANGE_NOT_EXPRESSIBLE,
     CHANGE_NOT_KEPT,
 ];

@@ -44,3 +44,6 @@ alo-strings = { path = "../alo-strings" }
 # question does — `alo-asking`'s local one, which leaves nothing.
 alo-asking = { path = "../alo-asking" }
 alo-answering = { path = "../alo-answering" }
+# Where a measurement of a brought file is written: the person's own settings,
+# through the one door they are changed by.
+alo-choosing = { path = "../alo-choosing" }

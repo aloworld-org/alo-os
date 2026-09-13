@@ -70,6 +70,13 @@ pub enum NotWritten {
         /// What the choice named, exactly as it was given.
         provider: String,
     },
+    /// A measurement finished for weights the person's list does not have.
+    NothingToMeasure {
+        /// Where the settings are.
+        at: PathBuf,
+        /// What the measurement was of, exactly as it was given.
+        model: String,
+    },
     /// The list of weights would not take these.
     ///
     /// `alo_models::WeightsError`'s own refusal, carried rather than reworded:
@@ -139,6 +146,7 @@ impl NotWritten {
         match self {
             Self::NotBrought { at, .. }
             | Self::NoSuchProvider { at, .. }
+            | Self::NothingToMeasure { at, .. }
             | Self::NotWeights { at, .. }
             | Self::NotAProvider { at, .. }
             | Self::NothingToChange { at, .. }
@@ -157,6 +165,7 @@ impl NotWritten {
         match self {
             Self::NotBrought { .. } => words::CHANGE_NOT_BROUGHT,
             Self::NoSuchProvider { .. } => words::CHANGE_NO_SUCH_PROVIDER,
+            Self::NothingToMeasure { .. } => words::CHANGE_NOTHING_TO_MEASURE,
             Self::NotWeights { why, .. } => why.word(),
             Self::NotAProvider { why, .. } => why.word(),
             Self::NothingToChange { .. } => words::CHANGE_NOTHING_TO_CHANGE,
@@ -179,6 +188,7 @@ impl NotWritten {
             Self::NotAProvider { why, .. } => return why.said(strings),
             Self::NotBrought { .. }
             | Self::NoSuchProvider { .. }
+            | Self::NothingToMeasure { .. }
             | Self::NothingToChange { .. }
             | Self::NotExpressible { .. }
             | Self::NotKept { .. } => {}
@@ -188,7 +198,9 @@ impl NotWritten {
             // Both quote back a name exactly as it was given, which is data and
             // is never translated — the rule a filename is held to in
             // `alo-files` and a path in `crate::refusing`.
-            Self::NotBrought { model, .. } => filling.and("model", model.clone()),
+            Self::NotBrought { model, .. } | Self::NothingToMeasure { model, .. } => {
+                filling.and("model", model.clone())
+            }
             Self::NoSuchProvider { provider, .. } | Self::NothingToChange { provider, .. } => {
                 filling.and("provider", provider.clone())
             }
@@ -223,6 +235,10 @@ mod tests {
                 at: somewhere(),
                 provider: "Mistral".to_owned(),
             },
+            NotWritten::NothingToMeasure {
+                at: somewhere(),
+                model: "my-finetune".to_owned(),
+            },
             NotWritten::NotWeights {
                 at: somewhere(),
                 why: WeightsError::AlreadyBrought("my-finetune".to_owned()),
@@ -251,6 +267,7 @@ mod tests {
         match reason {
             NotWritten::NotBrought { .. }
             | NotWritten::NoSuchProvider { .. }
+            | NotWritten::NothingToMeasure { .. }
             | NotWritten::NothingToChange { .. }
             | NotWritten::NotExpressible { .. }
             | NotWritten::NotKept { .. } => true,
@@ -297,7 +314,7 @@ mod tests {
         }
     }
 
-    /// **Seven reasons, seven sentences.** A machine that said the same thing about
+    /// **Eight reasons, eight sentences.** A machine that said the same thing about
     /// a disk that would not take the file and a choice naming weights nobody
     /// brought would be sending somebody to the wrong place.
     #[test]
@@ -311,7 +328,7 @@ mod tests {
         said.sort();
         said.dedup();
         assert_eq!(said.len(), reasons.len());
-        assert_eq!(said.len(), 7);
+        assert_eq!(said.len(), 8);
     }
 
     /// **A name is quoted back exactly as it was given**, which is what lets
@@ -336,6 +353,15 @@ mod tests {
             .said(&strings)
             .text()
             .contains("Mistral")
+        );
+        assert!(
+            NotWritten::NothingToMeasure {
+                at: somewhere(),
+                model: "my-finetune".to_owned(),
+            }
+            .said(&strings)
+            .text()
+            .contains("my-finetune")
         );
         assert!(
             NotWritten::NothingToChange {

@@ -107,7 +107,8 @@ machine has Ollama 0.34.0; this task answers all three.
 
 ### 4. Does a file a person brings clear the bar
 
-**Status:** ready. **Depends on:** 1, 3.
+**Status:** **Done, 2026-09-14.** **Depends on:** 1, 3.
+**Report:** `docs/autonomy/updates/a-file-a-person-brings-measured-against-the-bar.md`.
 
 *Point alo OS at weights you already have and it runs them* is built. Whether
 what a person brings can be **the agent** is task 10 of the old lane B plan,

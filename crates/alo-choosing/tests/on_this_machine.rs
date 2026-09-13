@@ -100,7 +100,26 @@ fn the_weights_a_person_brought_are_read_back_from_their_own_file() {
     let weights = settings.weights().unwrap();
     assert_eq!(weights.id, "my-finetune");
     assert_eq!(weights.bytes_on_disk, 4_700_000_000);
-    assert!(weights.can_be_the_agent());
+    // **A grade with no machine beside it is read and is not the agent**: the
+    // file is a contract and reads as it did, and a grade nobody can place is a
+    // claim. `docs/contracts/person-settings.md` says so.
+    assert!(!weights.can_be_the_agent());
+
+    let placed = settings_under(
+        &home,
+        "format = 1\n\n[answers]\nbrought = \"my-finetune\"\n\n\
+         [[brought]]\nid = \"my-finetune\"\nbytes-on-disk = 4700000000\n\
+         quantisation = \"Q4_K_M\"\ndrives-verbs = \"reliably\"\n\n\
+         [brought.measured]\nmachine = \"Apple M3, 8 GB unified memory\"\n\
+         date = \"2026-09-14\"\nruntime = \"Ollama 0.34.0\"\n",
+    );
+    assert!(
+        Settings::at(&placed)
+            .unwrap()
+            .weights()
+            .unwrap()
+            .can_be_the_agent()
+    );
 }
 
 /// **A file whose two halves disagree is refused whole**, on a real disk as in

@@ -86,6 +86,11 @@ id = "my-finetune"
 bytes-on-disk = 4700000000
 quantisation = "Q4_K_M"
 drives-verbs = "reliably"
+
+[brought.measured]
+machine = "Apple M3, 8 GB unified memory"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
 ```
 
 **Everything except `format` is optional, and nothing has a default.** A file
@@ -210,12 +215,21 @@ becomes six.
 | `bytes-on-disk` | What the weights take on this machine's disk, as the runtime reported it. Required. |
 | `quantisation` | The quantisation the runtime reports, where it says. Optional — a runtime does not always say. |
 | `drives-verbs` | What a measurement of these weights earned: `"reliably"`, `"sometimes"`, `"rarely"` or `"not-measured"`. Required. |
+| `measured` | **Where and when that grade was earned**: a table of `machine` (with the memory it had, in `GB` or `GiB`), `date` (`YYYY-MM-DD`) and `runtime` (a name and a version). Written beside every grade alo OS records, never beside `"not-measured"`. Optional in a file. |
 | `file` | The file on this machine the person pointed at, where they pointed at one rather than picking from what a runtime reports. Optional, and absent in every entry written before it existed. When alo OS writes it, `bytes-on-disk` beside it is what the disk said about that file at the moment they pointed — measured, never typed — and `id` is the file's own name. |
 
 - **`drives-verbs` has no default and an entry without it does not read.** *Not
   measured* is a thing to state, not a blank to leave: an entry that said nothing
   would read as *probably fine*, and alo OS gives an agent turn only to weights
   a measurement has cleared.
+- **`measured` is additive and the format number did not move for it.** A file
+  written before it existed reads exactly as it did. What changed is what a
+  grade does: **only a grade with a `measured` table that says something
+  checkable gives the weights agent turns.** A grade without one is read, kept
+  and shown — with a sentence saying it does not say which machine measured it —
+  and is not a measurement, so it is not the reason somebody's files are handed
+  to a model. alo OS writes a grade only from a measurement that finished, and
+  always with the machine beside it; it never travels anywhere but this file.
 - **Two ids differing in case are two entries.** An id is a name a runtime
   answers to rather than a word a person chose, so it is matched exactly — which
   is the opposite answer from a provider's name and is the same answer as every

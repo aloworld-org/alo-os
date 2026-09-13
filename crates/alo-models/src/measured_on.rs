@@ -36,7 +36,7 @@
 //!   template is the runtime's and not the model's, and two versions of one
 //!   runtime can put the same question to the same file differently.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// **Where and when a grade was earned.**
 ///
@@ -44,7 +44,7 @@ use serde::Deserialize;
 /// [`crate::Catalogue::parse`] refuses it anywhere else. Every field is
 /// required, for [`crate::Requantised`]'s reason: the case where a field is
 /// missing is exactly the case a reader needed it.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MeasuredOn {
     /// The machine, as a person would recognise it: the processor where it is

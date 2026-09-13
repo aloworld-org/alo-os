@@ -293,11 +293,14 @@ mod tests {
     fn theirs(id: &str) -> Brought {
         let mut brought = Brought::default();
         brought
-            .add(
-                Weights::checked(id, 4_000_000_000)
-                    .unwrap()
-                    .measured(Driving::Reliably),
-            )
+            .add(Weights::checked(id, 4_000_000_000).unwrap().measured(
+                Driving::Reliably,
+                alo_models::MeasuredOn {
+                    machine: "a test machine, 16 GB".to_owned(),
+                    date: "2026-09-14".to_owned(),
+                    runtime: "Ollama 0.34.0".to_owned(),
+                },
+            ))
             .unwrap();
         brought
     }

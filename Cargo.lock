@@ -294,6 +294,7 @@ dependencies = [
  "alo-applications",
  "alo-asking",
  "alo-capability",
+ "alo-choosing",
  "alo-files",
  "alo-models",
  "alo-protocol",

@@ -185,6 +185,7 @@ impl WeightsAsWritten {
             bytes_on_disk: weights.bytes_on_disk,
             quantisation: weights.quantisation.clone(),
             drives_verbs: weights.drives_verbs,
+            measured: weights.measured.clone(),
             file: weights.file.clone(),
         }
     }
@@ -242,11 +243,14 @@ mod tests {
     fn theirs(id: &str) -> Brought {
         let mut brought = Brought::default();
         brought
-            .add(
-                Weights::checked(id, 4_700_000_000)
-                    .unwrap()
-                    .measured(Driving::Reliably),
-            )
+            .add(Weights::checked(id, 4_700_000_000).unwrap().measured(
+                Driving::Reliably,
+                alo_models::MeasuredOn {
+                    machine: "a test machine, 16 GB".to_owned(),
+                    date: "2026-09-14".to_owned(),
+                    runtime: "Ollama 0.34.0".to_owned(),
+                },
+            ))
             .unwrap();
         brought
     }

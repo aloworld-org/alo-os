@@ -19,10 +19,10 @@
 //! that softened the second one would take away the only thing on the screen
 //! saying the question is about to leave the building, so its note says so.
 //!
-//! # And five of them are not refusals at all
+//! # And six of them are not refusals at all
 //!
 //! [`crate::Cost`]'s two lines, [`LICENCE_IS_YOURS`], [`WEIGHTS_NOT_MEASURED`]
-//! and [`WEIGHTS_MEASURED`] are read by somebody who has just pointed alo OS at
+//! and the two measured lines are read by somebody who has just pointed alo OS at
 //! weights of their own, and nothing was stopped. `docs/features.md` promises
 //! the machine *warns and then gets out of the way*, so a translation that
 //! made *larger than the memory this machine has* sound like a door closing
@@ -477,17 +477,44 @@ pub const WEIGHTS_NOT_MEASURED: Word = Word::saying(
      the weights are used now. It is not a warning and it does not lean toward any other model.",
 );
 
-/// A measurement of these weights has been run.
-pub const WEIGHTS_MEASURED: Word = Word::saying(
-    "models.brought.measured",
-    "these weights have been measured driving the agent's verbs, and what they earned is shown \
-     beside this line",
+/// These weights were measured, and cleared the bar.
+pub const WEIGHTS_MEASURED_THE_AGENT: Word = Word::saying(
+    "models.brought.measured-the-agent",
+    "these weights have been measured driving the agent's verbs dependably on this machine, so \
+     they can be given agent turns",
 )
 .noting(
-    "The same third line, for weights somebody has already measured. The grade itself — \
-     reliably, sometimes, rarely — is a value shown beside the sentence rather than inside it, \
-     for the reason numbers are. \"The agent's verbs\" are the typed instructions the assistant \
-     built into alo OS asks a model for.",
+    "The same third line, for weights somebody has measured and that cleared the bar. The grade \
+     and the machine it was measured on are values shown beside the sentence rather than inside \
+     it, for the reason numbers are. \"The agent's verbs\" are the typed instructions the \
+     assistant built into alo OS asks a model for; \"agent turns\" are the assistant acting on \
+     somebody's files with them. Said of a person's own weights: it does not compare them with \
+     anything.",
+);
+
+/// These weights were measured, and did not clear the bar.
+pub const WEIGHTS_MEASURED_NOT_THE_AGENT: Word = Word::saying(
+    "models.brought.measured-not-the-agent",
+    "these weights have been measured driving the agent's verbs on this machine, not often enough \
+     to be given agent turns — they still answer your questions",
+)
+.noting(
+    "The same third line, for weights somebody has measured that did not clear the bar. Both \
+     halves must survive: the weights are not given agent turns, and they are still used for \
+     questions. The grade and the machine are shown beside it. It is not a verdict on the \
+     person's choice and it does not point at any other model.",
+);
+
+/// Weights carrying a grade that does not say, checkably, where it was earned.
+pub const WEIGHTS_GRADE_NOT_PLACED: Word = Word::saying(
+    "models.brought.grade-not-placed",
+    "the weights called {name} carry a grade that does not say which machine measured them, so it \
+     is not used",
+)
+.noting(
+    "{name} is exactly what the model runtime answers to and is never translated. A grade is a \
+     measurement somebody ran on a machine, and one that cannot say which machine is a claim; \
+     refusing it keeps an agent turn from being given on somebody's say-so.",
 );
 
 // ---------------------------------------------------------------------------
@@ -777,7 +804,7 @@ pub const UNMEASURED_NOT_PUBLISHED: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 52] = [
+pub const EVERY_WORD: [Word; 54] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -805,7 +832,9 @@ pub const EVERY_WORD: [Word; 52] = [
     WEIGHTS_FILE_NOT_READ,
     LICENCE_IS_YOURS,
     WEIGHTS_NOT_MEASURED,
-    WEIGHTS_MEASURED,
+    WEIGHTS_MEASURED_THE_AGENT,
+    WEIGHTS_MEASURED_NOT_THE_AGENT,
+    WEIGHTS_GRADE_NOT_PLACED,
     KEY_BLANK,
     KEY_NOT_SENDABLE,
     THAT_WORKED,
@@ -856,7 +885,7 @@ pub enum WordsError {
 /// cannot disagree about which sentences that rule covers. A word added to
 /// the `brought` area and left out here is a sentence that rule stops
 /// reading.
-pub const ABOUT_BROUGHT_WEIGHTS: [Word; 10] = [
+pub const ABOUT_BROUGHT_WEIGHTS: [Word; 12] = [
     WEIGHTS_UNNAMED,
     WEIGHTS_ALREADY_BROUGHT,
     WEIGHTS_FIT,
@@ -866,7 +895,9 @@ pub const ABOUT_BROUGHT_WEIGHTS: [Word; 10] = [
     WEIGHTS_FILE_NOT_READ,
     LICENCE_IS_YOURS,
     WEIGHTS_NOT_MEASURED,
-    WEIGHTS_MEASURED,
+    WEIGHTS_MEASURED_THE_AGENT,
+    WEIGHTS_MEASURED_NOT_THE_AGENT,
+    WEIGHTS_GRADE_NOT_PLACED,
 ];
 
 /// Words a sentence beside somebody's own weights may not use.

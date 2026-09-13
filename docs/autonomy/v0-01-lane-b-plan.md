@@ -488,6 +488,19 @@ below is written from this outcome and was written in the same change.
 **Status:** blocked. **Depends on:** 9, and on the catalogue having an entry that
 clears the verb-driving bar.
 
+**Blocked for a truer reason, measured 2026-09-13/14** (the v0.5 plan's tasks
+1, 2 and 4, on an Apple M3 with 8 GB under the pinned Ollama 0.34.0). The block
+used to read as a machine too small to measure the 7B entries. They have been
+measured, and it is not that: `qwen2.5-7b-instruct` drove 4 of 10,
+`mistral-7b-instruct` 0 of 10 and `llama-3.1-8b-instruct` 1 of 10, and the same
+Qwen weights **brought by file** drove 3 of 10 — every one `rarely`. So no
+catalogued entry and no file on a machine that holds them clears the bar, and
+what fails is the call's **grammar** rather than the size: every read reaches
+the right door and nearly every change names its verb where the door belongs.
+Three entries — Teuken 7B, Gemma 2 9B, EuroLLM 9B — and Mixtral are still
+unmeasured because 8 GB cannot hold them inside the wait. What unblocks this
+task is unchanged in kind: a model that drives the verbs, measured.
+
 Task 8 took the measurement ADR 0025 owed and the first number did not exist:
 every catalogued entry anybody has run `alo-driving` against grades `rarely`,
 and the rest are `not-measured`, which is refused as a candidate on purpose. So

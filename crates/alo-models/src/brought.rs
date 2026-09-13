@@ -103,7 +103,7 @@ mod tests {
     use super::*;
     use crate::costing::GIGABYTE;
     use crate::driving::Driving;
-    use crate::testing::in_english;
+    use crate::testing::{a_machine, in_english};
 
     fn theirs(id: &str) -> Weights {
         Weights::checked(id, 4 * GIGABYTE).unwrap()
@@ -153,18 +153,42 @@ mod tests {
             .add(
                 Weights::checked("enormous", 400 * GIGABYTE)
                     .unwrap()
-                    .measured(Driving::Reliably),
+                    .measured(Driving::Reliably, a_machine()),
             )
             .unwrap();
         brought.add(theirs("small-and-unmeasured")).unwrap();
         brought
-            .add(theirs("small-and-poor").measured(Driving::Rarely))
+            .add(theirs("small-and-poor").measured(Driving::Rarely, a_machine()))
             .unwrap();
 
         let chosen = brought.for_the_agent();
         assert_eq!(chosen.len(), 1);
         assert_eq!(chosen.first().unwrap().id, "enormous");
         assert!(chosen.first().unwrap().costs_on(16.0).larger_than_memory());
+    }
+
+    /// **A grade with no machine beside it is kept on the list and never gives
+    /// the agent.** The settings file is a contract and reads what it read
+    /// before; what changed is that a grade nobody can place is not a
+    /// measurement, so it is not the reason an agent turn is given.
+    #[test]
+    fn a_grade_with_no_machine_beside_it_is_listed_and_is_never_the_agent() {
+        let mut brought = Brought::default();
+        let mut unplaced = theirs("claimed");
+        unplaced.drives_verbs = Driving::Reliably;
+        brought.add(unplaced).unwrap();
+        assert!(brought.for_the_agent().is_empty());
+        brought.remove("claimed");
+        assert!(
+            WeightsError::GradeNotPlaced("claimed".to_owned())
+                .said(&in_english())
+                .text()
+                .contains("claimed"),
+        );
+        brought
+            .add(theirs("measured").measured(Driving::Reliably, a_machine()))
+            .unwrap();
+        assert_eq!(brought.for_the_agent().len(), 1);
     }
 
     /// A machine nobody brought anything to has an empty list rather than a
@@ -183,7 +207,7 @@ mod tests {
     fn the_list_is_written_and_read_back_as_it_was() {
         let mut brought = Brought::default();
         brought
-            .add(theirs("their-own").measured(Driving::Sometimes))
+            .add(theirs("their-own").measured(Driving::Sometimes, a_machine()))
             .unwrap();
         let written = serde_json::to_string(&brought).unwrap();
         let read: Brought = serde_json::from_str(&written).unwrap();

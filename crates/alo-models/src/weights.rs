@@ -71,6 +71,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::costing::Cost;
 use crate::driving::Driving;
+use crate::measured_on::MeasuredOn;
 use crate::runtime::Installed;
 use crate::words;
 
@@ -107,6 +108,9 @@ pub enum WeightsError {
         /// What the machine said about it.
         why: String,
     },
+    /// The weights carry a grade that does not say, checkably, which machine
+    /// earned it — so the grade is not written rather than trusted.
+    GradeNotPlaced(String),
 }
 
 impl WeightsError {
@@ -119,6 +123,7 @@ impl WeightsError {
             Self::NoFileThere(_) => words::WEIGHTS_NO_FILE_THERE,
             Self::NotAFile(_) => words::WEIGHTS_NOT_A_FILE,
             Self::FileNotRead { .. } => words::WEIGHTS_FILE_NOT_READ,
+            Self::GradeNotPlaced(_) => words::WEIGHTS_GRADE_NOT_PLACED,
         }
     }
 
@@ -129,7 +134,7 @@ impl WeightsError {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::AlreadyBrought(id) => Filling::of("name", id.clone()),
+            Self::AlreadyBrought(id) | Self::GradeNotPlaced(id) => Filling::of("name", id.clone()),
             // A path is data and is never translated: it is quoted back as
             // it is on the disk, because it is the thing the person acts on.
             Self::NoFileThere(at) | Self::NotAFile(at) | Self::FileNotRead { at, .. } => {
@@ -168,6 +173,15 @@ pub struct Weights {
     /// What a measurement of these weights earned, and
     /// [`Driving::NotMeasured`] until somebody runs one.
     pub drives_verbs: Driving,
+    /// **Where and when that grade was earned** — the catalogue's rule for a
+    /// grade, applied to the list a person owns. Present exactly when
+    /// [`drives_verbs`](Self::drives_verbs) is a grade, and
+    /// [`crate::Brought::add`] refuses weights where it is not.
+    ///
+    /// The person's machine's, and it goes nowhere: it is written beside the
+    /// file in their own settings and never into the shipped catalogue.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measured: Option<MeasuredOn>,
     /// The file on this machine a person pointed at, where they pointed at
     /// one rather than picking from what a runtime reports.
     ///
@@ -195,6 +209,7 @@ impl Weights {
             bytes_on_disk,
             quantisation: None,
             drives_verbs: Driving::NotMeasured,
+            measured: None,
             file: None,
         })
     }
@@ -262,16 +277,31 @@ impl Weights {
         Ok(weights)
     }
 
-    /// The same weights, with what a measurement of them earned written down.
+    /// The same weights, with what a measurement of them earned written down
+    /// **and the machine it was earned on beside it**.
     ///
     /// Takes `self` rather than `&mut self` because a grade is a fact about one
     /// run against one set of weights: a method that could be called twice on a
     /// borrowed value would invite two grades from two runs to be written over
-    /// each other with nothing saying which survived.
+    /// each other with nothing saying which survived. Takes the machine because
+    /// there is no road to a grade without one.
     #[must_use]
-    pub fn measured(mut self, grade: Driving) -> Self {
+    pub fn measured(mut self, grade: Driving, on: MeasuredOn) -> Self {
         self.drives_verbs = grade;
+        self.measured = grade.has_been_measured().then_some(on);
         self
+    }
+
+    /// Whether the grade these weights carry says, checkably, where it was
+    /// earned — a grade with no machine, a machine beside no grade, or a
+    /// machine that states nothing a reader could check.
+    #[must_use]
+    pub fn grade_is_placed(&self) -> bool {
+        match (self.drives_verbs.has_been_measured(), &self.measured) {
+            (true, Some(on)) => on.what_is_wrong_with_it().is_none(),
+            (false, None) => true,
+            (true, None) | (false, Some(_)) => false,
+        }
     }
 
     /// Whether alo OS will give these weights an agent turn.
@@ -286,9 +316,15 @@ impl Weights {
     /// that produces sentences and loses structure is a bad agent on the
     /// machine of whoever owns it, and handing it somebody's files would be
     /// alo OS being useless rather than alo OS being sovereign.
+    ///
+    /// **And the measurement has to say where it was made.** A grade with no
+    /// machine beside it — typed into a settings file by hand, or carried from
+    /// before grades named machines — is kept and shown, and does not give the
+    /// agent: it is a claim, and this is the one question here that decides
+    /// whether somebody's files are handed to a model.
     #[must_use]
     pub fn can_be_the_agent(&self) -> bool {
-        self.drives_verbs.clears_the_bar()
+        self.drives_verbs.clears_the_bar() && self.grade_is_placed()
     }
 
     /// What these weights cost on a machine with this much memory.
@@ -333,10 +369,15 @@ impl Weights {
     /// word a language may have no one word for.
     #[must_use]
     pub fn measurement(&self, strings: &Strings) -> Said {
-        let word = if self.drives_verbs.has_been_measured() {
-            words::WEIGHTS_MEASURED
-        } else {
+        if !self.grade_is_placed() {
+            return WeightsError::GradeNotPlaced(self.id.clone()).said(strings);
+        }
+        let word = if !self.drives_verbs.has_been_measured() {
             words::WEIGHTS_NOT_MEASURED
+        } else if self.can_be_the_agent() {
+            words::WEIGHTS_MEASURED_THE_AGENT
+        } else {
+            words::WEIGHTS_MEASURED_NOT_THE_AGENT
         };
         strings.say(&word.key(), &Filling::nothing())
     }
@@ -350,7 +391,7 @@ impl Weights {
 mod tests {
     use super::*;
     use crate::costing::GIGABYTE;
-    use crate::testing::{in_english, translated};
+    use crate::testing::{a_machine, in_english, translated};
 
     fn installed(id: &str, bytes: u64) -> Installed {
         Installed {
@@ -392,12 +433,14 @@ mod tests {
             bytes_on_disk,
             quantisation,
             drives_verbs,
+            measured,
             file,
         } = weights.clone();
         assert_eq!(id, "their-own");
         assert_eq!(bytes_on_disk, GIGABYTE);
         assert_eq!(quantisation, Some("Q4_K_M".to_owned()));
         assert_eq!(drives_verbs, Driving::NotMeasured);
+        assert_eq!(measured, None);
         assert_eq!(file, None);
 
         // And no rendering of it says anything about a licence either.
@@ -415,13 +458,16 @@ mod tests {
 
         // Measured and enormous: the memory warning does not take the agent
         // away, because it is a warning.
-        let measured = unmeasured.clone().measured(Driving::Reliably);
+        let measured = unmeasured.clone().measured(Driving::Reliably, a_machine());
         assert!(measured.can_be_the_agent());
         assert!(measured.costs_on(16.0).larger_than_memory());
 
         for grade in [Driving::Sometimes, Driving::Rarely, Driving::NotMeasured] {
             assert!(
-                !unmeasured.clone().measured(grade).can_be_the_agent(),
+                !unmeasured
+                    .clone()
+                    .measured(grade, a_machine())
+                    .can_be_the_agent(),
                 "{grade:?}"
             );
         }
@@ -464,7 +510,10 @@ mod tests {
         assert!(!said.text().contains("catalogue"), "{said}");
 
         for grade in [Driving::Reliably, Driving::Sometimes, Driving::Rarely] {
-            let measured = unmeasured.clone().measured(grade).measurement(&strings);
+            let measured = unmeasured
+                .clone()
+                .measured(grade, a_machine())
+                .measurement(&strings);
             assert!(
                 measured.text().contains("have been measured"),
                 "{grade:?}: {measured}"
@@ -475,6 +524,87 @@ mod tests {
                 "{grade:?}: the grade is beside the sentence, not inside it: {measured}"
             );
         }
+    }
+
+    /// **Each outcome is its own sentence.** Weights that cleared the bar are
+    /// told they can be given agent turns; weights that did not are told they
+    /// still answer questions — and neither sentence points anywhere else.
+    #[test]
+    fn a_measured_file_is_told_which_outcome_it_earned_and_nothing_more() {
+        let strings = in_english();
+        let theirs = Weights::checked("theirs", GIGABYTE).unwrap();
+        let cleared = theirs
+            .clone()
+            .measured(Driving::Reliably, a_machine())
+            .measurement(&strings);
+        assert!(
+            cleared.text().contains("can be given agent turns"),
+            "{cleared}"
+        );
+        for grade in [Driving::Sometimes, Driving::Rarely] {
+            let short = theirs
+                .clone()
+                .measured(grade, a_machine())
+                .measurement(&strings);
+            assert!(
+                short.text().contains("not often enough"),
+                "{grade:?}: {short}"
+            );
+            assert!(
+                short.text().contains("still answer your questions"),
+                "{grade:?}: {short}"
+            );
+            assert_ne!(short.text(), cleared.text());
+        }
+    }
+
+    /// **A grade that cannot say where it was earned is not a placed grade**,
+    /// and a machine beside no grade is not one either.
+    #[test]
+    fn a_grade_is_placed_only_beside_a_machine_that_says_something_checkable() {
+        let theirs = Weights::checked("theirs", GIGABYTE).unwrap();
+        assert!(theirs.grade_is_placed());
+        assert!(
+            theirs
+                .clone()
+                .measured(Driving::Rarely, a_machine())
+                .grade_is_placed()
+        );
+
+        let mut unplaced = theirs.clone();
+        unplaced.drives_verbs = Driving::Reliably;
+        assert!(!unplaced.grade_is_placed());
+        assert!(
+            !unplaced.can_be_the_agent(),
+            "a grade nobody can place gave the agent"
+        );
+        assert!(
+            unplaced
+                .measurement(&in_english())
+                .text()
+                .contains("does not say which machine"),
+            "{}",
+            unplaced.measurement(&in_english())
+        );
+
+        let mut stray = theirs.clone();
+        stray.measured = Some(a_machine());
+        assert!(!stray.grade_is_placed());
+
+        let mut vague = theirs.measured(Driving::Reliably, a_machine());
+        if let Some(on) = vague.measured.as_mut() {
+            on.machine = "a machine".to_owned();
+        }
+        assert!(!vague.grade_is_placed());
+
+        // Measuring to `not-measured` writes no machine at all.
+        assert_eq!(
+            Weights::checked("theirs", GIGABYTE)
+                .unwrap()
+                .measured(Driving::NotMeasured, a_machine())
+                .measured,
+            None
+        );
     }
 
     /// Both lines are read in the reader's own language, and a machine that
@@ -618,7 +748,7 @@ mod tests {
     fn a_stored_entry_that_says_nothing_about_the_measurement_does_not_read() {
         let weights = Weights::checked("theirs", GIGABYTE)
             .unwrap()
-            .measured(Driving::Reliably);
+            .measured(Driving::Reliably, a_machine());
         let written = serde_json::to_string(&weights).unwrap();
         assert_eq!(
             serde_json::from_str::<Weights>(&written).unwrap(),

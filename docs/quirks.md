@@ -3184,3 +3184,26 @@ and the digest is read off the whole file first. `from` naming a path being
 refused is the good news in the table — there is no spelling of a create that
 turns this road into a download.
 **Date:** 2026-09-13.
+
+### The runtime samples every answer, so one round of ten is a small sample
+**Version:** Ollama 0.34.0 on an Apple M3 with 8 GB, `alo-models`' `/api/chat`
+request as of `c6a65ba`, which sets no sampling options. 2026-09-13/14.
+**Behaviour:** the runtime's own log prints the sampler for every request, and
+for every measurement here it read `temp = 0.800`, `top_k = 40`,
+`top_p = 0.900` — the runtime's defaults, because the request names none. So
+the same weights answer the same prompt differently from one run to the next.
+Measured, not supposed: the Qwen 2.5 7B GGUF (`sha256:2bada8a7…3730`) drove **4
+of 10** asked by its catalogue name on 2026-09-13 and **3 of 10** asked by the
+name of a file brought on 2026-09-14 — the same bytes, the same ten exercises,
+the same door. Both are `rarely`; neither is a different model.
+**Our response:** nothing was changed. `alo-models` asks a model the way a real
+turn asks it, and a measurement taken at a temperature no turn uses would be a
+measurement of a different machine. What follows for the catalogue is stated
+rather than hidden: a grade from one round is a grade from ten samples, the bar
+is nine of them, and a model near a boundary — five, or nine — deserves a second
+round before anybody relies on the line it lands on. `ALO_DRIVING_ROUNDS` is
+the harness's own way to take one. The best grade here, Qwen 2.5 7B's four, is
+one short of `sometimes` and should get that second round before anybody writes
+`sometimes` or `rarely` about it with confidence; none is anywhere near nine,
+which is the line that decides the agent.
+**Date:** 2026-09-14.

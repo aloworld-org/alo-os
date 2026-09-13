@@ -94,7 +94,7 @@
 
 use std::path::{Path, PathBuf};
 
-use alo_models::{Brought, Provider, Providers, Weights};
+use alo_models::{Brought, Driving, Provider, Providers, Weights, WeightsError};
 use alo_strings::Language;
 
 use crate::chosen::Picked;
@@ -241,6 +241,65 @@ impl Choosing {
             why,
         })?;
         self.bringing(weights)
+    }
+
+    /// **What a measurement of weights this person brought earned**, written
+    /// beside them in their own settings — never into the catalogue alo OS
+    /// ships, which is not theirs.
+    ///
+    /// Called by a measurement that finished: `alo-driving` puts its fixed set
+    /// to the weights through the daemon's own door, and the grade and the
+    /// machine it was earned on come here together, because there is no road to
+    /// a grade without one. Weights graded `reliably` may then be given agent
+    /// turns; anything else keeps answering questions and is not the agent.
+    /// Nothing here sends the grade anywhere — the file is the only place it
+    /// goes, and `tests/a_grade_travels_nowhere.rs` reads this crate's source
+    /// to say so.
+    ///
+    /// # Errors
+    ///
+    /// [`NotWritten::NothingToMeasure`] when the person's list has no weights
+    /// of that name — they are not added, because measuring and bringing are
+    /// two acts; [`NotWritten::NotWeights`] when the list will not take the
+    /// grade, which is a machine that says nothing checkable; and the two the
+    /// other doors share. Nothing is written in any of them.
+    pub fn measuring(
+        &mut self,
+        id: &str,
+        grade: Driving,
+        on: alo_models::MeasuredOn,
+    ) -> Result<(), NotWritten> {
+        let Some(theirs) = self.settings.brought().get(id).cloned() else {
+            return Err(NotWritten::NothingToMeasure {
+                at: self.at.clone(),
+                model: id.to_owned(),
+            });
+        };
+        // A grade is written only beside a machine a reader could check. The
+        // list reads an unplaced grade from a file as it was written — the
+        // contract is additive — so the refusal is here, on the one road that
+        // writes a grade.
+        let graded = theirs.measured(grade, on);
+        if !graded.grade_is_placed() {
+            return Err(NotWritten::NotWeights {
+                at: self.at.clone(),
+                why: WeightsError::GradeNotPlaced(graded.id),
+            });
+        }
+        let mut brought = self.settings.brought().clone();
+        brought.remove(id);
+        brought.add(graded).map_err(|why| NotWritten::NotWeights {
+            at: self.at.clone(),
+            why,
+        })?;
+        let changed = self.with(
+            self.settings.chosen().cloned(),
+            brought,
+            self.settings.providers().clone(),
+            self.settings.languages().to_vec(),
+            self.settings.setup(),
+        )?;
+        self.apply(changed)
     }
 
     /// **A provider this person added themselves**, added to their own list.
@@ -456,9 +515,14 @@ mod tests {
 
     /// One set of weights somebody brought.
     fn weights(id: &str) -> Weights {
-        Weights::checked(id, 4_700_000_000)
-            .unwrap()
-            .measured(Driving::Reliably)
+        Weights::checked(id, 4_700_000_000).unwrap().measured(
+            Driving::Reliably,
+            alo_models::MeasuredOn {
+                machine: "a test machine, 16 GB".to_owned(),
+                date: "2026-09-14".to_owned(),
+                runtime: "Ollama 0.34.0".to_owned(),
+            },
+        )
     }
 
     /// One provider, built the way a settings surface builds one.

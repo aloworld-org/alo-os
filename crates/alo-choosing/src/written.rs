@@ -201,6 +201,12 @@ pub(crate) struct WeightsAsWritten {
     /// What a measurement of these weights earned. No serde default, so an
     /// entry that says nothing about it fails to read.
     pub(crate) drives_verbs: Driving,
+    /// The machine, day and model runtime that grade was earned on.
+    /// **Additive**: a grade with none beside it still reads, and is shown as
+    /// a grade that does not say where it was made — and does not give the
+    /// agent, because it is somebody's say-so rather than a measurement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) measured: Option<alo_models::MeasuredOn>,
     /// The file on this machine the person pointed at, where they pointed at
     /// one rather than picking from what a runtime reports. Optional, and
     /// absent in every entry written before it existed — additive, so the
@@ -222,7 +228,12 @@ impl WeightsAsWritten {
         let mut weights = Weights::checked(&self.id, self.bytes_on_disk)?;
         weights.quantisation = self.quantisation;
         weights.file = self.file;
-        Ok(weights.measured(self.drives_verbs))
+        // Read as written, placed or not: whether a grade gives the agent is
+        // `alo_models::Weights::can_be_the_agent`'s question, and a file that
+        // read before this key existed reads the same now.
+        weights.drives_verbs = self.drives_verbs;
+        weights.measured = self.measured;
+        Ok(weights)
     }
 }
 
@@ -243,9 +254,14 @@ fn not_weights(at: &std::path::Path, why: WeightsError) -> NotSet {
         // the size it states. Named rather than wildcarded, so that a fourth
         // refusal added to that list is a question asked here rather than a
         // branch that silently answers it.
+        //
+        // Nor is a grade refused on the way in: one with no machine beside it
+        // is read, and `alo_models::Weights::can_be_the_agent` is what keeps it
+        // from giving the agent.
         WeightsError::NoFileThere(_)
         | WeightsError::NotAFile(_)
-        | WeightsError::FileNotRead { .. } => NotSet::WeightsUnnamed { at: at.to_owned() },
+        | WeightsError::FileNotRead { .. }
+        | WeightsError::GradeNotPlaced(_) => NotSet::WeightsUnnamed { at: at.to_owned() },
     }
 }
 
@@ -543,6 +559,11 @@ id = "my-finetune"
 bytes-on-disk = 4700000000
 quantisation = "Q4_K_M"
 drives-verbs = "reliably"
+
+[brought.measured]
+machine = "Apple M3, 8 GB unified memory"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
 "#
         .to_owned()
     }

@@ -132,7 +132,14 @@ fn a_model_a_provider_and_a_language_all_reach_the_file() {
         .bringing(
             Weights::checked("my-finetune", 4_700_000_000)
                 .unwrap()
-                .measured(Driving::Reliably),
+                .measured(
+                    Driving::Reliably,
+                    alo_models::MeasuredOn {
+                        machine: "a test machine, 16 GB".to_owned(),
+                        date: "2026-09-14".to_owned(),
+                        runtime: "Ollama 0.34.0".to_owned(),
+                    },
+                ),
         )
         .unwrap();
     choosing
@@ -250,8 +257,8 @@ fn a_file_the_machine_refuses_is_not_replaced_by_a_change() {
 }
 
 /// **Every string this crate can say is in the machine's one vocabulary**,
-/// including the four that arrived with the writer and the one that arrived
-/// with `Choosing::changing`. A word declared here and left out of
+/// including the four that arrived with the writer, the one that arrived with
+/// `Choosing::changing` and the one that arrived with `Choosing::measuring`. A word declared here and left out of
 /// `alo-saying`'s list is a sentence that reaches a person as a key — the
 /// failure task 17 built a check for, met here for the words this change adds.
 #[test]
@@ -264,7 +271,7 @@ fn everything_the_writer_says_is_something_the_machine_can_say() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 16);
+    assert_eq!(EVERY_WORD.len(), 17);
 }
 
 /// **What a person reads is theirs to read in their own language**, and the
