@@ -27,9 +27,9 @@ a shared space, and two lanes have taken the same one twice.
 
 ### 1. A machine says it exists, and says nothing else
 
-**Status:** done, 2026-09-13 — `crates/alo-nearby`, and
+**Status:** **Done, 2026-09-13.** **Depends on:** nothing.
+Built in `crates/alo-nearby`; the report is
 `docs/autonomy/updates/a-machine-says-it-exists-and-says-nothing-else.md`.
-**Depends on:** nothing.
 
 *Machines find each other with zero configuration — no addresses typed, no
 accounts.* ADR 0003: **discovery reveals presence and nothing else** — no
@@ -54,9 +54,9 @@ can read one, including a machine nobody has paired with and nobody owns.
 
 ### 2. Pairing is mutual, deliberate, and refused every other way
 
-**Status:** done, 2026-09-13 — `crates/alo-nearby`, and
+**Status:** **Done, 2026-09-13.** **Depends on:** 1.
+Built in `crates/alo-nearby`; the report is
 `docs/autonomy/updates/a-pairing-is-made-by-two-people-and-by-nothing-else.md`.
-**Depends on:** 1.
 
 *Pairing: mutual, deliberate, enumerated, revocable in one action, and
 expiring — grants, across a machine boundary.* This is the task the whole
@@ -81,9 +81,9 @@ is worse than no pairing at all.
 
 ### 3. One GPU box serves the office, and the indicator still fires
 
-**Status:** done, 2026-09-13 — `crates/alo-asking/src/corridor.rs`, and
+**Status:** **Done, 2026-09-13.** **Depends on:** 2.
+Built in `crates/alo-asking/src/corridor.rs`; the report is
 `docs/autonomy/updates/the-machine-down-the-corridor-is-still-an-egress.md`.
-**Depends on:** 2.
 
 *A machine without a GPU discovers the one with it, and the agents just work.
 The inference never leaves the building; it moves down the corridor.* The

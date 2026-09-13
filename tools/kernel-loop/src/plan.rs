@@ -547,6 +547,65 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
                     "`{named}` does not number its tasks from one in order: {task:?}"
                 );
             }
+
+            // **A status that says "done" on a task the loop does not read as
+            // done is a finished task the loop would take up again.** Three
+            // tasks were marked `**Status:** done, 2026-09-13 — …` by hand on
+            // 2026-09-13 with no `**Done, <date>.**` anywhere in their
+            // sections; the loop read all three as ready, launched a worker at
+            // the first, and had to be stopped. Older plans write
+            // `**Status:** done.` and carry the mark on the line after, which
+            // is fine — so this compares what a status *says* with what the
+            // parser *concluded*, task by task, and refuses only the gap.
+            let mut says_done: Vec<bool> = Vec::new();
+            let mut in_the_tasks = false;
+            for line in written.lines() {
+                if let Some(heading) = line.strip_prefix("## ") {
+                    in_the_tasks = heading.trim() == THE_TASKS;
+                    continue;
+                }
+                if !in_the_tasks {
+                    continue;
+                }
+                if let Some(heading) = line.strip_prefix("### ") {
+                    if heading
+                        .split_once(". ")
+                        .is_some_and(|(number, _)| number.parse::<u32>().is_ok())
+                    {
+                        says_done.push(false);
+                    }
+                    continue;
+                }
+                let Some(status) = line.strip_prefix(THE_STATUS) else {
+                    continue;
+                };
+                let first_word = status
+                    .trim_start()
+                    .trim_start_matches('*')
+                    .split(|of: char| !of.is_alphabetic())
+                    .next()
+                    .unwrap_or_default()
+                    .to_lowercase();
+                if first_word == "done"
+                    && let Some(this_task) = says_done.last_mut()
+                {
+                    *this_task = true;
+                }
+            }
+            assert_eq!(
+                says_done.len(),
+                tasks.len(),
+                "`{named}`: the two readings disagree"
+            );
+            for (task, said) in tasks.iter().zip(says_done) {
+                assert!(
+                    !said || task.done,
+                    "`{named}` task {} says done on its status line and carries no \
+                     `**Done, <date>.**` mark, so the loop would take it up again — write \
+                     `**Status:** **Done, <date>.**`",
+                    task.number
+                );
+            }
         }
     }
 
