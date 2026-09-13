@@ -56,7 +56,16 @@ use std::path::Path;
 use crate::{evidence, gates, handoff::Handed, journal, repository};
 
 /// How many times a lost race is worth answering before somebody should look.
-const TIMES: u8 = 3;
+///
+/// Three was sized for two lanes. On the night of 2026-09-13 there were three
+/// — two on the PC and one on a Mac — each gating for about fifteen minutes,
+/// and lane B twice needed all three attempts to land a task that had passed
+/// every gate every time: each rebase took long enough for another lane to
+/// publish under it. Losing a race is not a fault in the work, and parking a
+/// finished task for it costs a person a recovery by hand. So the bound is
+/// what three lanes need with room for a fourth, and the sentence a parked
+/// task carries still says the work was never the problem.
+const TIMES: u8 = 6;
 
 /// Every step publication is made of, so that the order they happen in is a
 /// thing this crate's own tests can check.
