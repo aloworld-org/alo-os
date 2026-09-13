@@ -10,8 +10,8 @@
 //! query to construct, so *answered with everything* is not a thing this
 //! type can do by accident. A part that is empty — a name of no letters, a
 //! sentence of no words — matches every entry on that axis, which is what a
-//! filter with no condition does; refusing a person's empty *question* is the
-//! search's job, in front of this, and the plan's next task.
+//! filter with no condition does; refusing a person's empty *question* is
+//! [`crate::Index::answer`]'s job, in front of this, through `asking.rs`.
 
 use std::time::SystemTime;
 
@@ -105,6 +105,26 @@ impl Query {
     #[must_use]
     pub fn words(&self) -> &[String] {
         self.saying.as_deref().unwrap_or(&[])
+    }
+
+    /// The part of a name this query asks for, in the form it is looked up
+    /// in, or nothing if no name was asked.
+    #[must_use]
+    pub fn name_asked(&self) -> Option<&str> {
+        self.named.as_deref()
+    }
+
+    /// The kind this query asks for, if one was.
+    #[must_use]
+    pub fn kind_asked(&self) -> Option<Kind> {
+        self.kind
+    }
+
+    /// Whether this query asks for a kind or a date — the two parts that
+    /// cannot be empty of anything to look for.
+    #[must_use]
+    pub fn asks_kind_or_date(&self) -> bool {
+        self.kind.is_some() || self.since.is_some() || self.before.is_some()
     }
 
     /// Whether this entry answers the query: every part given matches.
@@ -212,6 +232,21 @@ mod tests {
             Query::saying("Summer contract").words(),
             ["contract", "summer"]
         );
+    }
+
+    /// Each part says whether it was asked, in the form it is looked up in.
+    #[test]
+    fn each_part_says_whether_it_was_asked() {
+        let query = Query::named("Anna").and_of_kind(Kind::Text);
+        assert_eq!(query.name_asked(), Some("anna"));
+        assert_eq!(query.kind_asked(), Some(Kind::Text));
+        assert!(query.asks_kind_or_date());
+        let words = Query::saying("summer");
+        assert_eq!(words.name_asked(), None);
+        assert_eq!(words.kind_asked(), None);
+        assert!(!words.asks_kind_or_date());
+        assert!(Query::changed_since(at(1)).asks_kind_or_date());
+        assert!(Query::changed_before(at(1)).asks_kind_or_date());
     }
 
     /// Parts combine as *and*: every one given has to match.

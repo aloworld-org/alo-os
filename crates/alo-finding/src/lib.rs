@@ -15,9 +15,22 @@
 //! from its own bytes rather than its extension, its size, when it was last
 //! written as the filesystem says, and its [`Contents`] — the words in it, for
 //! a kind that is text, or the reason there are none. A [`Query`] over any of
-//! those four is answered by [`Index::find`] from the index alone: the disk is
-//! never walked to answer, which is why an index of a folder that has since
-//! been unplugged still answers.
+//! those four is answered by [`Index::answer`] from the index alone: the disk
+//! is never walked to answer, which is why an index of a folder that has
+//! since been unplugged still answers.
+//!
+//! # An answer says what it did not look at
+//!
+//! An [`Answer`] is what matched **beside** what was not searched — a
+//! [`NotSearched`] listing the folders the machine would not read, the
+//! folders on another disk, the files that could not be opened, the kinds
+//! with no reader, and the folder outside which nothing was looked at — so
+//! that an empty answer is *nothing matched* and never *nothing was looked
+//! at*. A query that is not a query — empty, or longer than a sentence — is
+//! refused with a [`NotAsked`] before anything is searched, rather than
+//! answered with everything. The answer carries how long it took, and
+//! `tests/a_search_answers_in_time_and_says_what_it_did_not_read.rs` builds
+//! an index of ten thousand files and times it.
 //!
 //! The index is **on this machine**, in a file the person owns under their
 //! own directory — [`Index::where_kept`] says where, and
@@ -45,7 +58,9 @@
 //! |---|---|
 //! | [`Index`], [`Index::of`] | One folder, indexed now |
 //! | [`Index::again`] | The same folder, indexed again, reading only what changed |
-//! | [`Index::find`], [`Query`] | An answer from the index alone |
+//! | [`Index::answer`], [`Query`], [`Answer`] | An answer from the index alone, beside what was not searched |
+//! | [`NotSearched`] | What the query could not be held against |
+//! | [`NotAsked`] | A query that is not one, refused before anything is searched |
 //! | [`Index::kept_at`], [`Index::read_from`], [`Index::where_kept`] | The file the index lives in |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
 //! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
@@ -58,8 +73,9 @@
 //! use alo_finding::{Index, Kind, Query};
 //!
 //! let index = Index::of(Path::new("/home/ada/Documents"))?;
-//! let invoices = index.find(&Query::of_kind(Kind::Pdf).and_named("invoice"));
-//! let about_the_summer = index.find(&Query::saying("contract summer"));
+//! let invoices = index.answer(&Query::of_kind(Kind::Pdf).and_named("invoice"))?;
+//! let about_the_summer = index.answer(&Query::saying("contract summer"))?;
+//! assert!(about_the_summer.not_searched.no_reader.contains(&invoices.found[0]));
 //! let at = Index::where_kept(
 //!     std::env::var_os("XDG_DATA_HOME").as_deref(),
 //!     std::env::var_os("HOME").as_deref(),
@@ -68,11 +84,13 @@
 //! index.kept_at(&at)?;
 //! let back = Index::read_from(&at, &index.of)?;
 //! assert_eq!(back.entries, index.entries);
-//! # Ok::<(), alo_finding::NotIndexed>(())
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answer;
+pub mod asking;
 pub mod covered;
 pub mod entry;
 pub mod index;
@@ -86,8 +104,11 @@ mod indexing;
 mod keeping;
 mod place;
 mod reading;
+mod searching;
 mod wording;
 
+pub use answer::{Answer, NotSearched};
+pub use asking::{A_NAME, A_SENTENCE, NotAsked};
 pub use covered::{Covered, Unread};
 pub use entry::{Contents, Entry, Moment};
 pub use index::Index;

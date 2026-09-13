@@ -149,7 +149,21 @@ road.
 
 ### 4. Search answers without asking anything, and says what it did not read
 
-**Status:** ready. **Depends on:** 3.
+**Status:** done. **Depends on:** 3.
+
+**Done, 2026-09-13.** Report:
+[`updates/search-answers-in-time-and-says-what-it-did-not-read.md`](updates/search-answers-in-time-and-says-what-it-did-not-read.md).
+`crates/alo-finding`: `Index::answer` is the search a person or an agent is
+given — `Index::find` stays the filter under it. An `Answer` is what matched
+beside a `NotSearched`: the folder outside which nothing was looked at, the
+folders the machine would not read, the folders on another disk, the folders
+the index stopped in, the files that could not be opened, the kinds with no
+reader and the files too large — the last three only when the query asked
+for what those files cannot answer. A query that is not one — nothing asked,
+more than `A_SENTENCE` words, a part longer than `A_NAME` — is refused with
+a `NotAsked` before anything is searched. The answer carries how long it
+took; a test builds ten thousand files and times it, and the numbers are in
+the report with the machine named.
 
 The second half of *without asking anything*: a search that answers in the time
 a person will wait for one, and is honest about what the index does not hold —

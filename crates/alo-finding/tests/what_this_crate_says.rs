@@ -14,7 +14,10 @@
 
 use std::path::PathBuf;
 
-use alo_finding::{Contents, Covered, Kind, NotIndexed, finding_words};
+use alo_finding::{
+    Contents, Covered, Entry, Kind, Moment, NotAsked, NotIndexed, NotSearched, Unread,
+    finding_words,
+};
 use alo_strings::{Form, Key, Language, Said, Strings, Translation};
 
 /// A key, from this crate's list.
@@ -22,13 +25,77 @@ fn key(named: &str) -> Key {
     Key::named(named).expect("a key")
 }
 
-/// Polish, and this crate's twenty-five strings in it.
+/// Polish, and this crate's thirty-five strings in it.
 fn in_polish() -> Strings {
     let vocabulary = finding_words().expect("this crate's own words");
     let polish = Language::written("pl").expect("a language");
     let not_whole = key("finding.not-whole");
     let unnamed = key("finding.unnamed");
+    let no_reader = key("finding.not-searched.no-reader");
+    let too_big = key("finding.not-searched.too-big");
     let translation = Translation::into_language(polish.clone())
+        .says(
+            key("finding.not-asked.nothing"),
+            "Nie zapytano o nic, więc nic nie przeszukano: wyszukiwanie potrzebuje nazwy, \
+             rodzaju, daty albo kilku słów.",
+        )
+        .says(
+            key("finding.not-asked.more-than-a-sentence"),
+            "{words} słów to więcej niż zdanie, a wyszukiwanie przyjmuje najwyżej {most}.",
+        )
+        .says(
+            key("finding.not-asked.longer-than-a-name"),
+            "{chars} znaków to więcej niż jakakolwiek nazwa pliku, a wyszukiwanie przyjmuje \
+             najwyżej {most}.",
+        )
+        .says(
+            key("finding.not-searched.outside"),
+            "Niczego poza {folder} nie przeszukano.",
+        )
+        .says(
+            key("finding.not-searched.folder-unread"),
+            "Nie udało się odczytać {below}, więc niczego w nim nie przeszukano: {why}",
+        )
+        .says(
+            key("finding.not-searched.elsewhere"),
+            "{below} jest na innym dysku, więc niczego w nim nie przeszukano.",
+        )
+        .says(
+            key("finding.not-searched.not-entered"),
+            "Indeks zatrzymał się, zanim skończył {below}, więc nie przeszukano go w całości.",
+        )
+        .says(
+            key("finding.not-searched.file-unread"),
+            "Nie udało się odczytać {below}, więc go nie przeszukano: {why}",
+        )
+        .says(
+            no_reader.for_form(Form::One),
+            "Jeden plik jest rodzaju, którego słów nie można odczytać, więc nie przeszukano \
+             go po słowach.",
+        )
+        .says(
+            no_reader.for_form(Form::Few),
+            "{files} pliki są rodzajów, których słów nie można odczytać, więc nie przeszukano \
+             ich po słowach.",
+        )
+        .says(
+            no_reader.for_form(Form::Many),
+            "{files} plików jest rodzajów, których słów nie można odczytać, więc nie \
+             przeszukano ich po słowach.",
+        )
+        .says(
+            too_big.for_form(Form::One),
+            "Jeden plik jest większy, niż indeks czyta, więc nie przeszukano go po słowach.",
+        )
+        .says(
+            too_big.for_form(Form::Few),
+            "{files} pliki są większe, niż indeks czyta, więc nie przeszukano ich po słowach.",
+        )
+        .says(
+            too_big.for_form(Form::Many),
+            "{files} plików jest większych, niż indeks czyta, więc nie przeszukano ich po \
+             słowach.",
+        )
         .says(
             key("finding.not-absolute"),
             "{at} nie mówi, gdzie jest od korzenia maszyny, więc nie można go zindeksować.",
@@ -117,7 +184,7 @@ fn in_polish() -> Strings {
         );
     let speaking = vocabulary
         .check(translation)
-        .expect("a translation of twenty-five strings with no gaps in it");
+        .expect("a translation of thirty-five strings with no gaps in it");
     let mut strings = Strings::of(vocabulary);
     strings.speaks(speaking).expect("a checked translation");
     strings.prefers(&[polish]);
@@ -134,6 +201,53 @@ fn a_covered(whole: bool, unnamed: usize) -> Covered {
         not_entered: Vec::new(),
         unnamed,
     }
+}
+
+/// An entry, for what a search says it did not look at.
+fn an_entry(below: &str, kind: Kind, contents: Contents) -> Entry {
+    Entry {
+        below: below.to_owned(),
+        kind,
+        bytes: 1,
+        modified: Moment { secs: 1, nanos: 0 },
+        contents,
+    }
+}
+
+/// What a search did not look at, said in full: one of each, and the two
+/// counts at one, a few and many.
+fn everything_a_search_did_not_look_at(strings: &Strings) -> Vec<Said> {
+    let folder = PathBuf::from("/home/ada/Documents");
+    let unread = Unread {
+        below: "private".to_owned(),
+        why: "permission denied".to_owned(),
+    };
+    let locked = an_entry(
+        "locked.txt",
+        Kind::Unread,
+        Contents::NotRead {
+            why: "permission denied".to_owned(),
+        },
+    );
+    let pdf = an_entry("march.pdf", Kind::Pdf, Contents::NotText);
+    let big = an_entry("big.txt", Kind::Text, Contents::TooBig { bytes: 9 });
+    let mut said = Vec::new();
+    for how_many in [1, 3, 25] {
+        let not_searched = NotSearched {
+            outside: &folder,
+            folders_unread: vec![&unread],
+            elsewhere: vec!["mnt"],
+            not_entered: vec![""],
+            unnamed: 0,
+            files_unread: vec![&locked],
+            no_reader: vec![&pdf; how_many],
+            too_big: vec![&big; how_many],
+        };
+        let sentences = not_searched.said(strings);
+        assert_eq!(sentences.len(), 7, "{sentences:?}");
+        said.extend(sentences);
+    }
+    said
 }
 
 /// Every sentence this crate says itself, rendered against these strings.
@@ -200,6 +314,20 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
                 .expect("a sentence above an index that left names out"),
         );
     }
+    for not_asked in [
+        NotAsked::Nothing,
+        NotAsked::MoreThanASentence {
+            words: 40,
+            most: 32,
+        },
+        NotAsked::LongerThanAName {
+            chars: 300,
+            most: 255,
+        },
+    ] {
+        said.push(not_asked.said(strings));
+    }
+    said.extend(everything_a_search_did_not_look_at(strings));
     said
 }
 
@@ -209,7 +337,7 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
 fn a_machine_with_no_translations_still_says_everything_in_english() {
     let strings = Strings::of(finding_words().expect("this crate's own words"));
     let said = everything_said_here(&strings);
-    assert_eq!(said.len(), 6 + 3 + 13 + 6);
+    assert_eq!(said.len(), 6 + 3 + 13 + 6 + 3 + 3 * 7);
     for said in said {
         assert!(!said.is_a_bug(), "{said}");
         assert!(!said.is_translated(), "{said}");
@@ -266,6 +394,35 @@ fn every_sentence_is_read_in_the_language_the_person_reads() {
     assert_eq!(
         many.text(),
         "Indeks zatrzymał się po 20000 rzeczach, więc nie obejmuje całego folderu."
+    );
+
+    let not_looked_at = everything_a_search_did_not_look_at(&strings);
+    assert_eq!(
+        not_looked_at.first().expect("a sentence").text(),
+        "Niczego poza /home/ada/Documents nie przeszukano."
+    );
+    assert_eq!(
+        not_looked_at.get(5).expect("a sentence").text(),
+        "Jeden plik jest rodzaju, którego słów nie można odczytać, więc nie przeszukano go po \
+         słowach."
+    );
+    assert_eq!(
+        not_looked_at.get(7 + 6).expect("a sentence").text(),
+        "3 pliki są większe, niż indeks czyta, więc nie przeszukano ich po słowach."
+    );
+    assert_eq!(
+        not_looked_at.get(14 + 5).expect("a sentence").text(),
+        "25 plików jest rodzajów, których słów nie można odczytać, więc nie przeszukano ich po \
+         słowach."
+    );
+    assert_eq!(
+        NotAsked::MoreThanASentence {
+            words: 40,
+            most: 32
+        }
+        .said(&strings)
+        .text(),
+        "40 słów to więcej niż zdanie, a wyszukiwanie przyjmuje najwyżej 32."
     );
 }
 

@@ -3,7 +3,8 @@
 //! An index is names, kinds, dates and words, and a name needs no
 //! translation. What needs one is every place a window shows a sentence
 //! instead: the kind of a file, why a file has no words in the index, why a
-//! folder could not be indexed at all. Each is declared here so that nothing
+//! folder could not be indexed at all, what a search did not look at, and why
+//! a query was not one. Each is declared here so that nothing
 //! reaches a person without something having asked whether anybody
 //! translated it.
 //!
@@ -275,8 +276,138 @@ pub const UNNAMED: Counted = Counted {
            name that could mislead. {unnamed} is how many.",
 };
 
+// ---------------------------------------------------------------------------
+// A query that is not one — `crate::NotAsked`.
+// ---------------------------------------------------------------------------
+
+/// Nothing was asked.
+pub const NOT_ASKED_NOTHING: Word = Word::saying(
+    "finding.not-asked.nothing",
+    "Nothing was asked, so nothing was searched: a search needs a name, a kind, a date or some \
+     words.",
+)
+.noting(
+    "Said when a search was started with nothing to look for: an empty box, or only spaces or \
+     punctuation. Nothing is wrong and nothing was searched; the person types something and \
+     searches again.",
+);
+
+/// More words than a sentence.
+pub const NOT_ASKED_MORE_THAN_A_SENTENCE: Word = Word::saying(
+    "finding.not-asked.more-than-a-sentence",
+    "{words} words is more than a sentence, and a search takes at most {most}.",
+)
+.noting(
+    "Said when the words to search for run longer than a search takes, which is what happens \
+     when a whole paragraph is pasted into the search box. {words} is how many words were given \
+     and {most} is the limit; both are numbers.",
+);
+
+/// Longer than a name.
+pub const NOT_ASKED_LONGER_THAN_A_NAME: Word = Word::saying(
+    "finding.not-asked.longer-than-a-name",
+    "{chars} characters is longer than any file name, and a search takes at most {most}.",
+)
+.noting(
+    "Said when the part of a name to search for, or a single word, is longer than any file's \
+     name can be, so it is in no file. {chars} is how many characters were given and {most} is \
+     the limit; both are numbers.",
+);
+
+// ---------------------------------------------------------------------------
+// What a search did not look at — `crate::NotSearched`.
+// ---------------------------------------------------------------------------
+
+/// Nothing outside the indexed folder was searched.
+pub const NOT_SEARCHED_OUTSIDE: Word = Word::saying(
+    "finding.not-searched.outside",
+    "Nothing outside {folder} was searched.",
+)
+.noting(
+    "Shown beside every search answer, first, so that a person knows which folder was \
+     searched and that the rest of the disk was not. {folder} is a path and is never \
+     translated.",
+);
+
+/// A folder the machine would not read.
+pub const NOT_SEARCHED_FOLDER_UNREAD: Word = Word::saying(
+    "finding.not-searched.folder-unread",
+    "{below} could not be read, so nothing in it was searched: {why}",
+)
+.noting(
+    "Shown beside a search answer for each folder inside the searched one that the machine \
+     would not let the index open, usually because it belongs to another person. {below} is \
+     the folder's path and is never translated. {why} is what the operating system said, in \
+     its own words.",
+);
+
+/// A folder on another disk.
+pub const NOT_SEARCHED_ELSEWHERE: Word = Word::saying(
+    "finding.not-searched.elsewhere",
+    "{below} is on another disk, so nothing in it was searched.",
+)
+.noting(
+    "Shown beside a search answer for each folder inside the searched one that is really on \
+     another disk or drive, which an index does not enter. {below} is the folder's path and is \
+     never translated.",
+);
+
+/// A folder the index stopped in.
+pub const NOT_SEARCHED_NOT_ENTERED: Word = Word::saying(
+    "finding.not-searched.not-entered",
+    "The index stopped before it had finished {below}, so not all of it was searched.",
+)
+.noting(
+    "Shown beside a search answer for each folder the index had not finished listing when it \
+     reached the most it looks at. Read together with \"finding.not-whole\", which says how \
+     many that is. {below} is the folder's path and is never translated.",
+);
+
+/// A file the machine would not open.
+pub const NOT_SEARCHED_FILE_UNREAD: Word = Word::saying(
+    "finding.not-searched.file-unread",
+    "{below} could not be read, so it was not searched: {why}",
+)
+.noting(
+    "Shown beside a search answer for each file the machine would not let the index open, so \
+     that neither what kind of file it is nor its words could be searched. {below} is the \
+     file's path and is never translated. {why} is what the operating system said, in its own \
+     words.",
+);
+
+/// Files of a kind with no reader.
+pub const NOT_SEARCHED_NO_READER: Counted = Counted {
+    named: "finding.not-searched.no-reader",
+    number: "files",
+    one: "One file is of a kind whose words cannot be read, so it was not searched by its words.",
+    other: "{files} files are of kinds whose words cannot be read, so they were not searched by \
+            their words.",
+    note: "Said once beside a search by words, counting the images, PDFs, archives and files of \
+           no known kind, whose words the index does not hold. A search by name still finds \
+           them. {files} is how many.",
+};
+
+/// Files larger than an index reads.
+pub const NOT_SEARCHED_TOO_BIG: Counted = Counted {
+    named: "finding.not-searched.too-big",
+    number: "files",
+    one: "One file is larger than an index reads, so it was not searched by its words.",
+    other: "{files} files are larger than an index reads, so they were not searched by their \
+            words.",
+    note: "Said once beside a search by words, counting the files too large for their words to \
+           be indexed. A search by name still finds them. {files} is how many.",
+};
+
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 23] = [
+pub const EVERY_WORD: [Word; 31] = [
+    NOT_ASKED_NOTHING,
+    NOT_ASKED_MORE_THAN_A_SENTENCE,
+    NOT_ASKED_LONGER_THAN_A_NAME,
+    NOT_SEARCHED_OUTSIDE,
+    NOT_SEARCHED_FOLDER_UNREAD,
+    NOT_SEARCHED_ELSEWHERE,
+    NOT_SEARCHED_NOT_ENTERED,
+    NOT_SEARCHED_FILE_UNREAD,
     NOT_ABSOLUTE,
     NOT_WALKED,
     NOT_THE_SAME,
@@ -303,7 +434,12 @@ pub const EVERY_WORD: [Word; 23] = [
 ];
 
 /// Everything this crate can say about a number of things.
-pub const EVERY_COUNTED: [Counted; 2] = [NOT_WHOLE, UNNAMED];
+pub const EVERY_COUNTED: [Counted; 4] = [
+    NOT_WHOLE,
+    UNNAMED,
+    NOT_SEARCHED_NO_READER,
+    NOT_SEARCHED_TOO_BIG,
+];
 
 /// Why this crate's list could not be declared.
 #[derive(Debug, thiserror::Error)]
@@ -379,7 +515,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(finding_words().unwrap().how_many(), 25);
+        assert_eq!(finding_words().unwrap().how_many(), 35);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

@@ -3,6 +3,8 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
+use crate::answer::Answer;
+use crate::asking::NotAsked;
 use crate::covered::Covered;
 use crate::entry::Entry;
 use crate::format;
@@ -57,12 +59,29 @@ impl Index {
 
     /// Everything that answers this query, from the index alone and in the
     /// index's own order.
+    ///
+    /// The filter and nothing else: [`Self::answer`] is the search a person
+    /// or an agent is given, which refuses a query that is not one and says
+    /// what it did not look at.
     #[must_use]
     pub fn find(&self, query: &Query) -> Vec<&Entry> {
         self.entries
             .iter()
             .filter(|entry| query.matches(entry))
             .collect()
+    }
+
+    /// The answer to this query: what matched, beside what was not searched,
+    /// and how long it took — from the index alone, and in the index's own
+    /// order.
+    ///
+    /// # Errors
+    ///
+    /// [`NotAsked`] for a query that is not one — empty, or longer than a
+    /// sentence — refused before anything is searched, because the answer to
+    /// no question is not everything.
+    pub fn answer(&self, query: &Query) -> Result<Answer<'_>, NotAsked> {
+        crate::searching::answered(self, query)
     }
 
     /// Where this entry is on the disk.
