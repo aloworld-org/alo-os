@@ -511,7 +511,21 @@ fn one_iteration(
                 if worker::was_too_fast_to_have_tried(took) {
                     return Ok(journal::Went::TheWorkerCannotRun(why));
                 }
-                return Ok(journal::Went::NobodyWroteIt(chosen.number, chosen.named));
+                // **An exit code is not evidence about the work**, which is
+                // this loop's own first rule and was broken here: a worker
+                // that wrote its handoff and *then* died — of an exhausted
+                // account, a killed terminal, a panic on the way out — has
+                // handed over, and the handoff on disk says so. Looked at
+                // before it is called missing, exactly as `waiting_for` looks
+                // before it honours a stop.
+                if handoff::Handed::waiting(ours)?.is_none() {
+                    return Ok(journal::Went::NobodyWroteIt(chosen.number, chosen.named));
+                }
+                journal::note(
+                    ours,
+                    "the worker did not exit cleanly, but it left a handoff — which is what \
+                     this loop acts on, and it is gated like any other",
+                );
             }
         }
     }
