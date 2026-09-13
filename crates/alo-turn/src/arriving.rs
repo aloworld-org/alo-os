@@ -73,16 +73,29 @@
 //! at the moment with [`crate::words::NO_LONGER_PAIRED`], and a verb arriving
 //! after it is refused before the grants are asked.
 //!
+//! # And the answer leaves under this machine's indicator
+//!
+//! An answer to a remote read is this machine's data leaving it, and the
+//! number a change waits under is a sentence leaving it; law 1 is not
+//! suspended for the length of a corridor. So a remote turn has two doors a
+//! local one has no use for: [`Arriving::departing`] asks this machine's
+//! egress rule about an answer going back to the origin machine and puts it
+//! on this machine's indicator, handing back the [`alo_egress::Departing`]
+//! that is the only thing meaning *this may leave*; and [`Arriving::returned`]
+//! writes the departure down, stamped with where the verb came from, and
+//! takes the line off. A rule that refuses — an organisation that said
+//! *nothing leaves* — is written down as `held back`, and nothing goes back.
+//! The wire that carries the answer is `alo-corridor`'s, and it has no road
+//! to its socket that does not pass through the first of these.
+//!
 //! # What is not here
 //!
 //! **The wire.** Nothing in this crate opens a socket, and a verb *arrives* at
 //! this type as a name and some values the way one arrives at [`Turning`] from
-//! `alo-agentd`'s local protocol. Whatever carries verbs between machines calls
-//! this door and no other, and holds, when it sends an answer back, a
-//! `alo_egress::Departing` from this machine's indicator — an answer to a
-//! remote read is this machine's data leaving it, and law 1 is not suspended
-//! for the length of a corridor. That is not built, and nothing here claims it
-//! is; what is built is the only door such a wire could call.
+//! `alo-agentd`'s local protocol. `alo-corridor` carries verbs between
+//! machines, calls this door and no other, and holds the departure above
+//! when it sends an answer back; this crate holds the order around the door
+//! and the socket stays where the sockets are.
 
 use std::time::{Duration, SystemTime};
 
@@ -90,6 +103,7 @@ use alo_capability::{
     Given, GrantError, Grantee, Grants, NotAuthorised, NotGranted, ProposalError, ProposalId,
     Refused, Waiting,
 };
+use alo_egress::{Departing, Destination, EgressPolicy, Leaving, Why};
 use alo_files::Answer;
 use alo_nearby::{Origin, Pairings};
 use alo_record::Entry;
@@ -98,6 +112,7 @@ use alo_strings::{Filling, Said, Strings};
 use crate::machine::Machine;
 use crate::refusing::NotDone;
 use crate::turning::Turning;
+use crate::unanswered::NoAnswer;
 use crate::words;
 
 /// A turn under way for a paired machine, on this machine's grants.
@@ -259,11 +274,98 @@ impl<'a, 'm> Arriving<'a, 'm> {
     /// consumed, and so that the changes it put to somebody and nobody
     /// answered go away with it.
     pub fn ending(self, grants: &mut Grants) {
-        let taken_back = self.turning.ending(grants);
+        let _ = self.ended(grants);
+    }
+
+    /// End the turn, and hand the machine back.
+    ///
+    /// [`Arriving::ending`] with the machine this turn was holding returned,
+    /// for the door on the receiving machine that holds one remote turn after
+    /// another on one machine it does not own — the next turn begins on the
+    /// same borrow. [`Turning::ended`] is the same door on a local turn.
+    #[must_use]
+    pub fn ended(self, grants: &mut Grants) -> &'a mut Machine<'m> {
+        let (taken_back, machine) = self.turning.ended(grants);
         debug_assert!(
             !taken_back,
             "a remote turn ended holding a grant it could not have made"
         );
+        machine
+    }
+
+    /// An answer is about to go back to the machine the verbs came from:
+    /// ask this machine's egress rule, and put it on this machine's
+    /// indicator.
+    ///
+    /// Law 1, on the receiving side of the corridor. What leaves is under the
+    /// origin machine's principal — the name its grants here are made to —
+    /// as [`alo_egress::Why::Sending`] to the machine by the name this
+    /// machine's person gave it. The [`Departing`] handed back is the only
+    /// thing that means *this may leave*, and `alo-corridor`'s reply to a
+    /// proven verb cannot be written without one; [`Arriving::returned`] is
+    /// what it is spent on once the answer has gone.
+    ///
+    /// # Errors
+    /// [`NoAnswer::HeldBack`] when the rule in force refuses — written down
+    /// as held back, in the rule's own words, before this answers;
+    /// [`NoAnswer::CannotBeShown`] when the machine's name could not be put
+    /// on the indicator, in which case nothing left and nothing is written;
+    /// [`NoAnswer::NotRecorded`] with `after_it_left` false if the held-back
+    /// entry could not be written; [`NoAnswer::TurnClosed`] if this turn has
+    /// stopped keeping evidence, because nothing leaves a machine that cannot
+    /// write down that it did.
+    pub fn departing(
+        &mut self,
+        policy: &EgressPolicy,
+        now: SystemTime,
+    ) -> Result<Departing, NoAnswer> {
+        if self.turning.is_closed() {
+            return Err(NoAnswer::TurnClosed);
+        }
+        let destination =
+            Destination::paired(self.origin.called()).map_err(NoAnswer::CannotBeShown)?;
+        let leaving = Leaving::because(self.turning.grantee(), Why::Sending, destination);
+        match self
+            .turning
+            .machine()
+            .indicator()
+            .beginning(policy, leaving, now)
+        {
+            Ok(departing) => Ok(departing),
+            Err(refused) => {
+                let entry = Entry::held_back(&refused, self.turning.strings(), now);
+                match self.turning.keeping_stamped(entry) {
+                    Ok(()) => Err(NoAnswer::HeldBack(refused)),
+                    Err(why) => Err(NoAnswer::NotRecorded {
+                        why,
+                        after_it_left: false,
+                    }),
+                }
+            }
+        }
+    }
+
+    /// The answer has gone back: write the departure down, and take the line
+    /// off the indicator.
+    ///
+    /// In that order, as [`Turning::asking`] keeps it: the departure is
+    /// written before the line comes off and before the caller hears
+    /// anything, and the line comes off whatever the record said, because
+    /// the indicator is a statement about now and a connection that has
+    /// ended is not leaving. The entry is stamped with where the verb came
+    /// from, as every entry of a remote turn is.
+    ///
+    /// # Errors
+    /// [`NoAnswer::NotRecorded`] with `after_it_left` true: the answer went
+    /// back and there is no evidence of it, which is law 1's second half
+    /// failing, and the turn is closed by it.
+    pub fn returned(&mut self, departing: Departing) -> Result<(), NoAnswer> {
+        let kept = self.turning.keeping_stamped(Entry::left(&departing));
+        self.turning.machine().indicator().ended(departing);
+        kept.map_err(|why| NoAnswer::NotRecorded {
+            why,
+            after_it_left: true,
+        })
     }
 
     /// The machine the verbs come from.
@@ -410,12 +512,15 @@ mod tests {
     use std::path::Path;
 
     use alo_capability::{Ask, Authorised, Grant, Reach};
+    use alo_egress::Indicator;
+    use alo_files::OnThisMachine;
     use alo_nearby::{
         Deliberating, Keying, MachineId, MayAskIts, Pairing, Proof, Proposal, Seen, Side,
     };
+    use alo_record::{Happened, Record};
 
     use super::*;
-    use crate::testing::{files, hour, in_english, listing, noon};
+    use crate::testing::{NothingIsBounded, files, hour, in_english, listing, noon};
 
     /// The machine down the corridor.
     fn the_reception() -> MachineId {
@@ -612,5 +717,137 @@ mod tests {
         assert!(!said.is_a_bug(), "{said}");
         assert!(said.text().contains("no longer paired"), "{said}");
         assert!(said.text().contains("the reception machine"), "{said}");
+    }
+
+    /// **An answer going back leaves under this machine's indicator**, as the
+    /// origin's principal sending to the machine by the name the person gave
+    /// it; once returned it is written down as having left, stamped with
+    /// where the verb came from, and the line is off.
+    #[test]
+    fn an_answer_going_back_is_shown_leaving_and_written_down_as_left() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let origin = origin();
+        let mut grants = Grants::default();
+        let mut arriving =
+            Arriving::beginning(&origin, hour(), noon(), &mut grants, &mut machine).unwrap();
+
+        let departing = arriving
+            .departing(&EgressPolicy::InTheBuilding, noon())
+            .unwrap();
+        assert_eq!(departing.agent(), arriving.grantee());
+        assert_eq!(departing.why(), Why::Sending);
+        assert_eq!(
+            departing.destination(),
+            &Destination::paired("the reception machine").unwrap()
+        );
+        assert_eq!(arriving.turning().showing().showing().len(), 1);
+        assert!(
+            arriving
+                .turning()
+                .showing()
+                .showing()
+                .first()
+                .unwrap()
+                .said(&strings)
+                .text()
+                .contains("the reception machine")
+        );
+
+        arriving.returned(departing).unwrap();
+        assert!(arriving.turning().showing().is_quiet());
+        let machine = arriving.ended(&mut grants);
+        assert!(machine.showing().is_quiet());
+
+        assert_eq!(record.len(), 1);
+        let entry = record.everything().next().unwrap();
+        assert!(entry.happened().caused_egress());
+        assert_eq!(
+            entry.happened().destination(),
+            Some(&Destination::paired("the reception machine").unwrap())
+        );
+        assert!(
+            entry
+                .origin()
+                .is_some_and(|from| from.is("the reception machine"))
+        );
+    }
+
+    /// **A rule that says nothing leaves holds the answer back**, written
+    /// down as such in the rule's own words with the origin named, and
+    /// nothing goes on the indicator.
+    #[test]
+    fn a_rule_that_says_nothing_leaves_holds_the_answer_back_and_writes_it_down() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let origin = origin();
+        let mut grants = Grants::default();
+        let mut arriving =
+            Arriving::beginning(&origin, hour(), noon(), &mut grants, &mut machine).unwrap();
+
+        let held = arriving
+            .departing(&EgressPolicy::NothingLeaves, noon())
+            .unwrap_err();
+        assert!(matches!(held, NoAnswer::HeldBack(_)), "{held:?}");
+        assert!(arriving.turning().showing().is_quiet());
+        assert!(!arriving.is_closed());
+        let _ = arriving.ended(&mut grants);
+
+        assert_eq!(record.len(), 1);
+        let entry = record.everything().next().unwrap();
+        assert!(!entry.happened().caused_egress());
+        assert!(matches!(entry.happened(), Happened::HeldBack { .. }));
+        assert!(
+            entry
+                .origin()
+                .is_some_and(|from| from.is("the reception machine"))
+        );
+    }
+
+    /// A turn handed back after ending is the same machine, and the next
+    /// remote turn begins on it.
+    #[test]
+    fn a_turn_that_ended_hands_the_machine_back_for_the_next_one() {
+        let strings = in_english();
+        let mut indicator = Indicator::default();
+        let mut record = Record::default();
+        let mut bounding = NothingIsBounded;
+        let mut machine = Machine::carrying_out_file_verbs(
+            &strings,
+            &OnThisMachine,
+            &mut bounding,
+            &mut indicator,
+            &mut record,
+        )
+        .unwrap();
+        let origin = origin();
+        let mut grants = Grants::default();
+        let first =
+            Arriving::beginning(&origin, hour(), noon(), &mut grants, &mut machine).unwrap();
+        let machine = first.ended(&mut grants);
+        let second = Arriving::beginning(&origin, hour(), noon(), &mut grants, machine).unwrap();
+        assert!(!second.is_closed());
+        second.ending(&mut grants);
+        assert!(record.is_empty());
     }
 }

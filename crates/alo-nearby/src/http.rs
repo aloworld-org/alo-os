@@ -1,23 +1,32 @@
-//! The framing both ends of the pairing wire share: the least of HTTP/1.1
-//! that carries one line there and one line back.
+//! The framing both ends of a wire between two machines share: the least of
+//! HTTP/1.1 that carries one message there and one message back.
 //!
 //! # Why HTTP, and why this little of it
 //!
 //! The port a machine advertises is the one the corridor already puts
-//! questions to over HTTP, and the verb wire after this one carries its proof
-//! in a header. One port, one shape: a daemon that answers on it can tell a
-//! proposal from a question by the path, rather than by guessing which
-//! protocol a stranger's first bytes are in.
+//! questions to over HTTP, and the verb wire (`alo-corridor`) carries its
+//! proof in a header. One port, one shape: a daemon that answers on it can
+//! tell a proposal from a verb from a question by the path, rather than by
+//! guessing which protocol a stranger's first bytes are in.
 //!
 //! But only this much of it. A request is a `POST` with a `content-length`
 //! and `connection: close`; a reply is a status line with the same two. No
-//! chunked bodies, no keep-alive, no pipelining, nothing over eight
-//! kibibytes, nothing that is not text. What is not read cannot be got
-//! wrong, and everything on a network can reach this port.
+//! chunked bodies, no keep-alive, no pipelining, a stated bound on the body,
+//! nothing that is not text. What is not read cannot be got wrong, and
+//! everything on a network can reach this port.
 //!
 //! Hand-written rather than rented for the reason the DNS packets in
 //! `advertising.rs` are: what this crate reads off a port is small and
 //! closed, and a dependency that read more would be more to be wrong in.
+//!
+//! # Public, and for whom
+//!
+//! The pairing wire in this crate and the verb wire in `alo-corridor` are one
+//! port and one shape, so they are one framing. That crate reads and writes
+//! through this module rather than carrying a second copy of it, which is the
+//! whole of why the module is public: a second parser of what a stranger sends
+//! would be a second place to be wrong in. The headers are kept because the
+//! verb wire's proof travels in one; the pairing wire reads none.
 
 use std::io::{BufRead, BufReader, Read};
 use std::time::Duration;
@@ -27,14 +36,20 @@ use crate::refusing::{NotNearby, because};
 /// How long either end waits for the other on one connection.
 ///
 /// Ten seconds. The other machine is in the building, and what it has to do
-/// before answering is show a value to a surface, not think.
-pub(crate) const WHILE_THE_WIRE_ANSWERS: Duration = Duration::from_secs(10);
+/// before answering is show a value to a surface or walk a verb through its
+/// grants, not think.
+pub const WHILE_THE_WIRE_ANSWERS: Duration = Duration::from_secs(10);
 
-/// The most bytes one message is read from.
-const AT_MOST_A_MESSAGE: u64 = 8 * 1024;
+/// The most bytes the head of a message — its first line and its headers —
+/// is read from.
+const AT_MOST_A_HEAD: u64 = 8 * 1024;
 
-/// The most bytes a body may say it is.
-const AT_MOST_A_BODY: usize = 4 * 1024;
+/// The most bytes a body on the pairing wire may say it is.
+///
+/// Four kibibytes: a proposal and a confirmation are each one short line, and
+/// the verb wire, which carries more, says how much through
+/// [`read_message_of_at_most`].
+pub const AT_MOST_A_BODY: usize = 4 * 1024;
 
 /// The most headers a message here has.
 const AT_MOST_HEADERS: usize = 32;
@@ -48,26 +63,59 @@ const TRANSFER_ENCODING: &str = "transfer-encoding";
 /// What every message here says its body is.
 const TEXT: &str = "text/plain; charset=utf-8";
 
-/// One message, read: its first line and its body.
+/// One message, read: its first line, its headers and its body.
 #[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Message {
+pub struct Message {
     /// The request line or the status line.
-    pub(crate) first: String,
+    pub first: String,
+    /// Every header, name lowercased and value trimmed, in the order sent.
+    pub headers: Vec<(String, String)>,
     /// The body, which is text.
-    pub(crate) body: String,
+    pub body: String,
 }
 
-/// One message off a connection, refused if it is not the shape this wire
-/// carries.
+impl Message {
+    /// The value of the first header called `name`, if one was sent.
+    ///
+    /// Names are matched lowercased, because HTTP does; values are as they
+    /// were sent, trimmed.
+    #[must_use]
+    pub fn header(&self, name: &str) -> Option<&str> {
+        let name = name.to_ascii_lowercase();
+        self.headers
+            .iter()
+            .find(|(sent, _)| *sent == name)
+            .map(|(_, value)| value.as_str())
+    }
+}
+
+/// One message off a connection, refused if it is not the shape the pairing
+/// wire carries.
 ///
 /// # Errors
 ///
 /// [`NotNearby::NotAMessage`] for anything but a first line, at most
-/// [`AT_MOST_HEADERS`] headers, a `content-length` of at most
-/// [`AT_MOST_A_BODY`], and that many bytes of text; [`NotNearby::TheNetwork`]
-/// if the connection would not read.
-pub(crate) fn read_message<R: Read>(from: R) -> Result<Message, NotNearby> {
-    let mut lines = BufReader::new(from.take(AT_MOST_A_MESSAGE));
+/// thirty-two headers, a `content-length` of at most [`AT_MOST_A_BODY`], and
+/// that many bytes of text; [`NotNearby::TheNetwork`] if the connection would
+/// not read.
+pub fn read_message<R: Read>(from: R) -> Result<Message, NotNearby> {
+    read_message_of_at_most(from, AT_MOST_A_BODY)
+}
+
+/// One message off a connection, with a body of at most `most_body` bytes.
+///
+/// The same reading as [`read_message`] with the bound named by the caller,
+/// for the verb wire, whose answers carry a folder's listing rather than one
+/// line. The bound is on the body a message *says* it has and on what is read
+/// for it, so a stranger who says four kibibytes and sends a gigabyte is read
+/// for four kibibytes and refused.
+///
+/// # Errors
+///
+/// As [`read_message`].
+pub fn read_message_of_at_most<R: Read>(from: R, most_body: usize) -> Result<Message, NotNearby> {
+    let at_most = AT_MOST_A_HEAD.saturating_add(u64::try_from(most_body).unwrap_or(u64::MAX));
+    let mut lines = BufReader::new(from.take(at_most));
     let first = a_line(&mut lines)?;
     if first.is_empty() {
         return Err(NotNearby::NotAMessage(
@@ -75,14 +123,13 @@ pub(crate) fn read_message<R: Read>(from: R) -> Result<Message, NotNearby> {
         ));
     }
     let mut length = None;
-    let mut how_many = 0_usize;
+    let mut headers = Vec::new();
     loop {
         let line = a_line(&mut lines)?;
         if line.is_empty() {
             break;
         }
-        how_many = how_many.saturating_add(1);
-        if how_many > AT_MOST_HEADERS {
+        if headers.len() >= AT_MOST_HEADERS {
             return Err(NotNearby::NotAMessage(
                 "more headers than a message here has".to_owned(),
             ));
@@ -93,21 +140,23 @@ pub(crate) fn read_message<R: Read>(from: R) -> Result<Message, NotNearby> {
             ));
         };
         let name = name.trim().to_ascii_lowercase();
+        let value = value.trim().to_owned();
         if name == TRANSFER_ENCODING {
             return Err(NotNearby::NotAMessage(
                 "a body this wire does not carry".to_owned(),
             ));
         }
         if name == CONTENT_LENGTH {
-            length = Some(value.trim().parse::<usize>().map_err(|_| {
+            length = Some(value.parse::<usize>().map_err(|_| {
                 NotNearby::NotAMessage("a content-length that is not a number".to_owned())
             })?);
         }
+        headers.push((name, value));
     }
     let Some(length) = length else {
         return Err(NotNearby::NotAMessage("no content-length".to_owned()));
     };
-    if length > AT_MOST_A_BODY {
+    if length > most_body {
         return Err(NotNearby::NotAMessage(
             "a body longer than any message here".to_owned(),
         ));
@@ -118,7 +167,11 @@ pub(crate) fn read_message<R: Read>(from: R) -> Result<Message, NotNearby> {
         .map_err(|_| NotNearby::NotAMessage("it ended before its body did".to_owned()))?;
     let body = String::from_utf8(body)
         .map_err(|_| NotNearby::NotAMessage("a body that is not text".to_owned()))?;
-    Ok(Message { first, body })
+    Ok(Message {
+        first,
+        headers,
+        body,
+    })
 }
 
 /// One line, without its ending.
@@ -140,16 +193,33 @@ fn a_line<R: BufRead>(from: &mut R) -> Result<String, NotNearby> {
 }
 
 /// A request to `path` at `host`, carrying `body`, as the bytes go.
-pub(crate) fn a_request(path: &str, host: &str, body: &str) -> String {
+#[must_use]
+pub fn a_request(path: &str, host: &str, body: &str) -> String {
+    a_request_carrying(path, host, &[], body)
+}
+
+/// A request to `path` at `host`, carrying `body` and these headers besides
+/// the four every request here has, as the bytes go.
+///
+/// For the verb wire, whose proof travels in a header. A header's value is
+/// one line: whatever the caller hands over is written as it is, and the one
+/// caller writes a proof, which is hexadecimal and decimal and nothing else.
+#[must_use]
+pub fn a_request_carrying(path: &str, host: &str, headers: &[(&str, &str)], body: &str) -> String {
+    let carried: String = headers
+        .iter()
+        .map(|(name, value)| format!("{name}: {value}\r\n"))
+        .collect();
     format!(
         "POST {path} HTTP/1.1\r\nhost: {host}\r\ncontent-type: {TEXT}\r\ncontent-length: {}\r\n\
-         connection: close\r\n\r\n{body}",
+         connection: close\r\n{carried}\r\n{body}",
         body.len()
     )
 }
 
 /// A reply with `status`, carrying `body`, as the bytes go.
-pub(crate) fn a_reply(status: u16, reason: &str, body: &str) -> String {
+#[must_use]
+pub fn a_reply(status: u16, reason: &str, body: &str) -> String {
     format!(
         "HTTP/1.1 {status} {reason}\r\ncontent-type: {TEXT}\r\ncontent-length: {}\r\n\
          connection: close\r\n\r\n{body}",
@@ -162,7 +232,7 @@ pub(crate) fn a_reply(status: u16, reason: &str, body: &str) -> String {
 /// # Errors
 ///
 /// [`NotNearby::NotAMessage`] for a line that is not `METHOD path HTTP/1.x`.
-pub(crate) fn asked_for(first: &str) -> Result<(String, String), NotNearby> {
+pub fn asked_for(first: &str) -> Result<(String, String), NotNearby> {
     let parts: Vec<&str> = first.split(' ').collect();
     let &[method, path, version] = parts.as_slice() else {
         return Err(NotNearby::NotAMessage(
@@ -182,7 +252,7 @@ pub(crate) fn asked_for(first: &str) -> Result<(String, String), NotNearby> {
 /// # Errors
 ///
 /// [`NotNearby::NotAMessage`] for a line that is not `HTTP/1.x status ...`.
-pub(crate) fn status_of(first: &str) -> Result<u16, NotNearby> {
+pub fn status_of(first: &str) -> Result<u16, NotNearby> {
     let mut parts = first.split(' ');
     let (Some(version), Some(status)) = (parts.next(), parts.next()) else {
         return Err(NotNearby::NotAMessage(
@@ -207,10 +277,14 @@ pub(crate) fn status_of(first: &str) -> Result<u16, NotNearby> {
 mod tests {
     use std::io::Cursor;
 
-    use super::{Message, a_reply, a_request, asked_for, read_message, status_of};
+    use super::{
+        AT_MOST_A_BODY, Message, a_reply, a_request, a_request_carrying, asked_for, read_message,
+        read_message_of_at_most, status_of,
+    };
     use crate::refusing::NotNearby;
 
-    /// A request written here is read back as its line and its body.
+    /// A request written here is read back as its line, its headers and its
+    /// body.
     #[test]
     fn a_request_written_here_is_read_back() {
         let bytes = a_request(
@@ -223,6 +297,15 @@ mod tests {
             message,
             Message {
                 first: "POST /alo-os/1/pairing/proposal HTTP/1.1".to_owned(),
+                headers: vec![
+                    ("host".to_owned(), "192.168.1.20:7610".to_owned()),
+                    (
+                        "content-type".to_owned(),
+                        "text/plain; charset=utf-8".to_owned()
+                    ),
+                    ("content-length".to_owned(), "9".to_owned()),
+                    ("connection".to_owned(), "close".to_owned()),
+                ],
                 body: "one line\n".to_owned(),
             }
         );
@@ -230,6 +313,54 @@ mod tests {
             asked_for(&message.first).unwrap(),
             ("POST".to_owned(), "/alo-os/1/pairing/proposal".to_owned())
         );
+        assert_eq!(message.header("Host"), Some("192.168.1.20:7610"));
+        assert_eq!(message.header("alo-pairing"), None);
+    }
+
+    /// A header the caller carries is read back by name, whatever case it
+    /// was sent in, and a request carrying none is the plain request.
+    #[test]
+    fn a_header_carried_is_read_back_by_name() {
+        let bytes = a_request_carrying(
+            "/alo-os/1/verb/read",
+            "192.168.1.20:7610",
+            &[("Alo-Pairing", "alo-os/1 a b 1 2 ff")],
+            "{}",
+        );
+        let message = read_message(Cursor::new(bytes)).unwrap();
+        assert_eq!(message.header("alo-pairing"), Some("alo-os/1 a b 1 2 ff"));
+        assert_eq!(message.body, "{}");
+        assert_eq!(
+            a_request_carrying("/p", "h", &[], "b"),
+            a_request("/p", "h", "b")
+        );
+    }
+
+    /// The body bound is the caller's on the verb wire and four kibibytes on
+    /// the pairing wire, and either way a body that says more is refused
+    /// before it is read.
+    #[test]
+    fn the_body_bound_is_the_callers_and_is_enforced_before_the_body_is_read() {
+        let five = "x".repeat(5 * 1024);
+        let bytes = a_request("/p", "h", &five);
+        assert!(matches!(
+            read_message(Cursor::new(bytes.clone())).unwrap_err(),
+            NotNearby::NotAMessage(_)
+        ));
+        assert_eq!(
+            read_message_of_at_most(Cursor::new(bytes), 8 * 1024)
+                .unwrap()
+                .body,
+            five
+        );
+        let says_more_than_it_sends = format!(
+            "POST / HTTP/1.1\r\ncontent-length: {}\r\n\r\nshort",
+            AT_MOST_A_BODY + 1
+        );
+        assert!(matches!(
+            read_message(Cursor::new(says_more_than_it_sends)).unwrap_err(),
+            NotNearby::NotAMessage(_)
+        ));
     }
 
     /// A reply written here is read back, and an empty body is a body.

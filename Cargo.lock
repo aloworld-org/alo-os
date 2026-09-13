@@ -255,6 +255,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-corridor"
+version = "0.0.1"
+dependencies = [
+ "alo-answering",
+ "alo-asking",
+ "alo-capability",
+ "alo-egress",
+ "alo-files",
+ "alo-keeping",
+ "alo-models",
+ "alo-nearby",
+ "alo-protocol",
+ "alo-record",
+ "alo-strings",
+ "alo-turn",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-dock"
 version = "0.0.1"
 dependencies = [
@@ -548,6 +569,7 @@ dependencies = [
  "alo-choosing",
  "alo-clipboard",
  "alo-context",
+ "alo-corridor",
  "alo-dock",
  "alo-egress",
  "alo-files",

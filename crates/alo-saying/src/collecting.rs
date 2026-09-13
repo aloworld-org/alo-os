@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 31] = [
+pub const EVERY_LIST: [&str; 32] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -88,6 +88,7 @@ pub const EVERY_LIST: [&str; 31] = [
     "alo-choosing",
     "alo-clipboard",
     "alo-context",
+    "alo-corridor",
     "alo-dock",
     "alo-egress",
     "alo-files",
@@ -185,6 +186,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         alo_clipboard::declare_into,
     )?;
     declare(&mut vocabulary, "alo-context", alo_context::declare_into)?;
+    declare(&mut vocabulary, "alo-corridor", alo_corridor::declare_into)?;
     declare(&mut vocabulary, "alo-dock", alo_dock::declare_into)?;
     declare(&mut vocabulary, "alo-egress", alo_egress::declare_into)?;
     declare(&mut vocabulary, "alo-files", alo_files::words::declare_into)?;
@@ -261,7 +263,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 31] = [
+    const ONE_STRING_EACH: [(&str, &str); 32] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -273,6 +275,7 @@ mod tests {
         ("alo-choosing", "choosing.settings.not-understood"),
         ("alo-clipboard", "clipboard.nothing-copied"),
         ("alo-context", "context.the-document"),
+        ("alo-corridor", "corridor.at-the-door.not-granted-there"),
         ("alo-dock", "dock.edge.bottom"),
         ("alo-egress", "egress.destination.paired-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),
@@ -346,6 +349,7 @@ mod tests {
             alo_choosing::choosing_words().unwrap().how_many(),
             alo_clipboard::clipboard_words().unwrap().how_many(),
             alo_context::context_words().unwrap().how_many(),
+            alo_corridor::corridor_words().unwrap().how_many(),
             alo_dock::dock_words().unwrap().how_many(),
             alo_egress::egress_words().unwrap().how_many(),
             alo_files::file_words().unwrap().how_many(),

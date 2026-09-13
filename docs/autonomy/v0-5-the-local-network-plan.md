@@ -247,7 +247,13 @@ with until a pairing exists.
 
 ### 8. A verb crosses between two machines, and is proven at the door
 
-**Status:** ready. **Depends on:** 4, 6, 7.
+**Status:** **Done, 2026-09-13.** **Depends on:** 4, 6, 7.
+Built in a new `crates/alo-corridor` (`carried.rs`, `answered.rs`,
+`door.rs`, `crossing.rs`, `dialling.rs`, `receiving.rs`, `doorway.rs`,
+`holding.rs`, `replying.rs`), with `alo_turn::Arriving` gaining the two
+doors an answer leaves through and `alo_nearby::http` shared between the
+two wires; the report is
+`docs/autonomy/updates/a-verb-crosses-between-two-machines-and-is-proven-at-the-door.md`.
 
 Task 7 built the pairing wire, and nothing on it carries a verb or a
 question: two machines that never shared a process can now hold a pairing,
@@ -283,3 +289,53 @@ because a verb had nothing to prove itself with until a pairing existed.
   port, one shape: HTTP on the port presence advertises, beside task 7's two
   paths, with the proof in `alo_asking::THE_PROOF_HEADER`. Nothing in
   `alo-shell`, nothing in `image/`.
+
+### 9. The machine that is asked answers on the port it advertises
+
+**Status:** ready. **Depends on:** 7, 8.
+
+Tasks 7 and 8 built the two wires, and each takes a listener somebody bound:
+`alo_nearby::Receiving` for a proposal and a confirmation,
+`alo_corridor::Receiving` for a verb, and `alo-asking`'s corridor for a
+question, all on the one port presence advertises. Nothing binds that port,
+nothing answers discovery for a running machine, nothing holds the
+`Pairings`, the `Proposals`, the `Doorway` and the `Seen` those wires share
+behind one lock, and nothing writes `alo-record` when a pairing is kept. On
+the asking side, a verb crosses from a `Crossing` a test built, not from a
+turn: task 8's report says so, and says what the turn's door owes law 1 and
+ADR 0020. This is the task that turns three libraries into a machine that
+can be asked.
+
+- **Acceptance:** one process binds the port presence advertises and answers
+  discovery with that port, and on that port tells a proposal, a
+  confirmation, a verb and a question apart by path, handing each to the
+  crate that decides it and refusing anything else as *not for this wire* —
+  tested by a request on each path reaching its door and a request on none
+  reaching nothing; the `Pairings`, the `Proposals`, the `Doorway` and the
+  `Seen` are one each, behind one lock, so a pairing revoked on the person's
+  surface refuses the next verb and the next question alike, tested by a
+  revocation between two requests on two paths; a pairing kept is written to
+  `alo-record` at the one moment there is one value to write it from, and a
+  proposal refused or withdrawn writes nothing, tested; the asking side has a
+  door on `alo_turn::Turning` that crosses a verb the way
+  `Turning::asking` puts a question — resolved before the boundary is
+  entered and put from inside it (ADR 0020), the departure written down
+  whether or not an answer came back, the answer or the door's word handed
+  back — so an agent reaches the wire through a turn and through nothing
+  else, tested beside the question's door; a local agent that calls itself
+  by a machine's name is refused at the daemon's door
+  (`alo_nearby::Origin::names_a_machine`), tested; and what became of a
+  change an asking machine proposed — approved, declined, or lapsed — can
+  be asked for on the wire, additively, so that a person is not left
+  guessing whether a file moved on a machine down the corridor.
+- **Constraint:** ADR 0003 and ADR 0031 throughout, and nothing that task 8
+  decided is re-decided: one turn at a time per remote machine, the proof
+  judged before anything else, every answer under a departure. The daemon
+  is `alo-agentd`, which is Linux; **before starting, `git pull`, read this
+  plan as published, and confirm which lane owns `alo-agentd`** — if it is
+  another lane's, this task is the asking side's door on `Turning`, the
+  outcome path on the wire and a report saying what the daemon still owes,
+  and nothing in that crate. Nothing in `alo-shell`, nothing in `image/`;
+  the name a person gave a paired machine is resolved through
+  `alo_corridor::Naming` and shown by the shell, and the shell is outside
+  this plan.

@@ -21,6 +21,7 @@ members = [
   "crates/alo-clipboard",
   "crates/alo-collected",
   "crates/alo-context",
+  "crates/alo-corridor",
   "crates/alo-dock",
   "crates/alo-driving",
   "crates/alo-egress",

@@ -86,7 +86,9 @@
 //! code and the two confirmations; [`Receiving`] is the asked end of the
 //! wire and [`crossing`] the asking end. Nothing on the wire carries a verb
 //! or a question, and a pairing is kept on each machine only after both
-//! people have confirmed on their own.
+//! people have confirmed on their own. The framing both wires share is
+//! [`http`], which `alo-corridor` — the verb wire — reads and writes through
+//! rather than carrying a second copy.
 //!
 //! **And not a trusted network.** There is no setting in this crate, which is
 //! the point of it having none: no *advertise as*, no *discovery off*, no
@@ -103,7 +105,7 @@ pub mod crossing;
 mod deliberating;
 mod dialling;
 mod hexing;
-mod http;
+pub mod http;
 mod keying;
 mod looking;
 mod machine;

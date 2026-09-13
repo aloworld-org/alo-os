@@ -1,0 +1,51 @@
+[package]
+name = "alo-corridor"
+version = "0.0.1"
+description = "A verb crosses between two paired machines, and is proven at the door (ADR 0003, ADR 0031)."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The one spelling of the header a proof travels in. The corridor that carries
+# questions and the one that carries verbs are one port and one shape, and
+# this is the constant that keeps the header one name.
+alo-asking = { path = "../alo-asking" }
+# The verb's name and its typed values, as they arrive at any door.
+alo-capability = { path = "../alo-capability" }
+# Law 1. Nothing here opens a connection without a `Departing`, on either
+# side of the corridor, and the only maker of one is the indicator.
+alo-egress = { path = "../alo-egress" }
+# The one failure a record can answer with, carried whole when an answer went
+# back and could not be written down.
+alo-keeping = { path = "../alo-keeping" }
+# The pairing, the proof, the judgement of a proof, and the framing both wires
+# on the advertised port share.
+alo-nearby = { path = "../alo-nearby" }
+# One argument and one answer, spelt on this wire exactly as the local
+# protocol spells them: a second description of the same shapes would be a
+# second thing to keep true.
+alo-protocol = { path = "../alo-protocol" }
+# The sentences a person reads about a verb that did not cross.
+alo-strings = { path = "../alo-strings" }
+# The one door a verb from another machine goes through on the receiving
+# machine, and no other.
+alo-turn = { path = "../alo-turn" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# Every crate whose words a refusal met on the receiving machine can be worded
+# by, so the integration test's vocabulary is the one a real machine has.
+alo-answering = { path = "../alo-answering" }
+alo-files = { path = "../alo-files" }
+alo-models = { path = "../alo-models" }
+# The record is nobody's dependency here — the asking end hands back the
+# departure and writes nothing down. The integration test walks the whole
+# journey into both machines' records to prove the handing back is enough.
+alo-record = { path = "../alo-record" }
+
+[lints]
+workspace = true

@@ -431,7 +431,20 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// `what_the_invocation_offered_is_the_only_thing_it_granted` below.
     #[must_use]
     pub fn ending(self, grants: &mut Grants) -> bool {
-        self.turn.ending(grants)
+        self.ended(grants).0
+    }
+
+    /// End the turn, and hand the machine back.
+    ///
+    /// [`Turning::ending`] with the machine this turn was holding returned to
+    /// the caller, for whatever holds one turn after another on the same
+    /// machine without owning it — the verb wire's door on the receiving
+    /// machine is one — so that the next turn can begin on the same borrow.
+    /// The turn is consumed exactly as by `ending`, and for the same reason.
+    #[must_use]
+    pub fn ended(self, grants: &mut Grants) -> (bool, &'a mut Machine<'m>) {
+        let Self { turn, machine, .. } = self;
+        (turn.ending(grants), machine)
     }
 
     /// The agent this turn is for.
@@ -690,11 +703,23 @@ impl<'a, 'm> Turning<'a, 'm> {
     /// records it, with A named as the origin*). `pub(crate)` for
     /// [`crate::Arriving`], which has one entry of its own to write.
     pub(crate) fn writing_down(&mut self, entry: Entry) -> Result<(), NotDone> {
+        self.keeping_stamped(entry).map_err(NotDone::NotRecorded)
+    }
+
+    /// The same, answering with what the record said, and stamped with where
+    /// the turn's verbs came from when they came from another machine.
+    ///
+    /// `pub(crate)`, for [`crate::Arriving`]'s two departure entries, which
+    /// need the failure itself for the reason [`Turning::keeping`] gives and
+    /// the stamp for the reason [`Turning::writing_down`] gives. The one
+    /// place the stamp is put on, so that no door can write down something a
+    /// paired machine caused as though an agent on this machine had.
+    pub(crate) fn keeping_stamped(&mut self, entry: Entry) -> Result<(), alo_keeping::NotKept> {
         let entry = match &self.origin {
             Some(origin) => entry.from_another_machine(origin.called()),
             None => entry,
         };
-        self.keeping(entry).map_err(NotDone::NotRecorded)
+        self.keeping(entry)
     }
 
     /// The same, answering with what the record said rather than with a turn's
