@@ -43,6 +43,31 @@ purpose.
    gates build in `$HOME/alo-builds/<checkout>-<hash>` **inside the VM's own
    home**, never on the shared mount — the loop chooses that directory itself.
 
+   That list was not enough, and the first run found what else, one refusal at
+   a time (`docs/autonomy/updates/one-catalogue-entry-graded-on-a-machine-that-can-hold-it.md`
+   has each refusal's words):
+
+   - **The desktop's libraries**, the list `docs/autonomy/GRAPHICS.md` gives —
+     `libwayland-dev libegl1-mesa-dev libgles2-mesa-dev libxkbcommon-dev
+     libudev-dev libinput-dev libgbm-dev libseat-dev` — or clippy stops at
+     `libudev-sys`.
+   - **`gnome-keyring` and `dbus`**, which `alo-keyring-fixture` starts.
+   - **Ubuntu's `org.freedesktop.secrets` activation file set aside**, with
+     `dpkg-divert --local --rename --add
+     /usr/share/dbus-1/services/org.freedesktop.secrets.service`, or the keyring
+     fixture's bus starts the machine's keyring instead of its own
+     (`docs/quirks.md`).
+   - **The HWE kernel**, `linux-generic-hwe-24.04` (7.0 on 2026-09-13): on the
+     release kernel, 6.8, the verifier refuses the boundary for its stack.
+   - **`lsm=…,bpf`** on the kernel command line, in `/etc/default/grub.d/`, which
+     Ubuntu's cloud image does not start.
+   - **Root.** The PC runs every gate as root (`wsl -u root`), and the tests that
+     impose a boundary need it. Point root's login shell at the same toolchain
+     (`RUSTUP_HOME`, `CARGO_HOME` and `PATH` in `/root/.profile`) and name the VM
+     as `limactl shell alo sudo`, so the loop's `bash -lc` runs as root.
+   - **Swap.** Four gigabytes of VM links the workspace's tests against swap;
+     an 8 GB swap file keeps the linker from being killed.
+
 3. **On the Mac itself**: `git` with credentials that can push (the loop runs
    `git` where the credentials are, which is why it is a host program and not a
    VM one), the `claude` CLI, `cargo` for building the supervisor, and
@@ -57,7 +82,7 @@ purpose.
 
    ```sh
    export ALO_LOOP_PLAN=docs/autonomy/v0-5-the-models-measured-plan.md
-   export ALO_KERNEL_LOOP_LINUX='limactl shell alo'   # or: orb -m alo
+   export ALO_KERNEL_LOOP_LINUX='limactl shell alo sudo'   # or: orb -m alo -u root
    export ALO_KERNEL_LOOP_WORKER="$(command -v claude)"
    ./tools/kernel-loop/target/release/alo-kernel-loop run
    ```
@@ -81,6 +106,22 @@ refuse a tree whose other seven pass, that is a finding about the Mac and not
 about the tree: record it in `docs/quirks.md` with the exact refusal, and the
 Mac lane's plan already keeps it off the kernel crates. Do not weaken a gate to
 get past it.
+
+**What it found, on 2026-09-13**, on an Apple M3 with 8 GB running Ubuntu
+24.04 aarch64 under Lima: **both BPF gates pass**, and so do six of the other
+seven. The workspace's tests pass except for one on the untouched tree, in a crate
+this lane does not own — `alo-bounding`'s file-flag test, refused as unsupported
+on aarch64 kernels 6.17 and 7.0 — and one that fails or passes by the order a
+filesystem lists a directory in, `alo-citing`'s. Both are in
+`docs/quirks.md` with their words, for their owners.
+
+## A Mac with 8 GB
+
+This document assumed 16–32 GB. The first Mac in the loop has 8, and it holds a
+7B model at four bits anyway — **with the VM stopped**. The VM is given 4 GB and
+the weights want 4.7 GB of the same unified memory, so a measurement is run with
+`limactl stop alo` first and the gates are run after it. Measured that way, the
+fixed ten against `qwen2.5:7b-instruct-q4_K_M` took thirty-three seconds.
 
 ## What it must not take up
 

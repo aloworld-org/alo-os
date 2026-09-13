@@ -37,6 +37,7 @@ pub mod catalogue;
 pub mod choosing;
 pub mod costing;
 pub mod driving;
+pub mod measured_on;
 pub mod ollama;
 pub mod provider;
 pub mod refusing;
@@ -57,6 +58,7 @@ pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model, On
 pub use choosing::NoAgentHere;
 pub use costing::Cost;
 pub use driving::Driving;
+pub use measured_on::MeasuredOn;
 pub use ollama::{Ollama, found_on_this_machine};
 pub use provider::{Provider, ProviderError, Providers, SecretRef};
 pub use refusing::NotAllowed;

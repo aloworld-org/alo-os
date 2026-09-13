@@ -109,6 +109,12 @@ fn right_answer(named: &str) -> String {
 
 /// A catalogue of one model, stating the grade it was given.
 fn catalogue_of(grade: &str) -> Catalogue {
+    // A grade names the machine it was earned on, or the catalogue refuses it.
+    let measured = if grade == "not-measured" {
+        ""
+    } else {
+        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\" }\n"
+    };
     Catalogue::parse(&format!(
         "[[model]]\n\
          id = \"measured-one\"\n\
@@ -122,6 +128,7 @@ fn catalogue_of(grade: &str) -> Catalogue {
          min_ram_gb = 5.0\n\
          on_cpu = \"comfortable\"\n\
          drives_verbs = \"{grade}\"\n\
+         {measured}\
          upstream = \"https://example.test/measured\"\n\
          licence = {{ name = \"Apache-2.0\", spdx = \"Apache-2.0\", commercial_use = \"permitted\" }}\n"
     ))
@@ -267,6 +274,11 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// it named one it can. The **measured** count does not move either way, and
 /// that is the one a person's answer turns on: naming a file is not running it,
 /// and nobody has run this one.
+///
+/// **The Mac lane's first task moved the measured count to five**, and only
+/// that one: `qwen2.5-7b-instruct` was already one of the seven, and on
+/// 2026-09-13 it was measured on a machine with room for it and graded
+/// `rarely`. Seven to choose between, five of them measured, none good enough.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -275,7 +287,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
         refused,
         NoAgentHere::NoneClearsTheBar {
             to_choose_from: 7,
-            measured: 4,
+            measured: 5,
         }
     );
 
@@ -294,6 +306,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         measured,
         vec![
+            "qwen2.5-7b-instruct",
             "phi-3-mini-instruct",
             "llama-3.2-3b-instruct",
             "qwen2.5-3b-instruct",

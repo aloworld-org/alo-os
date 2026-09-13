@@ -29,7 +29,8 @@ plan as published — numbers are a shared space.
 
 ### 1. One catalogue entry, graded on a machine that can hold it
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-13.** **Depends on:** nothing.
+**Report:** `docs/autonomy/updates/one-catalogue-entry-graded-on-a-machine-that-can-hold-it.md`.
 
 The first real measurement. `alo-driving` has the ten exercises and the bar —
 nine attempts in ten — and has never been run against a loaded model, because

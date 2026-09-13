@@ -209,6 +209,10 @@ fn the_fixed_set_put_to_a_model_that_exists() {
 
     println!("putting the fixed set to {model}, {rounds} round(s)");
     let mut attempts: Vec<Attempt> = Vec::new();
+    // Every answer whole, in the order it was given. A grade a reader cannot
+    // re-derive is a grade they have to take on trust, and the bounded line
+    // above is for reading the run, not for checking it.
+    let mut verbatim: Vec<String> = Vec::new();
     for round in 1..=rounds {
         for exercise in exercises.all() {
             let answered = put(
@@ -240,8 +244,19 @@ fn the_fixed_set_put_to_a_model_that_exists() {
             if !attempt.drove() {
                 println!("                    {}", as_far_as_it_helps(answer.text()));
             }
+            verbatim.push(format!(
+                "round {round}, {}: {:?}\n{}",
+                exercise.named(),
+                attempt.outcome(),
+                answer.text()
+            ));
             attempts.push(attempt);
         }
+    }
+
+    println!("\nevery answer, verbatim:");
+    for said in &verbatim {
+        println!("\n----- {said}\n----- end");
     }
 
     let measured = Measured::of(&exercises, attempts).unwrap();

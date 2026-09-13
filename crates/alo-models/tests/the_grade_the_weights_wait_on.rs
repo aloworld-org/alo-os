@@ -16,8 +16,14 @@
 //! three things:
 //!
 //! - **The three are the catalogue's**, by the ids the catalogue uses, and each
-//!   of them is still `not-measured`. The day one is not, this fails and sends
-//!   whoever sees it back to the entry to write what was measured.
+//!   of them is either still `not-measured` or graded **with the machine it was
+//!   graded on named in the finding**. The day one is graded and the finding
+//!   does not say where, this fails and sends whoever sees it back to the entry
+//!   to write what was measured.
+//!
+//! That day came on 2026-09-13: `qwen2.5-7b-instruct` was graded on an Apple M3
+//! with 8 GB, a machine with room for it, and the finding now says so beside
+//! the box that had none.
 //! - **The finding names all three**, because a finding about some of them
 //!   reads as one about all of them — the same rule
 //!   `the_carry_or_fetch_measurement.rs` holds its table to.
@@ -48,7 +54,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use alo_models::{Catalogue, Driving};
+use alo_models::{Catalogue, Driving, MeasuredOn};
 
 /// The heading of the entry in `docs/quirks.md` that carries the finding.
 const THE_FINDING: &str = "### A 7B-class entry cannot be measured on the box";
@@ -120,8 +126,12 @@ fn the_entry_in(document: &str, heading: &str) -> String {
     kept.join("\n")
 }
 
-/// What the catalogue says about the three, as a grade each.
-fn what_the_catalogue_says() -> Vec<(String, Driving)> {
+/// What the catalogue says about each of the three: its grade, and the machine
+/// the grade was earned on where there is one.
+type Said = (String, Driving, Option<MeasuredOn>);
+
+/// What the catalogue says about the three.
+fn what_the_catalogue_says() -> Vec<Said> {
     let catalogue = Catalogue::built_in().expect("the built-in catalogue loads");
     THE_THREE
         .iter()
@@ -133,7 +143,7 @@ fn what_the_catalogue_says() -> Vec<(String, Driving)> {
                      with it"
                 )
             });
-            (model.id.clone(), model.drives_verbs)
+            (model.id.clone(), model.drives_verbs, model.measured.clone())
         })
         .collect()
 }
@@ -147,17 +157,26 @@ fn what_the_catalogue_says() -> Vec<(String, Driving)> {
 ///
 /// # Errors
 /// A sentence naming what stopped being true and where to go about it.
-fn whether_the_finding_still_holds(said: &[(String, Driving)], entry: &str) -> Result<(), String> {
+fn whether_the_finding_still_holds(said: &[Said], entry: &str) -> Result<(), String> {
     if said.is_empty() {
         return Err("nothing was compared against the finding at all".to_owned());
     }
-    for (id, grade) in said {
+    for (id, grade, measured) in said {
         if *grade != Driving::NotMeasured {
-            return Err(format!(
-                "`{id}` is now graded and the finding still says the three are unmeasured. A \
-                 grade is a run somebody made: write which machine made it, and what it earned, \
-                 rather than leaving this entry standing"
-            ));
+            // The machine as a person names it: what comes before the first
+            // comma of the catalogue's description.
+            let machine = measured
+                .as_ref()
+                .and_then(|on| on.machine.split(',').next())
+                .map(str::trim)
+                .unwrap_or_default();
+            if machine.is_empty() || !entry.contains(machine) {
+                return Err(format!(
+                    "`{id}` is now graded and the finding does not say which machine graded it. \
+                     A grade is a run somebody made: write which machine made it, and what it \
+                     earned, rather than leaving this entry saying the three are unmeasured"
+                ));
+            }
         }
         if !entry.contains(id) {
             return Err(format!(
@@ -166,7 +185,11 @@ fn whether_the_finding_still_holds(said: &[(String, Driving)], entry: &str) -> R
             ));
         }
     }
-    if !entry.contains(UNMEASURED) {
+    if said
+        .iter()
+        .any(|(_, grade, _)| *grade == Driving::NotMeasured)
+        && !entry.contains(UNMEASURED)
+    {
         return Err(format!(
             "the finding does not say the three stay `{UNMEASURED}`, which is the whole of what \
              the run concluded — a machine without the memory for a run does not guess"
@@ -191,8 +214,8 @@ fn whether_the_finding_still_holds(said: &[(String, Driving)], entry: &str) -> R
     Ok(())
 }
 
-/// **The three entries the grade waits on are still `not-measured`, and the
-/// finding says so with the numbers behind it.**
+/// **The three entries the grade waits on are `not-measured` or graded where
+/// the finding says, and the finding says why with the numbers behind it.**
 #[test]
 fn the_three_entries_the_grade_waits_on_are_unmeasured_and_the_finding_says_why() {
     let said = what_the_catalogue_says();
@@ -291,10 +314,10 @@ fn the_task_written_from_this_outcome_is_in_the_plan() {
 /// is the half a green run cannot show anybody.
 #[test]
 fn the_check_catches_a_finding_that_has_stopped_being_true() {
-    let said = |grade: Driving| -> Vec<(String, Driving)> {
+    let said = |grade: Driving| -> Vec<Said> {
         THE_THREE
             .iter()
-            .map(|id| ((*id).to_owned(), grade))
+            .map(|id| ((*id).to_owned(), grade, None))
             .collect()
     };
     let unmeasured = said(Driving::NotMeasured);
@@ -315,17 +338,21 @@ fn the_check_catches_a_finding_that_has_stopped_being_true() {
         "a sound finding was refused, so the refusals below say nothing"
     );
 
-    // The one this test exists for: a grade arrives and the finding still
-    // says nobody has one.
-    let graded: Vec<(String, Driving)> = unmeasured
+    // The one this test exists for: a grade arrives and the finding does not
+    // say where it was earned.
+    let on_a_machine = MeasuredOn {
+        machine: "A Named Workstation, 64 GB".to_owned(),
+        date: "2026-09-13".to_owned(),
+        runtime: "Ollama 0.34.0".to_owned(),
+    };
+    let graded: Vec<Said> = unmeasured
         .iter()
-        .map(|(id, grade)| {
-            let earned = if id == THE_THREE[1] {
-                Driving::Rarely
+        .map(|(id, grade, _)| {
+            if id == THE_THREE[1] {
+                (id.clone(), Driving::Rarely, Some(on_a_machine.clone()))
             } else {
-                *grade
-            };
-            (id.clone(), earned)
+                (id.clone(), *grade, None)
+            }
         })
         .collect();
     assert!(
@@ -333,6 +360,12 @@ fn the_check_catches_a_finding_that_has_stopped_being_true() {
             .is_err_and(|why| why.contains("now graded")),
         "a catalogue with a measured entry was accepted against a finding that says none is"
     );
+    // And the same grade, once the finding names the machine that made it.
+    let told = format!(
+        "{sound}\n{} was graded on A Named Workstation.",
+        THE_THREE[1]
+    );
+    assert_eq!(whether_the_finding_still_holds(&graded, &told), Ok(()));
 
     // A finding about two of the three.
     let partial = sound.replace(THE_THREE[2], "something else");

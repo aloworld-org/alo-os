@@ -90,11 +90,17 @@ fn an_entry(artefact: bool, grade: &str, borrowed: Option<&str>) -> String {
     };
     let (vram, ram) = if artefact { (2.0, 3.0) } else { (4.0, 6.0) };
     let whose = borrowed.unwrap_or_default();
+    // A grade names the machine it was earned on, or the catalogue refuses it.
+    let measured = if grade == "not-measured" {
+        ""
+    } else {
+        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\" }\n"
+    };
     format!(
         "[[model]]\nid = \"borrowed\"\nname = \"Borrowed\"\npublisher = \"A Publisher\"\n\
          parameters_b = 1.7\n{pair}\n\
          download_bytes = {bytes}\nmin_vram_gb = {vram}\nmin_ram_gb = {ram}\n\
-         on_cpu = \"comfortable\"\ndrives_verbs = \"{grade}\"\n\
+         on_cpu = \"comfortable\"\ndrives_verbs = \"{grade}\"\n{measured}\
          upstream = \"https://example.test/borrowed\"\n\
          licence = {{ name = \"Apache-2.0\", spdx = \"Apache-2.0\", \
          commercial_use = \"permitted\" }}\n{whose}"

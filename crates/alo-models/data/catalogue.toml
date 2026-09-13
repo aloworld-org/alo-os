@@ -21,6 +21,13 @@
 #    one thing this field exists to stop: it is the only property here that
 #    decides whether a machine hands somebody's files to a model, and ADR 0007
 #    says it is measured by us and never claimed by the publisher.
+#
+#    **A grade names the machine it was earned on**, in a `[model.measured]`
+#    block beside it: the machine with its memory, the date, and the runtime
+#    with its version. The loader refuses a grade without one and a block
+#    beside `not-measured`. Until 2026-09-13 the seven grades here said where
+#    they came from only in comments below, which a reader of one entry had no
+#    reason to find; they were given their blocks from the runs' own reports.
 # 4. **A stated `quantisation` names an artefact, in `artefact`, or the entry
 #    states no quantisation.** The two fields are one claim and the loader
 #    refuses half of it. `upstream` says where a model comes from; `artefact`
@@ -155,6 +162,17 @@
 # stronger sentence about small models than the five before them were: it is not
 # only that small chat models lose the shape, it is that training for the shape
 # does not recover it at this size.
+#
+# **On 2026-09-13 the first 7B entry was measured**, on a machine that could
+# hold it: `qwen2.5-7b-instruct`, on an Apple M3 with 8 GB of unified memory,
+# Ollama 0.34.0 — the pinned runtime — serving the weights on the GPU. The whole
+# fixed ten took thirty-three seconds, against a quarter of a token a second on
+# the box above. It drove 4 of 10, which is `rarely`. It is also the first entry
+# to fail by **door** rather than by punctuation: every read went through `read`
+# correctly, and every change named its verb where the door belongs instead of
+# `propose`. `docs/quirks.md` has the ten answers' shape; the report the grade
+# came from has them verbatim. Two 7B entries and the 9B and 46B ones are still
+# unmeasured, and that is task 2 of `docs/autonomy/v0-5-the-models-measured-plan.md`.
 #
 # A machine reading this catalogue still offers no local model the agent — but
 # it says so for the reason that is true of it, which is that what was measured
@@ -309,6 +327,14 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 
 # ── Others, with their conditions stated ────────────────────────────────────
 
+# Graded on 2026-09-13, the first entry measured on a machine with room for it,
+# and the one measured first because it is the entry `agent_for_cpu`'s own
+# ordering ranks highest among those nobody had measured — comfortable before
+# workable, then larger, among what runs on a CPU and may be used commercially.
+# One round of the fixed ten: 4 drove, 6 did not, every one of the six a change
+# addressed to a door named after its verb. `min_ram_gb` and `on_cpu` are left as
+# they were: they are the machine's properties rather than the weights', and a
+# GPU-served run on unified memory says nothing about a CPU.
 [[model]]
 id = "qwen2.5-7b-instruct"
 name = "Qwen2.5 7B Instruct"
@@ -320,9 +346,14 @@ download_bytes = 4_680_000_000
 min_vram_gb = 6.0
 min_ram_gb = 10.0
 on_cpu = "workable"
-drives_verbs = "not-measured"
+drives_verbs = "rarely"
 upstream = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.measured]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-13"
+runtime = "Ollama 0.34.0"
 
 # The one entry anybody has measured, on 2026-09-04. Ollama 0.33.3 serving
 # `phi3:3.8b-mini-4k-instruct-q4_K_M` — the weights this entry's `upstream`
@@ -349,6 +380,11 @@ on_cpu = "comfortable"
 drives_verbs = "rarely"
 upstream = "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct"
 licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
+
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-04"
+runtime = "Ollama 0.33.3"
 
 [[model]]
 id = "llama-3.1-8b-instruct"
@@ -443,6 +479,11 @@ name = "Llama 3.2 Community License"
 commercial_use = "with-conditions"
 note = """Commercial use is permitted, but not by an organisation with more than 700 million monthly active users on the version release date, who must request a separate licence from Meta. Products built on it must display "Built with Llama", and derived models must carry "Llama" in their name. Meta's Acceptable Use Policy applies."""
 
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-04"
+runtime = "Ollama 0.33.3"
+
 [[model]]
 id = "qwen2.5-3b-instruct"
 name = "Qwen2.5 3B Instruct"
@@ -461,6 +502,11 @@ upstream = "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct"
 name = "Qwen Research License"
 commercial_use = "with-conditions"
 note = """The 3B model is published under Qwen's own licence rather than Apache-2.0, unlike the 7B. Read it before deploying commercially; where that is unwelcome, qwen2.5-7b-instruct is Apache-2.0 and unconditional."""
+
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-04"
+runtime = "Ollama 0.33.3"
 
 [[model]]
 id = "gemma-2-2b-instruct"
@@ -481,6 +527,11 @@ name = "Gemma Terms of Use"
 commercial_use = "with-conditions"
 note = """Commercial use is permitted under Google's Gemma Terms of Use and Prohibited Use Policy, which bind anyone the model or its derivatives are passed on to — so the terms must travel with any distribution, and the use restrictions apply to outputs as well as weights."""
 
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-04"
+runtime = "Ollama 0.33.3"
+
 [[model]]
 id = "smollm2-1.7b-instruct"
 name = "SmolLM2 1.7B Instruct"
@@ -495,6 +546,11 @@ on_cpu = "comfortable"
 drives_verbs = "rarely"
 upstream = "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-04"
+runtime = "Ollama 0.33.3"
 
 # ── trained for tool calls, rather than chosen for being small ──────────────
 #
@@ -528,6 +584,11 @@ drives_verbs = "rarely"
 upstream = "https://huggingface.co/Qwen/Qwen3-1.7B"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-11"
+runtime = "Ollama 0.33.3"
+
 [[model]]
 id = "granite-3.2-2b-instruct"
 name = "Granite 3.2 2B Instruct"
@@ -542,3 +603,8 @@ on_cpu = "comfortable"
 drives_verbs = "rarely"
 upstream = "https://huggingface.co/ibm-granite/granite-3.2-2b-instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.measured]
+machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
+date = "2026-09-11"
+runtime = "Ollama 0.33.3"

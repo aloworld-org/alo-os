@@ -2298,6 +2298,50 @@ runtime and more than four cores — and the run is a download and an hour, not 
 purchase, once there is one.
 **Date:** 2026-09-11.
 
+**Since, on a machine with room — 2026-09-13.** One of the three has been
+measured: `qwen2.5-7b-instruct` was graded on an **Apple M3 with 8 GB of unified
+memory**, Ollama 0.34.0 (the pinned runtime) serving the weights on the GPU, and
+earned `rarely`, 4 of 10. Not 16 GB, and it did not need it: with the Linux VM
+stopped the model loaded and the fixed ten took thirty-three seconds, which is
+the difference between memory the runtime can page against and memory it
+cannot. The same prompt, the same scoring, the same five-minute wait.
+`teuken-7b-instruct` and `mistral-7b-instruct` stay `not-measured` until the
+same machine runs them, which is task 2 of
+`docs/autonomy/v0-5-the-models-measured-plan.md`. What the box above could not
+do is still true of the box above.
+
+### A 7B model gets the reads right and addresses every change to the wrong door
+**Version:** `qwen2.5:7b-instruct-q4_K_M` (`sha256:845dbda0…697e`, 4,683,087,332
+bytes) under Ollama 0.34.0 on an Apple M3 with 8 GB of unified memory, macOS
+26.5.2, one round of `alo_driving::THE_SET`. 2026-09-13.
+**Behaviour:** four of ten drove the verbs, and the four and the six split
+exactly along a line the grade cannot show. **Every read went through the right
+door** — `list`, `read`, `open` and `focus` produced
+`{"format":1,"asks":{"read":…}}` or `{"asks":{"propose":…}}` with the verb and
+its arguments where they belong. **Every one of the six failures named the
+verb where the door belongs**: `{"asks":{"rename_file":{"verb":"rename_file",…}}}`,
+`{"asks":{"move_file":…}}`, `{"asks":{"close_application":…}}`. Two did worse
+inside that: `find` put the door's name `read` in `verb` and the verb's name in
+the door's place, and `archive` dropped the argument list for a bare object of
+name to value, which is how `qwen2.5-3b-instruct` failed on 2026-09-04. One
+answer carried a stray backtick after its closing brace. Every failure is the
+same outcome, `NotAMessage(NotReadable)`: the daemon's door could not read the
+envelope, so the registry was never reached.
+
+This is a different failure from the small entries above, which lost the
+punctuation or copied the prompt's placeholders. A 7B model holds the
+envelope's syntax and loses its **grammar** — which key is a door and which is
+a verb — and loses it precisely for the verbs that change something, which are
+the ones the door exists to keep apart.
+**Our response:** the grade is `rarely` and the bar did not move. The prompt
+was not edited to name the doors more loudly, because a bar that moves to meet
+the candidate is not a bar; the finding is recorded here because it says where
+the next candidate's prompt-independent evidence should be looked for. The
+report the grade came from,
+`docs/autonomy/updates/one-catalogue-entry-graded-on-a-machine-that-can-hold-it.md`,
+has the ten answers verbatim.
+**Date:** 2026-09-13.
+
 ### Teuken has no first-party Q4_K_M, and the entry named the research release
 **Version:** `data/catalogue.toml`'s `teuken-7b-instruct` as of 2026-09-11,
 against what openGPT-X publishes on Hugging Face that day.
@@ -2437,7 +2481,7 @@ memory:
 | `teuken-7b-instruct` | 5_018_868_512 | `not-measured` |
 | `mistral-7b-instruct` | 4_370_000_000 | `not-measured` |
 | `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
-| `qwen2.5-7b-instruct` | 4_680_000_000 | `not-measured` |
+| `qwen2.5-7b-instruct` | 4_680_000_000 | `rarely` |
 | `phi-3-mini-instruct` | 2_400_000_000 | `rarely` |
 | `llama-3.1-8b-instruct` | 4_920_000_000 | `not-measured` |
 | `gemma-2-9b-instruct` | 5_760_000_000 | `not-measured` |
@@ -2937,3 +2981,91 @@ image entry does not exist yet (`docs/autonomy/QUEUE.md` item 28), and no claim
 that the agent's door works on a real machine is made anywhere until somebody
 runs the two users again.
 **Date:** 2026-09-03, and the move on 2026-09-04
+
+### On Ubuntu 24.04's aarch64 kernel the verifier refuses the boundary for its stack
+**Version:** kernel `6.8.0-134-generic`, aarch64, Ubuntu 24.04 in a Lima 2.2.0
+virtual machine on an Apple M3 with 8 GB, `bpf` in the started security modules,
+lockdown `none`, JIT on. The Mac lane's first gate run, 2026-09-13.
+**Behaviour:** every test that imposes the boundary failed with *"the kernel
+would not attach the boundary to file_open"*, which reads as the LSM question
+`docs/hardware.md` asks and is not. The source error, printed by a probe calling
+`alo_bounding::Imposed::once` directly:
+`the BPF_PROG_LOAD syscall returned Permission denied (os error 13). Verifier
+output: combined stack size of 3 calls is 544. Too large` — `stack depth
+0+304+168`, 62,760 instructions processed of a million. The programme's three
+nested calls use 544 bytes against the verifier's 512 for a call chain. The
+same tree loads on the development PC's x86_64 6.18 kernel, and on this machine
+it loads on Ubuntu's HWE kernel `7.0.0-31-generic` (and `6.17.0-42`): newer
+kernels give JIT-compiled sub-programmes stacks of their own and stop adding
+them up.
+**Our response:** the Mac's VM runs the HWE kernel; nothing in the programme
+was changed, because the programme is not this lane's and the certified machine
+is x86_64. Two things for `alo-bounding`'s owner: the refusal is **named** as an
+attach when it happens at load, which sent this diagnosis to the wrong question
+first; and 544 bytes is 32 over a limit that older kernels still enforce, so a
+certified machine on an older kernel would refuse the boundary for the same
+reason. `docs/hardware.md`'s kernel checks do not ask this.
+**Date:** 2026-09-13.
+
+### Setting a file flag under the boundary is refused as unsupported on aarch64
+**Version:** kernels `6.17.0-42-generic` and `7.0.0-31-generic`, aarch64, the
+same virtual machine; tree `b83d95e`, gates run as root.
+**Behaviour:** `alo-bounding`'s
+`ordinary_programs_run_under_the_boundary_and_nothing_is_written_down` fails,
+every time, with *"an ordinary program can set a flag on its own files: Os {
+code: 95, kind: Unsupported, message: "Operation not supported" }"* at
+`the_boundary_decides_and_forgets.rs:364`. What was ruled out, by measurement:
+the kernel and filesystem accept the same `FS_IOC_SETFLAGS` (`0x40086602`,
+`NODUMP` alone and added to the existing flags) on ext4 `/tmp` and on tmpfs with
+no boundary loaded; and with the boundary attached and no turn, `chattr +d`,
+`lsattr`, `FS_IOC_GETFLAGS` and an unrelated terminal `ioctl` all behave. So the
+refusal needs something the test does and the probe did not — the child
+program, the attributes and access list set just before, the write-only
+descriptor — and which of them was not established.
+**Our response:** recorded for `alo-bounding`'s owner and not worked around. It
+fails on the untouched tree, it is the one test in 4,088 that does, and it is not
+this lane's crate. The Mac lane publishes with it named in every report rather
+than ignored or excluded.
+**Date:** 2026-09-13.
+
+### A check that takes "the first decision" takes whichever the filesystem lists first
+**Version:** `crates/alo-citing/tests/every_decision_this_repository_points_at.rs`
+at `b83d95e`, run in the Mac lane's virtual machine against the checkout on the
+Mac's shared mount (virtiofs).
+**Behaviour:** `a_real_decision_taken_off_the_real_list_is_refused` fails with
+*"`0023-installed-from-the-machine-it-replaces.md` is linked to by name in this
+repository and the check did not notice the file was gone"*. `the_decisions`
+reads `docs/decisions/` with `fs::read_dir`, whose order is the filesystem's, and
+the test removes `split_first()` of it. On the PC's ext4 that is a decision the
+check finds linked by name; on the Mac's shared mount it is 0023, and the check
+finds no link to 0023 by its filename among the files it reads (`docs/contracts/`
+does name it, and whether those are read was not established) — so the
+assertion describes a failure the check had nothing to notice.
+It passed again on the same machine an hour later, on a tree with four more
+files elsewhere in the repository — which is the finding rather than a relief:
+the test's outcome depends on something no change to `docs/decisions/` made.
+**Our response:** recorded for the crate's owner: sort the listing, or choose
+the decision by a property the assertion needs (one that is linked to by name)
+rather than by position. Not changed here, because the crate is not this lane's.
+**Date:** 2026-09-13.
+
+### The keyring fixture's bus can still start the machine's own keyring
+**Version:** `crates/alo-keyring-fixture` at `b83d95e`; dbus 1.14.10 and
+gnome-keyring on Ubuntu 24.04 aarch64.
+**Behaviour:** the fixture points its private session bus at an empty
+`XDG_DATA_DIRS` so that *"the only Secret Service on it is the one started
+below"*. On this dbus that does not hold: a bus started exactly that way lists
+`org.freedesktop.secrets` among `ListActivatableNames`, because
+`<standard_session_servicedirs/>` adds the compiled-in `/usr/share/dbus-1/services`
+as well. When the fixture's own keyring is slow to take its name — as it is in a
+small virtual machine — the fixture's first client activates the machine's
+keyring instead, the fixture's keyring logs *"another secret service is
+running"*, and ten `alo-agentd` tests fail with *"the fixture's keyring never
+offered a collection to store a secret in"*. On a faster machine the fixture wins
+the race and the isolation merely looks as though it holds.
+**Our response:** on the Mac's VM the package's activation file is set aside with
+`dpkg-divert --local --rename` (reversible, and listed by `dpkg-divert --list`),
+which makes the machine match what the fixture assumes. The fixture itself should
+start its bus from a configuration naming no service directories, as its
+`from_a_config` path already does; that is the owner's change.
+**Date:** 2026-09-13.

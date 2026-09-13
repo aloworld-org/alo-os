@@ -25,7 +25,9 @@ use std::collections::BTreeSet;
 
 use serde::Deserialize;
 
-use crate::{costing::GIGABYTE, driving::Driving, requantised::Requantised};
+use crate::{
+    costing::GIGABYTE, driving::Driving, measured_on::MeasuredOn, requantised::Requantised,
+};
 
 /// Bytes per parameter at which a stated size stops being a quantised
 /// artefact's and becomes a full-precision release's.
@@ -231,6 +233,17 @@ pub struct Model {
     /// load, and [`Driving::NotMeasured`] is how an entry states that nobody
     /// has run the measurement yet.
     pub drives_verbs: Driving,
+    /// **Where and when [`drives_verbs`](Model::drives_verbs) was earned** —
+    /// the machine, with its memory, the day, and the runtime that served the
+    /// weights.
+    ///
+    /// Present exactly when the entry states a grade, and
+    /// [`Catalogue::parse`] refuses it either way round: a grade with no
+    /// machine beside it is a claim, and a machine beside a grade nobody ran is
+    /// a run nobody can find. [`crate::MeasuredOn`] says what each field is
+    /// held to.
+    #[serde(default)]
+    pub measured: Option<MeasuredOn>,
     /// The licence, which every entry must state.
     pub licence: Licence,
     /// Where the weights come from. We never redistribute them
@@ -423,6 +436,29 @@ impl Catalogue {
                      file, so name the one it was run against or state no grade",
                 ));
             }
+            // And on which machine it was earned. A grade is a measurement,
+            // and a measurement names its instrument: without one, nobody who
+            // disagrees with it knows what to run it on to find out.
+            match (model.drives_verbs.has_been_measured(), &model.measured) {
+                (true, None) => {
+                    return Err(invalid(
+                        "a grade with no machine beside it: say which machine the run was made on, \
+                         when, and under which runtime, in [model.measured], or the grade is a claim",
+                    ));
+                }
+                (false, Some(_)) => {
+                    return Err(invalid(
+                        "a machine named beside a measurement nobody ran: an entry that says \
+                         not-measured carries no [model.measured]",
+                    ));
+                }
+                (true, Some(measured)) => {
+                    if let Some(what) = measured.what_is_wrong_with_it() {
+                        return Err(invalid(what));
+                    }
+                }
+                (false, None) => {}
+            }
             // And whose file that is, where it is not the publisher's own.
             if let Some(requantised) = &model.requantised
                 && let Some(what) = requantised
@@ -612,6 +648,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
 upstream = "https://example.test/one"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -627,6 +664,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
 upstream = "https://example.test/two"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -654,6 +692,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
 upstream = "https://example.test/vague"
 licence = { name = "Custom Community Licence", commercial_use = "with-conditions" }
 "#;
@@ -784,6 +823,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
 upstream = "   "
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -932,11 +972,16 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     /// `crates/alo-models/tests/the_grade_the_weights_wait_on.rs` and
     /// `crates/alo-models/tests/candidates_the_box_can_hold.rs` hold both
     /// findings to the catalogue, and `docs/quirks.md` has the numbers.
+    ///
+    /// **The eighth is the first 7B entry, and the first grade made on a
+    /// machine that could hold it**: `qwen2.5-7b-instruct`, on an Apple M3 with
+    /// 8 GB on 2026-09-13, 4 of 10. `Rarely`, like the seven before it — and
+    /// failing a different way, which `docs/quirks.md` has.
     #[test]
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it
         /// earned.
-        const MEASURED: [(&str, Driving); 7] = [
+        const MEASURED: [(&str, Driving); 8] = [
             ("phi-3-mini-instruct", Driving::Rarely),
             ("llama-3.2-3b-instruct", Driving::Rarely),
             ("qwen2.5-3b-instruct", Driving::Rarely),
@@ -944,6 +989,7 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
             ("smollm2-1.7b-instruct", Driving::Rarely),
             ("qwen3-1.7b", Driving::Rarely),
             ("granite-3.2-2b-instruct", Driving::Rarely),
+            ("qwen2.5-7b-instruct", Driving::Rarely),
         ];
         for m in Catalogue::built_in().unwrap().models {
             let ran = MEASURED.iter().find(|(id, _)| *id == m.id);
@@ -951,6 +997,96 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
                 m.drives_verbs,
                 ran.map_or(Driving::NotMeasured, |(_, grade)| *grade),
                 "{} claims a grade; was it measured?",
+                m.id
+            );
+        }
+    }
+
+    /// One entry, graded, with `measured` standing in for whatever block the
+    /// test puts beside the grade.
+    fn graded_with(grade: &str, measured: &str) -> String {
+        format!(
+            r#"
+[[model]]
+id = "graded"
+name = "Graded"
+publisher = "p"
+parameters_b = 7.0
+quantisation = "Q4_K_M"
+artefact = "runtime:tag-q4_K_M"
+download_bytes = 4_370_000_000
+min_vram_gb = 8.0
+min_ram_gb = 10.0
+on_cpu = "workable"
+drives_verbs = "{grade}"
+upstream = "https://example.test/graded"
+licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }}
+{measured}
+"#
+        )
+    }
+
+    /// A machine that says all three things.
+    const A_MACHINE: &str = r#"
+[model.measured]
+machine = "Apple M3, 8 GB unified memory"
+date = "2026-09-13"
+runtime = "Ollama 0.34.0"
+"#;
+
+    /// **A grade with no machine beside it is refused**, and so is a machine
+    /// beside a grade nobody ran. The first is the plan's own test; the second
+    /// is the same claim made the other way round.
+    #[test]
+    fn a_grade_with_no_machine_beside_it_is_refused() {
+        let with_one = Catalogue::parse(&graded_with("rarely", A_MACHINE)).unwrap();
+        let measured = with_one.models.first().unwrap().measured.as_ref().unwrap();
+        assert_eq!(measured.machine, "Apple M3, 8 GB unified memory");
+        assert_eq!(measured.date, "2026-09-13");
+        assert_eq!(measured.runtime, "Ollama 0.34.0");
+
+        for grade in ["reliably", "sometimes", "rarely"] {
+            let refused = Catalogue::parse(&graded_with(grade, "")).unwrap_err();
+            assert!(
+                refused.to_string().contains("no machine beside it"),
+                "{grade} with no machine: {refused}"
+            );
+        }
+        let refused = Catalogue::parse(&graded_with("not-measured", A_MACHINE)).unwrap_err();
+        assert!(
+            refused.to_string().contains("nobody ran"),
+            "a machine beside no grade: {refused}"
+        );
+        assert!(Catalogue::parse(&graded_with("not-measured", "")).is_ok());
+    }
+
+    /// **The block is held to what it says**, not only to being present: a
+    /// machine with no memory figure is refused through the loader, and a block
+    /// spelled wrongly or carrying a field nobody reads fails to load rather
+    /// than vanishing.
+    #[test]
+    fn a_machine_that_says_nothing_checkable_is_refused_by_the_loader() {
+        let no_memory = A_MACHINE.replace(", 8 GB unified memory", "");
+        let refused = Catalogue::parse(&graded_with("rarely", &no_memory)).unwrap_err();
+        assert!(refused.to_string().contains("how much memory"), "{refused}");
+
+        let misspelt = A_MACHINE.replace("[model.measured]", "[model.measurd]");
+        assert!(Catalogue::parse(&graded_with("rarely", &misspelt)).is_err());
+
+        let extra = format!("{A_MACHINE}cores = 8\n");
+        assert!(Catalogue::parse(&graded_with("rarely", &extra)).is_err());
+    }
+
+    /// **Every grade the catalogue ships names the machine it was earned on.**
+    /// The loader already refuses one that does not; this says so about the
+    /// file a machine is actually built with.
+    #[test]
+    fn every_grade_we_ship_names_its_machine() {
+        for m in Catalogue::built_in().unwrap().models {
+            assert_eq!(
+                m.drives_verbs.has_been_measured(),
+                m.measured.is_some(),
+                "{}",
                 m.id
             );
         }

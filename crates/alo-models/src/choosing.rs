@@ -223,6 +223,13 @@ mod tests {
     fn catalogue(entries: &[(&str, f32, &str, &str, &str)]) -> Catalogue {
         let mut text = String::new();
         for (id, parameters_b, on_cpu, commercial, driving) in entries {
+            // A grade names the machine it was earned on, or the catalogue
+            // refuses it.
+            let measured = if *driving == "not-measured" {
+                ""
+            } else {
+                "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\" }\n"
+            };
             let gigabytes = f64::from(*parameters_b) * 0.62;
             let (bytes, vram, ram) = (
                 format!("{:.0}", gigabytes * 1e9),
@@ -234,7 +241,7 @@ mod tests {
                  parameters_b = {parameters_b}\nquantisation = \"Q4_K_M\"\n\
                  artefact = \"runtime:{id}-q4_K_M\"\n\
                  download_bytes = {bytes}\nmin_vram_gb = {vram:.2}\nmin_ram_gb = {ram:.2}\n\
-                 on_cpu = \"{on_cpu}\"\ndrives_verbs = \"{driving}\"\n\
+                 on_cpu = \"{on_cpu}\"\ndrives_verbs = \"{driving}\"\n{measured}\
                  upstream = \"https://example.test/{id}\"\n\
                  licence = {{ name = \"L\", commercial_use = \"{commercial}\", \
                  note = \"conditions, stated\" }}\n\n"
