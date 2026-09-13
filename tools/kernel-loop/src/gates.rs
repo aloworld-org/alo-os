@@ -211,9 +211,9 @@ pub fn all_of_them(at: &Path, touched: &[String]) -> Result<Vec<String>, String>
         // under a sentence blaming it, which happened twice on 2026-09-11.
         if let Some(why) = the_machine_rather_than_the_work(&refused) {
             return Err(format!(
-                "this machine is not ready to be gated, so nothing was published: {why}. \
-                 The gate `{}` was not answering about the change. Nothing was staged, \
-                 committed or pushed, and the work is where it was. What it said:\n\n{refused}",
+                "{NOT_READY_TO_BE_GATED}: {why}. The gate `{}` was not answering about the \
+                 change. Nothing was staged, committed or pushed, and the work is where it \
+                 was. What it said:\n\n{refused}",
                 gate.named
             ));
         }
@@ -306,7 +306,7 @@ fn every_crate_among(touched: &[String]) -> Vec<String> {
 /// resembling them. `no space left on device` is **not** here, because
 /// `crate::where_it_builds` measures that before a gate runs and says so in its
 /// own sentence.
-fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static str> {
+pub(crate) fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static str> {
     const NOT_THE_WORK: [(&str, &str); 4] = [
         (
             "Cannot allocate memory",
@@ -329,6 +329,28 @@ fn the_machine_rather_than_the_work(refused: &str) -> Option<&'static str> {
         .into_iter()
         .find(|(said, _)| refused.contains(said))
         .map(|(_, why)| why)
+}
+
+/// How every refusal that blames the machine rather than the work begins.
+///
+/// One sentence, so that the loop can tell the two apart without reading the
+/// rest: a refusal that begins this way is answered by running the gates
+/// again once the machine is back, never by launching a worker to repair work
+/// nothing was wrong with. The evidence check and the gate loop both begin
+/// their machine refusals with it.
+pub(crate) const NOT_READY_TO_BE_GATED: &str =
+    "this machine is not ready to be gated, so nothing was published";
+
+/// Whether a refusal is the machine's rather than the work's.
+///
+/// Read off the sentence, which is the one thing a refusal from the gates and
+/// one from the evidence have in common. On 2026-09-13 lane A's task 7 passed
+/// all nine gates on the combined tree, then WSL timed out under one of its
+/// evidence tests — and the loop spent its one repair worker on a test that
+/// had been green ninety seconds earlier, because nothing asked this.
+#[must_use]
+pub(crate) fn blamed_the_machine(said: &str) -> bool {
+    said.trim_start().starts_with(NOT_READY_TO_BE_GATED)
 }
 
 /// Run one gate, and say whether it passed without deciding what that means.
@@ -850,6 +872,23 @@ mod tests {
     /// *the work rather than the machine*, which sends somebody looking for a
     /// defect that is not there. A second run cannot tell them from a real
     /// break, because each fails as reliably as one.
+    #[test]
+    fn a_refusal_that_blames_the_machine_is_told_apart_by_its_first_words() {
+        let the_machine = format!(
+            "{NOT_READY_TO_BE_GATED}: the distribution the gates run in did not answer. The gate \
+             `the workspace's tests` was not answering about the change."
+        );
+        assert!(blamed_the_machine(&the_machine));
+        assert!(blamed_the_machine(&format!("  \n{the_machine}")));
+
+        let the_work = "the gate `the workspace's tests` did not pass, so nothing was \
+                        published:\n\nRun twice and refused both times, so this is the work \
+                        rather than the machine.";
+        assert!(!blamed_the_machine(the_work));
+        // The sentence appearing later in a refusal is a quotation, not a verdict.
+        assert!(!blamed_the_machine(&format!("{the_work}\n\n{the_machine}")));
+    }
+
     #[test]
     fn a_machines_own_refusal_is_not_read_as_the_works() {
         let out_of_memory = "error: failed to write to `/mnt/c/dev/alo-os-b/target/debug/deps/                             rmetagke7R9/full.rmeta`: Cannot allocate memory (os error 12)";

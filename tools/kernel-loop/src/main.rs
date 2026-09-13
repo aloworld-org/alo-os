@@ -463,6 +463,16 @@ const WAITING_AT_MOST: Duration = Duration::from_secs(60 * 60);
 /// created is not instantaneous. Ten seconds is one look, a pause, and another.
 const WAITING_ON_A_WORKER: Duration = Duration::from_secs(10);
 
+/// How long the machine is given after it refused a gate, before the gates
+/// are run once more.
+///
+/// A distribution that timed out under two lanes gating at once answers again
+/// within seconds of the load easing; a compiler refused memory needs the
+/// other lane's build to finish. Half a minute covers the first and gives the
+/// second a chance, and a machine still refusing after it is carried out as
+/// the machine, never as the work.
+const A_MOMENT_FOR_THE_MACHINE: Duration = Duration::from_secs(30);
+
 /// How often it looks for the work while waiting, and how often it notices a
 /// stop.
 const LOOKING_EVERY: Duration = Duration::from_secs(10);
@@ -562,6 +572,26 @@ fn one_iteration(
     //
     // Once, never twice. A second failure is the work rather than an oversight,
     // and parking is what that is for.
+    // **Unless what refused it was the machine.** A distribution that did not
+    // answer, or a compiler with no memory, says nothing about the work — and
+    // a worker sent to repair work nothing was wrong with spends the account
+    // and then changes nothing. So the gates are run once more instead, after
+    // the machine has had a moment, and only a second machine refusal in a row
+    // is carried out of here, still blaming the machine and never the work.
+    if gates::blamed_the_machine(&said) {
+        journal::note(
+            ours,
+            &format!(
+                "the machine refused task {}, not the work; the gates are run once more rather \
+                 than a worker being launched. It said:\n\n{said}",
+                chosen.number
+            ),
+        );
+        std::thread::sleep(A_MOMENT_FOR_THE_MACHINE);
+        let mut again = publishing::OnThisMachine::publishing(at, ours, &task);
+        return publishing::gated_and_pushed(&mut again)
+            .map(|sha| journal::Went::Published(sha, task.task.clone()));
+    }
     if !worker::is_configured() {
         return Err(said);
     }

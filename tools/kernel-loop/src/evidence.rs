@@ -174,18 +174,46 @@ pub fn stands_up(at: &Path, files: &[String], shown: &[Shown]) -> Result<Vec<Str
             String::from_utf8_lossy(&said.stdout),
             String::from_utf8_lossy(&said.stderr)
         );
-        one_test_passed(said.status.success(), &printed).map_err(|why| {
-            let lines: Vec<&str> = printed.lines().collect();
-            let from = lines.len().saturating_sub(20);
-            format!(
-                "the evidence `{}` did not stand up: {why}. Nothing was published.\n{}",
-                one.named,
-                lines.get(from..).unwrap_or_default().join("\n")
-            )
-        })?;
+        what_it_showed(&one.named, said.status.success(), &printed)?;
         stood.push(format!("{} ({})", one.named, one.within));
     }
     Ok(stood)
+}
+
+/// What one evidence run showed, with the machine told apart from the work.
+///
+/// **A distribution that did not answer printed no test results**, and read
+/// as *cargo printed 0 test results* that is a sentence about the evidence — a
+/// name that matches nothing — when it is a sentence about WSL. The same
+/// classification the gates use is asked first, and a refusal that is the
+/// machine's begins with [`gates::NOT_READY_TO_BE_GATED`] so the loop runs the
+/// gates again rather than launching a worker to repair a test that passed.
+///
+/// # Errors
+/// A sentence naming the evidence and either the machine's fault or the
+/// work's, with the tail of what cargo printed.
+fn what_it_showed(named: &str, status_ok: bool, printed: &str) -> Result<(), String> {
+    if let Some(why) = gates::the_machine_rather_than_the_work(printed) {
+        return Err(format!(
+            "{}: {why}. The evidence `{named}` was not answering about the change; nothing was \
+             staged, committed or pushed, and the work is where it was. What it said:\n\n{}",
+            gates::NOT_READY_TO_BE_GATED,
+            the_tail_of(printed)
+        ));
+    }
+    one_test_passed(status_ok, printed).map_err(|why| {
+        format!(
+            "the evidence `{named}` did not stand up: {why}. Nothing was published.\n{}",
+            the_tail_of(printed)
+        )
+    })
+}
+
+/// The last twenty lines of what cargo printed, which is where the reason is.
+fn the_tail_of(printed: &str) -> String {
+    let lines: Vec<&str> = printed.lines().collect();
+    let from = lines.len().saturating_sub(20);
+    lines.get(from..).unwrap_or_default().join("\n")
 }
 
 /// Whether what `cargo test` printed is **one** test, run, and passed.
@@ -358,6 +386,38 @@ mod tests {
     /// **A failing test is refused**, and so is a run that printed no result at
     /// all — a build error, a bridge that could not reach the machine, a
     /// process killed part way.
+    #[test]
+    fn a_distribution_that_did_not_answer_is_the_machine_and_not_the_evidence() {
+        // What `wsl` printed on 2026-09-13 while lane A's task 7 ran its
+        // evidence: no cargo output at all, and a service error. Read as
+        // *0 test results* it blamed a test that had passed ninety seconds
+        // earlier; read here it is the machine, and the loop runs the gates
+        // again rather than sending a worker to repair nothing.
+        let wsl_timed_out = "A connection attempt failed because the connected party did not \
+                             properly respond after a period of time. Error code: \
+                             Wsl/Service/0x8007274c\n";
+        let refused = what_it_showed("it_answers", false, wsl_timed_out)
+            .err()
+            .unwrap_or_default();
+        assert!(
+            !refused.is_empty(),
+            "a distribution that did not answer was taken as evidence"
+        );
+        assert!(gates::blamed_the_machine(&refused), "{refused}");
+        assert!(refused.contains("it_answers"), "{refused}");
+        assert!(!refused.contains("0 test results"), "{refused}");
+
+        // And a test that really failed is still the work, said the old way.
+        let failed = "running 1 test\ntest it_answers ... FAILED\n\ntest result: FAILED. \
+                      0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out\n";
+        let refused = what_it_showed("it_answers", false, failed)
+            .err()
+            .unwrap_or_default();
+        assert!(!refused.is_empty(), "a failed test was taken as evidence");
+        assert!(!gates::blamed_the_machine(&refused), "{refused}");
+        assert!(refused.contains("did not stand up"), "{refused}");
+    }
+
     #[test]
     fn a_test_that_failed_or_never_ran_is_not_evidence() {
         let failed = "running 1 test\ntest it_answers ... FAILED\n\ntest result: FAILED. \
