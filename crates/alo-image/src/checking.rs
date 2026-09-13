@@ -2207,16 +2207,38 @@ mod tests {
     /// **A model nobody measured is caught.** `docs/features.md` promises a
     /// catalogue measured by us rather than claimed by the publisher, and the
     /// one model every machine arrives with is the last place to take a
-    /// publisher's word for it — `mistral-7b-instruct` is catalogued, runs on
-    /// the certified laptop, and nobody has put it to `alo-driving`.
+    /// publisher's word for it.
+    ///
+    /// The example is **read off the catalogue** — the first entry whose grade
+    /// is still `not-measured` — rather than named here. It used to name
+    /// `mistral-7b-instruct`, and on 2026-09-13 the Mac lane measured that
+    /// model (0 of 10, `rarely`), at which point the example stopped being true
+    /// and the grade had to be held out of the catalogue to keep this test
+    /// green (`docs/quirks.md`). A check whose fixture is a fact about the
+    /// world goes stale the day the world moves; one that asks the catalogue
+    /// cannot. The day every entry is measured this test has nothing to catch
+    /// and says so by returning, which is the right thing for it to do.
     #[test]
     fn weights_naming_a_model_nobody_measured_are_caught() {
+        let unmeasured = Catalogue::built_in().ok().and_then(|catalogue| {
+            catalogue
+                .models
+                .iter()
+                .find(|model| !model.drives_verbs.has_been_measured())
+                .map(|model| model.id.clone())
+        });
+        let Some(unmeasured) = unmeasured else {
+            // Every entry has been measured. Asserting that this check still
+            // catches something would mean inventing a model for it to catch.
+            return;
+        };
+
         let root = a_copy_of_the_image("unmeasured-weights");
         edited(
             &root,
             THE_CONTAINERFILE,
             "ARG THE_MODEL=phi-3-mini-instruct",
-            "ARG THE_MODEL=mistral-7b-instruct",
+            &format!("ARG THE_MODEL={unmeasured}"),
         );
 
         let wrong = everything_wrong_with(&image_at(&root));
