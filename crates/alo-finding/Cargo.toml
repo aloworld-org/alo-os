@@ -1,0 +1,31 @@
+[package]
+name = "alo-finding"
+version = "0.0.1"
+description = "Search your own files: an index of a folder's names, kinds, dates and words that lives on this machine, and is asked instead of the disk."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Five dependencies, and `tests/nothing_here_opens_a_socket_or_asks_anybody.rs`
+# holds the list to exactly these. Nothing here reaches the network, asks a
+# model, or reads the record: contents are the words in a file, decided by
+# this crate's own code, and they are indexed on this machine and nowhere else.
+[dependencies]
+# The walk under a folder. Borrowed rather than written again because a second
+# walker would be two opinions in this repository about what a link is, and
+# `alo-files` exists because there is one.
+alo-files = { path = "../alo-files" }
+# Every sentence a window shows beside an entry — *not a kind of file whose
+# words can be read*, *could not be indexed* — is one of this crate's words,
+# looked up in the reader's own language.
+alo-strings = { path = "../alo-strings" }
+# The index is a file the person owns, in a format `docs/contracts/file-index.md`
+# describes, and it is JSON for the reason the record is: a reader that is not
+# alo OS needs a JSON parser and nothing else.
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

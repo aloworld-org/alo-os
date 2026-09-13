@@ -311,6 +311,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-finding"
+version = "0.0.1"
+dependencies = [
+ "alo-files",
+ "alo-strings",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-granted"
 version = "0.0.1"
 dependencies = [
@@ -533,6 +544,7 @@ dependencies = [
  "alo-dock",
  "alo-egress",
  "alo-files",
+ "alo-finding",
  "alo-granted",
  "alo-greeting",
  "alo-indicator",

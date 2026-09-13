@@ -107,7 +107,21 @@ directory a person opens up rather than roughly right for the whole disk.
 
 ### 3. Search your own files — an index that lives on the machine
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
+
+**Done, 2026-09-13.** Report:
+[`updates/search-your-own-files-is-an-index-on-the-machine.md`](updates/search-your-own-files-is-an-index-on-the-machine.md).
+`crates/alo-finding`: an `Index` is one folder a person named, walked once
+with `alo-files`' measuring policy, with an `Entry` for everything under it —
+where it is, its `Kind` read from its own bytes, its size, when the filesystem
+says it was written, and its `Contents`: the words in it for a kind that is
+text, or the reason there are none. `Index::find` answers a `Query` over any
+of the four from the index alone; `Index::again` reads only a file whose size
+or time changed and says how many it opened; the index lives under
+`$XDG_DATA_HOME/alo/finding/` in the JSON-lines format
+`docs/contracts/file-index.md` describes, readable by its owner alone. Nothing
+in the crate opens a socket, asks a model, or holds anything the record does,
+and a test reads the shipped source to say so.
 
 *Search your own files, without asking anything — by name, kind, date and
 contents, in the file manager, indexed on the machine.* And the sentence the

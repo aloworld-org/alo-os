@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 30] = [
+pub const EVERY_LIST: [&str; 31] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -91,6 +91,7 @@ pub const EVERY_LIST: [&str; 30] = [
     "alo-dock",
     "alo-egress",
     "alo-files",
+    "alo-finding",
     "alo-granted",
     "alo-greeting",
     "alo-indicator",
@@ -187,6 +188,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
     declare(&mut vocabulary, "alo-dock", alo_dock::declare_into)?;
     declare(&mut vocabulary, "alo-egress", alo_egress::declare_into)?;
     declare(&mut vocabulary, "alo-files", alo_files::words::declare_into)?;
+    declare(&mut vocabulary, "alo-finding", alo_finding::declare_into)?;
     declare(&mut vocabulary, "alo-granted", alo_granted::declare_into)?;
     declare(&mut vocabulary, "alo-greeting", alo_greeting::declare_into)?;
     declare(
@@ -259,7 +261,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 30] = [
+    const ONE_STRING_EACH: [(&str, &str); 31] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -274,6 +276,7 @@ mod tests {
         ("alo-dock", "dock.edge.bottom"),
         ("alo-egress", "egress.destination.paired-machine"),
         ("alo-files", "files.failed.not-a-file-verb"),
+        ("alo-finding", "finding.not-absolute"),
         ("alo-granted", "granted.nothing-granted"),
         ("alo-greeting", "greeting.make-an-account"),
         ("alo-indicator", "indicator.nothing-is-leaving"),
@@ -346,6 +349,7 @@ mod tests {
             alo_dock::dock_words().unwrap().how_many(),
             alo_egress::egress_words().unwrap().how_many(),
             alo_files::file_words().unwrap().how_many(),
+            alo_finding::finding_words().unwrap().how_many(),
             alo_granted::granted_words().unwrap().how_many(),
             alo_greeting::greeting_words().unwrap().how_many(),
             alo_indicator::indicator_words().unwrap().how_many(),
