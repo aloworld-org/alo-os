@@ -2298,17 +2298,21 @@ runtime and more than four cores — and the run is a download and an hour, not 
 purchase, once there is one.
 **Date:** 2026-09-11.
 
-**Since, on a machine with room — 2026-09-13.** One of the three has been
-measured: `qwen2.5-7b-instruct` was graded on an **Apple M3 with 8 GB of unified
+**Since, on a machine with room — 2026-09-13.** Two of the three have been
+measured, and the third has a reason instead. First `qwen2.5-7b-instruct` was graded on an **Apple M3 with 8 GB of unified
 memory**, Ollama 0.34.0 (the pinned runtime) serving the weights on the GPU, and
 earned `rarely`, 4 of 10. Not 16 GB, and it did not need it: with the Linux VM
 stopped the model loaded and the fixed ten took thirty-three seconds, which is
 the difference between memory the runtime can page against and memory it
 cannot. The same prompt, the same scoring, the same five-minute wait.
-`teuken-7b-instruct` and `mistral-7b-instruct` stay `not-measured` until the
-same machine runs them, which is task 2 of
-`docs/autonomy/v0-5-the-models-measured-plan.md`. What the box above could not
-do is still true of the box above.
+Then `mistral-7b-instruct`, on the same Apple M3 the same evening: 0 of 10,
+which is `rarely` — measured, and not yet written into the catalogue, for the
+reason in *An image test uses the model this lane measured as its unmeasured
+example* below. `teuken-7b-instruct` stays `not-measured` with the reason
+`too-large-for-the-measuring-machine`: on 8 GB the runtime ran out of GPU memory
+answering its first question (`kIOGPUCommandBufferCallbackErrorOutOfMemory`), and
+the file also carries no chat template the runtime can use, which is its own
+entry below. What the box above could not do is still true of the box above.
 
 ### A 7B model gets the reads right and addresses every change to the wrong door
 **Version:** `qwen2.5:7b-instruct-q4_K_M` (`sha256:845dbda0…697e`, 4,683,087,332
@@ -2483,7 +2487,7 @@ memory:
 | `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
 | `qwen2.5-7b-instruct` | 4_680_000_000 | `rarely` |
 | `phi-3-mini-instruct` | 2_400_000_000 | `rarely` |
-| `llama-3.1-8b-instruct` | 4_920_000_000 | `not-measured` |
+| `llama-3.1-8b-instruct` | 4_920_000_000 | `rarely` |
 | `gemma-2-9b-instruct` | 5_760_000_000 | `not-measured` |
 | `llama-3.2-3b-instruct` | 2_020_000_000 | `rarely` |
 | `qwen2.5-3b-instruct` | 1_930_000_000 | `rarely` |
@@ -3068,4 +3072,78 @@ the race and the isolation merely looks as though it holds.
 which makes the machine match what the fixture assumes. The fixture itself should
 start its bus from a configuration naming no service directories, as its
 `from_a_config` path already does; that is the owner's change.
+**Date:** 2026-09-13.
+
+### Teuken's GGUF carries no chat template, and the runtime says so and answers anyway
+**Version:** `hf.co/mradermacher/Teuken-7B-instruct-commercial-v0.4-GGUF:Q4_K_M`
+(the blob is the pinned `sha256:03fd13da…630b`, 5,018,868,512 bytes) under
+Ollama 0.34.0 on an Apple M3 with 8 GB. 2026-09-13.
+**Behaviour:** loading it, the runtime logs `model is missing
+tokenizer.chat_template and Go TEMPLATE support is unavailable; chat responses
+may be poorly formatted`. Asked through `/api/chat` to answer with one word, it
+answered `I'm ready.<|im_end|>` — the end-of-turn token written into the text,
+because nothing told the runtime how a turn is framed for this model. So a
+question alo OS puts to Teuken through the pinned runtime reaches the weights in
+a shape the model was not trained on, and a grade made that way would be a
+measurement of the missing template as much as of the weights.
+**Our response:** Teuken carries `too-large-for-the-measuring-machine`, which is
+what stopped the run on this machine (the GPU ran out of memory on the first
+question). The template is the finding for
+`docs/autonomy/v0-5-the-models-measured-plan.md`'s task 3 — whether the pinned
+runtime accepts what alo OS sends — and it matters before anybody grades Teuken
+on a larger machine: without a template the grade is not of the weights. A
+`Modelfile` `TEMPLATE` for Teuken would be alo OS configuring the engine, which
+is allowed; choosing that template is a decision with a name on it and is not
+made here.
+**Date:** 2026-09-13.
+
+### What 8 GB of unified memory holds, measured with the runtime alo OS pins
+**Version:** Ollama 0.34.0 on an Apple M3 with 8 GB, macOS 26.5.2, nothing else
+large running and the Linux VM stopped. 2026-09-13.
+**Behaviour:** the runtime reports `gpu memory … available="4.8 GiB"
+free="5.3 GiB"` on this machine, and llama.cpp aims to leave 1 GiB of that free,
+so whether a four-bit model runs on the GPU is decided in the last few hundred
+megabytes:
+
+| Artefact | Loaded, as `/api/ps` reports | On the GPU | Outcome |
+|---|---|---|---|
+| `qwen2.5:7b-instruct-q4_K_M` | — | all | measured, 33 s for the fixed ten |
+| `mistral:7b-instruct-v0.3-q4_K_M` | 5.14 GB | 4.63 GB | measured, 36 s |
+| `llama3.1:8b-instruct-q4_K_M` | 6.25 GB | 5.20 GB | first run: the GPU ran out of memory on the tenth exercise (`kIOGPUCommandBufferCallbackErrorOutOfMemory`, `llama-server terminated`); second run, nothing else loaded: measured, 66 s |
+| Teuken 7B, Q4_K_M | 6.02 GB | — | the GPU ran out of memory on the first question, twice |
+| `gemma2:9b-instruct-q4_K_M` | 7.45 GB | 4.13 GB | the rest on the processor; no answer to the first exercise inside five minutes |
+| EuroLLM 9B, Q4_K_M | 6.49 GB | — | no answer to the second exercise inside five minutes |
+
+The runtime answers the out-of-memory failure with an HTTP 500, which
+`alo_models` reads as `RuntimeError::Unusable` and a person is told as *not with
+anything this machine could use*. The measurement harness stops on it rather
+than scoring it, which is right: it is the machine failing, not the model.
+**Our response:** the three that did not fit carry
+`too-large-for-the-measuring-machine`. Nothing was loosened: not the context
+window, not the wait, not the quantisation. macOS lets the GPU's share of
+unified memory be raised (`sudo sysctl iogpu.wired_limit_mb=<megabytes>`); that
+is configuration of the machine rather than of the runtime or the model, and it
+needs the owner's password, so it was not done here. With it, Teuken and perhaps
+EuroLLM may fit; Gemma 2 9B at 7.45 GB will not on 8 GB.
+**Date:** 2026-09-13.
+
+### An image test uses the model this lane measured as its example of an unmeasured one
+**Version:** `crates/alo-image/src/checking.rs`,
+`weights_naming_a_model_nobody_measured_are_caught`, at `eb658f5`.
+**Behaviour:** the test edits a copy of the image's recipe to carry
+`mistral-7b-instruct` and expects `Wrong::TheWeightsWereNeverMeasured`, because —
+as its comment says — *nobody has put it to `alo-driving`*. On 2026-09-13 the Mac
+lane did: 0 of 10, `rarely`, on an Apple M3 with 8 GB under Ollama 0.34.0, with
+the ten answers verbatim in
+`docs/autonomy/updates/every-catalogue-entry-graded-or-refused-with-the-reason.md`.
+Writing that grade into the catalogue makes this test fail with
+`checking::tests::weights_naming_a_model_nobody_measured_are_caught ... FAILED`,
+because the example has stopped being true, not because the check is wrong.
+**Our response:** the grade is held out of `data/catalogue.toml`, named as the
+one exception in the two tests that require every entry to be graded or to say
+why, and task 2 of `docs/autonomy/v0-5-the-models-measured-plan.md` stays open.
+`alo-image` is not the measuring lane's crate. The change it needs is one line:
+an example that is still unmeasured — `teuken-7b-instruct` is, and says why —
+or better, an example read off the catalogue (the first entry whose
+`drives_verbs` is `not-measured`), so the next grade cannot break it again.
 **Date:** 2026-09-13.

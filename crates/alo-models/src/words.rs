@@ -732,11 +732,52 @@ pub const NOT_A_PATH_ON_THIS_DISK: Word = Word::saying(
      refused here rather than becoming a download nobody asked for.",
 );
 
+// ---------------------------------------------------------------------------
+// Why a catalogue entry has no grade — [`crate::Unmeasured`].
+//
+// Read by a person choosing a model, beside an entry that says it has not been
+// measured. Each is about **the machine that measured this catalogue**, never
+// about the reader's: a line that said "too large for this machine" beside an
+// entry on a 64 GB workstation would be a claim about the wrong machine.
+// ---------------------------------------------------------------------------
+
+/// The machine that measures this catalogue could not hold the model.
+pub const UNMEASURED_TOO_LARGE: Word = Word::saying(
+    "models.unmeasured.too-large-for-the-measuring-machine",
+    "not measured yet: it needs more memory than the machine that measured this catalogue has",
+)
+.noting(
+    "Shown beside a catalogue entry with no grade. It is about the machine that ran the \
+     measurements, not the reader's, and says nothing about whether the model is any good. The \
+     machine itself is named beside the line rather than inside it.",
+);
+
+/// The pinned runtime could not answer with the file.
+pub const UNMEASURED_RUNTIME_REFUSED: Word = Word::saying(
+    "models.unmeasured.the-runtime-refused-the-file",
+    "not measured yet: the model runtime alo OS ships could not answer with this file",
+)
+.noting(
+    "Shown beside a catalogue entry with no grade. \"The model runtime\" is the program that runs \
+     models on the machine; the file is the weights the entry names. A statement about the pair \
+     of them, not a verdict on the model.",
+);
+
+/// There are no weights to measure.
+pub const UNMEASURED_NOT_PUBLISHED: Word = Word::saying(
+    "models.unmeasured.weights-not-published",
+    "not measured yet: there are no published weights this catalogue can point at",
+)
+.noting(
+    "Shown beside a catalogue entry with no grade. \"Weights\" are the model's files; the line \
+     says there is nothing to fetch and run, which is why nobody could measure it.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 49] = [
+pub const EVERY_WORD: [Word; 52] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -786,6 +827,9 @@ pub const EVERY_WORD: [Word; 49] = [
     DOWNLOAD_INCOMPLETE,
     NOTHING_TO_BRING,
     NOT_A_PATH_ON_THIS_DISK,
+    UNMEASURED_TOO_LARGE,
+    UNMEASURED_RUNTIME_REFUSED,
+    UNMEASURED_NOT_PUBLISHED,
 ];
 
 /// Why this crate's own list could not be declared.

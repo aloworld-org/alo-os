@@ -1,0 +1,144 @@
+//! A model that was measured and does not drive the verbs, offered for what it
+//! is.
+//!
+//! `docs/features.md` says a model that cannot drive the verbs is offered for
+//! what it is and never the agent. Until 2026-09-13 every entry that proved it
+//! was one nobody had measured, so the sentence a person read was *nobody has
+//! measured this* — true, and not the sentence the promise is about. Now the
+//! catalogue carries measured `rarely` grades on 7B entries, and this file holds
+//! the three things that follow to the vocabulary the whole machine loads:
+//!
+//! - **choosing such a model still stands.** This crate holds what somebody
+//!   chose and never gates it on a grade; the catalogue recommends.
+//! - **the agent is refused with the sentence for a measurement that was made**
+//!   — `alo-models`' `NONE_CLEARS_THE_BAR`, which this crate shows rather than
+//!   repeats — and not the one for a measurement that was not.
+//! - **an entry with no grade says why**, in words `alo-saying` collects.
+
+#![expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+
+use alo_choosing::{Chosen, Which};
+use alo_models::{Catalogue, Driving, InferenceSource, NoAgentHere, WhyUnmeasured, words};
+use alo_strings::Strings;
+
+/// The vocabulary a machine actually holds.
+fn what_this_machine_can_say() -> Strings {
+    Strings::of(alo_saying::everything_this_machine_can_say().unwrap())
+}
+
+/// An entry the catalogue ships, measured on a machine and graded `rarely`.
+const MEASURED_RARELY: &str = "qwen2.5-7b-instruct";
+
+/// Measured, and not yet written into the catalogue: `alo-image`'s test uses
+/// it as its example of an entry nobody measured (`docs/quirks.md`).
+const AWAITING_ANOTHER_CRATE: &str = "mistral-7b-instruct";
+
+/// A machine with no graphics card and the memory the refusal tests ask about.
+const SIXTEEN_GIGABYTES: f32 = 16.0;
+
+/// **Choosing a model that rarely drives the verbs is still a choice.** It
+/// answers questions on this machine; the grade takes away the agent, not the
+/// model.
+#[test]
+fn a_model_measured_rarely_can_still_be_chosen_to_answer_questions() {
+    let shipped = Catalogue::built_in().unwrap();
+    let entry = shipped.get(MEASURED_RARELY).unwrap();
+    assert_eq!(entry.drives_verbs, Driving::Rarely);
+    assert!(
+        entry.measured.is_some(),
+        "the grade is shown, so the machine it was earned on must be too"
+    );
+    assert!(!entry.can_be_the_agent());
+
+    let chosen = Chosen::of(Which::Catalogue, MEASURED_RARELY).unwrap();
+    assert_eq!(chosen.model(), MEASURED_RARELY);
+    assert_eq!(chosen.source(), InferenceSource::ThisMachine);
+}
+
+/// **The agent is refused with the sentence for a measurement that was made.**
+/// Seven entries run here and may be used; five of them were measured, and a
+/// machine saying *nobody has measured* would be claiming the opposite of what
+/// happened.
+#[test]
+fn the_refusal_is_the_one_for_a_measurement_that_was_made() {
+    let shipped = Catalogue::built_in().unwrap();
+    let refused = shipped.agent_for_cpu(SIXTEEN_GIGABYTES).unwrap_err();
+    assert!(
+        matches!(refused, NoAgentHere::NoneClearsTheBar { measured, .. } if measured > 0),
+        "{refused:?}"
+    );
+    assert_eq!(refused.word(), words::NONE_CLEARS_THE_BAR);
+
+    let strings = what_this_machine_can_say();
+    let [why, brought, elsewhere] = refused.lines(&strings);
+    assert!(
+        !why.text().contains("models.agent"),
+        "reached a person as a key: {why}"
+    );
+    assert_eq!(
+        why.text(),
+        strings
+            .say(
+                &words::NONE_CLEARS_THE_BAR.key(),
+                &alo_strings::Filling::nothing()
+            )
+            .text()
+    );
+    assert_ne!(
+        why.text(),
+        strings
+            .say(
+                &words::NONE_MEASURED.key(),
+                &alo_strings::Filling::nothing()
+            )
+            .text(),
+        "a measured catalogue was refused with the sentence for an unmeasured one"
+    );
+    assert!(
+        brought.text().contains("weights you already have"),
+        "{brought}"
+    );
+    assert!(
+        elsewhere.text().contains("will not choose for you"),
+        "{elsewhere}"
+    );
+}
+
+/// **Every entry with no grade says why, in the machine's vocabulary**, and
+/// none of those sentences reaches a person as a key.
+#[test]
+fn an_entry_with_no_grade_says_why_in_words_the_machine_holds() {
+    let strings = what_this_machine_can_say();
+    let shipped = Catalogue::built_in().unwrap();
+    let unmeasured: Vec<_> = shipped
+        .models
+        .iter()
+        .filter(|entry| !entry.drives_verbs.has_been_measured())
+        .filter(|entry| entry.id != AWAITING_ANOTHER_CRATE)
+        .collect();
+    assert!(!unmeasured.is_empty());
+    for entry in unmeasured {
+        let reason = entry.unmeasured.as_ref().unwrap();
+        let said = reason.said(&strings);
+        assert!(
+            said.text().starts_with("not measured yet"),
+            "{}: {said}",
+            entry.id
+        );
+        assert!(
+            !said.text().contains("models.unmeasured"),
+            "{}: {said}",
+            entry.id
+        );
+        assert_eq!(
+            reason.because,
+            WhyUnmeasured::TooLargeForTheMeasuringMachine,
+            "{} — every reason the catalogue ships today is this one; a new one is a new \
+             finding and belongs in the report that made it",
+            entry.id
+        );
+    }
+}

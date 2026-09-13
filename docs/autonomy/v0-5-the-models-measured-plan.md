@@ -58,7 +58,8 @@ the catalogue with the machine named beside it.
 
 ### 2. Every entry graded, or refused with the reason
 
-**Status:** ready. **Depends on:** 1.
+**Status:** blocked — every entry is graded or says why except `mistral-7b-instruct`, measured 0 of 10 and held out of the catalogue because `alo-image`'s test uses it as its example of an unmeasured entry (`docs/quirks.md`); that crate is not this lane's. **Depends on:** 1.
+**Report:** `docs/autonomy/updates/every-catalogue-entry-graded-or-refused-with-the-reason.md`.
 
 Task 1 is one fact; the promise is the catalogue. This grades every entry the
 catalogue ships, and for any it cannot, says why in the entry rather than

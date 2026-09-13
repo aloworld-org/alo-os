@@ -279,6 +279,11 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// that one: `qwen2.5-7b-instruct` was already one of the seven, and on
 /// 2026-09-13 it was measured on a machine with room for it and graded
 /// `rarely`. Seven to choose between, five of them measured, none good enough.
+///
+/// **Its second task left it at five**: `llama-3.1-8b-instruct` was graded
+/// `rarely` and is not among the seven, because its licence carries conditions,
+/// which is the list this count is of; `mistral-7b-instruct` was measured and
+/// its grade waits on another crate's test (`docs/quirks.md`).
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -308,6 +313,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
         vec![
             "qwen2.5-7b-instruct",
             "phi-3-mini-instruct",
+            "llama-3.1-8b-instruct",
             "llama-3.2-3b-instruct",
             "qwen2.5-3b-instruct",
             "gemma-2-2b-instruct",

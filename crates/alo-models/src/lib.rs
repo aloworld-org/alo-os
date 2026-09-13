@@ -47,6 +47,7 @@ pub mod secret;
 pub mod source;
 pub mod tried;
 pub mod trying;
+pub mod unmeasured;
 pub mod weights;
 pub mod words;
 
@@ -68,5 +69,6 @@ pub use secret::{Secret, SecretError};
 pub use source::{InferenceSource, Region, SourcePolicy};
 pub use tried::{NotTried, Tried};
 pub use trying::Trying;
+pub use unmeasured::{Unmeasured, WhyUnmeasured};
 pub use weights::{Weights, WeightsError};
 pub use words::{Word, WordsError, declare_into, model_words};
