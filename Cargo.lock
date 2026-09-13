@@ -175,6 +175,8 @@ dependencies = [
  "alo-applications",
  "alo-capability",
  "alo-files",
+ "alo-finding",
+ "alo-measuring",
  "thiserror 2.0.20",
 ]
 
@@ -314,7 +316,9 @@ dependencies = [
 name = "alo-finding"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
  "alo-files",
+ "alo-record",
  "alo-strings",
  "serde",
  "serde_json",
@@ -406,7 +410,9 @@ dependencies = [
 name = "alo-measuring"
 version = "0.0.1"
 dependencies = [
+ "alo-capability",
  "alo-files",
+ "alo-record",
  "alo-strings",
  "thiserror 2.0.20",
 ]

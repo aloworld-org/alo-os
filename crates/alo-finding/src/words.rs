@@ -398,8 +398,67 @@ pub const NOT_SEARCHED_TOO_BIG: Counted = Counted {
            be indexed. A search by name still finds them. {files} is how many.",
 };
 
+// ---------------------------------------------------------------------------
+// The one verb: what it does, what a person is shown, and what each argument
+// is for. `crate::verbs` declares it from these.
+// ---------------------------------------------------------------------------
+
+/// What `search_files` does.
+pub const SEARCH_FILES: Word = Word::saying(
+    "finding.verb.search-files.purpose",
+    "search the index of a folder for files by what they are called",
+)
+.noting(
+    "The one-sentence purpose of the search verb, shown where a person reads what their agent \
+     can do. \"The index\" is the list this machine keeps of a folder's files, so that a search \
+     does not read the disk again.",
+);
+
+/// What a person is shown when `search_files` runs. It is a read, so nobody
+/// is asked to approve it — it is what the shell shows while it happens.
+pub const SEARCH_FILES_SENTENCE: Word = Word::saying(
+    "finding.verb.search-files.sentence",
+    "search the index of {folder} for files whose name contains {named}",
+)
+.noting(
+    "{folder} is a path and {named} is part of a file's name; neither is translated. {named} \
+     is not a pattern and not an expression: this verb interprets nothing.",
+);
+
+/// Where `search_files` looks.
+pub const SEARCH_FILES_FOLDER: Word = Word::saying(
+    "finding.verb.search-files.argument.folder",
+    "the folder whose index to search",
+)
+.noting("Shown beside the argument when an agent asks for it. The folder has to have an index.");
+
+/// What `search_files` looks for.
+pub const SEARCH_FILES_NAMED: Word = Word::saying(
+    "finding.verb.search-files.argument.named",
+    "the words a file's name has to contain",
+)
+.noting("Shown beside the argument when an agent asks for it. Part of a name, never a pattern.");
+
+/// A verb that is not this crate's to answer.
+pub const NOT_THIS_CRATES: Word = Word::saying(
+    "finding.verb.not-this-crates",
+    "nothing in the index does {verb} — it searches, and anything else is somewhere else's to do",
+)
+.noting("{verb} is the name of a capability and is never translated.");
+
+/// A verb performed without an argument it declares.
+pub const MISSING: Word = Word::saying(
+    "finding.verb.missing",
+    "{verb} was performed without {argument}, which it declares — this is a verb to write again, \
+     not a call to make again",
+)
+.noting(
+    "Both gaps are names in the code and are never translated. This sentence is read by whoever \
+     wrote the verb rather than by whoever asked for it.",
+);
+
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 31] = [
+pub const EVERY_WORD: [Word; 37] = [
     NOT_ASKED_NOTHING,
     NOT_ASKED_MORE_THAN_A_SENTENCE,
     NOT_ASKED_LONGER_THAN_A_NAME,
@@ -431,6 +490,12 @@ pub const EVERY_WORD: [Word; 31] = [
     KIND_FOLDER,
     KIND_LINK,
     KIND_OTHER,
+    SEARCH_FILES,
+    SEARCH_FILES_SENTENCE,
+    SEARCH_FILES_FOLDER,
+    SEARCH_FILES_NAMED,
+    NOT_THIS_CRATES,
+    MISSING,
 ];
 
 /// Everything this crate can say about a number of things.
@@ -515,7 +580,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(finding_words().unwrap().how_many(), 35);
+        assert_eq!(finding_words().unwrap().how_many(), 41);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

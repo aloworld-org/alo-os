@@ -40,6 +40,18 @@
 //! whose size or time has changed, and [`Index::opened`] says how many it
 //! read, so that a test can count.
 //!
+//! # An agent asks the same index, under a grant
+//!
+//! `search_files` is the verb — declared in [`verbs`] in the shape
+//! `alo-files` declares its six, a read over a granted folder, so it runs
+//! inside the turn with no approval to name and is refused outside its grant
+//! like anything else. [`Searched`] is the door from an
+//! [`alo_files::Touching`] — the call permitted, and the folder made real —
+//! to [`Index::answer`], and it hands the authorisation back so the record
+//! can be written. A person in the file manager takes none of that road:
+//! [`Index::answer`] takes an index and a query, and there is no argument
+//! through which an agent and a person could be told apart.
+//!
 //! # What is deliberately not here
 //!
 //! **Contents are never sent anywhere.** Nothing in this crate opens a socket,
@@ -65,6 +77,8 @@
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
 //! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The seven ways there is no index at all |
+//! | [`finding_verbs`], [`verbs::declare_into`] | The search verb, declared for an agent's list |
+//! | [`Searched`], [`NotAnswered`] | A permitted search put to the index, and why it might not answer |
 //! | [`words`] | Every sentence this crate can say, in the reader's language |
 //!
 //! ```no_run
@@ -97,6 +111,9 @@ pub mod index;
 pub mod kind;
 pub mod query;
 pub mod refusing;
+pub mod searched;
+pub mod unanswered;
+pub mod verbs;
 pub mod words;
 
 mod format;
@@ -116,6 +133,9 @@ pub use kind::{Kind, SNIFFED};
 pub use place::{DATA_HOME, HOME, THE_FOLDER, THE_INDEXES};
 pub use query::Query;
 pub use refusing::NotIndexed;
+pub use searched::Searched;
+pub use unanswered::NotAnswered;
+pub use verbs::{Declaring, finding_verbs};
 pub use words::{
     Counted, EVERY_COUNTED, EVERY_WORD, Word, WordsError, declare_into, finding_words,
 };

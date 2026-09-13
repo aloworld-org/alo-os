@@ -1,10 +1,12 @@
-//! The five ways nothing can be measured at all.
+//! The seven ways nothing can be measured at all.
 //!
 //! Every one of these is a refusal of the whole question rather than a gap in
 //! the answer. A number the kernel would not give for one process is a
 //! [`crate::Number`] saying so in that process's row, and a folder that could
 //! not be read is a [`crate::Counted`] on that folder's node; this is for when
-//! there is no list to put a row in and no tree to put a node in.
+//! there is no list to put a row in and no tree to put a node in. The last
+//! two are met only by [`crate::Measured::of`], which is handed a permitted
+//! call: one that was not this crate's, or one missing an argument it declares.
 
 use std::path::PathBuf;
 
@@ -67,6 +69,27 @@ pub enum NotMeasured {
         /// What the file half said about it, in its own words.
         why: alo_files::Failed,
     },
+
+    /// A permitted call of a verb that is not this crate's to answer.
+    ///
+    /// Only ever met at [`crate::Measured::of`], which is handed a call that
+    /// the capability model already permitted: the call was somebody else's
+    /// to carry out, and nothing was measured.
+    #[error("nothing here measures {verb}")]
+    NotThisCrates {
+        /// The verb as it was called.
+        verb: String,
+    },
+
+    /// A verb performed without an argument it declares: a verb to write
+    /// again rather than a call to make again.
+    #[error("{verb} was performed without {argument}")]
+    Missing {
+        /// The verb as it was called.
+        verb: String,
+        /// The argument that did not arrive.
+        argument: String,
+    },
 }
 
 impl NotMeasured {
@@ -79,6 +102,8 @@ impl NotMeasured {
             Self::NoInterval => &words::NO_INTERVAL,
             Self::SameMoment => &words::SAME_MOMENT,
             Self::NotCounted { .. } => &words::NOT_COUNTED,
+            Self::NotThisCrates { .. } => &words::NOT_THIS_CRATES,
+            Self::Missing { .. } => &words::MISSING,
         }
     }
 
@@ -94,6 +119,10 @@ impl NotMeasured {
             Self::Unreadable { at, .. } => Filling::of("at", at.display().to_string()),
             Self::NotCounted { at, why } => {
                 Filling::of("at", at.display().to_string()).and_said("why", &why.said(strings))
+            }
+            Self::NotThisCrates { verb } => Filling::of("verb", verb.clone()),
+            Self::Missing { verb, argument } => {
+                Filling::of("verb", verb.clone()).and("argument", argument.clone())
             }
             Self::NotOnThisHost | Self::NoInterval | Self::SameMoment => Filling::nothing(),
         };
@@ -126,12 +155,21 @@ mod tests {
                 path: "Documents".to_owned(),
             },
         };
+        let not_this_crates = NotMeasured::NotThisCrates {
+            verb: "list_folder".to_owned(),
+        };
+        let missing = NotMeasured::Missing {
+            verb: "what_is_running".to_owned(),
+            argument: "proc".to_owned(),
+        };
         for refusal in [
             NotMeasured::NotOnThisHost,
             unreadable.clone(),
             NotMeasured::NoInterval,
             NotMeasured::SameMoment,
             not_counted.clone(),
+            not_this_crates.clone(),
+            missing.clone(),
         ] {
             let said = refusal.said(&strings);
             assert!(!said.is_a_bug(), "{said}");
@@ -147,6 +185,18 @@ mod tests {
         assert!(
             !said.text().contains("files."),
             "the file half's sentence is a sentence, not a key: {said}"
+        );
+        assert!(
+            not_this_crates
+                .said(&strings)
+                .text()
+                .contains("list_folder"),
+            "the verb is named"
+        );
+        let said = missing.said(&strings).into_text();
+        assert!(
+            said.contains("what_is_running") && said.contains("proc"),
+            "{said}"
         );
     }
 }

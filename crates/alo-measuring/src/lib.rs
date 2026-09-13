@@ -25,7 +25,9 @@
 //! | [`Number`], [`Source`] | One number and where it came from — or why there is no number |
 //! | [`Holding`], [`Holding::of`] | What is filling a folder: a tree of sizes, counted now |
 //! | [`Node`], [`Counted`] | One thing in that tree, its size, and whether the size is the whole truth |
-//! | [`NotMeasured`] | The five ways nothing can be said at all |
+//! | [`NotMeasured`] | The seven ways nothing can be said at all |
+//! | [`measuring_verbs`], [`verbs::declare_into`] | The two measurements as verbs, declared for an agent's list |
+//! | [`Measured`], [`Measurement`] | A permitted measurement made, with the authority it ran under |
 //! | [`words`] | Every sentence a window shows beside these, in the reader's language |
 //!
 //! ```no_run
@@ -111,6 +113,20 @@
 //! above the tree. Nothing here deletes, moves or empties anything, and the
 //! whole disk is never walked unasked: a caller names a folder.
 //!
+//! # An agent asks for the same numbers, under a grant
+//!
+//! `what_is_running` and `what_is_filling` are the verbs — declared in
+//! [`verbs`] in the shape `alo-files` declares its six, each a read over
+//! the one folder it reads, so each runs inside the turn with no approval
+//! to name and is refused outside its grant like anything else. For
+//! *what is running* that folder is the kernel's own, `/proc`, taken as an
+//! argument so that the grant names exactly what is read. [`Measured`] is
+//! the door from an [`alo_files::Touching`] — the call permitted, and the
+//! folder made real — to [`Reading::since`] or [`Holding::of`], and it hands
+//! the authorisation back so the record can be written. A person's window
+//! takes none of that road: [`Reading::now`] and [`Holding::of`] take no
+//! caller, no grant and no name.
+//!
 //! # This crate reads, and does nothing else
 //!
 //! Nothing here signals, stops, renices or otherwise touches a process, and
@@ -142,6 +158,7 @@ mod kernel;
 mod kilobytes;
 mod listing;
 mod looking;
+pub mod measured;
 mod netdev;
 mod rating;
 mod reading;
@@ -151,14 +168,17 @@ mod sampled;
 mod sampling;
 mod source;
 mod stat;
+pub mod verbs;
 pub mod words;
 
 pub use alo_files::Kind;
 pub use holding::{Counted, Holding, Node};
 pub use kernel::{Disk, Kernel};
+pub use measured::{Measured, Measurement};
 pub use reading::Reading;
 pub use refusing::NotMeasured;
 pub use running::{Gone, Network, Process, Running};
 pub use sampled::{Machine, Sampled};
 pub use source::{Known, Number, Source};
+pub use verbs::{Declaring, measuring_verbs};
 pub use words::{WordsError, declare_into, measuring_words};

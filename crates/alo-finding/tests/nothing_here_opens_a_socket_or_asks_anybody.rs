@@ -12,6 +12,7 @@
 //! | nothing in the shipped source opens a socket, runs anything, or asks a model | [`nothing_in_the_shipped_source_opens_a_socket_or_asks_anybody`] |
 //! | the walk is `alo-files`', the format is JSON, and nothing else is rented | [`the_walk_is_alo_files_and_nothing_else_is_rented`] |
 //! | the index takes no account of who asked, and holds nothing the record does | [`the_index_takes_no_account_of_who_asked`] |
+//! | only the verb's declaration and its door name the capability model | [`only_the_verb_and_its_door_name_the_capability_model`] |
 //!
 //! # What is read, and what is deliberately not
 //!
@@ -19,6 +20,16 @@
 //! at length that it opens no socket. What is left is code, and in code none
 //! of the identifiers below may appear. Unit tests at the foot of a file are
 //! not read: every `#[cfg(test)]` module is the last thing in its file.
+//!
+//! # Two files may name the capability model, and only those two
+//!
+//! `search_files` is a verb, and a verb is declared in `alo-capability`'s
+//! shape and carried out under an `alo_capability::Authorised`. So
+//! `verbs.rs` and `searched.rs` name that crate, and **nothing else here
+//! does**: the index, the walk, the search and the format never see a grant,
+//! an agent or an authority, which is what keeps the answer the same whoever
+//! asked. [`only_the_verb_and_its_door_name_the_capability_model`] holds
+//! both halves — those two may, and no third file may.
 
 #![expect(
     clippy::panic,
@@ -97,6 +108,46 @@ fn identifiers(code: &str) -> Vec<&str> {
         .collect()
 }
 
+/// The two files that declare the verb and carry it out, which are the only
+/// two allowed to name the capability model.
+const THE_VERB_AND_ITS_DOOR: [&str; 2] = ["verbs.rs", "searched.rs"];
+
+/// The name of the capability model, as code names it.
+const THE_CAPABILITY_MODEL: &str = "alo_capability";
+
+/// Whether this file is one of the two.
+fn is_the_verb_or_its_door(at: &Path) -> bool {
+    at.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| THE_VERB_AND_ITS_DOOR.contains(&name))
+}
+
+/// The lines of a file's code that name this identifier.
+fn lines_naming(at: &Path, named: &str) -> Vec<usize> {
+    code_of(at)
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| identifiers(line).contains(&named))
+        .map(|(number, _)| number + 1)
+        .collect()
+}
+
+/// The names in one section of the manifest.
+fn section_of<'a>(manifest: &'a str, section: &str) -> Vec<&'a str> {
+    manifest
+        .split(section)
+        .nth(1)
+        .unwrap()
+        .split("\n[")
+        .next()
+        .unwrap()
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(|line| line.split('=').next().unwrap().trim())
+        .collect()
+}
+
 /// **Nothing in the shipped source opens a socket, runs anything, asks a
 /// model, or reads the record.**
 ///
@@ -132,7 +183,6 @@ fn nothing_in_the_shipped_source_opens_a_socket_or_asks_anybody() {
         "rustix",
         // the record, a grant, and who is asking
         "alo_record",
-        "alo_capability",
         "alo_granted",
         "Record",
         "Grant",
@@ -162,27 +212,19 @@ fn nothing_in_the_shipped_source_opens_a_socket_or_asks_anybody() {
 }
 
 /// **The walk is `alo-files`', the file is JSON, and nothing else is
-/// rented.** The manifest names exactly five dependencies, none of which
-/// reaches the network, and every absolute path in the shipped source is a
-/// path in a doc comment's example rather than one the code opens.
+/// rented.** The manifest names exactly six dependencies, none of which
+/// reaches the network — the capability model is the shape of a verb, and
+/// nothing more — and every absolute path in the shipped source is a path
+/// in a doc comment's example rather than one the code opens. The one
+/// dependency a test has is the record, so a test can show a search being
+/// written down; nothing shipped reads or writes one.
 #[test]
 fn the_walk_is_alo_files_and_nothing_else_is_rented() {
     let manifest = std::fs::read_to_string(here().join("Cargo.toml")).unwrap();
-    let dependencies: Vec<&str> = manifest
-        .split("[dependencies]")
-        .nth(1)
-        .unwrap()
-        .split("\n[")
-        .next()
-        .unwrap()
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(|line| line.split('=').next().unwrap().trim())
-        .collect();
     assert_eq!(
-        dependencies,
+        section_of(&manifest, "[dependencies]"),
         [
+            "alo-capability",
             "alo-files",
             "alo-strings",
             "serde",
@@ -190,9 +232,10 @@ fn the_walk_is_alo_files_and_nothing_else_is_rented() {
             "thiserror"
         ]
     );
-    assert!(
-        !manifest.contains("[dev-dependencies]"),
-        "a test indexes the disk with nothing rented either"
+    assert_eq!(
+        section_of(&manifest, "[dev-dependencies]"),
+        ["alo-record"],
+        "a test indexes the disk with nothing rented but the record it writes into"
     );
 
     let walks = shipped_source()
@@ -254,4 +297,36 @@ fn the_index_takes_no_account_of_who_asked() {
             "pub contents: Contents,",
         ]
     );
+}
+
+/// **Only the verb's declaration and its door name the capability model.**
+///
+/// Both halves, because each is a way of quietly becoming a different crate.
+/// A third file naming it would be the index, the walk or the search starting
+/// to care who asked; the two files not naming it would be a verb declared
+/// out of nothing, which cannot compile — so the second half is here to keep
+/// the first from passing on an empty list.
+#[test]
+fn only_the_verb_and_its_door_name_the_capability_model() {
+    let mut naming_it = Vec::new();
+    for at in shipped_source() {
+        let lines = lines_naming(&at, THE_CAPABILITY_MODEL);
+        if is_the_verb_or_its_door(&at) {
+            assert!(
+                !lines.is_empty(),
+                "{} declares or carries out the verb and never names {THE_CAPABILITY_MODEL}",
+                at.display()
+            );
+            naming_it.push(at);
+            continue;
+        }
+        assert!(
+            lines.is_empty(),
+            "{}:{}: `{THE_CAPABILITY_MODEL}` — the index takes no account of who asked, and \
+             only the verb and its door may name the capability model",
+            at.display(),
+            lines.first().copied().unwrap_or(0)
+        );
+    }
+    assert_eq!(naming_it.len(), THE_VERB_AND_ITS_DOOR.len());
 }

@@ -7,11 +7,16 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-# Five dependencies, and `tests/nothing_here_opens_a_socket_or_asks_anybody.rs`
+# Six dependencies, and `tests/nothing_here_opens_a_socket_or_asks_anybody.rs`
 # holds the list to exactly these. Nothing here reaches the network, asks a
 # model, or reads the record: contents are the words in a file, decided by
 # this crate's own code, and they are indexed on this machine and nowhere else.
 [dependencies]
+# The shape a verb has to be, so that *search your own files* is on the closed
+# list an agent asks from — declared in `verbs.rs` and carried out in
+# `searched.rs`, which are the only two files here allowed to name it. The
+# index itself takes no account of who asked and never sees a grant.
+alo-capability = { path = "../alo-capability" }
 # The walk under a folder. Borrowed rather than written again because a second
 # walker would be two opinions in this repository about what a link is, and
 # `alo-files` exists because there is one.
@@ -26,6 +31,13 @@ alo-strings = { path = "../alo-strings" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+
+# Only for a test, and only so the test can show a search being written down.
+# `every execution and every refusal leaves a record` is one of the guarantees
+# `CLAUDE.md` names, and a test that stopped at the authorisation coming back
+# would be taking that on trust. Nothing shipped here reads or writes a record.
+[dev-dependencies]
+alo-record = { path = "../alo-record" }
 
 [lints]
 workspace = true

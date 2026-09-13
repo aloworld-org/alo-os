@@ -265,8 +265,89 @@ pub const UNNAMED: Counted = Counted {
            under a name that could mislead. {unnamed} is how many.",
 };
 
+// ---------------------------------------------------------------------------
+// The two verbs: what each does, what a person is shown, and what each
+// argument is for. `crate::verbs` declares them from these.
+// ---------------------------------------------------------------------------
+
+/// What `what_is_running` does.
+pub const WHAT_IS_RUNNING: Word = Word::saying(
+    "measuring.verb.what-is-running.purpose",
+    "list what is running on this machine and what each process is using",
+)
+.noting(
+    "The one-sentence purpose of the verb, shown where a person reads what their agent can do. \
+     \"What it is using\" is memory, processor, disk and network, each read from the kernel.",
+);
+
+/// What a person is shown when `what_is_running` runs. It is a read, so
+/// nobody is asked to approve it — it is what the shell shows while it
+/// happens.
+pub const WHAT_IS_RUNNING_SENTENCE: Word = Word::saying(
+    "measuring.verb.what-is-running.sentence",
+    "list what is running and what it is using, read from {proc}",
+)
+.noting(
+    "{proc} is the path of the kernel's own directory of what is running — on alo OS it is \
+     \"/proc\" — and is never translated. It is in the sentence because it is the folder the \
+     verb reads and the folder the person granted.",
+);
+
+/// Where `what_is_running` reads.
+pub const WHAT_IS_RUNNING_PROC: Word = Word::saying(
+    "measuring.verb.what-is-running.argument.proc",
+    "the kernel's own directory of what is running, which on this machine is /proc",
+)
+.noting(
+    "Shown beside the argument when an agent asks for it. \"/proc\" is a path and is never \
+     translated.",
+);
+
+/// What `what_is_filling` does.
+pub const WHAT_IS_FILLING: Word = Word::saying(
+    "measuring.verb.what-is-filling.purpose",
+    "count what is filling a folder, as a tree of sizes",
+)
+.noting(
+    "The one-sentence purpose of the verb, shown where a person reads what their agent can do. \
+     \"A tree of sizes\" is the folder, each thing inside it and its size, and so on down.",
+);
+
+/// What a person is shown when `what_is_filling` runs.
+pub const WHAT_IS_FILLING_SENTENCE: Word = Word::saying(
+    "measuring.verb.what-is-filling.sentence",
+    "count what is filling {folder}",
+)
+.noting("{folder} is a path and is never translated. Nothing is changed by counting it.");
+
+/// What `what_is_filling` counts.
+pub const WHAT_IS_FILLING_FOLDER: Word = Word::saying(
+    "measuring.verb.what-is-filling.argument.folder",
+    "the folder to count",
+)
+.noting("Shown beside the argument when an agent asks for it.");
+
+/// A verb that is not this crate's to answer.
+pub const NOT_THIS_CRATES: Word = Word::saying(
+    "measuring.verb.not-this-crates",
+    "nothing here measures {verb} — it says what is running and what is filling a folder, and \
+     anything else is somewhere else's to do",
+)
+.noting("{verb} is the name of a capability and is never translated.");
+
+/// A verb performed without an argument it declares.
+pub const MISSING: Word = Word::saying(
+    "measuring.verb.missing",
+    "{verb} was performed without {argument}, which it declares — this is a verb to write again, \
+     not a call to make again",
+)
+.noting(
+    "Both gaps are names in the code and are never translated. This sentence is read by whoever \
+     wrote the verb rather than by whoever asked for it.",
+);
+
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 22] = [
     NOT_ON_THIS_HOST,
     UNREADABLE,
     NO_INTERVAL,
@@ -281,6 +362,14 @@ pub const EVERY_WORD: [Word; 14] = [
     ANOTHER_FILESYSTEM,
     NOT_FINISHED,
     NOT_COUNTED,
+    WHAT_IS_RUNNING,
+    WHAT_IS_RUNNING_SENTENCE,
+    WHAT_IS_RUNNING_PROC,
+    WHAT_IS_FILLING,
+    WHAT_IS_FILLING_SENTENCE,
+    WHAT_IS_FILLING_FOLDER,
+    NOT_THIS_CRATES,
+    MISSING,
 ];
 
 /// Everything this crate can say about a number of things.
@@ -360,7 +449,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(measuring_words().unwrap().how_many(), 17);
+        assert_eq!(measuring_words().unwrap().how_many(), 25);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

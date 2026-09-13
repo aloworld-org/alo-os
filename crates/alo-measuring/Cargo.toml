@@ -7,7 +7,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
-# Three dependencies, and `tests/nothing_here_acts_or_asks_who_is_asking.rs`
+# Four dependencies, and `tests/nothing_here_acts_or_asks_who_is_asking.rs`
 # holds the list to exactly these. There is deliberately no `sysinfo`, no
 # `procfs` and no crate of that kind: the numbers this crate answers with are
 # read out of `/proc` by the code in `src/`, which is the only way a number
@@ -15,6 +15,12 @@ repository.workspace = true
 # person. A rented reader would be a second author's opinion about what
 # *memory* means, unreviewable from this repository.
 [dependencies]
+# The shape a verb has to be, so that *what is running* and *what is filling*
+# are on the closed list an agent asks from — declared in `verbs.rs` and
+# carried out in `measured.rs`, which are the only two files here allowed to
+# name it. The measurements themselves take no account of who asked and never
+# see a grant.
+alo-capability = { path = "../alo-capability" }
 # The walk under a folder, for *what is filling the disk*. Borrowed rather
 # than written again because a second walker would be two opinions in this
 # repository about what a link is, and `alo-files` exists because there is
@@ -25,6 +31,14 @@ alo-files = { path = "../alo-files" }
 # the reader's own language.
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
+
+# Only for a test, and only so the test can show a measurement being written
+# down. `every execution and every refusal leaves a record` is one of the
+# guarantees `CLAUDE.md` names, and a test that stopped at the authorisation
+# coming back would be taking that on trust. Nothing shipped here reads or
+# writes a record.
+[dev-dependencies]
+alo-record = { path = "../alo-record" }
 
 [lints]
 workspace = true

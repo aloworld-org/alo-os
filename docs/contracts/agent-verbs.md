@@ -527,12 +527,63 @@ through `alo_strings::Filling::and_said`, or through `Filling::and_composed`
 where the value is assembled out of several — never as text, which reports every
 half-English line as finished.
 
+## The measurement verbs
+
+`docs/features.md` promises three measurements of the machine at v0.5 — *search
+your own files, without asking anything*, *what is running, and what it is
+using*, and *what is filling the disk* — and each names a window. The agent's
+*"where is that file?"* and *"why is it slow?"* are these three verbs, declared
+in the crates that answer them (`alo-finding` and `alo-measuring`, each in its
+`src/verbs.rs` with a `pub fn declare_into`), and **every one of them is a
+read**: it runs inside the turn, nobody is asked to approve it, and the record's
+entry has no approval to name.
+
+| Verb | Effect | Arguments | Sentence |
+|---|---|---|---|
+| `search_files` | read | `folder` (path), `named` (name, at most 255 characters) | search the index of {folder} for files whose name contains {named} |
+| `what_is_running` | read | `proc` (path) | list what is running and what it is using, read from {proc} |
+| `what_is_filling` | read | `folder` (path) | count what is filling {folder} |
+
+**Each requires a grant over the one folder it reads**, and nothing else. A
+read inside the turn is about approval and never about reach: an index of a
+folder nobody granted would be a way to read the names in it, and a process
+list is a fingerprint of who somebody is and what they do.
+
+**`what_is_running` takes the kernel's directory as an argument, and the grant
+is over it.** Every number the answer holds is read from a file under `/proc`,
+so the grant that permits the verb names exactly what the verb reads, and
+revoking it stops the verb the same instant it stops `list_folder`. It carries
+no interval: a rate is two readings with time between them, and how long a turn
+waits is not the model's to set — whatever carries the verb out chooses the
+interval and passes it in.
+
+**`search_files` asks the index, never the disk.** `find_in_folder` walks a
+folder and answers with what it met; this verb asks the index the file manager
+asks, answers with what matched beside what the index does not hold, and
+touches the folder not at all. It asks by name and by nothing else — every
+argument is required, and a verb per axis would be four names for one action.
+The index it is handed has to be the granted folder's, and one that is not
+answers with a refusal in the index's own words rather than a search of
+somewhere nobody granted.
+
+**Neither answer depends on who asked.** `Index::answer`, `Reading::now` and
+`Holding::of` take no caller, no grant and no name, and a test in each crate
+holds the shape; the verb is a road to the same function, and a person in the
+window takes none of it.
+
+**These three are declared and carried out, and not yet offered by a turn.**
+`alo-turn`'s machine offers the file verbs it has an executor for; adding an
+executor and adding to the offered list is one edit there, and it has not been
+made. Until it is, an agent on a shipped machine cannot reach these — which is
+the honest state of a verb that exists and is not on the list a machine offers.
+
 ## The verb classes
 
 | Class | What it covers | Where it runs |
 |---|---|---|
 | **Files** | List, read, find, rename, move, archive — within granted paths | `alo-agentd`, as the person |
 | **Applications** | Open, focus, arrange, close — over granted applications | `alo-agentd`, as the person |
+| **Measurements** | Search the index, what is running, what is filling — over the granted folder each reads | `alo-agentd`, as the person; declared, not yet offered by a turn |
 | **Context** | The focused window, the selection, the open document | Offered at invocation only |
 | **Adapters** | An installed application's own verbs | See `app-adapters.md` |
 | **System** | Printers, network, updates, storage | The **privileged broker**, never the agent directly |
@@ -659,8 +710,9 @@ not make, and a debt owed at a release nobody ships, are refused with it.
 ### Where verbs are declared, which that check reads
 
 **A crate declares verbs in `src/verbs.rs`, through a `pub fn declare_into` that
-puts them on somebody else's `Verbs`.** `alo-files` and `alo-applications` both
-do exactly that, and it is a rule rather than a habit because `alo-by-hand` walks
+puts them on somebody else's `Verbs`.** `alo-files`, `alo-applications`,
+`alo-finding` and `alo-measuring` all do exactly that, and it is a rule rather
+than a habit because `alo-by-hand` walks
 this workspace's own member list for it: **a crate that declares verbs and was
 not handed to that check would make every verb in it invisible to rule 7**, and
 the check would go on passing in the same colour. An adapter outside this

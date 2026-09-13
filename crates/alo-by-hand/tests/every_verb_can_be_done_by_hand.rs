@@ -1,10 +1,11 @@
 //! The check itself, run against the verbs this machine really ships.
 //!
-//! Everything in the crate is the method. This is the measurement: the ten verbs
-//! `alo-files` and `alo-applications` declare, the real `docs/by-hand.md`, the
-//! real `docs/features.md` and this workspace's own member list — read off the
-//! disk this test is running on, so a verb added tomorrow with nothing said about
-//! it fails here rather than in somebody's reading a release from now.
+//! Everything in the crate is the method. This is the measurement: the thirteen
+//! verbs `alo-files`, `alo-applications`, `alo-finding` and `alo-measuring`
+//! declare, the real `docs/by-hand.md`, the real `docs/features.md` and this
+//! workspace's own member list — read off the disk this test is running on, so
+//! a verb added tomorrow with nothing said about it fails here rather than in
+//! somebody's reading a release from now.
 //!
 //! # And the refusals, beside it
 //!
@@ -40,7 +41,12 @@ const THE_DOCUMENT: &str = "docs/by-hand.md";
 /// Written here rather than in the crate, because this is the measurement: the
 /// crate checks whatever list it is handed, and a crate declaring verbs that is
 /// missing from this array is what [`Finding::AVerbListNobodyHandedIn`] is for.
-const WHO_DECLARES_THEM: [&str; 2] = ["alo-files", "alo-applications"];
+const WHO_DECLARES_THEM: [&str; 4] = [
+    "alo-files",
+    "alo-applications",
+    "alo-finding",
+    "alo-measuring",
+];
 
 /// This repository, from the crate this test is in.
 fn the_repository() -> PathBuf {
@@ -63,6 +69,8 @@ fn what_this_machine_ships() -> Verbs {
     let mut verbs = Verbs::default();
     alo_files::declare_into(&mut verbs).expect("the six file verbs declare");
     alo_applications::declare_into(&mut verbs).expect("the four application verbs declare");
+    alo_finding::verbs::declare_into(&mut verbs).expect("the search verb declares");
+    alo_measuring::verbs::declare_into(&mut verbs).expect("the two measuring verbs declare");
     verbs
 }
 

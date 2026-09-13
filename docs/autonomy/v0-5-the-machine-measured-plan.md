@@ -186,7 +186,25 @@ asked to index.
 
 ### 5. The three measurements are asked the way everything else is asked
 
-**Status:** ready. **Depends on:** 1, 2, 3.
+**Status:** done. **Depends on:** 1, 2, 3.
+
+**Done, 2026-09-13.** Report:
+[`updates/the-three-measurements-are-verbs-and-not-the-only-road.md`](updates/the-three-measurements-are-verbs-and-not-the-only-road.md).
+`crates/alo-finding` declares `search_files` and `crates/alo-measuring`
+declares `what_is_running` and `what_is_filling`, each in `src/verbs.rs`
+through a `declare_into` in the shape `alo-files` uses, each a read requiring
+a grant over the one folder it reads — for *what is running* that folder is
+`/proc`, taken as an argument so the grant names exactly what is read.
+`Searched::of` and `Measured::of` are the doors from an `alo_files::Touching`
+(the call permitted and the folder made real) to `Index::answer`,
+`Reading::since` and `Holding::of`, and each hands the authorisation back for
+the record. A test in each crate walks the real verb, grants, resolver and
+record through the happy road and every refusal, and shows the same answer
+reached with no agent and no grant. `docs/by-hand.md` answers the three,
+`docs/contracts/agent-verbs.md` describes them, and `alo-capability` was read
+and not edited. What is not done, decided in the report: `alo-turn`'s machine
+does not yet offer the three — lane A's crate this week — and the index a
+search is handed is chosen by the caller, which task 6 takes up.
 
 The agent's *"where is that file?"* and *"why is it slow?"* are verbs, and a
 verb is what ADR 0001 says it is: on a closed list, checked against a grant,
@@ -209,3 +227,34 @@ the half the promise underlines.
   week. If declaring a verb turns out to need a change there, the honest
   deliverable is the finding in the report and the task stays open, not an
   edit to a crate this plan does not own.
+
+### 6. Which folders are indexed, and the index for a folder found by its name
+
+**Status:** ready. **Depends on:** 3, 5.
+
+Task 5 left one thing to the caller on purpose: `Searched::of` is handed the
+index of the granted folder and checks that it is that folder's, but nothing
+in `alo-finding` says **which folders have an index** or hands back the index
+for one. A daemon carrying `search_files`, and a file manager offering a
+search box, both need the same answer — *is this folder indexed, and where is
+its index?* — and today each would have to remember the folders it indexed
+and call `Index::where_kept` itself, which is two lists of the same fact.
+
+- **Acceptance:** `alo-finding` keeps the list of folders a person asked to
+  index, under `$XDG_DATA_HOME/alo/finding/` beside the indexes in a format
+  `docs/contracts/file-index.md` describes, written whole or not at all like
+  an index is; a caller names a folder and gets back its index read from the
+  disk, or a refusal in words saying the folder was never indexed — never a
+  walk of the folder, checked by a test that asks about an unindexed folder
+  and counts the files opened; a folder removed from the list has its index
+  file removed with it, and a test says so; the list answers the same
+  whether an agent or a person asked, because it holds folders and nothing
+  the record does; and `Searched::of` is unchanged — the caller still hands
+  it an index, now one this list gave it.
+- **Constraint:** the list is not a grant and grants nothing: a folder being
+  indexed says nothing about whether an agent may search it, and the tests
+  hold the two apart by indexing a folder no grant covers and showing the
+  verb is still refused. Nothing here reads the environment inside the
+  crate: `$XDG_DATA_HOME` and `$HOME` are passed in, as `Index::where_kept`
+  already takes them. The walk stays `alo-files`'; nothing here opens a
+  socket, and the shipped-source test keeps saying so.

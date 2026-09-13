@@ -39,7 +39,7 @@ sentences in it rather than a table of ten ticks.
 
 ## What this document already shows, which is not comfortable
 
-**Six of the ten verbs ship at v0.01 and their plain way arrives at v0.5.** The
+**Six of the ten v0.01 verbs ship at v0.01 and their plain way arrives at v0.5.** The
 file manager, the search, the text editor and the terminal are all v0.5; the six
 file verbs are v0.01. So on a v0.01 machine with no agent — or with an agent
 whose provider is down — a person cannot list, read, find, rename, move or
@@ -51,6 +51,12 @@ refuse: v0.01 is *it boots and the agent acts*, the desktop is v0.5, and moving
 either is the owner's decision and nobody else's. What is not acceptable is that
 it was true and unwritten. It is written here now, and `ROADMAP.md`'s v0.5 exit
 gate is where it comes due.
+
+**The three v0.5 measurement verbs land with their surfaces.** `search_files`,
+`what_is_running` and `what_is_filling` are v0.5 verbs over v0.5 promises, and
+each promise names its window; the verb and the plain way arrive in the same
+release, which is the shape ADR 0009 asks for. The windows are not built yet
+either — the same distinction as above, and the same exit gate.
 
 ## Every verb, one at a time
 
@@ -122,6 +128,29 @@ unsaved work exactly as it does for the verb —
 maximises it — `Window management: move, resize, snap, tile, minimise, maximise,
 close`. The verb offers the left half, the right half and the whole screen, and
 each of those three is one of *snap*, *tile* and *maximise* on that line.
+
+### search_files
+
+**By hand:** a person searches for the file themselves, by name, in the file
+manager, which asks the same index this verb asks — `Search your own files,
+without asking anything`. The verb is the *nicer way to reach this* the
+definition names, and the index answers a person with no agent, no grant and
+nobody to ask.
+
+### what_is_running
+
+**By hand:** a person opens the window and reads the list — `What is running,
+and what it is using`, which the definition words as *the plain answer to "why
+is it slow?", for the person who cannot or will not ask*. The verb reads the
+same files under the kernel's own directory that the window reads, and the
+list is the same because it is a list of facts.
+
+### what_is_filling
+
+**By hand:** a person opens the folder up and clicks through the sizes —
+`What is filling the disk`, *shown as sizes you can open up and click through,
+not a number in Settings*. The tree the verb answers with is the tree the window
+draws.
 
 ## What this document does not do
 
