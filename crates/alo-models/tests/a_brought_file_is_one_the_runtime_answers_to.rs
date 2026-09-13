@@ -11,10 +11,17 @@
 //! person's settings would carry for it, the door, and a runtime fixture on the
 //! other side of a real socket answering by the file's own name.
 //!
+//! **What the pinned runtime accepts is no longer only this file's say-so.** On
+//! 2026-09-13 Ollama 0.34.0 refused the one-line Modelfile these tests used to
+//! assert, so the requests below are the two it takes — the file into its store
+//! by digest, then a model made from that blob — and
+//! `the_pinned_runtime_accepts_what_alo_os_sends.rs` walks the same road against
+//! the real runtime.
+//!
 //! | The acceptance | The test |
 //! |---|---|
 //! | the runtime is told, and afterwards answers by that id | [`a_brought_file_is_told_to_the_runtime_and_then_answers_by_its_own_name`] |
-//! | nothing downloads: the Modelfile names a path on this disk | [`what_the_runtime_is_told_names_a_path_on_this_disk_and_asks_for_no_download`] |
+//! | nothing downloads: the runtime is handed this disk's file by digest, and never a name to fetch | [`what_the_runtime_is_told_names_a_path_on_this_disk_and_asks_for_no_download`] |
 //! | the door is not the choosing door — a runtime that is down costs nothing typed | [`a_runtime_that_is_down_costs_the_person_nothing_they_typed`] |
 //!
 //! # It needs no runtime
@@ -51,7 +58,7 @@ fn a_file_of_our_own(what: &str) -> PathBuf {
 /// Written here rather than borrowed from the crate's own fixtures because
 /// those are `pub(crate)`: an integration test is outside, which is the point
 /// of it.
-fn a_runtime_answering(replies: [&'static str; 2]) -> (String, thread::JoinHandle<Vec<String>>) {
+fn a_runtime_answering(replies: [&'static str; 3]) -> (String, thread::JoinHandle<Vec<String>>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let address = format!("http://{}", listener.local_addr().unwrap());
     let handle = thread::spawn(move || {
@@ -100,6 +107,7 @@ fn a_brought_file_is_told_to_the_runtime_and_then_answers_by_its_own_name() {
     let file = a_file_of_our_own("answers");
     let weights = Weights::at(&file).unwrap();
     let (address, runtime) = a_runtime_answering([
+        "",
         r#"{"status":"success"}"#,
         r#"{"message":{"role":"assistant","content":"Yes, and here is why."}}"#,
     ]);
@@ -109,10 +117,18 @@ fn a_brought_file_is_told_to_the_runtime_and_then_answers_by_its_own_name() {
     let said = ollama.answers("Does this run?", &weights.id).unwrap();
 
     let sent = runtime.join().unwrap();
-    assert_eq!(sent.len(), 2, "the runtime was not asked twice: {sent:?}");
-    let taught = sent.first().unwrap();
-    let asked = sent.get(1).unwrap();
+    assert_eq!(
+        sent.len(),
+        3,
+        "the runtime was not asked three times: {sent:?}"
+    );
+    let (held, taught, asked) = (
+        sent.first().unwrap(),
+        sent.get(1).unwrap(),
+        sent.get(2).unwrap(),
+    );
     assert_eq!(said, "Yes, and here is why.");
+    assert!(held.contains("HEAD /api/blobs/sha256:"), "{held}");
     assert!(taught.contains("POST /api/create"), "{taught}");
     assert!(asked.contains("POST /api/chat"), "{asked}");
     assert!(
@@ -122,31 +138,45 @@ fn a_brought_file_is_told_to_the_runtime_and_then_answers_by_its_own_name() {
     drop(std::fs::remove_file(&file));
 }
 
-/// **Nothing downloads.** The Modelfile is one `FROM` naming a path on this
-/// disk, because to the runtime a bare name is an instruction to fetch from a
-/// publisher — which would turn *run the weights you already have* into an
-/// egress nobody asked for.
+/// **Nothing downloads.** The runtime is handed the bytes of the file on this
+/// disk, named by their digest, and never `from` — which to the runtime is a
+/// model to fetch from a publisher, and would turn *run the weights you already
+/// have* into an egress nobody asked for.
 #[test]
 fn what_the_runtime_is_told_names_a_path_on_this_disk_and_asks_for_no_download() {
     let file = a_file_of_our_own("no-download");
     let weights = Weights::at(&file).unwrap();
-    let (address, runtime) = a_runtime_answering([r#"{"status":"success"}"#, r#"{}"#]);
+    let (address, runtime) = a_runtime_answering(["", r#"{"status":"success"}"#, r#"{}"#]);
     let ollama = Ollama::at(&address, Catalogue::built_in().unwrap());
 
     ollama.bring(&weights).unwrap();
     drop(ollama.answers("anything", &weights.id));
 
     let sent = runtime.join().unwrap();
-    let taught = sent.first().unwrap();
+    let taught = sent.get(1).unwrap();
     let body = taught.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
     let body: serde_json::Value = serde_json::from_str(body).unwrap();
-    let modelfile = body.get("modelfile").unwrap().as_str().unwrap();
+    let files = body.get("files").unwrap().as_object().unwrap();
+    let file_name = file.file_name().unwrap().to_str().unwrap();
 
-    assert_eq!(modelfile, format!("FROM {}", file.display()));
+    assert_eq!(files.len(), 1, "{body}");
     assert!(
-        !taught.contains("/api/pull"),
-        "the road went near a download: {taught}"
+        files
+            .get(file_name)
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|digest| digest.starts_with("sha256:")),
+        "the runtime was not handed this disk's file by digest: {body}"
     );
+    assert!(
+        body.get("from").is_none(),
+        "the create names a model to fetch: {body}"
+    );
+    for request in &sent {
+        assert!(
+            !request.contains("/api/pull"),
+            "the road went near a download: {request}"
+        );
+    }
     drop(std::fs::remove_file(&file));
 }
 

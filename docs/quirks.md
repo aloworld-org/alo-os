@@ -3147,3 +3147,40 @@ an example that is still unmeasured — `teuken-7b-instruct` is, and says why �
 or better, an example read off the catalogue (the first entry whose
 `drives_verbs` is `not-measured`), so the next grade cannot break it again.
 **Date:** 2026-09-13.
+
+### The pinned runtime refuses the Modelfile a brought file was handed over with
+**Version:** Ollama 0.34.0 — the release `image/Containerfile` installs — on an
+Apple M3 with 8 GB, against `alo-models`' `Ollama::bring` as of `dec0ef1`.
+2026-09-13.
+**Behaviour:** `bring` sent `POST /api/create` with
+`{"model": <id>, "modelfile": "FROM /absolute/path.gguf", "stream": false}`, and
+every test in the repository agreed with it, because every test answered with a
+socket the repository wrote. The runtime answers that request
+`400 {"error":"neither 'from' or 'files' was specified"}`: the `modelfile` field
+is not part of its create API. So *point alo OS at weights you already have and
+it runs them* was built, tested, and refused by the program it depends on.
+What 0.34.0 answered to each road tried, all on loopback with a real GGUF from
+this disk:
+
+| Request | Answer |
+|---|---|
+| `create` with `modelfile: "FROM <path>"` | `400 {"error":"neither 'from' or 'files' was specified"}` |
+| `create` with `from: "<absolute path>"` | `400 {"error":"invalid model name"}` |
+| `HEAD /api/blobs/sha256:<digest>`, not held | `404` |
+| `POST /api/blobs/sha256:<digest>` with the file | `201` |
+| the same with the wrong digest | `400 {"error":"digest mismatch, expected …, got …"}` |
+| `HEAD` again | `200` |
+| `create` with `files: {<name>: "sha256:<digest>"}` | `200 {"status":"success"}` |
+| the same, from bytes that are not weights | `500 {"error":"unexpected EOF"}` |
+| `/api/chat` by the created id | `"Ready."` |
+
+**Our response:** `bring` now hands the file to the runtime's store by digest and
+creates the model from that blob (`crates/alo-models/src/handing_over.rs`); the
+fixtures assert those requests, two more carry 0.34.0's listing and answer
+verbatim, and `THE_PINNED_RUNTIME` in `alo-models` must equal the image's
+`ARG THE_RUNTIME` or a test fails. The runtime was not upgraded. The cost is
+stated where it is paid: the runtime keeps its own copy of a brought file, once,
+and the digest is read off the whole file first. `from` naming a path being
+refused is the good news in the table — there is no spelling of a create that
+turns this road into a download.
+**Date:** 2026-09-13.

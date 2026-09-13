@@ -45,6 +45,7 @@
 //! elsewhere would leave the egress indicator honest about a destination nobody
 //! chose.
 
+use crate::handing_over;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -510,14 +511,16 @@ impl ModelRuntime for Ollama {
             return Err(RuntimeError::NotAPathOnThisDisk(file.clone()));
         }
 
-        // The whole Modelfile, and nothing else in it. Anything further — a
-        // template, a system prompt, parameters — would be this machine
-        // putting words in a model somebody else brought.
-        let body = serde_json::json!({
-            "model": Self::runtime_name(&weights.id),
-            "modelfile": format!("FROM {}", file.display()),
-            "stream": false,
-        });
+        // The file into the runtime's store under its own digest, then the
+        // model made from that blob by name — the two requests the pinned
+        // runtime takes. `handing_over` has what 0.34.0 answered to each, and to
+        // the one-line Modelfile this door used to send.
+        let Some(file_name) = file.file_name().and_then(|name| name.to_str()) else {
+            return Err(RuntimeError::NotAPathOnThisDisk(file.clone()));
+        };
+        let digest = handing_over::digest_of(file)?;
+        handing_over::handed_over(&self.endpoint, file, &digest, WHILE_A_MODEL_THINKS)?;
+        let body = handing_over::the_create(&Self::runtime_name(&weights.id), file_name, &digest);
         let response = ureq::post(format!("{}/api/create", self.endpoint))
             .config()
             .timeout_global(Some(WHILE_A_MODEL_THINKS))
@@ -567,7 +570,7 @@ impl Ollama {
 )]
 mod tests {
     use super::*;
-    use crate::testing::{serving, serving_in_turn};
+    use crate::testing::{serving, serving_each, serving_in_turn};
 
     fn catalogue() -> Catalogue {
         Catalogue::built_in().unwrap()
@@ -648,6 +651,52 @@ mod tests {
     /// test that fails over a space is a test that will be silenced.
     fn without_spaces(s: &str) -> String {
         s.chars().filter(|c| !c.is_whitespace()).collect()
+    }
+
+    /// **The listing Ollama 0.34.0 really sends**, verbatim off the runtime on
+    /// 2026-09-13, reads as the fixture above assumed: the name, the size and the
+    /// quantisation, with every field this crate does not read ignored rather
+    /// than refused. The runtime's version is in the test's name because a later
+    /// one is a later fixture.
+    #[test]
+    fn the_listing_ollama_0_34_0_sends_is_read() {
+        let (url, server) = serving(
+            r#"{"models":[{"name":"mistral:7b-instruct-v0.3-q4_K_M","model":"mistral:7b-instruct-v0.3-q4_K_M","modified_at":"2026-09-13T20:55:04.463878831+02:00","size":4372824384,"digest":"6577803aa9a036369e481d648a2baebb381ebc6e897f2bb9a766a2aa7bfbc1cf","details":{"parent_model":"","format":"gguf","family":"llama","families":["llama"],"parameter_size":"7.2B","quantization_level":"Q4_K_M","context_length":32768,"embedding_length":4096},"capabilities":["completion","tools"]}]}"#,
+            200,
+        );
+        let got = Ollama::at(&url, catalogue()).installed().unwrap();
+        server.join().unwrap();
+        assert_eq!(
+            got,
+            vec![Installed {
+                id: "mistral:7b-instruct-v0.3-q4_K_M".to_owned(),
+                bytes_on_disk: 4_372_824_384,
+                quantisation: Some("Q4_K_M".to_owned()),
+            }]
+        );
+    }
+
+    /// **The answer Ollama 0.34.0 really sends to `/api/chat`**, verbatim off
+    /// the runtime on 2026-09-13, is read for its text alone.
+    #[test]
+    fn the_answer_ollama_0_34_0_sends_is_read() {
+        let (url, server) = serving(
+            r#"{"model":"qwen2.5:7b-instruct-q4_K_M","created_at":"2026-09-13T21:07:11.188133Z","message":{"role":"assistant","content":"Ready."},"done":true,"done_reason":"stop","total_duration":6364345416,"load_duration":5865330791,"prompt_eval_count":37,"prompt_eval_cached_count":0,"prompt_eval_duration":374170000,"eval_count":3,"eval_duration":109666000}"#,
+            200,
+        );
+        let said = Ollama::at(&url, catalogue())
+            .answers(
+                "Answer with the single word: ready.",
+                "qwen2.5:7b-instruct-q4_K_M",
+            )
+            .unwrap();
+        let sent = server.join().unwrap();
+        assert_eq!(said, "Ready.");
+        assert!(sent.starts_with("POST /api/chat "), "{sent}");
+        let body = sent.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert_eq!(body.get("stream").unwrap(), false);
+        assert_eq!(body.pointer("/messages/0/role").unwrap(), "user");
     }
 
     #[test]
@@ -958,34 +1007,52 @@ mod tests {
         weights
     }
 
-    /// **What goes to the runtime is the file's own path and nothing else.**
+    /// **The file goes to the runtime by its digest, and the model is made from
+    /// that blob — the two requests the pinned runtime takes.**
     ///
-    /// The request body is asserted on rather than the call's return, because
-    /// what this door *is* is the sentence it sends: a Modelfile carrying one
-    /// `FROM` and no template, no system prompt and no parameters. Anything
-    /// further would be this machine putting words in a model somebody else
-    /// brought.
+    /// Ollama 0.34.0 refuses the one-line Modelfile this door used to send
+    /// (`handing_over` has its words), so what is asserted here is the road it
+    /// accepts: a `HEAD` asking whether the bytes are held, the bytes themselves
+    /// when they are not, and a create naming the file by digest. The bodies are
+    /// parsed rather than searched, and the create is held to carrying nothing
+    /// but the file — no template, no system prompt, no parameters — because
+    /// anything further would be this machine putting words in a model somebody
+    /// else brought.
     #[test]
-    fn bringing_a_file_tells_the_runtime_its_path_and_nothing_else() {
+    fn bringing_a_file_hands_it_over_by_digest_and_makes_the_model_from_it() {
         let file = a_file_of_our_own("plain");
         let weights = Weights::at(&file).unwrap();
-        let (url, server) = serving(r#"{"status":"success"}"#, 200);
+        let digest = crate::handing_over::digest_of(&file).unwrap();
+        let (url, server) = serving_each(&[(404, ""), (201, ""), (200, r#"{"status":"success"}"#)]);
 
         Ollama::at(&url, catalogue()).bring(&weights).unwrap();
 
         let sent = server.join().unwrap();
-        assert!(sent.contains("POST /api/create"), "{sent}");
-        // **The body is parsed rather than searched.** A path is JSON-escaped
-        // on the way out, so a substring match would pass on Linux and fail on
-        // Windows for a request that is correct.
-        let body = sent.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
-        let body: serde_json::Value = serde_json::from_str(body).unwrap();
-        let modelfile = body.get("modelfile").unwrap().as_str().unwrap();
-
         assert_eq!(
-            modelfile,
-            format!("FROM {}", file.display()),
-            "the Modelfile is not one FROM naming the file the person pointed at"
+            sent.len(),
+            3,
+            "the runtime was not asked three times: {sent:?}"
+        );
+        let (asked, handed, made) = (
+            sent.first().unwrap(),
+            sent.get(1).unwrap(),
+            sent.get(2).unwrap(),
+        );
+        let blob = format!("/api/blobs/sha256:{digest}");
+        assert!(asked.starts_with(&format!("HEAD {blob} ")), "{asked}");
+        assert!(handed.starts_with(&format!("POST {blob} ")), "{handed}");
+        assert!(
+            handed.ends_with("GGUF"),
+            "the bytes sent are not the file's own: {handed}"
+        );
+        assert!(made.starts_with("POST /api/create "), "{made}");
+
+        let body = made.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        let file_name = file.file_name().unwrap().to_str().unwrap();
+        assert_eq!(
+            body.pointer(&format!("/files/{file_name}")).unwrap(),
+            &format!("sha256:{digest}")
         );
         assert!(
             body.get("model")
@@ -995,13 +1062,30 @@ mod tests {
                 .contains(&weights.id),
             "the runtime is not told which id to answer to: {body}"
         );
-        for putting_words_in_it in ["TEMPLATE", "SYSTEM", "PARAMETER"] {
+        for putting_words_in_it in ["modelfile", "template", "system", "parameters", "from"] {
             assert!(
-                !modelfile.contains(putting_words_in_it),
-                "the Modelfile carries `{putting_words_in_it}`, which is this machine putting \
-                 words in a model somebody else brought: {modelfile}"
+                body.get(putting_words_in_it).is_none(),
+                "the create carries `{putting_words_in_it}`: {body}"
             );
         }
+        drop(std::fs::remove_file(&file));
+    }
+
+    /// **Bytes the runtime already holds are not sent again.** A second bring
+    /// of the same file is a `HEAD` and a create, not another copy of gigabytes.
+    #[test]
+    fn a_file_the_runtime_already_holds_is_not_sent_again() {
+        let file = a_file_of_our_own("held");
+        let weights = Weights::at(&file).unwrap();
+        let (url, server) = serving_each(&[(200, ""), (200, r#"{"status":"success"}"#)]);
+
+        Ollama::at(&url, catalogue()).bring(&weights).unwrap();
+
+        let sent = server.join().unwrap();
+        assert_eq!(sent.len(), 2, "the runtime was not asked twice: {sent:?}");
+        let (asked, made) = (sent.first().unwrap(), sent.get(1).unwrap());
+        assert!(asked.starts_with("HEAD /api/blobs/sha256:"), "{sent:?}");
+        assert!(made.starts_with("POST /api/create "), "{sent:?}");
         drop(std::fs::remove_file(&file));
     }
 
@@ -1024,8 +1108,8 @@ mod tests {
 
     /// **A name that is not a path on this disk is refused before anything is
     /// sent**, and this is the refusal that keeps *run the weights you already
-    /// have* from becoming a download nobody asked for: to the runtime,
-    /// `FROM mistral` is an instruction to fetch from a publisher.
+    /// have* from becoming a download nobody asked for: to the runtime, a bare
+    /// model name is an instruction to fetch from a publisher.
     ///
     /// The door cannot lean on `Weights::at` having checked: these weights come
     /// back out of a settings file, where the path may since have been removed
@@ -1051,12 +1135,34 @@ mod tests {
     fn a_file_the_runtime_will_not_take_is_carried_as_a_refusal() {
         let file = a_file_of_our_own("refused");
         let weights = Weights::at(&file).unwrap();
-        let (url, server) = serving(r#"{"error":"unsupported architecture"}"#, 400);
+        // What 0.34.0 answers a create from bytes that are not weights.
+        let (url, server) = serving_each(&[(200, ""), (500, r#"{"error":"unexpected EOF"}"#)]);
 
         let refused = Ollama::at(&url, catalogue()).bring(&weights).unwrap_err();
 
         drop(server.join());
         assert_eq!(refused, RuntimeError::Unusable);
+        drop(std::fs::remove_file(&file));
+    }
+
+    /// **Bytes the runtime will not store are refused too**, and nothing is
+    /// created from them: the runtime checks the digest it was given against
+    /// the bytes, and a file that changed while it was being sent fails that.
+    #[test]
+    fn bytes_the_runtime_will_not_store_are_refused_and_nothing_is_made() {
+        let file = a_file_of_our_own("mismatch");
+        let weights = Weights::at(&file).unwrap();
+        let (url, server) = serving_each(&[(404, ""), (400, r#"{"error":"digest mismatch"}"#)]);
+
+        let refused = Ollama::at(&url, catalogue()).bring(&weights).unwrap_err();
+
+        let sent = server.join().unwrap();
+        assert_eq!(refused, RuntimeError::Unusable);
+        assert_eq!(
+            sent.len(),
+            2,
+            "a model was made from bytes the runtime refused: {sent:?}"
+        );
         drop(std::fs::remove_file(&file));
     }
 

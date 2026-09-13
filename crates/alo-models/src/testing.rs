@@ -114,6 +114,26 @@ pub(crate) fn serving_in_turn(
     (address, handle)
 }
 
+/// Several requests in a row, each answered with its own status and reply.
+///
+/// [`serving_in_turn`] answers every request with one status. Handing a file to
+/// the runtime is three requests whose statuses are the point — *not held yet*,
+/// *taken*, *created* — so a server that could only say `200` would test a road
+/// the runtime never takes.
+pub(crate) fn serving_each(
+    replies: &'static [(u16, &'static str)],
+) -> (String, thread::JoinHandle<Vec<String>>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = address_of(&listener);
+    let handle = thread::spawn(move || {
+        replies
+            .iter()
+            .map(|(status, reply)| one_exchange(&listener, reply, *status, ""))
+            .collect()
+    });
+    (address, handle)
+}
+
 /// Where a listener is, as an adapter is pointed at it.
 fn address_of(listener: &TcpListener) -> String {
     format!("http://127.0.0.1:{}", listener.local_addr().unwrap().port())

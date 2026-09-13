@@ -16,6 +16,10 @@ serde = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }
 ureq = { workspace = true }
+# SHA-256, for the digest the runtime's store names a brought file by
+# (`src/handing_over.rs`). Already compiled for every build through `ureq`'s
+# `rustls`, so this adds no code to the tree.
+ring = { workspace = true }
 serde_json = { workspace = true }
 
 [lints]

@@ -100,8 +100,10 @@ signal-hook = { version = "0.4", default-features = false }
 # The primitives a pairing's key and a message's proof are made with — X25519
 # agreement, HKDF and HMAC over SHA-256 — rented rather than written, as ADR
 # 0031 decides. Already pinned and compiled for every build through `ureq`'s
-# `rustls`, so this adds no code to the tree; reached only by `alo-nearby`,
-# and only from `keying.rs`, `proof.rs` and `proven.rs`.
+# `rustls`, so this adds no code to the tree; reached by `alo-nearby`, only
+# from `keying.rs`, `proof.rs` and `proven.rs`, and for SHA-256 alone by
+# `alo-models`, only from `handing_over.rs` — the digest the model runtime's
+# store names a brought file by.
 ring = "0.17"
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is

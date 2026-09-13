@@ -82,7 +82,8 @@ leaving `not-measured` to mean *probably fine*.
 
 ### 3. Does the pinned runtime accept what alo OS sends it
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-13.** **Depends on:** nothing.
+**Report:** `docs/autonomy/updates/the-pinned-runtime-and-what-alo-os-sends-it.md`.
 
 Three reports end with the same sentence: *what no test here shows is that the
 pinned runtime accepts this exact request* — `/api/create` with a one-line

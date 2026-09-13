@@ -422,6 +422,7 @@ name = "alo-models"
 version = "0.0.1"
 dependencies = [
  "alo-strings",
+ "ring",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
