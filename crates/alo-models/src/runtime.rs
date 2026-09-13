@@ -26,9 +26,11 @@
 //! question is exactly the call somebody would be most tempted to make directly.
 
 use std::fmt;
+use std::path::PathBuf;
 
 use alo_strings::{Filling, Said, Strings};
 
+use crate::weights::Weights;
 use crate::words;
 
 /// A model's weights, on this machine's disk.
@@ -140,6 +142,21 @@ pub enum RuntimeError {
     Unusable,
     /// A download stopped before it had everything, so nothing was installed.
     DownloadIncomplete,
+    /// Weights that name no file were handed to [`ModelRuntime::bring`].
+    ///
+    /// The door exists for *point alo OS at weights you already have*; weights
+    /// picked from what a runtime already lists have nothing to tell it about.
+    /// A refusal about which door was used, not about the weights.
+    NothingToBring(String),
+    /// A path offered to [`ModelRuntime::bring`] that is not a file on this
+    /// machine.
+    ///
+    /// **The reason is the runtime's own reading of a bare name.** `FROM
+    /// mistral` in a Modelfile is an instruction to fetch from a publisher, so
+    /// a path that is not this machine's own would turn *run the weights you
+    /// already have* into a download nobody asked for. Refused here, before
+    /// anything is sent.
+    NotAPathOnThisDisk(PathBuf),
 }
 
 impl RuntimeError {
@@ -154,6 +171,8 @@ impl RuntimeError {
             Self::NotEnoughDisk { .. } => words::NOT_ENOUGH_DISK,
             Self::Unusable => words::RUNTIME_UNUSABLE,
             Self::DownloadIncomplete => words::DOWNLOAD_INCOMPLETE,
+            Self::NothingToBring(_) => words::NOTHING_TO_BRING,
+            Self::NotAPathOnThisDisk(_) => words::NOT_A_PATH_ON_THIS_DISK,
         }
     }
 
@@ -164,9 +183,10 @@ impl RuntimeError {
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Said {
         let filling = match self {
-            Self::NotOffered(model) | Self::NotInstalled(model) => {
+            Self::NotOffered(model) | Self::NotInstalled(model) | Self::NothingToBring(model) => {
                 Filling::of("model", model.clone())
             }
+            Self::NotAPathOnThisDisk(path) => Filling::of("path", path.display().to_string()),
             Self::Unreachable
             | Self::TookTooLong
             | Self::NotEnoughDisk { .. }
@@ -292,6 +312,29 @@ pub trait ModelRuntime: fmt::Debug + Send + Sync {
     /// finished, and [`RuntimeError::Unusable`] if what came back is not an
     /// answer.
     fn answers(&self, question: &str, of_model: &str) -> Result<String, RuntimeError>;
+
+    /// **Make the runtime answer to weights somebody pointed at.**
+    ///
+    /// `docs/features.md` promises, at v0.5, *point alo OS at weights you
+    /// already have and it runs them*. [`crate::Brought`] and
+    /// `Choosing::bringing_a_file` are the first half — the file is chosen,
+    /// costed and written into the person's own settings. This is the last
+    /// word of it: until the runtime has been told, the first question put to
+    /// those weights fails as *no model there*, which is honest and is not the
+    /// promise.
+    ///
+    /// Called **after** the choosing door succeeded, never instead of it, so a
+    /// runtime that is down costs a person nothing they typed.
+    ///
+    /// # Errors
+    /// [`RuntimeError::NothingToBring`] for weights that name no file,
+    /// [`RuntimeError::NotAPathOnThisDisk`] for a path this machine does not
+    /// have — a bare name is a publisher's to fetch and is refused before
+    /// anything is sent — [`RuntimeError::Unreachable`] if the runtime is not
+    /// answering, and [`RuntimeError::Unusable`] where it answered with
+    /// something else. A file the runtime itself will not take is its own
+    /// refusal, carried in words rather than reworded.
+    fn bring(&self, weights: &Weights) -> Result<(), RuntimeError>;
 }
 
 #[cfg(test)]

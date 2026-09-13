@@ -142,6 +142,12 @@ impl ModelRuntime for Local {
         *self.asked.lock().expect("the count") += 1;
         self.says.clone()
     }
+
+    /// Nothing is brought: this fixture serves questions rather than weights,
+    /// and a test that needs the door refused should use one that refuses.
+    fn bring(&self, _weights: &alo_models::Weights) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }
 
 fn noon() -> SystemTime {

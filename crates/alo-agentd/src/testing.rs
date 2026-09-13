@@ -440,6 +440,12 @@ impl ModelRuntime for Saying {
     fn answers(&self, _question: &str, _of_model: &str) -> Result<String, RuntimeError> {
         self.0.clone()
     }
+
+    /// Nothing is brought: this fixture serves questions rather than weights,
+    /// and a test that needs the door refused should use one that refuses.
+    fn bring(&self, _weights: &alo_models::Weights) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }
 
 /// A machine where nobody has chosen anything to answer questions.

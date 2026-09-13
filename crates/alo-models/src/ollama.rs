@@ -51,6 +51,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::catalogue::Catalogue;
 use crate::runtime::{Installed, Loaded, ModelRuntime, Progress, ProgressSink, RuntimeError};
+use crate::weights::Weights;
 
 /// Where Ollama listens by default. The same endpoint `alo-workplace`'s
 /// `AiConfig` has documented since 2025, which is why pointing the agents at a
@@ -493,6 +494,48 @@ impl ModelRuntime for Ollama {
         }
         Ok(said)
     }
+
+    fn bring(&self, weights: &Weights) -> Result<(), RuntimeError> {
+        let Some(file) = weights.file.as_ref() else {
+            return Err(RuntimeError::NothingToBring(weights.id.clone()));
+        };
+
+        // **A bare name is a publisher's to fetch.** `FROM mistral` in a
+        // Modelfile is an instruction to download, so a path that is not
+        // absolute and on this disk would turn *run the weights you already
+        // have* into an egress nobody asked for. Refused before anything is
+        // sent, which is the only place it can be refused for certain: once the
+        // runtime holds the Modelfile, it is the runtime deciding.
+        if !file.is_absolute() || !file.is_file() {
+            return Err(RuntimeError::NotAPathOnThisDisk(file.clone()));
+        }
+
+        // The whole Modelfile, and nothing else in it. Anything further — a
+        // template, a system prompt, parameters — would be this machine
+        // putting words in a model somebody else brought.
+        let body = serde_json::json!({
+            "model": Self::runtime_name(&weights.id),
+            "modelfile": format!("FROM {}", file.display()),
+            "stream": false,
+        });
+        let response = ureq::post(format!("{}/api/create", self.endpoint))
+            .config()
+            .timeout_global(Some(WHILE_A_MODEL_THINKS))
+            .build()
+            .send_json(&body);
+        match response {
+            Ok(_) => Ok(()),
+            // It is there and it is working: importing weights copies
+            // gigabytes, and the reasoning `answers` gives applies here.
+            Err(ureq::Error::Timeout(_)) => Err(RuntimeError::TookTooLong),
+            // The runtime looked at the file and would not take it — an
+            // architecture it does not know, a file that is not what its name
+            // says. Its own refusal, carried as one rather than reworded,
+            // because this crate never repeats a backend's words.
+            Err(ureq::Error::StatusCode(_)) => Err(RuntimeError::Unusable),
+            Err(_) => Err(RuntimeError::Unreachable),
+        }
+    }
 }
 
 impl Ollama {
@@ -897,5 +940,137 @@ mod tests {
             matches!(&err, RuntimeError::NotInstalled(id) if id == "mistral-7b-instruct"),
             "{err:?}"
         );
+    }
+
+    /// A file on this disk, for a door that refuses anything else.
+    fn a_file_of_our_own(called: &str) -> std::path::PathBuf {
+        let at = std::env::temp_dir().join(format!("alo-brought-{called}-{}", std::process::id()));
+        std::fs::write(&at, b"GGUF").unwrap();
+        at
+    }
+
+    /// Weights naming a path that is not this machine's, which `Weights::at`
+    /// could not make and a settings file read back from disk can carry: the
+    /// file it named may have been deleted, or the line edited by hand.
+    fn weights_naming(path: &str) -> Weights {
+        let mut weights = Weights::checked("borrowed", 4_000).unwrap();
+        weights.file = Some(std::path::PathBuf::from(path));
+        weights
+    }
+
+    /// **What goes to the runtime is the file's own path and nothing else.**
+    ///
+    /// The request body is asserted on rather than the call's return, because
+    /// what this door *is* is the sentence it sends: a Modelfile carrying one
+    /// `FROM` and no template, no system prompt and no parameters. Anything
+    /// further would be this machine putting words in a model somebody else
+    /// brought.
+    #[test]
+    fn bringing_a_file_tells_the_runtime_its_path_and_nothing_else() {
+        let file = a_file_of_our_own("plain");
+        let weights = Weights::at(&file).unwrap();
+        let (url, server) = serving(r#"{"status":"success"}"#, 200);
+
+        Ollama::at(&url, catalogue()).bring(&weights).unwrap();
+
+        let sent = server.join().unwrap();
+        assert!(sent.contains("POST /api/create"), "{sent}");
+        // **The body is parsed rather than searched.** A path is JSON-escaped
+        // on the way out, so a substring match would pass on Linux and fail on
+        // Windows for a request that is correct.
+        let body = sent.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        let modelfile = body.get("modelfile").unwrap().as_str().unwrap();
+
+        assert_eq!(
+            modelfile,
+            format!("FROM {}", file.display()),
+            "the Modelfile is not one FROM naming the file the person pointed at"
+        );
+        assert!(
+            body.get("model")
+                .unwrap()
+                .as_str()
+                .unwrap_or_default()
+                .contains(&weights.id),
+            "the runtime is not told which id to answer to: {body}"
+        );
+        for putting_words_in_it in ["TEMPLATE", "SYSTEM", "PARAMETER"] {
+            assert!(
+                !modelfile.contains(putting_words_in_it),
+                "the Modelfile carries `{putting_words_in_it}`, which is this machine putting \
+                 words in a model somebody else brought: {modelfile}"
+            );
+        }
+        drop(std::fs::remove_file(&file));
+    }
+
+    /// **Weights that name no file are refused at the door**, because there is
+    /// nothing to tell the runtime about — a refusal about which door was used
+    /// rather than about anything the person did.
+    #[test]
+    fn weights_with_no_file_are_refused_without_asking_the_runtime() {
+        // Port 1 is not listening: had this leaked past the check we would see
+        // `Unreachable` instead of the refusal.
+        let weights = Weights::checked("mistral-7b-instruct", 4_000).unwrap();
+        let refused = Ollama::at("http://127.0.0.1:1", catalogue())
+            .bring(&weights)
+            .unwrap_err();
+        assert_eq!(
+            refused,
+            RuntimeError::NothingToBring("mistral-7b-instruct".to_owned())
+        );
+    }
+
+    /// **A name that is not a path on this disk is refused before anything is
+    /// sent**, and this is the refusal that keeps *run the weights you already
+    /// have* from becoming a download nobody asked for: to the runtime,
+    /// `FROM mistral` is an instruction to fetch from a publisher.
+    ///
+    /// The door cannot lean on `Weights::at` having checked: these weights come
+    /// back out of a settings file, where the path may since have been removed
+    /// or the line edited by hand.
+    #[test]
+    fn a_path_that_is_not_a_file_on_this_disk_is_refused_before_anything_is_sent() {
+        for not_a_file in ["mistral", "./relative.gguf", "/does/not/exist.gguf"] {
+            let refused = Ollama::at("http://127.0.0.1:1", catalogue())
+                .bring(&weights_naming(not_a_file))
+                .unwrap_err();
+            assert!(
+                matches!(refused, RuntimeError::NotAPathOnThisDisk(_)),
+                "`{not_a_file}` reached the runtime, where a bare name is a publisher's to \
+                 fetch: {refused:?}"
+            );
+        }
+    }
+
+    /// **A file the runtime will not take is the runtime's own refusal**,
+    /// carried rather than reworded — an architecture it does not know, a file
+    /// that is not what its name says.
+    #[test]
+    fn a_file_the_runtime_will_not_take_is_carried_as_a_refusal() {
+        let file = a_file_of_our_own("refused");
+        let weights = Weights::at(&file).unwrap();
+        let (url, server) = serving(r#"{"error":"unsupported architecture"}"#, 400);
+
+        let refused = Ollama::at(&url, catalogue()).bring(&weights).unwrap_err();
+
+        drop(server.join());
+        assert_eq!(refused, RuntimeError::Unusable);
+        drop(std::fs::remove_file(&file));
+    }
+
+    /// And a runtime that is not there at all is what it always was, so a
+    /// person who brought a file while the runtime was down is told the true
+    /// thing rather than something about their file.
+    #[test]
+    fn a_runtime_that_is_not_there_is_unreachable() {
+        let file = a_file_of_our_own("nobody-home");
+        let weights = Weights::at(&file).unwrap();
+        let refused = Ollama::at("http://127.0.0.1:1", catalogue())
+            .bring(&weights)
+            .unwrap_err();
+        assert_eq!(refused, RuntimeError::Unreachable);
+        drop(std::fs::remove_file(&file));
     }
 }

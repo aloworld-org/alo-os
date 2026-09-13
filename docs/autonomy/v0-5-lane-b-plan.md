@@ -208,3 +208,27 @@ Honest, and not the promise.
   Engines are configured, never patched (`CLAUDE.md`): the runtime's own API is
   used as shipped, and a runtime that has no such API is *this cannot be done
   here*, said rather than worked around.
+
+**Done, 2026-09-13.** `ModelRuntime::bring` is the door, taking the `Weights` a
+person's settings carry; for the pinned runtime that is `/api/create` with a
+Modelfile of exactly one line — `FROM` the file's own path — and nothing else
+in it, because a template or a system prompt would be this machine putting
+words in a model somebody else brought. It is called after
+`Choosing::bringing_a_file` has succeeded, so a runtime that is down costs a
+person nothing they typed.
+
+**The refusal that matters is the one before anything is sent.** To the runtime
+a bare name is an instruction to fetch from a publisher, so `FROM mistral`
+would have turned *run the weights you already have* into an egress nobody
+asked for: a path that is not absolute and not a file on this disk is refused
+here, and the door deliberately does not lean on `Weights::at` having checked,
+because these weights come back out of a settings file whose path may since
+have been deleted or edited by hand. Weights naming no file are refused too, as
+a sentence about which door was used.
+
+Seven tests, five beside the adapter and a whole-road integration test that
+tells the runtime about a file and then asks it a question by that id over one
+socket. What none of them shows is that the pinned runtime accepts this exact
+body — 0.34.0 is on the image and not on this machine — and that is owed to the
+VM rather than claimed here. Report:
+`docs/autonomy/updates/a-brought-file-is-one-the-runtime-answers-to.md`.

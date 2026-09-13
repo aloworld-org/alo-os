@@ -196,6 +196,16 @@ fn what_went_wrong(why: RuntimeError) -> WentWrong {
         RuntimeError::Unusable
         | RuntimeError::NotEnoughDisk { .. }
         | RuntimeError::DownloadIncomplete => WentWrong::NothingUsable,
+        // **Neither can arrive on this road**, and the mapping says what it
+        // would mean rather than what it is. Both come from
+        // `ModelRuntime::bring`, the door a person's brought file goes through
+        // when they choose it; asking a question never opens that door. If one
+        // ever did reach here, what is true for the person who asked is that
+        // the weights were never made answerable — which is *no model there*
+        // and not *something unusable came back*.
+        RuntimeError::NothingToBring(_) | RuntimeError::NotAPathOnThisDisk(_) => {
+            WentWrong::NoModelThere
+        }
     }
 }
 

@@ -353,6 +353,12 @@ impl ModelRuntime for Stub {
             .push((question.to_owned(), of_model.to_owned()));
         self.says.clone()
     }
+
+    /// Nothing is brought: this fixture serves questions rather than weights,
+    /// and a test that needs the door refused should use one that refuses.
+    fn bring(&self, _weights: &alo_models::Weights) -> Result<(), RuntimeError> {
+        Ok(())
+    }
 }
 
 /// One answer, in the shape every OpenAI-compatible provider replies with.

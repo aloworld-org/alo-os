@@ -708,11 +708,35 @@ pub const DOWNLOAD_INCOMPLETE: Word = Word::saying(
      half-model to clean up.",
 );
 
+/// Weights that name no file, handed to the door that needs one.
+pub const NOTHING_TO_BRING: Word = Word::saying(
+    "models.runtime.nothing-to-bring",
+    "{model} names no file on this machine, so there is nothing to tell the model runtime about",
+)
+.noting(
+    "{model} is the id the runtime would answer to and is never translated. Said when weights \
+     picked from what a runtime already lists are handed to the door meant for a file somebody \
+     pointed at. It is a refusal about which door was used rather than about anything the \
+     person did wrong.",
+);
+
+/// A path that is not a file on this disk, offered as weights to bring.
+pub const NOT_A_PATH_ON_THIS_DISK: Word = Word::saying(
+    "models.runtime.not-a-path-on-this-disk",
+    "{path} is not a file on this machine, and only a file on this machine is offered to the \
+     model runtime",
+)
+.noting(
+    "{path} is exactly what was offered and is never translated. The model runtime reads a bare \
+     name as something to fetch from its publisher, so a path that is not this machine's own is \
+     refused here rather than becoming a download nobody asked for.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 47] = [
+pub const EVERY_WORD: [Word; 49] = [
     ON_THIS_MACHINE,
     AT_THIS_MACHINES_ADDRESS,
     ON_A_PAIRED_MACHINE,
@@ -760,6 +784,8 @@ pub const EVERY_WORD: [Word; 47] = [
     NOT_ENOUGH_DISK,
     RUNTIME_UNUSABLE,
     DOWNLOAD_INCOMPLETE,
+    NOTHING_TO_BRING,
+    NOT_A_PATH_ON_THIS_DISK,
 ];
 
 /// Why this crate's own list could not be declared.
