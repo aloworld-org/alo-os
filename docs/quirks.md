@@ -117,7 +117,7 @@ test passes; this is Unix-socket development evidence, not physical input testin
 **Version:** `alo-agentd` and `alo-bounding` from 2026-09-12, measured on
 `6.18.33.2-microsoft-standard-WSL2` by
 `crates/alo-bounding/tests/a_turn_without_a_boundary_does_not_run.rs`.
-**Behaviour:** the boundary is twenty-two pinned links and two pinned maps under
+**Behaviour:** the boundary is twenty-three pinned links and two pinned maps under
 `/sys/fs/bpf/alo`, made once at boot by `alo-boundaryd` (ADR 0018), and
 `alo-agentd` opens the one map it may write. Three things can happen to that
 arrangement under a running service, and until 2026-09-12 the service noticed
@@ -153,7 +153,7 @@ was opened), and a mode that let the service read a pin would let the person's
 own daemon take the machine's boundary off.
 **Our response:** the service asks the machine before every turn, and at
 start — `alo_bounding::Boundary::in_place`, called first thing in
-`Turns::doing`: is the map of turns still pinned, is every one of the twenty-two
+`Turns::doing`: is the map of turns still pinned, is every one of the twenty-three
 hooks still held, and is the map at the pin the map this service holds, as the
 kernel numbers its maps. Any *no* refuses the turn before its first verb, with
 nothing made and nothing to undo; the refusal is written down in the record as
@@ -172,7 +172,7 @@ machine gets instead is the same refusal and this entry. To find out which of
 the three states it is in:
 
 ```
-ls -l /sys/fs/bpf/alo                    # twenty-two links, bounds, fields — all present?
+ls -l /sys/fs/bpf/alo                    # twenty-three links, bounds, fields — all present?
 systemctl status alo-boundaryd           # did the loader run, and once?
 journalctl -u alo-agentd | grep boundary # which pin, or which two map numbers
 ```
@@ -1053,14 +1053,14 @@ evidence and never certified-hardware acceptance.
 **Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-08 and
 as it stands on 2026-09-13;
 `crates/alo-bounding/tests/what_a_bound_turn_can_still_change.rs`
-**Behaviour:** the boundary watches twenty-two hooks — `file_open`,
+**Behaviour:** the boundary watches twenty-three hooks — `file_open`,
 `file_permission`, `inode_rename`, `inode_unlink`, `inode_link`,
 `inode_setattr`, `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
 `inode_remove_acl`, `file_ioctl`, `inode_create`, `inode_mknod`,
 `inode_mkdir`, `inode_rmdir`, `inode_symlink`, `inode_getattr`,
-`inode_getxattr`, `inode_listxattr`, `inode_readlink`, `socket_connect` and
-`socket_sendmsg` — and a filesystem has more verbs than the twenty of those
-that are about one. The filesystem hooks were chosen for one property:
+`inode_getxattr`, `inode_listxattr`, `inode_readlink`, `inode_get_acl`,
+`socket_connect` and `socket_sendmsg` — and a filesystem has more verbs than
+the twenty-one of those that are about one. The filesystem hooks were chosen for one property:
 **none of the mutations they leave unwatched moves a byte of somebody's file
 past a grant.** That is a narrower promise than *a turn cannot change anything
 outside its bound*, and reading the second where the first is written is how
@@ -1371,7 +1371,8 @@ and never certified-hardware acceptance.
 **Date:** 2026-09-13
 
 ### What a turn reads about a file is inside the grant
-**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-13;
+**Version:** Linux 6.18.33.2, alo OS's own BPF LSM as loaded on 2026-09-13,
+four hooks that morning and the fifth, `inode_get_acl`, the same day;
 `crates/alo-bounding/tests/the_kernel_refuses_what_a_turn_reads_about_a_file.rs`
 **Behaviour:** until 2026-09-13 every hook decided what a turn did *to* a
 file, and none decided what it learned *about* one it could not open. Inside
@@ -1398,8 +1399,15 @@ four hooks whose shapes the programme already documents, printed:
 | `inode_getxattr` | `(struct dentry *dentry, const char *name)` | `arg(0)` | `arg(2)` |
 | `inode_listxattr` | `(struct dentry *dentry)` | `arg(0)` | `arg(1)` |
 | `inode_readlink` | `(struct dentry *dentry)` | `arg(0)` | `arg(1)` |
+| `inode_get_acl` | `(struct mnt_idmap *idmap, struct dentry *dentry, const char *acl_name)` | `arg(1)` | `arg(3)` |
 
-Two of those are not what a reading of the attribute hooks predicts, and the
+The last row is the fifth hook, added the same day by task 20 after the four
+above found the read it decides; its shape was read from the same BTF on the
+day it was written rather than copied from `inode_set_acl`, and the two
+agree — the mapping *is* there for the access-list pair, where it is not for
+`inode_getxattr` one row up.
+
+Two of the first four are not what a reading of the attribute hooks predicts, and the
 plan predicted one of them wrong: `inode_getxattr` carries **no mount
 mapping** before the entry, where `inode_setxattr` and `inode_removexattr`
 do. A programme written from `inode_setxattr`'s shape would have read a
@@ -1431,20 +1439,24 @@ already talks to.
   twice, and what it would add is refusing `access(2)`, which reveals only
   whether a name exists. A bound turn can still learn that one bit, and it
   is named here rather than closed.
-- **A file's access list, read, is still answered — task 20.** Since Linux
-  6.2 a `getxattr` of `system.posix_acl_access` is routed to
-  `inode_get_acl` and never reaches `inode_getxattr`, exactly as the write
-  is routed to `inode_set_acl` past `inode_setxattr`; this programme does
-  not sit on `inode_get_acl`, so a turn refused the names of a file's
-  attributes is still answered its access list. Measured, in
+- **A file's access list, read, was still answered for the rest of that
+  day, and is closed — task 20.** Since Linux 6.2 a `getxattr` of
+  `system.posix_acl_access` is routed to `inode_get_acl` and never reaches
+  `inode_getxattr`, exactly as the write is routed to `inode_set_acl` past
+  `inode_setxattr`; the programme with the four hooks on it did not sit on
+  `inode_get_acl`, so a turn refused the names of a file's attributes was
+  still answered its access list — measured, in what was then
   `a_files_access_list_is_not_yet_inside_the_grant`, in the direction it
-  behaves: a bound turn reads a five-entry list off a file it was refused
-  `open` on. That test is the reproduction task 20 flips. Note for whoever
-  writes it: an access list that says no more than the mode bits is not
-  stored at all — the kernel folds it into the mode and a read answers
-  `ENODATA` — so the least list `the_boundary_decides_and_forgets.rs` puts
-  on its files would leave nothing to be answered; the reproduction carries
-  a named user and a mask.
+  behaved: a bound turn read a five-entry list off a file it was refused
+  `open` on. That reproduction was run against the programme at `6f72631`
+  and passed in that direction before the fifth hook was written, and is
+  `a_files_access_list_is_inside_the_grant` now: `EACCES` outside the
+  grant, and inside it the forty-four bytes read back are the forty-four put.
+  **An access list that says no more than the mode bits is not stored at
+  all** — the kernel folds it into the mode and a read answers `ENODATA` —
+  so both the reproduction and the ordinary day in
+  `the_boundary_decides_and_forgets.rs` carry a list with a named user and a
+  mask; the least list the kernel accepts would have asked the hook nothing.
 - **`fstat` was a proof and is now a refusal.** `what_a_turn_inherits.rs`
   used `fstat` on an inherited handle to show it was still a handle after a
   refused write; that `fstat` reaches `inode_getattr` through the
@@ -1469,18 +1481,21 @@ right answer, and every one answered to a process that is not a turn:
 | `getxattr` of `user.alo.origin` | the value | `EACCES` | the value |
 | `listxattr` | the names | `EACCES` | the names, with the attribute among them |
 | `readlink` | where the link points | `EACCES` | where the link points |
-| `getxattr` of `system.posix_acl_access` | the list | **the list, still** — task 20 | the list |
+| `getxattr` of `system.posix_acl_access` | the list | the list until `inode_get_acl` landed the same day; `EACCES` since | the list that was put |
 
-**Our response:** closed for the four, and every row above is a test — the
+**Our response:** closed, and every row above is a test — the first five
 reproductions were run against the programme at `5836d9c` that morning and
-passed with each question answered, then flipped into the refusals they are
-now. `the_boundary_decides_and_forgets.rs` asks every file of its ordinary
-day its size by name and through a descriptor, an attribute's value, its
-attributes' names and where a link beside it points, outside any turn, and
-finds nothing written down; `a_turn_without_a_boundary_does_not_run.rs`
-refuses a turn over each of the four new pins with no line of its loop
-changed. WSL is development evidence and never certified-hardware
-acceptance.
+passed with each question answered, the sixth against the programme at
+`6f72631` with the four hooks on it, and each was then flipped into the
+refusal it is now. `the_boundary_decides_and_forgets.rs` asks every file of
+its ordinary day its size by name and through a descriptor, an attribute's
+value, its attributes' names, its access list and where a link beside it
+points, outside any turn, and finds nothing written down;
+`a_turn_without_a_boundary_does_not_run.rs` refuses a turn over each of the
+five new pins with no line of its loop changed. What a bound turn can still
+learn about a file outside its grant is one bit — whether a name exists, by
+`access(2)` — named above with the reason `inode_permission` is not hooked.
+WSL is development evidence and never certified-hardware acceptance.
 **Date:** 2026-09-13
 
 

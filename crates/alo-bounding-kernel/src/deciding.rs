@@ -31,12 +31,13 @@
 
 //! # What is watched, and what is not
 //!
-//! Twenty hooks on the filesystem — `file_open`, `file_permission`,
+//! Twenty-one hooks on the filesystem — `file_open`, `file_permission`,
 //! `inode_rename`, `inode_unlink`, `inode_link`, `inode_setattr`,
 //! `inode_setxattr`, `inode_removexattr`, `inode_set_acl`,
 //! `inode_remove_acl`, `file_ioctl`, `inode_create`, `inode_mknod`,
 //! `inode_mkdir`, `inode_rmdir`, `inode_symlink`, `inode_getattr`,
-//! `inode_getxattr`, `inode_listxattr` and `inode_readlink` — which is what
+//! `inode_getxattr`, `inode_listxattr`, `inode_readlink` and
+//! `inode_get_acl` — which is what
 //! a turn **opens**, **reads and writes**, **moves**, **removes**, gives a
 //! **second name**, **changes about a file that is not its contents** — its
 //! size, mode, owner, times, extended attributes and access lists, which
@@ -48,19 +49,13 @@
 //! removes, which [`decide_delete`] decides as it decides a file — and,
 //! since the same day, what it **learns about** a file it may not open: its
 //! size, mode, owner and times, the value of an extended attribute, the
-//! names of its attributes, and where a symbolic link points, which
+//! names of its attributes, where a symbolic link points, and its access
+//! list — which the kernel routes to `inode_get_acl` past `inode_getxattr`
+//! since Linux 6.2, so it is a hook of its own as the write is — which
 //! [`decide_asking`] and [`decide_question`] decide by the walk every other
 //! file hook makes. That is not the whole of a filesystem and this file does
 //! not pretend it is. Nothing here watches:
 //!
-//! - **a file's access list, read** (`inode_get_acl`) — since Linux 6.2 a
-//!   `getxattr` of `system.posix_acl_access` is routed to that hook and never
-//!   reaches `inode_getxattr`, exactly as the write is routed to
-//!   `inode_set_acl` past `inode_setxattr`; so a bound turn refused the names
-//!   of a file's attributes is still answered its access list. Reproduced in
-//!   `alo-bounding/tests/the_kernel_refuses_what_a_turn_reads_about_a_file.rs`
-//!   in the direction it behaves, named in `docs/quirks.md`, and the
-//!   kernel-enforcement plan's task 20 is what closes it;
 //! - **whether a name exists** (`inode_permission`) — `access(2)` and every
 //!   path the kernel resolves ask it, so a hook there would be paid for every
 //!   component of every open on the machine, twice, to refuse a turn the one
@@ -343,16 +338,17 @@ pub fn decide_asking(path: u64) -> i32 {
 }
 
 /// Whether this question about a file — the value of an extended attribute,
-/// the names of its attributes, or where a symbolic link points — may be
-/// answered.
+/// the names of its attributes, where a symbolic link points, or its access
+/// list — may be answered.
 ///
-/// # One answer for three hooks
+/// # One answer for four hooks
 ///
-/// `inode_getxattr`, `inode_listxattr` and `inode_readlink` are each handed
-/// the directory entry of the file being asked about. The file exists, so
-/// this is the question [`decide_attribute`] asks of a change and the same
-/// walk answers it, from the entry rather than its folder: a grant can be
-/// over a single file, and its folder is then not a place the call named.
+/// `inode_getxattr`, `inode_listxattr`, `inode_readlink` and `inode_get_acl`
+/// are each handed the directory entry of the file being asked about. The
+/// file exists, so this is the question [`decide_attribute`] asks of a change
+/// and the same walk answers it, from the entry rather than its folder: a
+/// grant can be over a single file, and its folder is then not a place the
+/// call named.
 ///
 /// # Why a read of what is not the contents is decided
 ///
@@ -366,14 +362,18 @@ pub fn decide_asking(path: u64) -> i32 {
 /// changes until the size broke it, and it has the same remainder — nothing
 /// of somebody's contents, all of somebody's files.
 ///
-/// # What is not decided here
+/// # Why the access list is a fourth hook and not the second
 ///
-/// A file's access list, read: `getxattr` of `system.posix_acl_access` is
-/// routed by the kernel to `inode_get_acl` since Linux 6.2 and never reaches
-/// `inode_getxattr`, as the write is routed to `inode_set_acl`. That hook is
-/// not on this programme; the crate's own documentation and `docs/quirks.md`
-/// name it, and the reproduction that holds it open is in the test file
-/// beside the four refusals.
+/// A file's access list is read with `getxattr` under
+/// `system.posix_acl_access`, and since Linux 6.2 the kernel routes that read
+/// to `inode_get_acl` before `inode_getxattr` is ever asked — the same
+/// routing that made `inode_set_acl` a hook beside `inode_setxattr` for the
+/// write. So a boundary on `inode_getxattr` alone refused a turn the names of
+/// a file's attributes and answered it the list of who may read the file,
+/// which task 19's own reproduction measured on 2026-09-13 and task 20
+/// closed the same day. The list is what the mode bits cannot say — a named
+/// user, a mask — and a file nobody granted is not one whose readers a turn
+/// may learn.
 ///
 /// # Not a turn
 ///

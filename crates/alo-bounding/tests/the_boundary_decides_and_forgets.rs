@@ -437,11 +437,12 @@ fn an_ordinary_days_makings(folder: &Path) -> usize {
 
 /// An ordinary program's questions about its files: every file in the folder
 /// asked its size by name and through a descriptor, given an attribute and
-/// asked its value and the names of its attributes, and a link made beside
-/// it and asked where it points — each taken away again, and the count of
-/// files that went through all of it.
+/// asked its value and the names of its attributes, given an access list the
+/// kernel has to keep and asked it back, and a link made beside it and asked
+/// where it points — each taken away again, and the count of files that went
+/// through all of it.
 ///
-/// The four hooks on what a turn learns about a file run on every one of
+/// The five hooks on what a turn learns about a file run on every one of
 /// those on the machine — `inode_getattr` on every `stat`, which is the
 /// busiest hook here after reads and writes — and this is what holds them to
 /// *decides and forgets* the way the opens hold `file_open`: a process in no
@@ -503,6 +504,27 @@ fn an_ordinary_days_questions(folder: &Path) -> usize {
         rustix::fs::removexattr(&entry, "user.alo.asked")
             .map_err(of_rustix)
             .expect("and take it away");
+        rustix::fs::setxattr(
+            &entry,
+            "system.posix_acl_access",
+            &an_access_list_the_kernel_keeps(),
+            rustix::fs::XattrFlags::empty(),
+        )
+        .map_err(of_rustix)
+        .expect("an ordinary program can set an access list on its own files");
+        let mut list = [0u8; 128];
+        let length = rustix::fs::getxattr(&entry, "system.posix_acl_access", &mut list[..])
+            .map_err(of_rustix)
+            .expect("an ordinary program can read the access list of its own files");
+        assert_eq!(
+            list.get(..length),
+            Some(an_access_list_the_kernel_keeps().as_slice()),
+            "the access list read back is not the one set, so the `inode_get_acl` hook answered \
+             wrongly outside a turn"
+        );
+        rustix::fs::removexattr(&entry, "system.posix_acl_access")
+            .map_err(of_rustix)
+            .expect("and take it away");
         let link = entry.with_extension("asked-link");
         std::os::unix::fs::symlink(&entry, &link)
             .expect("an ordinary program can make a symbolic link");
@@ -516,6 +538,31 @@ fn an_ordinary_days_questions(folder: &Path) -> usize {
         asked += 1;
     }
     asked
+}
+
+/// A valid POSIX access list the kernel has to **keep**: version two, then
+/// the owner, one named user, the group, a mask and everybody else.
+///
+/// [`an_ordinary_access_list`] is the least the kernel accepts, and it is
+/// also one the kernel does not store: a list that says no more than the
+/// mode bits is folded into them, and a read of it answers `ENODATA` — so a
+/// day that set that list and read it back would ask `inode_get_acl` nothing
+/// at all. The named user and the mask are what make this one a list.
+fn an_access_list_the_kernel_keeps() -> Vec<u8> {
+    let mut list = Vec::with_capacity(44);
+    list.extend_from_slice(&2u32.to_le_bytes());
+    for (tag, permissions, id) in [
+        (0x01u16, 6u16, u32::MAX),
+        (0x02, 4, 1),
+        (0x04, 4, u32::MAX),
+        (0x10, 4, u32::MAX),
+        (0x20, 0, u32::MAX),
+    ] {
+        list.extend_from_slice(&tag.to_le_bytes());
+        list.extend_from_slice(&permissions.to_le_bytes());
+        list.extend_from_slice(&id.to_le_bytes());
+    }
+    list
 }
 
 /// A valid POSIX access list — version two, then the owner, the group and
@@ -696,7 +743,7 @@ fn ordinary_programs_run_under_the_boundary_and_nothing_is_written_down() {
     let asked = an_ordinary_days_questions(&folder);
     assert_eq!(
         asked, FILES,
-        "only {asked} files were asked about, so the four hooks on what a turn learns about a \
+        "only {asked} files were asked about, so the five hooks on what a turn learns about a \
          file were barely asked anything"
     );
 

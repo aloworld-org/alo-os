@@ -10,16 +10,17 @@
 //!
 //! # The list, and where it went
 //!
-//! Twenty-two hooks exist — `file_open`, `file_permission`, `inode_rename`,
+//! Twenty-three hooks exist — `file_open`, `file_permission`, `inode_rename`,
 //! `inode_unlink`, `inode_link`, `inode_setattr`, `inode_setxattr`,
 //! `inode_removexattr`, `inode_set_acl`, `inode_remove_acl`, `file_ioctl`,
 //! `inode_create`, `inode_mknod`, `inode_mkdir`, `inode_rmdir`,
 //! `inode_symlink`, `inode_getattr`, `inode_getxattr`, `inode_listxattr`,
-//! `inode_readlink`, `socket_connect` and `socket_sendmsg` — and every row
-//! this file once held is a refusal now. The last four are not mutations at
-//! all and were never rows here: what a turn learns *about* a file it may
-//! not open — its size, an attribute, the attribute names, where a link
-//! points — is measured in `the_kernel_refuses_what_a_turn_reads_about_a_file.rs`,
+//! `inode_readlink`, `inode_get_acl`, `socket_connect` and `socket_sendmsg`
+//! — and every row this file once held is a refusal now. The five on what a
+//! turn reads are not mutations at all and were never rows here: what a turn
+//! learns *about* a file it may not open — its size, an attribute, the
+//! attribute names, where a link points, its access list — is measured in
+//! `the_kernel_refuses_what_a_turn_reads_about_a_file.rs`,
 //! refused outside the grant beside the same question answered inside it. Changing a file's **mode, owner, times,
 //! size or attributes** was here until 2026-09-12 and its **inode flags**
 //! until 2026-09-13; `the_kernel_refuses_an_attribute_change.rs` is where

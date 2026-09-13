@@ -583,6 +583,39 @@ pub fn inode_readlink(ctx: LsmContext) -> i32 {
     deciding::decide_question(entry)
 }
 
+/// Every POSIX access list read on this machine, until the program is
+/// detached.
+///
+/// `inode_get_acl(struct mnt_idmap *idmap, struct dentry *dentry,
+/// const char *acl_name)` — three arguments, so the previous module's
+/// decision is the fourth, and **the entry is the second**: unlike
+/// `inode_getxattr` one hook above, this one carries the mount's identity
+/// mapping before the entry, as `inode_set_acl` and `inode_remove_acl` do.
+/// Read from this kernel's own BTF (`bpf_lsm_inode_get_acl`) on the day it
+/// was written, not copied from the hook it mirrors, because the hook above
+/// is the case for that rule. The name is not read: an access list of a file
+/// outside the grant is refused whether it is the access list or the default
+/// one.
+///
+/// The twenty-third hook, and the one `inode_getxattr` could not be. Since
+/// Linux 6.2 a `getxattr` of `system.posix_acl_access` or
+/// `system.posix_acl_default` is routed here and never reaches
+/// `inode_getxattr` — the same routing that made `inode_set_acl` a hook of
+/// its own beside `inode_setxattr` — so until 2026-09-13 a bound turn
+/// refused the names of a file's attributes was still answered its access
+/// list, which is who may read the file and who may not, by name. Task 19's
+/// own reproduction found it; [`crate::deciding::decide_question`] is what
+/// it asks, the walk the three hooks above make.
+#[lsm(hook = "inode_get_acl")]
+pub fn inode_get_acl(ctx: LsmContext) -> i32 {
+    let entry: u64 = ctx.arg(1);
+    let already: i32 = ctx.arg(3);
+    if already != 0 {
+        return already;
+    }
+    deciding::decide_question(entry)
+}
+
 /// Which turn this open belongs to, or the cgroup of whoever is not in one.
 pub fn turn() -> u64 {
     unsafe { bpf_get_current_cgroup_id() }

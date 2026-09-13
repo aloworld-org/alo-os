@@ -1,7 +1,7 @@
 //! What a bound turn **learns about** a file it may not open — its size,
 //! owner, mode and times, the value of an extended attribute, the names of
-//! its attributes, and where a symbolic link points — is decided by the
-//! kernel, and decided by the file being asked about.
+//! its attributes, where a symbolic link points, and its access list — is
+//! decided by the kernel, and decided by the file being asked about.
 //!
 //! Every hook before these decides what a turn does *to* a file:
 //! `the_kernel_refuses.rs` what it opens, `the_kernel_refuses_a_rename.rs`
@@ -22,13 +22,13 @@
 //! four hooks below existed and passed in the direction the boundary behaved,
 //! and every one is now refused, with the refusal named.
 //!
-//! # Four hooks, and the question they ask is about the file
+//! # Five hooks, and the question they ask is about the file
 //!
 //! `inode_getattr` is handed a `struct path` — the one an open reaches an
 //! entry through as `file_open` does via `f_path` — and is asked by every
 //! `stat`, `lstat`, `fstat` and `statx` on the machine; `inode_getxattr`,
-//! `inode_listxattr` and `inode_readlink` are handed the directory entry of
-//! the file being asked about. The file exists, so this is the question
+//! `inode_listxattr`, `inode_readlink` and `inode_get_acl` are handed the
+//! directory entry of the file being asked about. The file exists, so this is the question
 //! `decide_attribute` already asks and the same walk answers it: the entry,
 //! upwards, until a granted place is met or the top of the filesystem is.
 //! `deciding.rs` argues all of it, and says why a socket and a pipe are
@@ -55,17 +55,23 @@
 //! handle was still a handle; it uses `fcntl` now, which asks no hook this
 //! boundary sits on, and the `fstat` is measured here instead.
 //!
-//! # One question is still answered, and it is left standing
+//! # The access list was the question the four left answered, for one day
 //!
 //! A file's POSIX access list is read with `getxattr` under the name
 //! `system.posix_acl_access`, and since Linux 6.2 that read never reaches
 //! `inode_getxattr`: the kernel routes it to `inode_get_acl`, a hook of its
 //! own, exactly as it routes the write to `inode_set_acl` past
-//! `inode_setxattr`. This boundary does not sit on `inode_get_acl`, so a
-//! bound turn refused the names of a file's attributes can still read its
-//! access list. That is reproduced below in the direction it behaves, the
-//! way task 14 left a file's flags and task 18 was handed them, and
-//! `docs/quirks.md` names it with the task that closes it.
+//! `inode_setxattr`. The four hooks' own reproduction found it: a bound turn
+//! refused the names of a file's attributes was still answered who may read
+//! the file, by name. That stood below in the direction it behaved — run
+//! against the programme at `6f72631`, with the four on it and the fifth not,
+//! and passing — the way task 14 left a file's flags and task 18 was handed
+//! them, until `inode_get_acl` joined the programme the same day and the
+//! assertion was flipped into the refusal beside its allowance. The list the
+//! fixture puts on both files carries a named user and a mask, because a list
+//! that says no more than the mode bits is folded into them by the kernel and
+//! a read of it answers `ENODATA` — there would be nothing for a turn to be
+//! answered, and nothing to be refused.
 //!
 //! # This runs as root, and that is the point rather than a flaw
 //!
@@ -203,7 +209,7 @@ enum Asking {
     Link,
 
     /// Its POSIX access list, which is a `getxattr(2)` the kernel routes to
-    /// a hook this boundary does not sit on.
+    /// `inode_get_acl`, past the hook the attribute above reaches.
     AccessList,
 }
 
@@ -522,11 +528,11 @@ fn refused_outside_and_answered_inside(what: &str, asking: Asking) {
     assert_eq!(
         went.outside,
         Outcome::Refused(REFUSED),
-        "a bound turn was answered a {asking:?} about a file outside its grant. The four hooks \
-         `inode_getattr`, `inode_getxattr`, `inode_listxattr` and `inode_readlink` in \
-         crates/alo-bounding-kernel/src/kernel.rs are what refuse this, and `decide_asking` \
-         in deciding.rs — or `decide_question`, for the three handed an entry — is what they \
-         ask. Before 2026-09-13 this assertion was the other way round and passed"
+        "a bound turn was answered a {asking:?} about a file outside its grant. The five hooks \
+         `inode_getattr`, `inode_getxattr`, `inode_listxattr`, `inode_readlink` and \
+         `inode_get_acl` in crates/alo-bounding-kernel/src/kernel.rs are what refuse this, and \
+         `decide_asking` in deciding.rs — or `decide_question`, for the four handed an entry — \
+         is what they ask. Before 2026-09-13 this assertion was the other way round and passed"
     );
     assert_eq!(
         went.inside,
@@ -582,43 +588,21 @@ fn where_a_symbolic_link_points_is_inside_the_grant() {
     refused_outside_and_answered_inside("link", Asking::Link);
 }
 
-/// **A file's access list is not yet inside the grant**, and this test
-/// stands until it is.
+/// **A bound turn cannot read the access list of a file outside its grant**,
+/// and inside it the list read back is the one that was put.
 ///
 /// Reading `system.posix_acl_access` is a `getxattr(2)` the kernel routes to
 /// `inode_get_acl` since Linux 6.2, past `inode_getxattr` — the same routing
-/// that made `inode_set_acl` a hook of its own beside `inode_setxattr`. This
-/// boundary does not sit on `inode_get_acl`, so a bound turn refused the
-/// names of a file's attributes is still answered its access list. Asserted
-/// in the direction it behaves, so the day the hook lands this fails and
-/// says where to come; `docs/quirks.md` names it under *What a turn reads
-/// about a file is inside the grant*, and the kernel-enforcement plan's task
-/// 20 is what closes it.
+/// that made `inode_set_acl` a hook of its own beside `inode_setxattr`. Until
+/// 2026-09-13 this boundary did not sit on `inode_get_acl`, so a bound turn
+/// refused the names of a file's attributes was still answered who may read
+/// it, by name; this test stood in that direction, measured against the
+/// programme at `6f72631`, and was flipped the day the hook landed. The
+/// right answer inside the grant is asserted, not merely an answer: the
+/// forty-four bytes read back are the forty-four that were put.
 #[test]
-fn a_files_access_list_is_not_yet_inside_the_grant() {
-    let machine = AMachine::ready_for("access-list");
-    let went = a_bound_turn("alo-asking-access-list", &machine, Asking::AccessList);
-
-    assert_eq!(
-        went.control,
-        Outcome::Refused(REFUSED),
-        "the boundary was not in force, so nothing this turn did means anything"
-    );
-    assert_eq!(
-        went.outside,
-        Outcome::Answered,
-        "a bound turn was refused the access list of a file outside its grant. That is the gap \
-         closing: `inode_get_acl` is on the programme, or the kernel now routes the read \
-         through `inode_getxattr`. Flip this assertion into the refusal, move the row in \
-         docs/quirks.md, and mark the plan's task"
-    );
-    assert_eq!(
-        went.inside,
-        Outcome::Answered,
-        "a bound turn was refused the access list of a file inside its grant"
-    );
-    machine.the_secret_is_undisturbed();
-    machine.taken_away();
+fn a_files_access_list_is_inside_the_grant() {
+    refused_outside_and_answered_inside("access-list", Asking::AccessList);
 }
 
 /// **A process that is not a turn is answered what it always was.** Every

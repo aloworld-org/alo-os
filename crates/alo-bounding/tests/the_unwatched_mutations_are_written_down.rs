@@ -82,7 +82,7 @@ const WHERE_IT_ALSO_BELONGS: &[&str] = &[
 /// The hooks this programme has, as an exact list.
 ///
 /// Written out rather than counted, for the reason
-/// `the_boundary_decides_and_forgets` names its two maps: a twenty-third hook
+/// `the_boundary_decides_and_forgets` names its two maps: a twenty-fourth hook
 /// is a change to what this boundary is, and it should arrive with somebody
 /// looking at it rather than as a test that still passes.
 const EVERY_HOOK: &[&str] = &[
@@ -90,6 +90,7 @@ const EVERY_HOOK: &[&str] = &[
     "file_open",
     "file_permission",
     "inode_create",
+    "inode_get_acl",
     "inode_getattr",
     "inode_getxattr",
     "inode_link",

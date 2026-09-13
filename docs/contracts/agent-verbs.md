@@ -295,14 +295,15 @@ inside the call's own places, which is where an archive is written. And since
 the same day it covers what a turn **learns about** a file: a bounded turn
 cannot ask the size, mode, owner or times of a file outside the call's own
 places, by name or through a descriptor it held before the turn began; cannot
-read or list its extended attributes; and cannot read where a symbolic link
+read or list its extended attributes; cannot read its access list, which the
+kernel routes to a hook of its own; and cannot read where a symbolic link
 there points. **An adapter may no longer assume that a path it was not
 granted can be checked from inside a turn** — not for its existence by
-`stat`, not for its size — and a check of a path the call *did* name is
-answered as it always was, because every such path is among the turn's
-places. Two things a turn can still learn are named rather than closed in
-`docs/quirks.md` under *What a turn reads about a file is inside the grant*:
-whether a name exists, by `access(2)`, and a file's access list. What a
+`stat`, not for its size, not for who may read it — and a check of a path
+the call *did* name is answered as it always was, because every such path is
+among the turn's places. One thing a turn can still learn is named rather
+than closed in `docs/quirks.md` under *What a turn reads about a file is
+inside the grant*: whether a name exists, by `access(2)`. What a
 bounded turn can still do on a filesystem is read a file it was handed
 through a memory mapping, which is named in `docs/quirks.md` under *A
 descriptor opened before a turn began is decided about on every use*; the
