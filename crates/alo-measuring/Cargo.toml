@@ -1,0 +1,25 @@
+[package]
+name = "alo-measuring"
+version = "0.0.1"
+description = "What is running on this machine and what it is using, read from the kernel and estimated by nothing."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Two dependencies, and `tests/nothing_here_acts_or_asks_who_is_asking.rs`
+# holds the list to exactly these. There is deliberately no `sysinfo`, no
+# `procfs` and no crate of that kind: the numbers this crate answers with are
+# read out of `/proc` by the code in `src/`, which is the only way a number
+# here can be named for the file it came from and checked against it by a
+# person. A rented reader would be a second author's opinion about what
+# *memory* means, unreviewable from this repository.
+[dependencies]
+# Every sentence a window shows beside a number — *ended since the last
+# reading*, *the kernel did not show this* — is one of this crate's words,
+# looked up in the reader's own language.
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

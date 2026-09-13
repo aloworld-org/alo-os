@@ -24,7 +24,7 @@
 //! recorded when a connection exists to record it about.
 //!
 //! Nothing here reads the clock either. The moment a pairing starts is passed
-//! in, the same way [`alo_capability::Grant`] takes it, so that what a pairing
+//! in, the same way `alo_capability::Grant` takes it, so that what a pairing
 //! does at a moment can be asked about a moment that is not now.
 
 use std::time::Duration;

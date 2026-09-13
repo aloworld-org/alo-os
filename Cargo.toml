@@ -32,6 +32,7 @@ members = [
   "crates/alo-indicator",
   "crates/alo-keyring-fixture",
   "crates/alo-keeping",
+  "crates/alo-measuring",
   "crates/alo-models",
   "crates/alo-nearby",
   "crates/alo-overlay",

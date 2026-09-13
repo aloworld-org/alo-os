@@ -28,7 +28,18 @@ a shared space, and two lanes have taken the same one twice.
 
 ### 1. What is running, and what it is using — read, not estimated
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** done. **Depends on:** nothing.
+
+**Done, 2026-09-13.** Report:
+[`updates/what-is-running-is-read-from-the-kernel.md`](updates/what-is-running-is-read-from-the-kernel.md).
+`crates/alo-measuring`: a `Reading` is every total the kernel keeps at one
+moment, each number carrying the `/proc` file and field it was read from;
+`Reading::since` makes two of them and a caller's interval into rates, a share
+of the processor, and a list of what ended in between. Per-process network
+bytes are the network namespace's, and the answer says how many other
+processes share the count rather than attributing the machine's traffic to a
+row — the one place the kernel keeps no per-process number, decided in the
+report.
 
 *What is running, and what it is using — processes, memory, disk and network
 in a window. The plain answer to "why is it slow?", for the person who cannot

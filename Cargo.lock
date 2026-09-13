@@ -391,6 +391,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alo-measuring"
+version = "0.0.1"
+dependencies = [
+ "alo-strings",
+ "thiserror 2.0.20",
+]
+
+[[package]]
 name = "alo-models"
 version = "0.0.1"
 dependencies = [
@@ -526,6 +534,7 @@ dependencies = [
  "alo-greeting",
  "alo-indicator",
  "alo-keeping",
+ "alo-measuring",
  "alo-models",
  "alo-nearby",
  "alo-overlay",
