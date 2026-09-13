@@ -32,10 +32,6 @@ fn what_this_machine_can_say() -> Strings {
 /// An entry the catalogue ships, measured on a machine and graded `rarely`.
 const MEASURED_RARELY: &str = "qwen2.5-7b-instruct";
 
-/// Measured, and not yet written into the catalogue: `alo-image`'s test uses
-/// it as its example of an entry nobody measured (`docs/quirks.md`).
-const AWAITING_ANOTHER_CRATE: &str = "mistral-7b-instruct";
-
 /// A machine with no graphics card and the memory the refusal tests ask about.
 const SIXTEEN_GIGABYTES: f32 = 16.0;
 
@@ -59,7 +55,7 @@ fn a_model_measured_rarely_can_still_be_chosen_to_answer_questions() {
 }
 
 /// **The agent is refused with the sentence for a measurement that was made.**
-/// Seven entries run here and may be used; five of them were measured, and a
+/// Seven entries run here and may be used; six of them were measured, and a
 /// machine saying *nobody has measured* would be claiming the opposite of what
 /// happened.
 #[test]
@@ -117,7 +113,6 @@ fn an_entry_with_no_grade_says_why_in_words_the_machine_holds() {
         .models
         .iter()
         .filter(|entry| !entry.drives_verbs.has_been_measured())
-        .filter(|entry| entry.id != AWAITING_ANOTHER_CRATE)
         .collect();
     assert!(!unmeasured.is_empty());
     for entry in unmeasured {

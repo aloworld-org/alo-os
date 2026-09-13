@@ -1005,7 +1005,7 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it
         /// earned.
-        const MEASURED: [(&str, Driving); 9] = [
+        const MEASURED: [(&str, Driving); 10] = [
             ("phi-3-mini-instruct", Driving::Rarely),
             ("llama-3.2-3b-instruct", Driving::Rarely),
             ("qwen2.5-3b-instruct", Driving::Rarely),
@@ -1014,6 +1014,7 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
             ("qwen3-1.7b", Driving::Rarely),
             ("granite-3.2-2b-instruct", Driving::Rarely),
             ("qwen2.5-7b-instruct", Driving::Rarely),
+            ("mistral-7b-instruct", Driving::Rarely),
             ("llama-3.1-8b-instruct", Driving::Rarely),
         ];
         for m in Catalogue::built_in().unwrap().models {
@@ -1102,26 +1103,12 @@ runtime = "Ollama 0.34.0"
         assert!(Catalogue::parse(&graded_with("rarely", &extra)).is_err());
     }
 
-    /// The one entry measured and not yet written down, because another crate's
-    /// test uses it as its example of an entry nobody measured. `docs/quirks.md`
-    /// has the finding; the check below fails the day the grade arrives, so the
-    /// exception cannot outlive its reason.
-    const AWAITING_ANOTHER_CRATE: &str = "mistral-7b-instruct";
-
     /// **Every entry the catalogue ships is graded or says why it is not.**
     /// `not-measured` on its own reads as *probably fine, nobody checked*, and a
     /// person choosing a model is owed the reason.
     #[test]
     fn every_entry_we_ship_is_graded_or_says_why_not() {
         for m in Catalogue::built_in().unwrap().models {
-            if m.id == AWAITING_ANOTHER_CRATE {
-                assert_eq!(
-                    m.drives_verbs,
-                    Driving::NotMeasured,
-                    "{AWAITING_ANOTHER_CRATE} has its grade now: take it off the exception"
-                );
-                continue;
-            }
             assert_ne!(
                 m.drives_verbs.has_been_measured(),
                 m.unmeasured.is_some(),

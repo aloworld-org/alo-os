@@ -280,10 +280,9 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// 2026-09-13 it was measured on a machine with room for it and graded
 /// `rarely`. Seven to choose between, five of them measured, none good enough.
 ///
-/// **Its second task left it at five**: `llama-3.1-8b-instruct` was graded
-/// `rarely` and is not among the seven, because its licence carries conditions,
-/// which is the list this count is of; `mistral-7b-instruct` was measured and
-/// its grade waits on another crate's test (`docs/quirks.md`).
+/// **Its second task moved it to six**: `mistral-7b-instruct` graded `rarely`.
+/// `llama-3.1-8b-instruct` was graded too and is not among the seven, because
+/// its licence carries conditions, which is the list this count is of.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -292,7 +291,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
         refused,
         NoAgentHere::NoneClearsTheBar {
             to_choose_from: 7,
-            measured: 5,
+            measured: 6,
         }
     );
 
@@ -311,6 +310,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         measured,
         vec![
+            "mistral-7b-instruct",
             "qwen2.5-7b-instruct",
             "phi-3-mini-instruct",
             "llama-3.1-8b-instruct",

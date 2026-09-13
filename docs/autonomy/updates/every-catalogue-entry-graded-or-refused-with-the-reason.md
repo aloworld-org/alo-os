@@ -9,13 +9,13 @@
 runtime Ollama **0.34.0** (the pinned version) on `127.0.0.1`, the Linux VM
 stopped during every run. Gates in Ubuntu 24.04 aarch64 under Lima, kernel
 7.0.0-31-generic, as root.
-**Status:** open — blocked on one line in `alo-image`, which is not this lane's crate. Everything else is done and published.
+**Status:** done. (Open for a few hours on one line in `alo-image`; resolved by `2cf6025`, see below.)
 
 ## What changed, for somebody outside this repository
 
 Every model in the catalogue now either carries a verb-driving grade with the
 machine it was measured on, or says in one translatable sentence **why** it has
-none — with one exception, named below, that waits on another crate. Two more 7B-class models were measured — Mistral 7B (0 of 10) and
+none. Two more 7B-class models were measured — Mistral 7B (0 of 10) and
 Llama 3.1 8B (1 of 10), both `rarely` — and four could not be, because the
 measuring machine has 8 GB. **No local model clears the bar**, so the catalogue
 still gives no local model the agent, and now it says so with ten measurements
@@ -27,7 +27,7 @@ behind it rather than seven.
 |---|---|---|
 | `eurollm-9b-instruct` | not measured — *too large for the measuring machine* (no answer within five minutes; 6.49 GB loaded) | Apple M3, 8 GB, 2026-09-13 |
 | `teuken-7b-instruct` | not measured — *too large for the measuring machine* (GPU out of memory on the first question, twice) | Apple M3, 8 GB, 2026-09-13 |
-| `mistral-7b-instruct` | **measured: 0 of 10, `rarely` — not yet written into the catalogue** (see *Why the task is open*) | Apple M3, 8 GB, 2026-09-13 |
+| `mistral-7b-instruct` | **`rarely`, 0 of 10** | Apple M3, 8 GB, 2026-09-13 |
 | `mixtral-8x7b-instruct` | not measured — *too large for the measuring machine* (26.4 GB against 8 GB; not fetched) | Apple M3, 8 GB, 2026-09-13 |
 | `qwen2.5-7b-instruct` | `rarely`, 4 of 10 (task 1) | Apple M3, 8 GB, 2026-09-13 |
 | `phi-3-mini-instruct` | `rarely` | development PC's WSL guest, 2026-09-04 |
@@ -37,8 +37,8 @@ behind it rather than seven.
 | `qwen3-1.7b`, `granite-3.2-2b-instruct` | `rarely` | development PC's WSL guest, 2026-09-11 |
 
 **The recommendation, re-derived from the grades.** `agent_for_cpu` still
-refuses, with `NoneClearsTheBar { to_choose_from: 7, measured: 5 }` on a
-16 GB machine (six once Mistral's grade is written). There was no recommended entry before this task, so none moved;
+refuses, with `NoneClearsTheBar { to_choose_from: 7, measured: 6 }` on a
+16 GB machine. There was no recommended entry before this task, so none moved;
 the refusal a person reads is the one for a measurement that was made.
 
 **No entry was removed**, and the bar, the prompt, the scoring and the wait did
@@ -150,7 +150,7 @@ second run, with nothing else loaded, is the measurement.
 ----- end
 ```
 
-## Why the task is open
+## Why the task was open for a few hours
 
 `alo-image`'s `weights_naming_a_model_nobody_measured_are_caught` uses
 `mistral-7b-instruct` as its example of *a model nobody has put to
@@ -161,9 +161,10 @@ this lane's plan, so per the lanes' rule the change is a finding rather than an
 edit: the grade is held out of `data/catalogue.toml`, the two tests that require
 every entry to be graded or say why name Mistral as their one exception (and
 fail the day its grade arrives, so the exception cannot outlive its reason), and
-the task stays open. The one-line change, for `alo-image`'s owner, is in
-`docs/quirks.md`: an example still unmeasured, or better, one read off the
-catalogue.
+the task stayed open. The finding went to `docs/quirks.md` with the change it
+needed — an example read off the catalogue — and `alo-image`'s owner made it in
+`2cf6025` the same evening. The grade was then written, both exceptions removed,
+and the gates run again on the combined tree before this was published.
 
 ## What was built
 

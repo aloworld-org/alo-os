@@ -2306,9 +2306,7 @@ stopped the model loaded and the fixed ten took thirty-three seconds, which is
 the difference between memory the runtime can page against and memory it
 cannot. The same prompt, the same scoring, the same five-minute wait.
 Then `mistral-7b-instruct`, on the same Apple M3 the same evening: 0 of 10,
-which is `rarely` — measured, and not yet written into the catalogue, for the
-reason in *An image test uses the model this lane measured as its unmeasured
-example* below. `teuken-7b-instruct` stays `not-measured` with the reason
+which is `rarely`. `teuken-7b-instruct` stays `not-measured` with the reason
 `too-large-for-the-measuring-machine`: on 8 GB the runtime ran out of GPU memory
 answering its first question (`kIOGPUCommandBufferCallbackErrorOutOfMemory`), and
 the file also carries no chat template the runtime can use, which is its own
@@ -2483,7 +2481,7 @@ memory:
 |---|---|---|
 | `eurollm-9b-instruct` | 5_582_838_496 | `not-measured` |
 | `teuken-7b-instruct` | 5_018_868_512 | `not-measured` |
-| `mistral-7b-instruct` | 4_370_000_000 | `not-measured` |
+| `mistral-7b-instruct` | 4_370_000_000 | `rarely` |
 | `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
 | `qwen2.5-7b-instruct` | 4_680_000_000 | `rarely` |
 | `phi-3-mini-instruct` | 2_400_000_000 | `rarely` |
@@ -3139,9 +3137,11 @@ the ten answers verbatim in
 Writing that grade into the catalogue makes this test fail with
 `checking::tests::weights_naming_a_model_nobody_measured_are_caught ... FAILED`,
 because the example has stopped being true, not because the check is wrong.
-**Our response:** the grade is held out of `data/catalogue.toml`, named as the
+**Our response:** the grade was held out of `data/catalogue.toml`, named as the
 one exception in the two tests that require every entry to be graded or to say
-why, and task 2 of `docs/autonomy/v0-5-the-models-measured-plan.md` stays open.
+why, and task 2 of `docs/autonomy/v0-5-the-models-measured-plan.md` stayed open.
+**Resolved the same evening** by `2cf6025`, which reads the example off the
+catalogue; the grade was then written and both exceptions removed.
 `alo-image` is not the measuring lane's crate. The change it needs is one line:
 an example that is still unmeasured — `teuken-7b-instruct` is, and says why —
 or better, an example read off the catalogue (the first entry whose

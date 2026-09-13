@@ -175,11 +175,9 @@
 #
 # **The same evening every other entry was put to the same machine** (task 2 of
 # `docs/autonomy/v0-5-the-models-measured-plan.md`). `mistral-7b-instruct` drove
-# 0 of 10 and `llama-3.1-8b-instruct` 1 of 10: both `rarely`. **Mistral's grade
-# is not written below yet**: `alo-image`'s own test uses `mistral-7b-instruct`
-# as its example of an entry nobody measured, and that crate is not the
-# measuring lane's to edit — `docs/quirks.md` has the finding and the task stays
-# open until the example names an entry that is still unmeasured. The other four
+# 0 of 10 and `llama-3.1-8b-instruct` 1 of 10: both `rarely`. (Mistral's grade
+# waited a few hours on `alo-image`'s test, which used it as its example of an
+# unmeasured entry; that test now reads its example off this file.) The other four
 # could not be measured there, and **each says why** in a `[model.unmeasured]`
 # block rather than leaving `not-measured` to read as *probably fine*: on 8 GB of
 # unified memory the GPU has about 5.4 GB, and `teuken-7b-instruct` ran out of it
@@ -334,10 +332,14 @@ download_bytes = 4_370_000_000
 min_vram_gb = 6.0
 min_ram_gb = 10.0
 on_cpu = "workable"
-drives_verbs = "not-measured"
+drives_verbs = "rarely"
 upstream = "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
+[model.measured]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-13"
+runtime = "Ollama 0.34.0"
 
 [[model]]
 id = "mixtral-8x7b-instruct"
