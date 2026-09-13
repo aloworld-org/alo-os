@@ -149,6 +149,24 @@ pub const RAN_OUT: Word = Word::saying(
      question was to be answered and arrives already in the reader's language.",
 );
 
+/// This machine has no route to that address: nothing was sent, and nothing
+/// there was reached.
+pub const NO_WAY_THERE: Word = Word::saying(
+    "answering.wrong.no-way-there",
+    "nothing was answered {source} — there is no way there from the network this machine is on, \
+     so the question was not sent",
+)
+.noting(
+    "The one sentence in this list about this machine's own connection rather than the far end: \
+     the operating system reported that there is no route from this machine to that address. Two \
+     things have to survive translation. Nothing was sent and nothing at the far end was reached, \
+     so this says nothing about whether the provider is working. And it does not call the machine \
+     offline or say the internet is gone, because the machine cannot know that — an office \
+     network with no route to the outside reaches every machine in the building and nothing \
+     beyond it, and this sentence must stay true there. {source} is where the question was to be \
+     answered and arrives already in the reader's language.",
+);
+
 // ---------------------------------------------------------------------------
 // The line that is always shown — [`crate::Failed::nothing_was_sent`].
 //
@@ -253,7 +271,7 @@ pub const NOT_ON_OFFER: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 14] = [
+pub const EVERY_WORD: [Word; 15] = [
     NOTHING_ANSWERED,
     TOOK_TOO_LONG,
     NOTHING_USABLE,
@@ -262,6 +280,7 @@ pub const EVERY_WORD: [Word; 14] = [
     SENT_SOMEWHERE_ELSE,
     HAVING_TROUBLE,
     RAN_OUT,
+    NO_WAY_THERE,
     NOTHING_WAS_SENT,
     ASK_HERE_INSTEAD,
     ASK_IN_THE_BUILDING_INSTEAD,
@@ -438,6 +457,7 @@ mod tests {
             SENT_SOMEWHERE_ELSE,
             HAVING_TROUBLE,
             RAN_OUT,
+            NO_WAY_THERE,
         ] {
             for suggesting in ["instead", "try ", "another"] {
                 assert!(
@@ -467,6 +487,35 @@ mod tests {
                 assert!(!word.says().contains(asking), "{}: {asking}", word.named());
             }
         }
+    }
+
+    /// **The line about having no way there claims nothing the machine cannot
+    /// know.** A machine can measure that it has no route to one address; it
+    /// cannot measure that it is offline, or that the internet is gone, and an
+    /// office whose network reaches every machine in the building and nothing
+    /// beyond it would be told a false thing by either word. The note is
+    /// searched as well, because a translator writes the sentence from it.
+    #[test]
+    fn having_no_way_there_says_nothing_about_being_offline() {
+        let read = format!(
+            "{} {}",
+            NO_WAY_THERE.says(),
+            NO_WAY_THERE.note().unwrap_or_default()
+        )
+        .to_ascii_lowercase();
+        for claim in [
+            "is offline",
+            "has no internet",
+            "no connection",
+            "disconnected",
+        ] {
+            assert!(
+                !read.contains(claim),
+                "the line about having no way there says \"{claim}\", which the machine cannot know"
+            );
+        }
+        assert!(NO_WAY_THERE.says().contains("the question was not sent"));
+        assert!(NO_WAY_THERE.says().contains("{source}"));
     }
 
     /// **And what it says is a state of an account, not a mistake somebody

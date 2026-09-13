@@ -335,8 +335,28 @@ fn what_went_wrong(error: ureq::Error) -> WentWrong {
         // machine to send the question somewhere else. ureq refuses to carry a
         // body across a redirect, and so does alo OS.
         ureq::Error::RedirectFailed => WentWrong::SentSomewhereElse,
+        // **The kernel said there is no route**, which is the one failure that
+        // is about this machine rather than the far end: no packet went out,
+        // and nothing there was reached. It is read off the socket error and
+        // off nothing else — a refused connection, a reset, or a name that
+        // did not resolve are not this, and an office with no internet is
+        // told the true thing rather than that a provider did not answer.
+        ureq::Error::Io(why) if had_no_way_there(&why) => WentWrong::NoWayThere,
         _ => WentWrong::NothingAnswered,
     }
+}
+
+/// Whether a socket error is the operating system saying it has no route.
+///
+/// Two kinds and no others: `ENETUNREACH`, which is what a machine with no
+/// route off its network answers for any address beyond it, and `EHOSTUNREACH`,
+/// which is the same fact about one host. Both are the kernel's own finding
+/// about this machine's routing table, made before a single packet is sent.
+fn had_no_way_there(why: &std::io::Error) -> bool {
+    matches!(
+        why.kind(),
+        std::io::ErrorKind::NetworkUnreachable | std::io::ErrorKind::HostUnreachable
+    )
 }
 
 /// Where a service answers questions.
@@ -659,6 +679,50 @@ mod tests {
     /// `EACCES` as every Unix numbers it, without a crate to say so.
     const fn libc_eacces() -> i32 {
         13
+    }
+
+    /// **No route is the one failure that is about this machine**, and it is
+    /// read off the two errors the kernel uses for it — the network and one
+    /// host — and off nothing else. An office with no internet meets this on
+    /// every question bound for a provider, and is told the true thing.
+    #[test]
+    fn no_route_off_this_network_is_said_as_no_way_there() {
+        for kind in [
+            std::io::ErrorKind::NetworkUnreachable,
+            std::io::ErrorKind::HostUnreachable,
+        ] {
+            assert_eq!(
+                what_went_wrong(ureq::Error::Io(std::io::Error::from(kind))),
+                WentWrong::NoWayThere,
+                "{kind:?}"
+            );
+        }
+    }
+
+    /// **And nothing that merely resembles it is turned into it.** A refused
+    /// connection is a machine that was reached and said no; a reset is one
+    /// that was reached and went away; a name that did not resolve reached
+    /// nowhere for a different reason. Telling somebody there was no way there
+    /// when the far end refused them would be the machine claiming a fact
+    /// about its own connection that it did not measure.
+    #[test]
+    fn a_far_end_that_was_reached_and_refused_is_not_said_to_be_out_of_reach() {
+        for kind in [
+            std::io::ErrorKind::ConnectionRefused,
+            std::io::ErrorKind::ConnectionReset,
+            std::io::ErrorKind::PermissionDenied,
+            std::io::ErrorKind::Other,
+        ] {
+            assert_eq!(
+                what_went_wrong(ureq::Error::Io(std::io::Error::from(kind))),
+                WentWrong::NothingAnswered,
+                "{kind:?}"
+            );
+        }
+        assert_eq!(
+            what_went_wrong(ureq::Error::HostNotFound),
+            WentWrong::NothingAnswered
+        );
     }
 
     /// Addresses are documented both ways. A second `/v1` would come back 404

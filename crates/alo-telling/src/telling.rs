@@ -59,7 +59,7 @@ use crate::who_asked::WhoAsked;
 /// How many unavailabilities one session remembers having told somebody about.
 ///
 /// Larger than the number a real machine produces — a person's machine has one
-/// local runtime and a small number of providers, and eight reasons between
+/// local runtime and a small number of providers, and nine reasons between
 /// them — and small enough that the list is nothing. It exists for the service
 /// that flaps, not for the machine that works.
 pub const HOW_MANY_IT_REMEMBERS: usize = 64;

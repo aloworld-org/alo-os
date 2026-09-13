@@ -111,7 +111,8 @@ impl Failed {
             | WentWrong::NoModelThere
             | WentWrong::KeyNotAccepted
             | WentWrong::SentSomewhereElse
-            | WentWrong::RanOut => filling,
+            | WentWrong::RanOut
+            | WentWrong::NoWayThere => filling,
         };
         strings.say(&self.why.word().key(), &filling)
     }

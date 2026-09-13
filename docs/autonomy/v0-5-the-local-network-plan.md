@@ -133,7 +133,14 @@ act.*
 
 ### 5. An office that cannot connect still has working AI
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-13.** **Depends on:** 3.
+Measured in
+`crates/alo-asking/tests/an_office_that_cannot_connect_still_has_working_ai.rs`,
+inside a network namespace with no route out of it, with the kernel's own
+count of packets refused a route read before and after the day; the true
+sentence is `alo_answering::WentWrong::NoWayThere`, said once through
+`alo-telling`. The report is
+`docs/autonomy/updates/an-office-that-cannot-connect-still-has-working-ai.md`.
 
 *The whole of it works with no internet at all.* The measurement, in the shape
 `a_day_that_never_left.rs` already uses for one machine: a working day across
@@ -152,3 +159,40 @@ for the want of one.
   environment, the honest finding is the deliverable and it goes in
   `docs/quirks.md` with what was tried — not a test that asserts a promise by
   asserting a fixture.
+
+### 6. The machine that asks is the machine that paired
+
+**Status:** ready. **Depends on:** 2, 3, 4.
+
+Task 3's report said it outright and task 4 and 5 built on it: *there is no
+cryptography here and none is claimed.* A question arrives at the studio over
+plain http from whoever holds the address, and the studio writes down *the
+reception machine* because its pairing names one — not because the connection
+proved it. Task 4 decides whose grants a verb from a paired machine is judged
+by; nothing yet decides that the verb came from that machine. Before anything
+carries a verb between two machines, that has to be true, or a stranger on the
+office WiFi who learned an address acts under every grant B's person made to
+A — which is exactly the lateral movement ADR 0003 exists to refuse.
+
+- **Acceptance:** a pairing leaves each machine holding something made at the
+  moment both people confirmed and held by nobody else, so that being
+  discovered, sharing the network, or having read a `MachineId` off the wire
+  confers nothing — three refusals, one test each; a question or a verb
+  arriving from a paired machine is accepted only when it proves it comes from
+  the identity the pairing names, and a stranger presenting A's `MachineId`
+  is refused before any grant is asked; a proof replayed from an earlier
+  exchange is refused; a proof from a pairing since revoked or expired is
+  refused at the moment, not at the next restart; `alo_nearby::Found` carries
+  the address a machine answered from, so the next hop is dialled from what
+  discovery measured rather than from what a test typed — task 5 had to use
+  loopback because it does not; and B's record names A because the connection
+  proved it, tested by a record that stays empty when the proof fails.
+- **Constraint:** no certificate authority and no trusted network (ADR 0003);
+  what stands in for both is the pairing itself, which two people made. The
+  primitives are rented from a pinned, audited crate and never written here.
+  Which primitive, and how the secret is exchanged at pairing time between two
+  machines that have never met, is a settled decision before it is code: an
+  ADR under `docs/decisions/` with the options, a recommendation and the
+  consequences. A worker who cannot finish this task without making that
+  decision writes the ADR, hands it over as this task, and says in the report
+  that the code waits on it.

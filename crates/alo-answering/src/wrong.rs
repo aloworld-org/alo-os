@@ -34,10 +34,26 @@
 //!
 //! [`WentWrong::RanOut`] is refused in the same place and for the same shape of
 //! reason, twice over: nothing reaches a machine on this network, and a machine
-//! in the next room bills nobody. Two of the eight reasons are about an
+//! in the next room bills nobody. Two of the nine reasons are about an
 //! arrangement with the far end rather than about the answer — a **key**
 //! somebody pasted and an **account** somebody pays for — and a paired machine
 //! has neither.
+//!
+//! # And one reason is about this machine rather than the far end
+//!
+//! [`WentWrong::NoWayThere`] is the ninth, and it is the only one that says
+//! nothing about the place a question was put: the operating system answered
+//! that there is **no route** from this machine to that address, so no packet
+//! was sent and nothing at the far end was reached. It exists for the office
+//! `docs/features.md` promises *works with no internet at all* — where a
+//! question to a hosted provider must fail with a true sentence rather than
+//! *nothing answered by Mistral*, which would send somebody to check on a
+//! provider that is fine. It is reported only when the kernel said so
+//! (`alo_asking::openai` reads it off the socket error and off nothing else),
+//! and it does not say the machine is *offline*, which no machine can know
+//! about itself: a machine on an office network with no internet reaches
+//! everything in the building and nothing beyond it, and the sentence says
+//! exactly that much.
 //!
 //! **This machine used to be on that list and no longer is, and the reason is
 //! item 18b.** A key was impossible here while the only thing on this machine
@@ -60,7 +76,7 @@ use crate::words;
 
 /// Why the place a question was put did not answer it.
 ///
-/// Eight, and a ninth belongs here only if it is a different thing to be
+/// Nine, and a tenth belongs here only if it is a different thing to be
 /// **told** — not a different thing to have happened. *The runtime crashed* and
 /// *the runtime was not running* are one sentence to the person reading them.
 ///
@@ -82,10 +98,19 @@ use crate::words;
 /// named that as the wrong answer twice over: the first sends a person to check
 /// a key that is perfectly correct, and the second hands them a number.
 ///
+/// [`NoWayThere`] is the ninth, and it passes the bar because it is the only
+/// one that is **about this machine** rather than the far end: the kernel
+/// found no route to the address, nothing was sent, and the place was never
+/// reached — so *nothing answered there* would be a sentence about a service
+/// that was never asked. It is measured, never inferred: only a socket error
+/// that says *no route* becomes it, and a refused connection, a timeout or a
+/// name that did not resolve stays what it was.
+///
 /// [`SentSomewhereElse`]: WentWrong::SentSomewhereElse
 /// [`RanOut`]: WentWrong::RanOut
 /// [`KeyNotAccepted`]: WentWrong::KeyNotAccepted
 /// [`HavingTrouble`]: WentWrong::HavingTrouble
+/// [`NoWayThere`]: WentWrong::NoWayThere
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WentWrong {
     /// Nothing was listening, or nothing was running.
@@ -118,6 +143,16 @@ pub enum WentWrong {
     /// Carries the status it answered with, which is an identifier and not a
     /// count.
     HavingTrouble(u16),
+    /// This machine has no route to that address, so nothing was sent and
+    /// nothing there was reached.
+    ///
+    /// The one reason here that is about this machine's own connection rather
+    /// than about the far end, and the one an office with no internet meets
+    /// every time a question is bound for a provider. Only the operating
+    /// system can say it — *no route to host* or *network unreachable* on the
+    /// socket — and nothing here guesses it from a failure that could have
+    /// another cause.
+    NoWayThere,
 }
 
 impl WentWrong {
@@ -133,6 +168,7 @@ impl WentWrong {
             Self::SentSomewhereElse => words::SENT_SOMEWHERE_ELSE,
             Self::HavingTrouble(_) => words::HAVING_TROUBLE,
             Self::RanOut => words::RAN_OUT,
+            Self::NoWayThere => words::NO_WAY_THERE,
         }
     }
 
@@ -150,11 +186,14 @@ impl WentWrong {
     /// The refusal this reason is met with where the thing it is about does not
     /// exist, if it is about such a thing at all.
     ///
-    /// Two of the eight are: a **key** somebody pasted, and an **account**
-    /// somebody pays for. The other six are things this machine can observe
-    /// about any place at all, so they are refused nowhere. The list is walked
-    /// rather than wildcarded, so a reason added later has to answer this
-    /// question rather than inherit an answer.
+    /// Two of the nine are: a **key** somebody pasted, and an **account**
+    /// somebody pays for. The other seven are things this machine can observe
+    /// about any place at all, so they are refused nowhere — including
+    /// [`NoWayThere`](Self::NoWayThere), which is about this machine's route
+    /// to a place and can be true of any address, loopback included, on a
+    /// machine whose loopback interface is down. The list is walked rather
+    /// than wildcarded, so a reason added later has to answer this question
+    /// rather than inherit an answer.
     fn needs_a_key_or_an_account(&self) -> Option<NotWhatFailed> {
         match self {
             Self::KeyNotAccepted => Some(NotWhatFailed::NoKeyThere),
@@ -164,7 +203,8 @@ impl WentWrong {
             | Self::NothingUsable
             | Self::NoModelThere
             | Self::SentSomewhereElse
-            | Self::HavingTrouble(_) => None,
+            | Self::HavingTrouble(_)
+            | Self::NoWayThere => None,
         }
     }
 
@@ -231,6 +271,7 @@ mod tests {
             WentWrong::NoModelThere,
             WentWrong::SentSomewhereElse,
             WentWrong::HavingTrouble(503),
+            WentWrong::NoWayThere,
         ] {
             for source in [here(), paired(), hosted()] {
                 assert!(went_wrong.can_happen(&source), "{went_wrong:?} {source:?}");
@@ -301,6 +342,23 @@ mod tests {
         }
     }
 
+    /// **Having no way there is a fact about this machine, and this machine
+    /// can have no way to any address**, so it is refused nowhere — a paired
+    /// machine on a link that went down, a provider from an office with no
+    /// internet, and even this machine's own address on a machine whose
+    /// loopback is down all read as the true thing that happened.
+    #[test]
+    fn having_no_way_there_can_happen_towards_any_place_at_all() {
+        for source in [here(), paired(), hosted()] {
+            assert!(WentWrong::NoWayThere.can_happen(&source), "{source:?}");
+            assert_eq!(
+                WentWrong::NoWayThere.checked(&source),
+                Ok(WentWrong::NoWayThere),
+                "{source:?}"
+            );
+        }
+    }
+
     /// The two impossible pairings are two sentences, because they send whoever
     /// wrote the adapter to two different mistakes.
     #[test]
@@ -328,6 +386,7 @@ mod tests {
             WentWrong::SentSomewhereElse,
             WentWrong::HavingTrouble(503),
             WentWrong::RanOut,
+            WentWrong::NoWayThere,
         ];
         let mut keys: Vec<String> = every.iter().map(|w| w.word().named().to_owned()).collect();
         keys.sort_unstable();

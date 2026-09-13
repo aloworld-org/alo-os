@@ -252,6 +252,7 @@ mod tests {
             WentWrong::SentSomewhereElse,
             WentWrong::RanOut,
             WentWrong::HavingTrouble(503),
+            WentWrong::NoWayThere,
         ] {
             let told = a_telling_about(hosted(), why, &[]);
             for line in told.lines(&strings) {

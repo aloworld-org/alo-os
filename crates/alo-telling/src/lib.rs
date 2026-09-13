@@ -10,7 +10,7 @@
 //! reach a model says so once, where it happened, and continues.*
 //!
 //! Everything that promise needs existed except one thing. `alo-answering`
-//! knows the eight ways a place can fail to answer and words every one of them;
+//! knows the nine ways a place can fail to answer and words every one of them;
 //! `alo-asking` and `alo-turn` both hand back the failure whole. **Nothing
 //! remembered that a person had already been told.** So a machine whose
 //! provider account had emptied would produce the same four lines at the end of

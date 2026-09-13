@@ -63,5 +63,12 @@ alo-choosing = { path = "../alo-choosing" }
 # collected by `alo-saying`, and never reaches for it.
 alo-saying = { path = "../alo-saying" }
 
+# What a person is told once about this machine's connectedness. The office
+# that cannot connect meets a failure this crate reports — the kernel said
+# there is no route — and what is said about it, and that it is said once, is
+# `alo-telling`'s. A dev-dependency only: this crate reports a failure and has
+# no business remembering whether anybody was told.
+alo-telling = { path = "../alo-telling" }
+
 [lints]
 workspace = true

@@ -515,6 +515,59 @@ the accommodation lives in our configuration and the reason lives here.
 An entry here that says "we patched it" is a bug in the process: a source patch
 to an engine requires an ADR first.
 
+### The Linux kernel — an office with no route out can be made on a development machine, and `OutNoRoutes` counts every packet that tried to leave it, once each
+**Version:** `6.18.33.2-microsoft-standard-WSL2`, util-linux 2.41.3
+(`unshare`), iproute2 6.19.0 (`ip`), rustix 1.1.4 and ureq 3.4.0, measured on
+2026-09-13 by
+`crates/alo-asking/tests/an_office_that_cannot_connect_still_has_working_ai.rs`.
+**Behaviour:** `docs/features.md` promises *the whole of it works with no
+internet at all*, and the plan asked for that measured with the unreachability
+enforced rather than assumed. Four things turned out to be true of making that
+measurement here, and none of them is in a manual:
+
+- **A network namespace cannot be made from Rust under this repository's
+  rules.** rustix 1.1.4 marks its safe `thread::unshare` `#[deprecated]` — the
+  call was never sound — and the replacement, `unshare_unsafe`, needs an
+  `unsafe` block, which this repository does not add for a test. util-linux's
+  `unshare --map-root-user --net` makes the namespace instead, `ip link set lo
+  up` brings loopback up in it (a fresh namespace's `lo` is down, and
+  `127.0.0.1` is not routable until it is up), and a child of the test binary
+  started from inside inherits it. `--map-root-user` is there so the same
+  command works as root and as an unprivileged user on a machine that allows
+  user namespaces; this machine's supervisor is root.
+- **The kernel counts a refused route, once per attempt, before a byte
+  goes anywhere.** `/proc/net/snmp`'s `Ip: OutNoRoutes` (and `Ip6OutNoRoutes`
+  in `/proc/net/snmp6`) is per namespace, and increments by exactly one when a
+  TCP `connect` or a UDP `sendto` is refused with `ENETUNREACH` — which reaches
+  Rust as `io::ErrorKind::NetworkUnreachable`. Measured: one stream and one
+  datagram addressed at `192.0.2.1` from inside the namespace read `2`; five
+  questions bound for a provider there read `5`; a working day of discovery,
+  pairing and eight questions down the corridor read `0`. `ip route` inside
+  the namespace prints nothing at all.
+- **ureq 3.4.0 makes the count exact rather than a lower bound.** Its
+  connector retries the next resolved address only on `ConnectionRefused`
+  and a per-address timeout; every other socket error — `ENETUNREACH`
+  included — is returned at once as `Error::Io` with the kind intact. So one
+  attempt is one packet, and `alo_asking::openai::what_went_wrong` can read
+  *no route* off the error and off nothing else.
+- **A search waits out its patience.** `alo_nearby::Looking::found` keeps
+  listening until its patience ends even after a machine has answered,
+  because a search cannot know how many will; the day therefore takes the
+  five seconds it was given to look, not the milliseconds the road takes.
+
+**Our response:** the measurement runs where a namespace can be made — Linux,
+with `unshare --net` permitted — and **fails rather than skips** anywhere else
+on Linux, naming util-linux as what it needs, the way the boundary tests fail
+on a machine without a boundary. On Windows the file is compiled out
+(`#![cfg(target_os = "linux")]`), so a green Windows suite says nothing about
+this promise and the report says so. The one production change is the
+mapping: only `NetworkUnreachable` and `HostUnreachable` become
+`WentWrong::NoWayThere`; a refused connection, a reset, a timeout and a name
+that did not resolve stay what they were, held by
+`a_far_end_that_was_reached_and_refused_is_not_said_to_be_out_of_reach`.
+**Upstream:** nothing to report; none of the four is a defect.
+**Date:** 2026-09-13
+
 ### `logind` will open a session for something that is not `pam_systemd`, and the refusal for anybody else has two different wordings
 **Version:** measured three ways. `systemd` 257 (257.13-1.fc42) on **the pinned
 base** — `quay.io/fedora/fedora-bootc:42`, run as the alo OS image built from it
