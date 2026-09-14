@@ -235,3 +235,39 @@ measurement is the same one; only the room is missing.
   with a machine that actually tried named in it.
 - **Constraint:** nothing is loosened to fit — not the context window, the wait
   or the quantisation.
+
+### 10. Every entry this machine can hold, asked in the envelope
+
+**Status:** ready. **Depends on:** 7.
+
+ADR 0032 took Qwen 2.5 7B from 40% to 87.5% by holding it to the protocol's
+envelope. Four entries have an envelope grade; the six small entries graded on
+the development PC in 2026-09 were never asked that way, and two of them —
+`qwen3-1.7b` and `granite-3.2-2b-instruct` — were chosen because their publishers
+train them for tool calls and constrained output.
+
+- **Acceptance:** every catalogue entry this machine can hold carries a
+  `drives_verbs_in_the_envelope` grade with its machine, date, runtime and
+  counts, each earned by two rounds through the harness and each fetched through
+  `Ollama::fetch` rather than by hand; the report carries every answer verbatim
+  and says which, if any, clears the bar.
+- **Constraint:** the free grades those entries carry are not touched — they were
+  earned on another machine asking another way, and ADR 0032 keeps the two apart.
+
+### 11. Candidates published for tool calls, at a size this machine holds
+
+**Status:** ready. **Depends on:** 10.
+
+If no catalogued entry clears the bar in the envelope, the next question is
+whether a model this catalogue does not list does. The candidates are the ones
+their publishers train for tool calls at a size 8 GB holds — the Qwen3 family at
+4B and 8B first.
+
+- **Acceptance:** each candidate's licence is read against its publisher's own
+  repository before anything is fetched (the catalogue's rule 1); each is added
+  as an entry only if its licence permits commercial use or states its
+  conditions; each added entry is graded both ways with its machine beside it;
+  and an entry that clears the bar in the envelope is reported as the first local
+  model that could be given the agent once lane A's turn asks that way.
+- **Constraint:** nothing is added for its grade; an entry is added for its
+  licence and training, then measured, and kept whatever it earns.
