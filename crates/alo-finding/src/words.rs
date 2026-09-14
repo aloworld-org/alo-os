@@ -228,6 +228,18 @@ pub const TOO_BIG: Word = Word::saying(
      a number. A phrase rather than a sentence: it stands beside a file.",
 );
 
+/// A text file with more different words than an index keeps.
+pub const NOT_ALL_KEPT: Word = Word::saying(
+    "finding.contents.not-all-kept",
+    "More different words than the {most} an index keeps, so only the first {most} were kept.",
+)
+.noting(
+    "Shown beside a text file — usually a log or a table a program wrote — that says more \
+     different words than the index keeps for one file. The words it says first are kept and \
+     found by a search; a word said only later may not be. {most} is the limit, a number. A \
+     phrase rather than a sentence: it stands beside a file.",
+);
+
 // ---------------------------------------------------------------------------
 // What a file is — `crate::Kind`.
 // ---------------------------------------------------------------------------
@@ -458,6 +470,20 @@ pub const NOT_SEARCHED_TOO_BIG: Counted = Counted {
            be indexed. A search by name still finds them. {files} is how many.",
 };
 
+/// Files whose words were not all kept.
+pub const NOT_SEARCHED_NOT_ALL_KEPT: Counted = Counted {
+    named: "finding.not-searched.not-all-kept",
+    number: "files",
+    one: "One file holds more different words than an index keeps, so not all of its words were \
+          searched.",
+    other: "{files} files hold more different words than an index keeps, so not all of their \
+            words were searched.",
+    note: "Said once beside a search by words, counting the text files — usually logs or tables \
+           a program wrote — that say more different words than the index keeps for one file and \
+           did not hold the words asked among those it kept. They may still say them further on. \
+           A search by name still finds them. {files} is how many.",
+};
+
 // ---------------------------------------------------------------------------
 // The one verb: what it does, what a person is shown, and what each argument
 // is for. `crate::verbs` declares it from these.
@@ -518,7 +544,7 @@ pub const MISSING: Word = Word::saying(
 );
 
 /// Everything this crate can say in one sentence each.
-pub const EVERY_WORD: [Word; 42] = [
+pub const EVERY_WORD: [Word; 43] = [
     NOT_ASKED_NOTHING,
     NOT_ASKED_MORE_THAN_A_SENTENCE,
     NOT_ASKED_LONGER_THAN_A_NAME,
@@ -542,6 +568,7 @@ pub const EVERY_WORD: [Word; 42] = [
     NOT_TEXT,
     NOT_READ,
     TOO_BIG,
+    NOT_ALL_KEPT,
     KIND_TEXT,
     KIND_PDF,
     KIND_PNG,
@@ -564,11 +591,12 @@ pub const EVERY_WORD: [Word; 42] = [
 ];
 
 /// Everything this crate can say about a number of things.
-pub const EVERY_COUNTED: [Counted; 4] = [
+pub const EVERY_COUNTED: [Counted; 5] = [
     NOT_WHOLE,
     UNNAMED,
     NOT_SEARCHED_NO_READER,
     NOT_SEARCHED_TOO_BIG,
+    NOT_SEARCHED_NOT_ALL_KEPT,
 ];
 
 /// Why this crate's list could not be declared.
@@ -645,7 +673,7 @@ mod tests {
     /// A key names one string.
     #[test]
     fn the_list_declares_into_a_vocabulary_once() {
-        assert_eq!(finding_words().unwrap().how_many(), 46);
+        assert_eq!(finding_words().unwrap().how_many(), 48);
         let mut vocabulary = Vocabulary::empty();
         declare_into(&mut vocabulary).unwrap();
         let again = declare_into(&mut vocabulary).unwrap_err();

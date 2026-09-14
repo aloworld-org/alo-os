@@ -54,6 +54,7 @@ pub(crate) fn searched<'a>(index: &'a Index, query: &Query) -> Answer<'a> {
         files_unread: Vec::new(),
         no_reader: Vec::new(),
         too_big: Vec::new(),
+        not_all_kept: Vec::new(),
     };
     let mut found = Vec::new();
     for entry in &index.entries {
@@ -70,7 +71,21 @@ pub(crate) fn searched<'a>(index: &'a Index, query: &Query) -> Answer<'a> {
                 not_searched.too_big.push(entry);
                 continue;
             }
+            // A file whose words were not all kept is held against the words
+            // it kept. Found, it is found; not found, it is not *nothing
+            // matched* but *not all of it was searched* — when everything
+            // else the query asks does match, and a missing word is the one
+            // thing that stopped it.
+            Contents::NotAllKept { .. } if by_words => {
+                if query.matches(entry) {
+                    found.push(entry);
+                } else if query.matches_apart_from_words(entry) {
+                    not_searched.not_all_kept.push(entry);
+                }
+                continue;
+            }
             Contents::Read { .. }
+            | Contents::NotAllKept { .. }
             | Contents::NotText
             | Contents::NotRead { .. }
             | Contents::TooBig { .. }

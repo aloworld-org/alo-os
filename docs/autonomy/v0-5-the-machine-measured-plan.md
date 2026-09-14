@@ -634,7 +634,28 @@ the same shape of decision, and the task is to make it in the open.
 
 ### 13. An index that fits in hand: the words of a large folder bounded and said
 
-**Status:** ready. **Depends on:** 9, 11.
+**Status:** done. **Depends on:** 9, 11.
+
+**Done, 2026-09-14.** Report:
+[`updates/an-index-that-fits-in-hand.md`](updates/an-index-that-fits-in-hand.md).
+`crates/alo-finding`: a file's words are gathered as a set while it is
+read — never once per occurrence, not even while gathering — and held with
+no room to spare, whether the index was just made or read back from its
+file (the list of words used to keep the capacity of every occurrence it
+was collected from, and that is gone). At most `MOST_WORDS`, fifty
+thousand, different words are kept per file, the first ones it says; a
+file with more is the new `Contents::NotAllKept`, carrying how many it did
+not keep, with a sentence beside the file, and a search by words that does
+not find it among the kept words lists it in the new
+`NotSearched::not_all_kept` with a counted sentence rather than answering
+*nothing matched*. In the file it is still `"were":"read"` with one field,
+`unkept`, left out when nothing was — `format` still `1`, an entry whose
+words were all kept byte for byte as before, and a reader with the old
+shape still reads every entry, tested. Measured on the development
+machine, WSL: six long letters, 5.4 MB, held in 4.7 MB by the index's own
+count; three long logs of a hundred thousand identifiers each, 2.7 MB,
+held in 4.8 MB with the bound where every word would have been 9.6 MB.
+Every task 9 and task 11 test passes unchanged.
 
 Task 11 measured what a whole index takes in hand: every word of every text
 file held as its own `String`, five to eight times the file's own size, so
@@ -665,3 +686,42 @@ which is the number that grows.
   honest deliverable turns out to be that no bound is needed at the sizes a
   person's machine holds, that is the number in the report and the task ends
   there, with the reasoning written down.
+
+### 14. Words held in one piece: an index in hand the size of its words
+
+**Status:** ready. **Depends on:** 13.
+
+Task 13 bounded what one file's words may hold and measured what they do
+hold — and the measurement says where the rest of the memory goes. A word
+is held as its own `String`: twenty-four bytes of place in the list, and an
+allocation of its own that the allocator rounds up to thirty-two bytes on
+the development machine, for a word that is seven or eight bytes long. The
+letters in task 13's test held 4.7 MB in hand by the index's own count for
+1.1 MB of words, and the allocator's rounding — which that count cannot
+see — is roughly another 3.6 MB on top, so an index of a person's prose is
+held at about one and a half times the size of the files, most of it the
+bookkeeping of a hundred and fifty thousand small strings rather than the
+words. The index file on the disk is smaller than what it holds in hand.
+
+- **Acceptance:** `alo-finding` holds one file's kept words in a constant
+  number of allocations — the words sorted and joined in one piece with
+  where each begins beside them, or a shape the report argues for — so
+  that the bytes an entry holds are its words' own bytes and a small,
+  fixed cost per word, **measured with the machine named** against task
+  13's folder of long letters and logs and published beside task 13's
+  numbers; `Contents::say` still answers by a binary search over the kept
+  words, and every search, every `NotSearched` sentence and every task 9,
+  11 and 13 test answers exactly as before; the index file is unchanged,
+  byte for byte, and an index written before still reads; and a public
+  surface that has to change — `Contents::words` hands out `&[String]` —
+  changes additively, with the old way kept and marked deprecated rather
+  than removed, because other crates are allowed to have read it.
+- **Constraint:** no `unsafe` block — the one piece is indexed by byte
+  offsets checked like any other slice, and a measurement that would need
+  a counting allocator is instead the index's own count plus the
+  allocator's rounding named as an estimate, as task 13 did. No edit to
+  `alo-files`. Nothing opens a socket, reads a clock or watches a folder;
+  the verb, the list, the record, `MOST_WORDS` and the words a person
+  reads are untouched. If the honest deliverable is that the saving is
+  not worth a changed public surface at the sizes a person's machine
+  holds, that is the number in the report and the task ends there.

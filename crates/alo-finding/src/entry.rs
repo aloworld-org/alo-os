@@ -2,12 +2,10 @@
 
 use std::time::{Duration, SystemTime};
 
-use alo_strings::{Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
 
+pub use crate::contents::Contents;
 use crate::kind::Kind;
-use crate::wording;
-use crate::words;
 
 /// One thing the walk found under the folder.
 ///
@@ -72,68 +70,6 @@ impl Moment {
     }
 }
 
-/// The words in a file, or why the index has none.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "were", rename_all = "kebab-case")]
-#[non_exhaustive]
-pub enum Contents {
-    /// The file is text, and these are its words: each once, lower case,
-    /// sorted.
-    Read {
-        /// The words.
-        words: Vec<String>,
-    },
-    /// The file is a kind this crate has no reader for, so it has no words
-    /// here — a search by contents will not find it, and says so.
-    NotText,
-    /// The file could not be read, and this is what the machine said.
-    NotRead {
-        /// What the machine said, as a sentence.
-        why: String,
-    },
-    /// The file is larger than an index reads, so its words were not read.
-    TooBig {
-        /// How large it is.
-        bytes: u64,
-    },
-    /// A folder, a link or a device: not a file, so nothing to read.
-    NotAFile,
-}
-
-impl Contents {
-    /// The words, if the file had any.
-    #[must_use]
-    pub fn words(&self) -> &[String] {
-        match self {
-            Self::Read { words } => words,
-            Self::NotText | Self::NotRead { .. } | Self::TooBig { .. } | Self::NotAFile => &[],
-        }
-    }
-
-    /// Whether the file's words hold this one, which is already lower case.
-    #[must_use]
-    pub fn say(&self, word: &str) -> bool {
-        wording::says(self.words(), word)
-    }
-
-    /// The sentence a window shows in place of words, in the language the
-    /// person reads — or nothing, for a file whose words were read and for
-    /// something that is not a file.
-    #[must_use]
-    pub fn said(&self, strings: &Strings) -> Option<Said> {
-        let (word, filling) = match self {
-            Self::Read { .. } | Self::NotAFile => return None,
-            Self::NotText => (&words::NOT_TEXT, Filling::nothing()),
-            Self::NotRead { why } => (&words::NOT_READ, Filling::of("why", why.clone())),
-            Self::TooBig { .. } => (
-                &words::TOO_BIG,
-                Filling::of("most", alo_files::MOST_READ.to_string()),
-            ),
-        };
-        Some(strings.say(&word.key(), &filling))
-    }
-}
-
 #[cfg(test)]
 #[expect(
     clippy::unwrap_used,
@@ -189,30 +125,5 @@ mod tests {
         assert_eq!(at_the_top.name(), "notes.txt");
         assert!(!at_the_top.contents.say("invoice"));
         assert!(at_the_top.contents.words().is_empty());
-    }
-
-    /// Contents are spelled with a tag, so a reader can tell the five apart
-    /// without knowing which fields each has.
-    #[test]
-    fn contents_are_tagged_in_the_file() {
-        let spelled = |contents: &Contents| serde_json::to_string(contents).unwrap();
-        assert_eq!(
-            spelled(&Contents::Read {
-                words: vec!["a".to_owned()]
-            }),
-            r#"{"were":"read","words":["a"]}"#
-        );
-        assert_eq!(spelled(&Contents::NotText), r#"{"were":"not-text"}"#);
-        assert_eq!(
-            spelled(&Contents::NotRead {
-                why: "no".to_owned()
-            }),
-            r#"{"were":"not-read","why":"no"}"#
-        );
-        assert_eq!(
-            spelled(&Contents::TooBig { bytes: 5 }),
-            r#"{"were":"too-big","bytes":5}"#
-        );
-        assert_eq!(spelled(&Contents::NotAFile), r#"{"were":"not-a-file"}"#);
     }
 }

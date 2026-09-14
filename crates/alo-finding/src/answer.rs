@@ -77,6 +77,11 @@ pub struct NotSearched<'a> {
     /// Files larger than an index reads, whose words it did not. Empty
     /// unless the search was by words.
     pub too_big: Vec<&'a Entry>,
+    /// Files with more different words than an index keeps, which did not
+    /// hold the words asked among those kept and matched everything else the
+    /// query asked: not *nothing matched*, but not all of their words were
+    /// searched. Empty unless the search was by words.
+    pub not_all_kept: Vec<&'a Entry>,
 }
 
 impl NotSearched<'_> {
@@ -91,13 +96,15 @@ impl NotSearched<'_> {
             && self.files_unread.is_empty()
             && self.no_reader.is_empty()
             && self.too_big.is_empty()
+            && self.not_all_kept.is_empty()
     }
 
     /// Every sentence a window shows beside the answer, in the language the
     /// person reads: one saying nothing outside the folder was searched,
     /// then one per folder and per unread file, then one counting the files
-    /// of a kind with no reader and one counting the files too large — each
-    /// of the last two only when there are any.
+    /// of a kind with no reader, one counting the files too large, and one
+    /// counting the files whose words were not all kept — each of the last
+    /// three only when there are any.
     #[must_use]
     pub fn said(&self, strings: &Strings) -> Vec<Said> {
         let mut said = vec![strings.say(
@@ -142,6 +149,7 @@ impl NotSearched<'_> {
         for (counted, files) in [
             (&words::NOT_SEARCHED_NO_READER, &self.no_reader),
             (&words::NOT_SEARCHED_TOO_BIG, &self.too_big),
+            (&words::NOT_SEARCHED_NOT_ALL_KEPT, &self.not_all_kept),
         ] {
             if !files.is_empty() {
                 said.push(strings.count(
@@ -202,6 +210,7 @@ mod tests {
             files_unread: Vec::new(),
             no_reader: Vec::new(),
             too_big: Vec::new(),
+            not_all_kept: Vec::new(),
         };
         assert!(everything.is_nothing());
         let said = everything.said(&strings);
@@ -221,6 +230,14 @@ mod tests {
         );
         let pdf = an_entry("2026/march.pdf", Kind::Pdf, Contents::NotText);
         let big = an_entry("big.txt", Kind::Text, Contents::TooBig { bytes: 9 });
+        let many = an_entry(
+            "log.txt",
+            Kind::Text,
+            Contents::NotAllKept {
+                words: Vec::new(),
+                unkept: 1,
+            },
+        );
         let not = NotSearched {
             outside: of,
             folders_unread: vec![&unread],
@@ -230,6 +247,7 @@ mod tests {
             files_unread: vec![&locked],
             no_reader: vec![&pdf, &pdf],
             too_big: vec![&big],
+            not_all_kept: vec![&many],
         };
         assert!(!not.is_nothing());
         let said = not.said(&strings);
@@ -267,6 +285,9 @@ mod tests {
                  their words."
                     .to_owned(),
                 "One file is larger than an index reads, so it was not searched by its words."
+                    .to_owned(),
+                "One file holds more different words than an index keeps, so not all of its \
+                 words were searched."
                     .to_owned(),
             ]
         );

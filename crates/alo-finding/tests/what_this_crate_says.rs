@@ -33,6 +33,7 @@ fn in_polish() -> Strings {
     let unnamed = key("finding.unnamed");
     let no_reader = key("finding.not-searched.no-reader");
     let too_big = key("finding.not-searched.too-big");
+    let not_all_kept = key("finding.not-searched.not-all-kept");
     let translation = Translation::into_language(polish.clone())
         .says(
             key("finding.not-asked.nothing"),
@@ -97,6 +98,21 @@ fn in_polish() -> Strings {
              słowach.",
         )
         .says(
+            not_all_kept.for_form(Form::One),
+            "Jeden plik ma więcej różnych słów, niż indeks zachowuje, więc nie przeszukano \
+             wszystkich jego słów.",
+        )
+        .says(
+            not_all_kept.for_form(Form::Few),
+            "{files} pliki mają więcej różnych słów, niż indeks zachowuje, więc nie \
+             przeszukano wszystkich ich słów.",
+        )
+        .says(
+            not_all_kept.for_form(Form::Many),
+            "{files} plików ma więcej różnych słów, niż indeks zachowuje, więc nie \
+             przeszukano wszystkich ich słów.",
+        )
+        .says(
             key("finding.not-absolute"),
             "{at} nie mówi, gdzie jest od korzenia maszyny, więc nie można go zindeksować.",
         )
@@ -157,6 +173,11 @@ fn in_polish() -> Strings {
         .says(
             key("finding.contents.too-big"),
             "Większy niż {most} bajtów, które indeks czyta, więc jego słowa nie zostały odczytane.",
+        )
+        .says(
+            key("finding.contents.not-all-kept"),
+            "Więcej różnych słów niż {most}, które indeks zachowuje, więc zachowano tylko \
+             pierwsze {most}.",
         )
         .says(key("finding.kind.text"), "Tekst")
         .says(key("finding.kind.pdf"), "Dokument PDF")
@@ -256,6 +277,14 @@ fn everything_a_search_did_not_look_at(strings: &Strings) -> Vec<Said> {
     );
     let pdf = an_entry("march.pdf", Kind::Pdf, Contents::NotText);
     let big = an_entry("big.txt", Kind::Text, Contents::TooBig { bytes: 9 });
+    let log = an_entry(
+        "log.txt",
+        Kind::Text,
+        Contents::NotAllKept {
+            words: vec!["started".to_owned()],
+            unkept: 12,
+        },
+    );
     let mut said = Vec::new();
     for how_many in [1, 3, 25] {
         let not_searched = NotSearched {
@@ -267,9 +296,10 @@ fn everything_a_search_did_not_look_at(strings: &Strings) -> Vec<Said> {
             files_unread: vec![&locked],
             no_reader: vec![&pdf; how_many],
             too_big: vec![&big; how_many],
+            not_all_kept: vec![&log; how_many],
         };
         let sentences = not_searched.said(strings);
-        assert_eq!(sentences.len(), 7, "{sentences:?}");
+        assert_eq!(sentences.len(), 8, "{sentences:?}");
         said.extend(sentences);
     }
     said
@@ -341,6 +371,10 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
             why: "permission denied".to_owned(),
         },
         Contents::TooBig { bytes: 5_000_000 },
+        Contents::NotAllKept {
+            words: Vec::new(),
+            unkept: 1,
+        },
     ] {
         said.push(
             contents
@@ -387,7 +421,7 @@ fn everything_said_here(strings: &Strings) -> Vec<Said> {
 fn a_machine_with_no_translations_still_says_everything_in_english() {
     let strings = Strings::of(finding_words().expect("this crate's own words"));
     let said = everything_said_here(&strings);
-    assert_eq!(said.len(), 11 + 3 + 13 + 6 + 3 + 3 * 7);
+    assert_eq!(said.len(), 11 + 4 + 13 + 6 + 3 + 3 * 8);
     for said in said {
         assert!(!said.is_a_bug(), "{said}");
         assert!(!said.is_translated(), "{said}");
@@ -458,13 +492,34 @@ fn every_sentence_is_read_in_the_language_the_person_reads() {
          słowach."
     );
     assert_eq!(
-        not_looked_at.get(7 + 6).expect("a sentence").text(),
+        not_looked_at.get(8 + 6).expect("a sentence").text(),
         "3 pliki są większe, niż indeks czyta, więc nie przeszukano ich po słowach."
     );
     assert_eq!(
-        not_looked_at.get(14 + 5).expect("a sentence").text(),
+        not_looked_at.get(16 + 5).expect("a sentence").text(),
         "25 plików jest rodzajów, których słów nie można odczytać, więc nie przeszukano ich po \
          słowach."
+    );
+    assert_eq!(
+        not_looked_at.get(7).expect("a sentence").text(),
+        "Jeden plik ma więcej różnych słów, niż indeks zachowuje, więc nie przeszukano \
+         wszystkich jego słów."
+    );
+    assert_eq!(
+        not_looked_at.get(16 + 7).expect("a sentence").text(),
+        "25 plików ma więcej różnych słów, niż indeks zachowuje, więc nie przeszukano \
+         wszystkich ich słów."
+    );
+    let not_all_kept = Contents::NotAllKept {
+        words: Vec::new(),
+        unkept: 1,
+    }
+    .said(&strings)
+    .expect("a sentence beside the words");
+    assert_eq!(
+        not_all_kept.text(),
+        "Więcej różnych słów niż 50000, które indeks zachowuje, więc zachowano tylko pierwsze \
+         50000."
     );
     assert_eq!(
         NotAsked::MoreThanASentence {

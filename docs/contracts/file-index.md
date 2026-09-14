@@ -262,7 +262,7 @@ should treat it as `bytes`.
 
 | `were` | Other fields | Meaning |
 |---|---|---|
-| `read` | `words` | The file is text and these are its words: each once, in lower case, sorted. A word is a run of letters or digits in any script. |
+| `read` | `words`, `unkept` | The file is text and these are its words: each once, in lower case, sorted. A word is a run of letters or digits in any script. At most `50000` different words are kept for one file (`alo_finding::MOST_WORDS`), the first ones the file says; `unkept` is how many more different words it said that were not kept, and is **left out** when that is none. |
 | `not-text` | | A kind with no reader: no words here. A search by words does not find it, and says so. |
 | `not-read` | `why` | The file could not be read; `why` is what the machine said. |
 | `too-big` | `bytes` | Larger than an index reads — `alo_files::MOST_READ`, a megabyte, the same bound a file verb reads under — so its words were not read. |
@@ -272,6 +272,18 @@ should treat it as `bytes`.
 of words in a file and never the file: an index that held every document
 whole would be a second copy of every document, under a different name, in a
 place nobody thought to grant.
+
+**What is not kept is said.** An index is held in memory by whoever asks it
+many times, so one file's words are bounded: prose is not expected to say
+as many different words as the bound at the megabyte an index reads, and
+what reaches it is text a program wrote — a log, a table, a list of
+identifiers. Such a file's entry
+carries the words it kept and `unkept` beside them. `alo-finding` reads it as
+`Contents::NotAllKept`, a window shows *only the first 50000 were kept*
+beside the file, and a search by words that does not find it among the words
+kept lists it as a file whose words were not all searched, never as *nothing
+matched*. A reader that does not know `unkept` reads the kept words and
+nothing else, which is true as far as it goes.
 
 ## What is **not** in it
 
@@ -296,3 +308,9 @@ does not read rather than guessing.
 a head written before it still reads, and a head written without it — an
 index of an earlier version, made again — gains it the next time the index
 is made.
+
+`unkept` in a `read` entry's contents is the second, added the same way:
+`format` stayed `1`, it is left out when nothing was left out — so an entry
+whose words were all kept is written byte for byte as before — and a reader
+from before ignores it. A value that is not a whole number of zero or more
+does not parse, and the file is refused whole like any other torn line.

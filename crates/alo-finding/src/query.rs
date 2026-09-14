@@ -130,6 +130,22 @@ impl Query {
     /// Whether this entry answers the query: every part given matches.
     #[must_use]
     pub fn matches(&self, entry: &Entry) -> bool {
+        if !self.matches_apart_from_words(entry) {
+            return false;
+        }
+        if let Some(saying) = &self.saying
+            && !saying.iter().all(|word| entry.contents.say(word))
+        {
+            return false;
+        }
+        true
+    }
+
+    /// Whether this entry answers every part of the query but its words —
+    /// so that a file whose words were not all kept, and that does not hold
+    /// the words asked, can be told apart from one that did not match at all.
+    #[must_use]
+    pub fn matches_apart_from_words(&self, entry: &Entry) -> bool {
         if let Some(named) = &self.named
             && !entry.name().to_lowercase().contains(named.as_str())
         {
@@ -148,11 +164,6 @@ impl Query {
         }
         if let Some(before) = self.before
             && modified >= before
-        {
-            return false;
-        }
-        if let Some(saying) = &self.saying
-            && !saying.iter().all(|word| entry.contents.say(word))
         {
             return false;
         }

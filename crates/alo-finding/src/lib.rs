@@ -133,6 +133,26 @@
 //! file. The list's order is the order folders were asked for, and nothing
 //! here changes it.
 //!
+//! # An index that fits in hand
+//!
+//! What an [`InHand`] holds is what a file manager holds for as long as it is
+//! open, and an index holds words. They are kept once per file, never once
+//! per occurrence — gathered as a set while the file is read, and held with
+//! no room to spare, whether the index was just made or read back from its
+//! file — and at most [`MOST_WORDS`] different words per file, the first ones
+//! the file says. A file with more — a log, a table a program wrote; prose
+//! is not expected to reach the bound at the megabyte an index reads —
+//! is [`Contents::NotAllKept`], saying how many it did not keep. Nothing is
+//! left out quietly: [`Contents::said`] says it beside the file, and a search
+//! by words that does not find such a file lists it in
+//! [`NotSearched::not_all_kept`] rather than answering *nothing matched*
+//! about words nobody kept. In the index file it is still `"were":"read"`,
+//! with one field added the way `made` was, so `format` is still `1` and a
+//! reader from before still reads.
+//! `tests/an_index_that_fits_in_hand.rs` indexes a folder of long text files
+//! and measures the bytes held in hand against the bytes of the files, and
+//! the report publishes the numbers with the machine named.
+//!
 //! # An agent asks the same index, under a grant
 //!
 //! `search_files` is the verb — declared in [`verbs`] in the shape
@@ -176,6 +196,7 @@
 //! | [`Indexed::in_hand`], [`InHand`], [`InHand::answer`], [`InHand::again`] | The list's indexes read once and held, asked many times from memory, one brought up to date by its name |
 //! | [`InHand::keep`], [`InHand::forget`] | A folder kept or forgotten through the held set: on the disk and the list as `Indexed` does it, and in hand what that means |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
+//! | [`MOST_WORDS`], [`Contents::NotAllKept`], [`NotSearched::not_all_kept`] | The most different words one file keeps, a file that had more, and a search that says so |
 //! | [`Covered`] | What the walks could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The twelve ways there is no index at all |
 //! | [`finding_verbs`], [`verbs::declare_into`] | The search verb, declared for an agent's list |
@@ -248,6 +269,7 @@ pub mod unanswered;
 pub mod verbs;
 pub mod words;
 
+mod contents;
 mod format;
 mod indexing;
 mod keeping;
@@ -274,6 +296,7 @@ pub use refusing::NotIndexed;
 pub use searched::Searched;
 pub use unanswered::NotAnswered;
 pub use verbs::{Declaring, finding_verbs};
+pub use wording::MOST_WORDS;
 pub use words::{
     Counted, EVERY_COUNTED, EVERY_WORD, Word, WordsError, declare_into, finding_words,
 };

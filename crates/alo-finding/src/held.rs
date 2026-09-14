@@ -59,6 +59,8 @@ pub struct Unsearched {
     pub no_reader: Vec<Entry>,
     /// Files larger than an index reads.
     pub too_big: Vec<Entry>,
+    /// Files whose words were not all kept, and not all searched.
+    pub not_all_kept: Vec<Entry>,
 }
 
 impl Held {
@@ -77,6 +79,7 @@ impl Held {
                 files_unread: copied(&not.files_unread),
                 no_reader: copied(&not.no_reader),
                 too_big: copied(&not.too_big),
+                not_all_kept: copied(&not.not_all_kept),
             },
             made: answer.made,
             took: answer.took,
@@ -110,6 +113,7 @@ impl Unsearched {
             files_unread: self.files_unread.iter().collect(),
             no_reader: self.no_reader.iter().collect(),
             too_big: self.too_big.iter().collect(),
+            not_all_kept: self.not_all_kept.iter().collect(),
         }
     }
 }

@@ -92,7 +92,10 @@ pub(crate) fn read(text: &str) -> Result<Index, String> {
             head.format
         ));
     }
-    let entries = lines
+    // Collected without knowing how many lines there are, so the list grows
+    // by doubling; the index is held in hand for as long as a caller keeps
+    // it, so it is held with no room to spare.
+    let mut entries = lines
         .enumerate()
         .filter(|(_, line)| !line.is_empty())
         .map(|(number, line)| {
@@ -100,6 +103,7 @@ pub(crate) fn read(text: &str) -> Result<Index, String> {
                 .map_err(|why| format!("line {} is not an entry: {why}", number + 2))
         })
         .collect::<Result<Vec<Entry>, String>>()?;
+    entries.shrink_to_fit();
     Ok(Index {
         of: head.of,
         made: head.made,

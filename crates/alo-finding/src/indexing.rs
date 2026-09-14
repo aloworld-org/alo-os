@@ -119,9 +119,8 @@ fn looked(looked: Looked) -> (Kind, Contents) {
         Looked::Whole(bytes) => {
             let kind = Kind::of_bytes(bytes.get(..SNIFFED).unwrap_or(&bytes));
             let contents = if kind.has_words() {
-                Contents::Read {
-                    words: wording::words_of(&String::from_utf8_lossy(&bytes)),
-                }
+                let kept = wording::kept_of(&String::from_utf8_lossy(&bytes), wording::MOST_WORDS);
+                Contents::of_words(kept.words, kept.unkept)
             } else {
                 Contents::NotText
             };
@@ -392,6 +391,35 @@ mod tests {
             }
         );
         assert!(!covered.is_everything());
+    }
+
+    /// **A text file with more different words than an index keeps keeps
+    /// the first of them and says how many it did not** — and one at the
+    /// bound exactly keeps them all.
+    #[test]
+    fn a_look_at_more_words_than_are_kept_keeps_the_first_and_counts_the_rest() {
+        let text = |how_many: usize| {
+            (0..how_many)
+                .map(|n| format!("w{n:06}"))
+                .collect::<Vec<_>>()
+                .join(" ")
+                .into_bytes()
+        };
+        let (kind, contents) = looked(Looked::Whole(text(wording::MOST_WORDS + 3)));
+        assert_eq!(kind, Kind::Text);
+        assert!(
+            matches!(contents, Contents::NotAllKept { unkept: 3, .. }),
+            "{} words kept",
+            contents.words().len()
+        );
+        assert_eq!(contents.words().len(), wording::MOST_WORDS);
+        assert!(contents.say("w000000"));
+        assert!(contents.say(&format!("w{:06}", wording::MOST_WORDS - 1)));
+        assert!(!contents.say(&format!("w{:06}", wording::MOST_WORDS)));
+
+        let (_, at_the_bound) = looked(Looked::Whole(text(wording::MOST_WORDS)));
+        assert!(matches!(at_the_bound, Contents::Read { .. }));
+        assert_eq!(at_the_bound.words().len(), wording::MOST_WORDS);
     }
 
     /// A look is turned into a kind and contents: words for text, none for a
