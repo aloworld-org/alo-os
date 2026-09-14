@@ -61,7 +61,8 @@ pub struct NotSearched<'a> {
     pub folders_unread: Vec<&'a Unread>,
     /// Folders on another filesystem, which the index did not enter.
     pub elsewhere: Vec<&'a str>,
-    /// Folders the index had not finished when it reached its bound.
+    /// Folders no walk could list to their end, each holding more than one
+    /// walk looks at, at one level.
     pub not_entered: Vec<&'a str>,
     /// How many things were left out of the index because their names
     /// cannot be shown.

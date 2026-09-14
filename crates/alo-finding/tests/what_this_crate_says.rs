@@ -182,15 +182,18 @@ fn in_polish() -> Strings {
         )
         .says(
             not_whole.for_form(Form::One),
-            "Indeks zatrzymał się po jednej rzeczy, więc nie obejmuje całego folderu.",
+            "Jeden z folderów zawiera na jednym poziomie więcej niż jedną rzecz, więc indeks \
+             nie obejmuje całego folderu.",
         )
         .says(
             not_whole.for_form(Form::Few),
-            "Indeks zatrzymał się po {most} rzeczach, więc nie obejmuje całego folderu.",
+            "Jeden z folderów zawiera na jednym poziomie więcej niż {most} rzeczy, więc indeks \
+             nie obejmuje całego folderu.",
         )
         .says(
             not_whole.for_form(Form::Many),
-            "Indeks zatrzymał się po {most} rzeczach, więc nie obejmuje całego folderu.",
+            "Jeden z folderów zawiera na jednym poziomie więcej niż {most} rzeczy, więc indeks \
+             nie obejmuje całego folderu.",
         )
         .says(
             unnamed.for_form(Form::One),
@@ -440,7 +443,8 @@ fn every_sentence_is_read_in_the_language_the_person_reads() {
         .expect("a sentence above the index");
     assert_eq!(
         many.text(),
-        "Indeks zatrzymał się po 20000 rzeczach, więc nie obejmuje całego folderu."
+        "Jeden z folderów zawiera na jednym poziomie więcej niż 20000 rzeczy, więc indeks nie \
+         obejmuje całego folderu."
     );
 
     let not_looked_at = everything_a_search_did_not_look_at(&strings);

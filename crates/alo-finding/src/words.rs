@@ -310,15 +310,18 @@ pub const KIND_OTHER: Word = Word::saying(
 // What the walk did not reach — `crate::Covered`.
 // ---------------------------------------------------------------------------
 
-/// An index that stopped at its bound.
+/// An index with a folder no walk could list to its end.
 pub const NOT_WHOLE: Counted = Counted {
     named: "finding.not-whole",
     number: "most",
-    one: "The index stopped after one thing, so it is not the whole of the folder.",
-    other: "The index stopped after {most} things, so it is not the whole of the folder.",
-    note: "Said once, above an index, when the folder holds more things than one walk looks at. \
-           {most} is that limit. What was indexed is true, and a search says which folders it \
-           never entered.",
+    one: "A folder under it holds more than one thing at a single level, so the index is not \
+          the whole of the folder.",
+    other: "A folder under it holds more than {most} things at a single level, so the index is \
+            not the whole of the folder.",
+    note: "Said once, above an index, when a folder under the one indexed holds more things \
+           directly inside it than one walk looks at, which no walk can list to its end. {most} \
+           is that limit; a folder holding more than it in subfolders is indexed whole. What was \
+           indexed is true, and a search says which folders were left.",
 };
 
 /// Things whose names cannot be shown, left out of the index.
@@ -414,9 +417,10 @@ pub const NOT_SEARCHED_NOT_ENTERED: Word = Word::saying(
     "The index stopped before it had finished {below}, so not all of it was searched.",
 )
 .noting(
-    "Shown beside a search answer for each folder the index had not finished listing when it \
-     reached the most it looks at. Read together with \"finding.not-whole\", which says how \
-     many that is. {below} is the folder's path and is never translated.",
+    "Shown beside a search answer for each folder no walk could list to its end, because it \
+     holds more things at one level than one walk looks at. Read together with \
+     \"finding.not-whole\", which says how many that is. {below} is the folder's path and is \
+     never translated.",
 );
 
 /// A file the machine would not open.

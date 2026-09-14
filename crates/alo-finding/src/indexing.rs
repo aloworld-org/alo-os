@@ -1,12 +1,14 @@
 //! Turning a walk into an index, reading only what changed.
 //!
-//! The walk is `alo-files`' measuring policy: a link is a step with its own
-//! bytes and is never followed, a folder the machine would not read is noted
-//! and stepped over rather than ending the walk, and a folder on another
-//! filesystem is noted and not entered. A search must be honest rather than
-//! complete — *this folder could not be read* beside the answer is a true
-//! answer, and a whole index refused because one subfolder belongs to
-//! somebody else is a person locked out of the rest of their documents.
+//! The walk is `alo-files`' measuring policy, walked on from every folder one
+//! walk left unentered by `walking_on.rs` until the folder is gathered whole:
+//! a link is a step with its own bytes and is never followed, a folder the
+//! machine would not read is noted and stepped over rather than ending the
+//! walk, and a folder on another filesystem is noted and not entered. A
+//! search must be honest rather than complete — *this folder could not be
+//! read* beside the answer is a true answer, and a whole index refused
+//! because one subfolder belongs to somebody else is a person locked out of
+//! the rest of their documents.
 //!
 //! # Unchanged means the same size and the same time
 //!
@@ -18,14 +20,12 @@
 //!
 //! # Nothing recurses, and the previous index is read once
 //!
-//! The walk is flat, in folder order, and the previous entries go into a map
-//! by path before the walk is read; each step is then one lookup.
+//! The gathering is flat, in the walks' order, and the previous entries go
+//! into a map by path before it is read; each step is then one lookup.
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::SystemTime;
-
-use alo_files::{MOST_WALKED, Walked, Walking};
 
 use crate::covered::{Covered, Unread};
 use crate::entry::{Contents, Entry, Moment};
@@ -33,10 +33,14 @@ use crate::index::Index;
 use crate::kind::{Kind, SNIFFED};
 use crate::reading::{Looked, Reading};
 use crate::refusing::NotIndexed;
+use crate::walking_on::{Gathered, everything_under};
 use crate::wording;
 
 /// The index of this folder, made at `made` as the caller says it, reading a
-/// file only where `previous` cannot vouch for it.
+/// file only where `previous` cannot vouch for it, gathered by walks of at
+/// most `most` things each — [`alo_files::MOST_WALKED`] from the crate's
+/// public way in, and smaller in a test that wants a small folder to take
+/// more than one walk.
 ///
 /// # Errors
 ///
@@ -50,18 +54,17 @@ pub(crate) fn assembled(
     previous: Option<&Index>,
     made: SystemTime,
     reading: &mut dyn Reading,
+    most: usize,
 ) -> Result<Index, NotIndexed> {
     if !folder.has_root() {
         return Err(NotIndexed::NotAbsolute {
             at: folder.to_path_buf(),
         });
     }
-    let walked = Walking::measuring(MOST_WALKED)
-        .through(folder)
-        .map_err(|why| NotIndexed::NotWalked {
-            at: folder.to_path_buf(),
-            why,
-        })?;
+    let walked = everything_under(folder, most).map_err(|why| NotIndexed::NotWalked {
+        at: folder.to_path_buf(),
+        why,
+    })?;
     let vouched: HashMap<&str, &Entry> = previous
         .map(|previous| {
             previous
@@ -104,7 +107,7 @@ pub(crate) fn assembled(
     Ok(Index {
         of: folder.to_path_buf(),
         made: Some(Moment::of(made)),
-        covered: covered_from(&walked),
+        covered: covered_from(&walked, most),
         entries,
         opened,
     })
@@ -129,11 +132,12 @@ fn looked(looked: Looked) -> (Kind, Contents) {
     }
 }
 
-/// What the walk could not reach, as the index keeps it.
-pub(crate) fn covered_from(walked: &Walked) -> Covered {
+/// What the walks could not reach, as the index keeps it; `most` is the
+/// bound each walk was under.
+pub(crate) fn covered_from(walked: &Gathered, most: usize) -> Covered {
     Covered {
-        whole: !walked.cut_short,
-        most: MOST_WALKED,
+        whole: walked.whole,
+        most,
         unread: walked
             .unread
             .iter()
@@ -237,7 +241,7 @@ mod tests {
             looks: 0,
             at: Vec::new(),
         };
-        let index = assembled(&folder, None, noon(), &mut first).unwrap();
+        let index = assembled(&folder, None, noon(), &mut first, alo_files::MOST_WALKED).unwrap();
         assert_eq!(first.looks, 2, "{:?}", first.at);
         assert_eq!(index.opened, 2);
         assert_eq!(
@@ -251,7 +255,14 @@ mod tests {
             looks: 0,
             at: Vec::new(),
         };
-        let again = assembled(&folder, Some(&index), noon(), &mut second).unwrap();
+        let again = assembled(
+            &folder,
+            Some(&index),
+            noon(),
+            &mut second,
+            alo_files::MOST_WALKED,
+        )
+        .unwrap();
         assert_eq!(second.looks, 0, "{:?}", second.at);
         assert_eq!(again.opened, 0);
         // The files are the same entries, read from the earlier index. A
@@ -266,7 +277,14 @@ mod tests {
             looks: 0,
             at: Vec::new(),
         };
-        let changed = assembled(&folder, Some(&again), noon(), &mut third).unwrap();
+        let changed = assembled(
+            &folder,
+            Some(&again),
+            noon(),
+            &mut third,
+            alo_files::MOST_WALKED,
+        )
+        .unwrap();
         assert_eq!(third.looks, 2, "{:?}", third.at);
         assert!(third.at.iter().any(|at| at.ends_with("notes.txt")));
         assert!(third.at.iter().any(|at| at.ends_with("april.txt")));
@@ -274,15 +292,82 @@ mod tests {
         let _ = std::fs::remove_dir_all(&folder);
     }
 
-    /// **What the walk could not read, enter or finish is kept beside the
+    /// **A folder larger than one walk is one index, whole, and indexed again
+    /// it reads nothing** — with the bound made small here, so that the
+    /// folder is a few dozen files and the walking on is still counted by the
+    /// reader: every file read exactly once the first time, none the second,
+    /// and the index the same as one made with a bound the folder fits under.
+    #[test]
+    fn a_folder_larger_than_one_walk_is_indexed_whole_and_again_reads_nothing() {
+        let folder = a_folder_of_our_own("larger-than-one-walk");
+        let mut files = 0;
+        for f in 0..5 {
+            let sub = folder.join(format!("f-{f}")).join("deeper");
+            std::fs::create_dir_all(&sub).unwrap();
+            for m in 0..4 {
+                std::fs::write(sub.join(format!("{f}-{m}.txt")), b"a word each").unwrap();
+                std::fs::write(
+                    sub.parent().unwrap().join(format!("{f}-{m}.txt")),
+                    b"another",
+                )
+                .unwrap();
+                files += 2;
+            }
+        }
+        let things = files + 10;
+
+        let mut in_walks = Counting {
+            looks: 0,
+            at: Vec::new(),
+        };
+        let index = assembled(&folder, None, noon(), &mut in_walks, 7).unwrap();
+        assert!(index.covered.whole, "{:?}", index.covered);
+        assert!(index.covered.not_entered.is_empty());
+        assert_eq!(index.covered.most, 7, "the bound each walk was under");
+        assert_eq!(index.entries.len(), things);
+        assert_eq!(index.opened, files);
+        assert_eq!(
+            in_walks.looks, files,
+            "each file read once: {:?}",
+            in_walks.at
+        );
+        let mut sorted = in_walks.at.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), files, "no file read twice");
+
+        let mut in_one = Counting {
+            looks: 0,
+            at: Vec::new(),
+        };
+        let at_once = assembled(&folder, None, noon(), &mut in_one, things).unwrap();
+        assert!(at_once.covered.whole);
+        let mut ours: Vec<&str> = index.entries.iter().map(|e| e.below.as_str()).collect();
+        ours.sort_unstable();
+        let mut theirs: Vec<&str> = at_once.entries.iter().map(|e| e.below.as_str()).collect();
+        theirs.sort_unstable();
+        assert_eq!(ours, theirs);
+
+        let mut none = Counting {
+            looks: 0,
+            at: Vec::new(),
+        };
+        let again = assembled(&folder, Some(&index), noon(), &mut none, 7).unwrap();
+        assert_eq!(none.looks, 0, "{:?}", none.at);
+        assert_eq!(again.opened, 0);
+        assert!(again.covered.whole);
+        assert_eq!(files_of(&again), files_of(&index));
+        let _ = std::fs::remove_dir_all(&folder);
+    }
+
+    /// **What the walks could not read, enter or finish is kept beside the
     /// index**, spelled with `/` whatever the host, the root included.
     #[test]
     fn what_the_walk_could_not_reach_is_kept_beside_the_index() {
-        let walked = Walked {
+        let walked = Gathered {
             things: Vec::new(),
-            links: 0,
             could_not_be_named: 2,
-            cut_short: true,
+            whole: false,
             unread: vec![alo_files::Unread {
                 below: PathBuf::from("Private").join("Theirs"),
                 why: "permission denied".to_owned(),
@@ -290,12 +375,12 @@ mod tests {
             elsewhere: vec![PathBuf::from("Drive")],
             not_entered: vec![PathBuf::new(), PathBuf::from("Later")],
         };
-        let covered = covered_from(&walked);
+        let covered = covered_from(&walked, alo_files::MOST_WALKED);
         assert_eq!(
             covered,
             Covered {
                 whole: false,
-                most: MOST_WALKED,
+                most: alo_files::MOST_WALKED,
                 unread: vec![Unread {
                     below: "Private/Theirs".to_owned(),
                     why: "permission denied".to_owned(),

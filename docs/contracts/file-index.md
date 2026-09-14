@@ -217,11 +217,11 @@ empty answer is *nothing matched* and never *nothing was looked at*:
 
 | Field | Meaning |
 |---|---|
-| `whole` | Whether the walk finished, rather than stopping at its bound. |
+| `whole` | Whether every folder found was listed to its end. An index walks on from every folder one walk left unentered, so a folder of more things than one walk looks at is indexed whole; `false` only when a folder under it holds more than `most` things at a single level, which no walk can list to its end. |
 | `most` | The bound: how many things one walk looks at. `20000` today, which is `alo_files::MOST_WALKED`. |
 | `unread` | Folders the machine would not let the walk read, each as `{"below":…,"why":…}` with what the machine said. |
 | `elsewhere` | Folders on another filesystem, not entered. |
-| `not_entered` | Folders the walk had not finished when it stopped at its bound. Empty unless `whole` is `false`. |
+| `not_entered` | Folders no walk could list to their end, each holding more than `most` things at one level; the first `most` names in each are in the index, and the rest are not. Empty when `whole` is `true`. An index written by a version that stopped at one walk lists here the folders that walk had not entered, and is made whole the next time it is made again. |
 | `unnamed` | How many things were left out because their names cannot be shown safely. |
 
 ## What an entry says

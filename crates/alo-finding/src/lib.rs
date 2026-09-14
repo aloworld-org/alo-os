@@ -40,6 +40,24 @@
 //! whose size or time has changed, and [`Index::opened`] says how many it
 //! read, so that a test can count.
 //!
+//! # An index made whole for a folder larger than one walk
+//!
+//! One walk looks at [`alo_files::MOST_WALKED`] things, so that a verb over a
+//! granted folder is bounded whatever the folder holds. A photo library or a
+//! source tree is more than that, so [`Index::of`] walks **on**: from every
+//! folder the walk had found and not entered — the same walker, under the
+//! same bound, asked again from a folder it named — until nothing is left
+//! unentered, every entry's `below` spelled from the folder the person named.
+//! [`Covered::whole`] is then true and [`Covered::not_entered`] empty. The one
+//! folder no walk can list to its end is one holding more than the bound at
+//! a single level; it stays in `not_entered`, the index says it is not whole,
+//! and every answer says that folder was not searched. [`Index::again`] walks
+//! on the same way, so an index an earlier version cut short at one walk is
+//! made whole by it, reading only the files it had not reached.
+//! `tests/an_index_made_whole_for_a_folder_larger_than_one_walk.rs` builds a
+//! folder of more than the bound and times the index, and the report
+//! publishes the number with the machine named.
+//!
 //! # An index says when it was made, and an answer says how old it is
 //!
 //! [`Index::of`] and [`Index::again`] take the moment the index is made
@@ -144,7 +162,7 @@
 //! | | |
 //! |---|---|
 //! | [`Index`], [`Index::of`] | One folder, indexed at a moment the caller names |
-//! | [`Index::again`] | The same folder, indexed again, reading only what changed |
+//! | [`Index::again`] | The same folder, indexed again, reading only what changed — and made whole if it was cut short |
 //! | [`Index::made`], [`Answer::made`] | When the index was made, and so how old an answer is |
 //! | [`Index::answer`], [`Query`], [`Answer`] | An answer from the index alone, beside what was not searched |
 //! | [`NotSearched`] | What the query could not be held against |
@@ -158,7 +176,7 @@
 //! | [`Indexed::in_hand`], [`InHand`], [`InHand::answer`], [`InHand::again`] | The list's indexes read once and held, asked many times from memory, one brought up to date by its name |
 //! | [`InHand::keep`], [`InHand::forget`] | A folder kept or forgotten through the held set: on the disk and the list as `Indexed` does it, and in hand what that means |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
-//! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
+//! | [`Covered`] | What the walks could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The twelve ways there is no index at all |
 //! | [`finding_verbs`], [`verbs::declare_into`] | The search verb, declared for an agent's list |
 //! | [`Searched`], [`NotAnswered`] | A permitted search put to the index, and why it might not answer |
@@ -237,6 +255,7 @@ mod listed;
 mod place;
 mod reading;
 mod searching;
+mod walking_on;
 mod wording;
 
 pub use answer::{Answer, NotSearched};

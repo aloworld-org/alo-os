@@ -3,11 +3,22 @@
 //!
 //! An empty answer has to be *nothing matched* and never *nothing was looked
 //! at*, and the difference is this: the folders the machine would not read,
-//! the folders on another filesystem the walk did not enter, the folders it
-//! had not finished when it reached its bound, and the things whose names
-//! cannot be shown. Each is written into the index's first line, and the
-//! search that answers *what was not searched* — the plan's next task — reads
-//! it from there rather than walking to find out.
+//! the folders on another filesystem the walk did not enter, the folders no
+//! walk could list to their end, and the things whose names cannot be shown.
+//! Each is written into the index's first line, and the search that answers
+//! *what was not searched* reads it from there rather than walking to find
+//! out.
+//!
+//! # Not whole means one folder too wide, not a folder too big
+//!
+//! An index walks on from every folder one walk left unentered until nothing
+//! is, so a folder of more things than one walk looks at is indexed whole.
+//! What is left in [`Covered::not_entered`] is a folder holding more than
+//! [`Covered::most`] things **at one level**, which the walker — listing a
+//! folder, sorting its names and keeping the first `most` — stops inside in
+//! the same place every time. The first `most` names in it are in the index,
+//! and everything under the folders among them; the rest is not, and the
+//! sentence above the index says so.
 
 use alo_strings::{Counting, Filling, Said, Strings};
 use serde::{Deserialize, Serialize};
@@ -17,17 +28,19 @@ use crate::words;
 /// What the walk under the folder could not reach.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Covered {
-    /// Whether the walk finished, rather than stopping at its bound.
+    /// Whether every folder found was listed to its end, rather than one
+    /// holding more than [`Self::most`] things at one level being left.
     pub whole: bool,
-    /// The bound: how many things one walk looks at.
+    /// The bound: how many things one walk looks at. An index walks on past
+    /// it; a single folder wider than it does not.
     pub most: usize,
     /// Folders the machine would not let the walk read, each with what it
     /// said.
     pub unread: Vec<Unread>,
     /// Folders on another filesystem, not entered.
     pub elsewhere: Vec<String>,
-    /// Folders the walk had not finished listing when it stopped. Empty
-    /// unless the walk was not [`Self::whole`].
+    /// Folders no walk could list to their end, each holding more than
+    /// [`Self::most`] things at one level. Empty when [`Self::whole`].
     pub not_entered: Vec<String>,
     /// How many things were left out because their names cannot be shown.
     pub unnamed: usize,
@@ -49,8 +62,8 @@ impl Covered {
         self.whole && self.unread.is_empty() && self.elsewhere.is_empty() && self.unnamed == 0
     }
 
-    /// The sentence said once above an index that stopped at its bound — or
-    /// nothing, for one that finished.
+    /// The sentence said once above an index with a folder wider than one
+    /// walk — or nothing, for one that is whole.
     #[must_use]
     pub fn not_the_whole(&self, strings: &Strings) -> Option<Said> {
         if self.whole {

@@ -4,6 +4,8 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use alo_files::MOST_WALKED;
+
 use crate::answer::Answer;
 use crate::asking::NotAsked;
 use crate::covered::Covered;
@@ -56,23 +58,37 @@ impl Index {
     /// an answer from it can say how old it is. It is an argument rather than
     /// a reading of the clock, for the reasons on [`Self::made`].
     ///
+    /// # A folder larger than one walk
+    ///
+    /// One walk looks at [`alo_files::MOST_WALKED`] things. A folder holding
+    /// more is walked on from every folder that walk had found and not
+    /// entered — the same walker, under the same bound, from a folder it
+    /// named — until nothing is left unentered, and the index is whole. The
+    /// one folder that cannot be made whole is one holding more than the
+    /// bound at a single level, which no walk can list to its end; it stays
+    /// in [`Covered::not_entered`], [`Covered::whole`] is false, and every
+    /// answer says it was not searched.
+    ///
     /// # Errors
     ///
     /// [`NotIndexed::NotAbsolute`] for a folder not named from the root, and
     /// [`NotIndexed::NotWalked`] for one that is not there, is a file, or
     /// could not be read.
     pub fn of(folder: &Path, made: SystemTime) -> Result<Self, NotIndexed> {
-        indexing::assembled(folder, None, made, &mut Disk)
+        indexing::assembled(folder, None, made, &mut Disk, MOST_WALKED)
     }
 
-    /// The same folder, indexed again at this moment: walked again, and a
-    /// file read only if its size or its time has changed since this index.
+    /// The same folder, indexed again at this moment: walked again — and on,
+    /// as [`Self::of`] walks — and a file read only if its size or its time
+    /// has changed since this index. An index cut short at one walk's bound
+    /// by an earlier version is made whole here, reading only the files it
+    /// had not reached.
     ///
     /// # Errors
     ///
     /// As [`Self::of`]. This index is as it was, whatever the answer.
     pub fn again(&self, made: SystemTime) -> Result<Self, NotIndexed> {
-        indexing::assembled(&self.of, Some(self), made, &mut Disk)
+        indexing::assembled(&self.of, Some(self), made, &mut Disk, MOST_WALKED)
     }
 
     /// Everything that answers this query, from the index alone and in the

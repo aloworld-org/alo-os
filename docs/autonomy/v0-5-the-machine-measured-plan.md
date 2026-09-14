@@ -503,7 +503,28 @@ remember to drop its held set every time it forgot a folder.
 
 ### 11. An index made whole for a folder larger than one walk
 
-**Status:** ready. **Depends on:** 3, 7.
+**Status:** done. **Depends on:** 3, 7.
+
+**Done, 2026-09-14.** Report:
+[`updates/an-index-made-whole-for-a-folder-larger-than-one-walk.md`](updates/an-index-made-whole-for-a-folder-larger-than-one-walk.md).
+`crates/alo-finding`: `Index::of` and `Index::again` walk on — the same
+walker, asked again from every folder one walk left in `not_entered`, under
+the same bound each time, in the new `walking_on.rs`, the one file that
+names the walker — until nothing is left unentered, every entry's `below`
+spelled from the folder the person named; `Covered::whole` is then true,
+`not_entered` empty and `most` still one walk's bound. The one folder no
+walk can finish is one holding more than the bound at a single level: it is
+tried once more, left in `not_entered`, and the sentence above the index
+now says so rather than *stopped after 20000 things*. A folder a later walk
+could not read is `unread` exactly as one the first walk stepped over; the
+folder a walk stopped inside is listed twice and its steps and its unnamed
+names are counted once; an index cut short by task 3 reads, and `again`
+makes it whole reading only what it had not reached, `format` still `1`
+and no field added. Timed on the development machine, WSL: 24,400 things
+indexed whole in 427 to 451 ms, and the memory a whole index takes in hand
+— five to eight times its words, held one `String` each — is the number
+the constraint asked for, with a bound proposed as a task rather than
+taken.
 
 `alo_files::MOST_WALKED` is twenty thousand: the most things one walk
 looks at, so that a verb over a granted folder is bounded in time and
@@ -547,3 +568,48 @@ stops in the same place.
   of a very large folder turns out to need more memory than a person's
   machine should give a search, the honest deliverable is that number in
   the report and a bound argued for there, not a quiet partial index.
+
+### 12. Sizes made whole for a folder larger than one walk, with one walking on
+
+**Status:** ready. **Depends on:** 2, 11.
+
+Task 11 made the index whole for a folder larger than one walk. *What is
+filling the disk* has the same bound and the same honesty: task 2's
+`Holding::of` walks once under `MOST_WALKED`, and where the walk stops the
+tree says a folder was cut short rather than reporting a partial sum as a
+total. Honest, and the same *not enough*: the folder a person opens *what
+is filling the disk* on is exactly the one with too much in it, and a tree
+that says *cut short* about it is a measurement that stops where it was
+most wanted. The walking on that fixes it exists now, in
+`crates/alo-finding/src/walking_on.rs` — and a second copy in
+`alo-measuring` would be two opinions about which folder is walked again
+and what is counted once, which is the reason this plan borrows one walker
+instead of writing another. Task 2 made the walker public in `alo-files`
+additively, as the one edit to that crate this plan makes, because the
+private walker could not express three of the acceptance's clauses; this is
+the same shape of decision, and the task is to make it in the open.
+
+- **Acceptance:** `alo-measuring` answers *what is filling this* whole for
+  a folder of more than one walk's bound — every node's size the sum of its
+  children plus its own files, checked by a test that builds a folder of
+  more than the bound in subfolders with known bytes and reads the total
+  back to the byte, timed and the number in the report **with the machine
+  named**; the tree's *cut short* is said only for a folder holding more
+  than the bound at a single level, exactly as the index's `not_entered` is,
+  and never for a folder that was merely large; hard links are still
+  counted once per tree across the walks, with the task 2 test extended
+  past the bound; **the walking on lives in exactly one place** — the
+  report decides where, and the recommendation is `alo-files`, additively,
+  beside `Walking` as a call that walks on under the walker's own bound and
+  returns what task 11's `Gathered` returns, with `alo-finding`'s
+  `walking_on.rs` reduced to using it and every task 11 test still passing
+  unchanged; and `alo_files::Walking::through` is unchanged, so `alo-files`'
+  six verbs and their archive bound are as they were.
+- **Constraint:** if the one place is `alo-files`, the edit is additive
+  and argued in the report the way task 2's was — a new call, no change to
+  `through`, no wider bound, no second walker — and it is the second and
+  last edit to that crate this plan makes. Nothing here deletes, moves or
+  empties anything, and the whole disk is still never walked unasked. The
+  index's format, the verb and the list are untouched. A link is still
+  never followed, another filesystem is still noted and not entered, and
+  the shipped-source tests of both crates keep saying what they say.
