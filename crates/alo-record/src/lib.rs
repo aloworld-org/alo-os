@@ -21,6 +21,7 @@
 //! | [`Happened::NeverPutAnywhere`] | A question a rule refused before it was put anywhere |
 //! | [`Happened::GrantsNotReadAgain`] | The person's grants were not read again, so the service went on under the list it had |
 //! | [`Happened::Paired`] | A pairing with another machine was kept on this one ([ADR 0003](../../../docs/decisions/0003-the-network-is-not-authority.md)) |
+//! | [`Happened::WorkspaceOpened`] | The person opened a workspace discovery found, at the address measured at that moment ([ADR 0003](../../../docs/decisions/0003-the-network-is-not-authority.md)) |
 //! | [`Happened::NotBounded`] | There was no boundary to run a turn's work inside, so nothing ran ([ADR 0015](../../../docs/decisions/0015-the-kernel-learns-what-a-turn-is.md)) |
 //! | [`Happened::Left`] | Something left this machine (law 1) |
 //! | [`Happened::HeldBack`] | Something the egress policy refused to let leave |

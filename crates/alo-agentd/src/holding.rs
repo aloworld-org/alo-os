@@ -174,6 +174,40 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
             }
         }
     }
+
+    /// Write down that the person opened a workspace discovery found, with
+    /// the identity and the address it answered from at that moment.
+    ///
+    /// The person's own door opens one whether or not a turn — local or
+    /// remote — holds the machine, and the record is behind whatever does.
+    /// The same entry either way, naming no agent: the person opened it.
+    ///
+    /// # Errors
+    ///
+    /// [`NotKept`] when the record could not be written; the service stops on
+    /// it, and the address is not handed to anybody.
+    pub fn a_workspace_was_opened(
+        &mut self,
+        workspace: &str,
+        answers_at: &str,
+        now: SystemTime,
+    ) -> Result<(), NotKept> {
+        match self {
+            Self::ATurn { turning, .. } => {
+                turning.a_workspace_was_opened(workspace, answers_at, now)
+            }
+            Self::Nobody(machine) => machine.a_workspace_was_opened(workspace, answers_at, now),
+            Self::TheNetwork { doorway, .. } => {
+                if let Some(arriving) = doorway.turn() {
+                    arriving.a_workspace_was_opened(workspace, answers_at, now)
+                } else if let Some(machine) = doorway.machine() {
+                    machine.a_workspace_was_opened(workspace, answers_at, now)
+                } else {
+                    Err(the_machine_was_lost())
+                }
+            }
+        }
+    }
 }
 
 /// The record's answer for a machine that is no longer there to write into.

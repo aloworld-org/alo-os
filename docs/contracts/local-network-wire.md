@@ -221,8 +221,12 @@ answer in one window.
 verb or question reaches a workspace because it was found, no alo machine
 connects to one until a person acts, and no alo machine dials an address a person
 typed as a workspace. What reaching a found workspace takes is recorded in
-`docs/autonomy/updates/a-self-hosted-workspace-is-found-not-configured.md` and is
-built by the task that builds it.
+`docs/autonomy/updates/a-self-hosted-workspace-is-found-not-configured.md`. The
+person's act is `open-workspace` (`docs/contracts/daemon-protocol.md`), by identity
+alone: the machine asks this question again at that moment, and hands the person's
+session the one address that workspace answered from — refusing when none did, or
+when more than one address answered for the same identity. The machine still
+connects to nothing; the workspace client in the person's session does.
 
 ## Versioning
 

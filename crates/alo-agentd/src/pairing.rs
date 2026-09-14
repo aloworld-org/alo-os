@@ -145,7 +145,8 @@ impl AboutAPairing {
             | FromAPerson::ChooseMachineToAnswer { .. }
             | FromAPerson::NameMachine { .. }
             | FromAPerson::ClearMachineName { .. }
-            | FromAPerson::Workspaces => None,
+            | FromAPerson::Workspaces
+            | FromAPerson::OpenWorkspace { .. } => None,
         }
     }
 }

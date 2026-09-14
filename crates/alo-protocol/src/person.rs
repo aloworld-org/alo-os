@@ -56,6 +56,18 @@
 //! workspace because it was found. An agent asking is refused in the words an
 //! approval gets: the network around the person is the person's to be shown.
 //!
+//! # Opening a found workspace is the person's act, by identity alone
+//!
+//! `open-workspace` names a workspace **by the identity it was found by** and
+//! carries nothing else. The daemon looks around on the link at that moment and
+//! answers with the one address that workspace answered from then — never one
+//! a shell kept from a list that has since aged, which would be a typed address
+//! by another route. It hands that address to the person's session and dials
+//! nothing itself; what connects is the workspace client, under the person's
+//! own account, and nothing here is a pairing or a sign-in (ADR 0003). An agent
+//! sending it is refused in the words an approval gets: an agent that could
+//! open a workspace would be choosing where the person's session connects.
+//!
 //! # A number is not a handle
 //!
 //! Both of these carry a `u64`, and it is deliberately not an
@@ -192,6 +204,14 @@ pub enum FromAPerson {
     /// Carries nothing — no address — and reaches nothing: see this file's
     /// header.
     Workspaces,
+    /// They open a workspace discovery found, by its identity.
+    ///
+    /// No address: the daemon measures where it answers at that moment. See
+    /// this file's header.
+    OpenWorkspace {
+        /// Which workspace, by the identity it was found by.
+        machine: String,
+    },
 }
 
 impl FromAPerson {
@@ -223,6 +243,7 @@ impl FromAPerson {
             Asked::NameMachine { machine, called } => Ok(Self::NameMachine { machine, called }),
             Asked::ClearMachineName { machine } => Ok(Self::ClearMachineName { machine }),
             Asked::Workspaces {} => Ok(Self::Workspaces),
+            Asked::OpenWorkspace { machine } => Ok(Self::OpenWorkspace { machine }),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -256,7 +277,8 @@ impl FromAPerson {
             | Self::ChooseMachineToAnswer { .. }
             | Self::NameMachine { .. }
             | Self::ClearMachineName { .. }
-            | Self::Workspaces => None,
+            | Self::Workspaces
+            | Self::OpenWorkspace { .. } => None,
         }
     }
 
@@ -334,6 +356,7 @@ impl From<FromAPerson> for Asked {
             FromAPerson::NameMachine { machine, called } => Self::NameMachine { machine, called },
             FromAPerson::ClearMachineName { machine } => Self::ClearMachineName { machine },
             FromAPerson::Workspaces => Self::Workspaces {},
+            FromAPerson::OpenWorkspace { machine } => Self::OpenWorkspace { machine },
         }
     }
 }
@@ -621,9 +644,63 @@ mod tests {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
             },
             FromAPerson::Workspaces,
+            FromAPerson::OpenWorkspace {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            },
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);
+        }
+    }
+
+    /// **Opening a found workspace is the person's, names it by its identity
+    /// alone, and an agent sending it is refused in the words an approval
+    /// gets.**
+    #[test]
+    fn opening_a_workspace_is_a_persons_by_identity_and_refused_to_an_agent() {
+        let line = r#"{"format":1,"asks":{"open-workspace":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}}"#;
+        let asked = FromAPerson::read(line).unwrap();
+        assert_eq!(
+            asked,
+            FromAPerson::OpenWorkspace {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned()
+            }
+        );
+        assert_eq!(asked.number(), None);
+        assert!(!asked.is_yes());
+        assert!(!asked.is_a_question_about_the_turn());
+        assert!(!asked.is_about_a_pairing());
+        assert!(!asked.is_about_a_name());
+        assert_eq!(
+            crate::FromAnAgent::read(line),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+    }
+
+    /// **A request to open a workspace that carries an address is not a
+    /// request**: beside the identity, instead of it, or as a URL or a port —
+    /// every shape is refused as unreadable on both doors, so an address a
+    /// shell kept or a person typed has nowhere to arrive.
+    #[test]
+    fn opening_a_workspace_by_an_address_is_not_a_request() {
+        for message in [
+            r#"{"format":1,"asks":{"open-workspace":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","answers_at":"192.168.1.20:8443"}}}"#,
+            r#"{"format":1,"asks":{"open-workspace":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","address":"192.168.1.20"}}}"#,
+            r#"{"format":1,"asks":{"open-workspace":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","port":8443}}}"#,
+            r#"{"format":1,"asks":{"open-workspace":{"answers_at":"192.168.1.20:8443"}}}"#,
+            r#"{"format":1,"asks":{"open-workspace":{"url":"https://mail.axon.example"}}}"#,
+            r#"{"format":1,"asks":{"open-workspace":{}}}"#,
+        ] {
+            assert_eq!(
+                FromAPerson::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
+            assert_eq!(
+                crate::FromAnAgent::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
         }
     }
 }

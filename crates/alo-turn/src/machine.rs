@@ -281,6 +281,34 @@ impl<'a> Machine<'a> {
         self.kept.keep(Entry::paired(with, now))
     }
 
+    /// Write down that the person opened a workspace discovery found, with
+    /// the identity they named and the address it answered from at that
+    /// moment.
+    ///
+    /// Called by the service that holds this machine, from the person's own
+    /// door, before it hands the address to their session — so no turn need
+    /// be under way. [`crate::Turning`] and [`crate::Arriving`] have the same
+    /// door for the rounds where a turn holds the machine.
+    ///
+    /// **Nothing a caller passes in can name an authority**, for
+    /// [`Machine::a_pairing_was_kept`]'s reason: the arguments are an identity
+    /// and an address, and the entry names no agent because no agent can
+    /// send the request. See [`alo_record::Entry::a_workspace_was_opened`].
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written. A
+    /// service that meets this has stopped keeping evidence and stops.
+    pub fn a_workspace_was_opened(
+        &mut self,
+        workspace: &str,
+        answers_at: &str,
+        now: std::time::SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.kept
+            .keep(Entry::a_workspace_was_opened(workspace, answers_at, now))
+    }
+
     /// Shorten this machine's record under the rule it is kept by.
     ///
     /// Public, because the caller is the service that holds the machine and

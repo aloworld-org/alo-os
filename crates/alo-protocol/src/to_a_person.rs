@@ -6,7 +6,8 @@
 //! about pairing — the proposal waiting with its code, what became of a
 //! confirmation, what became of a revocation, and everything paired and
 //! waiting — the machine now chosen to answer their questions, a machine named
-//! or its name taken away, and, for any of the eleven, the refusal in the
+//! or its name taken away, the workspaces on the network and the one they
+//! opened, and, for any of them, the refusal in the
 //! language they read.
 //!
 //! Wherever a paired machine is named here — on the list, chosen to answer,
@@ -116,9 +117,27 @@ pub enum ToAPerson {
         /// In the order they answered; empty when nothing was found.
         found: Vec<FoundWorkspace>,
     },
+    /// The workspace they opened, at the one address it answered from when
+    /// the daemon looked — for their session to hand to the workspace client.
+    WorkspaceOpened(FoundWorkspace),
 }
 
 impl ToAPerson {
+    /// The workspace they opened, at the address measured at that moment.
+    #[must_use]
+    pub const fn workspace_opened(workspace: FoundWorkspace) -> Self {
+        Self::WorkspaceOpened(workspace)
+    }
+
+    /// The workspace they opened, when that is what they asked.
+    #[must_use]
+    pub const fn opened_workspace(&self) -> Option<&FoundWorkspace> {
+        match self {
+            Self::WorkspaceOpened(workspace) => Some(workspace),
+            _ => None,
+        }
+    }
+
     /// The workspaces found on the local network, in the order they answered.
     #[must_use]
     pub const fn workspaces(found: Vec<FoundWorkspace>) -> Self {
@@ -349,6 +368,7 @@ impl ToAPerson {
                 became,
             }),
             Told::Workspaces { found } => Ok(Self::Workspaces { found }),
+            Told::WorkspaceOpened(workspace) => Ok(Self::WorkspaceOpened(workspace)),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -425,6 +445,7 @@ impl From<ToAPerson> for Told {
                 became,
             },
             ToAPerson::Workspaces { found } => Self::Workspaces { found },
+            ToAPerson::WorkspaceOpened(workspace) => Self::WorkspaceOpened(workspace),
         }
     }
 }
@@ -577,6 +598,30 @@ mod tests {
             Some([].as_slice())
         );
         assert!(ToAPerson::Declined.workspaces_found().is_none());
+    }
+
+    /// **The workspace opened comes back to the person — never to an agent —
+    /// with the one address measured**, in the shape a listed workspace has.
+    #[test]
+    fn the_workspace_opened_is_told_to_the_person_and_not_to_an_agent() {
+        let opened = FoundWorkspace::of(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            "192.168.1.20:8443".parse().unwrap(),
+            "1",
+        );
+        let told = ToAPerson::workspace_opened(opened.clone());
+        assert_eq!(told.opened_workspace(), Some(&opened));
+        let written = told.written().unwrap();
+        assert_eq!(
+            written,
+            r#"{"format":1,"tells":{"workspace-opened":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","answers_at":"192.168.1.20:8443","speaks":"1"}}}"#
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+        assert!(ToAPerson::Declined.opened_workspace().is_none());
     }
 
     /// **What a shell draws is the number and the sentence**, one for each

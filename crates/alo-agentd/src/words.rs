@@ -371,8 +371,49 @@ pub const A_NAME_CANNOT_BE_AN_IDENTITY: Word = Word::saying(
      one.",
 );
 
+/// A workspace named to be opened by something that is not an identity.
+pub const THAT_IS_NOT_A_WORKSPACE: Word = Word::saying(
+    "agentd.that-is-not-a-workspace",
+    "that is not a workspace on this network — a workspace is opened by the identity it was found by, and nothing else",
+)
+.noting(
+    "Said to the person's own shell when it asked to open a workspace by something that is not a \
+     workspace identity: a web address, a server name, a number. A \"workspace\" is the shared \
+     mail, files, chat and documents an office runs on its own server; its identity is the string \
+     alo OS found it by on the local network, and alo OS does not open anything a person typed in \
+     its place. Nothing was looked for and nothing was contacted.",
+);
+
+/// A workspace named to be opened that did not answer at the moment.
+pub const NO_SUCH_WORKSPACE_ON_THE_NETWORK: Word = Word::saying(
+    "agentd.no-such-workspace-on-the-network",
+    "no workspace by that identity answered on this network just now, so nothing was opened",
+)
+.noting(
+    "Said when the person asked to open a workspace found on their local network, and alo OS looked \
+     for it again at that moment and it did not answer. Its server may be switched off or on \
+     another network. A \"workspace\" is the shared mail, files, chat and documents an office runs \
+     on its own server. Nothing was contacted.",
+);
+
+/// A workspace named to be opened that answered from more than one place.
+pub const A_WORKSPACE_ANSWERED_FROM_MORE_THAN_ONE_PLACE: Word = Word::saying(
+    "agentd.a-workspace-answered-from-more-than-one-place",
+    "more than one place on this network answered as that workspace just now, so nothing was opened — alo OS cannot tell which one is really it",
+)
+.noting(
+    "Said when the person asked to open a workspace found on their local network, and when alo OS \
+     looked at that moment two or more different places answered claiming to be the same one. \
+     Anything on a network can claim to be anything, so alo OS opens none of them rather than \
+     guessing. A \"workspace\" is the shared mail, files, chat and documents an office runs on its \
+     own server. Nothing was contacted.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 24] = [
+pub const EVERY_WORD: [Word; 27] = [
+    THAT_IS_NOT_A_WORKSPACE,
+    NO_SUCH_WORKSPACE_ON_THE_NETWORK,
+    A_WORKSPACE_ANSWERED_FROM_MORE_THAN_ONE_PLACE,
     ONLY_A_PAIRED_MACHINE_IS_NAMED,
     A_NAME_HAS_NOTHING_IN_IT,
     A_NAME_IS_TOO_LONG,

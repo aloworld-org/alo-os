@@ -317,6 +317,29 @@ impl Entry {
         )
     }
 
+    /// The person opened `workspace`, which answered at `answers_at` when the
+    /// link was looked at.
+    ///
+    /// Written by the service holding this machine at the moment it hands the
+    /// address to the person's session, and before it does, so an address is
+    /// never handed anywhere the record does not say. `workspace` is the
+    /// identity it was found by and `answers_at` the address measured, as
+    /// `address:port`. See [`Happened::WorkspaceOpened`] for why it names no
+    /// agent and is not egress.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision.
+    #[must_use]
+    pub fn a_workspace_was_opened(workspace: &str, answers_at: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::WorkspaceOpened {
+                workspace: Line::of(workspace),
+                answers_at: Line::of(answers_at),
+            },
+        )
+    }
+
     /// There was no boundary to run this turn's work inside, so nothing ran.
     ///
     /// `why` is the sentence the person was shown, handed in already rendered
@@ -734,5 +757,42 @@ mod tests {
             .from_another_machine("the reception machine\u{1b}[2K");
         let written = serde_json::to_string(&entry).unwrap();
         assert!(!written.contains('\u{1b}'), "{written}");
+    }
+
+    /// **A workspace opened by the person is recorded with the identity and
+    /// the address measured, under nobody's authority, and is not egress**:
+    /// the person opened it, and this machine's service dialled nothing.
+    #[test]
+    fn a_workspace_opened_by_the_person_names_the_identity_and_the_address_and_no_agent() {
+        let entry = Entry::a_workspace_was_opened(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            "192.168.1.20:8443",
+            noon(),
+        );
+
+        assert_eq!(entry.at(), noon());
+        assert_eq!(entry.agent(), None);
+        assert_eq!(entry.origin(), None);
+        assert_eq!(entry.what(), None);
+        assert!(!entry.happened().ran());
+        assert!(!entry.happened().was_stopped());
+        assert!(!entry.happened().caused_egress());
+        assert_eq!(entry.happened().destination(), None);
+        assert!(matches!(
+            entry.happened(),
+            Happened::WorkspaceOpened { workspace, answers_at }
+                if workspace.is("0f1e2d3c4b5a69788796a5b4c3d2e1f0")
+                    && answers_at.is("192.168.1.20:8443")
+        ));
+
+        let written = serde_json::to_string(&entry).unwrap();
+        assert!(
+            written.contains(
+                r#""workspace-opened":{"workspace":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","answers_at":"192.168.1.20:8443"}"#
+            ),
+            "{written}"
+        );
+        assert!(!written.contains("agent"), "{written}");
+        assert_eq!(serde_json::from_str::<Entry>(&written).unwrap(), entry);
     }
 }

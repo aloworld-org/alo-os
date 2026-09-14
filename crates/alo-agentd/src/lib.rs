@@ -222,6 +222,8 @@ pub mod naming_machines;
 #[cfg(target_os = "linux")]
 pub mod network;
 #[cfg(target_os = "linux")]
+pub mod opening_workspaces;
+#[cfg(target_os = "linux")]
 pub mod pairing;
 #[cfg(target_os = "linux")]
 pub mod place;

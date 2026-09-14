@@ -22,9 +22,17 @@
 //!
 //! **No standing.** Finding a workspace confers nothing (ADR 0003): there is no
 //! field saying it is trusted, reachable, signed in to or paired, because none
-//! of those is true of something found. **No request goes the other way**:
+//! of those is true of something found. **No address goes the other way**:
 //! the person's door has no request that names an address to be dialled as a
 //! workspace, so an address typed into a shell has nowhere on this wire to go.
+//!
+//! # Opening one is by identity, answered in this same shape
+//!
+//! `open-workspace` names a workspace by `machine` alone, and its answer,
+//! `workspace-opened`, is one of these: the address in it is the one that
+//! workspace answered from **when the daemon looked on receiving the request**,
+//! never one kept from an earlier list. The daemon hands it to the person's
+//! session and dials nothing.
 
 use serde::{Deserialize, Serialize};
 

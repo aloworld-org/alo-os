@@ -341,6 +341,49 @@ the same look — an advertisement is not proven, and a workspace claiming a nam
 machine's identity from anywhere else is listed by the identity alone. There is no
 field for standing: a workspace found is not trusted, reachable or signed in to.
 
+### `open-workspace` — the person opens a found workspace
+
+```json
+{"open-workspace":{"machine":"aaaabbbbccccddddeeeeffff00001111"}}
+```
+
+Added 2026-09-14, additively. The person opens a workspace discovery found, **by its
+identity and nothing else**. There is no field for an address, a port, a hostname or
+a URL, and a message carrying any of them — beside the identity or instead of it — is
+not a request. A shell does not send back the `answers_at` it drew from
+`workspaces`: that list has aged, and an address remembered from it is a typed
+address by another route.
+
+The daemon, in this order, and every refusal contacts nothing and writes nothing:
+
+1. `machine` must be an identity, or the person is told *that is not a workspace on
+   this network* — before the link is asked at all.
+2. The link is asked at that moment, as for `workspaces`.
+3. Exactly one address must have answered as that identity. None is *no workspace
+   by that identity answered on this network just now*; two or more different
+   addresses is *more than one place on this network answered as that workspace* —
+   an advertisement is not proven, and a claim nobody can tell apart is not settled
+   by taking whichever answered first. The same address heard twice is one place.
+4. The opening is written in the record as `workspace-opened`, naming the identity
+   and the address (`docs/contracts/record-file.md`), **before** the answer is sent.
+   A record that cannot be written stops the service, and no address is handed over.
+
+What comes back is `workspace-opened`, in the shape one entry of `workspaces` has,
+with `called` under the same rule:
+
+```json
+{"workspace-opened":{"machine":"aaaabbbbccccddddeeeeffff00001111","answers_at":"192.168.1.20:8443","speaks":"1"}}
+```
+
+**The daemon dials nothing.** It hands the address to the person's session; what
+connects is the workspace client — `alo-workplace`'s — under the person's own
+account, and the workspace's own sign-in answers it. No pairing is required or
+consulted, and nothing here is a sign-in. An agent sending the request is refused in
+the same words as an agent trying to approve something: an agent that could open a
+workspace would be choosing where the person's session connects. Anything this
+machine or its agents do *with* a workspace on another alo machine is a different
+act, under a pairing permitting `workspace`, and is not this request.
+
 ## What comes back
 
 ```json

@@ -63,8 +63,9 @@
 //! what is granted has changed, and — since the local network — a pairing
 //! proposed, confirmed, revoked or listed (`pairing.rs`), a paired machine
 //! chosen to answer their questions, a paired machine named or its name
-//! taken away, and the workspaces discovery finds on the network
-//! (`workspaces.rs`) — each refused on the agent's door in the words an
+//! taken away, the workspaces discovery finds on the network
+//! (`workspaces.rs`) and one of them opened by its identity — each refused on
+//! the agent's door in the words an
 //! approval gets.
 //!
 //! They are two types because they arrive from two sides of one machine, and a

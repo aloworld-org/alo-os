@@ -136,7 +136,8 @@ impl ToAnAgent {
             | Told::Pairings { .. }
             | Told::ChosenToAnswer { .. }
             | Told::MachineNamed { .. }
-            | Told::Workspaces { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
+            | Told::Workspaces { .. }
+            | Told::WorkspaceOpened(_) => Err(NotUnderstood::NotAnAnswerForAnAgent),
         }
     }
 

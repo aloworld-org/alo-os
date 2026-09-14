@@ -483,6 +483,28 @@ impl<'a, 'm> Arriving<'a, 'm> {
         self.turning.keeping(Entry::paired(with, now))
     }
 
+    /// Write down that the person opened a workspace discovery found, while
+    /// this remote turn holds the machine.
+    ///
+    /// [`crate::Machine::a_workspace_was_opened`] with a remote turn in front
+    /// of it. The entry is the machine's own — no agent, and not stamped with
+    /// this turn's origin, because the machine whose turn this is caused
+    /// nothing about it: the person here opened it.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and
+    /// the turn is closed by it.
+    pub fn a_workspace_was_opened(
+        &mut self,
+        workspace: &str,
+        answers_at: &str,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.turning
+            .keeping(Entry::a_workspace_was_opened(workspace, answers_at, now))
+    }
+
     /// The sentence for a pairing that has ended, if it has.
     ///
     /// `None` while the pairing stands, which is the ordinary answer and costs

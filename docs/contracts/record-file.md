@@ -63,12 +63,13 @@ machine that did nothing are the same file.
 
 Every entry carries `at` and `happened`. `happened` is tagged with what kind of
 thing it was — `ran`, `stopped`, `turned-away`, `answered-here`,
-`never-put-anywhere`, `grants-not-read-again`, `paired`, `not-bounded`, `left`,
+`never-put-anywhere`, `grants-not-read-again`, `paired`, `workspace-opened`,
+`not-bounded`, `left`,
 `held-back`, `left-on-its-own` — and the fields under it depend on that tag.
 `crates/alo-record` is the shape as working code; ADR 0001 §7 is why each of
 them is kept.
 
-**Every entry names whose authority it was under, except three.** `agent` is
+**Every entry names whose authority it was under, except four.** `agent` is
 present on all of them but these:
 
 - `left-on-its-own`, which is alo OS reaching the network with nobody having
@@ -83,14 +84,24 @@ present on all of them but these:
   pairing spells it — no person had named it yet, and no name is invented. A
   proposal refused, withdrawn or left to lapse writes nothing, because a
   proposal is not something that happened to the machine.
+- `workspace-opened`, added 2026-09-14 and additive, which is the person opening
+  a workspace discovery found (ADR 0003): `workspace` is the identity they named
+  it by and `answers_at` is the one address it answered from when the machine
+  looked, as `address:port`. It is written before that address is handed to the
+  person's session, and a request refused — not an identity, nothing answered,
+  more than one address answered — writes nothing, because nothing was handed
+  anywhere. It is not a departure: the machine's service dialled nothing, and
+  what connects is the workspace client under the person's own account. No agent
+  can send the request, so no agent is named.
 
 There is no name in any of these positions and there is not going to be one.
 Nobody granted the system permission to sign somebody in, nobody granted it
-permission to hold the person's own list of grants, and two people made a
-pairing rather than any agent, so a name there would be an authority the
+permission to hold the person's own list of grants, two people made a
+pairing rather than any agent, and a person opened a workspace no agent could
+open, so a name there would be an authority the
 record invented — and it would appear in a *who did what* column beside agents
 that really were granted something. A reader looking for what the machine did
-with nobody's authority looks for the entries with no `agent`; the three are
+with nobody's authority looks for the entries with no `agent`; the four are
 told apart by their tags, and only the first of them reached the network.
 
 **`not-bounded` is the machine's own refusal**, added 2026-09-12 and additive.

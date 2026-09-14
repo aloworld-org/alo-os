@@ -29,9 +29,11 @@
 //! Nothing here connects to a workspace, dials the address it was heard from,
 //! proposes a pairing, writes the record, or touches a grant or a setting —
 //! the answer is a list and nothing on the machine moves because of it (ADR
-//! 0003). Reaching a workspace found this way is the person's own act, and no
-//! request on either door does it. There is no field on the request for an
-//! address either, so an address typed into a shell has nowhere here to go.
+//! 0003). Reaching a workspace found this way is the person's own act —
+//! `open-workspace`, by identity, answered by [`crate::opening_workspaces`] at
+//! the address measured when it arrives, never one from this list. There is no
+//! field on either request for an address, so an address typed into a shell
+//! has nowhere here to go.
 //!
 //! An agent asking is refused by `alo-protocol` before anything reaches this
 //! file, in the words an agent approving something gets.
@@ -39,8 +41,10 @@
 use std::time::SystemTime;
 
 use alo_corridor::Naming as _;
+use alo_nearby::Around;
 use alo_protocol::{FoundWorkspace, ToAPerson};
 
+use crate::network::{Shared, TheNetwork};
 use crate::pairing::Nearby;
 
 /// Every workspace discovery finds on the network at the moment, each with the
@@ -56,24 +60,41 @@ pub fn listed(nearby: &Nearby<'_>, now: SystemTime) -> ToAPerson {
     let found = around
         .workspaces
         .iter()
-        .map(|workspace| {
-            let host = workspace.host();
-            let answered_there = around
-                .machines
-                .iter()
-                .any(|machine| machine.machine == *host && machine.address == workspace.address());
-            let called = (answered_there && shared.pairings().paired_with(host, now))
-                .then(|| nearby.network.names().called(host))
-                .flatten();
-            FoundWorkspace::of(
-                host.as_str(),
-                workspace.where_it_answers(),
-                workspace.version(),
-            )
-            .hosted_by(called.as_deref())
-        })
+        .map(|workspace| drawn(workspace, &around, &shared, nearby.network, now))
         .collect();
     ToAPerson::workspaces(found)
+}
+
+/// One workspace heard in `around`, as a shell draws it: as it was heard, with
+/// the name the person gave the paired machine hosting it only where that
+/// machine is paired now and answered from the same address in the same look.
+///
+/// Taken with the network's lock held (`shared`), and takes the names' after
+/// it — the order `crate::pairing`'s list takes. Shared with
+/// [`crate::opening_workspaces`], so a workspace opened is drawn by exactly the
+/// rule a workspace listed is.
+#[must_use]
+pub fn drawn(
+    workspace: &alo_nearby::FoundWorkspace,
+    around: &Around,
+    shared: &Shared,
+    network: &TheNetwork,
+    now: SystemTime,
+) -> FoundWorkspace {
+    let host = workspace.host();
+    let answered_there = around
+        .machines
+        .iter()
+        .any(|machine| machine.machine == *host && machine.address == workspace.address());
+    let called = (answered_there && shared.pairings().paired_with(host, now))
+        .then(|| network.names().called(host))
+        .flatten();
+    FoundWorkspace::of(
+        host.as_str(),
+        workspace.where_it_answers(),
+        workspace.version(),
+    )
+    .hosted_by(called.as_deref())
 }
 
 #[cfg(test)]

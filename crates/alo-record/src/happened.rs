@@ -304,6 +304,38 @@ pub enum Happened {
         /// The machine this one is now paired with, by its identity.
         with: Line,
     },
+    /// The person opened a workspace discovery found, and this machine handed
+    /// their session the address it answered from at that moment
+    /// ([ADR 0003](../../../docs/decisions/0003-the-network-is-not-authority.md)).
+    ///
+    /// Written at the one moment there is one value to write it from: the
+    /// link was looked at, exactly one address answered for the identity the
+    /// person named, and that address is about to be handed to the workspace
+    /// client in the person's session. A request refused — not an identity,
+    /// nothing answered, more than one place answered — writes nothing,
+    /// because nothing was handed anywhere.
+    ///
+    /// **It names the workspace by its identity and where it answered by the
+    /// measured address**, both as they were at that moment: a name a person
+    /// gave the host is theirs to change, and the record is read as a
+    /// statement of fact. **No agent, and no field for one**: no agent can
+    /// send the request, and a name in that position would be an authority
+    /// the record invented.
+    ///
+    /// **It is not egress** ([`Happened::caused_egress`] is false). This
+    /// machine's service dialled nothing; what connects is the workspace
+    /// client, under the person's own account, and nothing an agent caused
+    /// left.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    WorkspaceOpened {
+        /// Which workspace, by the identity it was found by.
+        workspace: Line,
+        /// Where it answered at that moment, as `address:port`.
+        answers_at: Line,
+    },
     /// There was no boundary to run the turn's work inside, so nothing ran.
     ///
     /// ADR 0015's *a turn whose boundary cannot be applied does not run — a
@@ -420,6 +452,7 @@ impl Happened {
             Self::LeftOnItsOwn { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
     }
@@ -445,6 +478,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
@@ -471,6 +505,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -525,6 +560,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -554,6 +590,7 @@ impl Happened {
             | Self::AnsweredHere { .. }
             | Self::AnsweredForAnotherMachine { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
@@ -571,6 +608,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -590,6 +628,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -615,6 +654,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. } => None,
         }
     }
@@ -639,6 +679,7 @@ impl Happened {
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
             | Self::Paired { .. }
+            | Self::WorkspaceOpened { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
@@ -966,6 +1007,10 @@ mod tests {
                 refused: Line::of("this machine is set to let nothing leave"),
             },
             fetching_a_model(),
+            Happened::WorkspaceOpened {
+                workspace: Line::of("0f1e2d3c4b5a69788796a5b4c3d2e1f0"),
+                answers_at: Line::of("192.168.1.20:8443"),
+            },
         ] {
             let written = serde_json::to_string(&happened).unwrap_or_default();
             assert_eq!(

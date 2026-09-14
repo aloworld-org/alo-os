@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Fourteen answers, and there is no fifteenth. It is [`crate::asked`]'s shape from
+//! Fifteen answers, and there is no sixteenth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -156,6 +156,15 @@ pub(crate) enum Told {
         /// In the order they answered.
         found: Vec<FoundWorkspace>,
     },
+    /// The workspace the person opened, at the one address it answered from
+    /// when the daemon looked.
+    ///
+    /// The answer to `open-workspace`, in the shape a listed workspace has:
+    /// which one, where it answers **measured at that moment**, the version
+    /// it speaks, and the host's name where the person gave one and it is
+    /// true. The person's session hands this address to the workspace client;
+    /// the daemon dialled nothing.
+    WorkspaceOpened(FoundWorkspace),
 }
 
 #[cfg(test)]
@@ -227,6 +236,11 @@ mod tests {
                     .hosted_by(Some("the studio machine")),
                 ],
             },
+            Told::WorkspaceOpened(FoundWorkspace::of(
+                "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+                "192.168.1.20:8443".parse().unwrap(),
+                "1",
+            )),
         ]
     }
 

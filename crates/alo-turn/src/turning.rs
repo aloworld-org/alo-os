@@ -654,6 +654,29 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.keeping(Entry::paired(with, now))
     }
 
+    /// Write down that the person opened a workspace discovery found, while
+    /// this turn holds the machine.
+    ///
+    /// [`crate::Machine::a_workspace_was_opened`] for the rounds where a local
+    /// turn holds the machine: the person's own door opens a workspace whether
+    /// or not their agent is in a turn. The entry is the machine's own — no
+    /// agent, because the person opened it and the turn's grantee would be
+    /// the wrong name even though it is to hand.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and
+    /// the turn is closed by it exactly as
+    /// [`Turning::a_pairing_was_kept`] closes one.
+    pub fn a_workspace_was_opened(
+        &mut self,
+        workspace: &str,
+        answers_at: &str,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.keeping(Entry::a_workspace_was_opened(workspace, answers_at, now))
+    }
+
     /// What is leaving this machine right now.
     ///
     /// The machine's indicator, lent out while a turn holds the machine — a

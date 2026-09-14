@@ -745,7 +745,22 @@ nothing on this machine ever dials.
 
 ### 18. The person opens a found workspace, at the address measured at that moment
 
-**Status:** ready. **Depends on:** 17.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-protocol` (`open-workspace` as
+`FromAPerson::OpenWorkspace { machine }`, refused on the agent's door; the answer
+`workspace-opened` as `ToAPerson::WorkspaceOpened`, in `FoundWorkspace`'s shape),
+`crates/alo-record` (`Happened::WorkspaceOpened { workspace, answers_at }`, tag
+`workspace-opened`, no agent, not egress; `Entry::a_workspace_was_opened`),
+`crates/alo-turn` (`a_workspace_was_opened` on `Machine`, `Turning` and `Arriving`),
+`crates/alo-recounting` (the clause `recounting.outcome.workspace-opened`) and
+`crates/alo-agentd` (`opening_workspaces.rs` — identity, then the link at the moment,
+then exactly one address, then the record, then the answer; three new refusals in
+`words.rs`; `Holding::a_workspace_was_opened`; `listing_workspaces::drawn`, the
+listing's naming rule, now shared by both). `crates/alo-changing/src/door.rs` gained
+the one arm its exhaustive match needed. Contracts: `daemon-protocol.md`
+(`open-workspace`), `record-file.md` (`workspace-opened`) and `local-network-wire.md`,
+additively. The report is
+`docs/autonomy/updates/the-person-opens-a-found-workspace.md`.
+**Depends on:** 17.
 
 Task 17 made a workspace on the network something a person is shown — which one,
 where discovery measured it answers, and the name of the paired machine hosting it —
@@ -817,3 +832,42 @@ SHA-256 and nothing else.
   blocked on this one landing. `alo-instructing` is a dependency, never a place
   to write: if a turn needs words the crate does not build, the deliverable is a
   finding in the report.
+
+### 20. An alo machine that hosts a workspace answers for it, and says nothing more
+
+**Status:** ready. **Depends on:** 17, 18.
+
+Task 17's contract says a workspace on an alo machine is advertised under **that
+machine's own identity**, and tasks 17 and 18 built everything that reads such an
+advertisement. Nothing on an alo machine writes one. `alo-agentd` already owns this
+machine's discovery responder (`alo_nearby::Answering`, bound by `crate::wire::Wire`
+on the port every mDNS responder shares), and it answers only the question for
+`_alo-os._tcp.local`; the question for `_alo-workspace._tcp.local` is stepped over. So
+a workspace served by `alo-workplace` on an alo machine can be found only if a second
+responder races the daemon for the same socket and invents the machine's identity for
+itself — which is a machine saying something about itself that the service holding
+its identity did not say.
+
+- **Acceptance:** `alo-nearby`'s `Answering` gains the workspace question: it answers
+  `_alo-workspace._tcp.local` with exactly the closed advertisement
+  (`advertising::about_a_workspace`) when it was given a `WorkspacePresence`, and
+  steps over the question when it was not — one test each, and the machine's own
+  presence answer unchanged byte for byte either way, tested; the identity in a
+  workspace answer is always the machine's own, and there is no constructor through
+  which another identity reaches the responder, tested by the refusal (a
+  `compile_fail` example or its equivalent); `alo-agentd` reads which port this
+  machine's workspace answers on from one root-owned file under the trust the
+  pairings file has — absent means nothing is advertised, and a file that is not
+  root's, is writable by anyone else, carries any key but the port, or names a port
+  outside 1–65535 is refused with the machine advertising no workspace, one test
+  each; an agent cannot write, name or change it, and no request on either door does,
+  tested; a machine advertising a workspace is found and opened by task 18's request
+  from a second daemon over loopback, end to end, tested.
+- **Constraint:** ADR 0003: discovery reveals presence only, so the answer carries the
+  three records and nothing else, and hosting a workspace grants nothing and pairs
+  nothing. The file is a config key and so a public surface: a new contract under
+  `docs/contracts/`, additive, naming who writes it (the package that installs the
+  workspace server, as root — `alo-workplace`'s, outside this repository) and that the
+  daemon only reads it. Whether a change to the file is read at the next start or on a
+  knock is decided in the crate and written up. Nothing in `alo-shell`, nothing in
+  `image/`.

@@ -1,6 +1,6 @@
 //! Everything that can arrive, in one closed list.
 //!
-//! Fifteen requests, and there is no sixteenth. What makes this file worth having on
+//! Sixteen requests, and there is no seventeenth. What makes this file worth having on
 //! its own is that it is deliberately **not** public: the two types a caller of
 //! this crate ever holds are [`FromAnAgent`](crate::FromAnAgent) and
 //! [`FromAPerson`](crate::FromAPerson), and this is the list they are each cut
@@ -16,9 +16,9 @@
 //! two different types, and neither can produce the other's.
 //!
 //! Keeping the list itself in one place is what makes that a division rather
-//! than two lists that could drift: a sixteenth request has to be given to one
+//! than two lists that could drift: a seventeenth request has to be given to one
 //! door or the other before this crate will compile, and a request that is not
-//! one of the fifteen is not a request at all.
+//! one of the sixteen is not a request at all.
 //!
 //! **Which side of a socket a caller is really on is not this crate's
 //! question.** That is peer credentials on a Unix socket, and it is
@@ -190,6 +190,19 @@ pub(crate) enum Asked {
     /// for somebody to type where one is. Finding one confers nothing (ADR
     /// 0003), so there is no request that goes on to reach one either.
     Workspaces {},
+    /// The person opens a workspace discovery found, by its identity.
+    ///
+    /// **The identity and nothing else**, for [`Asked::Pair`]'s reason: no
+    /// address, no port, no hostname and no URL. The daemon looks around on
+    /// the link at the moment and answers with the one address that workspace
+    /// answered from then, so an address a shell remembered from a list that
+    /// has since aged — a typed address by another route — has no field to
+    /// arrive in. The daemon hands the address to the person's session and
+    /// dials nothing itself.
+    OpenWorkspace {
+        /// Which workspace, by the identity it was found by.
+        machine: String,
+    },
 }
 
 #[cfg(test)]

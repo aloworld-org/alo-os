@@ -76,6 +76,14 @@
 //! writes nothing and reaches nothing, so it is answered the same way whether a
 //! turn is under way or not, by [`crate::listing_workspaces`].
 //!
+//! # And one opens a found workspace
+//!
+//! Opening a workspace by its identity is the person's act and neither a turn's
+//! nor the grants file's, so it is answered the same way whether a turn is under
+//! way or not, by [`crate::opening_workspaces`] — with the record behind whatever
+//! holds the machine, because the opening is written down before the address is
+//! handed back.
+//!
 //! # And the turn may be a paired machine's
 //!
 //! Since the daemon bound the port, a change waiting for this person may have
@@ -99,6 +107,7 @@ use crate::choosing_to_answer;
 use crate::holding::Holding;
 use crate::listing_workspaces;
 use crate::naming_machines;
+use crate::opening_workspaces;
 use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
 use crate::rereading::{self, WhatIsGranted};
@@ -157,6 +166,9 @@ pub fn what_a_person_said(
             now,
         )),
         Ok(FromAPerson::Workspaces) => Ok(listing_workspaces::listed(nearby, now)),
+        Ok(FromAPerson::OpenWorkspace { machine }) => {
+            opening_workspaces::opened(&machine, nearby, holding, strings, now)
+        }
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -237,7 +249,8 @@ fn answered_to(
         | FromAPerson::ChooseMachineToAnswer { .. }
         | FromAPerson::NameMachine { .. }
         | FromAPerson::ClearMachineName { .. }
-        | FromAPerson::Workspaces => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::Workspaces
+        | FromAPerson::OpenWorkspace { .. } => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => match turning.approving(waiting, grants, now) {
                 Ok(answer) => ToAPerson::did(&answer),

@@ -84,6 +84,9 @@ pub enum Outcome {
     GrantsNotReadAgain,
     /// A pairing with another machine was kept on this one (ADR 0003).
     Paired,
+    /// The person opened a workspace discovery found, at the address measured
+    /// at that moment (ADR 0003).
+    WorkspaceOpened,
     /// A turn the machine would not run, because there was no boundary to run
     /// it inside (ADR 0015).
     NotBounded,
@@ -111,6 +114,7 @@ impl Outcome {
             Happened::NeverPutAnywhere { .. } => Self::NeverPutAnywhere,
             Happened::GrantsNotReadAgain { .. } => Self::GrantsNotReadAgain,
             Happened::Paired { .. } => Self::Paired,
+            Happened::WorkspaceOpened { .. } => Self::WorkspaceOpened,
             Happened::NotBounded { .. } => Self::NotBounded,
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
@@ -133,6 +137,7 @@ impl Outcome {
             Self::NeverPutAnywhere => words::NEVER_PUT_ANYWHERE,
             Self::GrantsNotReadAgain => words::GRANTS_NOT_READ_AGAIN,
             Self::Paired => words::PAIRED,
+            Self::WorkspaceOpened => words::WORKSPACE_OPENED,
             Self::NotBounded => words::NOT_BOUNDED,
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,

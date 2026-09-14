@@ -98,7 +98,8 @@ impl TheDaemonsDoor {
             | ToAPerson::Pairings { .. }
             | ToAPerson::ChosenToAnswer { .. }
             | ToAPerson::MachineNamed { .. }
-            | ToAPerson::Workspaces { .. } => None,
+            | ToAPerson::Workspaces { .. }
+            | ToAPerson::WorkspaceOpened(_) => None,
         }
     }
 }
