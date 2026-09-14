@@ -366,3 +366,34 @@ and the free grade is what a person is shown as history.
 - **Constraint:** no grade is rewritten and both stay in the catalogue side by
   side. If lane A's wiring has not landed, this task stays blocked rather than
   reading the enveloped grade for a turn that still asks freely.
+
+### 16. The instructions' one example, and what a second one costs
+
+**Status:** ready. **Depends on:** 12.
+
+Task 12 read the five attempts Qwen 2.5 7B failed and found that three were
+a correct request through the wrong door — a change asked for as a *read* —
+and that the only example the instructions give a model uses the read door.
+That is a question about the instructions, and task 12 rightly changed
+nothing. This task decides it, in the open, the way the bar itself was
+decided: a bar that moves to meet a candidate is not a bar, but an
+instruction that shows one door and is then surprised when a model takes it
+is not a bar either.
+
+- **Acceptance:** an ADR sets out the options — the instructions as they are;
+  one example per door; an example that names the door it does *not* use —
+  with what each would measure and what each would hide, and recommends one;
+  the recommended instructions are then put to the same ten exercises on the
+  same weights, in the envelope, as a **new** grade beside the old and never
+  over it, with the machine, runtime, counts and the instructions' own hash
+  recorded so a reader can tell which instructions earned which grade; the
+  five failed attempts from task 12 are re-read against the new instructions
+  and the report says, one by one, which changed and which did not; and if
+  the change clears the bar for any model, the report says so as the first
+  local model that could be given the agent, and says in one sentence what
+  it took.
+- **Constraint:** the exercises, the verbs they name, the scoring and the bar
+  are untouched; only the instructions a model is shown may change, and only
+  as the ADR decides. A grade earned under the old instructions is not
+  rewritten — `alo-driving` records which instructions a grade was earned
+  under, so the two can never be confused.
