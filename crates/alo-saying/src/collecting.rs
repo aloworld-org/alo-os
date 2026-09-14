@@ -76,7 +76,7 @@ impl NotCollected {
 /// Written down so that the test walking it and the function below cannot
 /// disagree about how many there are: a crate added to one and not the other is
 /// a count that no longer proves anything.
-pub const EVERY_LIST: [&str; 32] = [
+pub const EVERY_LIST: [&str; 33] = [
     "alo-accounts",
     "alo-answering",
     "alo-appearance",
@@ -100,6 +100,7 @@ pub const EVERY_LIST: [&str; 32] = [
     "alo-measuring",
     "alo-models",
     "alo-nearby",
+    "alo-opening",
     "alo-overlay",
     "alo-picking",
     "alo-protocol",
@@ -210,6 +211,7 @@ pub fn everything_this_machine_can_say() -> Result<Vocabulary, NotCollected> {
         "alo-nearby",
         alo_nearby::words::declare_into,
     )?;
+    declare(&mut vocabulary, "alo-opening", alo_opening::declare_into)?;
     declare(&mut vocabulary, "alo-overlay", alo_overlay::declare_into)?;
     declare(&mut vocabulary, "alo-picking", alo_picking::declare_into)?;
     declare(&mut vocabulary, "alo-protocol", alo_protocol::declare_into)?;
@@ -263,7 +265,7 @@ mod tests {
 
     /// One string each crate declares, which is how the test below proves that
     /// crate was reached rather than that the total came out right.
-    const ONE_STRING_EACH: [(&str, &str); 32] = [
+    const ONE_STRING_EACH: [(&str, &str); 33] = [
         ("alo-accounts", "accounts.not-signed-in"),
         ("alo-answering", "answering.wrong.nothing-answered"),
         ("alo-appearance", "appearance.token.navy"),
@@ -287,6 +289,7 @@ mod tests {
         ("alo-measuring", "measuring.not-on-this-host"),
         ("alo-models", "models.source.this-machine"),
         ("alo-nearby", "nearby.may.ask-its-models"),
+        ("alo-opening", "opening.cannot.damaged"),
         ("alo-overlay", "overlay.at-rest.nothing-chosen"),
         ("alo-picking", "picking.the-whole-machine"),
         ("alo-protocol", "protocol.too-long"),
@@ -361,6 +364,7 @@ mod tests {
             alo_measuring::measuring_words().unwrap().how_many(),
             alo_models::model_words().unwrap().how_many(),
             alo_nearby::nearby_words().unwrap().how_many(),
+            alo_opening::opening_words().unwrap().how_many(),
             alo_overlay::overlay_words().unwrap().how_many(),
             alo_picking::picking_words().unwrap().how_many(),
             alo_protocol::protocol_words().unwrap().how_many(),

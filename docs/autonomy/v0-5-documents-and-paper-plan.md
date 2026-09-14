@@ -45,6 +45,18 @@ task, `git pull` and read the plan as published.
 
 **Status:** ready. **Depends on:** nothing.
 
+**Done, 2026-09-14.** `crates/alo-opening`: `decide` takes an open file, its
+name and a `ThisMachine` and answers with a `Decided` — `AsItIs(Outcome)` or
+`NotWhatItsNameSays { named, outcome }`, the finding wrapping the outcome.
+`Outcome` is `OpensAsItIs`, `Converts` with its `Costs`, or `CannotOpen` with one
+of six `Cannot` reasons (empty, unrecognised, damaged, a program, locked with a
+password, nothing here opens it). What a file is comes from signatures, a zip's
+list of contents, the older Office directory and whole-file text rules; the name
+is compared afterwards. 35 strings collected by `alo-saying`. Report:
+`docs/autonomy/updates/what-this-machine-can-do-with-a-file.md`. For tasks 2 and
+4: `ThisMachine::converts` is where a conversion registers, and `Cannot` is the
+set task 4's sentences extend.
+
 Before anything converts, opens or prints, the machine has to be able to answer
 one question honestly: *given this file, what are my options?* Today nothing can
 answer it, which is why every system's answer is a spinner followed by a

@@ -359,7 +359,13 @@ fn an_ordinary_days_changes(folder: &Path) -> usize {
             1,
             "the shortening did not land, so a hook refused something outside a turn"
         );
-        rustix::fs::ioctl_setflags(&held, rustix::fs::IFlags::NODUMP)
+        // Added to the flags the file has, the way `chattr +d` does: ext4 marks
+        // every file it lays out in extents, and a request that would clear
+        // that mark is `EOPNOTSUPP` before any hook is asked.
+        let had = rustix::fs::ioctl_getflags(&held)
+            .map_err(of_rustix)
+            .expect("an ordinary program can read the flags of its own files");
+        rustix::fs::ioctl_setflags(&held, had | rustix::fs::IFlags::NODUMP)
             .map_err(of_rustix)
             .expect("an ordinary program can set a flag on its own files");
         assert!(
@@ -369,7 +375,7 @@ fn an_ordinary_days_changes(folder: &Path) -> usize {
                 .contains(rustix::fs::IFlags::NODUMP),
             "the flag did not land, so the `ioctl` hook refused something outside a turn"
         );
-        rustix::fs::ioctl_setflags(&held, rustix::fs::IFlags::empty())
+        rustix::fs::ioctl_setflags(&held, had)
             .map_err(of_rustix)
             .expect("and take it away");
         changed += 1;

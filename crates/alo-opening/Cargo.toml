@@ -1,0 +1,28 @@
+[package]
+name = "alo-opening"
+version = "0.0.1"
+description = "What a file is from its own bytes, and what this machine can do with it: open it as it is, convert a copy and say what that costs, or say that it cannot."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Two dependencies, and the shortness of the list is a guarantee rather than a
+# habit: deciding what a file is must never be an errand. There is no network
+# here, no process, no converter and no other crate that has any of those, so
+# no answer this crate gives can have been reached by asking something off this
+# machine. `tests/deciding_never_leaves_the_machine.rs` reads this manifest and
+# says so.
+[dependencies]
+alo-strings = { path = "../alo-strings" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+# The machine's one vocabulary, which is what a shell really holds. A
+# dev-dependency and not a dependency, in the direction every crate here takes:
+# a crate that says something is collected by `alo-saying`, and never reaches
+# for it.
+alo-saying = { path = "../alo-saying" }
+
+[lints]
+workspace = true

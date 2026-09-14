@@ -353,11 +353,17 @@ fn changing(change: Change, file: &Path, held: Option<&fs::File>) -> std::io::Re
         Change::AccessListRemoved => {
             rustix::fs::removexattr(file, THE_ACCESS_LIST).map_err(of_rustix)
         }
-        Change::Flags => rustix::fs::ioctl_setflags(
-            held.expect("a flags change goes through a descriptor opened beforehand"),
-            rustix::fs::IFlags::NODUMP,
-        )
-        .map_err(of_rustix),
+        // Added to the flags the file has, the way `chattr +d` does: ext4 marks
+        // every file it lays out in extents, and a request that would clear
+        // that mark is `EOPNOTSUPP` before any hook is asked. Reading them is
+        // answered inside a turn, even outside the grant, so the refusal this
+        // test is about is still the `SETFLAGS` request's.
+        Change::Flags => {
+            let held = held.expect("a flags change goes through a descriptor opened beforehand");
+            rustix::fs::ioctl_getflags(held)
+                .and_then(|had| rustix::fs::ioctl_setflags(held, had | rustix::fs::IFlags::NODUMP))
+                .map_err(of_rustix)
+        }
         Change::FlagsRead => rustix::fs::ioctl_getflags(
             held.expect("a flags read goes through a descriptor opened beforehand"),
         )

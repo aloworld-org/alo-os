@@ -1718,6 +1718,42 @@ found nothing wrong with anything. The same caution applies to `Path::join`,
 it does not run the tests on.
 **Date:** 2026-09-03
 
+### A PDF ends with `%%EOF`, and readers accept it anywhere in the last kilobyte
+**Version:** PDF 1.7 (ISO 32000-1) §7.5.5 and PDF 2.0; the tolerance is Adobe's
+published implementation note and every widely used reader's behaviour.
+2026-09-14, `alo-opening`.
+**Behaviour:** the specification puts `%%EOF` on the file's last line. Real
+PDFs carry bytes after it — a trailing newline pair, padding from a mail
+gateway, a signature appended by a scanner — and readers open them, because
+Acrobat has always looked for the marker within the last 1024 bytes. The same
+readers accept a `%PDF-` header that is not at offset zero, which the
+specification also does not.
+**Our response:** `alo-opening` calls a PDF damaged only when `%%EOF` is absent
+from the last 1024 bytes — the rule that separates a download cut short from a
+PDF with a tail. It does **not** accept a header past offset zero: a search for
+`%PDF-` near the start would find it in a letter about PDFs and call the letter
+a damaged document, and *damaged* sends a person back to whoever sent them the
+file. A real PDF with bytes before its header is therefore *not recognised*
+rather than opened; that is the refusal of the two that costs less.
+**Date:** 2026-09-14
+
+### An OpenDocument lists its macro libraries whether or not it has a macro
+**Version:** OpenDocument 1.2/1.3 packages; 2026-09-14, `alo-opening`. Read
+from the package layout, **not yet measured** against a suite's own output on a
+certified machine — task 2 of the documents plan opens real files and is where
+that measurement belongs.
+**Behaviour:** a package keeps its macro libraries as `Basic/script-lc.xml`, a
+`script-lb.xml` per library, and one file per module. The two listings can name
+a library with no module in it — a document whose *Standard* library was created
+and never written in. Reading *has a `Basic/` folder* as *carries macros* would
+tell a person their plain letter has macros in it.
+**Our response:** a macro is a finding only when the list of contents names a
+module beside those two listings under `Basic/`, or a script under `Scripts/`,
+with something in it. Nothing is decompressed to decide it. Where a kind keeps
+its macros inside a stream this crate does not read — an older PowerPoint
+presentation — `Macros::NoneSeen` says exactly that, rather than *none*.
+**Date:** 2026-09-14
+
 ### A zip has nowhere to say which clock its timestamps came from
 **Version:** the zip format as every reader implements it; seen 2026-09-02 in
 `alo-files`, against Windows 11 26200's own reader
@@ -2876,6 +2912,35 @@ does not own the crate; it is already in the loop's own gate log on this machine
 that would settle it is the same test with the boundary detached, and then with
 the `file_ioctl` hook alone.
 **Date:** 2026-09-14.
+**Settled, 2026-09-14:** the boundary was never involved — see *Setting a
+file's flags to exactly `nodump` asks ext4 to take its extents away* below.
+
+### Setting a file's flags to exactly `nodump` asks ext4 to take its extents away
+**Version:** Linux `6.18.33.2-microsoft-standard-WSL2`, ext4 `/tmp`, no
+boundary loaded; the loop's gate machine, 2026-09-14.
+**Behaviour:** `FS_IOC_SETFLAGS` *replaces* a file's flags; it does not add to
+them. Every file ext4 lays out in extents carries `EXTENTS_FL` (`0x80000`, the
+`e` in `lsattr`), so a request of `NODUMP` alone asks ext4 to convert the file
+back to indirect blocks, and ext4 refuses that conversion with `EOPNOTSUPP`
+for a file whose blocks are not settled. Measured with no boundary at all, on a
+file of sixteen bytes opened write-only: written, then flags set to `NODUMP`
+alone — accepted, and the file *silently lost its extents* (`0x40` afterwards);
+written, cut to one byte with `ftruncate`, then `NODUMP` alone — `EOPNOTSUPP`;
+the same after an `fsync` — accepted; the same with `NODUMP` added to the
+flags the file had — accepted every time (`0x80040`). `chattr +d` reads the flags
+first, which is why every probe with it succeeded. On `tmpfs`, which has no
+extents, `NODUMP` alone was always accepted, and that is where `/tmp` was when
+these tests were written.
+**Our response:** the two `alo-bounding` tests that set a flag
+(`the_boundary_decides_and_forgets.rs`, `the_kernel_refuses_an_attribute_change.rs`)
+read the flags first and add `NODUMP` to them, the way an ordinary program
+does; the first puts back exactly what it read. Nothing a hook decides changed:
+the refusal inside a turn is still the `SETFLAGS` request's, because a read of
+a file's flags is answered inside a turn even outside the grant. This settles
+the entry above and *Setting a file flag under the boundary is refused as
+unsupported on aarch64* — the shortening just before the flag was the step the
+probes there did not take.
+**Date:** 2026-09-14.
 
 ### A turn asks a model in English, whatever language the machine runs in
 **Version:** `alo-instructing` as of 2026-09-14, the crate the words a model is
@@ -3186,6 +3251,8 @@ fails on the untouched tree, it is the one test in 4,088 that does, and it is no
 this lane's crate. The Mac lane publishes with it named in every report rather
 than ignored or excluded.
 **Date:** 2026-09-13.
+**Settled, 2026-09-14:** not aarch64 and not the boundary — see *Setting a
+file's flags to exactly `nodump` asks ext4 to take its extents away*.
 
 ### A check that takes "the first decision" takes whichever the filesystem lists first
 **Version:** `crates/alo-citing/tests/every_decision_this_repository_points_at.rs`
