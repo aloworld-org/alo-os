@@ -490,3 +490,30 @@ three, and keeps what they made.
   `alo-shell`, nothing in `image/`; `docs/contracts/daemon-protocol.md` and
   `docs/contracts/person-settings.md` (or a file beside it, decided in the
   report) gain the shapes additively.
+
+### 13. A turn asks the local model in the envelope
+
+**Status:** ready. **Depends on:** 11.
+
+ADR 0032 decided that an agent turn asks a model on this machine for the
+protocol's envelope and the door — `read`, `propose` or `ask` — and never for
+the call, because that is where a 7B model went from 40% to 87.5% on the Mac.
+Its point 5 says the catalogue keeps reading the free grade *until the agent
+turn asks that way*. The Mac lane's task 14 makes the ask a door in
+`alo-asking`; this wires the real turn through it, which is `alo-turn` and
+`alo-agentd`'s and therefore this lane's.
+
+- **Acceptance:** the turn that asks the pinned runtime for an agent's next
+  request takes `Asking::to_this_machine` with the envelope's schema, and a
+  test reads the request off a socket and finds the schema and nothing about
+  the call's inside; a question a person puts to a model on the same machine
+  is never given the schema, held by a test beside it; a hosted provider and
+  a paired machine are asked exactly as before, with a test each, because
+  ADR 0032 point 4 is explicit that they are a separate measurement; and the
+  turn's record entry is unchanged in shape — how the model was asked is not
+  a thing the record keeps.
+- **Constraint:** this depends on the Mac lane's task 14 having landed the
+  door; if it has not, the honest deliverable is the finding and the task
+  waits rather than building a second ask in this crate. Nothing here reads
+  or rewrites a grade — which grade the recommendation reads is the Mac
+  lane's task 15, unblocked by this one landing.

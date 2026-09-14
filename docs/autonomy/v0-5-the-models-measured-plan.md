@@ -272,3 +272,95 @@ their publishers train for tool calls at a size 8 GB holds — the Qwen3 family 
   model that could be given the agent once lane A's turn asks that way.
 - **Constraint:** nothing is added for its grade; an entry is added for its
   licence and training, then measured, and kept whatever it earns.
+
+### 12. The five that failed, read one by one
+
+**Status:** ready. **Depends on:** 10.
+
+Qwen 2.5 7B drove the verbs 35 times in 40 in the envelope. The bar is 36.
+Before any more models are fetched, the five attempts that failed are the
+cheapest measurement on this machine and the most likely to say what the gap
+*is* — a shape the model cannot hold, one exercise it always misses, or an
+exercise asking for something the protocol never needs.
+
+- **Acceptance:** each failed attempt is read against the exercise it answered
+  and classified as exactly one of: a valid call to the wrong verb, the right
+  verb with an argument the protocol refuses, or output that is not a call at
+  all — with the attempt verbatim beside the classification; the five are
+  tabulated by exercise, so a single exercise that accounts for most of the
+  gap is visible; if any exercise's wording asks for a thing `alo-capability`
+  never validates, that is written down as a finding about the exercise and
+  the exercise is **not** changed here — the bar does not move to meet the
+  candidate (task 1's rule); and the report ends with one sentence on whether
+  the gap looks like the model's or the harness's, and the measurement that
+  would settle it.
+- **Constraint:** nothing is re-graded and no grade changes. This reads what
+  was already measured; a second run belongs to task 6's second-round rule
+  and is not this.
+
+### 13. The same weights at a higher quantisation
+
+**Status:** ready. **Depends on:** 12.
+
+The catalogue grades `qwen2.5-7b-instruct` at `Q4_K_M`. A model five in forty
+short of the bar at four bits may clear it at five or six, and the image's
+pinned weights are chosen by this catalogue — so which quantisation the entry
+names is a product decision, and today it rests on nothing measured.
+
+- **Acceptance:** the same weights at `Q5_K_M` and, if 8 GB holds it with the
+  VM stopped, `Q6_K` are graded in the envelope with the same ten exercises
+  and the same second-round rule, each with its machine, runtime, digest and
+  counts beside it; the loaded size and whether the weights stayed on the GPU
+  are recorded per quantisation, because a grade earned against swap is a
+  different measurement (`docs/quirks.md`, *what 8 GB holds*); the catalogue
+  entry carries one grade per quantisation rather than one grade for the
+  model, and `quantised_at` is what a reader uses to tell them apart; and if a
+  quantisation clears the bar, the report says so as the first local model
+  that could be given the agent, and names what the image would have to pin
+  for that to be true on a shipped machine.
+- **Constraint:** the exercises, the bar and the door are unchanged. A
+  quantisation that does not fit this machine is refused with the reason
+  task 2 established, never graded against swap and reported as a grade.
+
+### 14. The door that asks in the envelope
+
+**Status:** ready. **Depends on:** 7.
+
+ADR 0032 decided that an agent turn asks a model on this machine for the
+envelope and the door, never the call — and its point 5 says the catalogue
+keeps reading the free grade *until the agent turn asks that way*. Today only
+`alo-driving`'s harness asks that way. This makes the ask a door in
+`alo-asking`, so that a turn can take it.
+
+- **Acceptance:** `Asking::to_this_machine` can be given the envelope's
+  schema — the protocol version and exactly one of `read`, `propose`, `ask` —
+  and puts it to the pinned runtime the way ADR 0032 measured, with a test
+  that reads the request off a socket and finds the schema and nothing about
+  the call's inside; a question a person puts to a model is never given the
+  schema, held by a test; the hosted and served doors are untouched and a
+  test says so; and `alo-driving`'s harness uses this door rather than its
+  own request, so the measurement and the product ask in one way.
+- **Constraint:** `alo-turn` and `alo-agentd` are lane A's. Wiring the real
+  turn through this door is written as a task on
+  `v0-5-the-local-network-plan.md` for lane A, and this task ends at the door.
+  Nothing here changes which grade the recommendation reads: that is task 15,
+  after the turn asks this way.
+
+### 15. The recommendation reads the grade for the way turns ask
+
+**Status:** blocked — on lane A wiring the turn through the door of task 14.
+**Depends on:** 14.
+
+ADR 0032 point 5, second half. Once the agent turn asks in the envelope, the
+grade that says whether a model may be given the agent is the enveloped one,
+and the free grade is what a person is shown as history.
+
+- **Acceptance, when unblocked:** `Catalogue`'s recommendation reads the
+  enveloped grade for an entry that has one and the free grade only where
+  none was measured, with a test for each; `can_be_the_agent` follows the
+  same rule; `alo-choosing`'s offer names which way the grade was earned; and
+  the report says whether any local model is now given the agent, with the
+  machine that measured it.
+- **Constraint:** no grade is rewritten and both stay in the catalogue side by
+  side. If lane A's wiring has not landed, this task stays blocked rather than
+  reading the enveloped grade for a turn that still asks freely.
