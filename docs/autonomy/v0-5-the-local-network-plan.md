@@ -689,7 +689,25 @@ identities is one they cannot.
 
 ### 17. A self-hosted workspace on the network is found, not configured
 
-**Status:** ready. **Depends on:** 1, 16.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-nearby` (`workspace.rs` —
+`WORKSPACE_SERVICE` beside `SERVICE`, `WorkspacePresence`, and `FoundWorkspace`,
+which has no public constructor; `advertising.rs` — `about_a_workspace` and
+`a_question_for_workspaces`, through the same record writer a machine's presence
+uses; `reading.rs` — `a_workspace_in`, refusing any `TXT` entry but `v=1`;
+`looking.rs` — `Looking::around`, machines and workspaces in one window),
+`crates/alo-protocol` (`workspaces` as `FromAPerson::Workspaces`, refused on the
+agent's door; the answer `workspaces` as `ToAPerson::Workspaces` of
+`FoundWorkspace`s) and `crates/alo-agentd` (`listing_workspaces.rs`, reached from
+the person's door alone; `LookingFor::look_around` and `looking::around_at`, which
+the shipped `Wire` asks the link with). A name is shown beside a workspace only
+where the paired machine of that identity answered from the same address in the
+same look. `crates/alo-changing/src/door.rs` gained the one arm its exhaustive
+match needed. Contracts: `docs/contracts/local-network-wire.md` (*A workspace on the
+network*, new) and `daemon-protocol.md`, additively. The report — including the
+decision that reaching a found workspace does not require the host to be an alo
+machine, and why that narrows nothing — is
+`docs/autonomy/updates/a-self-hosted-workspace-is-found-not-configured.md`.
+**Depends on:** 1, 16.
 
 `docs/features.md` promises for v0.5 that *a self-hosted workspace on the network
 is discovered, not configured — no DNS step*, and ADR 0003 names it as the second
@@ -723,4 +741,40 @@ nothing on this machine ever dials.
   found workspace requires a pairing permitting `MayAskIts::Workspace` — and so
   whether a workspace host must be an alo machine — is decided in the report,
   and an ADR is written first if the answer would narrow the promise. Nothing in
+  `alo-shell`, nothing in `image/`.
+
+### 18. The person opens a found workspace, at the address measured at that moment
+
+**Status:** ready. **Depends on:** 17.
+
+Task 17 made a workspace on the network something a person is shown — which one,
+where discovery measured it answers, and the name of the paired machine hosting it —
+and deliberately nothing more: finding one confers nothing, and no request reaches
+one. Its report decided what reaching one takes: **the person's own act**, answered
+by the workspace's own sign-in, with no pairing required and no requirement that
+the host be an alo machine; and **a pairing permitting `MayAskIts::Workspace`**
+for anything this machine or its agents do with a workspace on another alo machine.
+Nothing yet carries the first of those from the list a shell draws to the workspace
+client in the person's session, so a shell holding a found workspace would have to
+remember an address from a list that has since aged — which is a typed address by
+another route.
+
+- **Acceptance:** the person's door (`alo-protocol`) gains a request that opens a
+  found workspace **by its identity** and nothing else, answered by the daemon
+  looking around at that moment (`LookingFor::look_around`) and answering with the
+  one address that workspace answered from now — refused in words when what is
+  named is not an identity, when no workspace of that identity answered, and when
+  more than one address answered for the same identity (a claim nobody can tell
+  apart is not opened), one test each, and each refusal contacting nothing; a
+  request carrying an address is not a request, tested; an agent sending it is
+  refused in the words an approval gets, tested; opening writes the record entry
+  *a workspace opened by the person*, naming the identity and the address, and the
+  daemon itself still connects to nothing, tested with a listener at that address
+  that is never connected to.
+- **Constraint:** ADR 0003 throughout. The daemon hands the address to the
+  person's session and dials nothing; what connects is the workspace client,
+  which is `alo-workplace`'s, in the person's session, under the person's own
+  account. Nothing here lets an agent reach a workspace, and nothing here treats
+  a pairing as a sign-in. `docs/contracts/daemon-protocol.md` and
+  `docs/contracts/record-file.md` gain the shapes additively. Nothing in
   `alo-shell`, nothing in `image/`.

@@ -135,7 +135,8 @@ impl ToAnAgent {
             | Told::Revoked { .. }
             | Told::Pairings { .. }
             | Told::ChosenToAnswer { .. }
-            | Told::MachineNamed { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
+            | Told::MachineNamed { .. }
+            | Told::Workspaces { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
         }
     }
 

@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Thirteen answers, and there is no fourteenth. It is [`crate::asked`]'s shape from
+//! Fourteen answers, and there is no fifteenth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -44,6 +44,7 @@ use crate::done::Done;
 use crate::pairing::{AfterConfirming, AfterNaming, AfterRevoking, Paired, WaitingToPair};
 use crate::standing::Standing;
 use crate::wording::Wording;
+use crate::workspaces::FoundWorkspace;
 
 /// Everything the daemon can put on the wire.
 ///
@@ -145,6 +146,16 @@ pub(crate) enum Told {
         /// Kept, or kept until a restart.
         became: AfterNaming,
     },
+    /// The workspaces on the local network at the moment.
+    ///
+    /// The answer to `workspaces`: each with which one it is, where discovery
+    /// measured it answers, the version it speaks, and the name of the paired
+    /// machine hosting it where the person gave one. A list with nothing on it
+    /// is an answer — nothing was found — and not an absence.
+    Workspaces {
+        /// In the order they answered.
+        found: Vec<FoundWorkspace>,
+    },
 }
 
 #[cfg(test)]
@@ -205,6 +216,16 @@ mod tests {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
                 called: None,
                 became: AfterNaming::Kept,
+            },
+            Told::Workspaces {
+                found: vec![
+                    FoundWorkspace::of(
+                        "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+                        "192.168.1.20:8443".parse().unwrap(),
+                        "1",
+                    )
+                    .hosted_by(Some("the studio machine")),
+                ],
             },
         ]
     }

@@ -168,6 +168,62 @@ The `200` answer is additive to the version that answered every proven
 question `503`: a machine speaking that version reads a `503` as it always
 did, and reads a `200` as the answer it was always going to read.
 
+## A workspace on the network
+
+Added 2026-09-14, additively. *A self-hosted workspace on the network is
+discovered, not configured — no DNS step* (`docs/features.md`, ADR 0003). What a
+workspace **is** and what serves one belongs to `alo-workplace`; this section is
+what that repository advertises against, and what every alo machine reads.
+`crates/alo-nearby` (`WORKSPACE_SERVICE`, `WorkspacePresence`,
+`advertising::about_a_workspace`, `reading::a_workspace_in`) is it as working
+code.
+
+**The service** is `_alo-workspace._tcp.local` — its own, beside `_alo-os._tcp.local`,
+so an alo machine advertises exactly the same presence whether or not it serves a
+workspace, and a workspace served by something that is not an alo machine is not
+advertised as one.
+
+**The advertisement** is an mDNS answer of three records and nothing else:
+
+| Record | Name | Carries |
+|---|---|---|
+| `PTR` | `_alo-workspace._tcp.local` | the instance, `<identity>._alo-workspace._tcp.local` |
+| `SRV` | the instance | priority `0`, weight `0`, the **port** the workspace answers on, and the target `<identity>.local` |
+| `TXT` | the instance | exactly one entry, `v=1` |
+
+That is the closed list: **which workspace** (the identity), **where it answers**
+(the port — the address is measured, see below), and **the version it speaks**
+(`v=1`). `<identity>` is thirty-two lowercase hexadecimal characters nobody chose:
+on an alo machine it is that machine's own identity (`/var/lib/alo/machine-id`),
+so a workspace hosted by a machine the person is paired with can be spoken of by
+the name they gave it; a host that is not an alo machine keeps a random identity
+of its own in the same shape, made once and kept across restarts, and never a
+serial, a hostname or the organisation's name. One host serves one workspace.
+
+**What a reader refuses.** A `TXT` entry other than `v=1` — any other key, or a
+version this machine does not speak — refuses the whole advertisement rather than
+being read around; so does an instance that is not an identity. A workspace that
+wants to say more (its organisation, a login address, a certificate) is not found
+at all, which is the point: an advertisement is read by everything on the network,
+including machines nobody paired with. No `A` record is required or read.
+
+**Where it answers is measured**: the source address of the answer, and the port
+from the `SRV` record. The `SRV` target name is never resolved or used, so nothing
+in a packet becomes an address a machine goes to.
+
+**The question** a machine asks is one `PTR` question for
+`_alo-workspace._tcp.local`, naming no workspace. An alo machine asks it beside the
+question for `_alo-os._tcp.local`, on the same socket, and reads both kinds of
+answer in one window.
+
+**Finding a workspace confers nothing.** It is listed for the person
+(`workspaces`, `docs/contracts/daemon-protocol.md`) and nothing more: no request,
+verb or question reaches a workspace because it was found, no alo machine
+connects to one until a person acts, and no alo machine dials an address a person
+typed as a workspace. What reaching a found workspace takes is recorded in
+`docs/autonomy/updates/a-self-hosted-workspace-is-found-not-configured.md` and is
+built by the task that builds it.
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

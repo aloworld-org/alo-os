@@ -65,6 +65,14 @@ pub enum NotNearby {
     #[error("the advertisement is for `{0}` rather than an alo machine")]
     NotAnAloMachine(String),
 
+    /// The advertisement is for some other service than a workspace.
+    ///
+    /// [`NotNearby::NotAnAloMachine`]'s twin, when what was being read for is a
+    /// workspace: a printer, or an alo machine's own presence, is not one, and
+    /// neither is a fault in anything.
+    #[error("the advertisement is for `{0}` rather than a workspace")]
+    NotAWorkspace(String),
+
     /// Nothing in the advertisement said which machine sent it.
     #[error("nothing in the advertisement says which machine sent it")]
     SaysNothingAboutWhichMachine,
@@ -169,6 +177,7 @@ impl NotNearby {
                 | Self::NotAMachineIdentity(_)
                 | Self::SaysMoreThanPresence(_)
                 | Self::NotAnAloMachine(_)
+                | Self::NotAWorkspace(_)
                 | Self::SaysNothingAboutWhichMachine
                 | Self::NotAnOffer(_)
                 | Self::NotAProof(_)

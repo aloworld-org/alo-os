@@ -510,6 +510,10 @@ impl crate::looking::LookingFor for NobodyIsNearby {
     fn look_for(&self, _machine: &alo_nearby::MachineId) -> Option<alo_nearby::Found> {
         None
     }
+
+    fn look_around(&self) -> alo_nearby::Around {
+        alo_nearby::Around::default()
+    }
 }
 
 /// A machine where nobody has chosen anything to answer questions.
@@ -686,5 +690,16 @@ impl crate::looking::LookingFor for TheStudioIsAt {
         self.looked.set(self.looked.get() + 1);
         (*machine == the_studio())
             .then(|| alo_nearby::Found::seen(the_studio(), self.at.port(), self.at.ip()))
+    }
+
+    fn look_around(&self) -> alo_nearby::Around {
+        alo_nearby::Around {
+            machines: vec![alo_nearby::Found::seen(
+                the_studio(),
+                self.at.port(),
+                self.at.ip(),
+            )],
+            workspaces: Vec::new(),
+        }
     }
 }

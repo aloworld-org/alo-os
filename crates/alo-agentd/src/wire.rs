@@ -253,6 +253,11 @@ impl crate::looking::LookingFor for Wire {
     fn look_for(&self, machine: &MachineId) -> Option<alo_nearby::Found> {
         crate::looking::found_by_name(machine, self.looks_at)
     }
+
+    /// Asked on the same link, at the moment, for machines and workspaces.
+    fn look_around(&self) -> alo_nearby::Around {
+        crate::looking::around_at(self.looks_at)
+    }
 }
 
 impl std::fmt::Debug for Wire {

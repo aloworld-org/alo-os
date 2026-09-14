@@ -48,6 +48,7 @@ use crate::refusing::NotUnderstood;
 use crate::standing::Standing;
 use crate::told::Told;
 use crate::wording::Wording;
+use crate::workspaces::FoundWorkspace;
 
 /// One thing the daemon told a person's shell.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,9 +111,29 @@ pub enum ToAPerson {
         /// Kept, or kept until a restart.
         became: AfterNaming,
     },
+    /// The workspaces discovery found on the local network at the moment.
+    Workspaces {
+        /// In the order they answered; empty when nothing was found.
+        found: Vec<FoundWorkspace>,
+    },
 }
 
 impl ToAPerson {
+    /// The workspaces found on the local network, in the order they answered.
+    #[must_use]
+    pub const fn workspaces(found: Vec<FoundWorkspace>) -> Self {
+        Self::Workspaces { found }
+    }
+
+    /// The workspaces found, when that is what they asked.
+    #[must_use]
+    pub fn workspaces_found(&self) -> Option<&[FoundWorkspace]> {
+        match self {
+            Self::Workspaces { found } => Some(found),
+            _ => None,
+        }
+    }
+
     /// The pairing they proposed, waiting with the code known.
     #[must_use]
     pub const fn pairing(waiting: WaitingToPair) -> Self {
@@ -327,6 +348,7 @@ impl ToAPerson {
                 called,
                 became,
             }),
+            Told::Workspaces { found } => Ok(Self::Workspaces { found }),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -402,6 +424,7 @@ impl From<ToAPerson> for Told {
                 called,
                 became,
             },
+            ToAPerson::Workspaces { found } => Self::Workspaces { found },
         }
     }
 }
@@ -516,6 +539,44 @@ mod tests {
         assert!(!written.contains("called"), "{written}");
         assert_eq!(ToAPerson::read(&written).unwrap(), cleared);
         assert!(ToAPerson::Declined.became_of_naming().is_none());
+    }
+
+    /// **The workspaces found come back to the person — never to an agent —
+    /// each with where discovery measured it answers**, and nothing found is a
+    /// list with nothing on it rather than an absence.
+    #[test]
+    fn the_workspaces_found_are_told_to_the_person_and_not_to_an_agent() {
+        let found = vec![
+            FoundWorkspace::of(
+                "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+                "192.168.1.20:8443".parse().unwrap(),
+                "1",
+            )
+            .hosted_by(Some("the studio machine")),
+        ];
+        let told = ToAPerson::workspaces(found.clone());
+        assert_eq!(told.workspaces_found(), Some(found.as_slice()));
+        let written = told.written().unwrap();
+        assert!(
+            written.contains(r#""workspaces":{"found":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","answers_at":"192.168.1.20:8443","speaks":"1","called":"the studio machine"}]}"#),
+            "{written}"
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+
+        let nothing = ToAPerson::workspaces(Vec::new()).written().unwrap();
+        assert_eq!(
+            nothing,
+            r#"{"format":1,"tells":{"workspaces":{"found":[]}}}"#
+        );
+        assert_eq!(
+            ToAPerson::read(&nothing).unwrap().workspaces_found(),
+            Some([].as_slice())
+        );
+        assert!(ToAPerson::Declined.workspaces_found().is_none());
     }
 
     /// **What a shell draws is the number and the sentence**, one for each

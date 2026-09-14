@@ -118,7 +118,11 @@ impl FromAnAgent {
             // What a machine is called is what its person reads, and an agent
             // naming one could put one machine's name on another's evidence.
             | Asked::NameMachine { .. }
-            | Asked::ClearMachineName { .. } => Err(NotUnderstood::NotForAnAgent),
+            | Asked::ClearMachineName { .. }
+            // What is on the network is the person's to be shown: an agent
+            // told which workspaces are nearby would be an agent reading the
+            // network around the person, and finding one confers nothing.
+            | Asked::Workspaces {} => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

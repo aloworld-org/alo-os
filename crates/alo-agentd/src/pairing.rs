@@ -144,7 +144,8 @@ impl AboutAPairing {
             | FromAPerson::Granted
             | FromAPerson::ChooseMachineToAnswer { .. }
             | FromAPerson::NameMachine { .. }
-            | FromAPerson::ClearMachineName { .. } => None,
+            | FromAPerson::ClearMachineName { .. }
+            | FromAPerson::Workspaces => None,
         }
     }
 }
@@ -449,6 +450,13 @@ mod tests {
     impl LookingFor for ReceptionIsAt {
         fn look_for(&self, machine: &MachineId) -> Option<Found> {
             (*machine == reception()).then(|| Found::seen(reception(), self.0.port(), self.0.ip()))
+        }
+
+        fn look_around(&self) -> alo_nearby::Around {
+            alo_nearby::Around {
+                machines: vec![Found::seen(reception(), self.0.port(), self.0.ip())],
+                workspaces: Vec::new(),
+            }
         }
     }
 

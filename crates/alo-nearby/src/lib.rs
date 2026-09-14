@@ -51,6 +51,14 @@
 //! apart and refuses anything saying more than presence, and [`Answering`] and
 //! [`Looking`] are the two things a machine does on a socket.
 //!
+//! **And a workspace.** [`WORKSPACE_SERVICE`] is the service a self-hosted
+//! workspace is advertised under, beside [`SERVICE`]; [`WorkspacePresence`] is
+//! the closed list its host may say — which workspace, where it answers, and
+//! the version — and [`FoundWorkspace`] is one heard, made only by reading an
+//! advertisement ([`reading::a_workspace_in`]) and paired with nothing.
+//! [`Looking::around`] hears machines and workspaces in one window. Finding a
+//! workspace confers nothing: nothing here connects to one.
+//!
 //! **Not pairing, and not use.** Nothing here opens a connection to a machine
 //! it found. A [`Found`] is a fact written down, and turning one into something
 //! this machine will talk to is ADR 0003's mutual, deliberate pairing — made on
@@ -135,12 +143,13 @@ mod testing;
 mod waiting;
 mod wire;
 pub mod words;
+mod workspace;
 
 pub use confirming::Confirmation;
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
 pub use keeping::{NotWrittenDown, THE_PAIRINGS_FORMAT};
 pub use keying::{Code, Keying, Offer};
-pub use looking::{Answering, Looking, THE_ADDRESS, THE_PORT};
+pub use looking::{Answering, Around, Looking, THE_ADDRESS, THE_PORT};
 pub use machine::MachineId;
 pub use origin::Origin;
 pub use pairing::{NotPaired, Pairing, Pairings};
@@ -154,3 +163,4 @@ pub use refusing::NotNearby;
 pub use replaying::{Seen, WHILE_A_PROOF_STANDS};
 pub use waiting::Waiting;
 pub use words::nearby_words;
+pub use workspace::{FoundWorkspace, WORKSPACE_SERVICE, WorkspacePresence};

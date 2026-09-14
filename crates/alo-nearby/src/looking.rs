@@ -35,10 +35,11 @@
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
-use crate::advertising::{a_question, about};
+use crate::advertising::{a_question, a_question_for_workspaces, about};
 use crate::presence::{Found, Presence};
-use crate::reading::{a_machine_in, a_question_in};
+use crate::reading::{a_machine_in, a_question_in, a_workspace_in};
 use crate::refusing::{NotNearby, because};
+use crate::workspace::FoundWorkspace;
 
 /// The address every machine on a link listens to for this kind of question.
 pub const THE_ADDRESS: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 251);
@@ -137,6 +138,19 @@ impl Looking {
         Ok(())
     }
 
+    /// Ask which workspaces are here.
+    ///
+    /// # Errors
+    ///
+    /// As [`ask`](Self::ask).
+    pub fn ask_for_workspaces(&self, of: SocketAddr) -> Result<(), NotNearby> {
+        let question = a_question_for_workspaces()?;
+        self.socket
+            .send_to(&question, of)
+            .map_err(|why| NotNearby::TheNetwork(because(&why)))?;
+        Ok(())
+    }
+
     /// Every machine that answers within `patience`, each counted once.
     ///
     /// A packet that is not an alo machine's is stepped over rather than
@@ -149,15 +163,31 @@ impl Looking {
     /// [`NotNearby::TheNetwork`] if a read timeout cannot be set on the socket.
     /// **Not** if nothing answers: that is an empty list.
     pub fn found(&self, patience: Duration) -> Result<Vec<Found>, NotNearby> {
+        self.around(patience).map(|around| around.machines)
+    }
+
+    /// Every machine and every workspace that answers within `patience`.
+    ///
+    /// One window for both, so that a workspace and the machine that says it
+    /// serves it are heard at the same moment and can be told to have answered
+    /// from the same address. A machine is counted once by its identity; a
+    /// workspace once by its identity, address and port — two answers claiming
+    /// one identity from two addresses are two things heard, and neither is
+    /// quietly preferred. Anything that is neither is stepped over.
+    ///
+    /// # Errors
+    ///
+    /// As [`found`](Self::found).
+    pub fn around(&self, patience: Duration) -> Result<Around, NotNearby> {
         let until = Instant::now().checked_add(patience);
-        let mut machines: Vec<Found> = Vec::new();
+        let mut around = Around::default();
         let mut heard = [0_u8; AT_MOST];
         loop {
             let left = until
                 .and_then(|until| until.checked_duration_since(Instant::now()))
                 .unwrap_or_default();
             if left.is_zero() {
-                return Ok(machines);
+                return Ok(around);
             }
             self.socket
                 .set_read_timeout(Some(left))
@@ -165,20 +195,39 @@ impl Looking {
             let Ok((how_many, who)) = self.socket.recv_from(&mut heard) else {
                 // Nothing more arrived in the time there was, which is the
                 // ordinary end of a search rather than a fault.
-                return Ok(machines);
+                return Ok(around);
             };
             let Some(said) = heard.get(..how_many) else {
                 continue;
             };
-            if let Ok(found) = a_machine_in(said, who.ip())
-                && !machines
+            if let Ok(found) = a_machine_in(said, who.ip()) {
+                if !around
+                    .machines
                     .iter()
                     .any(|already| already.machine == found.machine)
+                {
+                    around.machines.push(found);
+                }
+            } else if let Ok(found) = a_workspace_in(said, who.ip())
+                && !around.workspaces.contains(&found)
             {
-                machines.push(found);
+                around.workspaces.push(found);
             }
         }
     }
+}
+
+/// What answered on the link in one window: machines, and workspaces.
+///
+/// Both are facts written down and nothing more — every one of them
+/// [`crate::Standing::NotPaired`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Around {
+    /// The alo machines that said they exist, in the order they answered.
+    pub machines: Vec<Found>,
+    /// The workspaces whose hosts said they serve one, in the order they
+    /// answered.
+    pub workspaces: Vec<FoundWorkspace>,
 }
 
 #[cfg(test)]
@@ -254,5 +303,40 @@ mod tests {
             answered.join().unwrap().unwrap().is_none(),
             "something that was not a question was answered"
         );
+    }
+
+    /// **One window hears both**: a machine and a workspace answering the
+    /// two questions come back apart, each once, and a machine's own
+    /// discovery does not answer the question for workspaces.
+    #[test]
+    fn one_look_around_hears_machines_and_workspaces_apart() {
+        let machine = MachineId::made().unwrap();
+        let answering = a_socket();
+        let at = answering.local_addr().unwrap();
+        let answering = Answering::on(answering, Presence::of(machine.clone(), 7_610));
+
+        let looking = Looking::from(a_socket());
+        looking.ask_for_workspaces(at).unwrap();
+        // The machine's own discovery hears a question that is not for it.
+        assert!(answering.answer_one().unwrap().is_none());
+        looking.ask(at).unwrap();
+        assert!(answering.answer_one().unwrap().is_some());
+
+        // A workspace host answers twice, which is counted once.
+        let workspace = crate::workspace::WorkspacePresence::of(machine.clone(), 8_443);
+        let packet = crate::advertising::about_a_workspace(&workspace).unwrap();
+        let host = a_socket();
+        let to = looking.socket.local_addr().unwrap();
+        host.send_to(&packet, to).unwrap();
+        host.send_to(&packet, to).unwrap();
+
+        let around = looking.around(Duration::from_millis(500)).unwrap();
+        assert_eq!(around.machines.len(), 1, "{around:?}");
+        assert_eq!(around.machines.first().unwrap().machine, machine);
+        assert_eq!(around.workspaces.len(), 1, "{around:?}");
+        let found = around.workspaces.first().unwrap();
+        assert_eq!(found.host(), &machine);
+        assert_eq!(found.port(), 8_443);
+        assert_eq!(found.address(), host.local_addr().unwrap().ip());
     }
 }

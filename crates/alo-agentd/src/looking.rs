@@ -29,11 +29,19 @@
 //! answer is not found, and nothing is proposed to it. [`LookingFor`] is that
 //! question as the door asks it, so the door can be tested against a network
 //! with nobody on it.
+//!
+//! # And for the workspaces on the network
+//!
+//! The person's door lists the workspaces discovery finds
+//! (`crate::listing_workspaces`), and [`around_at`] is that look: both
+//! questions — who is here, and which workspaces — asked at once on the link,
+//! and everything that answered in the one window. Again nothing is kept, so
+//! the list is the network at the moment it was asked about.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::Duration;
 
-use alo_nearby::{Found, Looking, MachineId};
+use alo_nearby::{Around, Found, Looking, MachineId};
 
 /// Somewhere a machine can be looked for by its identity, at the moment.
 ///
@@ -44,6 +52,36 @@ pub trait LookingFor: std::fmt::Debug {
     /// The machine with this identity, if it answered on the network just
     /// now, at the address it answered from.
     fn look_for(&self, machine: &MachineId) -> Option<Found>;
+
+    /// Every machine and every workspace that answered on the network just
+    /// now, each at the address it answered from — nothing at all on a link
+    /// with nobody on it, which is an answer rather than a failure.
+    fn look_around(&self) -> Around;
+}
+
+/// Ask `at` which machines and which workspaces are here, and answer with
+/// everything that answered within [`WHILE_LOOKING`].
+///
+/// One socket and one window for both questions, so a workspace and the
+/// machine that says it serves it are heard at the same moment
+/// (`alo_nearby::Looking::around`). Nothing that answered is contacted: this
+/// sends two questions and reads what comes back, and a socket that will not
+/// bind or a question that cannot be sent is *nothing found*.
+#[must_use]
+pub fn around_at(at: SocketAddr) -> Around {
+    let here: IpAddr = if at.ip().is_loopback() {
+        Ipv4Addr::LOCALHOST.into()
+    } else {
+        Ipv4Addr::UNSPECIFIED.into()
+    };
+    let Ok(socket) = UdpSocket::bind((here, 0)) else {
+        return Around::default();
+    };
+    let looking = Looking::from(socket);
+    if looking.ask(at).is_err() || looking.ask_for_workspaces(at).is_err() {
+        return Around::default();
+    }
+    looking.around(WHILE_LOOKING).unwrap_or_default()
 }
 
 /// Ask who is here at `at`, and answer with the machine named `machine` if

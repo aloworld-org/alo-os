@@ -306,6 +306,41 @@ takes effect at once either way.
 **A name goes with its pairing.** Revoking a pairing takes its name away in the
 same act, and a pairing kept afresh with a machine starts with no name.
 
+### `workspaces` — the self-hosted workspaces on the network
+
+```json
+{"workspaces":{}}
+```
+
+Added 2026-09-14, additively. Asks which workspaces discovery finds on the local
+network at the moment (`docs/contracts/local-network-wire.md`, *A workspace on the
+network*). It **carries nothing** — in particular no address: a workspace is found,
+not configured, and there is no request on either door that names an address to be
+dialled as a workspace, so a message that carries one is not a request.
+
+The link is asked when the request arrives — who is here, and which workspaces, in
+one window of two seconds — and nothing is kept between two asks. **Finding a
+workspace confers nothing**: nothing is contacted, paired, proposed, granted or
+written in the record because of it. An agent asking is refused in the same words as
+an agent trying to approve something: the network around the person is the
+person's to be shown.
+
+What comes back is `workspaces`, in the order they answered — an empty `found` when
+there are none, which is an answer and not a failure:
+
+```json
+{"workspaces":{"found":[{"machine":"aaaabbbbccccddddeeeeffff00001111","answers_at":"192.168.1.20:8443","speaks":"1","called":"the studio machine"}]}}
+```
+
+`machine` is which workspace — the identity it was advertised under; `answers_at` is
+the address discovery measured off the answer with the port it advertised; `speaks`
+is the version. `called` is the name the person gave the paired machine hosting it
+(`name-machine`), present **only** when this machine is paired with the machine of
+that identity at the moment **and** that machine answered from the same address in
+the same look — an advertisement is not proven, and a workspace claiming a named
+machine's identity from anywhere else is listed by the identity alone. There is no
+field for standing: a workspace found is not trusted, reachable or signed in to.
+
 ## What comes back
 
 ```json

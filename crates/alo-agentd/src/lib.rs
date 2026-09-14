@@ -212,6 +212,8 @@ pub mod lines;
 #[cfg(target_os = "linux")]
 pub mod listening;
 #[cfg(target_os = "linux")]
+pub mod listing_workspaces;
+#[cfg(target_os = "linux")]
 pub mod looking;
 #[cfg(target_os = "linux")]
 pub mod names;
@@ -296,7 +298,7 @@ pub use lines::Line;
 #[cfg(target_os = "linux")]
 pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
-pub use looking::{LookingFor, WHILE_LOOKING, found_at, found_by_name};
+pub use looking::{LookingFor, WHILE_LOOKING, around_at, found_at, found_by_name};
 #[cfg(target_os = "linux")]
 pub use names::{KeepingNames, NothingKeepsNames, TheNames};
 #[cfg(target_os = "linux")]

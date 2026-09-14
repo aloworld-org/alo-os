@@ -338,6 +338,10 @@ mod tests {
             self.asked.borrow_mut().push(machine.clone());
             self.studio.look_for(machine)
         }
+
+        fn look_around(&self) -> alo_nearby::Around {
+            self.studio.look_around()
+        }
     }
 
     /// **A question down the corridor names the machine by the name its

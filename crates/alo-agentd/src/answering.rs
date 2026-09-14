@@ -70,6 +70,12 @@
 //! name are answered the same way whether a turn is under way or not, by
 //! [`crate::naming_machines`].
 //!
+//! # And one lists the workspaces on the network
+//!
+//! Which workspaces discovery finds is neither a turn's nor the grants file's,
+//! writes nothing and reaches nothing, so it is answered the same way whether a
+//! turn is under way or not, by [`crate::listing_workspaces`].
+//!
 //! # And the turn may be a paired machine's
 //!
 //! Since the daemon bound the port, a change waiting for this person may have
@@ -91,6 +97,7 @@ use alo_turn::Turning;
 
 use crate::choosing_to_answer;
 use crate::holding::Holding;
+use crate::listing_workspaces;
 use crate::naming_machines;
 use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
@@ -149,6 +156,7 @@ pub fn what_a_person_said(
             strings,
             now,
         )),
+        Ok(FromAPerson::Workspaces) => Ok(listing_workspaces::listed(nearby, now)),
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -228,9 +236,8 @@ fn answered_to(
         | FromAPerson::Pairings
         | FromAPerson::ChooseMachineToAnswer { .. }
         | FromAPerson::NameMachine { .. }
-        | FromAPerson::ClearMachineName { .. } => {
-            ToAPerson::refused(&rereading::what_to_say(strings))
-        }
+        | FromAPerson::ClearMachineName { .. }
+        | FromAPerson::Workspaces => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => match turning.approving(waiting, grants, now) {
                 Ok(answer) => ToAPerson::did(&answer),

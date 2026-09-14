@@ -45,6 +45,17 @@
 //! the words an approval gets: an agent that could name a machine could put one
 //! machine's name on another machine's evidence.
 //!
+//! # Which workspaces are nearby is the person's to be shown, and reaches none
+//!
+//! `workspaces` asks which self-hosted workspaces discovery finds on the local
+//! network at the moment, and carries nothing: **no address**, because a
+//! workspace is found rather than configured, and a field for one would be the
+//! DNS step the promise removes arriving as a text box. What comes back is
+//! each workspace with the address discovery measured, and finding one confers
+//! nothing (ADR 0003) — there is no request on either door that reaches a
+//! workspace because it was found. An agent asking is refused in the words an
+//! approval gets: the network around the person is the person's to be shown.
+//!
 //! # A number is not a handle
 //!
 //! Both of these carry a `u64`, and it is deliberately not an
@@ -176,6 +187,11 @@ pub enum FromAPerson {
         /// The other machine, by its identity.
         machine: String,
     },
+    /// Which workspaces are on the local network at the moment.
+    ///
+    /// Carries nothing — no address — and reaches nothing: see this file's
+    /// header.
+    Workspaces,
 }
 
 impl FromAPerson {
@@ -206,6 +222,7 @@ impl FromAPerson {
             Asked::ChooseMachineToAnswer { machine } => Ok(Self::ChooseMachineToAnswer { machine }),
             Asked::NameMachine { machine, called } => Ok(Self::NameMachine { machine, called }),
             Asked::ClearMachineName { machine } => Ok(Self::ClearMachineName { machine }),
+            Asked::Workspaces {} => Ok(Self::Workspaces),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -238,7 +255,8 @@ impl FromAPerson {
             | Self::Pairings
             | Self::ChooseMachineToAnswer { .. }
             | Self::NameMachine { .. }
-            | Self::ClearMachineName { .. } => None,
+            | Self::ClearMachineName { .. }
+            | Self::Workspaces => None,
         }
     }
 
@@ -315,6 +333,7 @@ impl From<FromAPerson> for Asked {
             }
             FromAPerson::NameMachine { machine, called } => Self::NameMachine { machine, called },
             FromAPerson::ClearMachineName { machine } => Self::ClearMachineName { machine },
+            FromAPerson::Workspaces => Self::Workspaces {},
         }
     }
 }
@@ -514,6 +533,48 @@ mod tests {
         }
     }
 
+    /// **Asking which workspaces are nearby is the person's, carries nothing,
+    /// and an agent asking is refused in the words an approval gets.**
+    #[test]
+    fn asking_which_workspaces_are_nearby_is_a_persons_and_refused_to_an_agent() {
+        let line = r#"{"format":1,"asks":{"workspaces":{}}}"#;
+        let asked = FromAPerson::read(line).unwrap();
+        assert_eq!(asked, FromAPerson::Workspaces);
+        assert_eq!(asked.number(), None);
+        assert!(!asked.is_yes());
+        assert!(!asked.is_a_question_about_the_turn());
+        assert!(!asked.is_about_a_pairing());
+        assert!(!asked.is_about_a_name());
+        assert_eq!(
+            crate::FromAnAgent::read(line),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+    }
+
+    /// **An address a person types is never dialled as a workspace**: there is
+    /// no field on `workspaces` for one, and no request that names a workspace
+    /// by an address — each shape is refused as not a request at all.
+    #[test]
+    fn an_address_typed_as_a_workspace_is_not_a_request() {
+        for message in [
+            r#"{"format":1,"asks":{"workspaces":{"address":"192.168.1.20:8443"}}}"#,
+            r#"{"format":1,"asks":{"workspaces":{"at":"mail.axon.example"}}}"#,
+            r#"{"format":1,"asks":{"open-workspace":{"address":"192.168.1.20:8443"}}}"#,
+            r#"{"format":1,"asks":{"workspace":{"url":"https://mail.axon.example"}}}"#,
+        ] {
+            assert_eq!(
+                FromAPerson::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
+            assert_eq!(
+                crate::FromAnAgent::read(message),
+                Err(NotUnderstood::NotReadable),
+                "{message}"
+            );
+        }
+    }
+
     /// **A proposal cannot name where a machine is**: an address in it is a
     /// message this crate refuses to read, in the same words as any field
     /// nobody declared.
@@ -559,6 +620,7 @@ mod tests {
             FromAPerson::ClearMachineName {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
             },
+            FromAPerson::Workspaces,
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);

@@ -1,5 +1,5 @@
-//! Taking a packet off the network as a machine, and refusing anything that
-//! says more than presence.
+//! Taking a packet off the network as a machine or a workspace, and refusing
+//! anything that says more than presence.
 //!
 //! # The refusal this file exists for
 //!
@@ -14,14 +14,20 @@
 //! **this** machine, two years from now, advertising the person's name in a key
 //! the reader would have ignored, with nothing in the workspace failing.
 //!
+//! **A workspace is held to the same list** — which workspace, where it
+//! answers, and the version it speaks — for the same reason: a workspace
+//! advertising its organisation's name, a login address or a certificate in a
+//! key nobody reads is a workspace telling a café who works where.
+//!
 //! # What is read, and in what order
 //!
 //! The instance name from the `PTR`, the port and host from the `SRV`, the keys
-//! from the `TXT`. A packet with no `PTR` for this service is not an answer
-//! about an alo machine at all and says so; a packet whose `SRV` and `TXT` are
+//! from the `TXT`. A packet with no `PTR` for the service asked about is not an
+//! answer about that at all and says so; a packet whose `SRV` and `TXT` are
 //! about a different instance than the `PTR` is refused, because presence about
-//! one machine carried in an answer about another is not something a correct
-//! responder does.
+//! one thing carried in an answer about another is not something a correct
+//! responder does. The `SRV`'s host name is read past and never used: where a
+//! machine or a workspace answers is the address its answer came from.
 
 use std::net::IpAddr;
 
@@ -29,6 +35,7 @@ use crate::machine::MachineId;
 use crate::presence::{Found, SERVICE, VERSION, VERSION_KEY};
 use crate::refusing::NotNearby;
 use crate::wire::{Packet, kind};
+use crate::workspace::{FoundWorkspace, WORKSPACE_SERVICE};
 
 /// The class bits that matter, the top one being mDNS's cache-flush bit rather
 /// than part of the class.
@@ -46,6 +53,35 @@ const WITHOUT_THE_FLUSH_BIT: u16 = 0x7fff;
 /// [`NotNearby::SaysNothingAboutWhichMachine`] for one that never named an
 /// instance.
 pub fn a_machine_in(packet: &[u8], from: IpAddr) -> Result<Found, NotNearby> {
+    let (machine, port) = an_instance_in(packet, SERVICE, NotNearby::NotAnAloMachine)?;
+    Ok(Found::seen(machine, port, from))
+}
+
+/// One workspace, read out of an answer its host sent from `from`.
+///
+/// The only way a [`FoundWorkspace`] is made: where it answers is `from`, the
+/// address measured off the packet, and the port it advertised.
+///
+/// # Errors
+///
+/// [`NotNearby::NotAWorkspace`] for an answer about some other service —
+/// including an alo machine's own presence, which is not a workspace;
+/// [`NotNearby::SaysMoreThanPresence`] for an answer carrying a key that is not
+/// on the closed list, or claiming a version this machine does not speak; and
+/// the refusals [`a_machine_in`] gives for a packet that is not well formed or
+/// never says which one it is about.
+pub fn a_workspace_in(packet: &[u8], from: IpAddr) -> Result<FoundWorkspace, NotNearby> {
+    let (host, port) = an_instance_in(packet, WORKSPACE_SERVICE, NotNearby::NotAWorkspace)?;
+    Ok(FoundWorkspace::heard(host, port, from))
+}
+
+/// The identity and port an answer about `service` carries, or why it is not
+/// one — `not_it` saying so for an answer about something else.
+fn an_instance_in(
+    packet: &[u8],
+    service: &str,
+    not_it: fn(String) -> NotNearby,
+) -> Result<(MachineId, u16), NotNearby> {
     let mut reading = Packet::of(packet);
     let _transaction = reading.sixteen()?;
     let _flags = reading.sixteen()?;
@@ -79,7 +115,7 @@ pub fn a_machine_in(packet: &[u8], from: IpAddr) -> Result<Found, NotNearby> {
             .ok_or(NotNearby::CutShort)?;
 
         match kind_of {
-            kind::PTR if name.eq_ignore_ascii_case(SERVICE) => {
+            kind::PTR if name.eq_ignore_ascii_case(service) => {
                 instance = Some(reading.name()?);
             }
             kind::SRV => {
@@ -99,19 +135,19 @@ pub fn a_machine_in(packet: &[u8], from: IpAddr) -> Result<Found, NotNearby> {
     }
 
     let Some(instance) = instance else {
-        return Err(NotNearby::NotAnAloMachine(a_word_for(packet)));
+        return Err(not_it(a_word_for(packet)));
     };
-    let Some(said) = instance.strip_suffix(&format!(".{SERVICE}")) else {
-        return Err(NotNearby::NotAnAloMachine(instance));
+    let Some(said) = instance.strip_suffix(&format!(".{service}")) else {
+        return Err(not_it(instance));
     };
-    let machine = MachineId::read(said)?;
+    let identity = MachineId::read(said)?;
     let Some(port) = port else {
         return Err(NotNearby::SaysNothingAboutWhichMachine);
     };
     if !version_said {
         return Err(NotNearby::SaysNothingAboutWhichMachine);
     }
-    Ok(Found::seen(machine, port, from))
+    Ok((identity, port))
 }
 
 /// Whether a packet is somebody asking who is here.
@@ -199,14 +235,15 @@ fn a_word_for(packet: &[u8]) -> String {
     reason = "in a test, a panic on an unexpected Err is the failure being reported"
 )]
 mod tests {
-    use super::a_machine_in;
-    use crate::advertising::about;
+    use super::{a_machine_in, a_workspace_in};
+    use crate::advertising::{about, about_a_workspace};
     use crate::machine::MachineId;
     use crate::presence::{Presence, SERVICE, Standing};
     use crate::refusing::NotNearby;
     use crate::wire::{
         IN_AND_THE_ONLY_ONE, kind, write_data, write_name, write_sixteen, write_thirty_two,
     };
+    use crate::workspace::{WORKSPACE_SERVICE, WorkspacePresence};
 
     /// Where every answer here is heard from.
     fn here() -> std::net::IpAddr {
@@ -371,6 +408,161 @@ mod tests {
         write_thirty_two(&mut packet, 120);
         write_data(&mut packet, &instance, |data| {
             for said in ["v=1", entry] {
+                data.push(u8::try_from(said.len()).unwrap_or(0));
+                data.extend_from_slice(said.as_bytes());
+            }
+            Ok(())
+        })
+        .unwrap();
+
+        packet
+    }
+
+    /// **A workspace advertised is read back as which workspace, where it
+    /// answers and the version** — at the address its answer came from, not
+    /// paired with anything.
+    #[test]
+    fn a_workspace_that_advertises_is_read_back_as_one_workspace_not_paired() {
+        let packet = about_a_workspace(&WorkspacePresence::of(an_identity(), 8_443)).unwrap();
+        let from: std::net::IpAddr = std::net::Ipv4Addr::new(192, 168, 1, 20).into();
+        let found = a_workspace_in(&packet, from).unwrap();
+        assert_eq!(found.host(), &an_identity());
+        assert_eq!(found.port(), 8_443);
+        assert_eq!(found.address(), from);
+        assert_eq!(found.version(), "1");
+        assert_eq!(found.standing(), Standing::NotPaired);
+    }
+
+    /// **A workspace advertisement carrying one field more is refused by name,
+    /// not read around** — the organisation, a login address, a certificate or
+    /// anything else a later workspace might start saying.
+    #[test]
+    fn a_workspace_advertisement_carrying_one_field_more_is_refused() {
+        for saying in [
+            "org=axon",
+            "url=https://mail.axon.example",
+            "address=192.168.1.20",
+            "name=axon-workspace",
+            "cert=ab12",
+        ] {
+            let packet = a_workspace_advertisement_saying(&["v=1", saying], "unused.local");
+            let key = saying.split_once('=').unwrap().0;
+            assert_eq!(
+                a_workspace_in(&packet, here()).unwrap_err(),
+                NotNearby::SaysMoreThanPresence(key.to_owned()),
+                "`{saying}` was read past rather than refused"
+            );
+        }
+        // And a version this machine does not speak is not a quiet `v=1`.
+        assert!(matches!(
+            a_workspace_in(
+                &a_workspace_advertisement_saying(&["v=2"], "x.local"),
+                here()
+            )
+            .unwrap_err(),
+            NotNearby::SaysMoreThanPresence(_)
+        ));
+        // Exactly the closed list reads.
+        assert!(
+            a_workspace_in(
+                &a_workspace_advertisement_saying(&["v=1"], "x.local"),
+                here()
+            )
+            .is_ok()
+        );
+    }
+
+    /// **Where a workspace answers is the address it was heard from**, whatever
+    /// host name its `SRV` record names — so a name in a packet never becomes
+    /// an address this machine would go to.
+    #[test]
+    fn where_a_workspace_answers_is_measured_not_what_its_record_names() {
+        let packet = a_workspace_advertisement_saying(&["v=1"], "mail.axon.example");
+        let from: std::net::IpAddr = std::net::Ipv4Addr::new(10, 1, 2, 3).into();
+        let found = a_workspace_in(&packet, from).unwrap();
+        assert_eq!(found.where_it_answers().to_string(), "10.1.2.3:8443");
+    }
+
+    /// **A machine's presence is not a workspace, and a workspace is not a
+    /// machine**: each service's answer is refused as the other, so serving a
+    /// workspace never changes what a machine advertises about itself.
+    #[test]
+    fn a_machine_is_not_a_workspace_and_a_workspace_is_not_a_machine() {
+        let machine = about(&Presence::of(an_identity(), 7_610)).unwrap();
+        let refused = a_workspace_in(&machine, here()).unwrap_err();
+        assert!(
+            matches!(refused, NotNearby::NotAWorkspace(_)),
+            "{refused:?}"
+        );
+        assert!(refused.is_about_a_stranger());
+
+        let workspace = about_a_workspace(&WorkspacePresence::of(an_identity(), 8_443)).unwrap();
+        assert!(matches!(
+            a_machine_in(&workspace, here()).unwrap_err(),
+            NotNearby::NotAnAloMachine(_)
+        ));
+    }
+
+    /// A workspace advertised under something that is not an identity — a name
+    /// somebody chose — is refused rather than listed under that name.
+    #[test]
+    fn a_workspace_advertised_under_a_chosen_name_is_refused() {
+        let mut packet = Vec::new();
+        write_sixteen(&mut packet, 0);
+        write_sixteen(&mut packet, 0x8400);
+        write_sixteen(&mut packet, 0);
+        write_sixteen(&mut packet, 1);
+        write_sixteen(&mut packet, 0);
+        write_sixteen(&mut packet, 0);
+        write_name(&mut packet, WORKSPACE_SERVICE).unwrap();
+        write_sixteen(&mut packet, kind::PTR);
+        write_sixteen(&mut packet, IN_AND_THE_ONLY_ONE);
+        write_thirty_two(&mut packet, 120);
+        let instance = format!("axon-mail.{WORKSPACE_SERVICE}");
+        write_data(&mut packet, &instance, |data| write_name(data, &instance)).unwrap();
+        assert!(matches!(
+            a_workspace_in(&packet, here()).unwrap_err(),
+            NotNearby::NotAMachineIdentity(_)
+        ));
+    }
+
+    /// A workspace advertisement with `entries` in its `TXT` and `target` as its
+    /// `SRV` host, built by hand because the writer in this crate cannot
+    /// produce anything but the closed list.
+    fn a_workspace_advertisement_saying(entries: &[&str], target: &str) -> Vec<u8> {
+        let instance = WorkspacePresence::of(an_identity(), 8_443).instance();
+        let mut packet = Vec::new();
+        write_sixteen(&mut packet, 0);
+        write_sixteen(&mut packet, 0x8400);
+        write_sixteen(&mut packet, 0);
+        write_sixteen(&mut packet, 1);
+        write_sixteen(&mut packet, 0);
+        write_sixteen(&mut packet, 2);
+
+        write_name(&mut packet, WORKSPACE_SERVICE).unwrap();
+        write_sixteen(&mut packet, kind::PTR);
+        write_sixteen(&mut packet, IN_AND_THE_ONLY_ONE);
+        write_thirty_two(&mut packet, 120);
+        write_data(&mut packet, &instance, |data| write_name(data, &instance)).unwrap();
+
+        write_name(&mut packet, &instance).unwrap();
+        write_sixteen(&mut packet, kind::SRV);
+        write_sixteen(&mut packet, IN_AND_THE_ONLY_ONE);
+        write_thirty_two(&mut packet, 120);
+        write_data(&mut packet, &instance, |data| {
+            write_sixteen(data, 0);
+            write_sixteen(data, 0);
+            write_sixteen(data, 8_443);
+            write_name(data, target)
+        })
+        .unwrap();
+
+        write_name(&mut packet, &instance).unwrap();
+        write_sixteen(&mut packet, kind::TXT);
+        write_sixteen(&mut packet, IN_AND_THE_ONLY_ONE);
+        write_thirty_two(&mut packet, 120);
+        write_data(&mut packet, &instance, |data| {
+            for said in entries {
                 data.push(u8::try_from(said.len()).unwrap_or(0));
                 data.extend_from_slice(said.as_bytes());
             }
