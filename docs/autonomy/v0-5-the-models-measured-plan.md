@@ -399,3 +399,45 @@ is not a bar either.
   as the ADR decides. A grade earned under the old instructions is not
   rewritten — `alo-driving` records which instructions a grade was earned
   under, so the two can never be confused.
+
+### 17. The same ten exercises through the engine's own server, held to the whole call
+
+**Status:** ready. **Depends on:** 12, 16.
+
+[ADR 0035](../decisions/0035-the-wrapper-or-the-engine.md) is *proposed*, and
+this task is what accepts or rejects it. Every friction the measuring lane
+found was in the wrapper, and one of them is that it cannot hold a model to
+the whole call in the protocol's key order. The engine's own server can, with
+a grammar.
+
+**Task 16 changed what this is for, and the ADR says so.** The bar was cleared
+under the wrapper — 80 in 80 — by showing the instructions' every door, so
+this is no longer *the thing standing between the product and a local agent*.
+It is now a question of margin, of the four frictions that live in the image,
+and of what the next model needs. Measure it anyway; accept it only if the
+engine's server is **better** rather than equal.
+
+- **Acceptance:** `llama.cpp`'s `llama-server`, at one pinned version and
+  digest recorded in the report, serves the same weights the wrapper served
+  (the same file, the same digest — never re-fetched from a publisher if the
+  bytes are already on this disk); the ten exercises are put to it through a
+  door in `alo-asking` that speaks the server's OpenAI-shaped API — the
+  hosted door already does, on loopback, and nothing new is opened — with a
+  **GBNF grammar for the entire call** derived from `alo-protocol`'s own
+  shape and checked by a test against every call `alo-capability` accepts;
+  every run is under ADR 0034's `OneExamplePerDoor` instructions, named by
+  their digest like every other grade, so the comparison has one variable;
+  the grade is written beside the wrapper's, never over it, with machine,
+  runtime, digest, counts, residency and the grammar's hash; and the report's
+  first paragraph answers the three questions ADR 0035 accepts on — did a
+  model clear the bar here that cannot through the wrapper, is the margin on
+  the one that already does materially wider, and was the whole call held —
+  then the ADR's status is changed to accepted or rejected in the same commit,
+  with the numbers.
+- **Constraint:** the exercises, the bar, the second-round rule and the door's
+  scoring are untouched. Nothing here changes the pinned runtime, the image
+  or `ollama.rs`: this measures a candidate; the change, if the number earns
+  it, is a task of its own after the ADR is accepted. No source patch to
+  either program. If the engine's server cannot be pinned or its grammar
+  cannot express the call, that is the finding, recorded in `docs/quirks.md`,
+  and the ADR is rejected on it.
