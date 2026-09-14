@@ -220,16 +220,17 @@ pub const ANOTHER_FILESYSTEM: Word = Word::saying(
      technical term and may be translated as such. It stands beside a size.",
 );
 
-/// A folder the count stopped in before it was finished.
+/// A folder no count can finish.
 pub const NOT_FINISHED: Word = Word::saying(
     "measuring.filling.not-finished",
     "The count stopped before everything inside it was seen.",
 )
 .noting(
-    "Shown beside a folder when the count reached its limit while inside it or before reaching \
-     it, so its size is the size of what was seen and not of the whole. Read with \
-     \"measuring.filling.cut-short\", which is said once about the whole count. It stands \
-     beside a size.",
+    "Shown beside a folder that holds more things directly inside it than one count looks at, \
+     which no count can list to its end, so its size is the size of what was seen and not of \
+     the whole. A folder that is merely large, with more than that in subfolders, is counted \
+     whole and never shows this. Read with \"measuring.filling.cut-short\", which is said once \
+     about the whole count. It stands beside a size.",
 );
 
 /// The folder asked about could not be counted at all.
@@ -243,15 +244,19 @@ pub const NOT_COUNTED: Word = Word::saying(
      translated. {why} is a whole sentence saying which, already in the reader's language.",
 );
 
-/// A count that stopped at its limit.
+/// A count with a folder no walk could list to its end.
 pub const CUT_SHORT: Counted = Counted {
     named: "measuring.filling.cut-short",
     number: "most",
-    one: "The count stopped after one thing, so these sizes are not the whole of it.",
-    other: "The count stopped after {most} things, so these sizes are not the whole of it.",
-    note: "Said once, above a tree of sizes, when the folder holds more things than one count \
-           looks at. {most} is that limit. The sizes shown are true for what was seen and \
-           smaller than the whole.",
+    one: "A folder under it holds more than one thing at a single level, so these sizes are not \
+          the whole of it.",
+    other: "A folder under it holds more than {most} things at a single level, so these sizes \
+            are not the whole of it.",
+    note: "Said once, above a tree of sizes, when a folder under the one counted holds more \
+           things directly inside it than one count looks at, which no count can list to its \
+           end. {most} is that limit; a folder holding more than it in subfolders is counted \
+           whole. The sizes shown are true for what was seen and smaller than the whole, and \
+           each such folder is marked with \"measuring.filling.not-finished\".",
 };
 
 /// Things whose names cannot be shown, left out of the count.

@@ -571,7 +571,25 @@ stops in the same place.
 
 ### 12. Sizes made whole for a folder larger than one walk, with one walking on
 
-**Status:** ready. **Depends on:** 2, 11.
+**Status:** done. **Depends on:** 2, 11.
+
+**Done, 2026-09-14.** Report:
+[`updates/sizes-made-whole-for-a-folder-larger-than-one-walk.md`](updates/sizes-made-whole-for-a-folder-larger-than-one-walk.md).
+The walking on lives in one place: `crates/alo-files/src/walking_on.rs`,
+additively, as `Walking::throughout` — the walk asked again from every
+folder one walk named and did not enter, under the same policy and the same
+bound, answering a `Gathered` — with `Walking::through` and the six verbs
+untouched, the second and last edit to that crate this plan makes.
+`alo-finding`'s `walking_on.rs` is reduced to that call and every task 11
+test passes unchanged; `alo-measuring`'s `Holding::of` walks on the same
+way, so *what is filling this* is whole for a folder of more than one walk's
+bound, every size the sum of its children plus its own files to the byte,
+hard links counted once across the walks, and *cut short* said only for a
+folder holding more than the bound at a single level, which is marked with
+exactly one walk's worth of names. Timed on the development machine, WSL:
+24,240 things of known bytes counted whole, to the byte, in 124 to 173 ms,
+and the whole root filesystem — 394 thousand things, a hundred gigabytes,
+twenty walks — in twelve seconds; the numbers are in the report.
 
 Task 11 made the index whole for a folder larger than one walk. *What is
 filling the disk* has the same bound and the same honesty: task 2's
@@ -613,3 +631,37 @@ the same shape of decision, and the task is to make it in the open.
   index's format, the verb and the list are untouched. A link is still
   never followed, another filesystem is still noted and not entered, and
   the shipped-source tests of both crates keep saying what they say.
+
+### 13. An index that fits in hand: the words of a large folder bounded and said
+
+**Status:** ready. **Depends on:** 9, 11.
+
+Task 11 measured what a whole index takes in hand: every word of every text
+file held as its own `String`, five to eight times the file's own size, so
+that a hundred thousand long documents is more than a person's machine
+should give a search — and it named that as a bound to argue for rather
+than trimming an index quietly. Task 9 reads the indexes once and asks them
+many times, so what an index holds in hand is what the shell holds for as
+long as it is open. Task 12 made the tree of sizes whole the same way the
+index is, and the tree holds one node per thing; the index holds every word,
+which is the number that grows.
+
+- **Acceptance:** `alo-finding` holds a whole index of a large folder in a
+  bounded amount of memory per entry — words kept once per file rather than
+  once per occurrence, and a bound on how many distinct words one entry
+  keeps, said in `Contents` so that an answer can say a file's words were
+  not all kept — with a test that indexes a folder of long text files and
+  checks the bytes held in hand against the bytes of the files, measured and
+  the number in the report **with the machine named**; a search over a file
+  whose words were bounded still finds every word that was kept and says the
+  words were not all kept, never *nothing matched* quietly; the index file's
+  `format` is still `1` if the change is additive, and if a field is added it
+  is added the way `made` was, so a reader from before still reads; and every
+  task 9 and task 11 test still passes.
+- **Constraint:** nothing here is a quiet partial index: what is left out is
+  said in the entry and in the answer. No edit to `alo-files` — this plan's
+  two edits to that crate are spent. Nothing opens a socket, reads a clock or
+  watches a folder; the verb, the list and the record are untouched. If the
+  honest deliverable turns out to be that no bound is needed at the sizes a
+  person's machine holds, that is the number in the report and the task ends
+  there, with the reasoning written down.

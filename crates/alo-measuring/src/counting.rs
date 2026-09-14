@@ -1,12 +1,15 @@
 //! Turning a walk into a tree of sizes, with the arithmetic that makes each
 //! size true.
 //!
-//! `alo-files`' walk answers a flat list — every folder before the things in
-//! it, each folder's things in the order a person reads them — plus what it
-//! could not read, would not enter and did not finish. This file makes the
-//! tree: a node per step, each moved under its parent, each size its own
-//! bytes plus its children's, and each of the walk's notes written on the node
-//! it is about.
+//! `alo-files`' walk, walked on until the folder is whole, answers a flat
+//! list — every folder before the things in it, each folder's things in the
+//! order a person reads them, each walk's after the walk before it — plus
+//! what it could not read, would not enter and could not finish. This file
+//! makes the tree: a node per step, each moved under its parent, each size
+//! its own bytes plus its children's, and each of the gathering's notes
+//! written on the node it is about. Which walk found a step makes no
+//! difference here: a parent is still before its children, and a file with
+//! two names met by two walks is still one file.
 //!
 //! # One look at every file, after the walk
 //!
@@ -31,7 +34,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use alo_files::{Kind, Walked};
+use alo_files::{Gathered, Kind};
 
 use crate::holding::{Counted, Holding, Node};
 use crate::looking::Looked;
@@ -40,10 +43,11 @@ use crate::looking::Looked;
 /// now, or why it would not say.
 pub(crate) type Looking<'a> = &'a mut dyn FnMut(&Path) -> Result<Looked, String>;
 
-/// The tree of sizes under `folder`, from what a measuring walk found there.
+/// The tree of sizes under `folder`, from what a measuring walk, walked on
+/// until the folder was whole, gathered there.
 ///
-/// `most` is the bound the walk had, for the sentence the answer says when it
-/// reached it.
+/// `most` is the bound each walk had, for the sentence the answer says about
+/// a folder no walk could finish.
 #[cfg_attr(
     all(not(target_os = "linux"), not(test)),
     expect(
@@ -52,7 +56,7 @@ pub(crate) type Looking<'a> = &'a mut dyn FnMut(&Path) -> Result<Looked, String>
                   reached by the unit tests below"
     )
 )]
-pub(crate) fn tree_of(folder: &Path, walked: Walked, most: usize, look: Looking<'_>) -> Holding {
+pub(crate) fn tree_of(folder: &Path, walked: Gathered, most: usize, look: Looking<'_>) -> Holding {
     let mut root = Node {
         name: folder.file_name().map_or_else(
             || folder.display().to_string(),
@@ -120,9 +124,9 @@ pub(crate) fn tree_of(folder: &Path, walked: Walked, most: usize, look: Looking<
         index.insert(step.below, Some(which));
     }
 
-    // The walk's notes, each on the folder it is about. A folder the walk
-    // could not read or would not enter was never listed, so it cannot also
-    // be one it did not finish.
+    // The gathering's notes, each on the folder it is about. A folder the
+    // walks could not read or would not enter was never listed, so it cannot
+    // also be one no walk could finish.
     let mut counted_as = |below: &Path, counted: Counted, root: &mut Node| match index.get(below) {
         Some(Some(which)) => {
             if let Some(Some(node)) = nodes.get_mut(*which) {
@@ -176,7 +180,7 @@ pub(crate) fn tree_of(folder: &Path, walked: Walked, most: usize, look: Looking<
     Holding {
         folder: folder.to_path_buf(),
         tree: root,
-        finished: !walked.cut_short,
+        finished: walked.whole,
         most,
         unnamed: walked.could_not_be_named,
     }
@@ -206,13 +210,13 @@ mod tests {
         }
     }
 
-    /// A walk that found these things and nothing else to say.
-    fn walk_of(things: Vec<Step>) -> Walked {
-        Walked {
+    /// A gathering that found these things and has nothing else to say.
+    fn walk_of(things: Vec<Step>) -> Gathered {
+        Gathered {
             things,
             links: 0,
             could_not_be_named: 0,
-            cut_short: false,
+            whole: true,
             unread: Vec::new(),
             elsewhere: Vec::new(),
             not_entered: Vec::new(),
@@ -387,9 +391,9 @@ mod tests {
         );
     }
 
-    /// **What the walk could not read, would not enter, and did not finish
-    /// is written on the node it is about** — including the folder asked
-    /// about — and the count says it is not the whole.
+    /// **What the walks could not read, would not enter, and could not
+    /// finish is written on the node it is about** — including the folder
+    /// asked about — and the count says it is not the whole.
     #[test]
     fn what_the_walk_could_not_read_enter_or_finish_is_marked_where_it_is() {
         let mut walked = walk_of(vec![
@@ -403,7 +407,7 @@ mod tests {
             why: "permission denied".to_owned(),
         });
         walked.elsewhere.push(PathBuf::from("mounted"));
-        walked.cut_short = true;
+        walked.whole = false;
         walked.not_entered = vec![PathBuf::new(), PathBuf::from("later")];
         walked.could_not_be_named = 2;
 

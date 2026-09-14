@@ -23,9 +23,21 @@
 //! - a **folder on another filesystem** is a node that stops there and says
 //!   so, which is also how naming the root of the machine is answered: a tree
 //!   that stops at each mount point;
-//! - a **count that reached its bound** says so on every folder it had not
-//!   finished, and once at the top, rather than reporting a partial sum as a
-//!   total.
+//! - a **folder no count can finish** — one holding more things directly
+//!   inside it than one walk looks at — says so on that folder, and once at
+//!   the top, rather than reporting a partial sum as a total.
+//!
+//! # A folder larger than one walk is counted whole
+//!
+//! One walk looks at `alo_files::MOST_WALKED` things. The folder a person
+//! opens *what is filling the disk* on is exactly the one with too much in
+//! it, so the count walks on — `alo_files::Walking::throughout`, the same
+//! walk asked again from every folder one walk had found and not entered,
+//! under the same bound — until every folder has been listed to its end. A
+//! file with two names met by two different walks is still one file: the
+//! look that counts names is over the whole gathering. What no walk can
+//! finish is a single folder holding more than the bound at one level, and
+//! that is the only folder ever marked [`Counted::NotFinished`].
 //!
 //! # What this is not
 //!
@@ -34,7 +46,7 @@
 //! never draws. The whole disk is never walked unasked: a caller names a
 //! folder, and the walk is `alo-files`' — borrowed, bounded, following
 //! nothing — so that there is one opinion in this repository about what a
-//! link is.
+//! link is and about which folder is walked again.
 
 use std::path::{Path, PathBuf};
 
@@ -54,13 +66,16 @@ pub struct Holding {
     /// The folder, its size, and everything inside it.
     pub tree: Node,
 
-    /// Whether the count saw everything. When it did not, [`Self::tree`] has
-    /// [`Counted::NotFinished`] on every folder it had not finished, and
-    /// [`Self::not_the_whole`] has the sentence.
+    /// Whether every folder was listed to its end. False only when a folder
+    /// holds more than [`Self::most`] things directly inside it, which no
+    /// walk can finish; then [`Self::tree`] has [`Counted::NotFinished`] on
+    /// each such folder, and [`Self::not_the_whole`] has the sentence. A
+    /// folder that is merely large — more than the bound, in subfolders — is
+    /// counted whole by walking on.
     pub finished: bool,
 
-    /// The most things one count looks at: the bound it stopped at, if it
-    /// stopped.
+    /// The most things one walk looks at, which is the most a single folder
+    /// may hold directly inside it and still be counted to its end.
     pub most: usize,
 
     /// How many things were left out because their names cannot be shown.
@@ -69,7 +84,8 @@ pub struct Holding {
 }
 
 impl Holding {
-    /// What is filling this folder, counted now.
+    /// What is filling this folder, counted now — whole, however many walks
+    /// the folder takes.
     ///
     /// # Errors
     /// [`NotMeasured::NotCounted`] when the folder itself is not there, is
@@ -79,7 +95,7 @@ impl Holding {
     pub fn of(folder: &Path) -> Result<Self, NotMeasured> {
         use alo_files::{MOST_WALKED, Walking};
         let walked = Walking::measuring(MOST_WALKED)
-            .through(folder)
+            .throughout(folder)
             .map_err(|why| NotMeasured::NotCounted {
                 at: folder.to_path_buf(),
                 why,
@@ -106,8 +122,10 @@ impl Holding {
         Err(NotMeasured::NotOnThisHost)
     }
 
-    /// What a window says above the tree when the count stopped at its
-    /// bound, in the reader's language — or nothing, when it finished.
+    /// What a window says above the tree when a folder holds more things
+    /// directly inside it than one walk looks at, so that the count could
+    /// not finish it, in the reader's language — or nothing, when every
+    /// folder was listed to its end.
     #[must_use]
     pub fn not_the_whole(&self, strings: &Strings) -> Option<Said> {
         if self.finished {
@@ -212,9 +230,15 @@ pub enum Counted {
     /// What is inside it takes no space on the disk being counted.
     OnAnotherFilesystem,
 
-    /// A folder the count had not finished when it reached its bound.
+    /// A folder no count can finish: it holds more things directly inside
+    /// it than one walk looks at, so every walk stops in it at the same
+    /// place.
     ///
-    /// Its size is the size of what was seen, and smaller than the whole.
+    /// Its size is the size of what was seen — the first bound's worth of
+    /// its names, in the order a person reads them, and everything under the
+    /// folders among them — and smaller than the whole. A folder that is
+    /// merely large, with more than the bound in subfolders, is never this:
+    /// the count walks on into it until it is whole.
     NotFinished,
 }
 

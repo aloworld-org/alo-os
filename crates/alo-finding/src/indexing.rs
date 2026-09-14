@@ -366,6 +366,7 @@ mod tests {
     fn what_the_walk_could_not_reach_is_kept_beside_the_index() {
         let walked = Gathered {
             things: Vec::new(),
+            links: 0,
             could_not_be_named: 2,
             whole: false,
             unread: vec![alo_files::Unread {

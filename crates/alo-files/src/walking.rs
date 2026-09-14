@@ -43,6 +43,16 @@
 //! carries the three differences between the two: whether a link is kept as a
 //! step with its own size, whether an unreadable folder is noted or fatal, and
 //! whether a folder on another filesystem is entered.
+//!
+//! # One walk here; walking on is next door
+//!
+//! [`Walking::through`] is one walk under one bound, and the six verbs make
+//! exactly that. A caller that needs a folder larger than the bound — the
+//! index in `alo-finding`, the tree of sizes in `alo-measuring` — asks
+//! [`Walking::throughout`], in [`crate::walking_on`], which is this walk
+//! asked again from every folder it named and did not enter, under the same
+//! policy and the same bound, until nothing is left. Nothing in this file
+//! changed for it.
 
 use std::collections::VecDeque;
 use std::fs;
@@ -160,7 +170,22 @@ impl Walking {
         }
     }
 
-    /// Everything under this folder, to any depth, following nothing.
+    /// Whether a folder the machine would not read is noted and stepped over
+    /// rather than ending the walk — the difference walking on has to know
+    /// about a later walk's own refusal.
+    pub(crate) const fn notes_an_unreadable_folder(&self) -> bool {
+        self.unreadable_noted
+    }
+
+    /// This policy with a bound of nothing: a walk that lists the folder it
+    /// starts at, counts what it holds, and keeps and enters nothing.
+    pub(crate) const fn keeping_nothing(&self) -> Self {
+        Self { most: 0, ..*self }
+    }
+
+    /// Everything under this folder, to any depth, following nothing — in
+    /// one walk. For a folder larger than one walk's bound,
+    /// [`Self::throughout`] walks on from where this stopped.
     ///
     /// The folder itself is not in the answer: a walk answers what is *in* a
     /// folder, and the folder is what was asked about.

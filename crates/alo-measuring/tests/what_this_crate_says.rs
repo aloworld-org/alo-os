@@ -2,8 +2,8 @@
 //!
 //! The unit tests read the list; this reads what a person would see, in a
 //! language that is not the one the code is written in. Polish, because the
-//! countable sentences here — *counted together with N other processes*, *the
-//! count stopped after N things* — have three forms for whole numbers in
+//! countable sentences here — *counted together with N other processes*, *a
+//! folder holds more than N things at a single level* — have three forms for whole numbers in
 //! Polish where English has two, and a sentence assembled out of English
 //! pieces would show it at five.
 
@@ -99,15 +99,18 @@ fn in_polish() -> Strings {
         )
         .says(
             cut_short.for_form(Form::One),
-            "Liczenie zatrzymało się po jednej rzeczy, więc te rozmiary nie są całością.",
+            "Jakiś folder w nim zawiera więcej niż jedną rzecz na jednym poziomie, więc te \
+             rozmiary nie są całością.",
         )
         .says(
             cut_short.for_form(Form::Few),
-            "Liczenie zatrzymało się po {most} rzeczach, więc te rozmiary nie są całością.",
+            "Jakiś folder w nim zawiera więcej niż {most} rzeczy na jednym poziomie, więc te \
+             rozmiary nie są całością.",
         )
         .says(
             cut_short.for_form(Form::Many),
-            "Liczenie zatrzymało się po {most} rzeczach, więc te rozmiary nie są całością.",
+            "Jakiś folder w nim zawiera więcej niż {most} rzeczy na jednym poziomie, więc te \
+             rozmiary nie są całością.",
         )
         .says(
             unnamed.for_form(Form::One),
