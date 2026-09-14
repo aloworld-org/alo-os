@@ -89,6 +89,8 @@ impl Unmeasured {
             machine: self.machine.clone(),
             date: self.date.clone(),
             runtime: self.runtime.clone(),
+            drove: None,
+            of: None,
         }
     }
 

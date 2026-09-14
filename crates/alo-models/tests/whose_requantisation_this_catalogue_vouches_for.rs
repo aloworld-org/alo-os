@@ -94,7 +94,7 @@ fn an_entry(artefact: bool, grade: &str, borrowed: Option<&str>) -> String {
     let measured = if grade == "not-measured" {
         ""
     } else {
-        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\" }\n"
+        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20 }\n"
     };
     format!(
         "[[model]]\nid = \"borrowed\"\nname = \"Borrowed\"\npublisher = \"A Publisher\"\n\

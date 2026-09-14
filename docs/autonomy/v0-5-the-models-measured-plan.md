@@ -156,7 +156,8 @@ and fixes what does not read.
 
 ### 6. A grade that lands one short of a line gets a second round
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-14.** **Depends on:** 1.
+**Report:** `docs/autonomy/updates/a-grade-near-a-line-gets-a-second-round.md`.
 
 Written from task 4's finding: the runtime samples every answer (temperature 0.8,
 the default, because alo OS asks the way a turn asks), and the same Qwen 2.5 7B

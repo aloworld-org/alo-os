@@ -74,4 +74,4 @@ mod testing;
 pub use attempt::{Attempt, Outcome};
 pub use exercise::{Exercise, HOW_TO_ANSWER, prompt};
 pub use exercises::{Exercises, NotComparable, THE_SET};
-pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES};
+pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES, grade_of, owes_a_second_round};

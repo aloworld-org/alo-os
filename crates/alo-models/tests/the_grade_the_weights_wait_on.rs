@@ -344,6 +344,8 @@ fn the_check_catches_a_finding_that_has_stopped_being_true() {
         machine: "A Named Workstation, 64 GB".to_owned(),
         date: "2026-09-13".to_owned(),
         runtime: "Ollama 0.34.0".to_owned(),
+        drove: None,
+        of: None,
     };
     let graded: Vec<Said> = unmeasured
         .iter()

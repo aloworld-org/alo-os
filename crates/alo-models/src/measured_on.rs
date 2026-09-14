@@ -56,6 +56,18 @@ pub struct MeasuredOn {
 
     /// The runtime that served the weights, with its version — `Ollama 0.34.0`.
     pub runtime: String,
+
+    /// **How many attempts drove the verbs**, beside [`of`](Self::of) — so a
+    /// grade can be re-derived, and a grade from one round landing near a line
+    /// can be told apart from one out of two. The catalogue requires both; a
+    /// person's settings file may carry neither, because that contract grew
+    /// them after it was written.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drove: Option<u32>,
+
+    /// **How many attempts were made** — ten a round.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub of: Option<u32>,
 }
 
 impl MeasuredOn {
@@ -86,7 +98,18 @@ impl MeasuredOn {
                  the runtime and the release that served the run",
             );
         }
-        None
+        match (self.drove, self.of) {
+            (None, None) => None,
+            (Some(drove), Some(of)) if of > 0 && drove <= of => None,
+            (Some(_), Some(_)) => Some(
+                "counts that cannot be a run: more attempts drove than were made, or none were \
+                 made at all",
+            ),
+            (Some(_), None) | (None, Some(_)) => Some(
+                "half a count: say how many attempts drove the verbs and how many were made, or \
+                 neither",
+            ),
+        }
     }
 }
 
@@ -169,6 +192,37 @@ mod tests {
             machine: "Apple M3, 8 GB unified memory".to_owned(),
             date: "2026-09-13".to_owned(),
             runtime: "Ollama 0.34.0".to_owned(),
+            drove: Some(8),
+            of: Some(20),
+        }
+    }
+
+    /// **Counts are both or neither, and could have been a run.**
+    #[test]
+    fn counts_that_cannot_be_a_run_are_refused() {
+        let neither = MeasuredOn {
+            drove: None,
+            of: None,
+            ..sound()
+        };
+        assert_eq!(neither.what_is_wrong_with_it(), None);
+        for (drove, of, saying) in [
+            (Some(3), None, "half a count"),
+            (None, Some(10), "half a count"),
+            (Some(11), Some(10), "cannot be a run"),
+            (Some(0), Some(0), "cannot be a run"),
+        ] {
+            let wrong = MeasuredOn {
+                drove,
+                of,
+                ..sound()
+            };
+            assert!(
+                wrong
+                    .what_is_wrong_with_it()
+                    .is_some_and(|why| why.contains(saying)),
+                "{wrong:?}"
+            );
         }
     }
 
@@ -217,6 +271,7 @@ mod tests {
                 machine: machine.to_owned(),
                 date: date.to_owned(),
                 runtime: runtime.to_owned(),
+                ..sound()
             };
             assert!(
                 wrong

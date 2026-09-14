@@ -115,19 +115,46 @@ impl Measured {
     /// a measurement that did not.
     #[must_use]
     pub fn grade(&self) -> Driving {
-        let how_many = self.how_many();
-        if how_many == 0 {
-            return Driving::NotMeasured;
-        }
-        let share = self.drove().saturating_mul(100) / how_many;
-        if share >= RELIABLY {
-            Driving::Reliably
-        } else if share >= SOMETIMES {
-            Driving::Sometimes
-        } else {
-            Driving::Rarely
-        }
+        grade_of(self.drove(), self.how_many())
     }
+}
+
+/// **The grade `drove` of `how_many` attempts earns** — the arithmetic
+/// [`Measured::grade`] is, for a count written down rather than a run held in
+/// memory, so that a grade in the catalogue can be checked against the counts
+/// beside it by the same bar that made it.
+#[must_use]
+pub fn grade_of(drove: usize, how_many: usize) -> Driving {
+    if how_many == 0 {
+        return Driving::NotMeasured;
+    }
+    let share = drove.saturating_mul(100) / how_many;
+    if share >= RELIABLY {
+        Driving::Reliably
+    } else if share >= SOMETIMES {
+        Driving::Sometimes
+    } else {
+        Driving::Rarely
+    }
+}
+
+/// **Whether a grade owes a second round before anybody relies on it**: it was
+/// earned in one round of the set, and it landed within one attempt of a line.
+///
+/// The runtime samples every answer, so one round is ten samples and a model at
+/// four or five, eight or nine, can land on either side of a line from one run
+/// to the next — `docs/quirks.md` has the same weights driving four and three.
+/// A grade out of more than one round is not held to this: a bigger sample is
+/// what a second round is.
+#[must_use]
+pub fn owes_a_second_round(drove: usize, how_many: usize, one_round: usize) -> bool {
+    if how_many == 0 || how_many > one_round {
+        return false;
+    }
+    let first_attempt_at = |percent: usize| (percent * how_many).div_ceil(100);
+    [SOMETIMES, RELIABLY]
+        .into_iter()
+        .any(|line| drove.abs_diff(first_attempt_at(line)) <= 1)
 }
 
 #[cfg(test)]

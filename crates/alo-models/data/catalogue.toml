@@ -340,6 +340,8 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
 date = "2026-09-13"
 runtime = "Ollama 0.34.0"
+drove = 0
+of = 10
 
 [[model]]
 id = "mixtral-8x7b-instruct"
@@ -369,7 +371,17 @@ runtime = "Ollama 0.34.0"
 # ordering ranks highest among those nobody had measured — comfortable before
 # workable, then larger, among what runs on a CPU and may be used commercially.
 # One round of the fixed ten: 4 drove, 6 did not, every one of the six a change
-# addressed to a door named after its verb. `min_ram_gb` and `on_cpu` are left as
+# addressed to a door named after its verb. Four is one short of `sometimes`, so
+# on 2026-09-14 it was put to two more rounds on the same machine: **8 of 20**,
+# still `rarely`, and that is the grade below.
+#
+# **The rule that measurement came from:** a grade from one round that lands
+# within one attempt of a line — four, five or six; eight, nine or ten — owes a
+# second round before it is written here, because the runtime samples every
+# answer and ten samples can land either side of a line from one run to the
+# next. `alo-driving`'s `owes_a_second_round` is the rule and
+# `the_catalogue_grades_are_what_their_counts_earn.rs` refuses a grade that
+# breaks it. `min_ram_gb` and `on_cpu` are left as
 # they were: they are the machine's properties rather than the weights', and a
 # GPU-served run on unified memory says nothing about a CPU.
 [[model]]
@@ -389,8 +401,10 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 
 [model.measured]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
-date = "2026-09-13"
+date = "2026-09-14"
 runtime = "Ollama 0.34.0"
+drove = 8
+of = 20
 
 # The one entry anybody has measured, on 2026-09-04. Ollama 0.33.3 serving
 # `phi3:3.8b-mini-4k-instruct-q4_K_M` — the weights this entry's `upstream`
@@ -422,6 +436,8 @@ licence = { name = "MIT", spdx = "MIT", commercial_use = "permitted" }
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-04"
 runtime = "Ollama 0.33.3"
+drove = 0
+of = 20
 
 [[model]]
 id = "llama-3.1-8b-instruct"
@@ -450,6 +466,8 @@ applies."""
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
 date = "2026-09-13"
 runtime = "Ollama 0.34.0"
+drove = 1
+of = 10
 
 [[model]]
 id = "gemma-2-9b-instruct"
@@ -531,6 +549,8 @@ note = """Commercial use is permitted, but not by an organisation with more than
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-04"
 runtime = "Ollama 0.33.3"
+drove = 0
+of = 20
 
 [[model]]
 id = "qwen2.5-3b-instruct"
@@ -555,6 +575,8 @@ note = """The 3B model is published under Qwen's own licence rather than Apache-
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-04"
 runtime = "Ollama 0.33.3"
+drove = 1
+of = 20
 
 [[model]]
 id = "gemma-2-2b-instruct"
@@ -579,6 +601,8 @@ note = """Commercial use is permitted under Google's Gemma Terms of Use and Proh
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-04"
 runtime = "Ollama 0.33.3"
+drove = 2
+of = 20
 
 [[model]]
 id = "smollm2-1.7b-instruct"
@@ -599,6 +623,8 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-04"
 runtime = "Ollama 0.33.3"
+drove = 0
+of = 20
 
 # ── trained for tool calls, rather than chosen for being small ──────────────
 #
@@ -636,6 +662,8 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-11"
 runtime = "Ollama 0.33.3"
+drove = 3
+of = 20
 
 [[model]]
 id = "granite-3.2-2b-instruct"
@@ -656,3 +684,5 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
 machine = "the development PC's WSL2 Ubuntu guest, four CPU cores and 5.8 GiB, no graphics card"
 date = "2026-09-11"
 runtime = "Ollama 0.33.3"
+drove = 1
+of = 20

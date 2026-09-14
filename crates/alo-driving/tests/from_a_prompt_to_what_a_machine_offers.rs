@@ -113,7 +113,7 @@ fn catalogue_of(grade: &str) -> Catalogue {
     let measured = if grade == "not-measured" {
         ""
     } else {
-        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\" }\n"
+        "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20 }\n"
     };
     Catalogue::parse(&format!(
         "[[model]]\n\

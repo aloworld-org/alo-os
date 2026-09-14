@@ -52,6 +52,8 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
             .expect("set ALO_DRIVING_MACHINE to the machine, with its memory in GB"),
         date: measuring::said("ALO_DRIVING_DATE").expect("set ALO_DRIVING_DATE to YYYY-MM-DD"),
         runtime: format!("Ollama {THE_PINNED_RUNTIME}"),
+        drove: None,
+        of: None,
     };
     let settings = measuring::said("ALO_DRIVING_SETTINGS").map(PathBuf::from);
     let endpoint = alo_models::ollama::DEFAULT_ENDPOINT;
@@ -85,8 +87,14 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
                 .bringing_a_file(&file)
                 .expect("the file goes on the person's list");
         }
+        // The counts go beside the grade, so it can be re-derived from the file.
+        let counted = MeasuredOn {
+            drove: u32::try_from(measured.drove()).ok(),
+            of: u32::try_from(measured.how_many()).ok(),
+            ..on
+        };
         choosing
-            .measuring(&weights.id, measured.grade(), on)
+            .measuring(&weights.id, measured.grade(), counted)
             .expect("the grade is written beside the file");
         let theirs = choosing
             .settings()

@@ -299,6 +299,8 @@ mod tests {
                     machine: "a test machine, 16 GB".to_owned(),
                     date: "2026-09-14".to_owned(),
                     runtime: "Ollama 0.34.0".to_owned(),
+                    drove: None,
+                    of: None,
                 },
             ))
             .unwrap();

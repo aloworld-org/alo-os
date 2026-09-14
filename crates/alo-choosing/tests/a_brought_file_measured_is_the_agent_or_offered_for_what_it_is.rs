@@ -62,6 +62,8 @@ fn the_machine() -> MeasuredOn {
         machine: "Apple M3, 8 GB unified memory".to_owned(),
         date: "2026-09-14".to_owned(),
         runtime: "Ollama 0.34.0".to_owned(),
+        drove: None,
+        of: None,
     }
 }
 

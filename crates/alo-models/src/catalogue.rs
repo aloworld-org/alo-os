@@ -466,6 +466,15 @@ impl Catalogue {
                     if let Some(what) = measured.what_is_wrong_with_it() {
                         return Err(invalid(what));
                     }
+                    // The catalogue's grades are re-derivable or they are not
+                    // grades: how many attempts drove, of how many, beside each.
+                    // `alo-driving` holds the numbers to the bar that made them.
+                    if measured.drove.is_none() || measured.of.is_none() {
+                        return Err(invalid(
+                            "a grade with no counts beside it: say how many attempts drove the \
+                             verbs and how many were made, so a reader can re-derive it",
+                        ));
+                    }
                 }
                 (false, None) => {}
             }
@@ -672,7 +681,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
 upstream = "https://example.test/one"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -688,7 +697,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
 upstream = "https://example.test/two"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -716,7 +725,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
 upstream = "https://example.test/vague"
 licence = { name = "Custom Community Licence", commercial_use = "with-conditions" }
 "#;
@@ -847,7 +856,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0" }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
 upstream = "   "
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -1058,6 +1067,8 @@ licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitt
 machine = "Apple M3, 8 GB unified memory"
 date = "2026-09-13"
 runtime = "Ollama 0.34.0"
+drove = 8
+of = 20
 "#;
 
     /// **A grade with no machine beside it is refused**, and so is a machine
@@ -1123,6 +1134,7 @@ runtime = "Ollama 0.34.0"
     #[test]
     fn a_reason_beside_a_grade_is_refused() {
         let reason = A_MACHINE
+            .replace("drove = 8\nof = 20\n", "")
             .replace("[model.measured]", "[model.unmeasured]")
             .replace(
                 "machine =",
@@ -1138,6 +1150,18 @@ runtime = "Ollama 0.34.0"
         let no_memory = reason.replace(", 8 GB unified memory", "");
         let refused = Catalogue::parse(&graded_with("not-measured", &no_memory)).unwrap_err();
         assert!(refused.to_string().contains("how much memory"), "{refused}");
+    }
+
+    /// **A catalogue grade with no counts beside it is refused**, because a
+    /// grade a reader cannot re-derive is one they have to take on trust.
+    #[test]
+    fn a_catalogue_grade_with_no_counts_is_refused() {
+        let no_counts = A_MACHINE.replace("drove = 8\nof = 20\n", "");
+        let refused = Catalogue::parse(&graded_with("rarely", &no_counts)).unwrap_err();
+        assert!(refused.to_string().contains("no counts"), "{refused}");
+        let half = A_MACHINE.replace("of = 20\n", "");
+        let refused = Catalogue::parse(&graded_with("rarely", &half)).unwrap_err();
+        assert!(refused.to_string().contains("half a count"), "{refused}");
     }
 
     /// **Every grade the catalogue ships names the machine it was earned on.**

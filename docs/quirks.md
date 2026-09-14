@@ -3206,4 +3206,31 @@ the harness's own way to take one. The best grade here, Qwen 2.5 7B's four, is
 one short of `sometimes` and should get that second round before anybody writes
 `sometimes` or `rarely` about it with confidence; none is anywhere near nine,
 which is the line that decides the agent.
+
+**The second round was run on 2026-09-14** (task 6): Qwen 2.5 7B drove **8 of
+20**, still `rarely`, and the catalogue now refuses a one-round grade within one
+attempt of a line.
+**Date:** 2026-09-14.
+
+### A boundary fixture takes a control group away while its process is still leaving
+**Version:** `crates/alo-bounding/tests/what_a_turn_inherits.rs` on the Mac
+lane's Lima VM (Ubuntu 24.04 aarch64, kernel 7.0.0-31-generic, 6 CPUs, 4 GiB),
+tree `20bf483` and after. 2026-09-14.
+**Behaviour:** tests in that file fail intermittently — under the whole
+workspace's load and, less often, run alone — with *"a service can be put back
+where it was: Cgroup { what: "cannot take away the control group at", path:
+"/sys/fs/cgroup/alo-inherit-reopen-<pid>/home", why: Os { code: 16, kind:
+ResourceBusy, message: "Device or resource busy" } }"*. Run alone twice in a row
+on the same tree, `an_inherited_descriptor_cannot_be_reopened_through_the_name_the_kernel_gives_it`
+passed once and failed once; `a_directory_opened_before_the_turn_began_is_not_a_key_to_what_is_in_it`
+failed the same way under load and passed alone twice. `rmdir` on a control
+group answers `EBUSY` while any process is still in it, and a child that has
+been told to exit has not necessarily left by the time the fixture removes its
+group.
+**Our response:** recorded for `alo-bounding`'s owner and not worked around;
+the crate is not the measuring lane's. The fixture wants to wait for the group's
+`cgroup.procs` to be empty (or `cgroup.events` to say `populated 0`) before
+removing it. `tools/kernel-loop` already runs a failing gate twice for this kind
+of transient; the Mac lane's publish script does not, so it refuses a tree this
+flakes on and is run again.
 **Date:** 2026-09-14.
