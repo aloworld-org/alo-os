@@ -43,9 +43,9 @@ pub(crate) struct Keyboard {
     /// Shared seat for keyboard and optional pointer capability.
     pub(crate) seat: Seat<Surfaces>,
     /// Keyboard handle with the person's configured layout.
-    handle: KeyboardHandle<Surfaces>,
+    pub(crate) handle: KeyboardHandle<Surfaces>,
     /// Last accepted timestamp, reused for releases synthesized on focus loss.
-    time: u32,
+    pub(crate) time: u32,
     /// Latest delivered real key event; consumed by popup initiation, never synthesized.
     pub(crate) popup_key: Option<(Serial, WlSurface)>,
 }

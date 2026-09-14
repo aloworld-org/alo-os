@@ -6,6 +6,11 @@
 //! parent leave notifications and session entry remain separate
 //! components. This library exposes no agent capability,
 //! context capture, command execution or clipboard protocol.
+//!
+//! The sign-in screen (`SignInScreen`) is drawn here and decided in
+//! `alo-greeting`: it takes keystrokes through the seat, lends a name and a
+//! password to `alo_greeting::Greeting`, shows only the sentences that crate
+//! hands back, and hands over to the session that opens.
 
 #![cfg(target_os = "linux")]
 
@@ -37,6 +42,7 @@ mod nested_pointer;
 mod nested_reader_frame;
 mod nested_reader_input;
 mod nested_reader_session;
+mod nested_sign_in;
 mod offscreen;
 mod output_metadata;
 mod output_retirement;
@@ -61,6 +67,13 @@ mod server;
 mod session_device;
 mod session_input;
 mod shortcut_dispatch;
+mod sign_in_entry;
+mod sign_in_keys;
+mod sign_in_paint;
+mod sign_in_password;
+mod sign_in_raster;
+mod sign_in_screen;
+mod sign_in_seat;
 mod socket;
 mod surfaces;
 mod window_activation;
@@ -151,6 +164,11 @@ pub use scene_scanout::ActiveScene;
 pub use server::Server;
 pub use session_device::SessionError;
 pub use shortcut_dispatch::ShortcutDispatchError;
+pub use sign_in_entry::{NAME_BYTES, SignInField};
+pub use sign_in_keys::SignInKey;
+pub use sign_in_password::PASSWORD_BYTES;
+pub use sign_in_raster::SignInLook;
+pub use sign_in_screen::{SignInScreen, SignInShows, Signing};
 pub use socket::SocketError;
 pub use window_command::WindowCommandError;
 pub use window_control_focus::WindowControlFocus;

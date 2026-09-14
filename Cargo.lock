@@ -644,7 +644,11 @@ dependencies = [
 name = "alo-shell"
 version = "0.1.0"
 dependencies = [
+ "alo-accounts",
  "alo-appearance",
+ "alo-greeting",
+ "alo-saying",
+ "alo-sessiond",
  "alo-shortcuts",
  "alo-strings",
  "cosmic-text",

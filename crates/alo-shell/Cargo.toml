@@ -7,7 +7,14 @@ license.workspace = true
 publish = false
 
 [target.'cfg(target_os = "linux")'.dependencies]
+# The type of the session the sign-in screen hands over to, and nothing else:
+# `tests/sign_in_source.rs` holds this crate to naming `alo_accounts::Session`
+# and never the accounts themselves, which only `alo-greeting` asks.
+alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
+# Everything the sign-in screen does that is not drawing — authenticate, then
+# knock — composed once, there, and called here.
+alo-greeting = { path = "../alo-greeting" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
@@ -17,6 +24,12 @@ thiserror.workspace = true
 drm = "=0.14.1"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
+# The machine's one vocabulary, so the sign-in screen's sentences are checked
+# against what is really collected rather than a list kept here.
+alo-saying = { path = "../alo-saying" }
+# The opener's wire words, for a door in a test that answers the way the real
+# one does. Never a dependency of the shipped screen.
+alo-sessiond = { path = "../alo-sessiond" }
 tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"

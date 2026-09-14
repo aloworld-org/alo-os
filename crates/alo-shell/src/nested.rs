@@ -246,7 +246,7 @@ impl Nested {
     }
 
     /// Keep event order and apply parent activation before delivering a key.
-    fn pump_events(
+    pub(crate) fn pump_events(
         &mut self,
         mut route: impl FnMut(Option<WinitEvent>, bool),
     ) -> Result<(), RenderError> {
@@ -356,7 +356,7 @@ impl Nested {
     }
 
     /// One shared submission boundary for complete labels and paged readers.
-    fn submit_native_scene(
+    pub(crate) fn submit_native_scene(
         &mut self,
         roots: &[WlSurface],
         popups: &[crate::Popup],

@@ -12,6 +12,8 @@ pub(crate) enum NativeScene<'a> {
     Controls(crate::WindowControlScene<'a>),
     /// Complete paged reader and its original strip.
     Reader(&'a WindowControlReaderScene<'a>),
+    /// The sign-in screen, which is the whole output.
+    SignIn(&'a crate::sign_in_raster::SignInPicture),
 }
 
 impl NativeScene<'_> {
@@ -20,6 +22,7 @@ impl NativeScene<'_> {
         match self {
             Self::Controls(scene) => scene.validate(size),
             Self::Reader(scene) => scene.validate(size),
+            Self::SignIn(picture) => picture.validate(size),
         }
     }
 
@@ -27,6 +30,7 @@ impl NativeScene<'_> {
     pub(crate) fn paint(self, frame: &mut impl Frame) -> Result<(), RenderError> {
         match self {
             Self::Reader(scene) => scene.paint(frame),
+            Self::SignIn(picture) => picture.paint(frame),
             Self::Controls(scene) => {
                 scene.layout.paint(frame, scene.scheme)?;
                 if let Some(label) = scene.label {

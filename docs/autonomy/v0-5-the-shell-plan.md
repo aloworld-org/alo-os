@@ -43,7 +43,12 @@ installs them by that document rather than working around them.
 
 ### 1. The sign-in screen
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** **Done, 2026-09-14.** `crates/alo-shell/src/sign_in_*.rs` and
+`nested_sign_in.rs`; evidence and decisions in
+`docs/autonomy/updates/the-sign-in-screen-drawn-on-the-nested-compositor.md`.
+The code only — a certified machine has not seen it, and the fields carry no
+label because no crate declares one (a finding in that report).
+**Depends on:** nothing.
 
 `ROADMAP.md` v0.01: *boots on one certified machine, firmware to sign-in* —
 the last v0.01 line with nothing drawn behind it, and the reason the demo

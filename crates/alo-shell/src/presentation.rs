@@ -29,6 +29,10 @@ pub enum RenderError {
     /// Native output geometry differs or its label is obscured/clipped.
     #[error("native control scene requires matching geometry and an unobscured complete label")]
     ControlScene,
+    /// The sign-in screen cannot be laid out for this output, or was laid out
+    /// for a different one.
+    #[error("the sign-in screen does not fit this output")]
+    SignInScene,
     /// The target does not support explicit retirement.
     #[error("target does not support output retirement")]
     RetirementUnsupported,
