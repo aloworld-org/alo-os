@@ -592,7 +592,21 @@ as before* — which today means *refused*.
 
 ### 15. The person's door chooses a paired machine to answer their questions
 
-**Status:** ready. **Depends on:** 12, 14.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-protocol` (the request
+`choose-machine-to-answer` as `FromAPerson::ChooseMachineToAnswer`, refused on the
+agent's door; the answer `chosen-to-answer` as `ToAPerson::ChosenToAnswer`; and
+`Paired::may_answer_questions` on the list) and
+`crates/alo-agentd/src/choosing_to_answer.rs` (the one file in the daemon that
+writes a person's settings, through `alo_choosing::Choosing::answered_by_a_paired_machine`
+with the daemon's own pairings, under the lock), reached from the person's door
+alone (`answering.rs`), with `Questions::where_the_settings_are` naming the file
+the next turn reads. `alo-choosing`'s guard
+`tests/no_agents_door_reaches_these_settings.rs` now holds exactly that: one file
+of the daemon names the writer, and only the person's door reaches it. The
+contracts `docs/contracts/daemon-protocol.md` and
+`docs/contracts/person-settings.md` gained the shapes additively. The report is
+`docs/autonomy/updates/the-persons-door-chooses-a-paired-machine-to-answer.md`.
+**Depends on:** 12, 14.
 
 Task 14 made a paired machine a choice a person can make and a place a turn's
 question can go, and held the choice to the pairings at the moment it is made —
@@ -620,3 +634,38 @@ refused at choosing becomes a choice nobody refused.
   person's own shell asked it to, through `alo-choosing`'s one way out.
   `docs/contracts/daemon-protocol.md` gains the shapes additively. Nothing in
   `alo-shell`, nothing in `image/`.
+
+### 16. A paired machine is spoken of by the name its person gave it
+
+**Status:** ready. **Depends on:** 12, 15.
+
+Every surface this plan built names the other machine by its identity — thirty-two
+hexadecimal characters a person did not choose — because the name a person gives a
+machine was declared *the shell's to keep until a home for it exists*
+(`crates/alo-protocol/src/pairing.rs`), and nothing keeps one. The daemon answers
+`alo_corridor::Naming` with `NoNameYet` in `crates/alo-agentd/src/starting.rs`, so
+the indicator a question down the corridor fires, the record entry it leaves, a
+change a paired machine proposed, the pairings list and the machine chosen to
+answer questions all say `0f1e2d3c…` where the person would read *the studio
+machine*. ADR 0003's *visible* is a list a person can read, and a list of
+identities is one they cannot.
+
+- **Acceptance:** the person's door (`alo-protocol`) gains a request that names a
+  machine this one is paired with, by its identity, with a name the person gave
+  it, and one that clears the name — each refused in words when what is named is
+  not an identity or not a machine this one is paired with, and on the agent's
+  door in the words an agent approving something gets, one test each; the name is
+  kept on this machine in the person's own file, with the trust the pairings file
+  has, and read again at start, tested across a restart; the daemon's `Naming`
+  answers from it, so the indicator and the record entry of a question down the
+  corridor, a change a paired machine proposed, and a question answered for a
+  paired machine name the machine by that name — one test each through the door —
+  and the pairings list and `chosen-to-answer` carry it beside the identity; a
+  name is never sent to the other machine, never used to find, dial or prove one,
+  and a revoked pairing's name goes with it, each held by a test.
+- **Constraint:** ADR 0003 and ADR 0031: a name decides nothing — the identity is
+  what the proof and the pairing are about, and a machine answering to a name is
+  not a machine anybody paired with. Which file keeps the names, and whether it is
+  the pairings file or one beside it, is decided in the crate that owns it and
+  written up. Nothing in `alo-shell`, nothing in `image/`; the contracts gain the
+  shapes additively.

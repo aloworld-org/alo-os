@@ -104,6 +104,19 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         }
     }
 
+    /// What a question is put to, whether a turn or the network's door holds
+    /// the machine — which is where the person's settings are found.
+    ///
+    /// `None` only while nobody holds the machine, which is a test's state:
+    /// a running service always holds it one way or the other.
+    #[must_use]
+    pub fn questions(&self) -> Option<&Questions> {
+        match self {
+            Self::ATurn { questions, .. } | Self::TheNetwork { questions, .. } => Some(questions),
+            Self::Nobody(_) => None,
+        }
+    }
+
     /// Write down that the person's grants were not read again.
     ///
     /// The same entry either way, and neither road names an agent: this is

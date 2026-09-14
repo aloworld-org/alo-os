@@ -1,11 +1,12 @@
 //! What the daemon says back to the person's shell.
 //!
-//! Nine answers to eight requests: what a change did once they approved it,
+//! Ten answers to nine requests: what a change did once they approved it,
 //! that a change they declined is written down, everything still waiting for
 //! them, how much is granted after the machine read its list again, the four
 //! about pairing — the proposal waiting with its code, what became of a
 //! confirmation, what became of a revocation, and everything paired and
-//! waiting — and, for any of the eight, the refusal in the language they read.
+//! waiting — the machine now chosen to answer their questions, and, for any of
+//! the nine, the refusal in the language they read.
 //!
 //! The four about pairing are on this side and no other, for the reason
 //! `waiting` is: a pairing is the person's list of which machines may ask this
@@ -87,6 +88,12 @@ pub enum ToAPerson {
         /// In the order they began waiting.
         waiting: Vec<WaitingToPair>,
     },
+    /// The machine they chose now answers their questions, by the identity
+    /// written down in their settings.
+    ChosenToAnswer {
+        /// The machine chosen, by its identity.
+        machine: String,
+    },
 }
 
 impl ToAPerson {
@@ -112,6 +119,24 @@ impl ToAPerson {
     #[must_use]
     pub const fn pairings(paired: Vec<Paired>, waiting: Vec<WaitingToPair>) -> Self {
         Self::Pairings { paired, waiting }
+    }
+
+    /// The machine they chose to answer their questions, by its identity.
+    #[must_use]
+    pub fn chosen_to_answer(machine: &str) -> Self {
+        Self::ChosenToAnswer {
+            machine: machine.to_owned(),
+        }
+    }
+
+    /// The machine now answering their questions, when that is what they were
+    /// told.
+    #[must_use]
+    pub fn machine_chosen_to_answer(&self) -> Option<&str> {
+        match self {
+            Self::ChosenToAnswer { machine } => Some(machine),
+            _ => None,
+        }
     }
 
     /// The proposal waiting, when that is what they were told.
@@ -238,6 +263,7 @@ impl ToAPerson {
             Told::Confirmed { became } => Ok(Self::Confirmed { became }),
             Told::Revoked { became } => Ok(Self::Revoked { became }),
             Told::Pairings { paired, waiting } => Ok(Self::Pairings { paired, waiting }),
+            Told::ChosenToAnswer { machine } => Ok(Self::ChosenToAnswer { machine }),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -301,6 +327,7 @@ impl From<ToAPerson> for Told {
             ToAPerson::Confirmed { became } => Self::Confirmed { became },
             ToAPerson::Revoked { became } => Self::Revoked { became },
             ToAPerson::Pairings { paired, waiting } => Self::Pairings { paired, waiting },
+            ToAPerson::ChosenToAnswer { machine } => Self::ChosenToAnswer { machine },
         }
     }
 }
@@ -338,6 +365,29 @@ mod tests {
             let written = told.written().unwrap();
             assert_eq!(ToAPerson::read(&written).unwrap(), told, "{written}");
         }
+    }
+
+    /// **The machine chosen to answer comes back to the person, by its
+    /// identity, and never to an agent.**
+    #[test]
+    fn the_machine_chosen_to_answer_is_told_to_the_person_and_not_to_an_agent() {
+        let told = ToAPerson::chosen_to_answer("0f1e2d3c4b5a69788796a5b4c3d2e1f0");
+        assert_eq!(
+            told.machine_chosen_to_answer(),
+            Some("0f1e2d3c4b5a69788796a5b4c3d2e1f0")
+        );
+        let written = told.written().unwrap();
+        assert!(
+            written
+                .contains(r#""chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}"#),
+            "{written}"
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+        assert!(ToAPerson::Declined.machine_chosen_to_answer().is_none());
     }
 
     /// **What a shell draws is the number and the sentence**, one for each

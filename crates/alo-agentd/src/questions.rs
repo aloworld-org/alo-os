@@ -62,8 +62,9 @@
 //! beside a refusal is empty rather than invented.
 
 use std::ffi::{OsStr, OsString};
+use std::path::PathBuf;
 
-use alo_choosing::{AMachine, CONFIG_HOME, Chosen, HOME, NotSet};
+use alo_choosing::{AMachine, CONFIG_HOME, Chosen, HOME, NotSet, where_it_is};
 use alo_models::{Catalogue, Provider, Secret, SecretRef, SourcePolicy, found_on_this_machine};
 use alo_secrets::{NotStored, TheBus, TheKeyring};
 use alo_turn::Places;
@@ -360,6 +361,17 @@ impl Questions {
             }
         };
         TheKeyring::opened(bus)?.look_up(named)
+    }
+
+    /// Where this session's person keeps their settings, if they have a
+    /// home to keep them in.
+    ///
+    /// The one file the next turn's first question reads, so that a choice the
+    /// person's door writes there is the choice that question is put to
+    /// (`crate::choosing_to_answer`). Nothing is opened here.
+    #[must_use]
+    pub fn where_the_settings_are(&self) -> Option<PathBuf> {
+        where_it_is(self.config_home.as_deref(), self.home.as_deref())
     }
 
     /// Forget what the last turn found.

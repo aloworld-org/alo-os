@@ -49,9 +49,10 @@ There are two kinds of caller and they do not share a list.
 told `did`, `proposed`, `answered` and `refused`.
 
 **A person's shell** may send `approve`, `decline`, `waiting`, `granted`, and
-— since the local network — `pair`, `confirm-pairing`, `revoke-pairing` and
-`pairings`; it is told `did`, `waiting`, `declined`, `granted`, `pairing`,
-`confirmed`, `revoked`, `pairings` and `refused`.
+— since the local network — `pair`, `confirm-pairing`, `revoke-pairing`,
+`pairings` and `choose-machine-to-answer`; it is told `did`, `waiting`,
+`declined`, `granted`, `pairing`, `confirmed`, `revoked`, `pairings`,
+`chosen-to-answer` and `refused`.
 
 If one door took both, the side that proposed a change could approve it, and
 ADR 0001 §5 — one approval, one execution, given by a person — would be true of
@@ -233,13 +234,48 @@ nothing.
 `pairings` carries nothing, for `waiting`'s reason, and answers with the whole
 list — both halves.
 
+### `choose-machine-to-answer` — a paired machine answers the person's questions
+
+```json
+{"choose-machine-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}
+```
+
+Added 2026-09-14, additively. Where a question is answered is the person's
+setting (ADR 0008), and a machine this one is paired with is one of the places.
+The request names that machine by its **identity** and nothing else: no address,
+for `pair`'s reason, and **no model**, because which model answers there is that
+machine's person's setting.
+
+The daemon holds the choice to the pairings it keeps — the very list that
+refuses that machine's next verb and next question — and writes it into the
+person's own settings file (`docs/contracts/person-settings.md`, `[answers]
+machine = "<identity>"`) through the same door a settings panel uses. That file
+is the one the next turn's first question reads, so the next turn's question goes
+to that machine. It is refused in words, and **nothing is written**, when what is
+named is not an identity (before the settings file is opened), when this session
+has nowhere to keep settings, when the settings file is there and does not hold
+(it is left exactly as it was), and when no pairing with that machine permits
+asking its models at the moment — never paired, paired for something else, run
+out or revoked, all one sentence naming the machine. An agent sending it is
+refused in the same words as an agent trying to approve something: an agent that
+could choose where questions are answered would be choosing where its own
+questions leave for.
+
+What comes back is `chosen-to-answer`, naming the machine by the identity that
+was written down.
+
+A choice is asked of the pairings again at every question
+(`docs/contracts/local-network-wire.md`): a pairing revoked or run out after the
+choice refuses the question in words, and nothing else is asked instead.
+
 ## What comes back
 
 ```json
 {"pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","side":"asking","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"seconds":86400,"code":"482910","confirmed":{"here":false,"there":false},"lapses_in":600}}
 {"confirmed":{"became":"paired"}}
 {"revoked":{"became":"revoked"}}
-{"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"made_ago":60,"ends_in":86340}],"waiting":[]}}
+{"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"made_ago":60,"ends_in":86340,"may_answer_questions":true}],"waiting":[]}}
+{"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}
 ```
 
 A proposal waiting carries the **code** and the **list** — each arm as the wire
@@ -254,6 +290,12 @@ moment — and no address: discovery measured where the machine is, the daemon
 dials it, and a shell has no use for an address it could not act on. A machine
 is named by its identity throughout; the name a person gives a machine is the
 shell's to keep.
+
+`may_answer_questions` (added 2026-09-14, additively) says whether that pairing
+lets the person choose the machine to answer their questions at the moment the
+list was made — answered by the same question `choose-machine-to-answer` and
+every question to that machine are asked — so a shell offers only what can be
+chosen. A list without the field reads as `false`.
 
 ```json
 {"did":{"listed":{"things":[{"name":"march.pdf","kind":"file","bytes":4180}],"could_not_be_named":0,"cut_short":false}}}

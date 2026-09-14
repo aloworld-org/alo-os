@@ -196,6 +196,12 @@ pub struct Paired {
     made_ago: u64,
     /// How many seconds are left before the pairing ends.
     ends_in: u64,
+    /// Whether this pairing lets the person here choose that machine to
+    /// answer their questions at the moment — so a shell offers only what can
+    /// be chosen. Absent in a list written before this field existed, which
+    /// reads as *no*.
+    #[serde(default)]
+    may_answer_questions: bool,
 }
 
 impl Paired {
@@ -207,7 +213,23 @@ impl Paired {
             may,
             made_ago,
             ends_in,
+            may_answer_questions: false,
         }
+    }
+
+    /// The same pairing, saying whether the person may choose that machine to
+    /// answer their questions.
+    #[must_use]
+    pub const fn that_may_answer_questions(mut self, may: bool) -> Self {
+        self.may_answer_questions = may;
+        self
+    }
+
+    /// Whether the person may choose that machine to answer their questions
+    /// at the moment the list was made.
+    #[must_use]
+    pub const fn may_answer_questions(&self) -> bool {
+        self.may_answer_questions
     }
 
     /// The other machine, by its identity.
@@ -345,6 +367,28 @@ mod tests {
         }
         let back: Paired = serde_json::from_str(&written).unwrap();
         assert_eq!(back, paired);
+    }
+
+    /// **A pairing says whether its machine may be chosen to answer
+    /// questions**, and a list written before the field existed reads as *no*
+    /// rather than as a machine a shell may offer.
+    #[test]
+    fn a_pairing_says_whether_its_machine_may_answer_questions() {
+        let paired = Paired::of("0f1e2d3c4b5a69788796a5b4c3d2e1f0", a_list(), 60, 86_340)
+            .that_may_answer_questions(true);
+        assert!(paired.may_answer_questions());
+        let written = serde_json::to_string(&paired).unwrap();
+        assert!(
+            written.contains(r#""may_answer_questions":true"#),
+            "{written}"
+        );
+        assert_eq!(serde_json::from_str::<Paired>(&written).unwrap(), paired);
+
+        let older: Paired = serde_json::from_str(
+            r#"{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[],"made_ago":1,"ends_in":1}"#,
+        )
+        .unwrap();
+        assert!(!older.may_answer_questions());
     }
 
     /// A field nobody declared is refused rather than read around, so a

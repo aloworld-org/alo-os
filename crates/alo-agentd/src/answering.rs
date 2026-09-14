@@ -55,6 +55,14 @@
 //! turn is holding the machine. The [`Nearby`] handed in is that lock and the
 //! network a machine is looked for on.
 //!
+//! # And one request chooses where the person's questions are answered
+//!
+//! To choose a machine this one is paired with to answer the person's questions
+//! is neither the turn's nor the grants file's, and it is judged against the
+//! same lock the pairings are — so it is answered the same way whether a turn
+//! is under way or not, by [`crate::choosing_to_answer`], against the settings
+//! file whatever holds the machine says the next question reads.
+//!
 //! # And the turn may be a paired machine's
 //!
 //! Since the daemon bound the port, a change waiting for this person may have
@@ -74,6 +82,7 @@ use alo_protocol::{FromAPerson, ToAPerson};
 use alo_strings::Strings;
 use alo_turn::Turning;
 
+use crate::choosing_to_answer;
 use crate::holding::Holding;
 use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
@@ -106,6 +115,18 @@ pub fn what_a_person_said(
 ) -> Result<ToAPerson, NotKept> {
     match FromAPerson::read(line) {
         Ok(FromAPerson::Granted) => what_is_granted_changed(holding, granted, strings, now),
+        Ok(FromAPerson::ChooseMachineToAnswer { machine }) => {
+            let settings = holding
+                .questions()
+                .and_then(crate::questions::Questions::where_the_settings_are);
+            Ok(choosing_to_answer::chosen_to_answer(
+                &machine,
+                settings.as_deref(),
+                nearby.network,
+                strings,
+                now,
+            ))
+        }
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -176,12 +197,16 @@ fn answered_to(
         // `crate::pairing` answers them before this is reached, and a request
         // that got here was not answered by it — so it is refused rather
         // than assumed away, in the one sentence that is true of a request
-        // this machine did not carry out.
+        // this machine did not carry out. A machine chosen to answer is the
+        // same again: `crate::choosing_to_answer` answers it first.
         FromAPerson::Granted
         | FromAPerson::Pair { .. }
         | FromAPerson::ConfirmPairing { .. }
         | FromAPerson::RevokePairing { .. }
-        | FromAPerson::Pairings => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::Pairings
+        | FromAPerson::ChooseMachineToAnswer { .. } => {
+            ToAPerson::refused(&rereading::what_to_say(strings))
+        }
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => match turning.approving(waiting, grants, now) {
                 Ok(answer) => ToAPerson::did(&answer),

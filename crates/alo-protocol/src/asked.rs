@@ -1,6 +1,6 @@
 //! Everything that can arrive, in one closed list.
 //!
-//! Eleven requests, and there is no twelfth. What makes this file worth having on
+//! Twelve requests, and there is no thirteenth. What makes this file worth having on
 //! its own is that it is deliberately **not** public: the two types a caller of
 //! this crate ever holds are [`FromAnAgent`](crate::FromAnAgent) and
 //! [`FromAPerson`](crate::FromAPerson), and this is the list they are each cut
@@ -16,9 +16,9 @@
 //! two different types, and neither can produce the other's.
 //!
 //! Keeping the list itself in one place is what makes that a division rather
-//! than two lists that could drift: a twelfth request has to be given to one
+//! than two lists that could drift: a thirteenth request has to be given to one
 //! door or the other before this crate will compile, and a request that is not
-//! one of the eleven is not a request at all.
+//! one of the twelve is not a request at all.
 //!
 //! **Which side of a socket a caller is really on is not this crate's
 //! question.** That is peer credentials on a Unix socket, and it is
@@ -153,6 +153,17 @@ pub(crate) enum Asked {
     /// Carries nothing, for [`Asked::Waiting`]'s reason: the list is this
     /// machine's, and a field would be a way to ask about another's.
     Pairings {},
+    /// The person chooses a machine this one is paired with to answer their
+    /// questions.
+    ///
+    /// The identity and nothing else, for [`Asked::Pair`]'s reason: no address,
+    /// no port, no name, and **no model** — which model answers there is that
+    /// machine's person's setting (ADR 0008). The daemon holds the choice to the
+    /// pairings behind its one lock before anything is written.
+    ChooseMachineToAnswer {
+        /// The other machine, by its identity.
+        machine: String,
+    },
 }
 
 #[cfg(test)]
@@ -267,6 +278,31 @@ mod tests {
         assert_eq!(pairings, Asked::Pairings {});
     }
 
+    /// **Choosing a paired machine to answer names it by its identity and by
+    /// nothing else**: no address, no name, and no model — which model answers
+    /// there is that machine's person's to choose.
+    #[test]
+    fn choosing_a_machine_to_answer_names_its_identity_and_nothing_else() {
+        let chosen: Asked = serde_json::from_str(
+            r#"{"choose-machine-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            chosen,
+            Asked::ChooseMachineToAnswer {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            }
+        );
+        for message in [
+            r#"{"choose-machine-to-answer":{}}"#,
+            r#"{"choose-machine-to-answer":{"machine":"m","model":"mistral"}}"#,
+            r#"{"choose-machine-to-answer":{"machine":"m","address":"192.168.1.20"}}"#,
+            r#"{"choose-machine-to-answer":{"machine":"m","name":"the studio"}}"#,
+        ] {
+            assert!(serde_json::from_str::<Asked>(message).is_err(), "{message}");
+        }
+    }
+
     /// **A proposal cannot name where a machine is.** The identity is what
     /// discovery finds a machine by and the daemon looks for it at the moment;
     /// an address, a port or a name would be a way to point the machine at
@@ -290,11 +326,11 @@ mod tests {
         }
     }
 
-    /// **There is no twelfth.** A name that is not one of the eleven has nowhere
+    /// **There is no thirteenth.** A name that is not one of the twelve has nowhere
     /// to land, which is the shape law 2 takes at this boundary: a caller
     /// cannot invent a request any more than it can invent a verb.
     #[test]
-    fn a_request_that_is_not_one_of_the_eleven_is_not_a_request() {
+    fn a_request_that_is_not_one_of_the_twelve_is_not_a_request() {
         for message in [
             r#"{"run":{"command":"rm -rf /"}}"#,
             r#"{"exec":{"verb":"sh","given":[]}}"#,

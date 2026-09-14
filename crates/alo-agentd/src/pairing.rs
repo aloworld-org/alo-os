@@ -47,6 +47,7 @@
 
 use std::time::{Duration, SystemTime};
 
+use alo_choosing::WhoMayBeAsked as _;
 use alo_keeping::NotKept;
 use alo_nearby::{MachineId, MayAskIts, Pairing, Side, Waiting, crossing};
 use alo_protocol::{
@@ -134,7 +135,8 @@ impl AboutAPairing {
             FromAPerson::Approve { .. }
             | FromAPerson::Decline { .. }
             | FromAPerson::Waiting
-            | FromAPerson::Granted => None,
+            | FromAPerson::Granted
+            | FromAPerson::ChooseMachineToAnswer { .. } => None,
         }
     }
 }
@@ -298,7 +300,8 @@ fn revoked(machine: &str, nearby: &Nearby<'_>, strings: &Strings, now: SystemTim
     })
 }
 
-/// Everything paired and everything waiting, at `now`.
+/// Everything paired and everything waiting, at `now`, each pairing saying
+/// whether the person may choose that machine to answer their questions.
 fn listed(nearby: &Nearby<'_>, strings: &Strings, now: SystemTime) -> ToAPerson {
     let mut shared = nearby.network.locked();
     shared.proposals_mut().lapsed(now);
@@ -307,7 +310,13 @@ fn listed(nearby: &Nearby<'_>, strings: &Strings, now: SystemTime) -> ToAPerson 
         .every()
         .iter()
         .filter(|pairing| now < pairing.ends())
-        .map(|pairing| a_pairing(pairing, strings, now))
+        .map(|pairing| {
+            // Asked of the very list a question to that machine is asked of
+            // (`crate::corridor`), so a shell offers only what can be chosen.
+            a_pairing(pairing, strings, now).that_may_answer_questions(
+                shared.may_ask_the_models_of(pairing.with().as_str(), now),
+            )
+        })
         .collect();
     let waiting = shared
         .proposals()
@@ -892,6 +901,48 @@ mod tests {
                 .paired_with(&reception(), noon())
         );
         assert_eq!(record.len(), 0, "a revocation was written down");
+    }
+
+    /// **The list says which pairings let the person choose that machine to
+    /// answer their questions**: a pairing permitting its models does, one
+    /// permitting only a workspace does not — the same answer a question to
+    /// that machine would get.
+    #[test]
+    fn the_list_says_which_pairings_may_answer_questions() {
+        let mut record = Record::default();
+        let warehouse = MachineId::read("11112222333344445555666677778888").unwrap();
+        let (_, models) = paired_between(reception(), the_studio(), &[MayAskIts::Models], noon());
+        let (_, workspace) = paired_between(
+            warehouse.clone(),
+            the_studio(),
+            &[MayAskIts::Workspace],
+            noon(),
+        );
+        let network = TheNetwork::on(the_studio());
+        network.locked().pairings_mut().keep(models);
+        network.locked().pairings_mut().keep(workspace);
+
+        let said = the_person_says(
+            r#"{"pairings":{}}"#,
+            &network,
+            &NobodyIsNearby,
+            &mut record,
+            noon(),
+        );
+        let paired = said.paired().unwrap();
+        assert_eq!(paired.len(), 2);
+        for pairing in paired {
+            assert_eq!(
+                pairing.may_answer_questions(),
+                pairing.machine() == reception().as_str(),
+                "{pairing:?}"
+            );
+        }
+        assert!(
+            paired
+                .iter()
+                .any(|pairing| pairing.machine() == warehouse.as_str())
+        );
     }
 
     /// **The list is the whole list**: what is paired with when it ends, and

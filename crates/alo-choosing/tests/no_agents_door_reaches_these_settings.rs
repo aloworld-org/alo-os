@@ -8,12 +8,21 @@
 //! `alo-agentd` finds out which model answers, and it is meant to.
 //!
 //! So the guarantee is a different one and it is checked a different way:
-//! **the daemon reads these settings and has no way to write them.**
-//! [`alo_choosing::Choosing`] is the only door in this crate that touches a
-//! disk in that direction, and nothing under `crates/alo-agentd/src` names it.
+//! **the daemon writes these settings in one file, and only the person's door
+//! reaches it.** [`alo_choosing::Choosing`] is the only door in this crate that
+//! touches a disk in that direction. Until task 15 of the local-network plan
+//! nothing under `crates/alo-agentd/src` named it at all; that task gave the
+//! person's shell a request that chooses a paired machine to answer their
+//! questions, and the plan decided it is answered by the daemon *through
+//! `alo-choosing`'s one way out*, because the pairings the choice is held to
+//! live behind the daemon's lock and nowhere a shell can keep true. So one file
+//! names it — `choosing_to_answer.rs` — and the only file that reaches that one
+//! is `answering.rs`, the person's door. The agent's door (`doing.rs`), the
+//! network's (`hearing.rs`, `questioned.rs`) and everything else reach neither.
 //! That is read off this repository rather than asserted about it, which is the
 //! shape `alo-collected` and `alo-citing` settled: a check that only ever reads
-//! its own fixtures can pass while the disk says something else.
+//! its own fixtures can pass while the disk says something else. The refusal on
+//! the agent's door is the daemon's own test, beside the file.
 //!
 //! The second thing measured here is the **absence of a knock**, and it is a
 //! finding rather than an omission. `alo-changing` ends in
@@ -91,24 +100,53 @@ fn every_source_of(crate_named: &str) -> Vec<(PathBuf, String)> {
     found
 }
 
-/// **The daemon reads a person's settings and cannot write them.** It names
-/// this crate on purpose — that is how it learns which model answers — and the
-/// half that must stay true is the direction: `Choosing` is the only door here
-/// that writes, and nothing an agent's door can reach names it.
+/// The one file in the daemon that may name the writer.
+const THE_PERSONS_DOOR_WRITES_HERE: &str = "choosing_to_answer.rs";
+
+/// The one file in the daemon that may reach it: the person's door.
+const THE_PERSONS_DOOR: &str = "answering.rs";
+
+/// **The daemon writes a person's settings in one file, and only the person's
+/// door reaches it.** It names this crate on purpose — that is how it learns
+/// which model answers — and the half that must stay true is the direction:
+/// `Choosing` is the only door here that writes, one file of the daemon names
+/// it, and nothing but the person's door names that file.
 ///
 /// This is the check that fails the day somebody inside the daemon reaches for
 /// the convenient thing, which is to have the machine write a person's choice
-/// on their behalf.
+/// on their behalf from anywhere but the person's own request.
 #[test]
-fn the_daemon_reads_these_settings_and_never_writes_them() {
+fn the_daemon_writes_these_settings_only_where_the_persons_door_asks() {
+    let mut the_writer_found = false;
     for (at, said) in every_source_of("alo-agentd") {
+        let name = at
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_owned();
+        if name == THE_PERSONS_DOOR_WRITES_HERE {
+            the_writer_found = true;
+            continue;
+        }
         assert!(
             !said.contains("Choosing"),
-            "{} names alo_choosing::Choosing: the daemon now has a road to writing \
+            "{} names alo_choosing::Choosing: the daemon now has a second road to writing \
              a person's own settings, which is the person's to do and nobody else's",
             at.display()
         );
+        let reaches_it =
+            said.contains("choosing_to_answer::") || said.contains("use crate::choosing_to_answer");
+        assert!(
+            !reaches_it || name == THE_PERSONS_DOOR,
+            "{} reaches the file that writes a person's settings, and only the person's door may",
+            at.display()
+        );
     }
+    assert!(
+        the_writer_found,
+        "the daemon's one writer of a person's settings moved: this check would be passing about \
+         a file that is not there"
+    );
 }
 
 /// **This crate cannot knock on anything.** No wire words, no daemon, no turn,

@@ -110,7 +110,11 @@ impl FromAnAgent {
             | Asked::Pair { .. }
             | Asked::ConfirmPairing { .. }
             | Asked::RevokePairing { .. }
-            | Asked::Pairings {} => Err(NotUnderstood::NotForAnAgent),
+            | Asked::Pairings {}
+            // Choosing where the person's questions are answered is the
+            // person's (ADR 0008), and an agent choosing it would be an agent
+            // choosing which machine its own questions leave for.
+            | Asked::ChooseMachineToAnswer { .. } => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

@@ -95,7 +95,8 @@ impl TheDaemonsDoor {
             | ToAPerson::Pairing(_)
             | ToAPerson::Confirmed { .. }
             | ToAPerson::Revoked { .. }
-            | ToAPerson::Pairings { .. } => None,
+            | ToAPerson::Pairings { .. }
+            | ToAPerson::ChosenToAnswer { .. } => None,
         }
     }
 }

@@ -213,6 +213,10 @@ machine = "aaaabbbbccccddddeeeeffff00001111"
   machine … answers your questions, and no pairing with it lets it answer them
   at the moment, so nothing in your settings has been changed*.
   `alo_choosing::AMachine::permitted` is the only way to make the choice.
+  A person's shell reaches it through the daemon: `choose-machine-to-answer`
+  on the person's door (`docs/contracts/daemon-protocol.md`) is answered with
+  the daemon's own pairings as the `WhoMayBeAsked`, and that request is the one
+  place `alo-agentd` writes this file — only because the person's shell asked.
 - **It is not checked when the file is read.** A pairing ends or is revoked and
   the file outlives it; a settings file is not wrong because an expiry passed
   overnight. What is refused instead is **the question**, at every question, in

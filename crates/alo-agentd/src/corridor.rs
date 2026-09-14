@@ -194,15 +194,11 @@ pub(crate) fn put_down_the_corridor(
 )]
 mod tests {
     use std::cell::Cell;
-    use std::io::{BufRead as _, Read as _, Write as _};
-    use std::net::{SocketAddr, TcpListener};
-    use std::sync::Arc;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::time::{Duration, Instant};
+    use std::sync::atomic::Ordering;
+    use std::time::Duration;
 
     use alo_capability::Grants;
     use alo_models::{Catalogue, SourcePolicy};
-    use alo_nearby::Found;
     use alo_record::{Asking as AskingAbout, Only, Record};
 
     use super::*;
@@ -210,76 +206,12 @@ mod tests {
     use crate::questions::{Questions, TheBound, WhoseKeyring};
     use crate::terms::NoNameYet;
     use crate::testing::{
-        a_directory_of_our_own, a_message, hour, noon, on_a_machine_that_answers, paired_between,
-        reception, the_studio,
+        TheStudioIsAt, a_directory_of_our_own, a_message, hour, noon, on_a_machine_that_answers,
+        paired_between, reception, the_studio, the_studio_answering,
     };
 
     /// An agent's question in words.
     const ASKED: &str = r#"{"ask":{"question":"how many invoices are unpaid?"}}"#;
-
-    /// What the studio answers, in the shape the corridor reads.
-    const THE_STUDIOS_ANSWER: &str = r#"{"object":"chat.completion","model":"the-studios-model","choices":[{"index":0,"message":{"role":"assistant","content":"Three are unpaid."},"finish_reason":"stop"}]}"#;
-
-    /// The studio machine answering on a socket of this test's own, for a few
-    /// seconds, counting every question that reached it.
-    fn the_studio_answering() -> (SocketAddr, Arc<AtomicUsize>) {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let at = listener.local_addr().unwrap();
-        listener.set_nonblocking(true).unwrap();
-        let heard = Arc::new(AtomicUsize::new(0));
-        let counting = Arc::clone(&heard);
-        std::thread::spawn(move || {
-            let until = Instant::now() + Duration::from_secs(5);
-            while Instant::now() < until {
-                let Ok((mut stream, _)) = listener.accept() else {
-                    std::thread::sleep(Duration::from_millis(10));
-                    continue;
-                };
-                counting.fetch_add(1, Ordering::SeqCst);
-                stream.set_nonblocking(false).unwrap();
-                let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
-                let mut length = 0usize;
-                loop {
-                    let mut line = String::new();
-                    if reader.read_line(&mut line).unwrap_or(0) == 0 {
-                        break;
-                    }
-                    if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
-                        length = value.trim().parse().unwrap_or(0);
-                    }
-                    if line == "\r\n" || line == "\n" {
-                        break;
-                    }
-                }
-                let mut body = vec![0u8; length];
-                drop(reader.read_exact(&mut body));
-                let written = format!(
-                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{THE_STUDIOS_ANSWER}",
-                    THE_STUDIOS_ANSWER.len()
-                );
-                drop(stream.write_all(written.as_bytes()));
-            }
-        });
-        (at, heard)
-    }
-
-    /// The network, where the studio answers discovery at `at` — and how many
-    /// times anybody looked.
-    #[derive(Debug)]
-    struct TheStudioIsAt {
-        /// Where it answers.
-        at: SocketAddr,
-        /// How many times it was looked for.
-        looked: Cell<usize>,
-    }
-
-    impl LookingFor for TheStudioIsAt {
-        fn look_for(&self, machine: &MachineId) -> Option<Found> {
-            self.looked.set(self.looked.get() + 1);
-            (*machine == the_studio())
-                .then(|| Found::seen(the_studio(), self.at.port(), self.at.ip()))
-        }
-    }
 
     /// Reception's machine, whose person chose the studio to answer their
     /// questions — under `bound`.

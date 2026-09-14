@@ -601,3 +601,72 @@ pub(crate) fn a_runtime_served(
 pub(crate) fn the_body_of(request: &str) -> serde_json::Value {
     serde_json::from_str(request.split_once("\r\n\r\n").map_or("", |(_, body)| body)).unwrap()
 }
+
+/// What the studio answers a question with, in the shape the corridor reads.
+pub(crate) const THE_STUDIOS_ANSWER: &str = r#"{"object":"chat.completion","model":"the-studios-model","choices":[{"index":0,"message":{"role":"assistant","content":"Three are unpaid."},"finish_reason":"stop"}]}"#;
+
+/// The studio machine answering on a socket of this test's own, for a few
+/// seconds, counting every question that reached it.
+///
+/// Shared by `crate::corridor` and `crate::choosing_to_answer`: a question down
+/// the corridor, and a question to the machine the person's door just chose.
+pub(crate) fn the_studio_answering() -> (std::net::SocketAddr, std::sync::Arc<AtomicUsize>) {
+    use std::io::{BufRead as _, Read as _, Write as _};
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let at = listener.local_addr().unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let heard = std::sync::Arc::new(AtomicUsize::new(0));
+    let counting = std::sync::Arc::clone(&heard);
+    std::thread::spawn(move || {
+        let until = std::time::Instant::now() + Duration::from_secs(5);
+        while std::time::Instant::now() < until {
+            let Ok((mut stream, _)) = listener.accept() else {
+                std::thread::sleep(Duration::from_millis(10));
+                continue;
+            };
+            counting.fetch_add(1, Ordering::SeqCst);
+            stream.set_nonblocking(false).unwrap();
+            let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
+            let mut length = 0usize;
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                    break;
+                }
+                if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                    length = value.trim().parse().unwrap_or(0);
+                }
+                if line == "\r\n" || line == "\n" {
+                    break;
+                }
+            }
+            let mut body = vec![0u8; length];
+            drop(reader.read_exact(&mut body));
+            let written = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{THE_STUDIOS_ANSWER}",
+                THE_STUDIOS_ANSWER.len()
+            );
+            drop(stream.write_all(written.as_bytes()));
+        }
+    });
+    (at, heard)
+}
+
+/// The network, where the studio answers discovery at `at` — and how many
+/// times anybody looked.
+#[derive(Debug)]
+pub(crate) struct TheStudioIsAt {
+    /// Where it answers.
+    pub(crate) at: std::net::SocketAddr,
+    /// How many times it was looked for.
+    pub(crate) looked: std::cell::Cell<usize>,
+}
+
+impl crate::looking::LookingFor for TheStudioIsAt {
+    fn look_for(&self, machine: &alo_nearby::MachineId) -> Option<alo_nearby::Found> {
+        self.looked.set(self.looked.get() + 1);
+        (*machine == the_studio())
+            .then(|| alo_nearby::Found::seen(the_studio(), self.at.port(), self.at.ip()))
+    }
+}

@@ -63,7 +63,8 @@ pub fn answered_to(
             let called = arriving.origin().called().to_owned();
             ToAPerson::waiting_from_a_machine(arriving.waiting_at(now), &called, strings, now)
         }
-        // The knock and the four about a pairing are not about the turn, and
+        // The knock, the four about a pairing and choosing a machine to answer
+        // are not about the turn, and
         // the one caller answers them before they reach here — the same arm,
         // and the same true sentence, as `crate::answering` keeps for a local
         // turn.
@@ -71,7 +72,10 @@ pub fn answered_to(
         | FromAPerson::Pair { .. }
         | FromAPerson::ConfirmPairing { .. }
         | FromAPerson::RevokePairing { .. }
-        | FromAPerson::Pairings => ToAPerson::refused(&rereading::what_to_say(strings)),
+        | FromAPerson::Pairings
+        | FromAPerson::ChooseMachineToAnswer { .. } => {
+            ToAPerson::refused(&rereading::what_to_say(strings))
+        }
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {
                 let shared = network.locked();

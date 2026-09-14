@@ -303,9 +303,20 @@ pub const THE_CHOSEN_MACHINE_DID_NOT_ANSWER: Word = Word::saying(
      nothing else was asked instead.",
 );
 
+/// A paired machine chosen to answer questions, on a machine that has nowhere
+/// to keep the person's settings.
+pub const NOWHERE_TO_KEEP_THE_CHOICE: Word = Word::saying(
+    "agentd.nowhere-to-keep-the-choice",
+    "this machine has nowhere to keep your settings for this session, so nothing was chosen to      answer your questions",
+)
+.noting(
+    "Said to the person's own shell when they chose a machine on their network to answer their      questions and alo OS could not find where their settings are kept — the session has no home      folder to keep them in. Nothing was written and nothing else was chosen.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 18] = [
+pub const EVERY_WORD: [Word; 19] = [
     THAT_IS_NOT_A_MACHINE,
+    NOWHERE_TO_KEEP_THE_CHOICE,
     NO_SUCH_MACHINE_ON_THE_NETWORK,
     NOT_SOMETHING_A_PAIRING_MAY_PERMIT,
     THE_CODE_DOES_NOT_MATCH,

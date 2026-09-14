@@ -133,7 +133,8 @@ impl ToAnAgent {
             | Told::Pairing(_)
             | Told::Confirmed { .. }
             | Told::Revoked { .. }
-            | Told::Pairings { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
+            | Told::Pairings { .. }
+            | Told::ChosenToAnswer { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
         }
     }
 

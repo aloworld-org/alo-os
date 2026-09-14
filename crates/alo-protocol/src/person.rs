@@ -1,6 +1,6 @@
 //! What a person's shell sends, on behalf of the person in front of it.
 //!
-//! Eight requests. Two of them are the same act — answering a change that was
+//! Nine requests. Two of them are the same act — answering a change that was
 //! put to them in one sentence — and ADR 0001 §5 says a person approves a
 //! sentence rather than a session, so there is nothing here that approves more
 //! than one thing, nothing that approves everything from an agent, and nothing
@@ -22,6 +22,17 @@
 //! the machine at something discovery never measured. A confirmation carries
 //! the code the person was shown, so that what is confirmed is what was shown
 //! (ADR 0031).
+//!
+//! # Which paired machine answers is the person's too
+//!
+//! ADR 0008 puts where a question is answered with the person, and a machine
+//! this one is paired with is one of the places. `choose-machine-to-answer`
+//! carries the other machine's **identity** and nothing else — no address, for
+//! the pairing requests' reason, and no model, because which model answers
+//! there is that machine's person's setting. The daemon holds the choice to
+//! the pairings it keeps before anything is written, and an agent sending it
+//! is refused in the same words as an approval: an agent that could choose
+//! where questions go would be choosing where its own questions leave for.
 //!
 //! # A number is not a handle
 //!
@@ -132,6 +143,14 @@ pub enum FromAPerson {
     },
     /// What is paired, and what is waiting to be.
     Pairings,
+    /// They choose a machine this one is paired with to answer their
+    /// questions, by its identity.
+    ///
+    /// No model and no address: see this file's header.
+    ChooseMachineToAnswer {
+        /// The other machine, by its identity.
+        machine: String,
+    },
 }
 
 impl FromAPerson {
@@ -159,6 +178,7 @@ impl FromAPerson {
             Asked::ConfirmPairing { machine, code } => Ok(Self::ConfirmPairing { machine, code }),
             Asked::RevokePairing { machine } => Ok(Self::RevokePairing { machine }),
             Asked::Pairings {} => Ok(Self::Pairings),
+            Asked::ChooseMachineToAnswer { machine } => Ok(Self::ChooseMachineToAnswer { machine }),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -188,7 +208,8 @@ impl FromAPerson {
             | Self::Pair { .. }
             | Self::ConfirmPairing { .. }
             | Self::RevokePairing { .. }
-            | Self::Pairings => None,
+            | Self::Pairings
+            | Self::ChooseMachineToAnswer { .. } => None,
         }
     }
 
@@ -247,6 +268,9 @@ impl From<FromAPerson> for Asked {
             FromAPerson::ConfirmPairing { machine, code } => Self::ConfirmPairing { machine, code },
             FromAPerson::RevokePairing { machine } => Self::RevokePairing { machine },
             FromAPerson::Pairings => Self::Pairings {},
+            FromAPerson::ChooseMachineToAnswer { machine } => {
+                Self::ChooseMachineToAnswer { machine }
+            }
         }
     }
 }
@@ -390,6 +414,29 @@ mod tests {
         assert!(!FromAPerson::Granted.is_about_a_pairing());
     }
 
+    /// **Choosing a machine to answer is the person's, and an agent sending it
+    /// is refused in the words an approval gets**: it answers no change, asks
+    /// nothing about the turn, and is not one of the four about a pairing.
+    #[test]
+    fn choosing_a_machine_to_answer_is_a_persons_and_refused_to_an_agent() {
+        let line = r#"{"format":1,"asks":{"choose-machine-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}}"#;
+        let chosen = FromAPerson::read(line).unwrap();
+        assert_eq!(
+            chosen,
+            FromAPerson::ChooseMachineToAnswer {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            }
+        );
+        assert_eq!(chosen.number(), None);
+        assert!(!chosen.is_yes());
+        assert!(!chosen.is_a_question_about_the_turn());
+        assert!(!chosen.is_about_a_pairing());
+        assert_eq!(
+            crate::FromAnAgent::read(line),
+            Err(NotUnderstood::NotForAnAgent)
+        );
+    }
+
     /// **A proposal cannot name where a machine is**: an address in it is a
     /// message this crate refuses to read, in the same words as any field
     /// nobody declared.
@@ -425,6 +472,9 @@ mod tests {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
             },
             FromAPerson::Pairings,
+            FromAPerson::ChooseMachineToAnswer {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            },
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);

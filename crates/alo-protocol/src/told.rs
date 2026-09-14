@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Eleven answers, and there is no twelfth. It is [`crate::asked`]'s shape from
+//! Twelve answers, and there is no thirteenth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -118,6 +118,15 @@ pub(crate) enum Told {
         /// In the order they began waiting.
         waiting: Vec<WaitingToPair>,
     },
+    /// The machine the person chose now answers their questions.
+    ///
+    /// The answer to `choose-machine-to-answer`, naming the machine by the
+    /// identity that was written down — which is what the next turn's question
+    /// goes to.
+    ChosenToAnswer {
+        /// The machine chosen, by its identity.
+        machine: String,
+    },
 }
 
 #[cfg(test)]
@@ -170,6 +179,9 @@ mod tests {
                 )],
                 waiting: vec![a_proposal_waiting()],
             },
+            Told::ChosenToAnswer {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            },
         ]
     }
 
@@ -193,10 +205,10 @@ mod tests {
         )
     }
 
-    /// **The eleven read back as what was written**, so a shell and a daemon
+    /// **The twelve read back as what was written**, so a shell and a daemon
     /// built from this crate cannot disagree about what happened.
     #[test]
-    fn the_eleven_read_back_as_what_was_written() {
+    fn the_twelve_read_back_as_what_was_written() {
         for told in every_answer() {
             let written = serde_json::to_string(&told).unwrap();
             let back: Told = serde_json::from_str(&written).unwrap();
@@ -204,11 +216,11 @@ mod tests {
         }
     }
 
-    /// **There is no twelfth.** An answer that is not one of the eleven has
+    /// **There is no thirteenth.** An answer that is not one of the twelve has
     /// nowhere to land, which is what stops a daemon from being extended by
     /// whatever a client is willing to parse.
     #[test]
-    fn an_answer_that_is_not_one_of_the_eleven_is_not_an_answer() {
+    fn an_answer_that_is_not_one_of_the_twelve_is_not_an_answer() {
         for message in [
             r#"{"ran":{"command":"rm -rf /"}}"#,
             r#"{"granted":{"path":"/"}}"#,
