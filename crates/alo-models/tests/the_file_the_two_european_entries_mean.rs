@@ -359,20 +359,35 @@ fn a_requantisation_of_the_wrong_release_is_caught() {
 }
 
 /// **No grade was earned here.** An artefact named is not an artefact measured,
-/// and nothing on this lane's box can run either of these.
+/// and nothing on this lane's box could run either of these.
+///
+/// **Since 2026-09-14 one of them has a grade, from a run** — `teuken-7b-instruct`,
+/// measured on the Mac lane against this very artefact once it carried its
+/// publisher's chat template. So the rule this holds is the one behind the
+/// moment: a grade on either entry was earned against the file named here, with
+/// the machine and counts of a run beside it.
 #[test]
 fn naming_a_file_earned_no_grade() {
     for upload in &THE_TWO {
         let model = the_entry(upload.id);
+        if model.drives_verbs == Driving::NotMeasured {
+            assert_eq!(model.graded_against(), None, "`{}`", upload.id);
+            continue;
+        }
         assert_eq!(
-            model.drives_verbs,
-            Driving::NotMeasured,
-            "`{}` claims a grade. `alo-driving` measured that a 7B model at four bits does not \
-             run usefully on this box, so a grade appearing beside a newly named file is a grade \
-             from somewhere other than a run",
+            model.graded_against(),
+            model.artefact.as_deref(),
+            "`{}` has a grade that was not earned against the file it names",
             upload.id
         );
-        assert_eq!(model.graded_against(), None, "`{}`", upload.id);
+        assert!(
+            model
+                .measured
+                .as_ref()
+                .is_some_and(|on| on.drove.is_some() && on.of.is_some()),
+            "`{}` claims a grade with no run placed beside it",
+            upload.id
+        );
     }
 }
 
@@ -382,8 +397,14 @@ fn naming_a_file_earned_no_grade() {
 fn the_carry_or_fetch_table_carries_both_artefacts() {
     let measurement = reading(THE_MEASUREMENT);
     for upload in &THE_TWO {
+        let grade = match the_entry(upload.id).drives_verbs {
+            Driving::Reliably => "reliably",
+            Driving::Sometimes => "sometimes",
+            Driving::Rarely => "rarely",
+            Driving::NotMeasured => "not-measured",
+        };
         let row = format!(
-            "| `{}` | {} | `not-measured` |",
+            "| `{}` | {} | `{grade}` |",
             upload.id,
             with_underscores(upload.bytes)
         );

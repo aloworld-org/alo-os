@@ -469,19 +469,34 @@ fn every_borrowed_file_the_catalogue_ships_is_stated_and_brings_no_grade_with_it
 /// and that is the state this asserts — separately from the choosing, so that a
 /// future change which measures one of them fails here and is read rather than
 /// waved through.
+///
+/// **One of them has since been measured** — `teuken-7b-instruct`, on
+/// 2026-09-14 — and so what this asserts is the rule the moment stood for: an
+/// entry that gained a file gained no grade from it, and a grade either of them
+/// carries was earned by a run against the file it names.
 #[test]
 fn neither_european_entry_gained_a_grade_when_it_gained_a_file() {
     for id in THE_TWO {
         let model = the_entry(id);
-        assert_eq!(
-            model.drives_verbs,
-            Driving::NotMeasured,
+        if model.drives_verbs == Driving::NotMeasured {
+            assert_eq!(
+                model.graded_against(),
+                None,
+                "`{id}` reports a file a grade was earned against, and it has no grade"
+            );
+            continue;
+        }
+        assert!(
+            measured_entries().contains(&id),
             "`{id}` gained a grade; was `alo-driving` run against the artefact it names?"
         );
-        assert_eq!(
-            model.graded_against(),
-            None,
-            "`{id}` reports a file a grade was earned against, and it has no grade"
+        assert_eq!(model.graded_against(), model.artefact.as_deref(), "`{id}`");
+        assert!(
+            model
+                .measured
+                .as_ref()
+                .is_some_and(|on| on.drove.is_some() && on.of.is_some()),
+            "`{id}` claims a grade with no run placed beside it"
         );
     }
 }
@@ -493,7 +508,7 @@ fn neither_european_entry_gained_a_grade_when_it_gained_a_file() {
 /// constant, and a borrowed file arriving with a grade is exactly the case
 /// where a shared constant would be updated to match the data instead of the
 /// other way round.
-fn measured_entries() -> [&'static str; 7] {
+fn measured_entries() -> [&'static str; 11] {
     [
         "phi-3-mini-instruct",
         "llama-3.2-3b-instruct",
@@ -502,5 +517,11 @@ fn measured_entries() -> [&'static str; 7] {
         "smollm2-1.7b-instruct",
         "qwen3-1.7b",
         "granite-3.2-2b-instruct",
+        "qwen2.5-7b-instruct",
+        "mistral-7b-instruct",
+        "llama-3.1-8b-instruct",
+        // Measured on the Mac lane on 2026-09-14 against the borrowed artefact
+        // it names, once fetched with its publisher's chat template.
+        "teuken-7b-instruct",
     ]
 }

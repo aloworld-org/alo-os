@@ -203,7 +203,8 @@ exactly why it is a decision before it is a change.
 
 ### 8. Teuken's chat template, decided before Teuken is graded
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-14.** **Depends on:** 3.
+**Report:** `docs/autonomy/updates/teukens-chat-template-and-the-fetch-that-could-not-fetch.md`.
 
 `docs/quirks.md` has it: the GGUF the catalogue names for `teuken-7b-instruct`
 carries no chat template, the runtime warns and answers with the end-of-turn
@@ -225,8 +226,9 @@ whose publisher wrote one elsewhere is a decision with a name on it.
 with the GPU's share of memory raised (`sudo sysctl iogpu.wired_limit_mb=6800`,
 which needs the owner's password). **Depends on:** 2, 8 for Teuken.
 
-`teuken-7b-instruct`, `gemma-2-9b-instruct`, `eurollm-9b-instruct` and
-`mixtral-8x7b-instruct` carry `too-large-for-the-measuring-machine`. The
+`gemma-2-9b-instruct`, `eurollm-9b-instruct` and `mixtral-8x7b-instruct` carry
+`too-large-for-the-measuring-machine`. (`teuken-7b-instruct` was graded on
+2026-09-14 by task 8, once it carried its publisher's template.) The
 measurement is the same one; only the room is missing.
 
 - **Acceptance:** each is graded with the machine beside it, or keeps its reason

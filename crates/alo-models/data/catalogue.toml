@@ -180,10 +180,13 @@
 # unmeasured entry; that test now reads its example off this file.) The other four
 # could not be measured there, and **each says why** in a `[model.unmeasured]`
 # block rather than leaving `not-measured` to read as *probably fine*: on 8 GB of
-# unified memory the GPU has about 5.4 GB, and `teuken-7b-instruct` ran out of it
-# answering its first question, `gemma-2-9b-instruct` and `eurollm-9b-instruct`
+# unified memory the GPU has about 5.4 GB, `gemma-2-9b-instruct` and `eurollm-9b-instruct`
 # spilled onto the processor and did not answer within the five minutes
 # `alo_models` waits, and `mixtral-8x7b-instruct` is 26.4 GB and was not fetched.
+# `teuken-7b-instruct` ran out of GPU memory on its first try and was graded on
+# 2026-09-14 once it carried its publisher's chat template (task 8): 0 of 20
+# asked freely, 1 of 20 in the envelope — its answers cut paths short and misspell
+# them, which no template or envelope reaches.
 # A reason is about the machine that measured, never the reader's; a larger
 # machine removes it by running the measurement. No entry was removed for
 # failing, and the bar did not move.
@@ -299,10 +302,24 @@ download_bytes = 5_018_868_512
 min_vram_gb = 6.5
 min_ram_gb = 10.0
 on_cpu = "workable"
-drives_verbs = "not-measured"
+drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-commercial-v0.4"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
+
+[model.chat_template]
+# openGPT-X's own template for this release, rendered for the one shape alo OS
+# asks in — a single message from a person — in the runtime's template language.
+# It is `gptx_tokenizer.py`'s `default` (the English system message, which that
+# file spells with no space after the first full stop, where the model card's
+# example has one) followed by the Jinja template's `User: ` line and its
+# generation prompt, `Assistant: `. The model card says the model "must be used
+# with the provided prompt template". Read 2026-09-14.
+text = """System: A chat between a human and an artificial intelligence assistant.The assistant gives helpful and polite answers to the human's questions.
+User: {{ .Prompt }}
+Assistant: """
+published_at = "https://huggingface.co/openGPT-X/Teuken-7B-instruct-commercial-v0.4/blob/e91cc26f0a5b1082c1375fd161ccb8cc0a05b291/gptx_tokenizer.py"
 [model.requantised]
 by = "mradermacher"
 sha256 = "03fd13daafb6f20c1c5f4b908d163841cdd96803a6f5a7c0c39dd236a2b1630b"
@@ -315,11 +332,19 @@ release exists at `-i1-GGUF` and is deliberately not what this entry names. The 
 upload's own Hugging Face metadata states `license: apache-2.0`, the model's \
 own licence, and attaches no terms beyond it. Read 2026-09-11."""
 
-[model.unmeasured]
-because = "too-large-for-the-measuring-machine"
+[model.measured]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
-date = "2026-09-13"
+date = "2026-09-14"
 runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 1
+of = 20
 
 [[model]]
 id = "mistral-7b-instruct"

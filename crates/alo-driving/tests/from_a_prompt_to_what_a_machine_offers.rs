@@ -283,6 +283,10 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// **Its second task moved it to six**: `mistral-7b-instruct` graded `rarely`.
 /// `llama-3.1-8b-instruct` was graded too and is not among the seven, because
 /// its licence carries conditions, which is the list this count is of.
+///
+/// **Its eighth made it seven of seven**: `teuken-7b-instruct`, graded once it
+/// was fetched with its publisher's chat template. Every model a 16 GB machine
+/// could give the agent has now been measured, and none of them clears the bar.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -291,7 +295,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
         refused,
         NoAgentHere::NoneClearsTheBar {
             to_choose_from: 7,
-            measured: 6,
+            measured: 7,
         }
     );
 
@@ -310,6 +314,7 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         measured,
         vec![
+            "teuken-7b-instruct",
             "mistral-7b-instruct",
             "qwen2.5-7b-instruct",
             "phi-3-mini-instruct",

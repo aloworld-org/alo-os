@@ -26,8 +26,8 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 
 use crate::{
-    costing::GIGABYTE, driving::Driving, measured_on::MeasuredOn, requantised::Requantised,
-    unmeasured::Unmeasured,
+    chat_template::ChatTemplate, costing::GIGABYTE, driving::Driving, measured_on::MeasuredOn,
+    requantised::Requantised, unmeasured::Unmeasured,
 };
 
 /// Bytes per parameter at which a stated size stops being a quantised
@@ -200,6 +200,13 @@ pub struct Model {
     /// it with any of the three missing — see [`crate::Requantised`].
     #[serde(default)]
     pub requantised: Option<Requantised>,
+    /// **The chat template these weights are asked through**, where the file
+    /// [`artefact`](Model::artefact) names does not carry one — the publisher's
+    /// own, with the address they published it at
+    /// ([`crate::ChatTemplate`]). Applied when the model is fetched, and
+    /// [`None`] on every entry whose file carries its own.
+    #[serde(default)]
+    pub chat_template: Option<ChatTemplate>,
     /// Download size in bytes — what the disk actually loses, **for the
     /// artefact this entry names**.
     ///
@@ -537,6 +544,19 @@ impl Catalogue {
                     }
                 }
                 (true | false, None) => {}
+            }
+            // A template is configuration of a file, so it needs a file, and it
+            // is the publisher's or it is not carried.
+            if let Some(template) = &model.chat_template {
+                if model.quantised_at().is_none() {
+                    return Err(invalid(
+                        "a chat template beside no artefact: a template is how a file is asked, \
+                         and this entry names no file",
+                    ));
+                }
+                if let Some(what) = template.what_is_wrong_with_it() {
+                    return Err(invalid(what));
+                }
             }
             // And whose file that is, where it is not the publisher's own.
             if let Some(requantised) = &model.requantised
@@ -1060,7 +1080,7 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it
         /// earned.
-        const MEASURED: [(&str, Driving); 10] = [
+        const MEASURED: [(&str, Driving); 11] = [
             ("phi-3-mini-instruct", Driving::Rarely),
             ("llama-3.2-3b-instruct", Driving::Rarely),
             ("qwen2.5-3b-instruct", Driving::Rarely),
@@ -1071,6 +1091,7 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
             ("qwen2.5-7b-instruct", Driving::Rarely),
             ("mistral-7b-instruct", Driving::Rarely),
             ("llama-3.1-8b-instruct", Driving::Rarely),
+            ("teuken-7b-instruct", Driving::Rarely),
         ];
         for m in Catalogue::built_in().unwrap().models {
             let ran = MEASURED.iter().find(|(id, _)| *id == m.id);

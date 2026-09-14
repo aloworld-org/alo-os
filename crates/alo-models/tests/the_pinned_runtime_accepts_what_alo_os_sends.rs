@@ -134,3 +134,36 @@ fn the_three_requests_put_to_the_real_runtime() {
         "the probe's model is still listed"
     );
 }
+
+/// **A catalogue entry fetched from the real runtime answers by its catalogue
+/// id** — the fourth request, found after the first three: `fetch` pulled the
+/// catalogue's id, which the registry does not know. Run with `ALO_FETCH_ID`
+/// naming an entry; the pull is a download (or, for an artefact already held, a
+/// manifest check), which is egress and belongs in the report of whoever runs it.
+#[test]
+#[ignore = "fetches from a publisher's registry — run it with ALO_FETCH_ID set"]
+fn a_catalogue_entry_fetched_answers_by_its_catalogue_id() {
+    let id = std::env::var("ALO_FETCH_ID").expect("set ALO_FETCH_ID to a catalogue entry's id");
+    let catalogue = Catalogue::built_in().unwrap();
+    let runtime = Ollama::at(ON_THIS_MACHINE, catalogue.clone());
+    runtime
+        .fetch(&id, &mut alo_models::Progress::ignored())
+        .expect("the pinned runtime fetches the entry's artefact and names it for the catalogue");
+    let installed = runtime.installed().unwrap();
+    assert!(
+        installed.iter().any(|entry| entry.id == id),
+        "{id} is not listed under its catalogue id"
+    );
+    println!(
+        "{id} fetched as {:?}, template carried: {}",
+        catalogue.get(&id).and_then(|m| m.artefact.clone()),
+        catalogue
+            .get(&id)
+            .is_some_and(|m| m.chat_template.is_some())
+    );
+    match runtime.answers("Answer with the single word: ready.", &id) {
+        Ok(said) => println!("answered: {said:?}"),
+        Err(why) => println!("did not answer on this machine: {why:?}"),
+    }
+    runtime.unload(&id).expect("let go of");
+}

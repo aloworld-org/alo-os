@@ -2480,7 +2480,7 @@ memory:
 | Entry | Download bytes | Drives the verbs |
 |---|---|---|
 | `eurollm-9b-instruct` | 5_582_838_496 | `not-measured` |
-| `teuken-7b-instruct` | 5_018_868_512 | `not-measured` |
+| `teuken-7b-instruct` | 5_018_868_512 | `rarely` |
 | `mistral-7b-instruct` | 4_370_000_000 | `rarely` |
 | `mixtral-8x7b-instruct` | 26_400_000_000 | `not-measured` |
 | `qwen2.5-7b-instruct` | 4_680_000_000 | `rarely` |
@@ -3084,9 +3084,14 @@ because nothing told the runtime how a turn is framed for this model. So a
 question alo OS puts to Teuken through the pinned runtime reaches the weights in
 a shape the model was not trained on, and a grade made that way would be a
 measurement of the missing template as much as of the weights.
-**Our response:** Teuken carries `too-large-for-the-measuring-machine`, which is
-what stopped the run on this machine (the GPU ran out of memory on the first
-question). The template is the finding for
+**Our response, first:** Teuken carried `too-large-for-the-measuring-machine`,
+which is what stopped the first run on this machine (the GPU ran out of memory
+on the first question). **Then, on 2026-09-14 (task 8):** the catalogue entry
+carries openGPT-X's own template, applied when the model is fetched; asked
+through it, Teuken answered `" ready."` with nothing stray in the text, loaded on
+a second try, and was graded — 0 of 20 freely, 1 of 20 in the envelope. Its
+answers cut paths short and misspell them (`/home/anna/Invoic`,
+`/home/anna/Invoicnes`), which is the model rather than the template. The template is the finding for
 `docs/autonomy/v0-5-the-models-measured-plan.md`'s task 3 — whether the pinned
 runtime accepts what alo OS sends — and it matters before anybody grades Teuken
 on a larger machine: without a template the grade is not of the weights. A
@@ -3252,4 +3257,27 @@ model, which then writes it in the order the prompt teaches: 35 of 40. The
 whole call's schema is not used on this runtime, and the reason is in the ADR so
 it is not tried again by default. A later runtime that keeps a schema's order is
 a new measurement.
+**Date:** 2026-09-14.
+
+### `fetch` pulled the catalogue's id, which the registry does not know
+**Version:** `alo-models`' `Ollama::fetch` as of `95b8509`, against Ollama 0.34.0
+on an Apple M3 with 8 GB. 2026-09-14.
+**Behaviour:** `fetch` sent `POST /api/pull {"model":"mistral-7b-instruct:latest"}`
+— the catalogue's own id with the runtime's default tag — and the runtime
+answered `{"status":"pulling manifest"}` then
+`{"error":"pull model manifest: file does not exist"}`. The registry knows
+`mistral:7b-instruct-v0.3-q4_K_M`, which is what the entry's `artefact` names and
+what the catalogue's own rule 4 says is fetched. So no catalogued model could have
+been fetched by alo OS, and every fixture agreed with the request, because every
+fixture was written by this repository. Task 3 put three requests to the real
+runtime; this was a fourth it did not.
+**Our response:** `fetch` pulls the entry's `artefact`, then creates the model
+under the catalogue's id from it — `/api/create {"model": <id>, "from":
+<artefact>}`, with the publisher's `template` for the one entry whose file carries
+none — so everything else reaches the model by the id a person saw. Walked on the
+real runtime for `mistral-7b-instruct` (it answered by that id) and
+`teuken-7b-instruct`, by
+`the_pinned_runtime_accepts_what_alo_os_sends.rs`'s ignored
+`a_catalogue_entry_fetched_answers_by_its_catalogue_id`. The one request that
+failed cost a manifest lookup at `registry.ollama.ai`, 2026-09-14 01:32:21 UTC.
 **Date:** 2026-09-14.

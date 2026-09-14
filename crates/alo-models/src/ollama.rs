@@ -366,11 +366,20 @@ impl ModelRuntime for Ollama {
     fn fetch(&self, id: &str, progress: &mut dyn ProgressSink) -> Result<(), RuntimeError> {
         // The catalogue gate. Without it, any name could be pulled and the
         // licence promise in docs/features.md would mean nothing.
-        if self.catalogue.get(id).is_none() {
+        let Some(entry) = self.catalogue.get(id) else {
             return Err(RuntimeError::NotOffered(id.to_owned()));
-        }
+        };
+        // **What is fetched is the file the entry names, not the entry's id.**
+        // An id is this catalogue's name for a model; the registry knows the
+        // artefact. Asked for `mistral-7b-instruct:latest`, the pinned runtime
+        // answers `pull model manifest: file does not exist` (`docs/quirks.md`),
+        // so an entry that names no file is one there is nothing to fetch for.
+        let Some(artefact) = entry.artefact.clone() else {
+            return Err(RuntimeError::NotOffered(id.to_owned()));
+        };
+        let template = entry.chat_template.as_ref().map(|t| t.text.clone());
 
-        let body = serde_json::json!({ "model": Self::runtime_name(id), "stream": true });
+        let body = serde_json::json!({ "model": artefact, "stream": true });
         let response = ureq::post(format!("{}/api/pull", self.endpoint))
             .send_json(&body)
             .map_err(|_| RuntimeError::Unreachable)?;
@@ -414,7 +423,7 @@ impl ModelRuntime for Ollama {
             // than a sentence this file wrote.
             return Err(RuntimeError::DownloadIncomplete);
         }
-        Ok(())
+        self.named_for_the_catalogue(id, &artefact, template.as_deref())
     }
 
     fn remove(&self, id: &str) -> Result<(), RuntimeError> {
@@ -579,6 +588,43 @@ impl Ollama {
             return Err(RuntimeError::Unusable);
         }
         Ok(said)
+    }
+}
+
+impl Ollama {
+    /// **The fetched file, made answerable by the catalogue's id** — and, for an
+    /// entry whose file carries no chat template, asked through its publisher's.
+    ///
+    /// `/api/create` from the artefact just pulled: `from` names a model the
+    /// runtime now holds, never a path and never something to fetch, and
+    /// `template` is carried only when the entry states one. Afterwards every
+    /// other method here — `answers`, `load`, `remove` — reaches the model by the
+    /// id a person saw in the catalogue.
+    fn named_for_the_catalogue(
+        &self,
+        id: &str,
+        artefact: &str,
+        template: Option<&str>,
+    ) -> Result<(), RuntimeError> {
+        let mut body = serde_json::json!({
+            "model": Self::runtime_name(id),
+            "from": artefact,
+            "stream": false,
+        });
+        if let (Some(template), Some(fields)) = (template, body.as_object_mut()) {
+            fields.insert("template".to_owned(), serde_json::Value::from(template));
+        }
+        let response = ureq::post(format!("{}/api/create", self.endpoint))
+            .config()
+            .timeout_global(Some(WHILE_A_MODEL_THINKS))
+            .build()
+            .send_json(&body);
+        match response {
+            Ok(_) => Ok(()),
+            Err(ureq::Error::Timeout(_)) => Err(RuntimeError::TookTooLong),
+            Err(ureq::Error::StatusCode(_)) => Err(RuntimeError::Unusable),
+            Err(_) => Err(RuntimeError::Unreachable),
+        }
     }
 }
 
@@ -831,36 +877,113 @@ mod tests {
 
     #[test]
     fn fetching_reports_progress_as_the_download_advances() {
-        let (url, server) = serving(
-            "{\"status\":\"pulling\",\"completed\":100,\"total\":400}\n\
-             {\"status\":\"pulling\",\"completed\":400,\"total\":400}\n\
-             {\"status\":\"success\"}\n",
-            200,
-        );
+        let (url, server) = serving_each(&[
+            (
+                200,
+                "{\"status\":\"pulling\",\"completed\":100,\"total\":400}\n\
+                 {\"status\":\"pulling\",\"completed\":400,\"total\":400}\n\
+                 {\"status\":\"success\"}\n",
+            ),
+            (200, r#"{"status":"success"}"#),
+        ]);
         let mut seen: Vec<Progress> = Vec::new();
         let result = Ollama::at(&url, catalogue()).fetch("mistral-7b-instruct", &mut |p| {
             seen.push(p);
         });
-        let request = server.join().unwrap();
+        let sent = server.join().unwrap();
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(seen.len(), 2, "{seen:?}");
         assert_eq!(seen[0].fraction(), Some(0.25));
         assert_eq!(seen[1].fraction(), Some(1.0));
-        // The name that went out is Ollama's convention, applied here and
-        // nowhere else.
-        assert!(request.contains("mistral-7b-instruct:latest"), "{request}");
+        // **What is pulled is the artefact the entry names**, which is what the
+        // registry knows — never the catalogue's own id.
+        let pulled = sent.first().unwrap();
+        assert!(pulled.starts_with("POST /api/pull "), "{pulled}");
+        assert!(
+            pulled.contains("mistral:7b-instruct-v0.3-q4_K_M"),
+            "{pulled}"
+        );
+        assert!(!pulled.contains("mistral-7b-instruct:latest"), "{pulled}");
+    }
+
+    /// **After the pull, the model is made answerable by the catalogue's id**,
+    /// from the file just pulled — and an entry whose file carries its own
+    /// template is not given one.
+    #[test]
+    fn a_fetched_file_is_named_for_the_catalogue_and_given_no_template_it_did_not_need() {
+        let (url, server) = serving_each(&[
+            (200, "{\"status\":\"success\"}\n"),
+            (200, r#"{"status":"success"}"#),
+        ]);
+        Ollama::at(&url, catalogue())
+            .fetch("mistral-7b-instruct", &mut Progress::ignored())
+            .unwrap();
+        let sent = server.join().unwrap();
+        let made = sent.get(1).unwrap();
+        assert!(made.starts_with("POST /api/create "), "{made}");
+        let body = made.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert_eq!(body.get("model").unwrap(), "mistral-7b-instruct:latest");
+        assert_eq!(body.get("from").unwrap(), "mistral:7b-instruct-v0.3-q4_K_M");
+        assert!(body.get("template").is_none(), "{body}");
+    }
+
+    /// **An entry whose file carries no chat template is fetched with its
+    /// publisher's** — Teuken, whose GGUF has none (`docs/quirks.md`), and only
+    /// Teuken: every entry is walked, and only one names a template.
+    #[test]
+    fn only_an_entry_that_names_a_template_is_given_one_when_fetched() {
+        let shipped = catalogue();
+        let with_a_template: Vec<&str> = shipped
+            .models
+            .iter()
+            .filter(|m| m.chat_template.is_some())
+            .map(|m| m.id.as_str())
+            .collect();
+        assert_eq!(with_a_template, vec!["teuken-7b-instruct"]);
+
+        let (url, server) = serving_each(&[
+            (200, "{\"status\":\"success\"}\n"),
+            (200, r#"{"status":"success"}"#),
+        ]);
+        Ollama::at(&url, shipped.clone())
+            .fetch("teuken-7b-instruct", &mut Progress::ignored())
+            .unwrap();
+        let sent = server.join().unwrap();
+        let body = sent
+            .get(1)
+            .unwrap()
+            .split_once("\r\n\r\n")
+            .map(|(_, body)| body)
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        let template = shipped
+            .get("teuken-7b-instruct")
+            .and_then(|m| m.chat_template.as_ref())
+            .unwrap();
+        assert_eq!(
+            body.get("template").unwrap(),
+            &serde_json::Value::from(template.text.clone())
+        );
+        assert_eq!(
+            body.get("from").unwrap(),
+            "hf.co/mradermacher/Teuken-7B-instruct-commercial-v0.4-GGUF:Q4_K_M"
+        );
     }
 
     /// A malformed line mid-download must not abandon several gigabytes of
     /// progress. The next line almost always parses.
     #[test]
     fn a_line_that_does_not_parse_does_not_end_the_download() {
-        let (url, server) = serving(
-            "{\"completed\":100,\"total\":400}\n\
-             not json at all\n\
-             {\"completed\":400,\"total\":400}\n",
-            200,
-        );
+        let (url, server) = serving_each(&[
+            (
+                200,
+                "{\"completed\":100,\"total\":400}\n\
+                 not json at all\n\
+                 {\"completed\":400,\"total\":400}\n",
+            ),
+            (200, r#"{"status":"success"}"#),
+        ]);
         let mut seen = 0;
         let result = Ollama::at(&url, catalogue()).fetch("mistral-7b-instruct", &mut |_p| {
             seen += 1;

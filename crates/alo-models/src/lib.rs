@@ -34,6 +34,7 @@
 pub mod address;
 pub mod brought;
 pub mod catalogue;
+pub mod chat_template;
 pub mod choosing;
 pub mod costing;
 pub mod driving;
@@ -59,6 +60,7 @@ mod testing;
 
 pub use brought::Brought;
 pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model, OnCpu};
+pub use chat_template::ChatTemplate;
 pub use choosing::NoAgentHere;
 pub use costing::Cost;
 pub use driving::Driving;

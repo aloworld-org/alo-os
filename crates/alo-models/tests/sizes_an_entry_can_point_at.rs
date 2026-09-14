@@ -113,13 +113,23 @@ fn an_entry(parameters_b: f32, bytes: u64, vram: f32, ram: f32, quantised: bool)
 ///
 /// Still true after task 15 named an artefact for each of them, and for a
 /// stronger reason than it was here: naming a file is not running one either.
+///
+/// **Since 2026-09-14 one of them has a grade, and it came from a run.**
+/// `teuken-7b-instruct` was measured on the Mac lane once it carried its
+/// publisher's chat template, so what this holds now is the rule rather than the
+/// moment: a grade on either entry is one with the machine and the counts of a
+/// run beside it — never one a size correction left behind.
 #[test]
 fn correcting_a_size_moved_no_grade() {
     for id in THE_TWO {
-        assert_eq!(
-            the_entry(id).drives_verbs,
-            Driving::NotMeasured,
-            "`{id}` gained a grade in a change that ran no measurement"
+        let entry = the_entry(id);
+        let placed = entry
+            .measured
+            .as_ref()
+            .is_some_and(|on| on.drove.is_some() && on.of.is_some());
+        assert!(
+            entry.drives_verbs == Driving::NotMeasured || placed,
+            "`{id}` has a grade no measurement placed"
         );
     }
 }
@@ -137,8 +147,14 @@ fn the_carry_or_fetch_table_carries_the_two_corrected_sizes() {
     let measurement = reading(THE_MEASUREMENT);
     for id in THE_TWO {
         let model = the_entry(id);
+        let grade = match model.drives_verbs {
+            Driving::Reliably => "reliably",
+            Driving::Sometimes => "sometimes",
+            Driving::Rarely => "rarely",
+            Driving::NotMeasured => "not-measured",
+        };
         let row = format!(
-            "| `{id}` | {} | `not-measured` |",
+            "| `{id}` | {} | `{grade}` |",
             with_underscores(model.download_bytes)
         );
         assert!(
