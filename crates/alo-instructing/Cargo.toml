@@ -1,0 +1,32 @@
+[package]
+name = "alo-instructing"
+version = "0.0.1"
+description = "The words a model is shown before it is asked for a request."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The closed list of verbs. A model is told about the verbs the machine really
+# has, in the words the verb itself declared, so this crate reads a registry and
+# declares nothing of its own.
+alo-capability = { path = "../alo-capability" }
+# The digest a grade names its instructions by (ADR 0034): SHA-256 of their
+# text, from the primitives the workspace already trusts rather than a second
+# hashing crate.
+ring = { workspace = true }
+
+[lints]
+workspace = true
+
+# The verbs a real machine offers, so a test here reads the list a machine has
+# rather than a list written for a test. They are dev-dependencies because this
+# crate names verbs and does not declare them — `crates_this_crate_carries.rs`
+# is what holds the dependencies above to the two they are.
+[dev-dependencies]
+alo-applications = { path = "../alo-applications" }
+alo-files = { path = "../alo-files" }
+# One `Word`, for the verb an adapter might add to a registry. Nothing in the
+# crate itself declares a string.
+alo-strings = { path = "../alo-strings" }

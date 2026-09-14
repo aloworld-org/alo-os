@@ -67,16 +67,20 @@
 pub mod attempt;
 pub mod exercise;
 pub mod exercises;
-pub mod instructions;
 pub mod measured;
 pub mod the_whole_call;
 
 #[cfg(test)]
 mod testing;
 
+/// The words a model is shown, and which set of them a grade was earned under.
+///
+/// They live in `alo-instructing` since 2026-09-14 (ADR 0037), where a daemon
+/// can take them without taking this crate; they are re-exported because a
+/// grade names its instructions and every reader of a grade arrives here first.
+pub use alo_instructing::{HOW_TO_ANSWER, Instructions, ONE_EXAMPLE_PER_DOOR};
 pub use attempt::{Attempt, Outcome};
-pub use exercise::{Exercise, HOW_TO_ANSWER, prompt, prompt_under};
+pub use exercise::{Exercise, prompt, prompt_under};
 pub use exercises::{Exercises, NotComparable, THE_SET};
-pub use instructions::{Instructions, ONE_EXAMPLE_PER_DOOR};
 pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES, grade_of, owes_a_second_round};
 pub use the_whole_call::{digest_of, grammar_for};

@@ -2811,6 +2811,51 @@ the placement decision on the smallest certified machine, and the five-bit
 weights are the test case.
 **Date:** 2026-09-14.
 
+### Under the boundary on this VM, an ordinary program cannot set a file flag
+**Version:** `alo-bounding`'s `the_boundary_decides_and_forgets.rs` as of
+2026-09-14, on the Mac lane's Lima VM — Ubuntu on kernel `7.0.0-31-generic`,
+aarch64, six processors, 4 GiB.
+**Behaviour:** `ordinary_programs_run_under_the_boundary_and_nothing_is_written_down`
+fails at line 364 — *"an ordinary program can set a flag on its own files:
+Os { code: 95, kind: Unsupported, message: 'Operation not supported' }"* — where
+the test sets `IFlags::NODUMP` on a file of its own in `/tmp`, outside any turn,
+while the boundary is attached. It fails **deterministically**, alone and in the
+suite, and it is the only test of 4,846 in the workspace that does. With no
+boundary attached, `chattr +d` on a file in the same `/tmp` (ext4) succeeds, so
+the kernel and the filesystem do support the flag on this machine. Whether the
+`file_ioctl` hook refuses it, or the aarch64 kernel answers `ENOTSUP` for a
+reason of its own, is **not established here**.
+**Our response:** recorded for `alo-bounding`'s owner, not worked around and no
+gate weakened. The measuring lane found it while gating an unrelated change and
+does not own the crate; it is already in the loop's own gate log on this machine
+(`~/alo-builds/gate-the_workspace's_tests.log`, 2026-09-14). The measurement
+that would settle it is the same test with the boundary detached, and then with
+the `file_ioctl` hook alone.
+**Date:** 2026-09-14.
+
+### A turn asks a model in English, whatever language the machine runs in
+**Version:** `alo-instructing` as of 2026-09-14, the crate the words a model is
+shown moved into ([ADR 0037](decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md)).
+**Behaviour:** the text a model is shown is how to answer, every verb in the
+sentence the verb declared, and the request — and all of it is English. The
+verbs' sentences are `alo_strings::Word`s with an English default, and this
+crate asks for no translation of them; the instructions are a `&'static str`
+with no vocabulary behind them at all. Until now that was a fact about a
+measurement (recorded above, *it is asked in English*). Once a turn composes
+what it shows a model from here, it becomes a fact about the product: a person
+whose machine is in Latvian is served by an agent whose model was asked in
+English.
+**Our response:** recorded rather than worked around, and it falls the way the
+measurement's version does — a model asked in a language it is weaker in drives
+the verbs worse, and every grade in the catalogue was earned in English, so the
+grade a machine reads is the grade for the way it asks. What a **person** is
+told never passes through here: their words go to the model as they wrote them,
+and every sentence they read back is an `alo_strings::Word` in their own
+language. Asking in twenty-four languages needs the verbs' sentences translated
+*and* a grade per language, which is a measurement nobody has made; it is not
+work this crate can hide, and `Instructions` is where a second set would go.
+**Date:** 2026-09-14.
+
 ## Providers and their APIs
 
 A provider somebody adds themselves is a service nobody here operates, behind an

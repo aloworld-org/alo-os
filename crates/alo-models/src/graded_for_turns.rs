@@ -14,12 +14,23 @@
 //!
 //! **What this does not read**, and on purpose: a grade under other
 //! instructions ([`crate::AlsoUnder`]) or at another quantisation
-//! ([`crate::AlsoAt`]). An agent turn is shown neither of alo-driving's two
-//! sets of instructions, and it runs the file the entry names — so a grade
-//! earned under instructions a turn is not shown, or on a file the entry does
-//! not name, is not a grade for the turn
+//! ([`crate::AlsoAt`]). An agent turn is shown neither of the two sets of
+//! instructions a grade names, and it runs the file the entry names — so a
+//! grade earned under instructions a turn is not shown, or on a file the entry
+//! does not name, is not a grade for the turn
 //! ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md),
 //! decision 4).
+//!
+//! **What a turn is shown is now the product's to say**, and this still does not
+//! read it. `alo-instructing` holds the words a model is shown and names the set
+//! a turn shows them in, and
+//! [ADR 0037](../../../docs/decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md)
+//! decision 3 is why nothing moves here yet: until `alo-turn` composes what it
+//! shows a model from that crate, a turn is shown whatever its caller wrote, and
+//! a grade read for it would be a grade about somebody else's words. When the
+//! wiring lands, decision 4 of that ADR is what this file becomes — the grade
+//! earned under the turn's own instructions, and no grade at all for an entry
+//! never measured under them.
 
 use alo_strings::{Filling, Said, Strings};
 

@@ -300,6 +300,7 @@ dependencies = [
  "alo-capability",
  "alo-choosing",
  "alo-files",
+ "alo-instructing",
  "alo-models",
  "alo-protocol",
  "alo-strings",
@@ -407,6 +408,17 @@ dependencies = [
  "alo-saying",
  "alo-strings",
  "thiserror 2.0.20",
+]
+
+[[package]]
+name = "alo-instructing"
+version = "0.0.1"
+dependencies = [
+ "alo-applications",
+ "alo-capability",
+ "alo-files",
+ "alo-strings",
+ "ring",
 ]
 
 [[package]]

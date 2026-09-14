@@ -446,3 +446,85 @@ engine's server is **better** rather than equal.
   either program. If the engine's server cannot be pinned or its grammar
   cannot express the call, that is the finding, recorded in `docs/quirks.md`,
   and the ADR is rejected on it.
+
+### 18. The words a turn shows a model are the product's own
+
+**Status:** **Done, 2026-09-14.** **Depends on:** 16.
+**Report:** `docs/autonomy/updates/the-words-a-turn-shows-a-model.md`.
+
+Every grade this lane has made is a measurement of words that only the
+measurement has. `alo_turn::Turning::asking_for_the_next_request` takes what a
+model is shown as a string from whoever calls the daemon's door — its rustdoc
+says *what the agent composed for the model — its instructions, the verbs and
+what the person said* — and **no crate in this repository composes one**. ADR
+0034's second cost names the consequence and leaves the remedy to the turn; read
+against the code there was no prompt to fix, and task 16 had just measured that
+the words are worth 80 of 80 against 71 of 80 on the same weights.
+
+- **Acceptance:** the words a model is shown — the instructions, every verb the
+  registry declares in the verb's own sentence, the request last — are one
+  function in a crate of their own that carries the verb registry and SHA-256
+  and nothing else, held to that by a test reading its own manifest and its own
+  source rather than by a sentence in a header; `alo-driving` composes its
+  prompt by calling it, with a test that an exercise is asked in exactly those
+  words, and every digest a catalogue grade names is unchanged — the first
+  instructions' pinned SHA-256 travels with the text and its test still passes;
+  an ADR decides which set a turn shows, on the measurements rather than on
+  taste, and records that **no grade moves until a turn composes from the
+  crate**, so `grade_for_the_turn` is untouched here; and the wiring is written
+  as a task on `v0-5-the-local-network-plan.md` for the lane that owns the turn,
+  naming the function.
+- **Constraint:** the exercises, the bar, the scoring and every grade are
+  unchanged — this moves text without editing a byte of it, which is what the
+  pinned digest proves. `alo-turn`, `alo-agentd` and `alo-capability` are not
+  edited. The words stay English and that limit, which was a fact about a
+  measurement, becomes a fact about the product the day a turn uses them:
+  `docs/quirks.md` records it before it is true rather than after.
+
+### 19. The catalogue reads the grade for the words a turn shows
+
+**Status:** blocked — on task 19 of `v0-5-the-local-network-plan.md`, where a
+turn composes what it shows a model from `alo-instructing`. **Depends on:** 18,
+20.
+
+ADR 0037 decision 4. Once a turn is shown the product's own words, the grade
+that says whether a model may be given the agent is the one earned under those
+words, and a grade earned under any other set is history — the same rule ADR
+0032 decision 5 set for the envelope, one variable on.
+
+- **Acceptance, when unblocked:** `Model::grade_for_the_turn` reads the grade
+  earned under `Instructions::SHOWN_TO_A_TURN`'s digest, with a test for an
+  entry that has one and a test for an entry that does not; an entry never
+  measured under it **has no grade for the turn** and `can_be_the_agent` is
+  false for it, rather than a grade under other instructions being read for it;
+  `alo-choosing`'s offer names which words the grade was earned under; and the
+  report says which entries a person may now be offered as the agent and which
+  lost a grade they appeared to have.
+- **Constraint:** no grade is rewritten and every grade stays in the entry. If
+  the wiring has not landed, this stays blocked rather than reading a grade for
+  a turn shown somebody else's words.
+
+### 20. Every entry this machine can hold, graded in the words a turn shows
+
+**Status:** ready. **Depends on:** 18.
+
+Task 10 graded the catalogue in the envelope under the first instructions; task
+16 graded one entry under the instructions ADR 0037 now names as the turn's.
+Between them the catalogue has one entry — `qwen2.5-7b-instruct`, and its
+five-bit file — measured the way a shipped machine will ask. Task 19 turns that
+into the grade that decides, and until every entry this machine can hold has one,
+doing so would take a grade away from twelve entries rather than move it.
+
+- **Acceptance:** every catalogue entry this machine can hold carries a grade
+  under `Instructions::SHOWN_TO_A_TURN`, in the envelope, through
+  `alo-asking`'s door, with its machine, date, runtime, digest, counts and
+  residency beside it and the second-round rule applied as every other grade
+  was; each is fetched through `Ollama::fetch` rather than by hand; the report
+  carries every answer verbatim and says, entry by entry, what the words moved;
+  and an entry too large for this machine keeps the reason task 2 gave it, with
+  the machine that tried named in it.
+- **Constraint:** the exercises, the bar, the door and the scoring are
+  unchanged, and no existing grade is touched — the new grades sit beside them
+  under their own digest (ADR 0034, decision 3). Nothing is fetched that the
+  catalogue does not already list, and an entry is not removed for what it
+  earns.

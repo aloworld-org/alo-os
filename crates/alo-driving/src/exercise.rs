@@ -14,27 +14,20 @@
 //! not a path — so the structural gate carries real weight without anybody
 //! having to write down a right answer.
 //!
-//! # The prompt is built from the verbs' own words
+//! # The prompt is the words the product shows
 //!
-//! What a model is told each verb does is
-//! [`alo_capability::Verb::purpose_as_written`] and
-//! [`alo_capability::Arg::purpose_as_written`] — the sentence a translator is
-//! handed, not a second description written for a test. Item 9b's rule, one
-//! crate on: two descriptions of one verb are two things that can disagree, and
-//! the one the measurement used would be the one nobody maintains.
-//!
-//! # It is in English, and that is a limit rather than a decision
-//!
-//! The prompt is not a string a person reads, so it is not an
-//! `alo_strings::Word` and this crate declares no vocabulary. What follows is
-//! that the grade says how a model drives the verbs **when it is asked in
-//! English**, and a model asked in Latvian may do worse. `docs/quirks.md`
-//! records it. Measuring in twenty-four languages is a real question and it is
-//! not this one.
+//! What a model is shown — how to answer, every verb in the verb's own words,
+//! the request last — is `alo-instructing`'s, not this crate's. It moved there
+//! on 2026-09-14
+//! ([ADR 0037](../../../docs/decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md))
+//! so that an agent turn can be shown the same text a grade was earned under;
+//! the functions here are the same text for one [`Exercise`], and a prompt this
+//! crate built out of its own words would be a measurement of words nothing
+//! ships. `alo_instructing::verb_as_told` has why a verb is described in its own
+//! sentence, and the crate header has why the words are in English.
 
-use alo_capability::{Effect, Takes, Verb, Verbs};
-
-use crate::instructions::Instructions;
+use alo_capability::Verbs;
+use alo_instructing::{Instructions, shown_to_a_model};
 
 /// One request put to a model, and the verb a correct answer calls.
 ///
@@ -77,26 +70,6 @@ impl Exercise {
     }
 }
 
-/// What every model is told before it is asked anything.
-///
-/// It describes the message `alo_protocol::FromAnAgent` reads and nothing else.
-/// The two keys and the two doors are the whole of the envelope; a model that
-/// cannot reproduce those cannot reproduce a verb call either.
-pub const HOW_TO_ANSWER: &str = "\
-You are talking to a computer, not to a person. Answer with one line of JSON and
-nothing else: no explanation, no code fence, no second line.
-
-The line has this shape:
-
-{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
-
-Use \"read\" for a verb that only answers a question, and \"propose\" for a verb
-that changes something; each verb below says which it is. VALUE is text in
-quotes, or a whole number with no quotes. Give every argument the verb takes and
-no others. A path is always a full path.
-
-These are the only verbs there are:";
-
 /// The whole prompt for one exercise: how to answer, the verbs, and the
 /// request.
 ///
@@ -112,51 +85,13 @@ pub fn prompt(exercise: &Exercise, verbs: &Verbs) -> String {
 /// The whole prompt for one exercise under the given [`Instructions`] — the
 /// same verbs and the same request, only how to answer differs
 /// ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)).
+///
+/// It is `alo_instructing::shown_to_a_model` with this exercise's request, so a
+/// model being measured and a model being asked for a turn's next request are
+/// shown one text built by one function (ADR 0037).
 #[must_use]
 pub fn prompt_under(instructions: Instructions, exercise: &Exercise, verbs: &Verbs) -> String {
-    let mut text = String::from(instructions.text());
-    for verb in verbs.all() {
-        text.push_str(&describe(verb));
-    }
-    text.push_str("\n\nThe request: ");
-    text.push_str(exercise.asked());
-    text
-}
-
-/// One verb, as a model is told about it.
-fn describe(verb: &Verb) -> String {
-    let door = match verb.effect() {
-        Effect::Read => "read",
-        Effect::Change => "propose",
-    };
-    let mut text = format!(
-        "\n\n- {} ({door}) — {}",
-        verb.name(),
-        verb.purpose_as_written()
-    );
-    for arg in verb.args() {
-        text.push_str(&format!(
-            "\n  - {} ({}) — {}",
-            arg.name(),
-            takes(arg.takes()),
-            arg.purpose_as_written()
-        ));
-    }
-    text
-}
-
-/// What one argument accepts, in a clause.
-fn takes(takes: &Takes) -> String {
-    match takes {
-        Takes::Path => "a full path".to_owned(),
-        Takes::Application => "an installed application's identifier".to_owned(),
-        Takes::Name { longest } => format!("one name, at most {longest} characters"),
-        Takes::Count { least, most } => format!("a whole number from {least} to {most}"),
-        Takes::Choice(options) => {
-            let names: Vec<&str> = options.iter().map(alo_capability::Offered::name).collect();
-            format!("one of: {}", names.join(", "))
-        }
-    }
+    shown_to_a_model(instructions, verbs, exercise.asked())
 }
 
 #[cfg(test)]
@@ -164,62 +99,33 @@ mod tests {
     use super::*;
     use crate::testing::the_verbs;
 
-    /// **A model is told what a verb is for in the verb's own words.** Two
-    /// descriptions of one verb are two things that can disagree, and the one
-    /// the measurement used would be the one nobody maintains.
+    /// **An exercise is put to a model in the words the product shows**, and
+    /// the exercise's request is what it carries. What those words are — every
+    /// verb in the verb's own sentence, the bounds it declared, the door it
+    /// takes, the request last — is `alo-instructing`'s and is held to there
+    /// (ADR 0037). What is held here is that a measurement adds nothing to them
+    /// and drops nothing from them, because a prompt this crate shaped would be
+    /// a measurement of words nothing ships.
     #[test]
-    fn the_prompt_describes_each_verb_in_the_words_the_verb_declared() {
+    fn an_exercise_is_asked_in_the_words_a_turn_would_be_shown() {
         let verbs = the_verbs();
-        let text = prompt(
-            &Exercise::asking("a", "do something", "list_folder"),
-            &verbs,
-        );
-        for verb in verbs.all() {
-            assert!(text.contains(verb.name()), "{}", verb.name());
-            assert!(text.contains(verb.purpose_as_written()), "{}", verb.name());
-            for arg in verb.args() {
-                assert!(text.contains(arg.purpose_as_written()), "{}", arg.name());
-            }
+        let exercise = Exercise::asking("a", "list what is in /home/anna", "list_folder");
+        for instructions in Instructions::ALL {
+            assert_eq!(
+                prompt_under(instructions, &exercise, &verbs),
+                shown_to_a_model(instructions, &verbs, exercise.asked())
+            );
         }
-    }
-
-    /// Every kind of argument is described, including the two that carry a
-    /// bound: a model told "a whole number" and refused for sending 5000 has
-    /// been measured on something nobody asked it.
-    #[test]
-    fn every_bound_a_verb_declared_is_in_the_prompt() {
-        let text = prompt(
-            &Exercise::asking("a", "do something", "list_folder"),
-            &the_verbs(),
+        assert_eq!(
+            prompt(&exercise, &verbs),
+            shown_to_a_model(Instructions::AsFirstWritten, &verbs, exercise.asked()),
+            "the unnamed prompt is the instructions every existing grade was earned under"
         );
-        assert!(text.contains("a full path"), "{text}");
-        assert!(text.contains("at most 255 characters"), "{text}");
-        assert!(text.contains("a whole number from 1 to 1000"), "{text}");
-        assert!(
-            text.contains("one of: left_half, right_half, whole_screen"),
-            "{text}"
-        );
-        assert!(
-            text.contains("an installed application's identifier"),
-            "{text}"
-        );
-    }
-
-    /// The two doors are named, because sending a change through the read door
-    /// is one of the ways a model fails and it must not fail for want of being
-    /// told which is which.
-    #[test]
-    fn the_prompt_says_which_door_each_verb_takes() {
-        let text = prompt(
-            &Exercise::asking("a", "do something", "list_folder"),
-            &the_verbs(),
-        );
-        assert!(text.contains("list_folder (read)"), "{text}");
-        assert!(text.contains("move_file (propose)"), "{text}");
     }
 
     /// The request is the last thing in the prompt, so nothing after it can be
-    /// mistaken for part of it.
+    /// mistaken for part of it — and it is the exercise's own words, not a
+    /// summary of them.
     #[test]
     fn the_request_comes_last() {
         let text = prompt(

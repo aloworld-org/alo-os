@@ -778,3 +778,42 @@ another route.
   a pairing as a sign-in. `docs/contracts/daemon-protocol.md` and
   `docs/contracts/record-file.md` gain the shapes additively. Nothing in
   `alo-shell`, nothing in `image/`.
+
+### 19. A turn shows a model the words the product wrote
+
+**Status:** ready. **Depends on:** 13.
+**Written by the measuring lane** (task 18 of
+`docs/autonomy/v0-5-the-models-measured-plan.md`), whose crates end at the words.
+
+Task 13 landed the ask: an agent's next request goes to the pinned runtime held
+to the protocol's envelope. What the model is *shown* is still a `&str` from
+whoever called the door — `Turning::asking_for_the_next_request`'s own rustdoc
+says *what the agent composed for the model — its instructions, the verbs and
+what the person said* — and nothing in this repository composes one. So a model
+on a shipped machine is shown words nobody here wrote, and no grade in the
+catalogue is about them ([ADR 0037](../decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md),
+and ADR 0034's second cost before it).
+
+The words now exist: `alo_instructing::shown_to_a_turn(verbs, request)` — how to
+answer under the set ADR 0037 names, every verb in the sentence the verb itself
+declared, the person's request last — in a crate carrying the verb registry and
+SHA-256 and nothing else.
+
+- **Acceptance:** an agent's next request is put to a model in the text
+  `alo_instructing::shown_to_a_turn` builds from the machine's own registry and
+  the request the agent's question carries, with a test reading the request off
+  the runtime's socket and finding the instructions' digest, every verb the
+  registry declared and the person's words in that order; a question a person
+  asks is untouched — their words reach a model as they wrote them, held by the
+  test that already says a person's question is never given the envelope; a
+  question a paired machine asks is untouched in the same way; and the report
+  says what a client's own instructions now do — whether they are refused,
+  ignored or wrapped — because a door that accepts both would be two prompts
+  again.
+- **Constraint:** the words are not edited here and no second copy of them is
+  made: a turn shows what that function returns, so a change to the text is a
+  change to one digest. Nothing about grades moves in this repository's
+  catalogue on this task — that is the measuring lane's task 19, which is
+  blocked on this one landing. `alo-instructing` is a dependency, never a place
+  to write: if a turn needs words the crate does not build, the deliverable is a
+  finding in the report.

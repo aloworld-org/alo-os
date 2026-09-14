@@ -21,6 +21,11 @@ alo-protocol = { path = "../alo-protocol" }
 # Where the grade goes. `Driving` is a catalogue property, so it lives with the
 # catalogue; this crate produces one and nothing here reads one back.
 alo-models = { path = "../alo-models" }
+# The words a model is shown. They were this crate's until 2026-09-14 and are
+# now the product's (ADR 0037), so that an agent turn and a measurement are
+# shown one text built by one function — a grade about words nothing ships is a
+# grade about nothing.
+alo-instructing = { path = "../alo-instructing" }
 # The digest a grade names its instructions by (ADR 0034): SHA-256 of their
 # text, from the primitives the workspace already trusts rather than a second
 # hashing crate.

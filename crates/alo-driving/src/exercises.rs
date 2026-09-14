@@ -30,9 +30,10 @@
 
 use alo_capability::Verbs;
 
+use alo_instructing::Instructions;
+
 use crate::attempt::Attempt;
 use crate::exercise::{Exercise, prompt, prompt_under};
-use crate::instructions::Instructions;
 
 /// The ten, in the order a report reads in.
 ///

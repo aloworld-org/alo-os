@@ -1,6 +1,8 @@
-//! The instructions a model is shown before it is asked anything, and which of
-//! them a grade was earned under —
-//! [ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md).
+//! The instructions a model is shown before it is asked anything, which of them
+//! a grade was earned under, and which of them a turn shows —
+//! [ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)
+//! and
+//! [ADR 0037](../../../docs/decisions/0037-the-words-a-turn-shows-a-model-are-the-products-own.md).
 //!
 //! Every grade in the catalogue until 2026-09-14 was earned under one set of
 //! instructions, whose only example request goes through the read door; the
@@ -10,7 +12,25 @@
 //! text, so two grades under different instructions are never read as one
 //! measurement.
 
-use crate::exercise::HOW_TO_ANSWER;
+/// What every model is told before it is asked anything.
+///
+/// It describes the message `alo_protocol::FromAnAgent` reads and nothing else.
+/// The two keys and the two doors are the whole of the envelope; a model that
+/// cannot reproduce those cannot reproduce a verb call either.
+pub const HOW_TO_ANSWER: &str = "\
+You are talking to a computer, not to a person. Answer with one line of JSON and
+nothing else: no explanation, no code fence, no second line.
+
+The line has this shape:
+
+{\"format\":1,\"asks\":{\"read\":{\"verb\":\"NAME\",\"given\":[{\"named\":\"ARGUMENT\",\"is\":VALUE}]}}}
+
+Use \"read\" for a verb that only answers a question, and \"propose\" for a verb
+that changes something; each verb below says which it is. VALUE is text in
+quotes, or a whole number with no quotes. Give every argument the verb takes and
+no others. A path is always a full path.
+
+These are the only verbs there are:";
 
 /// The instructions shown one example per door (ADR 0034, decision 1).
 pub const ONE_EXAMPLE_PER_DOOR: &str = "\
@@ -44,6 +64,17 @@ pub enum Instructions {
 impl Instructions {
     /// Both, in the order they were written.
     pub const ALL: [Self; 2] = [Self::AsFirstWritten, Self::OneExamplePerDoor];
+
+    /// **The set an agent turn shows a model** (ADR 0037, decision 2).
+    ///
+    /// The choice is a measured one rather than a taste: on an Apple M3 with
+    /// 8 GB the same weights drove the verbs 80 of 80 under these and 71 of 80
+    /// under [`Self::AsFirstWritten`], through the pinned runtime, in the
+    /// envelope — and 80 of 80 against 65 of 80 through `llama.cpp`'s own
+    /// server. A turn shown any other text is a turn no grade is about, so what
+    /// a turn shows is named here, once, and taken by
+    /// [`crate::shown_to_a_turn`].
+    pub const SHOWN_TO_A_TURN: Self = Self::OneExamplePerDoor;
 
     /// The text a model is shown.
     #[must_use]
@@ -90,6 +121,8 @@ mod tests {
     /// **The instructions every existing grade was earned under are unchanged**:
     /// held to the digest they had when ADR 0034 was taken, so an edit to
     /// `HOW_TO_ANSWER` fails here rather than silently re-labelling a grade.
+    /// The text moved crate on 2026-09-14 (ADR 0037) and this is what says it
+    /// moved without changing.
     #[test]
     fn the_first_instructions_are_the_ones_every_existing_grade_was_earned_under() {
         assert_eq!(
@@ -101,6 +134,21 @@ mod tests {
 
     /// The digest the first instructions had on 2026-09-14.
     const FIRST_WRITTEN_DIGEST: &str = include_str!("instructions_first_written.sha256");
+
+    /// **The set a turn shows is one this crate has**, and it is the one the
+    /// measurements of 2026-09-14 named. A turn shown text with no digest in
+    /// the catalogue is a turn no grade is about.
+    #[test]
+    fn what_a_turn_is_shown_is_named_and_measured() {
+        assert_eq!(
+            Instructions::SHOWN_TO_A_TURN,
+            Instructions::OneExamplePerDoor
+        );
+        assert_eq!(
+            Instructions::of_digest(&Instructions::SHOWN_TO_A_TURN.digest()),
+            Some(Instructions::SHOWN_TO_A_TURN)
+        );
+    }
 
     /// **The second set shows each door once, and the first shows only `read`.**
     #[test]
