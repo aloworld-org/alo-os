@@ -338,6 +338,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -345,6 +346,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 1
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "mistral-7b-instruct"
@@ -368,6 +370,7 @@ date = "2026-09-13"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 10
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -375,6 +378,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "mixtral-8x7b-instruct"
@@ -448,6 +452,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 8
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 # The one entry anybody has measured, on 2026-09-04. Ollama 0.33.3 serving
 # `phi3:3.8b-mini-4k-instruct-q4_K_M` — the weights this entry's `upstream`
@@ -469,6 +474,27 @@ drove = 71
 of = 80
 loaded_bytes = 5_197_833_172
 on_the_gpu_bytes = 4_583_210_351
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+# Task 16: the same weights, in the envelope, through the same door, under the
+# instructions ADR 0034 added — an example request through each door rather than
+# through `read` alone. **80 of 80, `reliably`**, the first local grade in this
+# catalogue to clear the bar. It sits beside the 71 of 80 above, which stays the
+# entry's own envelope grade: the two differ only in the instructions, and
+# `instructions` is the SHA-256 that tells them apart. The recommendation reads
+# neither (ADR 0032, decision 5; ADR 0034, decision 4).
+[[model.also_under]]
+drives_verbs_in_the_envelope = "reliably"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 80
+of = 80
+loaded_bytes = 5_197_833_172
+on_the_gpu_bytes = 4_583_210_351
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 # Task 13: the same weights at five bits, in the envelope, forty attempts, with
 # 1.4 GB of them off the graphics processor. Six bits (`qwen2.5:7b-instruct-q6_K`,
@@ -488,6 +514,23 @@ drove = 18
 of = 40
 loaded_bytes = 5_959_592_178
 on_the_gpu_bytes = 4_563_287_407
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+# And under ADR 0034's instructions (task 16), the same forty attempts on the same
+# five-bit weights with the same 1.4 GB off the graphics processor: **40 of 40,
+# `reliably`**, where the first instructions earned 18.
+[[model.also_at.also_under]]
+drives_verbs_in_the_envelope = "reliably"
+
+[model.also_at.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 40
+of = 40
+loaded_bytes = 5_959_592_178
+on_the_gpu_bytes = 4_563_287_407
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 [[model]]
 id = "phi-3-mini-instruct"
@@ -511,6 +554,7 @@ date = "2026-09-04"
 runtime = "Ollama 0.33.3"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -518,6 +562,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "llama-3.1-8b-instruct"
@@ -549,6 +594,7 @@ date = "2026-09-13"
 runtime = "Ollama 0.34.0"
 drove = 1
 of = 10
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -556,6 +602,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 5
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "gemma-2-9b-instruct"
@@ -640,6 +687,7 @@ date = "2026-09-04"
 runtime = "Ollama 0.33.3"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -647,6 +695,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 3
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "qwen2.5-3b-instruct"
@@ -674,6 +723,7 @@ date = "2026-09-04"
 runtime = "Ollama 0.33.3"
 drove = 1
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -681,6 +731,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "gemma-2-2b-instruct"
@@ -708,6 +759,7 @@ date = "2026-09-04"
 runtime = "Ollama 0.33.3"
 drove = 2
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -715,6 +767,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "smollm2-1.7b-instruct"
@@ -738,6 +791,7 @@ date = "2026-09-04"
 runtime = "Ollama 0.33.3"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -745,6 +799,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 
 # ── trained for tool calls, rather than chosen for being small ──────────────
@@ -786,6 +841,7 @@ date = "2026-09-11"
 runtime = "Ollama 0.33.3"
 drove = 3
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -793,6 +849,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 1
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "granite-3.2-2b-instruct"
@@ -816,6 +873,7 @@ date = "2026-09-11"
 runtime = "Ollama 0.33.3"
 drove = 1
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -823,6 +881,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 # ── the Qwen3 family, at the sizes an 8 GB machine holds (task 11) ──────────
 #
@@ -866,6 +925,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 5
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -873,6 +933,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 3
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [[model]]
 id = "qwen3-8b"
@@ -896,6 +957,7 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 10
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
 [model.measured_in_the_envelope]
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
@@ -903,3 +965,4 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 10
 of = 20
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"

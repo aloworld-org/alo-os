@@ -9,6 +9,7 @@
 
 use serde::Deserialize;
 
+use crate::also_under::AlsoUnder;
 use crate::driving::Driving;
 use crate::measured_on::MeasuredOn;
 
@@ -26,6 +27,10 @@ pub struct AlsoAt {
     pub drives_verbs_in_the_envelope: Driving,
     /// Where, when, under which runtime, with what counts and what residency.
     pub measured_in_the_envelope: MeasuredOn,
+    /// **This quantisation under other instructions**, each graded on its own
+    /// beside the grade above ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)).
+    #[serde(default)]
+    pub also_under: Vec<AlsoUnder>,
 }
 
 impl AlsoAt {
@@ -68,11 +73,32 @@ impl AlsoAt {
             return Some(what);
         }
         let on = &self.measured_in_the_envelope;
+        if on.instructions.is_none() {
+            return Some(
+                "another quantisation's grade that does not name its instructions: two grades \
+                 under different instructions are two measurements (ADR 0034)",
+            );
+        }
         if on.drove.is_none() || on.loaded_bytes.is_none() {
             return Some(
                 "another quantisation's grade without its counts and its residency: a grade per \
                  quantisation is compared across quantisations, and that needs both",
             );
+        }
+        for (at, also) in self.also_under.iter().enumerate() {
+            if let Some(what) = also.what_is_wrong_with_it(on.instructions.as_deref()) {
+                return Some(what);
+            }
+            if self
+                .also_under
+                .iter()
+                .skip(at + 1)
+                .any(|later| later.instructions() == also.instructions())
+            {
+                return Some(
+                    "two grades under the same other instructions: write the larger sample once",
+                );
+            }
         }
         None
     }
@@ -96,7 +122,11 @@ mod tests {
                 of: Some(40),
                 loaded_bytes: Some(5_959_592_178),
                 on_the_gpu_bytes: Some(4_563_287_407),
+                instructions: Some(
+                    "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce".to_owned(),
+                ),
             },
+            also_under: Vec::new(),
         }
     }
 
@@ -108,6 +138,44 @@ mod tests {
             None
         );
         assert_eq!(also.quantised_at(), ("Q5_K_M", "runtime:model-q5_K_M"));
+    }
+
+    /// **Another quantisation carries its grades under other instructions**,
+    /// held to its own grade's instructions rather than the entry's.
+    #[test]
+    fn another_quantisation_under_other_instructions_is_held_to_its_own_grade() {
+        let theirs = Some(("Q4_K_M", "runtime:model-q4_K_M"));
+        let under = |digest: &str| AlsoUnder {
+            drives_verbs_in_the_envelope: Driving::Reliably,
+            measured_in_the_envelope: MeasuredOn {
+                drove: Some(40),
+                instructions: Some(digest.to_owned()),
+                ..sound().measured_in_the_envelope
+            },
+        };
+        let other = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02";
+        let own = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce";
+
+        let mut beside = sound();
+        beside.also_under.push(under(other));
+        assert_eq!(beside.what_is_wrong_with_it(theirs), None);
+
+        let mut the_same = sound();
+        the_same.also_under.push(under(own));
+        assert!(
+            the_same
+                .what_is_wrong_with_it(theirs)
+                .is_some_and(|why| why.contains("the entry's own"))
+        );
+
+        let mut twice = sound();
+        twice.also_under.push(under(other));
+        twice.also_under.push(under(other));
+        assert!(
+            twice
+                .what_is_wrong_with_it(theirs)
+                .is_some_and(|why| why.contains("larger sample"))
+        );
     }
 
     #[test]

@@ -2748,6 +2748,26 @@ box is not the certified one.
 **Date:** 2026-09-03, iteration 42; run for the first time and extended
 2026-09-04, iteration 44; four more models 2026-09-04, iteration 45.
 
+### A model copies the door of the example it is shown, not the sentence under it
+**Version:** Qwen 2.5 7B Instruct, `qwen2.5:7b-instruct-q4_K_M`, under Ollama
+0.34.0 on an Apple M3 with 8 GB unified memory; `alo-driving` as of 2026-09-14.
+**Behaviour:** `alo_driving::HOW_TO_ANSWER` shows one example request, through
+the `read` door, and says in a sentence underneath to use `propose` for a
+change. Asked in the envelope through `alo-asking`'s door, the model drove 71 of
+80; five of the nine failures were a change sent through `read`, and the small
+models' wrong doors in task 10 and the five-bit weights' twenty-two in task 13
+were `read` too. Shown the same text with a second example through `propose`
+(`alo_driving::ONE_EXAMPLE_PER_DOOR`), with nothing else changed — exercises,
+verbs, scoring, bar, weights, runtime, machine and door — the same weights drove
+**80 of 80**, and every change went through `propose`.
+**Our response:** [ADR 0034](decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md).
+The first instructions are kept and named; every catalogue grade records the
+SHA-256 of the instructions it was earned under; the new grade sits beside the
+old in `[[model.also_under]]` and never over it; and the recommendation still
+reads neither, because an agent turn is not yet shown these instructions.
+Whoever writes the turn's prompt writes an example for each door it offers.
+**Date:** 2026-09-14.
+
 ## Providers and their APIs
 
 A provider somebody adds themselves is a service nobody here operates, behind an

@@ -228,7 +228,7 @@ mod tests {
             let measured = if *driving == "not-measured" {
                 ""
             } else {
-                "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20 }\n"
+                "measured = { machine = \"a test fixture, 16 GB\", date = \"2026-09-13\", runtime = \"Ollama 0.34.0\", drove = 10, of = 20, instructions = \"d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce\" }\n"
             };
             let gigabytes = f64::from(*parameters_b) * 0.62;
             let (bytes, vram, ram) = (

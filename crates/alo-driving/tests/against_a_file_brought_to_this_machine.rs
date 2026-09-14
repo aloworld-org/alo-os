@@ -63,6 +63,9 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
         of: None,
         loaded_bytes: None,
         on_the_gpu_bytes: None,
+        // A brought file is measured under the instructions every catalogue
+        // grade before ADR 0034 was, and its grade says so.
+        instructions: Some(alo_driving::Instructions::AsFirstWritten.digest()),
     };
     let settings = measuring::said("ALO_DRIVING_SETTINGS").map(PathBuf::from);
     let endpoint = alo_models::ollama::DEFAULT_ENDPOINT;
@@ -87,8 +90,13 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
         .expect("the pinned runtime accepts the brought file");
     println!("brought {} as {}", file.display(), weights.id);
 
-    let measured =
-        measuring::the_fixed_set_put_to(&weights.id, endpoint, 1, measuring::Asked::Freely);
+    let measured = measuring::the_fixed_set_put_to(
+        &weights.id,
+        endpoint,
+        1,
+        measuring::Asked::Freely,
+        alo_driving::Instructions::AsFirstWritten,
+    );
 
     if let Some(at) = settings {
         let mut choosing = Choosing::at(&at).expect("the settings are readable");

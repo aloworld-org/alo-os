@@ -61,6 +61,21 @@ fn every_grade_the_catalogue_ships_is_what_its_counts_earn() {
                 Some(&also.measured_in_the_envelope),
                 "in the envelope, at another quantisation",
             ));
+            for under in &also.also_under {
+                graded.push((
+                    Some(under.drives_verbs_in_the_envelope),
+                    Some(&under.measured_in_the_envelope),
+                    "in the envelope, at another quantisation, under other instructions",
+                ));
+            }
+        }
+        // And every grade under other instructions (task 16, ADR 0034).
+        for also in &entry.also_under {
+            graded.push((
+                Some(also.drives_verbs_in_the_envelope),
+                Some(&also.measured_in_the_envelope),
+                "in the envelope, under other instructions",
+            ));
         }
         for (grade, measured, asked) in graded {
             let (Some(grade), Some(measured)) = (grade, measured) else {

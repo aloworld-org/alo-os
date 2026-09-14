@@ -54,7 +54,7 @@
 //! grade that is worse than no grade, since `alo_models::Driving` carries the
 //! authority of having been checked.
 //!
-//! # Three variables, and only the first is required
+//! # The variables, and only the first is required
 //!
 //! | | |
 //! |---|---|
@@ -62,6 +62,7 @@
 //! | `ALO_DRIVING_ENDPOINT` | Where the runtime is, defaulting to `alo_models::ollama::DEFAULT_ENDPOINT` |
 //! | `ALO_DRIVING_ROUNDS` | How many times to put the whole set, defaulting to one. A model is not deterministic, and `measured.rs` says repeats are a bigger sample rather than a different method |
 //! | `ALO_DRIVING_ASKED` | `in-the-envelope` to hold the answer to the protocol's envelope (ADR 0032), which earns `drives_verbs_in_the_envelope`; unset to ask freely, which earns `drives_verbs` |
+//! | `ALO_DRIVING_INSTRUCTIONS` | `one-example-per-door` to open every prompt with `alo_driving::ONE_EXAMPLE_PER_DOOR` (ADR 0034); unset for the instructions every grade before it was earned under. The run prints their digest, which the grade records |
 //!
 //! The loop itself is `tests/measuring/mod.rs`, shared with
 //! `against_a_file_brought_to_this_machine.rs`, so a catalogue entry and a file
@@ -88,6 +89,9 @@ const HOW_MANY_ROUNDS: &str = "ALO_DRIVING_ROUNDS";
 /// How to ask: unset for freely, `in-the-envelope` for ADR 0032's way.
 const HOW_IT_IS_ASKED: &str = "ALO_DRIVING_ASKED";
 
+/// Which instructions open every prompt.
+const WHICH_INSTRUCTIONS: &str = "ALO_DRIVING_INSTRUCTIONS";
+
 /// **Put the fixed ten to a model on this machine, and print the grade.**
 #[test]
 #[ignore = "the measurement needs a model on this machine — run it with ALO_DRIVING_MODEL set"]
@@ -111,5 +115,12 @@ fn the_fixed_set_put_to_a_model_that_exists() {
         Some("in-the-envelope") => measuring::Asked::InTheEnvelope,
         Some(other) => panic!("{HOW_IT_IS_ASKED} is `in-the-envelope` or unset, not `{other}`"),
     };
-    measuring::the_fixed_set_put_to(&model, &endpoint, rounds, asked);
+    let instructions = match measuring::said(WHICH_INSTRUCTIONS).as_deref() {
+        None => alo_driving::Instructions::AsFirstWritten,
+        Some("one-example-per-door") => alo_driving::Instructions::OneExamplePerDoor,
+        Some(other) => {
+            panic!("{WHICH_INSTRUCTIONS} is `one-example-per-door` or unset, not `{other}`")
+        }
+    };
+    measuring::the_fixed_set_put_to(&model, &endpoint, rounds, asked, instructions);
 }

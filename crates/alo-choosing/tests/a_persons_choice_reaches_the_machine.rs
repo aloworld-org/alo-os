@@ -142,6 +142,7 @@ fn a_model_a_provider_and_a_language_all_reach_the_file() {
                         of: None,
                         loaded_bytes: None,
                         on_the_gpu_bytes: None,
+                        instructions: None,
                     },
                 ),
         )

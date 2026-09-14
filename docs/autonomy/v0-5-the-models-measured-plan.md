@@ -371,7 +371,7 @@ and the free grade is what a person is shown as history.
 
 ### 16. The instructions' one example, and what a second one costs
 
-**Status:** ready. **Depends on:** 12.
+**Status:** **Done, 2026-09-14.** **Depends on:** 12.
 
 Task 12 read the five attempts Qwen 2.5 7B failed and found that three were
 a correct request through the wrong door — a change asked for as a *read* —

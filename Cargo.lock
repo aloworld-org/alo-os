@@ -302,6 +302,7 @@ dependencies = [
  "alo-models",
  "alo-protocol",
  "alo-strings",
+ "ring",
  "thiserror 2.0.20",
 ]
 

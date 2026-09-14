@@ -303,6 +303,7 @@ mod tests {
                     of: None,
                     loaded_bytes: None,
                     on_the_gpu_bytes: None,
+                    instructions: None,
                 },
             ))
             .unwrap();

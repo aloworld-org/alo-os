@@ -104,7 +104,8 @@ signal-hook = { version = "0.4", default-features = false }
 # `rustls`, so this adds no code to the tree; reached by `alo-nearby`, only
 # from `keying.rs`, `proof.rs` and `proven.rs`, and for SHA-256 alone by
 # `alo-models`, only from `handing_over.rs` — the digest the model runtime's
-# store names a brought file by.
+# store names a brought file by — and by `alo-driving`, only from
+# `instructions.rs`, the digest a grade names its instructions by (ADR 0034).
 ring = "0.17"
 # The constitution, expressed where the compiler can enforce it. CLAUDE.md law 3
 # forbids stubs and `unwrap()` outside tests; a rule only a reviewer enforces is

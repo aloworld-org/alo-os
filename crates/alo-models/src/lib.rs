@@ -33,6 +33,7 @@
 
 pub mod address;
 pub mod also_at;
+pub mod also_under;
 pub mod brought;
 pub mod catalogue;
 pub mod chat_template;
@@ -60,6 +61,7 @@ pub mod words;
 mod testing;
 
 pub use also_at::AlsoAt;
+pub use also_under::AlsoUnder;
 pub use brought::Brought;
 pub use catalogue::{Catalogue, CatalogueError, CommercialUse, Licence, Model, OnCpu};
 pub use chat_template::ChatTemplate;

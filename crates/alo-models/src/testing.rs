@@ -188,5 +188,6 @@ pub(crate) fn a_machine() -> crate::MeasuredOn {
         of: None,
         loaded_bytes: None,
         on_the_gpu_bytes: None,
+        instructions: None,
     }
 }

@@ -66,6 +66,7 @@ fn the_machine() -> MeasuredOn {
         of: None,
         loaded_bytes: None,
         on_the_gpu_bytes: None,
+        instructions: None,
     }
 }
 

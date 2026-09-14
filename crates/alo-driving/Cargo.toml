@@ -21,6 +21,10 @@ alo-protocol = { path = "../alo-protocol" }
 # Where the grade goes. `Driving` is a catalogue property, so it lives with the
 # catalogue; this crate produces one and nothing here reads one back.
 alo-models = { path = "../alo-models" }
+# The digest a grade names its instructions by (ADR 0034): SHA-256 of their
+# text, from the primitives the workspace already trusts rather than a second
+# hashing crate.
+ring = { workspace = true }
 thiserror = { workspace = true }
 
 [lints]

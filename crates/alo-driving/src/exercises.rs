@@ -31,7 +31,8 @@
 use alo_capability::Verbs;
 
 use crate::attempt::Attempt;
-use crate::exercise::{Exercise, prompt};
+use crate::exercise::{Exercise, prompt, prompt_under};
+use crate::instructions::Instructions;
 
 /// The ten, in the order a report reads in.
 ///
@@ -159,6 +160,12 @@ impl Exercises {
     #[must_use]
     pub fn prompt(&self, exercise: &Exercise) -> String {
         prompt(exercise, &self.verbs)
+    }
+
+    /// The whole prompt for one exercise under the given [`Instructions`].
+    #[must_use]
+    pub fn prompt_under(&self, instructions: Instructions, exercise: &Exercise) -> String {
+        prompt_under(instructions, exercise, &self.verbs)
     }
 
     /// Score what a model produced for one exercise.

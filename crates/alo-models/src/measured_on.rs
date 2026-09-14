@@ -35,6 +35,12 @@
 //! - **The runtime**, because the prompt reaches the weights through it: a chat
 //!   template is the runtime's and not the model's, and two versions of one
 //!   runtime can put the same question to the same file differently.
+//! - **The instructions**, by the SHA-256 of their text, because the prompt
+//!   decides what a model is being graded on as much as the runtime does:
+//!   [ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)
+//!   gave a model a second set, and two grades under different sets are two
+//!   measurements. The catalogue requires it beside every grade; a person's
+//!   settings may omit it, because that contract grew it after it was written.
 
 use serde::{Deserialize, Serialize};
 
@@ -80,6 +86,13 @@ pub struct MeasuredOn {
     /// **How much of that was on the graphics processor** (`size_vram`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub on_the_gpu_bytes: Option<u64>,
+
+    /// **The instructions the model was shown**, as the SHA-256 of their text
+    /// in sixty-four lowercase hexadecimal characters. `alo-driving`'s
+    /// `Instructions` names every set a digest can stand for; this crate holds
+    /// it to the shape of one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
 }
 
 impl MeasuredOn {
@@ -108,6 +121,16 @@ impl MeasuredOn {
             return Some(
                 "a runtime with no version: the prompt reaches the weights through it, so name \
                  the runtime and the release that served the run",
+            );
+        }
+        if self
+            .instructions
+            .as_deref()
+            .is_some_and(|digest| !is_a_digest(digest))
+        {
+            return Some(
+                "instructions that are not a digest: name them by the SHA-256 of their text, in \
+                 sixty-four lowercase hexadecimal characters",
             );
         }
         match (self.loaded_bytes, self.on_the_gpu_bytes) {
@@ -160,6 +183,15 @@ fn names_its_memory(machine: &str) -> bool {
         }
         _ => false,
     })
+}
+
+/// Whether this is a SHA-256 written as sixty-four lowercase hexadecimal
+/// characters.
+fn is_a_digest(written: &str) -> bool {
+    written.len() == 64
+        && written
+            .chars()
+            .all(|letter| letter.is_ascii_digit() || ('a'..='f').contains(&letter))
 }
 
 /// Whether this is a real day written as `YYYY-MM-DD`.
@@ -224,6 +256,37 @@ mod tests {
             of: Some(20),
             loaded_bytes: None,
             on_the_gpu_bytes: None,
+            instructions: Some(
+                "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce".to_owned(),
+            ),
+        }
+    }
+
+    /// **Instructions are named by a digest, or not at all.**
+    #[test]
+    fn instructions_named_by_anything_but_a_digest_are_refused() {
+        let unnamed = MeasuredOn {
+            instructions: None,
+            ..sound()
+        };
+        assert_eq!(unnamed.what_is_wrong_with_it(), None);
+        for written in [
+            "one-example-per-door",
+            "D468E469651D778AE369C53E37816FCE62C80F703DE729A074BCF8FF44A5ADCE",
+            "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adc",
+            "g468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce",
+            "",
+        ] {
+            let wrong = MeasuredOn {
+                instructions: Some(written.to_owned()),
+                ..sound()
+            };
+            assert!(
+                wrong
+                    .what_is_wrong_with_it()
+                    .is_some_and(|why| why.contains("not a digest")),
+                "{written:?} was accepted as a digest"
+            );
         }
     }
 

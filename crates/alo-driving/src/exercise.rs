@@ -34,6 +34,8 @@
 
 use alo_capability::{Effect, Takes, Verb, Verbs};
 
+use crate::instructions::Instructions;
+
 /// One request put to a model, and the verb a correct answer calls.
 ///
 /// Both halves are `&'static str`, so the set is written in the source and
@@ -104,7 +106,15 @@ These are the only verbs there are:";
 /// at all.
 #[must_use]
 pub fn prompt(exercise: &Exercise, verbs: &Verbs) -> String {
-    let mut text = String::from(HOW_TO_ANSWER);
+    prompt_under(Instructions::AsFirstWritten, exercise, verbs)
+}
+
+/// The whole prompt for one exercise under the given [`Instructions`] — the
+/// same verbs and the same request, only how to answer differs
+/// ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)).
+#[must_use]
+pub fn prompt_under(instructions: Instructions, exercise: &Exercise, verbs: &Verbs) -> String {
+    let mut text = String::from(instructions.text());
     for verb in verbs.all() {
         text.push_str(&describe(verb));
     }

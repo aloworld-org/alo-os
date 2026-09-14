@@ -26,8 +26,8 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 
 use crate::{
-    also_at::AlsoAt, chat_template::ChatTemplate, costing::GIGABYTE, driving::Driving,
-    measured_on::MeasuredOn, requantised::Requantised, unmeasured::Unmeasured,
+    also_at::AlsoAt, also_under::AlsoUnder, chat_template::ChatTemplate, costing::GIGABYTE,
+    driving::Driving, measured_on::MeasuredOn, requantised::Requantised, unmeasured::Unmeasured,
 };
 
 /// Bytes per parameter at which a stated size stops being a quantised
@@ -62,6 +62,12 @@ const NOTHING_IS_THIS_LARGE: f64 = 4.5;
 /// the catalogue is part of what was signed and shipped, and a file an agent
 /// could write would be a way to introduce a model nobody curated.
 const BUILT_IN: &str = include_str!("../data/catalogue.toml");
+
+/// Why a catalogue grade that does not name its instructions is refused
+/// ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)).
+const THE_INSTRUCTIONS_UNNAMED: &str = "a grade that does not name the instructions it was earned \
+     under: give their SHA-256 as `instructions`, because two grades under different instructions \
+     are two measurements";
 
 /// Why a catalogue could not be read.
 #[derive(Debug, thiserror::Error)]
@@ -283,6 +289,13 @@ pub struct Model {
     /// this entry names.
     #[serde(default)]
     pub also_at: Vec<AlsoAt>,
+    /// **The same weights asked in the envelope under other instructions, each
+    /// graded on its own** — [`crate::AlsoUnder`]
+    /// ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)).
+    /// Empty on every entry nobody measured under more than one set. Never read
+    /// by the recommendation.
+    #[serde(default)]
+    pub also_under: Vec<AlsoUnder>,
     /// The licence, which every entry must state.
     pub licence: Licence,
     /// Where the weights come from. We never redistribute them
@@ -504,6 +517,9 @@ impl Catalogue {
                              verbs and how many were made, so a reader can re-derive it",
                         ));
                     }
+                    if measured.instructions.is_none() {
+                        return Err(invalid(THE_INSTRUCTIONS_UNNAMED));
+                    }
                 }
                 (false, None) => {}
             }
@@ -522,6 +538,9 @@ impl Catalogue {
                             "an envelope grade with no counts beside it: say how many attempts \
                              drove the verbs and how many were made",
                         ));
+                    }
+                    if measured.instructions.is_none() {
+                        return Err(invalid(THE_INSTRUCTIONS_UNNAMED));
                     }
                 }
                 (Some(_), Some(_)) => {
@@ -554,6 +573,26 @@ impl Catalogue {
             for also in &model.also_at {
                 if let Some(what) = also.what_is_wrong_with_it(model.quantised_at()) {
                     return Err(invalid(what));
+                }
+            }
+            let the_entrys = model
+                .measured_in_the_envelope
+                .as_ref()
+                .and_then(|on| on.instructions.as_deref());
+            for (at, also) in model.also_under.iter().enumerate() {
+                if let Some(what) = also.what_is_wrong_with_it(the_entrys) {
+                    return Err(invalid(what));
+                }
+                if model
+                    .also_under
+                    .iter()
+                    .skip(at + 1)
+                    .any(|later| later.instructions() == also.instructions())
+                {
+                    return Err(invalid(
+                        "two grades under the same other instructions: write the larger sample \
+                         once",
+                    ));
                 }
             }
             // A template is configuration of a file, so it needs a file, and it
@@ -758,7 +797,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20, instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce" }
 upstream = "https://example.test/one"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -774,7 +813,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20, instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce" }
 upstream = "https://example.test/two"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -802,7 +841,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20, instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce" }
 upstream = "https://example.test/vague"
 licence = { name = "Custom Community Licence", commercial_use = "with-conditions" }
 "#;
@@ -933,7 +972,7 @@ min_vram_gb = 8.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "reliably"
-measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20 }
+measured = { machine = "a test fixture, 16 GB", date = "2026-09-13", runtime = "Ollama 0.34.0", drove = 10, of = 20, instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce" }
 upstream = "   "
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 "#;
@@ -1141,12 +1180,16 @@ licence = {{ name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitt
         )
     }
 
+    /// The instructions every fixture's grade was earned under.
+    const A_DIGEST: &str = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce";
+
     /// A machine that says all three things.
     const A_MACHINE: &str = r#"
 [model.measured]
 machine = "Apple M3, 8 GB unified memory"
 date = "2026-09-13"
 runtime = "Ollama 0.34.0"
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 drove = 8
 of = 20
 "#;
@@ -1215,6 +1258,7 @@ of = 20
     fn a_reason_beside_a_grade_is_refused() {
         let reason = A_MACHINE
             .replace("drove = 8\nof = 20\n", "")
+            .replace(&format!("instructions = \"{A_DIGEST}\"\n"), "")
             .replace("[model.measured]", "[model.unmeasured]")
             .replace(
                 "machine =",
@@ -1244,6 +1288,105 @@ of = 20
         assert!(refused.to_string().contains("half a count"), "{refused}");
     }
 
+    /// **A catalogue grade that does not name its instructions is refused**, on
+    /// either door — two grades under different instructions are two
+    /// measurements (ADR 0034), and a reader cannot tell them apart without it.
+    #[test]
+    fn a_catalogue_grade_that_does_not_name_its_instructions_is_refused() {
+        let unnamed = A_MACHINE.replace(&format!("instructions = \"{A_DIGEST}\"\n"), "");
+        let refused = Catalogue::parse(&graded_with("rarely", &unnamed)).unwrap_err();
+        assert!(refused.to_string().contains("instructions"), "{refused}");
+
+        let envelope_unnamed = graded_with("rarely", A_MACHINE).replacen(
+            "upstream = ",
+            "drives_verbs_in_the_envelope = \"sometimes\"\nupstream = ",
+            1,
+        ) + IN_THE_ENVELOPE
+            .split_once("\n\n")
+            .map_or("", |(_, table)| table)
+            .replace(&format!("instructions = \"{A_DIGEST}\"\n"), "")
+            .as_str();
+        let refused = Catalogue::parse(&envelope_unnamed).unwrap_err();
+        assert!(refused.to_string().contains("instructions"), "{refused}");
+        assert!(
+            Catalogue::parse(
+                &(graded_with("rarely", A_MACHINE).replacen(
+                    "upstream = ",
+                    "drives_verbs_in_the_envelope = \"sometimes\"\nupstream = ",
+                    1,
+                ) + IN_THE_ENVELOPE
+                    .split_once("\n\n")
+                    .map_or("", |(_, table)| table))
+            )
+            .is_ok(),
+            "the same entry with its instructions named loads"
+        );
+    }
+
+    /// **A grade under other instructions sits beside the entry's own, once.**
+    #[test]
+    fn a_grade_under_other_instructions_is_read_beside_the_entrys_and_written_once() {
+        const UNDER: &str = r#"
+[[model.also_under]]
+drives_verbs_in_the_envelope = "reliably"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 80
+of = 80
+loaded_bytes = 5_197_833_172
+on_the_gpu_bytes = 4_583_210_351
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+"#;
+        let entry = graded_with("rarely", A_MACHINE).replacen(
+            "upstream = ",
+            "drives_verbs_in_the_envelope = \"sometimes\"\nupstream = ",
+            1,
+        ) + IN_THE_ENVELOPE
+            .split_once("\n\n")
+            .map_or("", |(_, table)| table);
+
+        let read = Catalogue::parse(&(entry.clone() + UNDER)).unwrap();
+        let model = read.models.first().unwrap();
+        assert_eq!(model.drives_verbs_in_the_envelope, Some(Driving::Sometimes));
+        let also = model.also_under.first().unwrap();
+        assert_eq!(also.drives_verbs_in_the_envelope, Driving::Reliably);
+        assert_ne!(
+            also.instructions(),
+            model
+                .measured_in_the_envelope
+                .as_ref()
+                .unwrap()
+                .instructions
+                .as_deref()
+        );
+
+        let twice = Catalogue::parse(&(entry.clone() + UNDER + UNDER)).unwrap_err();
+        assert!(
+            twice.to_string().contains("write the larger sample once"),
+            "{twice}"
+        );
+        let the_entrys = Catalogue::parse(
+            &(entry
+                + &UNDER.replace(
+                    "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02",
+                    A_DIGEST,
+                )),
+        )
+        .unwrap_err();
+        assert!(
+            the_entrys.to_string().contains("the entry's own"),
+            "{the_entrys}"
+        );
+        let alone = Catalogue::parse(&(graded_with("rarely", A_MACHINE) + UNDER)).unwrap_err();
+        assert!(
+            alone.to_string().contains("no envelope grade of its own"),
+            "{alone}"
+        );
+    }
+
     /// An envelope grade and its machine, as a curator writes them.
     const IN_THE_ENVELOPE: &str = r#"
 drives_verbs_in_the_envelope = "reliably"
@@ -1252,6 +1395,7 @@ drives_verbs_in_the_envelope = "reliably"
 machine = "Apple M3, 8 GB unified memory"
 date = "2026-09-14"
 runtime = "Ollama 0.34.0"
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 drove = 19
 of = 20
 "#;

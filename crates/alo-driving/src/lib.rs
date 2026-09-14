@@ -25,6 +25,7 @@
 //! | [`Attempt`] | What a model produced for one exercise, put through the daemon's door |
 //! | [`Outcome`] | What became of it: five ways to fail, and one to drive |
 //! | [`Measured`] | A whole run, and the grade it earns |
+//! | [`Instructions`] | How a model is told to answer, and the digest a grade names them by |
 //!
 //! # Three decisions, and each is in the file that makes it
 //!
@@ -66,12 +67,14 @@
 pub mod attempt;
 pub mod exercise;
 pub mod exercises;
+pub mod instructions;
 pub mod measured;
 
 #[cfg(test)]
 mod testing;
 
 pub use attempt::{Attempt, Outcome};
-pub use exercise::{Exercise, HOW_TO_ANSWER, prompt};
+pub use exercise::{Exercise, HOW_TO_ANSWER, prompt, prompt_under};
 pub use exercises::{Exercises, NotComparable, THE_SET};
+pub use instructions::{Instructions, ONE_EXAMPLE_PER_DOOR};
 pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES, grade_of, owes_a_second_round};

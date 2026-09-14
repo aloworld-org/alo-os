@@ -10,7 +10,7 @@
 use alo_answering::Answering;
 use alo_asking::{Answer, Asking, NotAnswered, Question};
 use alo_capability::{Grantee, Verbs};
-use alo_driving::{Attempt, Exercises, Measured};
+use alo_driving::{Attempt, Exercises, Instructions, Measured};
 use alo_models::{Driving, InferenceSource, Ollama, SourcePolicy};
 
 /// **How the model is asked**, which is part of what a grade is a grade of
@@ -170,11 +170,20 @@ fn as_far_as_it_helps(said: &str) -> String {
 /// and `alo-capability`'s validation. Every answer is printed whole after the
 /// run, so a grade can be re-derived by a reader who disagrees with it.
 ///
+/// Every prompt opens with `instructions` (ADR 0034), and the run prints their
+/// digest, which is what a grade earned here records beside itself.
+///
 /// # Panics
 /// When the runtime cannot answer — the machine failing, which is never scored
 /// as the model failing — and when an answer came from anywhere but this
 /// machine.
-pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize, asked: Asked) -> Measured {
+pub fn the_fixed_set_put_to(
+    model: &str,
+    endpoint: &str,
+    rounds: usize,
+    asked: Asked,
+    instructions: Instructions,
+) -> Measured {
     let verbs = the_verbs();
     let exercises = Exercises::over(&verbs).expect("the fixed set is built over alo OS's verbs");
     let runtime = Ollama::at(
@@ -189,6 +198,11 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize, asked: A
     let measuring = Grantee::named("@measuring");
 
     println!("loading {model} at {endpoint}, asked {}", asked.named());
+    println!(
+        "under the instructions {}, sha256 {}",
+        instructions.named(),
+        instructions.digest()
+    );
     let warmed = put(TO_WARM_IT_UP, model, &runtime, &measuring, &policy);
     assert!(
         warmed.is_ok(),
@@ -205,7 +219,7 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize, asked: A
         for exercise in exercises.all() {
             let answered = put_as(
                 asked,
-                &exercises.prompt(exercise),
+                &exercises.prompt_under(instructions, exercise),
                 model,
                 &runtime,
                 &measuring,
@@ -245,8 +259,9 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize, asked: A
     let measured = Measured::of(&exercises, attempts)
         .expect("every exercise was asked, which is what makes a run a measurement");
     println!(
-        "\n{model}, asked {}: {} of {} drove the verbs — \"{}\"",
+        "\n{model}, asked {} under {}: {} of {} drove the verbs — \"{}\"",
         asked.named(),
+        instructions.named(),
         measured.drove(),
         measured.how_many(),
         as_it_is_written(measured.grade())
