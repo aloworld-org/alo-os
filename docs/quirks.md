@@ -2811,6 +2811,50 @@ the placement decision on the smallest certified machine, and the five-bit
 weights are the test case.
 **Date:** 2026-09-14.
 
+### Asked in the envelope within seconds of being fetched, the runtime answers nothing usable
+**Version:** Ollama 0.34.0 on an Apple M3 with 8 GB, macOS 26.5.2, 2026-09-14,
+measuring `teuken-7b-instruct` (a 7B at Q4_K_M, 6.0 GB loaded).
+**Behaviour:** `Ollama::fetch`, then `unload`, then a first `/api/chat` **held to
+the envelope's schema** answers in about six seconds with something
+`alo_models::RuntimeError::Unusable` refuses — a non-200 or an empty message, and
+the crate deliberately does not repeat a backend's body, so which is not
+recorded. It happened twice, on two separate fetches, and both times the same
+weights answered the same question correctly once they were warm: the
+fetch-and-measure run that failed at the warm-up graded 3 of 20 when the
+measurement was run again against a loaded model. A question asked **not** held
+to a schema right after the same fetch answered normally (*" I am ready."*), so
+what is fragile is the first *structured* request rather than the first request.
+**Our response:** nothing in the product is changed and no retry is added to it:
+a turn that gets nothing usable is told so, which is the right answer for a
+person. What changed is how a measurement is run — the weights are warmed before
+the fixed set is put to them, which the harness already does with its own
+throwaway question and which is not enough within seconds of a fetch. Whoever
+sees this in a product setting should read it as *the model was just installed*,
+and the measurement that would settle the cause is a packet capture of that first
+request, which nobody has made.
+**Date:** 2026-09-14.
+
+### An 8B model on this 8 GB machine can take longer than the five minutes the product waits
+**Version:** Ollama 0.34.0 on an Apple M3 with 8 GB, macOS 26.5.2, 2026-09-14,
+measuring `llama-3.1-8b-instruct` (5.7–6.2 GB loaded, about 1 GB of it off the
+graphics processor).
+**Behaviour:** two runs of the fixed ten were abandoned at the second or third
+exercise with `RuntimeError::TookTooLong` — `alo-models` waits 300 seconds for an
+answer (`WHILE_A_MODEL_THINKS`). At the time the machine had 5.1 GB of its 6 GB
+swap in use and about 60 MB of free pages, with an editor, two agent sessions and
+macOS's own indexing resident. The same entry, on the same day, with the weights
+already warm and nothing else started, answered all twenty and graded 10 of 20.
+A single answer took 8 to 16 seconds when it worked.
+**Our response:** the harness refuses to score a runtime failure as a model's
+failure, which is why two runs produced no grade rather than a bad one, and that
+is the behaviour being relied on rather than worked around. The 300-second wait is
+not raised: a person waiting five minutes for one request has already been failed,
+and lengthening it would hide exactly this. What it says about the product is that
+**8 GB is the floor for an 8B entry and it is a floor with nothing above it** —
+the catalogue's `min_ram_gb` for this entry is 10, and this machine is below it.
+A certified machine's own measurement is the one that decides.
+**Date:** 2026-09-14.
+
 ### Under the boundary on this VM, an ordinary program cannot set a file flag
 **Version:** `alo-bounding`'s `the_boundary_decides_and_forgets.rs` as of
 2026-09-14, on the Mac lane's Lima VM — Ubuntu on kernel `7.0.0-31-generic`,

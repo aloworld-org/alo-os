@@ -506,7 +506,10 @@ words, and a grade earned under any other set is history — the same rule ADR
 
 ### 20. Every entry this machine can hold, graded in the words a turn shows
 
-**Status:** ready. **Depends on:** 18.
+**Status:** **Done, 2026-09-14.** **Depends on:** 18.
+**Report:** `docs/autonomy/updates/every-entry-graded-in-the-words-a-turn-shows.md`.
+Twelve entries re-measured: 98 of 240 against 23 of 240, none worse, five bands
+moved, and `qwen3-8b` at **20 of 20** is the second entry to clear the bar.
 
 Task 10 graded the catalogue in the envelope under the first instructions; task
 16 graded one entry under the instructions ADR 0037 now names as the turn's.

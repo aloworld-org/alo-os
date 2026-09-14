@@ -348,6 +348,29 @@ drove = 1
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
+
+# Task 20: the same weights in the envelope under the instructions a turn shows
+# (ADR 0037), which is the grade ADR 0037's decision 4 will read once a turn is
+# composed from `alo-instructing`. **3 of 20** against the 1 of 20 above — its
+# five wrong verbs and nine unreadable lines are the same failures it had, fewer
+# of them. Part of the file was off the graphics processor for this run, which
+# the two byte counts say. It is also the one entry whose first two runs could not
+# be measured at all: asked in the envelope within seconds of being fetched, the
+# runtime answered nothing usable twice, and answered normally once the weights
+# were warm (`docs/quirks.md`).
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 3
+of = 20
+loaded_bytes = 6_022_953_429
+on_the_gpu_bytes = 5_229_426_769
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
 [[model]]
 id = "mistral-7b-instruct"
 name = "Mistral 7B Instruct"
@@ -379,6 +402,25 @@ runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+
+# Task 20, and the largest move any entry made: **15 of 20** against **0 of 20**
+# under the first instructions. A model that drove nothing in the envelope drives
+# three in four when the example shows both doors — so the 0 above was mostly the
+# prompt, and what this entry was said to be worth was worth re-measuring rather
+# than believing. Part of the file was off the graphics processor for this run.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "sometimes"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 15
+of = 20
+loaded_bytes = 5_397_094_069
+on_the_gpu_bytes = 4_631_067_360
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 [[model]]
 id = "mixtral-8x7b-instruct"
@@ -613,6 +655,24 @@ drove = 0
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
+
+# Task 20: **0 of 20**, the same as under the first instructions, and one of two
+# entries the words moved nothing for. Fifteen answers were not a message at all
+# and five named an argument the protocol refuses; showing both doors does not
+# help a model that is not producing the shape.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
+loaded_bytes = 4_059_205_467
+on_the_gpu_bytes = 4_059_205_467
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
 [[model]]
 id = "llama-3.1-8b-instruct"
 name = "Llama 3.1 8B Instruct"
@@ -652,6 +712,26 @@ runtime = "Ollama 0.34.0"
 drove = 5
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+
+# Task 20: **10 of 20** against 5 of 20, exactly half, and a band with it. Part of
+# the file was off the graphics processor. Two runs of this entry were abandoned
+# before this one because the runtime took longer than the five minutes
+# `alo-models` waits — the machine under memory pressure, not the model, and the
+# harness refuses to score that (`docs/quirks.md`). The grade is the run that
+# completed, with the weights already warm.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "sometimes"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 10
+of = 20
+loaded_bytes = 6_248_645_102
+on_the_gpu_bytes = 5_196_218_367
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 [[model]]
 id = "gemma-2-9b-instruct"
@@ -746,6 +826,23 @@ drove = 3
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
+
+# Task 20: **3 of 20**, the same count as under the first instructions — the other
+# entry the words moved nothing for. Seventeen of its twenty answers were not a
+# message the door reads.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 3
+of = 20
+loaded_bytes = 2_548_417_166
+on_the_gpu_bytes = 2_548_417_166
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
 [[model]]
 id = "qwen2.5-3b-instruct"
 name = "Qwen2.5 3B Instruct"
@@ -781,6 +878,23 @@ runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+
+# Task 20: **7 of 20** against 0 of 20. A third of the way up from nothing, still
+# under the half the `sometimes` line asks for, and the thirteen that failed were
+# not a message rather than the wrong door.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 7
+of = 20
+loaded_bytes = 2_155_169_709
+on_the_gpu_bytes = 2_155_169_709
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 [[model]]
 id = "gemma-2-2b-instruct"
@@ -818,6 +932,23 @@ drove = 0
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
+
+# Task 20: **8 of 20** against 0 of 20 — two short of the line, at 2.6 billion
+# parameters. Ten answers were not a message and two named a verb this machine
+# does not have.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 8
+of = 20
+loaded_bytes = 2_010_980_023
+on_the_gpu_bytes = 2_010_980_023
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
 [[model]]
 id = "smollm2-1.7b-instruct"
 name = "SmolLM2 1.7B Instruct"
@@ -849,6 +980,23 @@ runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+
+# Task 20: **0 of 20**, as under the first instructions. Every one of the twenty
+# was unreadable as a message: it writes `given` as an object, and an example of
+# each door does not teach it the list.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
+loaded_bytes = 1_934_979_235
+on_the_gpu_bytes = 1_934_979_235
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 
 # ── trained for tool calls, rather than chosen for being small ──────────────
@@ -900,6 +1048,25 @@ drove = 1
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
+
+# Task 20, and the smallest model ever to clear the `sometimes` line here:
+# **12 of 20** against 1 of 20. Only two answers were unreadable; six named an
+# argument the protocol refuses, which is a model that has the shape and not the
+# bounds. Alibaba Cloud trains it for tool calls, and under the words a turn shows
+# that training finally shows.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "sometimes"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 12
+of = 20
+loaded_bytes = 1_873_427_823
+on_the_gpu_bytes = 1_873_427_823
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
 [[model]]
 id = "granite-3.2-2b-instruct"
 name = "Granite 3.2 2B Instruct"
@@ -931,6 +1098,22 @@ runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+
+# Task 20: **6 of 20** against 0 of 20. Twelve were not a message and two took
+# another verb; nothing it got wrong was the door.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "rarely"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 6
+of = 20
+loaded_bytes = 1_942_015_180
+on_the_gpu_bytes = 1_942_015_180
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
 # ── the Qwen3 family, at the sizes an 8 GB machine holds (task 11) ──────────
 #
@@ -984,6 +1167,23 @@ drove = 3
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
 
+
+# Task 20: **14 of 20** against 3 of 20, and the whole file on the graphics
+# processor. At four billion parameters this is the smallest entry a person could
+# be offered as something that sometimes drives the verbs.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "sometimes"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 14
+of = 20
+loaded_bytes = 3_298_841_067
+on_the_gpu_bytes = 3_298_841_067
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
 [[model]]
 id = "qwen3-8b"
 name = "Qwen3 8B"
@@ -1015,3 +1215,26 @@ runtime = "Ollama 0.34.0"
 drove = 10
 of = 20
 instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
+
+# Task 20, and **the second entry in this catalogue to clear the bar: 20 of 20,
+# `reliably`**, against 10 of 20 under the first instructions. Every attempt in
+# both rounds drove the verbs. It is the largest model this 8 GB machine can hold
+# at all, and part of the file was off the graphics processor while it did it —
+# which is a grade earned in a worse position than a machine with room would give
+# it, not a better one. Whether a machine should be offered this entry or
+# `qwen2.5-7b-instruct` as its agent is a question about memory and speed rather
+# than about driving the verbs, and neither has been measured on a certified
+# machine.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "reliably"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 20
+of = 20
+loaded_bytes = 6_033_736_988
+on_the_gpu_bytes = 4_585_359_932
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
