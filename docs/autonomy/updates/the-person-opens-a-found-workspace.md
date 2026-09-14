@@ -107,7 +107,7 @@ covers, and nothing here is agent-caused.
 **The identity is read after trimming whitespace**, as `naming_machines` reads one,
 so the two doors that take an identity agree.
 
-**Next task written:** the plan named nothing after 18, so task 19 is written — *An
+**Next task written:** the plan named nothing after 18, so the next task is written (published as task 20, the measuring lane having taken 19) — *An
 alo machine that hosts a workspace answers for it, and says nothing more*. The
 contract says a workspace on an alo machine is advertised under that machine's own
 identity, but `alo-agentd` owns the discovery responder and answers only the machine
@@ -158,7 +158,7 @@ The full workspace suite was not run here; the supervisor runs it.
 - **The person's session and the workspace client.** The shell that sends
   `open-workspace` and hands the address on is `alo-shell`'s (outside this plan), and
   the client that connects is `alo-workplace`'s. Nothing here can test either.
-- **An alo machine advertising a workspace** — plan task 19.
+- **An alo machine advertising a workspace** — plan task 20.
 - No `unsafe`, no new dependency, no setting. Three new user-facing sentences in
   `alo-agentd` and one clause in `alo-recounting`, each declared with a note.
 
@@ -172,6 +172,6 @@ The full workspace suite was not run here; the supervisor runs it.
 - **ROADMAP.md / QUEUE.md:** v0.5 *A self-hosted workspace on the network is
   discovered, not configured* — the person's door can now open a found workspace
   (screenless); the shell's use of it, `alo-workplace`'s client and responder, and
-  two-machine acceptance owed. Next: plan task 19, *An alo machine that hosts a
+  two-machine acceptance owed. Next: plan task 20, *An alo machine that hosts a
   workspace answers for it, and says nothing more*.
 - **STATE.md:** reference this report.

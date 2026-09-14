@@ -1,7 +1,7 @@
 # An alo machine that hosts a workspace answers for it, and says nothing more
 
 **Date:** 2026-09-14
-**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 19)
+**Workstream:** v0.5 — the local network (`docs/autonomy/v0-5-the-local-network-plan.md`, task 20; written as 19 and renumbered when the measuring lane took 19 first)
 **Contributor:** Claude Code worker in `C:\dev\alo-os-claude`, for the owner
 **Status:** ready for integration
 
@@ -143,6 +143,14 @@ All executed under WSL Ubuntu (kernel 6.18, as root, as the loop runs), from
 
 Not run: the whole-workspace suite (the supervisor's).
 
+**Rebased onto `773313c`, re-gated.** The first handoff was refused at `git rebase
+origin/main`: the measuring lane had published its own task 19 (*A turn shows a model
+the words the product wrote*) in this plan while this branch — this task and task 18,
+which had not been published either — held 19 for this task. Both sections are kept;
+the lane that published first keeps the number, so this task is **20** and the one it
+wrote is **21**, with the cross-references in this report and in task 18's renumbered.
+No code changed in the resolution. The gates above were run again on the rebased tree.
+
 ## Not shown, and owed
 
 - **Two physical machines.** Both ends ran on one host over loopback datagrams; whether a
@@ -154,7 +162,7 @@ Not run: the whole-workspace suite (the supervisor's).
   non-root run fails them with a sentence saying so rather than passing a test about
   root's file on somebody else's.
 - **The person on the hosting machine is not shown** what their machine advertises, nor
-  a refused file in their language — written as plan task 20.
+  a refused file in their language — written as plan task 21.
 
 ## Proposed updates for the integration owner
 
@@ -163,7 +171,7 @@ Not run: the whole-workspace suite (the supervisor's).
   `/etc/alo/workspace.toml` — and nothing more. Colleagues find and open it without
   typing an address; nothing an agent or a person sends the machine changes what it
   advertises.*
-- **QUEUE.md / STATE.md:** v0.5 local-network plan task 19 done; task 20 (*The person
+- **QUEUE.md / STATE.md:** v0.5 local-network plan task 20 done; task 21 (*The person
   sees what their machine says about itself on the network*) written and ready.
 - **ROADMAP.md:** no box moves; the physical two-machine acceptance for workspace
   discovery stays owed.

@@ -886,11 +886,11 @@ its identity did not say.
   knock is decided in the crate and written up. Nothing in `alo-shell`, nothing in
   `image/`.
 
-### 20. The person sees what their machine says about itself on the network
+### 21. The person sees what their machine says about itself on the network
 
-**Status:** ready. **Depends on:** 1, 19.
+**Status:** ready. **Depends on:** 1, 20.
 
-Since task 19 an alo machine can say two things on the local network: that it exists,
+Since task 20 an alo machine can say two things on the local network: that it exists,
 under its identity and the wire's port, and — where root installed a workspace
 server — that it hosts a workspace at a port. Both are said to everything on the link,
 and neither is shown to the person whose machine is saying it. Law 1 is about egress
