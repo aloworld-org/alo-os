@@ -1080,7 +1080,7 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
     fn the_catalogue_we_ship_claims_no_measurement_it_did_not_make() {
         /// Every entry anybody has run `alo-driving` against, and the grade it
         /// earned.
-        const MEASURED: [(&str, Driving); 11] = [
+        const MEASURED: [(&str, Driving); 13] = [
             ("phi-3-mini-instruct", Driving::Rarely),
             ("llama-3.2-3b-instruct", Driving::Rarely),
             ("qwen2.5-3b-instruct", Driving::Rarely),
@@ -1092,6 +1092,8 @@ licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitte
             ("mistral-7b-instruct", Driving::Rarely),
             ("llama-3.1-8b-instruct", Driving::Rarely),
             ("teuken-7b-instruct", Driving::Rarely),
+            ("qwen3-4b", Driving::Rarely),
+            ("qwen3-8b", Driving::Sometimes),
         ];
         for m in Catalogue::built_in().unwrap().models {
             let ran = MEASURED.iter().find(|(id, _)| *id == m.id);

@@ -508,7 +508,7 @@ fn neither_european_entry_gained_a_grade_when_it_gained_a_file() {
 /// constant, and a borrowed file arriving with a grade is exactly the case
 /// where a shared constant would be updated to match the data instead of the
 /// other way round.
-fn measured_entries() -> [&'static str; 11] {
+fn measured_entries() -> [&'static str; 13] {
     [
         "phi-3-mini-instruct",
         "llama-3.2-3b-instruct",
@@ -523,5 +523,7 @@ fn measured_entries() -> [&'static str; 11] {
         // Measured on the Mac lane on 2026-09-14 against the borrowed artefact
         // it names, once fetched with its publisher's chat template.
         "teuken-7b-instruct",
+        "qwen3-4b",
+        "qwen3-8b",
     ]
 }

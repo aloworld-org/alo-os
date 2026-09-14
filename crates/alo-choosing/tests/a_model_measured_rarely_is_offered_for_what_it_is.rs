@@ -55,7 +55,7 @@ fn a_model_measured_rarely_can_still_be_chosen_to_answer_questions() {
 }
 
 /// **The agent is refused with the sentence for a measurement that was made.**
-/// Seven entries run here and may be used; all seven were measured, and a
+/// Nine entries run here and may be used; all nine were measured, and a
 /// machine saying *nobody has measured* would be claiming the opposite of what
 /// happened.
 #[test]

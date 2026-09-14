@@ -456,8 +456,8 @@ fn the_shorter_list_a_laptop_is_offered_has_teuken_back_in_it_and_not_eurollm() 
     );
     assert_eq!(
         offered.len(),
-        7,
-        "the shorter list is seven; `crates/alo-driving/tests/\
+        9,
+        "the shorter list is nine (seven, and the two Qwen3 entries task 11 added); `crates/alo-driving/tests/\
          from_a_prompt_to_what_a_machine_offers.rs` says the same number to a person, and the two \
          are the same count or one of them is stale: {offered:?}"
     );

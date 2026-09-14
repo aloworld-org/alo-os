@@ -257,7 +257,8 @@ train them for tool calls and constrained output.
 
 ### 11. Candidates published for tool calls, at a size this machine holds
 
-**Status:** ready. **Depends on:** 10.
+**Status:** **Done, 2026-09-14.** **Depends on:** 10.
+**Report:** `docs/autonomy/updates/qwen3-at-the-sizes-this-machine-holds.md`.
 
 If no catalogued entry clears the bar in the envelope, the next question is
 whether a model this catalogue does not list does. The candidates are the ones

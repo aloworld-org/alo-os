@@ -800,3 +800,83 @@ date = "2026-09-14"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 20
+
+# ── the Qwen3 family, at the sizes an 8 GB machine holds (task 11) ──────────
+#
+# Added on 2026-09-14 for the reason `qwen3-1.7b` was: Alibaba Cloud trains the
+# Qwen3 family for tool calls. Chosen at 4B and 8B because those are the sizes a
+# machine of 8 GB can load, and because Qwen 2.5 7B came within five attempts in
+# forty of the bar once held to the protocol's envelope (ADR 0032). Rule 1 read
+# first: both repositories state `license: apache-2.0` in their own metadata and
+# ship the Apache License 2.0 as `LICENSE` (revisions `1cfa9a72` and `b968826d`,
+# read 2026-09-14). The artefacts are the runtime library's quantisation-pinned
+# tags rather than `qwen3:4b` and `qwen3:8b`: on the same day the bare `qwen3:4b`
+# named a different file (2,497,280,480 bytes) from `qwen3:4b-q4_K_M`
+# (2,620,774,592), which is the re-pointing rule 6 warns about.
+#
+# **Measured the same day** on the Apple M3 with 8 GB: Qwen3 4B drove 5 of 20
+# freely and 3 of 20 in the envelope, `rarely` both ways. **Qwen3 8B drove 10 of
+# 20 both ways — `sometimes`**, the first entry asked freely to reach it, and on
+# the line exactly. Its reads all drove; nearly every failure was an application
+# verb written with the verb as a key inside the door
+# (`{"propose":{"focus_application":{…}}}`), which the envelope does not reach.
+
+[[model]]
+id = "qwen3-4b"
+name = "Qwen3 4B"
+publisher = "Alibaba Cloud"
+parameters_b = 4.0
+quantisation = "Q4_K_M"
+artefact = "qwen3:4b-q4_K_M"
+download_bytes = 2_620_774_592
+min_vram_gb = 3.5
+min_ram_gb = 5.0
+on_cpu = "comfortable"
+drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
+upstream = "https://huggingface.co/Qwen/Qwen3-4B"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.measured]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 5
+of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 3
+of = 20
+
+[[model]]
+id = "qwen3-8b"
+name = "Qwen3 8B"
+publisher = "Alibaba Cloud"
+parameters_b = 8.2
+quantisation = "Q4_K_M"
+artefact = "qwen3:8b-q4_K_M"
+download_bytes = 5_225_374_496
+min_vram_gb = 6.5
+min_ram_gb = 10.0
+on_cpu = "workable"
+drives_verbs = "sometimes"
+drives_verbs_in_the_envelope = "sometimes"
+upstream = "https://huggingface.co/Qwen/Qwen3-8B"
+licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
+
+[model.measured]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 10
+of = 20
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 10
+of = 20

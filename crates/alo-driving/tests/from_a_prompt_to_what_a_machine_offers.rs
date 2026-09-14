@@ -287,6 +287,11 @@ fn an_unmeasured_model_is_refused_without_being_accused_of_anything() {
 /// **Its eighth made it seven of seven**: `teuken-7b-instruct`, graded once it
 /// was fetched with its publisher's chat template. Every model a 16 GB machine
 /// could give the agent has now been measured, and none of them clears the bar.
+///
+/// **Task 11 made it nine of nine**: `qwen3-4b` and `qwen3-8b`, added for their
+/// publisher's tool-call training and measured the day they were added. Qwen3 8B
+/// is the first `sometimes` a 16 GB machine could choose; `sometimes` is not the
+/// bar, so the refusal is the same sentence.
 #[test]
 fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     let shipped = Catalogue::built_in().unwrap();
@@ -294,8 +299,8 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
     assert_eq!(
         refused,
         NoAgentHere::NoneClearsTheBar {
-            to_choose_from: 7,
-            measured: 7,
+            to_choose_from: 9,
+            measured: 9,
         }
     );
 
@@ -325,6 +330,8 @@ fn the_catalogue_we_ship_now_refuses_for_the_reason_a_measurement_gave_it() {
             "smollm2-1.7b-instruct",
             "qwen3-1.7b",
             "granite-3.2-2b-instruct",
+            "qwen3-4b",
+            "qwen3-8b",
         ]
     );
     let here: Vec<&str> = shipped

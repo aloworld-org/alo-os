@@ -2493,6 +2493,8 @@ memory:
 | `smollm2-1.7b-instruct` | 1_060_000_000 | `rarely` |
 | `qwen3-1.7b` | 1_359_279_776 | `rarely` |
 | `granite-3.2-2b-instruct` | 1_545_296_256 | `rarely` |
+| `qwen3-4b` | 2_620_774_592 | `rarely` |
+| `qwen3-8b` | 5_225_374_496 | `sometimes` |
 
 **Fourteen entries as of 2026-09-11, seven measured and all seven `rarely`.**
 The table above was twelve rows and five grades when this measurement was
