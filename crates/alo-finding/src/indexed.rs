@@ -51,6 +51,15 @@
 //! `everywhere.rs` is the search, and `held.rs` the shape of an answer that
 //! outlives the index it came from.
 //!
+//! # Read once and asked many times, when the caller chooses
+//!
+//! [`Indexed::answer`] reads every index file on every query, and stays
+//! that way for a caller that wants the disk's word every time.
+//! [`Indexed::in_hand`], in `in_hand.rs`, is the same reads made once: an
+//! [`crate::InHand`] holds every index on the list, or the refusal that
+//! stood where one would be, and answers from memory in the same shape.
+//! Nothing decides when to read again but the caller.
+//!
 //! # The list is not a grant
 //!
 //! A folder being on the list says nothing about whether an agent may search

@@ -85,6 +85,23 @@
 //! ranks across folders or within one. It is not a verb: an agent's
 //! `search_files` still names one granted folder.
 //!
+//! # The indexes read once and asked many times
+//!
+//! [`Indexed::answer`] reads every index file from the disk on every query,
+//! which is the disk's word every time. A caller that asks many times — a
+//! file manager between keystrokes — takes [`Indexed::in_hand`] instead: an
+//! [`InHand`] is every index on the list read from its file once and held,
+//! with a folder whose file would not read held as the same named refusal
+//! in the same place, and [`InHand::answer`] answers from memory in the
+//! shape [`Indexed::answer`] answers in, opening no file. [`InHand::again`]
+//! brings one folder up to date by its name, in hand and on the disk,
+//! without the other folders being read again. Holding the indexes is the
+//! caller's choice for the caller's lifetime: nothing here caches across
+//! processes, writes anything on its own, or decides when to read again.
+//! `tests/a_search_over_every_folder_timed.rs` builds three indexes of ten
+//! thousand files and times both forms, and the report publishes the
+//! numbers with the machine named.
+//!
 //! # An agent asks the same index, under a grant
 //!
 //! `search_files` is the verb — declared in [`verbs`] in the shape
@@ -125,6 +142,7 @@
 //! | [`Indexed::again`] | A folder's index brought up to date by its name, in one call |
 //! | [`Indexed::answer`], [`Everywhere`], [`OfFolder`] | One query over every indexed folder: one answer or one named refusal per folder, in the list's order |
 //! | [`Held`], [`Unsearched`] | An answer held apart from the index it came from |
+//! | [`Indexed::in_hand`], [`InHand`], [`InHand::answer`], [`InHand::again`] | The list's indexes read once and held, asked many times from memory, one brought up to date by its name |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
 //! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The twelve ways there is no index at all |
@@ -164,6 +182,14 @@
 //!         Err(why) => println!("{}: {why}", of.folder.display()),
 //!     }
 //! }
+//! // Between keystrokes: the same indexes read once, and asked many times
+//! // from memory — until this caller decides to read again.
+//! let mut in_hand = indexed.in_hand();
+//! for typed in ["c", "co", "con", "contract"] {
+//!     let from_memory = in_hand.answer(&Query::named(typed))?;
+//!     assert_eq!(from_memory.answers.len(), indexed.folders().len());
+//! }
+//! in_hand.again(&index.of, SystemTime::now())?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
@@ -175,6 +201,7 @@ pub mod covered;
 pub mod entry;
 pub mod everywhere;
 pub mod held;
+pub mod in_hand;
 pub mod index;
 pub mod indexed;
 pub mod kind;
@@ -200,6 +227,7 @@ pub use covered::{Covered, Unread};
 pub use entry::{Contents, Entry, Moment};
 pub use everywhere::{Everywhere, OfFolder};
 pub use held::{Held, Unsearched};
+pub use in_hand::InHand;
 pub use index::Index;
 pub use indexed::Indexed;
 pub use kind::{Kind, SNIFFED};

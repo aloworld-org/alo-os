@@ -89,6 +89,23 @@ it is not a verb: an agent's `search_files` still names one granted folder,
 because a search across every indexed folder under one grant would be a
 search of folders nobody granted.
 
+**The indexes read once and asked many times.** `Indexed::answer` reads
+every index file from the disk on every query — the disk's word every time,
+and it stays so. A caller that asks many times, such as a file manager
+between keystrokes, takes `Indexed::in_hand`: an `InHand` is every index on
+the list read from its file once, at that moment, and held, and
+`InHand::answer` answers any number of queries from memory in the same shape
+`Indexed::answer` answers in, opening no file. A folder whose index file
+could not be read when the set was read is held as that same refusal, in
+its place beside the others, and answers with it every time until the
+caller reads again. `InHand::again` brings one folder up to date by its
+name through the set — `Indexed::again` on the list the set was read from,
+with the fresh index put in the set's place for that folder — and reads no
+other folder's file. Holding the indexes is the caller's choice for the
+caller's lifetime: nothing caches across processes, nothing is written to
+the disk that `Indexed` would not write, and nothing decides when to read
+again but the caller.
+
 **Nothing watches.** When an index is brought up to date is the caller's
 decision and nobody else's: there is no `inotify`, no thread and no timer in
 `alo-finding`, and a test reads its shipped source to say so. A crate that

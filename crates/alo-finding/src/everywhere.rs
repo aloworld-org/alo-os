@@ -33,8 +33,16 @@
 //! one grant would be a search of folders nobody granted. This is the
 //! person's search, from the file manager's box, and it takes no grant
 //! because the person is not asking anybody.
+//!
+//! # From the disk every time, or from hand
+//!
+//! [`crate::Indexed::answer`] reads every index file on every query, and
+//! [`crate::InHand::answer`] answers from indexes read once and held; both
+//! put each folder's index, or the refusal standing in for it, through
+//! `of_folder` below, so that an answer from hand is the answer from the disk
+//! in every respect but where the index came from.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::asking::{self, NotAsked};
 use crate::held::Held;
@@ -45,7 +53,7 @@ use crate::refusing::NotIndexed;
 use crate::searching;
 
 /// One query's answers from every indexed folder.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Everywhere {
     /// One per folder on the list, in the list's order.
     pub answers: Vec<OfFolder>,
@@ -53,9 +61,10 @@ pub struct Everywhere {
 
 /// What one folder answered — or why it could not.
 ///
-/// Not `Clone` and not `PartialEq`, because a [`NotIndexed`] is neither: it
-/// carries what the machine said, which is a thing that happened.
-#[derive(Debug)]
+/// `PartialEq` compares the answer's timing too: two searches timed
+/// separately are two measurements, and a test comparing what was found
+/// compares that.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OfFolder {
     /// The folder, as it is on the list.
     pub folder: PathBuf,
@@ -98,11 +107,25 @@ pub(crate) fn answered(indexed: &Indexed, query: &Query) -> Result<Everywhere, N
     let answers = indexed
         .folders()
         .iter()
-        .map(|folder| OfFolder {
-            folder: folder.clone(),
-            answered: Index::read_from(&indexed.where_index_of(folder), folder)
-                .map(|index| Held::of(&searching::searched(&index, query))),
+        .map(|folder| {
+            let read = Index::read_from(&indexed.where_index_of(folder), folder);
+            of_folder(folder, read.as_ref(), query)
         })
         .collect();
     Ok(Everywhere { answers })
+}
+
+/// This folder's answer to this query — from its index, held apart from it,
+/// or the refusal that stands where the index would be.
+pub(crate) fn of_folder(
+    folder: &Path,
+    index: Result<&Index, &NotIndexed>,
+    query: &Query,
+) -> OfFolder {
+    OfFolder {
+        folder: folder.to_path_buf(),
+        answered: index
+            .map(|index| Held::of(&searching::searched(index, query)))
+            .map_err(NotIndexed::clone),
+    }
 }

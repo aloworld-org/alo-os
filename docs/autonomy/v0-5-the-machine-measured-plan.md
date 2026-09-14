@@ -389,7 +389,27 @@ about a folder it never looked at.
 
 ### 9. The indexes read once and asked many times, and a search over every folder timed
 
-**Status:** ready. **Depends on:** 7, 8.
+**Status:** done. **Depends on:** 7, 8.
+
+**Done, 2026-09-14.** Report:
+[`updates/the-indexes-read-once-and-asked-many-times.md`](updates/the-indexes-read-once-and-asked-many-times.md).
+`crates/alo-finding`: `Indexed::in_hand` reads every index on the list from
+its file once and hands back an `InHand` — one place per folder, in the
+list's order, holding the index or the refusal that stood where it would
+be — and `InHand::answer` answers any number of queries from memory in the
+shape `Indexed::answer` answers in, with a test holding the second query to
+the kernel's per-thread read count: no file opened. A torn index file is
+the same named refusal in the same place on every query until the caller
+reads again. `InHand::again` is `Indexed::again` through the set, the fresh
+index put in the set's place for that folder, and a test shows the other
+folders — their index files torn on the disk after the set was read —
+still answering from hand, and the refresh costing exactly the reads the
+disk's own refresh costs. `Indexed::answer` is unchanged. Three folders of
+ten thousand files timed on the development machine, WSL: a query over the
+index files from the disk 400 ms by name and 360 ms by contents at best;
+from hand 5 ms and 11 ms; the numbers are in the report with the machine
+named. `NotIndexed` became `Clone` and `PartialEq` so a held refusal can be
+handed back, decided in the report.
 
 Task 8 made one search over every indexed folder one call. What that call
 does on every query is read every index file from the disk again: a person
@@ -422,3 +442,44 @@ read — three of the loops this plan has been removing one by one.
   Nothing ranks. The verb is unchanged, the list is still not a grant, and
   `Indexed::answer` stays as it is for a caller that wants the disk's word
   every time.
+
+### 10. A folder kept or forgotten in hand and on the disk in one call
+
+**Status:** ready. **Depends on:** 6, 9.
+
+Task 9 gave a file manager the indexes in hand, and `InHand::again` keeps
+one folder's place in the set true to the disk when the person asks for it
+to be brought up to date. The other two things a person does to the list
+have no road through the set yet: *index this folder* and *forget this
+folder* are `Indexed::keep` and `Indexed::forget`, on the disk and on the
+list the set was read from — and a set in hand does not see either until
+the caller reads it all again. The second of these is the one that
+matters: task 6 promised that the words of a folder a person asked to have
+forgotten are off the disk before anything else, and a set in hand that
+went on answering about that folder from memory would be keeping what the
+person asked to have gone, for as long as the caller held it. That is not
+a background reader, but it is a memory nobody asked for, and it is the
+loop task 9 removed coming back for *forget*: a file manager would have to
+remember to drop its held set every time it forgot a folder.
+
+- **Acceptance:** `alo-finding` offers, through the held set, a folder kept
+  and a folder forgotten in one call each — `InHand::keep` and
+  `InHand::forget`, or names the report argues for — each doing on the disk
+  and the list exactly what `Indexed::keep` and `Indexed::forget` do, and
+  then in hand what the disk's change means: a kept folder's index in the
+  set at the end of the list, or in its place if it was already there; a
+  forgotten folder gone from the set, its place and its entries with it, so
+  that the next `InHand::answer` has no folder for it and nothing of its
+  words is held, checked by a test that reads the set's own list of what
+  it holds; a refusal — a folder never indexed, a folder not named from the
+  root, an index file that could not be written or removed — leaves the set
+  as it was, as it leaves the disk; the list's order is unchanged by any of
+  this; and neither call reads any other folder's index file, checked by the
+  read count the task 9 test uses.
+- **Constraint:** nothing here reads the disk that `Indexed::keep` and
+  `Indexed::forget` do not read, and nothing writes what they do not
+  write. No watcher, no thread, no timer, no clock, and the shipped-source
+  test keeps saying so. Nothing ranks. The verb is unchanged, the list is
+  still not a grant, and `Indexed::answer`, `Indexed::keep` and
+  `Indexed::forget` stay as they are for a caller that holds nothing in
+  hand.

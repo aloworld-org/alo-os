@@ -12,7 +12,11 @@ use alo_strings::{Filling, Said, Strings};
 use crate::words::{self, Word};
 
 /// Why a folder could not be indexed, or an index could not be kept or read.
-#[derive(Debug, thiserror::Error)]
+///
+/// `Clone`, so that a refusal held in hand — the one that stood where a
+/// folder's index would be when the set was read — can be handed back
+/// beside every answer, the same each time, until the caller reads again.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum NotIndexed {
     /// The folder was named from somewhere rather than from the root of the
