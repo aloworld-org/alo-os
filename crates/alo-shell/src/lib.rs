@@ -25,6 +25,14 @@
 //! a change that arrives while another is open waits behind it; and a frame
 //! submitted with `Nested::submit_with_approval` carries the question above
 //! every client and the egress indicator above the question.
+//!
+//! The record window (`RecordWindow`) is drawn here and composed in
+//! `alo-recounting`: the whole record, read off the disk, drawn most recent
+//! first with each entry's clause at its head and the machine's own words
+//! after it — refusals as plainly as what ran, and alo OS's own errands with no
+//! agent invented for them. It opens by hand, with no agent involved, and
+//! asking the agent *what did you do?* opens the same account; nothing here
+//! writes to the record, filters it or summarises it.
 
 #![cfg(target_os = "linux")]
 
@@ -75,6 +83,7 @@ mod nested_pointer;
 mod nested_reader_frame;
 mod nested_reader_input;
 mod nested_reader_session;
+mod nested_record;
 mod nested_sign_in;
 mod offscreen;
 mod output_metadata;
@@ -87,6 +96,16 @@ mod popup_placement;
 mod popups;
 mod presentation;
 mod readback;
+mod record_keys;
+mod record_lines;
+mod record_paint;
+mod record_raster;
+mod record_room;
+mod record_seat;
+mod record_shown;
+#[cfg(test)]
+mod record_testing;
+mod record_window;
 mod resize_transaction;
 mod resource_device;
 mod scanout;
@@ -194,11 +213,15 @@ pub use nested_egress_status::EgressStatusFrame;
 pub use nested_pointer::NestedPointerEvent;
 pub use nested_reader_frame::NestedReaderFrame;
 pub use nested_reader_session::NestedReaderSession;
+pub use nested_record::RecordFrame;
 pub use offscreen::{PreparedScanout, render_control_scanout, render_scanout};
 pub use output_metadata::OutputMetadata;
 pub use popups::Popup;
 pub use presentation::{FrameTarget, RenderError};
 pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
+pub use record_keys::RecordKey;
+pub use record_room::RecordLook;
+pub use record_window::{RecordOpened, RecordShows, RecordWindow};
 pub use scanout::ActiveScanout;
 pub use scanout_frame::XrgbFrame;
 pub use scene_replacement::SceneReplacement;

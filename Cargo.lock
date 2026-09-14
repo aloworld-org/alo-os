@@ -657,6 +657,7 @@ dependencies = [
  "alo-keeping",
  "alo-models",
  "alo-record",
+ "alo-recounting",
  "alo-saying",
  "alo-sessiond",
  "alo-shortcuts",

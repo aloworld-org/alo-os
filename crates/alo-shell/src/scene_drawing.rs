@@ -30,6 +30,9 @@ pub(crate) fn paint(
     if let Some(controls) = native.scene {
         controls.validate(size)?;
     }
+    if let Some(record) = native.record {
+        record.validate(size)?;
+    }
     if let Some(approval) = native.approval {
         approval.validate(size)?;
     }
@@ -66,6 +69,11 @@ pub(crate) fn paint(
     draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage]).map_err(submission)?;
     if let Some(controls) = native.scene {
         controls.paint(&mut frame)?;
+    }
+    // Above every client and control, so no window covers what the machine
+    // did; below the question and the indicator.
+    if let Some(record) = native.record.filter(|record| !record.is_empty()) {
+        record.paint(&mut frame)?;
     }
     // Above every client and control, so no window covers the sentence a
     // person is asked to approve; below the indicator, so the question never

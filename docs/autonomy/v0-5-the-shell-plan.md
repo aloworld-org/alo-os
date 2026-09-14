@@ -147,7 +147,14 @@ surface may not improve on it.
 
 ### 4. What the machine did, in front of the person
 
-**Status:** ready. **Depends on:** 3.
+**Status:** **Done, 2026-09-14.** `crates/alo-shell/src/record_*.rs` and
+`nested_record.rs`; evidence and decisions in
+`docs/autonomy/updates/what-the-machine-did-drawn-in-the-record-window.md`.
+The code only — a certified machine has not seen it, no key or dock item opens
+it yet because `alo-shortcuts` declares no action for it, no date is drawn
+because no crate decides how a moment is written, and the window has no title
+because no crate declares one (findings in that report).
+**Depends on:** 3.
 
 `docs/features.md`: *afterwards, ask what it did.* `alo-recounting` composes
 the account and has every sentence a person reads; ADR 0009 says the plain

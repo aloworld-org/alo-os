@@ -30,6 +30,14 @@ alo-greeting = { path = "../alo-greeting" }
 # compositor is handed, made from the machine's own `alo_egress::Indicator`.
 # This crate draws it and never decides what may leave.
 alo-indicator = { path = "../alo-indicator" }
+# The record's own question, asked of the whole record: `Asking::anything()`
+# and nothing narrower, so the record window has no filter that could hide a
+# refusal. Read, never written — `tests/record_source.rs` holds it to that.
+alo-record = { path = "../alo-record" }
+# Afterwards, ask what it did: the account `alo_recounting::Recounting` reads
+# off the disk and hands the compositor. This crate draws that account and
+# words nothing in it.
+alo-recounting = { path = "../alo-recounting" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 # The turn a question was asked inside, borrowed for the length of one call so
@@ -59,7 +67,6 @@ alo-models = { path = "../alo-models" }
 alo-context = { path = "../alo-context" }
 alo-files = { path = "../alo-files" }
 alo-keeping = { path = "../alo-keeping" }
-alo-record = { path = "../alo-record" }
 tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"

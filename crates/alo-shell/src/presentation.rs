@@ -47,6 +47,12 @@ pub enum RenderError {
     /// The frame is refused rather than drawn with the sentence cut.
     #[error("the approval surface does not fit this output")]
     ApprovalScene,
+    /// The record window is open and cannot hold the record's own sentences
+    /// and the entry at the top of its view whole on this output, or was laid
+    /// out for a different one. The frame is refused rather than drawn with an
+    /// entry cut.
+    #[error("the record window does not fit this output")]
+    RecordScene,
     /// The target does not support explicit retirement.
     #[error("target does not support output retirement")]
     RetirementUnsupported,
