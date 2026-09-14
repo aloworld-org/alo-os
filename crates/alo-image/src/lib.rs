@@ -23,6 +23,7 @@
 //! | [`TheStore`], [`where_a_sign_in_looks`] | The accounts a sign-in reads, which an image must not ship |
 //! | [`TheRuntime`] | The model runtime the recipe carries, and whether it is pinned |
 //! | [`TheWeights`] | The weights a machine arrives with, and whether the catalogue measured them |
+//! | [`TheVersion`] | Which release the recipe says it builds, which a published image is pinned against |
 //! | [`TheDisk`], [`TheDocument`] | The disk a machine boots from, as the recipe declares it and as `docs/booting.md` tells a person to make it |
 //!
 //! # Nothing on a machine ever reads this
@@ -93,6 +94,7 @@ mod service;
 #[cfg(test)]
 mod testing;
 mod unit;
+mod version;
 mod weights;
 mod wrong;
 
@@ -109,6 +111,7 @@ pub use refusing::{NotAService, NotAUnit, NotAnImage, NotDeclared, NotDescribed,
 pub use runtime::{THE_RUNTIMES_BINARY, THE_RUNTIMES_LIBRARIES, TheRuntime};
 pub use service::{ROOT, Service};
 pub use unit::Unit;
+pub use version::{THE_VERSION_LABEL, TheVersion};
 pub use weights::{THE_WEIGHTS, TheWeights};
 pub use wrong::Wrong;
 

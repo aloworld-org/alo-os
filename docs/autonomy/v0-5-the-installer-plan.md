@@ -38,7 +38,26 @@ done.
 
 ### 1. The image is published from GitHub, signed, and pinned
 
-**Status:** ready. **Depends on:** nothing.
+**Status:** blocked — on [ADR 0036](../decisions/0036-the-image-is-signed-by-a-key-a-person-holds.md)
+and on the owner's first publish; no worker can finish it before both.
+**Depends on:** the owner.
+
+**What the first worker found, 2026-09-14** (`updates/who-signs-the-image.md`):
+the machine that builds the image has no `cosign`, no login to `ghcr.io` and
+no GitHub command-line tool, and nothing in this repository says who holds the
+key every installed machine will trust. ADR 0036 puts that to the owner and
+recommends a key the owner generates and holds, with signing by digest done
+by a person and never by an agent or the loop. What landed with it is the one
+piece a push needs first: `image/Containerfile` names its release in
+`org.opencontainers.image.version`, and `crates/alo-image` refuses a recipe
+that names none, two, or a word that moves.
+
+**When it unblocks**, the owner does the five steps in ADR 0036 — build at a
+published commit, push, sign the digest, verify with the committed public half,
+hand over the version and digest — and this task is then the repository's
+half, which is the acceptance below with a real digest to pin. A worker that
+reaches this task while ADR 0036 is still proposed, or with no digest handed
+over, launches nothing and says so.
 
 ADR 0023: *the installer's reboot environment pulls the same signed, versioned
 image CI built, from the same registry updates come from.* Today the image is

@@ -852,6 +852,18 @@ pub enum Wrong {
         /// What it does not name.
         about: String,
     },
+    /// The recipe does not name the one release it builds.
+    #[error(
+        "this image's recipe states `{stated}` as its `org.opencontainers.image.version` — ADR \
+         0033 publishes the image to a registry and pins the digest the installer pulls against \
+         the release the recipe names, so the recipe has to name exactly one, as `MAJOR.MINOR.PATCH`; \
+         a word like `latest` names whichever build was pushed last, and a pin held to it holds \
+         nothing"
+    )]
+    TheImageDoesNotNameItsRelease {
+        /// Everything the recipe gave the label, or `-` where it gave nothing.
+        stated: String,
+    },
 }
 
 #[cfg(test)]
@@ -879,6 +891,13 @@ mod tests {
             }
             .to_string()
             .contains("ADR 0017")
+        );
+        assert!(
+            Wrong::TheImageDoesNotNameItsRelease {
+                stated: "latest".to_owned(),
+            }
+            .to_string()
+            .contains("ADR 0033")
         );
     }
 

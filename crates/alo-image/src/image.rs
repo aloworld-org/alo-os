@@ -25,6 +25,7 @@ use crate::refusing::NotAnImage;
 use crate::runtime::TheRuntime;
 use crate::service::Service;
 use crate::unit::Unit;
+use crate::version::TheVersion;
 use crate::weights::TheWeights;
 
 /// The unit that loads the boundary, as systemd names it.
@@ -104,6 +105,8 @@ pub struct Image {
     runtime: TheRuntime,
     /// What its recipe says about the weights a machine arrives with.
     weights: TheWeights,
+    /// Which release its recipe says it builds.
+    version: TheVersion,
     /// What its recipe says about the disk a machine boots from.
     disk: TheDisk,
     /// What the document beside it tells a person to do with that disk.
@@ -144,6 +147,7 @@ impl Image {
         let asserted = Asserted::read(&recipe);
         let runtime = TheRuntime::read(&recipe);
         let weights = TheWeights::read(&recipe);
+        let version = TheVersion::read(&recipe);
         let disk = TheDisk::read(&recipe);
         let document = TheDocument::read(&text(&root.join(THE_DOCUMENT))?);
 
@@ -159,6 +163,7 @@ impl Image {
             store: TheStore::of(root),
             runtime,
             weights,
+            version,
             disk,
             document,
         })
@@ -259,6 +264,12 @@ impl Image {
     #[must_use]
     pub const fn weights(&self) -> &TheWeights {
         &self.weights
+    }
+
+    /// Which release this image's recipe says it builds.
+    #[must_use]
+    pub const fn version(&self) -> &TheVersion {
+        &self.version
     }
 
     /// What this image's recipe says about the disk a machine boots from.

@@ -158,7 +158,24 @@ pub fn everything_wrong_with(image: &Image) -> Vec<Wrong> {
     the_server_reaches_nothing_off_this_machine(image, &mut wrong);
     the_image_becomes_a_disk(image, &mut wrong);
     the_document_says_what_the_recipe_does(image, &mut wrong);
+    the_image_names_the_release_it_is(image, &mut wrong);
     wrong
+}
+
+/// **The recipe names the one release it builds.**
+///
+/// ADR 0033 §3 publishes the image to a registry and pins, in this repository,
+/// the digest the installer pulls. That pin is held against the release the
+/// recipe names, and the recipe has to name it before the image is built — an
+/// image pushed without it is one that cannot say which release it is, and a
+/// pin written against it is a digest held to nothing.
+fn the_image_names_the_release_it_is(image: &Image, wrong: &mut Vec<Wrong>) {
+    let version = image.version();
+    if !version.names_one_release() {
+        wrong.push(Wrong::TheImageDoesNotNameItsRelease {
+            stated: version.everything_stated(),
+        });
+    }
 }
 
 /// **The image says what disk it becomes, and it is written by the base's own
@@ -2616,6 +2633,37 @@ mod tests {
             ),
             "{wrong:?}"
         );
+    }
+
+    /// **An image that stopped naming its release is caught**, and so is one
+    /// that names it twice or by a word that moves — each is an image whose
+    /// published digest could be pinned against nothing.
+    #[test]
+    fn an_image_that_does_not_name_one_release_is_caught() {
+        let label = "LABEL org.opencontainers.image.version=\"0.0.1\"";
+        for (what, instead) in [
+            ("no-release", String::new()),
+            (
+                "a-moving-release",
+                "LABEL org.opencontainers.image.version=\"latest\"".to_owned(),
+            ),
+            (
+                "two-releases",
+                format!("{label}\nLABEL org.opencontainers.image.version=\"0.0.2\""),
+            ),
+        ] {
+            let root = a_copy_of_the_image(what);
+            edited(&root, THE_CONTAINERFILE, label, &instead);
+
+            let wrong = everything_wrong_with(&image_at(&root));
+
+            assert!(
+                wrong
+                    .iter()
+                    .any(|it| matches!(it, Wrong::TheImageDoesNotNameItsRelease { .. })),
+                "{what}: {wrong:?}"
+            );
+        }
     }
 
     /// **An image that stopped saying what disk it becomes is caught.** The
