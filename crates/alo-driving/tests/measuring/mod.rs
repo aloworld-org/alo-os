@@ -21,12 +21,9 @@ pub enum Asked {
     /// else, through `alo-asking`'s door that does not leave the machine.
     Freely,
     /// As `drives_verbs_in_the_envelope` is earned: the same question, with the
-    /// runtime holding the answer to the protocol's envelope.
-    ///
-    /// Put through `alo_models::Ollama::answers_in_the_envelope` directly. The
-    /// agent turn's door to it is `alo-asking`'s local door and `alo-turn`,
-    /// which are lane A's and do not ask this way yet; what reaches the runtime
-    /// is the request that door would send, and the scoring is the same.
+    /// runtime holding the answer to the protocol's envelope — through
+    /// `alo-asking`'s `Asking::to_this_machine_in_the_envelope`, the door an
+    /// agent turn takes, so the measurement and the product ask in one way.
     InTheEnvelope,
 }
 
@@ -113,9 +110,22 @@ fn put_as(
                 answer.text().to_owned()
             })
             .map_err(|why| format!("{why:?}")),
-        Asked::InTheEnvelope => runtime
-            .answers_in_the_envelope(text, model)
-            .map_err(|why| format!("{why:?}")),
+        Asked::InTheEnvelope => {
+            let question = Question::asked(text, model).expect("a question the harness wrote");
+            let answering = Answering::chosen(InferenceSource::ThisMachine, policy)
+                .expect("no policy forbids this machine answering");
+            Asking::by(agent, answering, &[], policy)
+                .to_this_machine_in_the_envelope(&question, runtime)
+                .map(|answer| {
+                    assert_eq!(
+                        answer.source(),
+                        &InferenceSource::ThisMachine,
+                        "a measurement whose answers came from anywhere else is not this measurement"
+                    );
+                    answer.text().to_owned()
+                })
+                .map_err(|why| format!("{why:?}"))
+        }
     }
 }
 

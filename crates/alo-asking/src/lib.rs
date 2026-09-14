@@ -152,6 +152,7 @@ pub mod asking;
 pub mod corridor;
 pub mod found;
 pub mod hosted;
+pub mod in_the_envelope;
 pub mod locally;
 // The wire, and nothing in it is anybody else's to call: a public function that
 // puts a question on a socket is precisely what this crate's guarantees are

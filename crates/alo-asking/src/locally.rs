@@ -116,30 +116,51 @@ impl Asking<'_> {
         question: &Question,
         runtime: &dyn ModelRuntime,
     ) -> Result<Answer, NotAnswered> {
+        let source = self.the_runtime_is_the_place()?;
+        // No policy is asked, no indicator is shown and no departure is made.
+        // There is nothing here for any of the three to be about.
+        let said = runtime.answers(question.text(), question.of());
+        self.answered_here(source, question, said)
+    }
+
+    /// **Whether the permission this asking holds is for the runtime on this
+    /// machine**, answered before the runtime is asked anything.
+    ///
+    /// `pub(crate)` for the door that asks in the envelope
+    /// ([`crate::in_the_envelope`]), which is the same place asked a different
+    /// way and must refuse exactly what this door refuses.
+    pub(crate) fn the_runtime_is_the_place(&self) -> Result<InferenceSource, NotAnswered> {
         let source = self.answering.source().clone();
         match &source {
-            InferenceSource::ThisMachine => {}
+            InferenceSource::ThisMachine => Ok(source),
             // A service the person runs is the *other* local door. Both are
             // bounded identically, so this costs nobody anything — what it
             // keeps true is that the sentence about where an answer came from
             // is about the thing that actually answered it (ADR 0021).
-            InferenceSource::AServiceAtThisMachinesAddress => {
-                return Err(Miswired::NotTheRuntime.into());
-            }
+            InferenceSource::AServiceAtThisMachinesAddress => Err(Miswired::NotTheRuntime.into()),
             // The person chose a provider. Answering them from a model on this
             // machine would give them a different answer wearing the same face,
             // which is the half of ADR 0008 that was missing from it until
             // somebody pointed out that it read as though only one direction
             // mattered.
-            InferenceSource::Hosted { .. } => return Err(Miswired::NotOnThisMachine.into()),
-            InferenceSource::PairedMachine { .. } => {
-                return Err(Miswired::BelongsDownTheCorridor.into());
-            }
+            InferenceSource::Hosted { .. } => Err(Miswired::NotOnThisMachine.into()),
+            InferenceSource::PairedMachine { .. } => Err(Miswired::BelongsDownTheCorridor.into()),
         }
+    }
 
-        // No policy is asked, no indicator is shown and no departure is made.
-        // There is nothing here for any of the three to be about.
-        match runtime.answers(question.text(), question.of()) {
+    /// What the runtime said, as an answer or as the failure a person is told.
+    ///
+    /// `pub(crate)` for the same reason as
+    /// [`the_runtime_is_the_place`](Self::the_runtime_is_the_place): one mapping
+    /// from a runtime failure to a sentence, whichever way the runtime was
+    /// asked.
+    pub(crate) fn answered_here(
+        self,
+        source: InferenceSource,
+        question: &Question,
+        said: Result<String, RuntimeError>,
+    ) -> Result<Answer, NotAnswered> {
+        match said {
             Ok(said) => Ok(Answer::new(said, source, question.of().to_owned())),
             Err(why) => {
                 match self

@@ -411,7 +411,9 @@ runtime = "Ollama 0.34.0"
 # **And asked in the envelope** ([ADR 0032](../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)):
 # with the runtime holding the answer to the protocol's version and one of the
 # three doors, the same weights drove **35 of 40 — `sometimes`**, two and a half
-# points under the bar. That grade is `drives_verbs_in_the_envelope`, kept apart
+# points under the bar; and on 2026-09-14, through `alo-asking`'s door for it
+# (task 14), **71 of 80 — `sometimes` again, one attempt short of the 72 the bar
+# needs**. The eighty are the grade below, as the larger sample of one method. That grade is `drives_verbs_in_the_envelope`, kept apart
 # from the free one, and the recommendation does not read it until an agent turn
 # asks a local model that way.
 #
@@ -463,9 +465,9 @@ of = 20
 machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
 date = "2026-09-14"
 runtime = "Ollama 0.34.0"
-drove = 35
-of = 40
-loaded_bytes = 5_345_399_272
+drove = 71
+of = 80
+loaded_bytes = 5_197_833_172
 on_the_gpu_bytes = 4_583_210_351
 
 # Task 13: the same weights at five bits, in the envelope, forty attempts, with

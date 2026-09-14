@@ -327,7 +327,8 @@ names is a product decision, and today it rests on nothing measured.
 
 ### 14. The door that asks in the envelope
 
-**Status:** ready. **Depends on:** 7.
+**Status:** **Done, 2026-09-14.** **Depends on:** 7.
+**Report:** `docs/autonomy/updates/the-door-that-asks-in-the-envelope.md`.
 
 ADR 0032 decided that an agent turn asks a model on this machine for the
 envelope and the door, never the call — and its point 5 says the catalogue
