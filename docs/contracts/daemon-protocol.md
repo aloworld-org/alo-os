@@ -268,6 +268,44 @@ A choice is asked of the pairings again at every question
 (`docs/contracts/local-network-wire.md`): a pairing revoked or run out after the
 choice refuses the question in words, and nothing else is asked instead.
 
+### `name-machine` and `clear-machine-name` — what the person calls a paired machine
+
+```json
+{"name-machine":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}
+{"clear-machine-name":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}
+```
+
+Added 2026-09-14, additively. A machine this one is paired with is named by its
+**identity**, and the person gives it a name to read: `called` is what the egress
+indicator, the record, the list of pairings and `chosen-to-answer` say beside or
+instead of the identity from then on. `clear-machine-name` takes the name away,
+and the machine is spoken of by its identity again.
+
+**A name decides nothing** (ADR 0003). It is kept on this machine in the person's
+own file (`docs/contracts/machine-names-file.md`), it never crosses to the other
+machine, and nothing finds, dials or proves a machine by it — every request here
+still names a machine by its identity, and a name typed where the identity goes is
+refused as not a machine.
+
+Each is refused in words, and **nothing changes**, when what is named is not an
+identity; when this machine is not paired with that one at the moment (never
+paired, revoked, or run out); and, for `name-machine`, when the name has nothing
+in it once trimmed, is longer than 64 characters, holds a line break or another
+control character, or is spelt as a machine's identity (bare or as
+`machine:<identity>`, in any case) — a name that reads as one machine's identity
+would put it on another machine. Each of those is its own sentence. An agent
+sending either is refused in the same words as an agent trying to approve
+something: an agent that could name a machine could put one machine's name on
+another machine's evidence.
+
+What comes back is `machine-named`: the machine by its identity, `called` as it
+now stands — trimmed, and absent once there is no name — and `became`, which is
+`kept`, or `kept-until-a-restart` when the file could not be written. The name
+takes effect at once either way.
+
+**A name goes with its pairing.** Revoking a pairing takes its name away in the
+same act, and a pairing kept afresh with a machine starts with no name.
+
 ## What comes back
 
 ```json
@@ -276,6 +314,9 @@ choice refuses the question in words, and nothing else is asked instead.
 {"revoked":{"became":"revoked"}}
 {"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"made_ago":60,"ends_in":86340,"may_answer_questions":true}],"waiting":[]}}
 {"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}
+{"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[…],"made_ago":60,"ends_in":86340,"may_answer_questions":true,"called":"the studio machine"}],"waiting":[]}}
+{"chosen-to-answer":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}
+{"machine-named":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine","became":"kept"}}
 ```
 
 A proposal waiting carries the **code** and the **list** — each arm as the wire
@@ -288,8 +329,11 @@ two people stand, and `lapses_in` how many seconds are left before it lapses
 unanswered. A pairing carries `made_ago` and `ends_in` in seconds — never a
 moment — and no address: discovery measured where the machine is, the daemon
 dials it, and a shell has no use for an address it could not act on. A machine
-is named by its identity throughout; the name a person gives a machine is the
-shell's to keep.
+is named by its identity throughout, and — since 2026-09-14, additively — a
+paired machine the person has named carries `called` beside it on `pairings` and
+`chosen-to-answer`: the name the person gave it with `name-machine`, absent
+(never empty) when they gave none, and absent in anything written before the
+field existed.
 
 `may_answer_questions` (added 2026-09-14, additively) says whether that pairing
 lets the person choose the machine to answer their questions at the moment the

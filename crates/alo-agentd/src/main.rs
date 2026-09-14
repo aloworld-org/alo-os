@@ -32,13 +32,15 @@ mod running {
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION,
-        THE_IDENTITY, ThePairingsFile, ThePersonsFile, Waking, WhatIsGranted, Wire, session,
-        signalling, starting, unix,
+        THE_IDENTITY, TheNames, TheNamesFile, ThePairingsFile, ThePersonsFile, Waking,
+        WhatIsGranted, Wire, session, signalling, starting, unix,
     };
     use alo_capability::Grants;
     use alo_keeping::Writing;
     use alo_nearby::{MachineId, Pairings};
-    use alo_remembering::{NotRemembered, THE_GRANTS, THE_PAIRINGS};
+    use alo_remembering::{
+        MachineNames, NotRemembered, THE_GRANTS, THE_MACHINE_NAMES, THE_PAIRINGS,
+    };
 
     /// Serve until somebody asks the service to stop, and say what it did.
     ///
@@ -134,6 +136,14 @@ mod running {
         // nothing (`alo_agentd::keeping_pairings`).
         let pairings = whatever_was_paired()?;
         let keeping_pairings = ThePairingsFile::at(Path::new(THE_PAIRINGS));
+        // And the third, beside them: what the person here called the machines
+        // they paired with, read against the pairings just read so a name whose
+        // pairing is gone does not come back, and written by the service when
+        // the person names one, clears a name or revokes a pairing.
+        let names = TheNames::remembering(
+            whatever_was_named(&pairings)?,
+            Box::new(TheNamesFile::at(Path::new(THE_MACHINE_NAMES))),
+        );
 
         let (waking, stop) = Waking::made().map_err(|why| NotStarted::NoStop { why })?;
         signalling::on_sigterm(stop)?;
@@ -166,6 +176,7 @@ mod running {
                 &mut WhatIsGranted::of(&mut grants, &remembering),
                 pairings,
                 Box::new(keeping_pairings),
+                names,
                 &mut bounding,
                 &mut writing,
             ),
@@ -242,6 +253,28 @@ mod running {
             Ok(pairings) => Ok(pairings),
             Err(NotRemembered::NotThere { .. }) => Ok(Pairings::none()),
             Err(why) => Err(NotStarted::NoPairings {
+                why: why.to_string(),
+            }),
+        }
+    }
+
+    /// What the person here called the machines this one is paired with, before
+    /// this process existed.
+    ///
+    /// `whatever_was_paired`'s twin, with the same two machines told apart: no
+    /// file is a person who has named nothing, which starts; a file that is
+    /// there and cannot be believed stops the process, because whoever could
+    /// write it could put one machine's name on another machine's evidence. A
+    /// name whose pairing is not in `pairings` is dropped as the list is read.
+    fn whatever_was_named(pairings: &Pairings) -> Result<MachineNames, NotStarted> {
+        match alo_remembering::machine_names_remembered(
+            Path::new(THE_MACHINE_NAMES),
+            pairings,
+            SystemTime::now(),
+        ) {
+            Ok(names) => Ok(names),
+            Err(NotRemembered::NotThere { .. }) => Ok(MachineNames::none()),
+            Err(why) => Err(NotStarted::NoMachineNames {
                 why: why.to_string(),
             }),
         }

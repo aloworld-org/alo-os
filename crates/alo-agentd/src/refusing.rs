@@ -691,6 +691,20 @@ pub enum NotStarted {
         /// What `alo-remembering` said about the file.
         why: String,
     },
+    /// The names this person gave the machines this one is paired with are
+    /// there and could not be believed.
+    ///
+    /// Stopped on for the pairings' reason: whoever could write that file could
+    /// put one machine's name on another machine's evidence, and a service that
+    /// shrugged would make *somebody edited your names* look like *you named
+    /// nothing*. No file at all is a person who has named nothing, and starts.
+    #[error(
+        "the names this machine kept for the machines it is paired with could not be believed: {why}; alo-agentd will not serve under names it cannot read"
+    )]
+    NoMachineNames {
+        /// What `alo-remembering` said about the file.
+        why: String,
+    },
     /// The socket could not be put where it belongs.
     #[error("{0}")]
     NotBound(#[from] NotBound),

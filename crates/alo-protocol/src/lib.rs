@@ -61,8 +61,9 @@
 //! to the person, and a question for a model. [`FromAPerson`] is what a person's
 //! shell sends: yes or no to one change by its number, what is waiting, that
 //! what is granted has changed, and — since the local network — a pairing
-//! proposed, confirmed, revoked or listed (`pairing.rs`), each refused on the
-//! agent's door in the words an approval gets.
+//! proposed, confirmed, revoked or listed (`pairing.rs`), a paired machine
+//! chosen to answer their questions, and a paired machine named or its name
+//! taken away — each refused on the agent's door in the words an approval gets.
 //!
 //! They are two types because they arrive from two sides of one machine, and a
 //! door that took both would be a door where the side that proposed a change
@@ -151,7 +152,8 @@ pub use argument::Argument;
 pub use done::Done;
 pub use frame::{FORMAT, LONGEST, LONGEST_ANSWER};
 pub use pairing::{
-    AfterConfirming, AfterRevoking, Confirmed, Paired, Permitted, SideOf, WaitingToPair,
+    AfterConfirming, AfterNaming, AfterRevoking, Confirmed, Paired, Permitted, SideOf,
+    WaitingToPair,
 };
 pub use person::FromAPerson;
 pub use refusing::NotUnderstood;

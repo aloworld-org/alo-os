@@ -50,6 +50,7 @@ use std::path::Path;
 use std::time::SystemTime;
 
 use alo_choosing::{Choosing, NotWritten};
+use alo_corridor::Naming as _;
 use alo_nearby::MachineId;
 use alo_protocol::ToAPerson;
 use alo_strings::{Filling, Strings};
@@ -92,7 +93,12 @@ pub fn chosen_to_answer(
     // 4. The pairing, under the lock, for as long as the file is written.
     let shared = network.locked();
     match choosing.answered_by_a_paired_machine(identity.as_str(), &*shared, now) {
-        Ok(()) => ToAPerson::chosen_to_answer(identity.as_str()),
+        // The name the person gave it, beside the identity that was written:
+        // asked of the names' own lock, taken second (`crate::names`).
+        Ok(()) => ToAPerson::chosen_to_answer(
+            identity.as_str(),
+            network.names().called(&identity).as_deref(),
+        ),
         Err(why) => {
             // The two that are the machine's rather than the person's are read
             // by whoever is fixing it; the person is told the sentence either
@@ -276,6 +282,58 @@ mod tests {
         );
         assert_eq!(heard.load(Ordering::SeqCst), 1);
         assert_eq!(looking.looked.get(), 1);
+    }
+
+    /// **`chosen-to-answer` carries the name the person gave the machine beside
+    /// the identity**, and the settings still hold the identity alone — a name
+    /// is for reading, and what the next question goes to is the identity.
+    #[test]
+    fn the_machine_chosen_to_answer_is_told_by_its_name_beside_its_identity() {
+        let (mut questions, at) = receptions_session("chosen-by-name");
+        let network = reception_paired_with(the_studio(), &[MayAskIts::Models]);
+        let mut record = Record::default();
+
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let before = the_person_says(
+                &choosing(the_studio().as_str()),
+                turning,
+                &mut questions,
+                &network,
+                strings,
+                noon(),
+            );
+            assert_eq!(before.called(), None, "{before:?}");
+
+            let named = the_person_says(
+                &a_message(&format!(
+                    r#"{{"name-machine":{{"machine":"{}","called":"the studio machine"}}}}"#,
+                    the_studio().as_str()
+                )),
+                turning,
+                &mut questions,
+                &network,
+                strings,
+                noon(),
+            );
+            assert!(named.became_of_naming().is_some(), "{named:?}");
+
+            let said = the_person_says(
+                &choosing(the_studio().as_str()),
+                turning,
+                &mut questions,
+                &network,
+                strings,
+                noon(),
+            );
+            assert_eq!(said.machine_chosen_to_answer(), Some(the_studio().as_str()));
+            assert_eq!(said.called(), Some("the studio machine"), "{said:?}");
+        });
+        let settings = std::fs::read_to_string(&at).unwrap();
+        assert!(
+            settings.contains(&format!("machine = \"{}\"", the_studio().as_str())),
+            "{settings}"
+        );
+        assert!(!settings.contains("the studio machine"), "{settings}");
     }
 
     /// **A choice no pairing permits is refused in words, and writes

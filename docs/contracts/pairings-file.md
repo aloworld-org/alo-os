@@ -63,6 +63,10 @@ machine, or for *trusted* — a row with any of those would be a pairing on term
 nobody confirmed. A key nobody declared is refused rather than read around.
 There is at most one row per machine.
 
+The name the person here gives a paired machine is kept beside this file, never
+in it: `docs/contracts/machine-names-file.md` (added 2026-09-14, additively). A
+name is one person's and a row is what two people made.
+
 ## The rules it is held to
 
 - **Every row is made again on the way in**, through the same constructor a

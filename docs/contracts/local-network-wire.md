@@ -100,6 +100,14 @@ machine leaves under its egress indicator and is written in its record with
 the origin machine named (ADR 0003). A verb arriving while the person's own
 agent holds a turn waits for that turn to end.
 
+**Named** is the name the receiving machine's person gave the other machine
+(`name-machine`, `docs/contracts/daemon-protocol.md`), or its identity until they
+give one. A name is kept on the machine whose person gave it
+(`docs/contracts/machine-names-file.md`) and **nothing on this wire carries one**
+— no header, no body, no proof — so neither machine learns what the other calls
+it, and nothing is found, dialled or proven by a name: the identity is what the
+proof, the pairing and every grant are about.
+
 ## The question path
 
 A question is told apart, proven, judged against the pairing's own list, and

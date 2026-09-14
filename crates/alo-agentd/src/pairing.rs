@@ -39,6 +39,11 @@
 //! as *until a restart* — the true sentence — rather than reversing what
 //! they did or saying nothing. The same for a pairing kept.
 //!
+//! **A revoked pairing's name goes with it**, under the same lock, and a
+//! pairing kept afresh starts with none: the name a person gave a machine
+//! (`crate::naming_machines`) belongs to the agreement it was given under. The
+//! list carries each pairing's name beside its identity.
+//!
 //! # And an agent reaches none of it
 //!
 //! Every one of the four is `alo_protocol::FromAPerson`'s, refused on the
@@ -48,6 +53,7 @@
 use std::time::{Duration, SystemTime};
 
 use alo_choosing::WhoMayBeAsked as _;
+use alo_corridor::Naming as _;
 use alo_keeping::NotKept;
 use alo_nearby::{MachineId, MayAskIts, Pairing, Side, Waiting, crossing};
 use alo_protocol::{
@@ -136,7 +142,9 @@ impl AboutAPairing {
             | FromAPerson::Decline { .. }
             | FromAPerson::Waiting
             | FromAPerson::Granted
-            | FromAPerson::ChooseMachineToAnswer { .. } => None,
+            | FromAPerson::ChooseMachineToAnswer { .. }
+            | FromAPerson::NameMachine { .. }
+            | FromAPerson::ClearMachineName { .. } => None,
         }
     }
 }
@@ -267,6 +275,9 @@ fn confirmed(
     };
     shared.pairings_mut().keep(pairing.clone());
     let written = shared.written_down(now);
+    // A pairing kept afresh starts with no name: a name left from an
+    // agreement that ended belongs to that agreement (`crate::names`).
+    forget_the_name(nearby.network, &machine, shared.pairings(), now);
     drop(shared);
     holding.a_pairing_was_kept(pairing.with().as_str(), now)?;
     Ok(ToAPerson::confirmed(match written {
@@ -291,13 +302,35 @@ fn revoked(machine: &str, nearby: &Nearby<'_>, strings: &Strings, now: SystemTim
             &Filling::nothing(),
         ));
     }
-    ToAPerson::revoked(match shared.written_down(now) {
+    let written = shared.written_down(now);
+    // The name goes with the pairing, under the same lock.
+    forget_the_name(nearby.network, &machine, shared.pairings(), now);
+    ToAPerson::revoked(match written {
         Ok(()) => AfterRevoking::Revoked,
         Err(why) => {
             eprintln!("alo-agentd: a pairing was revoked and could not be written down: {why}");
             AfterRevoking::RevokedUntilARestart
         }
     })
+}
+
+/// Take away the name of a machine whose pairing was revoked or kept afresh,
+/// with the network's lock held by the caller.
+///
+/// A names file that could not be written is the service log's: the name is
+/// gone for the session, and at the next start a name whose pairing is gone is
+/// not read back anyway (`alo_remembering::machine_names_remembered`).
+pub(crate) fn forget_the_name(
+    network: &TheNetwork,
+    machine: &MachineId,
+    pairings: &alo_nearby::Pairings,
+    now: SystemTime,
+) {
+    if let Some(Err(why)) = network.names().forgotten(machine, pairings, now) {
+        eprintln!(
+            "alo-agentd: a machine's name was taken away and could not be written down: {why}"
+        );
+    }
 }
 
 /// Everything paired and everything waiting, at `now`, each pairing saying
@@ -313,9 +346,13 @@ fn listed(nearby: &Nearby<'_>, strings: &Strings, now: SystemTime) -> ToAPerson 
         .map(|pairing| {
             // Asked of the very list a question to that machine is asked of
             // (`crate::corridor`), so a shell offers only what can be chosen.
-            a_pairing(pairing, strings, now).that_may_answer_questions(
-                shared.may_ask_the_models_of(pairing.with().as_str(), now),
-            )
+            a_pairing(pairing, strings, now)
+                .that_may_answer_questions(
+                    shared.may_ask_the_models_of(pairing.with().as_str(), now),
+                )
+                // Beside the identity, the name the person gave it: asked of
+                // the names' own lock, taken second (`crate::names`).
+                .that_is_called(nearby.network.names().called(pairing.with()).as_deref())
         })
         .collect();
     let waiting = shared

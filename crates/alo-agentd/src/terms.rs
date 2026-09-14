@@ -36,9 +36,10 @@ pub struct Terms<'a> {
     pub policy: EgressPolicy,
     /// What the person here called the machines they paired with.
     ///
-    /// Asked at the moment and deciding nothing; the shell keeps the names,
-    /// and until one does, [`NoNameYet`] answers that nobody has named
-    /// anything.
+    /// Asked at the moment and deciding nothing. A running machine answers
+    /// with `crate::network::TheNetwork::names` — the names read back at start
+    /// and given on the person's door since — and a test that is not about
+    /// names hands in [`NoNameYet`].
     pub naming: &'a dyn Naming,
 }
 
@@ -58,11 +59,11 @@ impl std::fmt::Debug for Terms<'_> {
 
 /// Nobody has given any paired machine a name.
 ///
-/// The person's name for a paired machine is the shell's to keep, and the
-/// shell is outside the local-network plan; until it keeps one, every machine
-/// is spoken of by its identity, which `alo_nearby::Origin` does when the
-/// name is empty. This is that absence written where a reader can see it
-/// rather than a closure in `main`.
+/// Every machine is then spoken of by its identity, which `alo_nearby::Origin`
+/// does when the name is empty. Nothing a machine runs is handed this since the
+/// person's door learned to name a machine (`crate::naming_machines`): the
+/// service answers with `crate::names::TheNames`. It stays for a test that is
+/// not about names, written where a reader can see what it is.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoNameYet;
 

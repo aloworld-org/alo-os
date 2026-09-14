@@ -765,6 +765,100 @@ region = \"the EU\"
         }));
     }
 
+    /// **A question answered for a paired machine names it by the name its
+    /// person here gave it on the person's door** — on the indicator while the
+    /// answer leaves, on the departure, and on both record entries — while the
+    /// machine it is answered for is still reception by identity.
+    #[test]
+    fn a_question_answered_for_a_paired_machine_names_it_by_its_given_name() {
+        use crate::answering::what_a_person_said;
+        use crate::holding::Holding;
+        use crate::network::TheNetwork;
+        use crate::pairing::Nearby;
+        use crate::rereading::WhatIsGranted;
+        use crate::testing::{NobodyIsNearby, NothingIsRemembered, a_message};
+
+        const CALLED: &str = "the reception machine";
+        let (pairings, on_reception) = paired_for(&[MayAskIts::Models]);
+        let network = TheNetwork::on(the_studio());
+        *network.locked().pairings_mut() = pairings;
+        let mut questions = a_person_who_chose_a_model_here(Ok("Three are unpaid.".to_owned()));
+        let strings = in_english();
+        let (answered, record, quiet) = on_the_studio(|doorway| {
+            let named = what_a_person_said(
+                &a_message(&format!(
+                    r#"{{"name-machine":{{"machine":"{}","called":"{CALLED}"}}}}"#,
+                    reception().as_str()
+                )),
+                &mut Holding::TheNetwork {
+                    doorway: &mut *doorway,
+                    network: &network,
+                    questions: &mut nothing_has_been_chosen(),
+                },
+                &mut WhatIsGranted::of(
+                    &mut alo_capability::Grants::default(),
+                    &NothingIsRemembered,
+                ),
+                &Nearby {
+                    network: &network,
+                    looking: &NobodyIsNearby,
+                },
+                &strings,
+                noon(),
+            )
+            .unwrap();
+            assert_eq!(named.called(), Some(CALLED), "{named:?}");
+
+            let mut judgement = judged(
+                &proven_by(&on_reception, A_QUESTION, noon()),
+                doorway,
+                Asking {
+                    pairings: network.locked().pairings(),
+                    questions: &mut questions,
+                    naming: network.names(),
+                },
+                noon(),
+            )
+            .unwrap();
+            let showing = doorway.machine().unwrap().showing().showing();
+            assert_eq!(showing.len(), 1);
+            assert_eq!(
+                showing.first().unwrap().leaving().unwrap().destination(),
+                &alo_egress::Destination::PairedMachine {
+                    machine: CALLED.to_owned()
+                },
+                "the indicator did not name the machine by its name"
+            );
+            let (origin, departing) = judgement.departed.take().unwrap();
+            assert_eq!(origin.called(), CALLED);
+            assert_eq!(origin.machine(), &reception());
+            assert_eq!(
+                departing.destination(),
+                &alo_egress::Destination::PairedMachine {
+                    machine: CALLED.to_owned()
+                }
+            );
+            doorway
+                .machine()
+                .unwrap()
+                .answer_returned(&origin, departing)
+                .unwrap();
+            vec![judgement]
+        });
+        assert_eq!(
+            answered.first().unwrap().questioned,
+            Questioned::Answered(reception())
+        );
+        assert!(quiet);
+        assert_eq!(record.len(), 2, "{record:?}");
+        assert!(
+            record
+                .everything()
+                .all(|entry| entry.origin().is_some_and(|from| from.is(CALLED))),
+            "{record:?}"
+        );
+    }
+
     /// **A question from a paired machine reaches the pinned runtime here
     /// exactly as before — never held to the envelope** (ADR 0032, decision
     /// 4): a paired machine is a separate measurement, and what crosses the

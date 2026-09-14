@@ -176,6 +176,17 @@ pub enum NotRemembered {
     #[error("the pairings this machine kept were not believed: {0}")]
     NotPairings(#[from] alo_nearby::NotWrittenDown),
 
+    /// The names a person gave the machines this one is paired with were not
+    /// the names `crate::names` reads, or could not be written down.
+    ///
+    /// Refused whole, for every other arm's reason: a list that silently lost
+    /// a name, or kept one the rule would not allow, would make what a person
+    /// reads on an indicator or in a record untrue.
+    #[error(
+        "the names this machine kept for the machines it is paired with were not believed: {0}"
+    )]
+    NotMachineNames(#[from] crate::names::NotNames),
+
     /// The file could not be written down.
     #[error("this machine's list could not be written to {}: {why}", at.display())]
     NotWritten {

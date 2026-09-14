@@ -38,7 +38,10 @@
 //!    stops. A pairing that ended while the machine was off is gone as the
 //!    list is read. It is handed in as a value beside the one thing that can
 //!    write it — a pairing is made by two people on two machines, and this
-//!    service is what hears the second of them.
+//!    service is what hears the second of them. **And what the person here
+//!    called those machines**, out of the third file, under the same rules
+//!    and read against the pairings just read, so a name whose pairing ended
+//!    while the machine was off does not come back.
 //! 7. **The stop, and the handler that causes one.** `crate::signalling`.
 //! 8. **The boundary** — the map `alo-boundaryd` pinned at boot, opened by
 //!    path, and this service's own control group subtree, `crate::bounding`.
@@ -119,6 +122,7 @@ use alo_turn::{Bounding, Machine, Shortening};
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
+use crate::names::TheNames;
 use crate::network::{KeepingPairings, TheNetwork};
 use crate::questions::Questions;
 use crate::refusing::NotStarted;
@@ -126,7 +130,7 @@ use crate::rereading::WhatIsGranted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
 use crate::surface::AtThePersonsDoor;
-use crate::terms::{NoNameYet, Terms};
+use crate::terms::Terms;
 use crate::wire::Wire;
 use crate::words::declare_into;
 
@@ -218,6 +222,7 @@ pub fn until_stopped(
     granted: &mut WhatIsGranted<'_>,
     pairings: Pairings,
     keeping_pairings: Box<dyn KeepingPairings>,
+    names: TheNames,
     bounding: &mut dyn Bounding,
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
@@ -228,7 +233,10 @@ pub fn until_stopped(
     // read back off the disk, handed in as a value for the grants' reason,
     // and one lock over it — with the one way to write the list whole beside
     // it, holding the path `main` gave it.
-    let network = TheNetwork::remembering(wire.here().clone(), pairings, keeping_pairings);
+    // And beside them, what the person here called those machines, read back
+    // with them and written through the file `main` named.
+    let network =
+        TheNetwork::remembering(wire.here().clone(), pairings, keeping_pairings).calling(names);
     // A proposal that arrives waits on the person's door, where the shell
     // lists and confirms it; the loop hands this in only while a shell is
     // connected, and nobody-to-show-it-to otherwise.
@@ -256,7 +264,9 @@ pub fn until_stopped(
         // One rule, stated once: what may leave is the same rule that says
         // where a question may be answered.
         policy: EgressPolicy::from(described.questions().policy()),
-        naming: &NoNameYet,
+        // What the person here called the machines they paired with: the names
+        // `main` read back, and every one given on the person's door since.
+        naming: network.names(),
     };
     Ok(
         Serving::of(knocking, waking, wire, &network, terms).until_stopped(
@@ -423,6 +433,7 @@ mod tests {
             &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
             Pairings::none(),
             Box::new(crate::network::NothingKeepsPairings),
+            crate::names::TheNames::default(),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )
@@ -491,6 +502,7 @@ mod tests {
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
             Pairings::none(),
             Box::new(crate::network::NothingKeepsPairings),
+            crate::names::TheNames::default(),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )

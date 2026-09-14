@@ -73,7 +73,9 @@ pub fn answered_to(
         | FromAPerson::ConfirmPairing { .. }
         | FromAPerson::RevokePairing { .. }
         | FromAPerson::Pairings
-        | FromAPerson::ChooseMachineToAnswer { .. } => {
+        | FromAPerson::ChooseMachineToAnswer { .. }
+        | FromAPerson::NameMachine { .. }
+        | FromAPerson::ClearMachineName { .. } => {
             ToAPerson::refused(&rereading::what_to_say(strings))
         }
         FromAPerson::Approve { number } => match under(arriving, number, now) {
@@ -130,7 +132,6 @@ mod tests {
     use crate::holding::Holding;
     use crate::network::TheNetwork;
     use crate::rereading::WhatIsGranted;
-    use crate::terms::NoNameYet;
     use crate::testing::{
         NobodyIsNearby, NothingIsBounded, NothingIsRemembered, a_folder_with_an_invoice, a_message,
         hour, in_english, noon, nothing_has_been_chosen, paired_between, reception, the_studio,
@@ -223,7 +224,9 @@ mod tests {
             &body,
             network.locked().pairings(),
             grants,
-            &NoNameYet,
+            // What a running machine answers with: the names given on the
+            // person's door, asked while the network's lock is held.
+            network.names(),
             &EgressPolicy::InTheBuilding,
             at,
         );
@@ -328,6 +331,101 @@ mod tests {
                 .origin()
                 .is_some_and(|from| from.is(reception().as_str()))
         }));
+    }
+
+    /// **A change a paired machine proposed names the machine by the name its
+    /// person gave it on the person's door** — on the list of what is waiting
+    /// and on every record entry the change leaves — **and the name proves
+    /// nothing**: the grant it runs under is the one made to reception's
+    /// identity, and a proof from a machine no pairing stands with is refused
+    /// however the machines here are named.
+    #[test]
+    fn a_change_from_a_paired_machine_names_it_by_its_given_name_and_the_name_proves_nothing() {
+        const CALLED: &str = "the reception machine";
+        let mut record = Record::default();
+        on_the_studio(
+            "reaching-named",
+            &mut record,
+            |doorway, network, grants, on_reception, strings, folder| {
+                let named = the_person_says(
+                    &format!(
+                        r#"{{"name-machine":{{"machine":"{}","called":"{CALLED}"}}}}"#,
+                        reception().as_str()
+                    ),
+                    doorway,
+                    network,
+                    grants,
+                    strings,
+                );
+                assert_eq!(named.called(), Some(CALLED), "{named:?}");
+
+                let number =
+                    a_change_from_reception(doorway, network, grants, on_reception, folder, noon());
+                let said = the_person_says(r#"{"waiting":{}}"#, doorway, network, grants, strings);
+                let changes = said.changes().unwrap();
+                assert_eq!(changes.len(), 1);
+                assert_eq!(changes.first().unwrap().from(), Some(CALLED), "{changes:?}");
+
+                let approve = format!(r#"{{"approve":{{"number":{number}}}}}"#);
+                let said = the_person_says(&approve, doorway, network, grants, strings);
+                assert!(said.done().is_some(), "{said:?}");
+                assert!(!folder.join("march.pdf").is_file());
+
+                // A machine nobody here is paired with, making a proof with a
+                // row of its own: refused at the proof, names or no names.
+                let warehouse =
+                    alo_nearby::MachineId::read("11112222333344445555666677778888").unwrap();
+                let (on_warehouse, _) = paired_between(
+                    warehouse.clone(),
+                    the_studio(),
+                    &[MayAskIts::Models],
+                    noon(),
+                );
+                let body = Carried::of(
+                    "list_folder",
+                    &[("folder", Given::text(folder.to_string_lossy().into_owned()))],
+                )
+                .said();
+                let later = noon() + Duration::from_secs(1);
+                let proof = Proof::made(&on_warehouse, &warehouse, body.as_bytes(), later);
+                let judged = doorway.judged(
+                    Door::Read,
+                    Some(&proof),
+                    &body,
+                    network.locked().pairings(),
+                    grants,
+                    network.names(),
+                    &EgressPolicy::InTheBuilding,
+                    later,
+                );
+                assert!(
+                    matches!(
+                        judged,
+                        Judged::Reply {
+                            replying: Replying::BeforeTheDoor(alo_corridor::AtTheDoor::NotProven(
+                                alo_nearby::NotProven::NotWithThatMachine
+                            )),
+                            ..
+                        }
+                    ),
+                    "{judged:?}"
+                );
+            },
+        );
+        assert_eq!(
+            record
+                .answering(&alo_record::Asking::anything().only(Only::Executions))
+                .count(),
+            1,
+            "{record:?}"
+        );
+        assert!(!record.is_empty());
+        assert!(
+            record
+                .everything()
+                .all(|entry| entry.origin().is_some_and(|from| from.is(CALLED))),
+            "{record:?}"
+        );
     }
 
     /// **No is a whole answer on a remote turn too**: nothing runs, the

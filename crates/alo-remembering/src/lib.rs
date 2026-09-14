@@ -65,6 +65,17 @@
 //! what hears the second of them — and a pairing that has ended is gone when
 //! the list is read, exactly as an expired grant is.
 //!
+//! # And the names a person gave those machines
+//!
+//! A third file, `/var/lib/alo/machine-names.toml`, under the same three rules:
+//! what the person here called each machine this one is paired with, so that an
+//! indicator, a record entry and a list say *the studio machine* rather than
+//! thirty-two hexadecimal characters. It is beside the pairings rather than in
+//! them because a pairing is exactly the row two people made and a name is one
+//! person's; a name decides nothing, and a name whose pairing is gone is gone
+//! when the list is read. What a name may be is `named`, and it is the rule the
+//! person's door holds a name to as well.
+//!
 //! # Map
 //!
 //! | | |
@@ -73,6 +84,9 @@
 //! | `believing` | A file on the disk: who may have written it, and the whole-or-nothing replacement |
 //! | `keeping` | The grants file, where it is |
 //! | `pairings` | The pairings file, where it is |
+//! | `named` | What a person may call a machine |
+//! | `names` | The names, as a list and as they are written down |
+//! | `machine_names` | The names file, where it is |
 //! | `refusing` | Every refusal, in the English whoever stands a machine up reads |
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
@@ -82,6 +96,10 @@ mod believing;
 #[cfg(unix)]
 mod keeping;
 #[cfg(unix)]
+mod machine_names;
+mod named;
+mod names;
+#[cfg(unix)]
 mod pairings;
 mod refusing;
 #[cfg(test)]
@@ -90,6 +108,10 @@ mod written;
 
 #[cfg(unix)]
 pub use keeping::{THE_GRANTS, kept, remembered};
+#[cfg(unix)]
+pub use machine_names::{THE_MACHINE_NAMES, machine_names_kept, machine_names_remembered};
+pub use named::{LONGEST_NAME, MachineName, NotAName};
+pub use names::{MachineNames, NotNames, THE_NAMES_FORMAT};
 #[cfg(unix)]
 pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;

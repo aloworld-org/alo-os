@@ -1,6 +1,6 @@
 //! What a person's shell sends, on behalf of the person in front of it.
 //!
-//! Nine requests. Two of them are the same act — answering a change that was
+//! Eleven requests. Two of them are the same act — answering a change that was
 //! put to them in one sentence — and ADR 0001 §5 says a person approves a
 //! sentence rather than a session, so there is nothing here that approves more
 //! than one thing, nothing that approves everything from an agent, and nothing
@@ -33,6 +33,17 @@
 //! the pairings it keeps before anything is written, and an agent sending it
 //! is refused in the same words as an approval: an agent that could choose
 //! where questions go would be choosing where its own questions leave for.
+//!
+//! # What a paired machine is called is the person's, and decides nothing
+//!
+//! `name-machine` gives a machine this one is paired with a name, by its
+//! identity, and `clear-machine-name` takes the name away. The name is what the
+//! person reads — on the list, on the indicator, in the record — and nothing
+//! else: no request finds, dials or proves a machine by one, which is why every
+//! other request here still names a machine by its identity, and the name never
+//! crosses to the other machine (ADR 0003). An agent sending either is refused in
+//! the words an approval gets: an agent that could name a machine could put one
+//! machine's name on another machine's evidence.
 //!
 //! # A number is not a handle
 //!
@@ -151,6 +162,20 @@ pub enum FromAPerson {
         /// The other machine, by its identity.
         machine: String,
     },
+    /// They give a machine this one is paired with a name, by its identity.
+    ///
+    /// The name decides nothing: see this file's header.
+    NameMachine {
+        /// The other machine, by its identity.
+        machine: String,
+        /// What they call it.
+        called: String,
+    },
+    /// They take a machine's name away, by its identity.
+    ClearMachineName {
+        /// The other machine, by its identity.
+        machine: String,
+    },
 }
 
 impl FromAPerson {
@@ -179,6 +204,8 @@ impl FromAPerson {
             Asked::RevokePairing { machine } => Ok(Self::RevokePairing { machine }),
             Asked::Pairings {} => Ok(Self::Pairings),
             Asked::ChooseMachineToAnswer { machine } => Ok(Self::ChooseMachineToAnswer { machine }),
+            Asked::NameMachine { machine, called } => Ok(Self::NameMachine { machine, called }),
+            Asked::ClearMachineName { machine } => Ok(Self::ClearMachineName { machine }),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -209,8 +236,23 @@ impl FromAPerson {
             | Self::ConfirmPairing { .. }
             | Self::RevokePairing { .. }
             | Self::Pairings
-            | Self::ChooseMachineToAnswer { .. } => None,
+            | Self::ChooseMachineToAnswer { .. }
+            | Self::NameMachine { .. }
+            | Self::ClearMachineName { .. } => None,
         }
+    }
+
+    /// Whether this names a machine or takes its name away.
+    ///
+    /// Told apart for a daemon choosing what to answer them against: a name is
+    /// neither a turn's nor the grants file's, and it is answered whether or
+    /// not a turn is under way.
+    #[must_use]
+    pub fn is_about_a_name(&self) -> bool {
+        matches!(
+            self,
+            Self::NameMachine { .. } | Self::ClearMachineName { .. }
+        )
     }
 
     /// Whether this is about a pairing rather than about a turn or the grants.
@@ -271,6 +313,8 @@ impl From<FromAPerson> for Asked {
             FromAPerson::ChooseMachineToAnswer { machine } => {
                 Self::ChooseMachineToAnswer { machine }
             }
+            FromAPerson::NameMachine { machine, called } => Self::NameMachine { machine, called },
+            FromAPerson::ClearMachineName { machine } => Self::ClearMachineName { machine },
         }
     }
 }
@@ -437,6 +481,39 @@ mod tests {
         );
     }
 
+    /// **Naming a machine and clearing its name are a person's, and an agent
+    /// sending either is refused in the words an approval gets**: neither
+    /// answers a change, asks about the turn, or is about a pairing.
+    #[test]
+    fn naming_a_machine_is_a_persons_and_refused_to_an_agent() {
+        let naming = r#"{"format":1,"asks":{"name-machine":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}}"#;
+        let clearing = r#"{"format":1,"asks":{"clear-machine-name":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}}"#;
+        let named = FromAPerson::read(naming).unwrap();
+        assert_eq!(
+            named,
+            FromAPerson::NameMachine {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                called: "the studio machine".to_owned(),
+            }
+        );
+        let cleared = FromAPerson::read(clearing).unwrap();
+        for one in [&named, &cleared] {
+            assert!(one.is_about_a_name(), "{one:?}");
+            assert!(!one.is_about_a_pairing(), "{one:?}");
+            assert_eq!(one.number(), None);
+            assert!(!one.is_yes());
+            assert!(!one.is_a_question_about_the_turn());
+        }
+        assert!(!FromAPerson::Pairings.is_about_a_name());
+        for line in [naming, clearing] {
+            assert_eq!(
+                crate::FromAnAgent::read(line),
+                Err(NotUnderstood::NotForAnAgent),
+                "{line}"
+            );
+        }
+    }
+
     /// **A proposal cannot name where a machine is**: an address in it is a
     /// message this crate refuses to read, in the same words as any field
     /// nobody declared.
@@ -473,6 +550,13 @@ mod tests {
             },
             FromAPerson::Pairings,
             FromAPerson::ChooseMachineToAnswer {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            },
+            FromAPerson::NameMachine {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                called: "the studio machine".to_owned(),
+            },
+            FromAPerson::ClearMachineName {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
             },
         ] {

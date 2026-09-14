@@ -1,6 +1,6 @@
 //! Everything that can arrive, in one closed list.
 //!
-//! Twelve requests, and there is no thirteenth. What makes this file worth having on
+//! Fourteen requests, and there is no fifteenth. What makes this file worth having on
 //! its own is that it is deliberately **not** public: the two types a caller of
 //! this crate ever holds are [`FromAnAgent`](crate::FromAnAgent) and
 //! [`FromAPerson`](crate::FromAPerson), and this is the list they are each cut
@@ -16,9 +16,9 @@
 //! two different types, and neither can produce the other's.
 //!
 //! Keeping the list itself in one place is what makes that a division rather
-//! than two lists that could drift: a thirteenth request has to be given to one
+//! than two lists that could drift: a fifteenth request has to be given to one
 //! door or the other before this crate will compile, and a request that is not
-//! one of the twelve is not a request at all.
+//! one of the fourteen is not a request at all.
 //!
 //! **Which side of a socket a caller is really on is not this crate's
 //! question.** That is peer credentials on a Unix socket, and it is
@@ -161,6 +161,25 @@ pub(crate) enum Asked {
     /// machine's person's setting (ADR 0008). The daemon holds the choice to the
     /// pairings behind its one lock before anything is written.
     ChooseMachineToAnswer {
+        /// The other machine, by its identity.
+        machine: String,
+    },
+    /// The person gives a machine this one is paired with a name.
+    ///
+    /// The identity says which machine, and `called` is what the person reads
+    /// wherever that machine is spoken of on this machine. **A name decides
+    /// nothing** (ADR 0003): nothing finds, dials or proves a machine by it,
+    /// and it never crosses to the other machine. There is no field for an
+    /// address, for [`Asked::Pair`]'s reason.
+    NameMachine {
+        /// The other machine, by its identity.
+        machine: String,
+        /// What the person calls it.
+        called: String,
+    },
+    /// The person takes a machine's name away, so it is spoken of by its
+    /// identity again.
+    ClearMachineName {
         /// The other machine, by its identity.
         machine: String,
     },
@@ -326,11 +345,47 @@ mod tests {
         }
     }
 
-    /// **There is no thirteenth.** A name that is not one of the twelve has nowhere
+    /// **Naming a machine carries its identity and the name, and nothing
+    /// else**; clearing one carries the identity alone.
+    #[test]
+    fn naming_a_machine_carries_its_identity_and_the_name_and_nothing_else() {
+        let named: Asked = serde_json::from_str(
+            r#"{"name-machine":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine"}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            named,
+            Asked::NameMachine {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                called: "the studio machine".to_owned(),
+            }
+        );
+        let cleared: Asked = serde_json::from_str(
+            r#"{"clear-machine-name":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            cleared,
+            Asked::ClearMachineName {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            }
+        );
+        for message in [
+            r#"{"name-machine":{"machine":"m"}}"#,
+            r#"{"name-machine":{"called":"the studio"}}"#,
+            r#"{"name-machine":{"machine":"m","called":"s","address":"192.168.1.20"}}"#,
+            r#"{"name-machine":{"machine":"m","called":"s","trusted":true}}"#,
+            r#"{"clear-machine-name":{"machine":"m","called":"s"}}"#,
+        ] {
+            assert!(serde_json::from_str::<Asked>(message).is_err(), "{message}");
+        }
+    }
+
+    /// **There is no fifteenth.** A name that is not one of the fourteen has nowhere
     /// to land, which is the shape law 2 takes at this boundary: a caller
     /// cannot invent a request any more than it can invent a verb.
     #[test]
-    fn a_request_that_is_not_one_of_the_twelve_is_not_a_request() {
+    fn a_request_that_is_not_one_of_the_fourteen_is_not_a_request() {
         for message in [
             r#"{"run":{"command":"rm -rf /"}}"#,
             r#"{"exec":{"verb":"sh","given":[]}}"#,

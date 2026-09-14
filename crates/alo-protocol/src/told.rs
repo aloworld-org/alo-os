@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Twelve answers, and there is no thirteenth. It is [`crate::asked`]'s shape from
+//! Thirteen answers, and there is no fourteenth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -41,7 +41,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::done::Done;
-use crate::pairing::{AfterConfirming, AfterRevoking, Paired, WaitingToPair};
+use crate::pairing::{AfterConfirming, AfterNaming, AfterRevoking, Paired, WaitingToPair};
 use crate::standing::Standing;
 use crate::wording::Wording;
 
@@ -126,6 +126,24 @@ pub(crate) enum Told {
     ChosenToAnswer {
         /// The machine chosen, by its identity.
         machine: String,
+        /// What the person here called it, if they gave it a name — absent,
+        /// never empty, when they did not.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        called: Option<String>,
+    },
+    /// A machine this one is paired with was named, or its name taken away.
+    ///
+    /// The answer to `name-machine` and `clear-machine-name`: the machine by
+    /// its identity, the name it now has — absent once it has none — and
+    /// whether the name was written down or stands until a restart.
+    MachineNamed {
+        /// The machine, by its identity.
+        machine: String,
+        /// What it is now called, if anything.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        called: Option<String>,
+        /// Kept, or kept until a restart.
+        became: AfterNaming,
     },
 }
 
@@ -181,6 +199,12 @@ mod tests {
             },
             Told::ChosenToAnswer {
                 machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                called: Some("the studio machine".to_owned()),
+            },
+            Told::MachineNamed {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                called: None,
+                became: AfterNaming::Kept,
             },
         ]
     }
@@ -205,10 +229,10 @@ mod tests {
         )
     }
 
-    /// **The twelve read back as what was written**, so a shell and a daemon
+    /// **The thirteen read back as what was written**, so a shell and a daemon
     /// built from this crate cannot disagree about what happened.
     #[test]
-    fn the_twelve_read_back_as_what_was_written() {
+    fn the_thirteen_read_back_as_what_was_written() {
         for told in every_answer() {
             let written = serde_json::to_string(&told).unwrap();
             let back: Told = serde_json::from_str(&written).unwrap();
@@ -216,11 +240,11 @@ mod tests {
         }
     }
 
-    /// **There is no thirteenth.** An answer that is not one of the twelve has
+    /// **There is no fourteenth.** An answer that is not one of the thirteen has
     /// nowhere to land, which is what stops a daemon from being extended by
     /// whatever a client is willing to parse.
     #[test]
-    fn an_answer_that_is_not_one_of_the_twelve_is_not_an_answer() {
+    fn an_answer_that_is_not_one_of_the_thirteen_is_not_an_answer() {
         for message in [
             r#"{"ran":{"command":"rm -rf /"}}"#,
             r#"{"granted":{"path":"/"}}"#,

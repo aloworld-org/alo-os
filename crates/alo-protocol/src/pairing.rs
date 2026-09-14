@@ -23,13 +23,15 @@
 //! daemon dials it, and a shell has no use for an address it could not act on
 //! (`docs/contracts/local-network-wire.md`).
 //!
-//! # A machine is named by its identity
+//! # A machine is named by its identity, and called by its name
 //!
 //! `machine` is the identity discovery found the other machine by — thirty-two
-//! characters a person did not choose. The name a person gives a machine is
-//! theirs, kept on their own machine, and is the shell's to keep until a home
-//! for it exists; it never crosses this wire and never reaches the other
-//! machine.
+//! characters a person did not choose — and it is what every request names a
+//! machine by. `called`, beside it on a pairing, is the name the person here
+//! gave that machine (`name-machine`), kept on this machine in the person's own
+//! file and absent until they give one. It is for reading and decides nothing:
+//! it never reaches the other machine, and nothing finds, dials or proves a
+//! machine by it.
 
 use alo_strings::Said;
 use serde::{Deserialize, Serialize};
@@ -202,6 +204,11 @@ pub struct Paired {
     /// reads as *no*.
     #[serde(default)]
     may_answer_questions: bool,
+    /// What the person here called that machine, if they gave it a name.
+    /// Absent — never empty — when they did not, and in a list written before
+    /// this field existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    called: Option<String>,
 }
 
 impl Paired {
@@ -214,7 +221,21 @@ impl Paired {
             made_ago,
             ends_in,
             may_answer_questions: false,
+            called: None,
         }
+    }
+
+    /// The same pairing, carrying the name the person here gave that machine.
+    #[must_use]
+    pub fn that_is_called(mut self, called: Option<&str>) -> Self {
+        self.called = called.map(ToOwned::to_owned);
+        self
+    }
+
+    /// What the person here called that machine, if they gave it a name.
+    #[must_use]
+    pub fn called(&self) -> Option<&str> {
+        self.called.as_deref()
     }
 
     /// The same pairing, saying whether the person may choose that machine to
@@ -289,6 +310,21 @@ pub enum AfterRevoking {
     /// Revoked until this machine restarts, because the file could not be
     /// written.
     RevokedUntilARestart,
+}
+
+/// What became of a name the person gave a machine, or took away.
+///
+/// A name takes effect at once whether or not the file could be written; the
+/// second arm says the file could not be, so that a person is not surprised by
+/// a name coming back — or going — after a restart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AfterNaming {
+    /// Named, or the name taken away, and written down as such.
+    Kept,
+    /// Named, or the name taken away, until this machine restarts, because the
+    /// file could not be written.
+    KeptUntilARestart,
 }
 
 #[cfg(test)]
@@ -389,6 +425,37 @@ mod tests {
         )
         .unwrap();
         assert!(!older.may_answer_questions());
+    }
+
+    /// **A pairing carries the name the person here gave its machine beside
+    /// the identity**, absent rather than empty when there is none, and a list
+    /// written before the field existed reads as having none.
+    #[test]
+    fn a_pairing_carries_its_machines_name_beside_the_identity() {
+        let called = Paired::of("0f1e2d3c4b5a69788796a5b4c3d2e1f0", a_list(), 60, 86_340)
+            .that_is_called(Some("the reception machine"));
+        assert_eq!(called.called(), Some("the reception machine"));
+        assert_eq!(called.machine(), "0f1e2d3c4b5a69788796a5b4c3d2e1f0");
+        let written = serde_json::to_string(&called).unwrap();
+        assert!(
+            written.contains(r#""machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0""#)
+                && written.contains(r#""called":"the reception machine""#),
+            "{written}"
+        );
+        assert_eq!(serde_json::from_str::<Paired>(&written).unwrap(), called);
+
+        let nameless = Paired::of("0f1e2d3c4b5a69788796a5b4c3d2e1f0", a_list(), 60, 86_340)
+            .that_is_called(None);
+        assert!(!serde_json::to_string(&nameless).unwrap().contains("called"));
+        let older: Paired = serde_json::from_str(
+            r#"{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[],"made_ago":1,"ends_in":1}"#,
+        )
+        .unwrap();
+        assert_eq!(older.called(), None);
+        assert_eq!(
+            serde_json::to_string(&AfterNaming::KeptUntilARestart).unwrap(),
+            r#""kept-until-a-restart""#
+        );
     }
 
     /// A field nobody declared is refused rather than read around, so a

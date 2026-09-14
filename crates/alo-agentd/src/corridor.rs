@@ -323,6 +323,124 @@ mod tests {
         assert_eq!(departures(&record), 1);
     }
 
+    /// A network where the studio answers, remembering every identity it was
+    /// asked for — so a test can say what a machine was looked for *by*.
+    #[derive(Debug)]
+    struct LookedForBy {
+        /// The studio's network.
+        studio: TheStudioIsAt,
+        /// Every identity looked for, in order.
+        asked: std::cell::RefCell<Vec<MachineId>>,
+    }
+
+    impl LookingFor for LookedForBy {
+        fn look_for(&self, machine: &MachineId) -> Option<alo_nearby::Found> {
+            self.asked.borrow_mut().push(machine.clone());
+            self.studio.look_for(machine)
+        }
+    }
+
+    /// **A question down the corridor names the machine by the name its
+    /// person gave it on the person's door** — the departure the indicator
+    /// shows and the record entry it leaves (`Entry::left` is made only from
+    /// the departure the indicator hands out) say *the studio machine*, and so
+    /// does where the answer came from — **and the name never crosses**: what
+    /// the studio heard holds no byte of it, and the machine was looked for by
+    /// its identity and nothing else.
+    #[test]
+    fn a_question_down_the_corridor_names_the_machine_by_its_name_and_the_name_never_crosses() {
+        use crate::answering::what_a_person_said;
+        use crate::holding::Holding;
+        use crate::pairing::Nearby;
+        use crate::rereading::WhatIsGranted;
+        use crate::testing::{
+            NobodyIsNearby, NothingIsRemembered, the_studio_answering_and_keeping,
+        };
+
+        const CALLED: &str = "the studio machine";
+        let mut questions = reception_choosing_the_studio("named", TheBound::Nobodys);
+        let network = reception_paired_with_the_studio();
+        let (at, heard, kept) = the_studio_answering_and_keeping();
+        let looking = LookedForBy {
+            studio: TheStudioIsAt {
+                at,
+                looked: Cell::new(0),
+            },
+            asked: std::cell::RefCell::new(Vec::new()),
+        };
+        let corridor = Corridor {
+            network: &network,
+            looking: &looking,
+            naming: network.names(),
+        };
+        let mut record = Record::default();
+
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let named = what_a_person_said(
+                &a_message(&format!(
+                    r#"{{"name-machine":{{"machine":"{}","called":"{CALLED}"}}}}"#,
+                    the_studio().as_str()
+                )),
+                &mut Holding::ATurn {
+                    turning: &mut *turning,
+                    questions: &mut questions,
+                },
+                &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
+                &Nearby {
+                    network: &network,
+                    looking: &NobodyIsNearby,
+                },
+                strings,
+                noon(),
+            )
+            .unwrap();
+            assert_eq!(named.called(), Some(CALLED), "{named:?}");
+
+            let said = what_an_agent_said(
+                &a_message(ASKED),
+                turning,
+                &mut questions,
+                Some(&corridor),
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+            let ToAnAgent::Answered {
+                text, came_from, ..
+            } = &said
+            else {
+                unreachable!("{said:?}")
+            };
+            assert_eq!(text, "Three are unpaid.");
+            assert!(came_from.text().contains(CALLED), "{came_from:?}");
+            assert!(
+                !came_from.text().contains(the_studio().as_str()),
+                "{came_from:?}"
+            );
+        });
+
+        assert!(
+            record.everything().any(|entry| matches!(
+                entry.happened(),
+                alo_record::Happened::Left {
+                    destination: alo_egress::Destination::PairedMachine { machine },
+                    ..
+                } if machine == CALLED
+            )),
+            "{record:?}"
+        );
+        assert_eq!(departures(&record), 1);
+        assert_eq!(heard.load(Ordering::SeqCst), 1);
+        let crossed = kept.lock().unwrap();
+        assert_eq!(crossed.len(), 1);
+        assert!(
+            !crossed.first().unwrap().contains(CALLED),
+            "the name crossed to the other machine: {crossed:?}"
+        );
+        assert_eq!(*looking.asked.borrow(), vec![the_studio()]);
+    }
+
     /// **A pairing that ran out since the choice refuses the question in the
     /// same words**, before the network is asked anything.
     #[test]

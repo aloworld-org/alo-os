@@ -36,6 +36,8 @@ use std::time::SystemTime;
 use alo_nearby::{MachineId, Pairings, Proposals};
 use alo_remembering::NotRemembered;
 
+use crate::names::TheNames;
+
 /// Somewhere this machine's pairings are written down between restarts.
 ///
 /// One method, and it writes the whole list. There is deliberately no way to
@@ -130,10 +132,17 @@ impl Shared {
 }
 
 /// The one lock over what this machine holds about the other machines.
+///
+/// And, beside it, what the person here called those machines
+/// ([`TheNetwork::names`]): behind a lock of its own that is always taken
+/// second, because a name is asked while this one is held
+/// (`crate::names` has the order).
 #[derive(Debug)]
 pub struct TheNetwork {
     /// The lists.
     shared: Mutex<Shared>,
+    /// What the person here called the machines this one is paired with.
+    names: TheNames,
 }
 
 impl TheNetwork {
@@ -161,7 +170,25 @@ impl TheNetwork {
                 proposals: Proposals::on(here),
                 keeping,
             }),
+            names: TheNames::default(),
         }
+    }
+
+    /// The same machine, holding these names — what `src/main.rs` read back
+    /// beside the pairings — and writing every change to them where they say.
+    #[must_use]
+    pub fn calling(mut self, names: TheNames) -> Self {
+        self.names = names;
+        self
+    }
+
+    /// What the person here called the machines this one is paired with.
+    ///
+    /// The `alo_corridor::Naming` the service answers with. Its lock is always
+    /// taken after this type's own, never before.
+    #[must_use]
+    pub const fn names(&self) -> &TheNames {
+        &self.names
     }
 
     /// Take the lock, for the length of one message or one act on the

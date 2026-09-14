@@ -313,8 +313,71 @@ pub const NOWHERE_TO_KEEP_THE_CHOICE: Word = Word::saying(
     "Said to the person's own shell when they chose a machine on their network to answer their      questions and alo OS could not find where their settings are kept — the session has no home      folder to keep them in. Nothing was written and nothing else was chosen.",
 );
 
+/// A machine named, or its name taken away, that this machine is not paired
+/// with.
+pub const ONLY_A_PAIRED_MACHINE_IS_NAMED: Word = Word::saying(
+    "agentd.only-a-paired-machine-is-named",
+    "this machine is not paired with that one, so no name was given or taken away — a name is for a machine you are paired with",
+)
+.noting(
+    "Said to the person's own shell when they gave a name to a machine on their network, or took \
+     one away, and this machine has no pairing with it at that moment: never paired, revoked, or \
+     its time ran out. Nothing was written. A \"pairing\" is the agreement two people make, one on \
+     each machine, that lets one machine ask the other for something.",
+);
+
+/// A machine's name with nothing in it.
+pub const A_NAME_HAS_NOTHING_IN_IT: Word = Word::saying(
+    "agentd.a-name-has-nothing-in-it",
+    "that name has nothing in it, so the machine was not named — to take a name away, clear it instead",
+)
+.noting(
+    "Said when the person gave a machine on their network a name that is empty or only spaces. \
+     Taking a name away is a separate action in their shell, which the second half points to.",
+);
+
+/// A machine's name longer than a name may be.
+pub const A_NAME_IS_TOO_LONG: Word = Word::saying(
+    "agentd.a-name-is-too-long",
+    "that name is longer than 64 characters, so the machine was not named — choose a shorter one",
+)
+.noting(
+    "Said when the person gave a machine on their network a name longer than 64 characters. The \
+     name appears on lists, on the indicator that shows something is leaving the machine, and in \
+     the record of what happened, where a long one would hide what is beside it. Keep the number \
+     as a number.",
+);
+
+/// A machine's name with a line break or another control character in it.
+pub const A_NAME_HAS_A_LINE_BREAK: Word = Word::saying(
+    "agentd.a-name-has-a-line-break",
+    "that name has a line break or another invisible control character in it, so the machine was not named",
+)
+.noting(
+    "Said when the person gave a machine on their network a name containing a line break, a tab \
+     or a similar invisible character. Names are shown one line at a time in lists and in the \
+     record, and a line break could make a name look like a second line nobody wrote.",
+);
+
+/// A machine's name that reads as a machine's identity.
+pub const A_NAME_CANNOT_BE_AN_IDENTITY: Word = Word::saying(
+    "agentd.a-name-cannot-be-an-identity",
+    "that name reads as a machine's identity, so the machine was not named — a name that looks like one machine's identity would put it on another machine",
+)
+.noting(
+    "Said when the person gave a machine on their network a name that is spelt exactly like a \
+     machine identity: the thirty-two letters and digits a machine is found by. A person reading \
+     an identity would believe they were reading about that machine, so a name may not look like \
+     one.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 19] = [
+pub const EVERY_WORD: [Word; 24] = [
+    ONLY_A_PAIRED_MACHINE_IS_NAMED,
+    A_NAME_HAS_NOTHING_IN_IT,
+    A_NAME_IS_TOO_LONG,
+    A_NAME_HAS_A_LINE_BREAK,
+    A_NAME_CANNOT_BE_AN_IDENTITY,
     THAT_IS_NOT_A_MACHINE,
     NOWHERE_TO_KEEP_THE_CHOICE,
     NO_SUCH_MACHINE_ON_THE_NETWORK,

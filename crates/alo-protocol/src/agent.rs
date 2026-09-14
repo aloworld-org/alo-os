@@ -114,7 +114,11 @@ impl FromAnAgent {
             // Choosing where the person's questions are answered is the
             // person's (ADR 0008), and an agent choosing it would be an agent
             // choosing which machine its own questions leave for.
-            | Asked::ChooseMachineToAnswer { .. } => Err(NotUnderstood::NotForAnAgent),
+            | Asked::ChooseMachineToAnswer { .. }
+            // What a machine is called is what its person reads, and an agent
+            // naming one could put one machine's name on another's evidence.
+            | Asked::NameMachine { .. }
+            | Asked::ClearMachineName { .. } => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

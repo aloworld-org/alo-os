@@ -63,6 +63,13 @@
 //! is under way or not, by [`crate::choosing_to_answer`], against the settings
 //! file whatever holds the machine says the next question reads.
 //!
+//! # And two name a paired machine, or take its name away
+//!
+//! What the person calls a machine they are paired with is theirs, outlives
+//! every turn and is held beside the pairings, so naming one and clearing the
+//! name are answered the same way whether a turn is under way or not, by
+//! [`crate::naming_machines`].
+//!
 //! # And the turn may be a paired machine's
 //!
 //! Since the daemon bound the port, a change waiting for this person may have
@@ -84,6 +91,7 @@ use alo_turn::Turning;
 
 use crate::choosing_to_answer;
 use crate::holding::Holding;
+use crate::naming_machines;
 use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
 use crate::rereading::{self, WhatIsGranted};
@@ -127,6 +135,20 @@ pub fn what_a_person_said(
                 now,
             ))
         }
+        Ok(FromAPerson::NameMachine { machine, called }) => Ok(naming_machines::named(
+            &machine,
+            Some(&called),
+            nearby.network,
+            strings,
+            now,
+        )),
+        Ok(FromAPerson::ClearMachineName { machine }) => Ok(naming_machines::named(
+            &machine,
+            None,
+            nearby.network,
+            strings,
+            now,
+        )),
         Ok(answered) => {
             // A pairing is neither the turn's nor the grants file's, and it
             // is answered whether or not a turn holds the machine: the
@@ -204,7 +226,9 @@ fn answered_to(
         | FromAPerson::ConfirmPairing { .. }
         | FromAPerson::RevokePairing { .. }
         | FromAPerson::Pairings
-        | FromAPerson::ChooseMachineToAnswer { .. } => {
+        | FromAPerson::ChooseMachineToAnswer { .. }
+        | FromAPerson::NameMachine { .. }
+        | FromAPerson::ClearMachineName { .. } => {
             ToAPerson::refused(&rereading::what_to_say(strings))
         }
         FromAPerson::Approve { number } => match under(turning, number, now) {

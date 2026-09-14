@@ -200,6 +200,8 @@ pub mod hearing;
 #[cfg(target_os = "linux")]
 pub mod holding;
 #[cfg(target_os = "linux")]
+pub mod keeping_names;
+#[cfg(target_os = "linux")]
 pub mod keeping_pairings;
 #[cfg(target_os = "linux")]
 pub mod knocking;
@@ -211,6 +213,10 @@ pub mod lines;
 pub mod listening;
 #[cfg(target_os = "linux")]
 pub mod looking;
+#[cfg(target_os = "linux")]
+pub mod names;
+#[cfg(target_os = "linux")]
+pub mod naming_machines;
 #[cfg(target_os = "linux")]
 pub mod network;
 #[cfg(target_os = "linux")]
@@ -278,6 +284,8 @@ pub use hearing::{Heard, Judging, NOT_A_MESSAGE, NOT_FOR_THIS_WIRE};
 #[cfg(target_os = "linux")]
 pub use holding::Holding;
 #[cfg(target_os = "linux")]
+pub use keeping_names::TheNamesFile;
+#[cfg(target_os = "linux")]
 pub use keeping_pairings::ThePairingsFile;
 #[cfg(target_os = "linux")]
 pub use knocking::Knocking;
@@ -289,6 +297,8 @@ pub use lines::Line;
 pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
 pub use looking::{LookingFor, WHILE_LOOKING, found_at, found_by_name};
+#[cfg(target_os = "linux")]
+pub use names::{KeepingNames, NothingKeepsNames, TheNames};
 #[cfg(target_os = "linux")]
 pub use network::{KeepingPairings, NothingKeepsPairings, Shared, TheNetwork};
 #[cfg(target_os = "linux")]

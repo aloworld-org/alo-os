@@ -1,12 +1,17 @@
 //! What the daemon says back to the person's shell.
 //!
-//! Ten answers to nine requests: what a change did once they approved it,
+//! Eleven answers to eleven requests: what a change did once they approved it,
 //! that a change they declined is written down, everything still waiting for
 //! them, how much is granted after the machine read its list again, the four
 //! about pairing — the proposal waiting with its code, what became of a
 //! confirmation, what became of a revocation, and everything paired and
-//! waiting — the machine now chosen to answer their questions, and, for any of
-//! the nine, the refusal in the language they read.
+//! waiting — the machine now chosen to answer their questions, a machine named
+//! or its name taken away, and, for any of the eleven, the refusal in the
+//! language they read.
+//!
+//! Wherever a paired machine is named here — on the list, chosen to answer,
+//! named — its identity comes with the name the person gave it beside it,
+//! `called`, absent until they give one.
 //!
 //! The four about pairing are on this side and no other, for the reason
 //! `waiting` is: a pairing is the person's list of which machines may ask this
@@ -38,7 +43,7 @@ use alo_strings::{Said, Strings};
 
 use crate::done::Done;
 use crate::frame;
-use crate::pairing::{AfterConfirming, AfterRevoking, Paired, WaitingToPair};
+use crate::pairing::{AfterConfirming, AfterNaming, AfterRevoking, Paired, WaitingToPair};
 use crate::refusing::NotUnderstood;
 use crate::standing::Standing;
 use crate::told::Told;
@@ -93,6 +98,17 @@ pub enum ToAPerson {
     ChosenToAnswer {
         /// The machine chosen, by its identity.
         machine: String,
+        /// What they called it, if they gave it a name.
+        called: Option<String>,
+    },
+    /// A machine this one is paired with was named, or its name taken away.
+    MachineNamed {
+        /// The machine, by its identity.
+        machine: String,
+        /// What it is now called, if anything.
+        called: Option<String>,
+        /// Kept, or kept until a restart.
+        became: AfterNaming,
     },
 }
 
@@ -121,11 +137,13 @@ impl ToAPerson {
         Self::Pairings { paired, waiting }
     }
 
-    /// The machine they chose to answer their questions, by its identity.
+    /// The machine they chose to answer their questions, by its identity, with
+    /// the name they gave it if they gave one.
     #[must_use]
-    pub fn chosen_to_answer(machine: &str) -> Self {
+    pub fn chosen_to_answer(machine: &str, called: Option<&str>) -> Self {
         Self::ChosenToAnswer {
             machine: machine.to_owned(),
+            called: called.map(ToOwned::to_owned),
         }
     }
 
@@ -134,7 +152,41 @@ impl ToAPerson {
     #[must_use]
     pub fn machine_chosen_to_answer(&self) -> Option<&str> {
         match self {
-            Self::ChosenToAnswer { machine } => Some(machine),
+            Self::ChosenToAnswer { machine, .. } => Some(machine),
+            _ => None,
+        }
+    }
+
+    /// A machine named, or its name taken away when `called` is nothing.
+    #[must_use]
+    pub fn machine_named(machine: &str, called: Option<&str>, became: AfterNaming) -> Self {
+        Self::MachineNamed {
+            machine: machine.to_owned(),
+            called: called.map(ToOwned::to_owned),
+            became,
+        }
+    }
+
+    /// What the machine they chose, or the machine they named, is called now —
+    /// when that is what they were told and it has a name.
+    #[must_use]
+    pub fn called(&self) -> Option<&str> {
+        match self {
+            Self::ChosenToAnswer { called, .. } | Self::MachineNamed { called, .. } => {
+                called.as_deref()
+            }
+            _ => None,
+        }
+    }
+
+    /// What became of a name they gave or took away, and which machine it was
+    /// — when that is what they were told.
+    #[must_use]
+    pub fn became_of_naming(&self) -> Option<(&str, AfterNaming)> {
+        match self {
+            Self::MachineNamed {
+                machine, became, ..
+            } => Some((machine, *became)),
             _ => None,
         }
     }
@@ -263,7 +315,18 @@ impl ToAPerson {
             Told::Confirmed { became } => Ok(Self::Confirmed { became }),
             Told::Revoked { became } => Ok(Self::Revoked { became }),
             Told::Pairings { paired, waiting } => Ok(Self::Pairings { paired, waiting }),
-            Told::ChosenToAnswer { machine } => Ok(Self::ChosenToAnswer { machine }),
+            Told::ChosenToAnswer { machine, called } => {
+                Ok(Self::ChosenToAnswer { machine, called })
+            }
+            Told::MachineNamed {
+                machine,
+                called,
+                became,
+            } => Ok(Self::MachineNamed {
+                machine,
+                called,
+                became,
+            }),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -327,7 +390,18 @@ impl From<ToAPerson> for Told {
             ToAPerson::Confirmed { became } => Self::Confirmed { became },
             ToAPerson::Revoked { became } => Self::Revoked { became },
             ToAPerson::Pairings { paired, waiting } => Self::Pairings { paired, waiting },
-            ToAPerson::ChosenToAnswer { machine } => Self::ChosenToAnswer { machine },
+            ToAPerson::ChosenToAnswer { machine, called } => {
+                Self::ChosenToAnswer { machine, called }
+            }
+            ToAPerson::MachineNamed {
+                machine,
+                called,
+                became,
+            } => Self::MachineNamed {
+                machine,
+                called,
+                became,
+            },
         }
     }
 }
@@ -371,7 +445,7 @@ mod tests {
     /// identity, and never to an agent.**
     #[test]
     fn the_machine_chosen_to_answer_is_told_to_the_person_and_not_to_an_agent() {
-        let told = ToAPerson::chosen_to_answer("0f1e2d3c4b5a69788796a5b4c3d2e1f0");
+        let told = ToAPerson::chosen_to_answer("0f1e2d3c4b5a69788796a5b4c3d2e1f0", None);
         assert_eq!(
             told.machine_chosen_to_answer(),
             Some("0f1e2d3c4b5a69788796a5b4c3d2e1f0")
@@ -388,6 +462,60 @@ mod tests {
             Err(NotUnderstood::NotAnAnswerForAnAgent)
         );
         assert!(ToAPerson::Declined.machine_chosen_to_answer().is_none());
+
+        // With a name, the name comes beside the identity.
+        let called = ToAPerson::chosen_to_answer(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            Some("the studio machine"),
+        );
+        let written = called.written().unwrap();
+        assert!(
+            written.contains(
+                r#""machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine""#
+            ),
+            "{written}"
+        );
+        assert_eq!(
+            ToAPerson::read(&written).unwrap().called(),
+            Some("the studio machine")
+        );
+    }
+
+    /// **A machine named, and a name taken away, come back to the person with
+    /// the identity and what became of it — and never to an agent.**
+    #[test]
+    fn a_machine_named_is_told_to_the_person_and_not_to_an_agent() {
+        let named = ToAPerson::machine_named(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            Some("the studio machine"),
+            AfterNaming::Kept,
+        );
+        let written = named.written().unwrap();
+        assert!(
+            written.contains(r#""machine-named":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","called":"the studio machine","became":"kept"}"#),
+            "{written}"
+        );
+        let back = ToAPerson::read(&written).unwrap();
+        assert_eq!(back, named);
+        assert_eq!(back.called(), Some("the studio machine"));
+        assert_eq!(
+            back.became_of_naming(),
+            Some(("0f1e2d3c4b5a69788796a5b4c3d2e1f0", AfterNaming::Kept))
+        );
+        assert_eq!(
+            ToAnAgent::read(&written),
+            Err(NotUnderstood::NotAnAnswerForAnAgent)
+        );
+
+        let cleared = ToAPerson::machine_named(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            None,
+            AfterNaming::KeptUntilARestart,
+        );
+        let written = cleared.written().unwrap();
+        assert!(!written.contains("called"), "{written}");
+        assert_eq!(ToAPerson::read(&written).unwrap(), cleared);
+        assert!(ToAPerson::Declined.became_of_naming().is_none());
     }
 
     /// **What a shell draws is the number and the sentence**, one for each

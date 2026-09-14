@@ -194,10 +194,22 @@ fn on_the_pairing_wire(
         // between the list changing and the file saying so. A file that
         // could not be written is the service log's: the pairing stands, both
         // people confirmed it, and what failed is its outliving a restart.
-        if let Ok(alo_nearby::Heard::AConfirmation { kept: Some(_), .. }) = &heard
-            && let Err(why) = shared.written_down(now)
+        if let Ok(alo_nearby::Heard::AConfirmation {
+            kept: Some(pairing),
+            ..
+        }) = &heard
         {
-            eprintln!("alo-agentd: a pairing was kept and could not be written down: {why}");
+            if let Err(why) = shared.written_down(now) {
+                eprintln!("alo-agentd: a pairing was kept and could not be written down: {why}");
+            }
+            // A pairing kept afresh starts with no name, as it does when the
+            // person's door keeps one (`crate::pairing`).
+            crate::pairing::forget_the_name(
+                judging.network,
+                pairing.with(),
+                shared.pairings(),
+                now,
+            );
         }
         heard
     };

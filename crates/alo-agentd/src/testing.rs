@@ -611,8 +611,22 @@ pub(crate) const THE_STUDIOS_ANSWER: &str = r#"{"object":"chat.completion","mode
 /// Shared by `crate::corridor` and `crate::choosing_to_answer`: a question down
 /// the corridor, and a question to the machine the person's door just chose.
 pub(crate) fn the_studio_answering() -> (std::net::SocketAddr, std::sync::Arc<AtomicUsize>) {
+    let (at, heard, _) = the_studio_answering_and_keeping();
+    (at, heard)
+}
+
+/// The same studio, keeping every request that reached it — head and body, as
+/// the bytes arrived — so a test reads what crossed to the other machine rather
+/// than the code that sent it.
+pub(crate) fn the_studio_answering_and_keeping() -> (
+    std::net::SocketAddr,
+    std::sync::Arc<AtomicUsize>,
+    std::sync::Arc<std::sync::Mutex<Vec<String>>>,
+) {
     use std::io::{BufRead as _, Read as _, Write as _};
 
+    let kept = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let keeping = std::sync::Arc::clone(&kept);
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let at = listener.local_addr().unwrap();
     listener.set_nonblocking(true).unwrap();
@@ -629,6 +643,7 @@ pub(crate) fn the_studio_answering() -> (std::net::SocketAddr, std::sync::Arc<At
             stream.set_nonblocking(false).unwrap();
             let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
             let mut length = 0usize;
+            let mut request = String::new();
             loop {
                 let mut line = String::new();
                 if reader.read_line(&mut line).unwrap_or(0) == 0 {
@@ -637,12 +652,15 @@ pub(crate) fn the_studio_answering() -> (std::net::SocketAddr, std::sync::Arc<At
                 if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
                     length = value.trim().parse().unwrap_or(0);
                 }
+                request.push_str(&line);
                 if line == "\r\n" || line == "\n" {
                     break;
                 }
             }
             let mut body = vec![0u8; length];
             drop(reader.read_exact(&mut body));
+            request.push_str(&String::from_utf8_lossy(&body));
+            keeping.lock().unwrap().push(request);
             let written = format!(
                 "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{THE_STUDIOS_ANSWER}",
                 THE_STUDIOS_ANSWER.len()
@@ -650,7 +668,7 @@ pub(crate) fn the_studio_answering() -> (std::net::SocketAddr, std::sync::Arc<At
             drop(stream.write_all(written.as_bytes()));
         }
     });
-    (at, heard)
+    (at, heard, kept)
 }
 
 /// The network, where the studio answers discovery at `at` — and how many

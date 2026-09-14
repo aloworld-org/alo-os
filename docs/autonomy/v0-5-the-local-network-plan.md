@@ -637,7 +637,24 @@ refused at choosing becomes a choice nobody refused.
 
 ### 16. A paired machine is spoken of by the name its person gave it
 
-**Status:** ready. **Depends on:** 12, 15.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-remembering` (`named.rs` —
+the rule a name is held to, `MachineName`; `names.rs` — `MachineNames` and the
+file's shape, reading back only names of machines still paired;
+`machine_names.rs` — `/var/lib/alo/machine-names.toml` under the pairings file's
+trust), `crates/alo-protocol` (`name-machine` and `clear-machine-name` as
+`FromAPerson::NameMachine` and `ClearMachineName`, refused on the agent's door;
+the answer `machine-named` as `ToAPerson::MachineNamed` with `AfterNaming`; and
+`called` beside the identity on `Paired` and `chosen-to-answer`) and
+`crates/alo-agentd` (`names.rs` — `TheNames`, the daemon's `alo_corridor::Naming`,
+behind its own lock taken after the network's; `keeping_names.rs` — the file;
+`naming_machines.rs` — the door; the name forgotten when a pairing is revoked or
+kept afresh, in `pairing.rs` and `hearing.rs`; read at start in `src/main.rs` and
+handed to `starting::until_stopped`, which replaces `NoNameYet` with it). The file
+is beside the pairings file rather than in it, because a pairings row is exactly
+what two people made. Contracts: `docs/contracts/machine-names-file.md` (new),
+`daemon-protocol.md`, `pairings-file.md` and `local-network-wire.md`, additively.
+The report is `docs/autonomy/updates/a-paired-machine-is-spoken-of-by-its-given-name.md`.
+**Depends on:** 12, 15.
 
 Every surface this plan built names the other machine by its identity — thirty-two
 hexadecimal characters a person did not choose — because the name a person gives a
@@ -669,3 +686,41 @@ identities is one they cannot.
   the pairings file or one beside it, is decided in the crate that owns it and
   written up. Nothing in `alo-shell`, nothing in `image/`; the contracts gain the
   shapes additively.
+
+### 17. A self-hosted workspace on the network is found, not configured
+
+**Status:** ready. **Depends on:** 1, 16.
+
+`docs/features.md` promises for v0.5 that *a self-hosted workspace on the network
+is discovered, not configured — no DNS step*, and ADR 0003 names it as the second
+thing discovery is for. Nothing in this plan has built it: discovery
+(`alo_nearby::SERVICE`, task 1) finds alo machines, and a workspace — mail, files,
+chat and documents, the `alo-workplace` repository's — is found by nobody. A
+person joining an office still has to be told an address and type it, which is
+the step the promise removes, and a typed address is the one thing ADR 0003 says
+nothing on this machine ever dials.
+
+- **Acceptance:** discovery on this machine finds a workspace a machine on the
+  local network advertises, by a DNS-SD service of its own declared in
+  `alo-nearby` beside `SERVICE`, and reads from the advertisement exactly a closed
+  list — which workspace, where it answers, and the version it speaks — refusing
+  anything else it carries rather than reading around it, tested with an
+  advertisement carrying one field more; the person's door (`alo-protocol`) gains
+  a request listing the workspaces found at the moment, each with the address
+  discovery measured and the name of the paired machine hosting it where the
+  person gave one (task 16), refused on the agent's door in the words an approval
+  gets, tested; **finding a workspace confers nothing** — no request, verb or
+  question reaches one because it was found, and nothing on this machine connects
+  to it until a person acts, tested by a workspace advertised on a network where
+  nothing is paired and nothing is contacted; and an address a person types is
+  never dialled as a workspace, tested by its refusal.
+- **Constraint:** ADR 0003 throughout: discovery is open and reveals presence
+  only, use requires the person's deliberate act, and there is no trusted-network
+  setting. What a workspace *is* and what serves one is `alo-workplace`'s and
+  outside this repository; what this task owes it is the service name and the
+  closed advertisement, written up in `docs/contracts/local-network-wire.md`
+  additively so that repository can advertise against it. Whether reaching a
+  found workspace requires a pairing permitting `MayAskIts::Workspace` — and so
+  whether a workspace host must be an alo machine — is decided in the report,
+  and an ADR is written first if the answer would narrow the promise. Nothing in
+  `alo-shell`, nothing in `image/`.

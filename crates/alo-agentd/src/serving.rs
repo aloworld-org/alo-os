@@ -859,7 +859,7 @@ mod tests {
     use std::sync::Arc;
 
     use crate::network::{KeepingPairings, NothingKeepsPairings, TheNetwork};
-    use crate::terms::{NoNameYet, Terms};
+    use crate::terms::Terms;
     use crate::testing::{paired_between, reception, the_studio};
     use crate::wire::Wire;
     use alo_egress::EgressPolicy;
@@ -1201,7 +1201,9 @@ mod tests {
             standing: hour(),
             keeping,
             policy: EgressPolicy::InTheBuilding,
-            naming: &NoNameYet,
+            // What a running machine answers with: the names given on the
+            // person's door, held beside the pairings.
+            naming: network.names(),
         };
         let served = Serving::of(&knocking, &waking, &wire, &network, terms).until_stopped(
             &mut machine,
