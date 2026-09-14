@@ -70,6 +70,7 @@ use alo_models::{
 };
 
 use crate::chosen::{Chosen, Picked, Which};
+use crate::paired::AMachine;
 use crate::refusing::NotSet;
 use crate::settings::{Settings, Unresolved};
 use crate::setup::Setup;
@@ -287,6 +288,14 @@ pub(crate) enum TheAnswers {
     Brought(String),
     /// A provider the person added, and the model they want from it.
     Provider(ProviderChosen),
+    /// A machine this person is paired with, by the identity the pairing
+    /// names: `machine = "aaaabbbbccccddddeeeeffff00001111"`.
+    ///
+    /// Additive, and the format did not move for it — `[[brought]]`'s
+    /// precedent: an alo OS that never heard of the key refuses the file whole
+    /// rather than answering somewhere the person did not pick, so no older
+    /// release honours a different choice.
+    Machine(String),
 }
 
 /// Which provider, and which of its models.
@@ -416,6 +425,15 @@ impl AsWritten {
                 Picked::from_a_provider(&picked.name, &picked.model)
                     .map_err(|_| NotSet::Nameless { at: at.to_owned() })?,
             ),
+            // Read as written and checked against no pairing: a file is not
+            // wrong because a pairing ended overnight, and the question is
+            // refused in words instead (`crate::paired`).
+            Some(TheAnswers::Machine(said)) if said.trim().is_empty() => {
+                return Err(NotSet::Nameless { at: at.to_owned() });
+            }
+            Some(TheAnswers::Machine(said)) => {
+                Some(Picked::FromAPairedMachine(AMachine::as_written(said)))
+            }
             None => None,
         };
 
@@ -584,6 +602,43 @@ runtime = "Ollama 0.34.0"
                 .collect::<Vec<_>>(),
             ["de", "en"]
         );
+    }
+
+    /// **A machine this person is paired with is chosen by its identity**, in
+    /// the shape this alo OS writes, and is read without asking any pairing —
+    /// a file is not wrong because a pairing ended overnight.
+    #[test]
+    fn a_paired_machine_is_chosen_by_its_identity() {
+        let said = as_the_contract_writes_them().replace(
+            r#"catalogue = "mistral-small""#,
+            r#"machine = "aaaabbbbccccddddeeeeffff00001111""#,
+        );
+        let settings = read(&said, somewhere()).unwrap();
+        let chosen = settings.chosen().unwrap();
+        assert_eq!(
+            chosen.paired_machine().unwrap().machine(),
+            "aaaabbbbccccddddeeeeffff00001111"
+        );
+        assert_eq!(chosen.model(), crate::WHAT_THAT_MACHINE_CHOSE);
+        assert!(chosen.on_this_machine().is_none());
+        assert!(
+            chosen
+                .source(settings.providers())
+                .unwrap()
+                .stays_in_the_building()
+        );
+    }
+
+    /// **A machine named nothing is a choice of nothing**, refused as a list
+    /// named with no model is — what was cleared was a value, not the choice.
+    #[test]
+    fn a_machine_named_nothing_is_refused() {
+        let said = as_the_contract_writes_them()
+            .replace(r#"catalogue = "mistral-small""#, r#"machine = "  ""#);
+        assert!(matches!(
+            read(&said, somewhere()),
+            Err(NotSet::Nameless { .. })
+        ));
     }
 
     /// **Weights somebody brought are the other list**, named by the key rather

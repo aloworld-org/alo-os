@@ -168,6 +168,7 @@ pub mod question;
 // 4's — it is a list of somebody else's identifiers, and it changes when they
 // do rather than when the wire does.
 mod ran_out;
+pub mod refused_on_the_wire;
 pub mod refusing;
 pub mod served;
 pub mod unanswered;
@@ -186,6 +187,7 @@ pub use found::{Found, NotVetted};
 pub use hosted::Hosted;
 pub use openai::{NotHeard, a_question_off_the_wire, an_answer_on_the_wire};
 pub use question::{NotAQuestion, Question};
+pub use refused_on_the_wire::{ANSWERS_ELSEWHERE, NOT_ANSWERED_HERE, NOT_PERMITTED};
 pub use refusing::{Miswired, NotAnswered, NotAsked};
 pub use served::Served;
 pub use unanswered::DidNotAnswer;

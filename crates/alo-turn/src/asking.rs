@@ -38,6 +38,8 @@
 //! | A provider, answered | `left` — the departure, from the token the door hands back |
 //! | A provider, no reply | `left` — it went, and a record of only the answered ones would report a quieter day than the machine had |
 //! | A provider, refused by the rule | `held back`, in the rule's own words |
+//! | A paired machine, answered or refused in its own word | `left` — as a provider, because *it only went down the corridor* is still a departure |
+//! | A paired machine, refused by the rule | `held back`, in the rule's own words |
 //! | This machine, answered | `answered here` — who asked, and nothing else |
 //! | This machine, no reply | nothing: `crate::unanswered` has the four absences and the argument for each |
 //!
@@ -226,34 +228,21 @@ impl Turning<'_, '_> {
                 // boundary permitting these addresses and no others, and asks
                 // no name server anything of its own.
                 let to = registering(hosted.where_it_would_connect());
-                let (bounding, indicator) = self.machine().bounding_and_indicator();
-                // Moved into the closure once. The door takes `self` because
-                // one permission is one attempt, and this is that one attempt.
-                let mut once = Some(asking);
-                let mut outcome = None;
-                let bounded = bounding.carrying_out_a_departure(&to, &mut || {
-                    if let Some(asking) = once.take() {
-                        outcome =
-                            Some(asking.to_a_provider(&question, hosted, indicator, now, &to));
-                    }
-                });
-                match (bounded, outcome) {
-                    (Ok(()), Some(outcome)) => self.what_a_provider_did(outcome, now),
-                    // A boundary that could not be imposed is ADR 0015's rule
-                    // rather than a smaller question: nothing was asked and
-                    // nothing left. A boundary that was imposed and ran nothing
-                    // is the same fact about this machine, said the same way —
-                    // and both are written down as the machine's own refusal.
-                    (Err(why), _) => Err(self.nothing_was_bounded(why, &agent, now)),
-                    (Ok(()), None) => Err(self.nothing_was_bounded(
-                        NoBoundary::because(
-                            "the boundary was imposed and the question was not put inside it"
-                                .to_owned(),
-                        ),
-                        &agent,
-                        now,
-                    )),
-                }
+                self.put_off_this_machine(&to, &agent, now, |indicator| {
+                    asking.to_a_provider(&question, hosted, indicator, now, &to)
+                })
+            }
+            // **Down the corridor, exactly as to a provider in everything law 1
+            // cares about**: resolved before the boundary, put from inside one
+            // permitting the one address discovery measured, the departure
+            // written whether or not an answer came back. `held` is not read —
+            // a paired machine is asked for an agent's next request exactly as
+            // it is asked a question in words (ADR 0032, decision 4).
+            Answers::PairedMachine(corridor) => {
+                let to = registering(corridor.where_it_would_connect());
+                self.put_off_this_machine(&to, &agent, now, |indicator| {
+                    asking.to_a_paired_machine(&question, corridor, indicator, now, &to)
+                })
             }
             Answers::ThePinnedRuntime(runtime) => {
                 // The only place `held` is read (ADR 0032, decisions 3 and 4).
@@ -280,7 +269,49 @@ impl Turning<'_, '_> {
         }
     }
 
-    /// What came back from a provider, written down and then handed over.
+    /// Put a question that leaves this machine from inside a boundary
+    /// permitting `to` and nothing else, and write down what became of it.
+    ///
+    /// One road for a provider and a paired machine, because what law 1 and
+    /// ADR 0020 ask of the two is the same: `put` is the one attempt the
+    /// permission buys, run once inside the boundary or not at all.
+    fn put_off_this_machine(
+        &mut self,
+        to: &[SocketAddr],
+        agent: &Grantee,
+        now: SystemTime,
+        put: impl FnOnce(&mut alo_egress::Indicator) -> Result<Asked, NotAsked>,
+    ) -> Result<Answer, NoAnswer> {
+        let (bounding, indicator) = self.machine().bounding_and_indicator();
+        // Moved into the closure once. The door takes `self` because one
+        // permission is one attempt, and this is that one attempt.
+        let mut once = Some(put);
+        let mut outcome = None;
+        let bounded = bounding.carrying_out_a_departure(to, &mut || {
+            if let Some(put) = once.take() {
+                outcome = Some(put(indicator));
+            }
+        });
+        match (bounded, outcome) {
+            (Ok(()), Some(outcome)) => self.what_a_provider_did(outcome, now),
+            // A boundary that could not be imposed is ADR 0015's rule rather
+            // than a smaller question: nothing was asked and nothing left. A
+            // boundary that was imposed and ran nothing is the same fact about
+            // this machine, said the same way — and both are written down as
+            // the machine's own refusal.
+            (Err(why), _) => Err(self.nothing_was_bounded(why, agent, now)),
+            (Ok(()), None) => Err(self.nothing_was_bounded(
+                NoBoundary::because(
+                    "the boundary was imposed and the question was not put inside it".to_owned(),
+                ),
+                agent,
+                now,
+            )),
+        }
+    }
+
+    /// What came back from a provider or a paired machine, written down and
+    /// then handed over.
     ///
     /// Both roads where something left end with the departure written before
     /// the line comes off the indicator and before the caller hears anything:

@@ -63,7 +63,7 @@
 
 use std::ffi::{OsStr, OsString};
 
-use alo_choosing::{CONFIG_HOME, Chosen, HOME, NotSet};
+use alo_choosing::{AMachine, CONFIG_HOME, Chosen, HOME, NotSet};
 use alo_models::{Catalogue, Provider, Secret, SecretRef, SourcePolicy, found_on_this_machine};
 use alo_secrets::{NotStored, TheBus, TheKeyring};
 use alo_turn::Places;
@@ -200,6 +200,11 @@ enum Looked {
         /// The runtime that was found, which nothing here can point anywhere.
         runtime: TheRuntime,
     },
+    /// A machine the person is paired with, whose own model answers.
+    ///
+    /// Held as it was chosen and checked against no pairing here: whether one
+    /// still permits it is asked at every question, by `crate::corridor`.
+    FromAPairedMachine(AMachine),
     /// A provider the person added, and the model they asked it for.
     ///
     /// Resolved out of their own list when the file was read, so what is held
@@ -236,6 +241,17 @@ pub enum WhatAnswers<'a> {
         provider: &'a Provider,
         /// What it is asked for.
         model: &'a str,
+        /// What is permitted, and what else could be offered — which is
+        /// nothing, honestly.
+        places: Places<'a>,
+    },
+    /// The question goes down the corridor to a machine the person chose.
+    ///
+    /// Nothing here has asked the pairings or the network yet;
+    /// `crate::corridor` does both, at the moment of the question.
+    FromAPairedMachine {
+        /// The machine, as the person chose it.
+        machine: &'a AMachine,
         /// What is permitted, and what else could be offered — which is
         /// nothing, honestly.
         places: Places<'a>,
@@ -382,6 +398,10 @@ impl Questions {
                 model,
                 places: Places::under(bound),
             },
+            Some(Looked::FromAPairedMachine(machine)) => WhatAnswers::FromAPairedMachine {
+                machine,
+                places: Places::under(bound),
+            },
             Some(Looked::NotSet(why)) => WhatAnswers::NotSet(why),
             Some(Looked::NotRunning) => WhatAnswers::NotRunning,
             // Filled two lines above, so `None` is unreachable rather than
@@ -453,6 +473,11 @@ fn look(config_home: Option<&OsStr>, home: Option<&OsStr>, catalogue: &Catalogue
     let Some(chosen) = settings.chosen() else {
         return Looked::Nothing;
     };
+    // A paired machine is the person's choice and goes down the corridor, never
+    // to anything on this machine — returned before a runtime is looked for.
+    if let Some(machine) = chosen.paired_machine() {
+        return Looked::FromAPairedMachine(machine.clone());
+    }
     // A provider is looked up in the person's own list and not on this machine.
     // Falling through to `found_on_this_machine` here would be the one thing
     // nothing may do: a question the person addressed elsewhere answered by

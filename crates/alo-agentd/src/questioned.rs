@@ -75,16 +75,16 @@ use crate::refusing::NotServed;
 
 /// What the wire says for a question it proved and this machine has nothing
 /// chosen to answer with.
-pub const NOT_ANSWERED_HERE: &str = "not-answered-here";
+pub const NOT_ANSWERED_HERE: &str = alo_asking::NOT_ANSWERED_HERE;
 
 /// What the wire says for a question from a pairing that does not permit
 /// asking this machine's models.
-pub const NOT_PERMITTED: &str = "not-permitted";
+pub const NOT_PERMITTED: &str = alo_asking::NOT_PERMITTED;
 
 /// What the wire says for a question this machine's person answers their own
 /// questions elsewhere for: a provider is chosen here, and a question from
 /// another machine is not sent there.
-pub const ANSWERS_ELSEWHERE: &str = "answers-elsewhere";
+pub const ANSWERS_ELSEWHERE: &str = alo_asking::ANSWERS_ELSEWHERE;
 
 /// What the wire says for a body that proved itself and was not a question.
 pub const NOT_A_QUESTION: &str = "not-a-question";
@@ -272,7 +272,9 @@ fn judged(
         WhatAnswers::Nothing | WhatAnswers::NotRunning | WhatAnswers::NotSet(_) => {
             return Ok(not_answered_here(from));
         }
-        WhatAnswers::FromAProvider { .. } => {
+        // A provider, or another paired machine: a question from a machine down
+        // the corridor is never passed on to either (ADR 0003, ADR 0008).
+        WhatAnswers::FromAProvider { .. } | WhatAnswers::FromAPairedMachine { .. } => {
             return Ok(Judgement::said(
                 Questioned::AnswersElsewhere(from),
                 503,
@@ -339,6 +341,10 @@ fn judged(
                 | WentWrong::RanOut
                 | WentWrong::SentSomewhereElse
                 | WentWrong::NoWayThere
+                // Not reachable from this machine's own model, which is the only
+                // thing a question from another machine is put to; answered as
+                // what it would mean rather than assumed away.
+                | WentWrong::RefusedThere(_)
                 | WentWrong::HavingTrouble(_) => (503, "Service Unavailable", NOTHING_ANSWERED),
             };
             Judgement::said(

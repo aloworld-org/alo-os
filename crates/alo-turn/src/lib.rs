@@ -140,6 +140,8 @@ pub mod became;
 pub mod bounding;
 mod carrying;
 pub mod crossing;
+#[cfg(test)]
+mod down_the_corridor;
 pub mod kept;
 pub mod machine;
 pub mod next_request;

@@ -277,13 +277,41 @@ pub const NOTHING_IS_PAIRED_WITH_THAT_MACHINE: Word = Word::saying(
      about nothing.",
 );
 
+/// The paired machine chosen to answer questions is no longer paired to.
+pub const THE_CHOSEN_MACHINE_IS_NOT_PAIRED: Word = Word::saying(
+    "agentd.the-chosen-machine-is-not-paired",
+    "the machine on your network chosen to answer your questions is not paired with this one in a \
+     way that lets it answer them at the moment, so nothing was sent — pair with it again, or \
+     choose something else in Settings",
+)
+.noting(
+    "Said when a question was about to go to a machine on the local network that the person chose, \
+     and no pairing with it permits asking its models any more — revoked, or its time ran out. Do \
+     not say which: the sentence deliberately does not. Nothing was sent, and nothing else was \
+     asked instead. \"Settings\" is the name of the panel in alo OS.",
+);
+
+/// The paired machine chosen to answer questions did not answer on the network.
+pub const THE_CHOSEN_MACHINE_DID_NOT_ANSWER: Word = Word::saying(
+    "agentd.the-chosen-machine-did-not-answer",
+    "the machine on your network chosen to answer your questions did not answer on this network \
+     just now, so nothing was sent",
+)
+.noting(
+    "Said when alo OS looked for that machine on the local network at the moment of a question and \
+     nothing answered: it may be switched off or on another network. Nothing was sent, and \
+     nothing else was asked instead.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 16] = [
+pub const EVERY_WORD: [Word; 18] = [
     THAT_IS_NOT_A_MACHINE,
     NO_SUCH_MACHINE_ON_THE_NETWORK,
     NOT_SOMETHING_A_PAIRING_MAY_PERMIT,
     THE_CODE_DOES_NOT_MATCH,
     NOTHING_IS_PAIRED_WITH_THAT_MACHINE,
+    THE_CHOSEN_MACHINE_IS_NOT_PAIRED,
+    THE_CHOSEN_MACHINE_DID_NOT_ANSWER,
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,

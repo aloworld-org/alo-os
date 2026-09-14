@@ -254,6 +254,51 @@ pub const NOWHERE_ELSE: Word = Word::saying(
 );
 
 // ---------------------------------------------------------------------------
+// A paired machine that would not answer, in its own word —
+// [`crate::RefusedThere`].
+//
+// Three sentences, because they send the person here to three different
+// places: the pairing, the other person's settings, and their own.
+// ---------------------------------------------------------------------------
+
+/// The pairing, as the other machine keeps it, does not let this machine ask
+/// its models.
+pub const NOT_PERMITTED_THERE: Word = Word::saying(
+    "answering.there.not-permitted",
+    "nothing was answered {source} — the pairing with that machine does not let this one ask its \
+     models, so it would not take the question",
+)
+.noting(
+    "Said when the machine down the corridor refused a question because the pairing, as that \
+     machine keeps it, does not include asking its models. {source} names that machine and \
+     arrives already in the reader's language. The fix is a new pairing that includes it, made \
+     by the two people together; do not suggest anything is broken.",
+);
+
+/// The other machine's person chose a provider, and it answers for nobody.
+pub const ANSWERS_ELSEWHERE_THERE: Word = Word::saying(
+    "answering.there.answers-elsewhere",
+    "nothing was answered {source} — that machine's own questions go to a provider, and it never \
+     passes a question from another machine on to one",
+)
+.noting(
+    "Said when the machine down the corridor refused because its person chose a hosted provider \
+     rather than a model on that machine. The second clause is a promise, not an excuse: a \
+     question from this machine was not forwarded anywhere. {source} names that machine.",
+);
+
+/// Nothing on the other machine is chosen or running to answer.
+pub const NOTHING_CHOSEN_THERE: Word = Word::saying(
+    "answering.there.nothing-chosen",
+    "nothing was answered {source} — nothing on that machine is chosen and running to answer \
+     questions at the moment",
+)
+.noting(
+    "Said when the machine down the corridor has no model chosen, none running, or settings that \
+     do not read. What to do is on that machine, not this one. {source} names that machine.",
+);
+
+// ---------------------------------------------------------------------------
 // An offer that was not this failure's — [`crate::NotOffered`].
 // ---------------------------------------------------------------------------
 
@@ -271,7 +316,7 @@ pub const NOT_ON_OFFER: Word = Word::saying(
 ///
 /// The array is what a test reads down and what [`declare_into`] walks, so a
 /// word declared above and left out here is a string nothing can look up.
-pub const EVERY_WORD: [Word; 15] = [
+pub const EVERY_WORD: [Word; 18] = [
     NOTHING_ANSWERED,
     TOOK_TOO_LONG,
     NOTHING_USABLE,
@@ -281,6 +326,9 @@ pub const EVERY_WORD: [Word; 15] = [
     HAVING_TROUBLE,
     RAN_OUT,
     NO_WAY_THERE,
+    NOT_PERMITTED_THERE,
+    ANSWERS_ELSEWHERE_THERE,
+    NOTHING_CHOSEN_THERE,
     NOTHING_WAS_SENT,
     ASK_HERE_INSTEAD,
     ASK_IN_THE_BUILDING_INSTEAD,

@@ -116,8 +116,8 @@ then answered by **the machine's own model and nothing else**. In that order:
    morning answers for the machine down the corridor this afternoon, and no
    default decides it. A machine where nothing is chosen, nothing is running,
    or the settings file does not hold is answered `503` with
-   `not-answered-here`. A machine whose person chose a **provider** is
-   answered `503` with `answers-elsewhere`: a question from a paired machine
+   `not-answered-here`. A machine whose person chose a **provider**, or a
+   **paired machine** of their own, is answered `503` with `answers-elsewhere`: a question from a paired machine
    is never forwarded to a provider or to a third machine (ADR 0003, ADR
    0008), and nothing is written.
 4. **The body**, now that the proof over it held: exactly what
@@ -140,6 +140,21 @@ then answered by **the machine's own model and nothing else**. In that order:
    with nothing on it. A model that was asked and did not answer is `503`
    with `nothing-answered-here`, and one that was not there to answer is
    `404` with `no-model-here`; neither writes anything.
+
+## What the asking machine reads
+
+The machine that asked reads three of those words and no others, and only on
+their own status: `not-permitted` on `403`, `answers-elsewhere` and
+`not-answered-here` on `503` (`alo_asking::NOT_PERMITTED`, `ANSWERS_ELSEWHERE`,
+`NOT_ANSWERED_HERE`, spelled once for both ends). Each reaches the agent as
+`alo_answering::RefusedThere`, rendered as a sentence in the language the person
+**on the asking machine** reads — never as text the answering machine wrote.
+Any other body on any other status is read as the status alone, as before. The
+question left either way, so the asking machine's record keeps it as a
+departure. The body names the model `what-that-machine-chose`
+(`alo_choosing::WHAT_THAT_MACHINE_CHOSE`), which the answering machine checks
+and sets aside. Reading these words is additive: a machine speaking the version
+before it read every refusal as the status alone.
 
 The `200` answer is additive to the version that answered every proven
 question `503`: a machine speaking that version reads a `503` as it always

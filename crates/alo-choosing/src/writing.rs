@@ -174,6 +174,7 @@ fn the_answers(picked: &Picked) -> TheAnswers {
             name: provider.clone(),
             model: model.clone(),
         }),
+        Picked::FromAPairedMachine(machine) => TheAnswers::Machine(machine.machine().to_owned()),
     }
 }
 

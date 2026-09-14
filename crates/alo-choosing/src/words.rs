@@ -290,8 +290,26 @@ pub const CHANGE_NOT_KEPT: Word = Word::saying(
      this one is still in force.",
 );
 
+// ---------------------------------------------------------------------------
+// A machine on this network — [`crate::AMachine`].
+// ---------------------------------------------------------------------------
+
+/// A machine chosen to answer questions that no pairing lets answer them.
+pub const CHANGE_NOT_PAIRED_TO_ANSWER: Word = Word::saying(
+    "choosing.change.not-paired-to-answer",
+    "your settings at {path} would say the machine {machine} answers your questions, and no \
+     pairing with it lets it answer them at the moment, so nothing in your settings has been \
+     changed",
+)
+.noting(
+    "{path} is a file on this machine and {machine} is a machine's identity; both are data and are \
+     never translated. A pairing has to include asking that machine's models, and one that has \
+     ended or been revoked includes nothing. Do not say which of never paired, expired or revoked \
+     it is — the sentence deliberately does not.",
+);
+
 /// Every string this crate can say, in the order this file declares them.
-pub const EVERY_WORD: [Word; 17] = [
+pub const EVERY_WORD: [Word; 18] = [
     SETTINGS_NOT_READ,
     SETTINGS_NOT_UNDERSTOOD,
     SETTINGS_FROM_A_NEWER_ALO_OS,
@@ -309,6 +327,7 @@ pub const EVERY_WORD: [Word; 17] = [
     CHANGE_NOTHING_TO_MEASURE,
     CHANGE_NOT_EXPRESSIBLE,
     CHANGE_NOT_KEPT,
+    CHANGE_NOT_PAIRED_TO_ANSWER,
 ];
 
 /// Why this crate's own list could not be declared.

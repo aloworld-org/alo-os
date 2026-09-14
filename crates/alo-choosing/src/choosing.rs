@@ -183,6 +183,34 @@ impl Choosing {
         self.apply(changed)
     }
 
+    /// **A machine this person is paired with answers their questions** —
+    /// chosen only if a pairing permits asking its models at `now`.
+    ///
+    /// The door a settings surface offering the paired machines calls, and the
+    /// one that can put a refusal in the person's words: [`crate::AMachine::permitted`]
+    /// is asked here, against the pairings as they stand, so a machine that is
+    /// merely on the network, one paired for something else, and one whose
+    /// pairing ended or was revoked are refused before a byte is written.
+    ///
+    /// # Errors
+    ///
+    /// [`NotWritten::NotPairedToAnswer`] when no pairing permits it, and the two
+    /// ways the file itself does not happen. The settings are as they were.
+    pub fn answered_by_a_paired_machine(
+        &mut self,
+        machine: &str,
+        pairings: &dyn crate::WhoMayBeAsked,
+        now: std::time::SystemTime,
+    ) -> Result<(), NotWritten> {
+        let chosen = crate::AMachine::permitted(machine, pairings, now).map_err(|refused| {
+            NotWritten::NotPairedToAnswer {
+                at: self.at.clone(),
+                machine: refused.machine().to_owned(),
+            }
+        })?;
+        self.answered_by(Some(Picked::FromAPairedMachine(chosen)))
+    }
+
     /// **Weights this person brought to the machine themselves**, added to
     /// their own list.
     ///
@@ -606,6 +634,67 @@ mod tests {
             read.provider().unwrap().region,
             Region::Declared("the EU".to_owned())
         );
+    }
+
+    /// **A paired machine chosen reads back as that machine**, by the identity
+    /// the pairing names, and is written only because a pairing permitted
+    /// asking its models at the moment it was chosen.
+    #[test]
+    fn a_paired_machine_chosen_reads_back_as_that_machine() {
+        use crate::testing::{PairedFor, a_moment, the_studio};
+        let at = a_machine_nobody_has_configured("paired-machine");
+        let mut choosing = Choosing::at(&at).unwrap();
+
+        choosing
+            .answered_by_a_paired_machine(the_studio(), &PairedFor::a_day(the_studio()), a_moment())
+            .unwrap();
+
+        let read = Settings::at(&at).unwrap();
+        let machine = read.chosen().unwrap().paired_machine().unwrap();
+        assert_eq!(machine.machine(), the_studio());
+        assert!(read.chosen().unwrap().on_this_machine().is_none());
+        assert!(
+            std::fs::read_to_string(&at)
+                .unwrap()
+                .contains(&format!("machine = \"{}\"", the_studio()))
+        );
+    }
+
+    /// **Choosing a machine no pairing lets answer is refused at choosing**, in
+    /// the person's words naming the machine, and nothing is written: a machine
+    /// never paired with, a pairing with another machine, and a pairing that
+    /// has ended are all the same refusal.
+    #[test]
+    fn choosing_a_machine_no_pairing_lets_answer_writes_nothing() {
+        use crate::testing::{PairedFor, a_moment, the_studio};
+        let at = a_machine_nobody_has_configured("unpaired-machine");
+        let mut choosing = Choosing::at(&at).unwrap();
+        let a_week_later = a_moment() + std::time::Duration::from_secs(7 * 86_400);
+
+        for (pairings, now) in [
+            (PairedFor::nothing(), a_moment()),
+            (
+                PairedFor::a_day("11112222333344445555666677778888"),
+                a_moment(),
+            ),
+            (PairedFor::a_day(the_studio()), a_week_later),
+        ] {
+            let refused = choosing
+                .answered_by_a_paired_machine(the_studio(), &pairings, now)
+                .unwrap_err();
+            assert!(
+                matches!(&refused, NotWritten::NotPairedToAnswer { machine, .. } if machine == the_studio()),
+                "{refused:?}"
+            );
+            let said = refused.said(&crate::testing::in_english());
+            assert!(said.text().contains(the_studio()), "{said}");
+            assert!(
+                said.text()
+                    .contains("nothing in your settings has been changed")
+            );
+        }
+        assert!(!at.exists(), "a refused choice wrote a file");
+        assert!(choosing.settings().chosen().is_none());
     }
 
     /// **A language picked reads back, in the order it was picked in.**

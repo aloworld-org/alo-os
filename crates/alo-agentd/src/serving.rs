@@ -138,6 +138,7 @@ use alo_turn::{Machine, Shortened, Turning};
 
 use crate::ageing::Ageing;
 use crate::answering::what_a_person_said;
+use crate::corridor::Corridor;
 use crate::doing::what_an_agent_said;
 use crate::hearing::{self, Judging};
 use crate::holding::Holding;
@@ -577,6 +578,14 @@ impl<'a> Serving<'a> {
         }
 
         if agent {
+            // What a question down the corridor is asked against: the one lock
+            // over the pairings, the link this wire is bound to, and what the
+            // person here called the machines they paired with.
+            let corridor = Corridor {
+                network: self.network,
+                looking: self.wire,
+                naming: self.terms.naming,
+            };
             let answered = match (held.agent.as_mut(), holding.underway()) {
                 // A connection with no turn behind it cannot be served and
                 // cannot be left waiting either: it would be ready for ever and
@@ -592,6 +601,7 @@ impl<'a> Serving<'a> {
                             said,
                             turning,
                             questions,
+                            Some(&corridor),
                             granted.holding(),
                             strings,
                             self.terms.standing,

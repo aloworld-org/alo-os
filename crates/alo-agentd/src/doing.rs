@@ -49,6 +49,7 @@ use alo_turn::{Answers, NoAnswer, NoBoundary, NotDone, Places, Turning};
 
 use alo_secrets::NotStored;
 
+use crate::corridor::{Corridor, put_down_the_corridor};
 use crate::questions::{Questions, WhatAnswers};
 use crate::rereading;
 use crate::words::{
@@ -63,17 +64,24 @@ use crate::words::{
 /// verb nobody declared and a grant that ran out are all answers rather than
 /// silences, which is `docs/contracts/daemon-protocol.md`'s *refused in words
 /// and never dropped*.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one line, the turn it belongs to, and everything it can reach; a struct would exist \n              only to be unpacked"
+)]
 pub fn what_an_agent_said(
     line: &str,
     turning: &mut Turning<'_, '_>,
     questions: &mut Questions,
+    corridor: Option<&Corridor<'_>>,
     grants: &Grants,
     strings: &Strings,
     standing: Duration,
     now: SystemTime,
 ) -> ToAnAgent {
     match FromAnAgent::read(line) {
-        Ok(asked) => carried_out(&asked, turning, questions, grants, strings, standing, now),
+        Ok(asked) => carried_out(
+            &asked, turning, questions, corridor, grants, strings, standing, now,
+        ),
         // **An agent reaching for the person's own list of grants is written
         // down**, and it is the one refusal here that is: the rest of what
         // `alo-protocol` turns away is a malformed message, which is noise, and
@@ -87,10 +95,15 @@ pub fn what_an_agent_said(
 }
 
 /// The three things an agent can ask for, each through the turn's own door.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one request and everything it can reach; a struct would exist only to be unpacked"
+)]
 fn carried_out(
     asked: &FromAnAgent,
     turning: &mut Turning<'_, '_>,
     questions: &mut Questions,
+    corridor: Option<&Corridor<'_>>,
     grants: &Grants,
     strings: &Strings,
     standing: Duration,
@@ -109,9 +122,9 @@ fn carried_out(
                 Err(why) => not_done(&why, strings),
             }
         }
-        FromAnAgent::Ask { question, answered } => {
-            put_to_a_model(question, *answered, turning, questions, strings, now)
-        }
+        FromAnAgent::Ask { question, answered } => put_to_a_model(
+            question, *answered, turning, questions, corridor, strings, now,
+        ),
     }
 }
 
@@ -171,7 +184,7 @@ fn a_rule_refused(why: &NotAllowed, by_an_organisation: bool, strings: &Strings)
 ///
 /// Nothing was sent to a provider on either road, and nothing else answered in
 /// its stead.
-fn refused_by_a_rule(
+pub(crate) fn refused_by_a_rule(
     turning: &mut Turning<'_, '_>,
     why: &NotAllowed,
     by_an_organisation: bool,
@@ -198,6 +211,7 @@ fn put_to_a_model(
     answered: Answered,
     turning: &mut Turning<'_, '_>,
     questions: &mut Questions,
+    corridor: Option<&Corridor<'_>>,
     strings: &Strings,
     now: SystemTime,
 ) -> ToAnAgent {
@@ -215,6 +229,20 @@ fn put_to_a_model(
         }
         WhatAnswers::NotRunning => ToAnAgent::refused(&RuntimeError::Unreachable.said(strings)),
         WhatAnswers::NotSet(why) => ToAnAgent::refused(&why.said(strings)),
+        // **A machine on this network the person chose**, down the corridor —
+        // `crate::corridor` asks the bound, the pairing and the network, in that
+        // order, before anything leaves.
+        WhatAnswers::FromAPairedMachine { machine, places } => put_down_the_corridor(
+            machine,
+            &places,
+            corridor,
+            question,
+            answered,
+            turning,
+            by_an_organisation,
+            strings,
+            now,
+        ),
         // **The second of the three choices**, and alo's own service is this
         // one too (ADR 0014). A provider that needs a credential is now asked
         // for one: `alo_models::SecretRef` names where the key lives and
@@ -340,7 +368,7 @@ fn not_done(why: &NotDone, strings: &Strings) -> ToAnAgent {
     reason = "the six a turn's question takes, the turn, and which door; a struct would \
               exist only to be unpacked on the next line"
 )]
-fn putting(
+pub(crate) fn putting(
     turning: &mut Turning<'_, '_>,
     answered: Answered,
     question: &str,
@@ -366,7 +394,7 @@ fn putting(
 /// so this crate says the one thing that is true and useful: it went nowhere,
 /// and it is not theirs to fix. A question the machine would not put for want
 /// of a boundary reaches the service log as a verb's refusal does.
-fn nothing_answered(why: &NoAnswer, strings: &Strings) -> Said {
+pub(crate) fn nothing_answered(why: &NoAnswer, strings: &Strings) -> Said {
     if let NoAnswer::NotBounded(no_boundary) = why {
         the_boundary_was_not_there(no_boundary);
     }
@@ -642,6 +670,7 @@ endpoint = \"https://{other}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             )
@@ -873,6 +902,7 @@ endpoint = \"https://{other}\"
                     Answered::InWords,
                     turning,
                     &mut questions,
+                    None,
                     strings,
                     noon(),
                 )
@@ -1086,6 +1116,7 @@ endpoint = \"https://{other}\"
                     Answered::InWords,
                     turning,
                     &mut questions,
+                    None,
                     strings,
                     noon(),
                 )
@@ -1275,6 +1306,7 @@ endpoint = \"https://{other}\"
                                     Answered::InWords,
                                     turning,
                                     &mut questions,
+                                    None,
                                     strings,
                                     noon(),
                                 )
@@ -1299,6 +1331,7 @@ endpoint = \"https://{other}\"
                     Answered::InWords,
                     turning,
                     &mut questions,
+                    None,
                     strings,
                     noon(),
                 )
@@ -1366,6 +1399,7 @@ endpoint = \"https://{other}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             )
@@ -1812,6 +1846,7 @@ endpoint = \"https://{other}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             )
@@ -1902,6 +1937,7 @@ endpoint = \"https://{other}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             )
@@ -1986,6 +2022,7 @@ endpoint = \"https://{other}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             );
@@ -2173,6 +2210,7 @@ endpoint = \"https://{other}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             )
@@ -2288,6 +2326,7 @@ endpoint = \"https://{other}\"
                     Answered::InWords,
                     turning,
                     &mut questions,
+                    None,
                     strings,
                     noon(),
                 )
@@ -2366,6 +2405,7 @@ endpoint = \"https://{other}\"
                     Answered::InWords,
                     turning,
                     &mut questions,
+                    None,
                     strings,
                     noon(),
                 )
@@ -2459,6 +2499,7 @@ endpoint = \"https://{at}\"
                 Answered::InWords,
                 turning,
                 &mut questions,
+                None,
                 strings,
                 noon(),
             )
@@ -2499,6 +2540,7 @@ endpoint = \"https://{at}\"
                 )),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2525,6 +2567,7 @@ endpoint = \"https://{at}\"
                 )),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2546,6 +2589,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"read":{"verb":"/bin/sh","given":[]}}"#),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2570,6 +2614,7 @@ endpoint = \"https://{at}\"
                 )),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2580,6 +2625,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"approve":{"number":1}}"#),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2615,6 +2661,7 @@ endpoint = \"https://{at}\"
                     line,
                     turning,
                     &mut nothing_has_been_chosen(),
+                    None,
                     grants,
                     strings,
                     hour(),
@@ -2636,6 +2683,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2664,6 +2712,7 @@ endpoint = \"https://{at}\"
                 )),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 Duration::from_secs(0),
@@ -2696,6 +2745,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
                 &mut holding("my-finetune", Ok("a sublet clause".to_owned())),
+                None,
                 &Grants::default(),
                 strings,
                 hour(),
@@ -2740,6 +2790,7 @@ endpoint = \"https://{at}\"
                 ),
                 turning,
                 &mut questions,
+                None,
                 &Grants::default(),
                 strings,
                 hour(),
@@ -2777,6 +2828,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
                 &mut questions,
+                None,
                 &Grants::default(),
                 strings,
                 hour(),
@@ -2808,6 +2860,7 @@ endpoint = \"https://{at}\"
                     &a_message(asked),
                     turning,
                     &mut holding("my-finetune", Ok("this should never be reached".to_owned())),
+                    None,
                     &Grants::default(),
                     strings,
                     hour(),
@@ -2830,6 +2883,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
                 &mut holding("my-finetune", Err(RuntimeError::Unreachable)),
+                None,
                 &Grants::default(),
                 strings,
                 hour(),
@@ -2877,6 +2931,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
                 &mut questions,
+                None,
                 &Grants::default(),
                 strings,
                 hour(),
@@ -2902,6 +2957,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
                 turning,
                 &mut holding("my-finetune", Ok("a sublet clause".to_owned())),
+                None,
                 &Grants::default(),
                 strings,
                 hour(),
@@ -2940,6 +2996,7 @@ endpoint = \"https://{at}\"
                 &a_message(r#"{"granted":{}}"#),
                 turning,
                 &mut nothing_has_been_chosen(),
+                None,
                 grants,
                 strings,
                 hour(),
@@ -2970,6 +3027,7 @@ endpoint = \"https://{at}\"
                     &a_message(message),
                     turning,
                     &mut nothing_has_been_chosen(),
+                    None,
                     grants,
                     strings,
                     hour(),

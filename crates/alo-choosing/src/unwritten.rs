@@ -137,6 +137,14 @@ pub enum NotWritten {
         /// whoever is fixing the machine rather than shown to the person.
         why: String,
     },
+    /// The change would have said a paired machine answers this person's
+    /// questions, and no pairing with it permits asking its models now.
+    NotPairedToAnswer {
+        /// Where the settings are.
+        at: PathBuf,
+        /// The machine that was chosen.
+        machine: String,
+    },
 }
 
 impl NotWritten {
@@ -151,7 +159,8 @@ impl NotWritten {
             | Self::NotAProvider { at, .. }
             | Self::NothingToChange { at, .. }
             | Self::NotExpressible { at, .. }
-            | Self::NotKept { at, .. } => at,
+            | Self::NotKept { at, .. }
+            | Self::NotPairedToAnswer { at, .. } => at,
         }
     }
 
@@ -171,6 +180,7 @@ impl NotWritten {
             Self::NothingToChange { .. } => words::CHANGE_NOTHING_TO_CHANGE,
             Self::NotExpressible { .. } => words::CHANGE_NOT_EXPRESSIBLE,
             Self::NotKept { .. } => words::CHANGE_NOT_KEPT,
+            Self::NotPairedToAnswer { .. } => words::CHANGE_NOT_PAIRED_TO_ANSWER,
         }
     }
 
@@ -191,7 +201,8 @@ impl NotWritten {
             | Self::NothingToMeasure { .. }
             | Self::NothingToChange { .. }
             | Self::NotExpressible { .. }
-            | Self::NotKept { .. } => {}
+            | Self::NotKept { .. }
+            | Self::NotPairedToAnswer { .. } => {}
         }
         let filling = Filling::of("path", self.at().to_string_lossy().into_owned());
         let filling = match self {
@@ -204,6 +215,7 @@ impl NotWritten {
             Self::NoSuchProvider { provider, .. } | Self::NothingToChange { provider, .. } => {
                 filling.and("provider", provider.clone())
             }
+            Self::NotPairedToAnswer { machine, .. } => filling.and("machine", machine.clone()),
             Self::NotWeights { .. }
             | Self::NotAProvider { .. }
             | Self::NotExpressible { .. }
@@ -259,6 +271,10 @@ mod tests {
                 at: somewhere(),
                 why: "permission denied".to_owned(),
             },
+            NotWritten::NotPairedToAnswer {
+                at: somewhere(),
+                machine: "aaaabbbbccccddddeeeeffff00001111".to_owned(),
+            },
         ]
     }
 
@@ -270,7 +286,8 @@ mod tests {
             | NotWritten::NothingToMeasure { .. }
             | NotWritten::NothingToChange { .. }
             | NotWritten::NotExpressible { .. }
-            | NotWritten::NotKept { .. } => true,
+            | NotWritten::NotKept { .. }
+            | NotWritten::NotPairedToAnswer { .. } => true,
             NotWritten::NotWeights { .. } | NotWritten::NotAProvider { .. } => false,
         }
     }
@@ -314,7 +331,7 @@ mod tests {
         }
     }
 
-    /// **Eight reasons, eight sentences.** A machine that said the same thing about
+    /// **Nine reasons, nine sentences.** A machine that said the same thing about
     /// a disk that would not take the file and a choice naming weights nobody
     /// brought would be sending somebody to the wrong place.
     #[test]
@@ -328,7 +345,7 @@ mod tests {
         said.sort();
         said.dedup();
         assert_eq!(said.len(), reasons.len());
-        assert_eq!(said.len(), 8);
+        assert_eq!(said.len(), 9);
     }
 
     /// **A name is quoted back exactly as it was given**, which is what lets

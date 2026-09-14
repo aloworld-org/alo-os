@@ -276,7 +276,7 @@ fn everything_the_writer_says_is_something_the_machine_can_say() {
             word.named()
         );
     }
-    assert_eq!(EVERY_WORD.len(), 17);
+    assert_eq!(EVERY_WORD.len(), 18);
 }
 
 /// **What a person reads is theirs to read in their own language**, and the

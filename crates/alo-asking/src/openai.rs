@@ -76,6 +76,11 @@
 //! status alone cannot tell them apart — so those two replies, and no others,
 //! have their body read as far as [`MOST_OF_A_REFUSAL`]. What is taken out of it
 //! is a `bool`; [`ran_out`] is where that is done and why nothing else is.
+//!
+//! A question down the corridor has one more pair: a paired machine that will
+//! not answer says why in a word of its own, on a `403` or a `503`, and only
+//! that caller reads it — [`refused_on_the_wire`] has the three words and takes
+//! out an `alo_answering::RefusedThere` or nothing.
 
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -91,6 +96,7 @@ use ureq::unversioned::transport::{DefaultConnector, NextTimeout};
 use crate::answer::Answer;
 use crate::question::{NotAQuestion, Question};
 use crate::ran_out;
+use crate::refused_on_the_wire;
 
 /// The most addresses one request is given.
 ///
@@ -414,6 +420,7 @@ pub(crate) fn put(
     // terms (`docs/quirks.md`, ureq 3.4.0).
     let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
     let request = request.header("content-type", "application/json");
+    let down_the_corridor = vouching.is_some();
     let request = match vouching {
         Some(vouch) => request.header(crate::corridor::THE_PROOF_HEADER, vouch(&body)),
         None => request,
@@ -423,16 +430,31 @@ pub(crate) fn put(
     // Two statuses in this convention are ambiguous, and the name inside the
     // refusal is the only thing that resolves them: a `403` is a refused key
     // unless it is an account with nothing left, and a `429` is a service
-    // asking this machine to slow down unless it is the same. Nothing else
-    // here reads an error body at all, and `ran_out.rs` keeps nothing out of
-    // the one it does read.
-    let ran_out = matches!(status, 403 | 429)
-        && response
+    // asking this machine to slow down unless it is the same. And a paired
+    // machine refuses in a word of its own on a `403` or a `503`, which only
+    // a question down the corridor reads. Nothing else here reads an error
+    // body at all, and neither `ran_out.rs` nor `refused_on_the_wire.rs`
+    // keeps anything out of the one it does read.
+    let reads_the_refusal =
+        matches!(status, 403 | 429) || (down_the_corridor && matches!(status, 503));
+    let refusal = if reads_the_refusal {
+        response
             .body_mut()
             .with_config()
             .limit(MOST_OF_A_REFUSAL)
             .read_to_string()
-            .is_ok_and(|refusal| ran_out::said_in(&refusal));
+            .ok()
+    } else {
+        None
+    };
+    if down_the_corridor
+        && let Some(refused) = refusal
+            .as_deref()
+            .and_then(|said| refused_on_the_wire::heard(status, said))
+    {
+        return Err(WentWrong::RefusedThere(refused));
+    }
+    let ran_out = matches!(status, 403 | 429) && refusal.as_deref().is_some_and(ran_out::said_in);
     match status {
         200 => {}
         300..=399 => return Err(WentWrong::SentSomewhereElse),

@@ -22,7 +22,7 @@
 //! | A runtime known only by its trait ([`Answers::Runtime`]) | freely | freely |
 //! | A service somebody runs here ([`Answers::Service`]) | freely | freely |
 //! | A provider ([`Answers::Provider`]) | freely, under a departure | freely, under a departure |
-//! | A paired machine | refused as down the corridor | refused as down the corridor |
+//! | A paired machine ([`Answers::PairedMachine`]) | freely, under a departure | freely, under a departure |
 //!
 //! **Only the pinned runtime** (decision 4): a provider and a paired machine
 //! answer through other doors with other capabilities, and whether they are
@@ -378,9 +378,11 @@ mod tests {
         assert!(!for_the_next.contains("format"), "{for_the_next}");
     }
 
-    /// **A paired machine is refused for the next request exactly as it is
-    /// for a question in words**: no door a turn holds goes down the corridor,
-    /// and the envelope does not make one. Nothing is asked of anything —
+    /// **A permission for a paired machine asks the pinned runtime nothing, for
+    /// the next request exactly as for a question in words**: the envelope does
+    /// not turn the runtime here into a substitute for the machine the person
+    /// chose. The paired machine's own road is `crate::down_the_corridor`'s
+    /// tests. Nothing is asked of anything —
     /// the runtime listens nowhere, so a request would come back as a failure
     /// rather than as this refusal — and nothing is written down.
     #[test]

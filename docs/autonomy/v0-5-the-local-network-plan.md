@@ -541,7 +541,21 @@ turn asks that way*. The Mac lane's task 14 makes the ask a door in
 
 ### 14. A turn on a machine with no model asks the paired machine its person chose
 
-**Status:** ready. **Depends on:** 3, 12, 13.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-choosing/src/paired.rs`
+(`Picked::FromAPairedMachine`, `AMachine`, `WhoMayBeAsked`, `machine =
+"<identity>"` in the file, `Choosing::answered_by_a_paired_machine`),
+`crates/alo-answering/src/refused_there.rs` (`WentWrong::RefusedThere`, three
+words), `crates/alo-asking/src/refused_on_the_wire.rs` (the three wire words,
+spelled once for both ends), `alo_turn::Answers::PairedMachine` (one road with a
+provider's in `asking.rs`, tested in `down_the_corridor.rs`) and
+`crates/alo-agentd/src/corridor.rs` (bound, pairing, discovery, question, in that
+order); the contracts `docs/contracts/person-settings.md` and
+`docs/contracts/local-network-wire.md` gained the shapes additively. The report
+is `docs/autonomy/updates/a-turn-asks-the-paired-machine-its-person-chose.md`.
+`alo-choosing` may not depend on `alo-nearby` (`tests/a_grade_travels_nowhere.rs`),
+so the pairings are asked through a trait the daemon answers — task 15 gives the
+person's door the request that makes that the road a shell takes.
+**Depends on:** 3, 12, 13.
 
 Task 3 built the corridor as a door — `alo_asking::Asking::to_a_paired_machine`
 shows the departure, proves the question and reads the answer — and task 11
@@ -575,3 +589,34 @@ as before* — which today means *refused*.
   leaves. The settings shape is decided in the crate that owns the person's
   settings, additively, with `docs/contracts/person-settings.md` updated in the
   same change. Nothing in `alo-shell`, nothing in `image/`.
+
+### 15. The person's door chooses a paired machine to answer their questions
+
+**Status:** ready. **Depends on:** 12, 14.
+
+Task 14 made a paired machine a choice a person can make and a place a turn's
+question can go, and held the choice to the pairings at the moment it is made —
+through `alo_choosing::WhoMayBeAsked`, because a settings store may not depend on
+anything that reaches the network. The pairings themselves live in one place, the
+daemon's `TheNetwork`, and nothing on the person's door reaches it to choose: a
+shell that wanted to offer *the studio machine answers my questions* would have
+to hold a copy of the pairings it has no way to keep true, which is how a choice
+refused at choosing becomes a choice nobody refused.
+
+- **Acceptance:** the person's door (`alo-protocol`) gains a request that
+  chooses a machine this machine is paired with, by its identity, to answer the
+  person's questions — answered by the daemon through
+  `alo_choosing::Choosing::answered_by_a_paired_machine` with its own
+  `TheNetwork` as the `WhoMayBeAsked`, so the choice is made against the list
+  that refuses the next question; refused in words when no pairing permits
+  asking that machine's models, when what is named is not an identity, and on
+  the agent's door in the words an agent approving something gets — one test
+  each, and one test that a refused choice writes nothing; the list of pairings
+  on the person's door says, for each, whether it permits asking its models, so
+  a shell offers only what can be chosen; and a choice made through the door is
+  the one the next turn's question goes to, tested through the door.
+- **Constraint:** ADR 0003, ADR 0008 and ADR 0016: the person chooses and no
+  default does; the daemon writes the person's own settings only because the
+  person's own shell asked it to, through `alo-choosing`'s one way out.
+  `docs/contracts/daemon-protocol.md` gains the shapes additively. Nothing in
+  `alo-shell`, nothing in `image/`.

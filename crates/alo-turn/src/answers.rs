@@ -11,6 +11,7 @@
 //! | [`Answers::ThePinnedRuntime`] | The model runtime alo OS ships, typed as itself | No |
 //! | [`Answers::Runtime`] | A model runtime on this machine, known only by its trait | No |
 //! | [`Answers::Service`] | A service somebody runs here on loopback | No |
+//! | [`Answers::PairedMachine`] | A machine this person is paired with | Yes, and law 1 shows it |
 //!
 //! # This is not a route, and it decides nothing
 //!
@@ -27,15 +28,22 @@
 //! check too, and a second one here would be this machine holding two opinions
 //! about where a question is going.
 //!
-//! # A paired machine is not here, because there is no door for it
+//! # A paired machine is here, behind the corridor's own door
 //!
-//! `alo_models::InferenceSource::PairedMachine` is a place a question may be
-//! answered and nothing in this repository reaches one. A variant for it would
-//! be a stub wearing a capability, which law 3 forbids; what happens instead is
-//! that the permission arrives naming somewhere none of the three doors goes,
-//! and `alo_asking::Miswired::BelongsDownTheCorridor` says so.
+//! [`Answers::PairedMachine`] holds an `alo_asking::DownTheCorridor`, which
+//! only a pairing permitting asking that machine's models can make — so holding
+//! one is the evidence that two people agreed and the agreement stands. It
+//! used to be absent because nothing reached a paired machine from a turn, and
+//! a variant would have been a stub wearing a capability; the corridor and the
+//! machine that answers it are both built now, and this is the join.
+//!
+//! **It is never a fallback, in either direction.** Which of these a turn is
+//! handed is the person's setting and nothing else: a permission for this
+//! machine arriving with a corridor is refused as
+//! `alo_asking::Miswired::NotAPairedMachine`, and a permission for a paired
+//! machine arriving with anything else as `Miswired::BelongsDownTheCorridor`.
 
-use alo_asking::{Hosted, Served};
+use alo_asking::{DownTheCorridor, Hosted, Served};
 use alo_models::{InferenceSource, ModelRuntime, Ollama};
 
 /// One thing that can answer a question, and everything needed to reach it.
@@ -83,6 +91,13 @@ pub enum Answers<'a> {
     /// refused every address that is not this machine, so holding one of these
     /// is the proof that nothing put to it leaves.
     Service(Served<'a>),
+    /// A machine this person is paired with, down the corridor.
+    ///
+    /// **The other one that leaves**, and it is shown and written down exactly
+    /// as a provider is: *it only went down the corridor* is the exception law
+    /// 1 exists to refuse. The question travels; the grant does not (ADR 0003),
+    /// and the model that answers is the one that machine's person chose.
+    PairedMachine(DownTheCorridor<'a>),
 }
 
 impl Answers<'_> {
@@ -99,12 +114,14 @@ impl Answers<'_> {
             Self::Provider(hosted) => hosted.named_source(),
             Self::ThePinnedRuntime(_) | Self::Runtime(_) => InferenceSource::ThisMachine,
             Self::Service(served) => served.source(),
+            Self::PairedMachine(corridor) => corridor.source(),
         }
     }
 
     /// Whether putting a question here sends anything off this machine.
     ///
-    /// True for the provider and false for the two on this machine. A caller
+    /// True for the provider and the paired machine, and false for the ones on
+    /// this machine. A caller
     /// asks it before a question rather than after: it is the difference
     /// between a turn that will put something on law 1's indicator and one that
     /// will not.

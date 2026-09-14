@@ -87,13 +87,18 @@
 //! disk is theirs to ask. The one list this crate can contradict itself about
 //! is the one it holds.
 //!
-//! # What is not here yet
+//! # A machine in the next room
 //!
-//! **A machine in the next room.** ADR 0008 permits it and ADR 0003 says what
-//! pairing is, and this machine keeps no list of paired machines anywhere — so
-//! a choice naming one is a file that fails to read rather than a setting that
-//! silently does nothing. `alo-asking` refuses it too: *nothing anywhere
-//! reaches a machine on this network yet.*
+//! **Here since the local network could carry a question**, as
+//! [`Picked::FromAPairedMachine`] and `machine = "<identity>"` in the file.
+//! ADR 0008 permits it and ADR 0003 says what makes it allowed: a pairing two
+//! people made that permits asking that machine's models. [`AMachine::permitted`]
+//! is the only door a surface has to the choice, so it is refused at choosing
+//! when no such pairing stands, and [`AMachine::still_permitted`] is asked again
+//! by whatever puts a question — `crate::paired` has the argument for why a file
+//! read back is checked against nothing.
+//!
+//! # What is not here yet
 //!
 //! **A provider is here since format 2**, which is the second of the three
 //! choices `docs/features.md` names, and the third — alo's own service — is the
@@ -117,6 +122,7 @@ mod choosing;
 mod chosen;
 mod holding;
 mod keeping;
+mod paired;
 mod place;
 mod refusing;
 mod settings;
@@ -131,6 +137,7 @@ mod written;
 
 pub use choosing::Choosing;
 pub use chosen::{Chosen, NoModel, NoProvider, Picked, Which};
+pub use paired::{AMachine, NotPairedToAnswer, WHAT_THAT_MACHINE_CHOSE, WhoMayBeAsked};
 pub use place::{CONFIG_HOME, HOME, THE_FOLDER, THE_SETTINGS, where_it_is};
 pub use refusing::NotSet;
 pub use settings::{Settings, Unresolved};

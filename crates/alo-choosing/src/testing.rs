@@ -87,3 +87,40 @@ pub(crate) fn a_folder_of_our_own(what: &str) -> std::path::PathBuf {
     std::fs::create_dir_all(&folder).unwrap();
     folder
 }
+
+/// The machine with the GPU in it, by its identity.
+pub(crate) const fn the_studio() -> &'static str {
+    "aaaabbbbccccddddeeeeffff00001111"
+}
+
+/// A moment to reason from.
+pub(crate) fn a_moment() -> std::time::SystemTime {
+    std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_760_000_000)
+}
+
+/// Pairings as a test holds them: one machine whose models may be asked until
+/// a day after [`a_moment`], or none.
+pub(crate) struct PairedFor {
+    /// The machine, where there is one.
+    machine: Option<&'static str>,
+}
+
+impl PairedFor {
+    /// Paired with nothing.
+    pub(crate) const fn nothing() -> Self {
+        Self { machine: None }
+    }
+
+    /// Paired with this machine, to ask its models, for a day.
+    pub(crate) const fn a_day(machine: &'static str) -> Self {
+        Self {
+            machine: Some(machine),
+        }
+    }
+}
+
+impl crate::WhoMayBeAsked for PairedFor {
+    fn may_ask_the_models_of(&self, machine: &str, now: std::time::SystemTime) -> bool {
+        self.machine == Some(machine) && now < a_moment() + std::time::Duration::from_secs(86_400)
+    }
+}

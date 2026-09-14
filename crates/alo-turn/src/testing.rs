@@ -545,3 +545,41 @@ pub(crate) fn everything_that_can_come_back() -> Vec<NotDone> {
         NotDone::TurnClosed,
     ]
 }
+
+/// This machine, in the tests where it asks a paired machine.
+pub(crate) fn this_machine() -> alo_nearby::MachineId {
+    alo_nearby::MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap()
+}
+
+/// The machine with the GPU in it.
+pub(crate) fn the_studio() -> alo_nearby::MachineId {
+    alo_nearby::MachineId::read("aaaabbbbccccddddeeeeffff00001111").unwrap()
+}
+
+/// This machine's pairings, holding its row of one pairing with the studio made
+/// at [`noon`] for an hour and permitting `may` — made the way two people make
+/// one, both codes compared.
+pub(crate) fn paired_with_the_studio(may: &[alo_nearby::MayAskIts]) -> alo_nearby::Pairings {
+    use alo_nearby::{Deliberating, Keying, Proposal, Side};
+    let here = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
+        this_machine(),
+        the_studio(),
+        may,
+        hour(),
+        here.offer().clone(),
+    )
+    .unwrap();
+    let there = Deliberating::asked(proposal.clone(), Keying::fresh().unwrap());
+    let on_here = Deliberating::asking(proposal, here)
+        .unwrap()
+        .answered_with(there.answered().unwrap().clone())
+        .unwrap()
+        .agreed_at(Side::TheOneAsking)
+        .agreed_at(Side::TheOneAsked)
+        .agreed(noon())
+        .unwrap();
+    let mut pairings = alo_nearby::Pairings::none();
+    pairings.keep(on_here);
+    pairings
+}

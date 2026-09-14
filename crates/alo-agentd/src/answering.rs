@@ -310,6 +310,7 @@ mod tests {
             )),
             turning,
             &mut nothing_has_been_chosen(),
+            None,
             grants,
             strings,
             hour(),

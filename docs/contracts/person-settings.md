@@ -158,6 +158,7 @@ says otherwise.
 | `catalogue = "<name>"` | A model in the catalogue alo OS ships, named exactly as the catalogue names it. |
 | `brought = "<name>"` | Weights the person brought themselves, named exactly as that list names them. |
 | `provider = { name = "<provider>", model = "<model>" }` | A provider from `[[provider]]` below, and the model to ask it for. Format 2. |
+| `machine = "<identity>"` | A machine this person is paired with, by the identity its pairing names, whose own model answers. Additive; format 3 unchanged. See below. |
 
 These are the three choices `docs/features.md` names — **local models**, **your
 own API provider**, and **alo**, which is the second one because
@@ -178,13 +179,58 @@ list** as well as which entry.
 
 - **Two keys at once is not a choice** and does not read. Whichever one a reader
   took would be the machine picking between them.
-- **A key that is neither is refused**, naming the two that are. A provider and
-  a machine in the next room are both places ADR 0008 permits and neither is
-  here yet, because this machine keeps no list of either — so such a file fails
-  to read rather than reading as a setting that quietly does nothing.
+- **A key that is none of the four is refused**, naming the ones that are, so
+  a file naming a place this alo OS does not know fails to read rather than
+  reading as a setting that quietly does nothing.
 - **A list named with no model** — `catalogue = ""` — is refused rather than
   read as a person who chose nothing. They chose, and what they chose is not a
-  model.
+  model. `machine = ""` is refused the same way.
+
+### `machine = "<identity>"` — a machine down the corridor
+
+*A machine without a GPU discovers the one with it, and the agents just work.*
+The value is the other machine's **identity** — thirty-two lowercase
+hexadecimal characters, the string its pairing names — and never an address or
+a name: an address is measured by discovery at the moment of asking and is
+never typed or kept (ADR 0003), and a name is what the person here called it,
+which can change without the choice changing.
+
+```toml
+format = 3
+
+[answers]
+machine = "aaaabbbbccccddddeeeeffff00001111"
+```
+
+- **It carries no model.** The machine down the corridor puts the question to
+  the model **its** person chose (`docs/contracts/local-network-wire.md`, *the
+  question path*), and names that model in its answer. Which model runs there
+  is that person's setting (ADR 0008), not this one's.
+- **It is refused at choosing** when no pairing permits asking that machine's
+  models: `alo_choosing::Choosing::answered_by_a_paired_machine` asks the
+  pairings as they stand (`alo_choosing::WhoMayBeAsked`, answered by whoever
+  holds them) and writes nothing otherwise — *your settings would say the
+  machine … answers your questions, and no pairing with it lets it answer them
+  at the moment, so nothing in your settings has been changed*.
+  `alo_choosing::AMachine::permitted` is the only way to make the choice.
+- **It is not checked when the file is read.** A pairing ends or is revoked and
+  the file outlives it; a settings file is not wrong because an expiry passed
+  overnight. What is refused instead is **the question**, at every question, in
+  words and with nothing sent.
+- **An identity nobody is paired with reads**, exactly as it was written, and
+  is refused at the question as paired with nothing — which is what it is.
+- **It is a place, so an organisation's bound applies**:
+  `SourcePolicy::ThisMachineOnly` refuses it, and `InTheBuilding` and a region
+  permit it (a paired machine stays in the building and is in the customer's
+  region by definition). The bound is asked before anything leaves.
+- **It is never a fallback, in either direction.** A question for a paired
+  machine that is not answered is not put to anything on this machine or to a
+  provider, and a question for either of those is never put to a paired
+  machine.
+- **Additive, and the format number did not move** — `[[brought]]`'s
+  precedent: an alo OS from before the key refuses the whole file as *a key I
+  have not heard of* rather than answering anywhere else, so no release honours
+  a different choice.
 
 The name is kept **exactly as it was written**. A runtime matches the name it
 was given, and trimming or lower-casing it would be alo OS quietly asking for a

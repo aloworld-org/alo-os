@@ -72,6 +72,7 @@
 
 use alo_models::InferenceSource;
 
+use crate::refused_there::RefusedThere;
 use crate::words;
 
 /// Why the place a question was put did not answer it.
@@ -153,6 +154,15 @@ pub enum WentWrong {
     /// socket — and nothing here guesses it from a failure that could have
     /// another cause.
     NoWayThere,
+    /// A paired machine was asked, and refused the question in a word of its
+    /// own.
+    ///
+    /// The tenth, and it passes the bar because the other nine are about a
+    /// place failing and this is a place **declining**, for a reason its person
+    /// set: the question arrived, was read as far as the reason needed, and
+    /// was turned away. *Nothing answered* would send somebody to check on a
+    /// machine that is working. `crate::refused_there` has the three.
+    RefusedThere(RefusedThere),
 }
 
 impl WentWrong {
@@ -160,6 +170,7 @@ impl WentWrong {
     #[must_use]
     pub fn word(&self) -> words::Word {
         match self {
+            Self::RefusedThere(refused) => refused.word(),
             Self::NothingAnswered => words::NOTHING_ANSWERED,
             Self::TookTooLong => words::TOOK_TOO_LONG,
             Self::NothingUsable => words::NOTHING_USABLE,
@@ -180,7 +191,7 @@ impl WentWrong {
     /// network.
     #[must_use]
     pub fn can_happen(&self, source: &InferenceSource) -> bool {
-        !neither_a_key_nor_an_account(source) || self.needs_a_key_or_an_account().is_none()
+        self.checked(source).is_ok()
     }
 
     /// The refusal this reason is met with where the thing it is about does not
@@ -204,13 +215,21 @@ impl WentWrong {
             | Self::NoModelThere
             | Self::SentSomewhereElse
             | Self::HavingTrouble(_)
-            | Self::NoWayThere => None,
+            | Self::NoWayThere
+            | Self::RefusedThere(_) => None,
         }
     }
 
     /// The same question, answered as a refusal whoever reported the failure
     /// can act on.
+    ///
+    /// Two shapes of impossible, one each way round: a key or an account at a
+    /// paired machine, which has neither, and a paired machine's own refusal
+    /// anywhere that is not one, which has no pairing to refuse under.
     pub(crate) fn checked(self, source: &InferenceSource) -> Result<Self, NotWhatFailed> {
+        if matches!(self, Self::RefusedThere(_)) && !neither_a_key_nor_an_account(source) {
+            return Err(NotWhatFailed::NoMachineThere);
+        }
         match self.needs_a_key_or_an_account() {
             Some(refusal) if neither_a_key_nor_an_account(source) => Err(refusal),
             _ => Ok(self),
@@ -252,6 +271,13 @@ pub enum NotWhatFailed {
          report what actually went wrong"
     )]
     NoAccountThere,
+    /// A paired machine's own refusal was reported about a place that is not
+    /// a paired machine.
+    #[error(
+        "only a machine on this network, asked under a pairing, refuses a question in a word of its \
+         own — a provider or this machine cannot have said one, so report what actually went wrong"
+    )]
+    NoMachineThere,
 }
 
 #[cfg(test)]
@@ -356,6 +382,30 @@ mod tests {
                 Ok(WentWrong::NoWayThere),
                 "{source:?}"
             );
+        }
+    }
+
+    /// **A paired machine's own refusal can only have come from a paired
+    /// machine.** A provider saying `answers-elsewhere` would be a provider
+    /// claiming a pairing it does not have, and this machine saying it to
+    /// itself is a wiring mistake — so both are refused where they are
+    /// reported, and at a paired machine all three are the true thing.
+    #[test]
+    fn a_refusal_in_a_paired_machines_own_word_happens_only_at_a_paired_machine() {
+        for refused in [
+            RefusedThere::NotPermitted,
+            RefusedThere::AnswersElsewhere,
+            RefusedThere::NothingChosenThere,
+        ] {
+            let went_wrong = WentWrong::RefusedThere(refused);
+            assert_eq!(went_wrong.checked(&paired()), Ok(went_wrong));
+            for elsewhere in [here(), hosted()] {
+                assert!(!went_wrong.can_happen(&elsewhere), "{elsewhere:?}");
+                assert_eq!(
+                    went_wrong.checked(&elsewhere),
+                    Err(NotWhatFailed::NoMachineThere)
+                );
+            }
         }
     }
 

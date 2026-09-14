@@ -186,6 +186,8 @@ pub mod bounding;
 #[cfg(target_os = "linux")]
 pub mod caller;
 #[cfg(target_os = "linux")]
+pub mod corridor;
+#[cfg(target_os = "linux")]
 pub mod described;
 #[cfg(target_os = "linux")]
 pub mod describing;

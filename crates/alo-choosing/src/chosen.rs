@@ -29,16 +29,14 @@
 
 use alo_models::{InferenceSource, Providers};
 
+use crate::paired::{AMachine, WHAT_THAT_MACHINE_CHOSE};
+
 /// Which of this machine's two lists of models a choice names.
 ///
-/// A closed list of the lists that exist. A provider somebody added and a
-/// machine somebody paired with are two more places a question could be
-/// answered (ADR 0008), and neither is here: this machine keeps no list of
-/// either, so a choice naming one could not be resolved into anything. What
-/// that means for a settings file is in `docs/contracts/person-settings.md`:
-/// such a file fails to read as [`crate::NotSet::NotUnderstood`], naming the
-/// two lists there are, rather than reading as a setting that quietly does
-/// nothing.
+/// A closed list of the lists of models on this machine. A provider somebody
+/// added and a machine somebody paired with are two more places a question
+/// could be answered (ADR 0008), and neither is a list of models here: they
+/// are [`Picked::FromAProvider`] and [`Picked::FromAPairedMachine`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Which {
     /// The catalogue alo OS ships, where every model states its licence.
@@ -164,6 +162,13 @@ pub enum Picked {
         /// What they asked that provider for, exactly as they wrote it.
         model: String,
     },
+
+    /// A machine this person is paired with, whose own model answers.
+    ///
+    /// Carries no model, because which model answers there is that machine's
+    /// person's setting (ADR 0008) — `crate::paired` has the argument, and
+    /// [`crate::AMachine::permitted`] is the only door a surface has to one.
+    FromAPairedMachine(AMachine),
 }
 
 impl Picked {
@@ -190,6 +195,7 @@ impl Picked {
         match self {
             Self::OnThisMachine(chosen) => chosen.model(),
             Self::FromAProvider { model, .. } => model,
+            Self::FromAPairedMachine(_) => WHAT_THAT_MACHINE_CHOSE,
         }
     }
 
@@ -198,7 +204,7 @@ impl Picked {
     pub const fn on_this_machine(&self) -> Option<&Chosen> {
         match self {
             Self::OnThisMachine(chosen) => Some(chosen),
-            Self::FromAProvider { .. } => None,
+            Self::FromAProvider { .. } | Self::FromAPairedMachine(_) => None,
         }
     }
 
@@ -206,8 +212,17 @@ impl Picked {
     #[must_use]
     pub fn provider(&self) -> Option<&str> {
         match self {
-            Self::OnThisMachine(_) => None,
+            Self::OnThisMachine(_) | Self::FromAPairedMachine(_) => None,
             Self::FromAProvider { provider, .. } => Some(provider),
+        }
+    }
+
+    /// The paired machine, where that is what this is.
+    #[must_use]
+    pub const fn paired_machine(&self) -> Option<&AMachine> {
+        match self {
+            Self::FromAPairedMachine(machine) => Some(machine),
+            Self::OnThisMachine(_) | Self::FromAProvider { .. } => None,
         }
     }
 
@@ -234,6 +249,7 @@ impl Picked {
             Self::FromAProvider { provider, .. } => {
                 providers.get(provider).map(alo_models::Provider::source)
             }
+            Self::FromAPairedMachine(machine) => Some(machine.source()),
         }
     }
 }
