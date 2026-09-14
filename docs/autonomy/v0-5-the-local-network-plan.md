@@ -796,7 +796,20 @@ another route.
 
 ### 19. A turn shows a model the words the product wrote
 
-**Status:** ready. **Depends on:** 13.
+**Status:** **Done, 2026-09-15.** Built in `crates/alo-turn/src/next_request.rs`
+(`Held::shown`: an agent's next request is put to a model in
+`alo_instructing::shown_to_a_turn` over the turn's own machine's registry,
+wherever the person chose — a provider, a service and a paired machine are
+shown the same text, and only the pinned runtime is also held to the envelope)
+and the one line of `crates/alo-turn/src/asking.rs` that builds the question
+from it; a question in words and a question a paired machine asks this one are
+untouched, each held by a test off the socket. **A client's own instructions
+are wrapped**: what an agent sends is the request, beneath the product's
+instructions, and nothing replaces them. The contract
+`docs/contracts/daemon-protocol.md` says so. The measuring lane's task 19 is
+unblocked. The report is
+`docs/autonomy/updates/a-turn-shows-a-model-the-words-the-product-wrote.md`.
+**Depends on:** 13.
 **Written by the measuring lane** (task 18 of
 `docs/autonomy/v0-5-the-models-measured-plan.md`), whose crates end at the words.
 

@@ -421,6 +421,49 @@ mod tests {
         assert_eq!(how_many(&record, Only::Egress), 1);
     }
 
+    /// **A question a paired machine asks is put to this machine's model as it
+    /// arrived, and nothing of this machine's words is put around it** (ADR
+    /// 0037): the machine that asked composed whatever its turn shows, against
+    /// its own verbs, and wrapping it again here would show a model two sets of
+    /// instructions and this machine's verbs for a request carried out there.
+    #[test]
+    fn a_question_a_paired_machine_asks_reaches_this_model_untouched() {
+        // What the reception machine's turn composed for its agent's next
+        // request, arriving here as a question.
+        let composed =
+            alo_instructing::shown_to_a_turn(&alo_files::file_verbs().unwrap(), "list my invoices");
+        let question = Question::asked(&composed, "a-model").unwrap();
+        let runtime = Stub::answering("{\"format\":1}");
+        let mut record = Record::default();
+        let mut indicator = Indicator::default();
+        let origin = origin();
+        on_this_machine(&mut record, &mut indicator, |machine| {
+            let answered = machine
+                .answering_for(
+                    &origin,
+                    &question,
+                    here_permitted(),
+                    &runtime,
+                    &SourcePolicy::Anywhere,
+                    noon(),
+                )
+                .unwrap();
+            let (_, departing) = answered.into_parts();
+            machine.answer_returned(&origin, departing).unwrap();
+        });
+
+        let (shown, _) = runtime.asked().unwrap();
+        assert_eq!(shown, composed);
+        assert_eq!(
+            shown
+                .matches(alo_instructing::Instructions::SHOWN_TO_A_TURN.text())
+                .count(),
+            1,
+            "{shown}"
+        );
+        assert_eq!(shown.matches("The request: ").count(), 1, "{shown}");
+    }
+
     /// **A model that does not answer leaves nothing**: no entry, nothing on
     /// the indicator, and the failure handed back whole for the daemon to word
     /// on the wire.

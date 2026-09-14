@@ -136,6 +136,10 @@ alo-record = { path = "../alo-record" }
 # held to the protocol's envelope (ADR 0032) is compared as a value.
 serde_json = { workspace = true }
 
+# The words a turn shows a model (ADR 0037), so a test compares what crossed a
+# runtime's socket with the text that crate builds rather than with a copy.
+alo-instructing = { path = "../alo-instructing" }
+
 # A **real** Secret Service to ask for a key, shared with `alo-secrets` so there
 # is one fixture rather than two drifting apart. Dev only, and
 # `alo-secrets/tests/nothing_ships_the_fixture.rs` is the check that it stays

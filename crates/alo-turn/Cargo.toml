@@ -25,6 +25,10 @@ alo-egress = { path = "../alo-egress" }
 alo-context = { path = "../alo-context" }
 # The only thing in this repository that touches a disk on an agent's behalf.
 alo-files = { path = "../alo-files" }
+# The words a model is shown when an agent asks it for its next request (ADR
+# 0037). A dependency and never a place to write: the text is that crate's, and
+# a turn shows what `shown_to_a_turn` returns.
+alo-instructing = { path = "../alo-instructing" }
 # Where a turn writes down what happened, when the machine has somewhere
 # durable to write it.
 alo-keeping = { path = "../alo-keeping" }
@@ -48,6 +52,9 @@ thiserror = { workspace = true }
 # Reading a request a test served back as JSON, so that what an agent's next
 # request was held to is compared as a value rather than as a spelling.
 serde_json = { workspace = true }
+# The SHA-256 of the instructions a model was shown, computed from the bytes
+# that crossed the socket rather than asked of the crate that wrote them.
+ring = { workspace = true }
 
 [lints]
 workspace = true

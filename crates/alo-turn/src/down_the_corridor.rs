@@ -311,11 +311,15 @@ mod tests {
         assert_eq!(departures(&record), 1);
     }
 
-    /// **An agent's next request down the corridor is asked exactly as a
-    /// question in words is** (ADR 0032, decision 4): the two bodies read off
-    /// the socket are the same bytes, neither holds a schema, and both leave.
+    /// **An agent's next request down the corridor is shown this machine's
+    /// words, and is otherwise asked exactly as a question in words is** (ADR
+    /// 0032, decision 4; ADR 0037): the request it answers is carried out here,
+    /// against this machine's verbs, so the text is built here — and the body
+    /// read off the socket is the same bytes as a question in words carrying
+    /// that text, neither holds a schema, and both leave.
     #[test]
-    fn an_agents_next_request_down_the_corridor_is_asked_exactly_as_a_question_in_words() {
+    fn an_agents_next_request_down_the_corridor_is_shown_this_machines_words_and_asked_as_before() {
+        let shown = alo_instructing::shown_to_a_turn(&alo_files::file_verbs().unwrap(), ASKED);
         let pairings = paired_with_the_studio(&[MayAskIts::Models]);
         let strings = in_english();
         let mut bodies = Vec::new();
@@ -338,7 +342,7 @@ mod tests {
                     )
                 } else {
                     turning.asking(
-                        ASKED,
+                        &shown,
                         THE_MODEL_NAMED,
                         permitted_down_the_corridor(),
                         &answers,
@@ -358,7 +362,19 @@ mod tests {
             in_words, for_the_next,
             "the paired machine was asked differently"
         );
-        assert!(!for_the_next.contains("format"), "{for_the_next}");
+        assert!(
+            serde_json::from_str::<serde_json::Value>(for_the_next)
+                .unwrap()
+                .get("format")
+                .is_none(),
+            "{for_the_next}"
+        );
+        let body: serde_json::Value = serde_json::from_str(for_the_next).unwrap();
+        assert!(
+            body.to_string()
+                .contains(&serde_json::Value::String(shown.clone()).to_string()),
+            "the paired machine was not shown this machine's words: {body}"
+        );
     }
 
     /// **A paired machine is never a fallback, in either direction.** A

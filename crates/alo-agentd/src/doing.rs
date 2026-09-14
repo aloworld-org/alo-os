@@ -360,7 +360,9 @@ fn not_done(why: &NotDone, strings: &Strings) -> ToAnAgent {
 /// words goes through `Turning::asking`; one asking for the agent's own next
 /// request goes through `Turning::asking_for_the_next_request`, which holds the
 /// pinned runtime's answer to the protocol's envelope (ADR 0032) and asks every
-/// other place exactly as the first door does. Where it goes is still the
+/// other place exactly as the first door does — and shows every place the
+/// product's words around the request (ADR 0037), which this crate neither
+/// writes nor sees. Where it goes is still the
 /// person's, and what comes back crosses to the agent as a model's words
 /// either way.
 #[expect(
@@ -2786,7 +2788,7 @@ endpoint = \"https://{at}\"
         on_a_machine_that_answers(&mut record, |turning, _, strings| {
             let said = what_an_agent_said(
                 &a_message(
-                    r#"{"ask":{"question":"the person said: list my invoices. your next request?","answered":"as-the-next-request"}}"#,
+                    r#"{"ask":{"question":"list my invoices","answered":"as-the-next-request"}}"#,
                 ),
                 turning,
                 &mut questions,
@@ -2808,6 +2810,107 @@ endpoint = \"https://{at}\"
             Some(&alo_models::in_the_envelope::the_envelope())
         );
         assert_eq!(record.len(), 1);
+    }
+
+    /// What a runtime a test served was shown: the one message's content.
+    fn what_the_model_was_shown(body: &serde_json::Value) -> String {
+        let messages = body.get("messages").and_then(|m| m.as_array()).unwrap();
+        assert_eq!(messages.len(), 1, "{body}");
+        messages
+            .first()
+            .unwrap()
+            .get("content")
+            .and_then(|c| c.as_str())
+            .unwrap()
+            .to_owned()
+    }
+
+    /// **Through the agent's door, an agent's next request is put to the model
+    /// in the words the product wrote** (ADR 0037) — read off the pinned
+    /// runtime's socket: the instructions of the set a turn shows, named by its
+    /// digest, then every verb this daemon's machine declared, in the
+    /// registry's order, then the request the agent carried, last. A client
+    /// sends the request and nothing it sends replaces the instructions.
+    #[test]
+    fn an_agents_next_request_is_shown_the_products_words_through_the_door() {
+        use alo_instructing::{Instructions, shown_to_a_turn};
+
+        let (runtime, served) = crate::testing::a_runtime_served(AN_ENVELOPE);
+        let mut questions = Questions::already_found_pinned(
+            Chosen::of(Which::Catalogue, "qwen2.5-7b-instruct").unwrap(),
+            runtime,
+            TheBound::Nobodys,
+        );
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            what_an_agent_said(
+                &a_message(
+                    r#"{"ask":{"question":"list my invoices","answered":"as-the-next-request"}}"#,
+                ),
+                turning,
+                &mut questions,
+                None,
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+        });
+
+        let shown = what_the_model_was_shown(&crate::testing::the_body_of(&served.join().unwrap()));
+        let verbs = alo_files::file_verbs().unwrap();
+        assert_eq!(shown, shown_to_a_turn(&verbs, "list my invoices"));
+
+        let which = Instructions::ALL
+            .into_iter()
+            .find(|instructions| shown.starts_with(instructions.text()));
+        assert_eq!(
+            which.map(Instructions::digest),
+            Some(Instructions::SHOWN_TO_A_TURN.digest()),
+            "{shown}"
+        );
+        let mut from = 0;
+        for verb in verbs.all() {
+            let at = shown[from..]
+                .find(&format!("\n\n- {} (", verb.name()))
+                .unwrap();
+            from += at + 1;
+        }
+        assert!(
+            shown[from..].ends_with("\n\nThe request: list my invoices"),
+            "{shown}"
+        );
+    }
+
+    /// **A person's question in words reaches the model as they wrote it**,
+    /// through the same door to the same runtime: no instructions and no verbs
+    /// are put around it.
+    #[test]
+    fn a_question_in_words_reaches_the_model_as_it_was_written_through_the_door() {
+        let (runtime, served) = crate::testing::a_runtime_served(
+            r#"{"message":{"role":"assistant","content":"a sublet clause"}}"#,
+        );
+        let mut questions = Questions::already_found_pinned(
+            Chosen::of(Which::Catalogue, "qwen2.5-7b-instruct").unwrap(),
+            runtime,
+            TheBound::Nobodys,
+        );
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            what_an_agent_said(
+                &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
+                turning,
+                &mut questions,
+                None,
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+        });
+
+        let shown = what_the_model_was_shown(&crate::testing::the_body_of(&served.join().unwrap()));
+        assert_eq!(shown, "what is in this contract?");
     }
 
     /// **A question in words, on the same machine and to the same pinned

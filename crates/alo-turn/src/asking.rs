@@ -191,10 +191,12 @@ impl Turning<'_, '_> {
     /// The one road every question takes, told how its answer is held.
     ///
     /// `pub(crate)` for [`crate::next_request`], whose door is this one with
-    /// [`Held::ToTheEnvelope`]. **`held` reaches exactly one arm** — the
-    /// pinned runtime's — and every other line here is the same for both, so
-    /// what is written down, shown and refused cannot differ between a
-    /// question asked in words and an agent's next request.
+    /// [`Held::ToTheEnvelope`]. **`held` is read in two places and no more**:
+    /// what the model is shown (the person's words, or the product's around
+    /// the agent's request — `crate::next_request` has why) and the pinned
+    /// runtime's arm. Every other line here is the same for both, so what is
+    /// written down, shown on the indicator and refused cannot differ between
+    /// a question asked in words and an agent's next request.
     #[expect(
         clippy::too_many_arguments,
         reason = "the six `asking` takes and how the answer is held; bundling them would \
@@ -213,7 +215,9 @@ impl Turning<'_, '_> {
         if self.is_closed() {
             return Err(NoAnswer::TurnClosed);
         }
-        let question = Question::asked(asked, of_model)?;
+        // The only other place `held` is read: an agent's next request is put
+        // to a model in the product's own words (ADR 0037), wherever it goes.
+        let question = Question::asked(&held.shown(self.machine().verbs(), asked), of_model)?;
         // Cloned rather than borrowed: the indicator and the record are reached
         // through the same machine this borrows from, and an agent's name is a
         // short string beside a question that is about to cross a network.
@@ -237,7 +241,9 @@ impl Turning<'_, '_> {
             // permitting the one address discovery measured, the departure
             // written whether or not an answer came back. `held` is not read —
             // a paired machine is asked for an agent's next request exactly as
-            // it is asked a question in words (ADR 0032, decision 4).
+            // it is asked a question in words (ADR 0032, decision 4). What it is
+            // shown is this machine's words, built from this machine's verbs,
+            // because the request it answers with is carried out here.
             Answers::PairedMachine(corridor) => {
                 let to = registering(corridor.where_it_would_connect());
                 self.put_off_this_machine(&to, &agent, now, |indicator| {
@@ -245,7 +251,8 @@ impl Turning<'_, '_> {
                 })
             }
             Answers::ThePinnedRuntime(runtime) => {
-                // The only place `held` is read (ADR 0032, decisions 3 and 4).
+                // The only place `held` decides how a model is asked (ADR 0032,
+                // decisions 3 and 4).
                 let outcome = match held {
                     Held::InWords => asking.to_this_machine(&question, *runtime),
                     Held::ToTheEnvelope => {

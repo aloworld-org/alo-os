@@ -2888,7 +2888,10 @@ with no vocabulary behind them at all. Until now that was a fact about a
 measurement (recorded above, *it is asked in English*). Once a turn composes
 what it shows a model from here, it becomes a fact about the product: a person
 whose machine is in Latvian is served by an agent whose model was asked in
-English.
+English. **Since 2026-09-15 it does** (`alo_turn::Turning::asking_for_the_next_request`):
+an agent's next request is put to a model in this text, with the request itself
+in whatever language the person wrote it, beneath English instructions and
+English descriptions of the verbs.
 **Our response:** recorded rather than worked around, and it falls the way the
 measurement's version does — a model asked in a language it is weaker in drives
 the verbs worse, and every grade in the catalogue was earned in English, so the

@@ -107,7 +107,7 @@ be an agent choosing which machine its question goes to.
 A question may also say **what it wants back**, and nothing else:
 
 ```json
-{"ask":{"question":"…the person said: list my invoices. Your next request?","answered":"as-the-next-request"}}
+{"ask":{"question":"list my invoices","answered":"as-the-next-request"}}
 ```
 
 | `answered` | Means |
@@ -128,6 +128,19 @@ asked exactly as they are asked in words. The answer comes back as `answered`
 either way, in the model's own words: it becomes a request only when the agent
 sends it as its next line, read and validated like any other. The record entry
 is the same for both; how the model was asked is not kept.
+
+**What the model is shown is the product's words** (ADR 0037; added
+2026-09-15). For `as-the-next-request` the `question` is **the request** — what
+the person wants done — and not a prompt. Wherever the person chose to have
+questions answered, the daemon shows the model the text
+`alo_instructing::shown_to_a_turn` builds: how to answer, every verb this
+machine declares in the verb's own words, and the request last. A client's own
+instructions are **wrapped**, never obeyed and never refused: whatever the
+client sends sits after `The request:`, beneath the product's instructions, and
+no field replaces them. A client that still sends a composed prompt is answered
+rather than refused, but its prompt is shown to the model as a request, so it
+should send the request alone. A question `in-words` is shown to the model
+exactly as written, and so is a question a paired machine asks this one.
 
 The daemon reads that decision out of the person's own settings file
 (`docs/contracts/person-settings.md`), once at the first question of each turn
