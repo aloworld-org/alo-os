@@ -228,6 +228,18 @@ session the one address that workspace answered from — refusing when none did,
 when more than one address answered for the same identity. The machine still
 connects to nothing; the workspace client in the person's session does.
 
+**An alo machine that hosts a workspace answers for it** (added 2026-09-14,
+additively). `alo-agentd` is the one responder on an alo machine: it answers the
+`_alo-workspace._tcp.local` question with the three records above, under **its own
+identity**, when root has said where the hosted workspace answers in
+`/etc/alo/workspace.toml` (`docs/contracts/hosted-workspace-file.md`), and steps
+over the question when nothing is hosted — exactly as it steps over a printer's.
+`alo-workplace`'s server on an alo machine therefore runs no mDNS responder of its
+own and invents no identity; it is installed with that file. The answer to the
+`_alo-os._tcp.local` question is the same bytes either way, and one packet asking
+both questions is answered with two packets, one each. Hosting a workspace pairs
+nothing and grants nothing.
+
 ## Versioning
 
 The `1` in every path is the version of this wire. Anything that would stop a

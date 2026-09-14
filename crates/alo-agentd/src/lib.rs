@@ -200,6 +200,8 @@ pub mod hearing;
 #[cfg(target_os = "linux")]
 pub mod holding;
 #[cfg(target_os = "linux")]
+pub mod hosting;
+#[cfg(target_os = "linux")]
 pub mod keeping_names;
 #[cfg(target_os = "linux")]
 pub mod keeping_pairings;
@@ -288,6 +290,8 @@ pub use hearing::{Heard, Judging, NOT_A_MESSAGE, NOT_FOR_THIS_WIRE};
 #[cfg(target_os = "linux")]
 pub use holding::Holding;
 #[cfg(target_os = "linux")]
+pub use hosting::{THE_HOSTED_WORKSPACE, advertised, hosted_at};
+#[cfg(target_os = "linux")]
 pub use keeping_names::TheNamesFile;
 #[cfg(target_os = "linux")]
 pub use keeping_pairings::ThePairingsFile;
@@ -318,8 +322,8 @@ pub use questioned::{
 pub use questions::{Questions, TheBound, WhatAnswers};
 #[cfg(target_os = "linux")]
 pub use refusing::{
-    NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotReadAgain, NotServed, NotStarted,
-    NotTwoSides,
+    NotACaller, NotAUser, NotBound, NotDescribed, NotHeard, NotHosting, NotReadAgain, NotServed,
+    NotStarted, NotTwoSides,
 };
 #[cfg(target_os = "linux")]
 pub use rereading::{Remembering, ThePersonsFile, WhatIsGranted};

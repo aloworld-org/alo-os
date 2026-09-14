@@ -32,8 +32,8 @@ mod running {
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION,
-        THE_IDENTITY, TheNames, TheNamesFile, ThePairingsFile, ThePersonsFile, Waking,
-        WhatIsGranted, Wire, session, signalling, starting, unix,
+        THE_HOSTED_WORKSPACE, THE_IDENTITY, TheNames, TheNamesFile, ThePairingsFile,
+        ThePersonsFile, Waking, WhatIsGranted, Wire, session, signalling, starting, unix,
     };
     use alo_capability::Grants;
     use alo_keeping::Writing;
@@ -156,8 +156,16 @@ mod running {
         // programme in the kernel that belong to this process: every road out
         // goes through the giving back below, including the ones where the
         // port or the socket could not be bound.
+        // And the workspace this machine hosts, if root installed one: read
+        // once, here, and a file that cannot be believed advertises nothing
+        // rather than stopping a machine the person can still be served at.
+        let hosted = alo_agentd::advertised(Path::new(THE_HOSTED_WORKSPACE), |why| {
+            eprintln!("alo-agentd: {why}");
+        });
+
         let served = match who_this_machine_is()
             .and_then(Wire::bound)
+            .map(|wire| wire.hosting(hosted))
             .map_err(NotStarted::from)
             .and_then(|wire| {
                 Listening::at(

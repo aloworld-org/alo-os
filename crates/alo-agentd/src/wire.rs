@@ -30,8 +30,16 @@
 //! trusted-network switch ADR 0003 forbids by the back door. Whoever runs alo
 //! OS on one host for a test binds sockets of their own and hands them in
 //! ([`Wire::on`]); the machine binds these.
+//!
+//! **What a workspace this machine hosts answers on is not a setting either.**
+//! It is a fact about a server root installed, read once at start out of
+//! [`crate::hosting`]'s root-owned file and handed in as a port
+//! ([`Wire::hosting`]). It adds an answer to the question for workspaces under
+//! this machine's own identity, and changes nothing this machine says about
+//! itself.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
+use std::num::NonZeroU16;
 use std::os::fd::{AsFd as _, BorrowedFd};
 
 use alo_corridor::AT_MOST_A_VERB;
@@ -180,6 +188,34 @@ impl Wire {
         self.answering.presence().port()
     }
 
+    /// The same machine, also answering discovery for the workspace it hosts
+    /// at `workspace` — or for none, when there is none.
+    ///
+    /// A port and nothing else: the workspace is advertised under this
+    /// machine's own identity, the one it was bound with
+    /// (`alo_nearby::Answering::hosting_a_workspace_at`). Taken by value before
+    /// the service is handed a borrow of the wire, so nothing the service does
+    /// can change what is advertised; `src/main.rs` reads the port from
+    /// [`crate::hosting`]'s file once, at start.
+    #[must_use]
+    pub fn hosting(self, workspace: Option<NonZeroU16>) -> Self {
+        match workspace {
+            Some(port) => Self {
+                answering: self.answering.hosting_a_workspace_at(port),
+                ..self
+            },
+            None => self,
+        }
+    }
+
+    /// The port of the workspace this machine answers for, if it hosts one.
+    #[must_use]
+    pub fn hosts(&self) -> Option<u16> {
+        self.answering
+            .workspace()
+            .map(alo_nearby::WorkspacePresence::port)
+    }
+
     /// Where an asking machine's own discovery answers.
     #[must_use]
     pub const fn asking_at(&self) -> u16 {
@@ -236,9 +272,11 @@ impl Wire {
     /// Answer one discovery question, if what arrived was one.
     ///
     /// Called once the discovery socket has said something is there. The
-    /// answer is this machine's identity and the port above, the same whether
-    /// anything is paired or a turn is under way — presence never says what a
-    /// machine is doing.
+    /// answer to *who is here* is this machine's identity and the port above,
+    /// the same whether anything is paired, a turn is under way or a workspace
+    /// is hosted — presence never says what a machine is doing. The answer to
+    /// *which workspaces are here* is the hosted workspace, and nothing on a
+    /// machine hosting none.
     ///
     /// # Errors
     ///
@@ -269,6 +307,7 @@ impl std::fmt::Debug for Wire {
             .field("here", self.here())
             .field("port", &self.port())
             .field("asking_at", &self.asking_at)
+            .field("hosts", &self.hosts())
             .finish_non_exhaustive()
     }
 }
@@ -336,5 +375,283 @@ mod tests {
         stranger.shutdown(std::net::Shutdown::Write).unwrap();
         let knocked = wire.accept_one().unwrap();
         assert!(knocked.message.is_err(), "a non-message was read as one");
+    }
+}
+
+/// An alo machine that hosts a workspace, as `src/main.rs` makes one — its
+/// file read, its wire told the port — found and opened by a second daemon
+/// over loopback with task 18's request, and the two ways it hosts nothing.
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
+)]
+mod a_hosted_workspace {
+    use std::fs::Permissions;
+    use std::net::{Ipv4Addr, SocketAddr, TcpListener, UdpSocket};
+    use std::num::NonZeroU16;
+    use std::os::unix::fs::{MetadataExt as _, PermissionsExt as _};
+    use std::path::{Path, PathBuf};
+    use std::thread::JoinHandle;
+    use std::time::Duration;
+
+    use alo_capability::Grants;
+    use alo_protocol::ToAPerson;
+    use alo_record::{Happened, Record};
+    use alo_strings::Filling;
+
+    use super::Wire;
+    use crate::answering::what_a_person_said;
+    use crate::corridor::Corridor;
+    use crate::doing::what_an_agent_said;
+    use crate::holding::Holding;
+    use crate::hosting::{advertised, hosted_at};
+    use crate::network::TheNetwork;
+    use crate::pairing::Nearby;
+    use crate::rereading::WhatIsGranted;
+    use crate::testing::{
+        NothingIsRemembered, a_directory_of_our_own, a_message, hour, in_english, noon,
+        nothing_has_been_chosen, on_a_machine_that_answers, on_a_machine_with_no_turn, reception,
+        the_studio,
+    };
+    use crate::words::NO_SUCH_WORKSPACE_ON_THE_NETWORK;
+
+    /// The workspace file `text` would be, written at `mode` in a folder of
+    /// this test's own — root's, because the loop runs these tests as root.
+    fn the_workspace_file(what: &str, text: &str, mode: u32) -> PathBuf {
+        let at = a_directory_of_our_own(what).join("workspace.toml");
+        std::fs::write(&at, text).unwrap();
+        std::fs::set_permissions(&at, Permissions::from_mode(mode)).unwrap();
+        assert_eq!(
+            std::fs::metadata(&at).unwrap().uid(),
+            0,
+            "these tests hold root's file and are run as root, as the loop runs them"
+        );
+        at
+    }
+
+    /// Where a workspace client would connect, which nothing may.
+    fn a_workspace_listening() -> TcpListener {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        listener
+    }
+
+    /// The studio, as a daemon starts it: bound on this host, hosting what
+    /// the file at `file` says — answering discovery on a thread until no
+    /// question has come for three seconds, and counting what it answered.
+    fn the_studio_hosting(file: &Path) -> (SocketAddr, Option<u16>, JoinHandle<u32>) {
+        let discovery = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        discovery
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        let at = discovery.local_addr().unwrap();
+        let mut refused = None;
+        let studio = Wire::on(
+            TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            discovery,
+            the_studio(),
+            0,
+        )
+        .unwrap()
+        .hosting(advertised(file, |why| refused = Some(why.to_string())));
+        if let Some(why) = refused {
+            assert!(why.contains("no workspace is advertised"), "{why}");
+        }
+        let hosts = studio.hosts();
+        let answering = std::thread::spawn(move || {
+            let mut answered = 0_u32;
+            while let Ok(who) = studio.answer_discovery() {
+                answered = answered.saturating_add(u32::from(who.is_some()));
+            }
+            answered
+        });
+        (at, hosts, answering)
+    }
+
+    /// Reception, a second daemon on this host, whose wire looks for who is
+    /// here where the studio answers.
+    fn reception_looking_at(studio: SocketAddr) -> Wire {
+        Wire::on(
+            TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            reception(),
+            studio.port(),
+        )
+        .unwrap()
+    }
+
+    /// Reception's person sends `line` on reception's door, looked around
+    /// through reception's own wire; the answer, and what was written down.
+    fn receptions_person_says(
+        line: &str,
+        network: &TheNetwork,
+        wire: &Wire,
+    ) -> (ToAPerson, Record) {
+        let mut record = Record::default();
+        let said = on_a_machine_with_no_turn(
+            "a-hosted-workspace",
+            &mut record,
+            |machine, _, strings, _, _| {
+                let mut grants = Grants::default();
+                what_a_person_said(
+                    &a_message(line),
+                    &mut Holding::Nobody(machine),
+                    &mut WhatIsGranted::of(&mut grants, &NothingIsRemembered),
+                    &Nearby {
+                        network,
+                        looking: wire,
+                    },
+                    strings,
+                    noon(),
+                )
+                .unwrap()
+            },
+        );
+        (said, record)
+    }
+
+    /// What reception's shell sends to open the studio's workspace.
+    fn opening_the_studio() -> String {
+        format!(
+            r#"{{"open-workspace":{{"machine":"{}"}}}}"#,
+            the_studio().as_str()
+        )
+    }
+
+    /// **A machine advertising a workspace is found and opened by task 18's
+    /// request from a second daemon, over loopback, end to end.** The
+    /// studio's port comes off root's file; reception's person lists the
+    /// workspaces and sees the studio's under the studio's own identity, at
+    /// the address it answered from, then opens it by that identity — written
+    /// down, with nothing connected to it and nothing paired.
+    #[test]
+    fn a_machine_hosting_a_workspace_is_found_and_opened_by_a_second_daemon_over_loopback() {
+        let workspace = a_workspace_listening();
+        let port = workspace.local_addr().unwrap().port();
+        let file = the_workspace_file("hosting-end-to-end", &format!("port = {port}\n"), 0o644);
+        let (at, hosts, answering) = the_studio_hosting(&file);
+        assert_eq!(hosts, Some(port));
+
+        let reception_wire = reception_looking_at(at);
+        let network = TheNetwork::on(reception());
+
+        let (listed, _) = receptions_person_says(r#"{"workspaces":{}}"#, &network, &reception_wire);
+        let found = listed.workspaces_found().unwrap();
+        assert_eq!(found.len(), 1, "{listed:?}");
+        let one = found.first().unwrap();
+        assert_eq!(one.machine(), the_studio().as_str());
+        assert_eq!(one.answers_at(), format!("127.0.0.1:{port}"));
+
+        let (said, record) =
+            receptions_person_says(&opening_the_studio(), &network, &reception_wire);
+        let opened = said.opened_workspace().unwrap();
+        assert_eq!(opened.machine(), the_studio().as_str());
+        assert_eq!(opened.answers_at(), format!("127.0.0.1:{port}"));
+        assert_eq!(record.len(), 1, "{record:?}");
+        assert!(matches!(
+            record.everything().next().unwrap().happened(),
+            Happened::WorkspaceOpened { workspace, answers_at }
+                if workspace.is(the_studio().as_str())
+                    && answers_at.as_str() == format!("127.0.0.1:{port}")
+        ));
+
+        // Two looks, each asking both questions, and every one answered.
+        assert_eq!(answering.join().unwrap(), 4);
+        assert_eq!(
+            workspace.accept().map(|_| ()).unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock,
+            "something connected to the workspace"
+        );
+        assert!(
+            network.locked().pairings().every().is_empty(),
+            "hosting paired"
+        );
+    }
+
+    /// **A machine with no workspace file, and a machine whose file is
+    /// refused, host nothing**: each is still found as a machine, and opening
+    /// a workspace by its identity is refused as no such workspace on the
+    /// network.
+    #[test]
+    fn a_machine_with_no_workspace_file_or_a_refused_one_is_found_and_hosts_nothing() {
+        let nowhere = a_directory_of_our_own("hosting-nothing").join("workspace.toml");
+        let loose = the_workspace_file("hosting-loose", "port = 8443\n", 0o666);
+        let strings = in_english();
+        for file in [nowhere, loose] {
+            let (at, hosts, answering) = the_studio_hosting(&file);
+            assert_eq!(hosts, None, "{}", file.display());
+
+            let reception_wire = reception_looking_at(at);
+            let network = TheNetwork::on(reception());
+            let (said, record) =
+                receptions_person_says(&opening_the_studio(), &network, &reception_wire);
+            let refusal = said.refusal().unwrap();
+            assert_eq!(
+                refusal.text(),
+                strings
+                    .say(&NO_SUCH_WORKSPACE_ON_THE_NETWORK.key(), &Filling::nothing())
+                    .text()
+            );
+            assert!(record.is_empty());
+            // One look, both questions: the machine's was answered, the
+            // workspace question was stepped over.
+            assert_eq!(answering.join().unwrap(), 1, "{}", file.display());
+        }
+    }
+
+    /// **No request on either door writes, names or changes what is
+    /// hosted.** Requests shaped as though one could — on the person's door
+    /// and on the agent's — are refused; the file is byte for byte what it was
+    /// and still says the same port.
+    #[test]
+    fn no_request_on_either_door_writes_names_or_changes_the_hosted_workspace() {
+        let file = the_workspace_file("hosting-doors", "port = 8443\n", 0o644);
+        let before = std::fs::read(&file).unwrap();
+        let lines = [
+            r#"{"host-workspace":{"port":9443}}"#.to_owned(),
+            r#"{"workspace":{"port":9443}}"#.to_owned(),
+            r#"{"hosting":{"file":"/etc/alo/workspace.toml","port":9443}}"#.to_owned(),
+            format!(
+                r#"{{"open-workspace":{{"machine":"{}","port":9443}}}}"#,
+                the_studio().as_str()
+            ),
+        ];
+
+        let quiet = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let wire = reception_looking_at(quiet.local_addr().unwrap());
+        let network = TheNetwork::on(reception());
+        for line in &lines {
+            let (said, record) = receptions_person_says(line, &network, &wire);
+            assert!(said.refusal().is_some(), "the person's door: {line}");
+            assert!(record.is_empty(), "{line}");
+        }
+
+        let corridor = Corridor {
+            network: &network,
+            looking: &wire,
+            naming: network.names(),
+        };
+        let mut questions = nothing_has_been_chosen();
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, grants, strings| {
+            for line in &lines {
+                let said = what_an_agent_said(
+                    &a_message(line),
+                    turning,
+                    &mut questions,
+                    Some(&corridor),
+                    grants,
+                    strings,
+                    hour(),
+                    noon(),
+                );
+                assert!(said.refusal().is_some(), "the agent's door: {line}");
+            }
+        });
+
+        assert_eq!(std::fs::read(&file).unwrap(), before);
+        assert_eq!(hosted_at(&file).unwrap().map(NonZeroU16::get), Some(8_443));
+        assert_eq!(wire.hosts(), None);
     }
 }

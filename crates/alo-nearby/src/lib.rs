@@ -57,7 +57,11 @@
 //! the version — and [`FoundWorkspace`] is one heard, made only by reading an
 //! advertisement ([`reading::a_workspace_in`]) and paired with nothing.
 //! [`Looking::around`] hears machines and workspaces in one window. Finding a
-//! workspace confers nothing: nothing here connects to one.
+//! workspace confers nothing: nothing here connects to one. An alo machine that
+//! hosts a workspace answers for it through the same [`Answering`] its presence
+//! is answered by ([`Answering::hosting_a_workspace_at`]) — under its own
+//! identity, because a port is all hosting takes — and says nothing more about
+//! itself for doing so.
 //!
 //! **Not pairing, and not use.** Nothing here opens a connection to a machine
 //! it found. A [`Found`] is a fact written down, and turning one into something
@@ -116,6 +120,7 @@
 //! [ADR 0003]: https://github.com/aloworld-org/alo-os/blob/main/docs/decisions/0003-the-network-is-not-authority.md
 
 pub mod advertising;
+mod answering;
 mod carried;
 mod confirming;
 pub mod crossing;
@@ -145,11 +150,12 @@ mod wire;
 pub mod words;
 mod workspace;
 
+pub use answering::Answering;
 pub use confirming::Confirmation;
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
 pub use keeping::{NotWrittenDown, THE_PAIRINGS_FORMAT};
 pub use keying::{Code, Keying, Offer};
-pub use looking::{Answering, Around, Looking, THE_ADDRESS, THE_PORT};
+pub use looking::{Around, Looking, THE_ADDRESS, THE_PORT};
 pub use machine::MachineId;
 pub use origin::Origin;
 pub use pairing::{NotPaired, Pairing, Pairings};

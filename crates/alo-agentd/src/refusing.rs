@@ -1,11 +1,13 @@
 //! Everything this crate refuses, and who reads it.
 //!
-//! Nine types, divided by what somebody has to do about them. [`NotDescribed`]
+//! Ten types, divided by what somebody has to do about them. [`NotDescribed`]
 //! is the file a machine is described by, [`NotTwoSides`] and [`NotAUser`] are
 //! a machine described wrongly, [`NotBound`] is a machine whose socket cannot be
 //! put where it belongs, [`NotACaller`] is one connection that will not be served,
 //! [`NotHeard`] is one connection that cannot go on being read,
 //! [`NotReadAgain`] is the person's grants not being read a second time,
+//! [`NotHosting`] is a workspace this machine advertises nothing about because
+//! its file cannot be believed,
 //! [`NotServed`] is the service itself stopping, and [`NotStarted`] is the
 //! process: the one that gathers the rest, because a process ends in exactly
 //! one of them.
@@ -582,6 +584,125 @@ pub enum NotReadAgain {
         "what is granted was not read again: {0}; the list on the disk uses a handle this turn's own grant is under, so nothing was replaced"
     )]
     ATurnsOwnGrant(String),
+}
+
+/// Why this machine advertises no workspace, although a file says it hosts one.
+///
+/// English, read out of a service log by whoever installed the workspace
+/// server — which is `crate::hosting`'s file and the package that wrote it.
+/// **None of these stops the service**: a machine whose workspace file cannot
+/// be believed is still a machine to serve the person at, and it advertises
+/// no workspace rather than one somebody else could have named. Every arm names
+/// the thing to go and change.
+#[derive(Debug, Error)]
+pub enum NotHosting {
+    /// The path is a symbolic link.
+    #[error(
+        "{} is a symbolic link, and which workspace this machine hosts is read only from the \
+         file itself; no workspace is advertised",
+        at.display()
+    )]
+    ALink {
+        /// Where the link is.
+        at: PathBuf,
+    },
+    /// Something is at the path, and it is not a file.
+    #[error("{} is not a file; no workspace is advertised", at.display())]
+    NotAFile {
+        /// Where it is.
+        at: PathBuf,
+    },
+    /// The file belongs to somebody other than root.
+    #[error(
+        "{} belongs to uid {owner}, and which workspace this machine hosts is believed only from \
+         root, which installs the server; no workspace is advertised",
+        at.display()
+    )]
+    NotRoots {
+        /// Where it is.
+        at: PathBuf,
+        /// Who owns it.
+        owner: u32,
+    },
+    /// The file can be written by its group or by the world.
+    #[error(
+        "{} is writable by its group or by anyone (mode {mode:o}), so somebody other than root \
+         could say what this machine advertises; no workspace is advertised",
+        at.display()
+    )]
+    WritableByOthers {
+        /// Where it is.
+        at: PathBuf,
+        /// The mode it has.
+        mode: u32,
+    },
+    /// The file would not read.
+    #[error("{} could not be read: {why}; no workspace is advertised", at.display())]
+    NotRead {
+        /// Where it is.
+        at: PathBuf,
+        /// What the machine said.
+        why: std::io::Error,
+    },
+    /// The file is not TOML at all.
+    #[error("{} is not TOML: {why}; no workspace is advertised", at.display())]
+    NotTheShape {
+        /// Where it is.
+        at: PathBuf,
+        /// What would not parse, in the parser's words.
+        why: String,
+    },
+    /// The file carries a key that is not `port`.
+    #[error(
+        "{} carries `{key}`, and the one key it may carry is `port`; no workspace is advertised",
+        at.display()
+    )]
+    AnotherKey {
+        /// Where it is.
+        at: PathBuf,
+        /// The key that is not on the list.
+        key: String,
+    },
+    /// The file does not say which port.
+    #[error("{} does not say `port`; no workspace is advertised", at.display())]
+    NoPort {
+        /// Where it is.
+        at: PathBuf,
+    },
+    /// `port` is not a whole number.
+    #[error(
+        "`port` in {} is `{said}`, which is not a whole number; no workspace is advertised",
+        at.display()
+    )]
+    NotANumber {
+        /// Where it is.
+        at: PathBuf,
+        /// What it says instead, as TOML spells it.
+        said: String,
+    },
+    /// `port` is a number no TCP port has.
+    #[error(
+        "`port` in {} is {port}, and a port is from 1 to 65535; no workspace is advertised",
+        at.display()
+    )]
+    NotAPort {
+        /// Where it is.
+        at: PathBuf,
+        /// The number it says.
+        port: i64,
+    },
+    /// `port` is the port this machine's own wire answers on.
+    #[error(
+        "`port` in {} is {port}, which is the port alo-agentd itself answers proposals, verbs and \
+         questions on, not a workspace's; no workspace is advertised",
+        at.display()
+    )]
+    TheWiresOwnPort {
+        /// Where it is.
+        at: PathBuf,
+        /// The port.
+        port: u16,
+    },
 }
 
 /// Why there is no service on this machine.

@@ -835,7 +835,21 @@ SHA-256 and nothing else.
 
 ### 20. An alo machine that hosts a workspace answers for it, and says nothing more
 
-**Status:** ready. **Depends on:** 17, 18.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-nearby` (`answering.rs`, split
+out of `looking.rs` — `Answering::hosting_a_workspace_at(NonZeroU16)`, which takes a
+port and nothing else so the workspace answer is always under the responder's own
+identity, and `Answering::workspace`; `reading::a_question_for_workspaces_in` beside
+`a_question_in`, one rule for both) and `crates/alo-agentd` (`hosting.rs` —
+`THE_HOSTED_WORKSPACE` at `/etc/alo/workspace.toml`, `hosted_at` and `advertised`,
+believed from root alone, one key `port`, 1–65535 and not the wire's own `7610`;
+`NotHosting` in `refusing.rs`; `Wire::hosting` and `Wire::hosts`; `src/main.rs` reads
+the file once at start, and a refused file is a line in the service log and no
+workspace advertised, never a stopped service). The file is read at the next start,
+not on a knock — decided in `hosting.rs` and the report. Contracts:
+`docs/contracts/hosted-workspace-file.md` (new) and `local-network-wire.md`,
+additively. The report is
+`docs/autonomy/updates/an-alo-machine-answers-for-the-workspace-it-hosts.md`.
+**Depends on:** 17, 18.
 
 Task 17's contract says a workspace on an alo machine is advertised under **that
 machine's own identity**, and tasks 17 and 18 built everything that reads such an
@@ -871,3 +885,34 @@ its identity did not say.
   daemon only reads it. Whether a change to the file is read at the next start or on a
   knock is decided in the crate and written up. Nothing in `alo-shell`, nothing in
   `image/`.
+
+### 20. The person sees what their machine says about itself on the network
+
+**Status:** ready. **Depends on:** 1, 19.
+
+Since task 19 an alo machine can say two things on the local network: that it exists,
+under its identity and the wire's port, and — where root installed a workspace
+server — that it hosts a workspace at a port. Both are said to everything on the link,
+and neither is shown to the person whose machine is saying it. Law 1 is about egress
+an agent causes, but its reason — *nothing leaves silently* — is a person's to check,
+and today a person cannot ask their own machine what it is telling the office without
+a packet capture. A refused workspace file is worse: the only sentence about it is a
+line in a service log the person does not read, and their colleagues simply do not
+find the workspace.
+
+- **Acceptance:** the person's door (`alo-protocol`) gains a read-only request
+  answering what this machine advertises at the moment it is asked — its identity, the
+  port its presence names, and the port of the workspace it hosts or that it hosts
+  none — with no field for anything the advertisement does not carry, tested by the
+  answer's shape; where the workspace file was refused, the answer says so in the
+  person's language (`alo-strings`, declared and collected) naming no path, owner or
+  mode, tested for each `NotHosting` arm grouped into what a person can act on; the
+  request changes nothing — no file is read again, nothing is advertised that was not,
+  nothing is written to the record — tested; an agent sending it is refused in the
+  words an approval gets, tested; and a request carrying a port or a path is not a
+  request, tested.
+- **Constraint:** ADR 0003: this shows presence, it does not change it, so there is
+  still no *advertise as*, no *discovery off* and no setting. What the daemon reports
+  is what `Wire` holds, never the file re-read: the answer describes the service that
+  is running. `docs/contracts/daemon-protocol.md` gains the shape additively. Nothing
+  in `alo-shell`, nothing in `image/`.

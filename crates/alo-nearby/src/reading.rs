@@ -157,6 +157,21 @@ fn an_instance_in(
 /// and is not an error either.
 #[must_use]
 pub fn a_question_in(packet: &[u8]) -> bool {
+    asks_for(packet, SERVICE)
+}
+
+/// Whether a packet is somebody asking which workspaces are here.
+///
+/// A question for [`WORKSPACE_SERVICE`] and no other, read by exactly the rule
+/// [`a_question_in`] reads a question for machines by — one packet may ask
+/// both, and then both are true of it.
+#[must_use]
+pub fn a_question_for_workspaces_in(packet: &[u8]) -> bool {
+    asks_for(packet, WORKSPACE_SERVICE)
+}
+
+/// Whether a packet is a question asking for `service`'s instances.
+fn asks_for(packet: &[u8], service: &str) -> bool {
     let asked = || -> Result<bool, NotNearby> {
         let mut reading = Packet::of(packet);
         let _transaction = reading.sixteen()?;
@@ -175,7 +190,7 @@ pub fn a_question_in(packet: &[u8]) -> bool {
             let name = reading.name()?;
             let kind_of = reading.sixteen()?;
             let _class = reading.sixteen()?;
-            if kind_of == kind::PTR && name.eq_ignore_ascii_case(SERVICE) {
+            if kind_of == kind::PTR && name.eq_ignore_ascii_case(service) {
                 return Ok(true);
             }
         }
@@ -253,6 +268,27 @@ mod tests {
     /// The identity every test here advertises.
     fn an_identity() -> MachineId {
         MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap()
+    }
+
+    /// **The two questions are told apart**: a question for machines is not
+    /// one for workspaces, the other way round neither, and an answer about
+    /// either is a question for nothing.
+    #[test]
+    fn a_question_for_workspaces_is_told_apart_from_one_for_machines() {
+        use super::{a_question_for_workspaces_in, a_question_in};
+        use crate::advertising::{a_question, a_question_for_workspaces, about_a_workspace};
+
+        let for_machines = a_question().unwrap();
+        let for_workspaces = a_question_for_workspaces().unwrap();
+        assert!(a_question_in(&for_machines));
+        assert!(!a_question_for_workspaces_in(&for_machines));
+        assert!(a_question_for_workspaces_in(&for_workspaces));
+        assert!(!a_question_in(&for_workspaces));
+
+        let an_answer = about_a_workspace(&WorkspacePresence::of(an_identity(), 8_443)).unwrap();
+        assert!(!a_question_for_workspaces_in(&an_answer));
+        assert!(!a_question_in(&an_answer));
+        assert!(!a_question_for_workspaces_in(b"which workspaces?"));
     }
 
     /// **A second machine reads the advertisement and answers with one machine,

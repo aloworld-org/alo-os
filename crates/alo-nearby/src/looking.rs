@@ -1,7 +1,7 @@
-//! The socket the packets go over, and the two things a machine does on it.
+//! Asking who is here on the socket the packets go over, and what comes back.
 //!
-//! [`Answering`] holds this machine's presence and replies when somebody asks
-//! who is here. [`Looking`] asks, and collects what comes back.
+//! [`Looking`] asks who is here, and collects what comes back. Its other half,
+//! this machine answering, is [`crate::answering`]'s.
 //!
 //! # Nothing here connects to anything it finds
 //!
@@ -35,9 +35,9 @@
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use std::time::{Duration, Instant};
 
-use crate::advertising::{a_question, a_question_for_workspaces, about};
-use crate::presence::{Found, Presence};
-use crate::reading::{a_machine_in, a_question_in, a_workspace_in};
+use crate::advertising::{a_question, a_question_for_workspaces};
+use crate::presence::Found;
+use crate::reading::{a_machine_in, a_workspace_in};
 use crate::refusing::{NotNearby, because};
 use crate::workspace::FoundWorkspace;
 
@@ -53,61 +53,6 @@ pub const THE_PORT: u16 = 5353;
 /// anything, and what does not fit is what is not read, which for a packet this
 /// crate will refuse anyway costs nothing.
 const AT_MOST: usize = 1_500;
-
-/// This machine, answering when somebody asks who is here.
-pub struct Answering {
-    /// The socket questions arrive on and answers go out of.
-    socket: UdpSocket,
-    /// What this machine says about itself, which does not change.
-    presence: Presence,
-}
-
-impl Answering {
-    /// This machine on a socket somebody else opened.
-    ///
-    /// The socket is taken rather than made so that a test can put both sides
-    /// of the road on one host, and so that whoever runs alo OS decides which
-    /// interfaces it speaks on rather than this crate deciding for them.
-    #[must_use]
-    pub const fn on(socket: UdpSocket, presence: Presence) -> Self {
-        Self { socket, presence }
-    }
-
-    /// What this machine says about itself, for a caller that wants to see it
-    /// without waiting for anybody to ask.
-    #[must_use]
-    pub const fn presence(&self) -> &Presence {
-        &self.presence
-    }
-
-    /// Wait for one question and answer it.
-    ///
-    /// Returns who was answered, or nothing at all if what arrived was not a
-    /// question for this service — a printer, a media player, or this machine's
-    /// own answer coming back round. Neither is an error.
-    ///
-    /// # Errors
-    ///
-    /// [`NotNearby::TheNetwork`] if the socket will not read or will not send,
-    /// which includes the timeout a caller set on it: a caller that wants to
-    /// stop waiting sets one and gets it back here.
-    pub fn answer_one(&self) -> Result<Option<SocketAddr>, NotNearby> {
-        let mut heard = [0_u8; AT_MOST];
-        let (how_many, who) = self
-            .socket
-            .recv_from(&mut heard)
-            .map_err(|why| NotNearby::TheNetwork(because(&why)))?;
-        let asked = heard.get(..how_many).ok_or(NotNearby::CutShort)?;
-        if !a_question_in(asked) {
-            return Ok(None);
-        }
-        let answer = about(&self.presence)?;
-        self.socket
-            .send_to(&answer, who)
-            .map_err(|why| NotNearby::TheNetwork(because(&why)))?;
-        Ok(Some(who))
-    }
-}
 
 /// This machine, asking who else is here.
 pub struct Looking {
@@ -239,7 +184,8 @@ mod tests {
     use std::net::UdpSocket;
     use std::time::Duration;
 
-    use super::{Answering, Looking};
+    use super::Looking;
+    use crate::answering::Answering;
     use crate::machine::MachineId;
     use crate::presence::{Presence, Standing};
 
@@ -286,23 +232,6 @@ mod tests {
         let looking = Looking::from(a_socket());
         let found = looking.found(Duration::from_millis(200)).unwrap();
         assert!(found.is_empty(), "{found:?}");
-    }
-
-    /// Something that is not a question is not answered, and is not an error.
-    #[test]
-    fn a_packet_that_is_not_a_question_is_stepped_over() {
-        let answering = a_socket();
-        let at = answering.local_addr().unwrap();
-        let answering = Answering::on(answering, Presence::of(MachineId::made().unwrap(), 7_610));
-        let answered = std::thread::spawn(move || answering.answer_one());
-
-        let saying = a_socket();
-        saying.send_to(b"who is there?", at).unwrap();
-
-        assert!(
-            answered.join().unwrap().unwrap().is_none(),
-            "something that was not a question was answered"
-        );
     }
 
     /// **One window hears both**: a machine and a workspace answering the

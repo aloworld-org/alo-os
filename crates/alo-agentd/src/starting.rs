@@ -57,6 +57,11 @@
 //!    because a machine that cannot be asked by the office is still a machine
 //!    to serve the person at, but one that advertised a port nothing answers
 //!    on would lie to every machine on the network.
+//!    **And the workspace this machine hosts**, if root installed a server and
+//!    said where it answers in `crate::hosting`'s file — read here, once, so
+//!    what the network is told is fixed for the life of the service; a file
+//!    that cannot be believed is a line in the service log and no workspace
+//!    advertised, never a machine that will not start.
 //! 10. **The person's door, and the socket in it** — last, because it is the
 //!     only thing anybody else on the machine can see. Nothing knocks on a
 //!     service that is still deciding whether it can run.
