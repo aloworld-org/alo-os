@@ -192,6 +192,8 @@ pub mod describing;
 #[cfg(target_os = "linux")]
 pub mod doing;
 #[cfg(target_os = "linux")]
+pub mod hearing;
+#[cfg(target_os = "linux")]
 pub mod holding;
 #[cfg(target_os = "linux")]
 pub mod knocking;
@@ -202,7 +204,13 @@ pub mod lines;
 #[cfg(target_os = "linux")]
 pub mod listening;
 #[cfg(target_os = "linux")]
+pub mod looking;
+#[cfg(target_os = "linux")]
+pub mod network;
+#[cfg(target_os = "linux")]
 pub mod place;
+#[cfg(target_os = "linux")]
+pub mod questioned;
 #[cfg(target_os = "linux")]
 pub mod questions;
 #[cfg(target_os = "linux")]
@@ -224,9 +232,15 @@ pub mod starting;
 #[cfg(target_os = "linux")]
 pub mod stopping;
 #[cfg(target_os = "linux")]
+pub mod surface;
+#[cfg(target_os = "linux")]
+pub mod terms;
+#[cfg(target_os = "linux")]
 pub mod trusting;
 #[cfg(target_os = "linux")]
 pub mod unix;
+#[cfg(target_os = "linux")]
+pub mod wire;
 #[cfg(target_os = "linux")]
 pub mod words;
 
@@ -248,6 +262,8 @@ pub use describing::{ALSO_READ, THE_FORMAT, is_a_shape_we_read};
 #[cfg(target_os = "linux")]
 pub use doing::what_an_agent_said;
 #[cfg(target_os = "linux")]
+pub use hearing::{Heard, Judging, NOT_A_MESSAGE, NOT_FOR_THIS_WIRE};
+#[cfg(target_os = "linux")]
 pub use holding::Holding;
 #[cfg(target_os = "linux")]
 pub use knocking::Knocking;
@@ -258,7 +274,13 @@ pub use lines::Line;
 #[cfg(target_os = "linux")]
 pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
+pub use looking::{WHILE_LOOKING, found_at};
+#[cfg(target_os = "linux")]
+pub use network::{Shared, TheNetwork};
+#[cfg(target_os = "linux")]
 pub use place::{Place, THE_ROOT};
+#[cfg(target_os = "linux")]
+pub use questioned::{NOT_ANSWERED_HERE, NOT_PERMITTED, Questioned};
 #[cfg(target_os = "linux")]
 pub use questions::{Questions, TheBound, WhatAnswers};
 #[cfg(target_os = "linux")]
@@ -282,5 +304,11 @@ pub use signalling::on_sigterm;
 pub use starting::{not_as_root, until_stopped, what_this_machine_says};
 #[cfg(target_os = "linux")]
 pub use stopping::{Stop, Waking};
+#[cfg(target_os = "linux")]
+pub use surface::NobodyToShowItTo;
+#[cfg(target_os = "linux")]
+pub use terms::{NoNameYet, Terms};
+#[cfg(target_os = "linux")]
+pub use wire::{Knocked, THE_IDENTITY, THE_WIRE_PORT, Wire};
 #[cfg(target_os = "linux")]
 pub use words::{EVERY_WORD, Word, WordsError, agentd_words, declare_into};

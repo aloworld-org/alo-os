@@ -176,16 +176,15 @@ impl Receiving {
         stream
             .set_write_timeout(Some(WHILE_THE_WIRE_ANSWERS))
             .map_err(|why| NotNearby::TheNetwork(why.to_string()))?;
-        let message = match http::read_message_of_at_most(&stream, AT_MOST_A_VERB) {
-            Ok(message) => read(&message),
-            Err(why) if why.is_about_a_stranger() => Message::NotAVerb,
-            Err(why) => return Err(why),
-        };
-        Ok(Arrived {
-            stream,
-            from: who.ip(),
-            message,
-        })
+        match http::read_message_of_at_most(&stream, AT_MOST_A_VERB) {
+            Ok(message) => Ok(Arrived::carried(stream, who.ip(), &message)),
+            Err(why) if why.is_about_a_stranger() => Ok(Arrived {
+                stream,
+                from: who.ip(),
+                message: Message::NotAVerb,
+            }),
+            Err(why) => Err(why),
+        }
     }
 }
 
@@ -219,6 +218,30 @@ fn read(message: &http::Message) -> Message {
 }
 
 impl Arrived {
+    /// A message somebody else read off a connection they accepted, for this
+    /// wire to consider.
+    ///
+    /// The daemon that owns the advertised port reads one message through
+    /// `alo_nearby::http` and hands it to whichever wire its path names; this
+    /// is how the verb wire takes one, so that one port has one reader and no
+    /// bytes are lost between a dispatcher and a door. What is decided here
+    /// is exactly what [`Receiving::accept_one`] decides — the method, the
+    /// path, the proof header — and a body longer than [`AT_MOST_A_VERB`] is
+    /// refused as not a verb, as it would have been there.
+    #[must_use]
+    pub fn carried(stream: TcpStream, from: IpAddr, message: &http::Message) -> Self {
+        let message = if message.body.len() > AT_MOST_A_VERB {
+            Message::NotAVerb
+        } else {
+            read(message)
+        };
+        Self {
+            stream,
+            from,
+            message,
+        }
+    }
+
     /// The address the connection came from.
     #[must_use]
     pub const fn from(&self) -> IpAddr {

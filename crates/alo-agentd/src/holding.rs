@@ -16,6 +16,7 @@
 
 use std::time::SystemTime;
 
+use alo_corridor::Doorway;
 use alo_keeping::NotKept;
 use alo_strings::Said;
 use alo_turn::{Machine, Turning};
@@ -39,6 +40,14 @@ pub enum Holding<'a, 'm, 't> {
     },
     /// Nobody is, so the machine itself is here.
     Nobody(&'a mut Machine<'m>),
+    /// No local turn is under way, so the network's door has the machine —
+    /// holding it for a remote turn, or holding it for the next verb.
+    ///
+    /// This is what the rounds between local turns hold since the daemon
+    /// bound the port: the person's door answers exactly as it does for
+    /// [`Holding::Nobody`], and what a knock writes goes through the remote
+    /// turn if one is open and through the machine otherwise.
+    TheNetwork(&'a mut Doorway<'m, 't>),
 }
 
 impl<'a, 'm, 't> Holding<'a, 'm, 't> {
@@ -50,7 +59,7 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
     pub fn turning(&mut self) -> Option<&mut Turning<'m, 't>> {
         match self {
             Self::ATurn { turning, .. } => Some(turning),
-            Self::Nobody(_) => None,
+            Self::Nobody(_) | Self::TheNetwork(_) => None,
         }
     }
 
@@ -62,7 +71,7 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
     pub fn underway(&mut self) -> Option<(&mut Turning<'m, 't>, &mut Questions)> {
         match self {
             Self::ATurn { turning, questions } => Some((turning, questions)),
-            Self::Nobody(_) => None,
+            Self::Nobody(_) | Self::TheNetwork(_) => None,
         }
     }
 
@@ -85,6 +94,21 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         match self {
             Self::ATurn { turning, .. } => turning.the_grants_were_not_read_again(why, now),
             Self::Nobody(machine) => machine.the_grants_were_not_read_again(why, now),
+            Self::TheNetwork(doorway) => {
+                if let Some(arriving) = doorway.turn() {
+                    arriving.the_grants_were_not_read_again(why, now)
+                } else if let Some(machine) = doorway.machine() {
+                    machine.the_grants_were_not_read_again(why, now)
+                } else {
+                    // The machine was lost when a remote turn could not begin,
+                    // which has already ended the service; nothing was added
+                    // and the truthful answer is that nothing could be.
+                    Err(NotKept::NotAddedTo {
+                        path: String::new(),
+                        why: "the machine was lost when a remote turn could not begin".to_owned(),
+                    })
+                }
+            }
         }
     }
 }

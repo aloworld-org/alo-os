@@ -448,6 +448,60 @@ impl ModelRuntime for Saying {
     }
 }
 
+/// The machine at reception, whose agent asks.
+pub(crate) fn reception() -> alo_nearby::MachineId {
+    alo_nearby::MachineId::read("0f1e2d3c4b5a69788796a5b4c3d2e1f0").unwrap()
+}
+
+/// The studio machine, which is asked — the one this service runs as in
+/// these tests.
+pub(crate) fn the_studio() -> alo_nearby::MachineId {
+    alo_nearby::MachineId::read("aaaabbbbccccddddeeeeffff00001111").unwrap()
+}
+
+/// Two machines paired the way two machines are, permitting `may`, for a
+/// day from `at`: the asking one's row first, the asked one's second.
+///
+/// The moment is an argument for [`granting`]'s reason: a running service
+/// reads a real clock, and a pairing made at a fixed noon would have run
+/// out before the first message arrived. `alo-corridor`'s fixture, copied
+/// rather than shared, because a fixture is not a public surface.
+pub(crate) fn paired_between(
+    asking: alo_nearby::MachineId,
+    asked: alo_nearby::MachineId,
+    may: &[alo_nearby::MayAskIts],
+    at: SystemTime,
+) -> (alo_nearby::Pairing, alo_nearby::Pairing) {
+    use alo_nearby::{Deliberating, Keying, Proposal, Side};
+    let at_asking = Keying::fresh().unwrap();
+    let at_asked = Keying::fresh().unwrap();
+    let proposal = Proposal::checked(
+        asking,
+        asked,
+        may,
+        Duration::from_secs(86_400),
+        at_asking.offer().clone(),
+    )
+    .unwrap();
+    let asked_side = Deliberating::asked(proposal.clone(), at_asked);
+    let asking_side = Deliberating::asking(proposal, at_asking)
+        .unwrap()
+        .answered_with(asked_side.answered().unwrap().clone())
+        .unwrap();
+    (
+        asking_side
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(at)
+            .unwrap(),
+        asked_side
+            .agreed_at(Side::TheOneAsking)
+            .agreed_at(Side::TheOneAsked)
+            .agreed(at)
+            .unwrap(),
+    )
+}
+
 /// A machine where nobody has chosen anything to answer questions.
 pub(crate) fn nothing_has_been_chosen() -> Questions {
     Questions::of_a_session(

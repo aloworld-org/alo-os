@@ -427,6 +427,51 @@ impl<'a, 'm> Arriving<'a, 'm> {
         self.turning.a_thread_is_lost()
     }
 
+    /// Write down that the person here was not able to have their grants
+    /// read again, while this remote turn holds the machine.
+    ///
+    /// [`Turning::the_grants_were_not_read_again`], on the turn this is, and
+    /// for the daemon's reason: the person's own side says *what is granted
+    /// has changed* whether or not a turn is under way, and a remote turn
+    /// holding the machine is not a reason for that refusal to go unwritten.
+    /// It is the person's own entry: it names no agent, as the local door
+    /// does not, and it is not stamped with this turn's origin, because the
+    /// other machine caused nothing about it.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and
+    /// the turn is closed by it, exactly as the local door answers.
+    pub fn the_grants_were_not_read_again(
+        &mut self,
+        why: &Said,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.turning.the_grants_were_not_read_again(why, now)
+    }
+
+    /// Write down that a pairing with `with` was kept on this machine, while
+    /// this remote turn holds it.
+    ///
+    /// [`crate::Machine::a_pairing_was_kept`] with a remote turn in front of
+    /// it: a confirmation from a third machine can complete a pairing while
+    /// another machine's turn is under way here, and the record is behind
+    /// the machine this turn holds. The entry is the machine's own — no
+    /// agent, and not stamped with this turn's origin, because the machine
+    /// whose turn this is caused nothing about it.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and
+    /// the turn is closed by it.
+    pub fn a_pairing_was_kept(
+        &mut self,
+        with: &str,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.turning.keeping(Entry::paired(with, now))
+    }
+
     /// The sentence for a pairing that has ended, if it has.
     ///
     /// `None` while the pairing stands, which is the ordinary answer and costs

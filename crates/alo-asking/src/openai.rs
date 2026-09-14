@@ -799,4 +799,20 @@ mod tests {
             "http://127.0.0.1:8000/v1/chat/completions"
         );
     }
+
+    /// **The path a question down the corridor is put to is the one spelling
+    /// the daemon tells it apart by.** The corridor's endpoint is a bare
+    /// address, so what this file appends to it has to be exactly
+    /// `THE_QUESTION_PATH`, or a daemon reading that constant would answer
+    /// *not for this wire* to every question.
+    #[test]
+    fn a_question_down_the_corridor_is_put_to_the_question_path() {
+        assert_eq!(
+            answers_url("http://192.168.1.20:7610"),
+            format!(
+                "http://192.168.1.20:7610{}",
+                crate::corridor::THE_QUESTION_PATH
+            )
+        );
+    }
 }

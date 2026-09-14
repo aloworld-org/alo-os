@@ -82,6 +82,8 @@ pub enum Outcome {
     /// The person's grants were not read again, so the service went on under
     /// the list it already had.
     GrantsNotReadAgain,
+    /// A pairing with another machine was kept on this one (ADR 0003).
+    Paired,
     /// A turn the machine would not run, because there was no boundary to run
     /// it inside (ADR 0015).
     NotBounded,
@@ -108,6 +110,7 @@ impl Outcome {
             Happened::AnsweredForAnotherMachine { .. } => Self::AnsweredForAnotherMachine,
             Happened::NeverPutAnywhere { .. } => Self::NeverPutAnywhere,
             Happened::GrantsNotReadAgain { .. } => Self::GrantsNotReadAgain,
+            Happened::Paired { .. } => Self::Paired,
             Happened::NotBounded { .. } => Self::NotBounded,
             Happened::Left { .. } => Self::Left,
             Happened::HeldBack { .. } => Self::HeldBack,
@@ -129,6 +132,7 @@ impl Outcome {
             Self::AnsweredForAnotherMachine => words::ANSWERED_FOR_ANOTHER_MACHINE,
             Self::NeverPutAnywhere => words::NEVER_PUT_ANYWHERE,
             Self::GrantsNotReadAgain => words::GRANTS_NOT_READ_AGAIN,
+            Self::Paired => words::PAIRED,
             Self::NotBounded => words::NOT_BOUNDED,
             Self::Left => words::LEFT,
             Self::HeldBack => words::HELD_BACK,

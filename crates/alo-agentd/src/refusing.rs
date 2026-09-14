@@ -179,6 +179,21 @@ pub enum NotDescribed {
         "agent.name is empty, so no grant could name this machine's agent; give the agent the name its grants are made to"
     )]
     Anonymous,
+    /// The agent's name is one this machine makes out to a paired machine.
+    ///
+    /// `machine:` and an identity is what a grant to a machine down the
+    /// corridor is made to (`alo_nearby::Origin::principal`), and an agent
+    /// called that would be answered by that machine's grants — a local
+    /// agent acting under a pairing nobody made for it. Refused where the
+    /// name is read, before anything is opened; `crate::serving` refuses it
+    /// again before a turn, for a service handed the name any other way.
+    #[error(
+        "agent.name is {named}, which is how a grant to a paired machine is spelt, and a local agent may not be called by a machine's name; give the agent a name of its own"
+    )]
+    NamesAMachine {
+        /// What the description said.
+        named: String,
+    },
     /// A length of time that is no time at all.
     #[error(
         "{what} is 0, and a turn or a proposal that lasts no time at all is refused at the moment it begins rather than served; give it a length in whole seconds"
@@ -238,6 +253,21 @@ pub enum NotBound {
     /// The machine would not say who this process is running as.
     #[error("could not tell who alo-agentd is running as: {0}")]
     NotAUser(#[from] NotAUser),
+    /// The port presence advertises, or the socket discovery is answered on,
+    /// could not be bound.
+    ///
+    /// Another responder may hold the discovery port without sharing it, or
+    /// another service the advertised one; either way nothing is listening
+    /// on the network and the person's door was not opened either, because
+    /// a machine that advertises a port nothing answers on is a machine that
+    /// lies about itself.
+    #[error("could not bind {what}: {why}")]
+    NoWire {
+        /// Which of the two.
+        what: &'static str,
+        /// What the machine said.
+        why: std::io::Error,
+    },
     /// This process is not the user it was told the person is.
     #[error(
         "alo-agentd is running as user {us} but was told the person is user {told}; it must run as the person it opens the person's door for (ADR 0001 §2)"
@@ -483,6 +513,43 @@ pub enum NotServed {
         "a thread of this service went into a turn's boundary and could not be brought back out, so nothing further will be done; the reason is above, and alo-agentd has to be started again"
     )]
     AThreadIsInsideATurn,
+    /// The network's door onto the machine could not be made.
+    ///
+    /// A turn or a change that would last no time or more than a day, which
+    /// the description already refused; answered rather than assumed away,
+    /// because the door is made from the same two numbers.
+    #[error("the network's door could not be opened: {0}")]
+    NoDoorway(#[from] alo_corridor::NotADoorway),
+    /// The agent this machine has is called by a machine's name.
+    ///
+    /// `crate::Described` refuses it where the name is read; this is the
+    /// same refusal at the door, for a service handed the name any other
+    /// way, so that no turn is ever begun for an agent that would be
+    /// answered by a paired machine's grants.
+    #[error(
+        "this machine's agent is called {named}, which is how a grant to a paired machine is spelt; no turn is begun for it"
+    )]
+    AnAgentNamedAMachine {
+        /// The name.
+        named: String,
+    },
+    /// The port presence advertises would not accept, or the discovery
+    /// socket would not read: the machine's, not a message's.
+    ///
+    /// A message that could not be read or answered is one connection and
+    /// is survived; this is the listener itself refusing, after `poll` said
+    /// somebody was there, which a service cannot go on from without spinning.
+    #[error("the port presence advertises could not be served on: {0}")]
+    TheWire(alo_nearby::NotNearby),
+    /// A remote turn could not begin and took the machine with it.
+    ///
+    /// `alo_corridor::Judged::NotBegun` has already ended the service by the
+    /// time this could be answered; it is here so that the road that hands
+    /// the machine back has a sentence for a state it should never see.
+    #[error(
+        "the machine was lost when a remote turn could not begin, so nothing further will be done; alo-agentd has to be started again"
+    )]
+    TheMachineWasLost,
 }
 
 /// Why what a person granted was not read again.

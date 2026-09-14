@@ -296,6 +296,27 @@ impl Entry {
         Self::new(at, Happened::GrantsNotReadAgain { why: Line::of(why) })
     }
 
+    /// A pairing with `with` was kept on this machine.
+    ///
+    /// Written by whatever holds this machine's pairings — the service that
+    /// owns the port — at the one moment there is one value to write it
+    /// from: the second confirmation arrived and the pairing became a row.
+    /// `with` is the other machine's identity as the pairing spells it; no
+    /// person's name for it exists yet, and none is invented here. See
+    /// [`Happened::Paired`] for why it names no agent.
+    ///
+    /// Additive; `format` stays `1`. `docs/contracts/record-file.md`'s *a new
+    /// kind of `happened` is additive* is the decision.
+    #[must_use]
+    pub fn paired(with: &str, at: SystemTime) -> Self {
+        Self::new(
+            at,
+            Happened::Paired {
+                with: Line::of(with),
+            },
+        )
+    }
+
     /// There was no boundary to run this turn's work inside, so nothing ran.
     ///
     /// `why` is the sentence the person was shown, handed in already rendered

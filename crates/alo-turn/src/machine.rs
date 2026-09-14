@@ -252,6 +252,35 @@ impl<'a> Machine<'a> {
             .keep(Entry::the_grants_were_not_read_again(why.text(), now))
     }
 
+    /// Write down that a pairing with `with` was kept on this machine.
+    ///
+    /// Public, and the caller is the service that holds the machine and the
+    /// pairings (`alo-agentd`) rather than anything inside a turn: a pairing
+    /// is completed by the second of two people's confirmations arriving on
+    /// the wire, which may happen with no turn under way at all.
+    /// [`crate::Arriving`] has the same door for the rounds where a remote
+    /// turn holds the machine.
+    ///
+    /// **Nothing a caller passes in can name an authority.** The one argument
+    /// is the other machine's identity as the pairing spells it — not a
+    /// grantee, not a person's name — and the entry names no agent, because
+    /// two people made this and no agent did. That is what makes a public
+    /// door onto the record safe here, as it is for
+    /// [`Machine::the_grants_were_not_read_again`]; see
+    /// [`alo_record::Entry::paired`].
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written. A
+    /// service that meets this has stopped keeping evidence and stops.
+    pub fn a_pairing_was_kept(
+        &mut self,
+        with: &str,
+        now: std::time::SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.kept.keep(Entry::paired(with, now))
+    }
+
     /// Shorten this machine's record under the rule it is kept by.
     ///
     /// Public, because the caller is the service that holds the machine and

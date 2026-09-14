@@ -168,10 +168,101 @@ impl<'a, 'm> Doorway<'a, 'm> {
         })
     }
 
+    /// This machine's door, on this machine, remembering the proofs an
+    /// earlier doorway on the same machine had already accepted.
+    ///
+    /// For the daemon that owns the port, whose one machine is lent to the
+    /// network's door between local turns and taken back for each of them
+    /// ([`Doorway::given_back`]): a doorway remade with an empty [`Seen`]
+    /// would accept again, for two minutes, every proof the one before it
+    /// had accepted, and a replay across a local turn is still a replay. So
+    /// the `Seen` is one for the life of the daemon and travels with the
+    /// machine.
+    ///
+    /// # Errors
+    ///
+    /// As [`Doorway::at`].
+    pub fn keeping(
+        here: MachineId,
+        machine: &'a mut Machine<'m>,
+        seen: Seen,
+        turns_last: Duration,
+        changes_wait: Duration,
+    ) -> Result<Self, NotADoorway> {
+        let mut doorway = Self::at(here, machine, turns_last, changes_wait)?;
+        doorway.seen = seen;
+        Ok(doorway)
+    }
+
     /// This machine.
     #[must_use]
     pub const fn here(&self) -> &MachineId {
         &self.here
+    }
+
+    /// The machine, while no remote turn is holding it.
+    ///
+    /// For what the daemon does with a machine between turns — a shortening,
+    /// the person's own knock written down — and for nothing a verb from the
+    /// network could reach: `None` while a remote turn has it, and that turn
+    /// is the only road to the machine until it ends.
+    pub fn machine(&mut self) -> Option<&mut Machine<'m>> {
+        match self.holding.as_mut() {
+            Some(Holding::Nobody(machine)) => Some(&mut **machine),
+            Some(Holding::ATurn(_)) | None => None,
+        }
+    }
+
+    /// Give the machine back, ending any remote turn under way, together
+    /// with the proofs this doorway has seen.
+    ///
+    /// The daemon's other door onto a remote turn's end, and the one it
+    /// takes when a local agent knocks: the machine is one, a local turn
+    /// needs the whole of it, and a remote turn between verbs holds nothing
+    /// but the window for the next one. What is handed back is exactly what
+    /// [`Doorway::keeping`] takes, so the next doorway refuses what this one
+    /// had already accepted.
+    ///
+    /// `None` when the machine was lost — a turn could not begin, which is
+    /// [`Judged::NotBegun`] and a daemon with a machine to stop.
+    pub fn given_back(mut self, grants: &mut Grants) -> Option<(&'a mut Machine<'m>, Seen)> {
+        let seen = std::mem::take(&mut self.seen);
+        match self.holding.take()? {
+            Holding::ATurn(arriving) => Some(((*arriving).ended(grants), seen)),
+            Holding::Nobody(machine) => Some((machine, seen)),
+        }
+    }
+
+    /// Judge a proof over exactly these bytes against this machine's
+    /// pairings at `now`, remembering it so the same proof is refused again.
+    ///
+    /// Step 1 of [`Doorway::judged`] on its own, for a message on the same
+    /// port that is not a verb — a question down `alo-asking`'s corridor —
+    /// so that a proof spent on a question cannot be replayed as a verb, or
+    /// the other way round: the [`Seen`] behind both is this one. Nothing
+    /// about the turn, the grants or the door is asked here.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_nearby::NotProven`], as [`Origin::proven`] answers it.
+    pub fn proven(
+        &mut self,
+        proof: &Proof,
+        body: &str,
+        pairings: &Pairings,
+        naming: &dyn Naming,
+        now: SystemTime,
+    ) -> Result<Origin, alo_nearby::NotProven> {
+        let called = naming.called(proof.from()).unwrap_or_default();
+        Origin::proven(
+            pairings,
+            &self.here,
+            proof,
+            body.as_bytes(),
+            &called,
+            now,
+            &mut self.seen,
+        )
     }
 
     /// The remote turn under way, if one is — for the surface on this machine

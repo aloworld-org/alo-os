@@ -353,12 +353,18 @@ can be asked.
 
 ### 10. The daemon binds the port
 
-**Status:** ready. **Depends on:** 9. **Before starting: `git pull`, read
-this plan as published, and confirm with the loop's owner which lane takes
-`alo-agentd` for this** — it is shared by three lanes, its gate is
-`cargo test -p alo-agentd` under WSL with the test count read and reported
-(`docs/autonomy/LOOP.md`), and the change is to its serving loop's shape,
-not to a file at its edge.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-agentd` (`wire.rs`,
+`hearing.rs`, `network.rs`, `questioned.rs`, `looking.rs`, `surface.rs`,
+`terms.rs`, and the serving loop), with `alo_nearby::Arrived::carried` and
+`alo_corridor::Arrived::carried` taking a message the daemon read,
+`alo_corridor::Doorway` gaining the doors the daemon lends the machine
+through, `alo_record::Entry::paired` for the moment a pairing is kept, and
+the contract in `docs/contracts/local-network-wire.md`; the report is
+`docs/autonomy/updates/the-daemon-binds-the-port.md`. This lane took
+`alo-agentd` for it because the task was assigned to it by the loop's owner,
+gated under WSL with the count read (257 unit, 5 + 1 + 1 + 4 + 12
+integration). The question path is told apart, proven and judged against the
+pairing's list, and **answering it is task 11**. **Depends on:** 9.
 
 Task 9 built the asking side's door and the outcome path and left the
 daemon owing everything that turns three libraries into a machine that can
@@ -394,3 +400,41 @@ be asked. This is that, with task 9's own words:
   Nothing in `alo-shell`, nothing in `image/`; the corridor's paths become a
   surface another alo machine speaks and get a document under
   `docs/contracts/` in the same change.
+
+### 11. A question from a paired machine is answered by this machine's own model, and the person's door reaches a remote turn
+
+**Status:** ready. **Depends on:** 10.
+
+Task 10 bound the port and left two things it could not decide as side
+effects. A question on `/v1/chat/completions` is told apart, proven through
+the one `Seen`, and judged against the pairing's `MayAskIts::Models` arm —
+and then answered `not-answered-here`, because the door that answers it is
+`alo_turn::Machine`'s to grow and `arriving.rs` says a remote turn puts no
+question. And a change a paired machine proposed waits for this machine's
+person, who has no request on the person's door that reaches
+`alo_turn::Arriving`: `alo-protocol`'s `approve`, `decline` and `waiting`
+answer *nothing is happening* while a remote turn holds the machine.
+
+- **Acceptance:** a proven question from a pairing that permits asking this
+  machine's models is put to this machine's **own** model and to nothing
+  else — never a provider, never another paired machine, tested by a machine
+  whose person chose a provider refusing the question in words — inside no
+  turn of the asking machine's, recorded as `alo_record::Entry::answered_for`
+  with the origin named, its answer leaving under a departure that the
+  indicator shows and the record keeps, and answered on the wire in the
+  OpenAI-compatible shape the corridor already reads; a question from a
+  pairing that does not permit it is still refused before anybody knows what
+  it asked; a machine where nothing has been chosen to answer a question says
+  so in the word it already has; and the person's door approves, declines and
+  lists a change a paired machine proposed, through `alo_turn::Arriving`,
+  with one approval causing exactly one execution there — the refusal paths
+  beside the road.
+- **Constraint:** ADR 0003, ADR 0008 and ADR 0031: the question travels, the
+  grant does not; which model may answer for another machine is the
+  **person's** setting and no default decides it for them; the proof is
+  judged before anything else through the same `Seen`. The door on `Machine`
+  or `Arriving` that puts a remote question, and the `alo-protocol` requests
+  the person's door needs, are decided in the crates that own them and
+  written up in the report; nothing widens the enumerated verbs, nothing in
+  `alo-shell`, nothing in `image/`. The contract
+  `docs/contracts/local-network-wire.md` gains the `200` answer additively.

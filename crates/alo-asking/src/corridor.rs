@@ -84,6 +84,17 @@ const WHILE_A_MODEL_THINKS: Duration = Duration::from_secs(120);
 /// The value is [`alo_nearby::Proof::said`], one line.
 pub const THE_PROOF_HEADER: &str = "alo-pairing";
 
+/// The path a question down the corridor is put to, on the port a machine
+/// advertises.
+///
+/// The OpenAI-compatible completions path, because a question is put to a
+/// paired machine in the same shape it is put to a provider (`crate::openai`
+/// says why there is one shape rather than two). One spelling, here, for the
+/// door that sends it and the daemon that tells a question apart from a
+/// proposal and a verb by path; `openai::tests` holds that the URL this crate
+/// really puts to ends in it.
+pub const THE_QUESTION_PATH: &str = "/v1/chat/completions";
+
 /// A paired machine, as a place a question may be put.
 ///
 /// Made only by [`paired`](Self::paired), which asks this machine's own

@@ -180,7 +180,7 @@ mod testing;
 pub use answer::Answer;
 pub use asked::Asked;
 pub use asking::Asking;
-pub use corridor::{DownTheCorridor, THE_PROOF_HEADER};
+pub use corridor::{DownTheCorridor, THE_PROOF_HEADER, THE_QUESTION_PATH};
 pub use found::{Found, NotVetted};
 pub use hosted::Hosted;
 pub use question::{NotAQuestion, Question};

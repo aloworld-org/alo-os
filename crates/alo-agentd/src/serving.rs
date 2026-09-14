@@ -1,4 +1,4 @@
-//! One machine, two connections, one turn.
+//! One machine, two doors, one port, one turn.
 //!
 //! This is the decision item 21c cut out of itself rather than take in a hurry,
 //! and it is the reason this file exists at all.
@@ -21,8 +21,8 @@
 //! Nothing in a turn blocks. A read answers, a proposal comes straight back as
 //! a number and a sentence, an approval runs and answers. What blocks is
 //! **waiting for somebody to say something**, and that is one call — `poll` —
-//! over the socket, the connections and the end a stop arrives on
-//! (`crate::unix::ready`).
+//! over the socket, the connections, the port, the discovery socket and the
+//! end a stop arrives on (`crate::unix::ready`).
 //!
 //! So there are no threads here, no channels, no lock around the machine, and
 //! nothing shared between two things that run at once. The machine is a local
@@ -30,6 +30,38 @@
 //! obvious shape for *two connections at once* is a thread each and a mutex,
 //! and it would have put the capability model behind a lock in the one service
 //! whose whole value is being small enough to read.
+//!
+//! # And the port presence advertises is the same loop
+//!
+//! Since the daemon bound the port, the machine has a third door: the network's
+//! (`alo_corridor::Doorway`), through which a proven verb from a paired machine
+//! begins a remote turn on this machine's grants. The doorway borrows the
+//! machine exactly as a local turn does, so **the lock over the machine is the
+//! loop**, and the two kinds of turn take it in turn:
+//!
+//! - while no local agent is connected, the doorway holds the machine — for a
+//!   remote turn, or for the next verb — and every message on the port is read
+//!   and answered in the round it arrives, because nothing a remote verb does
+//!   blocks either;
+//! - while a local turn is under way, **the port is not polled at all**. A
+//!   verb from the network waits in the kernel's backlog for the local turn to
+//!   end, which is the plan's *a verb from the network waits on a local turn*
+//!   made literal; the asking machine's own patience is the wire's, and a verb
+//!   that outwaits it is answered to a connection that has gone.
+//! - a local agent knocking while a remote turn is open **ends the remote
+//!   turn** and begins its own (`Doorway::given_back`). A remote turn between
+//!   verbs holds nothing but the window for the next one — every verb was
+//!   answered in the round it arrived — so the person's own agent waits for
+//!   nothing, and the next remote verb begins a fresh turn on a fresh proof.
+//!
+//! The pairings and the proposals are a different matter: the person's own
+//! surface changes them from outside this loop, so they are behind one lock
+//! (`crate::network`) taken for the length of one message. The proofs seen
+//! (`alo_nearby::Seen`) travel with the machine between doorways, so a replay
+//! across a local turn is still a replay.
+//!
+//! Discovery is answered in every state, because presence never says what a
+//! machine is doing.
 //!
 //! # A turn is an agent's connection, and it is a scope
 //!
@@ -45,6 +77,13 @@
 //! arriving while a turn is under way is refused in words and closed; the
 //! person's door is one at a time for the same reason and gets a sentence of
 //! its own. Both are `crate::words`.
+//!
+//! **And no agent is called by a machine's name.** `machine:` and an identity
+//! is how a grant to a paired machine is spelt, so an agent called that would
+//! be answered by that machine's grants. `crate::Described` refuses the name
+//! where it is read; [`Serving::until_stopped`] refuses it again before any
+//! turn, so that a service handed the name any other way holds no turn for it
+//! (`alo_nearby::Origin::names_a_machine`).
 //!
 //! # What a turn is begun with, and what it is not
 //!
@@ -66,9 +105,11 @@
 //!
 //! The other thing this service does with a clock is remove what the machine no
 //! longer keeps ([`crate::ageing`] is *when*, `alo_turn::Machine::shorten` is
-//! the door, `alo-keeping` is *what*). It happens in the rounds where no agent
-//! is connected, and that is not a rule anybody has to remember: while a turn is
-//! under way the [`Turning`] holds the machine, so there is nothing here to ask.
+//! the door, `alo-keeping` is *what*). It happens in the rounds where no turn
+//! is under way — local or remote — and that is not a rule anybody has to
+//! remember: while a turn is under way the [`Turning`] or the doorway's turn
+//! holds the machine, so there is nothing here to ask. A shortening due while
+//! a remote turn is open runs at the next round in which the machine is free.
 //!
 //! It is the right place as well as the only one. A shortening replaces the file
 //! the record is being written to, and one that ran mid-turn and was refused
@@ -81,7 +122,8 @@
 use std::time::{Duration, SystemTime};
 
 use alo_context::Context;
-use alo_keeping::Keeping;
+use alo_corridor::Doorway;
+use alo_nearby::{Origin, Seen, Surface};
 use alo_protocol::{NotUnderstood, ToAPerson, ToAnAgent};
 use alo_strings::{Filling, Strings};
 use alo_turn::{Machine, Shortened, Turning};
@@ -89,15 +131,19 @@ use alo_turn::{Machine, Shortened, Turning};
 use crate::ageing::Ageing;
 use crate::answering::what_a_person_said;
 use crate::doing::what_an_agent_said;
+use crate::hearing::{self, Judging};
 use crate::holding::Holding;
 use crate::knocking::Knocking;
 use crate::lines::Line;
+use crate::network::TheNetwork;
 use crate::questions::Questions;
 use crate::refusing::NotServed;
 use crate::rereading::WhatIsGranted;
 use crate::side::Side;
 use crate::stopping::Waking;
+use crate::terms::Terms;
 use crate::unix::ready;
+use crate::wire::Wire;
 use crate::words::{A_TURN_IS_UNDER_WAY, SOMEBODY_IS_ALREADY_ANSWERING};
 
 /// What the service did before it stopped.
@@ -135,6 +181,12 @@ pub struct Served {
     /// record with a line nobody can read is refused every time it is asked, and
     /// a number that stays at zero is how anybody would know it never happened.
     not_shortened: u64,
+    /// How many messages arrived on the port presence advertises, each
+    /// answered by the wire its path named or refused as for none of them.
+    heard: u64,
+    /// How many times another machine asked whether this one exists, and was
+    /// told.
+    found: u64,
 }
 
 impl Served {
@@ -168,27 +220,38 @@ impl Served {
     pub const fn shortenings_refused(&self) -> u64 {
         self.not_shortened
     }
+
+    /// How many messages arrived on the port presence advertises.
+    #[must_use]
+    pub const fn heard_on_the_port(&self) -> u64 {
+        self.heard
+    }
+
+    /// How many times this machine answered that it exists.
+    #[must_use]
+    pub const fn discovery_answered(&self) -> u64 {
+        self.found
+    }
 }
 
 /// The agent service, running.
 ///
 /// Holds what the machine was told about itself and nothing that changes: the
-/// door connections arrive at, the end a stop arrives on, which agent this
-/// machine has, and how long a turn and a question last. Where those come from
-/// is the process's, and is queue item 21e.
+/// door connections arrive at, the end a stop arrives on, the port and the
+/// identity presence advertises, the one lock over the pairings, and the
+/// terms — which agent this machine has, how long a turn and a change last,
+/// what may leave. Where those come from is the process's.
 pub struct Serving<'a> {
     /// Where connections come from, and which door each is on.
     knocking: &'a dyn Knocking,
     /// What a stop arrives on.
     waking: &'a Waking,
-    /// The agent this machine has, as the grants name it.
-    for_agent: &'a str,
-    /// How long a turn's own grant lasts.
-    lasting: Duration,
-    /// How long a change waits for an answer.
-    standing: Duration,
-    /// How long what happened on this machine is kept.
-    keeping: Keeping,
+    /// The port presence advertises, bound, and discovery answered.
+    wire: &'a Wire,
+    /// The pairings and the proposals, behind one lock.
+    network: &'a TheNetwork,
+    /// What this machine was told about itself.
+    terms: Terms<'a>,
 }
 
 /// What a round of work found, once everything ready has been dealt with.
@@ -215,27 +278,27 @@ struct Held {
 impl<'a> Serving<'a> {
     /// The service, told what this machine is.
     ///
-    /// Every one of these is `crate::Described`'s, read off the file whoever
-    /// stands the machine up wrote. The rule the record is kept under is here
-    /// rather than inside the machine because *when* a shortening runs is this
-    /// service's — it is the thing that is really running while time passes —
-    /// and *what* one removes is `alo-keeping`'s.
+    /// Every one of the terms is `crate::Described`'s, read off the file
+    /// whoever stands the machine up wrote; the wire is the port bound and the
+    /// identity kept; the network is the one lock over the pairings. The rule
+    /// the record is kept under is here rather than inside the machine because
+    /// *when* a shortening runs is this service's — it is the thing that is
+    /// really running while time passes — and *what* one removes is
+    /// `alo-keeping`'s.
     #[must_use]
     pub const fn of(
         knocking: &'a dyn Knocking,
         waking: &'a Waking,
-        for_agent: &'a str,
-        lasting: Duration,
-        standing: Duration,
-        keeping: Keeping,
+        wire: &'a Wire,
+        network: &'a TheNetwork,
+        terms: Terms<'a>,
     ) -> Self {
         Self {
             knocking,
             waking,
-            for_agent,
-            lasting,
-            standing,
-            keeping,
+            wire,
+            network,
+            terms,
         }
     }
 
@@ -246,26 +309,45 @@ impl<'a> Serving<'a> {
     /// says are **the machine's own** — taken from it rather than passed in
     /// beside it — because the record writes down what a person was shown, and
     /// two vocabularies would be a screen in one language and a record in
-    /// another.
+    /// another. `surface` is what shows a proposal from another machine to the
+    /// person here, and is the shell's.
     ///
     /// # Errors
     ///
     /// [`NotServed`], which is always the machine rather than a client: a
-    /// message that is not a request, a stranger at the door and a caller that
-    /// hangs up mid-message are all served and survived. In every one of them
-    /// the turn that was under way has been ended and its grant given back.
+    /// message that is not a request, a stranger at the door, a caller that
+    /// hangs up mid-message and a message on the port that could not be
+    /// answered are all served and survived. In every one of them the turn that
+    /// was under way has been ended and its grant given back.
     pub fn until_stopped(
         &self,
         machine: &mut Machine<'_>,
         granted: &mut WhatIsGranted<'_>,
         questions: &mut Questions,
+        surface: &mut dyn Surface,
     ) -> Result<Served, NotServed> {
+        if Origin::names_a_machine(self.terms.for_agent) {
+            return Err(NotServed::AnAgentNamedAMachine {
+                named: self.terms.for_agent.trim().to_owned(),
+            });
+        }
         let strings = machine.strings();
         let mut held = Held::default();
         let mut served = Served::default();
-        let mut ageing = Ageing::under(self.keeping);
+        let mut ageing = Ageing::under(self.terms.keeping);
+        let mut seen = Seen::nothing();
 
         loop {
+            // Between local turns the network's door holds the machine, with
+            // every proof seen so far, so a verb from a paired machine is
+            // judged and answered in the round it arrives.
+            let mut doorway = Doorway::keeping(
+                self.wire.here().clone(),
+                &mut *machine,
+                seen,
+                self.terms.lasting,
+                self.terms.standing,
+            )?;
             while held.agent.is_none() {
                 // Before the wait rather than after it, so that the first
                 // shortening happens before this machine serves anything: it is
@@ -273,21 +355,31 @@ impl<'a> Serving<'a> {
                 // off for. The moment is read here and again inside the round,
                 // because a wait sits between them.
                 let now = this_moment();
-                if ageing.due(now) {
-                    shortening(machine, &mut ageing, &mut served, now);
+                if ageing.due(now)
+                    && let Some(free) = doorway.machine()
+                {
+                    shortening(free, &mut ageing, &mut served, now);
                 }
                 if self.one_round(
                     &mut held,
-                    &mut Holding::Nobody(machine),
+                    &mut Holding::TheNetwork(&mut doorway),
                     granted,
                     strings,
                     &mut served,
                     ageing.before(now),
+                    surface,
                 )? == Next::Stopped
                 {
                     return Ok(served);
                 }
             }
+
+            // A local agent knocked: the network's door gives the machine
+            // back, ending any remote turn, and hands over what it has seen.
+            let Some((machine, seen_so_far)) = doorway.given_back(granted.holding_mut()) else {
+                return Err(NotServed::TheMachineWasLost);
+            };
+            seen = seen_so_far;
 
             // A turn is where what answers a question is looked for, so a turn
             // beginning is where the last one is forgotten. Here rather than at
@@ -297,8 +389,8 @@ impl<'a> Serving<'a> {
 
             let mut turning = Turning::beginning(
                 Context::at_invocation(this_moment()),
-                self.for_agent,
-                self.lasting,
+                self.terms.for_agent,
+                self.terms.lasting,
                 granted.holding_mut(),
                 machine,
             )
@@ -325,6 +417,7 @@ impl<'a> Serving<'a> {
                     strings,
                     &mut served,
                     None,
+                    surface,
                 ) {
                     Ok(Next::GoOn) => {}
                     Ok(Next::Stopped) => {
@@ -361,10 +454,11 @@ impl<'a> Serving<'a> {
 
     /// Wait until something has happened, and deal with all of it.
     ///
-    /// The order is the person, then the agent, then the door: somebody already
-    /// connected is answered before somebody new is let in, and the person is
-    /// answered before the agent because an approval that has already arrived
-    /// should not wait behind the next thing an agent thought of.
+    /// The order is the person, then the agent, then the door, then the port,
+    /// then discovery: somebody already connected is answered before somebody
+    /// new is let in, and the person is answered before the agent because an
+    /// approval that has already arrived should not wait behind the next thing
+    /// an agent thought of.
     ///
     /// **A round that ended a turn lets nobody in**, and that is the one piece
     /// of ordering here that is load-bearing rather than tidy. An agent hanging
@@ -377,10 +471,18 @@ impl<'a> Serving<'a> {
     /// whoever is knocking is still knocking when the next round asks, and they
     /// get a turn of their own instead of the remains of somebody else's.
     ///
+    /// **The port is waited on only while the network's door has the
+    /// machine.** During a local turn it is left out of the wait, and a verb
+    /// from a paired machine waits in the backlog for the turn to end.
+    ///
     /// **`for_at_most` is how long this round may sleep**, and `None` is until
     /// somebody says something. A round that slept the whole of it finds nothing
     /// ready, does nothing, and answers [`Next::GoOn`] — which is what brings
     /// the caller back round to a shortening that has come due.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "one round of one service, and every one of these is a thing the round has to reach; grouping them would be a struct that exists for one call"
+    )]
     fn one_round(
         &self,
         held: &mut Held,
@@ -389,17 +491,34 @@ impl<'a> Serving<'a> {
         strings: &Strings,
         served: &mut Served,
         for_at_most: Option<Duration>,
+        surface: &mut dyn Surface,
     ) -> Result<Next, NotServed> {
-        let (stopped, person, agent, knocked) = {
+        let the_network_has_the_machine = matches!(holding, Holding::TheNetwork(_));
+        let (stopped, person, agent, knocked, on_the_port, asked_who_is_here) = {
             let waiting_on = [
                 Some(self.waking.waiting_on()),
                 held.person.as_ref().map(Line::waiting_on),
                 held.agent.as_ref().map(Line::waiting_on),
                 Some(self.knocking.waiting_on()),
+                the_network_has_the_machine.then(|| self.wire.waiting_on()),
+                Some(self.wire.discovery_waiting_on()),
             ];
-            let [stopped, person, agent, knocked] =
-                ready(&waiting_on, for_at_most).map_err(|why| NotServed::NotWaiting { why })?;
-            (stopped, person, agent, knocked)
+            let [
+                stopped,
+                person,
+                agent,
+                knocked,
+                on_the_port,
+                asked_who_is_here,
+            ] = ready(&waiting_on, for_at_most).map_err(|why| NotServed::NotWaiting { why })?;
+            (
+                stopped,
+                person,
+                agent,
+                knocked,
+                on_the_port,
+                asked_who_is_here,
+            )
         };
 
         if stopped {
@@ -455,7 +574,7 @@ impl<'a> Serving<'a> {
                             questions,
                             granted.holding(),
                             strings,
-                            self.standing,
+                            self.terms.standing,
                             now,
                         )
                         .written()
@@ -485,6 +604,33 @@ impl<'a> Serving<'a> {
             }
         }
 
+        if on_the_port && let Holding::TheNetwork(doorway) = holding {
+            let knocked = self.wire.accept_one().map_err(NotServed::TheWire)?;
+            let mut judging = Judging {
+                network: self.network,
+                surface,
+                naming: self.terms.naming,
+                policy: &self.terms.policy,
+                asking_at: self.wire.asking_at(),
+            };
+            hearing::heard(knocked, doorway, granted.holding_mut(), &mut judging, now)?;
+            served.heard = served.heard.saturating_add(1);
+        }
+
+        if asked_who_is_here {
+            // A question that was not one for this service — a printer's, or
+            // this machine's own answer coming back round — is nothing to
+            // count; a socket that will not read is the machine's.
+            if self
+                .wire
+                .answer_discovery()
+                .map_err(NotServed::TheWire)?
+                .is_some()
+            {
+                served.found = served.found.saturating_add(1);
+            }
+        }
+
         Ok(Next::GoOn)
     }
 
@@ -496,11 +642,13 @@ impl<'a> Serving<'a> {
     ///
     /// **The agent's door asks two questions and the person's asks one.** A
     /// second shell is refused because one is already connected; a second agent
-    /// is refused because one is connected *or* because a turn is under way at
-    /// all. The second half is what makes *an agent never acts under a grant
-    /// another agent's invocation made* a property of this method rather than a
-    /// property of the order [`Serving::one_round`] happens to do things in —
-    /// the ordering is still right, and this is what would hold if it were not.
+    /// is refused because one is connected *or* because a local turn is under
+    /// way at all. The second half is what makes *an agent never acts under a
+    /// grant another agent's invocation made* a property of this method rather
+    /// than a property of the order [`Serving::one_round`] happens to do things
+    /// in — the ordering is still right, and this is what would hold if it were
+    /// not. A remote turn is not a reason to refuse: the caller ends it and
+    /// begins the local one, as this file's header says.
     fn let_in(
         &self,
         held: &mut Held,
@@ -543,10 +691,8 @@ impl std::fmt::Debug for Serving<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("Serving")
-            .field("for_agent", &self.for_agent)
-            .field("lasting", &self.lasting)
-            .field("standing", &self.standing)
-            .field("keeping", &self.keeping)
+            .field("wire", &self.wire)
+            .field("terms", &self.terms)
             .finish_non_exhaustive()
     }
 }
@@ -663,8 +809,17 @@ mod tests {
     use alo_protocol::Standing;
     use alo_record::Record;
     use std::io::{BufRead as _, BufReader, Write as _};
+    use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
     use std::os::unix::net::UnixStream;
     use std::path::{Path, PathBuf};
+    use std::sync::Arc;
+
+    use crate::network::TheNetwork;
+    use crate::terms::{NoNameYet, Terms};
+    use crate::testing::{paired_between, reception, the_studio};
+    use crate::wire::Wire;
+    use alo_egress::EgressPolicy;
+    use alo_keeping::Keeping;
 
     /// A record that cannot be written to, which is what a full disk looks like
     /// from inside a turn.
@@ -735,6 +890,14 @@ mod tests {
         invoice: PathBuf,
         /// What stops the service.
         stop: Stop,
+        /// The port presence advertises, on this host.
+        port: u16,
+        /// The pairings and the proposals, behind the one lock — what the
+        /// person's surface reaches from outside the loop.
+        network: Arc<TheNetwork>,
+        /// The socket the service asks reception's discovery at, for a test
+        /// that wants reception to be found.
+        discovery: UdpSocket,
     }
 
     /// One client, talking on one connection.
@@ -909,10 +1072,24 @@ mod tests {
         let (folder, invoice) = a_folder_with_an_invoice(what);
         let (waking, stop) = Waking::made().unwrap();
         let knocking = Pretending::handing_out(what, sides);
+        // The port and the discovery socket, on this host; and a socket of
+        // reception's own, at which this service is told to look for it.
+        let receptions_discovery = UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let wire = Wire::on(
+            TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            the_studio(),
+            receptions_discovery.local_addr().unwrap().port(),
+        )
+        .unwrap();
+        let network = Arc::new(TheNetwork::on(the_studio()));
         let told = Told {
             at: knocking.at(),
             invoice: invoice.clone(),
             stop,
+            port: wire.port(),
+            network: Arc::clone(&network),
+            discovery: receptions_discovery,
         };
 
         let mut indicator = Indicator::default();
@@ -929,10 +1106,22 @@ mod tests {
 
         let client = std::thread::spawn(move || talking(told));
         let mut questions = nothing_has_been_chosen();
-        let served = Serving::of(&knocking, &waking, agent, hour(), hour(), keeping).until_stopped(
+        // Every proposal is shown: the surface that really shows one is the
+        // shell's, and what these tests hold is the road on either side of it.
+        let mut shown = |_: &alo_nearby::Waiting| true;
+        let terms = Terms {
+            for_agent: agent,
+            lasting: hour(),
+            standing: hour(),
+            keeping,
+            policy: EgressPolicy::InTheBuilding,
+            naming: &NoNameYet,
+        };
+        let served = Serving::of(&knocking, &waking, &wire, &network, terms).until_stopped(
             &mut machine,
             &mut WhatIsGranted::of(&mut grants, remembering),
             &mut questions,
+            &mut shown,
         );
         client.join().unwrap();
         served.map(|served| (served, invoice))
@@ -1558,5 +1747,437 @@ mod tests {
         assert!(
             u64::try_from(alo_protocol::LONGEST_ANSWER).unwrap_or(u64::MAX) > alo_files::MOST_READ
         );
+    }
+    /// One request on the port, as another machine puts it: the reply's
+    /// status line and body.
+    fn on_the_port(port: u16, path: &str, headers: &[(&str, &str)], body: &str) -> (u16, String) {
+        let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+        stream
+            .write_all(alo_nearby::http::a_request_carrying(path, "h", headers, body).as_bytes())
+            .unwrap();
+        let reply = alo_nearby::http::read_message_of_at_most(&stream, 64 * 1024).unwrap();
+        (
+            alo_nearby::http::status_of(&reply.first).unwrap(),
+            reply.body,
+        )
+    }
+
+    /// The same, with a `GET` rather than a `POST`.
+    fn getting_on_the_port(port: u16, path: &str) -> (u16, String) {
+        let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+        stream
+            .write_all(
+                format!("GET {path} HTTP/1.1\r\nhost: h\r\ncontent-length: 0\r\nconnection: close\r\n\r\n")
+                    .as_bytes(),
+            )
+            .unwrap();
+        let reply = alo_nearby::http::read_message(&stream).unwrap();
+        (
+            alo_nearby::http::status_of(&reply.first).unwrap(),
+            reply.body,
+        )
+    }
+
+    /// A verb on the wire, proven by reception at this moment.
+    fn a_proven_verb(
+        on_reception: &alo_nearby::Pairing,
+        verb: &str,
+        given: &[(&str, alo_capability::Given)],
+        at: SystemTime,
+    ) -> (String, String) {
+        let body = alo_corridor::Carried::of(verb, given).said();
+        let proof = alo_nearby::Proof::made(on_reception, &reception(), body.as_bytes(), at);
+        (proof.said(), body)
+    }
+
+    /// A question on the wire, proven by reception at this moment.
+    fn a_proven_question(on_reception: &alo_nearby::Pairing, at: SystemTime) -> (String, String) {
+        let body = r#"{"model":"m","messages":[{"role":"user","content":"hello"}]}"#.to_owned();
+        let proof = alo_nearby::Proof::made(on_reception, &reception(), body.as_bytes(), at);
+        (proof.said(), body)
+    }
+
+    /// **Every path on the port reaches its door, and any other reaches
+    /// nothing.** Each of the six is told apart and answered by the crate
+    /// that decides it — with that crate's own word for a message it refuses
+    /// — and a seventh is answered *not for this wire* by the daemon itself.
+    #[test]
+    fn each_path_on_the_port_reaches_its_door_and_any_other_reaches_nothing() {
+        let (served, record, _invoice) = while_it_runs("six-paths", &[], |told| {
+            let port = told.port;
+            // A proposal from a machine discovery here never measured.
+            let proposal = alo_nearby::Proposal::checked(
+                reception(),
+                the_studio(),
+                &[alo_nearby::MayAskIts::Models],
+                Duration::from_secs(3_600),
+                alo_nearby::Keying::fresh().unwrap().offer().clone(),
+            )
+            .unwrap();
+            let (status, said) = on_the_port(
+                port,
+                alo_nearby::THE_PROPOSAL_PATH,
+                &[],
+                &format!("{}\n", proposal.said()),
+            );
+            assert_eq!(status, 400, "{said}");
+            assert_eq!(
+                alo_nearby::NotProposed::off_the_wire(said.trim()),
+                alo_nearby::NotProposed::NotFromWhereItWasFound
+            );
+            // A confirmation for nothing that is waiting.
+            let (status, said) = on_the_port(
+                port,
+                alo_nearby::THE_CONFIRMATION_PATH,
+                &[],
+                "not a confirmation\n",
+            );
+            assert_eq!(status, 400, "{said}");
+            assert!(
+                matches!(
+                    alo_nearby::NotProposed::off_the_wire(said.trim()),
+                    alo_nearby::NotProposed::Underneath(_)
+                ),
+                "{said}"
+            );
+            // A verb, an outcome and a question with no proof: each reaches a
+            // door that judges the proof first and says so.
+            for path in [
+                alo_corridor::THE_READ_PATH,
+                alo_corridor::THE_CHANGE_PATH,
+                alo_corridor::THE_OUTCOME_PATH,
+                alo_asking::THE_QUESTION_PATH,
+            ] {
+                let (status, said) = on_the_port(port, path, &[], "{}");
+                assert_eq!(
+                    status,
+                    alo_corridor::AtTheDoor::NoProof.status().0,
+                    "{path}: {said}"
+                );
+                assert_eq!(
+                    alo_corridor::AtTheDoor::off_the_wire(said.trim()),
+                    Some(alo_corridor::AtTheDoor::NoProof),
+                    "{path}"
+                );
+            }
+            // None of the six.
+            let (status, said) = on_the_port(port, "/alo-os/1/something-else", &[], "{}");
+            assert_eq!(status, 404);
+            assert_eq!(said.trim(), crate::hearing::NOT_FOR_THIS_WIRE);
+            let (status, _) = getting_on_the_port(port, alo_corridor::THE_READ_PATH);
+            assert_eq!(
+                status,
+                alo_corridor::AtTheDoor::NotForThisWire.status().0,
+                "a GET reached a door"
+            );
+            // Not a message at all.
+            let mut stream = TcpStream::connect((Ipv4Addr::LOCALHOST, port)).unwrap();
+            stream.write_all(b"\r\n").unwrap();
+            let reply = alo_nearby::http::read_message(&stream).unwrap();
+            assert_eq!(alo_nearby::http::status_of(&reply.first).unwrap(), 400);
+            assert_eq!(reply.body.trim(), crate::hearing::NOT_A_MESSAGE);
+            told.stop.stop();
+        });
+        assert_eq!(served.heard_on_the_port(), 9);
+        assert_eq!(
+            served.turns(),
+            0,
+            "a message on the port began a local turn"
+        );
+        assert_eq!(
+            record.len(),
+            0,
+            "a refusal before the door was written down"
+        );
+    }
+
+    /// **The pairings are one, behind one lock: a pairing revoked on the
+    /// person's side refuses the next verb and the next question alike**,
+    /// with nothing more written. Before the revocation the same verb ran
+    /// and the same question was proven.
+    #[test]
+    fn a_pairing_revoked_on_the_persons_surface_refuses_the_next_verb_and_the_next_question() {
+        let mut record = Record::default();
+        let (served, _invoice) = while_it_runs_remembering(
+            "@files",
+            Keeping::Forever,
+            "revoked-between-two-paths",
+            &[],
+            &mut record,
+            &NothingIsRemembered,
+            |folder, now| {
+                let mut grants = granting(folder, now);
+                grants.grant(
+                    alo_capability::Grant::checked(
+                        &format!("machine:{}", reception().as_str()),
+                        alo_capability::Reach::Folder(folder.to_path_buf()),
+                        now,
+                        hour(),
+                    )
+                    .unwrap(),
+                );
+                grants
+            },
+            |told| {
+                let now = this_moment();
+                let (on_reception, on_studio) = paired_between(
+                    reception(),
+                    the_studio(),
+                    &[alo_nearby::MayAskIts::Models],
+                    now,
+                );
+                told.network.locked().pairings_mut().keep(on_studio);
+                let folder = told.invoice.parent().unwrap().to_path_buf();
+                let listing = [(
+                    "folder",
+                    alo_capability::Given::text(folder.to_string_lossy().into_owned()),
+                )];
+
+                let (proof, body) = a_proven_verb(&on_reception, "list_folder", &listing, now);
+                let (status, said) = on_the_port(
+                    told.port,
+                    alo_corridor::THE_READ_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(status, 200, "{said}");
+                assert!(
+                    alo_corridor::Answered::read(&said).unwrap().did().is_some(),
+                    "{said}"
+                );
+                let later = now + Duration::from_secs(1);
+                let (proof, body) = a_proven_question(&on_reception, later);
+                let (status, said) = on_the_port(
+                    told.port,
+                    alo_asking::THE_QUESTION_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(status, 503, "{said}");
+                assert_eq!(said.trim(), crate::questioned::NOT_ANSWERED_HERE);
+
+                // The person here revokes it, on their own side of the lock.
+                assert!(told.network.locked().pairings_mut().revoke(&reception()));
+
+                let later = now + Duration::from_secs(2);
+                let (proof, body) = a_proven_verb(&on_reception, "list_folder", &listing, later);
+                let (_, said) = on_the_port(
+                    told.port,
+                    alo_corridor::THE_READ_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(
+                    alo_corridor::AtTheDoor::off_the_wire(said.trim()),
+                    Some(alo_corridor::AtTheDoor::NotProven(
+                        alo_nearby::NotProven::NotWithThatMachine
+                    )),
+                    "{said}"
+                );
+                let later = now + Duration::from_secs(3);
+                let (proof, body) = a_proven_question(&on_reception, later);
+                let (_, said) = on_the_port(
+                    told.port,
+                    alo_asking::THE_QUESTION_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(
+                    alo_corridor::AtTheDoor::off_the_wire(said.trim()),
+                    Some(alo_corridor::AtTheDoor::NotProven(
+                        alo_nearby::NotProven::NotWithThatMachine
+                    )),
+                    "{said}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert_eq!(served.heard_on_the_port(), 4);
+        // The read ran and its answer left; the question and the two
+        // refusals after the revocation wrote nothing.
+        assert_eq!(record.len(), 2, "{record:?}");
+        assert!(record.everything().all(|entry| {
+            entry
+                .origin()
+                .is_some_and(|from| from.is(reception().as_str()))
+        }));
+        assert_eq!(
+            record
+                .answering(&alo_record::Asking::anything().only(alo_record::Only::Refusals))
+                .count(),
+            0
+        );
+    }
+
+    /// **A pairing kept is written to the record at the one moment there is
+    /// one value to write it from, and a proposal refused writes nothing.**
+    /// Reception proposes over the wire, the studio's person is shown it and
+    /// confirms first, reception confirms second, and the second
+    /// confirmation is the one entry — after a proposal from an address
+    /// discovery never measured and a second proposal while one waits were
+    /// each refused with nothing written.
+    #[test]
+    fn a_pairing_kept_is_written_down_once_and_a_proposal_refused_writes_nothing() {
+        let (served, record, _invoice) = while_it_runs("pairing-kept", &[], |told| {
+            let now = this_moment();
+            let day = Duration::from_secs(86_400);
+            let studio_at = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), told.port);
+            let found = alo_nearby::Found::seen(the_studio(), told.port, studio_at.ip());
+
+            // Reception, before it answers discovery: not found, refused.
+            let mut receptions_proposals = alo_nearby::Proposals::on(reception());
+            let refused = alo_nearby::crossing::propose(
+                &mut receptions_proposals,
+                &found,
+                &[alo_nearby::MayAskIts::Models],
+                day,
+                now,
+            )
+            .unwrap_err();
+            assert_eq!(refused, alo_nearby::NotProposed::NotFromWhereItWasFound);
+            assert!(told.network.locked().proposals().every().is_empty());
+
+            // Reception's own wire, where the studio's confirmation arrives.
+            let receptions_listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+            let receptions_port = receptions_listener.local_addr().unwrap().port();
+            // Reception answers discovery when the studio looks for it.
+            let answering = alo_nearby::Answering::on(
+                told.discovery,
+                alo_nearby::Presence::of(reception(), receptions_port),
+            );
+            // Three questions reach it: the one the refused proposal caused,
+            // which waited unanswered in the socket, and one for each of the
+            // two proposals below.
+            let answered = std::thread::spawn(move || {
+                (0..3).map(|_| answering.answer_one()).collect::<Vec<_>>()
+            });
+
+            let waiting = alo_nearby::crossing::propose(
+                &mut receptions_proposals,
+                &found,
+                &[alo_nearby::MayAskIts::Models],
+                day,
+                now,
+            )
+            .unwrap();
+            let code_at_reception = waiting.code().unwrap();
+            assert_eq!(
+                told.network
+                    .locked()
+                    .proposals()
+                    .with(&reception())
+                    .unwrap()
+                    .code()
+                    .unwrap(),
+                code_at_reception,
+                "the two people were shown different codes"
+            );
+
+            // A second proposal while the first waits is refused, and still
+            // nothing is written.
+            let mut again = alo_nearby::Proposals::on(reception());
+            let refused = alo_nearby::crossing::propose(
+                &mut again,
+                &found,
+                &[alo_nearby::MayAskIts::Models],
+                day,
+                now,
+            )
+            .unwrap_err();
+            assert_eq!(refused, alo_nearby::NotProposed::AlreadyWaiting);
+            drop(answered.join().unwrap());
+
+            // The studio's person confirms first, on their own side of the
+            // lock; reception hears it on its own wire and holds nothing yet.
+            let mut receptions_pairings = alo_nearby::Pairings::none();
+            let heard_at_reception = std::thread::spawn(move || {
+                let receiving = alo_nearby::Receiving::on(receptions_listener);
+                let arrived = receiving.accept_one().unwrap();
+                let mut shown = |_: &alo_nearby::Waiting| true;
+                let heard = arrived
+                    .considered(
+                        &mut receptions_proposals,
+                        &mut receptions_pairings,
+                        &[],
+                        &mut shown,
+                        this_moment(),
+                    )
+                    .unwrap();
+                (heard, receptions_proposals, receptions_pairings)
+            });
+            let kept_at_the_studio = alo_nearby::crossing::confirm(
+                told.network.locked().proposals_mut(),
+                &reception(),
+                this_moment(),
+            )
+            .unwrap();
+            assert!(
+                kept_at_the_studio.is_none(),
+                "one confirmation kept a pairing"
+            );
+            let (heard, mut receptions_proposals, mut receptions_pairings) =
+                heard_at_reception.join().unwrap();
+            assert!(matches!(
+                heard,
+                alo_nearby::Heard::AConfirmation { kept: None, .. }
+            ));
+            assert!(receptions_pairings.every().is_empty());
+
+            // Reception confirms second, over the wire: the studio keeps the
+            // pairing and writes it down; reception keeps its own.
+            let kept_at_reception = alo_nearby::crossing::confirm(
+                &mut receptions_proposals,
+                &the_studio(),
+                this_moment(),
+            )
+            .unwrap()
+            .unwrap();
+            receptions_pairings.keep(kept_at_reception);
+            assert!(
+                told.network
+                    .locked()
+                    .pairings()
+                    .paired_with(&reception(), this_moment())
+            );
+            told.stop.stop();
+        });
+        assert_eq!(served.heard_on_the_port(), 4, "{served:?}");
+        assert_eq!(record.len(), 1, "{record:?}");
+        assert!(
+            matches!(
+                record.everything().next().unwrap().happened(),
+                alo_record::Happened::Paired { with } if with.as_str() == reception().as_str()
+            ),
+            "{record:?}"
+        );
+    }
+
+    /// **A local agent that calls itself by a machine's name is refused at
+    /// the daemon's door**: no turn is begun for it, nothing is written, and
+    /// the service stops saying so rather than holding a turn that a paired
+    /// machine's grants would answer.
+    #[test]
+    fn a_local_agent_called_by_a_machines_name_is_refused_at_the_door() {
+        let mut record = Record::default();
+        let stopped = while_it_runs_for(
+            "machine:0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            Keeping::Forever,
+            "agent-named-a-machine",
+            &[Some(Side::Agent)],
+            &mut record,
+            |told| {
+                // The service refuses before it listens for anybody, so the
+                // socket may already be gone; either answer is the refusal.
+                drop(UnixStream::connect(&told.at));
+                drop(told.stop);
+            },
+        )
+        .unwrap_err();
+        assert!(
+            matches!(stopped, NotServed::AnAgentNamedAMachine { ref named } if named.starts_with("machine:")),
+            "{stopped:?}"
+        );
+        assert_eq!(record.len(), 0);
     }
 }

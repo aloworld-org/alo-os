@@ -32,10 +32,12 @@ mod running {
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION,
-        ThePersonsFile, Waking, WhatIsGranted, session, signalling, starting, unix,
+        THE_IDENTITY, ThePersonsFile, Waking, WhatIsGranted, Wire, session, signalling, starting,
+        unix,
     };
     use alo_capability::Grants;
     use alo_keeping::Writing;
+    use alo_nearby::MachineId;
     use alo_remembering::{NotRemembered, THE_GRANTS};
 
     /// Serve until somebody asks the service to stop, and say what it did.
@@ -136,27 +138,51 @@ mod running {
 
         // Not `?`, because from here there is a subtree on the machine and a
         // programme in the kernel that belong to this process: every road out
-        // goes through the giving back below, including the one where the
-        // socket could not be bound.
-        let served = match Listening::at(
-            Place::for_person(described.sides().person()),
-            described.sides(),
-        ) {
-            Ok(listening) => starting::until_stopped(
+        // goes through the giving back below, including the ones where the
+        // port or the socket could not be bound.
+        let served = match who_this_machine_is()
+            .and_then(Wire::bound)
+            .map_err(NotStarted::from)
+            .and_then(|wire| {
+                Listening::at(
+                    Place::for_person(described.sides().person()),
+                    described.sides(),
+                )
+                .map(|listening| (wire, listening))
+                .map_err(NotStarted::from)
+            }) {
+            Ok((wire, listening)) => starting::until_stopped(
                 &described,
                 &listening,
                 &waking,
+                &wire,
                 &strings,
                 &mut WhatIsGranted::of(&mut grants, &remembering),
                 &mut bounding,
                 &mut writing,
             ),
-            Err(why) => Err(NotStarted::from(why)),
+            Err(why) => Err(why),
         };
         if let Err(why) = bounding.given_back() {
             eprintln!("alo-agentd: the boundary could not be given back: {why}");
         }
         served
+    }
+
+    /// Who this machine is on the network, kept beside the record.
+    ///
+    /// The one place in this service that names the file the identity is
+    /// kept in, as `whatever_was_granted` is for the grants: made the first
+    /// time, read afterwards, and refused rather than replaced when it
+    /// cannot be read — a new identity would be a new machine to everything
+    /// this one had paired with.
+    fn who_this_machine_is() -> Result<MachineId, alo_agentd::refusing::NotBound> {
+        MachineId::remembered_at(Path::new(THE_IDENTITY)).map_err(|why| {
+            alo_agentd::refusing::NotBound::NoWire {
+                what: "the machine's identity",
+                why: std::io::Error::other(why.to_string()),
+            }
+        })
     }
 
     /// What this person had granted before this process existed.

@@ -41,10 +41,16 @@
 //!    machine that will not serve rather than one that cannot write down why.
 //!    Nothing here is privileged: ADR 0018 moved the loading out of this
 //!    process, so what this step needs is permission on a file.
-//! 9. **The person's door, and the socket in it** — last, because it is the
-//!    only thing anybody else on the machine can see. Nothing knocks on a
-//!    service that is still deciding whether it can run.
-//! 10. **The machine, and the serving.** [`until_stopped`].
+//! 9. **The identity, and the port presence advertises** — `crate::wire`:
+//!    who this machine says it is, read from a file beside the record, and the
+//!    port bound with discovery answered on it. Before the person's door,
+//!    because a machine that cannot be asked by the office is still a machine
+//!    to serve the person at, but one that advertised a port nothing answers
+//!    on would lie to every machine on the network.
+//! 10. **The person's door, and the socket in it** — last, because it is the
+//!     only thing anybody else on the machine can see. Nothing knocks on a
+//!     service that is still deciding whether it can run.
+//! 11. **The machine, and the serving.** [`until_stopped`].
 //!
 //! # What answers a question is not decided here either
 //!
@@ -95,7 +101,7 @@
 //! still writes every refusal down, which is the capability model running
 //! rather than missing, and there is a test below that says so.
 
-use alo_egress::Indicator;
+use alo_egress::{EgressPolicy, Indicator};
 use alo_files::OnThisMachine;
 use alo_models::Catalogue;
 use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
@@ -105,11 +111,15 @@ use alo_turn::{Bounding, Machine, Shortening};
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
+use crate::network::TheNetwork;
 use crate::questions::Questions;
 use crate::refusing::NotStarted;
 use crate::rereading::WhatIsGranted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
+use crate::surface::NobodyToShowItTo;
+use crate::terms::{NoNameYet, Terms};
+use crate::wire::Wire;
 use crate::words::declare_into;
 
 /// Refuse to be root.
@@ -187,10 +197,15 @@ pub fn what_this_machine_says() -> Result<Loaded, NotStarted> {
 /// [`NotStarted::NotServed`] for every way a running service stops that is the
 /// machine's rather than a client's. A service that ends because somebody asked
 /// it to is not an error and answers with what it did.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the join between a process and a service, and every one of these is a thing the process opened and owns; a struct for them would be a struct that exists for one call"
+)]
 pub fn until_stopped(
     described: &Described,
     knocking: &dyn Knocking,
     waking: &Waking,
+    wire: &Wire,
     strings: &Strings,
     granted: &mut WhatIsGranted<'_>,
     bounding: &mut dyn Bounding,
@@ -199,6 +214,11 @@ pub fn until_stopped(
     let mut indicator = Indicator::default();
     let mut machine =
         Machine::carrying_out_file_verbs(strings, &OnThisMachine, bounding, &mut indicator, kept)?;
+    // What this machine holds about the other machines: nothing yet, because
+    // a pairing is not kept between restarts, and one lock over it.
+    let network = TheNetwork::on(wire.here().clone());
+    // Until a shell shows a proposal, nobody can be shown one.
+    let mut surface = NobodyToShowItTo;
     // Nothing is read or probed here: the environment is copied, and the first
     // question of the first turn is what opens the person's file.
     //
@@ -214,15 +234,24 @@ pub fn until_stopped(
         })?,
         described.questions().clone(),
     );
-    Ok(Serving::of(
-        knocking,
-        waking,
-        described.agent(),
-        described.turn().duration(),
-        described.proposal().duration(),
-        described.keeping(),
+    let terms = Terms {
+        for_agent: described.agent(),
+        lasting: described.turn().duration(),
+        standing: described.proposal().duration(),
+        keeping: described.keeping(),
+        // One rule, stated once: what may leave is the same rule that says
+        // where a question may be answered.
+        policy: EgressPolicy::from(described.questions().policy()),
+        naming: &NoNameYet,
+    };
+    Ok(
+        Serving::of(knocking, waking, wire, &network, terms).until_stopped(
+            &mut machine,
+            granted,
+            &mut questions,
+            &mut surface,
+        )?,
     )
-    .until_stopped(&mut machine, granted, &mut questions)?)
 }
 
 #[cfg(test)]
@@ -247,6 +276,17 @@ mod tests {
     use std::os::unix::net::UnixStream;
     use std::path::{Path, PathBuf};
     use std::time::SystemTime;
+
+    /// A wire on sockets of this test's own, on this host.
+    fn a_wire_of_our_own() -> crate::wire::Wire {
+        crate::wire::Wire::on(
+            std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            std::net::UdpSocket::bind((std::net::Ipv4Addr::LOCALHOST, 0)).unwrap(),
+            crate::testing::the_studio(),
+            0,
+        )
+        .unwrap()
+    }
 
     /// A machine described the ordinary way, with the agent these tests use.
     fn an_ordinary_machine() -> Described {
@@ -359,10 +399,12 @@ mod tests {
             back
         });
 
+        let wire = a_wire_of_our_own();
         let served = until_stopped(
             &described,
             &knocking,
             &waking,
+            &wire,
             &strings,
             &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
             &mut crate::testing::NothingIsBounded,
@@ -423,10 +465,12 @@ mod tests {
             answers
         });
 
+        let wire = a_wire_of_our_own();
         until_stopped(
             &described,
             &knocking,
             &waking,
+            &wire,
             &strings,
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
             &mut crate::testing::NothingIsBounded,

@@ -116,6 +116,16 @@ alo-secrets = { path = "../alo-secrets" }
 # rule somebody has to keep.
 alo-remembering = { path = "../alo-remembering" }
 
+# The port presence advertises, and the three wires on it. `alo-nearby` is
+# what a machine says about itself, the pairing wire and the framing every
+# message on that port shares; `alo-corridor` is the verb wire and the door a
+# verb from a paired machine is judged at. `src/wire.rs` is the only file that
+# binds the port, `src/hearing.rs` the only one that tells the wires apart, and
+# neither decides anything either crate decides: the daemon hands a message to
+# the crate its path names and carries the answer back.
+alo-corridor = { path = "../alo-corridor" }
+alo-nearby = { path = "../alo-nearby" }
+
 # Somewhere for a test's machine to write what happened that is not a file on a
 # disk. The process writes to `alo-keeping`'s real one; a test wants to read the
 # entries back and count them, which is what `alo_record::Record` is.

@@ -108,6 +108,14 @@ impl Described {
         if agent.trim().is_empty() {
             return Err(NotDescribed::Anonymous);
         }
+        // A local agent that calls itself by a machine's name would be
+        // answered by that machine's grants; refused here, where the name is
+        // read, before a socket or a record exists.
+        if alo_nearby::Origin::names_a_machine(agent) {
+            return Err(NotDescribed::NamesAMachine {
+                named: agent.trim().to_owned(),
+            });
+        }
         if !record.is_absolute() {
             return Err(NotDescribed::NotAbsolute {
                 what: THE_RECORD,
@@ -269,6 +277,42 @@ mod tests {
         )
         .unwrap_err();
         assert!(matches!(refused, NotDescribed::Anonymous));
+    }
+
+    /// **An agent called by a machine's name is refused where the name is
+    /// read.** `machine:` and an identity is how a grant to a paired machine
+    /// is spelt, so an agent so named would be answered by that machine's
+    /// grants; the description is refused before a socket or a record exists,
+    /// and the refusal says which name.
+    #[test]
+    fn an_agent_called_by_a_machines_name_is_refused() {
+        let refused = Described::of(
+            two_logins(),
+            "machine:0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            a_turn(),
+            a_proposal(),
+            Path::new("/var/lib/alo/record"),
+            Keeping::Forever,
+            TheBound::Nobodys,
+        )
+        .unwrap_err();
+        assert!(
+            matches!(refused, NotDescribed::NamesAMachine { ref named } if named == "machine:0f1e2d3c4b5a69788796a5b4c3d2e1f0"),
+            "{refused:?}"
+        );
+        // And an ordinary name, with the same letters inside it, is not.
+        assert!(
+            Described::of(
+                two_logins(),
+                "alo",
+                a_turn(),
+                a_proposal(),
+                Path::new("/var/lib/alo/record"),
+                Keeping::Forever,
+                TheBound::Nobodys,
+            )
+            .is_ok()
+        );
     }
 
     /// **And a name of nothing but spaces is no name**, which is the shape the

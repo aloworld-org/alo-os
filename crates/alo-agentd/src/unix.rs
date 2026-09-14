@@ -125,6 +125,35 @@ pub fn who(connection: &UnixStream) -> Result<Caller, NotACaller> {
     ))
 }
 
+/// A datagram socket on every interface at `port`, shared with whatever else
+/// on this machine is bound there.
+///
+/// The fourth thing the standard library will not do here: `UdpSocket::bind`
+/// sets no `SO_REUSEADDR`, and the port discovery is answered on is the
+/// multicast DNS port, which any other responder on the machine — a printer
+/// stack, a media daemon — binds too. Every one of them sets the option so
+/// the others can, and this is alo OS setting it for the same reason.
+/// Joining the group is `std`'s and is done by the caller.
+///
+/// # Errors
+///
+/// Whatever the machine said, as a `std::io::Error`.
+pub(crate) fn a_shared_datagram_socket_on(
+    port: u16,
+) -> Result<std::net::UdpSocket, std::io::Error> {
+    let socket = rustix::net::socket(
+        rustix::net::AddressFamily::INET,
+        rustix::net::SocketType::DGRAM,
+        None,
+    )?;
+    rustix::net::sockopt::set_socket_reuseaddr(&socket, true)?;
+    rustix::net::bind(
+        &socket,
+        &std::net::SocketAddr::from((std::net::Ipv4Addr::UNSPECIFIED, port)),
+    )?;
+    Ok(std::net::UdpSocket::from(socket))
+}
+
 /// Hand this path to a group, leaving its owner alone.
 ///
 /// The agent is a different user from the person, so a socket that only its

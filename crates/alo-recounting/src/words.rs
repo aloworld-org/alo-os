@@ -1,6 +1,6 @@
 //! Every string this crate can say, and the English beside each one.
 //!
-//! Twenty, and they divide in three. Thirteen are **what became of one entry** —
+//! Twenty-one, and they divide in three. Fourteen are **what became of one entry** —
 //! the short clause read at the head of a line, before the sentence the machine
 //! generated when it happened. Two are **remarks an account makes about
 //! itself**: that nothing in the record answers the question, and that what is
@@ -30,7 +30,7 @@
 //! of one moment, and the one a person read afterwards would be the one nothing
 //! checked.
 //!
-//! # Thirteen clauses, and none of them is a category
+//! # Fourteen clauses, and none of them is a category
 //!
 //! The outcomes are sentences about a machine rather than labels for a
 //! column — *the agent asked to do this and the person at this machine said no*
@@ -163,6 +163,18 @@ pub const GRANTS_NOT_READ_AGAIN: Word = Word::saying(
 )
 .noting(
     "Read at the head of one line of a record somebody is reading back. Somebody's side of the      machine said that what they had granted had changed, and the machine could not read its own      list of grants — so nothing was widened and nothing was forgotten either. The reason is shown      after it in the words the person was shown at the time. \"Granted\" is what a person does by      picking a folder for their agent to reach.",
+);
+
+/// A pairing with another machine was kept on this one.
+pub const PAIRED: Word = Word::saying(
+    "recounting.outcome.paired",
+    "this machine was paired with another machine",
+)
+.noting(
+    "Read at the head of one line of a record somebody is reading back. Two people, one at each \
+     machine, confirmed a pairing, and this machine now holds it. The other machine is named after \
+     it by its identity, because no person had given it a name yet. \"Paired\" is the word the rest \
+     of alo OS uses for two machines two people deliberately joined.",
 );
 
 /// A turn the machine would not run, because there was no boundary to run it
@@ -326,7 +338,7 @@ pub const NOTHING_TO_SHOW_ON: Word = Word::saying(
 );
 
 /// Every string this crate can say, in the order a translator meets them.
-pub const EVERY_WORD: [Word; 20] = [
+pub const EVERY_WORD: [Word; 21] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -336,6 +348,7 @@ pub const EVERY_WORD: [Word; 20] = [
     ANSWERED_FOR_ANOTHER_MACHINE,
     NEVER_PUT_ANYWHERE,
     GRANTS_NOT_READ_AGAIN,
+    PAIRED,
     NOT_BOUNDED,
     LEFT,
     HELD_BACK,
@@ -354,7 +367,7 @@ pub const EVERY_WORD: [Word; 20] = [
 /// Named apart from the rest so the tests below can hold each group to the rule
 /// that is actually its own: a clause is read beside a sentence and does not end
 /// in a full stop, and a refusal says what to do next.
-pub const EVERY_OUTCOME: [Word; 13] = [
+pub const EVERY_OUTCOME: [Word; 14] = [
     RAN,
     NOBODY_WAS_ASKED,
     THE_PERSON_SAID_NO,
@@ -364,6 +377,7 @@ pub const EVERY_OUTCOME: [Word; 13] = [
     ANSWERED_FOR_ANOTHER_MACHINE,
     NEVER_PUT_ANYWHERE,
     GRANTS_NOT_READ_AGAIN,
+    PAIRED,
     NOT_BOUNDED,
     LEFT,
     HELD_BACK,

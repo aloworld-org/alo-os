@@ -165,16 +165,15 @@ impl Receiving {
         stream
             .set_write_timeout(Some(WHILE_THE_WIRE_ANSWERS))
             .map_err(|why| NotNearby::TheNetwork(because(&why)))?;
-        let message = match http::read_message(&stream) {
-            Ok(message) => read(&message),
-            Err(why) if why.is_about_a_stranger() => Message::Unreadable(why),
-            Err(why) => return Err(why),
-        };
-        Ok(Arrived {
-            stream,
-            from: who.ip(),
-            message,
-        })
+        match http::read_message(&stream) {
+            Ok(message) => Ok(Arrived::carried(stream, who.ip(), &message)),
+            Err(why) if why.is_about_a_stranger() => Ok(Arrived {
+                stream,
+                from: who.ip(),
+                message: Message::Unreadable(why),
+            }),
+            Err(why) => Err(why),
+        }
     }
 }
 
@@ -201,6 +200,33 @@ fn read(message: &http::Message) -> Message {
 type Reply = (u16, &'static str, String);
 
 impl Arrived {
+    /// A message somebody else read off a connection they accepted, for this
+    /// wire to consider.
+    ///
+    /// The daemon that owns the advertised port reads one message through
+    /// [`http`] and hands it to whichever wire its path names; this is how the
+    /// pairing wire takes one, so that one port has one reader and no bytes
+    /// are lost between a dispatcher and a door. What is decided here is
+    /// exactly what [`Receiving::accept_one`] decides — the method, the path,
+    /// the body's shape — and a body longer than this wire carries
+    /// ([`http::AT_MOST_A_BODY`]) is refused here as it would have been there,
+    /// because the daemon reads with the verb wire's larger bound.
+    #[must_use]
+    pub fn carried(stream: TcpStream, from: IpAddr, message: &http::Message) -> Self {
+        let message = if message.body.len() > http::AT_MOST_A_BODY {
+            Message::Unreadable(NotNearby::NotAMessage(
+                "a body longer than any message here".to_owned(),
+            ))
+        } else {
+            read(message)
+        };
+        Self {
+            stream,
+            from,
+            message,
+        }
+    }
+
     /// The address the connection came from.
     #[must_use]
     pub const fn from(&self) -> IpAddr {

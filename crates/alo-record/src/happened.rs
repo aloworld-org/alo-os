@@ -282,6 +282,28 @@ pub enum Happened {
         /// Why they were not, in the words the person was shown.
         why: Line,
     },
+    /// A pairing with another machine was kept on this one
+    /// ([ADR 0003](../../../docs/decisions/0003-the-network-is-not-authority.md)).
+    ///
+    /// The one moment there is one value to write it from: the second of two
+    /// people's confirmations arrived, and the pairing became a row this
+    /// machine holds. A proposal that was refused, withdrawn or left to lapse
+    /// writes nothing, because a proposal is not something that happened to
+    /// the machine — this is.
+    ///
+    /// **It names the machine by its identity and not by a person's name for
+    /// it**, because at the moment a pairing is kept no name has been given
+    /// yet, and a record is read as a statement of fact. **No agent, and no
+    /// field for one**: two people made this, and a name in that position
+    /// would be an authority the record invented.
+    ///
+    /// Additive, and `format` stays `1` —
+    /// `docs/contracts/record-file.md`'s *a new kind of `happened` is additive*
+    /// is the decision and the reason.
+    Paired {
+        /// The machine this one is now paired with, by its identity.
+        with: Line,
+    },
     /// There was no boundary to run the turn's work inside, so nothing ran.
     ///
     /// ADR 0015's *a turn whose boundary cannot be applied does not run — a
@@ -397,6 +419,7 @@ impl Happened {
             // else's word into a record people read as fact.
             Self::LeftOnItsOwn { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::AnsweredForAnotherMachine { .. } => None,
         }
     }
@@ -421,6 +444,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. } => None,
@@ -446,6 +470,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -499,6 +524,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -527,6 +553,7 @@ impl Happened {
             Self::Ran { .. }
             | Self::AnsweredHere { .. }
             | Self::AnsweredForAnotherMachine { .. }
+            | Self::Paired { .. }
             | Self::Left { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
@@ -543,6 +570,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -561,6 +589,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. }
             | Self::Left { .. }
             | Self::HeldBack { .. }
@@ -585,6 +614,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. } => None,
         }
     }
@@ -608,6 +638,7 @@ impl Happened {
             | Self::AnsweredForAnotherMachine { .. }
             | Self::NeverPutAnywhere { .. }
             | Self::GrantsNotReadAgain { .. }
+            | Self::Paired { .. }
             | Self::NotBounded { .. }
             | Self::LeftOnItsOwn { .. } => None,
         }
