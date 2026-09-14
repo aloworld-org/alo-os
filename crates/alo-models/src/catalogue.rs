@@ -254,6 +254,22 @@ pub struct Model {
     /// model reads *not measured* as *probably fine* unless they are told why.
     #[serde(default)]
     pub unmeasured: Option<Unmeasured>,
+    /// **The grade the same weights earn when an agent turn holds them to the
+    /// protocol's envelope** — a different way of asking, so a different
+    /// measurement, never written over [`drives_verbs`](Model::drives_verbs)
+    /// ([ADR 0032](../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)).
+    ///
+    /// **Not read by the recommendation.** [`Catalogue::agent_for_cpu`] reads
+    /// the grade for the way turns actually ask, and until the agent turn asks a
+    /// local model in the envelope that is `drives_verbs`. Present only beside
+    /// [`measured_in_the_envelope`](Model::measured_in_the_envelope), with the
+    /// counts, and never as `not-measured`.
+    #[serde(default)]
+    pub drives_verbs_in_the_envelope: Option<Driving>,
+    /// Where, when, under which runtime and with what counts that grade was
+    /// earned.
+    #[serde(default)]
+    pub measured_in_the_envelope: Option<MeasuredOn>,
     /// The licence, which every entry must state.
     pub licence: Licence,
     /// Where the weights come from. We never redistribute them
@@ -477,6 +493,36 @@ impl Catalogue {
                     }
                 }
                 (false, None) => {}
+            }
+            // The envelope's grade: a measurement or nothing, placed and counted.
+            match (
+                model.drives_verbs_in_the_envelope,
+                &model.measured_in_the_envelope,
+            ) {
+                (None, None) => {}
+                (Some(grade), Some(measured)) if grade.has_been_measured() => {
+                    if let Some(what) = measured.what_is_wrong_with_it() {
+                        return Err(invalid(what));
+                    }
+                    if measured.drove.is_none() || measured.of.is_none() {
+                        return Err(invalid(
+                            "an envelope grade with no counts beside it: say how many attempts \
+                             drove the verbs and how many were made",
+                        ));
+                    }
+                }
+                (Some(_), Some(_)) => {
+                    return Err(invalid(
+                        "an envelope grade of not-measured: leave the grade out rather than state \
+                         a measurement nobody ran",
+                    ));
+                }
+                (Some(_), None) | (None, Some(_)) => {
+                    return Err(invalid(
+                        "half an envelope grade: a grade earned in the envelope is written with the \
+                         machine it was earned on, or not at all",
+                    ));
+                }
             }
             match (model.drives_verbs.has_been_measured(), &model.unmeasured) {
                 (true, Some(_)) => {
@@ -1162,6 +1208,84 @@ of = 20
         let half = A_MACHINE.replace("of = 20\n", "");
         let refused = Catalogue::parse(&graded_with("rarely", &half)).unwrap_err();
         assert!(refused.to_string().contains("half a count"), "{refused}");
+    }
+
+    /// An envelope grade and its machine, as a curator writes them.
+    const IN_THE_ENVELOPE: &str = r#"
+drives_verbs_in_the_envelope = "reliably"
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 19
+of = 20
+"#;
+
+    /// **An envelope grade is a measurement, placed and counted, or it is not
+    /// there** — and it never takes the place of the free grade (ADR 0032).
+    #[test]
+    fn an_envelope_grade_is_placed_counted_and_kept_apart() {
+        // The keys belong to the entry, so they go before its first table.
+        let with = |extra: &str| {
+            graded_with("rarely", A_MACHINE).replacen(
+                "upstream = ",
+                &format!(
+                    "{}\nupstream = ",
+                    extra.trim().split("\n\n").next().unwrap()
+                ),
+                1,
+            ) + extra
+                .trim()
+                .split_once("\n\n")
+                .map_or("", |(_, table)| table)
+        };
+        let read = Catalogue::parse(&with(IN_THE_ENVELOPE)).unwrap();
+        let model = read.models.first().unwrap();
+        assert_eq!(model.drives_verbs, Driving::Rarely);
+        assert_eq!(model.drives_verbs_in_the_envelope, Some(Driving::Reliably));
+        assert_eq!(
+            model.measured_in_the_envelope.as_ref().unwrap().drove,
+            Some(19)
+        );
+
+        let half =
+            with(IN_THE_ENVELOPE).replace("[model.measured_in_the_envelope]", "[model.nothing]");
+        assert!(Catalogue::parse(&half).is_err());
+        let only_grade = graded_with("rarely", A_MACHINE).replacen(
+            "upstream = ",
+            "drives_verbs_in_the_envelope = \"reliably\"\nupstream = ",
+            1,
+        );
+        let refused = Catalogue::parse(&only_grade).unwrap_err();
+        assert!(
+            refused.to_string().contains("half an envelope grade"),
+            "{refused}"
+        );
+        let unmeasured = with(IN_THE_ENVELOPE).replace(
+            "drives_verbs_in_the_envelope = \"reliably\"",
+            "drives_verbs_in_the_envelope = \"not-measured\"",
+        );
+        let refused = Catalogue::parse(&unmeasured).unwrap_err();
+        assert!(refused.to_string().contains("nobody ran"), "{refused}");
+        let uncounted = with(IN_THE_ENVELOPE).replace("drove = 19\nof = 20", "");
+        let refused = Catalogue::parse(&uncounted).unwrap_err();
+        assert!(refused.to_string().contains("no counts"), "{refused}");
+    }
+
+    /// **The recommendation does not read the envelope's grade** until turns ask
+    /// that way: a model that clears the bar only in the envelope is not given
+    /// the agent by a machine whose turns do not hold it there.
+    #[test]
+    fn the_recommendation_reads_the_grade_for_the_way_turns_ask() {
+        let text = graded_with("rarely", A_MACHINE).replacen(
+            "upstream = ",
+            "drives_verbs_in_the_envelope = \"reliably\"\nupstream = ",
+            1,
+        ) + IN_THE_ENVELOPE.trim().split_once("\n\n").unwrap().1;
+        let read = Catalogue::parse(&text).unwrap();
+        assert!(!read.models.first().unwrap().can_be_the_agent());
+        assert!(read.agent_for_cpu(64.0).is_err());
     }
 
     /// **Every grade the catalogue ships names the machine it was earned on.**

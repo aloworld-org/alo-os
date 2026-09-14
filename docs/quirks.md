@@ -3234,3 +3234,22 @@ removing it. `tools/kernel-loop` already runs a failing gate twice for this kind
 of transient; the Mac lane's publish script does not, so it refuses a tree this
 flakes on and is run again.
 **Date:** 2026-09-14.
+
+### The pinned runtime orders a JSON schema's keys alphabetically
+**Version:** Ollama 0.34.0, `/api/chat` with `format` set to a JSON schema, on
+an Apple M3 with 8 GB. 2026-09-14.
+**Behaviour:** a model held to a schema writes every object's keys in
+alphabetical order, whatever order the schema lists its `properties` in. Held to
+the protocol's whole call, Qwen 2.5 7B answered
+`{"asks":{"read":{"given":[{"is":"/home/anna/Invoices/march.pdf","named":"read_file"}],"verb":"read_file"}},"format":1}`
+— `asks` before `format`, `given` before `verb`, and **`is` before `named`**. A
+model generates left to right, so it is made to write an argument's value before
+it has written which argument it is, and it guessed wrong in fifteen of twenty.
+The same model asked freely drove 8 of 20; held to the whole call, 3 of 20.
+**Our response:** ADR 0032 holds a local model to the envelope and the door only
+— the version and one of `read`, `propose` or `ask` — and leaves the call to the
+model, which then writes it in the order the prompt teaches: 35 of 40. The
+whole call's schema is not used on this runtime, and the reason is in the ADR so
+it is not tried again by default. A later runtime that keeps a schema's order is
+a new measurement.
+**Date:** 2026-09-14.

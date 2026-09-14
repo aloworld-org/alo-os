@@ -34,6 +34,13 @@
     reason = "in a test, a panic on an unexpected None or Err is the failure being reported"
 )]
 
+// This harness writes a person's grade into their settings, which hold the grade
+// for the way a turn asks today — freely — and no envelope grade; so the shared
+// loop's `Asked::InTheEnvelope` is never built here. The other harness builds it.
+#[allow(
+    dead_code,
+    reason = "the envelope road is measured by against_a_model_on_this_machine.rs"
+)]
 mod measuring;
 
 use std::path::PathBuf;
@@ -78,7 +85,8 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
         .expect("the pinned runtime accepts the brought file");
     println!("brought {} as {}", file.display(), weights.id);
 
-    let measured = measuring::the_fixed_set_put_to(&weights.id, endpoint, 1);
+    let measured =
+        measuring::the_fixed_set_put_to(&weights.id, endpoint, 1, measuring::Asked::Freely);
 
     if let Some(at) = settings {
         let mut choosing = Choosing::at(&at).expect("the settings are readable");

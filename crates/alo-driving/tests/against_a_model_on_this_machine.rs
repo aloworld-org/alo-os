@@ -61,6 +61,7 @@
 //! | `ALO_DRIVING_MODEL` | What the runtime calls the model. Not the catalogue's `id` — the two are different namespaces, and matching them is the job of whoever writes the entry down |
 //! | `ALO_DRIVING_ENDPOINT` | Where the runtime is, defaulting to `alo_models::ollama::DEFAULT_ENDPOINT` |
 //! | `ALO_DRIVING_ROUNDS` | How many times to put the whole set, defaulting to one. A model is not deterministic, and `measured.rs` says repeats are a bigger sample rather than a different method |
+//! | `ALO_DRIVING_ASKED` | `in-the-envelope` to hold the answer to the protocol's envelope (ADR 0032), which earns `drives_verbs_in_the_envelope`; unset to ask freely, which earns `drives_verbs` |
 //!
 //! The loop itself is `tests/measuring/mod.rs`, shared with
 //! `against_a_file_brought_to_this_machine.rs`, so a catalogue entry and a file
@@ -84,6 +85,9 @@ const WHERE_THE_RUNTIME_IS: &str = "ALO_DRIVING_ENDPOINT";
 /// How many times to put the whole fixed set.
 const HOW_MANY_ROUNDS: &str = "ALO_DRIVING_ROUNDS";
 
+/// How to ask: unset for freely, `in-the-envelope` for ADR 0032's way.
+const HOW_IT_IS_ASKED: &str = "ALO_DRIVING_ASKED";
+
 /// **Put the fixed ten to a model on this machine, and print the grade.**
 #[test]
 #[ignore = "the measurement needs a model on this machine — run it with ALO_DRIVING_MODEL set"]
@@ -102,5 +106,10 @@ fn the_fixed_set_put_to_a_model_that_exists() {
         rounds > 0,
         "{HOW_MANY_ROUNDS} must be a whole number of rounds, and at least one"
     );
-    measuring::the_fixed_set_put_to(&model, &endpoint, rounds);
+    let asked = match measuring::said(HOW_IT_IS_ASKED).as_deref() {
+        None => measuring::Asked::Freely,
+        Some("in-the-envelope") => measuring::Asked::InTheEnvelope,
+        Some(other) => panic!("{HOW_IT_IS_ASKED} is `in-the-envelope` or unset, not `{other}`"),
+    };
+    measuring::the_fixed_set_put_to(&model, &endpoint, rounds, asked);
 }

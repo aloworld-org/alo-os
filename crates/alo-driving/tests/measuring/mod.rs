@@ -13,6 +13,33 @@ use alo_capability::{Grantee, Verbs};
 use alo_driving::{Attempt, Exercises, Measured};
 use alo_models::{Driving, InferenceSource, Ollama, SourcePolicy};
 
+/// **How the model is asked**, which is part of what a grade is a grade of
+/// ([ADR 0032](../../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Asked {
+    /// As the catalogue's `drives_verbs` was earned: the question and nothing
+    /// else, through `alo-asking`'s door that does not leave the machine.
+    Freely,
+    /// As `drives_verbs_in_the_envelope` is earned: the same question, with the
+    /// runtime holding the answer to the protocol's envelope.
+    ///
+    /// Put through `alo_models::Ollama::answers_in_the_envelope` directly. The
+    /// agent turn's door to it is `alo-asking`'s local door and `alo-turn`,
+    /// which are lane A's and do not ask this way yet; what reaches the runtime
+    /// is the request that door would send, and the scoring is the same.
+    InTheEnvelope,
+}
+
+impl Asked {
+    /// How a report and a catalogue comment name it.
+    pub fn named(self) -> &'static str {
+        match self {
+            Self::Freely => "freely",
+            Self::InTheEnvelope => "in the envelope",
+        }
+    }
+}
+
 /// The verbs alo OS itself offers, as `alo-agentd` would put them on a registry
 /// — `alo-files`' six and `alo-applications`' four.
 ///
@@ -66,6 +93,32 @@ fn put(
     Asking::by(agent, answering, &[], policy).to_this_machine(&question, runtime)
 }
 
+/// One question, asked the way `asked` says, answered with the model's text.
+fn put_as(
+    asked: Asked,
+    text: &str,
+    model: &str,
+    runtime: &Ollama,
+    agent: &Grantee,
+    policy: &SourcePolicy,
+) -> Result<String, String> {
+    match asked {
+        Asked::Freely => put(text, model, runtime, agent, policy)
+            .map(|answer| {
+                assert_eq!(
+                    answer.source(),
+                    &InferenceSource::ThisMachine,
+                    "a measurement whose answers came from anywhere else is not this measurement"
+                );
+                answer.text().to_owned()
+            })
+            .map_err(|why| format!("{why:?}")),
+        Asked::InTheEnvelope => runtime
+            .answers_in_the_envelope(text, model)
+            .map_err(|why| format!("{why:?}")),
+    }
+}
+
 /// How a catalogue entry, or a person's settings, writes the grade.
 ///
 /// The same four spellings `driving.rs` asserts, written out here rather than
@@ -111,7 +164,7 @@ fn as_far_as_it_helps(said: &str) -> String {
 /// When the runtime cannot answer — the machine failing, which is never scored
 /// as the model failing — and when an answer came from anywhere but this
 /// machine.
-pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize) -> Measured {
+pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize, asked: Asked) -> Measured {
     let verbs = the_verbs();
     let exercises = Exercises::over(&verbs).expect("the fixed set is built over alo OS's verbs");
     let runtime = Ollama::at(
@@ -125,7 +178,7 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize) -> Measu
     let policy = SourcePolicy::ThisMachineOnly;
     let measuring = Grantee::named("@measuring");
 
-    println!("loading {model} at {endpoint}");
+    println!("loading {model} at {endpoint}, asked {}", asked.named());
     let warmed = put(TO_WARM_IT_UP, model, &runtime, &measuring, &policy);
     assert!(
         warmed.is_ok(),
@@ -140,7 +193,8 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize) -> Measu
     let mut verbatim: Vec<String> = Vec::new();
     for round in 1..=rounds {
         for exercise in exercises.all() {
-            let answered = put(
+            let answered = put_as(
+                asked,
                 &exercises.prompt(exercise),
                 model,
                 &runtime,
@@ -149,31 +203,25 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize) -> Measu
             );
             // A runtime that could not answer is this machine failing, and
             // scoring it would blame the model for it.
-            let answer = answered.unwrap_or_else(|why| {
+            let said = answered.unwrap_or_else(|why| {
                 panic!(
-                    "{model} at {endpoint} did not answer the {} exercise: {why:?}",
+                    "{model} at {endpoint} did not answer the {} exercise: {why}",
                     exercise.named()
                 )
             });
-            assert_eq!(
-                answer.source(),
-                &InferenceSource::ThisMachine,
-                "a measurement whose answers came from anywhere else is not this measurement"
-            );
-            let attempt = exercises.attempt(exercise, answer.text());
+            let attempt = exercises.attempt(exercise, &said);
             println!(
                 "round {round}  {:<8}  {:?}",
                 exercise.named(),
                 attempt.outcome()
             );
             if !attempt.drove() {
-                println!("                    {}", as_far_as_it_helps(answer.text()));
+                println!("                    {}", as_far_as_it_helps(&said));
             }
             verbatim.push(format!(
-                "round {round}, {}: {:?}\n{}",
+                "round {round}, {}: {:?}\n{said}",
                 exercise.named(),
                 attempt.outcome(),
-                answer.text()
             ));
             attempts.push(attempt);
         }
@@ -187,7 +235,8 @@ pub fn the_fixed_set_put_to(model: &str, endpoint: &str, rounds: usize) -> Measu
     let measured = Measured::of(&exercises, attempts)
         .expect("every exercise was asked, which is what makes a run a measurement");
     println!(
-        "\n{model}: {} of {} drove the verbs — drives_verbs = \"{}\"",
+        "\n{model}, asked {}: {} of {} drove the verbs — \"{}\"",
+        asked.named(),
         measured.drove(),
         measured.how_many(),
         as_it_is_written(measured.grade())

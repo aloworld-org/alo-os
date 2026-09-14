@@ -238,6 +238,11 @@ struct ChatRequest<'a> {
     /// Whole answers only. Nothing in this repository has decided what a
     /// half-arrived answer is, so none is asked for.
     stream: bool,
+    /// The shape the answer is held to, for an agent turn's question and only
+    /// for that ([ADR 0032](../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)).
+    /// Absent on every question a person puts to a model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    format: Option<serde_json::Value>,
 }
 
 /// One message in that call.
@@ -450,50 +455,7 @@ impl ModelRuntime for Ollama {
     }
 
     fn answers(&self, question: &str, of_model: &str) -> Result<String, RuntimeError> {
-        let body = ChatRequest {
-            model: Self::runtime_name(of_model),
-            messages: [ChatMessage {
-                role: "user",
-                content: question,
-            }],
-            stream: false,
-        };
-        let response = ureq::post(format!("{}/api/chat", self.endpoint))
-            .config()
-            .timeout_global(Some(WHILE_A_MODEL_THINKS))
-            .build()
-            .send_json(&body);
-        let mut response = match response {
-            Ok(response) => response,
-            // Ollama answers 404 for a model it does not hold. The person asked
-            // a model that is not on this machine, which is a different thing
-            // from the runtime not being there.
-            Err(ureq::Error::StatusCode(404)) => {
-                return Err(RuntimeError::NotInstalled(of_model.to_owned()));
-            }
-            // It is there and it is thinking. ADR 0007's CPU default makes this
-            // ordinary rather than broken, and saying "nothing was running"
-            // would send somebody to look at a runtime that is busy.
-            Err(ureq::Error::Timeout(_)) => return Err(RuntimeError::TookTooLong),
-            // Something answered, and not with an answer. Its own words are not
-            // repeated: this crate's errors never carry a backend response body.
-            Err(ureq::Error::StatusCode(_)) => return Err(RuntimeError::Unusable),
-            Err(_) => return Err(RuntimeError::Unreachable),
-        };
-        let body = response
-            .body_mut()
-            .with_config()
-            .limit(MOST_OF_AN_ANSWER)
-            .read_to_string()
-            .map_err(|_| RuntimeError::Unusable)?;
-        let said: ChatResponse = serde_json::from_str(&body).map_err(|_| RuntimeError::Unusable)?;
-        let said = said.message.map(|m| m.content).unwrap_or_default();
-        if said.trim().is_empty() {
-            // A reply with no answer in it is not an empty answer to show
-            // somebody: they asked something and nothing came back.
-            return Err(RuntimeError::Unusable);
-        }
-        Ok(said)
+        self.chat(question, of_model, None)
     }
 
     fn bring(&self, weights: &Weights) -> Result<(), RuntimeError> {
@@ -538,6 +500,85 @@ impl ModelRuntime for Ollama {
             Err(ureq::Error::StatusCode(_)) => Err(RuntimeError::Unusable),
             Err(_) => Err(RuntimeError::Unreachable),
         }
+    }
+}
+
+impl Ollama {
+    /// **A question from an agent turn, held to the protocol's envelope** —
+    /// [ADR 0032](../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md).
+    ///
+    /// The same request as [`ModelRuntime::answers`] with one field more: the
+    /// runtime is asked to hold the answer to
+    /// [`crate::in_the_envelope::the_envelope`] — the protocol's version and
+    /// exactly one of the three doors, nothing inside. Never used for a question
+    /// a person asks: that is answered in prose, through `answers`.
+    ///
+    /// # Errors
+    /// The same as [`ModelRuntime::answers`].
+    pub fn answers_in_the_envelope(
+        &self,
+        question: &str,
+        of_model: &str,
+    ) -> Result<String, RuntimeError> {
+        self.chat(
+            question,
+            of_model,
+            Some(crate::in_the_envelope::the_envelope()),
+        )
+    }
+
+    /// One question put to the runtime, held to `format` where one is given.
+    fn chat(
+        &self,
+        question: &str,
+        of_model: &str,
+        format: Option<serde_json::Value>,
+    ) -> Result<String, RuntimeError> {
+        let body = ChatRequest {
+            model: Self::runtime_name(of_model),
+            messages: [ChatMessage {
+                role: "user",
+                content: question,
+            }],
+            stream: false,
+            format,
+        };
+        let response = ureq::post(format!("{}/api/chat", self.endpoint))
+            .config()
+            .timeout_global(Some(WHILE_A_MODEL_THINKS))
+            .build()
+            .send_json(&body);
+        let mut response = match response {
+            Ok(response) => response,
+            // Ollama answers 404 for a model it does not hold. The person asked
+            // a model that is not on this machine, which is a different thing
+            // from the runtime not being there.
+            Err(ureq::Error::StatusCode(404)) => {
+                return Err(RuntimeError::NotInstalled(of_model.to_owned()));
+            }
+            // It is there and it is thinking. ADR 0007's CPU default makes this
+            // ordinary rather than broken, and saying "nothing was running"
+            // would send somebody to look at a runtime that is busy.
+            Err(ureq::Error::Timeout(_)) => return Err(RuntimeError::TookTooLong),
+            // Something answered, and not with an answer. Its own words are not
+            // repeated: this crate's errors never carry a backend response body.
+            Err(ureq::Error::StatusCode(_)) => return Err(RuntimeError::Unusable),
+            Err(_) => return Err(RuntimeError::Unreachable),
+        };
+        let body = response
+            .body_mut()
+            .with_config()
+            .limit(MOST_OF_AN_ANSWER)
+            .read_to_string()
+            .map_err(|_| RuntimeError::Unusable)?;
+        let said: ChatResponse = serde_json::from_str(&body).map_err(|_| RuntimeError::Unusable)?;
+        let said = said.message.map(|m| m.content).unwrap_or_default();
+        if said.trim().is_empty() {
+            // A reply with no answer in it is not an empty answer to show
+            // somebody: they asked something and nothing came back.
+            return Err(RuntimeError::Unusable);
+        }
+        Ok(said)
     }
 }
 
@@ -697,6 +738,40 @@ mod tests {
         let body: serde_json::Value = serde_json::from_str(body).unwrap();
         assert_eq!(body.get("stream").unwrap(), false);
         assert_eq!(body.pointer("/messages/0/role").unwrap(), "user");
+    }
+
+    /// **A question a person asks carries no shape, and an agent turn's carries
+    /// exactly the envelope** — decisions 1 and 3 of ADR 0032, as the bytes that
+    /// go to the runtime.
+    #[test]
+    fn only_an_agent_turns_question_is_held_to_the_envelope() {
+        let reply = r#"{"message":{"role":"assistant","content":"No."}}"#;
+
+        let (url, server) = serving(reply, 200);
+        Ollama::at(&url, catalogue())
+            .answers("may the tenant sublet?", "a-model")
+            .unwrap();
+        let asked = server.join().unwrap();
+        let body = asked.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert!(
+            body.get("format").is_none(),
+            "a person's question was given a shape: {body}"
+        );
+
+        let (url, server) = serving(reply, 200);
+        Ollama::at(&url, catalogue())
+            .answers_in_the_envelope("the next request, please", "a-model")
+            .unwrap();
+        let asked = server.join().unwrap();
+        let body = asked.split_once("\r\n\r\n").map(|(_, body)| body).unwrap();
+        let body: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert_eq!(
+            body.get("format"),
+            Some(&crate::in_the_envelope::the_envelope()),
+            "{body}"
+        );
+        assert_eq!(body.get("stream").unwrap(), false);
     }
 
     #[test]

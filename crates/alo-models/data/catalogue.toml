@@ -333,6 +333,7 @@ min_vram_gb = 6.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -342,6 +343,13 @@ date = "2026-09-13"
 runtime = "Ollama 0.34.0"
 drove = 0
 of = 10
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 0
+of = 20
 
 [[model]]
 id = "mixtral-8x7b-instruct"
@@ -375,6 +383,13 @@ runtime = "Ollama 0.34.0"
 # on 2026-09-14 it was put to two more rounds on the same machine: **8 of 20**,
 # still `rarely`, and that is the grade below.
 #
+# **And asked in the envelope** ([ADR 0032](../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)):
+# with the runtime holding the answer to the protocol's version and one of the
+# three doors, the same weights drove **35 of 40 — `sometimes`**, two and a half
+# points under the bar. That grade is `drives_verbs_in_the_envelope`, kept apart
+# from the free one, and the recommendation does not read it until an agent turn
+# asks a local model that way.
+#
 # **The rule that measurement came from:** a grade from one round that lands
 # within one attempt of a line — four, five or six; eight, nine or ten — owes a
 # second round before it is written here, because the runtime samples every
@@ -396,6 +411,7 @@ min_vram_gb = 6.0
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "sometimes"
 upstream = "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct"
 licence = { name = "Apache-2.0", spdx = "Apache-2.0", commercial_use = "permitted" }
 
@@ -417,6 +433,14 @@ of = 20
 # property of the weights and travels between machines, while what a model
 # costs in memory and how fast it feels are properties of the machine it was
 # run on. Neither was measured by `alo-driving`, so neither is changed here.
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 35
+of = 40
+
 [[model]]
 id = "phi-3-mini-instruct"
 name = "Phi-3 Mini Instruct"
@@ -451,6 +475,7 @@ min_vram_gb = 6.5
 min_ram_gb = 10.0
 on_cpu = "workable"
 drives_verbs = "rarely"
+drives_verbs_in_the_envelope = "rarely"
 upstream = "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct"
 
 [model.licence]
@@ -468,6 +493,13 @@ date = "2026-09-13"
 runtime = "Ollama 0.34.0"
 drove = 1
 of = 10
+
+[model.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "Ollama 0.34.0"
+drove = 5
+of = 20
 
 [[model]]
 id = "gemma-2-9b-instruct"

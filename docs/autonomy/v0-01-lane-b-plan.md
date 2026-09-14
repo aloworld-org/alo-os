@@ -501,6 +501,12 @@ Three entries — Teuken 7B, Gemma 2 9B, EuroLLM 9B — and Mixtral are still
 unmeasured because 8 GB cannot hold them inside the wait. What unblocks this
 task is unchanged in kind: a model that drives the verbs, measured.
 
+**Closer, on 2026-09-14** (ADR 0032): asked with the runtime holding the answer
+to the protocol's envelope, Qwen 2.5 7B drove **35 of 40 — 87.5%, `sometimes`**,
+two and a half points under the bar, where it drove 40% asked freely. So the gap
+is five attempts in forty, not a model size — and the agent turn does not ask
+that way until lane A wires `alo-asking`'s local door and `alo-turn` to it.
+
 Task 8 took the measurement ADR 0025 owed and the first number did not exist:
 every catalogued entry anybody has run `alo-driving` against grades `rarely`,
 and the rest are `not-measured`, which is refused as a candidate on purpose. So

@@ -177,7 +177,8 @@ catalogue should not say `rarely` or `sometimes` about it on the strength of one
 
 ### 7. Whether a turn asks a local model for the shape it must answer in
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-14.** **Depends on:** 2.
+**Report:** `docs/autonomy/updates/a-local-model-held-to-the-envelope.md`.
 
 Every 7B-class model measured so far failed the call's **grammar** rather than
 its reasoning: reads went through the right door, and changes named their verb

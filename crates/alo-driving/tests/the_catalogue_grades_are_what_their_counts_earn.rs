@@ -45,22 +45,33 @@ fn every_grade_the_catalogue_ships_is_what_its_counts_earn() {
     let shipped = Catalogue::built_in().unwrap();
     let mut checked = 0;
     for entry in &shipped.models {
-        let Some(measured) = &entry.measured else {
-            continue;
-        };
-        let (drove, of) = (
-            usize::try_from(measured.drove.unwrap()).unwrap(),
-            usize::try_from(measured.of.unwrap()).unwrap(),
-        );
-        assert_eq!(
-            what_is_wrong(entry.drives_verbs, drove, of),
-            None,
-            "{}",
-            entry.id
-        );
-        checked += 1;
+        // Both ways a model is asked, each held to its own counts (ADR 0032).
+        let graded = [
+            (Some(entry.drives_verbs), entry.measured.as_ref(), "freely"),
+            (
+                entry.drives_verbs_in_the_envelope,
+                entry.measured_in_the_envelope.as_ref(),
+                "in the envelope",
+            ),
+        ];
+        for (grade, measured, asked) in graded {
+            let (Some(grade), Some(measured)) = (grade, measured) else {
+                continue;
+            };
+            let (drove, of) = (
+                usize::try_from(measured.drove.unwrap()).unwrap(),
+                usize::try_from(measured.of.unwrap()).unwrap(),
+            );
+            assert_eq!(
+                what_is_wrong(grade, drove, of),
+                None,
+                "{}, asked {asked}",
+                entry.id
+            );
+            checked += 1;
+        }
     }
-    assert!(checked >= 10, "only {checked} grades were checked");
+    assert!(checked >= 13, "only {checked} grades were checked");
 }
 
 /// **And the check refuses what it exists to refuse.**
