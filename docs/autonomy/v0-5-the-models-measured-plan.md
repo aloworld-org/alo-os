@@ -352,8 +352,13 @@ keeps reading the free grade *until the agent turn asks that way*. Today only
 
 ### 15. The recommendation reads the grade for the way turns ask
 
-**Status:** blocked — on lane A wiring the turn through the door of task 14.
-**Depends on:** 14.
+**Status:** ready — **unblocked 2026-09-14.** **Depends on:** 14.
+
+Lane A landed the wiring this waited on: `e99be94`, *an agent's next request
+is asked of the pinned runtime in the envelope* — `alo-agentd`'s `doing`,
+`questioned` and `questions` now put a turn's request through the door task 14
+built. So the condition ADR 0032 §5 names is met: **the agent turn asks that
+way**, and the recommendation may read the grade earned that way.
 
 ADR 0032 point 5, second half. Once the agent turn asks in the envelope, the
 grade that says whether a model may be given the agent is the enveloped one,
