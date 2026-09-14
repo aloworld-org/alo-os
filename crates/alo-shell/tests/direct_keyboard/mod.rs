@@ -63,7 +63,7 @@ fn direct_keyboard_pause_releases_modifiers_and_requires_explicit_focus() -> Res
     assert!(key(&f, true, 30, KeyState::Pressed)?);
     assert!(key(&f, true, 30, KeyState::Released)?);
     app.sync();
-    assert_eq!(app.events.keyboard.enters, [vec![], vec![]]);
+    assert_eq!(app.events.keyboard.enters, [Vec::<u8>::new(), Vec::new()]);
     assert_eq!(app.events.keyboard.keys.len(), 6);
     Ok(())
 }
@@ -127,7 +127,7 @@ fn direct_keyboard_absent_capability_refuses_and_disconnect_does_not_transfer_ke
     assert!(!key(&f, true, 42, KeyState::Released)?);
     f.focus(Some(0))?;
     replacement.sync();
-    assert_eq!(replacement.events.keyboard.enters, [vec![]]);
+    assert_eq!(replacement.events.keyboard.enters, [Vec::<u8>::new()]);
     assert_eq!(replacement.events.keyboard.modifiers.last(), Some(&0));
     assert!(replacement.events.keyboard.keys.is_empty());
     Ok(())

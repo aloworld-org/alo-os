@@ -107,6 +107,7 @@ impl Nested {
             &[],
             &Cursor::Default,
             Some(NativeScene::SignIn(&drawn)),
+            None,
         )
         .map(|_| ())
     }

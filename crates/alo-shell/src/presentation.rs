@@ -33,6 +33,15 @@ pub enum RenderError {
     /// for a different one.
     #[error("the sign-in screen does not fit this output")]
     SignInScene,
+    /// Something is leaving this machine and the egress indicator cannot be
+    /// laid out for this output, or was laid out for a different one. The
+    /// frame is refused rather than drawn without it.
+    #[error("the egress indicator does not fit this output")]
+    EgressStatusScene,
+    /// The egress indicator has never been told what is leaving, so a frame
+    /// drawn now could not say whether anything is.
+    #[error("the egress indicator has not been told what is leaving")]
+    EgressStatusUnknown,
     /// The target does not support explicit retirement.
     #[error("target does not support output retirement")]
     RetirementUnsupported,

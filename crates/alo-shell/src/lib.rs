@@ -11,6 +11,12 @@
 //! `alo-greeting`: it takes keystrokes through the seat, lends a name and a
 //! password to `alo_greeting::Greeting`, shows only the sentences that crate
 //! hands back, and hands over to the session that opens.
+//!
+//! The egress indicator (`EgressStatus`) is drawn here and decided in
+//! `alo-egress`: `alo_indicator::Indicating` hands it the machine's own
+//! indicator whenever that changes, and every session frame submitted with
+//! `Nested::submit_with_egress_status` draws its lines at the far end of the
+//! dock, above every client, and nothing while nothing is leaving.
 
 #![cfg(target_os = "linux")]
 
@@ -32,12 +38,20 @@ mod display_resources;
 mod drawing;
 mod drm_events;
 mod drm_inventory;
+mod egress_status;
+mod egress_status_mark;
+mod egress_status_paint;
+mod egress_status_place;
+mod egress_status_raster;
+#[cfg(test)]
+mod egress_status_testing;
 mod flip_gate;
 mod keyboard;
 mod libinput_routing;
 mod libinput_scroll;
 mod nested;
 mod nested_control_input;
+mod nested_egress_status;
 mod nested_pointer;
 mod nested_reader_frame;
 mod nested_reader_input;
@@ -46,6 +60,8 @@ mod nested_sign_in;
 mod offscreen;
 mod output_metadata;
 mod output_retirement;
+mod painted;
+mod painted_text;
 mod pointer;
 mod popup_grabs;
 mod popup_placement;
@@ -145,10 +161,13 @@ pub use direct_session::DirectSession;
 pub use direct_target::{DirectShutdownError, DirectTarget};
 pub use display_resources::{DisplayResources, ResourceError, ResourceFailure};
 pub use drm_events::{DisplayEvent, FlipComplete, read_display_events};
+pub use egress_status::EgressStatus;
+pub use egress_status_raster::EgressStatusLook;
 pub use flip_gate::FlipGate;
 pub use keyboard::InputError;
 pub use nested::Nested;
 pub use nested_control_input::NestedControlInput;
+pub use nested_egress_status::EgressStatusFrame;
 pub use nested_pointer::NestedPointerEvent;
 pub use nested_reader_frame::NestedReaderFrame;
 pub use nested_reader_session::NestedReaderSession;

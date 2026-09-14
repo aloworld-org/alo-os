@@ -16,6 +16,16 @@ pub(crate) enum NativeScene<'a> {
     SignIn(&'a crate::sign_in_raster::SignInPicture),
 }
 
+/// Everything native painted over clients in one frame: the selected scene, and
+/// the egress indicator above it.
+#[derive(Clone, Copy)]
+pub(crate) struct NativeLayers<'a> {
+    /// Controls, a reader or the sign-in screen, when one is selected.
+    pub(crate) scene: Option<NativeScene<'a>>,
+    /// The egress indicator, when the frame carries a status area.
+    pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
+}
+
 impl NativeScene<'_> {
     /// Refuse mismatched target geometry before importing clients.
     pub(crate) fn validate(self, size: Size<i32, Physical>) -> Result<(), RenderError> {

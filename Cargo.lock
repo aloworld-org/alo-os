@@ -646,7 +646,12 @@ version = "0.1.0"
 dependencies = [
  "alo-accounts",
  "alo-appearance",
+ "alo-capability",
+ "alo-dock",
+ "alo-egress",
  "alo-greeting",
+ "alo-indicator",
+ "alo-models",
  "alo-saying",
  "alo-sessiond",
  "alo-shortcuts",

@@ -287,6 +287,7 @@ impl FrameTarget for Nested {
             popups,
             cursor,
             Some(crate::scene_native::NativeScene::Reader(reader)),
+            None,
         )
     }
     fn submit_controls(
@@ -352,6 +353,7 @@ impl Nested {
             popups,
             cursor,
             controls.map(crate::scene_native::NativeScene::Controls),
+            None,
         )
     }
 
@@ -362,6 +364,7 @@ impl Nested {
         popups: &[crate::Popup],
         cursor: &crate::Cursor,
         controls: Option<crate::scene_native::NativeScene<'_>>,
+        status: Option<&crate::egress_status_raster::EgressStatusPicture>,
     ) -> Result<Vec<WlSurface>, RenderError> {
         if self.closed {
             return Err(RenderError::Closed);
@@ -388,7 +391,10 @@ impl Nested {
                 popups,
                 cursor,
                 Transform::Flipped180,
-                controls,
+                crate::scene_native::NativeLayers {
+                    scene: controls,
+                    status,
+                },
             )?
         };
         if trace {

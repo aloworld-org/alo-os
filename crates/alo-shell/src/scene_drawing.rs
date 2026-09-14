@@ -19,7 +19,7 @@ pub(crate) fn paint(
     popups: &[crate::Popup],
     cursor: &crate::Cursor,
     transform: Transform,
-    controls: Option<crate::scene_native::NativeScene<'_>>,
+    native: crate::scene_native::NativeLayers<'_>,
 ) -> Result<drawing::Drawing, RenderError> {
     let extent = framebuffer.size();
     let size: smithay::utils::Size<i32, smithay::utils::Physical> = (extent.w, extent.h).into();
@@ -27,8 +27,11 @@ pub(crate) fn paint(
         return Err(RenderError::EmptySize);
     }
     let damage = Rectangle::from_size(size);
-    if let Some(controls) = controls {
+    if let Some(controls) = native.scene {
         controls.validate(size)?;
+    }
+    if let Some(status) = native.status {
+        status.validate(size)?;
     }
     let arrow = crate::default_cursor::pixels(cursor, damage)?;
     let mut drawing = drawing::Drawing {
@@ -58,8 +61,13 @@ pub(crate) fn paint(
         .clear(Color32F::new(0.0, 0.0, 0.0, 1.0), &[damage])
         .map_err(submission)?;
     draw_render_elements(&mut frame, 1.0, &drawing.elements, &[damage]).map_err(submission)?;
-    if let Some(controls) = controls {
+    if let Some(controls) = native.scene {
         controls.paint(&mut frame)?;
+    }
+    // Above every client and control, below the cursor: nothing a client maps
+    // covers a line of what is leaving this machine.
+    if let Some(status) = native.status.filter(|status| !status.is_empty()) {
+        status.paint(&mut frame)?;
     }
     if let Some(cursor_drawing) = &cursor_drawing {
         draw_render_elements(&mut frame, 1.0, &cursor_drawing.elements, &[damage])

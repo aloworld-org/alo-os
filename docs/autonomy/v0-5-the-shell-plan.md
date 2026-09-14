@@ -80,7 +80,13 @@ draws it.
 
 ### 2. The egress indicator, on a screen
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-14.** `crates/alo-shell/src/egress_status*.rs` and
+`nested_egress_status.rs`; evidence and decisions in
+`docs/autonomy/updates/the-egress-indicator-drawn-in-the-status-area.md`. The
+code only — a certified machine has not seen it, there is no direct-display
+submission yet, and the sign-in screen carries no status area (a finding in
+that report).
+**Depends on:** 1.
 
 `docs/features.md`, ★: *the egress indicator lives in the status area, so
 "nothing has left this machine" sits where a person already glances rather

@@ -23,9 +23,11 @@
 //! face `crate::WindowControlLabels` already loads, never a host font.
 
 use alo_appearance::{Scheme, TextScale, Token};
-use cosmic_text::{Attrs, Buffer, Color, Family, FontSystem, Metrics, Shaping, SwashCache, Wrap};
+use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
 use smithay::utils::{Physical, Rectangle};
 
+use crate::painted::{Inked, Solid};
+use crate::painted_text::{Shaped, inked, sentence};
 use crate::{RenderError, SignInField, SignInShows, WindowControlLabels};
 
 /// How the screen looks: the scheme and the text scale the person chose.
@@ -39,24 +41,6 @@ pub struct SignInLook {
 
 /// The largest output side, in pixels, the screen is laid out for.
 const LARGEST_SIDE: i32 = 16_384;
-
-/// One flat rectangle of one colour.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Solid {
-    /// Where, in output pixels.
-    pub(crate) area: Rectangle<i32, Physical>,
-    /// Red, green, blue.
-    pub(crate) colour: [u8; 3],
-}
-
-/// Text inked onto its own ground, row-major and opaque.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Inked {
-    /// Where, in output pixels; always inside the output.
-    pub(crate) area: Rectangle<i32, Physical>,
-    /// `area.size.w * area.size.h` pixels.
-    pub(crate) pixels: Vec<[u8; 3]>,
-}
 
 /// The whole screen for one output size, ready to paint.
 ///
@@ -145,7 +129,7 @@ pub(crate) fn picture(
                 fonts,
                 said.text(),
                 column,
-                &measure,
+                measure.metrics(),
                 palette.ground,
                 palette.ink,
             );
@@ -163,7 +147,7 @@ pub(crate) fn picture(
                     fonts,
                     said.text(),
                     column,
-                    &measure,
+                    measure.metrics(),
                     palette.ground,
                     palette.ink,
                 )
@@ -305,62 +289,6 @@ fn caret(x: i32, top: i32, line: i32, measure: &Measure, palette: Palette) -> So
     }
 }
 
-/// Text shaped and inked into its own box, not yet placed.
-struct Shaped {
-    /// The box's width.
-    width_of_box: i32,
-    /// The ink's own width, for a caret after it.
-    width: i32,
-    /// The box's height.
-    height: i32,
-    /// Row-major pixels of the box.
-    pixels: Vec<[u8; 3]>,
-}
-
-impl Shaped {
-    /// The box at (`x`, `y`), cut at the bottom of an output `limit` high.
-    fn placed(self, x: i32, y: i32, limit: i32) -> Option<Inked> {
-        let rows = self.height.min(limit - y);
-        if rows <= 0 || self.width_of_box <= 0 {
-            return None;
-        }
-        let kept = (rows * self.width_of_box) as usize;
-        let mut pixels = self.pixels;
-        pixels.truncate(kept);
-        Some(Inked {
-            area: Rectangle::new((x, y).into(), (self.width_of_box, rows).into()),
-            pixels,
-        })
-    }
-}
-
-/// A sentence, wrapped to the column.
-fn sentence(
-    fonts: &mut FontSystem,
-    text: &str,
-    width: i32,
-    measure: &Measure,
-    ground: [u8; 3],
-    ink: [u8; 3],
-) -> Shaped {
-    let mut buffer = Buffer::new(fonts, measure.metrics());
-    buffer.set_wrap(fonts, Wrap::WordOrGlyph);
-    buffer.set_size(fonts, Some(width as f32), None);
-    buffer.set_text(
-        fonts,
-        text,
-        &Attrs::new().family(Family::SansSerif),
-        Shaping::Advanced,
-    );
-    buffer.shape_until_scroll(fonts, false);
-    let height = buffer
-        .layout_runs()
-        .map(|run| run.line_top + run.line_height)
-        .fold(0.0, f32::max)
-        .ceil() as i32;
-    inked(fonts, &buffer, (width, height.max(1)), 0, ground, ink)
-}
-
 /// The name as typed, on one line, scrolled so that its end is in view.
 fn typed_name(
     fonts: &mut FontSystem,
@@ -389,51 +317,6 @@ fn typed_name(
     let mut shaped = inked(fonts, &buffer, (width, measure.px(24)), -shift, ground, ink);
     shaped.width = wide.min(width);
     shaped
-}
-
-/// Ink a shaped buffer into a box of `size`, moved `shift` pixels across.
-fn inked(
-    fonts: &mut FontSystem,
-    buffer: &Buffer,
-    size: (i32, i32),
-    shift: i32,
-    ground: [u8; 3],
-    ink: [u8; 3],
-) -> Shaped {
-    let (width, height) = size;
-    let mut pixels = vec![ground; (width.max(0) * height.max(0)) as usize];
-    buffer.draw(
-        fonts,
-        &mut SwashCache::new(),
-        Color::rgb(ink[0], ink[1], ink[2]),
-        |x, y, w, h, colour| {
-            for dy in 0..h as i32 {
-                for dx in 0..w as i32 {
-                    let (px, py) = (x + dx + shift, y + dy);
-                    if px < 0 || py < 0 || px >= width || py >= height {
-                        continue;
-                    }
-                    let Some(pixel) = pixels.get_mut((py * width + px) as usize) else {
-                        continue;
-                    };
-                    let alpha = u32::from(colour.a());
-                    for (channel, value) in
-                        pixel.iter_mut().zip([colour.r(), colour.g(), colour.b()])
-                    {
-                        *channel =
-                            ((u32::from(value) * alpha + u32::from(*channel) * (255 - alpha) + 127)
-                                / 255) as u8;
-                    }
-                }
-            }
-        },
-    );
-    Shaped {
-        width_of_box: width,
-        width,
-        height,
-        pixels,
-    }
 }
 
 #[cfg(test)]

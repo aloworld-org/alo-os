@@ -12,9 +12,16 @@ publish = false
 # and never the accounts themselves, which only `alo-greeting` asks.
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
+# Where the dock is, and so which corner is the status area the egress
+# indicator is drawn in. Read, never written.
+alo-dock = { path = "../alo-dock" }
 # Everything the sign-in screen does that is not drawing — authenticate, then
 # knock — composed once, there, and called here.
 alo-greeting = { path = "../alo-greeting" }
+# The egress indicator's model: the one picture of what is leaving that a
+# compositor is handed, made from the machine's own `alo_egress::Indicator`.
+# This crate draws it and never decides what may leave.
+alo-indicator = { path = "../alo-indicator" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
 cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
@@ -30,6 +37,12 @@ alo-saying = { path = "../alo-saying" }
 # The opener's wire words, for a door in a test that answers the way the real
 # one does. Never a dependency of the shipped screen.
 alo-sessiond = { path = "../alo-sessiond" }
+# Real departures for the egress indicator's tests: permitted by the machine's
+# own indicator, by an agent a grant names, to a source a model is answered
+# at. Never a dependency of the shipped surface, which only draws.
+alo-capability = { path = "../alo-capability" }
+alo-egress = { path = "../alo-egress" }
+alo-models = { path = "../alo-models" }
 tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"
