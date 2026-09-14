@@ -120,6 +120,16 @@ pub fn chosen(at: &Path) -> &'static BuildsIn {
 /// the gates were going to build in. A reading that cannot be understood is a
 /// refusal too: a reserve that passed whenever it could not measure anything
 /// would not be a reserve.
+///
+/// *Not being able to ask at all* is a different refusal from *having asked and
+/// found too little*, and it carries [`gates::NOT_READY_TO_BE_GATED`] so that
+/// the loop reads it as the machine's rather than the work's. On 2026-09-14
+/// lane A's task 17 passed its worker, WSL then could not answer `df` about the
+/// build directory, and the loop spent its one repair attempt on a change
+/// nothing had found fault with — the same failure `blamed_the_machine` was
+/// written for, reached by a sentence that classifier had never been shown.
+/// Too little room keeps its own plain sentence: that is a determinate state a
+/// second attempt cannot improve, and retrying it would only spin.
 pub fn there_is_room(at: &Path) -> Result<(), String> {
     let builds = chosen(at);
     let asked_about = builds.measured().to_owned();
@@ -134,11 +144,16 @@ pub fn there_is_room(at: &Path) -> Result<(), String> {
         ],
     )?
     .output()
-    .map_err(|why| format!("this machine could not be asked about {asked_about}: {why}"))?;
+    .map_err(|why| {
+        format!(
+            "{}: this machine could not be asked about {asked_about}: {why}",
+            gates::NOT_READY_TO_BE_GATED
+        )
+    })?;
     if !said.status.success() {
         return Err(format!(
-            "this machine could not say how much room there is in {asked_about}, so nothing was \
-             published: {}",
+            "{}: this machine could not say how much room there is in {asked_about}: {}",
+            gates::NOT_READY_TO_BE_GATED,
             String::from_utf8_lossy(&said.stderr).trim()
         ));
     }
@@ -340,9 +355,10 @@ fn fingerprint(of: &str) -> String {
 fn room_enough(said: &str, directory: &str) -> Result<(), String> {
     let Some((free, filesystem)) = what_df_said(said) else {
         return Err(format!(
-            "this machine's answer about the room in {directory} could not be read, so nothing \
-             was published. A reserve that passed whenever it could not measure anything would \
-             not be a reserve. It said: {}",
+            "{}: this machine's answer about the room in {directory} could not be read. A \
+             reserve that passed whenever it could not measure anything would not be a reserve. \
+             It said: {}",
+            gates::NOT_READY_TO_BE_GATED,
             said.trim()
         ));
     };
@@ -385,6 +401,45 @@ fn what_df_said(said: &str) -> Option<(u64, String)> {
 )]
 mod tests {
     use super::*;
+
+    /// A machine that cannot answer `df` about its own build directory has
+    /// said nothing about the change, and the loop must read it that way —
+    /// otherwise it spends its one repair attempt on work nothing found fault
+    /// with, which is what happened to lane A's task 17 on 2026-09-14.
+    #[test]
+    fn a_machine_that_cannot_be_asked_about_its_disk_is_not_the_works_fault() {
+        for said in [
+            format!(
+                "{}: this machine could not be asked about /root/alo-builds/x: broken pipe",
+                gates::NOT_READY_TO_BE_GATED
+            ),
+            format!(
+                "{}: this machine could not say how much room there is in /root/alo-builds/x: \
+                 df: cannot read table",
+                gates::NOT_READY_TO_BE_GATED
+            ),
+        ] {
+            assert!(
+                gates::blamed_the_machine(&said),
+                "the loop would blame the work for this: {said}"
+            );
+        }
+    }
+
+    /// But having asked and found too little is the machine's plain answer,
+    /// not its silence: a second attempt cannot make room appear, so this one
+    /// stops the loop rather than being retried.
+    #[test]
+    fn too_little_room_is_not_read_as_the_machine_failing_to_answer() {
+        let Err(refused) = room_enough("      1024 /root/alo-builds/x\n", "/root/alo-builds/x")
+        else {
+            panic!("a kilobyte was read as room enough to build a workspace in");
+        };
+        assert!(
+            !gates::blamed_the_machine(&refused),
+            "too little room would be retried for ever: {refused}"
+        );
+    }
 
     /// **Two checkouts never share a build directory**, however alike their
     /// names, because a shared `target` is a lock and a lock is a lane waiting.
