@@ -57,16 +57,19 @@ apart by the checkout's path.
 
 ## The plan it runs, and the ones it must not
 
-**Its plan is `docs/autonomy/v0-5-applications-and-what-they-expect-plan.md`**
-— five tasks: a portal request as a grant, one list of what has been granted
-to what, the keyring behind the Secret portal, what opens what, and the D-Bus
-backend. It owns `crates/alo-portals` (new), `alo-granted`,
-`alo-applications` and `alo-secrets`, and **no other lane is in those**.
+**Its plan is `docs/autonomy/v0-5-documents-and-paper-plan.md`** — five tasks:
+what this machine can do with a file, `.docx`/`.xlsx`/`.pptx` opened and what
+the conversion cost, a printer found and saying what is wrong with it,
+*"I can't open this file"* said properly, and the walk through every sentence.
+It owns `crates/alo-printing` and `crates/alo-opening`, both new, and **no
+other lane is in those**.
 
-If it empties, the next unclaimed plan is
-`docs/autonomy/v0-5-the-machine-keeps-itself-plan.md`. Do not take the
-local-network, installer, shell or models plans: each has a lane on it, and
-two lanes in one crate corrupted a task on 2026-09-11.
+Two spare PCs joined on the same day and took the applications and
+machine-keeps-itself plans; the table in
+`docs/autonomy/a-new-machine-becomes-a-lane.md` is the one place that says who
+has what. **If this plan empties, do not pick another** — say so and stop, so
+that a person who can see every lane assigns the next one. Two lanes in one
+crate corrupted a task on 2026-09-11.
 
 ## The rules, which are the same for every lane
 

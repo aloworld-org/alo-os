@@ -531,6 +531,7 @@ The plan says a finished task is marked `**Done, <date>.**`; this one is not.
             "docs/autonomy/v0-5-the-installer-plan.md",
             "docs/autonomy/v0-5-the-shell-plan.md",
             "docs/autonomy/v0-5-the-machine-keeps-itself-plan.md",
+            "docs/autonomy/v0-5-documents-and-paper-plan.md",
         ] {
             let at = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../..")
