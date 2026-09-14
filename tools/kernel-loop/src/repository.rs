@@ -279,8 +279,44 @@ pub fn committed(at: &Path, message: &str) -> Result<String, String> {
     let made = git(at, &["commit", "--quiet", "--file", &wrote]);
     drop(std::fs::remove_file(&wrote));
     wrote.clear();
-    made?;
+    if let Err(why) = made {
+        // **The work may already be committed, and that is not a failure.**
+        //
+        // A publish that is re-run — because the machine refused a gate and
+        // the loop asked for the gates again rather than blaming the work —
+        // begins at the beginning, and by then the first pass has already
+        // committed. `git` answers *nothing to commit, working tree clean*,
+        // and on 2026-09-14 that parked a task whose nine gates and whose
+        // evidence had both just passed, on the installer plan.
+        //
+        // So: nothing to commit **and** a clean tree **and** something here
+        // that `origin/main` has not got is work already committed, and the
+        // sha of it is the honest answer. Any other refusal is still one — a
+        // tree `git` would not take is a real problem and this does not hide
+        // it, and a clean tree with nothing ahead is a publish with no work
+        // in it, which is also a refusal.
+        if !already_committed(at, &why)? {
+            return Err(why);
+        }
+    }
     git(at, &["rev-parse", "--short", "HEAD"])
+}
+
+/// Whether a refused commit is one that had already been made.
+///
+/// Three things must hold together; any one alone would let a real problem
+/// through.
+///
+/// # Errors
+/// Whatever `git` said when asked about the tree or the branch.
+fn already_committed(at: &Path, why: &str) -> Result<bool, String> {
+    if !why.contains("nothing to commit") {
+        return Ok(false);
+    }
+    if !git(at, &["status", "--porcelain"])?.trim().is_empty() {
+        return Ok(false);
+    }
+    Ok(git(at, &["rev-list", "--count", "origin/main..HEAD"])?.trim() != "0")
 }
 
 /// Put the message somewhere `git` can read it, because a commit body has
