@@ -276,7 +276,8 @@ their publishers train for tool calls at a size 8 GB holds — the Qwen3 family 
 
 ### 12. The five that failed, read one by one
 
-**Status:** ready. **Depends on:** 10.
+**Status:** **Done, 2026-09-14.** **Depends on:** 10.
+**Report:** `docs/autonomy/updates/the-five-that-failed-read-one-by-one.md`.
 
 Qwen 2.5 7B drove the verbs 35 times in 40 in the envelope. The bar is 36.
 Before any more models are fetched, the five attempts that failed are the
