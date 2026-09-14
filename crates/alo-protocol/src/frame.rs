@@ -281,7 +281,8 @@ mod tests {
         assert_eq!(
             asked,
             Asked::Ask {
-                question: "how many?".to_owned()
+                question: "how many?".to_owned(),
+                answered: crate::answered::Answered::InWords,
             }
         );
     }

@@ -399,9 +399,8 @@ pub(crate) fn on_a_machine_that_answers<T>(
 
 /// A model runtime that says one thing, without one being installed anywhere.
 ///
-/// `alo_models::found_on_this_machine` answers with a type no caller can name,
-/// which is ADR 0019 held by the compiler — so a test cannot ask for a runtime
-/// pointed somewhere of its own, and does not want one. What it wants is a
+/// A test that wants what the pinned runtime was *asked* serves one with
+/// [`a_runtime_served`]; most do not, and want only a
 /// question arriving and an answer coming back, which is the one method below
 /// that does anything.
 #[derive(Debug)]
@@ -549,4 +548,56 @@ impl alo_turn::Bounding for NothingIsBounded {
         doing();
         Ok(())
     }
+}
+
+/// The pinned runtime's side of one question, served on a socket of this
+/// test's own: it answers once with `reply` and hands back everything it was
+/// sent, head and body, so a test reads what a question was asked with rather
+/// than the code that built it.
+pub(crate) fn a_runtime_served(
+    reply: &'static str,
+) -> (alo_models::Ollama, std::thread::JoinHandle<String>) {
+    use std::io::{BufRead as _, Read as _, Write as _};
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let handle = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
+        let mut head = String::new();
+        let mut length = 0usize;
+        loop {
+            let mut line = String::new();
+            if reader.read_line(&mut line).unwrap() == 0 {
+                break;
+            }
+            if let Some(value) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                length = value.trim().parse().unwrap_or(0);
+            }
+            let done = line == "\r\n" || line == "\n";
+            head.push_str(&line);
+            if done {
+                break;
+            }
+        }
+        let mut body = vec![0u8; length];
+        reader.read_exact(&mut body).unwrap();
+        let written = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{reply}",
+            reply.len()
+        );
+        stream.write_all(written.as_bytes()).unwrap();
+        stream.flush().unwrap();
+        head + &String::from_utf8_lossy(&body)
+    });
+    let runtime = alo_models::Ollama::at(
+        &format!("http://127.0.0.1:{port}"),
+        Catalogue::built_in().unwrap(),
+    );
+    (runtime, handle)
+}
+
+/// What a request a test served was sent as its body, read as JSON.
+pub(crate) fn the_body_of(request: &str) -> serde_json::Value {
+    serde_json::from_str(request.split_once("\r\n\r\n").map_or("", |(_, body)| body)).unwrap()
 }

@@ -103,6 +103,31 @@ The question and nothing else. **Where it is answered is not on the wire**:
 ADR 0008 puts that decision with the person, and a request naming a place would
 be an agent choosing which machine its question goes to.
 
+A question may also say **what it wants back**, and nothing else:
+
+```json
+{"ask":{"question":"…the person said: list my invoices. Your next request?","answered":"as-the-next-request"}}
+```
+
+| `answered` | Means |
+|---|---|
+| absent, or `"in-words"` | An answer in words. What every `ask` meant before this field existed. |
+| `"as-the-next-request"` | The agent is asking a model for its own next request, which must be a line of this protocol. |
+
+Added 2026-09-14, additively: an `ask` without the field reads exactly as it
+always did, and one in words is written without it. Any other value — a place,
+a schema, anything not one of these two — refuses the whole request.
+
+It decides one thing. When the place the person chose is the model runtime alo
+OS pins, a question `as-the-next-request` is put to it **held to the protocol's
+envelope** — the version and exactly one of `read`, `propose` and `ask`, with
+nothing about what is inside the door (ADR 0032) — and a question in words never
+is. A provider, a service somebody runs on this machine and a paired machine are
+asked exactly as they are asked in words. The answer comes back as `answered`
+either way, in the model's own words: it becomes a request only when the agent
+sends it as its next line, read and validated like any other. The record entry
+is the same for both; how the model was asked is not kept.
+
 The daemon reads that decision out of the person's own settings file
 (`docs/contracts/person-settings.md`), once at the first question of each turn
 — so a model chosen in Settings answers the next turn, and two questions in one

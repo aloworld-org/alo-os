@@ -8,7 +8,8 @@
 //! | | Where the answer comes from | Does anything leave |
 //! |---|---|---|
 //! | [`Answers::Provider`] | A provider somebody added | Yes, and law 1 shows it |
-//! | [`Answers::Runtime`] | The model runtime alo OS ships | No |
+//! | [`Answers::ThePinnedRuntime`] | The model runtime alo OS ships, typed as itself | No |
+//! | [`Answers::Runtime`] | A model runtime on this machine, known only by its trait | No |
 //! | [`Answers::Service`] | A service somebody runs here on loopback | No |
 //!
 //! # This is not a route, and it decides nothing
@@ -35,7 +36,7 @@
 //! and `alo_asking::Miswired::BelongsDownTheCorridor` says so.
 
 use alo_asking::{Hosted, Served};
-use alo_models::{InferenceSource, ModelRuntime};
+use alo_models::{InferenceSource, ModelRuntime, Ollama};
 
 /// One thing that can answer a question, and everything needed to reach it.
 ///
@@ -51,12 +52,30 @@ pub enum Answers<'a> {
     /// it, and is written into the record as a departure whether or not it is
     /// answered.
     Provider(Hosted<'a>),
-    /// The model runtime alo OS ships, on this machine.
+    /// **The runtime alo OS pins (ADR 0006), typed as itself**, on this
+    /// machine.
+    ///
+    /// A question asked in words is put here exactly as [`Answers::Runtime`]
+    /// puts one, and nothing leaves either way. The type is named for the one
+    /// road that needs it: an agent turn asking for its next request is held
+    /// to the protocol's envelope (ADR 0032), and only the pinned runtime can
+    /// be asked that way — `alo_asking::Asking::to_this_machine_in_the_envelope`
+    /// takes it by name, never a trait object (decision 4).
+    /// [`crate::next_request`] has the rest.
+    ThePinnedRuntime(&'a Ollama),
+    /// A model runtime on this machine, known only by its trait.
     ///
     /// Nothing leaves, so there is no indicator, no rule to ask and no
     /// departure — which is `docs/features.md`'s *a working day with a local
     /// model produces zero inference egress*, carried by the absence of a type
     /// rather than by a counter that reads zero.
+    ///
+    /// **Never held to the envelope.** ADR 0032 measured the pinned runtime and
+    /// nothing else, so a runtime this crate cannot name is asked for an
+    /// agent's next request the way it is asked anything: freely. That costs
+    /// nothing a person relies on — the envelope removes a way for a model to
+    /// fail to be understood and lets nothing through — and the daemon hands a
+    /// turn the pinned runtime as [`Answers::ThePinnedRuntime`].
     Runtime(&'a dyn ModelRuntime),
     /// An OpenAI-compatible service somebody runs on this machine.
     ///
@@ -78,7 +97,7 @@ impl Answers<'_> {
     pub fn source(&self) -> InferenceSource {
         match self {
             Self::Provider(hosted) => hosted.named_source(),
-            Self::Runtime(_) => InferenceSource::ThisMachine,
+            Self::ThePinnedRuntime(_) | Self::Runtime(_) => InferenceSource::ThisMachine,
             Self::Service(served) => served.source(),
         }
     }
@@ -147,6 +166,15 @@ mod tests {
         assert!(Answers::Provider(Hosted::provider(&provider, None)).leaves());
 
         assert!(!Answers::Runtime(&runtime).leaves());
+
+        // The pinned runtime is the same place under its own name: nothing
+        // put to it leaves, however it is asked.
+        let pinned = alo_models::Ollama::new(alo_models::Catalogue::built_in().unwrap());
+        assert!(!Answers::ThePinnedRuntime(&pinned).leaves());
+        assert_eq!(
+            Answers::ThePinnedRuntime(&pinned).source(),
+            InferenceSource::ThisMachine
+        );
 
         let service = a_service("http://127.0.0.1:8000");
         assert!(!Answers::Service(Served::at(&service, None).unwrap()).leaves());

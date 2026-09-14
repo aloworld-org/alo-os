@@ -11,10 +11,12 @@
 //!
 //! There is no address here, no key that could hold one, and no way to write
 //! one. [`Questions`] is handed a catalogue and nothing else; where a runtime
-//! is, is the adapter's own knowledge, and `found_on_this_machine` answers with
-//! a type whose name no caller outside `alo-models` can write — so *point the
-//! agent at a machine of my choosing* is refused by the compiler rather than by
-//! nobody having added the field yet. A runtime somewhere else is a
+//! is, is the adapter's own knowledge, and `found_on_this_machine` is the only
+//! place this daemon's runtime comes from. It answers with the pinned runtime
+//! by name, which an agent's next request needs (ADR 0032), and *point the
+//! agent at a machine of my choosing* is refused by this crate making no runtime
+//! of its own anywhere it ships — held by a test in [`crate::the_runtime`]
+//! rather than by nobody having added the field yet. A runtime somewhere else is a
 //! **provider**, which is already modelled, already shown on the indicator and
 //! already bounded.
 //!
@@ -62,13 +64,12 @@
 use std::ffi::{OsStr, OsString};
 
 use alo_choosing::{CONFIG_HOME, Chosen, HOME, NotSet};
-use alo_models::{
-    Catalogue, ModelRuntime, Provider, Secret, SecretRef, SourcePolicy, found_on_this_machine,
-};
+use alo_models::{Catalogue, Provider, Secret, SecretRef, SourcePolicy, found_on_this_machine};
 use alo_secrets::{NotStored, TheBus, TheKeyring};
 use alo_turn::Places;
 
 use crate::settings::of_a_session;
+use crate::the_runtime::TheRuntime;
 
 /// What an organisation permits on a machine none manages.
 ///
@@ -197,7 +198,7 @@ enum Looked {
         /// What the person chose, as they wrote it.
         chosen: Chosen,
         /// The runtime that was found, which nothing here can point anywhere.
-        runtime: Box<dyn ModelRuntime>,
+        runtime: TheRuntime,
     },
     /// A provider the person added, and the model they asked it for.
     ///
@@ -244,7 +245,7 @@ pub enum WhatAnswers<'a> {
         /// What the person chose, which is also what the runtime is asked for.
         chosen: &'a Chosen,
         /// What answers it.
-        runtime: &'a dyn ModelRuntime,
+        runtime: &'a TheRuntime,
         /// What is permitted, and what else could be offered — which is
         /// nothing, honestly.
         places: Places<'a>,
@@ -373,7 +374,7 @@ impl Questions {
         match &self.looked {
             Some(Looked::OnThisMachine { chosen, runtime }) => WhatAnswers::OnThisMachine {
                 chosen,
-                runtime: runtime.as_ref(),
+                runtime,
                 places: Places::under(bound),
             },
             Some(Looked::FromAProvider { provider, model }) => WhatAnswers::FromAProvider {
@@ -405,9 +406,27 @@ impl Questions {
     #[cfg(test)]
     pub(crate) fn already_found(
         chosen: Chosen,
-        runtime: Box<dyn ModelRuntime>,
+        runtime: Box<dyn alo_models::ModelRuntime>,
         bound: TheBound,
     ) -> Self {
+        Self::holding(chosen, TheRuntime::StoodIn(runtime), bound)
+    }
+
+    /// The same, holding the pinned runtime itself — at an address a test
+    /// serves on, which is how a test reads what the runtime was asked off a
+    /// socket. `cfg(test)` for [`Questions::already_found`]'s reason.
+    #[cfg(test)]
+    pub(crate) fn already_found_pinned(
+        chosen: Chosen,
+        runtime: alo_models::Ollama,
+        bound: TheBound,
+    ) -> Self {
+        Self::holding(chosen, TheRuntime::Pinned(runtime), bound)
+    }
+
+    /// What both test seams make.
+    #[cfg(test)]
+    fn holding(chosen: Chosen, runtime: TheRuntime, bound: TheBound) -> Self {
         Self {
             config_home: None,
             home: None,
@@ -453,7 +472,7 @@ fn look(config_home: Option<&OsStr>, home: Option<&OsStr>, catalogue: &Catalogue
     match found_on_this_machine(catalogue.clone()) {
         Some(runtime) => Looked::OnThisMachine {
             chosen: local.clone(),
-            runtime: Box::new(runtime),
+            runtime: TheRuntime::Pinned(runtime),
         },
         None => Looked::NotRunning,
     }

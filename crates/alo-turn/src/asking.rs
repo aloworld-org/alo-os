@@ -62,6 +62,7 @@ use alo_keeping::NotKept;
 use alo_record::Entry;
 
 use crate::answers::Answers;
+use crate::next_request::Held;
 use crate::places::Places;
 use crate::turning::Turning;
 use crate::unanswered::NoAnswer;
@@ -174,6 +175,39 @@ impl Turning<'_, '_> {
         places: &Places<'_>,
         now: SystemTime,
     ) -> Result<Answer, NoAnswer> {
+        self.putting(
+            asked,
+            of_model,
+            answering,
+            answers,
+            places,
+            now,
+            Held::InWords,
+        )
+    }
+
+    /// The one road every question takes, told how its answer is held.
+    ///
+    /// `pub(crate)` for [`crate::next_request`], whose door is this one with
+    /// [`Held::ToTheEnvelope`]. **`held` reaches exactly one arm** — the
+    /// pinned runtime's — and every other line here is the same for both, so
+    /// what is written down, shown and refused cannot differ between a
+    /// question asked in words and an agent's next request.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the six `asking` takes and how the answer is held; bundling them would \
+                  be a type made only to be taken apart on the next line"
+    )]
+    pub(crate) fn putting(
+        &mut self,
+        asked: &str,
+        of_model: &str,
+        answering: Answering,
+        answers: &Answers<'_>,
+        places: &Places<'_>,
+        now: SystemTime,
+        held: Held,
+    ) -> Result<Answer, NoAnswer> {
         if self.is_closed() {
             return Err(NoAnswer::TurnClosed);
         }
@@ -220,6 +254,16 @@ impl Turning<'_, '_> {
                         now,
                     )),
                 }
+            }
+            Answers::ThePinnedRuntime(runtime) => {
+                // The only place `held` is read (ADR 0032, decisions 3 and 4).
+                let outcome = match held {
+                    Held::InWords => asking.to_this_machine(&question, *runtime),
+                    Held::ToTheEnvelope => {
+                        asking.to_this_machine_in_the_envelope(&question, runtime)
+                    }
+                };
+                self.what_this_machine_did(outcome, &agent, now)
             }
             Answers::Runtime(runtime) => {
                 let outcome = asking.to_this_machine(&question, *runtime);

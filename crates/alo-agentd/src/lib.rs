@@ -242,6 +242,8 @@ pub mod surface;
 #[cfg(target_os = "linux")]
 pub mod terms;
 #[cfg(target_os = "linux")]
+pub mod the_runtime;
+#[cfg(target_os = "linux")]
 pub mod trusting;
 #[cfg(target_os = "linux")]
 pub mod unix;

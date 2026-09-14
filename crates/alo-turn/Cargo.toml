@@ -44,5 +44,10 @@ alo-record = { path = "../alo-record" }
 alo-strings = { path = "../alo-strings" }
 thiserror = { workspace = true }
 
+[dev-dependencies]
+# Reading a request a test served back as JSON, so that what an agent's next
+# request was held to is compared as a value rather than as a spelling.
+serde_json = { workspace = true }
+
 [lints]
 workspace = true

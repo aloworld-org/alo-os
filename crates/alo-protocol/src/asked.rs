@@ -41,6 +41,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::answered::Answered;
 use crate::argument::Argument;
 
 /// Everything a client can put on the wire.
@@ -73,6 +74,11 @@ pub(crate) enum Asked {
     Ask {
         /// What is being asked.
         question: String,
+        /// Whether the answer is wanted in words or as the agent's next
+        /// request. Left off the wire when it is words, so an `ask` written
+        /// before this field existed reads, and is written, as it always was.
+        #[serde(default, skip_serializing_if = "Answered::is_in_words")]
+        answered: Answered,
     },
     /// The person approved the change waiting under this number.
     Approve {
@@ -182,7 +188,8 @@ mod tests {
         assert_eq!(
             ask,
             Asked::Ask {
-                question: "how many?".to_owned()
+                question: "how many?".to_owned(),
+                answered: Answered::InWords,
             }
         );
 
@@ -307,6 +314,61 @@ mod tests {
             r#"{"ask":{"question":"how many?","of":"a-provider"}}"#,
             r#"{"ask":{"question":"how many?","model":"mistral"}}"#,
             r#"{"ask":{"question":"how many?","where":"this-machine"}}"#,
+        ] {
+            assert!(serde_json::from_str::<Asked>(message).is_err(), "{message}");
+        }
+    }
+
+    /// **A question may say it wants the agent's next request back**, and that
+    /// is the only other thing it may say: words is what it means when it says
+    /// nothing, and a question in words is written without the field.
+    #[test]
+    fn a_question_says_whether_it_wants_words_or_the_next_request() {
+        let next: Asked = serde_json::from_str(
+            r#"{"ask":{"question":"what next?","answered":"as-the-next-request"}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            next,
+            Asked::Ask {
+                question: "what next?".to_owned(),
+                answered: Answered::AsTheNextRequest,
+            }
+        );
+        let words: Asked =
+            serde_json::from_str(r#"{"ask":{"question":"how many?","answered":"in-words"}}"#)
+                .unwrap();
+        assert!(matches!(
+            words,
+            Asked::Ask {
+                answered: Answered::InWords,
+                ..
+            }
+        ));
+        assert_eq!(
+            serde_json::to_string(&words).unwrap(),
+            r#"{"ask":{"question":"how many?"}}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&next).unwrap(),
+            r#"{"ask":{"question":"what next?","answered":"as-the-next-request"}}"#
+        );
+    }
+
+    /// **What a question wants back is one of two words, and never a place, a
+    /// schema or a command.** Anything else is refused whole rather than read
+    /// as words.
+    #[test]
+    fn what_a_question_wants_back_is_one_of_two_and_nothing_else() {
+        for message in [
+            r#"{"ask":{"question":"what next?","answered":"as-a-shell-command"}}"#,
+            r#"{"ask":{"question":"what next?","answered":"this-machine"}}"#,
+            r#"{"ask":{"question":"what next?","answered":"AsTheNextRequest"}}"#,
+            r#"{"ask":{"question":"what next?","answered":{"type":"object"}}}"#,
+            r#"{"ask":{"question":"what next?","answered":true}}"#,
+            r#"{"ask":{"question":"what next?","answered":null}}"#,
+            r#"{"ask":{"question":"what next?","answered":"as-the-next-request","schema":{}}}"#,
+            r#"{"ask":{"answered":"as-the-next-request"}}"#,
         ] {
             assert!(serde_json::from_str::<Asked>(message).is_err(), "{message}");
         }

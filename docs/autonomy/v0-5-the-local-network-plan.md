@@ -505,7 +505,16 @@ three, and keeps what they made.
 
 ### 13. A turn asks the local model in the envelope
 
-**Status:** ready. **Depends on:** 11.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-turn/src/next_request.rs`
+(`Turning::asking_for_the_next_request`, one road with `Turning::asking` that
+differs in the pinned runtime's arm alone), `alo_turn::Answers::ThePinnedRuntime`,
+`crates/alo-protocol/src/answered.rs` (an `ask` says `"answered":
+"as-the-next-request"`, additively) and `crates/alo-agentd/src/the_runtime.rs`
+(the runtime found here, held by its own type); the contract
+`docs/contracts/daemon-protocol.md` gained the field. The Mac lane's task 15 is
+unblocked. The report is
+`docs/autonomy/updates/a-turn-asks-the-local-model-in-the-envelope.md`.
+**Depends on:** 11.
 
 ADR 0032 decided that an agent turn asks a model on this machine for the
 protocol's envelope and the door — `read`, `propose` or `ask` — and never for
@@ -529,3 +538,40 @@ turn asks that way*. The Mac lane's task 14 makes the ask a door in
   waits rather than building a second ask in this crate. Nothing here reads
   or rewrites a grade — which grade the recommendation reads is the Mac
   lane's task 15, unblocked by this one landing.
+
+### 14. A turn on a machine with no model asks the paired machine its person chose
+
+**Status:** ready. **Depends on:** 3, 12, 13.
+
+Task 3 built the corridor as a door — `alo_asking::Asking::to_a_paired_machine`
+shows the departure, proves the question and reads the answer — and task 11
+built the machine that answers it. Nothing between them is wired: a person
+cannot choose a paired machine to answer their questions (`alo-choosing` names
+it as a place a question *could* go and has no shape for it), `alo_turn::Answers`
+has no variant for one and says so, and `alo-agentd` refuses a turn's question
+to one as `Miswired::BelongsDownTheCorridor`. *A machine without a GPU
+discovers the one with it, and the agents just work* is true of two doors and
+of no turn. Task 13 found this while holding a paired machine to *asked exactly
+as before* — which today means *refused*.
+
+- **Acceptance:** a person can choose a machine they are paired with, by its
+  identity, to answer their questions, and the choice is refused when no
+  pairing permitting `MayAskIts::Models` stands — at choosing and again at
+  every question, so a pairing revoked or expired between the two refuses the
+  question in words, tested; a turn's question to that machine goes through
+  `to_a_paired_machine` under a departure the indicator shows and the record
+  keeps as left, with the machine named, tested beside a local answer that
+  leaves nothing; a question the other machine refuses (not permitted, answers
+  elsewhere, nothing chosen there) reaches the agent as the other machine's own
+  word rendered in this machine's language, one test each; an agent's next
+  request down the corridor is asked exactly as a question in words is (ADR
+  0032 decision 4), tested off the socket; and a paired machine is never a
+  fallback for a local model or a provider, in either direction — refused by a
+  test.
+- **Constraint:** ADR 0003, ADR 0008 and ADR 0031 throughout: the question
+  travels, the grant does not; where a question goes is the person's setting
+  and no default chooses a machine for them; an organisation's bound
+  (`SourcePolicy::InTheBuilding` and its siblings) is asked before anything
+  leaves. The settings shape is decided in the crate that owns the person's
+  settings, additively, with `docs/contracts/person-settings.md` updated in the
+  same change. Nothing in `alo-shell`, nothing in `image/`.

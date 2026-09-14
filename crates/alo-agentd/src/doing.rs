@@ -40,12 +40,12 @@
 use std::time::{Duration, SystemTime};
 
 use alo_answering::Answering;
-use alo_asking::Hosted;
+use alo_asking::{Answer, Hosted};
 use alo_capability::{AnswerError, Grants, ProposalId};
 use alo_models::{NotAllowed, RuntimeError};
-use alo_protocol::{FromAnAgent, ToAnAgent};
+use alo_protocol::{Answered, FromAnAgent, ToAnAgent};
 use alo_strings::{Filling, Said, Strings};
-use alo_turn::{Answers, NoAnswer, NoBoundary, NotDone, Turning};
+use alo_turn::{Answers, NoAnswer, NoBoundary, NotDone, Places, Turning};
 
 use alo_secrets::NotStored;
 
@@ -109,7 +109,9 @@ fn carried_out(
                 Err(why) => not_done(&why, strings),
             }
         }
-        FromAnAgent::Ask { question } => put_to_a_model(question, turning, questions, strings, now),
+        FromAnAgent::Ask { question, answered } => {
+            put_to_a_model(question, *answered, turning, questions, strings, now)
+        }
     }
 }
 
@@ -193,6 +195,7 @@ fn refused_by_a_rule(
 /// is `alo-choosing`'s, and names the file and the line.
 fn put_to_a_model(
     question: &str,
+    answered: Answered,
     turning: &mut Turning<'_, '_>,
     questions: &mut Questions,
     strings: &Strings,
@@ -262,7 +265,9 @@ fn put_to_a_model(
                 },
             };
 
-            match turning.asking(
+            match putting(
+                turning,
+                answered,
                 question,
                 model,
                 permission,
@@ -284,11 +289,13 @@ fn put_to_a_model(
             // Nothing is composed out of what a model said, here or anywhere:
             // the text crosses as the model's own words, and the line naming
             // where it came from is a sentence of ours beside it.
-            Ok(permission) => match turning.asking(
+            Ok(permission) => match putting(
+                turning,
+                answered,
                 question,
                 chosen.model(),
                 permission,
-                &Answers::Runtime(runtime),
+                &runtime.answers(),
                 &places,
                 now,
             ) {
@@ -317,6 +324,38 @@ fn not_done(why: &NotDone, strings: &Strings) -> ToAnAgent {
         the_boundary_was_not_there(no_boundary);
     }
     ToAnAgent::refused(&why.said(strings))
+}
+
+/// A question put to a turn through the door for what it wants back.
+///
+/// **The agent says which, and nothing else is decided by it.** A question in
+/// words goes through `Turning::asking`; one asking for the agent's own next
+/// request goes through `Turning::asking_for_the_next_request`, which holds the
+/// pinned runtime's answer to the protocol's envelope (ADR 0032) and asks every
+/// other place exactly as the first door does. Where it goes is still the
+/// person's, and what comes back crosses to the agent as a model's words
+/// either way.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the six a turn's question takes, the turn, and which door; a struct would \
+              exist only to be unpacked on the next line"
+)]
+fn putting(
+    turning: &mut Turning<'_, '_>,
+    answered: Answered,
+    question: &str,
+    model: &str,
+    permission: Answering,
+    answers: &Answers<'_>,
+    places: &Places<'_>,
+    now: SystemTime,
+) -> Result<Answer, NoAnswer> {
+    match answered {
+        Answered::InWords => turning.asking(question, model, permission, answers, places, now),
+        Answered::AsTheNextRequest => {
+            turning.asking_for_the_next_request(question, model, permission, answers, places, now)
+        }
+    }
 }
 
 /// The sentence for a question that was not answered.
@@ -600,6 +639,7 @@ endpoint = \"https://{other}\"
         let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
             put_to_a_model(
                 "may the tenant sublet?",
+                Answered::InWords,
                 turning,
                 &mut questions,
                 strings,
@@ -830,6 +870,7 @@ endpoint = \"https://{other}\"
             on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
                 put_to_a_model(
                     "may the tenant sublet?",
+                    Answered::InWords,
                     turning,
                     &mut questions,
                     strings,
@@ -1042,6 +1083,7 @@ endpoint = \"https://{other}\"
             on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
                 put_to_a_model(
                     "may the tenant sublet?",
+                    Answered::InWords,
                     turning,
                     &mut questions,
                     strings,
@@ -1230,6 +1272,7 @@ endpoint = \"https://{other}\"
                             on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
                                 put_to_a_model(
                                     "may the tenant sublet?",
+                                    Answered::InWords,
                                     turning,
                                     &mut questions,
                                     strings,
@@ -1253,6 +1296,7 @@ endpoint = \"https://{other}\"
             let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
                 put_to_a_model(
                     "may the tenant sublet?",
+                    Answered::InWords,
                     turning,
                     &mut questions,
                     strings,
@@ -1319,6 +1363,7 @@ endpoint = \"https://{other}\"
         let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
             put_to_a_model(
                 "may the tenant sublet?",
+                Answered::InWords,
                 turning,
                 &mut questions,
                 strings,
@@ -1762,7 +1807,14 @@ endpoint = \"https://{other}\"
         );
         let mut record = Record::default();
         let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
-            put_to_a_model(A_CLIENT_WROTE, turning, &mut questions, strings, noon())
+            put_to_a_model(
+                A_CLIENT_WROTE,
+                Answered::InWords,
+                turning,
+                &mut questions,
+                strings,
+                noon(),
+            )
         });
 
         let refusal = said.refusal().map(|wording| wording.text().to_owned());
@@ -1847,6 +1899,7 @@ endpoint = \"https://{other}\"
         let said = on_a_machine_that_answers(&mut writing, |turning, _grants, strings| {
             put_to_a_model(
                 "may the tenant sublet?",
+                Answered::InWords,
                 turning,
                 &mut questions,
                 strings,
@@ -1930,6 +1983,7 @@ endpoint = \"https://{other}\"
         let said = on_a_machine_that_answers(&mut disk, |turning, _grants, strings| {
             let said = put_to_a_model(
                 "may the tenant sublet?",
+                Answered::InWords,
                 turning,
                 &mut questions,
                 strings,
@@ -2116,6 +2170,7 @@ endpoint = \"https://{other}\"
         let said = on_a_machine_that_answers(&mut writing, |turning, _grants, strings| {
             put_to_a_model(
                 "may the tenant sublet?",
+                Answered::InWords,
                 turning,
                 &mut questions,
                 strings,
@@ -2230,6 +2285,7 @@ endpoint = \"https://{other}\"
             |turning, _grants, strings| {
                 put_to_a_model(
                     "may the tenant sublet?",
+                    Answered::InWords,
                     turning,
                     &mut questions,
                     strings,
@@ -2307,6 +2363,7 @@ endpoint = \"https://{other}\"
             let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
                 put_to_a_model(
                     "may the tenant sublet?",
+                    Answered::InWords,
                     turning,
                     &mut questions,
                     strings,
@@ -2399,6 +2456,7 @@ endpoint = \"https://{at}\"
         let said = on_a_machine_that_answers(&mut record, |turning, _grants, strings| {
             put_to_a_model(
                 "may the tenant sublet?",
+                Answered::InWords,
                 turning,
                 &mut questions,
                 strings,
@@ -2657,6 +2715,109 @@ endpoint = \"https://{at}\"
         // Law 1's other half: it was answered here, so the entry says so and
         // nothing on it is about a destination.
         assert_eq!(record.len(), 1, "a question left no record");
+    }
+
+    /// The pinned runtime's answer holding one line of the protocol.
+    const AN_ENVELOPE: &str = r#"{"message":{"role":"assistant","content":"{\"format\":1,\"asks\":{\"read\":{\"verb\":\"list_folder\",\"given\":[]}}}"}}"#;
+
+    /// **An agent asking for its next request reaches the pinned runtime held
+    /// to the envelope** — read off the runtime's socket — and the model's line
+    /// comes back to the agent as words, with the one entry a question answered
+    /// here has always left.
+    #[test]
+    fn an_agents_next_request_reaches_the_pinned_runtime_held_to_the_envelope() {
+        let (runtime, served) = crate::testing::a_runtime_served(AN_ENVELOPE);
+        let mut questions = Questions::already_found_pinned(
+            Chosen::of(Which::Catalogue, "qwen2.5-7b-instruct").unwrap(),
+            runtime,
+            TheBound::Nobodys,
+        );
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let said = what_an_agent_said(
+                &a_message(
+                    r#"{"ask":{"question":"the person said: list my invoices. your next request?","answered":"as-the-next-request"}}"#,
+                ),
+                turning,
+                &mut questions,
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+            assert!(
+                matches!(&said, ToAnAgent::Answered { text, .. } if text.contains("\"asks\"")),
+                "{said:?}"
+            );
+        });
+
+        let body = crate::testing::the_body_of(&served.join().unwrap());
+        assert_eq!(
+            body.get("format"),
+            Some(&alo_models::in_the_envelope::the_envelope())
+        );
+        assert_eq!(record.len(), 1);
+    }
+
+    /// **A question in words, on the same machine and to the same pinned
+    /// runtime, is never given the schema** (ADR 0032, decision 3).
+    #[test]
+    fn a_question_in_words_reaches_the_pinned_runtime_with_no_envelope() {
+        let (runtime, served) = crate::testing::a_runtime_served(
+            r#"{"message":{"role":"assistant","content":"a sublet clause"}}"#,
+        );
+        let mut questions = Questions::already_found_pinned(
+            Chosen::of(Which::Catalogue, "qwen2.5-7b-instruct").unwrap(),
+            runtime,
+            TheBound::Nobodys,
+        );
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            let said = what_an_agent_said(
+                &a_message(r#"{"ask":{"question":"what is in this contract?"}}"#),
+                turning,
+                &mut questions,
+                &Grants::default(),
+                strings,
+                hour(),
+                noon(),
+            );
+            assert!(
+                matches!(&said, ToAnAgent::Answered { text, .. } if text == "a sublet clause"),
+                "{said:?}"
+            );
+        });
+
+        let body = crate::testing::the_body_of(&served.join().unwrap());
+        assert!(body.get("format").is_none(), "{body}");
+        assert_eq!(record.len(), 1);
+    }
+
+    /// **What a question wants back is one of two words.** Anything else is
+    /// refused in words before the turn — the runtime, a stand-in that would
+    /// answer, is asked nothing, and nothing is written down.
+    #[test]
+    fn a_question_wanting_anything_but_words_or_its_next_request_is_refused() {
+        let mut record = Record::default();
+        on_a_machine_that_answers(&mut record, |turning, _, strings| {
+            for asked in [
+                r#"{"ask":{"question":"what next?","answered":"as-a-shell-command"}}"#,
+                r#"{"ask":{"question":"what next?","answered":{"type":"object"}}}"#,
+            ] {
+                let said = what_an_agent_said(
+                    &a_message(asked),
+                    turning,
+                    &mut holding("my-finetune", Ok("this should never be reached".to_owned())),
+                    &Grants::default(),
+                    strings,
+                    hour(),
+                    noon(),
+                );
+                let refusal = said.refusal().unwrap();
+                assert!(!refusal.is_a_bug(), "{refusal:?}");
+            }
+        });
+        assert_eq!(record.len(), 0);
     }
 
     /// **A model that does not answer is a refusal in words**, and the sentence

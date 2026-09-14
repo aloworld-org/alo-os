@@ -49,6 +49,7 @@
 
 use alo_capability::Given;
 
+use crate::answered::Answered;
 use crate::argument::Argument;
 use crate::asked::Asked;
 use crate::frame;
@@ -80,6 +81,9 @@ pub enum FromAnAgent {
     Ask {
         /// What is being asked.
         question: String,
+        /// Whether it wants words back or the agent's own next request, which
+        /// decides how the pinned runtime is asked (ADR 0032) and nothing else.
+        answered: Answered,
     },
 }
 
@@ -94,7 +98,7 @@ impl FromAnAgent {
         match frame::message(line)? {
             Asked::Read { verb, given } => Ok(Self::Read { verb, given }),
             Asked::Propose { verb, given } => Ok(Self::Propose { verb, given }),
-            Asked::Ask { question } => Ok(Self::Ask { question }),
+            Asked::Ask { question, answered } => Ok(Self::Ask { question, answered }),
             // The four about pairing are refused in the same words as an
             // approval: a pairing is made by two people (ADR 0003), and an
             // agent that could propose, confirm or revoke one would be an
@@ -152,7 +156,16 @@ impl FromAnAgent {
     #[must_use]
     pub fn question(&self) -> Option<&str> {
         match self {
-            Self::Ask { question } => Some(question),
+            Self::Ask { question, .. } => Some(question),
+            Self::Read { .. } | Self::Propose { .. } => None,
+        }
+    }
+
+    /// What a question wants back, for the one request that asks anything.
+    #[must_use]
+    pub fn answered(&self) -> Option<Answered> {
+        match self {
+            Self::Ask { answered, .. } => Some(*answered),
             Self::Read { .. } | Self::Propose { .. } => None,
         }
     }
@@ -175,7 +188,7 @@ impl From<FromAnAgent> for Asked {
         match asked {
             FromAnAgent::Read { verb, given } => Self::Read { verb, given },
             FromAnAgent::Propose { verb, given } => Self::Propose { verb, given },
-            FromAnAgent::Ask { question } => Self::Ask { question },
+            FromAnAgent::Ask { question, answered } => Self::Ask { question, answered },
         }
     }
 }
@@ -211,8 +224,16 @@ mod tests {
         let ask =
             FromAnAgent::read(r#"{"format":1,"asks":{"ask":{"question":"how many?"}}}"#).unwrap();
         assert_eq!(ask.question(), Some("how many?"));
+        assert_eq!(ask.answered(), Some(Answered::InWords));
         assert_eq!(ask.verb(), None);
         assert!(ask.given().is_empty());
+        assert_eq!(read.answered(), None);
+
+        let next = FromAnAgent::read(
+            r#"{"format":1,"asks":{"ask":{"question":"what next?","answered":"as-the-next-request"}}}"#,
+        )
+        .unwrap();
+        assert_eq!(next.answered(), Some(Answered::AsTheNextRequest));
     }
 
     /// **An agent cannot approve its own change, and cannot say that what is
@@ -314,6 +335,11 @@ mod tests {
             },
             FromAnAgent::Ask {
                 question: "how many invoices are unpaid?".to_owned(),
+                answered: Answered::InWords,
+            },
+            FromAnAgent::Ask {
+                question: "the person said: archive march. your next request?".to_owned(),
+                answered: Answered::AsTheNextRequest,
             },
         ] {
             let written = asked.written().unwrap();

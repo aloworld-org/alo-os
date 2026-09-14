@@ -311,7 +311,7 @@ fn judged(
         &origin,
         &question,
         permission,
-        runtime,
+        runtime.in_words(),
         places.policy(),
         now,
     );
@@ -757,6 +757,48 @@ region = \"the EU\"
                 .origin()
                 .is_some_and(|from| from.is(reception().as_str()))
         }));
+    }
+
+    /// **A question from a paired machine reaches the pinned runtime here
+    /// exactly as before — never held to the envelope** (ADR 0032, decision
+    /// 4): a paired machine is a separate measurement, and what crosses the
+    /// corridor is asked in words. Read off the runtime's own socket.
+    #[test]
+    fn a_question_from_a_paired_machine_is_never_held_to_the_envelope() {
+        let (pairings, on_reception) = paired_for(&[MayAskIts::Models]);
+        let (runtime, served) = crate::testing::a_runtime_served(
+            r#"{"message":{"role":"assistant","content":"Three are unpaid."}}"#,
+        );
+        let mut questions = Questions::already_found_pinned(
+            Chosen::of(Which::Catalogue, "the-model-chosen-here").unwrap(),
+            runtime,
+            TheBound::Nobodys,
+        );
+        let (judged, _, _) = on_the_studio(|doorway| {
+            let mut judgement = one(
+                doorway,
+                &proven_by(&on_reception, A_QUESTION, noon()),
+                &pairings,
+                &mut questions,
+                noon(),
+            );
+            let (origin, departing) = judgement.departed.take().unwrap();
+            doorway
+                .machine()
+                .unwrap()
+                .answer_returned(&origin, departing)
+                .unwrap();
+            vec![judgement]
+        });
+        assert_eq!(
+            judged.first().unwrap().questioned,
+            Questioned::Answered(reception())
+        );
+        let body = crate::testing::the_body_of(&served.join().unwrap());
+        assert!(
+            body.get("format").is_none(),
+            "a paired machine's question was held to a shape: {body}"
+        );
     }
 
     /// **A machine whose person chose a provider refuses the question in

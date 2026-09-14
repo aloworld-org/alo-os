@@ -132,6 +132,10 @@ alo-nearby = { path = "../alo-nearby" }
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 alo-record = { path = "../alo-record" }
 
+# Reading what a runtime a test served was sent, so that whether a question was
+# held to the protocol's envelope (ADR 0032) is compared as a value.
+serde_json = { workspace = true }
+
 # A **real** Secret Service to ask for a key, shared with `alo-secrets` so there
 # is one fixture rather than two drifting apart. Dev only, and
 # `alo-secrets/tests/nothing_ships_the_fixture.rs` is the check that it stays

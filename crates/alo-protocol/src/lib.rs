@@ -126,6 +126,7 @@
 //! looks like, when [`FORMAT`] rises, and what may be added without raising it.
 
 mod agent;
+mod answered;
 mod argument;
 mod asked;
 mod done;
@@ -145,6 +146,7 @@ mod wording;
 pub mod words;
 
 pub use agent::FromAnAgent;
+pub use answered::Answered;
 pub use argument::Argument;
 pub use done::Done;
 pub use frame::{FORMAT, LONGEST, LONGEST_ANSWER};

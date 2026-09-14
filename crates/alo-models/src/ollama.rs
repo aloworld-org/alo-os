@@ -39,11 +39,14 @@
 //! [ADR 0019](../../../docs/decisions/0019-a-runtime-is-found-not-configured.md)
 //! settles the one thing ADR 0006's rule was silent about: an *address* is as
 //! much a mention of Ollama as a field name is, so nothing outside this file may
-//! carry one. [`found_on_this_machine`] is the door the rest of alo OS uses, and
-//! what it hands back is deliberately opaque — a caller that could name the type
-//! could point it somewhere, and an operator who could point the agent
-//! elsewhere would leave the egress indicator honest about a destination nobody
-//! chose.
+//! carry one. [`found_on_this_machine`] is the door the rest of alo OS uses: an
+//! operator who could point the agent elsewhere would leave the egress
+//! indicator honest about a destination nobody chose. It hands back an
+//! [`Ollama`] by name, because an agent turn asking for its next request needs
+//! the pinned runtime typed as itself (ADR 0032, decision 4); what keeps a
+//! caller from pointing one elsewhere is not the type's name, which
+//! [`Ollama::at`] never hid, but that nothing shipped outside this crate makes
+//! one — `alo-agentd` holds that of itself in a test.
 
 use crate::handing_over;
 use std::time::Duration;
@@ -122,13 +125,13 @@ const DEFAULT_KEEP_ALIVE: &str = "30m";
 /// after the service was is found the next time somebody asks — and one that has
 /// stopped is not still being offered.
 ///
-/// The type that comes back is opaque on purpose: a caller who could name it
-/// could construct one pointed elsewhere, and there is deliberately no override
-/// for an operator to reach for. A genuinely remote runtime is a
-/// [`crate::Provider`], which alo OS already models, shows on the indicator and
-/// bounds.
+/// The type that comes back is named, for ADR 0032: the envelope can be asked
+/// of the pinned runtime and of no trait object. There is still deliberately no
+/// override for an operator to reach for — no address goes in here. A
+/// genuinely remote runtime is a [`crate::Provider`], which alo OS already
+/// models, shows on the indicator and bounds.
 #[must_use]
-pub fn found_on_this_machine(catalogue: Catalogue) -> Option<impl ModelRuntime> {
+pub fn found_on_this_machine(catalogue: Catalogue) -> Option<Ollama> {
     found_at(DEFAULT_ENDPOINT, catalogue)
 }
 
