@@ -655,6 +655,7 @@ dependencies = [
  "alo-greeting",
  "alo-indicator",
  "alo-keeping",
+ "alo-measuring",
  "alo-models",
  "alo-record",
  "alo-recounting",

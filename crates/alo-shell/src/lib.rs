@@ -33,6 +33,15 @@
 //! agent invented for them. It opens by hand, with no agent involved, and
 //! asking the agent *what did you do?* opens the same account; nothing here
 //! writes to the record, filters it or summarises it.
+//!
+//! The ordinary desktop (`DesktopFrame`) is drawn here and decided elsewhere:
+//! the dock on the edge `alo-dock` names, laid out for each display's own size,
+//! with its status area at the far end holding the egress indicator; the accent
+//! and light and dark as `alo-appearance` answers them, with terracotta never
+//! offered; and two windows drawn from `alo-measuring` — what is running
+//! (`RunningWindow`) and what is filling the disk (`FillingWindow`) — each
+//! number the one the kernel or the count gave. The dock grants, approves and
+//! revokes nothing, and neither window acts on what it shows.
 
 #![cfg(target_os = "linux")]
 
@@ -52,6 +61,13 @@ mod atomic_output;
 mod atomic_test;
 mod cursor;
 mod default_cursor;
+mod desktop_list;
+mod desktop_look;
+mod desktop_paint;
+mod desktop_raster;
+mod desktop_seat;
+#[cfg(test)]
+mod desktop_testing;
 mod direct_input_loop;
 mod direct_keyboard;
 mod direct_loop;
@@ -61,6 +77,7 @@ mod direct_seat;
 mod direct_session;
 mod direct_target;
 mod display_resources;
+mod dock_raster;
 mod drawing;
 mod drm_events;
 mod drm_inventory;
@@ -71,6 +88,9 @@ mod egress_status_place;
 mod egress_status_raster;
 #[cfg(test)]
 mod egress_status_testing;
+mod filling_keys;
+mod filling_rows;
+mod filling_window;
 mod flip_gate;
 mod keyboard;
 mod libinput_routing;
@@ -78,6 +98,7 @@ mod libinput_scroll;
 mod nested;
 mod nested_approval;
 mod nested_control_input;
+mod nested_desktop;
 mod nested_egress_status;
 mod nested_pointer;
 mod nested_reader_frame;
@@ -108,6 +129,9 @@ mod record_testing;
 mod record_window;
 mod resize_transaction;
 mod resource_device;
+mod running_keys;
+mod running_rows;
+mod running_window;
 mod scanout;
 mod scanout_buffer;
 mod scanout_frame;
@@ -193,6 +217,7 @@ pub use approval_raster::ApprovalLook;
 pub use approval_screen::{ApprovalAnswer, ApprovalOutcome, ApprovalScreen, ApprovalShows};
 pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};
 pub use cursor::Cursor;
+pub use desktop_look::DesktopLook;
 pub use direct_keyboard::DirectKeyEvent;
 pub use direct_loop::{DirectFrame, DirectLoopError, DirectLoopResult};
 pub use direct_output::{DirectOutput, DirectOutputError, discover_output};
@@ -204,11 +229,14 @@ pub use display_resources::{DisplayResources, ResourceError, ResourceFailure};
 pub use drm_events::{DisplayEvent, FlipComplete, read_display_events};
 pub use egress_status::EgressStatus;
 pub use egress_status_raster::EgressStatusLook;
+pub use filling_keys::FillingKey;
+pub use filling_window::{FillingPressed, FillingShows, FillingWindow};
 pub use flip_gate::FlipGate;
 pub use keyboard::InputError;
 pub use nested::Nested;
 pub use nested_approval::ApprovalFrame;
 pub use nested_control_input::NestedControlInput;
+pub use nested_desktop::DesktopFrame;
 pub use nested_egress_status::EgressStatusFrame;
 pub use nested_pointer::NestedPointerEvent;
 pub use nested_reader_frame::NestedReaderFrame;
@@ -222,6 +250,8 @@ pub use readback::{ReadbackError, RowOrder, ScanoutPixels, readback_xrgb};
 pub use record_keys::RecordKey;
 pub use record_room::RecordLook;
 pub use record_window::{RecordOpened, RecordShows, RecordWindow};
+pub use running_keys::RunningKey;
+pub use running_window::{RunningPressed, RunningShows, RunningWindow};
 pub use scanout::ActiveScanout;
 pub use scanout_frame::XrgbFrame;
 pub use scene_replacement::SceneReplacement;

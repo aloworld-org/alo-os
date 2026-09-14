@@ -372,6 +372,7 @@ impl Nested {
             cursor,
             crate::scene_native::NativeLayers {
                 scene: controls,
+                desktop: None,
                 record: None,
                 approval: None,
                 status,

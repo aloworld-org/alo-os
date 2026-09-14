@@ -178,7 +178,19 @@ way to reach it must exist beside the agent's. This is the window.
 
 ### 5. The ordinary desktop: the dock, the status area, and what is running
 
-**Status:** ready. **Depends on:** 2.
+**Status:** **Done, 2026-09-14.** `crates/alo-shell/src/desktop_*.rs`,
+`dock_raster.rs`, `running_*.rs`, `filling_*.rs` and `nested_desktop.rs`;
+evidence and decisions in
+`docs/autonomy/updates/the-ordinary-desktop-drawn-dock-status-area-and-measuring-windows.md`.
+The code only — a certified machine has not seen it. **The clock, battery,
+network and volume are not in the status area**: no crate measures a battery,
+a network's state or a volume, and none decides how a time is written for a
+region, so drawing them would be deciding in a drawing crate. That half of the
+acceptance is task 7, blocked on those crates, rather than a promise quietly
+dropped. Also findings in that report: nothing is in the dock and nothing opens
+either window, because no crate decides either; and the edge is one for every
+display, because `alo-dock` has no per-display exception yet.
+**Depends on:** 2.
 
 `ROADMAP.md` v0.5: *the ordinary desktop* — the furniture a person expects,
 and the frame the other surfaces sit in. `alo-dock` decides the dock's edge
@@ -227,3 +239,28 @@ them has ever been shown.
   machine enforces cannot disagree. Nothing here is a second place to grant:
   making a grant is `alo-picking`, a person standing in a folder and choosing
   it, and revoking is the one action `alo-granted` already enforces.
+
+### 7. The status area's clock, battery, network and volume
+
+**Status:** blocked — on crates that do not exist yet: one that measures the
+battery and the network's state and says each in the vocabulary, one that
+owns the volume, and a regional way of writing a time (the finding task 4 made
+for dates). **Depends on:** 5.
+
+The half of task 5's acceptance that could not be drawn without deciding it
+here. `docs/features.md`, v0.5: *Status area: clock, battery, network, volume,
+brightness — at the far end of the dock, wherever the dock is.* The status area
+exists (`crate::dock_raster`, a segment at the far end of the band) and the
+egress indicator grows from it; nothing else is in it.
+
+- **Acceptance:** the status area holds the clock, the battery, the network and
+  the volume, each drawn from the crate that measures or owns it and worded in
+  the vocabulary, with a test per item that the number or state drawn is that
+  crate's and none is made here; each reflows with the dock — a row on a dock
+  across the screen, a column on one down it — and none covers the egress
+  indicator's lines; and an item the machine does not have (no battery on a
+  desktop) is **absent**, not drawn empty.
+- **Constraint:** the same as task 5's. The status area shows; it never
+  decides, and it adds no number of its own. Brightness waits for the display
+  work that owns it.
+

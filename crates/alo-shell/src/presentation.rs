@@ -53,6 +53,16 @@ pub enum RenderError {
     /// entry cut.
     #[error("the record window does not fit this output")]
     RecordScene,
+    /// The dock cannot be laid out on this output, an open desktop window
+    /// cannot be held whole in the room the dock leaves, or the desktop was
+    /// laid out for a different output. The frame is refused rather than drawn
+    /// with a row cut or the dock missing.
+    #[error("the desktop does not fit this output")]
+    DesktopScene,
+    /// The desktop was asked to draw in an accent that is not one a person can
+    /// choose — terracotta above all, which means the agent and nothing else.
+    #[error("the desktop refused an accent that is not offered")]
+    AccentRefused,
     /// The target does not support explicit retirement.
     #[error("target does not support output retirement")]
     RetirementUnsupported,

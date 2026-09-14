@@ -30,6 +30,10 @@ alo-greeting = { path = "../alo-greeting" }
 # compositor is handed, made from the machine's own `alo_egress::Indicator`.
 # This crate draws it and never decides what may leave.
 alo-indicator = { path = "../alo-indicator" }
+# What is running and what is filling the disk: the readings and the count the
+# two desktop windows draw, every number as the kernel or the count gave it.
+# Read, never acted on — `tests/desktop_source.rs` holds the windows to that.
+alo-measuring = { path = "../alo-measuring" }
 # The record's own question, asked of the whole record: `Asking::anything()`
 # and nothing narrower, so the record window has no filter that could hide a
 # refusal. Read, never written — `tests/record_source.rs` holds it to that.

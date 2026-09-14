@@ -114,6 +114,7 @@ impl Nested {
             cursor,
             NativeLayers {
                 scene: controls.map(NativeScene::Controls),
+                desktop: None,
                 record: Some(&account),
                 approval: question.as_ref(),
                 status: Some(&status),
