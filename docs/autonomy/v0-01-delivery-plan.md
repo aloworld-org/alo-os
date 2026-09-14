@@ -367,7 +367,15 @@ knows not to start.
 
 ### 13. A sign-in surface, and what starts it
 
-**Status:** ready — **unblocked 2026-09-11**, when
+**Status:** ready, and **being built since 2026-09-14 as task 1 of**
+`docs/autonomy/v0-5-the-shell-plan.md` — whoever runs *this* plan must not
+take it up as well. It sat ready for three days with nobody assigned: it was
+the away desktop lane's, and the rule reserving `crates/alo-shell` was not
+lifted until the owner asked what was blocking the remaining work. When the
+shell plan's task 1 publishes, this is marked done by that report, and task
+10 — the image carrying a shell to boot *to* — unblocks with it.
+
+Unblocked **2026-09-11**, when
 `docs/decisions/0024-what-a-person-signs-in-at.md` was accepted as Option B
 after the measurement it owed was taken: `logind` opens a session for a
 privileged caller that is not `pam_systemd` (`Invalid leader PID` from root is

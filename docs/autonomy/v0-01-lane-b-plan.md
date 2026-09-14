@@ -485,10 +485,29 @@ below is written from this outcome and was written in the same change.
 
 ### 10. A model on the disk, sized for the machine it lands on
 
-**Status:** blocked. **Depends on:** 9, and on the catalogue having an entry that
-clears the verb-driving bar.
+**Status:** ready — **unblocked 2026-09-14.** **Depends on:** 9.
 
-**Blocked for a truer reason, measured 2026-09-13/14** (the v0.5 plan's tasks
+**The precondition this waited on has been met.** It said *the catalogue
+having an entry that clears the verb-driving bar*, and since ADR 0034 the
+catalogue has one: `qwen2.5-7b-instruct` at four bits drove **80 of 80,
+`reliably`**, asked in the envelope under instructions that show an example
+through every door, on an Apple M3 with 8 GB under the pinned Ollama 0.34.0.
+The same weights at five bits also clear it. What took it there was not a
+bigger model and not a different runtime — it was showing the instructions'
+propose door beside its read door, which is what three of the five failures
+had been reaching for.
+
+**Two things this task must therefore say, and neither weakens it.** The
+grade was earned **in the envelope**, and a shipped machine's agent turn does
+not yet ask that way — that is lane A's task 13 on the local-network plan. So
+the weights this task puts on the disk are weights whose grade is real and
+whose road into the product is one task from finished; if lane A's wiring has
+not landed when this is built, the report says so in its first paragraph and
+the catalogue's recommendation still reads the free grade (ADR 0032 §5). And
+the four entries larger than 8 GB remain unmeasured, which changes nothing
+here: this task needs **an** entry that clears the bar, and it has one.
+
+**Superseded, kept for the record — the block as it read on 2026-09-13/14** (the v0.5 plan's tasks
 1, 2 and 4, on an Apple M3 with 8 GB under the pinned Ollama 0.34.0). The block
 used to read as a machine too small to measure the 7B entries. They have been
 measured, and it is not that: `qwen2.5-7b-instruct` drove 4 of 10,
