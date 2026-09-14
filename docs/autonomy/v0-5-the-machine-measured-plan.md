@@ -333,7 +333,25 @@ were now, and the person has no way to tell.
 
 ### 8. One search over every indexed folder, each answer saying which folder and how old
 
-**Status:** ready. **Depends on:** 4, 6, 7.
+**Status:** done. **Depends on:** 4, 6, 7.
+
+**Done, 2026-09-14.** Report:
+[`updates/one-search-over-every-indexed-folder.md`](updates/one-search-over-every-indexed-folder.md).
+`crates/alo-finding`: `Indexed::answer` puts one `Query` to every folder
+on the list in one call and hands back an `Everywhere` — one `OfFolder`
+per folder, in the list's order, each carrying the folder and either a
+`Held` (what matched, what was not searched, the moment its index was
+made, held apart from the index it came from) or the `NotIndexed` that
+stood where the answer would be: the index file could not be read, is
+not an index, or is another folder's. A test tears one index file of
+three and gets two answers and one refusal naming the file; the query is
+checked once before any index file is opened, held to the kernel's
+per-thread read count; an empty list answers with no folders and no
+refusal. `Held` is the owned shape of an `Answer`, decided in the report
+because an `Answer` borrows an index that is gone when the call returns,
+and its borrowing view keeps every sentence said by one piece of code.
+The verb, the door and the list are unchanged; the shipped-source test
+reads the two new files and still says so.
 
 A person's search box is not a folder's. Task 6 made the list the one place
 that says which folders are indexed, and task 7 made every answer say how
@@ -368,3 +386,39 @@ about a folder it never looked at.
   own task and checked at the door like any other. The list is still not a
   grant. Nothing here opens a socket, reads a clock or watches a folder,
   and the shipped-source test keeps saying so.
+
+### 9. The indexes read once and asked many times, and a search over every folder timed
+
+**Status:** ready. **Depends on:** 7, 8.
+
+Task 8 made one search over every indexed folder one call. What that call
+does on every query is read every index file from the disk again: a person
+typing *contract* into a search box fires a query per keystroke, and three
+folders of ten thousand entries are three files parsed per keystroke. Nobody
+has measured what that costs. Task 4 timed the answer from an index already
+in hand; the read of the file before it was never timed, and a number nobody
+measured is a claim. And a file manager that decided to keep the indexes in
+hand between keystrokes would today write its own set of them, its own
+refresh of one by name, and its own memory of which index file would not
+read — three of the loops this plan has been removing one by one.
+
+- **Acceptance:** a test builds three indexes of ten thousand files, times
+  `Indexed::answer` by name and by contents, and the numbers are in the
+  report **with the machine named**, as task 4's are; `alo-finding` offers
+  the list's indexes read from their files once and held in hand — a name
+  the report argues for — answering any number of queries over every folder
+  from memory in the same shape `Indexed::answer` answers, with a test
+  counting reads that shows the second query opens no file; a folder whose
+  index file would not read is the same named refusal, held in the same
+  place beside the others, until the caller reads again; and one folder is
+  brought up to date by its name through the held set in one call — in hand
+  and on the disk, through `Indexed::again` — without the other folders
+  being read again, checked by the read count. The held form is timed
+  beside the file-reading one, and both numbers are published.
+- **Constraint:** holding the indexes in hand is the caller's choice for
+  the caller's lifetime: nothing here caches across processes, writes
+  anything new to the disk, or decides when to read again — no watcher, no
+  thread, no timer, no clock, and the shipped-source test keeps saying so.
+  Nothing ranks. The verb is unchanged, the list is still not a grant, and
+  `Indexed::answer` stays as it is for a caller that wants the disk's word
+  every time.

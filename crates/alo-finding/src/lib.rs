@@ -69,6 +69,22 @@
 //! a grant: a folder being indexed says nothing about whether an agent may
 //! search it, and the list holds folders and nothing the record does.
 //!
+//! # One search over every indexed folder
+//!
+//! A person's search box is not a folder's. [`Indexed::answer`] puts one
+//! [`Query`] to every folder on the list in one call and hands back an
+//! [`Everywhere`]: one [`OfFolder`] per folder, **in the list's order**, each
+//! carrying the folder it is of and either a [`Held`] — what matched, what
+//! was not searched and the moment its index was made, held apart from the
+//! index it came from — or the [`NotIndexed`] that stood where the answer
+//! would be, because its index file could not be read or is not an index.
+//! A folder that would not answer is a named refusal **beside** the others,
+//! never a gap, so that *nothing matched* is never said about a folder
+//! nobody looked at. The query is checked once before any index file is
+//! opened, an empty list answers with no folders and no refusal, and nothing
+//! ranks across folders or within one. It is not a verb: an agent's
+//! `search_files` still names one granted folder.
+//!
 //! # An agent asks the same index, under a grant
 //!
 //! `search_files` is the verb — declared in [`verbs`] in the shape
@@ -107,6 +123,8 @@
 //! | [`Indexed`], [`Indexed::read_from`], [`Indexed::index_of`] | Which folders are indexed, and the index for one by its name |
 //! | [`Indexed::keep`], [`Indexed::forget`] | A folder put on the list with its index, or taken off it with its index removed |
 //! | [`Indexed::again`] | A folder's index brought up to date by its name, in one call |
+//! | [`Indexed::answer`], [`Everywhere`], [`OfFolder`] | One query over every indexed folder: one answer or one named refusal per folder, in the list's order |
+//! | [`Held`], [`Unsearched`] | An answer held apart from the index it came from |
 //! | [`Entry`], [`Kind`], [`Contents`], [`Moment`] | One thing under the folder, and what is known about it |
 //! | [`Covered`] | What the walk could not reach, so a search can say what it did not look at |
 //! | [`NotIndexed`] | The twelve ways there is no index at all |
@@ -138,6 +156,14 @@
 //! // Later — when the caller decides — brought up to date by its name.
 //! let fresh = indexed.again(&index.of, SystemTime::now())?;
 //! assert!(fresh.opened <= index.opened, "only what changed was read");
+//! // One search over every folder the person asked to have indexed.
+//! let everywhere = indexed.answer(&Query::named("contract"))?;
+//! for of in &everywhere.answers {
+//!     match &of.answered {
+//!         Ok(held) => println!("{}: {} found, as of {:?}", of.folder.display(), held.found.len(), held.made),
+//!         Err(why) => println!("{}: {why}", of.folder.display()),
+//!     }
+//! }
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
@@ -147,6 +173,8 @@ pub mod answer;
 pub mod asking;
 pub mod covered;
 pub mod entry;
+pub mod everywhere;
+pub mod held;
 pub mod index;
 pub mod indexed;
 pub mod kind;
@@ -170,6 +198,8 @@ pub use answer::{Answer, NotSearched};
 pub use asking::{A_NAME, A_SENTENCE, NotAsked};
 pub use covered::{Covered, Unread};
 pub use entry::{Contents, Entry, Moment};
+pub use everywhere::{Everywhere, OfFolder};
+pub use held::{Held, Unsearched};
 pub use index::Index;
 pub use indexed::Indexed;
 pub use kind::{Kind, SNIFFED};

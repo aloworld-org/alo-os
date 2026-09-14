@@ -28,6 +28,15 @@ use crate::query::Query;
 /// [`NotAsked`] for a query that is not one, before anything is searched.
 pub(crate) fn answered<'a>(index: &'a Index, query: &Query) -> Result<Answer<'a>, NotAsked> {
     asking::checked(query)?;
+    Ok(searched(index, query))
+}
+
+/// This index's answer to a query already checked to be one.
+///
+/// The pass itself, apart from the check, so that a search over every
+/// indexed folder can check the query once and put it to each index without
+/// a second refusal that could never happen having to be handled anyway.
+pub(crate) fn searched<'a>(index: &'a Index, query: &Query) -> Answer<'a> {
     let started = Instant::now();
 
     let by_words = !query.words().is_empty();
@@ -72,12 +81,12 @@ pub(crate) fn answered<'a>(index: &'a Index, query: &Query) -> Result<Answer<'a>
         }
     }
 
-    Ok(Answer {
+    Answer {
         found,
         not_searched,
         made: index.made,
         took: started.elapsed(),
-    })
+    }
 }
 
 #[cfg(test)]

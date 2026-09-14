@@ -72,6 +72,23 @@ folder not on the list is refused and is not indexed for the first time by
 it; a folder that is gone since it was indexed is refused and its index is
 kept, because an unplugged disk is not a request to forget it.
 
+**One search over every folder on the list.** `Indexed::answer` puts one
+query to every folder on the list in one call and hands back one answer per
+folder, **in the list's order**, each saying which folder it is of, what
+matched, what was not searched, and the moment its index was made — each
+read from that folder's index file, never by walking the folder. A folder
+whose index file could not be read, is not an index, or is an index of
+another folder is a refusal *beside* the other answers, naming the file,
+rather than a folder left out or a search that failed: a search that
+silently skipped a folder would have said *nothing matched* about a folder
+nobody looked at. The query is checked once before the first index file is
+opened; an empty list answers with no folders and no refusal; and nothing
+ranks — across folders the order is the list's, within one it is the
+index's own. This is the person's search, from the file manager's box, and
+it is not a verb: an agent's `search_files` still names one granted folder,
+because a search across every indexed folder under one grant would be a
+search of folders nobody granted.
+
 **Nothing watches.** When an index is brought up to date is the caller's
 decision and nobody else's: there is no `inotify`, no thread and no timer in
 `alo-finding`, and a test reads its shipped source to say so. A crate that

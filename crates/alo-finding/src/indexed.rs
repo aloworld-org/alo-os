@@ -40,13 +40,26 @@
 //! disk would be the background reader `CLAUDE.md` calls a bug, whether or
 //! not what it read was ever shown to a model.
 //!
+//! # One search over every folder on the list
+//!
+//! [`Indexed::answer`] puts one query to every folder on the list in one
+//! call and hands back one answer per folder, in the list's order, each
+//! saying which folder it is of and when its index was made — read from
+//! each index's file, never by walking. A folder whose index file would not
+//! read is a named refusal beside the other answers rather than a gap, so
+//! that *nothing matched* is never said about a folder nobody looked at;
+//! `everywhere.rs` is the search, and `held.rs` the shape of an answer that
+//! outlives the index it came from.
+//!
 //! # The list is not a grant
 //!
 //! A folder being on the list says nothing about whether an agent may search
 //! it. A grant is `alo-capability`'s, asked at the door in `searched.rs`;
 //! this file never names one, and
 //! `tests/which_folders_are_indexed_and_the_index_for_one.rs` indexes a
-//! folder no grant covers and shows the verb still refused.
+//! folder no grant covers and shows the verb still refused. The search over
+//! every folder is the person's, from the file manager's box, and is not a
+//! verb: an agent's `search_files` still names one granted folder.
 //!
 //! # Nothing here reads the environment
 //!
@@ -57,10 +70,13 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+use crate::asking::NotAsked;
+use crate::everywhere::Everywhere;
 use crate::index::Index;
 use crate::keeping;
 use crate::listed;
 use crate::place;
+use crate::query::Query;
 use crate::refusing::NotIndexed;
 
 /// The folders a person asked to have indexed, and the directory their
@@ -217,6 +233,33 @@ impl Indexed {
         let fresh = kept.again(made)?;
         self.keep(&fresh)?;
         Ok(fresh)
+    }
+
+    /// This query, put to every folder on the list in one call: one answer
+    /// per folder, in the list's order, each saying which folder it is of,
+    /// what matched, what was not searched, and the moment its index was
+    /// made — each read from that folder's index file, and never by walking
+    /// the folder.
+    ///
+    /// A folder whose index file could not be read, is not an index, or is
+    /// an index of another folder is a refusal **beside** the other answers,
+    /// named in its [`crate::OfFolder`], rather than a folder missing from
+    /// the list or a search that failed; the other folders still answer. An
+    /// empty list answers with no folders and no refusal: nothing asked for
+    /// is nothing to search. Nothing ranks across folders or within one.
+    ///
+    /// Not a verb: an agent's `search_files` still names one granted folder
+    /// and takes one index through [`crate::Searched::of`], because a search
+    /// across every indexed folder under one grant would be a search of
+    /// folders nobody granted.
+    ///
+    /// # Errors
+    ///
+    /// [`NotAsked`] for a query that is not one — nothing asked, more than a
+    /// sentence, a part longer than a name — refused once, before any index
+    /// file is opened.
+    pub fn answer(&self, query: &Query) -> Result<Everywhere, NotAsked> {
+        crate::everywhere::answered(self, query)
     }
 
     /// Forget this folder: its index file removed, and the folder taken off
