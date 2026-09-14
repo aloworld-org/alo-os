@@ -41,6 +41,13 @@ fn every_grade_the_catalogue_ships_names_instructions_this_crate_has() {
             .measured_in_the_envelope
             .as_ref()
             .map(|on| named_by(on, &format!("{}, in the envelope", entry.id)));
+        let the_entrys_way = entry.measured_in_the_envelope.as_ref().map(|on| {
+            (
+                on.instructions.as_deref(),
+                on.runtime.as_str(),
+                on.held_to.as_deref(),
+            )
+        });
         for also in &entry.also_at {
             let at = named_by(
                 &also.measured_in_the_envelope,
@@ -60,11 +67,14 @@ fn every_grade_the_catalogue_ships_names_instructions_this_crate_has() {
             }
         }
         for also in &entry.also_under {
-            let under = named_by(
+            named_by(
                 &also.measured_in_the_envelope,
-                &format!("{}, under other instructions", entry.id),
+                &format!("{}, measured another way", entry.id),
             );
-            assert_ne!(Some(under), own, "{}", entry.id);
+            // Another way is another set of instructions, another runtime, or
+            // another shape holding the answer — and never all three the same
+            // as the grade it sits beside (ADR 0034, ADR 0035).
+            assert_ne!(Some(also.the_way()), the_entrys_way, "{}", entry.id);
             named += 1;
         }
         named += usize::from(own.is_some());

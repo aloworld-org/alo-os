@@ -9,14 +9,17 @@
 
 use alo_answering::Answering;
 use alo_asking::{Answer, Asking, NotAnswered, Question};
+use std::net::SocketAddr;
+
+use alo_asking::Served;
 use alo_capability::{Grantee, Verbs};
 use alo_driving::{Attempt, Exercises, Instructions, Measured};
-use alo_models::{Driving, InferenceSource, Ollama, SourcePolicy};
+use alo_models::{Driving, InferenceSource, Ollama, Provider, Region, SourcePolicy};
 
 /// **How the model is asked**, which is part of what a grade is a grade of
 /// ([ADR 0032](../../../../docs/decisions/0032-a-local-model-is-held-to-the-envelope-not-the-call.md)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Asked {
+pub enum Asked<'a> {
     /// As the catalogue's `drives_verbs` was earned: the question and nothing
     /// else, through `alo-asking`'s door that does not leave the machine.
     Freely,
@@ -25,14 +28,22 @@ pub enum Asked {
     /// `alo-asking`'s `Asking::to_this_machine_in_the_envelope`, the door an
     /// agent turn takes, so the measurement and the product ask in one way.
     InTheEnvelope,
+    /// As [ADR 0035](../../../../docs/decisions/0035-the-wrapper-or-the-engine.md)
+    /// puts on trial: every token of the answer held to this grammar, by a
+    /// service on this machine that takes one — `llama.cpp`'s server — through
+    /// `alo-asking`'s `to_a_service_on_this_machine_held_to`. The envelope, the
+    /// door, the verb's spelling and its argument names are held by
+    /// construction; which verb, and the values, are the model's.
+    HeldToTheWholeCall(&'a str),
 }
 
-impl Asked {
+impl Asked<'_> {
     /// How a report and a catalogue comment name it.
     pub fn named(self) -> &'static str {
         match self {
             Self::Freely => "freely",
             Self::InTheEnvelope => "in the envelope",
+            Self::HeldToTheWholeCall(_) => "held to the whole call",
         }
     }
 }
@@ -92,7 +103,7 @@ fn put(
 
 /// One question, asked the way `asked` says, answered with the model's text.
 fn put_as(
-    asked: Asked,
+    asked: Asked<'_>,
     text: &str,
     model: &str,
     runtime: &Ollama,
@@ -126,8 +137,42 @@ fn put_as(
                 })
                 .map_err(|why| format!("{why:?}"))
         }
+        Asked::HeldToTheWholeCall(grammar) => {
+            let question = Question::asked(text, model).expect("a question the harness wrote");
+            // The engine's server is a service on this machine's address, which
+            // is what `Served` refuses every other address to be. It is asked
+            // through the door for one, with the answer held to the grammar.
+            let service =
+                Provider::checked("the engine's server", ENDPOINT_HERE, Region::Unknown, None)
+                    .expect("a provider on loopback");
+            let served = Served::at(&service, None).expect("a service on this machine");
+            let answering =
+                Answering::chosen(InferenceSource::AServiceAtThisMachinesAddress, policy)
+                    .expect("no policy forbids a service on this machine answering");
+            let to: Vec<SocketAddr> =
+                vec![THE_ENGINES_PORT.parse().expect("an address on loopback")];
+            Asking::by(agent, answering, &[], policy)
+                .to_a_service_on_this_machine_held_to(&question, &served, &to, grammar)
+                .map(|answer| {
+                    assert_eq!(
+                        answer.source(),
+                        &InferenceSource::AServiceAtThisMachinesAddress,
+                        "a measurement whose answers came from anywhere else is not this measurement"
+                    );
+                    answer.text().to_owned()
+                })
+                .map_err(|why| format!("{why:?}"))
+        }
     }
 }
+
+/// Where the engine's server listens for the trial (task 17), as an address and
+/// as the endpoint a provider is checked against. Loopback, and never a name:
+/// this crate's measurement resolves nothing.
+const THE_ENGINES_PORT: &str = "127.0.0.1:8081";
+
+/// The same, as a provider's endpoint.
+const ENDPOINT_HERE: &str = "http://127.0.0.1:8081";
 
 /// How a catalogue entry, or a person's settings, writes the grade.
 ///
@@ -181,7 +226,7 @@ pub fn the_fixed_set_put_to(
     model: &str,
     endpoint: &str,
     rounds: usize,
-    asked: Asked,
+    asked: Asked<'_>,
     instructions: Instructions,
 ) -> Measured {
     let verbs = the_verbs();
@@ -203,7 +248,7 @@ pub fn the_fixed_set_put_to(
         instructions.named(),
         instructions.digest()
     );
-    let warmed = put(TO_WARM_IT_UP, model, &runtime, &measuring, &policy);
+    let warmed = put_as(asked, TO_WARM_IT_UP, model, &runtime, &measuring, &policy);
     assert!(
         warmed.is_ok(),
         "{model} at {endpoint} did not answer at all, so nothing was measured: {warmed:?}"

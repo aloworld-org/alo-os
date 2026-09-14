@@ -303,6 +303,7 @@ mod tests {
                     of: None,
                     loaded_bytes: None,
                     on_the_gpu_bytes: None,
+                    held_to: None,
                     instructions: None,
                 },
             ))

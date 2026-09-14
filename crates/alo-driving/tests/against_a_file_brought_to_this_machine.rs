@@ -65,6 +65,7 @@ fn the_fixed_set_put_to_a_file_somebody_brought() {
         on_the_gpu_bytes: None,
         // A brought file is measured under the instructions every catalogue
         // grade before ADR 0034 was, and its grade says so.
+        held_to: None,
         instructions: Some(alo_driving::Instructions::AsFirstWritten.digest()),
     };
     let settings = measuring::said("ALO_DRIVING_SETTINGS").map(PathBuf::from);

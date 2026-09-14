@@ -407,7 +407,7 @@ is not a bar either.
 
 ### 17. The same ten exercises through the engine's own server, held to the whole call
 
-**Status:** ready. **Depends on:** 12, 16.
+**Status:** **Done, 2026-09-14.** **Depends on:** 12, 16.
 
 [ADR 0035](../decisions/0035-the-wrapper-or-the-engine.md) is *proposed*, and
 this task is what accepts or rejects it. Every friction the measuring lane

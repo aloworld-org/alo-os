@@ -191,6 +191,26 @@ struct Sent {
     stream: bool,
 }
 
+/// The same question, with the answer held to a grammar.
+///
+/// A second shape rather than a field on [`Sent`], because [`Sent`] is also what
+/// a body arriving here is read by: widening it would widen what this machine
+/// accepts from the wire, and this is only ever sent. `grammar` is `llama.cpp`'s
+/// own field on the OpenAI-shaped API, which a service that does not have it
+/// answers 400 to — reported as *something answered, and not with an answer*,
+/// which is what it is (task 17, ADR 0035).
+#[derive(Serialize)]
+struct HeldToAGrammar {
+    /// The model to answer it.
+    model: String,
+    /// The question, as the one message in this conversation.
+    messages: Vec<Message>,
+    /// Whole answers only.
+    stream: bool,
+    /// What every token of the answer must be part of, in GBNF.
+    grammar: String,
+}
+
 /// One message in that shape.
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -367,6 +387,63 @@ pub(crate) fn put(
     to: &[SocketAddr],
     vouching: Option<Vouching<'_>>,
 ) -> Result<String, WentWrong> {
+    let sent = Sent {
+        model: question.of().to_owned(),
+        messages: vec![Message {
+            role: THE_PERSON.to_owned(),
+            content: question.text().to_owned(),
+        }],
+        stream: false,
+    };
+    // Serialised here, compactly, so that the bytes a proof is made over are
+    // the bytes on the wire; `send_json` would serialise again on its own
+    // terms (`docs/quirks.md`, ureq 3.4.0).
+    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
+    sending(endpoint, key, &body, waiting, to, vouching)
+}
+
+/// **Put the question, and hold every token of the answer to `grammar`.**
+///
+/// The same request as [`put`] with one field more, and no caller of [`put`]
+/// changes: a grammar is the engine's own way of holding a model to a shape, and
+/// nothing but the measurement asks for one today. It carries no proof, because
+/// the corridor does not take this road — a paired machine is asked the question
+/// its own turn wrote, not one held to this machine's verbs.
+///
+/// # Errors
+/// [`WentWrong`], as [`put`] answers it. A service that does not know the field
+/// answers 400, which reaches a person as *something answered, and not with an
+/// answer*.
+pub(crate) fn put_held_to_a_grammar(
+    endpoint: &str,
+    key: Option<&Secret>,
+    question: &Question,
+    waiting: Duration,
+    to: &[SocketAddr],
+    grammar: &str,
+) -> Result<String, WentWrong> {
+    let sent = HeldToAGrammar {
+        model: question.of().to_owned(),
+        messages: vec![Message {
+            role: THE_PERSON.to_owned(),
+            content: question.text().to_owned(),
+        }],
+        stream: false,
+        grammar: grammar.to_owned(),
+    };
+    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
+    sending(endpoint, key, &body, waiting, to, None)
+}
+
+/// The one road both of them take: this address, these bytes, that long.
+fn sending(
+    endpoint: &str,
+    key: Option<&Secret>,
+    body: &[u8],
+    waiting: Duration,
+    to: &[SocketAddr],
+    vouching: Option<Vouching<'_>>,
+) -> Result<String, WentWrong> {
     let Some(only_these) = OnlyThese::of(to) else {
         // Nowhere was registered, so there is nowhere to go. Refused here
         // rather than left to the client, which would resolve the name itself
@@ -407,25 +484,13 @@ pub(crate) fn put(
         None => request,
     };
 
-    let sent = Sent {
-        model: question.of().to_owned(),
-        messages: vec![Message {
-            role: THE_PERSON.to_owned(),
-            content: question.text().to_owned(),
-        }],
-        stream: false,
-    };
-    // Serialised here, compactly, so that the bytes a proof is made over are
-    // the bytes on the wire; `send_json` would serialise again on its own
-    // terms (`docs/quirks.md`, ureq 3.4.0).
-    let body = serde_json::to_vec(&sent).map_err(|_| WentWrong::NothingUsable)?;
     let request = request.header("content-type", "application/json");
     let down_the_corridor = vouching.is_some();
     let request = match vouching {
-        Some(vouch) => request.header(crate::corridor::THE_PROOF_HEADER, vouch(&body)),
+        Some(vouch) => request.header(crate::corridor::THE_PROOF_HEADER, vouch(body)),
         None => request,
     };
-    let mut response = request.send(&body).map_err(what_went_wrong)?;
+    let mut response = request.send(body).map_err(what_went_wrong)?;
     let status = response.status().as_u16();
     // Two statuses in this convention are ambiguous, and the name inside the
     // refusal is the only thing that resolves them: a `403` is a refused key

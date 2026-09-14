@@ -63,6 +63,10 @@ const NOTHING_IS_THIS_LARGE: f64 = 4.5;
 /// could write would be a way to introduce a model nobody curated.
 const BUILT_IN: &str = include_str!("../data/catalogue.toml");
 
+/// Why two grades measured the same way are refused.
+const THE_SAME_WAY_TWICE: &str = "two grades measured the same way — the same instructions, the \
+     same runtime and the same shape holding the answer: write the larger sample once";
+
 /// Why a catalogue grade that does not name its instructions is refused
 /// ([ADR 0034](../../../docs/decisions/0034-the-instructions-show-every-door-they-ask-a-model-to-choose.md)).
 const THE_INSTRUCTIONS_UNNAMED: &str = "a grade that does not name the instructions it was earned \
@@ -578,10 +582,7 @@ impl Catalogue {
                     return Err(invalid(what));
                 }
             }
-            let the_entrys = model
-                .measured_in_the_envelope
-                .as_ref()
-                .and_then(|on| on.instructions.as_deref());
+            let the_entrys = model.measured_in_the_envelope.as_ref();
             for (at, also) in model.also_under.iter().enumerate() {
                 if let Some(what) = also.what_is_wrong_with_it(the_entrys) {
                     return Err(invalid(what));
@@ -590,12 +591,9 @@ impl Catalogue {
                     .also_under
                     .iter()
                     .skip(at + 1)
-                    .any(|later| later.instructions() == also.instructions())
+                    .any(|later| later.the_way() == also.the_way())
                 {
-                    return Err(invalid(
-                        "two grades under the same other instructions: write the larger sample \
-                         once",
-                    ));
+                    return Err(invalid(THE_SAME_WAY_TWICE));
                 }
             }
             // A template is configuration of a file, so it needs a file, and it
@@ -1356,14 +1354,14 @@ instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02
         assert_eq!(model.drives_verbs_in_the_envelope, Some(Driving::Sometimes));
         let also = model.also_under.first().unwrap();
         assert_eq!(also.drives_verbs_in_the_envelope, Driving::Reliably);
+        let own = model.measured_in_the_envelope.as_ref().unwrap();
         assert_ne!(
-            also.instructions(),
-            model
-                .measured_in_the_envelope
-                .as_ref()
-                .unwrap()
-                .instructions
-                .as_deref()
+            also.the_way(),
+            (
+                own.instructions.as_deref(),
+                own.runtime.as_str(),
+                own.held_to.as_deref()
+            )
         );
 
         let twice = Catalogue::parse(&(entry.clone() + UNDER + UNDER)).unwrap_err();

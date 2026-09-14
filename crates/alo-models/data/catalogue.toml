@@ -498,6 +498,53 @@ loaded_bytes = 5_197_833_172
 on_the_gpu_bytes = 4_583_210_351
 instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
 
+# Task 17, and the trial ADR 0035 was **rejected** on. The same file — the same
+# bytes on this disk, never re-fetched — served by `llama.cpp`'s own server
+# (0.4.0, build 10809, commit 5266f24da) instead of the pinned runtime, with every
+# token held to a grammar for the **whole call** in the protocol's key order,
+# which the pinned runtime cannot do because it orders a schema's keys
+# alphabetically. Two runs, one per set of instructions, so the only thing that
+# differs from the grades above is the runtime and what held the answer:
+#
+# - under ADR 0034's instructions: **80 of 80**, the same as the pinned runtime;
+# - under the first instructions: **65 of 80**, where the pinned runtime earned 71.
+#
+# The grammar makes a wrong door impossible, so the model's pull toward `read`
+# came out as the wrong **verb** instead — `read_file` for a rename, fifteen times.
+# Holding more of the call did not hold the model to the request. `docs/quirks.md`
+# has it, and the report has every answer.
+#
+# The engine reports no residency (there is no `/api/ps` on it), so what is written
+# here is the file's own size with every layer on the graphics processor (`-ngl 99`),
+# which is what was served, rather than a reading the runtime made.
+[[model.also_under]]
+drives_verbs_in_the_envelope = "reliably"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "llama.cpp 0.4.0 (build 10809, commit 5266f24da)"
+drove = 80
+of = 80
+loaded_bytes = 4_683_073_952
+on_the_gpu_bytes = 4_683_073_952
+held_to = "efa8b951cbb44e6fdd41dfb7b1bcd5dc3196e14a5ab725be67dc26b0975bbae8"
+instructions = "93a7f458ce9d017d6d12759a281e5f0b347a0d6963c04eae03b4c30581aebd02"
+
+[[model.also_under]]
+drives_verbs_in_the_envelope = "sometimes"
+
+[model.also_under.measured_in_the_envelope]
+machine = "Apple M3, 8 GB unified memory, macOS 26.5.2, weights on the GPU through Metal"
+date = "2026-09-14"
+runtime = "llama.cpp 0.4.0 (build 10809, commit 5266f24da)"
+drove = 65
+of = 80
+loaded_bytes = 4_683_073_952
+on_the_gpu_bytes = 4_683_073_952
+held_to = "efa8b951cbb44e6fdd41dfb7b1bcd5dc3196e14a5ab725be67dc26b0975bbae8"
+instructions = "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce"
+
 # Task 13: the same weights at five bits, in the envelope, forty attempts, with
 # 1.4 GB of them off the graphics processor. Six bits (`qwen2.5:7b-instruct-q6_K`,
 # 6,254,199,200 bytes) was not fetched: loaded it would put some 2.4 GB of weights

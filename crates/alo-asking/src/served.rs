@@ -167,6 +167,27 @@ impl<'a> Served<'a> {
         )
     }
 
+    /// Put the question, holding every token of the answer to `grammar`.
+    ///
+    /// Reached only by [`Asking::to_a_service_on_this_machine_held_to`], for
+    /// [`Served::ask`]'s reason, and `pub(crate)` rather than private because
+    /// that door is its own file (`held_to_the_whole_call.rs`).
+    pub(crate) fn ask_held_to(
+        &self,
+        question: &Question,
+        to: &[SocketAddr],
+        grammar: &str,
+    ) -> Result<String, alo_answering::WentWrong> {
+        openai::put_held_to_a_grammar(
+            &self.provider.endpoint,
+            self.key,
+            question,
+            WHILE_THIS_MACHINE_THINKS,
+            to,
+            grammar,
+        )
+    }
+
     /// The host and port this would connect to, for somebody to resolve.
     ///
     /// A service on this machine is loopback, which the boundary does not check

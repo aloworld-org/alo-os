@@ -61,7 +61,7 @@
 //! | `ALO_DRIVING_MODEL` | What the runtime calls the model. Not the catalogue's `id` — the two are different namespaces, and matching them is the job of whoever writes the entry down |
 //! | `ALO_DRIVING_ENDPOINT` | Where the runtime is, defaulting to `alo_models::ollama::DEFAULT_ENDPOINT` |
 //! | `ALO_DRIVING_ROUNDS` | How many times to put the whole set, defaulting to one. A model is not deterministic, and `measured.rs` says repeats are a bigger sample rather than a different method |
-//! | `ALO_DRIVING_ASKED` | `in-the-envelope` to hold the answer to the protocol's envelope (ADR 0032), which earns `drives_verbs_in_the_envelope`; unset to ask freely, which earns `drives_verbs` |
+//! | `ALO_DRIVING_ASKED` | `in-the-envelope` to hold the answer to the protocol's envelope (ADR 0032), which earns `drives_verbs_in_the_envelope`; `held-to-the-whole-call` to hold every token of it to a grammar for the whole call, served by `llama.cpp`'s server on `127.0.0.1:8081` (ADR 0035, task 17); unset to ask freely, which earns `drives_verbs` |
 //! | `ALO_DRIVING_INSTRUCTIONS` | `one-example-per-door` to open every prompt with `alo_driving::ONE_EXAMPLE_PER_DOOR` (ADR 0034); unset for the instructions every grade before it was earned under. The run prints their digest, which the grade records |
 //!
 //! The loop itself is `tests/measuring/mod.rs`, shared with
@@ -110,10 +110,24 @@ fn the_fixed_set_put_to_a_model_that_exists() {
         rounds > 0,
         "{HOW_MANY_ROUNDS} must be a whole number of rounds, and at least one"
     );
+    // The grammar is written from the registry the run is scored against, so it
+    // cannot name a verb the scoring does not have (task 17).
+    let grammar = alo_driving::grammar_for(&measuring::the_verbs());
     let asked = match measuring::said(HOW_IT_IS_ASKED).as_deref() {
         None => measuring::Asked::Freely,
         Some("in-the-envelope") => measuring::Asked::InTheEnvelope,
-        Some(other) => panic!("{HOW_IT_IS_ASKED} is `in-the-envelope` or unset, not `{other}`"),
+        Some("held-to-the-whole-call") => {
+            println!(
+                "held to a grammar of {} bytes, sha256 {}",
+                grammar.len(),
+                alo_driving::digest_of(&grammar)
+            );
+            measuring::Asked::HeldToTheWholeCall(&grammar)
+        }
+        Some(other) => panic!(
+            "{HOW_IT_IS_ASKED} is `in-the-envelope`, `held-to-the-whole-call` or unset, not \
+             `{other}`"
+        ),
     };
     let instructions = match measuring::said(WHICH_INSTRUCTIONS).as_deref() {
         None => alo_driving::Instructions::AsFirstWritten,

@@ -2768,6 +2768,49 @@ reads neither, because an agent turn is not yet shown these instructions.
 Whoever writes the turn's prompt writes an example for each door it offers.
 **Date:** 2026-09-14.
 
+### A grammar that forbids the wrong door moves the failure, it does not remove it
+**Version:** `llama.cpp` 0.4.0 (build 10809, commit 5266f24da) serving
+`qwen2.5:7b-instruct-q4_K_M` on an Apple M3 with 8 GB unified memory;
+`alo-driving` as of 2026-09-14.
+**Behaviour:** the engine's server takes a GBNF grammar, so the whole call can be
+held in the protocol's own key order — which the pinned runtime cannot do,
+because it orders a schema's keys alphabetically (ADR 0032). Held that way, the
+door a verb takes is decided by the grammar and a change through the read door is
+unreachable. Under the first instructions, which show only a `read` example, the
+model then produced **the wrong verb** instead: `read_file` for a rename five
+times in eighty, `read_file` for a close five times, `find_in_folder` for a close
+three times, and two more — 65 of 80, against 71 of 80 for the same weights
+through the pinned runtime under the same instructions. Under ADR 0034's
+instructions both were 80 of 80.
+**Our response:** [ADR 0035](decisions/0035-the-wrapper-or-the-engine.md),
+rejected on it. A constraint on the shape of an answer is not a fix for a model
+reading the request wrongly: it relocates the failure from the door, where
+`alo_capability::Authorised::read` refuses it, to the verb, where the call is
+well-formed and a machine would act on it. `alo-driving`'s measurement catches a
+wrong verb because every exercise names the verb a correct answer calls; nothing
+at runtime would. What fixed this failure was the instructions (ADR 0034), not
+the constraint.
+**Date:** 2026-09-14.
+
+### The engine's own server does not place a model that does not fit, and the wrapper does
+**Version:** `llama.cpp` 0.4.0 (build 10809) and Ollama 0.34.0 on an Apple M3
+with 8 GB unified memory, macOS 26.5.2.
+**Behaviour:** `qwen2.5:7b-instruct-q5_K_M` is 5,444,831,648 bytes and does not
+fit the graphics processor's working set on this machine. The pinned runtime
+serves it anyway, splitting it — 5,959,592,178 bytes loaded, 4,563,287,407 of
+them on the graphics processor — and it was graded twice that way.
+`llama-server -ngl 99` loads, then fails every request with
+*Insufficient Memory (kIOGPUCommandBufferCallbackErrorOutOfMemory)* and answers
+500. Told by hand to keep 21 of its 28 layers on the processor it serves, at 256
+seconds for one sixty-token answer, past the five minutes `alo_models` waits.
+**Our response:** recorded against [ADR 0035](decisions/0035-the-wrapper-or-the-engine.md),
+which was rejected with this as one of its reasons. The wrapper's model
+placement is a feature of the wrapper, not an accident of it, and a machine sold
+with 8 GB is exactly where it matters. Whoever proposes the engine again owns
+the placement decision on the smallest certified machine, and the five-bit
+weights are the test case.
+**Date:** 2026-09-14.
+
 ## Providers and their APIs
 
 A provider somebody adds themselves is a service nobody here operates, behind an

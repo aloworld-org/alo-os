@@ -167,6 +167,7 @@ pub mod question;
 // has run out. Private for `openai.rs`'s reason and one file of its own for law
 // 4's — it is a list of somebody else's identifiers, and it changes when they
 // do rather than when the wire does.
+pub mod held_to_the_whole_call;
 mod ran_out;
 pub mod refused_on_the_wire;
 pub mod refusing;

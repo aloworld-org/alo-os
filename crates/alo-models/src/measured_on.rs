@@ -87,6 +87,14 @@ pub struct MeasuredOn {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub on_the_gpu_bytes: Option<u64>,
 
+    /// **What the answer was held to**, as the SHA-256 of the grammar's text —
+    /// [`None`] where nothing held it beyond the envelope, which is every grade
+    /// the pinned runtime earned. `alo-driving`'s `grammar_for` writes the
+    /// grammar a digest is of (task 17,
+    /// [ADR 0035](../../../docs/decisions/0035-the-wrapper-or-the-engine.md)).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub held_to: Option<String>,
+
     /// **The instructions the model was shown**, as the SHA-256 of their text
     /// in sixty-four lowercase hexadecimal characters. `alo-driving`'s
     /// `Instructions` names every set a digest can stand for; this crate holds
@@ -121,6 +129,16 @@ impl MeasuredOn {
             return Some(
                 "a runtime with no version: the prompt reaches the weights through it, so name \
                  the runtime and the release that served the run",
+            );
+        }
+        if self
+            .held_to
+            .as_deref()
+            .is_some_and(|digest| !is_a_digest(digest))
+        {
+            return Some(
+                "a shape that is not a digest: name what held the answer by the SHA-256 of its \
+                 text, in sixty-four lowercase hexadecimal characters",
             );
         }
         if self
@@ -256,6 +274,7 @@ mod tests {
             of: Some(20),
             loaded_bytes: None,
             on_the_gpu_bytes: None,
+            held_to: None,
             instructions: Some(
                 "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce".to_owned(),
             ),
@@ -266,6 +285,7 @@ mod tests {
     #[test]
     fn instructions_named_by_anything_but_a_digest_are_refused() {
         let unnamed = MeasuredOn {
+            held_to: None,
             instructions: None,
             ..sound()
         };
@@ -278,6 +298,7 @@ mod tests {
             "",
         ] {
             let wrong = MeasuredOn {
+                held_to: None,
                 instructions: Some(written.to_owned()),
                 ..sound()
             };

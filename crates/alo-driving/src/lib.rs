@@ -69,6 +69,7 @@ pub mod exercise;
 pub mod exercises;
 pub mod instructions;
 pub mod measured;
+pub mod the_whole_call;
 
 #[cfg(test)]
 mod testing;
@@ -78,3 +79,4 @@ pub use exercise::{Exercise, HOW_TO_ANSWER, prompt, prompt_under};
 pub use exercises::{Exercises, NotComparable, THE_SET};
 pub use instructions::{Instructions, ONE_EXAMPLE_PER_DOOR};
 pub use measured::{Measured, NotMeasurable, RELIABLY, SOMETIMES, grade_of, owes_a_second_round};
+pub use the_whole_call::{digest_of, grammar_for};

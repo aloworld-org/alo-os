@@ -348,6 +348,7 @@ fn the_check_catches_a_finding_that_has_stopped_being_true() {
         of: None,
         loaded_bytes: None,
         on_the_gpu_bytes: None,
+        held_to: None,
         instructions: None,
     };
     let graded: Vec<Said> = unmeasured

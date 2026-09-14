@@ -86,18 +86,16 @@ impl AlsoAt {
             );
         }
         for (at, also) in self.also_under.iter().enumerate() {
-            if let Some(what) = also.what_is_wrong_with_it(on.instructions.as_deref()) {
+            if let Some(what) = also.what_is_wrong_with_it(Some(on)) {
                 return Some(what);
             }
             if self
                 .also_under
                 .iter()
                 .skip(at + 1)
-                .any(|later| later.instructions() == also.instructions())
+                .any(|later| later.the_way() == also.the_way())
             {
-                return Some(
-                    "two grades under the same other instructions: write the larger sample once",
-                );
+                return Some("two grades measured the same way: write the larger sample once");
             }
         }
         None
@@ -122,6 +120,7 @@ mod tests {
                 of: Some(40),
                 loaded_bytes: Some(5_959_592_178),
                 on_the_gpu_bytes: Some(4_563_287_407),
+                held_to: None,
                 instructions: Some(
                     "d468e469651d778ae369c53e37816fce62c80f703de729a074bcf8ff44a5adce".to_owned(),
                 ),
@@ -149,6 +148,7 @@ mod tests {
             drives_verbs_in_the_envelope: Driving::Reliably,
             measured_in_the_envelope: MeasuredOn {
                 drove: Some(40),
+                held_to: None,
                 instructions: Some(digest.to_owned()),
                 ..sound().measured_in_the_envelope
             },
