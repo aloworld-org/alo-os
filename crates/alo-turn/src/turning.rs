@@ -630,6 +630,30 @@ impl<'a, 'm> Turning<'a, 'm> {
         self.keeping(entry)
     }
 
+    /// Write down that a pairing with another machine was kept, while this
+    /// turn holds the machine.
+    ///
+    /// [`crate::Machine::a_pairing_was_kept`] for the rounds where a local
+    /// turn holds the machine, and [`crate::Arriving::a_pairing_was_kept`]'s
+    /// twin: the person's own door confirms a pairing whether or not their
+    /// agent is in a turn, and while one is under way there is nothing else
+    /// that can reach the record. The entry is the machine's own — no agent,
+    /// because two people made it and the turn's grantee would be the wrong
+    /// name even though it is to hand.
+    ///
+    /// # Errors
+    ///
+    /// [`alo_keeping::NotKept`] when the record could not be written, and
+    /// the turn is closed by it exactly as
+    /// [`Turning::the_grants_were_not_read_again`] closes one.
+    pub fn a_pairing_was_kept(
+        &mut self,
+        with: &str,
+        now: SystemTime,
+    ) -> Result<(), alo_keeping::NotKept> {
+        self.keeping(Entry::paired(with, now))
+    }
+
     /// What is leaving this machine right now.
     ///
     /// The machine's indicator, lent out while a turn holds the machine — a

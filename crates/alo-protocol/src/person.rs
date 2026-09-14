@@ -1,12 +1,27 @@
 //! What a person's shell sends, on behalf of the person in front of it.
 //!
-//! Four requests. Two of them are the same act — answering a change that was
+//! Eight requests. Two of them are the same act — answering a change that was
 //! put to them in one sentence — and ADR 0001 §5 says a person approves a
 //! sentence rather than a session, so there is nothing here that approves more
 //! than one thing, nothing that approves everything from an agent, and nothing
 //! that stands until it is revoked.
 //!
 //! The third is the one that makes the other two usable: what is waiting.
+//!
+//! # The four about pairing are the person's, and carry no address
+//!
+//! ADR 0003: a pairing is made by two people, each on their own machine, and
+//! it is enumerated, revocable in one action and expiring. So proposing,
+//! confirming and revoking one are on this door and refused on the agent's in
+//! the same words as an approval — an agent that could pair its own machine
+//! with another would be an agent widening what may ask it. What a proposal
+//! carries is the other machine's **identity**, the enumerated list and the
+//! duration, and nothing else: the identity is what discovery finds a machine
+//! by, and the daemon looks for it on the network at the moment. There is no
+//! field for an address, a port or a name, so nothing on this wire can point
+//! the machine at something discovery never measured. A confirmation carries
+//! the code the person was shown, so that what is confirmed is what was shown
+//! (ADR 0031).
 //!
 //! # A number is not a handle
 //!
@@ -65,7 +80,7 @@ use crate::frame;
 use crate::refusing::NotUnderstood;
 
 /// One thing a person's shell sent.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FromAPerson {
     /// They approved the change waiting under this number. Worth exactly one
     /// execution, which is `alo_capability::Approved::redeem`'s and not this
@@ -89,6 +104,34 @@ pub enum FromAPerson {
     /// The other request that carries nothing, and the one where that is the
     /// whole design: a knock rather than a payload. See this file's header.
     Granted,
+    /// They propose pairing with a machine discovery found.
+    ///
+    /// The identity, the enumerated list as the wire spells it, and the
+    /// duration — and nothing that could name a machine discovery did not
+    /// measure. See this file's header.
+    Pair {
+        /// The other machine, by its identity.
+        machine: String,
+        /// What it would be permitted to ask for.
+        may: Vec<String>,
+        /// How long the pairing would last, in seconds.
+        seconds: u64,
+    },
+    /// They confirm the proposal waiting with a machine, having compared the
+    /// code with the other person.
+    ConfirmPairing {
+        /// The other machine, by its identity.
+        machine: String,
+        /// The code they were shown.
+        code: String,
+    },
+    /// They revoke the pairing with a machine, in one action.
+    RevokePairing {
+        /// The other machine, by its identity.
+        machine: String,
+    },
+    /// What is paired, and what is waiting to be.
+    Pairings,
 }
 
 impl FromAPerson {
@@ -104,6 +147,18 @@ impl FromAPerson {
             Asked::Decline { number } => Ok(Self::Decline { number }),
             Asked::Waiting {} => Ok(Self::Waiting),
             Asked::Granted {} => Ok(Self::Granted),
+            Asked::Pair {
+                machine,
+                may,
+                seconds,
+            } => Ok(Self::Pair {
+                machine,
+                may,
+                seconds,
+            }),
+            Asked::ConfirmPairing { machine, code } => Ok(Self::ConfirmPairing { machine, code }),
+            Asked::RevokePairing { machine } => Ok(Self::RevokePairing { machine }),
+            Asked::Pairings {} => Ok(Self::Pairings),
             Asked::Read { .. } | Asked::Propose { .. } | Asked::Ask { .. } => {
                 Err(NotUnderstood::NotForAPerson)
             }
@@ -116,7 +171,7 @@ impl FromAPerson {
     /// A `serde_json::Error`, which an answer cannot cause. See
     /// `frame.rs` for why it is handed back rather than swallowed.
     pub fn written(&self) -> Result<String, serde_json::Error> {
-        frame::line((*self).into())
+        frame::line(self.clone().into())
     }
 
     /// The number they answered, for the two that answer one.
@@ -128,8 +183,29 @@ impl FromAPerson {
     pub fn number(&self) -> Option<u64> {
         match self {
             Self::Approve { number } | Self::Decline { number } => Some(*number),
-            Self::Waiting | Self::Granted => None,
+            Self::Waiting
+            | Self::Granted
+            | Self::Pair { .. }
+            | Self::ConfirmPairing { .. }
+            | Self::RevokePairing { .. }
+            | Self::Pairings => None,
         }
+    }
+
+    /// Whether this is about a pairing rather than about a turn or the grants.
+    ///
+    /// The four the local network added, told apart for a daemon choosing
+    /// what to answer them against: a pairing is neither a turn's nor the
+    /// grants file's, and it is answered whether or not a turn is under way.
+    #[must_use]
+    pub fn is_about_a_pairing(&self) -> bool {
+        matches!(
+            self,
+            Self::Pair { .. }
+                | Self::ConfirmPairing { .. }
+                | Self::RevokePairing { .. }
+                | Self::Pairings
+        )
     }
 
     /// Whether they said yes.
@@ -159,6 +235,18 @@ impl From<FromAPerson> for Asked {
             FromAPerson::Decline { number } => Self::Decline { number },
             FromAPerson::Waiting => Self::Waiting {},
             FromAPerson::Granted => Self::Granted {},
+            FromAPerson::Pair {
+                machine,
+                may,
+                seconds,
+            } => Self::Pair {
+                machine,
+                may,
+                seconds,
+            },
+            FromAPerson::ConfirmPairing { machine, code } => Self::ConfirmPairing { machine, code },
+            FromAPerson::RevokePairing { machine } => Self::RevokePairing { machine },
+            FromAPerson::Pairings => Self::Pairings {},
         }
     }
 }
@@ -266,6 +354,55 @@ mod tests {
         assert_eq!(nothing_waiting.number(), Some(9999));
     }
 
+    /// **The four about pairing are a person's**, read off the wire, and none
+    /// of them answers a change or asks about the turn.
+    #[test]
+    fn the_four_about_pairing_are_a_persons_and_answer_no_change() {
+        let pair = FromAPerson::read(
+            r#"{"format":1,"asks":{"pair":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":["models"],"seconds":86400}}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            pair,
+            FromAPerson::Pair {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                may: vec!["models".to_owned()],
+                seconds: 86_400,
+            }
+        );
+        let confirm = FromAPerson::read(
+            r#"{"format":1,"asks":{"confirm-pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","code":"482910"}}}"#,
+        )
+        .unwrap();
+        let revoke = FromAPerson::read(
+            r#"{"format":1,"asks":{"revoke-pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}}"#,
+        )
+        .unwrap();
+        let pairings = FromAPerson::read(r#"{"format":1,"asks":{"pairings":{}}}"#).unwrap();
+        assert_eq!(pairings, FromAPerson::Pairings);
+        for one in [pair, confirm, revoke, pairings] {
+            assert!(one.is_about_a_pairing(), "{one:?}");
+            assert_eq!(one.number(), None, "{one:?}");
+            assert!(!one.is_yes(), "{one:?}");
+            assert!(!one.is_a_question_about_the_turn(), "{one:?}");
+        }
+        assert!(!FromAPerson::Waiting.is_about_a_pairing());
+        assert!(!FromAPerson::Granted.is_about_a_pairing());
+    }
+
+    /// **A proposal cannot name where a machine is**: an address in it is a
+    /// message this crate refuses to read, in the same words as any field
+    /// nobody declared.
+    #[test]
+    fn a_proposal_naming_an_address_is_not_a_request() {
+        assert_eq!(
+            FromAPerson::read(
+                r#"{"format":1,"asks":{"pair":{"machine":"m","may":["models"],"seconds":60,"address":"192.168.1.20:7610"}}}"#,
+            ),
+            Err(NotUnderstood::NotReadable)
+        );
+    }
+
     /// A shell and a daemon built from this crate cannot disagree about the
     /// format.
     #[test]
@@ -275,6 +412,19 @@ mod tests {
             FromAPerson::Decline { number: 2 },
             FromAPerson::Waiting,
             FromAPerson::Granted,
+            FromAPerson::Pair {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                may: vec!["models".to_owned()],
+                seconds: 86_400,
+            },
+            FromAPerson::ConfirmPairing {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+                code: "482910".to_owned(),
+            },
+            FromAPerson::RevokePairing {
+                machine: "0f1e2d3c4b5a69788796a5b4c3d2e1f0".to_owned(),
+            },
+            FromAPerson::Pairings,
         ] {
             let written = answered.written().unwrap();
             assert_eq!(FromAPerson::read(&written).unwrap(), answered);

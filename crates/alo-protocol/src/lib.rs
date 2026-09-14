@@ -59,7 +59,10 @@
 //!
 //! [`FromAnAgent`] is what an agent asks during a turn: a read, a change to put
 //! to the person, and a question for a model. [`FromAPerson`] is what a person's
-//! shell sends: yes or no to one change by its number, and what is waiting.
+//! shell sends: yes or no to one change by its number, what is waiting, that
+//! what is granted has changed, and — since the local network — a pairing
+//! proposed, confirmed, revoked or listed (`pairing.rs`), each refused on the
+//! agent's door in the words an approval gets.
 //!
 //! They are two types because they arrive from two sides of one machine, and a
 //! door that took both would be a door where the side that proposed a change
@@ -128,6 +131,7 @@ mod asked;
 mod done;
 mod frame;
 mod naming;
+mod pairing;
 mod person;
 mod refusing;
 mod standing;
@@ -144,6 +148,9 @@ pub use agent::FromAnAgent;
 pub use argument::Argument;
 pub use done::Done;
 pub use frame::{FORMAT, LONGEST, LONGEST_ANSWER};
+pub use pairing::{
+    AfterConfirming, AfterRevoking, Confirmed, Paired, Permitted, SideOf, WaitingToPair,
+};
 pub use person::FromAPerson;
 pub use refusing::NotUnderstood;
 pub use standing::Standing;

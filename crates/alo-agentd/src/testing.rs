@@ -502,6 +502,17 @@ pub(crate) fn paired_between(
     )
 }
 
+/// A network with nobody on it, for the tests on the person's door that are
+/// not about proposing to anybody.
+#[derive(Debug)]
+pub(crate) struct NobodyIsNearby;
+
+impl crate::looking::LookingFor for NobodyIsNearby {
+    fn look_for(&self, _machine: &alo_nearby::MachineId) -> Option<alo_nearby::Found> {
+        None
+    }
+}
+
 /// A machine where nobody has chosen anything to answer questions.
 pub(crate) fn nothing_has_been_chosen() -> Questions {
     Questions::of_a_session(

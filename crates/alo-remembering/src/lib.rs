@@ -53,18 +53,36 @@
 //! road at all to writing them — the writer is the person's own side of the
 //! machine, and this crate is reachable from it and from nowhere else.
 //!
+//! # And the pairings, since the local network
+//!
+//! A second file beside the grants, `/var/lib/alo/pairings.toml`, held to the
+//! same three rules about who may have written it: every machine this one is
+//! paired with, what each may ask for, when the pairing ends, and the key the
+//! two machines agreed (ADR 0031). What a pairing *is* and how it is written
+//! down are `alo-nearby`'s (`alo_nearby::keeping`); this crate is where the
+//! file lives and who is believed about it. It is the one file here the daemon
+//! writes — a pairing is made by two people on two machines, and the daemon is
+//! what hears the second of them — and a pairing that has ended is gone when
+//! the list is read, exactly as an expired grant is.
+//!
 //! # Map
 //!
 //! | | |
 //! |---|---|
-//! | `written` | The file's shape, and every grant checked again on the way in |
-//! | `keeping` | The file on the disk, who may have written it, and the whole-or-nothing replacement |
+//! | `written` | The grants file's shape, and every grant checked again on the way in |
+//! | `believing` | A file on the disk: who may have written it, and the whole-or-nothing replacement |
+//! | `keeping` | The grants file, where it is |
+//! | `pairings` | The pairings file, where it is |
 //! | `refusing` | Every refusal, in the English whoever stands a machine up reads |
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
 #[cfg(unix)]
+mod believing;
+#[cfg(unix)]
 mod keeping;
+#[cfg(unix)]
+mod pairings;
 mod refusing;
 #[cfg(test)]
 mod testing;
@@ -72,5 +90,7 @@ mod written;
 
 #[cfg(unix)]
 pub use keeping::{THE_GRANTS, kept, remembered};
+#[cfg(unix)]
+pub use pairings::{THE_PAIRINGS, pairings_kept, pairings_remembered};
 pub use refusing::NotRemembered;
 pub use written::{THE_FORMAT, read, written};

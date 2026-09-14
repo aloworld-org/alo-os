@@ -89,7 +89,13 @@ impl TheDaemonsDoor {
             // Any other answer is not one this request can earn; a daemon
             // saying something unrecognisable is treated like no daemon,
             // because the change already stands and the next start reads it.
-            ToAPerson::Did(_) | ToAPerson::Waiting { .. } | ToAPerson::Declined => None,
+            ToAPerson::Did(_)
+            | ToAPerson::Waiting { .. }
+            | ToAPerson::Declined
+            | ToAPerson::Pairing(_)
+            | ToAPerson::Confirmed { .. }
+            | ToAPerson::Revoked { .. }
+            | ToAPerson::Pairings { .. } => None,
         }
     }
 }

@@ -129,15 +129,48 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
                 } else if let Some(machine) = doorway.machine() {
                     machine.the_grants_were_not_read_again(why, now)
                 } else {
-                    // The machine was lost when a remote turn could not begin,
-                    // which has already ended the service; nothing was added
-                    // and the truthful answer is that nothing could be.
-                    Err(NotKept::NotAddedTo {
-                        path: String::new(),
-                        why: "the machine was lost when a remote turn could not begin".to_owned(),
-                    })
+                    Err(the_machine_was_lost())
                 }
             }
         }
+    }
+
+    /// Write down that a pairing with another machine was kept.
+    ///
+    /// The person's own door confirms a pairing whether or not a turn — local
+    /// or remote — holds the machine, and the record is behind whatever does.
+    /// The same entry either way, naming no agent: two people made it.
+    ///
+    /// # Errors
+    ///
+    /// [`NotKept`] when the record could not be written; the service stops on
+    /// it, for the reason `crate::hearing` stops when the same entry cannot be
+    /// written for a confirmation that arrived on the wire.
+    pub fn a_pairing_was_kept(&mut self, with: &str, now: SystemTime) -> Result<(), NotKept> {
+        match self {
+            Self::ATurn { turning, .. } => turning.a_pairing_was_kept(with, now),
+            Self::Nobody(machine) => machine.a_pairing_was_kept(with, now),
+            Self::TheNetwork { doorway, .. } => {
+                if let Some(arriving) = doorway.turn() {
+                    arriving.a_pairing_was_kept(with, now)
+                } else if let Some(machine) = doorway.machine() {
+                    machine.a_pairing_was_kept(with, now)
+                } else {
+                    Err(the_machine_was_lost())
+                }
+            }
+        }
+    }
+}
+
+/// The record's answer for a machine that is no longer there to write into.
+///
+/// The machine was lost when a remote turn could not begin, which has already
+/// ended the service; nothing was added and the truthful answer is that
+/// nothing could be.
+fn the_machine_was_lost() -> NotKept {
+    NotKept::NotAddedTo {
+        path: String::new(),
+        why: "the machine was lost when a remote turn could not begin".to_owned(),
     }
 }

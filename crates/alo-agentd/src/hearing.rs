@@ -188,7 +188,18 @@ fn on_the_pairing_wire(
     let heard = {
         let mut shared = judging.network.locked();
         let (proposals, pairings) = shared.both();
-        arrived.considered(proposals, pairings, &found, judging.surface, now)
+        let heard = arrived.considered(proposals, pairings, &found, judging.surface, now);
+        // A pairing kept is written to the disk under the same lock it was
+        // kept under, so a revocation from the person's door cannot slip in
+        // between the list changing and the file saying so. A file that
+        // could not be written is the service log's: the pairing stands, both
+        // people confirmed it, and what failed is its outliving a restart.
+        if let Ok(alo_nearby::Heard::AConfirmation { kept: Some(_), .. }) = &heard
+            && let Err(why) = shared.written_down(now)
+        {
+            eprintln!("alo-agentd: a pairing was kept and could not be written down: {why}");
+        }
+        heard
     };
     match heard {
         Ok(heard) => {

@@ -15,6 +15,13 @@ repository.workspace = true
 # granting the whole machine is refused by the crate that owns that rule.
 alo-capability = { path = "../alo-capability" }
 
+# The pairings themselves, for the second file this crate keeps. The same
+# argument as above: what a pairing is, what it permits, when it ends and how
+# its row is spelt are all `alo-nearby`'s (`alo_nearby::keeping`), and every
+# row read back off the disk is made again there — so a file hand-edited into
+# a pairing that permits everything is refused by the crate that owns the rule.
+alo-nearby = { path = "../alo-nearby" }
+
 # The file itself: TOML, because `/etc/alo/agentd.toml` and
 # `/etc/alo/accounts.toml` are TOML, and a person who opens the file their
 # machine keeps its grants in should find one notation rather than three.

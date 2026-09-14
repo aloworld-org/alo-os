@@ -1,18 +1,10 @@
-//! The file on the disk: where it is, who may have written it, and how it is
-//! replaced without ever being half a file.
+//! The grants file on the disk: where it is, and the whole-or-nothing
+//! replacement.
 //!
-//! # Who may write it
-//!
-//! Whoever can rewrite this file says what this machine's agent may reach. So
-//! before a byte of it is parsed, and with exactly the accounts store's three
-//! questions —
-//!
-//! - the path is **not a symbolic link** (`O_NOFOLLOW`);
-//! - it belongs to **root or to the login reading it**, and to nobody else;
-//! - **nobody else can write it** — group- or world-writable is refused.
-//!
-//! Asked of the open file rather than of the path, so the file that was checked
-//! and the file that is read cannot be two different files.
+//! Who may have written it, and how it is replaced without ever being half a
+//! file, are [`crate::believing`]'s — one rule for this file and for the
+//! pairings beside it (`pairings.rs`), because whoever can rewrite either says
+//! what this machine's agent may do.
 //!
 //! # `/var/lib/alo/grants.toml`, and why it is there
 //!
@@ -29,27 +21,13 @@
 //! retention to whoever manages the machine; where the grants live is nobody's
 //! policy, and a second copy of the answer is a second file for somebody to
 //! point somewhere the daemon is not reading.
-//!
-//! # Replaced whole or not at all
-//!
-//! [`kept`] writes a sibling file (`grants.toml.new`, mode `0600`), syncs it and
-//! renames it over the real one. A machine that loses power mid-write keeps the
-//! grants it had — a torn grants file is refused whole by [`crate::read`], and a
-//! person who granted a folder this morning would find nothing granted this
-//! afternoon with nothing on the machine able to say why.
-//!
-//! The folder is **not** created here, for `alo-accounts`' reason and
-//! `alo-agentd`'s: `/var/lib/alo` is the image's, a missing one means this is
-//! not an alo OS machine, and making one would turn a typo in a path into a
-//! second list nobody is reading.
 
-use std::io::{Read, Write};
-use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::SystemTime;
 
 use alo_capability::Grants;
 
+use crate::believing::{read_believed, replaced_whole};
 use crate::refusing::NotRemembered;
 
 /// Where a machine keeps its grants.
@@ -58,12 +36,6 @@ use crate::refusing::NotRemembered;
 /// the record — the two files that together say what was allowed and what
 /// happened.
 pub const THE_GRANTS: &str = "/var/lib/alo/grants.toml";
-
-/// The mode bits that let the group or the world write.
-const OTHERS_MAY_WRITE: u32 = 0o022;
-
-/// The mode a grants file is created with: the owner and nobody else.
-const OURS_ALONE: u32 = 0o600;
 
 /// The grants kept at this path, believed, read, and already free of the
 /// expired ones.
@@ -76,38 +48,7 @@ const OURS_ALONE: u32 = 0o600;
 /// [`NotRemembered::WritableByOthers`] for a file somebody else could have
 /// written; and everything [`crate::read`] refuses about the text itself.
 pub fn remembered(at: &Path, now: SystemTime) -> Result<Grants, NotRemembered> {
-    let mut file = match std::fs::OpenOptions::new()
-        .read(true)
-        .custom_flags(o_nofollow())
-        .open(at)
-    {
-        Ok(file) => file,
-        Err(why) if why.kind() == std::io::ErrorKind::NotFound => {
-            return Err(NotRemembered::NotThere { at: at.to_owned() });
-        }
-        // `ELOOP` is what `O_NOFOLLOW` answers a link with; the named
-        // `ErrorKind` for it is not yet stable, so the number is compared.
-        Err(why) if why.raw_os_error() == Some(rustix::io::Errno::LOOP.raw_os_error()) => {
-            return Err(NotRemembered::ALink { at: at.to_owned() });
-        }
-        Err(why) => {
-            return Err(NotRemembered::NotRead {
-                at: at.to_owned(),
-                why: why.to_string(),
-            });
-        }
-    };
-    let seen = file.metadata().map_err(|why| NotRemembered::NotRead {
-        at: at.to_owned(),
-        why: why.to_string(),
-    })?;
-    believed(at, seen.uid(), seen.mode(), us())?;
-    let mut text = String::new();
-    file.read_to_string(&mut text)
-        .map_err(|why| NotRemembered::NotRead {
-            at: at.to_owned(),
-            why: why.to_string(),
-        })?;
+    let text = read_believed(at)?;
     crate::read(&text, now)
 }
 
@@ -120,78 +61,7 @@ pub fn remembered(at: &Path, now: SystemTime) -> Result<Grants, NotRemembered> {
 /// [`crate::written`] refuses about the grants themselves.
 pub fn kept(at: &Path, grants: &Grants, now: SystemTime) -> Result<(), NotRemembered> {
     let text = crate::written(grants, now)?;
-    let fresh = a_sibling_of(at);
-    // A stale sibling from a write that died is removed so `create_new` below
-    // can insist the one being written is ours alone.
-    if let Err(why) = std::fs::remove_file(&fresh)
-        && why.kind() != std::io::ErrorKind::NotFound
-    {
-        return Err(NotRemembered::NotWritten {
-            at: at.to_owned(),
-            why: why.to_string(),
-        });
-    }
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(OURS_ALONE)
-        .custom_flags(o_nofollow())
-        .open(&fresh)
-        .map_err(|why| NotRemembered::NotWritten {
-            at: at.to_owned(),
-            why: why.to_string(),
-        })?;
-    file.write_all(text.as_bytes())
-        .and_then(|()| file.sync_all())
-        .map_err(|why| NotRemembered::NotWritten {
-            at: at.to_owned(),
-            why: why.to_string(),
-        })?;
-    drop(file);
-    std::fs::rename(&fresh, at).map_err(|why| NotRemembered::NotWritten {
-        at: at.to_owned(),
-        why: why.to_string(),
-    })
-}
-
-/// Whether a file with this owner and mode is one to believe, as a rule of its
-/// own so every branch of it is testable without root.
-fn believed(at: &Path, owner: u32, mode: u32, us: u32) -> Result<(), NotRemembered> {
-    if owner != 0 && owner != us {
-        return Err(NotRemembered::SomebodyElses {
-            at: at.to_owned(),
-            owner,
-        });
-    }
-    if mode & OTHERS_MAY_WRITE != 0 {
-        return Err(NotRemembered::WritableByOthers {
-            at: at.to_owned(),
-            mode: mode & 0o777,
-        });
-    }
-    Ok(())
-}
-
-/// The user this process runs as, asked of the kernel rather than of an
-/// environment.
-fn us() -> u32 {
-    rustix::process::geteuid().as_raw()
-}
-
-/// The flag that refuses to open a symbolic link, as `OpenOptions` takes it.
-#[expect(
-    clippy::cast_possible_wrap,
-    reason = "O_NOFOLLOW is a flag bit pattern; the kernel reads it as bits either way"
-)]
-fn o_nofollow() -> i32 {
-    rustix::fs::OFlags::NOFOLLOW.bits() as i32
-}
-
-/// The path the grants are staged at before they replace the real ones.
-fn a_sibling_of(at: &Path) -> PathBuf {
-    let mut named = at.as_os_str().to_owned();
-    named.push(".new");
-    PathBuf::from(named)
+    replaced_whole(at, &text)
 }
 
 #[cfg(test)]
@@ -201,9 +71,11 @@ fn a_sibling_of(at: &Path) -> PathBuf {
 )]
 mod tests {
     use super::*;
+    use crate::believing::OURS_ALONE;
     use crate::testing::{HERS, a_folder_of_our_own, an_hour, granted_in, noon};
     use alo_capability::{Ask, Grantee};
     use std::os::unix::fs::PermissionsExt;
+    use std::path::PathBuf;
 
     /// A machine's grants, kept on the disk in this folder.
     fn grants_kept_in(folder: &Path) -> PathBuf {
@@ -271,29 +143,6 @@ mod tests {
         assert!(matches!(
             remembered(&at, noon()),
             Err(NotRemembered::WritableByOthers { mode: 0o666, .. })
-        ));
-    }
-
-    /// **The ownership rule, every branch** — a test cannot chown a file to
-    /// somebody else without root, so the rule is a function and this walks it:
-    /// root's file is believed, ours is believed, anybody else's is not, and a
-    /// believable owner does not excuse a writable mode.
-    #[test]
-    fn only_roots_grants_or_our_own_are_believed() {
-        let at = Path::new(THE_GRANTS);
-        assert!(believed(at, 0, OURS_ALONE, 1000).is_ok());
-        assert!(believed(at, 1000, OURS_ALONE, 1000).is_ok());
-        assert!(matches!(
-            believed(at, 1001, OURS_ALONE, 1000),
-            Err(NotRemembered::SomebodyElses { owner: 1001, .. })
-        ));
-        assert!(matches!(
-            believed(at, 0, 0o620, 1000),
-            Err(NotRemembered::WritableByOthers { .. })
-        ));
-        assert!(matches!(
-            believed(at, 1000, 0o602, 1000),
-            Err(NotRemembered::WritableByOthers { .. })
         ));
     }
 

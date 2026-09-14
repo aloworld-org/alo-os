@@ -32,13 +32,13 @@ mod running {
 
     use alo_agentd::{
         ByTheKernel, Described, Listening, NotStarted, Place, Served, THE_DESCRIPTION,
-        THE_IDENTITY, ThePersonsFile, Waking, WhatIsGranted, Wire, session, signalling, starting,
-        unix,
+        THE_IDENTITY, ThePairingsFile, ThePersonsFile, Waking, WhatIsGranted, Wire, session,
+        signalling, starting, unix,
     };
     use alo_capability::Grants;
     use alo_keeping::Writing;
-    use alo_nearby::MachineId;
-    use alo_remembering::{NotRemembered, THE_GRANTS};
+    use alo_nearby::{MachineId, Pairings};
+    use alo_remembering::{NotRemembered, THE_GRANTS, THE_PAIRINGS};
 
     /// Serve until somebody asks the service to stop, and say what it did.
     ///
@@ -128,6 +128,12 @@ mod running {
         // into. `alo_agentd::rereading` has the argument, and the short of it is
         // that nothing below this line can write a byte of it.
         let remembering = ThePersonsFile::at(Path::new(THE_GRANTS));
+        // And the other file in that folder, the other way round: read once
+        // here, and **written** by the service at the moment a pairing is
+        // kept or revoked, through a value that holds this path and can read
+        // nothing (`alo_agentd::keeping_pairings`).
+        let pairings = whatever_was_paired()?;
+        let keeping_pairings = ThePairingsFile::at(Path::new(THE_PAIRINGS));
 
         let (waking, stop) = Waking::made().map_err(|why| NotStarted::NoStop { why })?;
         signalling::on_sigterm(stop)?;
@@ -158,6 +164,8 @@ mod running {
                 &wire,
                 &strings,
                 &mut WhatIsGranted::of(&mut grants, &remembering),
+                pairings,
+                Box::new(keeping_pairings),
                 &mut bounding,
                 &mut writing,
             ),
@@ -215,6 +223,25 @@ mod running {
             Ok(grants) => Ok(grants),
             Err(NotRemembered::NotThere { .. }) => Ok(Grants::default()),
             Err(why) => Err(NotStarted::NoGrants {
+                why: why.to_string(),
+            }),
+        }
+    }
+
+    /// What this machine was paired with before this process existed.
+    ///
+    /// `whatever_was_granted`'s twin for the other file in that folder, with
+    /// the same two machines told apart: no file is a machine that has never
+    /// paired, which starts; a file that is there and cannot be believed stops
+    /// the process, because a daemon that served paired with nothing would
+    /// make *somebody tampered with your pairings* look like *you have not
+    /// paired yet*. A pairing that ended while the machine was off is dropped
+    /// as the list is read.
+    fn whatever_was_paired() -> Result<Pairings, NotStarted> {
+        match alo_remembering::pairings_remembered(Path::new(THE_PAIRINGS), SystemTime::now()) {
+            Ok(pairings) => Ok(pairings),
+            Err(NotRemembered::NotThere { .. }) => Ok(Pairings::none()),
+            Err(why) => Err(NotStarted::NoPairings {
                 why: why.to_string(),
             }),
         }

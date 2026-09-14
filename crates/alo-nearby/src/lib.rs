@@ -90,6 +90,15 @@
 //! [`http`], which `alo-corridor` — the verb wire — reads and writes through
 //! rather than carrying a second copy.
 //!
+//! **And what outlives a restart.** [`keeping`] is the pairings as they are
+//! written down and read back — every row two people made, its enumerated
+//! list, when it was made, when it ends, and the key — so that a machine
+//! switched off at night is paired with the same machines in the morning,
+//! for exactly as long as it was. What is read back is made again through
+//! the same rule a pairing is made under, and a row that has ended is not on
+//! the list that comes back. Where the file is, who may have written it, and
+//! how it is replaced whole is `alo-remembering`'s, beside the grants.
+//!
 //! **And not a trusted network.** There is no setting in this crate, which is
 //! the point of it having none: no *advertise as*, no *discovery off*, no
 //! subnet rule, no *remember this machine*. ADR 0003 names each as the whole
@@ -106,6 +115,7 @@ mod deliberating;
 mod dialling;
 mod hexing;
 pub mod http;
+pub mod keeping;
 mod keying;
 mod looking;
 mod machine;
@@ -128,6 +138,7 @@ pub mod words;
 
 pub use confirming::Confirmation;
 pub use deliberating::{AT_MOST, Deliberating, Proposal, Side};
+pub use keeping::{NotWrittenDown, THE_PAIRINGS_FORMAT};
 pub use keying::{Code, Keying, Offer};
 pub use looking::{Answering, Looking, THE_ADDRESS, THE_PORT};
 pub use machine::MachineId;

@@ -48,8 +48,10 @@ There are two kinds of caller and they do not share a list.
 **An agent, during a turn**, may ask for `read`, `propose` and `ask`, and is
 told `did`, `proposed`, `answered` and `refused`.
 
-**A person's shell** may send `approve`, `decline`, `waiting` and `granted`,
-and is told `did`, `waiting`, `declined`, `granted` and `refused`.
+**A person's shell** may send `approve`, `decline`, `waiting`, `granted`, and
+— since the local network — `pair`, `confirm-pairing`, `revoke-pairing` and
+`pairings`; it is told `did`, `waiting`, `declined`, `granted`, `pairing`,
+`confirmed`, `revoked`, `pairings` and `refused`.
 
 If one door took both, the side that proposed a change could approve it, and
 ADR 0001 §5 — one approval, one execution, given by a person — would be true of
@@ -159,7 +161,74 @@ invoices. A file that is simply *not there* is not that machine — it is a pers
 who has granted nothing, or revoked the last thing they granted, and it reads as
 an empty list.
 
+### Pairing, from the person's door
+
+```json
+{"pair":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":["models"],"seconds":86400}}
+{"confirm-pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","code":"482910"}}
+{"revoke-pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0"}}
+{"pairings":{}}
+```
+
+A pairing is mutual, deliberate, enumerated, revocable in one action and
+expiring (ADR 0003), made by two people each on their own machine — so
+proposing, confirming, revoking and listing one are on **this** door, and an
+agent sending any of the four is refused in the same words as an agent trying
+to approve something. What crosses the network for it is
+`docs/contracts/local-network-wire.md`; this is only how the person here
+reaches it.
+
+`pair` names the other machine by its **identity** — the thirty-two characters
+discovery found it by — the enumerated list as the wire spells each arm
+(`models`, `workspace`), and the duration in seconds, stated here rather than
+hidden in a constant. **It carries nothing that could name a machine discovery
+did not measure**: there is no field for an address, a port or a name, so
+nothing on this wire can point the machine at anything typed. The daemon looks
+for that identity on the local network at the moment, proposes to the machine
+that answered at the address it answered from, and is refused in words when no
+machine by that identity answers, when the identity is not one, when the list
+names something no pairing can permit, or when `alo-nearby` refuses the terms.
+What comes back is `pairing` — the proposal waiting, with the code known.
+
+`confirm-pairing` carries the **code** the person was shown, so that what is
+confirmed is what was compared with the other person (ADR 0031). It is refused
+when nothing is waiting with that machine, when the other machine has not
+answered yet so there is no code, and when the code is not the one shown. What
+comes back is `confirmed`, saying what became of it: `waiting-for-the-other-person`,
+`paired`, or `paired-until-a-restart` — the last when both people confirmed and
+this machine could not write the pairing to its file, which is said rather than
+hidden and rather than reported as a refusal, because the pairing was made.
+
+`revoke-pairing` takes effect at once on the very next verb and the very next
+question from that machine, before the file is written; `revoked` says
+`revoked` or `revoked-until-a-restart`. Revoking a machine this one is not
+paired with is refused in words rather than reported as a success about
+nothing.
+
+`pairings` carries nothing, for `waiting`'s reason, and answers with the whole
+list — both halves.
+
 ## What comes back
+
+```json
+{"pairing":{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","side":"asking","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"seconds":86400,"code":"482910","confirmed":{"here":false,"there":false},"lapses_in":600}}
+{"confirmed":{"became":"paired"}}
+{"revoked":{"became":"revoked"}}
+{"pairings":{"paired":[{"machine":"0f1e2d3c4b5a69788796a5b4c3d2e1f0","may":[{"named":"models","sentence":{"text":"…","came_from":"translation"}}],"made_ago":60,"ends_in":86340}],"waiting":[]}}
+```
+
+A proposal waiting carries the **code** and the **list** — each arm as the wire
+spells it beside the sentence the person reads — because that is what the
+person is shown to confirm, and a shell that confirmed without drawing both
+would have removed the only check two people have against somebody standing
+between their machines. `code` is absent until the other machine has answered.
+`side` says which machine this one is in the proposal, `confirmed` where the
+two people stand, and `lapses_in` how many seconds are left before it lapses
+unanswered. A pairing carries `made_ago` and `ends_in` in seconds — never a
+moment — and no address: discovery measured where the machine is, the daemon
+dials it, and a shell has no use for an address it could not act on. A machine
+is named by its identity throughout; the name a person gives a machine is the
+shell's to keep.
 
 ```json
 {"did":{"listed":{"things":[{"name":"march.pdf","kind":"file","bytes":4180}],"could_not_be_named":0,"cut_short":false}}}

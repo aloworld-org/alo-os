@@ -32,6 +32,13 @@
 //!    boundary and the socket, because a list of grants that cannot be believed
 //!    is a machine to stop on rather than one to open a door on. A machine that
 //!    has simply never been granted anything is not that machine, and starts.
+//!    **And whatever this machine was paired with**, read out of the file
+//!    beside the grants under the same three rules, for the same reason and
+//!    with the same two machines told apart: never paired starts, unbelievable
+//!    stops. A pairing that ended while the machine was off is gone as the
+//!    list is read. It is handed in as a value beside the one thing that can
+//!    write it — a pairing is made by two people on two machines, and this
+//!    service is what hears the second of them.
 //! 7. **The stop, and the handler that causes one.** `crate::signalling`.
 //! 8. **The boundary** — the map `alo-boundaryd` pinned at boot, opened by
 //!    path, and this service's own control group subtree, `crate::bounding`.
@@ -104,6 +111,7 @@
 use alo_egress::{EgressPolicy, Indicator};
 use alo_files::OnThisMachine;
 use alo_models::Catalogue;
+use alo_nearby::Pairings;
 use alo_saying::{Loaded, everything_this_machine_can_say, the_translations};
 use alo_strings::Strings;
 use alo_turn::{Bounding, Machine, Shortening};
@@ -111,13 +119,13 @@ use alo_turn::{Bounding, Machine, Shortening};
 use crate::caller::Uid;
 use crate::described::Described;
 use crate::knocking::Knocking;
-use crate::network::TheNetwork;
+use crate::network::{KeepingPairings, TheNetwork};
 use crate::questions::Questions;
 use crate::refusing::NotStarted;
 use crate::rereading::WhatIsGranted;
 use crate::serving::{Served, Serving};
 use crate::stopping::Waking;
-use crate::surface::NobodyToShowItTo;
+use crate::surface::AtThePersonsDoor;
 use crate::terms::{NoNameYet, Terms};
 use crate::wire::Wire;
 use crate::words::declare_into;
@@ -208,17 +216,23 @@ pub fn until_stopped(
     wire: &Wire,
     strings: &Strings,
     granted: &mut WhatIsGranted<'_>,
+    pairings: Pairings,
+    keeping_pairings: Box<dyn KeepingPairings>,
     bounding: &mut dyn Bounding,
     kept: &mut dyn Shortening,
 ) -> Result<Served, NotStarted> {
     let mut indicator = Indicator::default();
     let mut machine =
         Machine::carrying_out_file_verbs(strings, &OnThisMachine, bounding, &mut indicator, kept)?;
-    // What this machine holds about the other machines: nothing yet, because
-    // a pairing is not kept between restarts, and one lock over it.
-    let network = TheNetwork::on(wire.here().clone());
-    // Until a shell shows a proposal, nobody can be shown one.
-    let mut surface = NobodyToShowItTo;
+    // What this machine holds about the other machines: what `src/main.rs`
+    // read back off the disk, handed in as a value for the grants' reason,
+    // and one lock over it — with the one way to write the list whole beside
+    // it, holding the path `main` gave it.
+    let network = TheNetwork::remembering(wire.here().clone(), pairings, keeping_pairings);
+    // A proposal that arrives waits on the person's door, where the shell
+    // lists and confirms it; the loop hands this in only while a shell is
+    // connected, and nobody-to-show-it-to otherwise.
+    let mut surface = AtThePersonsDoor;
     // Nothing is read or probed here: the environment is copied, and the first
     // question of the first turn is what opens the person's file.
     //
@@ -407,6 +421,8 @@ mod tests {
             &wire,
             &strings,
             &mut WhatIsGranted::of(&mut Grants::default(), &NothingIsRemembered),
+            Pairings::none(),
+            Box::new(crate::network::NothingKeepsPairings),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )
@@ -473,6 +489,8 @@ mod tests {
             &wire,
             &strings,
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
+            Pairings::none(),
+            Box::new(crate::network::NothingKeepsPairings),
             &mut crate::testing::NothingIsBounded,
             &mut record,
         )

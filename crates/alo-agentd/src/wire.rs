@@ -71,6 +71,10 @@ pub struct Wire {
     /// Where an asking machine's own discovery answers, for looking one up
     /// when its proposal arrives ([`crate::looking`]).
     asking_at: u16,
+    /// Where this machine asks who is here when its person proposes a
+    /// pairing by identity: the multicast group on a real machine, and the
+    /// socket the other side of a test bound.
+    looks_at: SocketAddr,
 }
 
 /// One connection, accepted and read, not yet told which wire it is for.
@@ -115,7 +119,9 @@ impl Wire {
                 what: "the discovery group",
                 why,
             })?;
-        Self::on(listener, discovery, here, THE_PORT)
+        let mut wire = Self::on(listener, discovery, here, THE_PORT)?;
+        wire.looks_at = SocketAddr::new(THE_ADDRESS.into(), THE_PORT);
+        Ok(wire)
     }
 
     /// This machine on sockets somebody else bound.
@@ -151,7 +157,15 @@ impl Wire {
             discovery: waiting_on,
             answering: Answering::on(discovery, Presence::of(here, port)),
             asking_at,
+            looks_at: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), asking_at),
         })
+    }
+
+    /// Where this machine asks who is here, when its person proposes a
+    /// pairing by identity.
+    #[must_use]
+    pub const fn looks_at(&self) -> SocketAddr {
+        self.looks_at
     }
 
     /// This machine.
@@ -231,6 +245,13 @@ impl Wire {
     /// As [`Answering::answer_one`].
     pub fn answer_discovery(&self) -> Result<Option<SocketAddr>, NotNearby> {
         self.answering.answer_one()
+    }
+}
+
+impl crate::looking::LookingFor for Wire {
+    /// Asked on the link this wire is bound to, at the moment.
+    fn look_for(&self, machine: &MachineId) -> Option<alo_nearby::Found> {
+        crate::looking::found_by_name(machine, self.looks_at)
     }
 }
 

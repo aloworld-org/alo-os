@@ -45,6 +45,16 @@
 //! agent happens to be connected, and between turns the turn is not there to
 //! write it through.
 //!
+//! # And four requests are about a pairing, not about the turn
+//!
+//! Proposing, confirming, revoking and listing a pairing are the person's
+//! (ADR 0003: two people, each on their own machine) and are neither the
+//! turn's nor the grants file's, so they are answered the same way whether a
+//! turn is under way or not — against the one lock over the pairings, by
+//! [`crate::pairing`], which this file dispatches to before it asks which
+//! turn is holding the machine. The [`Nearby`] handed in is that lock and the
+//! network a machine is looked for on.
+//!
 //! # And the turn may be a paired machine's
 //!
 //! Since the daemon bound the port, a change waiting for this person may have
@@ -65,6 +75,7 @@ use alo_strings::Strings;
 use alo_turn::Turning;
 
 use crate::holding::Holding;
+use crate::pairing::{self, AboutAPairing, Nearby};
 use crate::reaching;
 use crate::rereading::{self, WhatIsGranted};
 
@@ -89,16 +100,25 @@ pub fn what_a_person_said(
     line: &str,
     holding: &mut Holding<'_, '_, '_>,
     granted: &mut WhatIsGranted<'_>,
+    nearby: &Nearby<'_>,
     strings: &Strings,
     now: SystemTime,
 ) -> Result<ToAPerson, NotKept> {
     match FromAPerson::read(line) {
         Ok(FromAPerson::Granted) => what_is_granted_changed(holding, granted, strings, now),
-        Ok(answered) => Ok(if let Some((arriving, network)) = holding.remote() {
-            reaching::answered_to(answered, arriving, network, granted.holding(), strings, now)
-        } else {
-            answered_to(answered, holding.turning(), granted.holding(), strings, now)
-        }),
+        Ok(answered) => {
+            // A pairing is neither the turn's nor the grants file's, and it
+            // is answered whether or not a turn holds the machine: the
+            // person pairs their machine from their own shell at any hour.
+            if let Some(about) = AboutAPairing::of(&answered) {
+                return pairing::answered_to(about, nearby, holding, strings, now);
+            }
+            Ok(if let Some((arriving, network)) = holding.remote() {
+                reaching::answered_to(answered, arriving, network, granted.holding(), strings, now)
+            } else {
+                answered_to(answered, holding.turning(), granted.holding(), strings, now)
+            })
+        }
         Err(why) => Ok(ToAPerson::refused(&why.said(strings))),
     }
 }
@@ -152,8 +172,16 @@ fn answered_to(
         // it reaches here. Unreachable while that is so, and answered rather
         // than assumed away — with the sentence that is true of a machine that
         // did not read its list again, because that is what has happened if
-        // this arm is ever taken.
-        FromAPerson::Granted => ToAPerson::refused(&rereading::what_to_say(strings)),
+        // this arm is ever taken. The four about a pairing are the same:
+        // `crate::pairing` answers them before this is reached, and a request
+        // that got here was not answered by it — so it is refused rather
+        // than assumed away, in the one sentence that is true of a request
+        // this machine did not carry out.
+        FromAPerson::Granted
+        | FromAPerson::Pair { .. }
+        | FromAPerson::ConfirmPairing { .. }
+        | FromAPerson::RevokePairing { .. }
+        | FromAPerson::Pairings => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(turning, number, now) {
             Some(waiting) => match turning.approving(waiting, grants, now) {
                 Ok(answer) => ToAPerson::did(&answer),
@@ -201,9 +229,10 @@ pub(crate) fn nothing_is_waiting(number: u64, strings: &Strings) -> ToAPerson {
 mod tests {
     use super::*;
     use crate::doing::what_an_agent_said;
+    use crate::network::TheNetwork;
     use crate::testing::{
-        NothingIsRemembered, a_file_holding, a_message, granting, hour, noon,
-        nothing_has_been_chosen, on_a_machine, on_a_machine_with_no_turn,
+        NobodyIsNearby, NothingIsRemembered, a_file_holding, a_message, granting, hour, noon,
+        nothing_has_been_chosen, on_a_machine, on_a_machine_with_no_turn, the_studio,
     };
     use alo_capability::{Ask, Grantee};
     use alo_record::Record;
@@ -220,6 +249,7 @@ mod tests {
         grants: &mut Grants,
         strings: &Strings,
     ) -> ToAPerson {
+        let network = TheNetwork::on(the_studio());
         what_a_person_said(
             line,
             &mut Holding::ATurn {
@@ -227,6 +257,10 @@ mod tests {
                 questions: &mut nothing_has_been_chosen(),
             },
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
+            &Nearby {
+                network: &network,
+                looking: &NobodyIsNearby,
+            },
             strings,
             noon(),
         )
@@ -242,10 +276,15 @@ mod tests {
         remembering: &dyn crate::rereading::Remembering,
         strings: &Strings,
     ) -> ToAPerson {
+        let network = TheNetwork::on(the_studio());
         what_a_person_said(
             line,
             &mut Holding::Nobody(machine),
             &mut WhatIsGranted::of(grants, remembering),
+            &Nearby {
+                network: &network,
+                looking: &NobodyIsNearby,
+            },
             strings,
             noon(),
         )

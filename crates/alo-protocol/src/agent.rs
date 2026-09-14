@@ -95,10 +95,18 @@ impl FromAnAgent {
             Asked::Read { verb, given } => Ok(Self::Read { verb, given }),
             Asked::Propose { verb, given } => Ok(Self::Propose { verb, given }),
             Asked::Ask { question } => Ok(Self::Ask { question }),
+            // The four about pairing are refused in the same words as an
+            // approval: a pairing is made by two people (ADR 0003), and an
+            // agent that could propose, confirm or revoke one would be an
+            // agent widening what may ask its own machine.
             Asked::Approve { .. }
             | Asked::Decline { .. }
             | Asked::Waiting {}
-            | Asked::Granted {} => Err(NotUnderstood::NotForAnAgent),
+            | Asked::Granted {}
+            | Asked::Pair { .. }
+            | Asked::ConfirmPairing { .. }
+            | Asked::RevokePairing { .. }
+            | Asked::Pairings {} => Err(NotUnderstood::NotForAnAgent),
         }
     }
 

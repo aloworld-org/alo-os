@@ -218,8 +218,72 @@ pub const AN_AGENT_CANNOT_SAY_WHAT_IS_GRANTED: Word = Word::saying(
     "Said to an agent that told alo OS what the person had granted had changed, which only the      person's own side of the machine may say, and shown to the person by whatever they were      talking to. It is addressed to them rather than to the agent: they are being told that their      agent asked for something it may not have, and that nothing came of it.",
 );
 
+/// A pairing proposed to, confirmed with, or revoked from something that is
+/// not a machine's identity.
+pub const THAT_IS_NOT_A_MACHINE: Word = Word::saying(
+    "agentd.that-is-not-a-machine",
+    "that is not a machine on this network — a machine is named by the identity it was found by, and nothing else",
+)
+.noting(
+    "Said to the person's own shell when it named a machine to pair with by something that is not \
+     a machine identity: a hostname, a person's name, an address. An identity is the string \
+     discovery found the machine by, and alo OS does not accept anything a person typed in its \
+     place.",
+);
+
+/// A pairing proposed to a machine discovery could not find at the moment.
+pub const NO_SUCH_MACHINE_ON_THE_NETWORK: Word = Word::saying(
+    "agentd.no-such-machine-on-the-network",
+    "no machine by that identity answered on this network just now, so nothing was proposed",
+)
+.noting(
+    "Said when the person asked to pair with a machine and alo OS looked for it on the local \
+     network at that moment and nothing answered. It may be switched off, on another network, or \
+     the identity may be wrong; nothing was sent anywhere.",
+);
+
+/// A pairing proposed permitting something no pairing can permit.
+pub const NOT_SOMETHING_A_PAIRING_MAY_PERMIT: Word = Word::saying(
+    "agentd.not-something-a-pairing-may-permit",
+    "a pairing can permit only what is on its list, and that is not on it — nothing was proposed",
+)
+.noting(
+    "Said when the person's shell proposed a pairing permitting a word alo OS has no arm for. \
+     What a pairing may permit is a short closed list, and a word outside it is refused rather \
+     than accepted as something wider.",
+);
+
+/// A confirmation carrying a code other than the one shown for the proposal
+/// waiting.
+pub const THE_CODE_DOES_NOT_MATCH: Word = Word::saying(
+    "agentd.the-code-does-not-match",
+    "that is not the code shown for this pairing — read the code again on both machines, and confirm only if they agree",
+)
+.noting(
+    "Said when the person confirmed a pairing with a code that is not the one alo OS is showing \
+     for it. The code is a short number both people compare, one on each machine; it is what \
+     tells them nobody is standing between their two machines. Confirming with a different code \
+     is refused, and the sentence sends them back to compare.",
+);
+
+/// A revocation of a pairing with a machine this one is not paired with.
+pub const NOTHING_IS_PAIRED_WITH_THAT_MACHINE: Word = Word::saying(
+    "agentd.nothing-is-paired-with-that-machine",
+    "this machine is not paired with that one, so there is nothing to revoke",
+)
+.noting(
+    "Said when the person revoked a pairing that is not there: never made, already revoked, or \
+     already ended. Nothing changed, and the sentence says so rather than reporting a success \
+     about nothing.",
+);
+
 /// Everything this crate can say.
-pub const EVERY_WORD: [Word; 11] = [
+pub const EVERY_WORD: [Word; 16] = [
+    THAT_IS_NOT_A_MACHINE,
+    NO_SUCH_MACHINE_ON_THE_NETWORK,
+    NOT_SOMETHING_A_PAIRING_MAY_PERMIT,
+    THE_CODE_DOES_NOT_MATCH,
+    NOTHING_IS_PAIRED_WITH_THAT_MACHINE,
     A_TURN_IS_UNDER_WAY,
     SOMEBODY_IS_ALREADY_ANSWERING,
     NOTHING_ANSWERS_QUESTIONS,

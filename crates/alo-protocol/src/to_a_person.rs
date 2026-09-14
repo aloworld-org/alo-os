@@ -1,9 +1,16 @@
 //! What the daemon says back to the person's shell.
 //!
-//! Five answers to four requests: what a change did once they approved it,
+//! Nine answers to eight requests: what a change did once they approved it,
 //! that a change they declined is written down, everything still waiting for
-//! them, how much is granted after the machine read its list again, and — for
-//! any of the four — the refusal in the language they read.
+//! them, how much is granted after the machine read its list again, the four
+//! about pairing — the proposal waiting with its code, what became of a
+//! confirmation, what became of a revocation, and everything paired and
+//! waiting — and, for any of the eight, the refusal in the language they read.
+//!
+//! The four about pairing are on this side and no other, for the reason
+//! `waiting` is: a pairing is the person's list of which machines may ask this
+//! one (ADR 0003), and an agent told what is paired — or handed a code to
+//! confirm — would be an agent reading the person's own list.
 //!
 //! # A person is never handed a model's answer here
 //!
@@ -30,6 +37,7 @@ use alo_strings::{Said, Strings};
 
 use crate::done::Done;
 use crate::frame;
+use crate::pairing::{AfterConfirming, AfterRevoking, Paired, WaitingToPair};
 use crate::refusing::NotUnderstood;
 use crate::standing::Standing;
 use crate::told::Told;
@@ -60,9 +68,100 @@ pub enum ToAPerson {
     },
     /// It did not happen, and this is what to say about it.
     Refused(Wording),
+    /// The pairing they proposed is waiting, with the code to show them.
+    Pairing(WaitingToPair),
+    /// What became of the confirmation they gave.
+    Confirmed {
+        /// Waiting for the other person, paired, or paired until a restart.
+        became: AfterConfirming,
+    },
+    /// What became of the revocation they made.
+    Revoked {
+        /// Revoked, or revoked until a restart.
+        became: AfterRevoking,
+    },
+    /// Everything this machine is paired with, and every proposal waiting.
+    Pairings {
+        /// In the order they were made.
+        paired: Vec<Paired>,
+        /// In the order they began waiting.
+        waiting: Vec<WaitingToPair>,
+    },
 }
 
 impl ToAPerson {
+    /// The pairing they proposed, waiting with the code known.
+    #[must_use]
+    pub const fn pairing(waiting: WaitingToPair) -> Self {
+        Self::Pairing(waiting)
+    }
+
+    /// What became of their confirmation.
+    #[must_use]
+    pub const fn confirmed(became: AfterConfirming) -> Self {
+        Self::Confirmed { became }
+    }
+
+    /// What became of their revocation.
+    #[must_use]
+    pub const fn revoked(became: AfterRevoking) -> Self {
+        Self::Revoked { became }
+    }
+
+    /// Everything paired and everything waiting.
+    #[must_use]
+    pub const fn pairings(paired: Vec<Paired>, waiting: Vec<WaitingToPair>) -> Self {
+        Self::Pairings { paired, waiting }
+    }
+
+    /// The proposal waiting, when that is what they were told.
+    ///
+    /// The one answered to `pair`; what `pairings` lists is
+    /// [`ToAPerson::waiting_to_pair`].
+    #[must_use]
+    pub const fn proposed_pairing(&self) -> Option<&WaitingToPair> {
+        match self {
+            Self::Pairing(waiting) => Some(waiting),
+            _ => None,
+        }
+    }
+
+    /// What became of their confirmation, when that is what they were told.
+    #[must_use]
+    pub const fn became_of_confirming(&self) -> Option<AfterConfirming> {
+        match self {
+            Self::Confirmed { became } => Some(*became),
+            _ => None,
+        }
+    }
+
+    /// What became of their revocation, when that is what they were told.
+    #[must_use]
+    pub const fn became_of_revoking(&self) -> Option<AfterRevoking> {
+        match self {
+            Self::Revoked { became } => Some(*became),
+            _ => None,
+        }
+    }
+
+    /// What is paired, when that is what they asked.
+    #[must_use]
+    pub fn paired(&self) -> Option<&[Paired]> {
+        match self {
+            Self::Pairings { paired, .. } => Some(paired),
+            _ => None,
+        }
+    }
+
+    /// What is waiting to be paired, when that is what they asked.
+    #[must_use]
+    pub fn waiting_to_pair(&self) -> Option<&[WaitingToPair]> {
+        match self {
+            Self::Pairings { waiting, .. } => Some(waiting),
+            _ => None,
+        }
+    }
+
     /// What the change they approved did.
     #[must_use]
     pub fn did(answer: &Answer) -> Self {
@@ -135,6 +234,10 @@ impl ToAPerson {
             Told::Declined {} => Ok(Self::Declined),
             Told::Granted { holding } => Ok(Self::Granted { holding }),
             Told::Refused(wording) => Ok(Self::Refused(wording)),
+            Told::Pairing(waiting) => Ok(Self::Pairing(waiting)),
+            Told::Confirmed { became } => Ok(Self::Confirmed { became }),
+            Told::Revoked { became } => Ok(Self::Revoked { became }),
+            Told::Pairings { paired, waiting } => Ok(Self::Pairings { paired, waiting }),
             Told::Proposed(_) | Told::Answered { .. } => Err(NotUnderstood::NotAnAnswerForAPerson),
         }
     }
@@ -194,6 +297,10 @@ impl From<ToAPerson> for Told {
             ToAPerson::Declined => Self::Declined {},
             ToAPerson::Granted { holding } => Self::Granted { holding },
             ToAPerson::Refused(wording) => Self::Refused(wording),
+            ToAPerson::Pairing(waiting) => Self::Pairing(waiting),
+            ToAPerson::Confirmed { became } => Self::Confirmed { became },
+            ToAPerson::Revoked { became } => Self::Revoked { became },
+            ToAPerson::Pairings { paired, waiting } => Self::Pairings { paired, waiting },
         }
     }
 }

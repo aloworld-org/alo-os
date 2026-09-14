@@ -127,9 +127,13 @@ impl ToAnAgent {
                 model,
             }),
             Told::Refused(wording) => Ok(Self::Refused(wording)),
-            Told::Waiting { .. } | Told::Declined {} | Told::Granted { .. } => {
-                Err(NotUnderstood::NotAnAnswerForAnAgent)
-            }
+            Told::Waiting { .. }
+            | Told::Declined {}
+            | Told::Granted { .. }
+            | Told::Pairing(_)
+            | Told::Confirmed { .. }
+            | Told::Revoked { .. }
+            | Told::Pairings { .. } => Err(NotUnderstood::NotAnAnswerForAnAgent),
         }
     }
 

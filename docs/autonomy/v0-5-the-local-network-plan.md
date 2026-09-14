@@ -453,7 +453,19 @@ answer *nothing is happening* while a remote turn holds the machine.
 
 ### 12. The person's door proposes, confirms and revokes a pairing, and a pairing outlives a restart
 
-**Status:** ready. **Depends on:** 10, 11.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-protocol/src/pairing.rs`
+(the four requests and four answers on the person's door),
+`crates/alo-agentd/src/pairing.rs` (the door, against the one lock),
+`crates/alo-nearby/src/keeping.rs` (the pairings as they are written down, key
+included) and `crates/alo-remembering/src/pairings.rs` (the file, under the
+grants file's three rules, with `believing.rs` split out to hold both), with
+`alo_turn::Turning::a_pairing_was_kept`, the daemon's `KeepingPairings` and
+`ThePairingsFile`, the proposal waiting on the person's door while a shell is
+connected, and the contracts `docs/contracts/daemon-protocol.md` and
+`docs/contracts/pairings-file.md`; the report is
+`docs/autonomy/updates/the-persons-door-pairs-and-a-pairing-outlives-a-restart.md`.
+The key goes in the file beside the identity, and the report says why.
+**Depends on:** 10, 11.
 
 Task 10 left two things a real machine cannot do without, and said so:
 the person's surface confirms a pairing by reaching into `TheNetwork`'s lock

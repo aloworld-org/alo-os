@@ -63,10 +63,15 @@ pub fn answered_to(
             let called = arriving.origin().called().to_owned();
             ToAPerson::waiting_from_a_machine(arriving.waiting_at(now), &called, strings, now)
         }
-        // The knock is not about the turn, and the one caller answers it
-        // before it reaches here — the same arm, and the same true sentence,
-        // as `crate::answering` keeps for a local turn.
-        FromAPerson::Granted => ToAPerson::refused(&rereading::what_to_say(strings)),
+        // The knock and the four about a pairing are not about the turn, and
+        // the one caller answers them before they reach here — the same arm,
+        // and the same true sentence, as `crate::answering` keeps for a local
+        // turn.
+        FromAPerson::Granted
+        | FromAPerson::Pair { .. }
+        | FromAPerson::ConfirmPairing { .. }
+        | FromAPerson::RevokePairing { .. }
+        | FromAPerson::Pairings => ToAPerson::refused(&rereading::what_to_say(strings)),
         FromAPerson::Approve { number } => match under(arriving, number, now) {
             Some(waiting) => {
                 let shared = network.locked();
@@ -123,8 +128,8 @@ mod tests {
     use crate::rereading::WhatIsGranted;
     use crate::terms::NoNameYet;
     use crate::testing::{
-        NothingIsBounded, NothingIsRemembered, a_folder_with_an_invoice, a_message, hour,
-        in_english, noon, nothing_has_been_chosen, paired_between, reception, the_studio,
+        NobodyIsNearby, NothingIsBounded, NothingIsRemembered, a_folder_with_an_invoice, a_message,
+        hour, in_english, noon, nothing_has_been_chosen, paired_between, reception, the_studio,
     };
 
     /// The studio, paired with reception for its models and its workspace,
@@ -251,6 +256,10 @@ mod tests {
                 questions: &mut nothing_has_been_chosen(),
             },
             &mut WhatIsGranted::of(grants, &NothingIsRemembered),
+            &crate::pairing::Nearby {
+                network,
+                looking: &NobodyIsNearby,
+            },
             strings,
             noon(),
         )

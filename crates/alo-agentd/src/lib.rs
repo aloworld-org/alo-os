@@ -196,6 +196,8 @@ pub mod hearing;
 #[cfg(target_os = "linux")]
 pub mod holding;
 #[cfg(target_os = "linux")]
+pub mod keeping_pairings;
+#[cfg(target_os = "linux")]
 pub mod knocking;
 #[cfg(target_os = "linux")]
 pub mod lasting;
@@ -207,6 +209,8 @@ pub mod listening;
 pub mod looking;
 #[cfg(target_os = "linux")]
 pub mod network;
+#[cfg(target_os = "linux")]
+pub mod pairing;
 #[cfg(target_os = "linux")]
 pub mod place;
 #[cfg(target_os = "linux")]
@@ -268,6 +272,8 @@ pub use hearing::{Heard, Judging, NOT_A_MESSAGE, NOT_FOR_THIS_WIRE};
 #[cfg(target_os = "linux")]
 pub use holding::Holding;
 #[cfg(target_os = "linux")]
+pub use keeping_pairings::ThePairingsFile;
+#[cfg(target_os = "linux")]
 pub use knocking::Knocking;
 #[cfg(target_os = "linux")]
 pub use lasting::Lasting;
@@ -276,9 +282,11 @@ pub use lines::Line;
 #[cfg(target_os = "linux")]
 pub use listening::{Accepted, Listening};
 #[cfg(target_os = "linux")]
-pub use looking::{WHILE_LOOKING, found_at};
+pub use looking::{LookingFor, WHILE_LOOKING, found_at, found_by_name};
 #[cfg(target_os = "linux")]
-pub use network::{Shared, TheNetwork};
+pub use network::{KeepingPairings, NothingKeepsPairings, Shared, TheNetwork};
+#[cfg(target_os = "linux")]
+pub use pairing::Nearby;
 #[cfg(target_os = "linux")]
 pub use place::{Place, THE_ROOT};
 #[cfg(target_os = "linux")]
@@ -310,7 +318,7 @@ pub use starting::{not_as_root, until_stopped, what_this_machine_says};
 #[cfg(target_os = "linux")]
 pub use stopping::{Stop, Waking};
 #[cfg(target_os = "linux")]
-pub use surface::NobodyToShowItTo;
+pub use surface::{AtThePersonsDoor, NobodyToShowItTo};
 #[cfg(target_os = "linux")]
 pub use terms::{NoNameYet, Terms};
 #[cfg(target_os = "linux")]

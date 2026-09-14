@@ -1,6 +1,6 @@
 //! Everything the daemon can say back, in one closed list.
 //!
-//! Seven answers, and there is no eighth. It is [`crate::asked`]'s shape from
+//! Eleven answers, and there is no twelfth. It is [`crate::asked`]'s shape from
 //! the other direction and for the same reason: the list is one thing, the
 //! doors are two, and neither door can produce the other's.
 //!
@@ -41,6 +41,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::done::Done;
+use crate::pairing::{AfterConfirming, AfterRevoking, Paired, WaitingToPair};
 use crate::standing::Standing;
 use crate::wording::Wording;
 
@@ -91,6 +92,32 @@ pub(crate) enum Told {
     },
     /// It did not happen, and this is what the person is told.
     Refused(Wording),
+    /// A pairing the person proposed is waiting, with the code known.
+    ///
+    /// The answer to `pair`, and it is the same shape a waiting proposal has
+    /// in `pairings`: what the shell draws to confirm is the code and the
+    /// list, and there is no shape without them.
+    Pairing(WaitingToPair),
+    /// What became of the person's confirmation.
+    Confirmed {
+        /// Waiting for the other person, paired, or paired until a restart.
+        became: AfterConfirming,
+    },
+    /// What became of the person's revocation.
+    Revoked {
+        /// Revoked, or revoked until a restart.
+        became: AfterRevoking,
+    },
+    /// Everything this machine is paired with, and every proposal waiting.
+    ///
+    /// The whole list, both halves — ADR 0003's *visible* is a list a person
+    /// can see, and nothing is hidden from it.
+    Pairings {
+        /// In the order they were made.
+        paired: Vec<Paired>,
+        /// In the order they began waiting.
+        waiting: Vec<WaitingToPair>,
+    },
 }
 
 #[cfg(test)]
@@ -127,13 +154,49 @@ mod tests {
             Told::Refused(Wording::of(
                 &in_english().say(&words::NOT_READABLE.key(), &Filling::nothing()),
             )),
+            Told::Pairing(a_proposal_waiting()),
+            Told::Confirmed {
+                became: AfterConfirming::Paired,
+            },
+            Told::Revoked {
+                became: AfterRevoking::Revoked,
+            },
+            Told::Pairings {
+                paired: vec![Paired::of(
+                    "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+                    Vec::new(),
+                    60,
+                    86_340,
+                )],
+                waiting: vec![a_proposal_waiting()],
+            },
         ]
     }
 
-    /// **The seven read back as what was written**, so a shell and a daemon
+    /// One proposal waiting, with the code known.
+    fn a_proposal_waiting() -> WaitingToPair {
+        use crate::pairing::{Confirmed, Permitted, SideOf};
+        WaitingToPair::of(
+            "0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+            SideOf::Asked,
+            vec![Permitted::of(
+                "models",
+                &in_english().say(&words::NOT_READABLE.key(), &Filling::nothing()),
+            )],
+            86_400,
+            Some("482910"),
+            Confirmed {
+                here: false,
+                there: false,
+            },
+            Some(600),
+        )
+    }
+
+    /// **The eleven read back as what was written**, so a shell and a daemon
     /// built from this crate cannot disagree about what happened.
     #[test]
-    fn the_seven_read_back_as_what_was_written() {
+    fn the_eleven_read_back_as_what_was_written() {
         for told in every_answer() {
             let written = serde_json::to_string(&told).unwrap();
             let back: Told = serde_json::from_str(&written).unwrap();
@@ -141,11 +204,11 @@ mod tests {
         }
     }
 
-    /// **There is no eighth.** An answer that is not one of the seven has
+    /// **There is no twelfth.** An answer that is not one of the eleven has
     /// nowhere to land, which is what stops a daemon from being extended by
     /// whatever a client is willing to parse.
     #[test]
-    fn an_answer_that_is_not_one_of_the_seven_is_not_an_answer() {
+    fn an_answer_that_is_not_one_of_the_eleven_is_not_an_answer() {
         for message in [
             r#"{"ran":{"command":"rm -rf /"}}"#,
             r#"{"granted":{"path":"/"}}"#,

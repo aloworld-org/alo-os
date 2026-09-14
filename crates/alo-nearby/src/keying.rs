@@ -179,12 +179,20 @@ impl PairingKey {
         &self.0
     }
 
-    /// A key a test names, for the tests about pairings that are not about
-    /// keys. Not compiled into anything a machine runs.
-    #[cfg(test)]
+    /// A key from its bytes.
+    ///
+    /// `pub(crate)`, and for two callers only: `keeping.rs`, which reads a
+    /// key back off the file this machine keeps its pairings in, and the tests
+    /// about pairings that are not about keys. It is deliberately not a way
+    /// to make a pairing — `Pairing::between` is `pub(crate)` for the same
+    /// reason — so nothing outside this crate can hold a key it did not agree
+    /// or read back under this crate's rules.
     pub(crate) const fn of(bytes: [u8; A_KEY]) -> Self {
         Self(bytes)
     }
+
+    /// How many bytes a key is, for the file that spells one.
+    pub(crate) const LENGTH: usize = A_KEY;
 }
 
 impl Debug for PairingKey {

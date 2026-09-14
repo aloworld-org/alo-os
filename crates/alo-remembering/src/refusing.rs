@@ -165,8 +165,19 @@ pub enum NotRemembered {
         handle: u64,
     },
 
-    /// The grants could not be written down.
-    #[error("this machine's grants could not be written to {}: {why}", at.display())]
+    /// The pairings a machine kept were not the pairings `alo-nearby` would
+    /// make, or could not be written down as such.
+    ///
+    /// Carried whole from the crate that owns the rule: which row, and what
+    /// was wrong with it, is its sentence. Refused whole, like every grant
+    /// above — a list that silently dropped the machine a person is looking
+    /// for, or kept a key it could not check, would lie about who this machine
+    /// is paired with.
+    #[error("the pairings this machine kept were not believed: {0}")]
+    NotPairings(#[from] alo_nearby::NotWrittenDown),
+
+    /// The file could not be written down.
+    #[error("this machine's list could not be written to {}: {why}", at.display())]
     NotWritten {
         /// Where they were going.
         at: PathBuf,

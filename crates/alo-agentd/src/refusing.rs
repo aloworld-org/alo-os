@@ -676,6 +676,21 @@ pub enum NotStarted {
         /// What `alo-remembering` said about the file.
         why: String,
     },
+    /// The pairings this machine kept could not be believed.
+    ///
+    /// The same refusal as [`NotStarted::NoGrants`] about the other file in
+    /// that folder, for the same reason: whoever can write it says which
+    /// machines may ask this one, and a daemon that went on paired with
+    /// nothing would make *somebody tampered with your pairings* look exactly
+    /// like *you have not paired with anything yet*. A machine that has
+    /// simply never paired starts perfectly well.
+    #[error(
+        "the pairings this machine kept could not be believed: {why}; alo-agentd will not serve under a list of pairings it cannot read"
+    )]
+    NoPairings {
+        /// What `alo-remembering` said about the file.
+        why: String,
+    },
     /// The socket could not be put where it belongs.
     #[error("{0}")]
     NotBound(#[from] NotBound),

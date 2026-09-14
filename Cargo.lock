@@ -463,7 +463,9 @@ dependencies = [
  "alo-strings",
  "getrandom 0.3.4",
  "ring",
+ "serde",
  "thiserror 2.0.20",
+ "toml",
 ]
 
 [[package]]
@@ -552,6 +554,7 @@ name = "alo-remembering"
 version = "0.0.1"
 dependencies = [
  "alo-capability",
+ "alo-nearby",
  "alo-picking",
  "rustix 1.1.4",
  "serde",

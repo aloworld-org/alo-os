@@ -63,6 +63,14 @@
 //! Discovery is answered in every state, because presence never says what a
 //! machine is doing.
 //!
+//! **And the person's door pairs from any state.** The four requests about a
+//! pairing (`crate::pairing`) are answered against the lock and the wire
+//! whether a local turn, a remote turn or nobody holds the machine, because a
+//! person pairs their machine from their own shell at any hour. A proposal
+//! that arrives on the port is shown by waiting on that door, so the wire is
+//! handed the surface only while a shell is connected, and *nobody to show it
+//! to* otherwise — the true word for a machine with no one in front of it.
+//!
 //! # A turn is an agent's connection, and it is a scope
 //!
 //! It begins when an agent connects and ends when that connection closes, and
@@ -136,11 +144,13 @@ use crate::holding::Holding;
 use crate::knocking::Knocking;
 use crate::lines::Line;
 use crate::network::TheNetwork;
+use crate::pairing::Nearby;
 use crate::questions::Questions;
 use crate::refusing::NotServed;
 use crate::rereading::WhatIsGranted;
 use crate::side::Side;
 use crate::stopping::Waking;
+use crate::surface::NobodyToShowItTo;
 use crate::terms::Terms;
 use crate::unix::ready;
 use crate::wire::Wire;
@@ -536,10 +546,16 @@ impl<'a> Serving<'a> {
             // closure rather than turned into an answer: what is missing is
             // evidence, and there is nothing to say to a caller about it.
             let mut nothing_written_down = false;
+            // What the four requests about a pairing are answered against:
+            // the one lock, and the link this wire is bound to.
+            let nearby = Nearby {
+                network: self.network,
+                looking: self.wire,
+            };
             let answered = held.person.as_mut().map(|line| {
                 one_message(
                     line,
-                    |said| match what_a_person_said(said, holding, granted, strings, now) {
+                    |said| match what_a_person_said(said, holding, granted, &nearby, strings, now) {
                         Ok(told) => told.written().ok(),
                         Err(_) => {
                             nothing_written_down = true;
@@ -614,9 +630,17 @@ impl<'a> Serving<'a> {
             } = holding
         {
             let knocked = self.wire.accept_one().map_err(NotServed::TheWire)?;
+            // A proposal is shown by waiting on the person's door, and there
+            // is a person's door to wait on only while a shell is connected;
+            // with none, nobody can be shown it and it is refused as such.
+            let mut nobody = NobodyToShowItTo;
             let mut judging = Judging {
                 network: self.network,
-                surface,
+                surface: if held.person.is_some() {
+                    surface
+                } else {
+                    &mut nobody
+                },
                 naming: self.terms.naming,
                 policy: &self.terms.policy,
                 asking_at: self.wire.asking_at(),
@@ -819,11 +843,12 @@ mod tests {
     use alo_record::Record;
     use std::io::{BufRead as _, BufReader, Write as _};
     use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, UdpSocket};
+    use std::os::unix::fs::PermissionsExt as _;
     use std::os::unix::net::UnixStream;
     use std::path::{Path, PathBuf};
     use std::sync::Arc;
 
-    use crate::network::TheNetwork;
+    use crate::network::{KeepingPairings, NothingKeepsPairings, TheNetwork};
     use crate::terms::{NoNameYet, Terms};
     use crate::testing::{paired_between, reception, the_studio};
     use crate::wire::Wire;
@@ -1077,7 +1102,41 @@ mod tests {
         sides: &[Option<Side>],
         kept: &mut dyn alo_turn::Shortening,
         remembering: &dyn crate::rereading::Remembering,
+        questions: Questions,
+        starting: impl FnOnce(&Path, SystemTime) -> Grants,
+        talking: impl FnOnce(Told) + Send + 'static,
+    ) -> Result<(Served, PathBuf), NotServed> {
+        while_it_runs_holding(
+            agent,
+            keeping,
+            what,
+            sides,
+            kept,
+            remembering,
+            questions,
+            (alo_nearby::Pairings::none(), Box::new(NothingKeepsPairings)),
+            starting,
+            talking,
+        )
+    }
+
+    /// The same again, on a machine that starts holding these pairings and
+    /// writes every change to this keeper — what a restart hands the service,
+    /// as `src/main.rs` hands it.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "a fixture standing a whole service up, and every one of these is a thing about \
+                  the machine a test has to be able to choose"
+    )]
+    fn while_it_runs_holding(
+        agent: &str,
+        keeping: Keeping,
+        what: &str,
+        sides: &[Option<Side>],
+        kept: &mut dyn alo_turn::Shortening,
+        remembering: &dyn crate::rereading::Remembering,
         mut questions: Questions,
+        paired: (alo_nearby::Pairings, Box<dyn KeepingPairings>),
         starting: impl FnOnce(&Path, SystemTime) -> Grants,
         talking: impl FnOnce(Told) + Send + 'static,
     ) -> Result<(Served, PathBuf), NotServed> {
@@ -1095,7 +1154,12 @@ mod tests {
             receptions_discovery.local_addr().unwrap().port(),
         )
         .unwrap();
-        let network = Arc::new(TheNetwork::on(the_studio()));
+        let (pairings, keeping_pairings) = paired;
+        let network = Arc::new(TheNetwork::remembering(
+            the_studio(),
+            pairings,
+            keeping_pairings,
+        ));
         let told = Told {
             at: knocking.at(),
             invoice: invoice.clone(),
@@ -2265,129 +2329,132 @@ mod tests {
     /// each refused with nothing written.
     #[test]
     fn a_pairing_kept_is_written_down_once_and_a_proposal_refused_writes_nothing() {
-        let (served, record, _invoice) = while_it_runs("pairing-kept", &[], |told| {
-            let now = this_moment();
-            let day = Duration::from_secs(86_400);
-            let studio_at = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), told.port);
-            let found = alo_nearby::Found::seen(the_studio(), told.port, studio_at.ip());
+        let (served, record, _invoice) =
+            while_it_runs("pairing-kept", &[Some(Side::Person)], |told| {
+                // A shell is connected, so a proposal has a door to wait on.
+                let _person = Talking::to(&told.at);
+                let now = this_moment();
+                let day = Duration::from_secs(86_400);
+                let studio_at = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), told.port);
+                let found = alo_nearby::Found::seen(the_studio(), told.port, studio_at.ip());
 
-            // Reception, before it answers discovery: not found, refused.
-            let mut receptions_proposals = alo_nearby::Proposals::on(reception());
-            let refused = alo_nearby::crossing::propose(
-                &mut receptions_proposals,
-                &found,
-                &[alo_nearby::MayAskIts::Models],
-                day,
-                now,
-            )
-            .unwrap_err();
-            assert_eq!(refused, alo_nearby::NotProposed::NotFromWhereItWasFound);
-            assert!(told.network.locked().proposals().every().is_empty());
+                // Reception, before it answers discovery: not found, refused.
+                let mut receptions_proposals = alo_nearby::Proposals::on(reception());
+                let refused = alo_nearby::crossing::propose(
+                    &mut receptions_proposals,
+                    &found,
+                    &[alo_nearby::MayAskIts::Models],
+                    day,
+                    now,
+                )
+                .unwrap_err();
+                assert_eq!(refused, alo_nearby::NotProposed::NotFromWhereItWasFound);
+                assert!(told.network.locked().proposals().every().is_empty());
 
-            // Reception's own wire, where the studio's confirmation arrives.
-            let receptions_listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
-            let receptions_port = receptions_listener.local_addr().unwrap().port();
-            // Reception answers discovery when the studio looks for it.
-            let answering = alo_nearby::Answering::on(
-                told.discovery,
-                alo_nearby::Presence::of(reception(), receptions_port),
-            );
-            // Three questions reach it: the one the refused proposal caused,
-            // which waited unanswered in the socket, and one for each of the
-            // two proposals below.
-            let answered = std::thread::spawn(move || {
-                (0..3).map(|_| answering.answer_one()).collect::<Vec<_>>()
+                // Reception's own wire, where the studio's confirmation arrives.
+                let receptions_listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+                let receptions_port = receptions_listener.local_addr().unwrap().port();
+                // Reception answers discovery when the studio looks for it.
+                let answering = alo_nearby::Answering::on(
+                    told.discovery,
+                    alo_nearby::Presence::of(reception(), receptions_port),
+                );
+                // Three questions reach it: the one the refused proposal caused,
+                // which waited unanswered in the socket, and one for each of the
+                // two proposals below.
+                let answered = std::thread::spawn(move || {
+                    (0..3).map(|_| answering.answer_one()).collect::<Vec<_>>()
+                });
+
+                let waiting = alo_nearby::crossing::propose(
+                    &mut receptions_proposals,
+                    &found,
+                    &[alo_nearby::MayAskIts::Models],
+                    day,
+                    now,
+                )
+                .unwrap();
+                let code_at_reception = waiting.code().unwrap();
+                assert_eq!(
+                    told.network
+                        .locked()
+                        .proposals()
+                        .with(&reception())
+                        .unwrap()
+                        .code()
+                        .unwrap(),
+                    code_at_reception,
+                    "the two people were shown different codes"
+                );
+
+                // A second proposal while the first waits is refused, and still
+                // nothing is written.
+                let mut again = alo_nearby::Proposals::on(reception());
+                let refused = alo_nearby::crossing::propose(
+                    &mut again,
+                    &found,
+                    &[alo_nearby::MayAskIts::Models],
+                    day,
+                    now,
+                )
+                .unwrap_err();
+                assert_eq!(refused, alo_nearby::NotProposed::AlreadyWaiting);
+                drop(answered.join().unwrap());
+
+                // The studio's person confirms first, on their own side of the
+                // lock; reception hears it on its own wire and holds nothing yet.
+                let mut receptions_pairings = alo_nearby::Pairings::none();
+                let heard_at_reception = std::thread::spawn(move || {
+                    let receiving = alo_nearby::Receiving::on(receptions_listener);
+                    let arrived = receiving.accept_one().unwrap();
+                    let mut shown = |_: &alo_nearby::Waiting| true;
+                    let heard = arrived
+                        .considered(
+                            &mut receptions_proposals,
+                            &mut receptions_pairings,
+                            &[],
+                            &mut shown,
+                            this_moment(),
+                        )
+                        .unwrap();
+                    (heard, receptions_proposals, receptions_pairings)
+                });
+                let kept_at_the_studio = alo_nearby::crossing::confirm(
+                    told.network.locked().proposals_mut(),
+                    &reception(),
+                    this_moment(),
+                )
+                .unwrap();
+                assert!(
+                    kept_at_the_studio.is_none(),
+                    "one confirmation kept a pairing"
+                );
+                let (heard, mut receptions_proposals, mut receptions_pairings) =
+                    heard_at_reception.join().unwrap();
+                assert!(matches!(
+                    heard,
+                    alo_nearby::Heard::AConfirmation { kept: None, .. }
+                ));
+                assert!(receptions_pairings.every().is_empty());
+
+                // Reception confirms second, over the wire: the studio keeps the
+                // pairing and writes it down; reception keeps its own.
+                let kept_at_reception = alo_nearby::crossing::confirm(
+                    &mut receptions_proposals,
+                    &the_studio(),
+                    this_moment(),
+                )
+                .unwrap()
+                .unwrap();
+                receptions_pairings.keep(kept_at_reception);
+                assert!(
+                    told.network
+                        .locked()
+                        .pairings()
+                        .paired_with(&reception(), this_moment())
+                );
+                told.stop.stop();
             });
-
-            let waiting = alo_nearby::crossing::propose(
-                &mut receptions_proposals,
-                &found,
-                &[alo_nearby::MayAskIts::Models],
-                day,
-                now,
-            )
-            .unwrap();
-            let code_at_reception = waiting.code().unwrap();
-            assert_eq!(
-                told.network
-                    .locked()
-                    .proposals()
-                    .with(&reception())
-                    .unwrap()
-                    .code()
-                    .unwrap(),
-                code_at_reception,
-                "the two people were shown different codes"
-            );
-
-            // A second proposal while the first waits is refused, and still
-            // nothing is written.
-            let mut again = alo_nearby::Proposals::on(reception());
-            let refused = alo_nearby::crossing::propose(
-                &mut again,
-                &found,
-                &[alo_nearby::MayAskIts::Models],
-                day,
-                now,
-            )
-            .unwrap_err();
-            assert_eq!(refused, alo_nearby::NotProposed::AlreadyWaiting);
-            drop(answered.join().unwrap());
-
-            // The studio's person confirms first, on their own side of the
-            // lock; reception hears it on its own wire and holds nothing yet.
-            let mut receptions_pairings = alo_nearby::Pairings::none();
-            let heard_at_reception = std::thread::spawn(move || {
-                let receiving = alo_nearby::Receiving::on(receptions_listener);
-                let arrived = receiving.accept_one().unwrap();
-                let mut shown = |_: &alo_nearby::Waiting| true;
-                let heard = arrived
-                    .considered(
-                        &mut receptions_proposals,
-                        &mut receptions_pairings,
-                        &[],
-                        &mut shown,
-                        this_moment(),
-                    )
-                    .unwrap();
-                (heard, receptions_proposals, receptions_pairings)
-            });
-            let kept_at_the_studio = alo_nearby::crossing::confirm(
-                told.network.locked().proposals_mut(),
-                &reception(),
-                this_moment(),
-            )
-            .unwrap();
-            assert!(
-                kept_at_the_studio.is_none(),
-                "one confirmation kept a pairing"
-            );
-            let (heard, mut receptions_proposals, mut receptions_pairings) =
-                heard_at_reception.join().unwrap();
-            assert!(matches!(
-                heard,
-                alo_nearby::Heard::AConfirmation { kept: None, .. }
-            ));
-            assert!(receptions_pairings.every().is_empty());
-
-            // Reception confirms second, over the wire: the studio keeps the
-            // pairing and writes it down; reception keeps its own.
-            let kept_at_reception = alo_nearby::crossing::confirm(
-                &mut receptions_proposals,
-                &the_studio(),
-                this_moment(),
-            )
-            .unwrap()
-            .unwrap();
-            receptions_pairings.keep(kept_at_reception);
-            assert!(
-                told.network
-                    .locked()
-                    .pairings()
-                    .paired_with(&reception(), this_moment())
-            );
-            told.stop.stop();
-        });
         assert_eq!(served.heard_on_the_port(), 4, "{served:?}");
         assert_eq!(record.len(), 1, "{record:?}");
         assert!(
@@ -2425,5 +2492,420 @@ mod tests {
             "{stopped:?}"
         );
         assert_eq!(record.len(), 0);
+    }
+
+    /// Reception, as the machine down the corridor: it answers discovery
+    /// once, is shown the studio's proposal on its own wire and answers it,
+    /// hears the studio's confirmation, confirms in turn to the studio's port,
+    /// and hands back its own row of the pairing.
+    fn reception_pairs_with_the_studio(
+        told_port: u16,
+        discovery: UdpSocket,
+    ) -> (u16, std::thread::JoinHandle<alo_nearby::Pairing>) {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let answering =
+            alo_nearby::Answering::on(discovery, alo_nearby::Presence::of(reception(), port));
+        let heard = std::thread::spawn(move || {
+            answering.answer_one().unwrap();
+            let receiving = alo_nearby::Receiving::on(listener);
+            let mut proposals = alo_nearby::Proposals::on(reception());
+            let mut pairings = alo_nearby::Pairings::none();
+            let studio =
+                alo_nearby::Found::seen(the_studio(), told_port, Ipv4Addr::LOCALHOST.into());
+            let mut shown = |waiting: &alo_nearby::Waiting| waiting.code().is_some();
+            let heard = receiving
+                .accept_one()
+                .unwrap()
+                .considered(
+                    &mut proposals,
+                    &mut pairings,
+                    &[studio],
+                    &mut shown,
+                    this_moment(),
+                )
+                .unwrap();
+            assert!(
+                matches!(heard, alo_nearby::Heard::AProposal { .. }),
+                "{heard:?}"
+            );
+            let heard = receiving
+                .accept_one()
+                .unwrap()
+                .considered(
+                    &mut proposals,
+                    &mut pairings,
+                    &[],
+                    &mut shown,
+                    this_moment(),
+                )
+                .unwrap();
+            assert!(
+                matches!(heard, alo_nearby::Heard::AConfirmation { kept: None, .. }),
+                "{heard:?}"
+            );
+            assert!(
+                pairings.every().is_empty(),
+                "one confirmation kept a pairing"
+            );
+            let kept = alo_nearby::crossing::confirm(&mut proposals, &the_studio(), this_moment())
+                .unwrap()
+                .unwrap();
+            pairings.keep(kept.clone());
+            kept
+        });
+        (port, heard)
+    }
+
+    /// Where a test keeps the pairings file, and the keeper the service
+    /// writes it through.
+    fn a_pairings_file_of_our_own(what: &str) -> (PathBuf, Box<dyn KeepingPairings>) {
+        let at = crate::testing::a_directory_of_our_own(what).join("pairings.toml");
+        (at.clone(), Box::new(crate::ThePairingsFile::at(&at)))
+    }
+
+    /// One proven verb from reception on the port, and its status and body.
+    fn a_verb_from_reception(
+        on_reception: &alo_nearby::Pairing,
+        port: u16,
+        folder: &Path,
+        at: SystemTime,
+    ) -> (u16, String) {
+        let listing = [(
+            "folder",
+            alo_capability::Given::text(folder.to_string_lossy().into_owned()),
+        )];
+        let (proof, body) = a_proven_verb(on_reception, "list_folder", &listing, at);
+        on_the_port(
+            port,
+            alo_corridor::THE_READ_PATH,
+            &[(alo_asking::THE_PROOF_HEADER, &proof)],
+            &body,
+        )
+    }
+
+    /// **The person's door proposes, confirms and lists a pairing, and the
+    /// pairing outlives a restart — and its expiry survives with it.** The
+    /// studio's person proposes to reception by identity from their shell;
+    /// reception is found on the network, shown, and answers; the shell is
+    /// shown the code and confirms with it; reception confirms; the shell
+    /// lists it paired, once, and the record says so once. The service is
+    /// then stopped and started again from nothing but the file, and a
+    /// proven verb from reception is carried out; started a third time after
+    /// the moment the pairing ends, the same verb is refused as not paired.
+    #[test]
+    fn a_pairing_made_on_the_persons_door_outlives_a_restart_and_its_expiry_survives_with_it() {
+        let (file, keeping) = a_pairings_file_of_our_own("pairing-door-file");
+        let mut record = Record::default();
+        let paired_from_the_door = Arc::new(std::sync::Mutex::new(None));
+        let handed_back = Arc::clone(&paired_from_the_door);
+        let (served, _invoice) = while_it_runs_holding(
+            "@files",
+            Keeping::Forever,
+            "pairing-door",
+            &[Some(Side::Person)],
+            &mut record,
+            &NothingIsRemembered,
+            nothing_has_been_chosen(),
+            (alo_nearby::Pairings::none(), keeping),
+            granting,
+            move |told| {
+                let mut person = Talking::to(&told.at);
+                let (_, reception_pairs) =
+                    reception_pairs_with_the_studio(told.port, told.discovery);
+
+                let said = person.asking(&format!(
+                    r#"{{"pair":{{"machine":"{}","may":["models"],"seconds":6}}}}"#,
+                    reception().as_str()
+                ));
+                let proposed = ToAPerson::read(said.trim_end()).unwrap();
+                assert!(
+                    proposed.proposed_pairing().is_some(),
+                    "the proposal did not come back with the code: {said}"
+                );
+                let waiting = proposed.proposed_pairing().unwrap();
+                let code = waiting.code().unwrap().to_owned();
+                assert_eq!(waiting.machine(), reception().as_str());
+                assert_eq!(waiting.side(), alo_protocol::SideOf::Asking);
+                assert!(!waiting.confirmed().here);
+
+                let said = person.asking(r#"{"pairings":{}}"#);
+                let listed = ToAPerson::read(said.trim_end()).unwrap();
+                assert!(listed.paired().unwrap().is_empty());
+                assert_eq!(listed.waiting_to_pair().unwrap().len(), 1);
+                assert_eq!(
+                    listed.waiting_to_pair().unwrap().first().unwrap().code(),
+                    Some(code.as_str())
+                );
+
+                let said = person.asking(&format!(
+                    r#"{{"confirm-pairing":{{"machine":"{}","code":"{code}"}}}}"#,
+                    reception().as_str()
+                ));
+                assert_eq!(
+                    ToAPerson::read(said.trim_end())
+                        .unwrap()
+                        .became_of_confirming(),
+                    Some(alo_protocol::AfterConfirming::WaitingForTheOtherPerson),
+                    "{said}"
+                );
+                // Reception confirms in turn, to the studio's port.
+                let on_reception = reception_pairs.join().unwrap();
+
+                let said = person.asking(r#"{"pairings":{}}"#);
+                let listed = ToAPerson::read(said.trim_end()).unwrap();
+                assert_eq!(listed.paired().unwrap().len(), 1, "{said}");
+                assert_eq!(
+                    listed.paired().unwrap().first().unwrap().machine(),
+                    reception().as_str()
+                );
+                assert!(listed.paired().unwrap().first().unwrap().ends_in() <= 6);
+                assert!(listed.waiting_to_pair().unwrap().is_empty());
+                *handed_back.lock().unwrap() = Some(on_reception);
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert_eq!(served.heard_on_the_port(), 1, "reception's confirmation");
+        assert_eq!(record.len(), 1, "{record:?}");
+        assert!(matches!(
+            record.everything().next().unwrap().happened(),
+            alo_record::Happened::Paired { with } if with.as_str() == reception().as_str()
+        ));
+        let on_reception = paired_from_the_door.lock().unwrap().take().unwrap();
+        let made = this_moment();
+        assert_eq!(
+            std::fs::metadata(&file).unwrap().permissions().mode() & 0o777,
+            0o600,
+            "the key went down where somebody else could read it"
+        );
+
+        // The restart: nothing but the file, as `src/main.rs` reads it.
+        let read_back = alo_remembering::pairings_remembered(&file, this_moment()).unwrap();
+        assert!(read_back.paired_with(&reception(), this_moment()));
+        let (_, keeping) = a_pairings_file_of_our_own("pairing-door-file-again");
+        let mut record = Record::default();
+        let after = on_reception.clone();
+        let (served, _invoice) = while_it_runs_holding(
+            "@files",
+            Keeping::Forever,
+            "pairing-door-restarted",
+            &[],
+            &mut record,
+            &NothingIsRemembered,
+            nothing_has_been_chosen(),
+            (read_back, keeping),
+            granting_reception_too,
+            move |told| {
+                let folder = told.invoice.parent().unwrap().to_path_buf();
+                let (status, said) =
+                    a_verb_from_reception(&after, told.port, &folder, this_moment());
+                assert_eq!(
+                    status, 200,
+                    "the pairing did not survive the restart: {said}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert_eq!(served.heard_on_the_port(), 1);
+        assert_eq!(
+            record.len(),
+            2,
+            "the read and its answer leaving: {record:?}"
+        );
+
+        // And across the moment it ends: the file still holds the row, and
+        // the row is gone as the list is read.
+        let until = made + Duration::from_secs(7);
+        if let Ok(left) = until.duration_since(this_moment()) {
+            std::thread::sleep(left);
+        }
+        let ended = alo_remembering::pairings_remembered(&file, this_moment()).unwrap();
+        assert!(ended.every().is_empty(), "a pairing that ended came back");
+        let (_, keeping) = a_pairings_file_of_our_own("pairing-door-file-ended");
+        let mut record = Record::default();
+        let (served, _invoice) = while_it_runs_holding(
+            "@files",
+            Keeping::Forever,
+            "pairing-door-ended",
+            &[],
+            &mut record,
+            &NothingIsRemembered,
+            nothing_has_been_chosen(),
+            (ended, keeping),
+            granting_reception_too,
+            move |told| {
+                let folder = told.invoice.parent().unwrap().to_path_buf();
+                let (_, said) =
+                    a_verb_from_reception(&on_reception, told.port, &folder, this_moment());
+                assert_eq!(
+                    alo_corridor::AtTheDoor::off_the_wire(said.trim()),
+                    Some(alo_corridor::AtTheDoor::NotProven(
+                        alo_nearby::NotProven::NotWithThatMachine
+                    )),
+                    "{said}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert_eq!(served.heard_on_the_port(), 1);
+        assert_eq!(
+            record.len(),
+            0,
+            "a refusal before the door was written down"
+        );
+    }
+
+    /// **A revocation from the person's door takes effect on the next verb
+    /// and the next question**, tested through the door rather than the
+    /// lock: before it the verb ran and the question was proven, after it
+    /// both are refused as not paired, and the file no longer holds the row.
+    #[test]
+    fn a_pairing_revoked_from_the_persons_door_refuses_the_next_verb_and_the_next_question() {
+        let (file, keeping) = a_pairings_file_of_our_own("revoked-from-the-door");
+        let mut record = Record::default();
+        let (on_reception, on_studio) = paired_between(
+            reception(),
+            the_studio(),
+            &[alo_nearby::MayAskIts::Models],
+            this_moment(),
+        );
+        let mut pairings = alo_nearby::Pairings::none();
+        pairings.keep(on_studio);
+        alo_remembering::pairings_kept(&file, &pairings, this_moment()).unwrap();
+        let (served, _invoice) = while_it_runs_holding(
+            "@files",
+            Keeping::Forever,
+            "revoked-from-the-door-service",
+            &[Some(Side::Person)],
+            &mut record,
+            &NothingIsRemembered,
+            nothing_has_been_chosen(),
+            (pairings, keeping),
+            granting_reception_too,
+            move |told| {
+                let now = this_moment();
+                let folder = told.invoice.parent().unwrap().to_path_buf();
+                let (status, said) = a_verb_from_reception(&on_reception, told.port, &folder, now);
+                assert_eq!(status, 200, "{said}");
+                let (proof, body) = a_proven_question(&on_reception, now + Duration::from_secs(1));
+                let (status, said) = on_the_port(
+                    told.port,
+                    alo_asking::THE_QUESTION_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(status, 503, "{said}");
+                assert_eq!(said.trim(), crate::questioned::NOT_ANSWERED_HERE);
+
+                // The person here revokes it, from their shell.
+                let mut person = Talking::to(&told.at);
+                let said = person.asking(&format!(
+                    r#"{{"revoke-pairing":{{"machine":"{}"}}}}"#,
+                    reception().as_str()
+                ));
+                assert_eq!(
+                    ToAPerson::read(said.trim_end())
+                        .unwrap()
+                        .became_of_revoking(),
+                    Some(alo_protocol::AfterRevoking::Revoked),
+                    "{said}"
+                );
+                let said = person.asking(r#"{"pairings":{}}"#);
+                assert!(
+                    ToAPerson::read(said.trim_end())
+                        .unwrap()
+                        .paired()
+                        .unwrap()
+                        .is_empty()
+                );
+
+                let later = now + Duration::from_secs(2);
+                let (_, said) = a_verb_from_reception(&on_reception, told.port, &folder, later);
+                assert_eq!(
+                    alo_corridor::AtTheDoor::off_the_wire(said.trim()),
+                    Some(alo_corridor::AtTheDoor::NotProven(
+                        alo_nearby::NotProven::NotWithThatMachine
+                    )),
+                    "{said}"
+                );
+                let (proof, body) = a_proven_question(&on_reception, now + Duration::from_secs(3));
+                let (_, said) = on_the_port(
+                    told.port,
+                    alo_asking::THE_QUESTION_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(
+                    alo_corridor::AtTheDoor::off_the_wire(said.trim()),
+                    Some(alo_corridor::AtTheDoor::NotProven(
+                        alo_nearby::NotProven::NotWithThatMachine
+                    )),
+                    "{said}"
+                );
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert_eq!(served.heard_on_the_port(), 4);
+        assert_eq!(served.messages(), 2);
+        assert_eq!(record.len(), 2, "{record:?}");
+        assert!(
+            alo_remembering::pairings_remembered(&file, this_moment())
+                .unwrap()
+                .every()
+                .is_empty(),
+            "a revoked pairing was still in the file"
+        );
+    }
+
+    /// **The four about a pairing on the agent's door are refused in the
+    /// words an agent approving something gets**, nothing waits or is paired
+    /// afterwards, and nothing is written down.
+    #[test]
+    fn the_four_about_pairing_on_the_agents_door_are_refused_as_an_approval_would_be() {
+        let (served, record, _invoice) = while_it_runs(
+            "agent-pairing",
+            &[Some(Side::Agent), Some(Side::Person)],
+            |told| {
+                let mut agent = Talking::to(&told.at);
+                for asks in [
+                    format!(
+                        r#"{{"pair":{{"machine":"{}","may":["models"],"seconds":3600}}}}"#,
+                        reception().as_str()
+                    ),
+                    format!(
+                        r#"{{"confirm-pairing":{{"machine":"{}","code":"000000"}}}}"#,
+                        reception().as_str()
+                    ),
+                    format!(
+                        r#"{{"revoke-pairing":{{"machine":"{}"}}}}"#,
+                        reception().as_str()
+                    ),
+                    r#"{"pairings":{}}"#.to_owned(),
+                ] {
+                    let refused = agent.asking(&asks);
+                    assert!(
+                        refused
+                            .contains("an agent cannot answer a question that was put to a person"),
+                        "{refused}"
+                    );
+                }
+                let mut person = Talking::to(&told.at);
+                let said = person.asking(r#"{"pairings":{}}"#);
+                let listed = ToAPerson::read(said.trim_end()).unwrap();
+                assert!(listed.paired().unwrap().is_empty());
+                assert!(listed.waiting_to_pair().unwrap().is_empty());
+                told.stop.stop();
+            },
+        );
+        assert_eq!(served.messages(), 5);
+        assert_eq!(
+            record.len(),
+            0,
+            "an agent's refused request was written down: {record:?}"
+        );
     }
 }
