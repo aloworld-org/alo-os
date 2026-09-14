@@ -98,6 +98,7 @@ mod plan;
 mod publishing;
 mod recovering;
 mod repository;
+mod what_it_printed;
 mod where_it_builds;
 mod worker;
 

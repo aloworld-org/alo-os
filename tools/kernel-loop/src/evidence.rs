@@ -34,7 +34,7 @@
 
 use std::path::Path;
 
-use crate::gates;
+use crate::{gates, what_it_printed};
 
 /// One acceptance criterion's test, as a handoff names it.
 #[derive(Debug, PartialEq, Eq)]
@@ -169,11 +169,7 @@ pub fn stands_up(at: &Path, files: &[String], shown: &[Shown]) -> Result<Vec<Str
         let said = gates::running(at, &one.at, "cargo", &one.as_arguments())?
             .output()
             .map_err(|why| format!("`{}` could not be run: {why}", one.named))?;
-        let printed = format!(
-            "{}{}",
-            String::from_utf8_lossy(&said.stdout),
-            String::from_utf8_lossy(&said.stderr)
-        );
+        let printed = what_it_printed::everything(&said);
         what_it_showed(&one.named, said.status.success(), &printed)?;
         stood.push(format!("{} ({})", one.named, one.within));
     }
@@ -416,6 +412,39 @@ mod tests {
         assert!(!refused.is_empty(), "a failed test was taken as evidence");
         assert!(!gates::blamed_the_machine(&refused), "{refused}");
         assert!(refused.contains("did not stand up"), "{refused}");
+    }
+
+    /// **The same sentence in the bytes the bridge really prints it in.** On
+    /// 2026-09-14 the test above was green and task 11's evidence was still
+    /// blamed for a WSL timeout, because `wsl.exe` writes its own words in
+    /// UTF-16 and what reached the classifier was `W s l / S e r v i c e /`.
+    /// What the process printed is read through `what_it_printed` first, so
+    /// the machine's fault is the machine's in the bytes and not only in the
+    /// test's UTF-8 quotation of them.
+    #[test]
+    fn a_distribution_that_did_not_answer_is_the_machine_in_the_bytes_wsl_prints() {
+        let wsl_timed_out: Vec<u8> = "A connection attempt failed because the connected party \
+                                      did not properly respond after a period of time, or \
+                                      established connection failed because connected host has \
+                                      failed to respond. \r\nError code: \
+                                      Wsl/Service/0x8007274c\r\n"
+            .encode_utf16()
+            .flat_map(u16::to_le_bytes)
+            .collect();
+        let printed = what_it_printed::as_text(&wsl_timed_out);
+        let refused = what_it_showed(
+            "reaching::tests::a_change_from_a_paired_machine_is_listed_approved_and_runs_once",
+            false,
+            &printed,
+        )
+        .err()
+        .unwrap_or_default();
+        assert!(gates::blamed_the_machine(&refused), "{refused}");
+        assert!(!refused.contains("0 test results"), "{refused}");
+        assert!(
+            refused.contains("Wsl/Service/0x8007274c"),
+            "the tail of what was printed is the words, not the bytes: {refused}"
+        );
     }
 
     #[test]

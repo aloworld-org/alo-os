@@ -236,6 +236,59 @@ puts the question through `alo-asking`'s own corridor exactly as reception's
 machine would, to the daemon's real port, and reads the answer back through
 the same reader a provider's answer goes through.
 
+## Second pass: why the first handoff was refused, and what was changed
+
+The first handoff of this task passed every gate on its own tree and on the
+combined tree, twice over, and its evidence stood up both times. On the third
+evidence run, after a push race rebased the tree once more, the supervisor
+refused `reaching::tests::a_change_from_a_paired_machine_is_listed_approved_and_runs_once`
+with *cargo printed 0 test results*. What cargo had printed was nothing:
+`wsl.exe` had not reached the distribution, and said so —
+`Wsl/Service/0x8007274c`, a connection that timed out before `bash` ran.
+
+The supervisor has a classifier for exactly that sentence
+(`gates::the_machine_rather_than_the_work`), and it did not fire, because
+`wsl.exe` writes its own words in UTF-16LE and the supervisor read the pipe as
+UTF-8: what reached the classifier was `W s l / S e r v i c e /`, a NUL between
+every letter. Its own test held the sentence in UTF-8, which is not how the
+bridge ever prints it. That is visible in the refusal quoted to this worker,
+where the message is spaced out character by character.
+
+Nothing in the product changed on this pass; the code of task 11 is as the
+first worker left it, and every gate was run again on it. What changed is the
+supervisor, in the smallest way that makes the refusal read what was said:
+
+- `tools/kernel-loop/src/what_it_printed.rs` (new): everything a bridged
+  process printed goes through one reader that tells a run of UTF-16LE from
+  UTF-8 by the byte UTF-8 output never contains, decodes each as what it is,
+  drops a byte-order mark, and lets the two follow one another in one stream
+  (the bridge's warning, then cargo's output). A character outside Latin-1 in
+  the bridge's own text degrades to a replacement rather than taking the
+  error code beside it with it.
+- `tools/kernel-loop/src/gates.rs` and `src/evidence.rs` read what a gate or
+  an evidence run printed through it. The classification was not touched: a
+  WSL timeout under an evidence test is now `NOT_READY_TO_BE_GATED`, and the
+  loop runs the gates again rather than sending a worker at a test that
+  passed, which is what the supervisor's own rustdoc already promised. No
+  gate is weaker: a build error, a failed test, a name that matches nothing
+  are refused in the same words as before, by the same tests.
+
+| What is shown | The test |
+|---|---|
+| the bytes `wsl.exe` printed on 2026-09-14 are read as the sentence | `tools/kernel-loop` · `what_it_printed::tests::what_wsl_prints_in_utf16_is_read_as_the_words` |
+| the same bytes, through the evidence reader, are the machine's fault and not the evidence's, and the tail quoted is words | `tools/kernel-loop` · `evidence::tests::a_distribution_that_did_not_answer_is_the_machine_in_the_bytes_wsl_prints` |
+| cargo's UTF-8 is left as it is, and a bridge warning ahead of it does not hide the one result line | `what_it_printed::tests::what_the_linux_side_prints_in_utf8_is_left_as_it_is`, `what_it_printed::tests::a_warning_from_the_bridge_before_cargos_output_reads_as_both` |
+
+Verified on this pass, Ubuntu under WSL, each run in the foreground and
+waited on: `cargo fmt --all` clean at the root and in `tools/kernel-loop`;
+`cargo clippy --workspace --all-targets -- -D warnings` clean; the
+supervisor's `cargo clippy --all-targets -- -D warnings` clean and its
+`cargo test` 113 passed (was 109); `cargo test -p` for `alo-agentd` (268
+unit, every integration target), `alo-turn` (89), `alo-asking` (104),
+`alo-nearby` (125) and `alo-protocol` (94), all green; and each of the three
+new tests run alone by `--exact` as the supervisor runs evidence, one result
+line each. The full workspace suite is the supervisor's.
+
 ## Remaining limitations, honestly
 
 - **The person's surface still confirms a pairing outside the loop**, and

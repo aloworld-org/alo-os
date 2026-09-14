@@ -66,7 +66,7 @@
 use std::path::Path;
 use std::process::Command;
 
-use crate::where_it_builds;
+use crate::{what_it_printed, where_it_builds};
 
 /// One check, and what it is called in a report.
 pub struct Gate {
@@ -362,11 +362,13 @@ fn ran(gate: &Gate, at: &Path) -> Result<Result<(), String>, String> {
     let said = asking(gate, at)?
         .output()
         .map_err(|why| format!("`{}` could not be run: {why}", gate.named))?;
+    // Through `what_it_printed`, because the bridge's own words arrive in
+    // UTF-16 and the classifier below has to be able to read them.
     Ok(whether_it_passed(
         gate.named,
         said.status.success(),
-        &String::from_utf8_lossy(&said.stdout),
-        &String::from_utf8_lossy(&said.stderr),
+        &what_it_printed::as_text(&said.stdout),
+        &what_it_printed::as_text(&said.stderr),
     ))
 }
 
