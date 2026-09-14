@@ -16,12 +16,14 @@ pub(crate) enum NativeScene<'a> {
     SignIn(&'a crate::sign_in_raster::SignInPicture),
 }
 
-/// Everything native painted over clients in one frame: the selected scene, and
-/// the egress indicator above it.
+/// Everything native painted over clients in one frame: the selected scene, the
+/// approval surface above it, and the egress indicator above both.
 #[derive(Clone, Copy)]
 pub(crate) struct NativeLayers<'a> {
     /// Controls, a reader or the sign-in screen, when one is selected.
     pub(crate) scene: Option<NativeScene<'a>>,
+    /// The approval surface, when the frame carries one.
+    pub(crate) approval: Option<&'a crate::approval_raster::ApprovalPicture>,
     /// The egress indicator, when the frame carries a status area.
     pub(crate) status: Option<&'a crate::egress_status_raster::EgressStatusPicture>,
 }

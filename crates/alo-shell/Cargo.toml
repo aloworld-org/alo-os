@@ -12,6 +12,14 @@ publish = false
 # and never the accounts themselves, which only `alo-greeting` asks.
 alo-accounts = { path = "../alo-accounts" }
 alo-appearance = { path = "../alo-appearance" }
+# The sentence a person approves: a change that is really waiting, put in
+# front of them once and answered once. This crate draws the question and
+# carries keys to it; every answer goes back through `alo_approving::Approving`
+# and nothing here approves, declines or words anything itself.
+alo-approving = { path = "../alo-approving" }
+# The number a question is answered by, and the grants an approval is checked
+# against again at the moment it runs — handed through, never decided here.
+alo-capability = { path = "../alo-capability" }
 # Where the dock is, and so which corner is the status area the egress
 # indicator is drawn in. Read, never written.
 alo-dock = { path = "../alo-dock" }
@@ -24,6 +32,9 @@ alo-greeting = { path = "../alo-greeting" }
 alo-indicator = { path = "../alo-indicator" }
 alo-shortcuts = { path = "../alo-shortcuts" }
 alo-strings = { path = "../alo-strings" }
+# The turn a question was asked inside, borrowed for the length of one call so
+# an answer reaches the one road that carries a change out and records it.
+alo-turn = { path = "../alo-turn" }
 cosmic-text = { version = "=0.14.2", default-features = false, features = ["std", "swash"] }
 smithay = { version = "=0.7.0", default-features = false, features = ["wayland_frontend", "renderer_gl", "backend_winit", "backend_session_libseat", "backend_libinput", "backend_udev", "use_system_lib", "desktop"] }
 rustix.workspace = true
@@ -40,9 +51,15 @@ alo-sessiond = { path = "../alo-sessiond" }
 # Real departures for the egress indicator's tests: permitted by the machine's
 # own indicator, by an agent a grant names, to a source a model is answered
 # at. Never a dependency of the shipped surface, which only draws.
-alo-capability = { path = "../alo-capability" }
 alo-egress = { path = "../alo-egress" }
 alo-models = { path = "../alo-models" }
+# A whole turn for the approval surface's tests — the invocation, the file
+# verbs on a real disk and the record — so *one approval, one execution* is a
+# file that moved once rather than a count the test kept.
+alo-context = { path = "../alo-context" }
+alo-files = { path = "../alo-files" }
+alo-keeping = { path = "../alo-keeping" }
+alo-record = { path = "../alo-record" }
 tempfile = "3"
 drm-ffi = "=0.9.1"
 wayland-client = "0.31"

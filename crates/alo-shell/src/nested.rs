@@ -366,6 +366,27 @@ impl Nested {
         controls: Option<crate::scene_native::NativeScene<'_>>,
         status: Option<&crate::egress_status_raster::EgressStatusPicture>,
     ) -> Result<Vec<WlSurface>, RenderError> {
+        self.submit_native_layers(
+            roots,
+            popups,
+            cursor,
+            crate::scene_native::NativeLayers {
+                scene: controls,
+                approval: None,
+                status,
+            },
+        )
+    }
+
+    /// The same boundary, with every native layer — scene, approval surface and
+    /// egress indicator — chosen by the caller.
+    pub(crate) fn submit_native_layers(
+        &mut self,
+        roots: &[WlSurface],
+        popups: &[crate::Popup],
+        cursor: &crate::Cursor,
+        native: crate::scene_native::NativeLayers<'_>,
+    ) -> Result<Vec<WlSurface>, RenderError> {
         if self.closed {
             return Err(RenderError::Closed);
         }
@@ -391,10 +412,7 @@ impl Nested {
                 popups,
                 cursor,
                 Transform::Flipped180,
-                crate::scene_native::NativeLayers {
-                    scene: controls,
-                    status,
-                },
+                native,
             )?
         };
         if trace {

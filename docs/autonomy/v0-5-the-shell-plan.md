@@ -114,7 +114,13 @@ on-the-machine half has been empty since the repository began.
 
 ### 3. The sentence a person approves
 
-**Status:** ready. **Depends on:** 1.
+**Status:** **Done, 2026-09-14.** `crates/alo-shell/src/approval_*.rs` and
+`nested_approval.rs`; evidence and decisions in
+`docs/autonomy/updates/the-sentence-a-person-approves-drawn-on-the-nested-compositor.md`.
+The code only — a certified machine has not seen it, answers are given by
+keyboard only, and a refusal has no visible acknowledging control because no
+crate declares a word for one (findings in that report).
+**Depends on:** 1.
 
 ADR 0001: an agent proposes and a person approves, and `alo-approving` is
 *one approval, and the sentence a person approves: the change an agent

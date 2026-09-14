@@ -61,7 +61,7 @@ impl Nested {
 }
 
 /// The indicator for this frame, or the refusal that stops the whole frame.
-fn status_picture(
+pub(crate) fn status_picture(
     egress: EgressStatusFrame<'_>,
     labels: &mut WindowControlLabels,
     size: (i32, i32),

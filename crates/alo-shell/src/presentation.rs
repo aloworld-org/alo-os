@@ -42,6 +42,11 @@ pub enum RenderError {
     /// drawn now could not say whether anything is.
     #[error("the egress indicator has not been told what is leaving")]
     EgressStatusUnknown,
+    /// A question or a refusal is open and the approval surface cannot hold
+    /// the whole of it on this output, or was laid out for a different one.
+    /// The frame is refused rather than drawn with the sentence cut.
+    #[error("the approval surface does not fit this output")]
+    ApprovalScene,
     /// The target does not support explicit retirement.
     #[error("target does not support output retirement")]
     RetirementUnsupported,

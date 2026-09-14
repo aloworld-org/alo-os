@@ -97,6 +97,7 @@ pub fn render_control_scanout(
         Transform::Normal,
         crate::scene_native::NativeLayers {
             scene: controls.map(crate::scene_native::NativeScene::Controls),
+            approval: None,
             status: None,
         },
     )?;

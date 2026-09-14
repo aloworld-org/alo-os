@@ -17,10 +17,28 @@
 //! indicator whenever that changes, and every session frame submitted with
 //! `Nested::submit_with_egress_status` draws its lines at the far end of the
 //! dock, above every client, and nothing while nothing is leaving.
+//!
+//! The approval surface (`ApprovalScreen`) is drawn here and decided in
+//! `alo-approving`: a change an agent proposed goes up as the sentence that
+//! crate hands the compositor, unedited, with two answers and neither
+//! selected; each answer goes back through `alo_approving::Approving` once;
+//! a change that arrives while another is open waits behind it; and a frame
+//! submitted with `Nested::submit_with_approval` carries the question above
+//! every client and the egress indicator above the question.
 
 #![cfg(target_os = "linux")]
 
 mod active_session;
+mod approval_answers;
+mod approval_keys;
+mod approval_paint;
+mod approval_queue;
+mod approval_raster;
+mod approval_screen;
+mod approval_seat;
+mod approval_shown;
+#[cfg(test)]
+mod approval_testing;
 mod atomic_inventory;
 mod atomic_output;
 mod atomic_test;
@@ -50,6 +68,7 @@ mod keyboard;
 mod libinput_routing;
 mod libinput_scroll;
 mod nested;
+mod nested_approval;
 mod nested_control_input;
 mod nested_egress_status;
 mod nested_pointer;
@@ -150,6 +169,9 @@ pub use window_switch::{WindowSwitchDirection, WindowSwitchError};
 pub use window_tiling::{TileGeometry, TileGeometryError, TileSide};
 
 pub use active_session::ActiveSessionResult;
+pub use approval_keys::ApprovalKey;
+pub use approval_raster::ApprovalLook;
+pub use approval_screen::{ApprovalAnswer, ApprovalOutcome, ApprovalScreen, ApprovalShows};
 pub use atomic_output::{AtomicOutput, AtomicOutputError, discover_atomic_output};
 pub use cursor::Cursor;
 pub use direct_keyboard::DirectKeyEvent;
@@ -166,6 +188,7 @@ pub use egress_status_raster::EgressStatusLook;
 pub use flip_gate::FlipGate;
 pub use keyboard::InputError;
 pub use nested::Nested;
+pub use nested_approval::ApprovalFrame;
 pub use nested_control_input::NestedControlInput;
 pub use nested_egress_status::EgressStatusFrame;
 pub use nested_pointer::NestedPointerEvent;
