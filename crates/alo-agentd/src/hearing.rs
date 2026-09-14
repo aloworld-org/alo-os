@@ -6,7 +6,8 @@
 //! (`THE_PROPOSAL_PATH`, `THE_CONFIRMATION_PATH`); a read, a change and an
 //! outcome are `alo-corridor`'s (`THE_READ_PATH`, `THE_CHANGE_PATH`,
 //! `THE_OUTCOME_PATH`); a question is `alo-asking`'s corridor arriving
-//! (`THE_QUESTION_PATH`) and is judged by [`crate::questioned`]. This file
+//! (`THE_QUESTION_PATH`) and is judged and answered by [`crate::questioned`],
+//! by what the person here chose to answer questions with. This file
 //! knows those six paths and nothing about what travels on them: it reads
 //! the request line, picks the wire, takes the one lock over the pairings
 //! and the proposals for exactly the length of the message, and carries the
@@ -44,6 +45,7 @@ use alo_nearby::{NotNearby, Pairing, Surface, THE_CONFIRMATION_PATH, THE_PROPOSA
 use crate::looking::found_at;
 use crate::network::TheNetwork;
 use crate::questioned::{self, Questioned};
+use crate::questions::Questions;
 use crate::refusing::NotServed;
 use crate::wire::Knocked;
 
@@ -84,6 +86,9 @@ pub struct Judging<'a> {
     pub policy: &'a EgressPolicy,
     /// Where an asking machine's own discovery answers.
     pub asking_at: u16,
+    /// What the person here chose to answer questions with, looked for at
+    /// every question from a paired machine.
+    pub questions: &'a mut Questions,
 }
 
 /// Hear one message: tell the wires apart by path, hand the message to the
@@ -136,19 +141,21 @@ pub fn heard(
         }
         THE_QUESTION_PATH => {
             let shared = judging.network.locked();
-            Ok(
-                match questioned::answered(
-                    stream,
-                    &message,
-                    doorway,
-                    shared.pairings(),
-                    judging.naming,
-                    now,
-                ) {
-                    Ok(questioned) => Heard::AQuestion(questioned),
-                    Err(why) => Heard::NotAnswered(why),
+            let replied = questioned::answered(
+                stream,
+                &message,
+                doorway,
+                questioned::Asking {
+                    pairings: shared.pairings(),
+                    questions: judging.questions,
+                    naming: judging.naming,
                 },
-            )
+                now,
+            )?;
+            Ok(match replied {
+                Ok(questioned) => Heard::AQuestion(questioned),
+                Err(why) => Heard::NotAnswered(why),
+            })
         }
         _ => {
             let written = http::a_reply(404, "Not Found", &format!("{NOT_FOR_THIS_WIRE}\n"));

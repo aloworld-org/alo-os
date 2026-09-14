@@ -362,7 +362,11 @@ impl<'a> Serving<'a> {
                 }
                 if self.one_round(
                     &mut held,
-                    &mut Holding::TheNetwork(&mut doorway),
+                    &mut Holding::TheNetwork {
+                        doorway: &mut doorway,
+                        network: self.network,
+                        questions: &mut *questions,
+                    },
                     granted,
                     strings,
                     &mut served,
@@ -493,7 +497,7 @@ impl<'a> Serving<'a> {
         for_at_most: Option<Duration>,
         surface: &mut dyn Surface,
     ) -> Result<Next, NotServed> {
-        let the_network_has_the_machine = matches!(holding, Holding::TheNetwork(_));
+        let the_network_has_the_machine = matches!(holding, Holding::TheNetwork { .. });
         let (stopped, person, agent, knocked, on_the_port, asked_who_is_here) = {
             let waiting_on = [
                 Some(self.waking.waiting_on()),
@@ -604,7 +608,11 @@ impl<'a> Serving<'a> {
             }
         }
 
-        if on_the_port && let Holding::TheNetwork(doorway) = holding {
+        if on_the_port
+            && let Holding::TheNetwork {
+                doorway, questions, ..
+            } = holding
+        {
             let knocked = self.wire.accept_one().map_err(NotServed::TheWire)?;
             let mut judging = Judging {
                 network: self.network,
@@ -612,6 +620,7 @@ impl<'a> Serving<'a> {
                 naming: self.terms.naming,
                 policy: &self.terms.policy,
                 asking_at: self.wire.asking_at(),
+                questions,
             };
             hearing::heard(knocked, doorway, granted.holding_mut(), &mut judging, now)?;
             served.heard = served.heard.saturating_add(1);
@@ -1042,17 +1051,20 @@ mod tests {
             sides,
             kept,
             &NothingIsRemembered,
+            nothing_has_been_chosen(),
             granting,
             talking,
         )
     }
 
-    /// The same again, on a machine whose grants file a test has written.
+    /// The same again, on a machine whose grants file a test has written, and
+    /// whose person has chosen what answers questions.
     ///
     /// The one thing the person's knock reaches, handed in rather than named
     /// here for `crate::starting`'s reason: the file is `src/main.rs`'s, and a
     /// service that could find it for itself would be a service with a road from
-    /// the socket to a path.
+    /// the socket to a path. What answers a question is handed in for the
+    /// same reason.
     #[expect(
         clippy::too_many_arguments,
         reason = "a fixture standing a whole service up, and every one of these is a thing about \
@@ -1065,6 +1077,7 @@ mod tests {
         sides: &[Option<Side>],
         kept: &mut dyn alo_turn::Shortening,
         remembering: &dyn crate::rereading::Remembering,
+        mut questions: Questions,
         starting: impl FnOnce(&Path, SystemTime) -> Grants,
         talking: impl FnOnce(Told) + Send + 'static,
     ) -> Result<(Served, PathBuf), NotServed> {
@@ -1105,7 +1118,6 @@ mod tests {
         let mut grants = starting(&folder, this_moment());
 
         let client = std::thread::spawn(move || talking(told));
-        let mut questions = nothing_has_been_chosen();
         // Every proposal is shown: the surface that really shows one is the
         // shell's, and what these tests hold is the road on either side of it.
         let mut shown = |_: &alo_nearby::Waiting| true;
@@ -1265,6 +1277,7 @@ mod tests {
             &[Some(Side::Agent), Some(Side::Person)],
             &mut Record::default(),
             &file,
+            nothing_has_been_chosen(),
             // The service signs in having been granted nothing, which is the
             // machine this task is about: the folder is picked afterwards.
             |_folder, _now| Grants::default(),
@@ -1326,6 +1339,7 @@ mod tests {
             &[Some(Side::Agent)],
             &mut record,
             &file,
+            nothing_has_been_chosen(),
             |_folder, _now| Grants::default(),
             move |told| {
                 let folder = told.invoice.parent().unwrap().to_path_buf();
@@ -1905,6 +1919,7 @@ mod tests {
             &[],
             &mut record,
             &NothingIsRemembered,
+            nothing_has_been_chosen(),
             |folder, now| {
                 let mut grants = granting(folder, now);
                 grants.grant(
@@ -2008,6 +2023,237 @@ mod tests {
                 .count(),
             0
         );
+    }
+
+    /// A grant to reception's principal over the fixture's folder, beside
+    /// `@files`'s.
+    fn granting_reception_too(folder: &Path, now: SystemTime) -> Grants {
+        let mut grants = granting(folder, now);
+        grants.grant(
+            alo_capability::Grant::checked(
+                &format!("machine:{}", reception().as_str()),
+                alo_capability::Reach::Folder(folder.to_path_buf()),
+                now,
+                hour(),
+            )
+            .unwrap(),
+        );
+        grants
+    }
+
+    /// **A question from a paired machine, put down the corridor as
+    /// reception's own machine puts one, is answered on the port by this
+    /// machine's own model** — the model the person here chose, named in the
+    /// answer — with reception's indicator firing for the corridor and this
+    /// machine's record saying a question was answered for reception and its
+    /// answer left.
+    #[test]
+    fn a_question_from_a_paired_machine_is_answered_on_the_port_by_this_machines_own_model() {
+        use alo_answering::Answering;
+        use alo_asking::{Asking, DownTheCorridor, Question};
+        use alo_capability::Grantee;
+        use alo_choosing::{Chosen, Which};
+        use alo_models::{InferenceSource, SourcePolicy};
+
+        let mut record = Record::default();
+        let (served, _invoice) = while_it_runs_remembering(
+            "@files",
+            Keeping::Forever,
+            "answered-on-the-port",
+            &[],
+            &mut record,
+            &NothingIsRemembered,
+            Questions::already_found(
+                Chosen::of(Which::Catalogue, "the-studios-model").unwrap(),
+                crate::testing::a_runtime_saying(Ok("Three are unpaid.".to_owned())),
+                crate::questions::TheBound::Nobodys,
+            ),
+            granting,
+            |told| {
+                let now = this_moment();
+                let (on_reception, on_studio) = paired_between(
+                    reception(),
+                    the_studio(),
+                    &[alo_nearby::MayAskIts::Models],
+                    now,
+                );
+                told.network.locked().pairings_mut().keep(on_studio);
+
+                // Reception's side, exactly as its own machine has it: its
+                // row of the pairing, the corridor made from it, and the
+                // question leaving under its own indicator.
+                let mut receptions_pairings = alo_nearby::Pairings::none();
+                receptions_pairings.keep(on_reception);
+                let studio_at = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), told.port);
+                let corridor = DownTheCorridor::paired(
+                    &receptions_pairings,
+                    &reception(),
+                    &the_studio(),
+                    "the studio machine",
+                    studio_at,
+                    None,
+                    now,
+                )
+                .unwrap();
+                let question = Question::asked("how many are unpaid?", "m").unwrap();
+                let files = Grantee::named("@files");
+                let permitted =
+                    Answering::chosen(corridor.source(), &SourcePolicy::InTheBuilding).unwrap();
+                let mut receptions_indicator = Indicator::default();
+                let asked = Asking::by(&files, permitted, &[], &SourcePolicy::InTheBuilding)
+                    .to_a_paired_machine(
+                        &question,
+                        &corridor,
+                        &mut receptions_indicator,
+                        now,
+                        &[studio_at],
+                    )
+                    .unwrap();
+                assert_eq!(asked.answer().text(), "Three are unpaid.");
+                // What reception's answer names is what reception asked for:
+                // `alo_asking::Answer` carries the model as it was named when
+                // it was asked and reads nothing off the reply, for the
+                // reason its constructor gives. Which model really answered
+                // is in the studio's reply and the studio's record, and
+                // `crate::questioned`'s tests hold that it is the one the
+                // studio's person chose.
+                assert_eq!(asked.answer().model(), "m");
+                assert_eq!(
+                    asked.answer().source(),
+                    &InferenceSource::PairedMachine {
+                        machine: "the studio machine".to_owned()
+                    }
+                );
+                assert!(
+                    !receptions_indicator.is_quiet(),
+                    "the question went down the corridor with reception's indicator quiet"
+                );
+                let answer = asked.ended(&mut receptions_indicator);
+                assert!(receptions_indicator.is_quiet());
+                assert_eq!(answer.text(), "Three are unpaid.");
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert_eq!(served.heard_on_the_port(), 1);
+        assert_eq!(served.turns(), 0, "a question began a local turn");
+        assert_eq!(record.len(), 2, "{record:?}");
+        assert!(record.everything().any(|entry| matches!(
+            entry.happened(),
+            alo_record::Happened::AnsweredForAnotherMachine { .. }
+        )));
+        assert_eq!(
+            record
+                .answering(&alo_record::Asking::anything().only(alo_record::Only::Egress))
+                .count(),
+            1
+        );
+        assert!(record.everything().all(|entry| {
+            entry
+                .origin()
+                .is_some_and(|from| from.is(reception().as_str()))
+        }));
+    }
+
+    /// **The person's door reaches a remote turn on the running service**: a
+    /// change reception's agent proposed on the port is listed for the
+    /// person here with reception named, approved from their shell, runs
+    /// once, and a second approval finds nothing waiting.
+    #[test]
+    fn a_change_a_paired_machine_proposed_is_approved_from_the_persons_shell() {
+        let mut record = Record::default();
+        let (served, invoice) = while_it_runs_remembering(
+            "@files",
+            Keeping::Forever,
+            "approved-from-the-shell",
+            &[Some(Side::Person)],
+            &mut record,
+            &NothingIsRemembered,
+            nothing_has_been_chosen(),
+            granting_reception_too,
+            |told| {
+                let now = this_moment();
+                let (on_reception, on_studio) = paired_between(
+                    reception(),
+                    the_studio(),
+                    &[alo_nearby::MayAskIts::Models],
+                    now,
+                );
+                told.network.locked().pairings_mut().keep(on_studio);
+                let (proof, body) = a_proven_verb(
+                    &on_reception,
+                    "rename_file",
+                    &[
+                        (
+                            "file",
+                            alo_capability::Given::text(
+                                told.invoice.to_string_lossy().into_owned(),
+                            ),
+                        ),
+                        ("name", alo_capability::Given::text("march-final.pdf")),
+                    ],
+                    now,
+                );
+                let (status, said) = on_the_port(
+                    told.port,
+                    alo_corridor::THE_CHANGE_PATH,
+                    &[(alo_asking::THE_PROOF_HEADER, &proof)],
+                    &body,
+                );
+                assert_eq!(status, 200, "{said}");
+                let number = alo_corridor::Answered::read(&said)
+                    .unwrap()
+                    .waits()
+                    .unwrap();
+                assert!(told.invoice.is_file(), "a proposal moved a file");
+
+                let mut person = Talking::to(&told.at);
+                let said = person.asking(r#"{"waiting":{}}"#);
+                let told_back = ToAPerson::read(said.trim_end()).unwrap();
+                let changes = told_back.changes().unwrap();
+                assert_eq!(changes.len(), 1, "{changes:?}");
+                assert_eq!(changes.first().unwrap().number(), number);
+                assert_eq!(
+                    changes.first().unwrap().from(),
+                    Some(reception().as_str()),
+                    "{changes:?}"
+                );
+
+                let approve = format!(r#"{{"approve":{{"number":{number}}}}}"#);
+                let said = person.asking(&approve);
+                assert!(
+                    ToAPerson::read(said.trim_end()).unwrap().done().is_some(),
+                    "{said}"
+                );
+                assert!(!told.invoice.is_file(), "the file did not move on the disk");
+                let again = person.asking(&approve);
+                assert!(
+                    ToAPerson::read(again.trim_end())
+                        .unwrap()
+                        .refusal()
+                        .is_some(),
+                    "{again}"
+                );
+                assert_eq!(person.what_is_waiting(), Vec::<u64>::new());
+                told.stop.stop();
+            },
+        )
+        .unwrap();
+        assert!(!invoice.is_file());
+        assert_eq!(served.heard_on_the_port(), 1);
+        assert_eq!(served.turns(), 0, "a remote change began a local turn");
+        assert_eq!(
+            record
+                .answering(&alo_record::Asking::anything().only(alo_record::Only::Executions))
+                .count(),
+            1,
+            "{record:?}"
+        );
+        assert!(record.everything().all(|entry| {
+            entry
+                .origin()
+                .is_some_and(|from| from.is(reception().as_str()))
+        }));
     }
 
     /// **A pairing kept is written to the record at the one moment there is

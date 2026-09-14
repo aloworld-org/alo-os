@@ -92,6 +92,11 @@ pub struct Questions {
     looked: Option<Looked>,
     /// Whose keyring a provider's key is asked of.
     keyring: WhoseKeyring,
+    /// Whether what was found is held across turns rather than looked for
+    /// again — true only of a machine [`Questions::already_found`] made, which
+    /// is a test's, and nothing a running machine can be.
+    #[cfg(test)]
+    pinned: bool,
 }
 
 /// Who set the rule a question is bounded by, kept apart from what the rule
@@ -285,6 +290,8 @@ impl Questions {
             catalogue,
             looked: None,
             keyring,
+            #[cfg(test)]
+            pinned: false,
         }
     }
 
@@ -342,7 +349,14 @@ impl Questions {
     ///
     /// Called where a turn begins rather than where one ends, so that a service
     /// which stopped mid-turn cannot leave a runtime behind for the next one.
+    /// Called before every question from a paired machine too
+    /// (`crate::questioned`): such a question is no turn of the person's, so
+    /// what was found for the last one is not held for it.
     pub fn a_new_turn(&mut self) {
+        #[cfg(test)]
+        if self.pinned {
+            return;
+        }
         self.looked = None;
     }
 
@@ -384,6 +398,10 @@ impl Questions {
     /// constructor that took one would be that field, reached through a
     /// different door. What a test needs is a runtime that does not require
     /// one to be installed, and what nothing else needs is this.
+    ///
+    /// What it holds survives [`Questions::a_new_turn`], because that is what
+    /// a runtime found on a real machine does: the next look finds it again.
+    /// A test that wants the look itself writes a settings file.
     #[cfg(test)]
     pub(crate) fn already_found(
         chosen: Chosen,
@@ -397,6 +415,7 @@ impl Questions {
             catalogue: Catalogue { models: Vec::new() },
             looked: Some(Looked::OnThisMachine { chosen, runtime }),
             keyring: WhoseKeyring::Nobodys,
+            pinned: true,
         }
     }
 }

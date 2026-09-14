@@ -88,6 +88,28 @@ impl ToAPerson {
         }
     }
 
+    /// Everything waiting for them that a paired machine proposed, in the
+    /// order it was proposed, each change saying which machine.
+    ///
+    /// [`ToAPerson::waiting`] with every change stamped
+    /// [`Standing::from_a_machine`]: what `alo_turn::Arriving::waiting_at`
+    /// hands out is one machine's changes, and the person answering them is
+    /// owed the name (ADR 0003: a change waits for the **receiving** machine's
+    /// person, and what they approve is the sentence).
+    #[must_use]
+    pub fn waiting_from_a_machine<'a>(
+        changes: impl Iterator<Item = &'a Waiting>,
+        machine: &str,
+        strings: &Strings,
+        now: SystemTime,
+    ) -> Self {
+        Self::Waiting {
+            changes: changes
+                .map(|waiting| Standing::of(waiting, strings, now).from_a_machine(machine))
+                .collect(),
+        }
+    }
+
     /// What is granted, read again, and how many grants that came to.
     #[must_use]
     pub const fn granted(holding: u64) -> Self {
@@ -224,6 +246,31 @@ mod tests {
         assert_eq!(only.number(), the_change(&approvals).id.as_u64());
         assert!(only.sentence().text().contains("march-final.pdf"));
         assert_eq!(only.lapses_in(), Some(300));
+    }
+
+    /// **What a paired machine proposed says which machine on every change**,
+    /// and reads back as written.
+    #[test]
+    fn what_a_paired_machine_proposed_names_the_machine_on_every_change() {
+        let (approvals, strings) = a_change_waiting();
+        let told = ToAPerson::waiting_from_a_machine(
+            approvals.waiting_at(the_moment()),
+            "the reception machine",
+            &strings,
+            the_moment(),
+        );
+        let changes = told.changes().unwrap();
+        assert_eq!(changes.len(), 1);
+        assert_eq!(
+            changes.first().unwrap().from(),
+            Some("the reception machine")
+        );
+        let written = told.written().unwrap();
+        assert!(
+            written.contains(r#""from":"the reception machine""#),
+            "{written}"
+        );
+        assert_eq!(ToAPerson::read(&written).unwrap(), told);
     }
 
     /// A list with nothing on it is an answer and not an absence: a shell that

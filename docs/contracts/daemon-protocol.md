@@ -187,6 +187,22 @@ number alone would let a shell offer *approve change 7*, and what a person
 approves is a sentence (ADR 0001 §5). `lapses_in` is seconds, and is absent once
 the question has stopped standing.
 
+A change in `waiting` that an agent on a **paired machine** proposed carries
+`from`, the name this machine's person gave that machine — because what they
+approve is the sentence, and a sentence for a change from the machine down the
+corridor has to say so (ADR 0003: a change waits for the *receiving* machine's
+person). It is additive: absent, not empty, for every change proposed on this
+machine, so a message written before there was such a thing as a remote turn
+reads back exactly as it was written. `approve` and `decline` answer such a
+change exactly as they answer a local one — the number is found among what is
+really waiting, one approval is one execution — with one more thing asked at
+the moment of approval: the pairing, so a pairing revoked between the proposal
+and the answer stops the change at the moment it would have run.
+
+```json
+{"waiting":{"changes":[{"number":7,"sentence":{"text":"…","came_from":"translation"},"lapses_in":300,"from":"the reception machine"}]}}
+```
+
 `answered` carries where the answer came from, and there is no shape without it:
 `docs/features.md` promises *where the answer came from is said where the answer
 appears*, and this is the last boundary at which that could be lost.

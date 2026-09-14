@@ -392,6 +392,17 @@ impl<'a, 'm> Arriving<'a, 'm> {
         self.turning.grantee()
     }
 
+    /// The machine this turn holds.
+    ///
+    /// `pub(crate)`, for [`crate::answering_for`]: a question from a paired
+    /// machine is answered by the machine and inside no turn, and while this
+    /// turn holds the machine the record and the indicator are behind it. A
+    /// public door here would be a way to reach the machine past every door
+    /// this turn has.
+    pub(crate) fn machine(&mut self) -> &mut Machine<'m> {
+        self.turning.machine()
+    }
+
     /// The changes this turn is waiting for this machine's person to answer.
     pub fn waiting_at(&self, now: SystemTime) -> impl Iterator<Item = &Waiting> {
         self.turning.waiting_at(now)

@@ -55,7 +55,7 @@ Either end waits ten seconds for the other on one connection.
 | `/alo-os/1/verb/read` | `POST` | JSON `{"verb":…,"given":[…]}` | `200` and an answer; or a word at the door |
 | `/alo-os/1/verb/change` | `POST` | the same | `200` and the number the change waits under; or a word at the door |
 | `/alo-os/1/verb/outcome` | `POST` | JSON `{"number":…}` | `200` and what became of it; or a word at the door |
-| `/v1/chat/completions` | `POST` | an OpenAI-compatible question | proven and judged; see below |
+| `/v1/chat/completions` | `POST` | an OpenAI-compatible question, exactly one message from the person | `200` and the answer in the same shape, as JSON; or a word, see below |
 
 The two pairing paths are `crates/alo-nearby`'s (`Proposal::said`,
 `Confirmation::said`, `NotProposed::on_the_wire`); the three verb paths are
@@ -100,17 +100,50 @@ machine leaves under its egress indicator and is written in its record with
 the origin machine named (ADR 0003). A verb arriving while the person's own
 agent holds a turn waits for that turn to end.
 
-## The question path, today
+## The question path
 
-A question is told apart, proven, and judged against the pairing's own list:
-a pairing that does not permit asking this machine's models
-(`alo_nearby::MayAskIts::Models`) is answered `403` with `not-permitted`. A
-question that proves itself and is permitted is answered `503` with
-`not-answered-here` and nothing is written, because the door that answers it
-from this machine's own model is not built yet; the asking machine's person
-is told the machine down the corridor could not answer, which is true. When
-that door exists the same path answers `200` in the OpenAI-compatible shape,
-additively.
+A question is told apart, proven, judged against the pairing's own list, and
+then answered by **the machine's own model and nothing else**. In that order:
+
+1. **The proof**, as above, through the same memory the verb wire refuses
+   replays with. A proof spent on a question is a replay as a verb.
+2. **The pairing's list.** A pairing that does not permit asking this
+   machine's models (`alo_nearby::MayAskIts::Models`) is answered `403` with
+   `not-permitted`, and the body is not read.
+3. **What the person on the answering machine chose**, read at every
+   question exactly as it is read for their own questions
+   (`docs/contracts/person-settings.md`) — so a model picked in Settings this
+   morning answers for the machine down the corridor this afternoon, and no
+   default decides it. A machine where nothing is chosen, nothing is running,
+   or the settings file does not hold is answered `503` with
+   `not-answered-here`. A machine whose person chose a **provider** is
+   answered `503` with `answers-elsewhere`: a question from a paired machine
+   is never forwarded to a provider or to a third machine (ADR 0003, ADR
+   0008), and nothing is written.
+4. **The body**, now that the proof over it held: exactly what
+   `alo-asking` sends — `model`, one `messages` entry in the `user` role, and
+   `stream: false`. A field the shape has no place for, a stream asked for,
+   no message, more than one, one in another role, or one that asks nothing
+   is answered `400` with `not-a-question`. **The model the body names is
+   checked and not used**: the question is put to the model the answering
+   machine's person chose, and the answer names that model.
+5. **The answer**, put to the model on that machine inside no turn of the
+   asking machine's, recorded there as *a question answered for another
+   machine* with the asking machine named (`docs/contracts/record-file.md`),
+   and sent back as `200` with the body in the OpenAI-compatible reply shape
+   — `object`, `model`, one `choices` entry with `message.role` `assistant`,
+   `message.content` the answer, and `finish_reason` `stop` — under
+   `content-type: application/json`. The answer leaves under the answering
+   machine's egress indicator and is written in its record as having left,
+   with the asking machine named; a rule on that machine that says nothing
+   leaves holds the answer back, writes that down, and closes the connection
+   with nothing on it. A model that was asked and did not answer is `503`
+   with `nothing-answered-here`, and one that was not there to answer is
+   `404` with `no-model-here`; neither writes anything.
+
+The `200` answer is additive to the version that answered every proven
+question `503`: a machine speaking that version reads a `503` as it always
+did, and reads a `200` as the answer it was always going to read.
 
 ## Versioning
 

@@ -403,7 +403,19 @@ be asked. This is that, with task 9's own words:
 
 ### 11. A question from a paired machine is answered by this machine's own model, and the person's door reaches a remote turn
 
-**Status:** ready. **Depends on:** 10.
+**Status:** **Done, 2026-09-14.** Built in `crates/alo-turn/src/answering_for.rs`
+(`Machine::answering_for`, `Machine::answer_returned`, and the same two on
+`Arriving`), `crates/alo-agentd/src/questioned.rs` (the question answered)
+and `crates/alo-agentd/src/reaching.rs` (the person's door on a remote
+turn), with `alo_asking::a_question_off_the_wire` and
+`alo_asking::an_answer_on_the_wire` as the receiving side of the one shape,
+`alo_nearby::http::a_json_reply`, and `alo_protocol::Standing::from_a_machine`
+so that what is waiting says which machine; the contract gained the `200`
+answer and the `from` field additively. Which model answers for another
+machine is the person's own choice for their own questions, read at every
+question, and a person who chose a provider answers for nobody. The report is
+`docs/autonomy/updates/a-question-from-a-paired-machine-is-answered-by-this-machines-own-model.md`.
+**Depends on:** 10.
 
 Task 10 bound the port and left two things it could not decide as side
 effects. A question on `/v1/chat/completions` is told apart, proven through
@@ -438,3 +450,43 @@ answer *nothing is happening* while a remote turn holds the machine.
   written up in the report; nothing widens the enumerated verbs, nothing in
   `alo-shell`, nothing in `image/`. The contract
   `docs/contracts/local-network-wire.md` gains the `200` answer additively.
+
+### 12. The person's door proposes, confirms and revokes a pairing, and a pairing outlives a restart
+
+**Status:** ready. **Depends on:** 10, 11.
+
+Task 10 left two things a real machine cannot do without, and said so:
+the person's surface confirms a pairing by reaching into `TheNetwork`'s lock
+from outside the loop — which only a test can do — and *pairings are not
+kept between restarts*, so a machine switched off at night is paired with
+nothing in the morning. Task 11 finished the person's door for a change and
+a question; this finishes it for the pairing itself. Nothing here decides
+what a pairing is (task 2), what it leaves each machine holding (task 6), or
+how a proposal crosses (task 7): it gives the person here a door onto all
+three, and keeps what they made.
+
+- **Acceptance:** the person's door (`alo-protocol`) gains requests that
+  propose a pairing to a machine discovery measured, confirm the one
+  waiting, revoke one, and list what is paired and what is waiting — each
+  carrying nothing that could name a machine discovery did not measure, and
+  each refused on the agent's door in the words an agent approving something
+  gets; what the person is shown to confirm is the `Code` and the enumerated
+  list, and a confirmation for nothing waiting, for a code that does not
+  match, and from an agent are three refusals with three tests; a pairing
+  kept is remembered under the person's own file with the same trust the
+  grants file has (`alo-remembering`: owner, mode, refused whole if it cannot
+  be believed) and read again at start, so that a pairing survives a restart
+  and its **expiry** survives with it, tested by a restart across the moment
+  it ends; a revocation from the door takes effect on the next verb and the
+  next question, tested through the door rather than the lock; and the key
+  the pairing holds (ADR 0031) is kept with the care a credential gets —
+  which store, and why, decided in the crate that owns it and written up.
+- **Constraint:** ADR 0003 and ADR 0031 throughout: no *remember this
+  machine* beyond the pairing's own stated expiry, no trusted network, no
+  certificate, and a remembered pairing is exactly the row two people made
+  — nothing about it is widened by being written down. The surface that
+  shows a proposal and a code is `alo-shell`'s and outside this plan; what
+  this task owes it is the requests and the answers. Nothing in
+  `alo-shell`, nothing in `image/`; `docs/contracts/daemon-protocol.md` and
+  `docs/contracts/person-settings.md` (or a file beside it, decided in the
+  report) gain the shapes additively.

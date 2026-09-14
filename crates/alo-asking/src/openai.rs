@@ -53,6 +53,20 @@
 //! is reported as unusable rather than truncated into something the model did
 //! not say.
 //!
+//! # And the same shape, read from the other side
+//!
+//! Since the daemon bound the port a machine is also *asked* in this shape:
+//! `alo_asking::THE_QUESTION_PATH` on the port presence advertises carries
+//! exactly what [`put`] sends, and what the answering machine writes back is
+//! exactly what [`put`] reads. [`a_question_off_the_wire`] and
+//! [`an_answer_on_the_wire`] are those two directions, and they are in this
+//! file rather than beside the daemon so that the sentence at the top stays
+//! true: one file knows the shape, and the sender and the receiver cannot
+//! drift apart because they are the same two types. A body that is not the
+//! shape — a field it has no place for, a stream asked for, two messages, a
+//! message somebody other than the person spoke — is refused rather than read
+//! around, which is the rule every body on that port is held to.
+//!
 //! # And one refusal is read, for one question
 //!
 //! Two statuses in this convention mean two things each, and the second thing is
@@ -74,7 +88,8 @@ use ureq::config::Config;
 use ureq::unversioned::resolver::{ResolvedSocketAddrs, Resolver};
 use ureq::unversioned::transport::{DefaultConnector, NextTimeout};
 
-use crate::question::Question;
+use crate::answer::Answer;
+use crate::question::{NotAQuestion, Question};
 use crate::ran_out;
 
 /// The most addresses one request is given.
@@ -154,50 +169,169 @@ const MOST_OF_AN_ANSWER: u64 = 1_000_000;
 const MOST_OF_A_REFUSAL: u64 = 64_000;
 
 /// One question, in the shape every OpenAI-compatible service speaks.
-#[derive(Serialize)]
-struct Sent<'a> {
+///
+/// Read as strictly as it is written: a field this shape has no place for
+/// refuses the body, because on the port a machine advertises a body is read
+/// by a machine that must not read around anything (ADR 0031: the proof is
+/// over these bytes, and every byte is one that was decided about).
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Sent {
     /// The model to answer it.
-    model: &'a str,
+    model: String,
     /// The question, as the one message in this conversation.
-    messages: [Message<'a>; 1],
+    messages: Vec<Message>,
     /// Whole answers only — this module's third decision.
     stream: bool,
 }
 
 /// One message in that shape.
-#[derive(Serialize)]
-struct Message<'a> {
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Message {
     /// Who is speaking. Always the person.
-    role: &'a str,
+    role: String,
     /// What they said.
-    content: &'a str,
+    content: String,
 }
+
+/// The one role a question is spoken in.
+const THE_PERSON: &str = "user";
+
+/// The role an answer is spoken in.
+const THE_MODEL: &str = "assistant";
 
 /// What a service answers with.
 ///
 /// `choices` is `#[serde(default)]` so that a reply which is valid JSON and not
 /// an answer is reported as unusable rather than as a parse failure: the two
 /// reach a person as one sentence, and the shorter path to it is fewer branches.
-#[derive(Deserialize)]
+/// Read leniently and written fully: a provider adds fields of its own beside
+/// these and is not refused for them, and what this machine writes when it is
+/// the one answering carries every field a reader of the convention expects.
+#[derive(Serialize, Deserialize)]
 struct Spoke {
+    /// What kind of reply this is, which the convention spells one way.
+    #[serde(default)]
+    object: String,
+    /// The model that answered.
+    #[serde(default)]
+    model: String,
     /// The answers offered. One is asked for and the first is taken.
     #[serde(default)]
     choices: Vec<Choice>,
 }
 
 /// One answer in that reply.
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Choice {
+    /// Which of the answers this is; there is one.
+    #[serde(default)]
+    index: u64,
     /// What the model wrote.
     message: Wrote,
+    /// Why the model stopped writing, which for a whole answer is that it
+    /// finished.
+    #[serde(default)]
+    finish_reason: String,
 }
 
 /// The message a model wrote.
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct Wrote {
+    /// Who is speaking. The model.
+    #[serde(default)]
+    role: String,
     /// Its text.
     #[serde(default)]
     content: String,
+}
+
+/// Why a body on the port was not read as a question.
+///
+/// Three, and each is a different thing about the bytes: they were not the
+/// shape at all, they were the shape and carried something other than one
+/// question from one person, or they carried one and it was empty. None of
+/// them is said to a person — the machine that sent the body is a machine,
+/// and what it is told is one word on the wire.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum NotHeard {
+    /// Not the shape a question travels in: not JSON, a field the shape has
+    /// no place for, or a stream asked for where only whole answers are
+    /// given.
+    NotTheShape,
+    /// The shape held and did not carry one question from the person: no
+    /// message, more than one, or one spoken in another role.
+    NotOneQuestion,
+    /// One message from the person, and what it carried was not a question
+    /// — nothing asked, or no model named.
+    NotAQuestion(NotAQuestion),
+}
+
+/// Read one body off the port as the question it carries, to be put to
+/// `of_model`.
+///
+/// The other side of `put` in `openai.rs`: what that sends, this reads, and
+/// nothing else is read. The body is refused whole for a field it has no place for, for
+/// `stream: true`, and for anything but exactly one message in the person's
+/// role; what the one message says and which model it names are then held to
+/// [`Question::asked`]'s own rule.
+///
+/// **The model the body names is checked and not used.** A question that
+/// arrives on the port is put to the model the person on the answering
+/// machine chose — that machine's own setting, which the asking machine does
+/// not decide (ADR 0008) — and `of_model` is that model. What the body named
+/// is held to the rule that a question names *a* model, so a body with none
+/// is refused as one, and is then set aside: the question that comes back
+/// says which model it is really to be put to, and the answer says which
+/// model really answered.
+///
+/// # Errors
+///
+/// [`NotHeard`], one arm per way the bytes were not a question.
+pub fn a_question_off_the_wire(body: &str, of_model: &str) -> Result<Question, NotHeard> {
+    let sent: Sent = serde_json::from_str(body).map_err(|_| NotHeard::NotTheShape)?;
+    if sent.stream {
+        return Err(NotHeard::NotTheShape);
+    }
+    let mut messages = sent.messages.into_iter();
+    let (Some(message), None) = (messages.next(), messages.next()) else {
+        return Err(NotHeard::NotOneQuestion);
+    };
+    if message.role != THE_PERSON {
+        return Err(NotHeard::NotOneQuestion);
+    }
+    // Held to the rule first, as the body named it; then made for the model
+    // this machine really puts it to.
+    Question::asked(&message.content, &sent.model).map_err(NotHeard::NotAQuestion)?;
+    Question::asked(&message.content, of_model).map_err(NotHeard::NotAQuestion)
+}
+
+/// Write one answer as the reply `put` in `openai.rs` reads.
+///
+/// The whole of the convention's reply, with the model that answered named
+/// in it: one choice, the model's role, the text as the model wrote it, and
+/// the reason it stopped, which for a whole answer is that it finished.
+/// Nothing of the machine that answered is in it beyond the model's name —
+/// no identity, no person, no clock.
+#[must_use]
+pub fn an_answer_on_the_wire(answer: &Answer) -> String {
+    let spoke = Spoke {
+        object: "chat.completion".to_owned(),
+        model: answer.model().to_owned(),
+        choices: vec![Choice {
+            index: 0,
+            message: Wrote {
+                role: THE_MODEL.to_owned(),
+                content: answer.text().to_owned(),
+            },
+            finish_reason: "stop".to_owned(),
+        }],
+    };
+    // Every field is a string or a number, so this cannot fail; it is
+    // answered rather than unwrapped for the reason every other door gives.
+    serde_json::to_string(&spoke).unwrap_or_default()
 }
 
 /// What makes the proof that travels beside a body: given the exact bytes, it
@@ -268,10 +402,10 @@ pub(crate) fn put(
     };
 
     let sent = Sent {
-        model: question.of(),
-        messages: [Message {
-            role: "user",
-            content: question.text(),
+        model: question.of().to_owned(),
+        messages: vec![Message {
+            role: THE_PERSON.to_owned(),
+            content: question.text().to_owned(),
         }],
         stream: false,
     };
@@ -798,6 +932,104 @@ mod tests {
             answers_url("http://127.0.0.1:8000"),
             "http://127.0.0.1:8000/v1/chat/completions"
         );
+    }
+
+    /// **What `put` sends is exactly what the other side reads**, so the
+    /// daemon answering on the port and the corridor asking it cannot drift:
+    /// the body a fixture read off the socket comes back as the question that
+    /// was put, model and text as they were written.
+    #[test]
+    fn what_is_put_on_the_wire_is_read_back_as_the_question() {
+        let (url, server) = serving(AN_ANSWER, 200);
+        put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap();
+        let request = server.join().unwrap();
+        let body = request.split("\r\n\r\n").nth(1).unwrap_or_default();
+
+        let heard = a_question_off_the_wire(body, "the-model-chosen-there").unwrap();
+        assert_eq!(heard.text(), "may the tenant sublet?");
+        // The model the body named was held to the rule and set aside: what
+        // answers is the answering machine's person's choice.
+        assert_eq!(heard.of(), "the-model-chosen-there");
+    }
+
+    /// **And what this machine writes as an answer is what `put` reads**:
+    /// the reply goes through the same reader a provider's does and comes
+    /// back as the text the model wrote, with the model named.
+    #[test]
+    fn what_is_written_as_an_answer_is_read_back_by_the_asking_side() {
+        let answer = Answer::new(
+            "The tenant may not sublet.".to_owned(),
+            alo_models::InferenceSource::ThisMachine,
+            "a-model".to_owned(),
+        );
+        let written: &'static str = Box::leak(an_answer_on_the_wire(&answer).into_boxed_str());
+        let spoke: serde_json::Value = serde_json::from_str(written).unwrap();
+        for (at, expected) in [
+            ("/object", "chat.completion"),
+            ("/model", "a-model"),
+            ("/choices/0/message/role", "assistant"),
+            ("/choices/0/finish_reason", "stop"),
+        ] {
+            assert_eq!(
+                spoke.pointer(at).and_then(serde_json::Value::as_str),
+                Some(expected),
+                "{at}: {written}"
+            );
+        }
+
+        let (url, server) = serving(written, 200);
+        let read = put(&url, None, &question(), A_MOMENT, &resolved(&url), None).unwrap();
+        server.join().unwrap();
+        assert_eq!(read, "The tenant may not sublet.");
+    }
+
+    /// **A body that is not the shape is refused rather than read around**:
+    /// a field the shape has no place for, a stream asked for, no message,
+    /// two messages, a message in another role, and one that asks nothing —
+    /// each its own refusal, and none of them a question.
+    #[test]
+    fn a_body_that_is_not_one_question_from_the_person_is_refused() {
+        for (body, expected) in [
+            ("not json at all", NotHeard::NotTheShape),
+            (
+                r#"{"model":"m","messages":[{"role":"user","content":"hello"}],"stream":false,"temperature":0.2}"#,
+                NotHeard::NotTheShape,
+            ),
+            (
+                r#"{"model":"m","messages":[{"role":"user","content":"hello","name":"anna"}],"stream":false}"#,
+                NotHeard::NotTheShape,
+            ),
+            (
+                r#"{"model":"m","messages":[{"role":"user","content":"hello"}],"stream":true}"#,
+                NotHeard::NotTheShape,
+            ),
+            (
+                r#"{"model":"m","messages":[],"stream":false}"#,
+                NotHeard::NotOneQuestion,
+            ),
+            (
+                r#"{"model":"m","messages":[{"role":"user","content":"a"},{"role":"user","content":"b"}],"stream":false}"#,
+                NotHeard::NotOneQuestion,
+            ),
+            (
+                r#"{"model":"m","messages":[{"role":"system","content":"you are"}],"stream":false}"#,
+                NotHeard::NotOneQuestion,
+            ),
+            (
+                r#"{"model":"m","messages":[{"role":"user","content":"   "}],"stream":false}"#,
+                NotHeard::NotAQuestion(NotAQuestion::Nothing),
+            ),
+            (
+                r#"{"model":"","messages":[{"role":"user","content":"hello"}],"stream":false}"#,
+                NotHeard::NotAQuestion(NotAQuestion::NoModel),
+            ),
+        ] {
+            assert_eq!(
+                a_question_off_the_wire(body, "a-model").unwrap_err(),
+                expected,
+                "{body}"
+            );
+        }
     }
 
     /// **The path a question down the corridor is put to is the one spelling

@@ -44,6 +44,17 @@
 //! `Option<&mut Turning>`: the refusal has to be written down whether or not an
 //! agent happens to be connected, and between turns the turn is not there to
 //! write it through.
+//!
+//! # And the turn may be a paired machine's
+//!
+//! Since the daemon bound the port, a change waiting for this person may have
+//! been proposed by an agent on a paired machine, through
+//! `alo_turn::Arriving` (ADR 0003: a change waits for the **receiving**
+//! machine's person). The three requests about the turn are then answered
+//! against that turn — [`crate::reaching`] is the file, so that this one
+//! changes when a local turn's doors change and that one when a remote
+//! turn's do — and this file only decides which turn is holding the machine.
+//! A number nothing is waiting under is refused in the same words on either.
 
 use std::time::SystemTime;
 
@@ -54,6 +65,7 @@ use alo_strings::Strings;
 use alo_turn::Turning;
 
 use crate::holding::Holding;
+use crate::reaching;
 use crate::rereading::{self, WhatIsGranted};
 
 /// Read one line as something the person said, and answer it.
@@ -82,13 +94,11 @@ pub fn what_a_person_said(
 ) -> Result<ToAPerson, NotKept> {
     match FromAPerson::read(line) {
         Ok(FromAPerson::Granted) => what_is_granted_changed(holding, granted, strings, now),
-        Ok(answered) => Ok(answered_to(
-            answered,
-            holding.turning(),
-            granted.holding(),
-            strings,
-            now,
-        )),
+        Ok(answered) => Ok(if let Some((arriving, network)) = holding.remote() {
+            reaching::answered_to(answered, arriving, network, granted.holding(), strings, now)
+        } else {
+            answered_to(answered, holding.turning(), granted.holding(), strings, now)
+        }),
         Err(why) => Ok(ToAPerson::refused(&why.said(strings))),
     }
 }
@@ -177,8 +187,9 @@ fn under(turning: &Turning<'_, '_>, number: u64, now: SystemTime) -> Option<Prop
 /// Borrowed rather than written here for item 9e's reason: the screen and the
 /// record render the same value, so neither can be a language the other is not
 /// — and a person who answers a change twice reads the same sentence whichever
-/// road the second answer took.
-fn nothing_is_waiting(number: u64, strings: &Strings) -> ToAPerson {
+/// road the second answer took. `pub(crate)` for `crate::reaching`, which
+/// refuses a number on a remote turn in the same words.
+pub(crate) fn nothing_is_waiting(number: u64, strings: &Strings) -> ToAPerson {
     ToAPerson::refused(&AnswerError::NothingWaiting { number }.said(strings))
 }
 

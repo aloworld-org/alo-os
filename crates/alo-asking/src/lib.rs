@@ -183,6 +183,7 @@ pub use asking::Asking;
 pub use corridor::{DownTheCorridor, THE_PROOF_HEADER, THE_QUESTION_PATH};
 pub use found::{Found, NotVetted};
 pub use hosted::Hosted;
+pub use openai::{NotHeard, a_question_off_the_wire, an_answer_on_the_wire};
 pub use question::{NotAQuestion, Question};
 pub use refusing::{Miswired, NotAnswered, NotAsked};
 pub use served::Served;

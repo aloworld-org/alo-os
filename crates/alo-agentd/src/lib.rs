@@ -214,6 +214,8 @@ pub mod questioned;
 #[cfg(target_os = "linux")]
 pub mod questions;
 #[cfg(target_os = "linux")]
+pub mod reaching;
+#[cfg(target_os = "linux")]
 pub mod refusing;
 #[cfg(target_os = "linux")]
 pub mod rereading;
@@ -280,7 +282,10 @@ pub use network::{Shared, TheNetwork};
 #[cfg(target_os = "linux")]
 pub use place::{Place, THE_ROOT};
 #[cfg(target_os = "linux")]
-pub use questioned::{NOT_ANSWERED_HERE, NOT_PERMITTED, Questioned};
+pub use questioned::{
+    ANSWERS_ELSEWHERE, NO_MODEL_HERE, NOT_A_QUESTION, NOT_ANSWERED_HERE, NOT_PERMITTED,
+    NOTHING_ANSWERED, Questioned, Replied,
+};
 #[cfg(target_os = "linux")]
 pub use questions::{Questions, TheBound, WhatAnswers};
 #[cfg(target_os = "linux")]

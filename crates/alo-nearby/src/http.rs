@@ -227,6 +227,25 @@ pub fn a_reply(status: u16, reason: &str, body: &str) -> String {
     )
 }
 
+/// What the one reply whose body is JSON says its body is.
+const JSON: &str = "application/json";
+
+/// A reply with `status`, carrying `body` as JSON, as the bytes go.
+///
+/// For the one reply on the port whose body is not a line of text: the
+/// answer to a question, which travels in the shape the question came in
+/// (`alo_asking::an_answer_on_the_wire`). The framing is [`a_reply`]'s to the
+/// byte; only what the body is said to be differs, so that a reader of the
+/// OpenAI-compatible convention is told the truth about it.
+#[must_use]
+pub fn a_json_reply(status: u16, reason: &str, body: &str) -> String {
+    format!(
+        "HTTP/1.1 {status} {reason}\r\ncontent-type: {JSON}\r\ncontent-length: {}\r\n\
+         connection: close\r\n\r\n{body}",
+        body.len()
+    )
+}
+
 /// The method and the path a request line asks for.
 ///
 /// # Errors
@@ -278,8 +297,8 @@ mod tests {
     use std::io::Cursor;
 
     use super::{
-        AT_MOST_A_BODY, Message, a_reply, a_request, a_request_carrying, asked_for, read_message,
-        read_message_of_at_most, status_of,
+        AT_MOST_A_BODY, Message, a_json_reply, a_reply, a_request, a_request_carrying, asked_for,
+        read_message, read_message_of_at_most, status_of,
     };
     use crate::refusing::NotNearby;
 
@@ -372,6 +391,21 @@ mod tests {
         let message = read_message(Cursor::new(a_reply(200, "OK", "an offer\n"))).unwrap();
         assert_eq!(status_of(&message.first).unwrap(), 200);
         assert_eq!(message.body, "an offer\n");
+    }
+
+    /// A reply carrying JSON is framed exactly as one carrying text, and says
+    /// what its body is.
+    #[test]
+    fn a_json_reply_is_the_same_framing_and_says_what_its_body_is() {
+        let json = a_json_reply(200, "OK", r#"{"choices":[]}"#);
+        let message = read_message(Cursor::new(json.clone())).unwrap();
+        assert_eq!(status_of(&message.first).unwrap(), 200);
+        assert_eq!(message.body, r#"{"choices":[]}"#);
+        assert_eq!(message.header("content-type"), Some("application/json"));
+        assert_eq!(
+            json.replace("application/json", "text/plain; charset=utf-8"),
+            a_reply(200, "OK", r#"{"choices":[]}"#)
+        );
     }
 
     /// Everything that is not the shape this wire carries is refused as not a

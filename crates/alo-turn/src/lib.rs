@@ -132,6 +132,7 @@
 
 #![doc(html_root_url = "https://github.com/aloworld-org/alo-os")]
 
+pub mod answering_for;
 pub mod answers;
 pub mod arriving;
 pub mod asking;
@@ -152,6 +153,7 @@ pub mod words;
 #[cfg(test)]
 mod testing;
 
+pub use answering_for::AnsweredFor;
 pub use answers::Answers;
 pub use arriving::Arriving;
 pub use became::Became;

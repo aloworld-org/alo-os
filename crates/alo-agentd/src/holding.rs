@@ -19,8 +19,9 @@ use std::time::SystemTime;
 use alo_corridor::Doorway;
 use alo_keeping::NotKept;
 use alo_strings::Said;
-use alo_turn::{Machine, Turning};
+use alo_turn::{Arriving, Machine, Turning};
 
+use crate::network::TheNetwork;
 use crate::questions::Questions;
 
 /// The machine, or the turn that is holding it.
@@ -44,10 +45,20 @@ pub enum Holding<'a, 'm, 't> {
     /// holding it for a remote turn, or holding it for the next verb.
     ///
     /// This is what the rounds between local turns hold since the daemon
-    /// bound the port: the person's door answers exactly as it does for
-    /// [`Holding::Nobody`], and what a knock writes goes through the remote
-    /// turn if one is open and through the machine otherwise.
-    TheNetwork(&'a mut Doorway<'m, 't>),
+    /// bound the port. What a knock writes goes through the remote turn if
+    /// one is open and through the machine otherwise; a change a paired
+    /// machine proposed is approved, declined and listed through the remote
+    /// turn (`crate::reaching`), against the pairings behind the one lock;
+    /// and a question from a paired machine is answered by what the person
+    /// here chose, looked for once per question.
+    TheNetwork {
+        /// The network's door onto the machine, holding the proofs seen.
+        doorway: &'a mut Doorway<'m, 't>,
+        /// The pairings and the proposals, behind the one lock.
+        network: &'a TheNetwork,
+        /// What a question from a paired machine is put to.
+        questions: &'a mut Questions,
+    },
 }
 
 impl<'a, 'm, 't> Holding<'a, 'm, 't> {
@@ -59,7 +70,25 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
     pub fn turning(&mut self) -> Option<&mut Turning<'m, 't>> {
         match self {
             Self::ATurn { turning, .. } => Some(turning),
-            Self::Nobody(_) | Self::TheNetwork(_) => None,
+            Self::Nobody(_) | Self::TheNetwork { .. } => None,
+        }
+    }
+
+    /// The remote turn under way and the pairings it is judged against, when
+    /// the network's door holds the machine for one.
+    ///
+    /// What `crate::reaching` answers the three requests about a turn with
+    /// when the turn is a paired machine's: a change it proposed waits for
+    /// the person here, and the pairing is asked again at the moment of
+    /// approval. `None` while no remote turn is open — including while the
+    /// network's door holds a free machine — so that a number nothing is
+    /// waiting under is refused in the ordinary words.
+    pub fn remote(&mut self) -> Option<(&mut Arriving<'m, 't>, &'a TheNetwork)> {
+        match self {
+            Self::TheNetwork {
+                doorway, network, ..
+            } => doorway.turn().map(|arriving| (arriving, *network)),
+            Self::ATurn { .. } | Self::Nobody(_) => None,
         }
     }
 
@@ -71,7 +100,7 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
     pub fn underway(&mut self) -> Option<(&mut Turning<'m, 't>, &mut Questions)> {
         match self {
             Self::ATurn { turning, questions } => Some((turning, questions)),
-            Self::Nobody(_) | Self::TheNetwork(_) => None,
+            Self::Nobody(_) | Self::TheNetwork { .. } => None,
         }
     }
 
@@ -94,7 +123,7 @@ impl<'a, 'm, 't> Holding<'a, 'm, 't> {
         match self {
             Self::ATurn { turning, .. } => turning.the_grants_were_not_read_again(why, now),
             Self::Nobody(machine) => machine.the_grants_were_not_read_again(why, now),
-            Self::TheNetwork(doorway) => {
+            Self::TheNetwork { doorway, .. } => {
                 if let Some(arriving) = doorway.turn() {
                     arriving.the_grants_were_not_read_again(why, now)
                 } else if let Some(machine) = doorway.machine() {
