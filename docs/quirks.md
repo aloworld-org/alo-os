@@ -3349,6 +3349,24 @@ removing it. `tools/kernel-loop` already runs a failing gate twice for this kind
 of transient; the Mac lane's publish script does not, so it refuses a tree this
 flakes on and is run again.
 
+**Then it refused a task twice, and the waiting went into the crate.** On
+2026-09-14 the supervisor's gate, in WSL (kernel 6.18.33.2), failed
+`a_turn_without_a_boundary_does_not_run.rs`'s
+`a_turn_runs_where_the_boundary_is_in_place` the same way on both runs, and the
+group it could not remove read `populated 0` minutes later with nothing in it.
+The in-place turn is the only one in that file that starts
+`Turns::doing`'s keeper thread. Moving a process out through `cgroup.procs`
+leaves behind a thread that has already begun to exit, and that thread counts
+until it is gone — and it is still *listed* in `cgroup.threads` meanwhile, so
+the list cannot tell it from a live one. `Cgroup::removed` now waits, on
+`EBUSY` only and for five seconds at most, for `cgroup.events` to say
+`populated 0` — the count `rmdir` itself asks — and asks once more; a group
+that does not empty is refused with the kernel's first answer, as before. Not
+reproduced on demand: the test passed alone three times without the change, and
+a probe doing the fixture's sequence 400 times, idle and under eight spinning
+processes, never saw `EBUSY`. The explanation is from the kernel's migration
+path and the group left behind, not from a reproduction.
+
 **It cascades.** A `home` group left behind in the session scope makes the next
 run of `alo-agentd`'s boundary tests fail four at once — *"cannot make a control
 group at /sys/fs/cgroup/user.slice/user-501.slice/session-4.scope/home …

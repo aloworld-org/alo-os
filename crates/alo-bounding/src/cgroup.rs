@@ -44,6 +44,8 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    thread,
+    time::{Duration, Instant},
 };
 
 use crate::failing::NotBounded;
@@ -176,13 +178,88 @@ impl Cgroup {
     /// Separate from dropping the value on purpose: removing a cgroup can fail,
     /// and a `Drop` that swallowed the failure would leave a machine slowly
     /// filling with the remains of turns and nothing saying so.
+    ///
+    /// # A thread on its way out is waited for, briefly
+    ///
+    /// Moving a process out of a group through `cgroup.procs` moves every
+    /// thread of it **except one that has already begun to exit**: the kernel
+    /// leaves that one where it is, and it counts there — `populated 1`, and
+    /// `rmdir` answering `EBUSY` — until it is gone. [`crate::Turns::doing`]
+    /// ends a keeper thread in `home` on every turn, and [`crate::Turns::given_back`]
+    /// moves the process out and removes `home` straight afterwards, so a machine
+    /// under load can be asked to remove a group whose last thread is still
+    /// leaving. `docs/quirks.md` has it failing that way.
+    ///
+    /// So an `EBUSY` is waited on, for `HOW_LONG_A_THREAD_TAKES_TO_LEAVE` at
+    /// most, until the kernel says `populated 0` — the same count `rmdir` asks
+    /// — and removal is asked once more. What was waited on is not judged from
+    /// `cgroup.threads`, because a thread that has begun to exit is still listed
+    /// there. A group that does not empty in that time is refused with the
+    /// kernel's own first answer, and so is every refusal that is not `EBUSY`.
     pub fn removed(self) -> Result<(), NotBounded> {
-        fs::remove_dir(&self.at).map_err(|why| NotBounded::Cgroup {
+        let refused = match fs::remove_dir(&self.at) {
+            Ok(()) => return Ok(()),
+            Err(why) => why,
+        };
+        if worth_waiting_for(&refused)
+            && emptied(&self.at.join(THE_EVENTS), HOW_LONG_A_THREAD_TAKES_TO_LEAVE)
+            && fs::remove_dir(&self.at).is_ok()
+        {
+            return Ok(());
+        }
+        Err(NotBounded::Cgroup {
             what: "cannot take away the control group at",
             path: self.at.display().to_string(),
-            why,
+            why: refused,
         })
     }
+}
+
+/// Waits, for `at_most`, for a group's `cgroup.events` to say nothing is in it.
+///
+/// A file that cannot be read ends the wait at once: there is nothing to wait
+/// on, and the removal's own refusal is what is reported.
+fn emptied(events: &Path, at_most: Duration) -> bool {
+    let until = Instant::now() + at_most;
+    loop {
+        match fs::read_to_string(events) {
+            Ok(said) if says_unpopulated(&said) => return true,
+            Ok(_) => {}
+            Err(_) => return false,
+        }
+        if Instant::now() >= until {
+            return false;
+        }
+        thread::sleep(LOOK_AGAIN_EVERY);
+    }
+}
+
+/// The file that says whether anything, living or leaving, is in a cgroup.
+const THE_EVENTS: &str = "cgroup.events";
+
+/// The longest a removal waits for a finished thread to leave.
+///
+/// Far more than the moment it takes, and short enough that a group which
+/// never empties is reported rather than waited on.
+const HOW_LONG_A_THREAD_TAKES_TO_LEAVE: Duration = Duration::from_secs(5);
+
+/// How often `cgroup.events` is read while waiting.
+const LOOK_AGAIN_EVERY: Duration = Duration::from_millis(10);
+
+/// `EBUSY`, as Linux numbers it.
+const BUSY: i32 = 16;
+
+/// Whether a refused removal is one a thread on its way out could explain.
+///
+/// Only `EBUSY`: a group that does not exist, or one this service may not
+/// remove, is not something waiting fixes.
+fn worth_waiting_for(refused: &std::io::Error) -> bool {
+    refused.raw_os_error() == Some(BUSY)
+}
+
+/// Whether `cgroup.events` says the group holds nothing.
+fn says_unpopulated(events: &str) -> bool {
+    events.lines().any(|line| line.trim() == "populated 0")
 }
 
 /// Whether a name is one component and nothing else.
@@ -224,6 +301,79 @@ mod tests {
     fn an_ordinary_name_is_a_name() {
         assert!(is_a_name("alo-turn_1"));
         assert!(is_a_name("t"));
+    }
+
+    /// A busy group is one a thread on its way out could explain.
+    #[test]
+    fn a_busy_group_is_waited_for() {
+        assert!(worth_waiting_for(&std::io::Error::from_raw_os_error(BUSY)));
+    }
+
+    /// Any refusal other than `EBUSY` — refused, not there, not a directory —
+    /// is reported at once rather than waited on.
+    #[test]
+    fn a_refusal_that_is_not_busy_is_not_waited_for() {
+        for other in [13, 2, 20] {
+            let refused = std::io::Error::from_raw_os_error(other);
+            assert!(!worth_waiting_for(&refused), "{other}");
+        }
+    }
+
+    /// A place of this test's own for a `cgroup.events` it writes itself.
+    fn an_events_file(what: &str, saying: Option<&str>) -> PathBuf {
+        let at = PathBuf::from("/tmp")
+            .join(format!("alo-bounding-events-{}-{what}", std::process::id()));
+        drop(fs::remove_file(&at));
+        if let Some(said) = saying {
+            let written = fs::write(&at, said);
+            assert!(
+                written.is_ok(),
+                "a temporary file can be written: {written:?}"
+            );
+        }
+        at
+    }
+
+    /// A group the kernel says is empty is not waited on at all.
+    #[test]
+    fn an_empty_group_ends_the_wait_at_once() {
+        let events = an_events_file("empty", Some("populated 0\nfrozen 0\n"));
+        let began = Instant::now();
+        assert!(emptied(&events, Duration::from_secs(5)));
+        assert!(began.elapsed() < Duration::from_secs(1));
+        drop(fs::remove_file(&events));
+    }
+
+    /// A group that stays populated is refused once the wait is over, and not
+    /// before: the wait is bounded, and it does not pretend the group emptied.
+    #[test]
+    fn a_group_that_never_empties_is_refused_when_the_wait_is_over() {
+        let events = an_events_file("never", Some("populated 1\nfrozen 0\n"));
+        let began = Instant::now();
+        assert!(!emptied(&events, Duration::from_millis(100)));
+        let waited = began.elapsed();
+        assert!(waited >= Duration::from_millis(100), "{waited:?}");
+        assert!(waited < Duration::from_secs(2), "{waited:?}");
+        drop(fs::remove_file(&events));
+    }
+
+    /// A group whose `cgroup.events` cannot be read has nothing to wait on.
+    #[test]
+    fn a_group_whose_events_cannot_be_read_is_not_waited_on() {
+        let events = an_events_file("gone", None);
+        let began = Instant::now();
+        assert!(!emptied(&events, Duration::from_secs(5)));
+        assert!(began.elapsed() < Duration::from_secs(1));
+    }
+
+    /// `populated 0` is read from the file as the kernel writes it, and
+    /// `populated 1` — which is what a leaving thread keeps it at — is not.
+    #[test]
+    fn only_populated_0_says_the_group_is_empty() {
+        assert!(says_unpopulated("populated 0\nfrozen 0\n"));
+        assert!(!says_unpopulated("populated 1\nfrozen 0\n"));
+        assert!(!says_unpopulated("frozen 0\n"));
+        assert!(!says_unpopulated(""));
     }
 
     /// The refusal reaches the caller as a value with the name in it, rather

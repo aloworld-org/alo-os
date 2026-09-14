@@ -215,7 +215,22 @@ no window.
 
 ### 6. One place for settings
 
-**Status:** ready. **Depends on:** 5.
+**Status:** blocked — on the keeping that
+[ADR 0038](../decisions/0038-a-persons-settings-are-kept-by-the-crate-that-owns-each.md)
+describes landing in crates this plan does not edit. That decision was
+**accepted on 2026-09-15**, option B, and the keeping is
+`docs/autonomy/v0-5-where-a-persons-settings-are-kept-plan.md`, a lane of its
+own; this task unblocks when that plan's tasks 2 and 3 have landed. Three of
+the seven sections —
+appearance, the dock and shortcuts — have no file any crate reads or writes, so
+*reading and writing the same file its crate already owns* has nothing to read
+or write, and choosing that file here would be the drawing crate deciding. And
+a pairing has no person's road to revoke it the way `alo-changing` revokes a
+grant, so *revoked the same way* would be two code paths in a compositor.
+Evidence and the proposed keeping lane in
+`docs/autonomy/updates/one-place-for-settings-waits-on-where-settings-are-kept.md`;
+`crates/alo-shell/tests/settings_source.rs` holds, meanwhile, that the shell
+keeps no settings file of its own. **Depends on:** 5.
 
 `ROADMAP.md` v0.5: *Settings, as one place — network, display, sound,
 printers, storage, keyboard, accounts, privacy, updates. Not a scattering of
